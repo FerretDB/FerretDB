@@ -420,6 +420,10 @@ func includeProjection(path types.Path, curIndex int, source any, projected, fil
 // with the key to remove that document. This is not the case in document.Remove(key).
 // Dot notation with array index path do not exclude unlike document.RemoveByPath(key).
 //
+// Returned command error code:
+//
+//   - ErrExclusionPositionalProjection when positional projection `$` is used.
+//
 // Examples: "v.foo" path exclusion projection:
 //
 //	{v: {foo: 1}}                       -> {v: {}}
@@ -432,6 +436,14 @@ func includeProjection(path types.Path, curIndex int, source any, projected, fil
 //	{v: [{foo: 1}, {foo: 2}]}           -> {v: [{foo: 1}, {foo: 2}]}
 func excludeProjection(path types.Path, projected any) error {
 	key := path.Prefix()
+
+	if key == "$" {
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrExclusionPositionalProjection,
+			"positional projection cannot be used with exclusion",
+			"projection",
+		)
+	}
 
 	switch projected := projected.(type) {
 	case *types.Document:

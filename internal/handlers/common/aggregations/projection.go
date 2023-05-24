@@ -73,7 +73,7 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrAggregatePositionalProject,
 				"Invalid $project :: caused by :: Cannot use positional projection in aggregation projection",
-				"projection",
+				"$project (stage)",
 			)
 		}
 
