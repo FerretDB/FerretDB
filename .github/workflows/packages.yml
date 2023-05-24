@@ -21,6 +21,7 @@ on:
   push:
     branches:
       - main
+      - releases/*
     tags:
       - "*"
   schedule:
