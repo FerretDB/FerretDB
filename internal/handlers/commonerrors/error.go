@@ -175,6 +175,13 @@ const (
 	// while projection document already marked as inclusion.
 	ErrProjectionExIn = ErrorCode(31254) // Location31254
 
+	// ErrWrongPositionalOperatorLocation indicates that there can only be one positional
+	// operator at the end.
+	ErrWrongPositionalOperatorLocation = ErrorCode(31394) // Location31394
+
+	// ErrExclusionPositionalProjection indicates that exclusion cannot use positional projection.
+	ErrExclusionPositionalProjection = ErrorCode(31395) // Location31395
+
 	// ErrStageCountNonString indicates that $count aggregation stage expected string.
 	ErrStageCountNonString = ErrorCode(40156) // Location40156
 

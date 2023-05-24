@@ -35,40 +35,58 @@ func TestQueryProjectionErrors(t *testing.T) {
 		filter     bson.D             // required
 		projection any                // required
 		err        mongo.CommandError // required
+		altMessage string             // optional
 	}{
 		"MultiplePositionalOperator": {
 			filter:     bson.D{{"_id", "array-numbers-asc"}},
 			projection: bson.D{{"v.$.foo.$", true}},
 			err: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "Executor error during find command :: caused by :: positional operator '.$' element mismatch",
+				Code: 31394,
+				Name: "Location31394",
+				Message: "As of 4.4, it's illegal to specify positional operator " +
+					"in the middle of a path.Positional projection may only be " +
+					"used at the end, for example: a.b.$. If the query previously " +
+					"used a form like a.b.$.d, remove the parts following the '$' and " +
+					"the results will be equivalent.",
 			},
+			altMessage: "Positional projection may only be used at the end, " +
+				"for example: a.b.$. If the query previously used a form " +
+				"like a.b.$.d, remove the parts following the '$' and " +
+				"the results will be equivalent.",
 		},
 		"NotSuffixPositionalOperator": {
 			filter:     bson.D{{"_id", "array-numbers-asc"}},
 			projection: bson.D{{"v.$.foo", true}},
 			err: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "Executor error during find command :: caused by :: positional operator '.$' element mismatch",
+				Code: 31394,
+				Name: "Location31394",
+				Message: "As of 4.4, it's illegal to specify positional operator " +
+					"in the middle of a path.Positional projection may only be " +
+					"used at the end, for example: a.b.$. If the query previously " +
+					"used a form like a.b.$.d, remove the parts following the '$' and " +
+					"the results will be equivalent.",
 			},
+			altMessage: "Positional projection may only be used at the end, " +
+				"for example: a.b.$. If the query previously used a form " +
+				"like a.b.$.d, remove the parts following the '$' and " +
+				"the results will be equivalent.",
 		},
 		"EmptyFilterPositionalOperator": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.$", true}},
 			err: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "Executor error during find command :: caused by :: positional operator '.$' element mismatch",
+				Code: 51246,
+				Name: "Location51246",
+				Message: "Executor error during find command :: caused by :: " +
+					"positional operator '.$' couldn't find a matching element in the array",
 			},
 		},
 		"EmptyArrayPositionalOperator": {
 			filter:     bson.D{{"_id", "array-empty"}},
 			projection: bson.D{{"v.$", true}},
 			err: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
+				Code:    51246,
+				Name:    "Location51246",
 				Message: "Executor error during find command :: caused by :: positional operator '.$' couldn't find a matching element in the array",
 			},
 		},
@@ -79,6 +97,15 @@ func TestQueryProjectionErrors(t *testing.T) {
 				Code:    51246,
 				Name:    "Location51246",
 				Message: "Executor error during find command :: caused by :: positional operator '.$' couldn't find a matching element in the array",
+			},
+		},
+		"ExclusionPositionalOperator": {
+			filter:     bson.D{{"v", 42}},
+			projection: bson.D{{"v.$", false}},
+			err: mongo.CommandError{
+				Code:    31395,
+				Name:    "Location31395",
+				Message: "positional projection cannot be used with exclusion",
 			},
 		},
 	} {
@@ -92,7 +119,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 			require.NotNil(t, tc.projection, "projection should be set")
 
 			_, err := coll.Find(ctx, tc.filter, options.Find().SetProjection(tc.projection))
-			AssertEqualCommandError(t, tc.err, err)
+			AssertEqualAltCommandError(t, tc.err, tc.altMessage, err)
 		})
 	}
 }

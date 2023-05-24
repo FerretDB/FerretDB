@@ -25,35 +25,37 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// getFirstMatchingElement returns the first element of the array that matches the filter condition.
+// getFirstMatchingElement checks validity of the positional operator `$` and
+// returns the first element of the array that matches the filter condition.
 //
-// Returns command error code:
-//   - ErrBadValue when multiple positional operator, positional operator is not at the end or filter is empty.
-//   - ErrBadValue when array is empty.
-//   - ErrBadPositionalOperator when filter does not contain filter for positional operator path.
-func getFirstMatchingElement(arr *types.Array, filter *types.Document, projection string) (any, error) {
-	if !strings.HasSuffix(projection, "$") ||
-		strings.Count(projection, "$") > 1 ||
-		filter.Len() == 0 {
+// Returned command error code:
+//   - ErrWrongPositionalOperatorLocation when there are multiple `$` or `$` is not at the end.
+//   - ErrBadPositionalOperator when array or filter is empty.
+//   - ErrBadPositionalOperator when filter does not contain positional operator filter.
+func getFirstMatchingElement(arr *types.Array, filter *types.Document, positionalOperator string) (any, error) {
+	if !strings.HasSuffix(positionalOperator, "$") ||
+		strings.Count(positionalOperator, "$") > 1 {
 		// there can only be one positional operator at the end.
-		// filter must not be empty.
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
-			"Executor error during find command :: caused by :: positional operator '.$' element mismatch",
+			commonerrors.ErrWrongPositionalOperatorLocation,
+			"Positional projection may only be used at the end, "+
+				"for example: a.b.$. If the query previously used a form "+
+				"like a.b.$.d, remove the parts following the '$' and "+
+				"the results will be equivalent.",
 			"projection",
 		)
 	}
 
-	if arr.Len() == 0 {
+	if arr.Len() == 0 || filter.Len() == 0 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
+			commonerrors.ErrBadPositionalOperator,
 			"Executor error during find command :: caused by :: positional operator"+
 				" '.$' couldn't find a matching element in the array",
 			"projection",
 		)
 	}
 
-	projectionArrayPath := strings.Replace(projection, ".$", "", 1)
+	positionalOperatorPath := strings.Replace(positionalOperator, ".$", "", 1)
 
 	iter := filter.Iterator()
 	defer iter.Close()
@@ -74,7 +76,7 @@ func getFirstMatchingElement(arr *types.Array, filter *types.Document, projectio
 			return nil, err
 		}
 
-		if filterKey != projectionArrayPath {
+		if filterKey != positionalOperatorPath {
 			continue
 		}
 

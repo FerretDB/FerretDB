@@ -241,7 +241,9 @@ func projectDocumentWithoutID(doc *types.Document, projection, filter *types.Doc
 			}
 
 			// exclusion projection removes the field on the path in projected.
-			excludeProjection(path, projected)
+			if err := excludeProjection(path, projected); err != nil {
+				return nil, err
+			}
 		default:
 			return nil, lazyerrors.Errorf("unsupported operation %s %v (%T)", key, value, value)
 		}
@@ -259,13 +261,20 @@ func projectDocumentWithoutID(doc *types.Document, projection, filter *types.Doc
 // It returns iterator errors other than ErrIteratorDone.
 // If the projected contains field that is not expected in source, it panics.
 //
-//	Example: "v.foo" path inclusion projection:
+// Returned command error code:
+//   - ErrWrongPositionalOperatorLocation when there are multiple `$` or `$` is not at the end.
+//   - ErrBadPositionalOperator when array or filter is empty.
+//   - ErrBadPositionalOperator when filter does not contain positional operator filter.
+//
+// Example: "v.foo" path inclusion projection:
+//
 //	{v: {foo: 1, bar: 1}}               -> {v: {foo: 1}}
 //	{v: {bar: 1}}                       -> {v: {}}
 //	{v: [{bar: 1}]}                     -> {v: [{}]}
 //	{v: [{foo: 1}, {foo: 2}, {bar: 1}]} -> {v: [{foo: 1}, {foo: 2}, {}]}
 //
-//	Example: "v.0.foo" path inclusion projection:
+// Example: "v.0.foo" path inclusion projection:
+//
 //	{v: [{foo: 1}, {foo: 2}, {bar: 1}]} -> {v: [{}, {}, {}]}
 func includeProjection(path types.Path, curIndex int, source any, projected, filter *types.Document) (*types.Array, error) {
 	key := path.Slice()[curIndex]
@@ -356,7 +365,6 @@ func includeProjection(path types.Path, curIndex int, source any, projected, fil
 				return nil, lazyerrors.Error(err)
 			}
 
-			// dot notation match
 			if _, ok := arrElem.(*types.Document); !ok {
 				continue
 			}
@@ -407,35 +415,51 @@ func includeProjection(path types.Path, curIndex int, source any, projected, fil
 // with the key to remove that document. This is not the case in document.Remove(key).
 // Dot notation with array index path do not exclude unlike document.RemoveByPath(key).
 //
-//	Examples: "v.foo" path exclusion projection:
+// Returned command error code:
+//
+//   - ErrExclusionPositionalProjection when positional projection `$` is used.
+//
+// Examples: "v.foo" path exclusion projection:
+//
 //	{v: {foo: 1}}                       -> {v: {}}
 //	{v: {foo: 1, bar: 1}}               -> {v: {bar: 1}}
 //	{v: [{foo: 1}, {foo: 2}]}           -> {v: [{}, {}]}
 //	{v: [{foo: 1}, {foo: 2}, {bar: 1}]} -> {v: [{}, {}, {bar: 1}]}
 //
-//	Example: "v.0.foo" path exclusion projection:
+// Example: "v.0.foo" path exclusion projection:
+//
 //	{v: [{foo: 1}, {foo: 2}]}           -> {v: [{foo: 1}, {foo: 2}]}
-func excludeProjection(path types.Path, projected any) {
+func excludeProjection(path types.Path, projected any) error {
 	key := path.Prefix()
+
+	if key == "$" {
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrExclusionPositionalProjection,
+			"positional projection cannot be used with exclusion",
+			"projection",
+		)
+	}
 
 	switch projected := projected.(type) {
 	case *types.Document:
 		embeddedSource, err := projected.Get(key)
 		if err != nil {
 			// key does not exist, nothing to exclude.
-			return
+			return nil
 		}
 
 		if path.Len() <= 1 {
 			// path reached suffix, remove the field from the document.
 			projected.Remove(key)
-			return
+			return nil
 		}
 
 		// recursively remove field from the embeddedSource.
-		excludeProjection(path.TrimPrefix(), embeddedSource)
+		if err := excludeProjection(path.TrimPrefix(), embeddedSource); err != nil {
+			return err
+		}
 
-		return
+		return nil
 	case *types.Array:
 		// modifies the field of projected, hence not using iterator.
 		for i := 0; i < projected.Len(); i++ {
@@ -446,13 +470,15 @@ func excludeProjection(path types.Path, projected any) {
 				continue
 			}
 
-			excludeProjection(path, arrElem)
+			if err := excludeProjection(path, arrElem); err != nil {
+				return err
+			}
 		}
 
-		return
+		return nil
 	default:
 		// not a path, nothing to exclude.
-		return
+		return nil
 	}
 }
 
