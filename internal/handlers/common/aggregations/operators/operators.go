@@ -21,7 +21,25 @@
 // should be stored in both operators and accumulators packages.
 package operators
 
-import "github.com/FerretDB/FerretDB/internal/types"
+import (
+	"fmt"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+)
+
+var (
+	// ErrWrongType indicates that operator field is not a document.
+	ErrWrongType = fmt.Errorf("Invalid type of operator field (expected document)")
+
+	// ErrEmptyField indicates that operator field does not specify any operator.
+	ErrEmptyField = fmt.Errorf("The operator field is empty (expected document)")
+
+	// ErrTooManyFields indicates that operator field specifes more than one operators.
+	ErrTooManyFields = fmt.Errorf("The operator field specifies more than one operator")
+
+	// ErrNotImplemented indicates that given operator is not implemented yet.
+	ErrNotImplemented = fmt.Errorf("The operator is not implemented yet")
+)
 
 // newOperatorFunc is a type for a function that creates a standard aggregation operator.
 //
@@ -44,18 +62,18 @@ func NewOperator(doc any) (Operator, error) {
 
 	switch {
 	case !ok:
-		return nil, newOperatorError(ErrWrongType)
+		return nil, ErrWrongType
 	case operatorDoc.Len() == 0:
-		return nil, newOperatorError(ErrEmptyField)
+		return nil, ErrEmptyField
 	case operatorDoc.Len() > 1:
-		return nil, newOperatorError(ErrTooManyFields)
+		return nil, ErrTooManyFields
 	}
 
 	operator := operatorDoc.Command()
 
 	newOperator, ok := Operators[operator]
 	if !ok {
-		return nil, newOperatorError(ErrNotImplemented)
+		return nil, ErrNotImplemented
 	}
 
 	return newOperator(operatorDoc)

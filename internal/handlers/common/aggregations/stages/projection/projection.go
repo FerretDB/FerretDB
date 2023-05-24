@@ -158,38 +158,7 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 
 			op, err = operators.NewOperator(idValue)
 			if err != nil {
-				var opErr *operators.OperatorError
-				if !errors.As(err, &opErr) {
-					return nil, err
-				}
-
-				switch opErr.Code() {
-				case operators.ErrEmptyField:
-					return nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrEmptySubProject,
-						"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
-							" Found empty object at path",
-						"$project (stage)",
-					)
-				case operators.ErrTooManyFields:
-					return nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrFieldPathInvalidName,
-						"Invalid $project :: caused by :: FieldPath field names may not start with '$'."+
-							" Consider using $getField or $setField.",
-						"$project (stage)",
-					)
-				case operators.ErrNotImplemented:
-					return nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrEmptySubProject,
-						"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
-							" Found empty object at path",
-						"$project (stage)",
-					)
-				case operators.ErrWrongType:
-					fallthrough
-				default:
-					return nil, lazyerrors.Error(err)
-				}
+				return nil, processOperatorError(err)
 			}
 
 			value, err = op.Process(projected)
@@ -269,38 +238,7 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 
 			op, err = operators.NewOperator(value)
 			if err != nil {
-				var opErr *operators.OperatorError
-				if !errors.As(err, &opErr) {
-					return nil, err
-				}
-
-				switch opErr.Code() {
-				case operators.ErrEmptyField:
-					return nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrEmptySubProject,
-						"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
-							" Found empty object at path",
-						"$project (stage)",
-					)
-				case operators.ErrTooManyFields:
-					return nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrFieldPathInvalidName,
-						"Invalid $project :: caused by :: FieldPath field names may not start with '$'."+
-							" Consider using $getField or $setField.",
-						"$project (stage)",
-					)
-				case operators.ErrNotImplemented:
-					return nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrEmptySubProject,
-						"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
-							" Found empty object at path",
-						"$project (stage)",
-					)
-				case operators.ErrWrongType:
-					fallthrough
-				default:
-					return nil, lazyerrors.Error(err)
-				}
+				return nil, processOperatorError(err)
 			}
 
 			v, err = op.Process(doc)
@@ -568,5 +506,39 @@ func setBySourceOrder(key string, val any, source, projected *types.Document) {
 	for _, key := range tmp.Keys()[newFieldIndex:] {
 		projected.Set(key, must.NotFail(tmp.Get(tmp.Keys()[i])))
 		i++
+	}
+}
+
+// processOperatorError takes internal error related to operator evaluation and
+// returns proper CommandError that can be returned by $process aggregation stage.
+func processOperatorError(err error) error {
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, operators.ErrEmptyField):
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrEmptySubProject,
+			"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
+				" Found empty object at path",
+			"$project (stage)",
+		)
+	case errors.Is(err, operators.ErrTooManyFields):
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrFieldPathInvalidName,
+			"Invalid $project :: caused by :: FieldPath field names may not start with '$'."+
+				" Consider using $getField or $setField.",
+			"$project (stage)",
+		)
+	case errors.Is(err, operators.ErrNotImplemented):
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrEmptySubProject,
+			"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
+				" Found empty object at path",
+			"$project (stage)",
+		)
+	case errors.Is(err, operators.ErrWrongType):
+		fallthrough
+	default:
+		return lazyerrors.Error(err)
 	}
 }
