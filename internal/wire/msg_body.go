@@ -42,6 +42,7 @@ type MsgBody interface {
 // indicating that connection was closed by the client.
 var ErrZeroRead = errors.New("zero bytes read")
 
+// kFlagBitSize represents the size of the flag bits field.
 const kFlagBitSize = 4
 
 // ReadMessage reads from reader and returns wire header and body.
@@ -68,7 +69,7 @@ func ReadMessage(r *bufio.Reader) (*MsgHeader, MsgBody, error) {
 		return &header, &reply, nil
 
 	case OpCodeMsg:
-		if err := containsValidChecksum(&header, b); err != nil {
+		if err := validateChecksum(&header, b); err != nil {
 			return &header, nil, lazyerrors.Error(err)
 		}
 
@@ -122,7 +123,7 @@ func WriteMessage(w *bufio.Writer, header *MsgHeader, msg MsgBody) error {
 	}
 
 	if header.OpCode == OpCodeMsg {
-		if err := containsValidChecksum(header, b); err != nil {
+		if err := validateChecksum(header, b); err != nil {
 			return lazyerrors.Error(err)
 		}
 	}
@@ -150,34 +151,42 @@ func getChecksum(data []byte) (uint32, error) {
 	return binary.LittleEndian.Uint32(data[n-crc32.Size:]), nil
 }
 
-func containsValidChecksum(header *MsgHeader, body []byte) error {
+// validateChecksum calculates checksum of the message (header + body)
+// and compares it with the checksum from the last bytes of the message.
+// If the flag bit for checksum presence is not set or the checksum is valid, it returns nil.
+// If the checksum is invalid, it returns an error.
+//
+// TODO The callers of checksum validation should be closer to OP_MSG handling: https://github.com/FerretDB/FerretDB/issues/2690
+func validateChecksum(header *MsgHeader, body []byte) error {
 	if len(body) < kFlagBitSize {
 		return lazyerrors.New("Message contains illegal flags value")
 	}
 
 	flagBit := OpMsgFlags(binary.LittleEndian.Uint32(body[:kFlagBitSize]))
-	if flagBit.FlagSet(OpMsgChecksumPresent) {
-		want, err := getChecksum(body)
-		if err != nil {
-			lazyerrors.Error(err)
-		}
+	if !flagBit.FlagSet(OpMsgChecksumPresent) {
+		return nil
+	}
 
-		// https://datatracker.ietf.org/doc/html/rfc4960#appendix-B
-		hasher := crc32.New(crc32.MakeTable(crc32.Castagnoli))
+	want, err := getChecksum(body)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
 
-		if err := binary.Write(hasher, binary.LittleEndian, header); err != nil {
-			return lazyerrors.Error(err)
-		}
+	// https://datatracker.ietf.org/doc/html/rfc4960#appendix-B
+	hasher := crc32.New(crc32.MakeTable(crc32.Castagnoli))
 
-		offset := len(body) - crc32.Size
-		if err := binary.Write(hasher, binary.LittleEndian, body[:offset]); err != nil {
-			return lazyerrors.Error(err)
-		}
+	if err := binary.Write(hasher, binary.LittleEndian, header); err != nil {
+		return lazyerrors.Error(err)
+	}
 
-		got := hasher.Sum32()
-		if want != got {
-			return lazyerrors.New("OP_MSG checksum does not match contents.")
-		}
+	offset := len(body) - crc32.Size
+	if err := binary.Write(hasher, binary.LittleEndian, body[:offset]); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	got := hasher.Sum32()
+	if want != got {
+		return lazyerrors.New("OP_MSG checksum does not match contents.")
 	}
 
 	return nil
