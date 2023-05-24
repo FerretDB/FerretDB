@@ -21,6 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -62,7 +63,13 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 }
 
 // Accumulate implements Accumulator interface.
-func (s *sum) Accumulate(grouped []*types.Document) (any, error) {
+func (s *sum) Accumulate(iter types.DocumentsIterator) (any, error) {
+	//TODO https://github.com/FerretDB/FerretDB/issues/2706
+	grouped, err := iterator.ConsumeValues[struct{}, *types.Document](iter)
+	if err != nil {
+		return nil, err
+	}
+
 	if s.expression != nil {
 		var values []any
 

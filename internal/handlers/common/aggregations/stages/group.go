@@ -49,7 +49,7 @@ type group struct {
 
 // groupBy represents accumulation to apply on the group.
 type groupBy struct {
-	accumulate  func(in []*types.Document) (any, error)
+	accumulate  func(iter types.DocumentsIterator) (any, error)
 	outputField string
 }
 
@@ -133,8 +133,10 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 	for _, groupedDocument := range groupedDocuments {
 		doc := must.NotFail(types.NewDocument("_id", groupedDocument.groupID))
 
+		groupIter := iterator.Values(iterator.ForSlice(groupedDocument.documents))
+
 		for _, accumulation := range g.groupBy {
-			out, err := accumulation.accumulate(groupedDocument.documents)
+			out, err := accumulation.accumulate(groupIter)
 			if err != nil {
 				return nil, err
 			}

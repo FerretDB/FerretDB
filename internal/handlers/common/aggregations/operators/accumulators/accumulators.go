@@ -34,7 +34,8 @@ type newAccumulatorFunc func(expression *types.Document) (Accumulator, error)
 // Accumulator is a common interface for aggregation accumulation operators.
 type Accumulator interface {
 	// Accumulate documents and returns the result of applying operator.
-	Accumulate(in []*types.Document) (any, error)
+	// It should always close iterator.
+	Accumulate(iter types.DocumentsIterator) (any, error)
 }
 
 // NewAccumulator returns accumulator for provided value.
