@@ -29,17 +29,11 @@ import (
 // it returns the value at projection path as if positional operator is not present.
 // If there is more than one array in the projection path, behaviour may be undefined.
 func getFirstElement(arr *types.Array, filter *types.Document, projection string) (any, error) {
-	if !strings.HasSuffix(projection, "$") {
-		// positional operator can only be at the end.
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
-			"Executor error during find command :: caused by :: positional operator '.$' element mismatch",
-			"projection",
-		)
-	}
-
-	if strings.Count(projection, "$") > 1 {
-		// there can only be one positional operator.
+	if !strings.HasSuffix(projection, "$") ||
+		strings.Count(projection, "$") > 1 ||
+		filter.Len() == 0 {
+		// there can only be one positional operator at the end.
+		// filter must not be empty.
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadValue,
 			"Executor error during find command :: caused by :: positional operator '.$' element mismatch",
@@ -51,15 +45,8 @@ func getFirstElement(arr *types.Array, filter *types.Document, projection string
 		// empty array returns error
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadValue,
-			"Executor error during find command :: caused by :: positional operator '.$' element mismatch",
-			"projection",
-		)
-	}
-
-	if filter.Len() == 0 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
-			"Executor error during find command :: caused by :: positional operator '.$' element mismatch",
+			"Executor error during find command :: caused by :: positional operator"+
+				" '.$' couldn't find a matching element in the array",
 			"projection",
 		)
 	}
