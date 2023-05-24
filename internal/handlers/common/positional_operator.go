@@ -124,7 +124,10 @@ func getPositionalProjection(arr *types.Array, filter *types.Document, positiona
 			key := "$"
 			doc := must.NotFail(types.NewDocument(key, elem))
 
-			// filterFieldExpr handles operators present in expr.
+			// In filtering filterFieldExpr was called to check if an array
+			// matched the filter.
+			// In this call, we already know that the array matched the filter,
+			// and we want to find out which array element matched the filter.
 			matched, err := filterFieldExpr(doc, key, key, expr)
 			if err != nil {
 				return nil, err
