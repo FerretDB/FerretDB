@@ -25,6 +25,7 @@ import (
 	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -36,8 +37,11 @@ func TestCreateCollectionIfNotExist(t *testing.T) {
 		URL: testutil.TigrisURL(t),
 	}
 
+	p, err := state.NewProvider("")
+	require.NoError(t, err)
+
 	logger := testutil.Logger(t, zap.NewAtomicLevelAt(zap.DebugLevel))
-	tdb, err := New(ctx, cfg, logger)
+	tdb, err := New(ctx, cfg, logger, p)
 	require.NoError(t, err)
 
 	t.Run("DBCollectionDoNotExist", func(t *testing.T) {
