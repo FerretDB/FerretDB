@@ -134,6 +134,7 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 		doc := must.NotFail(types.NewDocument("_id", groupedDocument.groupID))
 
 		groupIter := iterator.Values(iterator.ForSlice(groupedDocument.documents))
+		defer groupIter.Close()
 
 		for _, accumulation := range g.groupBy {
 			out, err := accumulation.accumulate(groupIter)
