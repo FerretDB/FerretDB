@@ -300,9 +300,8 @@ func includeProjection(path types.Path, curIndex int, source any, projected, fil
 			}
 		}
 
-		// positional operator sets field for non array.
-		// TODO handle suffix containing value: a.$.b
 		if path.TrimPrefix().Prefix() == "$" {
+			// positional operator sets non array field.
 			projected.Set(key, embeddedSource)
 		}
 
@@ -322,9 +321,8 @@ func includeProjection(path types.Path, curIndex int, source any, projected, fil
 
 		return nil, nil
 	case *types.Array:
-		// positional operator match
 		if key == "$" {
-			v, err := getFirstElement(source, filter, path.String())
+			v, err := getFirstMatchingElement(source, filter, path.String())
 			if err != nil {
 				return nil, err
 			}

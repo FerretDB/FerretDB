@@ -24,11 +24,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
-// getFirstElement returns the first element of the array that matches the condition.
-// When document does not contain an array at projection path,
-// it returns the value at projection path as if positional operator is not present.
-// If there is more than one array in the projection path, behaviour may be undefined.
-func getFirstElement(arr *types.Array, filter *types.Document, projection string) (any, error) {
+// getFirstMatchingElement returns the first element of the array that matches the filter condition.
+//
+// Returns command error code:
+//   - ErrBadValue when multiple positional operator, positional operator is not at the end or filter is empty.
+//   - ErrBadValue when array is empty
+//   - ErrBadPositionalOperator when filter does not contain filter for positional operator path.
+func getFirstMatchingElement(arr *types.Array, filter *types.Document, projection string) (any, error) {
 	if !strings.HasSuffix(projection, "$") ||
 		strings.Count(projection, "$") > 1 ||
 		filter.Len() == 0 {
@@ -76,24 +78,41 @@ func getFirstElement(arr *types.Array, filter *types.Document, projection string
 		}
 
 		// filter is for the projection path.
-		filterDoc, ok := filterVal.(*types.Document)
+		expr, ok := filterVal.(*types.Document)
+
 		if !ok {
-			// cannot return filterVal because filterVal maybe different number type
-			// from the first element in the array which matches the condition.
-			return getElement(arr, filterVal)
+			// filterVal may be different number type compared to the first element in the array
+			// which matched the condition, iterate array to find the first match.
+			aIter := arr.Iterator()
+			defer aIter.Close()
+
+			for {
+				_, elem, err := aIter.Next()
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					panic(fmt.Sprintf("array %v does not contain %v", arr, filterVal))
+				}
+
+				if err != nil {
+					return nil, err
+				}
+
+				if types.Compare(elem, filterVal) == types.Equal {
+					return elem, nil
+				}
+			}
 		}
 
-		return fetchElementFromDoc(arr, filterDoc)
+		return fetchElementFromDoc(arr, expr)
 	}
 }
 
 // fetchElementFromDoc fetches the first element from array which matches the value of doc.
 // If the doc has an operator, operator is applied to array element and the first element
 // that satisfies the operator is returned.
-func fetchElementFromDoc(arr *types.Array, doc *types.Document) (any, error) {
-	keys := doc.Keys()
+func fetchElementFromDoc(arr *types.Array, expr *types.Document) (any, error) {
+	keys := expr.Keys()
 
-	values, err := iterator.ConsumeValues(doc.Iterator())
+	values, err := iterator.ConsumeValues(expr.Iterator())
 	if err != nil {
 		return nil, err
 	}
@@ -131,26 +150,5 @@ func fetchElementFromDoc(arr *types.Array, doc *types.Document) (any, error) {
 		}
 	}
 
-	panic(fmt.Sprintf("filter %v matched array %v but no element in array matches filter", doc, arr))
-}
-
-// getElement fetches the first element from array which is the same according to the comparison as v.
-func getElement(arr *types.Array, v any) (any, error) {
-	iter := arr.Iterator()
-	defer iter.Close()
-
-	for {
-		_, elem, err := iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			panic(fmt.Sprintf("array %v but does not contain %v", arr, v))
-		}
-
-		if err != nil {
-			return nil, err
-		}
-
-		if types.Compare(elem, v) == types.Equal {
-			return elem, nil
-		}
-	}
+	panic(fmt.Sprintf("filter %v matched array %v but no element in array matches filter", expr, arr))
 }

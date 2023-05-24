@@ -29,7 +29,7 @@ import (
 func TestQueryProjectionErrors(t *testing.T) {
 	t.Parallel()
 
-	ctx, coll := setup.Setup(t, shareddata.Composites)
+	ctx, coll := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		filter     bson.D             // required
