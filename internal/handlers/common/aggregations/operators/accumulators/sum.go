@@ -64,7 +64,7 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 
 // Accumulate implements Accumulator interface.
 func (s *sum) Accumulate(iter types.DocumentsIterator) (any, error) {
-	//TODO https://github.com/FerretDB/FerretDB/issues/2706
+	// TODO https://github.com/FerretDB/FerretDB/issues/2706
 	grouped, err := iterator.ConsumeValues[struct{}, *types.Document](iter)
 	if err != nil {
 		return nil, err

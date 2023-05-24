@@ -44,6 +44,9 @@ const (
 	// ErrTypeMismatch for $sort indicates that the expression in the $sort is not an object.
 	ErrTypeMismatch = ErrorCode(14) // TypeMismatch
 
+	// ErrAuthenticationFailed indicates failed authentication.
+	ErrAuthenticationFailed = ErrorCode(18) // AuthenticationFailed
+
 	// ErrIllegalOperation indicated that operation is illegal.
 	ErrIllegalOperation = ErrorCode(20) // IllegalOperation
 
@@ -103,9 +106,6 @@ const (
 
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
-
-	// ErrMechanismUnavailable indicates unsupported authentication mechanism.
-	ErrMechanismUnavailable = ErrorCode(334) // MechanismUnavailable
 
 	// ErrDuplicateKey indicates duplicate key violation.
 	ErrDuplicateKey = ErrorCode(11000) // Location11000
