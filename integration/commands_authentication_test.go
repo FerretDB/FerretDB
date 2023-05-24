@@ -23,19 +23,36 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-func TestLogOut(t *testing.T) {
-	t.Helper()
+type connectionStatus struct {
+	AuthInfo struct {
+		AuthenticatedUsers []any
+	}
+	Ok float64
+}
 
+func TestCommandsAuthenticationLogout(t *testing.T) {
 	t.Parallel()
+	setup.SkipForMongoDB(t, "tls is not enabled for mongodb backend")
+	setup.SkipForTigrisWithReason(t, "tls is not enabled for tigris backend")
 	ctx, collection := setup.Setup(t)
 
 	db := collection.Database()
 
+	var statusSignedIn connectionStatus
+	err := db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&statusSignedIn)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, statusSignedIn.AuthInfo.AuthenticatedUsers)
+
 	var res bson.D
-	err := db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
+	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
 
 	assert.NoError(t, err)
 	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
+
+	var statusSignedOut connectionStatus
+	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&statusSignedOut)
+	assert.NoError(t, err)
+	assert.Empty(t, statusSignedOut.AuthInfo.AuthenticatedUsers)
 }
 
 func TestCommandsAuthenticationSASLStart(t *testing.T) {
