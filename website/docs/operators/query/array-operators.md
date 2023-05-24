@@ -85,8 +85,8 @@ db.team.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("63a5bb4acf72d6203bb45bb5"),
     id: 4,
@@ -121,8 +121,8 @@ db.team.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("63aa247e69c82de72bd40b93"),
     id: 2,
@@ -153,8 +153,8 @@ db.team.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("63aa247e69c82de72bd40b92"),
     id: 1,

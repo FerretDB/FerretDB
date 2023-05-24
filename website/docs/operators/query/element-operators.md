@@ -126,8 +126,8 @@ db.electronics.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
     product: "laptop",
@@ -196,8 +196,8 @@ db.electronics.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
     product: "laptop",
@@ -310,8 +310,8 @@ db.electronics.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
     product: "laptop",

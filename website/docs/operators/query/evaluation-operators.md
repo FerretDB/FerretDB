@@ -62,8 +62,8 @@ db.catalog.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("63e3ac0184f488929a3f737a"),
     product: "spoon",
@@ -104,8 +104,8 @@ db.catalog.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("63e4ce469695494b86bf2b2d"),
     product: "bottle",
@@ -146,8 +146,8 @@ db.catalog.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("63e3ac0184f488929a3f7379"),
     product: "bottle",

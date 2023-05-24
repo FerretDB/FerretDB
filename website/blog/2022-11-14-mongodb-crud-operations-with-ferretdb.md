@@ -163,8 +163,8 @@ db.league.find({ club: "PSG" })
 
 This retrieves all the records that match the query:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("63109e9251bcc5e0155db0c2"),
     club: "PSG",
@@ -204,8 +204,8 @@ db.league.find({ points: { $in: [80, 60] } })
 
 This displays the documents that match this query:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("63109f4d51bcc5e0155db0c3"),
     club: "Arsenal",
@@ -236,8 +236,8 @@ db.league.find({ points: { $lt: 60 } })
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("63109e9251bcc5e0155db0c2"),
     club: "PSG",
@@ -346,8 +346,8 @@ db.league.replaceOne(
 
 If we run `db.league.find({})`, our database now looks like this:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("63109e9251bcc5e0155db0c2"),
     club: "PSG",
@@ -414,8 +414,8 @@ db.league.deleteMany({ qualified: false })
 
 Run `db.league.find({})` to show the current state of records of the database.
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("63109f4d51bcc5e0155db0c4"),
     club: "Inter",

@@ -142,8 +142,8 @@ db.employees.find({ catalog: "printer" })
 
 The response displays all the retrieved documents:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("636b39f80466c61a229bbf9b"),
     name: { first: "Earl", last: "Thomas" },
@@ -174,8 +174,8 @@ db.employees.find({ "catalog.2": "blender" })
 
 The document that matches the array query is displayed in the response:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("636b3b0e0466c61a229bbf9c"),
     name: { first: "Sam", last: "Johnson" },

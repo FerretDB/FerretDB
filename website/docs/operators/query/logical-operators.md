@@ -106,8 +106,8 @@ db.catalog.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("639ba4a0071b6bed396a8f13"),
     product: "bottle",
@@ -170,8 +170,8 @@ db.catalog.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("639ba4a0071b6bed396a8f13"),
     product: "bottle",
@@ -228,8 +228,8 @@ db.catalog.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("639ba4a0071b6bed396a8f15"),
     product: "cup",
@@ -292,8 +292,8 @@ db.catalog.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("639ba4a0071b6bed396a8f14"),
     product: "spoon",

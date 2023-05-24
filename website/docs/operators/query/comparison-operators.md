@@ -76,8 +76,8 @@ db.employees.find({
 
 The response returns a single document that matches the query:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("639a3cce071b6bed396a8f0e"),
     name: { first: "Clarke", last: "Dane" },
@@ -102,8 +102,8 @@ db.employees.find({
 
 The response returns a single document that matches the query:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
     name: { first: "Earl", last: "Thomas" },
@@ -133,8 +133,8 @@ db.employees.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
     name: { first: "Earl", last: "Thomas" },
@@ -172,8 +172,8 @@ db.employees.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
     name: { first: "Earl", last: "Thomas" },
@@ -219,8 +219,8 @@ db.employees.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
     name: { first: "Earl", last: "Thomas" },
@@ -259,8 +259,8 @@ db.employees.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("639a3cce071b6bed396a8f0e"),
     name: { first: "Clarke", last: "Dane" },
@@ -290,8 +290,8 @@ db.employees.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("639a3cce071b6bed396a8f0d"),
     name: { first: "Sam", last: "Johnson" },
@@ -329,8 +329,8 @@ db.employees.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
     name: { first: "Earl", last: "Thomas" },
@@ -369,8 +369,8 @@ db.employees.find({
 
 The output:
 
-```js
-;[
+```sh
+[
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
     name: { first: "Earl", last: "Thomas" },
