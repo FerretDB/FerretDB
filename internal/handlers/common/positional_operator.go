@@ -80,12 +80,12 @@ func getPositionalProjection(arr *types.Array, filter *types.Document, positiona
 			continue
 		}
 
-		// filter is for the projection path.
 		expr, ok := filterVal.(*types.Document)
 
 		if !ok {
-			// filterVal may be different number type compared to the first element in the array
-			// which matched the condition, so iterate array to find the first match.
+			// filterVal may be different number type compared to the
+			// first element in the array which matched the condition,
+			// so iterate array to find the first match.
 			aIter := arr.Iterator()
 			defer aIter.Close()
 
