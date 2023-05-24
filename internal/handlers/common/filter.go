@@ -1022,15 +1022,15 @@ func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
 
 // filterFieldExprBitsAllClear handles {field: {$bitsAllClear: value}} filter.
 func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
+	bitmask, err := getBinaryMaskParam("$bitsAllClear", maskValue)
+	if err != nil {
+		return false, err
+	}
+
 	switch value := fieldValue.(type) {
 	case float64:
 		if isInvalidBitwiseValue(value) {
 			return false, nil
-		}
-
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
 		}
 
 		return (^uint64(value) & bitmask) == bitmask, nil
@@ -1044,19 +1044,9 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 		)
 
 	case int32:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
-		}
-
 		return (^uint64(value) & bitmask) == bitmask, nil
 
 	case int64:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
-		}
-
 		return (^uint64(value) & bitmask) == bitmask, nil
 
 	default:
@@ -1066,15 +1056,15 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 
 // filterFieldExprBitsAllSet handles {field: {$bitsAllSet: value}} filter.
 func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
+	bitmask, err := getBinaryMaskParam("$bitsAllSet", maskValue)
+	if err != nil {
+		return false, err
+	}
+
 	switch value := fieldValue.(type) {
 	case float64:
 		if isInvalidBitwiseValue(value) {
 			return false, nil
-		}
-
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
 		}
 
 		return (uint64(value) & bitmask) == bitmask, nil
@@ -1088,19 +1078,9 @@ func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 		)
 
 	case int32:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
-		}
-
 		return (uint64(value) & bitmask) == bitmask, nil
 
 	case int64:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
-		}
-
 		return (uint64(value) & bitmask) == bitmask, nil
 
 	default:
@@ -1110,15 +1090,15 @@ func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 
 // filterFieldExprBitsAnyClear handles {field: {$bitsAnyClear: value}} filter.
 func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
+	bitmask, err := getBinaryMaskParam("$bitsAnyClear", maskValue)
+	if err != nil {
+		return false, err
+	}
+
 	switch value := fieldValue.(type) {
 	case float64:
 		if isInvalidBitwiseValue(value) {
 			return false, nil
-		}
-
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
 		}
 
 		return (^uint64(value) & bitmask) != 0, nil
@@ -1132,19 +1112,9 @@ func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 		)
 
 	case int32:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
-		}
-
 		return (^uint64(value) & bitmask) != 0, nil
 
 	case int64:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
-		}
-
 		return (^uint64(value) & bitmask) != 0, nil
 
 	default:
@@ -1154,15 +1124,15 @@ func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 
 // filterFieldExprBitsAnySet handles {field: {$bitsAnySet: value}} filter.
 func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
+	bitmask, err := getBinaryMaskParam("$bitsAnySet", maskValue)
+	if err != nil {
+		return false, err
+	}
+
 	switch value := fieldValue.(type) {
 	case float64:
 		if isInvalidBitwiseValue(value) {
 			return false, nil
-		}
-
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
 		}
 
 		return (uint64(value) & bitmask) != 0, nil
@@ -1176,17 +1146,9 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 		)
 
 	case int32:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
-		}
 		return (uint64(value) & bitmask) != 0, nil
 
 	case int64:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
-		}
 		return (uint64(value) & bitmask) != 0, nil
 
 	default:
@@ -1646,42 +1608,4 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey, filterSuffix strin
 	}
 
 	return filterFieldExpr(doc, filterKey, filterSuffix, expr)
-}
-
-// formatBitwiseOperatorErr formats protocol error for given internal error and bitwise operator.
-// Mask value used in error message.
-func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
-	switch {
-	case errors.Is(err, commonparams.ErrNotWholeNumber):
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrFailedToParse,
-			fmt.Sprintf("Expected an integer: %s: %#v", operator, maskValue),
-			operator,
-		)
-
-	case errors.Is(err, commonparams.ErrNegativeNumber):
-		if _, ok := maskValue.(float64); ok {
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
-				fmt.Sprintf(`Expected a non-negative number in: %s: %.1f`, operator, maskValue),
-				operator,
-			)
-		}
-
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrFailedToParse,
-			fmt.Sprintf(`Expected a non-negative number in: %s: %v`, operator, maskValue),
-			operator,
-		)
-
-	case errors.Is(err, commonparams.ErrNotBinaryMask):
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
-			fmt.Sprintf(`value takes an Array, a number, or a BinData but received: %s: %#v`, operator, maskValue),
-			operator,
-		)
-
-	default:
-		return err
-	}
 }
