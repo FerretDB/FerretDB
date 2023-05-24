@@ -46,7 +46,7 @@ var (
 // By standard aggregation operator we mean any operator that is not accumulator.
 // While accumulators perform operations on multiple documents
 // (for example `$count` can count documents in each `$group` group),
-// standard operators perfrom operations on single documents.
+// standard operators perform operations on a single document.
 type newOperatorFunc func(expression *types.Document) (Operator, error)
 
 // Operator is a common interface for standard aggregation operators.
