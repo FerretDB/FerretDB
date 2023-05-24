@@ -16,8 +16,8 @@ require (
 	github.com/prometheus/common v0.43.0
 	github.com/stretchr/testify v1.8.3
 	github.com/tigrisdata/tigris-client-go v1.0.0
-	go.opentelemetry.io/otel v1.15.1
-	go.opentelemetry.io/otel/trace v1.15.1
+	go.opentelemetry.io/otel v1.16.0
+	go.opentelemetry.io/otel/trace v1.16.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.9.0 // indirect; always use @latest
 	golang.org/x/exp v0.0.0-20230515195305-f3d0a9c9a5cc
@@ -54,6 +54,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/mod v0.8.0 // indirect
