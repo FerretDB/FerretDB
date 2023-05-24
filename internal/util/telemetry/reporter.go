@@ -46,7 +46,8 @@ type request struct {
 	OS               string         `json:"os"`
 	Arch             string         `json:"arch"`
 
-	HandlerVersion string `json:"handler_version"` // PostgreSQL, Tigris, etc version
+	Handler        string `json:"handler"`
+	HandlerVersion string `json:"handler_version"`
 
 	UUID   string        `json:"uuid"`
 	Uptime time.Duration `json:"uptime"`
@@ -80,6 +81,7 @@ type NewReporterOpts struct {
 	P              *state.Provider
 	ConnMetrics    *connmetrics.ConnMetrics
 	L              *zap.Logger
+	Handler        string
 	UndecidedDelay time.Duration
 	ReportInterval time.Duration
 	ReportTimeout  time.Duration
@@ -161,7 +163,7 @@ func (r *Reporter) firstReportDelay(ctx context.Context, ch <-chan struct{}) {
 }
 
 // makeRequest creates a new telemetry request.
-func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
+func makeRequest(s *state.State, m *connmetrics.ConnMetrics, handler string) *request {
 	commandMetrics := map[string]map[string]map[string]map[string]int{}
 
 	for opcode, commands := range m.GetResponses() {
@@ -225,6 +227,7 @@ func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
 		OS:               runtime.GOOS,
 		Arch:             runtime.GOARCH,
 
+		Handler:        handler,
 		HandlerVersion: s.HandlerVersion,
 
 		UUID:   s.UUID,
@@ -246,7 +249,7 @@ func (r *Reporter) report(ctx context.Context) {
 		return
 	}
 
-	request := makeRequest(s, r.ConnMetrics)
+	request := makeRequest(s, r.ConnMetrics, r.Handler)
 	r.L.Info("Reporting telemetry.", zap.String("url", r.URL), zap.Any("data", request))
 
 	b, err := json.Marshal(request)
