@@ -290,7 +290,6 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/153).
 | `refreshSessions`          |                | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1553) |
 | `startSession`             |                | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1554) |
 
-
 ## Aggregation pipelines
 
 Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
