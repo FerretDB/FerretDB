@@ -163,16 +163,16 @@ db.league.find({ club: 'PSG' })
 
 This retrieves all the records that match the query:
 
-```sh
+```json
 [
   {
     _id: ObjectId("63109e9251bcc5e0155db0c2"),
-    club: "PSG",
+    club: 'PSG',
     points: 30,
     average_age: 30,
     discipline: { red: 5, yellow: 30 },
-    qualified: false,
-  },
+    qualified: false
+  }
 ]
 ```
 
