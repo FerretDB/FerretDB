@@ -1,5 +1,17 @@
 # Changelog
 
+## [v1.2.1](https://github.com/FerretDB/FerretDB/releases/tag/v1.2.1) (2023-05-24)
+
+### Fixed Bugs 🐛
+* Fix reporting of updates availability by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2653
+
+### Other Changes 🤖
+* Return a better error for authentication problems by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2703
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/43?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.2.0...v1.2.1).
+
+
 ## [v1.2.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.2.0) (2023-05-22)
 
 ### What's Changed

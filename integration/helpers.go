@@ -205,10 +205,10 @@ func AssertMatchesCommandError(t testing.TB, expected, actual error) {
 	t.Helper()
 
 	a, ok := actual.(mongo.CommandError) //nolint:errorlint // do not inspect error chain
-	require.Truef(t, ok, "actual is %T, not mongo.CommandError", a)
+	require.Truef(t, ok, "actual is %T, not mongo.CommandError", actual)
 
 	e, ok := expected.(mongo.CommandError) //nolint:errorlint // do not inspect error chain
-	require.Truef(t, ok, "expected is %T, not mongo.CommandError", e)
+	require.Truef(t, ok, "expected is %T, not mongo.CommandError", expected)
 
 	a.Raw = nil
 	e.Raw = nil
@@ -227,11 +227,11 @@ func AssertMatchesWriteError(t testing.TB, expected, actual error) {
 	t.Helper()
 
 	a, ok := actual.(mongo.WriteException) //nolint:errorlint // do not inspect error chain
-	require.Truef(t, ok, "actual is %T, not mongo.WriteException", a)
+	require.Truef(t, ok, "actual is %T, not mongo.WriteException", actual)
 	require.Lenf(t, a.WriteErrors, 1, "actual is %v, expected one mongo.WriteError", a.WriteErrors)
 
 	e, ok := expected.(mongo.WriteException) //nolint:errorlint // do not inspect error chain
-	require.Truef(t, ok, "expected is %T, not mongo.WriteException", e)
+	require.Truef(t, ok, "expected is %T, not mongo.WriteException", expected)
 	require.Lenf(t, e.WriteErrors, 1, "expected is %v, expected one mongo.WriteError", e.WriteErrors)
 
 	aErr := a.WriteErrors[0]

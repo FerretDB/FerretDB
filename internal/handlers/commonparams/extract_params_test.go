@@ -124,7 +124,7 @@ func TestParse(t *testing.T) {
 				"$db", "test",
 			)),
 			params:  new(allTagsThatPass),
-			wantErr: "BSON field 'find.find' is missing but a required field",
+			wantErr: "Invalid namespace specified 'test.'",
 		},
 		"ArrayTag": {
 			command: "update",

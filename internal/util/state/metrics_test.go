@@ -19,7 +19,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/AlekSi/pointer"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -33,7 +32,7 @@ func TestMetrics(t *testing.T) {
 	p, err := NewProvider("")
 	require.NoError(t, err)
 
-	err = p.Update(func(s *State) { s.Telemetry = pointer.ToBool(true) })
+	err = p.Update(func(s *State) { s.EnableTelemetry() })
 	require.NoError(t, err)
 
 	info := version.Get()
