@@ -1,6 +1,6 @@
 ---
 slug: ferretdb-v-0-9-3-improved-aggregation-pipeline-support
-title: "FerretDB v.0.9.3 - Improved Aggregation Pipeline Support"
+title: 'FerretDB v.0.9.3 - Improved Aggregation Pipeline Support'
 authors: [alex]
 description: >
   We are thrilled to announce the release of FerretDB v.0.9.3, which includes exciting new features and improvements, and we can't wait for you to try it out

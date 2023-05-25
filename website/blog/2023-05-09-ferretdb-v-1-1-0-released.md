@@ -1,6 +1,6 @@
 ---
 slug: ferretdb-v-1-1-0-released
-title: "FerretDB v1.1.0. Released"
+title: 'FerretDB v1.1.0. Released'
 authors: [alex]
 description: >
   It is our pleasure to announce the release of [FerretDB](https://www.ferretdb.io/) version 1.1.0, which includes the addition of `renameCollection`, support for projection field assignments, and the `$project` pipeline aggregation stage, as well as `create` and `drop` commands in SAP HANA handler.
@@ -48,7 +48,7 @@ Say you have an `inventory` collection below:
 You can access the `renameCollection` command through the `db.collection.renameCollection()` method within the same database in mongosh, as shown below for a current `inventory` collection.
 
 ```js
-db.inventory.renameCollection("store")
+db.inventory.renameCollection('store')
 ```
 
 Note that `writeConcern`, `comment`, and `dropTarget` arguments are not currently implemented.
@@ -107,7 +107,7 @@ For instance, if we have a `users` collection as shown below:
 Suppose we want to retrieve the documents from the `users` collection but only include the name field while assigning a new value of 'Anonymous' to it.
 
 ```js
-db.users.find({}, { name: "Anonymous" })
+db.users.find({}, { name: 'Anonymous' })
 ```
 
 The query will return:

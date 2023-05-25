@@ -1,8 +1,8 @@
 ---
 slug: ferretdb-fetches-data-query-pushdown
-title: "How FerretDB fetches data - about query pushdown"
+title: 'How FerretDB fetches data - about query pushdown'
 author: Patryk Kwiatek
-description: "Find out how FerretDB uses query pushdown to fetch data from the storage layer (also called as “backend”)"
+description: 'Find out how FerretDB uses query pushdown to fetch data from the storage layer (also called as “backend”)'
 image: /img/blog/ferretdb-query-pushdown.jpg
 ---
 
@@ -40,7 +40,7 @@ Let's jump right into the FerretDB internals and go step by step to see how it h
 Let's say we have a collection with data on thousands of customers, and want to check if the one under `john.doe@example.com` email address has an active account:
 
 ```js
-db.customers.find({ email: "john.doe@example.com" }, { active: 1 })
+db.customers.find({ email: 'john.doe@example.com' }, { active: 1 })
 ```
 
 FerretDB will extract the command (`find`), filters (`{ 'email': 'john.doe@example.com' }`, and projections `{ active: 1 }`.
@@ -116,7 +116,7 @@ Let’s go back to our workflow and suppose that afterward the account was activ
 If we know the exact `_id` of the customer’s document, we can use it to benefit from the query pushdown:
 
 ```js
-db.customers.find({ _id: ObjectId("63aa97626786637ef1c4b725") }, { active: 1 })
+db.customers.find({ _id: ObjectId('63aa97626786637ef1c4b725') }, { active: 1 })
 ```
 
 Let’s see what SQL queries FerretDB will send.

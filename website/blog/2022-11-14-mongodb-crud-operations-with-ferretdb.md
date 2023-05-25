@@ -1,6 +1,6 @@
 ---
 slug: mongodb-crud-operations-with-ferretdb
-title: "How to Pass Basic MongoDB CRUD Operations With FerretDB"
+title: 'How to Pass Basic MongoDB CRUD Operations With FerretDB'
 author: Alexander Fashakin
 image: /img/blog/uriel-sc-11KDtiUWRq4-unsplash-1024x680.jpg
 description: In this tutorial, we will show you how to pass basic MongoDB CRUD operations in FerretDB - the open source MongoDB alternative.
@@ -67,7 +67,7 @@ To begin with, let’s insert a single document into the collection:
 
 ```js
 db.league.insertOne({
-  club: "PSG",
+  club: 'PSG',
   points: 30,
   average_age: 30,
   discipline: { red: 5, yellow: 30 },
@@ -101,21 +101,21 @@ To see how this works, we are going to insert three new documents into the colle
 ```js
 db.league.insertMany([
   {
-    club: "Arsenal",
+    club: 'Arsenal',
     points: 80,
     average_age: 24,
     discipline: { red: 2, yellow: 15 },
     qualified: true,
   },
   {
-    club: "Barcelona",
+    club: 'Barcelona',
     points: 60,
     average_age: 31,
     discipline: { red: 0, yellow: 7 },
     qualified: false,
   },
   {
-    club: "Bayern",
+    club: 'Bayern',
     points: 84,
     average_age: 29,
     discipline: { red: 1, yellow: 20 },
@@ -158,7 +158,7 @@ This operation retrieves and displays all the documents present in the collectio
 Now, let's add a query parameter to the `find()` operation to filter for a specific item.
 
 ```js
-db.league.find({ club: "PSG" })
+db.league.find({ club: 'PSG' })
 ```
 
 This retrieves all the records that match the query:
@@ -292,7 +292,7 @@ Using our database, let’s update a document where the `club` field is `PSG` an
 This update operation will only affect the first document that’s retrieved in the collection.
 
 ```js
-db.league.updateOne({ club: "PSG" }, { $set: { points: 35 } })
+db.league.updateOne({ club: 'PSG' }, { $set: { points: 35 } })
 ```
 
 If this operation is successful, the queried document will be updated.
@@ -333,9 +333,9 @@ The replaceOne() method is ideal if you intend to replace an entire document at 
 
 ```js
 db.league.replaceOne(
-  { club: "Barcelona" },
+  { club: 'Barcelona' },
   {
-    club: "Inter",
+    club: 'Inter',
     points: 83,
     average_age: 32,
     discipline: { red: 2, yellow: 10 },
@@ -394,7 +394,7 @@ The `deleteOne()` method takes in a query parameter that filters a collection fo
 Note that this operation only deletes the first document that matches the query in the collection.
 
 ```js
-db.league.deleteOne({ club: "Arsenal" })
+db.league.deleteOne({ club: 'Arsenal' })
 ```
 
 This operation deletes one document from the collection:

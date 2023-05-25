@@ -20,11 +20,11 @@ If a collection does not exist, the insert command automatically creates one.
 ```js
 db.scientists.insertOne({
   name: {
-    firstname: "Thomas",
-    lastname: "Edison",
+    firstname: 'Thomas',
+    lastname: 'Edison',
   },
   born: 1847,
-  invention: "lightbulb",
+  invention: 'lightbulb',
 })
 ```
 
@@ -52,27 +52,27 @@ The following example shows how to insert multiple documents into a collection:
 db.scientists.insertMany([
   {
     name: {
-      firstname: "Alan",
-      lastname: "Turing",
+      firstname: 'Alan',
+      lastname: 'Turing',
     },
     born: 1912,
-    invention: "Turing Machine",
+    invention: 'Turing Machine',
   },
   {
     name: {
-      firstname: "Graham",
-      lastname: "Bell",
+      firstname: 'Graham',
+      lastname: 'Bell',
     },
     born: 1847,
-    invention: "telephone",
+    invention: 'telephone',
   },
   {
     name: {
-      firstname: "Ada",
-      lastname: "Lovelace",
+      firstname: 'Ada',
+      lastname: 'Lovelace',
     },
     born: 1815,
-    invention: "computer programming",
+    invention: 'computer programming',
   },
 ])
 ```

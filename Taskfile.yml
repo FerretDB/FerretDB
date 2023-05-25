@@ -603,7 +603,7 @@ tasks:
     cmds:
       - bin/checkdocs
       - docker compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
-      - docker compose run --rm prettier --write --parser markdown --no-semi --ignore-path build/.prettierignore "**/*.md"
+      - docker compose run --rm prettier --write --parser markdown --no-semi --single-quote --ignore-path build/.prettierignore "**/*.md"
       - docker compose run --rm markdownlint "**/*.md" "#CHANGELOG.md"
 
   docs-dev:

@@ -1,6 +1,6 @@
 ---
 slug: how-to-keep-control-of-your-infra-using-ferretdb-and-tigris
-title: "How to Keep Control of Your Data and Infrastructure Using FerretDB and Tigris"
+title: 'How to Keep Control of Your Data and Infrastructure Using FerretDB and Tigris'
 author: Alexander Fashakin
 description: Using MongoDB Atlas only leads to lock-in, learn to avoid this problem and keep total control of your data using FerretDB and Tigris Data.
 image: /img/blog/masaaki-komori--we0BQQewBo-unsplash-1024x684.jpg

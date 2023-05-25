@@ -25,33 +25,33 @@ For the examples in this section, insert the following documents into the `emplo
 db.employees.insertMany([
   {
     name: {
-      first: "Earl",
-      last: "Thomas",
+      first: 'Earl',
+      last: 'Thomas',
     },
     employeeID: 1234,
     age: 23,
-    role: "salesperson",
-    catalog: ["printer", "cardboard", "crayons", "books"],
+    role: 'salesperson',
+    catalog: ['printer', 'cardboard', 'crayons', 'books'],
   },
   {
     name: {
-      first: "Sam",
-      last: "Johnson",
+      first: 'Sam',
+      last: 'Johnson',
     },
     employeeID: 2234,
     age: 35,
-    role: "salesperson",
-    catalog: ["cabinet", "fridge", "blender", "utensils"],
+    role: 'salesperson',
+    catalog: ['cabinet', 'fridge', 'blender', 'utensils'],
   },
   {
     name: {
-      first: "Clarke",
-      last: "Dane",
+      first: 'Clarke',
+      last: 'Dane',
     },
     employeeID: 3234,
     age: 21,
-    role: "salesperson",
-    catalog: ["printer", "pencils", "crayons", "toys"],
+    role: 'salesperson',
+    catalog: ['printer', 'pencils', 'crayons', 'toys'],
   },
 ])
 ```
@@ -94,8 +94,8 @@ The following operation queries the `employees` collection for documents that ma
 
 ```js
 db.employees.find({
-  "name.first": {
-    $eq: "Earl",
+  'name.first': {
+    $eq: 'Earl',
   },
 })
 ```

@@ -1,8 +1,8 @@
 ---
 slug: 2023-02-14-ferretdb-v-0-9-1-minor-release
-title: "FerretDB v0.9.1 - Minor Release"
+title: 'FerretDB v0.9.1 - Minor Release'
 authors: [alex]
-description: "FerretDB v0.9.1 is a minor release that contains upgrades on previous versions, including bug fixes, enhancements, and new features"
+description: 'FerretDB v0.9.1 is a minor release that contains upgrades on previous versions, including bug fixes, enhancements, and new features'
 image: /img/blog/ferretdb-v0.9.1.jpg
 tags: [release]
 date: 2023-02-14

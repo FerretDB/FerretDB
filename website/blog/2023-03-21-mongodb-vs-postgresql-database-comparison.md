@@ -1,6 +1,6 @@
 ---
 slug: mongodb-vs-postgresql-database-comparison
-title: "MongoDB vs PostgreSQL: A Detailed Database Comparison"
+title: 'MongoDB vs PostgreSQL: A Detailed Database Comparison'
 authors: [alex]
 description: >
   Compare the features and benefits of MongoDB and PostgreSQL to determine which database management system is best for your application.
@@ -102,7 +102,7 @@ With MQL, you can query any field, embedded documents, or nested arrays in the M
 
 ```js
 db.users.find({
-  hobbies: { $all: ["reading", "cooking"] },
+  hobbies: { $all: ['reading', 'cooking'] },
 })
 ```
 

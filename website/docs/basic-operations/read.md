@@ -17,27 +17,27 @@ First, populate the database with a new collection containing a list of document
 db.scientists.insertMany([
   {
     name: {
-      firstname: "Alan",
-      lastname: "Turing",
+      firstname: 'Alan',
+      lastname: 'Turing',
     },
     born: 1912,
-    invention: "Turing Machine",
+    invention: 'Turing Machine',
   },
   {
     name: {
-      firstname: "Graham",
-      lastname: "Bell",
+      firstname: 'Graham',
+      lastname: 'Bell',
     },
     born: 1847,
-    invention: "telephone",
+    invention: 'telephone',
   },
   {
     name: {
-      firstname: "Ada",
-      lastname: "Lovelace",
+      firstname: 'Ada',
+      lastname: 'Lovelace',
     },
     born: 1815,
-    invention: "computer programming",
+    invention: 'computer programming',
   },
 ])
 ```
@@ -45,7 +45,7 @@ db.scientists.insertMany([
 Run the following `findOne()` operation to retrieve a single document from the collection:
 
 ```js
-db.scientists.findOne({ invention: "Turing Machine" })
+db.scientists.findOne({ invention: 'Turing Machine' })
 ```
 
 ## Retrieve all documents in a collection
@@ -103,33 +103,33 @@ Insert the following documents into an `employees` collection using this command
 db.employees.insertMany([
   {
     name: {
-      first: "Earl",
-      last: "Thomas",
+      first: 'Earl',
+      last: 'Thomas',
     },
     employeeID: 1234,
     age: 23,
-    role: "salesperson",
-    catalog: ["printer", "cardboard", "crayons", "books"],
+    role: 'salesperson',
+    catalog: ['printer', 'cardboard', 'crayons', 'books'],
   },
   {
     name: {
-      first: "Sam",
-      last: "Johnson",
+      first: 'Sam',
+      last: 'Johnson',
     },
     employeeID: 2234,
     age: 35,
-    role: "salesperson",
-    catalog: ["cabinet", "fridge", "blender", "utensils"],
+    role: 'salesperson',
+    catalog: ['cabinet', 'fridge', 'blender', 'utensils'],
   },
   {
     name: {
-      first: "Clarke",
-      last: "Dane",
+      first: 'Clarke',
+      last: 'Dane',
     },
     employeeID: 3234,
     age: 21,
-    role: "salesperson",
-    catalog: ["printer", "pencils", "crayons", "toys"],
+    role: 'salesperson',
+    catalog: ['printer', 'pencils', 'crayons', 'toys'],
   },
 ])
 ```
@@ -137,12 +137,12 @@ db.employees.insertMany([
 To retrieve all documents with a specific array field and value (`catalog: "printer"`), run the following command:
 
 ```js
-db.employees.find({ catalog: "printer" })
+db.employees.find({ catalog: 'printer' })
 ```
 
 The response displays all the retrieved documents:
 
-```sh
+```json
 [
   {
     _id: ObjectId("636b39f80466c61a229bbf9b"),
@@ -169,7 +169,7 @@ To retrieve all documents containing a specific value in an array, use dot notat
 The following command retrieves all documents containing `"blender"` in the third field of an array:
 
 ```js
-db.employees.find({ "catalog.2": "blender" })
+db.employees.find({ 'catalog.2': 'blender' })
 ```
 
 The document that matches the array query is displayed in the response:
@@ -193,5 +193,5 @@ To query on an embedded document, use dot notation to specify the fields.
 The following command queries on the embedded document in the`employees` collection:
 
 ```js
-db.employees.find({ "name.first": "Clarke" })
+db.employees.find({ 'name.first': 'Clarke' })
 ```

@@ -1,8 +1,8 @@
 ---
-title: "FerretDB v0.9.0 - Developer Preview"
+title: 'FerretDB v0.9.0 - Developer Preview'
 slug: ferretdb-v-0-9-0-developer-preview
 author: Alexander Fashakin
-description: "FerretDB 0.9.0 brings with it amazing new features, especially the initial support for aggregation pipelines."
+description: 'FerretDB 0.9.0 brings with it amazing new features, especially the initial support for aggregation pipelines.'
 image: /img/blog/developer-preview.png
 tags: [release]
 date: 2023-01-31

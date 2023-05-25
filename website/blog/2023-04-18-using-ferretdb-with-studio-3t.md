@@ -1,6 +1,6 @@
 ---
 slug: using-ferretdb-with-studio-3t
-title: "Using FerretDB 1.0 with Studio 3T"
+title: 'Using FerretDB 1.0 with Studio 3T'
 authors: [alex]
 description: >
   Discover how to use FerretDB 1.0 with Studio 3T, and explore ways to leverage FerretDB for MongoDB GUI applications.
@@ -157,55 +157,55 @@ In the IntelliShell window, type the following command to insert the first docum
 ```js
 db.test.insertMany([
   {
-    name: "John Doe",
-    email: "johndoe@example.com",
+    name: 'John Doe',
+    email: 'johndoe@example.com',
     age: 30,
-    gender: "Male",
-    interests: ["reading", "hiking", "photography"],
+    gender: 'Male',
+    interests: ['reading', 'hiking', 'photography'],
     address: {
-      street: "123 Main St",
-      city: "Anytown",
-      state: "CA",
-      zip: "12345",
+      street: '123 Main St',
+      city: 'Anytown',
+      state: 'CA',
+      zip: '12345',
     },
   },
   {
-    name: "Jane Smith",
-    email: "janesmith@example.com",
+    name: 'Jane Smith',
+    email: 'janesmith@example.com',
     age: 25,
-    gender: "Female",
-    interests: ["painting", "travel", "yoga"],
+    gender: 'Female',
+    interests: ['painting', 'travel', 'yoga'],
     address: {
-      street: "456 Elm St",
-      city: "Othertown",
-      state: "NY",
-      zip: "67890",
+      street: '456 Elm St',
+      city: 'Othertown',
+      state: 'NY',
+      zip: '67890',
     },
   },
   {
-    name: "Bob Johnson",
-    email: "bjohnson@example.com",
+    name: 'Bob Johnson',
+    email: 'bjohnson@example.com',
     age: 40,
-    gender: "Male",
-    interests: ["cooking", "gardening", "fishing"],
+    gender: 'Male',
+    interests: ['cooking', 'gardening', 'fishing'],
     address: {
-      street: "789 Oak St",
-      city: "Somewhere",
-      state: "TX",
-      zip: "23456",
+      street: '789 Oak St',
+      city: 'Somewhere',
+      state: 'TX',
+      zip: '23456',
     },
   },
   {
-    name: "Samantha Lee",
-    email: "slee@example.com",
+    name: 'Samantha Lee',
+    email: 'slee@example.com',
     age: 28,
-    gender: "Female",
-    interests: ["music", "dancing", "skiing"],
+    gender: 'Female',
+    interests: ['music', 'dancing', 'skiing'],
     address: {
-      street: "321 Pine St",
-      city: "Anotherplace",
-      state: "FL",
-      zip: "34567",
+      street: '321 Pine St',
+      city: 'Anotherplace',
+      state: 'FL',
+      zip: '34567',
     },
   },
 ])
@@ -231,7 +231,7 @@ Let’s also try updating some documents in the database by extending the above 
 ```js
 db.test.updateMany(
   { age: { $gte: 30 } },
-  { $set: { interests: ["reading", "hiking", "photography", "painting"] } }
+  { $set: { interests: ['reading', 'hiking', 'photography', 'painting'] } }
 )
 ```
 

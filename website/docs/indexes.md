@@ -103,7 +103,7 @@ You can also use the `dropIndex()` method to call the `dropIndexes()` command to
 Using the returned indexes above, let's drop the index with the name `price_1`.
 
 ```js
-db.products.dropIndex("price_1")
+db.products.dropIndex('price_1')
 ```
 
 Another way to perform this action is to use the same index document as the index you want to drop.
@@ -116,7 +116,7 @@ db.products.dropIndex({ price: 1 })
 Using the `dropIndexes()` command, specify the index as `"*"` to remove all indexes from the collection, except the `_id` index.
 
 ```js
-db.products.dropIndexes("*")
+db.products.dropIndexes('*')
 ```
 
 This will drop all the non-`_id` indexes from the collection.

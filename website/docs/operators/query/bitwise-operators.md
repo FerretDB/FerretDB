@@ -17,11 +17,11 @@ For the examples in this section, insert the following documents into the `numbe
 
 ```js
 db.numbers.insertMany([
-  { _id: 1, value: 23, binaryValue: "10111" },
-  { _id: 2, value: 56, binaryValue: "111000" },
-  { _id: 3, value: 67, binaryValue: "1000011" },
-  { _id: 4, value: 102, binaryValue: "1100110" },
-  { _id: 5, value: 5, binaryValue: "101" },
+  { _id: 1, value: 23, binaryValue: '10111' },
+  { _id: 2, value: 56, binaryValue: '111000' },
+  { _id: 3, value: 67, binaryValue: '1000011' },
+  { _id: 4, value: 102, binaryValue: '1100110' },
+  { _id: 5, value: 5, binaryValue: '101' },
 ])
 ```
 
@@ -69,7 +69,7 @@ For the same query above, the bitmask can also be written as a BinData value:
 ```js
 db.numbers.find({
   value: {
-    $bitsAllClear: BinData(0, "Bg=="),
+    $bitsAllClear: BinData(0, 'Bg=='),
   },
 })
 ```

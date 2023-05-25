@@ -18,45 +18,45 @@ For the examples in this section, insert the following documents into the `team`
 db.team.insertMany([
   {
     id: 1,
-    name: "Jack Smith",
-    position: "Manager",
-    skills: ["leadership", "communication", "project management"],
+    name: 'Jack Smith',
+    position: 'Manager',
+    skills: ['leadership', 'communication', 'project management'],
     contact: {
-      email: "john@example.com",
-      phone: "123-456-7890",
+      email: 'john@example.com',
+      phone: '123-456-7890',
     },
     active: true,
   },
   {
     id: 2,
-    name: "Jane Mark",
-    position: "Software Developer",
-    skills: ["Java", "Python", "C++"],
+    name: 'Jane Mark',
+    position: 'Software Developer',
+    skills: ['Java', 'Python', 'C++'],
     contact: {
-      email: "jane@example.com",
-      phone: "123-456-7891",
+      email: 'jane@example.com',
+      phone: '123-456-7891',
     },
     active: false,
   },
   {
     id: 3,
-    name: "Bob Johnson",
-    position: "Graphic Designer",
-    skills: ["Adobe Photoshop", "Illustrator", "InDesign"],
+    name: 'Bob Johnson',
+    position: 'Graphic Designer',
+    skills: ['Adobe Photoshop', 'Illustrator', 'InDesign'],
     contact: {
-      email: "bob@example.com",
-      phone: "123-456-7892",
+      email: 'bob@example.com',
+      phone: '123-456-7892',
     },
     active: true,
   },
   {
     id: 4,
-    name: "Alice Williams",
-    position: "Marketing Coordinator",
-    skills: ["communication", "content creation", "event planning"],
+    name: 'Alice Williams',
+    position: 'Marketing Coordinator',
+    skills: ['communication', 'content creation', 'event planning'],
     contact: {
-      email: "alice@example.com",
-      phone: "123-456-7893",
+      email: 'alice@example.com',
+      phone: '123-456-7893',
     },
     active: true,
   },
@@ -78,7 +78,7 @@ When using an `$all` operator, the order of the elements and array size does not
 ```js
 db.team.find({
   skills: {
-    $all: ["communication", "content creation"],
+    $all: ['communication', 'content creation'],
   },
 })
 ```
@@ -112,8 +112,8 @@ Use the following query operation:
 db.team.find({
   skills: {
     $elemMatch: {
-      $eq: "Java",
-      $nin: ["communication"],
+      $eq: 'Java',
+      $nin: ['communication'],
     },
   },
 })

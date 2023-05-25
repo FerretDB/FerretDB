@@ -16,27 +16,27 @@ For the examples in this section, insert the following documents into the `catal
 ```js
 db.catalog.insertMany([
   {
-    product: "bottle",
+    product: 'bottle',
     price: 15,
     stock: 1,
   },
   {
-    product: "spoon",
+    product: 'spoon',
     price: 500,
     stock: 0,
   },
   {
-    product: "cup",
+    product: 'cup',
     price: 100,
     stock: 14,
   },
   {
-    product: "BoWL",
+    product: 'BoWL',
     price: 56,
     stock: 5,
   },
   {
-    product: "boTtLe",
+    product: 'boTtLe',
     price: 20,
     stock: 3,
   },

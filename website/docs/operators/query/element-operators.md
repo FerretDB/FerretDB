@@ -16,13 +16,13 @@ For the examples in this section, insert the following documents into the `elect
 ```js
 db.electronics.insertMany([
   {
-    product: "laptop",
+    product: 'laptop',
     price: 1500,
     stock: 5,
     discount: true,
     specifications: [
       {
-        processor: "Intel Core i7",
+        processor: 'Intel Core i7',
       },
       {
         memory: 16,
@@ -30,47 +30,47 @@ db.electronics.insertMany([
     ],
   },
   {
-    product: "phone",
+    product: 'phone',
     price: 800,
     stock: 10,
     discount: true,
     specifications: [
       {
-        brand: "Apple",
+        brand: 'Apple',
       },
       {
-        model: "iPhone 12",
+        model: 'iPhone 12',
       },
     ],
   },
   {
-    product: "tablet",
+    product: 'tablet',
     price: 500,
     stock: 15,
     discount: true,
     specifications: [
       {
-        brand: "Samsung",
+        brand: 'Samsung',
       },
       {
-        model: "Galaxy Tab S7",
+        model: 'Galaxy Tab S7',
       },
     ],
   },
   {
-    product: "keyboard",
+    product: 'keyboard',
     price: 100,
     stock: 20,
   },
   {
-    product: "mouse",
+    product: 'mouse',
     price: 50,
     stock: 25,
     discount: null,
     specifications: [],
   },
   {
-    product: "monitor",
+    product: 'monitor',
     price: 250,
     stock: 30,
     discount: true,
@@ -79,24 +79,24 @@ db.electronics.insertMany([
         size: 27,
       },
       {
-        resolution: "4K",
+        resolution: '4K',
       },
     ],
   },
   {
-    product: "printer",
+    product: 'printer',
     price: 150,
     stock: 35,
     discount: false,
   },
   {
-    product: "scanner",
+    product: 'scanner',
     price: 100,
     stock: 40,
     discount: true,
     specifications: [
       {
-        type: "flatbed",
+        type: 'flatbed',
       },
     ],
   },
@@ -189,7 +189,7 @@ If you want to find documents where the `specifications` field exists and has a 
 db.electronics.find({
   specifications: {
     $exists: true,
-    $type: "array",
+    $type: 'array',
   },
 })
 ```
@@ -303,7 +303,7 @@ This query can also be written using the alias of the specified data type.
 ```js
 db.electronics.find({
   discount: {
-    $type: "bool",
+    $type: 'bool',
   },
 })
 ```

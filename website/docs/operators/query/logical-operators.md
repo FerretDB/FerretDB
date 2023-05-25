@@ -18,58 +18,58 @@ For the examples in this section, insert the following documents into the `catal
 ```js
 db.catalog.insertMany([
   {
-    product: "bottle",
+    product: 'bottle',
     price: 15,
     stock: 1,
     discount: true,
     variation: [
       {
-        size: ["small", "medium", "large"],
+        size: ['small', 'medium', 'large'],
       },
       {
-        color: ["black", "silver"],
+        color: ['black', 'silver'],
       },
     ],
   },
   {
-    product: "spoon",
+    product: 'spoon',
     price: 500,
     stock: 0,
     discount: true,
     variation: [
       {
-        size: ["small", "medium", "large"],
+        size: ['small', 'medium', 'large'],
       },
       {
-        color: ["silver", "white"],
+        color: ['silver', 'white'],
       },
     ],
   },
   {
-    product: "cup",
+    product: 'cup',
     price: 100,
     stock: 14,
     discount: true,
     variation: [
       {
-        size: ["small", "medium", "large"],
+        size: ['small', 'medium', 'large'],
       },
       {
-        color: ["red", "black", "white"],
+        color: ['red', 'black', 'white'],
       },
     ],
   },
   {
-    product: "bowl",
+    product: 'bowl',
     price: 56,
     stock: 5,
     discount: false,
     variation: [
       {
-        size: ["small", "medium", "large"],
+        size: ['small', 'medium', 'large'],
       },
       {
-        color: ["pink", "white", "red"],
+        color: ['pink', 'white', 'red'],
       },
     ],
   },
