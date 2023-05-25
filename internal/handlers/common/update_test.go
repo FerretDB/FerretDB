@@ -19,6 +19,9 @@ func TestValidatorTree(t *testing.T) {
 		{paths: []string{"v.foo.bar", "v.bar.foo", "v.foo"}, errOn: 2},
 		{paths: []string{"v.foo", "v.foo.bar"}, errOn: 1},
 		{paths: []string{"v.foo", "v.bar"}, noError: true},
+		{paths: []string{"v.foo", "v"}, errOn: 1},
+		{paths: []string{"v", "v"}, errOn: 1},
+		{paths: []string{"v", "foo"}, noError: true},
 	} {
 		i, tc := i, tc
 		t.Run(fmt.Sprint(i), func(t *testing.T) {

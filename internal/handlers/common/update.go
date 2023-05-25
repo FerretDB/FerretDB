@@ -915,16 +915,12 @@ func (tree *validatorTree) Validate(path types.Path) error {
 }
 
 func (tree *validatorTree) validate(keys []string) error {
-	// keys = [v foo]
-
 	if len(keys) == 0 {
 		tree.last = true
 		return nil
 	}
 
 	key, keys := keys[0], keys[1:]
-	// key = v
-	// keys = [foo]
 
 	if node, ok := tree.paths[key]; ok {
 		// v already exists so "v" or "v.foo" will collide
