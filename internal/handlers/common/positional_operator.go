@@ -16,6 +16,7 @@ package common
 
 import (
 	"errors"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -69,6 +70,7 @@ func getPositionalProjection(arr *types.Array, filter *types.Document, positiona
 		defer iter.Close()
 
 		var positionalPathFound bool
+
 		for {
 			filterKey, filterVal, err := iter.Next()
 			if errors.Is(err, iterator.ErrIteratorDone) {
