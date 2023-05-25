@@ -12,6 +12,7 @@ on:
   push:
     branches:
       - main
+      - releases/*
   schedule:
     - cron: "12 0 * * *"
 

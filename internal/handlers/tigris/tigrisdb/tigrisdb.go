@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // TigrisDB represents concurrency-safe TigrisDB connection pool.
@@ -35,15 +36,20 @@ type TigrisDB struct {
 //
 // Passed context is used only by the first checking connection.
 // Canceling it after that function returns does nothing.
-func New(ctx context.Context, cfg *config.Driver, logger *zap.Logger) (*TigrisDB, error) {
+func New(ctx context.Context, cfg *config.Driver, logger *zap.Logger, p *state.Provider) (*TigrisDB, error) {
 	d, err := driver.NewDriver(ctx, cfg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, err = d.Health(ctx); err != nil {
+	res, err := d.Info(ctx)
+	if err != nil {
 		_ = d.Close()
 		return nil, err
+	}
+
+	if err := p.Update(func(s *state.State) { s.HandlerVersion = res.ServerVersion }); err != nil {
+		logger.Error("tigrisdb.New: failed to update state", zap.Error(err))
 	}
 
 	return &TigrisDB{

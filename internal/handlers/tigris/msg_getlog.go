@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/tigrisdata/tigris-client-go/driver"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/build/version"
@@ -35,11 +34,6 @@ import (
 
 // MsgGetLog implements HandlerInterface.
 func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	dbPool, err := h.DBPool(ctx)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -94,14 +88,14 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		info := version.Get()
 
-		var hv *driver.InfoResponse
-
-		if hv, err = dbPool.Driver.Info(ctx); err != nil {
-			return nil, lazyerrors.Error(err)
+		// it may be empty if no connection was established yet
+		hv := state.HandlerVersion
+		if hv != "" {
+			hv = " " + hv
 		}
 
 		startupWarnings := []string{
-			"Powered by FerretDB " + info.Version + " and Tigris " + hv.ServerVersion + ".",
+			"Powered by FerretDB " + info.Version + " and Tigris" + hv + ".",
 			"Please star us on GitHub: https://github.com/FerretDB/FerretDB and https://github.com/tigrisdata/tigris.",
 		}
 
@@ -112,7 +106,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				"The telemetry state is undecided.",
 				"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.",
 			)
-		case state.UpdateAvailable():
+		case state.UpdateAvailable:
 			startupWarnings = append(
 				startupWarnings,
 				fmt.Sprintf(

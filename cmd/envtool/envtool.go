@@ -170,11 +170,16 @@ func setupAnyTigris(ctx context.Context, logger *zap.SugaredLogger, port uint16)
 		URL: fmt.Sprintf("127.0.0.1:%d", port),
 	}
 
+	p, err := state.NewProvider("")
+	if err != nil {
+		return err
+	}
+
 	var db *tigrisdb.TigrisDB
 
 	var retry int64
 	for ctx.Err() == nil {
-		if db, err = tigrisdb.New(ctx, cfg, logger.Desugar()); err == nil {
+		if db, err = tigrisdb.New(ctx, cfg, logger.Desugar(), p); err == nil {
 			break
 		}
 
