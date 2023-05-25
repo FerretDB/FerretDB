@@ -79,6 +79,7 @@ func _() {
 	_ = x[ErrBadRegexOption-51108]
 	_ = x[ErrBadPositionalProjection-51246]
 	_ = x[ErrElementMismatchPositionalProjection-51247]
+	_ = x[ErrEmptySubProject-51270]
 	_ = x[ErrEmptyProject-51272]
 	_ = x[ErrDuplicateField-4822819]
 	_ = x[ErrStageSkipBadValue-5107200]
@@ -86,7 +87,7 @@ func _() {
 	_ = x[ErrStageCollStatsInvalidArg-5447000]
 }
 
-const _ErrorCode_name = "UnsetInternalErrorBadValueFailedToParseTypeMismatchAuthenticationFailedIllegalOperationNamespaceNotFoundIndexNotFoundPathNotViableConflictingUpdateOperatorsCursorNotFoundNamespaceExistsDollarPrefixedFieldNameInvalidIDEmptyFieldNameCommandNotFoundImmutableFieldCannotCreateIndexInvalidOptionsInvalidNamespaceIndexOptionsConflictIndexKeySpecsConflictOperationFailedDocumentValidationFailureNotImplementedLocation11000Location15947Location15948Location15955Location15958Location15959Location15969Location15973Location15974Location15975Location15976Location15981Location15998Location16410Location16872Location17276Location28667Location28724Location28812Location28818Location31253Location31254Location31324Location31394Location31395Location40156Location40157Location40158Location40160Location40234Location40237Location40238Location40323Location40352Location40353Location40414Location40415Location50840Location51024Location51075Location51091Location51108Location51246Location51247Location51272Location4822819Location5107200Location5107201Location5447000"
+const _ErrorCode_name = "UnsetInternalErrorBadValueFailedToParseTypeMismatchAuthenticationFailedIllegalOperationNamespaceNotFoundIndexNotFoundPathNotViableConflictingUpdateOperatorsCursorNotFoundNamespaceExistsDollarPrefixedFieldNameInvalidIDEmptyFieldNameCommandNotFoundImmutableFieldCannotCreateIndexInvalidOptionsInvalidNamespaceIndexOptionsConflictIndexKeySpecsConflictOperationFailedDocumentValidationFailureNotImplementedLocation11000Location15947Location15948Location15955Location15958Location15959Location15969Location15973Location15974Location15975Location15976Location15981Location15998Location16410Location16872Location17276Location28667Location28724Location28812Location28818Location31253Location31254Location31324Location31394Location31395Location40156Location40157Location40158Location40160Location40234Location40237Location40238Location40323Location40352Location40353Location40414Location40415Location50840Location51024Location51075Location51091Location51108Location51246Location51247Location51270Location51272Location4822819Location5107200Location5107201Location5447000"
 
 var _ErrorCode_map = map[ErrorCode]string{
 	0:       _ErrorCode_name[0:5],
@@ -159,11 +160,12 @@ var _ErrorCode_map = map[ErrorCode]string{
 	51108:   _ErrorCode_name[935:948],
 	51246:   _ErrorCode_name[948:961],
 	51247:   _ErrorCode_name[961:974],
-	51272:   _ErrorCode_name[974:987],
-	4822819: _ErrorCode_name[987:1002],
-	5107200: _ErrorCode_name[1002:1017],
-	5107201: _ErrorCode_name[1017:1032],
-	5447000: _ErrorCode_name[1032:1047],
+	51270:   _ErrorCode_name[974:987],
+	51272:   _ErrorCode_name[987:1000],
+	4822819: _ErrorCode_name[1000:1015],
+	5107200: _ErrorCode_name[1015:1030],
+	5107201: _ErrorCode_name[1030:1045],
+	5447000: _ErrorCode_name[1045:1060],
 }
 
 func (i ErrorCode) String() string {

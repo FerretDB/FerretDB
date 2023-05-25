@@ -1399,6 +1399,27 @@ func TestAggregateCompatProject(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"ZeroOperators": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"v", bson.D{}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"TwoOperators": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"v", bson.D{{"$type", "foo"}, {"$sum", 1}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"DollarSignField": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"$v", 1}}}},
+			},
+			resultType: emptyResult,
+		},
 		"Include1Field": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
