@@ -204,24 +204,24 @@ db.league.find({ points: { $in: [80, 60] } })
 
 This displays the documents that match this query:
 
-```sh
+```json
 [
   {
     _id: ObjectId("63109f4d51bcc5e0155db0c3"),
-    club: "Arsenal",
+    club: 'Arsenal',
     points: 80,
     average_age: 24,
     discipline: { red: 2, yellow: 15 },
-    qualified: true,
+    qualified: true
   },
   {
     _id: ObjectId("63109f4d51bcc5e0155db0c4"),
-    club: "Barcelona",
+    club: 'Barcelona',
     points: 60,
     average_age: 31,
     discipline: { red: 0, yellow: 7 },
-    qualified: false,
-  },
+    qualified: false
+  }
 ]
 ```
 
@@ -346,27 +346,27 @@ db.league.replaceOne(
 
 If we run `db.league.find({})`, our database now looks like this:
 
-```sh
+```json
 [
   {
     _id: ObjectId("63109e9251bcc5e0155db0c2"),
-    club: "PSG",
+    club: 'PSG',
     points: 35,
     average_age: 30,
     discipline: { red: 5, yellow: 30 },
-    qualified: false,
+    qualified: false
   },
   {
     _id: ObjectId("63109f4d51bcc5e0155db0c3"),
-    club: "Arsenal",
+    club: 'Arsenal',
     points: 80,
     average_age: 24,
     discipline: { red: 2, yellow: 15 },
-    qualified: false,
+    qualified: false
   },
   {
     _id: ObjectId("63109f4d51bcc5e0155db0c5"),
-    club: "Bayern",
+    club: 'Bayern',
     points: 84,
     average_age: 29,
     discipline: { red: 1, yellow: 20 },
@@ -374,11 +374,11 @@ If we run `db.league.find({})`, our database now looks like this:
   },
   {
     _id: ObjectId("63109f4d51bcc5e0155db0c4"),
-    club: "Inter",
+    club: 'Inter',
     points: 83,
     average_age: 32,
     discipline: { red: 2, yellow: 10 },
-    qualified: true,
+    qualified: true
   },
 ]
 ```
@@ -414,15 +414,15 @@ db.league.deleteMany({ qualified: false })
 
 Run `db.league.find({})` to show the current state of records of the database.
 
-```sh
+```json
 [
   {
     _id: ObjectId("63109f4d51bcc5e0155db0c4"),
-    club: "Inter",
+    club: 'Inter',
     points: 83,
     average_age: 32,
     discipline: { red: 2, yellow: 10 },
-    qualified: true,
+    qualified: true
   },
 ]
 ```
