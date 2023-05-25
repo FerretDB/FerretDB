@@ -116,7 +116,7 @@ Let’s go back to our workflow and suppose that afterward the account was activ
 If we know the exact `_id` of the customer’s document, we can use it to benefit from the query pushdown:
 
 ```js
-db.customers.find({ _id: ObjectId("63aa97626786637ef1c4b725") }, { active: 1 })
+db.customers.find({ _id: ObjectId('63aa97626786637ef1c4b725') }, { active: 1 })
 ```
 
 Let’s see what SQL queries FerretDB will send.
