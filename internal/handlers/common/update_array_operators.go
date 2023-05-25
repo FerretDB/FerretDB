@@ -206,8 +206,9 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
+					// TODO
 					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
-					key, commonparams.AliasFromType(val), must.NotFail(doc.Get("_id")),
+					key, commonparams.AliasFromType(val), types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
 				),
 			)
 		}
@@ -296,7 +297,7 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
 					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
-					key, commonparams.AliasFromType(val), must.NotFail(doc.Get("_id")),
+					key, commonparams.AliasFromType(val), types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
 				),
 			)
 		}
@@ -369,8 +370,8 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
-					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
-					key, commonparams.AliasFromType(val), must.NotFail(doc.Get("_id")),
+					"The field '%s' must be an array but is of type '%s' in document {_id: %v}",
+					key, commonparams.AliasFromType(val), types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
 				),
 			)
 		}
