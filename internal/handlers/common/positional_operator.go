@@ -29,23 +29,9 @@ import (
 // returns the first element of the array that matches the filter condition.
 //
 // Returned command error code:
-//   - ErrWrongPositionalOperatorLocation when there are multiple `$` or `$` is not at the end.
 //   - ErrBadPositionalProjection when array or filter is empty.
-//   - ErrBadPositionalProjection when filter does not contain positional operator filter.
+//   - ErrBadPositionalProjection when filter does not contain positional operator path in its filter.
 func getPositionalProjection(arr *types.Array, filter *types.Document, positionalOperator string) (any, error) {
-	if !strings.HasSuffix(positionalOperator, "$") ||
-		strings.Count(positionalOperator, "$") > 1 {
-		// there can only be one positional operator at the end.
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrWrongPositionalOperatorLocation,
-			"Positional projection may only be used at the end, "+
-				"for example: a.b.$. If the query previously used a form "+
-				"like a.b.$.d, remove the parts following the '$' and "+
-				"the results will be equivalent.",
-			"projection",
-		)
-	}
-
 	if arr.Len() == 0 || filter.Len() == 0 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadPositionalProjection,
@@ -63,8 +49,11 @@ func getPositionalProjection(arr *types.Array, filter *types.Document, positiona
 	for {
 		filterKey, filterVal, err := iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
-			// filterKey did not contain projection path.
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				// filterKey did not contain projection path.
+				// If positional operator is "v.$" the filter must have filter for v such as {"v": 1}.
+				// For nested dot notation such as "v.foo.$", filter must have full path such as {"v.foo": 1},
+				// and just {"v": 1} is not sufficient. TODO: Test this
 				commonerrors.ErrBadPositionalProjection,
 				"Executor error during find command :: caused by :: positional operator"+
 					" '.$' couldn't find a matching element in the array",

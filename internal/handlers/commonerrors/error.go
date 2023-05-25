@@ -212,6 +212,9 @@ const (
 	// ErrEmptyFieldPath indicates that the field path is empty.
 	ErrEmptyFieldPath = ErrorCode(40352) // Location40352
 
+	// ErrInvalidFieldPath indicates that the field path is not valid.
+	ErrInvalidFieldPath = ErrorCode(40353) // Location40353
+
 	// ErrMissingField indicates that the required field in document is missing.
 	ErrMissingField = ErrorCode(40414) // Location40414
 

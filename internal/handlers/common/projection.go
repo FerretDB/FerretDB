@@ -20,6 +20,8 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -36,6 +38,15 @@ import (
 // Errors:
 //   - `ErrProjectionExIn` when there is exclusion in inclusion projection;
 //   - `ErrProjectionInEx` when there is inclusion in exclusion projection;
+//   - `ErrEmptyFieldPath` when positional projection path is empty;
+//   - `ErrInvalidFieldPath` when positional projection path is not valid;
+//   - `ErrFieldPathInvalidName` when positional projection operator is at the prefix;
+//   - `ErrFieldPathInvalidName` when `$` is used path of a key;
+//   - `ErrWrongPositionalOperatorLocation` when there are multiple positional operators;
+//   - `ErrWrongPositionalOperatorLocation` when positional operator is not at the end;
+//   - `ErrBadPositionalProjection` when array or filter at positional projection is empty;
+//   - `ErrBadPositionalProjection` when there is no filter path specially for positional projection.
+//   - `ErrExclusionPositionalProjection` when positional projection `$` is used for exclusion;
 //   - `ErrNotImplemented` when there is unimplemented projection operators and expressions;
 func ValidateProjection(projection *types.Document) (*types.Document, bool, error) {
 	validated := types.MakeDocument(0)
@@ -60,10 +71,62 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 			return nil, false, lazyerrors.Error(err)
 		}
 
-		if strings.HasPrefix(key, "$") {
-			return nil, false, commonerrors.NewCommandErrorMsg(
-				commonerrors.ErrNotImplemented,
-				fmt.Sprintf("projection operator $ is not supported in %s", key),
+		if key == "" {
+			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrEmptyFieldPath,
+				"FieldPath cannot be constructed with empty string",
+				"projection",
+			)
+		}
+
+		path, err := types.NewPathFromString(key)
+		if err != nil {
+			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrInvalidFieldPath,
+				"FieldPath must not end with a '.'.",
+				"projection",
+			)
+		}
+
+		if path.Len() > 1 && strings.Count(path.TrimSuffix().String(), "$") > 1 {
+			// there cannot be a more than one positional operator.
+			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrWrongPositionalOperatorLocation,
+				"Positional projection may only be used at the end, "+
+					"for example: a.b.$. If the query previously used a form "+
+					"like a.b.$.d, remove the parts following the '$' and "+
+					"the results will be equivalent.",
+				"projection",
+			)
+		}
+
+		if key == "$" || strings.HasPrefix(key, "$") {
+			// positional operator cannot be at the prefix.
+			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFieldPathInvalidName,
+				"FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+				"projection",
+			)
+		}
+
+		if path.Len() > 1 && slices.Contains(path.TrimSuffix().Slice(), "$") {
+			// there cannot be a positional operator along the path, can only be at the end.
+			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrWrongPositionalOperatorLocation,
+				"Positional projection may only be used at the end, "+
+					"for example: a.b.$. If the query previously used a form "+
+					"like a.b.$.d, remove the parts following the '$' and "+
+					"the results will be equivalent.",
+				"projection",
+			)
+		}
+
+		if strings.Count(strings.TrimSuffix(path.String(), ".$"), "$") >= 1 {
+			// arbitrary $ cannot exist in the path e.g. `v.$d` is wrong.
+			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFieldPathInvalidName,
+				"FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+				"projection",
 			)
 		}
 
@@ -76,7 +139,7 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 				fmt.Sprintf("projection expression %s is not supported", types.FormatAnyValue(value)),
 			)
 		case *types.Array, string, types.Binary, types.ObjectID,
-			time.Time, types.NullType, types.Regex, types.Timestamp: // all this types are treated as new fields value
+			time.Time, types.NullType, types.Regex, types.Timestamp: // all these types are treated as new fields value
 			result = true
 
 			validated.Set(key, value)
@@ -262,8 +325,7 @@ func projectDocumentWithoutID(doc *types.Document, projection, filter *types.Doc
 // If the projected contains field that is not expected in source, it panics.
 //
 // Returned command error code:
-//   - ErrWrongPositionalOperatorLocation when there are multiple `$` or `$` is not at the end.
-//   - ErrBadPositionalProjection when array or filter is empty.
+//   - ErrBadPositionalProjection when array or filter at positional projection is empty.
 //   - ErrBadPositionalProjection when there is no filter path specially for positional projection.
 //     If positional projection is `v.$`, the filter must contain `v` in the filter key e.g. `{v: 42}`.
 //
@@ -422,7 +484,7 @@ func includeProjection(path types.Path, curIndex int, source any, projected, fil
 //
 // Returned command error code:
 //
-//   - ErrExclusionPositionalProjection when positional projection `$` is used.
+//   - ErrExclusionPositionalProjection when positional projection `$` is used for exclusion.
 //
 // Examples: "v.foo" path exclusion projection:
 //
