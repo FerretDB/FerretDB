@@ -106,30 +106,30 @@ db.catalog.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("639ba4a0071b6bed396a8f13"),
-    product: "bottle",
+    _id: ObjectId('639ba4a0071b6bed396a8f13'),
+    product: 'bottle',
     price: 15,
     stock: 1,
     discount: true,
     variation: [
-      { size: ["small", "medium", "large"] },
-      { color: ["black", "silver"] },
-    ],
+      { size: ['small', 'medium', 'large'] },
+      { color: ['black', 'silver'] }
+    ]
   },
   {
-    _id: ObjectId("639ba4a0071b6bed396a8f16"),
-    product: "bowl",
+    _id: ObjectId('639ba4a0071b6bed396a8f16'),
+    product: 'bowl',
     price: 56,
     stock: 5,
     discount: false,
     variation: [
-      { size: ["small", "medium", "large"] },
-      { color: ["pink", "white", "red"] },
-    ],
-  },
+      { size: ['small', 'medium', 'large'] },
+      { color: ['pink', 'white', 'red'] }
+    ]
+  }
 ]
 ```
 
@@ -170,41 +170,41 @@ db.catalog.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("639ba4a0071b6bed396a8f13"),
-    product: "bottle",
+    _id: ObjectId('639ba4a0071b6bed396a8f13'),
+    product: 'bottle',
     price: 15,
     stock: 1,
     discount: true,
     variation: [
-      { size: ["small", "medium", "large"] },
-      { color: ["black", "silver"] },
-    ],
+      { size: ['small', 'medium', 'large'] },
+      { color: ['black', 'silver'] }
+    ]
   },
   {
-    _id: ObjectId("639ba4a0071b6bed396a8f15"),
-    product: "cup",
+    _id: ObjectId('639ba4a0071b6bed396a8f15'),
+    product: 'cup',
     price: 100,
     stock: 14,
     discount: true,
     variation: [
-      { size: ["small", "medium", "large"] },
-      { color: ["red", "black", "white"] },
-    ],
+      { size: ['small', 'medium', 'large'] },
+      { color: ['red', 'black', 'white'] }
+    ]
   },
   {
-    _id: ObjectId("639ba4a0071b6bed396a8f16"),
-    product: "bowl",
+    _id: ObjectId('639ba4a0071b6bed396a8f16'),
+    product: 'bowl',
     price: 56,
     stock: 5,
     discount: false,
     variation: [
-      { size: ["small", "medium", "large"] },
-      { color: ["pink", "white", "red"] },
-    ],
-  },
+      { size: ['small', 'medium', 'large'] },
+      { color: ['pink', 'white', 'red'] }
+    ]
+  }
 ]
 ```
 
@@ -228,30 +228,30 @@ db.catalog.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("639ba4a0071b6bed396a8f15"),
-    product: "cup",
+    _id: ObjectId('639ba4a0071b6bed396a8f15'),
+    product: 'cup',
     price: 100,
     stock: 14,
     discount: true,
     variation: [
-      { size: ["small", "medium", "large"] },
-      { color: ["red", "black", "white"] },
-    ],
+      { size: ['small', 'medium', 'large'] },
+      { color: ['red', 'black', 'white'] }
+    ]
   },
   {
-    _id: ObjectId("639ba4a0071b6bed396a8f16"),
-    product: "bowl",
+    _id: ObjectId('639ba4a0071b6bed396a8f16'),
+    product: 'bowl',
     price: 56,
     stock: 5,
     discount: false,
     variation: [
-      { size: ["small", "medium", "large"] },
-      { color: ["pink", "white", "red"] },
-    ],
-  },
+      { size: ['small', 'medium', 'large'] },
+      { color: ['pink', 'white', 'red'] }
+    ]
+  }
 ]
 ```
 
@@ -292,18 +292,18 @@ db.catalog.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("639ba4a0071b6bed396a8f14"),
-    product: "spoon",
+    _id: ObjectId('639ba4a0071b6bed396a8f14'),
+    product: 'spoon',
     price: 500,
     stock: 0,
     discount: true,
     variation: [
-      { size: ["small", "medium", "large"] },
-      { color: ["silver", "white"] },
-    ],
-  },
+      { size: ['small', 'medium', 'large'] },
+      { color: ['silver', 'white'] }
+    ]
+  }
 ]
 ```

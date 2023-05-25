@@ -21,13 +21,13 @@ Even the program that embeds FerretDB could connect to it if there is a need to 
 Let's see how the [ferretdb package](https://pkg.go.dev/github.com/FerretDB/FerretDB/ferretdb) could be used.
 First, we need to add a Go module to dependencies as usual:
 
-```sh
+```js
 go get github.com/FerretDB/FerretDB/ferretdb@latest
 ```
 
 Then we create a new instance of embedded FerretDB that would use the specified PostgreSQL database for storage:
 
-```go
+```js
 f, _ := ferretdb.New(&ferretdb.Config{
     Handler:       "pg",
     PostgreSQLURL: "postgres://username:password@127.0.0.1:5432/database",
@@ -37,19 +37,19 @@ f, _ := ferretdb.New(&ferretdb.Config{
 
 We make it run in the background:
 
-```go
+```js
 go f.Run(context.Background())
 ```
 
 And then, we use a method to get a MongoDB URI that can be used with any client:
 
-```go
+```js
 fmt.Println(f.MongoDBURI())
 ```
 
 For example, we can connect to it with Mongo Shell:
 
-```sh
+```js
 $ mongosh mongodb://127.0.0.1:27017/
 
     Current Mongosh Log ID: 62cb2d6a37f455b3cd5f0004

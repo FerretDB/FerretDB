@@ -60,25 +60,25 @@ The above query updates the value of the `city` field in the `address` embedded 
 
 This is the updated document:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("640a603558955e0e2b57c00d"),
-    name: "John Doe",
+    _id: ObjectId('640a603558955e0e2b57c00d'),
+    name: 'John Doe',
     age: 35,
-    email: "johndoe@example.com",
-    phone: "123-456-7890",
+    email: 'johndoe@example.com',
+    phone: '123-456-7890',
     address: {
-      street: "123 Main St",
-      city: "New York",
-      state: "CA",
-      zip: "12345",
+      street: '123 Main St',
+      city: 'New York',
+      state: 'CA',
+      zip: '12345'
     },
     salary: 50000,
-    jobTitle: "Manager",
-    startDate: ISODate("2021-01-01T00:00:00.000Z"),
-    endDate: null,
-  },
+    jobTitle: 'Manager',
+    startDate: ISODate('2021-01-01T00:00:00.000Z'),
+    endDate: null
+  }
 ]
 ```
 
@@ -94,24 +94,24 @@ db.employee.updateOne({ name: 'John Doe' }, { $unset: { 'address.zip': '' } })
 
 Below is the updated document, without the `zip` field:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("640a603558955e0e2b57c00d"),
-    name: "John Doe",
+    _id: ObjectId('640a603558955e0e2b57c00d'),
+    name: 'John Doe',
     age: 35,
-    email: "johndoe@example.com",
-    phone: "123-456-7890",
+    email: 'johndoe@example.com',
+    phone: '123-456-7890',
     address: {
-      street: "123 Main St",
-      city: "New York",
-      state: "CA",
+      street: '123 Main St',
+      city: 'New York',
+      state: 'CA'
     },
     salary: 50000,
-    jobTitle: "Manager",
-    startDate: ISODate("2021-01-01T00:00:00.000Z"),
-    endDate: null,
-  },
+    jobTitle: 'Manager',
+    startDate: ISODate('2021-01-01T00:00:00.000Z'),
+    endDate: null
+  }
 ]
 ```
 
@@ -128,24 +128,24 @@ db.employee.updateOne({ name: 'John Doe' }, { $inc: { age: 1 } })
 
 The updated document looks like this:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("640a603558955e0e2b57c00d"),
-    name: "John Doe",
+    _id: ObjectId('640a603558955e0e2b57c00d'),
+    name: 'John Doe',
     age: 36,
-    email: "johndoe@example.com",
-    phone: "123-456-7890",
+    email: 'johndoe@example.com',
+    phone: '123-456-7890',
     address: {
-      street: "123 Main St",
-      city: "New York",
-      state: "CA",
+      street: '123 Main St',
+      city: 'New York',
+      state: 'CA'
     },
     salary: 50000,
-    jobTitle: "Manager",
-    startDate: ISODate("2021-01-01T00:00:00.000Z"),
-    endDate: null,
-  },
+    jobTitle: 'Manager',
+    startDate: ISODate('2021-01-01T00:00:00.000Z'),
+    endDate: null
+  }
 ]
 ```
 
@@ -162,24 +162,24 @@ db.employee.updateOne({ name: 'John Doe' }, { $mul: { salary: 1.25 } })
 
 The updated record looks like this:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("640a603558955e0e2b57c00d"),
-    name: "John Doe",
+    _id: ObjectId('640a603558955e0e2b57c00d'),
+    name: 'John Doe',
     age: 36,
-    email: "johndoe@example.com",
-    phone: "123-456-7890",
+    email: 'johndoe@example.com',
+    phone: '123-456-7890',
     address: {
-      street: "123 Main St",
-      city: "New York",
-      state: "CA",
+      street: '123 Main St',
+      city: 'New York',
+      state: 'CA'
     },
     salary: 62500,
-    jobTitle: "Manager",
-    startDate: ISODate("2021-01-01T00:00:00.000Z"),
-    endDate: null,
-  },
+    jobTitle: 'Manager',
+    startDate: ISODate('2021-01-01T00:00:00.000Z'),
+    endDate: null
+  }
 ]
 ```
 
@@ -195,24 +195,24 @@ db.employee.updateOne({ name: 'John Doe' }, { $rename: { jobTitle: 'title' } })
 
 The updated document looks like this:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("640a603558955e0e2b57c00d"),
-    name: "John Doe",
+    _id: ObjectId('640a603558955e0e2b57c00d'),
+    name: 'John Doe',
     age: 36,
-    email: "johndoe@example.com",
-    phone: "123-456-7890",
+    email: 'johndoe@example.com',
+    phone: '123-456-7890',
     address: {
-      street: "123 Main St",
-      city: "New York",
-      state: "CA",
+      street: '123 Main St',
+      city: 'New York',
+      state: 'CA'
     },
     salary: 62500,
-    startDate: ISODate("2021-01-01T00:00:00.000Z"),
+    startDate: ISODate('2021-01-01T00:00:00.000Z'),
     endDate: null,
-    title: "Manager",
-  },
+    title: 'Manager'
+  }
 ]
 ```
 
@@ -229,24 +229,24 @@ db.employee.updateOne({ name: 'John Doe' }, { $min: { age: 30 } })
 Since `30` is less than `36`, the value of the `age` field is updated to `30`.
 The updated document now looks like this:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("640a603558955e0e2b57c00d"),
-    name: "John Doe",
+    _id: ObjectId('640a603558955e0e2b57c00d'),
+    name: 'John Doe',
     age: 30,
-    email: "johndoe@example.com",
-    phone: "123-456-7890",
+    email: 'johndoe@example.com',
+    phone: '123-456-7890',
     address: {
-      street: "123 Main St",
-      city: "New York",
-      state: "CA",
+      street: '123 Main St',
+      city: 'New York',
+      state: 'CA'
     },
     salary: 62500,
-    startDate: ISODate("2021-01-01T00:00:00.000Z"),
+    startDate: ISODate('2021-01-01T00:00:00.000Z'),
     endDate: null,
-    title: "Manager",
-  },
+    title: 'Manager'
+  }
 ]
 ```
 
@@ -262,21 +262,21 @@ db.employee.updateOne({ name: 'John Doe' }, { $max: { age: 40 } })
 
 This is what the updated document looks like:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("640a603558955e0e2b57c00d"),
-    name: "John Doe",
+    _id: ObjectId('640a603558955e0e2b57c00d'),
+    name: 'John Doe',
     age: 40,
-    email: "johndoe@example.com",
-    phone: "123-456-7890",
-    address: { street: "123 Main St", city: "New York", state: "CA" },
+    email: 'johndoe@example.com',
+    phone: '123-456-7890',
+    address: { street: '123 Main St', city: 'New York', state: 'CA' },
     salary: 62500,
-    startDate: ISODate("2021-01-01T00:00:00.000Z"),
+    startDate: ISODate('2021-01-01T00:00:00.000Z'),
     endDate: null,
     height: 0,
-    title: "Manager",
-  },
+    title: 'Manager'
+  }
 ]
 ```
 
@@ -296,25 +296,25 @@ db.employee.updateOne(
 
 This is the document after the update:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("640a603558955e0e2b57c00d"),
-    name: "John Doe",
+    _id: ObjectId('640a603558955e0e2b57c00d'),
+    name: 'John Doe',
     age: 40,
-    email: "johndoe@example.com",
-    phone: "123-456-7890",
+    email: 'johndoe@example.com',
+    phone: '123-456-7890',
     address: {
-      street: "123 Main St",
-      city: "New York",
-      state: "CA",
+      street: '123 Main St',
+      city: 'New York',
+      state: 'CA'
     },
     salary: 62500,
-    startDate: ISODate("2023-03-10T01:26:35.606Z"),
+    startDate: ISODate('2023-03-10T01:26:35.606Z'),
     endDate: null,
     height: 0,
-    title: "Manager",
-  },
+    title: 'Manager'
+  }
 ]
 ```
 

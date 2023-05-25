@@ -34,12 +34,12 @@ db.store.updateOne({ _id: 1 }, { $push: { items: 'markers' } })
 
 After the operation, the updated document looks like this:
 
-```sh
-[
+```js
+;[
   {
     _id: 1,
-    items: ["pens", "pencils", "paper", "erasers", "rulers", "markers"],
-  },
+    items: ['pens', 'pencils', 'paper', 'erasers', 'rulers', 'markers']
+  }
 ]
 ```
 
@@ -62,8 +62,8 @@ db.store.updateOne({ _id: 1 }, { $addToSet: { items: 'paper' } })
 
 The document is subsequently updated with the new element, as depicted below:
 
-```sh
-[{ _id: 1, items: ["pens", "pencils", "paper"] }]
+```js
+;[{ _id: 1, items: ['pens', 'pencils', 'paper'] }]
 ```
 
 **Example:** Use the `$addToSet` operator to update the array with already existing elements.
@@ -74,8 +74,8 @@ db.store.updateOne({ _id: 1 }, { $addToSet: { items: 'pens' } })
 
 Since the array already contains the element, there won't be any changes.
 
-```sh
-[ { _id: 'foo' } ]
+```js
+;[{ _id: 1, items: ['pens', 'pencils', 'paper'] }]
 ```
 
 :::note
@@ -92,8 +92,8 @@ db.store.updateOne({ _id: 1 }, { $addToSet: { colors: 'red' } })
 
 The updated document looks like this:
 
-```sh
-[{ _id: 1, items: ["pens", "pencils", "paper"], colors: ["red"] }]
+```js
+;[{ _id: 1, items: ['pens', 'pencils', 'paper'], colors: ['red'] }]
 ```
 
 ## $pop
@@ -117,12 +117,12 @@ db.products.updateOne({ _id: 1 }, { $pop: { items: -1 } })
 
 The document is subsequently updated with the first element `pens` removed, as depicted below:
 
-```sh
-[
+```js
+;[
   {
     _id: 1,
-    items: ["pencils", "paper", "erasers", "rulers"],
-  },
+    items: ['pencils', 'paper', 'erasers', 'rulers']
+  }
 ]
 ```
 
@@ -134,12 +134,12 @@ db.products.updateOne({ _id: 1 }, { $pop: { items: 1 } })
 
 The updated now looks like this:
 
-```sh
-[
+```js
+;[
   {
     _id: 1,
-    items: ["pencils", "paper", "erasers"],
-  },
+    items: ['pencils', 'paper', 'erasers']
+  }
 ]
 ```
 
@@ -166,12 +166,12 @@ db.store.updateOne(
 
 After removing all instances of the specified array elements, the document is updated as follows:
 
-```sh
-[
+```js
+;[
   {
     _id: 1,
-    items: ["erasers", "rulers"],
-  },
+    items: ['erasers', 'rulers']
+  }
 ]
 ```
 
@@ -210,6 +210,6 @@ db.fruits.update(
 
 The updated document now looks like this:
 
-```sh
-[{ _id: 1, fruits: [{ type: "orange", color: "orange" }] }]
+```js
+;[{ _id: 1, fruits: [{ type: 'orange', color: 'orange' }] }]
 ```

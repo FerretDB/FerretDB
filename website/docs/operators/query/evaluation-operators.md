@@ -62,20 +62,20 @@ db.catalog.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("63e3ac0184f488929a3f737a"),
-    product: "spoon",
+    _id: ObjectId('63e3ac0184f488929a3f737a'),
+    product: 'spoon',
     price: 500,
-    stock: 0,
+    stock: 0
   },
   {
-    _id: ObjectId("63e3ac0184f488929a3f737b"),
-    product: "cup",
+    _id: ObjectId('63e3ac0184f488929a3f737b'),
+    product: 'cup',
     price: 100,
-    stock: 14,
-  },
+    stock: 14
+  }
 ]
 ```
 
@@ -104,20 +104,20 @@ db.catalog.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("63e4ce469695494b86bf2b2d"),
-    product: "bottle",
+    _id: ObjectId('63e4ce469695494b86bf2b2d'),
+    product: 'bottle',
     price: 15,
-    stock: 1,
+    stock: 1
   },
   {
-    _id: ObjectId("63e4ce469695494b86bf2b31"),
-    product: "boTtLe",
+    _id: ObjectId('63e4ce469695494b86bf2b31'),
+    product: 'boTtLe',
     price: 20,
-    stock: 3,
-  },
+    stock: 3
+  }
 ]
 ```
 
@@ -146,19 +146,19 @@ db.catalog.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("63e3ac0184f488929a3f7379"),
-    product: "bottle",
+    _id: ObjectId('63e3ac0184f488929a3f7379'),
+    product: 'bottle',
     price: 15,
-    stock: 1,
+    stock: 1
   },
   {
-    _id: ObjectId("63e3ac0184f488929a3f737d"),
-    product: "boTtLe",
+    _id: ObjectId('63e3ac0184f488929a3f737d'),
+    product: 'boTtLe',
     price: 20,
-    stock: 3,
-  },
+    stock: 3
+  }
 ]
 ```

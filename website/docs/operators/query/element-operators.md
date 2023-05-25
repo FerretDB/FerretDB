@@ -126,56 +126,56 @@ db.electronics.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
-    product: "laptop",
+    _id: ObjectId('63a32fc7cf72d6203bb45b8e'),
+    product: 'laptop',
     price: 1500,
     stock: 5,
     discount: true,
-    specifications: [{ processor: "Intel Core i7" }, { memory: 16 }],
+    specifications: [{ processor: 'Intel Core i7' }, { memory: 16 }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b8f"),
-    product: "phone",
+    _id: ObjectId('63a32fc7cf72d6203bb45b8f'),
+    product: 'phone',
     price: 800,
     stock: 10,
     discount: true,
-    specifications: [{ brand: "Apple" }, { model: "iPhone 12" }],
+    specifications: [{ brand: 'Apple' }, { model: 'iPhone 12' }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b90"),
-    product: "tablet",
+    _id: ObjectId('63a32fc7cf72d6203bb45b90'),
+    product: 'tablet',
     price: 500,
     stock: 15,
     discount: true,
-    specifications: [{ brand: "Samsung" }, { model: "Galaxy Tab S7" }],
+    specifications: [{ brand: 'Samsung' }, { model: 'Galaxy Tab S7' }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b92"),
-    product: "mouse",
+    _id: ObjectId('63a32fc7cf72d6203bb45b92'),
+    product: 'mouse',
     price: 50,
     stock: 25,
     discount: null,
-    specifications: [],
+    specifications: []
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b93"),
-    product: "monitor",
+    _id: ObjectId('63a32fc7cf72d6203bb45b93'),
+    product: 'monitor',
     price: 250,
     stock: 30,
     discount: true,
-    specifications: [{ size: 27 }, { resolution: "4K" }],
+    specifications: [{ size: 27 }, { resolution: '4K' }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b95"),
-    product: "scanner",
+    _id: ObjectId('63a32fc7cf72d6203bb45b95'),
+    product: 'scanner',
     price: 100,
     stock: 40,
     discount: true,
-    specifications: [{ type: "flatbed" }],
-  },
+    specifications: [{ type: 'flatbed' }]
+  }
 ]
 ```
 
@@ -196,56 +196,56 @@ db.electronics.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
-    product: "laptop",
+    _id: ObjectId('63a32fc7cf72d6203bb45b8e'),
+    product: 'laptop',
     price: 1500,
     stock: 5,
     discount: true,
-    specifications: [{ processor: "Intel Core i7" }, { memory: 16 }],
+    specifications: [{ processor: 'Intel Core i7' }, { memory: 16 }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b8f"),
-    product: "phone",
+    _id: ObjectId('63a32fc7cf72d6203bb45b8f'),
+    product: 'phone',
     price: 800,
     stock: 10,
     discount: true,
-    specifications: [{ brand: "Apple" }, { model: "iPhone 12" }],
+    specifications: [{ brand: 'Apple' }, { model: 'iPhone 12' }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b90"),
-    product: "tablet",
+    _id: ObjectId('63a32fc7cf72d6203bb45b90'),
+    product: 'tablet',
     price: 500,
     stock: 15,
     discount: true,
-    specifications: [{ brand: "Samsung" }, { model: "Galaxy Tab S7" }],
+    specifications: [{ brand: 'Samsung' }, { model: 'Galaxy Tab S7' }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b92"),
-    product: "mouse",
+    _id: ObjectId('63a32fc7cf72d6203bb45b92'),
+    product: 'mouse',
     price: 50,
     stock: 25,
     discount: null,
-    specifications: [],
+    specifications: []
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b93"),
-    product: "monitor",
+    _id: ObjectId('63a32fc7cf72d6203bb45b93'),
+    product: 'monitor',
     price: 250,
     stock: 30,
     discount: true,
-    specifications: [{ size: 27 }, { resolution: "4K" }],
+    specifications: [{ size: 27 }, { resolution: '4K' }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b95"),
-    product: "scanner",
+    _id: ObjectId('63a32fc7cf72d6203bb45b95'),
+    product: 'scanner',
     price: 100,
     stock: 40,
     discount: true,
-    specifications: [{ type: "flatbed" }],
-  },
+    specifications: [{ type: 'flatbed' }]
+  }
 ]
 ```
 
@@ -310,54 +310,54 @@ db.electronics.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
-    product: "laptop",
+    _id: ObjectId('63a32fc7cf72d6203bb45b8e'),
+    product: 'laptop',
     price: 1500,
     stock: 5,
     discount: true,
-    specifications: [{ processor: "Intel Core i7" }, { memory: 16 }],
+    specifications: [{ processor: 'Intel Core i7' }, { memory: 16 }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b8f"),
-    product: "phone",
+    _id: ObjectId('63a32fc7cf72d6203bb45b8f'),
+    product: 'phone',
     price: 800,
     stock: 10,
     discount: true,
-    specifications: [{ brand: "Apple" }, { model: "iPhone 12" }],
+    specifications: [{ brand: 'Apple' }, { model: 'iPhone 12' }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b90"),
-    product: "tablet",
+    _id: ObjectId('63a32fc7cf72d6203bb45b90'),
+    product: 'tablet',
     price: 500,
     stock: 15,
     discount: true,
-    specifications: [{ brand: "Samsung" }, { model: "Galaxy Tab S7" }],
+    specifications: [{ brand: 'Samsung' }, { model: 'Galaxy Tab S7' }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b93"),
-    product: "monitor",
+    _id: ObjectId('63a32fc7cf72d6203bb45b93'),
+    product: 'monitor',
     price: 250,
     stock: 30,
     discount: true,
-    specifications: [{ size: 27 }, { resolution: "4K" }],
+    specifications: [{ size: 27 }, { resolution: '4K' }]
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b94"),
-    product: "printer",
+    _id: ObjectId('63a32fc7cf72d6203bb45b94'),
+    product: 'printer',
     price: 150,
     stock: 35,
-    discount: false,
+    discount: false
   },
   {
-    _id: ObjectId("63a32fc7cf72d6203bb45b95"),
-    product: "scanner",
+    _id: ObjectId('63a32fc7cf72d6203bb45b95'),
+    product: 'scanner',
     price: 100,
     stock: 40,
     discount: true,
-    specifications: [{ type: "flatbed" }],
-  },
+    specifications: [{ type: 'flatbed' }]
+  }
 ]
 ```

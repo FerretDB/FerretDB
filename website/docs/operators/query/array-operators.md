@@ -85,17 +85,17 @@ db.team.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("63a5bb4acf72d6203bb45bb5"),
+    _id: ObjectId('63a5bb4acf72d6203bb45bb5'),
     id: 4,
-    name: "Alice Williams",
-    position: "Marketing Coordinator",
-    skills: ["communication", "content creation", "event planning"],
-    contact: { email: "alice@example.com", phone: "123-456-7893" },
-    active: true,
-  },
+    name: 'Alice Williams',
+    position: 'Marketing Coordinator',
+    skills: ['communication', 'content creation', 'event planning'],
+    contact: { email: 'alice@example.com', phone: '123-456-7893' },
+    active: true
+  }
 ]
 ```
 
@@ -121,17 +121,17 @@ db.team.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("63aa247e69c82de72bd40b93"),
+    _id: ObjectId('63aa247e69c82de72bd40b93'),
     id: 2,
-    name: "Jane Mark",
-    position: "Software Developer",
-    skills: ["Java", "Python", "C++"],
-    contact: { email: "jane@example.com", phone: "123-456-7891" },
-    active: false,
-  },
+    name: 'Jane Mark',
+    position: 'Software Developer',
+    skills: ['Java', 'Python', 'C++'],
+    contact: { email: 'jane@example.com', phone: '123-456-7891' },
+    active: false
+  }
 ]
 ```
 
@@ -153,43 +153,43 @@ db.team.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("63aa247e69c82de72bd40b92"),
+    _id: ObjectId('63aa247e69c82de72bd40b92'),
     id: 1,
-    name: "Jack Smith",
-    position: "Manager",
-    skills: ["leadership", "communication", "project management"],
-    contact: { email: "john@example.com", phone: "123-456-7890" },
-    active: true,
+    name: 'Jack Smith',
+    position: 'Manager',
+    skills: ['leadership', 'communication', 'project management'],
+    contact: { email: 'john@example.com', phone: '123-456-7890' },
+    active: true
   },
   {
-    _id: ObjectId("63aa247e69c82de72bd40b93"),
+    _id: ObjectId('63aa247e69c82de72bd40b93'),
     id: 2,
-    name: "Jane Mark",
-    position: "Software Developer",
-    skills: ["Java", "Python", "C++"],
-    contact: { email: "jane@example.com", phone: "123-456-7891" },
-    active: false,
+    name: 'Jane Mark',
+    position: 'Software Developer',
+    skills: ['Java', 'Python', 'C++'],
+    contact: { email: 'jane@example.com', phone: '123-456-7891' },
+    active: false
   },
   {
-    _id: ObjectId("63aa247e69c82de72bd40b94"),
+    _id: ObjectId('63aa247e69c82de72bd40b94'),
     id: 3,
-    name: "Bob Johnson",
-    position: "Graphic Designer",
-    skills: ["Adobe Photoshop", "Illustrator", "InDesign"],
-    contact: { email: "bob@example.com", phone: "123-456-7892" },
-    active: true,
+    name: 'Bob Johnson',
+    position: 'Graphic Designer',
+    skills: ['Adobe Photoshop', 'Illustrator', 'InDesign'],
+    contact: { email: 'bob@example.com', phone: '123-456-7892' },
+    active: true
   },
   {
-    _id: ObjectId("63aa247e69c82de72bd40b95"),
+    _id: ObjectId('63aa247e69c82de72bd40b95'),
     id: 4,
-    name: "Alice Williams",
-    position: "Marketing Coordinator",
-    skills: ["communication", "content creation", "event planning"],
-    contact: { email: "alice@example.com", phone: "123-456-7893" },
-    active: true,
-  },
+    name: 'Alice Williams',
+    position: 'Marketing Coordinator',
+    skills: ['communication', 'content creation', 'event planning'],
+    contact: { email: 'alice@example.com', phone: '123-456-7893' },
+    active: true
+  }
 ]
 ```

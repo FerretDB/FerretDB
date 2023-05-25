@@ -76,16 +76,16 @@ db.employees.find({
 
 The response returns a single document that matches the query:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0e"),
-    name: { first: "Clarke", last: "Dane" },
+    _id: ObjectId('639a3cce071b6bed396a8f0e'),
+    name: { first: 'Clarke', last: 'Dane' },
     employeeID: 3234,
     age: 21,
-    role: "salesperson",
-    catalog: ["printer", "pencils", "crayons", "toys"],
-  },
+    role: 'salesperson',
+    catalog: ['printer', 'pencils', 'crayons', 'toys']
+  }
 ]
 ```
 
@@ -102,16 +102,16 @@ db.employees.find({
 
 The response returns a single document that matches the query:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0c"),
-    name: { first: "Earl", last: "Thomas" },
+    _id: ObjectId('639a3cce071b6bed396a8f0c'),
+    name: { first: 'Earl', last: 'Thomas' },
     employeeID: 1234,
     age: 23,
-    role: "salesperson",
-    catalog: ["printer", "cardboard", "crayons", "books"],
-  },
+    role: 'salesperson',
+    catalog: ['printer', 'cardboard', 'crayons', 'books']
+  }
 ]
 ```
 
@@ -133,24 +133,24 @@ db.employees.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0c"),
-    name: { first: "Earl", last: "Thomas" },
+    _id: ObjectId('639a3cce071b6bed396a8f0c'),
+    name: { first: 'Earl', last: 'Thomas' },
     employeeID: 1234,
     age: 23,
-    role: "salesperson",
-    catalog: ["printer", "cardboard", "crayons", "books"],
+    role: 'salesperson',
+    catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0d"),
-    name: { first: "Sam", last: "Johnson" },
+    _id: ObjectId('639a3cce071b6bed396a8f0d'),
+    name: { first: 'Sam', last: 'Johnson' },
     employeeID: 2234,
     age: 35,
-    role: "salesperson",
-    catalog: ["cabinet", "fridge", "blender", "utensils"],
-  },
+    role: 'salesperson',
+    catalog: ['cabinet', 'fridge', 'blender', 'utensils']
+  }
 ]
 ```
 
@@ -172,32 +172,32 @@ db.employees.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0c"),
-    name: { first: "Earl", last: "Thomas" },
+    _id: ObjectId('639a3cce071b6bed396a8f0c'),
+    name: { first: 'Earl', last: 'Thomas' },
     employeeID: 1234,
     age: 23,
-    role: "salesperson",
-    catalog: ["printer", "cardboard", "crayons", "books"],
+    role: 'salesperson',
+    catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0d"),
-    name: { first: "Sam", last: "Johnson" },
+    _id: ObjectId('639a3cce071b6bed396a8f0d'),
+    name: { first: 'Sam', last: 'Johnson' },
     employeeID: 2234,
     age: 35,
-    role: "salesperson",
-    catalog: ["cabinet", "fridge", "blender", "utensils"],
+    role: 'salesperson',
+    catalog: ['cabinet', 'fridge', 'blender', 'utensils']
   },
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0e"),
-    name: { first: "Clarke", last: "Dane" },
+    _id: ObjectId('639a3cce071b6bed396a8f0e'),
+    name: { first: 'Clarke', last: 'Dane' },
     employeeID: 3234,
     age: 21,
-    role: "salesperson",
-    catalog: ["printer", "pencils", "crayons", "toys"],
-  },
+    role: 'salesperson',
+    catalog: ['printer', 'pencils', 'crayons', 'toys']
+  }
 ]
 ```
 
@@ -219,24 +219,24 @@ db.employees.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0c"),
-    name: { first: "Earl", last: "Thomas" },
+    _id: ObjectId('639a3cce071b6bed396a8f0c'),
+    name: { first: 'Earl', last: 'Thomas' },
     employeeID: 1234,
     age: 23,
-    role: "salesperson",
-    catalog: ["printer", "cardboard", "crayons", "books"],
+    role: 'salesperson',
+    catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0e"),
-    name: { first: "Clarke", last: "Dane" },
+    _id: ObjectId('639a3cce071b6bed396a8f0e'),
+    name: { first: 'Clarke', last: 'Dane' },
     employeeID: 3234,
     age: 21,
-    role: "salesperson",
-    catalog: ["printer", "pencils", "crayons", "toys"],
-  },
+    role: 'salesperson',
+    catalog: ['printer', 'pencils', 'crayons', 'toys']
+  }
 ]
 ```
 
@@ -259,16 +259,16 @@ db.employees.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0e"),
-    name: { first: "Clarke", last: "Dane" },
+    _id: ObjectId('639a3cce071b6bed396a8f0e'),
+    name: { first: 'Clarke', last: 'Dane' },
     employeeID: 3234,
     age: 21,
-    role: "salesperson",
-    catalog: ["printer", "pencils", "crayons", "toys"],
-  },
+    role: 'salesperson',
+    catalog: ['printer', 'pencils', 'crayons', 'toys']
+  }
 ]
 ```
 
@@ -290,24 +290,24 @@ db.employees.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0d"),
-    name: { first: "Sam", last: "Johnson" },
+    _id: ObjectId('639a3cce071b6bed396a8f0d'),
+    name: { first: 'Sam', last: 'Johnson' },
     employeeID: 2234,
     age: 35,
-    role: "salesperson",
-    catalog: ["cabinet", "fridge", "blender", "utensils"],
+    role: 'salesperson',
+    catalog: ['cabinet', 'fridge', 'blender', 'utensils']
   },
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0e"),
-    name: { first: "Clarke", last: "Dane" },
+    _id: ObjectId('639a3cce071b6bed396a8f0e'),
+    name: { first: 'Clarke', last: 'Dane' },
     employeeID: 3234,
     age: 21,
-    role: "salesperson",
-    catalog: ["printer", "pencils", "crayons", "toys"],
-  },
+    role: 'salesperson',
+    catalog: ['printer', 'pencils', 'crayons', 'toys']
+  }
 ]
 ```
 
@@ -329,24 +329,24 @@ db.employees.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0c"),
-    name: { first: "Earl", last: "Thomas" },
+    _id: ObjectId('639a3cce071b6bed396a8f0c'),
+    name: { first: 'Earl', last: 'Thomas' },
     employeeID: 1234,
     age: 23,
-    role: "salesperson",
-    catalog: ["printer", "cardboard", "crayons", "books"],
+    role: 'salesperson',
+    catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0d"),
-    name: { first: "Sam", last: "Johnson" },
+    _id: ObjectId('639a3cce071b6bed396a8f0d'),
+    name: { first: 'Sam', last: 'Johnson' },
     employeeID: 2234,
     age: 35,
-    role: "salesperson",
-    catalog: ["cabinet", "fridge", "blender", "utensils"],
-  },
+    role: 'salesperson',
+    catalog: ['cabinet', 'fridge', 'blender', 'utensils']
+  }
 ]
 ```
 
@@ -369,15 +369,15 @@ db.employees.find({
 
 The output:
 
-```sh
-[
+```js
+;[
   {
-    _id: ObjectId("639a3cce071b6bed396a8f0c"),
-    name: { first: "Earl", last: "Thomas" },
+    _id: ObjectId('639a3cce071b6bed396a8f0c'),
+    name: { first: 'Earl', last: 'Thomas' },
     employeeID: 1234,
     age: 23,
-    role: "salesperson",
-    catalog: ["printer", "cardboard", "crayons", "books"],
-  },
+    role: 'salesperson',
+    catalog: ['printer', 'cardboard', 'crayons', 'books']
+  }
 ]
 ```

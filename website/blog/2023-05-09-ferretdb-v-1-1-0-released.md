@@ -70,13 +70,13 @@ db.store.aggregate([
 
 The output document looks like this:
 
-```sh
-[
+```js
+;[
   {
     _id: 1,
-    category: "Electronics",
-    inventory: [{ product: "Laptop", price: 1200, quantity: 10 }],
-  },
+    category: 'Electronics',
+    inventory: [{ product: 'Laptop', price: 1200, quantity: 10 }]
+  }
 ]
 ```
 
@@ -87,20 +87,20 @@ In the new release, we have added support for field projections assignment.
 With this feature, users can now specify which fields to retrieve from the database and assign new values to them in a single query.
 For instance, if we have a `users` collection as shown below:
 
-```sh
-[
+```js
+;[
   {
     _id: 1,
-    name: "John",
+    name: 'John',
     age: 30,
-    email: "john@example.com",
+    email: 'john@example.com'
   },
   {
     _id: 2,
-    name: "Jane",
+    name: 'Jane',
     age: 25,
-    email: "jane@example.com",
-  },
+    email: 'jane@example.com'
+  }
 ]
 ```
 
@@ -112,10 +112,10 @@ db.users.find({}, { name: 'Anonymous' })
 
 The query will return:
 
-```sh
-[
-  { _id: 1, name: "Anonymous" },
-  { _id: 2, name: "Anonymous" },
+```js
+;[
+  { _id: 1, name: 'Anonymous' },
+  { _id: 2, name: 'Anonymous' }
 ]
 ```
 
