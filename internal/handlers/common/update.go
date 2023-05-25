@@ -918,7 +918,7 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 				)
 			}
 
-			if _, ok := seen[path.Prefix()]; ok {
+			if _, ok := seen[path.String()]; ok {
 				return newUpdateError(
 					commonerrors.ErrConflictingUpdateOperators,
 					fmt.Sprintf(
@@ -928,7 +928,7 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 				)
 			}
 
-			seen[path.Prefix()] = struct{}{}
+			seen[path.String()] = struct{}{}
 		}
 	}
 
