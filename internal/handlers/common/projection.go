@@ -45,8 +45,9 @@ import (
 //   - `ErrWrongPositionalOperatorLocation` when there are multiple positional operators;
 //   - `ErrWrongPositionalOperatorLocation` when positional operator is not at the end;
 //   - `ErrBadPositionalProjection` when array or filter at positional projection is empty;
-//   - `ErrBadPositionalProjection` when there is no filter path specially for positional projection.
+//   - `ErrBadPositionalProjection` when there is no filter path specially for positional projection;
 //   - `ErrExclusionPositionalProjection` when positional projection `$` is used for exclusion;
+//   - `ErrElementMismatchPositionalProjection` when positional projection path did not find an element;
 //   - `ErrNotImplemented` when there is unimplemented projection operators and expressions;
 func ValidateProjection(projection *types.Document) (*types.Document, bool, error) {
 	validated := types.MakeDocument(0)
@@ -121,13 +122,16 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 			)
 		}
 
-		if strings.Count(strings.TrimSuffix(path.String(), ".$"), "$") >= 1 {
-			// arbitrary $ cannot exist in the path e.g. `v.$d` is wrong.
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFieldPathInvalidName,
-				"FieldPath field names may not start with '$'. Consider using $getField or $setField.",
-				"projection",
-			)
+		for _, k := range path.Slice() {
+			if strings.HasPrefix(k, "$") && k != "$" {
+				// arbitrary $ cannot exist in the path e.g. `v.$foo` is wrong,
+				// `v.$` is fine.
+				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrFieldPathInvalidName,
+					"FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+					"projection",
+				)
+			}
 		}
 
 		var result bool
@@ -328,6 +332,7 @@ func projectDocumentWithoutID(doc *types.Document, projection, filter *types.Doc
 //   - ErrBadPositionalProjection when array or filter at positional projection is empty.
 //   - ErrBadPositionalProjection when there is no filter path specially for positional projection.
 //     If positional projection is `v.$`, the filter must contain `v` in the filter key e.g. `{v: 42}`.
+//   - ErrElementMismatchPositionalProjection when positional projection path did not find an element.
 //
 // Example: "v.foo" path inclusion projection:
 //
@@ -403,7 +408,7 @@ func includeProjection(path types.Path, curIndex int, source any, projected, fil
 				return nil, err
 			}
 
-			return types.NewArray(v)
+			return v, nil
 		}
 
 		iter := source.Iterator()
@@ -468,6 +473,14 @@ func includeProjection(path types.Path, curIndex int, source any, projected, fil
 
 			arr.Set(i, doc)
 			i++
+		}
+
+		if path.Suffix() == "$" && arr.Len() == 0 {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrElementMismatchPositionalProjection,
+				"Executor error during find command :: caused by :: positional operator '.$' element mismatch",
+				"projection",
+			)
 		}
 
 		return arr, nil

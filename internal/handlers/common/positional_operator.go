@@ -16,22 +16,26 @@ package common
 
 import (
 	"errors"
-	"fmt"
-	"strings"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// getPositionalProjection checks validity of the positional operator `$` and
-// returns the first element of the array that matches the filter condition.
+// getPositionalProjection checks validity of the positional operator
+// by checking the filter contains a key for the path specified by positional operator
+// and returns the first element of the array that matches the filter condition.
+//
+// It takes following arguments:
+//   - arr is the value found at the projection operator path.
+//   - filter is the original query passed to get document during filtering.
+//   - path contains specification of projection operator e.g. `v.$`
 //
 // Returned command error code:
 //   - ErrBadPositionalProjection when array or filter is empty.
 //   - ErrBadPositionalProjection when filter does not contain positional operator path in its filter.
-func getPositionalProjection(arr *types.Array, filter *types.Document, positionalOperator string) (any, error) {
+func getPositionalProjection(arr *types.Array, filter *types.Document, positionalOperatorPath string) (*types.Array, error) {
 	if arr.Len() == 0 || filter.Len() == 0 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadPositionalProjection,
@@ -41,70 +45,70 @@ func getPositionalProjection(arr *types.Array, filter *types.Document, positiona
 		)
 	}
 
-	positionalOperatorPath := strings.Replace(positionalOperator, ".$", "", 1)
+	// the path without `.$` suffix of the positional operator
+	// is used to check that filter contains exact key for this.
+	path := must.NotFail(types.NewPathFromString(positionalOperatorPath)).TrimSuffix().String()
 
-	iter := filter.Iterator()
+	iter := arr.Iterator()
 	defer iter.Close()
 
 	for {
-		filterKey, filterVal, err := iter.Next()
+		_, elem, err := iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				// filterKey did not contain projection path.
-				// If positional operator is "v.$" the filter must have filter for v such as {"v": 1}.
-				// For nested dot notation such as "v.foo.$", filter must have full path such as {"v.foo": 1},
-				// and just {"v": 1} is not sufficient. TODO: Test this
-				commonerrors.ErrBadPositionalProjection,
-				"Executor error during find command :: caused by :: positional operator"+
-					" '.$' couldn't find a matching element in the array",
-				"projection",
-			)
+			// TODO: https://github.com/FerretDB/FerretDB/issues/2522
+			// when element satisfies all filter condition, positional
+			// operator returns an arbitrary value not empty array.
+			return new(types.Array), nil
 		}
 
 		if err != nil {
-			return nil, err
+			return nil, lazyerrors.Error(err)
 		}
 
-		if filterKey != positionalOperatorPath {
-			continue
-		}
-
-		expr, ok := filterVal.(*types.Document)
-
-		if !ok {
-			// filterVal may be different number type compared to the
-			// first element in the array which matched the condition,
-			// so iterate array to find the first match.
-			aIter := arr.Iterator()
-			defer aIter.Close()
-
-			for {
-				_, elem, err := aIter.Next()
-				if errors.Is(err, iterator.ErrIteratorDone) {
-					panic(fmt.Sprintf("array %v does not contain %v", arr, filterVal))
-				}
-
-				if err != nil {
-					return nil, err
-				}
-
-				if types.Compare(elem, filterVal) == types.Equal {
-					return elem, nil
-				}
-			}
-		}
-
-		iter := arr.Iterator()
+		iter := filter.Iterator()
 		defer iter.Close()
 
+		var positionalPathFound bool
 		for {
-			_, elem, err := iter.Next()
+			filterKey, filterVal, err := iter.Next()
 			if errors.Is(err, iterator.ErrIteratorDone) {
-				panic(fmt.Sprintf("filter %v matched array %v but no element in array matches filter", expr, arr))
+				if !positionalPathFound {
+					return nil, commonerrors.NewCommandErrorMsgWithArgument(
+						// filterKey did not contain path for positional projection.
+						// For example, if the positional operator is "v.$"
+						// the filter must have key `v` such as {"v": 1}.
+						// For nested dot notation such as "v.foo.$", filter must have key `v.foo` such as {"v.foo": 1},
+						// and just {"v": 1} is not sufficient.
+						commonerrors.ErrBadPositionalProjection,
+						"Executor error during find command :: caused by :: positional operator"+
+							" '.$' couldn't find a matching element in the array",
+						"projection",
+					)
+				}
+
+				return types.NewArray(elem)
 			}
 
 			if err != nil {
-				return nil, err
+				return nil, lazyerrors.Error(err)
+			}
+
+			if filterKey != path {
+				continue
+			}
+
+			positionalPathFound = true
+
+			expr, ok := filterVal.(*types.Document)
+			if !ok {
+				// filterVal may be different number type compared to the
+				// first element in the array which matched the condition,
+				// so iterate array to find the first match.
+				if types.Compare(elem, filterVal) != types.Equal {
+					break
+				}
+
+				continue
 			}
 
 			// array element does not have a key, use positional operator `$` as key,
@@ -119,11 +123,12 @@ func getPositionalProjection(arr *types.Array, filter *types.Document, positiona
 			// and we want to find out which array element matched the filter.
 			matched, err := filterFieldExpr(doc, key, key, expr)
 			if err != nil {
-				return nil, err
+				// the array already matched the filter, so it cannot fail.
+				panic(err)
 			}
 
-			if matched {
-				return elem, nil
+			if !matched {
+				break
 			}
 		}
 	}

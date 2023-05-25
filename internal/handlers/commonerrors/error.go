@@ -243,6 +243,9 @@ const (
 	// ErrBadPositionalProjection indicates that positional operator could not find a matching element in the array.
 	ErrBadPositionalProjection = ErrorCode(51246) // Location51246
 
+	// ErrElementMismatchPositionalProjection indicates that unexpected element was present at projection path.
+	ErrElementMismatchPositionalProjection = ErrorCode(51247) // Location51247
+
 	// ErrEmptyProject indicates that projection specification must have at least one field.
 	ErrEmptyProject = ErrorCode(51272) // Location51272
 

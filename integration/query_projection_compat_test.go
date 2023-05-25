@@ -257,6 +257,58 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
 			projection: bson.D{{"v.$", true}},
 		},
+		"DollarEndingKey": {
+			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
+			projection: bson.D{{"v$", true}},
+		},
+		"DollarPartOfKey": {
+			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
+			projection: bson.D{{"v$v", true}},
+		},
+		"DotNotation": {
+			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
+			projection: bson.D{{"v.foo.$", true}},
+		},
+		"DotNotationDollarEndingKey": {
+			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
+			projection: bson.D{{"v.foo$", true}},
+		},
+		"TwoFilter": {
+			filter: bson.D{
+				{"v", bson.D{{"$lt", 43}}},
+				{"v", bson.D{{"$gt", 41}}},
+			},
+			projection: bson.D{{"v.$", true}},
+		},
+		"TwoConflictingLtGt": {
+			filter: bson.D{
+				{"v", bson.D{{"$lt", 42}}},
+				{"v", bson.D{{"$gt", 42}}},
+			},
+			projection: bson.D{{"v.$", true}},
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2522",
+		},
+		"TwoConflictingGtLt": {
+			filter: bson.D{
+				{"v", bson.D{{"$gt", 42}}},
+				{"v", bson.D{{"$lt", 42}}},
+			},
+			projection: bson.D{{"v.$", true}},
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2522",
+		},
+		"PartialProjection": {
+			filter: bson.D{
+				{"v.foo", bson.D{{"$gt", 42}}},
+			},
+			projection: bson.D{{"v.$", true}},
+			resultType: emptyResult,
+		},
+		"PartialFilter": {
+			filter: bson.D{
+				{"v", bson.D{{"$gt", 42}}},
+			},
+			projection: bson.D{{"v.foo.$", true}},
+		},
 	}
 
 	testQueryCompat(t, testCases)
