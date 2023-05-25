@@ -12,14 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package operators
+package accumulators
 
 import (
-	"context"
+	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
 // count represents $count operator.
@@ -40,8 +41,23 @@ func newCount(expr *types.Document) (Accumulator, error) {
 }
 
 // Accumulate implements Accumulator interface.
-func (c *count) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
-	return int32(len(grouped)), nil
+func (c *count) Accumulate(iter types.DocumentsIterator) (any, error) {
+	defer iter.Close()
+	var count int32
+
+	for {
+		_, _, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return nil, err
+		}
+		count++
+	}
+
+	return count, nil
 }
 
 // check interfaces
