@@ -106,10 +106,10 @@ db.catalog.find({
 
 The output:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('639ba4a0071b6bed396a8f13'),
+    _id: ObjectId("639ba4a0071b6bed396a8f13'),
     product: 'bottle',
     price: 15,
     stock: 1,
@@ -120,7 +120,7 @@ The output:
     ]
   },
   {
-    _id: ObjectId('639ba4a0071b6bed396a8f16'),
+    _id: ObjectId("639ba4a0071b6bed396a8f16'),
     product: 'bowl',
     price: 56,
     stock: 5,
@@ -170,10 +170,10 @@ db.catalog.find({
 
 The output:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('639ba4a0071b6bed396a8f13'),
+    _id: ObjectId("639ba4a0071b6bed396a8f13'),
     product: 'bottle',
     price: 15,
     stock: 1,
@@ -184,7 +184,7 @@ The output:
     ]
   },
   {
-    _id: ObjectId('639ba4a0071b6bed396a8f15'),
+    _id: ObjectId("639ba4a0071b6bed396a8f15'),
     product: 'cup',
     price: 100,
     stock: 14,
@@ -195,7 +195,7 @@ The output:
     ]
   },
   {
-    _id: ObjectId('639ba4a0071b6bed396a8f16'),
+    _id: ObjectId("639ba4a0071b6bed396a8f16'),
     product: 'bowl',
     price: 56,
     stock: 5,
@@ -228,10 +228,10 @@ db.catalog.find({
 
 The output:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('639ba4a0071b6bed396a8f15'),
+    _id: ObjectId("639ba4a0071b6bed396a8f15'),
     product: 'cup',
     price: 100,
     stock: 14,
@@ -242,7 +242,7 @@ The output:
     ]
   },
   {
-    _id: ObjectId('639ba4a0071b6bed396a8f16'),
+    _id: ObjectId("639ba4a0071b6bed396a8f16'),
     product: 'bowl',
     price: 56,
     stock: 5,
@@ -292,10 +292,10 @@ db.catalog.find({
 
 The output:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('639ba4a0071b6bed396a8f14'),
+    _id: ObjectId("639ba4a0071b6bed396a8f14'),
     product: 'spoon',
     price: 500,
     stock: 0,

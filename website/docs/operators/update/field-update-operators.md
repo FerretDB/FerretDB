@@ -60,10 +60,10 @@ The above query updates the value of the `city` field in the `address` embedded 
 
 This is the updated document:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('640a603558955e0e2b57c00d'),
+    _id: ObjectId("640a603558955e0e2b57c00d'),
     name: 'John Doe',
     age: 35,
     email: 'johndoe@example.com',
@@ -94,10 +94,10 @@ db.employee.updateOne({ name: 'John Doe' }, { $unset: { 'address.zip': '' } })
 
 Below is the updated document, without the `zip` field:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('640a603558955e0e2b57c00d'),
+    _id: ObjectId("640a603558955e0e2b57c00d'),
     name: 'John Doe',
     age: 35,
     email: 'johndoe@example.com',
@@ -128,10 +128,10 @@ db.employee.updateOne({ name: 'John Doe' }, { $inc: { age: 1 } })
 
 The updated document looks like this:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('640a603558955e0e2b57c00d'),
+    _id: ObjectId("640a603558955e0e2b57c00d'),
     name: 'John Doe',
     age: 36,
     email: 'johndoe@example.com',
@@ -162,10 +162,10 @@ db.employee.updateOne({ name: 'John Doe' }, { $mul: { salary: 1.25 } })
 
 The updated record looks like this:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('640a603558955e0e2b57c00d'),
+    _id: ObjectId("640a603558955e0e2b57c00d'),
     name: 'John Doe',
     age: 36,
     email: 'johndoe@example.com',
@@ -195,10 +195,10 @@ db.employee.updateOne({ name: 'John Doe' }, { $rename: { jobTitle: 'title' } })
 
 The updated document looks like this:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('640a603558955e0e2b57c00d'),
+    _id: ObjectId("640a603558955e0e2b57c00d'),
     name: 'John Doe',
     age: 36,
     email: 'johndoe@example.com',
@@ -229,10 +229,10 @@ db.employee.updateOne({ name: 'John Doe' }, { $min: { age: 30 } })
 Since `30` is less than `36`, the value of the `age` field is updated to `30`.
 The updated document now looks like this:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('640a603558955e0e2b57c00d'),
+    _id: ObjectId("640a603558955e0e2b57c00d'),
     name: 'John Doe',
     age: 30,
     email: 'johndoe@example.com',
@@ -262,10 +262,10 @@ db.employee.updateOne({ name: 'John Doe' }, { $max: { age: 40 } })
 
 This is what the updated document looks like:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('640a603558955e0e2b57c00d'),
+    _id: ObjectId("640a603558955e0e2b57c00d'),
     name: 'John Doe',
     age: 40,
     email: 'johndoe@example.com',
@@ -296,10 +296,10 @@ db.employee.updateOne(
 
 This is the document after the update:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('640a603558955e0e2b57c00d'),
+    _id: ObjectId("640a603558955e0e2b57c00d'),
     name: 'John Doe',
     age: 40,
     email: 'johndoe@example.com',

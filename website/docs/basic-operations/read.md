@@ -142,10 +142,10 @@ db.employees.find({ catalog: 'printer' })
 
 The response displays all the retrieved documents:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('636b39f80466c61a229bbf9b'),
+    _id: ObjectId("636b39f80466c61a229bbf9b"),
     name: { first: 'Earl', last: 'Thomas' },
     employeeID: 1234,
     age: 23,
@@ -153,7 +153,7 @@ The response displays all the retrieved documents:
     catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
-    _id: ObjectId('636b3b0e0466c61a229bbf9d'),
+    _id: ObjectId("636b3b0e0466c61a229bbf9d"),
     name: { first: 'Clarke', last: 'Dane' },
     employeeID: 3234,
     age: 21,
@@ -174,10 +174,10 @@ db.employees.find({ 'catalog.2': 'blender' })
 
 The document that matches the array query is displayed in the response:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('636b3b0e0466c61a229bbf9c'),
+    _id: ObjectId("636b3b0e0466c61a229bbf9c"),
     name: { first: 'Sam', last: 'Johnson' },
     employeeID: 2234,
     age: 35,

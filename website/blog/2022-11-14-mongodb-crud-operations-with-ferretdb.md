@@ -163,10 +163,10 @@ db.league.find({ club: 'PSG' })
 
 This retrieves all the records that match the query:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('63109e9251bcc5e0155db0c2'),
+    _id: ObjectId("63109e9251bcc5e0155db0c2"),
     club: 'PSG',
     points: 30,
     average_age: 30,
@@ -204,10 +204,10 @@ db.league.find({ points: { $in: [80, 60] } })
 
 This displays the documents that match this query:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('63109f4d51bcc5e0155db0c3'),
+    _id: ObjectId("63109f4d51bcc5e0155db0c3"),
     club: 'Arsenal',
     points: 80,
     average_age: 24,
@@ -215,7 +215,7 @@ This displays the documents that match this query:
     qualified: true
   },
   {
-    _id: ObjectId('63109f4d51bcc5e0155db0c4'),
+    _id: ObjectId("63109f4d51bcc5e0155db0c4"),
     club: 'Barcelona',
     points: 60,
     average_age: 31,
@@ -236,10 +236,10 @@ db.league.find({ points: { $lt: 60 } })
 
 The output:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('63109e9251bcc5e0155db0c2'),
+    _id: ObjectId("63109e9251bcc5e0155db0c2"),
     club: 'PSG',
     points: 30,
     average_age: 30,
@@ -346,10 +346,10 @@ db.league.replaceOne(
 
 If we run `db.league.find({})`, our database now looks like this:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('63109e9251bcc5e0155db0c2'),
+    _id: ObjectId("63109e9251bcc5e0155db0c2"),
     club: 'PSG',
     points: 35,
     average_age: 30,
@@ -357,7 +357,7 @@ If we run `db.league.find({})`, our database now looks like this:
     qualified: false
   },
   {
-    _id: ObjectId('63109f4d51bcc5e0155db0c3'),
+    _id: ObjectId("63109f4d51bcc5e0155db0c3"),
     club: 'Arsenal',
     points: 80,
     average_age: 24,
@@ -365,7 +365,7 @@ If we run `db.league.find({})`, our database now looks like this:
     qualified: false
   },
   {
-    _id: ObjectId('63109f4d51bcc5e0155db0c5'),
+    _id: ObjectId("63109f4d51bcc5e0155db0c5"),
     club: 'Bayern',
     points: 84,
     average_age: 29,
@@ -373,7 +373,7 @@ If we run `db.league.find({})`, our database now looks like this:
     qualified: false
   },
   {
-    _id: ObjectId('63109f4d51bcc5e0155db0c4'),
+    _id: ObjectId("63109f4d51bcc5e0155db0c4"),
     club: 'Inter',
     points: 83,
     average_age: 32,
@@ -414,10 +414,10 @@ db.league.deleteMany({ qualified: false })
 
 Run `db.league.find({})` to show the current state of records of the database.
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('63109f4d51bcc5e0155db0c4'),
+    _id: ObjectId("63109f4d51bcc5e0155db0c4"),
     club: 'Inter',
     points: 83,
     average_age: 32,

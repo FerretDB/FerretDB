@@ -95,8 +95,8 @@ This is needed for our internal representation of the documents called `pjson`, 
 With these documents, FerretDB can parse the data to internal `pjson` type, and iterate through all of them to apply the filters.
 After this process, as only one document matches the filter, the projection will be applied to it, so only the `active` (and `_id`) fields will be returned:
 
-```js
-;[{ _id: ObjectId('63aa97626786637ef1c4b725'), active: false }]
+```json5
+[{ _id: ObjectId("63aa97626786637ef1c4b725"), active: false }]
 ```
 
 Cool!
@@ -116,7 +116,7 @@ Let’s go back to our workflow and suppose that afterward the account was activ
 If we know the exact `_id` of the customer’s document, we can use it to benefit from the query pushdown:
 
 ```js
-db.customers.find({ _id: ObjectId('63aa97626786637ef1c4b725') }, { active: 1 })
+db.customers.find({ _id: ObjectId("63aa97626786637ef1c4b725") }, { active: 1 })
 ```
 
 Let’s see what SQL queries FerretDB will send.

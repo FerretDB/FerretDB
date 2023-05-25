@@ -85,10 +85,10 @@ db.team.find({
 
 The output:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('63a5bb4acf72d6203bb45bb5'),
+    _id: ObjectId("63a5bb4acf72d6203bb45bb5"),
     id: 4,
     name: 'Alice Williams',
     position: 'Marketing Coordinator',
@@ -121,10 +121,10 @@ db.team.find({
 
 The output:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('63aa247e69c82de72bd40b93'),
+    _id: ObjectId("63aa247e69c82de72bd40b93"),
     id: 2,
     name: 'Jane Mark',
     position: 'Software Developer',
@@ -153,10 +153,10 @@ db.team.find({
 
 The output:
 
-```js
-;[
+```json5
+[
   {
-    _id: ObjectId('63aa247e69c82de72bd40b92'),
+    _id: ObjectId("63aa247e69c82de72bd40b92"),
     id: 1,
     name: 'Jack Smith',
     position: 'Manager',
@@ -165,7 +165,7 @@ The output:
     active: true
   },
   {
-    _id: ObjectId('63aa247e69c82de72bd40b93'),
+    _id: ObjectId("63aa247e69c82de72bd40b93"),
     id: 2,
     name: 'Jane Mark',
     position: 'Software Developer',
@@ -174,7 +174,7 @@ The output:
     active: false
   },
   {
-    _id: ObjectId('63aa247e69c82de72bd40b94'),
+    _id: ObjectId("63aa247e69c82de72bd40b94"),
     id: 3,
     name: 'Bob Johnson',
     position: 'Graphic Designer',
@@ -183,7 +183,7 @@ The output:
     active: true
   },
   {
-    _id: ObjectId('63aa247e69c82de72bd40b95'),
+    _id: ObjectId("63aa247e69c82de72bd40b95"),
     id: 4,
     name: 'Alice Williams',
     position: 'Marketing Coordinator',
