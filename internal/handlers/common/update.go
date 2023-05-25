@@ -899,6 +899,50 @@ func newUpdateError(code commonerrors.ErrorCode, msg, command string) error {
 	return commonerrors.NewWriteErrorMsg(code, msg)
 }
 
+func newValidatorTree() *validatorTree {
+	return &validatorTree{
+		paths: make(map[string]*validatorTree),
+	}
+}
+
+type validatorTree struct {
+	paths map[string]*validatorTree
+	last  bool
+}
+
+func (tree *validatorTree) Validate(path types.Path) error {
+	return tree.validate(path.Slice())
+}
+
+func (tree *validatorTree) validate(keys []string) error {
+	if len(keys) > 0 && tree.last {
+		return fmt.Errorf("conflict")
+	}
+
+	if len(keys) == 0 {
+		tree.last = true
+		return nil
+	}
+
+	key, keys := keys[0], keys[1:]
+
+	if len(keys) == 0 {
+		tree.last = true
+	}
+
+	node, ok := tree.paths[key]
+	if ok {
+		if tree.last {
+			return fmt.Errorf("conflict")
+		}
+
+		return node.validate(keys)
+	}
+
+	tree.paths[key] = newValidatorTree()
+	return tree.paths[key].validate(keys)
+}
+
 // validateOperatorKeys returns error if any key contains empty path or
 // the same path prefix exists in other key or other document.
 func validateOperatorKeys(command string, docs ...*types.Document) error {
@@ -917,6 +961,8 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 					command,
 				)
 			}
+
+			path.Slice()
 
 			if _, ok := seen[path.String()]; ok {
 				return newUpdateError(
