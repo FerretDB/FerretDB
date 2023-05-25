@@ -572,6 +572,12 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 	assert.Equal(t, int32(16777216), must.NotFail(doc.Get("maxBsonObjectSize")))
 	_, ok = must.NotFail(doc.Get("buildEnvironment")).(*types.Document)
 	assert.True(t, ok)
+
+	compatibility, ok := must.NotFail(doc.Get("compatibility")).(*types.Document)
+	assert.True(t, ok)
+	assert.NotEmpty(t, compatibility)
+	aggregationStages := must.NotFail(compatibility.Get("aggregationStages")).(*types.Array)
+	assert.NotEmpty(t, aggregationStages)
 }
 
 func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {

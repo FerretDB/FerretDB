@@ -27,8 +27,10 @@ import (
 
 // MsgBuildInfo is a common implementation of the buildInfo command.
 func MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2650
-	_ = stages.Stages
+	aggregationStages := types.MakeArray(len(stages.Stages))
+	for stage := range stages.Stages {
+		aggregationStages.Append(stage)
+	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
@@ -45,6 +47,9 @@ func MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 
 			// our extensions
 			"ferretdbVersion", version.Get().Version,
+			"compatibility", must.NotFail(types.NewDocument(
+				"aggregationStages", aggregationStages,
+			)),
 
 			"ok", float64(1),
 		))},
