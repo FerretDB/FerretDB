@@ -369,7 +369,7 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
-					"The field '%s' must be an array but is of type '%s' in document {_id: %v}",
+					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
 					key, commonparams.AliasFromType(val), types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
 				),
 			)
