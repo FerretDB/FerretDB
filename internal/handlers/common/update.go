@@ -915,9 +915,7 @@ func (tree *validatorTree) Validate(path types.Path) error {
 }
 
 func (tree *validatorTree) validate(keys []string) error {
-	if len(keys) > 0 && tree.last {
-		return fmt.Errorf("conflict")
-	}
+	// keys = [v foo]
 
 	if len(keys) == 0 {
 		tree.last = true
@@ -925,21 +923,27 @@ func (tree *validatorTree) validate(keys []string) error {
 	}
 
 	key, keys := keys[0], keys[1:]
+	// key = v
+	// keys = [foo]
 
-	if len(keys) == 0 {
-		tree.last = true
-	}
+	if node, ok := tree.paths[key]; ok {
+		// v already exists so "v" or "v.foo" will collide
+		if node.last {
+			return fmt.Errorf("conflict")
+		}
 
-	node, ok := tree.paths[key]
-	if ok {
-		if tree.last {
+		// v was not last element but it is in the current path
+		if len(keys) == 0 {
 			return fmt.Errorf("conflict")
 		}
 
 		return node.validate(keys)
 	}
 
-	tree.paths[key] = newValidatorTree()
+	tree.paths[key] = &validatorTree{
+		paths: map[string]*validatorTree{},
+	}
+
 	return tree.paths[key].validate(keys)
 }
 
