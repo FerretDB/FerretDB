@@ -364,8 +364,8 @@ func read(w io.Writer, paths ...string) error {
 }
 
 // printVersion will print out version omitting leading v
-func printVersion(w io.Writer) error {
-	b, err := os.ReadFile(versionFile)
+func printVersion(w io.Writer, file string) error {
+	b, err := os.ReadFile(file)
 	if err != nil {
 		return err
 	}
@@ -425,7 +425,7 @@ func main() {
 	case "shell read <path>":
 		err = read(os.Stdout, cli.Shell.Read.Paths...)
 	case "version":
-		err = printVersion(os.Stdout)
+		err = printVersion(os.Stdout, versionFile)
 	default:
 		err = fmt.Errorf("unknown command: %s", cmd)
 	}
