@@ -157,13 +157,13 @@ db.league.find({})
 This operation retrieves and displays all the documents present in the collection.
 Now, let's add a query parameter to the `find()` operation to filter for a specific item.
 
-```js
+```mongodb
 db.league.find({ club: 'PSG' })
 ```
 
 This retrieves all the records that match the query:
 
-```json
+```json5
 [
   {
     _id: ObjectId("63109e9251bcc5e0155db0c2"),

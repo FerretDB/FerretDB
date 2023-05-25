@@ -77,6 +77,34 @@ Rather than use relative paths, we strongly suggest the following approach, sinc
 
 `![FerretDB logo](/img/logo-dark.png)`.
 
+## Code blocks
+
+Always specify the language in Markdown code blocks.
+
+For MongoDB shell commands, use `js` language.
+Our tooling will automatically reformat those blocks.
+
+```js
+db.league.find({ club: 'PSG' })
+```
+
+For MongoDB shell results, use `jsob5` language and copy&paste the output as-is,
+with unquoted field names, single quotes for strings, without trailing commas, etc.
+Our tooling will not reformat those blocks.
+
+```json5
+[
+  {
+    _id: ObjectId("63109e9251bcc5e0155db0c2"),
+    club: 'PSG',
+    points: 30,
+    average_age: 30,
+    discipline: { red: 5, yellow: 30 },
+    qualified: false
+  }
+]
+```
+
 ## Terminologies
 
 To be sure that you're using the right descriptive term, please check our [glossary page](../reference/glossary.md) for relevant terms and terminologies about FerretDB.
