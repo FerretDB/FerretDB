@@ -206,7 +206,6 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 			return false, commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
-					// TODO
 					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
 					key, commonparams.AliasFromType(val), types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
 				),
