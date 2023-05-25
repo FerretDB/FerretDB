@@ -75,9 +75,9 @@ db.orders.aggregate([
   {
     $group: {
       _id: null,
-      count: { $count: {} },
-    },
-  },
+      count: { $count: {} }
+    }
+  }
 ])
 ```
 

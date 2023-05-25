@@ -14,7 +14,7 @@ keywords:
     scalability,
     performance,
     data modeling,
-    schema design,
+    schema design
   ]
 tags: [document database, mongodb alternative, mongodb compatible]
 ---
@@ -102,7 +102,7 @@ With MQL, you can query any field, embedded documents, or nested arrays in the M
 
 ```js
 db.users.find({
-  hobbies: { $all: ['reading', 'cooking'] },
+  hobbies: { $all: ['reading', 'cooking'] }
 })
 ```
 

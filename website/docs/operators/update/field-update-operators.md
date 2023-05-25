@@ -29,12 +29,12 @@ db.employee.insertOne({
   address: {
     street: '123 Main St',
     city: 'Anytown',
-    state: 'CA',
+    state: 'CA'
   },
   salary: 50000,
   jobTitle: 'Manager',
   startDate: new Date('2021-01-01'),
-  endDate: null,
+  endDate: null
 })
 ```
 
@@ -50,8 +50,8 @@ db.employee.updateOne(
   {
     $set: {
       'address.city': 'New York',
-      'address.zip': '12345',
-    },
+      'address.zip': '12345'
+    }
   }
 )
 ```
@@ -334,8 +334,8 @@ db.stocks.update(
   {
     $set: {
       price: 150,
-      lastUpdate: new Date(),
-    },
+      lastUpdate: new Date()
+    }
   },
   { upsert: true }
 )
@@ -354,8 +354,8 @@ db.stocks.update(
     $set: { price: 150 },
     $setOnInsert: {
       companyName: 'Apple Inc.',
-      createdAt: new Date(),
-    },
+      createdAt: new Date()
+    }
   },
   { upsert: true }
 )

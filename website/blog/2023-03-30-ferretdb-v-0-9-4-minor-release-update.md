@@ -39,7 +39,7 @@ Suppose you have a document like this below:
 ```js
 db.users.insertOne({
   name: 'Jane Doe',
-  skills: ['JavaScript', 'Python'],
+  skills: ['JavaScript', 'Python']
 })
 ```
 

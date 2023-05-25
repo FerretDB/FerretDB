@@ -22,12 +22,12 @@ db.electronics.insertMany([
     discount: true,
     specifications: [
       {
-        processor: 'Intel Core i7',
+        processor: 'Intel Core i7'
       },
       {
-        memory: 16,
-      },
-    ],
+        memory: 16
+      }
+    ]
   },
   {
     product: 'phone',
@@ -36,12 +36,12 @@ db.electronics.insertMany([
     discount: true,
     specifications: [
       {
-        brand: 'Apple',
+        brand: 'Apple'
       },
       {
-        model: 'iPhone 12',
-      },
-    ],
+        model: 'iPhone 12'
+      }
+    ]
   },
   {
     product: 'tablet',
@@ -50,24 +50,24 @@ db.electronics.insertMany([
     discount: true,
     specifications: [
       {
-        brand: 'Samsung',
+        brand: 'Samsung'
       },
       {
-        model: 'Galaxy Tab S7',
-      },
-    ],
+        model: 'Galaxy Tab S7'
+      }
+    ]
   },
   {
     product: 'keyboard',
     price: 100,
-    stock: 20,
+    stock: 20
   },
   {
     product: 'mouse',
     price: 50,
     stock: 25,
     discount: null,
-    specifications: [],
+    specifications: []
   },
   {
     product: 'monitor',
@@ -76,18 +76,18 @@ db.electronics.insertMany([
     discount: true,
     specifications: [
       {
-        size: 27,
+        size: 27
       },
       {
-        resolution: '4K',
-      },
-    ],
+        resolution: '4K'
+      }
+    ]
   },
   {
     product: 'printer',
     price: 150,
     stock: 35,
-    discount: false,
+    discount: false
   },
   {
     product: 'scanner',
@@ -96,10 +96,10 @@ db.electronics.insertMany([
     discount: true,
     specifications: [
       {
-        type: 'flatbed',
-      },
-    ],
-  },
+        type: 'flatbed'
+      }
+    ]
+  }
 ])
 ```
 
@@ -119,8 +119,8 @@ If the `<boolean>` value is `false`, the query returns documents where the speci
 ```js
 db.electronics.find({
   specifications: {
-    $exists: true,
-  },
+    $exists: true
+  }
 })
 ```
 
@@ -189,8 +189,8 @@ If you want to find documents where the `specifications` field exists and has a 
 db.electronics.find({
   specifications: {
     $exists: true,
-    $type: 'array',
-  },
+    $type: 'array'
+  }
 })
 ```
 
@@ -293,8 +293,8 @@ FerretDB supports the alias `number` which matches the following BSON types: `Do
 ```js
 db.electronics.find({
   discount: {
-    $type: 8,
-  },
+    $type: 8
+  }
 })
 ```
 
@@ -303,8 +303,8 @@ This query can also be written using the alias of the specified data type.
 ```js
 db.electronics.find({
   discount: {
-    $type: 'bool',
-  },
+    $type: 'bool'
+  }
 })
 ```
 

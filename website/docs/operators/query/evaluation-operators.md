@@ -18,28 +18,28 @@ db.catalog.insertMany([
   {
     product: 'bottle',
     price: 15,
-    stock: 1,
+    stock: 1
   },
   {
     product: 'spoon',
     price: 500,
-    stock: 0,
+    stock: 0
   },
   {
     product: 'cup',
     price: 100,
-    stock: 14,
+    stock: 14
   },
   {
     product: 'BoWL',
     price: 56,
-    stock: 5,
+    stock: 5
   },
   {
     product: 'boTtLe',
     price: 20,
-    stock: 3,
-  },
+    stock: 3
+  }
 ])
 ```
 
@@ -55,8 +55,8 @@ The mathematical operation for this is `field-value % divisor-value = modulus`.
 ```js
 db.catalog.find({
   stock: {
-    $mod: [2, 0],
-  },
+    $mod: [2, 0]
+  }
 })
 ```
 
@@ -97,8 +97,8 @@ To use regular expression for queries on particular fields, use the `$regex` ope
 ```js
 db.catalog.find({
   product: {
-    $regex: /^b/,
-  },
+    $regex: /^b/
+  }
 })
 ```
 
@@ -139,8 +139,8 @@ To perform case-insensitive matching, use the `i` flag in the `regex` expression
 ```js
 db.catalog.find({
   product: {
-    $regex: /bottle/i,
-  },
+    $regex: /bottle/i
+  }
 })
 ```
 

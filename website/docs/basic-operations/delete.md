@@ -24,29 +24,29 @@ db.scientists.insertMany([
     lastname: 'Edison',
     born: 1847,
     invention: 'LightBulb',
-    nobel: true,
+    nobel: true
   },
   {
     firstname: 'Graham',
     lastname: 'Bell',
     born: 1847,
     invention: 'telephone',
-    nobel: false,
+    nobel: false
   },
   {
     firstname: 'Nikola',
     lastname: 'Tesla',
     born: 1856,
     invention: 'Tesla coil',
-    nobel: false,
+    nobel: false
   },
   {
     firstname: 'Ada',
     lastname: 'Lovelace',
     born: 1815,
     invention: 'Computer programming',
-    nobel: false,
-  },
+    nobel: false
+  }
 ])
 ```
 

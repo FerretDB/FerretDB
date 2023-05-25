@@ -24,12 +24,12 @@ db.catalog.insertMany([
     discount: true,
     variation: [
       {
-        size: ['small', 'medium', 'large'],
+        size: ['small', 'medium', 'large']
       },
       {
-        color: ['black', 'silver'],
-      },
-    ],
+        color: ['black', 'silver']
+      }
+    ]
   },
   {
     product: 'spoon',
@@ -38,12 +38,12 @@ db.catalog.insertMany([
     discount: true,
     variation: [
       {
-        size: ['small', 'medium', 'large'],
+        size: ['small', 'medium', 'large']
       },
       {
-        color: ['silver', 'white'],
-      },
-    ],
+        color: ['silver', 'white']
+      }
+    ]
   },
   {
     product: 'cup',
@@ -52,12 +52,12 @@ db.catalog.insertMany([
     discount: true,
     variation: [
       {
-        size: ['small', 'medium', 'large'],
+        size: ['small', 'medium', 'large']
       },
       {
-        color: ['red', 'black', 'white'],
-      },
-    ],
+        color: ['red', 'black', 'white']
+      }
+    ]
   },
   {
     product: 'bowl',
@@ -66,13 +66,13 @@ db.catalog.insertMany([
     discount: false,
     variation: [
       {
-        size: ['small', 'medium', 'large'],
+        size: ['small', 'medium', 'large']
       },
       {
-        color: ['pink', 'white', 'red'],
-      },
-    ],
-  },
+        color: ['pink', 'white', 'red']
+      }
+    ]
+  }
 ])
 ```
 
@@ -92,15 +92,15 @@ db.catalog.find({
   $and: [
     {
       price: {
-        $lt: 100,
-      },
+        $lt: 100
+      }
     },
     {
       stock: {
-        $ne: 0,
-      },
-    },
-  ],
+        $ne: 0
+      }
+    }
+  ]
 })
 ```
 
@@ -150,21 +150,21 @@ db.catalog.find({
     {
       $and: [
         {
-          discount: true,
+          discount: true
         },
         {
           stock: {
-            $ne: 0,
-          },
-        },
-      ],
+            $ne: 0
+          }
+        }
+      ]
     },
     {
       price: {
-        $lte: 60,
-      },
-    },
-  ],
+        $lte: 60
+      }
+    }
+  ]
 })
 ```
 
@@ -220,9 +220,9 @@ To select documents that fail to match a particular query condition, use the `$n
 db.catalog.find({
   stock: {
     $not: {
-      $lt: 5,
-    },
-  },
+      $lt: 5
+    }
+  }
 })
 ```
 
@@ -272,21 +272,21 @@ db.catalog.find({
     {
       $and: [
         {
-          discount: true,
+          discount: true
         },
         {
           stock: {
-            $ne: 0,
-          },
-        },
-      ],
+            $ne: 0
+          }
+        }
+      ]
     },
     {
       price: {
-        $lte: 60,
-      },
-    },
-  ],
+        $lte: 60
+      }
+    }
+  ]
 })
 ```
 

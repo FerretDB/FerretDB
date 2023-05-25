@@ -23,9 +23,9 @@ db.team.insertMany([
     skills: ['leadership', 'communication', 'project management'],
     contact: {
       email: 'john@example.com',
-      phone: '123-456-7890',
+      phone: '123-456-7890'
     },
-    active: true,
+    active: true
   },
   {
     id: 2,
@@ -34,9 +34,9 @@ db.team.insertMany([
     skills: ['Java', 'Python', 'C++'],
     contact: {
       email: 'jane@example.com',
-      phone: '123-456-7891',
+      phone: '123-456-7891'
     },
-    active: false,
+    active: false
   },
   {
     id: 3,
@@ -45,9 +45,9 @@ db.team.insertMany([
     skills: ['Adobe Photoshop', 'Illustrator', 'InDesign'],
     contact: {
       email: 'bob@example.com',
-      phone: '123-456-7892',
+      phone: '123-456-7892'
     },
-    active: true,
+    active: true
   },
   {
     id: 4,
@@ -56,10 +56,10 @@ db.team.insertMany([
     skills: ['communication', 'content creation', 'event planning'],
     contact: {
       email: 'alice@example.com',
-      phone: '123-456-7893',
+      phone: '123-456-7893'
     },
-    active: true,
-  },
+    active: true
+  }
 ])
 ```
 
@@ -78,8 +78,8 @@ When using an `$all` operator, the order of the elements and array size does not
 ```js
 db.team.find({
   skills: {
-    $all: ['communication', 'content creation'],
-  },
+    $all: ['communication', 'content creation']
+  }
 })
 ```
 
@@ -113,9 +113,9 @@ db.team.find({
   skills: {
     $elemMatch: {
       $eq: 'Java',
-      $nin: ['communication'],
-    },
-  },
+      $nin: ['communication']
+    }
+  }
 })
 ```
 
@@ -146,8 +146,8 @@ The `$size` operator is ideal for selecting array fields containing a specified 
 ```js
 db.team.find({
   skills: {
-    $size: 3,
-  },
+    $size: 3
+  }
 })
 ```
 

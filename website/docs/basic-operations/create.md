@@ -21,10 +21,10 @@ If a collection does not exist, the insert command automatically creates one.
 db.scientists.insertOne({
   name: {
     firstname: 'Thomas',
-    lastname: 'Edison',
+    lastname: 'Edison'
   },
   born: 1847,
-  invention: 'lightbulb',
+  invention: 'lightbulb'
 })
 ```
 
@@ -53,27 +53,27 @@ db.scientists.insertMany([
   {
     name: {
       firstname: 'Alan',
-      lastname: 'Turing',
+      lastname: 'Turing'
     },
     born: 1912,
-    invention: 'Turing Machine',
+    invention: 'Turing Machine'
   },
   {
     name: {
       firstname: 'Graham',
-      lastname: 'Bell',
+      lastname: 'Bell'
     },
     born: 1847,
-    invention: 'telephone',
+    invention: 'telephone'
   },
   {
     name: {
       firstname: 'Ada',
-      lastname: 'Lovelace',
+      lastname: 'Lovelace'
     },
     born: 1815,
-    invention: 'computer programming',
-  },
+    invention: 'computer programming'
+  }
 ])
 ```
 

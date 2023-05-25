@@ -132,18 +132,18 @@ For example, the following collection contains three documents.
     {
       first: 'Alan',
       last: 'Turing',
-      born: 1912,
+      born: 1912
     },
     {
       first: 'Thomas',
       last: 'Edison',
-      birth: 1847,
+      birth: 1847
     },
     {
       first: 'Nikola',
       last: 'Tesla',
-      birth: 1856,
-    },
+      birth: 1856
+    }
   ]
 }
 ```

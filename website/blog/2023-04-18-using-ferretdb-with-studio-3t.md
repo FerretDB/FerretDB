@@ -11,7 +11,7 @@ tags:
     mongodb alternative,
     mongodb compatible,
     mongodb gui,
-    compatible applications,
+    compatible applications
   ]
 ---
 
@@ -166,8 +166,8 @@ db.test.insertMany([
       street: '123 Main St',
       city: 'Anytown',
       state: 'CA',
-      zip: '12345',
-    },
+      zip: '12345'
+    }
   },
   {
     name: 'Jane Smith',
@@ -179,8 +179,8 @@ db.test.insertMany([
       street: '456 Elm St',
       city: 'Othertown',
       state: 'NY',
-      zip: '67890',
-    },
+      zip: '67890'
+    }
   },
   {
     name: 'Bob Johnson',
@@ -192,8 +192,8 @@ db.test.insertMany([
       street: '789 Oak St',
       city: 'Somewhere',
       state: 'TX',
-      zip: '23456',
-    },
+      zip: '23456'
+    }
   },
   {
     name: 'Samantha Lee',
@@ -205,9 +205,9 @@ db.test.insertMany([
       street: '321 Pine St',
       city: 'Anotherplace',
       state: 'FL',
-      zip: '34567',
-    },
-  },
+      zip: '34567'
+    }
+  }
 ])
 ```
 

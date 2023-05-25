@@ -26,33 +26,33 @@ db.employees.insertMany([
   {
     name: {
       first: 'Earl',
-      last: 'Thomas',
+      last: 'Thomas'
     },
     employeeID: 1234,
     age: 23,
     role: 'salesperson',
-    catalog: ['printer', 'cardboard', 'crayons', 'books'],
+    catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
     name: {
       first: 'Sam',
-      last: 'Johnson',
+      last: 'Johnson'
     },
     employeeID: 2234,
     age: 35,
     role: 'salesperson',
-    catalog: ['cabinet', 'fridge', 'blender', 'utensils'],
+    catalog: ['cabinet', 'fridge', 'blender', 'utensils']
   },
   {
     name: {
       first: 'Clarke',
-      last: 'Dane',
+      last: 'Dane'
     },
     employeeID: 3234,
     age: 21,
     role: 'salesperson',
-    catalog: ['printer', 'pencils', 'crayons', 'toys'],
-  },
+    catalog: ['printer', 'pencils', 'crayons', 'toys']
+  }
 ])
 ```
 
@@ -69,8 +69,8 @@ This operator can be used to match values of different types, including document
 ```js
 db.employees.find({
   age: {
-    $eq: 21,
-  },
+    $eq: 21
+  }
 })
 ```
 
@@ -95,8 +95,8 @@ The following operation queries the `employees` collection for documents that ma
 ```js
 db.employees.find({
   'name.first': {
-    $eq: 'Earl',
-  },
+    $eq: 'Earl'
+  }
 })
 ```
 
@@ -126,8 +126,8 @@ To identify documents containing elements that have a greater value than the spe
 ```js
 db.employees.find({
   age: {
-    $gt: 21,
-  },
+    $gt: 21
+  }
 })
 ```
 
@@ -165,8 +165,8 @@ Use the `$gte` to select document with elements that are greater than or equal t
 ```js
 db.employees.find({
   age: {
-    $gte: 21,
-  },
+    $gte: 21
+  }
 })
 ```
 
@@ -212,8 +212,8 @@ Contrary to the `$gt` operator, the `$lt` operator is ideal for selecting docume
 ```js
 db.employees.find({
   age: {
-    $lt: 25,
-  },
+    $lt: 25
+  }
 })
 ```
 
@@ -252,8 +252,8 @@ Use the `$lte` operator to select documents with elements that are less than or 
 ```js
 db.employees.find({
   age: {
-    $lte: 21,
-  },
+    $lte: 21
+  }
 })
 ```
 
@@ -283,8 +283,8 @@ To select documents containing any of the listed elements in a specified array f
 ```js
 db.employees.find({
   age: {
-    $in: [21, 35],
-  },
+    $in: [21, 35]
+  }
 })
 ```
 
@@ -322,8 +322,8 @@ Use the `$ne` operator to select all the documents with elements that are not eq
 ```js
 db.employees.find({
   age: {
-    $ne: 21,
-  },
+    $ne: 21
+  }
 })
 ```
 
@@ -362,8 +362,8 @@ Use the `$nin` operator when selecting documents that do match or contain any of
 ```js
 db.employees.find({
   age: {
-    $nin: [21, 35],
-  },
+    $nin: [21, 35]
+  }
 })
 ```
 

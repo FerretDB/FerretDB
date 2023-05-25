@@ -18,27 +18,27 @@ db.scientists.insertMany([
   {
     name: {
       firstname: 'Alan',
-      lastname: 'Turing',
+      lastname: 'Turing'
     },
     born: 1912,
-    invention: 'Turing Machine',
+    invention: 'Turing Machine'
   },
   {
     name: {
       firstname: 'Graham',
-      lastname: 'Bell',
+      lastname: 'Bell'
     },
     born: 1847,
-    invention: 'telephone',
+    invention: 'telephone'
   },
   {
     name: {
       firstname: 'Ada',
-      lastname: 'Lovelace',
+      lastname: 'Lovelace'
     },
     born: 1815,
-    invention: 'computer programming',
-  },
+    invention: 'computer programming'
+  }
 ])
 ```
 
@@ -104,33 +104,33 @@ db.employees.insertMany([
   {
     name: {
       first: 'Earl',
-      last: 'Thomas',
+      last: 'Thomas'
     },
     employeeID: 1234,
     age: 23,
     role: 'salesperson',
-    catalog: ['printer', 'cardboard', 'crayons', 'books'],
+    catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
     name: {
       first: 'Sam',
-      last: 'Johnson',
+      last: 'Johnson'
     },
     employeeID: 2234,
     age: 35,
     role: 'salesperson',
-    catalog: ['cabinet', 'fridge', 'blender', 'utensils'],
+    catalog: ['cabinet', 'fridge', 'blender', 'utensils']
   },
   {
     name: {
       first: 'Clarke',
-      last: 'Dane',
+      last: 'Dane'
     },
     employeeID: 3234,
     age: 21,
     role: 'salesperson',
-    catalog: ['printer', 'pencils', 'crayons', 'toys'],
-  },
+    catalog: ['printer', 'pencils', 'crayons', 'toys']
+  }
 ])
 ```
 
@@ -144,22 +144,22 @@ The response displays all the retrieved documents:
 
 ```json
 [
-  {
-    _id: ObjectId("636b39f80466c61a229bbf9b"),
-    name: { first: "Earl", last: "Thomas" },
-    employeeID: 1234,
-    age: 23,
-    role: "salesperson",
-    catalog: ["printer", "cardboard", "crayons", "books"],
-  },
-  {
-    _id: ObjectId("636b3b0e0466c61a229bbf9d"),
-    name: { first: "Clarke", last: "Dane" },
-    employeeID: 3234,
-    age: 21,
-    role: "salesperson",
-    catalog: ["printer", "pencils", "crayons", "toys"],
-  },
+   {
+     _id: ObjectId("636b39f80466c61a229bbf9b"),
+     name: { first: 'Earl', last: 'Thomas' },
+     employeeID: 1234,
+     age: 23,
+     role: 'salesperson',
+     catalog: [ 'printer', 'cardboard', 'crayons', 'books' ]
+   },
+   {
+     _id: ObjectId("636b3b0e0466c61a229bbf9d"),
+     name: { first: 'Clarke', last: 'Dane' },
+     employeeID: 3234,
+     age: 21,
+     role: 'salesperson',
+     catalog: [ 'printer', 'pencils', 'crayons', 'toys' ]
+   }
 ]
 ```
 

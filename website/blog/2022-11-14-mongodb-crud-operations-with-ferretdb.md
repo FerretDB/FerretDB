@@ -71,7 +71,7 @@ db.league.insertOne({
   points: 30,
   average_age: 30,
   discipline: { red: 5, yellow: 30 },
-  qualified: false,
+  qualified: false
 })
 ```
 
@@ -105,22 +105,22 @@ db.league.insertMany([
     points: 80,
     average_age: 24,
     discipline: { red: 2, yellow: 15 },
-    qualified: true,
+    qualified: true
   },
   {
     club: 'Barcelona',
     points: 60,
     average_age: 31,
     discipline: { red: 0, yellow: 7 },
-    qualified: false,
+    qualified: false
   },
   {
     club: 'Bayern',
     points: 84,
     average_age: 29,
     discipline: { red: 1, yellow: 20 },
-    qualified: true,
-  },
+    qualified: true
+  }
 ])
 ```
 
@@ -339,7 +339,7 @@ db.league.replaceOne(
     points: 83,
     average_age: 32,
     discipline: { red: 2, yellow: 10 },
-    qualified: true,
+    qualified: true
   }
 )
 ```

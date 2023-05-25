@@ -34,29 +34,29 @@ db.scientists.insertMany([
     lastname: 'Edison',
     born: 1847,
     invention: 'LightBulb',
-    nobel: true,
+    nobel: true
   },
   {
     firstname: 'Graham',
     lastname: 'Bell',
     born: 1847,
     invention: 'telephone',
-    nobel: false,
+    nobel: false
   },
   {
     firstname: 'Nikola',
     lastname: 'Tesla',
     born: 1856,
     invention: 'Tesla coil',
-    nobel: false,
+    nobel: false
   },
   {
     firstname: 'Ada',
     lastname: 'Lovelace',
     born: 1815,
     invention: 'Computer programming',
-    nobel: false,
-  },
+    nobel: false
+  }
 ])
 ```
 
@@ -66,12 +66,12 @@ The `updateOne()` operation will only affect the first document that’s retriev
 ```js
 db.scientists.updateOne(
   {
-    firstname: 'Graham',
+    firstname: 'Graham'
   },
   {
     $set: {
-      firstname: 'Alexander Graham',
-    },
+      firstname: 'Alexander Graham'
+    }
   }
 )
 ```
@@ -83,14 +83,14 @@ Besides updating a document, you can replace it completely using the `replaceOne
 ```js
 db.scientists.replaceOne(
   {
-    lastname: 'Bell',
+    lastname: 'Bell'
   },
   {
     lastname: 'Einstein',
     firstname: 'Albert',
     born: 1879,
     invention: 'Photoelectric effect',
-    nobel: true,
+    nobel: true
   }
 )
 ```
@@ -116,33 +116,33 @@ db.employees.insertMany([
   {
     name: {
       first: 'Earl',
-      last: 'Thomas',
+      last: 'Thomas'
     },
     employeeID: 1234,
     age: 23,
     role: 'salesperson',
-    catalog: ['printer', 'cardboard', 'crayons', 'books'],
+    catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
     name: {
       first: 'Sam',
-      last: 'Johnson',
+      last: 'Johnson'
     },
     employeeID: 2234,
     age: 35,
     role: 'salesperson',
-    catalog: ['cabinet', 'fridge', 'blender', 'utensils'],
+    catalog: ['cabinet', 'fridge', 'blender', 'utensils']
   },
   {
     name: {
       first: 'Clarke',
-      last: 'Dane',
+      last: 'Dane'
     },
     employeeID: 3234,
     age: 21,
     role: 'salesperson',
-    catalog: ['printer', 'pencils', 'crayons', 'toys'],
-  },
+    catalog: ['printer', 'pencils', 'crayons', 'toys']
+  }
 ])
 ```
 
@@ -152,12 +152,12 @@ The command will query the second field of the array in every document for `"pen
 ```js
 db.employees.updateMany(
   {
-    'catalog.1': 'pencils',
+    'catalog.1': 'pencils'
   },
   {
     $set: {
-      'catalog.0': 'ruler',
-    },
+      'catalog.0': 'ruler'
+    }
   }
 )
 ```
@@ -182,12 +182,12 @@ The following operation updates any embedded document that matches the specified
 ```js
 db.employees.updateMany(
   {
-    'name.first': 'Clarke',
+    'name.first': 'Clarke'
   },
   {
     $set: {
-      'name.last': 'Elliot',
-    },
+      'name.last': 'Elliot'
+    }
   }
 )
 ```

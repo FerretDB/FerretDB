@@ -22,7 +22,7 @@ Insert the following document into a `store` collection:
 
 ```js
 db.store.insertMany([
-  { _id: 1, items: ['pens', 'pencils', 'paper', 'erasers', 'rulers'] },
+  { _id: 1, items: ['pens', 'pencils', 'paper', 'erasers', 'rulers'] }
 ])
 ```
 
@@ -105,7 +105,7 @@ Insert this document into a `products` collection:
 
 ```js
 db.products.insertMany([
-  { _id: 1, items: ['pens', 'pencils', 'paper', 'erasers', 'rulers'] },
+  { _id: 1, items: ['pens', 'pencils', 'paper', 'erasers', 'rulers'] }
 ])
 ```
 
@@ -151,7 +151,7 @@ Insert the following document into a `store` collection:
 
 ```js
 db.store.insertMany([
-  { _id: 1, items: ['pens', 'pencils', 'paper', 'erasers', 'rulers'] },
+  { _id: 1, items: ['pens', 'pencils', 'paper', 'erasers', 'rulers'] }
 ])
 ```
 
@@ -186,9 +186,9 @@ db.fruits.insertMany([
     fruits: [
       { type: 'apple', color: 'red' },
       { type: 'banana', color: 'yellow' },
-      { type: 'orange', color: 'orange' },
-    ],
-  },
+      { type: 'orange', color: 'orange' }
+    ]
+  }
 ])
 ```
 
@@ -201,9 +201,9 @@ db.fruits.update(
     $pullAll: {
       fruits: [
         { type: 'apple', color: 'red' },
-        { type: 'banana', color: 'yellow' },
-      ],
-    },
+        { type: 'banana', color: 'yellow' }
+      ]
+    }
   }
 )
 ```

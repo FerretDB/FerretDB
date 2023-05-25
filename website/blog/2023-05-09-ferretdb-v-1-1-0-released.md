@@ -62,9 +62,9 @@ db.store.aggregate([
   {
     $project: {
       category: 1,
-      inventory: 1,
-    },
-  },
+      inventory: 1
+    }
+  }
 ])
 ```
 
