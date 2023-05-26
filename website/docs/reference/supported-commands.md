@@ -124,7 +124,7 @@ The following operators are available in the `find` command `projection` argumen
 
 | Operator     | Status | Comments                                                  |
 | ------------ | ------ | --------------------------------------------------------- |
-| `$`          | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1709) |
+| `$`          | ✅️      |  |
 | `$elemMatch` | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1710) |
 | `$meta`      | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1712) |
 | `$slice`     | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1711) |
