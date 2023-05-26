@@ -28,16 +28,16 @@ func TestAggregateProjectErrors(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		expectedErr *mongo.CommandError
-		altMessage  string
-		skip        string
-		pipeline    bson.A
+		err        *mongo.CommandError
+		altMessage string
+		skip       string
+		pipeline   bson.A
 	}{
 		"EmptyPipeline": {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{}}},
 			},
-			expectedErr: &mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    51272,
 				Name:    "Location51272",
 				Message: "Invalid $project :: caused by :: projection specification must have at least one field",
@@ -47,7 +47,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v", bson.D{}}}}},
 			},
-			expectedErr: &mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    51270,
 				Name:    "Location51270",
 				Message: "Invalid $project :: caused by :: An empty sub-projection is not a valid value. Found empty object at path",
@@ -66,8 +66,8 @@ func TestAggregateProjectErrors(t *testing.T) {
 
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 
-			if tc.expectedErr != nil {
-				AssertEqualAltCommandError(t, *tc.expectedErr, tc.altMessage, err)
+			if tc.err != nil {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 			require.NoError(t, err)

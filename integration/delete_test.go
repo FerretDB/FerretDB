@@ -62,14 +62,14 @@ func TestDeleteErrors(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		deletes     bson.A
-		expectedErr *mongo.CommandError
-		skip        string
-		altMessage  string
+		deletes    bson.A
+		err        *mongo.CommandError
+		altMessage string
+		skip       string
 	}{
 		"QueryNotSet": {
 			deletes: bson.A{bson.D{}},
-			expectedErr: &mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    int32(commonerrors.ErrMissingField),
 				Name:    commonerrors.ErrMissingField.String(),
 				Message: "BSON field 'delete.deletes.q' is missing but a required field",
@@ -77,7 +77,7 @@ func TestDeleteErrors(t *testing.T) {
 		},
 		"NotSet": {
 			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}},
-			expectedErr: &mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    int32(commonerrors.ErrMissingField),
 				Name:    commonerrors.ErrMissingField.String(),
 				Message: "BSON field 'delete.deletes.limit' is missing but a required field",
@@ -92,7 +92,7 @@ func TestDeleteErrors(t *testing.T) {
 		},
 		"InvalidFloat": {
 			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 42.13}}},
-			expectedErr: &mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    int32(commonerrors.ErrFailedToParse),
 				Name:    commonerrors.ErrFailedToParse.String(),
 				Message: "The limit field in delete objects must be 0 or 1. Got 42.13",
@@ -101,7 +101,7 @@ func TestDeleteErrors(t *testing.T) {
 		},
 		"InvalidInt": {
 			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 100}}},
-			expectedErr: &mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    int32(commonerrors.ErrFailedToParse),
 				Name:    commonerrors.ErrFailedToParse.String(),
 				Message: "The limit field in delete objects must be 0 or 1. Got 100",
@@ -123,8 +123,8 @@ func TestDeleteErrors(t *testing.T) {
 				{"deletes", tc.deletes},
 			})
 
-			if tc.expectedErr != nil {
-				AssertEqualAltCommandError(t, *tc.expectedErr, tc.altMessage, res.Err())
+			if tc.err != nil {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, res.Err())
 				return
 			}
 			require.NoError(t, res.Err())
