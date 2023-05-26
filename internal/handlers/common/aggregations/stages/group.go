@@ -18,10 +18,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
-	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators/accumulators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -37,6 +38,10 @@ import (
 //		...
 //		<groupBy[N].outputField>: {accumulatorN: expressionN},
 //	}}
+//
+// $group uses group expression to group documents that have the same evaluated expression.
+// The evaluated expression becomes the _id for that group of documents.
+// For each group of documents, accumulators are applied.
 type group struct {
 	groupExpression any
 	groupBy         []groupBy
@@ -44,7 +49,7 @@ type group struct {
 
 // groupBy represents accumulation to apply on the group.
 type groupBy struct {
-	accumulate  func(ctx context.Context, groupID any, in []*types.Document) (any, error)
+	accumulate  func(iter types.DocumentsIterator) (any, error)
 	outputField string
 }
 
@@ -77,40 +82,16 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 		}
 
 		if field == "_id" {
+			if doc, ok := v.(*types.Document); ok {
+				if err = validateDocumentExpression(doc); err != nil {
+					return nil, err
+				}
+			}
 			groupKey = v
 			continue
 		}
 
-		accumulation, ok := v.(*types.Document)
-		if !ok || accumulation.Len() == 0 {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrStageGroupInvalidAccumulator,
-				fmt.Sprintf("The field '%s' must be an accumulator object", field),
-				"$group (stage)",
-			)
-		}
-
-		// accumulation document contains only one field.
-		if accumulation.Len() > 1 {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrStageGroupMultipleAccumulator,
-				fmt.Sprintf("The field '%s' must specify one accumulator", field),
-				"$group (stage)",
-			)
-		}
-
-		operator := accumulation.Command()
-
-		newAccumulator, ok := operators.GroupAccumulators[operator]
-		if !ok {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
-				fmt.Sprintf("$group accumulator %q is not implemented yet", operator),
-				operator+" (accumulator)",
-			)
-		}
-
-		accumulator, err := newAccumulator(accumulation)
+		accumulator, err := accumulators.NewAccumulator("$group", field, v)
 		if err != nil {
 			return nil, err
 		}
@@ -152,8 +133,11 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 	for _, groupedDocument := range groupedDocuments {
 		doc := must.NotFail(types.NewDocument("_id", groupedDocument.groupID))
 
+		groupIter := iterator.Values(iterator.ForSlice(groupedDocument.documents))
+		defer groupIter.Close()
+
 		for _, accumulation := range g.groupBy {
-			out, err := accumulation.accumulate(ctx, groupedDocument.groupID, groupedDocument.documents)
+			out, err := accumulation.accumulate(groupIter)
 			if err != nil {
 				return nil, err
 			}
@@ -271,6 +255,38 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 		groupID:   groupKey,
 		documents: docs,
 	})
+}
+
+// validateDocumentExpression returns error when there is unsupported expression present.
+func validateDocumentExpression(doc *types.Document) error {
+	iter := doc.Iterator()
+	defer iter.Close()
+
+	for {
+		k, v, err := iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			return nil
+		}
+
+		if err != nil {
+			return err
+		}
+
+		if strings.HasPrefix(k, "$") {
+			// TODO: https://github.com/FerretDB/FerretDB/issues/2165
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
+				fmt.Sprintf("%s operator is not implemented for $group key expression yet", k),
+				"$group (stage)",
+			)
+		}
+
+		if docVal, ok := v.(*types.Document); ok {
+			if err = validateDocumentExpression(docVal); err != nil {
+				return err
+			}
+		}
+	}
 }
 
 // Type implements Stage interface.
