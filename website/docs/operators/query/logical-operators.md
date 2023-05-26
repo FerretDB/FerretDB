@@ -295,7 +295,7 @@ The output:
 ```json5
 [
   {
-    _id: ObjectId("639ba4a0071b6bed396a8f14'),
+    _id: ObjectId("639ba4a0071b6bed396a8f14"),
     product: 'spoon',
     price: 500,
     stock: 0,

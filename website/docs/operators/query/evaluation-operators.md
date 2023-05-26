@@ -149,13 +149,13 @@ The output:
 ```json5
 [
   {
-    _id: ObjectId("63e3ac0184f488929a3f7379'),
+    _id: ObjectId("63e3ac0184f488929a3f7379"),
     product: 'bottle',
     price: 15,
     stock: 1
   },
   {
-    _id: ObjectId("63e3ac0184f488929a3f737d'),
+    _id: ObjectId("63e3ac0184f488929a3f737d"),
     product: 'boTtLe',
     price: 20,
     stock: 3
