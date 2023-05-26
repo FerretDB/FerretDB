@@ -45,7 +45,6 @@ jobs:
           - { name: "MongoDB", task: "mongodb" }
           - { name: "PostgreSQL", task: "pg" }
           - { name: "SQLite", task: "sqlite" }
-          - { name: "Hana", task: "hana" }
           # - { name: "Tigris", task: "tigris" }
           # - { name: "Tigris main", task: "tigris", tigris_dockerfile: "tigris_main" }
 

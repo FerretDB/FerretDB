@@ -81,22 +81,22 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	case "ferretdb-pg":
 		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for %q", *targetBackendF)
 		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
-		require.Empty(tb, *hanaURLSF, "-hana-url must be empty for %q", *targetBackendF)
+		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
 		handler = "pg"
 	case "ferretdb-sqlite":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
 		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
-		require.Empty(tb, *hanaURLSF, "-hana-url must be empty for %q", *targetBackendF)
+		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
 		handler = "sqlite"
 	case "ferretdb-tigris":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
 		require.NotEmpty(tb, *tigrisURLSF, "-tigris-urls must be set for %q", *targetBackendF)
-		require.Empty(tb, *hanaURLSF, "-hana-url must be empty for %q", *targetBackendF)
+		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
 		handler = "tigris"
 	case "ferretdb-hana":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
 		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
-		require.NotEmpty(tb, *hanaURLSF, "-hana-url must be set for %q", *targetBackendF)
+		require.NotEmpty(tb, *hanaURLF, "-hana-url must be set for %q", *targetBackendF)
 		handler = "hana"
 	case "mongodb":
 		tb.Fatal("can't start in-process MongoDB")
@@ -121,7 +121,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 		TigrisURL: nextTigrisUrl(),
 
-		HANAURL: *hanaURLSF,
+		HANAURL: *hanaURLF,
 
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown: *disableFilterPushdownF,
