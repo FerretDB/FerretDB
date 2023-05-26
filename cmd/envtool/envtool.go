@@ -54,6 +54,7 @@ var (
 	errorTemplate = template.Must(template.New("error").Option("missingkey=error").Parse(string(errorTemplateB)))
 )
 
+// versionFile contains version information with leading v.
 const versionFile = "build/version/version.txt"
 
 // waitForPort waits for the given port to be available until ctx is done.
@@ -363,14 +364,18 @@ func read(w io.Writer, paths ...string) error {
 	return nil
 }
 
-// printVersion will print out version omitting leading v
+// printVersion will print out version omitting leading v.
 func printVersion(w io.Writer, file string) error {
 	b, err := os.ReadFile(file)
 	if err != nil {
 		return err
 	}
 
-	fmt.Fprintf(w, string(b)[1:])
+	if strings.HasPrefix(string(b), "v") {
+		fmt.Fprint(w, string(b)[1:])
+	} else {
+		fmt.Fprint(w, string(b))
+	}
 
 	return nil
 }
