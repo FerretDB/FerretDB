@@ -929,6 +929,7 @@ type pathValidator struct {
 // the path is saved in pathValidator.
 func (tree *pathValidator) validate(keys []string) bool {
 	if len(keys) == 0 && !tree.root {
+		// if all keys were proceed correctly - path is not conflicting
 		tree.last = true
 		return true
 	}
@@ -936,12 +937,13 @@ func (tree *pathValidator) validate(keys []string) bool {
 	key, keys := keys[0], keys[1:]
 
 	if node, ok := tree.paths[key]; ok {
-		// v already exists so "v" or "v.foo" will collide
+		// if path exists in validator and it's the last element, conflict is detected
 		if node.last {
 			return false
 		}
 
-		// v was not last element but it is in the current path
+		// if there's no more keys in current path,
+		// but child path exists, conflict is detected
 		if len(keys) == 0 {
 			return false
 		}

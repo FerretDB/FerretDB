@@ -55,7 +55,7 @@ func TestPathValidator(t *testing.T) {
 				if tc.errOn == i {
 					require.False(t, ok, "Error expected at index %d", tc.errOn)
 				} else {
-					require.False(t, ok, "Error expected at index %d, but occurred at %d", tc.errOn, i)
+					require.True(t, ok, "Error expected at index %d, but occurred at %d", tc.errOn, i)
 				}
 			}
 		})
