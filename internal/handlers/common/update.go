@@ -946,7 +946,7 @@ func (tree *validatorTree) validate(keys []string) error {
 // validateOperatorKeys returns error if any key contains empty path or
 // the same path prefix exists in other key or other document.
 func validateOperatorKeys(command string, docs ...*types.Document) error {
-	seen := map[string]struct{}{}
+	seen := newValidatorTree()
 
 	for _, doc := range docs {
 		for _, key := range doc.Keys() {
@@ -962,9 +962,7 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 				)
 			}
 
-			path.Slice()
-
-			if _, ok := seen[path.String()]; ok {
+			if err := seen.Validate(path); err != nil {
 				return newUpdateError(
 					commonerrors.ErrConflictingUpdateOperators,
 					fmt.Sprintf(
@@ -973,8 +971,6 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 					command,
 				)
 			}
-
-			seen[path.String()] = struct{}{}
 		}
 	}
 
