@@ -63,7 +63,7 @@ This is the updated document:
 ```json5
 [
   {
-    _id: ObjectId("640a603558955e0e2b57c00d'),
+    _id: ObjectId("640a603558955e0e2b57c00d"),
     name: 'John Doe',
     age: 35,
     email: 'johndoe@example.com',
@@ -97,7 +97,7 @@ Below is the updated document, without the `zip` field:
 ```json5
 [
   {
-    _id: ObjectId("640a603558955e0e2b57c00d'),
+    _id: ObjectId("640a603558955e0e2b57c00d"),
     name: 'John Doe',
     age: 35,
     email: 'johndoe@example.com',
@@ -131,7 +131,7 @@ The updated document looks like this:
 ```json5
 [
   {
-    _id: ObjectId("640a603558955e0e2b57c00d'),
+    _id: ObjectId("640a603558955e0e2b57c00d"),
     name: 'John Doe',
     age: 36,
     email: 'johndoe@example.com',
@@ -165,7 +165,7 @@ The updated record looks like this:
 ```json5
 [
   {
-    _id: ObjectId("640a603558955e0e2b57c00d'),
+    _id: ObjectId("640a603558955e0e2b57c00d"),
     name: 'John Doe',
     age: 36,
     email: 'johndoe@example.com',
@@ -198,7 +198,7 @@ The updated document looks like this:
 ```json5
 [
   {
-    _id: ObjectId("640a603558955e0e2b57c00d'),
+    _id: ObjectId("640a603558955e0e2b57c00d"),
     name: 'John Doe',
     age: 36,
     email: 'johndoe@example.com',
@@ -232,7 +232,7 @@ The updated document now looks like this:
 ```json5
 [
   {
-    _id: ObjectId("640a603558955e0e2b57c00d'),
+    _id: ObjectId("640a603558955e0e2b57c00d"),
     name: 'John Doe',
     age: 30,
     email: 'johndoe@example.com',
@@ -265,7 +265,7 @@ This is what the updated document looks like:
 ```json5
 [
   {
-    _id: ObjectId("640a603558955e0e2b57c00d'),
+    _id: ObjectId("640a603558955e0e2b57c00d"),
     name: 'John Doe',
     age: 40,
     email: 'johndoe@example.com',
@@ -299,7 +299,7 @@ This is the document after the update:
 ```json5
 [
   {
-    _id: ObjectId("640a603558955e0e2b57c00d'),
+    _id: ObjectId("640a603558955e0e2b57c00d"),
     name: 'John Doe',
     age: 40,
     email: 'johndoe@example.com',

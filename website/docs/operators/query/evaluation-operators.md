@@ -65,13 +65,13 @@ The output:
 ```json5
 [
   {
-    _id: ObjectId("63e3ac0184f488929a3f737a'),
+    _id: ObjectId("63e3ac0184f488929a3f737a"),
     product: 'spoon',
     price: 500,
     stock: 0
   },
   {
-    _id: ObjectId("63e3ac0184f488929a3f737b'),
+    _id: ObjectId("63e3ac0184f488929a3f737b"),
     product: 'cup',
     price: 100,
     stock: 14
@@ -107,13 +107,13 @@ The output:
 ```json5
 [
   {
-    _id: ObjectId("63e4ce469695494b86bf2b2d'),
+    _id: ObjectId("63e4ce469695494b86bf2b2d"),
     product: 'bottle',
     price: 15,
     stock: 1
   },
   {
-    _id: ObjectId("63e4ce469695494b86bf2b31'),
+    _id: ObjectId("63e4ce469695494b86bf2b31"),
     product: 'boTtLe',
     price: 20,
     stock: 3
