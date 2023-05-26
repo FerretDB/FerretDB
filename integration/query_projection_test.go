@@ -141,6 +141,15 @@ func TestQueryProjectionPositionalOperatorErrors(t *testing.T) {
 		},
 		"EmptyPath": {
 			filter:     bson.D{{"v", 42}},
+			projection: bson.D{{"v..d", true}},
+			err: mongo.CommandError{
+				Code:    15998,
+				Name:    "Location15998",
+				Message: "FieldPath field names may not be empty strings.",
+			},
+		},
+		"EmptyDollarPath": {
+			filter:     bson.D{{"v", 42}},
 			projection: bson.D{{"v..$", true}},
 			err: mongo.CommandError{
 				Code:    40353,

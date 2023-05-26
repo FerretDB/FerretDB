@@ -40,6 +40,7 @@ import (
 //   - `ErrProjectionExIn` when there is exclusion in inclusion projection;
 //   - `ErrProjectionInEx` when there is inclusion in exclusion projection;
 //   - `ErrEmptyFieldPath` when projection path is empty;
+//   - `ErrPathContainsEmptyElement` when projection path contains empty key;
 //   - `ErrFieldPathInvalidName` when `$` is at the prefix of a key in the path;
 //   - `ErrWrongPositionalOperatorLocation` when there are multiple `$`;
 //   - `ErrAggregatePositionalProject` when `$` is used in the suffix key;
@@ -77,10 +78,18 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		path, err := types.NewPathFromString(key)
 		if err != nil {
+			if strings.HasSuffix(key, "$") {
+				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrAggregatePositionalProject,
+					"Invalid $project :: caused by :: Cannot use positional projection in aggregation projection",
+					"$project (stage)",
+				)
+			}
+
 			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrAggregatePositionalProject,
-				"Invalid $project :: caused by :: Cannot use positional projection in aggregation projection",
-				"$project (stage)",
+				commonerrors.ErrPathContainsEmptyElement,
+				"Invalid $project :: caused by :: FieldPath field names may not be empty strings.",
+				"projection",
 			)
 		}
 

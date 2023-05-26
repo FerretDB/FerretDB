@@ -115,6 +115,16 @@ func TestAggregateProjectErrors(t *testing.T) {
 					"FieldPath cannot be constructed with empty string",
 			},
 		},
+		"EmptyPath": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"v..d", true}}}},
+			},
+			expectedErr: mongo.CommandError{
+				Code:    15998,
+				Name:    "Location15998",
+				Message: "Invalid $project :: caused by :: FieldPath field names may not be empty strings.",
+			},
+		},
 		"PositionalOperatorEmptyPath": {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v..$", true}}}},
