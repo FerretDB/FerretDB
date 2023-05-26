@@ -53,6 +53,49 @@ func TestAggregateProjectErrors(t *testing.T) {
 			},
 			skip: "https://github.com/FerretDB/FerretDB/issues/2633",
 		},
+		"EmptyKey": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"", true}}}},
+			},
+			expectedErr: mongo.CommandError{
+				Code: 40352,
+				Name: "Location40352",
+				Message: "Invalid $project :: caused by :: " +
+					"FieldPath cannot be constructed with empty string",
+			},
+		},
+		"EmptyPath": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"v..d", true}}}},
+			},
+			expectedErr: mongo.CommandError{
+				Code:    15998,
+				Name:    "Location15998",
+				Message: "Invalid $project :: caused by :: FieldPath field names may not be empty strings.",
+			},
+		},
+		"ExcludeInclude": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"foo", false}, {"bar", true}}}},
+			},
+			expectedErr: mongo.CommandError{
+				Code:    31253,
+				Name:    "Location31253",
+				Message: "Invalid $project :: caused by :: Cannot do inclusion on field bar in exclusion projection",
+			},
+			altMessage: "Cannot do inclusion on field bar in exclusion projection",
+		},
+		"IncludeExclude": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"foo", true}, {"bar", false}}}},
+			},
+			expectedErr: mongo.CommandError{
+				Code:    31254,
+				Name:    "Location31254",
+				Message: "Invalid $project :: caused by :: Cannot do exclusion on field bar in inclusion projection",
+			},
+			altMessage: "Cannot do exclusion on field bar in inclusion projection",
+		},
 		"PositionalOperatorMultiple": {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v.$.foo.$", true}}}},
@@ -103,27 +146,6 @@ func TestAggregateProjectErrors(t *testing.T) {
 				"for example: a.b.$. If the query previously used a form " +
 				"like a.b.$.d, remove the parts following the '$' and " +
 				"the results will be equivalent.",
-		},
-		"EmptyKey": {
-			pipeline: bson.A{
-				bson.D{{"$project", bson.D{{"", true}}}},
-			},
-			expectedErr: mongo.CommandError{
-				Code: 40352,
-				Name: "Location40352",
-				Message: "Invalid $project :: caused by :: " +
-					"FieldPath cannot be constructed with empty string",
-			},
-		},
-		"EmptyPath": {
-			pipeline: bson.A{
-				bson.D{{"$project", bson.D{{"v..d", true}}}},
-			},
-			expectedErr: mongo.CommandError{
-				Code:    15998,
-				Name:    "Location15998",
-				Message: "Invalid $project :: caused by :: FieldPath field names may not be empty strings.",
-			},
 		},
 		"PositionalOperatorEmptyPath": {
 			pipeline: bson.A{

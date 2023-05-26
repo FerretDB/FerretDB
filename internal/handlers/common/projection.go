@@ -202,14 +202,14 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 			if *inclusion {
 				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrProjectionExIn,
-					fmt.Sprintf("Cannot do exclusion on field %s in inclusionField projection", key),
+					fmt.Sprintf("Cannot do exclusion on field %s in inclusion projection", key),
 					"projection",
 				)
 			}
 
 			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrProjectionInEx,
-				fmt.Sprintf("Cannot do inclusionField on field %s in exclusion projection", key),
+				fmt.Sprintf("Cannot do inclusion on field %s in exclusion projection", key),
 				"projection",
 			)
 		}
