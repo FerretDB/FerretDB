@@ -35,19 +35,16 @@ import (
 // Document fields could be either included or excluded but not both.
 // Exception is for the _id field that could be included or excluded.
 //
-// Errors:
+// Command error codes:
 //   - `ErrEmptyProject` when projection document is empty;
 //   - `ErrProjectionExIn` when there is exclusion in inclusion projection;
 //   - `ErrProjectionInEx` when there is inclusion in exclusion projection;
-//   - `ErrAggregatePositionalProject` when positional projection is used;
-//   - `ErrEmptyFieldPath` when positional projection path is empty;
-//   - `ErrAggregatePositionalProject` when positional projection path is not valid;
-//   - `ErrFieldPathInvalidName` when positional projection operator is at the prefix;
-//   - `ErrFieldPathInvalidName` when `$` is used path of a key;
-//   - `ErrWrongPositionalOperatorLocation` when there are multiple positional operators;
-//   - `ErrWrongPositionalOperatorLocation` when positional operator is not at the end;
-//   - `ErrFieldPathInvalidName` when projection key contains `$`;
-//   - `ErrNotImplemented` when there is unimplemented projection operators and expressions;
+//   - `ErrEmptyFieldPath` when projection path is empty;
+//   - `ErrFieldPathInvalidName` when `$` is at the prefix of a key in the path;
+//   - `ErrWrongPositionalOperatorLocation` when there are multiple `$`;
+//   - `ErrAggregatePositionalProject` when `$` is used in the suffix key;
+//   - `ErrAggregatePositionalProject` when positional projection contains empty path;
+//   - `ErrNotImplemented` when there is unimplemented projection operators and expressions.
 func ValidateProjection(projection *types.Document) (*types.Document, bool, error) {
 	validated := types.MakeDocument(0)
 
@@ -118,19 +115,10 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 			)
 		}
 
-		if strings.Contains(key, "$") {
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFieldPathInvalidName,
-				"Invalid $project :: caused by :: FieldPath field names may not start with '$'. "+
-					"Consider using $getField or $setField.",
-				"$project (stage)",
-			)
-		}
-
-		for i, k := range path.Slice() {
-			if strings.HasPrefix(k, "$") && i != path.Len()-1 {
-				// arbitrary $ cannot exist in the path e.g. `v.$foo` is wrong,
-				// `v.$` is fine.
+		for _, k := range path.Slice() {
+			if strings.HasPrefix(k, "$") {
+				// arbitrary `$` cannot exist in the path
+				// `v.$foo` is invalid, `v.$` and `v.foo$` are fine.
 				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrFieldPathInvalidName,
 					"Invalid $project :: caused by :: FieldPath field names may not start with '$'. "+

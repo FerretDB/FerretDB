@@ -47,7 +47,7 @@ func ProjectionIterator(iter types.DocumentsIterator, closer *iterator.MultiClos
 type projectionIterator struct {
 	iter       types.DocumentsIterator
 	projection *types.Document
-	filter     *types.Document // filter is used for positional operator to get first matching element.
+	filter     *types.Document // filter is used by positional operator to get first matching array element.
 	inclusion  bool
 }
 

@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 	"time"
 
@@ -239,6 +240,9 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 
 	testCases := map[string]queryCompatTestCase{
 		"IDFilter": {
+			// it returns error only if collection contains a doc that matches the filter
+			// and the filter does not contain positional operator path,
+			// e.g. missing {v: <val>} in the filter.
 			filter:         bson.D{{"_id", "array"}},
 			projection:     bson.D{{"v.$", true}},
 			resultPushdown: true,
@@ -247,6 +251,12 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 			filter:         bson.D{{"v", float64(42)}},
 			projection:     bson.D{{"v.$", true}},
 			resultPushdown: true,
+		},
+		"ImplicitNoMatch": {
+			filter:         bson.D{{"v", "non-existent"}},
+			projection:     bson.D{{"v.$", true}},
+			resultPushdown: true,
+			resultType:     emptyResult,
 		},
 		"Eq": {
 			filter:         bson.D{{"v", bson.D{{"$eq", 45.5}}}},
@@ -257,6 +267,11 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
 			projection: bson.D{{"v.$", true}},
 		},
+		"GtNoMatch": {
+			filter:     bson.D{{"v", bson.D{{"$gt", math.MaxFloat64}}}},
+			projection: bson.D{{"v.$", true}},
+			resultType: emptyResult,
+		},
 		"DollarEndingKey": {
 			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
 			projection: bson.D{{"v$", true}},
@@ -265,13 +280,36 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
 			projection: bson.D{{"v$v", true}},
 		},
-		"DotNotation": {
+		"ImplicitDotNotation": {
+			filter:         bson.D{{"v", float64(42)}},
+			projection:     bson.D{{"v.foo.$", true}},
+			resultPushdown: true,
+		},
+		"ImplicitDotNoMatch": {
+			filter:         bson.D{{"v", "non-existent"}},
+			projection:     bson.D{{"v.foo.$", true}},
+			resultPushdown: true,
+			resultType:     emptyResult,
+		},
+		"GtDotNotation": {
+			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
+			projection: bson.D{{"v.foo.$", true}},
+		},
+		"GtDotNoMatch": {
 			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
 			projection: bson.D{{"v.foo.$", true}},
 		},
 		"DotNotationDollarEndingKey": {
 			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
 			projection: bson.D{{"v.foo$", true}},
+		},
+		"IDValueFilters": {
+			filter: bson.D{
+				{"_id", "array"},
+				{"v", bson.D{{"$gt", 41}}},
+			},
+			projection:     bson.D{{"v.$", true}},
+			resultPushdown: true,
 		},
 		"TwoFilter": {
 			filter: bson.D{

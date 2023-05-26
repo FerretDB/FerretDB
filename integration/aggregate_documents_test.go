@@ -104,7 +104,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 				"like a.b.$.d, remove the parts following the '$' and " +
 				"the results will be equivalent.",
 		},
-		"PositionalOperatorEmptyKey": {
+		"EmptyKey": {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"", true}}}},
 			},

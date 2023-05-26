@@ -108,7 +108,9 @@ func TestQueryProjectionPositionalOperatorErrors(t *testing.T) {
 			},
 		},
 		"FilterMissingPath": {
-			// filter must contain filter for positional operator path v e.g. {v: <val>}
+			// it returns error only if collection contains a doc that matches the filter
+			// and the filter does not contain positional operator path,
+			// e.g. missing {v: <val>} in the filter.
 			filter:     bson.D{{"_id", "array"}},
 			projection: bson.D{{"v.$", true}},
 			err: mongo.CommandError{
@@ -118,6 +120,8 @@ func TestQueryProjectionPositionalOperatorErrors(t *testing.T) {
 			},
 		},
 		"Mismatch": {
+			// positional projection only handles one array at the suffix,
+			// path prefixes cannot contain array.
 			filter:     bson.D{{"v", 42}},
 			projection: bson.D{{"v.foo.$", true}},
 			err: mongo.CommandError{
