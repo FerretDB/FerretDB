@@ -47,7 +47,7 @@ func MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 
 			// our extensions
 			"ferretdbVersion", version.Get().Version,
-			"compatibility", must.NotFail(types.NewDocument(
+			"ferretdbFeatures", must.NotFail(types.NewDocument(
 				"aggregationStages", aggregationStages,
 			)),
 
