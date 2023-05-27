@@ -587,10 +587,10 @@ func TestCommandsAdministrationBuildInfoFerretdbExtensions(t *testing.T) {
 
 	doc := ConvertDocument(t, actual)
 
-	compatibility, ok := must.NotFail(doc.Get("ferretdbFeatures")).(*types.Document)
+	ferretdbFeatures, ok := must.NotFail(doc.Get("ferretdbFeatures")).(*types.Document)
 	assert.True(t, ok)
-	assert.NotNil(t, must.NotFail(types.NewDocument()), compatibility)
-	aggregationStages := must.NotFail(compatibility.Get("aggregationStages")).(*types.Array)
+	assert.NotNil(t, ferretdbFeatures)
+	aggregationStages := must.NotFail(ferretdbFeatures.Get("aggregationStages")).(*types.Array)
 	assert.NotEmpty(t, aggregationStages)
 }
 
