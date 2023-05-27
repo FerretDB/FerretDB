@@ -572,10 +572,24 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 	assert.Equal(t, int32(16777216), must.NotFail(doc.Get("maxBsonObjectSize")))
 	_, ok = must.NotFail(doc.Get("buildEnvironment")).(*types.Document)
 	assert.True(t, ok)
+}
 
-	compatibility, ok := must.NotFail(doc.Get("compatibility")).(*types.Document)
+func TestCommandsAdministrationBuildInfoFerretdbExtensions(t *testing.T) {
+	setup.SkipForMongoDB(t, "FerretDB-specific command's extensions")
+
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	var actual bson.D
+	command := bson.D{{"buildInfo", int32(1)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+
+	compatibility, ok := must.NotFail(doc.Get("ferretdbFeatures")).(*types.Document)
 	assert.True(t, ok)
-	assert.NotEmpty(t, compatibility)
+	assert.NotNil(t, must.NotFail(types.NewDocument()), compatibility)
 	aggregationStages := must.NotFail(compatibility.Get("aggregationStages")).(*types.Array)
 	assert.NotEmpty(t, aggregationStages)
 }
