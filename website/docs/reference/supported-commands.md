@@ -218,7 +218,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 | -------------- | -------- | ------ | --------------------------------------------------------- |
 | `authenticate` |          | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1731) |
 | `getnonce`     |          | ❌      | Deprecated                                                |
-| `logout`       |          | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1750) |
+| `logout`       |          | ✅      |                                                           |
 | `saslStart`    |          | ✅      |                                                           |
 
 ### Role Management Commands
@@ -329,7 +329,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 | `$merge`             | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1429) |
 | `$out`               | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1430) |
 | `$planCacheStats`    | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1431) |
-| `$project`           | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/2382) |
+| `$project`           | ✅      |                                                           |
 | `$redact`            | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1433) |
 | `$replaceRoot`       | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1434) |
 | `$replaceWith`       | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1434) |
