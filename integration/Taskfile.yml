@@ -27,6 +27,7 @@ tasks:
         -tags=ferretdb_testenvdata,ferretdb_tigris .
         -target-backend=ferretdb-tigris
         -tigris-urls=127.0.0.1:8081
+      # no hana yet
       - >
         go test -count=1 {{.RACEFLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
