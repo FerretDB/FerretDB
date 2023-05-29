@@ -88,7 +88,7 @@ func TestPrintVersion(t *testing.T) {
 	assert.NoError(t, err)
 
 	var output bytes.Buffer
-	err = printVersion(&output, f.Name())
+	err = packageVersion(&output, f.Name())
 	assert.NoError(t, err)
 	assert.Equal(t, "1.0.0", output.String())
 }
