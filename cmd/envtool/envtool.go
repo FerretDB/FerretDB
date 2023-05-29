@@ -54,6 +54,9 @@ var (
 	errorTemplate = template.Must(template.New("error").Option("missingkey=error").Parse(string(errorTemplateB)))
 )
 
+// versionFile contains version information with leading v.
+const versionFile = "build/version/version.txt"
+
 // waitForPort waits for the given port to be available until ctx is done.
 func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) error {
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
@@ -366,6 +369,22 @@ func read(w io.Writer, paths ...string) error {
 	return nil
 }
 
+// printVersion will print out version omitting leading v.
+func printVersion(w io.Writer, file string) error {
+	b, err := os.ReadFile(file)
+	if err != nil {
+		return err
+	}
+
+	if strings.HasPrefix(string(b), "v") {
+		fmt.Fprint(w, string(b)[1:])
+	} else {
+		fmt.Fprint(w, string(b))
+	}
+
+	return nil
+}
+
 // cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
@@ -382,6 +401,7 @@ var cli struct {
 			Paths []string `arg:"" name:"path" help:"Paths to read." type:"path"`
 		} `cmd:"" help:"read files"`
 	} `cmd:""`
+	Version struct{} `cmd:"" help:"Print version"`
 }
 
 func main() {
@@ -414,6 +434,8 @@ func main() {
 		err = rmdir(cli.Shell.Rmdir.Paths...)
 	case "shell read <path>":
 		err = read(os.Stdout, cli.Shell.Read.Paths...)
+	case "version":
+		err = printVersion(os.Stdout, versionFile)
 	default:
 		err = fmt.Errorf("unknown command: %s", cmd)
 	}
