@@ -587,14 +587,16 @@ func TestCommandsAdministrationBuildInfoFerretdbExtensions(t *testing.T) {
 
 	doc := ConvertDocument(t, actual)
 
-	// ferretdbFeatures, err := doc.Get("ferretdbFeatures").(*types.Document)
 	ferretdbFeatures, err := doc.Get("ferretdbFeatures")
 	assert.NoError(t, err)
-	ferretdbFeaturesDoc := ferretdbFeatures.(*types.Document)
+	ferretdbFeaturesDoc, ok := ferretdbFeatures.(*types.Document)
+	assert.True(t, ok)
 	assert.NotNil(t, ferretdbFeatures)
 	aggregationStages, err := ferretdbFeaturesDoc.Get("aggregationStages")
+	aggregationStagesArray, ok := aggregationStages.(*types.Array)
+	assert.True(t, ok)
 	assert.NoError(t, err)
-	assert.NotEmpty(t, aggregationStages.(*types.Array))
+	assert.NotEmpty(t, aggregationStagesArray)
 }
 
 func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
