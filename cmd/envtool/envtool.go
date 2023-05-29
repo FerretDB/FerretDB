@@ -369,20 +369,19 @@ func read(w io.Writer, paths ...string) error {
 	return nil
 }
 
-// printVersion will print out version omitting leading v.
-func printVersion(w io.Writer, file string) error {
+// packageVersion will print out FerretDB's package version (omitting leading v).
+func packageVersion(w io.Writer, file string) error {
 	b, err := os.ReadFile(file)
 	if err != nil {
 		return err
 	}
 
-	if strings.HasPrefix(string(b), "v") {
-		fmt.Fprint(w, string(b)[1:])
-	} else {
-		fmt.Fprint(w, string(b))
-	}
+	v := string(b)
+	v = strings.TrimPrefix(v, "v")
 
-	return nil
+	_, err = fmt.Fprint(w, v)
+
+	return err
 }
 
 // cli struct represents all command-line commands, fields and flags.
@@ -401,7 +400,7 @@ var cli struct {
 			Paths []string `arg:"" name:"path" help:"Paths to read." type:"path"`
 		} `cmd:"" help:"read files"`
 	} `cmd:""`
-	Version struct{} `cmd:"" help:"Print version"`
+	PackageVersion struct{} `cmd:"" help:"Print package version"`
 }
 
 func main() {
@@ -434,8 +433,8 @@ func main() {
 		err = rmdir(cli.Shell.Rmdir.Paths...)
 	case "shell read <path>":
 		err = read(os.Stdout, cli.Shell.Read.Paths...)
-	case "version":
-		err = printVersion(os.Stdout, versionFile)
+	case "package-version":
+		err = packageVersion(os.Stdout, versionFile)
 	default:
 		err = fmt.Errorf("unknown command: %s", cmd)
 	}
