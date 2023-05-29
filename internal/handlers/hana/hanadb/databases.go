@@ -16,23 +16,40 @@ package hanadb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
 // CreateSchema creates a schema in SAP HANA JSON Document Store.
-func (hanaPool *Pool) CreateSchema(ctx context.Context, db string) error {
-	sqlStmt := fmt.Sprintf("CREATE SCHEMA %q", db)
+//
+//	Returns ErrSchemaAlreadyExist if schema already exists.
+func (hanaPool *Pool) CreateSchema(ctx context.Context, qp *QueryParams) error {
+	sqlStmt := fmt.Sprintf("CREATE SCHEMA %q", qp.DB)
 
 	_, err := hanaPool.ExecContext(ctx, sqlStmt)
 
 	return getHanaErrorIfExists(err)
 }
 
-// DropSchema drops database
+// CreateSchemaIfNotExists creates a schema in SAP HANA JSON Document Store.
 //
-// It returns ErrSchemaNotExist if schema does not exist.
-func (hanaPool *Pool) DropSchema(ctx context.Context, db string) error {
-	sql := fmt.Sprintf("DROP SCHEMA %q CASCADE", db)
+// Returns nil if the schema already exists.
+func (hanaPool *Pool) CreateSchemaIfNotExists(ctx context.Context, qp *QueryParams) error {
+	err := hanaPool.CreateSchema(ctx, qp)
+
+	switch {
+	case errors.Is(err, ErrSchemaAlreadyExist):
+		return nil
+	default:
+		return err
+	}
+}
+
+// DropSchema drops database.
+//
+// Returns ErrSchemaNotExist if schema does not exist.
+func (hanaPool *Pool) DropSchema(ctx context.Context, qp *QueryParams) error {
+	sql := fmt.Sprintf("DROP SCHEMA %q CASCADE", qp.DB)
 
 	_, err := hanaPool.ExecContext(ctx, sql)
 

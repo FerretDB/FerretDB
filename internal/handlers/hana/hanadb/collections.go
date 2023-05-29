@@ -16,25 +16,40 @@ package hanadb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 )
 
 // CreateCollection creates a new SAP HANA JSON Document Store collection.
 //
 // It returns ErrAlreadyExist if collection already exist.
-func (hanaPool *Pool) CreateCollection(ctx context.Context, db, collection string) error {
-	sql := fmt.Sprintf("CREATE COLLECTION %q.%q", db, collection)
+func (hanaPool *Pool) CreateCollection(ctx context.Context, qp *QueryParams) error {
+	sql := fmt.Sprintf("CREATE COLLECTION %q.%q", qp.DB, qp.Collection)
 
 	_, err := hanaPool.ExecContext(ctx, sql)
 
 	return getHanaErrorIfExists(err)
 }
 
-// DropCollection drops collection
+// CreateCollectionIfNotExists creates a new SAP HANA JSON Document Store collection.
 //
-// It returns ErrTableNotExist is collection does not exist.
-func (hanaPool *Pool) DropCollection(ctx context.Context, db, collection string) error {
-	sql := fmt.Sprintf("DROP COLLECTION %q.%q", db, collection)
+// Returns nil if collection already exist.
+func (hanaPool *Pool) CreateCollectionIfNotExists(ctx context.Context, qp *QueryParams) error {
+	err := hanaPool.CreateCollection(ctx, qp)
+
+	switch {
+	case errors.Is(err, ErrCollectionAlreadyExist):
+		return nil
+	default:
+		return err
+	}
+}
+
+// DropCollection drops collection.
+//
+// Returns ErrTableNotExist is collection does not exist.
+func (hanaPool *Pool) DropCollection(ctx context.Context, qp *QueryParams) error {
+	sql := fmt.Sprintf("DROP COLLECTION %q.%q", qp.DB, qp.Collection)
 
 	_, err := hanaPool.ExecContext(ctx, sql)
 
