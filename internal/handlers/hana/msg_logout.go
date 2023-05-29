@@ -12,32 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package hana
 
 import (
-	"flag"
-	"os"
-	"testing"
+	"context"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// TestMain is the entry point for all integration tests.
-func TestMain(m *testing.M) {
-	flag.Parse()
-
-	var code int
-
-	// ensure that Shutdown runs for any exit code or panic
-	func() {
-		// make `go test -list=.` work without side effects
-		if flag.Lookup("test.list").Value.String() == "" {
-			setup.Startup()
-			defer setup.Shutdown()
-		}
-
-		code = m.Run()
-	}()
-
-	os.Exit(code)
+// MsgLogout implements HandlerInterface.
+func (h *Handler) MsgLogout(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return common.MsgLogout(ctx, msg)
 }
