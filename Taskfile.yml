@@ -176,10 +176,11 @@ tasks:
       - bin/task{{exeExt}} -d tools tools-test
 
   test-integration:
-    desc: "Run integration tests for `pg` and `tigris` in parallel"
+    desc: "Run integration tests for several backends in parallel"
     deps:
       - test-integration-pg
       - test-integration-mongodb
+      # no test-integration-sqlite yet
       # disable for now - test-integration-tigris
       # no test-integration-hana
 
@@ -193,6 +194,17 @@ tasks:
         -target-backend=ferretdb-pg
         -target-tls
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+
+  test-integration-sqlite:
+    desc: "Run integration tests for `sqlite` handler"
+    dir: integration
+    cmds:
+      - >
+        go test -count=1 -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-sqlite.txt .
+        -target-backend=ferretdb-sqlite
+        -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
 
   test-integration-tigris:
@@ -282,6 +294,19 @@ tasks:
         --mode=diff-normal
         --handler=pg
         --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+        --test-records-dir=tmp/records
+
+  run-sqlite:
+    desc: "Run FerretDB with `sqlite` handler"
+    deps: [build-host]
+    cmds:
+      - >
+        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=:27017
+        --proxy-addr=127.0.0.1:47017
+        --mode=diff-normal
+        --handler=sqlite
+        --sqlite-uri=tmp/sqlite
         --test-records-dir=tmp/records
 
   run-tigris:
@@ -406,6 +431,11 @@ tasks:
     cmds:
       - docker compose exec -e PGPASSWORD=password postgres psql -U username -d ferretdb
 
+  sqlite3:
+    desc: "Run sqlite3"
+    cmds:
+      - sqlite3 *.sqlite
+
   mongosh:
     desc: "Run MongoDB shell (`mongosh`)"
     cmds:
@@ -524,13 +554,14 @@ tasks:
           PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
           DOCKER_IMAGES: ignored
           OUTPUT: type=local,dest=tmp/build
-      - cmd: bin/nfpm{{exeExt}} package --config=build/nfpm.yml --packager=deb --target=tmp/debs/ferretdb.deb
-        env:
-          ARCH: amd64
-          VERSION:
-            sh: go run ./cmd/envtool shell read build/version/version.txt
-          POSTGRES_PACKAGE: postgresql
+      - bin/nfpm{{exeExt}} package --config=build/nfpm.yml --packager=deb --target=tmp/debs/ferretdb.deb
       - docker compose run --rm ubuntu /bin/sh -c 'dpkg -i /debs/ferretdb.deb && ferretdb --version'
+    env:
+      # nfpm parameters
+      ARCH: amd64
+      VERSION:
+        sh: go run ./cmd/envtool package-version
+      POSTGRES_PACKAGE: postgresql
 
   packages-rpm:
     cmds:
@@ -542,13 +573,14 @@ tasks:
           PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
           DOCKER_IMAGES: ignored
           OUTPUT: type=local,dest=tmp/build
-      - cmd: bin/nfpm{{exeExt}} package --config=build/nfpm.yml --packager=rpm --target=tmp/rpms/ferretdb.rpm
-        env:
-          ARCH: amd64
-          VERSION:
-            sh: go run ./cmd/envtool shell read build/version/version.txt
-          POSTGRES_PACKAGE: postgresql
+      - bin/nfpm{{exeExt}} package --config=build/nfpm.yml --packager=rpm --target=tmp/rpms/ferretdb.rpm
       - docker compose run --rm ubi /bin/sh -c 'rpm -i /rpms/ferretdb.rpm && ferretdb --version'
+    env:
+      # nfpm parameters
+      ARCH: amd64
+      VERSION:
+        sh: go run ./cmd/envtool package-version
+      POSTGRES_PACKAGE: postgresql
 
   fmt-yaml:
     desc: "Format YAML files"

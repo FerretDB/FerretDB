@@ -30,11 +30,11 @@ type State struct {
 	Telemetry *bool  `json:"telemetry,omitempty"` // nil for undecided
 
 	// never persisted
-	TelemetryLocked   bool      `json:"-"`
-	Start             time.Time `json:"-"`
-	LatestVersion     string    `json:"-"` // empty if IsUpdateAvailable is false
-	HandlerVersion    string    `json:"-"` // may be empty
-	IsUpdateAvailable bool      `json:"-"`
+	TelemetryLocked bool      `json:"-"`
+	Start           time.Time `json:"-"`
+	HandlerVersion  string    `json:"-"` // may be empty if FerretDB did not connect to the backend yet
+	LatestVersion   string    `json:"-"` // as reported by beacon, if known
+	UpdateAvailable bool      `json:"-"` // as reported by beacon, if known
 }
 
 // TelemetryString returns "enabled", "disabled" or "undecided".
@@ -50,14 +50,19 @@ func (s *State) TelemetryString() string {
 	return "disabled"
 }
 
-// UpdateAvailable returns true if there is a newer version available.
-func (s *State) UpdateAvailable() bool {
-	// if telemetry was enabled and then disabled, then LatestVersion will never be updated
-	if s.Telemetry != nil && !*s.Telemetry {
-		return false
-	}
+// DisableTelemetry disables telemetry.
+//
+// It also sets LatestVersion and UpdateAvailable to zero values
+// to avoid stale values when telemetry is re-enabled.
+func (s *State) DisableTelemetry() {
+	s.Telemetry = pointer.ToBool(false)
+	s.LatestVersion = ""
+	s.UpdateAvailable = false
+}
 
-	return s.IsUpdateAvailable
+// EnableTelemetry enables telemetry.
+func (s *State) EnableTelemetry() {
+	s.Telemetry = pointer.ToBool(true)
 }
 
 // fill replaces all unset or invalid values with default.
@@ -79,12 +84,12 @@ func (s *State) deepCopy() *State {
 	}
 
 	return &State{
-		UUID:              s.UUID,
-		Telemetry:         telemetry,
-		TelemetryLocked:   s.TelemetryLocked,
-		Start:             s.Start,
-		LatestVersion:     s.LatestVersion,
-		HandlerVersion:    s.HandlerVersion,
-		IsUpdateAvailable: s.IsUpdateAvailable,
+		UUID:            s.UUID,
+		Telemetry:       telemetry,
+		TelemetryLocked: s.TelemetryLocked,
+		Start:           s.Start,
+		HandlerVersion:  s.HandlerVersion,
+		LatestVersion:   s.LatestVersion,
+		UpdateAvailable: s.UpdateAvailable,
 	}
 }

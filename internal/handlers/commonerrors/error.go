@@ -44,6 +44,9 @@ const (
 	// ErrTypeMismatch for $sort indicates that the expression in the $sort is not an object.
 	ErrTypeMismatch = ErrorCode(14) // TypeMismatch
 
+	// ErrAuthenticationFailed indicates failed authentication.
+	ErrAuthenticationFailed = ErrorCode(18) // AuthenticationFailed
+
 	// ErrIllegalOperation indicated that operation is illegal.
 	ErrIllegalOperation = ErrorCode(20) // IllegalOperation
 
@@ -54,7 +57,7 @@ const (
 	ErrIndexNotFound = ErrorCode(27) // IndexNotFound
 
 	// ErrUnsuitableValueType indicates that field could not be created for given value.
-	ErrUnsuitableValueType = ErrorCode(28) // UnsuitableValueType
+	ErrUnsuitableValueType = ErrorCode(28) // PathNotViable
 
 	// ErrConflictingUpdateOperators indicates that $set, $inc or $setOnInsert were used together.
 	ErrConflictingUpdateOperators = ErrorCode(40) // ConflictingUpdateOperators
@@ -72,7 +75,7 @@ const (
 	ErrInvalidID = ErrorCode(53) // InvalidID
 
 	// ErrEmptyName indicates that the field name is empty.
-	ErrEmptyName = ErrorCode(56) // EmptyName
+	ErrEmptyName = ErrorCode(56) // EmptyFieldName
 
 	// ErrCommandNotFound indicates unknown command input.
 	ErrCommandNotFound = ErrorCode(59) // CommandNotFound
@@ -103,9 +106,6 @@ const (
 
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
-
-	// ErrMechanismUnavailable indicates unsupported authentication mechanism.
-	ErrMechanismUnavailable = ErrorCode(334) // MechanismUnavailable
 
 	// ErrDuplicateKey indicates duplicate key violation.
 	ErrDuplicateKey = ErrorCode(11000) // Location11000
@@ -175,6 +175,16 @@ const (
 	// while projection document already marked as inclusion.
 	ErrProjectionExIn = ErrorCode(31254) // Location31254
 
+	// ErrAggregatePositionalProject indicates that positional projection cannot be used in aggregation.
+	ErrAggregatePositionalProject = ErrorCode(31324) // Location31324
+
+	// ErrWrongPositionalOperatorLocation indicates that there can only be one positional
+	// operator at the end.
+	ErrWrongPositionalOperatorLocation = ErrorCode(31394) // Location31394
+
+	// ErrExclusionPositionalProjection indicates that exclusion cannot use positional projection.
+	ErrExclusionPositionalProjection = ErrorCode(31395) // Location31395
+
 	// ErrStageCountNonString indicates that $count aggregation stage expected string.
 	ErrStageCountNonString = ErrorCode(40156) // Location40156
 
@@ -202,6 +212,9 @@ const (
 	// ErrEmptyFieldPath indicates that the field path is empty.
 	ErrEmptyFieldPath = ErrorCode(40352) // Location40352
 
+	// ErrInvalidFieldPath indicates that the field path is not valid.
+	ErrInvalidFieldPath = ErrorCode(40353) // Location40353
+
 	// ErrMissingField indicates that the required field in document is missing.
 	ErrMissingField = ErrorCode(40414) // Location40414
 
@@ -226,6 +239,15 @@ const (
 
 	// ErrBadRegexOption indicates bad regex option value passed.
 	ErrBadRegexOption = ErrorCode(51108) // Location51108
+
+	// ErrBadPositionalProjection indicates that positional operator could not find a matching element in the array.
+	ErrBadPositionalProjection = ErrorCode(51246) // Location51246
+
+	// ErrElementMismatchPositionalProjection indicates that unexpected element was present at projection path.
+	ErrElementMismatchPositionalProjection = ErrorCode(51247) // Location51247
+
+	// ErrEmptySubProject indicates that subprojection mustn't be empty.
+	ErrEmptySubProject = ErrorCode(51270) // Location51270
 
 	// ErrEmptyProject indicates that projection specification must have at least one field.
 	ErrEmptyProject = ErrorCode(51272) // Location51272

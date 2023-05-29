@@ -12,21 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package operators
+package accumulators
 
 import (
-	"context"
 	"math"
 	"math/big"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // sum represents $sum aggregation operator.
 type sum struct {
-	expression types.Expression
+	expression *aggregations.Expression
 	number     any
 }
 
@@ -46,13 +47,14 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 		accumulator.number = expr
 	case string:
 		var err error
-		if accumulator.expression, err = types.NewExpression(expr); err != nil {
+		if accumulator.expression, err = aggregations.NewExpression(expr); err != nil {
 			// $sum returns 0 on non-existent field.
 			accumulator.number = int32(0)
 		}
 	case int32, int64:
 		accumulator.number = expr
 	default:
+		// TODO https://github.com/FerretDB/FerretDB/issues/2694
 		accumulator.number = int32(0)
 		// $sum returns 0 on non-numeric field
 	}
@@ -61,7 +63,13 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 }
 
 // Accumulate implements Accumulator interface.
-func (s *sum) Accumulate(ctx context.Context, groupID any, grouped []*types.Document) (any, error) {
+func (s *sum) Accumulate(iter types.DocumentsIterator) (any, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/2706
+	grouped, err := iterator.ConsumeValues[struct{}, *types.Document](iter)
+	if err != nil {
+		return nil, err
+	}
+
 	if s.expression != nil {
 		var values []any
 

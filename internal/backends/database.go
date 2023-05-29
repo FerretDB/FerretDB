@@ -14,23 +14,35 @@
 
 package backends
 
-import "context"
+import (
+	"context"
+
+	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/internal/util/resource"
+)
 
 // Database is a generic interface for all backends for accessing databases.
 //
-// Database object is expected to be stateless and temporary;
+// Database object is expected to be mostly stateless and temporary;
 // all state should be in the Backend that created this Database instance.
-// Handler can create and destroy Database objects on the fly.
+// Handler can create and destroy Database objects on the fly (but it should Close() them).
 // Creating a Database object does not imply the creating of the database itself.
 //
 // Database methods should be thread-safe.
 //
 // See databaseContract and its methods for additional details.
 type Database interface {
-	Collection(*CollectionParams) Collection
+	Close()
+	Collection(string) Collection
 	ListCollections(context.Context, *ListCollectionsParams) (*ListCollectionsResult, error)
 	CreateCollection(context.Context, *CreateCollectionParams) error
 	DropCollection(context.Context, *DropCollectionParams) error
+}
+
+// databaseContract implements Database interface.
+type databaseContract struct {
+	db    Database
+	token *resource.Token
 }
 
 // DatabaseContract wraps Database and enforces its contract.
@@ -40,24 +52,28 @@ type Database interface {
 //
 // See databaseContract and its methods for additional details.
 func DatabaseContract(db Database) Database {
-	return &databaseContract{
-		db: db,
+	dbc := &databaseContract{
+		db:    db,
+		token: resource.NewToken(),
 	}
+	resource.Track(dbc, dbc.token)
+
+	return dbc
 }
 
-// databaseContract implements Database interface.
-type databaseContract struct {
-	db Database
+// Close marks this Database instance as not being used anymore.
+// The implementation may close an associated database connection, decrease a reference counter, etc.
+func (dbc *databaseContract) Close() {
+	dbc.db.Close()
+
+	resource.Untrack(dbc, dbc.token)
 }
 
-// CollectionParams represents the parameters of Database.Collection method.
-type CollectionParams struct{}
-
-// Collection returns a Collection instance for given parameters.
+// Collection returns a Collection instance for the given name.
 //
 // The collection (or database) does not need to exist; even parameters like name could be invalid.
-func (dbc *databaseContract) Collection(params *CollectionParams) Collection {
-	return dbc.db.Collection(params)
+func (dbc *databaseContract) Collection(name string) Collection {
+	return dbc.db.Collection(name)
 }
 
 // ListCollectionsParams represents the parameters of Database.ListCollections method.
@@ -79,6 +95,7 @@ type CollectionInfo struct {
 //
 //nolint:lll // for readability
 func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCollectionsParams) (res *ListCollectionsResult, err error) {
+	defer observability.FuncCall(ctx)()
 	defer checkError(err)
 	res, err = dbc.db.ListCollections(ctx, params)
 
@@ -94,6 +111,7 @@ type CreateCollectionParams struct {
 //
 // Database may or may not exist; it should be created automatically if needed.
 func (dbc *databaseContract) CreateCollection(ctx context.Context, params *CreateCollectionParams) (err error) {
+	defer observability.FuncCall(ctx)()
 	defer checkError(err, ErrorCodeCollectionAlreadyExists, ErrorCodeCollectionNameIsInvalid)
 	err = dbc.db.CreateCollection(ctx, params)
 
@@ -107,6 +125,7 @@ type DropCollectionParams struct {
 
 // DropCollection drops existing collection in the database.
 func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCollectionParams) (err error) {
+	defer observability.FuncCall(ctx)()
 	defer checkError(err, ErrorCodeCollectionDoesNotExist)
 	err = dbc.db.DropCollection(ctx, params)
 

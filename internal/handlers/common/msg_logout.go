@@ -16,32 +16,20 @@ package common
 
 import (
 	"context"
-	"strconv"
 
-	"github.com/FerretDB/FerretDB/build/version"
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgBuildInfo is a common implementation of the buildInfo command.
-func MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgLogout is a common implementation of the logout command.
+func MsgLogout(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	conninfo.Get(ctx).SetAuth("", "")
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"version", version.Get().MongoDBVersion,
-			"gitVersion", version.Get().Commit,
-			"modules", must.NotFail(types.NewArray()),
-			"sysInfo", "deprecated",
-			"versionArray", version.Get().MongoDBVersionArray,
-			"bits", int32(strconv.IntSize),
-			"debug", version.Get().DebugBuild,
-			"maxBsonObjectSize", int32(types.MaxDocumentLen),
-			"buildEnvironment", version.Get().BuildEnvironment,
-
-			// our extensions
-			"ferretdbVersion", version.Get().Version,
-
 			"ok", float64(1),
 		))},
 	}))

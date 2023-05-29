@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package commoncommands
 
 import (
 	"context"
@@ -186,6 +186,10 @@ var Commands = map[string]command{
 	"listIndexes": {
 		Help:    "Returns a summary of indexes of the specified collection.",
 		Handler: handlers.Interface.MsgListIndexes,
+	},
+	"logout": {
+		Help:    "Logs out from the current session.",
+		Handler: handlers.Interface.MsgLogout,
 	},
 	"ping": {
 		Help:    "Returns a pong response.",

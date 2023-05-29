@@ -14,7 +14,12 @@
 
 package backends
 
-import "context"
+import (
+	"context"
+
+	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/internal/util/resource"
+)
 
 // Backend is a generic interface for all backends for accessing them.
 //
@@ -26,11 +31,18 @@ import "context"
 //
 // See backendContract and its methods for additional details.
 type Backend interface {
-	Database(context.Context, *DatabaseParams) Database
+	Close()
+	Database(string) Database
 	ListDatabases(context.Context, *ListDatabasesParams) (*ListDatabasesResult, error)
 	DropDatabase(context.Context, *DropDatabaseParams) error
 
 	// There is no interface method to create a database; see package documentation.
+}
+
+// backendContract implements Backend interface.
+type backendContract struct {
+	b     Backend
+	token *resource.Token
 }
 
 // BackendContract wraps Backend and enforces its contract.
@@ -40,26 +52,27 @@ type Backend interface {
 //
 // See backendContract and its methods for additional details.
 func BackendContract(b Backend) Backend {
-	return &backendContract{
-		b: b,
+	bc := &backendContract{
+		b:     b,
+		token: resource.NewToken(),
 	}
+	resource.Track(bc, bc.token)
+
+	return bc
 }
 
-// backendContract implements Backend interface.
-type backendContract struct {
-	b Backend
+// Close closes all database connections and frees all resources associated with the backend.
+func (bc *backendContract) Close() {
+	bc.b.Close()
+
+	resource.Untrack(bc, bc.token)
 }
 
-// DatabaseParams represents the parameters of Backend.Database method.
-type DatabaseParams struct {
-	Name string
-}
-
-// Database returns a Database instance for given parameters.
+// Database returns a Database instance for the given name.
 //
 // The database does not need to exist; even parameters like name could be invalid.
-func (bc *backendContract) Database(ctx context.Context, params *DatabaseParams) Database {
-	return bc.b.Database(ctx, params)
+func (bc *backendContract) Database(name string) Database {
+	return bc.b.Database(name)
 }
 
 // ListDatabasesParams represents the parameters of Backend.ListDatabases method.
@@ -73,13 +86,14 @@ type ListDatabasesResult struct {
 // DatabaseInfo represents information about a single database.
 type DatabaseInfo struct {
 	Name string
+	Size int64
 }
 
 // ListDatabases returns a Database instance for given parameters.
 func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDatabasesParams) (res *ListDatabasesResult, err error) {
+	defer observability.FuncCall(ctx)()
 	defer checkError(err)
 	res, err = bc.b.ListDatabases(ctx, params)
-
 	return
 }
 
@@ -88,11 +102,10 @@ type DropDatabaseParams struct {
 	Name string
 }
 
-// DropDatabase drops database with given parameters.
-//
-// Database doesn't have to exist; that's not an error.
+// DropDatabase drops existing database for given parameters.
 func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabaseParams) (err error) {
-	defer checkError(err)
+	defer observability.FuncCall(ctx)()
+	defer checkError(err, ErrorCodeDatabaseDoesNotExist)
 	err = bc.b.DropDatabase(ctx, params)
 
 	return

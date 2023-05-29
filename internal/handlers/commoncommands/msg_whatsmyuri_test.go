@@ -12,25 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package commoncommands
 
 import (
 	"context"
+	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/stretchr/testify/require"
+
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgCurrentOp is a common implementation of currentOp command.
-func MsgCurrentOp(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"inprog", must.NotFail(types.NewArray()),
-			"ok", float64(1),
-		))},
-	}))
-
-	return &reply, nil
+// TestMsgWhatsMyURI checks a special case: if context is not set, it panics.
+// The "normal" cases are covered in integration tests for MsgWhatsMyURI command.
+func TestMsgWhatsMyURI(t *testing.T) {
+	require.Panics(t, func() {
+		_, err := MsgWhatsMyURI(context.Background(), new(wire.OpMsg))
+		require.NoError(t, err)
+	})
 }
