@@ -190,21 +190,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 			},
 			skipForTigris: "schema validation would fail",
 		},
-		"InvalidOperator": {
-			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
-				{"update", bson.D{{"$invalid", "non-existent-field"}}},
-			},
-		},
-		"OperatorConflict": {
-			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
-				{"update", bson.D{
-					{"$set", bson.D{{"v", 4}}},
-					{"$inc", bson.D{{"v", 4}}},
-				}},
-			},
-		},
+
 		"MultipleOperatorsDotNotation": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
@@ -212,6 +198,13 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 					{"$set", bson.D{{"v.0.field", 4}}},
 					{"$inc", bson.D{{"v.0.foo", 4}}},
 				}},
+			},
+		},
+
+		"InvalidOperator": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{{"$invalid", "non-existent-field"}}},
 			},
 		},
 		"ConflictKey": {
@@ -229,6 +222,67 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 				{"update", bson.D{
 					{"$set", bson.D{{"v.foo", "val"}}},
 					{"$min", bson.D{{"v", "val"}}},
+				}},
+			},
+		},
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
+
+func TestFindAndModifyCompatConflict(t *testing.T) {
+	testCases := map[string]findAndModifyCompatTestCase{
+		"Simple": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v", 4}}},
+					{"$inc", bson.D{{"v", 4}}},
+				}},
+			},
+		},
+		"SimpleNoConflict": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v", 4}}},
+					{"$inc", bson.D{{"foo", 4}}},
+				}},
+			},
+		},
+		"DotNotation": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.0.field", 4}}},
+					{"$inc", bson.D{{"v.0.field", 4}}},
+				}},
+			},
+		},
+		"DotNotationNoConflict": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.0.field", 4}}},
+					{"$inc", bson.D{{"v.0.foo", 4}}},
+				}},
+			},
+		},
+		"DotNotationNoIndex": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.0.field", 4}}},
+					{"$inc", bson.D{{"v.field", 4}}},
+				}},
+			},
+		},
+		"DotNotationParentConflict": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.0.field", 4}}},
+					{"$inc", bson.D{{"v", 4}}},
 				}},
 			},
 		},
