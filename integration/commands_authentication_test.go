@@ -32,27 +32,49 @@ type connectionStatus struct {
 
 func TestCommandsAuthenticationLogout(t *testing.T) {
 	t.Parallel()
-	setup.SkipForMongoDB(t, "tls is not enabled for mongodb backend")
-	setup.SkipForTigrisWithReason(t, "tls is not enabled for tigris backend")
-	ctx, collection := setup.Setup(t)
 
+	ctx, collection := setup.Setup(t)
 	db := collection.Database()
 
-	var statusSignedIn connectionStatus
-	err := db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&statusSignedIn)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, statusSignedIn.AuthInfo.AuthenticatedUsers)
-
+	// the test user logs out
 	var res bson.D
-	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
-
+	err := db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
 	assert.NoError(t, err)
 	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
 
-	var statusSignedOut connectionStatus
-	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&statusSignedOut)
+	// the test user logs out again, it has no effect
+	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
 	assert.NoError(t, err)
-	assert.Empty(t, statusSignedOut.AuthInfo.AuthenticatedUsers)
+	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
+}
+
+func TestCommandsAuthenticationLogoutTLS(t *testing.T) {
+	t.Parallel()
+
+	setup.SkipForMongoDB(t, "tls is not enabled for mongodb backend")
+	setup.SkipForTigrisWithReason(t, "tls is not enabled for tigris backend")
+
+	ctx, collection := setup.Setup(t)
+	db := collection.Database()
+
+	// the test user is authenticated
+	var status connectionStatus
+	err := db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&status)
+	assert.NoError(t, err)
+	assert.Equal(t, float64(1), status.Ok)
+	assert.NotEmpty(t, status.AuthInfo.AuthenticatedUsers)
+
+	// the test user logs out
+	var res bson.D
+	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
+	assert.NoError(t, err)
+	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
+
+	// the test user is no longer authenticated
+	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&status)
+	assert.NoError(t, err)
+	assert.Equal(t, float64(1), status.Ok)
+	assert.Empty(t, status.AuthInfo.AuthenticatedUsers)
 }
 
 func TestCommandsAuthenticationSASLStart(t *testing.T) {
