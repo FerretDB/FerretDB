@@ -903,8 +903,8 @@ func newUpdateError(code commonerrors.ErrorCode, msg, command string) error {
 // It shouldn't be used as a node of other pathValidator.
 func newPathValidator() *pathValidator {
 	return &pathValidator{
-		paths: map[string]*pathValidator{},
-		root:  true,
+		paths:    map[string]*pathValidator{},
+		rootNode: true,
 	}
 }
 
@@ -920,17 +920,21 @@ func newPathValidator() *pathValidator {
 // `foo.bar.x, foo.bar.y`.
 type pathValidator struct {
 	paths map[string]*pathValidator
-	last  bool
-	root  bool
+	// rootNode indicates that validator is a root node.
+	// It stores all of top level path keys and doesn't have any parent node.
+	rootNode bool
+	// lastNode indicates that validator represents a last node of some path.
+	// For example for `foo.bar.x` the "x" node is the last one.
+	lastNode bool
 }
 
 // validate takes a slice of path keys and checks if the path
 // conflicts with previously validated path. If it's not, then
 // the path is saved in pathValidator.
 func (tree *pathValidator) validate(keys []string) bool {
-	if len(keys) == 0 && !tree.root {
+	if len(keys) == 0 && !tree.rootNode {
 		// if all keys were proceed correctly - path is not conflicting
-		tree.last = true
+		tree.lastNode = true
 		return true
 	}
 
@@ -938,12 +942,12 @@ func (tree *pathValidator) validate(keys []string) bool {
 
 	if node, ok := tree.paths[key]; ok {
 		// if path exists in validator and it's the last element, conflict is detected
-		if node.last {
+		if node.lastNode {
 			return false
 		}
 
-		// if there's no more keys in current path,
-		// but child path exists, conflict is detected
+		// if there's no more keys in current node,
+		// but child node exists, conflict is detected
 		if len(keys) == 0 {
 			return false
 		}
@@ -961,7 +965,7 @@ func (tree *pathValidator) validate(keys []string) bool {
 // validateOperatorKeys returns error if any key contains empty path or
 // the same path prefix exists in other key or other document.
 func validateOperatorKeys(command string, docs ...*types.Document) error {
-	seen := newPathValidator()
+	paths := newPathValidator()
 
 	for _, doc := range docs {
 		for _, key := range doc.Keys() {
@@ -977,7 +981,7 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 				)
 			}
 
-			if ok := seen.validate(path.Slice()); !ok {
+			if ok := paths.validate(path.Slice()); !ok {
 				return newUpdateError(
 					commonerrors.ErrConflictingUpdateOperators,
 					fmt.Sprintf(

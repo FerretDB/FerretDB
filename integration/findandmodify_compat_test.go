@@ -207,7 +207,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 		},
 		"MultipleOperatorsDotNotation": {
 			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
 				{"update", bson.D{
 					{"$set", bson.D{{"v.0.field", 4}}},
 					{"$inc", bson.D{{"v.0.foo", 4}}},
