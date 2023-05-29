@@ -51,28 +51,36 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		Collection: params.Collection,
 	}
 
-	qp.Filter = params.Filter
+	if !h.DisableFilterPushdown {
+		qp.Filter = params.Filter
+	}
 
-	var iter types.DocumentsIterator
+	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		iter, err = fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisableFilterPushdown})
-		return err
+		iter, _, err := pgdb.QueryDocuments(ctx, tx, &qp)
+		if err != nil {
+			return err
+		}
+
+		closer := iterator.NewMultiCloser(iter)
+		defer closer.Close()
+
+		iter = common.FilterIterator(iter, closer, qp.Filter)
+
+		iter = common.SkipIterator(iter, closer, params.Skip)
+
+		iter = common.LimitIterator(iter, closer, params.Limit)
+
+		resDocs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		return nil
 	})
 
 	if err != nil {
 		return nil, err
-	}
-
-	closer := iterator.NewMultiCloser(iter)
-	defer closer.Close()
-
-	iter = common.SkipIterator(iter, closer, params.Skip)
-
-	iter = common.LimitIterator(iter, closer, params.Limit)
-
-	resDocs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	var reply wire.OpMsg

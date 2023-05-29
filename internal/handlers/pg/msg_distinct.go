@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -47,24 +48,28 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	qp := pgdb.QueryParams{
 		DB:         dp.DB,
 		Collection: dp.Collection,
-		Filter:     dp.Filter,
 		Comment:    dp.Comment,
 	}
 
-	var iter types.DocumentsIterator
+	if !h.DisableFilterPushdown {
+		qp.Filter = dp.Filter
+	}
+
+	var distinct *types.Array
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		iter, err = fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisableFilterPushdown})
+		iter, _, err := pgdb.QueryDocuments(ctx, tx, &qp)
+		if err != nil {
+			return err
+		}
+
+		closer := iterator.NewMultiCloser(iter)
+		defer closer.Close()
+
+		iter = common.FilterIterator(iter, closer, qp.Filter)
+
+		distinct, err = common.FilterDistinctValues(iter, dp.Key)
 		return err
 	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	distinct, err := common.FilterDistinctValues(iter, dp.Key)
-	if err != nil {
-		return nil, err
-	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{

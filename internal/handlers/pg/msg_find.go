@@ -179,7 +179,7 @@ type fetchParams struct {
 }
 
 // fetchAndFilterDocs fetches documents from the database and filters them using the provided sqlParam.Filter.
-func fetchAndFilterDocs(ctx context.Context, fp *fetchParams) (types.DocumentsIterator, error) {
+func fetchAndFilterDocs(ctx context.Context, fp *fetchParams) ([]*types.Document, error) {
 	// filter is used to filter documents on the FerretDB side,
 	// qp.Filter is used to filter documents on the PostgreSQL side (query pushdown).
 	filter := fp.qp.Filter
@@ -198,5 +198,5 @@ func fetchAndFilterDocs(ctx context.Context, fp *fetchParams) (types.DocumentsIt
 
 	f := common.FilterIterator(iter, closer, filter)
 
-	return f, nil
+	return iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](f))
 }
