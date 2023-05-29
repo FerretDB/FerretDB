@@ -4,9 +4,9 @@ go 1.20
 
 require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20221020234012-480526a59796
-	github.com/go-task/task/v3 v3.24.0
+	github.com/go-task/task/v3 v3.25.0
 	github.com/google/go-github/v41 v41.0.0
-	github.com/goreleaser/nfpm/v2 v2.28.0
+	github.com/goreleaser/nfpm/v2 v2.29.0
 	github.com/quasilyte/go-consistent v0.0.0-20220429160651-4e46040fbc82
 	github.com/reviewdog/reviewdog v0.14.1
 	github.com/stretchr/testify v1.8.3
@@ -68,8 +68,8 @@ require (
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/kevinburke/ssh_config v1.1.0 // indirect
 	github.com/kisielk/gotool v1.0.0 // indirect
-	github.com/klauspost/compress v1.16.3 // indirect
-	github.com/klauspost/pgzip v1.2.5 // indirect
+	github.com/klauspost/compress v1.16.5 // indirect
+	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-shellwords v1.0.12 // indirect

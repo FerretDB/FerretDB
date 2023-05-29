@@ -94,39 +94,40 @@ func TestNewReporterLock(t *testing.T) {
 	}
 }
 
+// beaconServer returns a httptest.Server that emulates beacon server.
+func beaconServer(t *testing.T, calls *int, res *response) *httptest.Server {
+	t.Helper()
+
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		*calls++
+
+		w.WriteHeader(http.StatusCreated)
+		require.NoError(t, json.NewEncoder(w).Encode(res))
+	}))
+
+	t.Cleanup(s.Close)
+
+	return s
+}
+
 func TestReporterReport(t *testing.T) {
 	t.Parallel()
 
-	// Mock response from telemetry server.
-	telemetryResponse := struct {
-		LatestVersion   string `json:"latest_version"`
-		UpdateAvailable bool   `json:"update_available"`
-	}{
-		LatestVersion:   "0.3.4",
-		UpdateAvailable: true,
-	}
-
-	var serverCalled int // Number of times the server was called.
-
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			serverCalled++
-			w.WriteHeader(http.StatusCreated)
-			require.NoError(t, json.NewEncoder(w).Encode(telemetryResponse))
-		}
-	}))
-	defer ts.Close()
-
-	// Subtests are not run in parallel because they share the same telemetry mock.
-
 	t.Run("TelemetryEnabled", func(t *testing.T) {
-		serverCalled = 0 // telemetry server was not called yet.
+		t.Parallel()
+
+		var serverCalled int
+		telemetryResponse := response{
+			LatestVersion:   "v1.2.1",
+			UpdateAvailable: true,
+		}
+		bs := beaconServer(t, &serverCalled, &telemetryResponse)
 
 		provider, err := state.NewProvider("")
 		require.NoError(t, err)
 
 		opts := NewReporterOpts{
-			URL:           ts.URL,
+			URL:           bs.URL,
 			F:             &Flag{v: pointer.ToBool(true)},
 			ConnMetrics:   connmetrics.NewListenerMetrics().ConnMetrics,
 			P:             provider,
@@ -148,9 +149,9 @@ func TestReporterReport(t *testing.T) {
 		assert.Equal(t, 1, serverCalled)
 		s = r.P.Get()
 		assert.True(t, s.UpdateAvailable)
-		assert.Equal(t, "0.3.4", s.LatestVersion)
+		assert.Equal(t, "v1.2.1", s.LatestVersion)
 
-		// Set update available to false on the telemetry side, and call the telemetry server again.
+		// Set update available to false on the beacon side, and call the telemetry server again.
 		telemetryResponse.UpdateAvailable = false
 		r.report(testutil.Ctx(t))
 		assert.Equal(t, 2, serverCalled)
@@ -158,18 +159,18 @@ func TestReporterReport(t *testing.T) {
 		// Expect the state of provider to be updated.
 		s = r.P.Get()
 		assert.False(t, s.UpdateAvailable)
-		assert.Equal(t, "0.3.4", s.LatestVersion)
+		assert.Equal(t, "v1.2.1", s.LatestVersion)
 
 		// Set update available to true and update version, and call the telemetry server again.
 		telemetryResponse.UpdateAvailable = true
-		telemetryResponse.LatestVersion = "0.4.0"
+		telemetryResponse.LatestVersion = "v1.2.0"
 		r.report(testutil.Ctx(t))
 		assert.Equal(t, 3, serverCalled)
 
 		// Expect the state and the version to be updated.
 		s = r.P.Get()
 		assert.True(t, s.UpdateAvailable)
-		assert.Equal(t, "0.4.0", s.LatestVersion)
+		assert.Equal(t, "v1.2.0", s.LatestVersion)
 
 		// Disable telemetry and call the telemetry server again.
 		require.NoError(t, provider.Update(func(s *state.State) { s.DisableTelemetry() }))
@@ -187,24 +188,31 @@ func TestReporterReport(t *testing.T) {
 		require.NoError(t, provider.Update(func(s *state.State) { s.EnableTelemetry() }))
 
 		// Set a newer version to expect.
-		telemetryResponse.LatestVersion = "0.5.0"
+		telemetryResponse.LatestVersion = "v1.2.2"
 		r.report(testutil.Ctx(t))
 		assert.Equal(t, 4, serverCalled)
 
 		// Expect no update available and latest version equal to the previous state.
 		s = r.P.Get()
 		assert.True(t, s.UpdateAvailable)
-		assert.Equal(t, "0.5.0", s.LatestVersion)
+		assert.Equal(t, "v1.2.2", s.LatestVersion)
 	})
 
 	t.Run("TelemetryDisabled", func(t *testing.T) {
-		serverCalled = 0 // telemetry server was not called yet.
+		t.Parallel()
+
+		var serverCalled int
+		telemetryResponse := response{
+			LatestVersion:   "v1.2.1",
+			UpdateAvailable: true,
+		}
+		bs := beaconServer(t, &serverCalled, &telemetryResponse)
 
 		provider, err := state.NewProvider("")
 		require.NoError(t, err)
 
 		opts := NewReporterOpts{
-			URL:           ts.URL,
+			URL:           bs.URL,
 			F:             &Flag{v: pointer.ToBool(false)},
 			ConnMetrics:   connmetrics.NewListenerMetrics().ConnMetrics,
 			P:             provider,
