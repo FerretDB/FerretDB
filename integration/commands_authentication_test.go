@@ -23,13 +23,6 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-type connectionStatus struct {
-	AuthInfo struct {
-		AuthenticatedUsers []any
-	}
-	Ok float64
-}
-
 func TestCommandsAuthenticationLogout(t *testing.T) {
 	t.Parallel()
 
@@ -58,23 +51,40 @@ func TestCommandsAuthenticationLogoutTLS(t *testing.T) {
 	db := collection.Database()
 
 	// the test user is authenticated
-	var status connectionStatus
-	err := db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&status)
+	expectedAuthenticated := bson.D{
+		{
+			"authInfo", bson.D{
+				{"authenticatedUsers", bson.A{bson.D{{"user", "username"}}}},
+				{"authenticatedUserRoles", bson.A{}},
+				{"authenticatedUserPrivileges", bson.A{}},
+			},
+		},
+		{"ok", float64(1)},
+	}
+	var res bson.D
+	err := db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
 	assert.NoError(t, err)
-	assert.Equal(t, float64(1), status.Ok)
-	assert.NotEmpty(t, status.AuthInfo.AuthenticatedUsers)
+	assert.Equal(t, expectedAuthenticated, res)
 
 	// the test user logs out
-	var res bson.D
 	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
 	assert.NoError(t, err)
 	assert.Equal(t, bson.D{{"ok", float64(1)}}, res)
 
 	// the test user is no longer authenticated
-	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&status)
+	expectedUnauthenticated := bson.D{
+		{
+			"authInfo", bson.D{
+				{"authenticatedUsers", bson.A{}},
+				{"authenticatedUserRoles", bson.A{}},
+				{"authenticatedUserPrivileges", bson.A{}},
+			},
+		},
+		{"ok", float64(1)},
+	}
+	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&res)
 	assert.NoError(t, err)
-	assert.Equal(t, float64(1), status.Ok)
-	assert.Empty(t, status.AuthInfo.AuthenticatedUsers)
+	assert.Equal(t, expectedUnauthenticated, res)
 }
 
 func TestCommandsAuthenticationSASLStart(t *testing.T) {
