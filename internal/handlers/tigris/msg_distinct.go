@@ -20,6 +20,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -48,12 +49,19 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		Filter:     dp.Filter,
 	}
 
-	resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{dbPool, &qp, h.DisableFilterPushdown})
+	fp := &fetchParams{dbPool, &qp, h.DisableFilterPushdown}
+
+	iter, err := fp.dbPool.QueryDocuments(ctx, fp.qp)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
-	distinct, err := common.FilterDistinctValues(resDocs, dp.Key)
+	closer := iterator.NewMultiCloser(iter)
+	defer closer.Close()
+
+	iter = common.FilterIterator(iter, closer, qp.Filter)
+
+	distinct, err := common.FilterDistinctValues(iter, dp.Key)
 	if err != nil {
 		return nil, err
 	}
