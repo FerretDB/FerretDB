@@ -40,12 +40,12 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 	var res bson.D
 	err := db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
 	assert.NoError(t, err)
-	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
+	assert.Equal(t, bson.D{{"ok", float64(1)}}, res)
 
 	// the test user logs out again, it has no effect
 	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
 	assert.NoError(t, err)
-	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
+	assert.Equal(t, bson.D{{"ok", float64(1)}}, res)
 }
 
 func TestCommandsAuthenticationLogoutTLS(t *testing.T) {
@@ -68,7 +68,7 @@ func TestCommandsAuthenticationLogoutTLS(t *testing.T) {
 	var res bson.D
 	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
 	assert.NoError(t, err)
-	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
+	assert.Equal(t, bson.D{{"ok", float64(1)}}, res)
 
 	// the test user is no longer authenticated
 	err = db.RunCommand(ctx, bson.D{{"connectionStatus", 1}}).Decode(&status)
