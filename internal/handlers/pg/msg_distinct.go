@@ -51,9 +51,9 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		Comment:    dp.Comment,
 	}
 
-	var resDocs []*types.Document
+	var iter types.DocumentsIterator
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		resDocs, err = fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisableFilterPushdown})
+		iter, err = fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisableFilterPushdown})
 		return err
 	})
 
@@ -61,7 +61,7 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, err
 	}
 
-	distinct, err := common.FilterDistinctValues(resDocs, dp.Key)
+	distinct, err := common.FilterDistinctValues(iter, dp.Key)
 	if err != nil {
 		return nil, err
 	}

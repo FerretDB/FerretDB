@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -52,9 +53,9 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 
 	qp.Filter = params.Filter
 
-	var resDocs []*types.Document
+	var iter types.DocumentsIterator
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		resDocs, err = fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisableFilterPushdown})
+		iter, err = fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisableFilterPushdown})
 		return err
 	})
 
@@ -62,11 +63,15 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, err
 	}
 
-	if resDocs, err = common.SkipDocuments(resDocs, params.Skip); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	closer := iterator.NewMultiCloser(iter)
+	defer closer.Close()
 
-	if resDocs, err = common.LimitDocuments(resDocs, params.Limit); err != nil {
+	iter = common.SkipIterator(iter, closer, params.Skip)
+
+	iter = common.LimitIterator(iter, closer, params.Limit)
+
+	resDocs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
