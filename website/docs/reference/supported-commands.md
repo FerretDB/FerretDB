@@ -218,7 +218,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/78).
 | -------------- | -------- | ------ | --------------------------------------------------------- |
 | `authenticate` |          | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1731) |
 | `getnonce`     |          | ❌      | Deprecated                                                |
-| `logout`       |          | ❌      | [Issue](https://github.com/FerretDB/FerretDB/issues/1750) |
+| `logout`       |          | ✅      |                                                           |
 | `saslStart`    |          | ✅      |                                                           |
 
 ### Role Management Commands
