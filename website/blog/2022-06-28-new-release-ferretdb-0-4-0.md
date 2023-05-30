@@ -1,6 +1,6 @@
 ---
 slug: new-release-ferretdb-0-4-0
-title: "New release: FerretDB 0.4.0!"
+title: 'New release: FerretDB 0.4.0!'
 author: Peter Farkas
 description: We are happy to announce that FerretDB’s newest 0.4.0 release is now available on GitHub with some exciting new features and fixes in it.
 image: /img/blog/4ferrets.webp
@@ -18,7 +18,7 @@ We wish to thank everyone in the community who contributed to this release, eith
 Special thanks to [ribaraka](https://github.com/ribaraka) and [fenogentov](https://github.com/fenogentov) for their sustained efforts.
 
 Since 0.3.0, we are getting more and more user reports from those early adopters, who were curious enough to go ahead and replace their MongoDB instances with FerretDB - with success!
-The feedback we are getting is invaluable, though your mileage may vary based on the complexity of your application’s  database needs.
+The feedback we are getting is invaluable, though your mileage may vary based on the complexity of your application’s database needs.
 
 As mentioned before, we are already compatible with applications, like SAP’s [CLA assistant](https://github.com/cla-assistant), and there will be many more to come in the next couple of months.
 

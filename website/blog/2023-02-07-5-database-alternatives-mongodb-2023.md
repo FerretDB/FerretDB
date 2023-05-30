@@ -1,9 +1,9 @@
 ---
 slug: 5-database-alternatives-mongodb-2023
-title: "MongoDB Alternatives: 5 Database Alternatives to MongoDB for 2023"
+title: 'MongoDB Alternatives: 5 Database Alternatives to MongoDB for 2023'
 author: Alexander Fashakin
+description: 'The top 5 MongoDB-compatible alternatives to MongoDB include: FerretDB, DocumentDB, CosmosDB, GaussDB(for Mongo), and MariaDB MaxScale.'
 image: /img/blog/mongodb-alternatives.png
-description: "The top 5 MongoDB-compatible alternatives to MongoDB include: FerretDB, DocumentDB, CosmosDB, GaussDB(for Mongo), and MariaDB MaxScale."
 date: 2023-02-07
 ---
 
@@ -33,16 +33,16 @@ Due to the attraction and many benefits of open source software, [several compan
 Case in point: MongoDB.
 
 If you conduct a simple search to see if it's open source, you'll likely arrive at an article that describes it as one.
-But what does it mean to be *truly* open source, and what benefits do they have over proprietary databases?
+But what does it mean to be _truly_ open source, and what benefits do they have over proprietary databases?
 
 An open source software is licensed under Apache License 2.0, or other similar licenses approved by the Open Source Initiative (OSI) that follow the principles of open source to be freely available to modify, use, deploy, and manage, and most importantly.
 
-Yet, in the last few years, there have been some *redefinitions* and untruths on what open source actually means.
+Yet, in the last few years, there have been some _redefinitions_ and untruths on what open source actually means.
 
 The biggest culprits and prime examples among them are MongoDB's Server Side Public License (SSPL) and Elastic's source-available license, Elastic license.
 None of these licenses have been endorsed by the Open Source Initiative, generally considered the official arbiters in the open source community.
 
-While several euphemisms are used to describe these licenses as either free or open, *they are not*.
+While several euphemisms are used to describe these licenses as either free or open, _they are not_.
 They come with restrictions that go against the principles of OSS.
 For instance, under a proprietary license like SSPL, you can’t run MongoDB as a service unless you release all the support code and underlying infrastructure – or otherwise, pay for the enterprise version – MongoDB Atlas.
 
