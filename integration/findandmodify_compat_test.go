@@ -644,6 +644,8 @@ type findAndModifyCompatTestCase struct {
 
 	skip          string // skips test if non-empty
 	skipForTigris string // skips test for Tigris if non-empty
+
+	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
 // testFindAndModifyCompat tests findAndModify compatibility test cases.
@@ -667,7 +669,7 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 			// Use per-test setup because findAndModify modifies data set.
 			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
-			//	var nonEmptyResults bool
+			var nonEmptyResults bool
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
@@ -732,7 +734,20 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 					t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
 					t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))
 					AssertEqualDocumentsSlice(t, compatRes, targetRes)
+
+					if len(targetRes) > 0 || len(compatRes) > 0 {
+						nonEmptyResults = true
+					}
 				})
+			}
+
+			switch tc.resultType {
+			case nonEmptyResult:
+				assert.True(t, nonEmptyResults, "expected non-empty results")
+			case emptyResult:
+				assert.False(t, nonEmptyResults, "expected empty results")
+			default:
+				t.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
