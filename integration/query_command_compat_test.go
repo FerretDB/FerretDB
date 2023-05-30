@@ -26,10 +26,10 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-// queryCompatTestCase describes query compatibility test case.
+// queryCommandCompatTestCase describes query compatibility test case.
 //
 //nolint:vet // for readability
-type queryCompatCommandTestCase struct {
+type queryCommandCompatTestCase struct {
 	filter     bson.D // required
 	sort       bson.D // defaults to `bson.D{{"_id", 1}}`
 	projection bson.D // nil for leaving projection unset
@@ -44,7 +44,7 @@ type queryCompatCommandTestCase struct {
 }
 
 // testQueryCompat tests query compatibility test cases.
-func testQueryCompatCommand(t *testing.T, testCases map[string]queryCompatCommandTestCase) {
+func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompatTestCase) {
 	t.Helper()
 
 	// Use shared setup because find queries can't modify data.
@@ -171,10 +171,10 @@ func testQueryCompatCommand(t *testing.T, testCases map[string]queryCompatComman
 	}
 }
 
-func TestQueryCompatCommandSkip(t *testing.T) {
+func TestQueryCommandCompatSkip(t *testing.T) {
 	t.Parallel()
 
-	testCases := map[string]queryCompatCommandTestCase{
+	testCases := map[string]queryCommandCompatTestCase{
 		"MaxInt64": {
 			filter:     bson.D{},
 			optSkip:    math.MaxInt64,
@@ -205,5 +205,5 @@ func TestQueryCompatCommandSkip(t *testing.T) {
 		},
 	}
 
-	testQueryCompatCommand(t, testCases)
+	testQueryCommandCompat(t, testCases)
 }
