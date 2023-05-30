@@ -25,7 +25,7 @@ Let’s start with FerretDB and PostgreSQL.
 We will use Docker Compose to run everything in Docker containers.
 Put the following into the docker-compose.yml file:
 
-```js
+```yaml
 services:
   postgres:
     image: postgres:14.2
@@ -41,7 +41,6 @@ services:
     command: >
       -listen-addr=:27017
       -postgresql-url=postgres://postgres@postgres:5432/ferretdb
-
 ```
 
 The first service starts PostgreSQL and creates "ferretdb" database, with data stored on the host system in `./data/postgres` directory.
@@ -55,7 +54,7 @@ Now we need to start CLA Assistant itself.
 They do not provide a prebuilt Docker image, but it is easy to build ourselves.
 Run the following commands to do that:
 
-```js
+```sh
 git clone https://github.com/cla-assistant/cla-assistant.git
 cd cla-assistant
 git checkout v2.13.0
@@ -78,7 +77,7 @@ The only required scope is `public_repo`.
 
 Now, let’s add CLA Assistant to our Docker Compose configuration:
 
-```js
+```yaml
 services:
   # postgres and ferretdb above
 
@@ -94,16 +93,16 @@ services:
       GITHUB_SECRET: <OAuth App's Client secret>
       GITHUB_ADMIN_USERS: <bot's account name>
       GITHUB_TOKEN: <bot's personal access token>
-
 ```
 
 Finally, we need a web server that would handle HTTPS for us.
 For that, we will use [Caddy](https://caddyserver.com):
 
-```js
+```yaml
 services:
   # postgres, ferretdb, and cla-assistant above
 
+  caddy:
     image: caddy:2.4.6
     ports:
       - 80:80
@@ -112,23 +111,24 @@ services:
       - ./data/caddy/data:/data
       - ./data/caddy/config:/config
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-
 ```
 
-Caddy will listen on both HTTP and HTTPS ports, and retrieve the TLS certificate from Let’s Encrypt that will be stored in "./data/caddy" on the host.
-For that, we need to create a file called "Caddyfile" on the host next to docker-compose.yml with the following content:
+Caddy will listen on both HTTP and HTTPS ports, and retrieve the TLS certificate from Let’s Encrypt that will be stored in `./data/caddy` on the host.
+For that, we need to create a file called `Caddyfile` on the host next to docker-compose.yml with the following content:
 
-```js
+```text
   <domain> {
     reverse_proxy cla-assistant:5000
     tls <your email address>
   }
-
 ```
 
 Email is used by Let’s Encrypt to contact you if [something goes wrong](https://letsencrypt.org/docs/expiration-emails/).
 
 That’s all with the configuration!
-Now we can start our containers with _docker-compose up --detach_, start following logs with _docker-compose logs -f_, and open our domain in the browser to login with GitHub and configure our first CLA.
+Now we can start our containers with `docker-compose up --detach`,
+start following logs with `docker-compose logs -f`,
+and open our domain in the browser to login with GitHub and configure our first CLA.
 
-Hopefully, both CLA Assistant and FerretDB will work great for you; but if you encounter any problems, or just want to give us feedback about FerretDB, feel free to [join our community Slack or any other community place](https://github.com/FerretDB/FerretDB/#community) – we will be happy to help!
+Hopefully, both CLA Assistant and FerretDB will work great for you; but if you encounter any problems, or just want to give us feedback about FerretDB,
+feel free to [join our community Slack or any other community place](https://github.com/FerretDB/FerretDB/#community) – we will be happy to help!
