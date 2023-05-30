@@ -1,6 +1,6 @@
 ---
 slug: ferretdb-new-release-with-tls
-title: 'FerretDB v0.7.1 - Now offering basic TLS support'
+title: FerretDB v0.7.1 - Now offering basic TLS support
 author: Alexander Fashakin
 description: The new FerretDB release 0.7.1 comes with the introduction of basic TLS support, addition of `filter` for `listCollections`, and much more.
 image: /img/blog/TLS.webp

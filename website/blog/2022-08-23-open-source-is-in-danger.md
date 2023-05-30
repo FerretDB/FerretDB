@@ -1,6 +1,6 @@
 ---
 slug: open-source-is-in-danger
-title: 'Open Source is in Danger as a Result Of Complacency, Plain Stupidity and Greed'
+title: Open Source is in Danger as a Result Of Complacency, Plain Stupidity and Greed
 author: Peter Farkas
 description: For those of us working in the IT industry, we should be well aware of the many benefits that open source software provides.
 image: /img/blog/Maintainer@5x-1-300x300.png

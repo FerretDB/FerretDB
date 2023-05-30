@@ -1,6 +1,6 @@
 ---
 slug: using-ferretdb-with-studio-3t
-title: 'Using FerretDB 1.0 with Studio 3T'
+title: Using FerretDB 1.0 with Studio 3T
 authors: [alex]
 description: >
   Discover how to use FerretDB 1.0 with Studio 3T, and explore ways to leverage FerretDB for MongoDB GUI applications.

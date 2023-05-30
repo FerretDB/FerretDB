@@ -1,6 +1,6 @@
 ---
 slug: how-to-start-ferretdb-locally-with-docker
-title: 'How to start FerretDB locally with Docker'
+title: How to start FerretDB locally with Docker
 author: Patryk Kwiatek
 description: Learn to set up FerretDB locally using Docker by installing the essential software prerequisites, configuring Docker containers, and running insert() and find() commands.
 image: /img/blog/3g0okbkcve391.jpg
