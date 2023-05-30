@@ -1,12 +1,18 @@
 ---
 slug: using-ferretdb-with-studio-3t
-title: "Using FerretDB 1.0 with Studio 3T"
+title: Using FerretDB 1.0 with Studio 3T
 authors: [alex]
 description: >
-    Discover how to use FerretDB 1.0 with Studio 3T, and explore ways to leverage FerretDB for MongoDB GUI applications.
+  Discover how to use FerretDB 1.0 with Studio 3T, and explore ways to leverage FerretDB for MongoDB GUI applications.
 image: /img/blog/ferretdb-studio3t.png
 keywords: [FerretDB, Studio 3T, mongodb gui]
-tags: [mongodb alternative, mongodb compatible, mongodb gui, compatible applications]
+tags:
+  [
+    mongodb alternative,
+    mongodb compatible,
+    mongodb gui,
+    compatible applications
+  ]
 ---
 
 ![Using FerretDB with Studio 3T](/img/blog/ferretdb-studio3t.png)
@@ -98,33 +104,33 @@ Once installed, if you already have an account, you can proceed to sign in; othe
 
 Once we’ve finally installed and set up Studio 3T locally, the next thing to do is to connect Studio 3T with our FerretDB instance.
 
-1. To set up a connection, open Studio 3T and click on “New Connection” on the welcome screen.
-    You will be given a “New Connection” dialog box that you should use to set up your connection.
+1. To set up a connection, open Studio 3T and click on "New Connection" on the welcome screen.
+   You will be given a "New Connection" dialog box that you should use to set up your connection.
 
-    Connect FerretDB with any MongoDB client application like Studio 3T using MongoDB URI `mongodb://127.0.0.1:27017/`
+   Connect FerretDB with any MongoDB client application like Studio 3T using MongoDB URI `mongodb://127.0.0.1:27017/`
 
-    ![Studio 3T New Connection](/img/blog/ferretdb-studio3t/image3.png)
+   ![Studio 3T New Connection](/img/blog/ferretdb-studio3t/image3.png)
 
-    Click “Next” to proceed.
+   Click "Next" to proceed.
 
-    ![Studio 3T Connection window](/img/blog/ferretdb-studio3t/image4.png)
+   ![Studio 3T Connection window](/img/blog/ferretdb-studio3t/image4.png)
 
 2. In the "New Connection" dialog box, set up your connection with the following details:
 
-    * Connection name: A name for your connection.
-    * Server: The hostname or IP address of your FerretDB instance (e.g., "ferretdb").
-    The server and port are automatically set based on the connection URI you provided.
-    * Port: The port number on which FerretDB is listening (default is 27017)
-    * Authentication: Set to "LDAP (PLAIN)"
-    * Username: The username created for FerretDB
-    * Password: The password created for FerretDB
+   - Connection name: A name for your connection.
+   - Server: The hostname or IP address of your FerretDB instance (e.g., "ferretdb").
+     The server and port are automatically set based on the connection URI you provided.
+   - Port: The port number on which FerretDB is listening (default is 27017)
+   - Authentication: Set to "LDAP (PLAIN)"
+   - Username: The username created for FerretDB
+   - Password: The password created for FerretDB
 
 3. Click on "Test" to make sure the connection is working.
-    It should look like this once connected:
+   It should look like this once connected:
 
-    ![testing Studio 3T - FerretDB Connection](/img/blog/ferretdb-studio3t/image5.png)
+   ![testing Studio 3T - FerretDB Connection](/img/blog/ferretdb-studio3t/image5.png)
 
-    If the test is successful, click on "Save" to save the connection.
+   If the test is successful, click on "Save" to save the connection.
 
 And that’s about it; we have connected Studio 3T with our FerretDB instance.
 Up next, we will try to run some basic and advanced operations on Studio 3T to see all the essential features of FerretDB.
@@ -136,8 +142,8 @@ In this section, we will try to run some basic operations in Studio 3T and Ferre
 To begin, let’s create a database and collection using Studio 3T.
 If you already have some databases available in the FerretDB instance, this will be displayed in the list of available databases on the Studio 3T screen.
 
-If not, right-click on the added connection and select “Add Database”, naming it “testing”.
-Once that’s created, we repeat the process by right-clicking on the new database and then “Add Collection”.
+If not, right-click on the added connection and select "Add Database", naming it "testing".
+Once that’s created, we repeat the process by right-clicking on the new database and then "Add Collection".
 
 Let’s insert some documents into the collection we created:
 
@@ -151,62 +157,62 @@ In the IntelliShell window, type the following command to insert the first docum
 ```js
 db.test.insertMany([
   {
-    name: "John Doe",
-    email: "johndoe@example.com",
+    name: 'John Doe',
+    email: 'johndoe@example.com',
     age: 30,
-    gender: "Male",
-    interests: ["reading", "hiking", "photography"],
+    gender: 'Male',
+    interests: ['reading', 'hiking', 'photography'],
     address: {
-      street: "123 Main St",
-      city: "Anytown",
-      state: "CA",
-      zip: "12345"
+      street: '123 Main St',
+      city: 'Anytown',
+      state: 'CA',
+      zip: '12345'
     }
   },
   {
-    name: "Jane Smith",
-    email: "janesmith@example.com",
+    name: 'Jane Smith',
+    email: 'janesmith@example.com',
     age: 25,
-    gender: "Female",
-    interests: ["painting", "travel", "yoga"],
+    gender: 'Female',
+    interests: ['painting', 'travel', 'yoga'],
     address: {
-      street: "456 Elm St",
-      city: "Othertown",
-      state: "NY",
-      zip: "67890"
+      street: '456 Elm St',
+      city: 'Othertown',
+      state: 'NY',
+      zip: '67890'
     }
   },
   {
-    name: "Bob Johnson",
-    email: "bjohnson@example.com",
+    name: 'Bob Johnson',
+    email: 'bjohnson@example.com',
     age: 40,
-    gender: "Male",
-    interests: ["cooking", "gardening", "fishing"],
+    gender: 'Male',
+    interests: ['cooking', 'gardening', 'fishing'],
     address: {
-      street: "789 Oak St",
-      city: "Somewhere",
-      state: "TX",
-      zip: "23456"
+      street: '789 Oak St',
+      city: 'Somewhere',
+      state: 'TX',
+      zip: '23456'
     }
   },
   {
-    name: "Samantha Lee",
-    email: "slee@example.com",
+    name: 'Samantha Lee',
+    email: 'slee@example.com',
     age: 28,
-    gender: "Female",
-    interests: ["music", "dancing", "skiing"],
+    gender: 'Female',
+    interests: ['music', 'dancing', 'skiing'],
     address: {
-      street: "321 Pine St",
-      city: "Anotherplace",
-      state: "FL",
-      zip: "34567"
+      street: '321 Pine St',
+      city: 'Anotherplace',
+      state: 'FL',
+      zip: '34567'
     }
   }
 ])
 ```
 
 This should insert 4 documents into the collection.
-If it’s not visible on the screen, right the collection and click “Refresh”.
+If it’s not visible on the screen, right the collection and click "Refresh".
 
 ![Insert operation](/img/blog/ferretdb-studio3t/image6.png)
 
@@ -224,8 +230,8 @@ Let’s also try updating some documents in the database by extending the above 
 
 ```js
 db.test.updateMany(
-  { "age": { "$gte": 30 } },
-  { "$set": { "interests": ["reading", "hiking", "photography", "painting"] } }
+  { age: { $gte: 30 } },
+  { $set: { interests: ['reading', 'hiking', 'photography', 'painting'] } }
 )
 ```
 
@@ -267,22 +273,20 @@ Say we want to perform operations on a new collection, `sales`, with the followi
 An aggregation pipeline operation like the one below would run without any error:
 
 ```js
-db.sales.aggregate([
-  { $sort: { order_total: -1 } }
-])
+db.sales.aggregate([{ $sort: { order_total: -1 } }])
 ```
 
 FerretDB can be used to perform complex operations using aggregation pipelines to transform data.
 In addition to `aggregate`, `count`, and `distinct` aggregation pipeline commands, FerretDB supports the following aggregation pipeline stages:
 
-* $count
-* $group
-* $limit
-* $match
-* $out
-* $skip
-* $sort
-* $unwind
+- $count
+- $group
+- $limit
+- $match
+- $out
+- $skip
+- $sort
+- $unwind
 
 You can find the full list of available [supported FerretDB commands](https://docs.ferretdb.io/reference/supported-commands/) here.
 

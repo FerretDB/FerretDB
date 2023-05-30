@@ -1,6 +1,6 @@
 ---
 slug: ferretdb-percona-university-event-istanbul
-title: "FerretDB at Percona University in Istanbul"
+title: FerretDB at Percona University in Istanbul
 author: Peter Farkas
 description: We were really excited to join Percona University Istanbul last weekend, an event which was sponsored by FerretDB and HostedPMM.
 image: /img/blog/BSS-1319-1024x684.jpg
@@ -25,7 +25,7 @@ The former group still felt important to remain up to speed with open source tec
 It’s always fascinating to me how tightly knit the open source database community is.
 It’s almost a given that whenever and wherever I have the chance to attend a similar event, I will surely meet friends and former colleagues.
 
-Globally-known, but local experts, such as O”Reilly authors Sveta Smirnova and Alkin Tezuysal also gave talks.
+Globally-known, but local experts, such as O'Reilly authors Sveta Smirnova and Alkin Tezuysal also gave talks.
 And we had experts who visited the event from outside Türkiye, such as Ibrar Ahmed, my Co-Founder Peter Zaitsev, among others.
 
 It was also great to see the diversity-focused [Technologist Women Platformu](https://linktr.ee/technologist.women), who are working on increasing the level of Technology - Digital Literacy of women, to attend the event.

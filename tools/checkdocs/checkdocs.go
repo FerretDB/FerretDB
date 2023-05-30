@@ -85,7 +85,7 @@ func getBlogSlugs(fs []fs.DirEntry) []fileSlug {
 		sm := fnRegex.FindStringSubmatch(fn)
 
 		if len(sm) > 2 {
-			log.Fatalf("File %s is not correctly formated (yyyy-mm-dd-'slug'.md)", fn)
+			log.Fatalf("File %s is not correctly formatted (yyyy-mm-dd-'slug'.md)", fn)
 			continue
 		}
 

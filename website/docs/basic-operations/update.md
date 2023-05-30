@@ -29,34 +29,34 @@ First, populate the database with a collection containing a list of documents.
 
 ```js
 db.scientists.insertMany([
-   {
-        firstname: "Thomas",
-        lastname: "Edison",
-        born: 1847,
-        invention: "LightBulb",
-        nobel: true
-   },
-   {
-        firstname: "Graham",
-        lastname: "Bell",
-        born: 1847,
-        invention: "telephone",
-        nobel: false
-   },
-   {
-        firstname: "Nikola",
-        lastname: "Tesla",
-        born: 1856,
-        invention: "Tesla coil",
-        nobel: false
-   },
-   {
-        firstname: "Ada",
-        lastname: "Lovelace",
-        born: 1815,
-        invention: "Computer programming",
-        nobel: false
-   }
+  {
+    firstname: 'Thomas',
+    lastname: 'Edison',
+    born: 1847,
+    invention: 'LightBulb',
+    nobel: true
+  },
+  {
+    firstname: 'Graham',
+    lastname: 'Bell',
+    born: 1847,
+    invention: 'telephone',
+    nobel: false
+  },
+  {
+    firstname: 'Nikola',
+    lastname: 'Tesla',
+    born: 1856,
+    invention: 'Tesla coil',
+    nobel: false
+  },
+  {
+    firstname: 'Ada',
+    lastname: 'Lovelace',
+    born: 1815,
+    invention: 'Computer programming',
+    nobel: false
+  }
 ])
 ```
 
@@ -64,14 +64,16 @@ Using the document record in the collection, update the document where `firstnam
 The `updateOne()` operation will only affect the first document that’s retrieved in the collection.
 
 ```js
-db.scientists.updateOne({
-   firstname: "Graham"
-},
-{
-   $set:{
-      firstname: "Alexander Graham"
-   }
-})
+db.scientists.updateOne(
+  {
+    firstname: 'Graham'
+  },
+  {
+    $set: {
+      firstname: 'Alexander Graham'
+    }
+  }
+)
 ```
 
 ## Replace a document
@@ -79,16 +81,18 @@ db.scientists.updateOne({
 Besides updating a document, you can replace it completely using the `replaceOne()` method.
 
 ```js
-db.scientists.replaceOne({
-    lastname: "Bell",
-},
-{
-    lastname: "Einstein",
-    firstname: "Albert",
+db.scientists.replaceOne(
+  {
+    lastname: 'Bell'
+  },
+  {
+    lastname: 'Einstein',
+    firstname: 'Albert',
     born: 1879,
-    invention: "Photoelectric effect",
+    invention: 'Photoelectric effect',
     nobel: true
-})
+  }
+)
 ```
 
 ## Update many documents
@@ -97,7 +101,7 @@ Using the `updateMany()` command, you can modify many documents at once.
 In the example below, where `nobel` is set as false, update and set to true.
 
 ```js
-db.scientists.updateMany({nobel:false}, {$set: {nobel:true}})
+db.scientists.updateMany({ nobel: false }, { $set: { nobel: true } })
 ```
 
 This operation updates all the documents where the field `nobel` was previously false.
@@ -110,49 +114,34 @@ To populate the collection, run the following in your terminal:
 ```js
 db.employees.insertMany([
   {
-     name: {
-        first: "Earl",
-        last: "Thomas"
-     },
-     employeeID: 1234,
-     age: 23,
-     role: "salesperson",
-     catalog: [
-        "printer",
-        "cardboard",
-        "crayons",
-        "books"
-     ]
+    name: {
+      first: 'Earl',
+      last: 'Thomas'
+    },
+    employeeID: 1234,
+    age: 23,
+    role: 'salesperson',
+    catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
-     name: {
-        first: "Sam",
-        last: "Johnson"
-     },
-     employeeID: 2234,
-     age: 35,
-     role: "salesperson",
-     catalog: [
-        "cabinet",
-        "fridge",
-        "blender",
-        "utensils"
-     ]
+    name: {
+      first: 'Sam',
+      last: 'Johnson'
+    },
+    employeeID: 2234,
+    age: 35,
+    role: 'salesperson',
+    catalog: ['cabinet', 'fridge', 'blender', 'utensils']
   },
   {
-     name: {
-        first: "Clarke",
-        last: "Dane"
-     },
-     employeeID: 3234,
-     age: 21,
-     role: "salesperson",
-     catalog: [
-        "printer",
-        "pencils",
-        "crayons",
-        "toys"
-     ]
+    name: {
+      first: 'Clarke',
+      last: 'Dane'
+    },
+    employeeID: 3234,
+    age: 21,
+    role: 'salesperson',
+    catalog: ['printer', 'pencils', 'crayons', 'toys']
   }
 ])
 ```
@@ -161,14 +150,16 @@ The following command will query and update the `catalog` array in the `employee
 The command will query the second field of the array in every document for `"pencil"`, and when there is a match, updates the first element of the array.
 
 ```js
-db.employees.updateMany({
-    "catalog.1": "pencils"
-},
-{
+db.employees.updateMany(
+  {
+    'catalog.1': 'pencils'
+  },
+  {
     $set: {
-        "catalog.0": "ruler"
+      'catalog.0': 'ruler'
     }
-})
+  }
+)
 ```
 
 The response from the command:
@@ -189,14 +180,16 @@ To update an embedded document, use dot notation to specify the fields to modify
 The following operation updates any embedded document that matches the specified query in the `employees` collection.
 
 ```js
-db.employees.updateMany({
-    "name.first": "Clarke"
-},
-{
+db.employees.updateMany(
+  {
+    'name.first': 'Clarke'
+  },
+  {
     $set: {
-        "name.last": "Elliot"
+      'name.last': 'Elliot'
     }
-})
+  }
+)
 ```
 
 The following response from the command shows that a single document matching the query was updated:

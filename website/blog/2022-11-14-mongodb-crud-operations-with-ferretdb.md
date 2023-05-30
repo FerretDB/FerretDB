@@ -1,6 +1,6 @@
 ---
 slug: mongodb-crud-operations-with-ferretdb
-title: "How to Pass Basic MongoDB CRUD Operations With FerretDB"
+title: How to Pass Basic MongoDB CRUD Operations With FerretDB
 author: Alexander Fashakin
 image: /img/blog/uriel-sc-11KDtiUWRq4-unsplash-1024x680.jpg
 description: In this tutorial, we will show you how to pass basic MongoDB CRUD operations in FerretDB - the open source MongoDB alternative.
@@ -66,11 +66,17 @@ The process is identical to how you’d insert a single data record in MongoDB.
 To begin with, let’s insert a single document into the collection:
 
 ```js
-db.league.insertOne({club:'PSG', points: 30, average_age: 30, discipline:{red:5, yellow:30},qualified: false})
+db.league.insertOne({
+  club: 'PSG',
+  points: 30,
+  average_age: 30,
+  discipline: { red: 5, yellow: 30 },
+  qualified: false
+})
 ```
 
 This line of code creates a new document in your collection.
-If the operation is successful, you’ll get a  response with `acknowledged` set as ‘true’, and the id of the inserted document  (`insertedID`) containing the ObjectId.
+If the operation is successful, you’ll get a response with `acknowledged` set as ‘true’, and the id of the inserted document (`insertedID`) containing the ObjectId.
 
 ```js
 {
@@ -87,13 +93,35 @@ Instead of creating just a single document in the collection, you can create mul
 Indicate that you are inserting multiple document records with a square bracket and separate each document using commas.
 
 ```js
-db.collection_name.insertMany([{document1}, {document2},... {documentN}])
+db.collection_name.insertMany([{ document1 }, { document2 }, ...{ documentN }])
 ```
 
 To see how this works, we are going to insert three new documents into the collection:
 
 ```js
-db.league.insertMany([{club:'Arsenal', points: 80, average_age: 24, discipline: {red: 2, yellow: 15},qualified: true }, {club:'Barcelona', points: 60, average_age: 31, discipline: {red: 0, yellow: 7},qualified:false}, {club:'Bayern', points: 84, average_age: 29 , discipline: {red: 1, yellow: 20}, qualified:true}])
+db.league.insertMany([
+  {
+    club: 'Arsenal',
+    points: 80,
+    average_age: 24,
+    discipline: { red: 2, yellow: 15 },
+    qualified: true
+  },
+  {
+    club: 'Barcelona',
+    points: 60,
+    average_age: 31,
+    discipline: { red: 0, yellow: 7 },
+    qualified: false
+  },
+  {
+    club: 'Bayern',
+    points: 84,
+    average_age: 29,
+    discipline: { red: 1, yellow: 20 },
+    qualified: true
+  }
+])
 ```
 
 The output from this command:
@@ -130,12 +158,12 @@ This operation retrieves and displays all the documents present in the collectio
 Now, let's add a query parameter to the `find()` operation to filter for a specific item.
 
 ```js
-db.league.find({club:'PSG'})
+db.league.find({ club: 'PSG' })
 ```
 
 This retrieves all the records that match the query:
 
-```js
+```json5
 [
   {
     _id: ObjectId("63109e9251bcc5e0155db0c2"),
@@ -150,14 +178,14 @@ This retrieves all the records that match the query:
 
 You can also filter a collection in FerretDB using any of the commonly used MongoDB operators:
 
-* `$gt`: selects records that are greater than a specific value
-* `$lt`:  selects records that are less than a specific value
-* `$gte`: selects records greater or equal to a specific value
-* `$lte`: selects records less than or equal to a specific value
-* `$in`: selects any record that contains any of the items present in a defined array
-* `$nin`: selects any record that does not contain any of the items in a defined array
-* `$ne`: selects records that are not equal to a specific value
-* `$eq`: select records that are equal to a specific value
+- `$gt`: selects records that are greater than a specific value
+- `$lt`: selects records that are less than a specific value
+- `$gte`: selects records greater or equal to a specific value
+- `$lte`: selects records less than or equal to a specific value
+- `$in`: selects any record that contains any of the items present in a defined array
+- `$nin`: selects any record that does not contain any of the items in a defined array
+- `$ne`: selects records that are not equal to a specific value
+- `$eq`: select records that are equal to a specific value
 
 #### Find documents using the `$in` operator
 
@@ -171,12 +199,12 @@ db.collection_name.find({ field: { $in: [<value1>, <value2>, ... <valueN> ] } })
 Let's filter the `league` data for teams with 80 or 60 `points`:
 
 ```js
-db.league.find({points:{$in:[80,60]}})
+db.league.find({ points: { $in: [80, 60] } })
 ```
 
 This displays the documents that match this query:
 
-```js
+```json5
 [
   {
     _id: ObjectId("63109f4d51bcc5e0155db0c3"),
@@ -200,15 +228,15 @@ This displays the documents that match this query:
 #### Find documents using the `$lt` operator
 
 The `$lt` operator filters a collection for records that are less than a specific value.
-For example, let's select the documents with less than 60 *points* :
+For example, let's select the documents with less than 60 _points_ :
 
 ```js
-db.league.find({points:{$lt:60}})
+db.league.find({ points: { $lt: 60 } })
 ```
 
 The output:
 
-```js
+```json5
 [
   {
     _id: ObjectId("63109e9251bcc5e0155db0c2"),
@@ -224,10 +252,10 @@ The output:
 ### findOne()
 
 The `findOne()` method selects the first document that matches a specified set of query parameters.
-For instance, let’s filter the collection for documents with the *qualified* set to true.
+For instance, let’s filter the collection for documents with the _qualified_ set to true.
 
 ```js
-db.league.findOne({qualified:true})
+db.league.findOne({ qualified: true })
 ```
 
 The response displays the first document that matches the query:
@@ -249,7 +277,7 @@ Even though two documents match this query, the result only displays the first d
 
 Update operations are write commands that accept a query parameter and changes to be applied to a document.
 
-We'll be exploring  three basic MongoDB methods for updating documents using FerretDB: `updateOne()`, `updateMany()`, and `replaceOne()`.
+We'll be exploring three basic MongoDB methods for updating documents using FerretDB: `updateOne()`, `updateMany()`, and `replaceOne()`.
 
 ### updateOne()
 
@@ -260,11 +288,11 @@ The following syntax depicts the update operation where the atomic operator `$se
 db.collection_name.updateOne({<query-params>}, {$set: {<update fields>}})
 ```
 
-Using our database, let’s update a document where the `club` field is  `PSG` and set the new `points` field as `35`.
+Using our database, let’s update a document where the `club` field is `PSG` and set the new `points` field as `35`.
 This update operation will only affect the first document that’s retrieved in the collection.
 
 ```js
-db.league.updateOne({club:'PSG'}, {$set: {points:35}})
+db.league.updateOne({ club: 'PSG' }, { $set: { points: 35 } })
 ```
 
 If this operation is successful, the queried document will be updated.
@@ -282,10 +310,10 @@ If this operation is successful, the queried document will be updated.
 ### updateMany()
 
 The `updateMany()` method can take a query and make updates to many documents at once.
-For example, let’s update all documents with a *points* field that’s less than or equal to 90 and set the `qualified` field to false.
+For example, let’s update all documents with a _points_ field that’s less than or equal to 90 and set the `qualified` field to false.
 
 ```js
-db.league.updateMany({points:{$lte: 90}}, {$set: {qualified:false}})
+db.league.updateMany({ points: { $lte: 90 } }, { $set: { qualified: false } })
 ```
 
 ```js
@@ -304,12 +332,21 @@ db.league.updateMany({points:{$lte: 90}}, {$set: {qualified:false}})
 The replaceOne() method is ideal if you intend to replace an entire document at once.
 
 ```js
-db.league.replaceOne({club: "Barcelona"}, {club:'Inter', points: 83, average_age: 32, discipline:{red:2, yellow:10},qualified: true})
+db.league.replaceOne(
+  { club: 'Barcelona' },
+  {
+    club: 'Inter',
+    points: 83,
+    average_age: 32,
+    discipline: { red: 2, yellow: 10 },
+    qualified: true
+  }
+)
 ```
 
 If we run `db.league.find({})`, our database now looks like this:
 
-```js
+```json5
 [
   {
     _id: ObjectId("63109e9251bcc5e0155db0c2"),
@@ -357,7 +394,7 @@ The `deleteOne()` method takes in a query parameter that filters a collection fo
 Note that this operation only deletes the first document that matches the query in the collection.
 
 ```js
-db.league.deleteOne({club:'Arsenal'})
+db.league.deleteOne({ club: 'Arsenal' })
 ```
 
 This operation deletes one document from the collection:
@@ -372,12 +409,12 @@ The deleteMany() method is used for deleting multiple documents in a collection.
 The operation takes in a query and then filters and deletes all the documents matching the query.
 
 ```js
-db.league.deleteMany({qualified: false})
+db.league.deleteMany({ qualified: false })
 ```
 
 Run `db.league.find({})` to show the current state of records of the database.
 
-```js
+```json5
 [
   {
     _id: ObjectId("63109f4d51bcc5e0155db0c4"),
@@ -402,4 +439,4 @@ That means you don’t have to sacrifice the integrity and benefits of open-sour
 
 To know more about the importance of an open-source alternative to MongoDB, read [this article](https://blog.ferretdb.io/open-source-is-in-danger/).
 
-Photo by [Uriel SC](https://unsplash.com/@urielsc26?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText) on [Unsplash](https://unsplash.com/?utm_source=unsplash&amp;utm_medium=referral&amp;utm_content=creditCopyText)
+Photo by [Uriel SC](https://unsplash.com/@urielsc26?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText) on [Unsplash](https://unsplash.com/?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText)
