@@ -326,30 +326,35 @@ func TestFindAndModifyCompatUpdateCurrentDate(t *testing.T) {
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", 1}}},
 			},
+			resultType: emptyResult,
 		},
 		"UnknownOption": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{{"foo", int32(1)}}}}}}},
 			},
+			resultType: emptyResult,
 		},
-		"NotDate": {
+		"InvalidType": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", int32(1)}}}}}}},
 			},
+			resultType: emptyResult,
 		},
 		"UnknownType": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "unknown"}}}}}}},
 			},
+			resultType: emptyResult,
 		},
-		"InvalidType": {
+		"InvalidValue": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", bson.D{{"v", 1}}}}},
 			},
+			resultType: emptyResult,
 		},
 	}
 
@@ -365,30 +370,35 @@ func TestFindAndModifyCompatUpdateRename(t *testing.T) {
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"$rename", 1}}},
 			},
+			resultType: emptyResult,
 		},
 		"NonStringTargetField": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"$rename", bson.D{{"v", 0}}}}},
 			},
+			resultType: emptyResult,
 		},
 		"SameTargetField": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"$rename", bson.D{{"v", "v"}}}}},
 			},
+			resultType: emptyResult,
 		},
 		"DuplicateSource": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"$rename", bson.D{{"v", "w"}, {"v", "x"}}}}},
 			},
+			resultType: emptyResult,
 		},
 		"DuplicateTarget": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"$rename", bson.D{{"v", "w"}, {"x", "w"}}}}},
 			},
+			resultType: emptyResult,
 		},
 	}
 
