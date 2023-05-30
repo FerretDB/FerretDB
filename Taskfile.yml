@@ -607,7 +607,7 @@ tasks:
       - bin/checkdocs
       - docker compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
       - docker compose run --rm prettier --write --parser markdown --no-semi --single-quote --trailing-comma none "**/*.md"
-      - docker compose run --rm markdownlint "**/*.md"
+      - docker compose run --rm markdownlint "build/.markdownlint.yml" "**/*.md"
 
   docs-dev:
     desc: "Start documentation development server"
