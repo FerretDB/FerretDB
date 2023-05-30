@@ -602,9 +602,11 @@ tasks:
   # see https://github.com/DavidAnson/markdownlint-cli2#command-line for the reason we use double-quotes
   docs-fmt:
     desc: "Format and lint documentation"
+    run: once
     cmds:
       - bin/checkdocs
       - docker compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
+      - docker compose run --rm prettier --write --parser markdown --no-semi --single-quote --trailing-comma none --ignore-path build/.prettierignore "**/*.md"
       - docker compose run --rm markdownlint "**/*.md" "#CHANGELOG.md"
 
   docs-dev:

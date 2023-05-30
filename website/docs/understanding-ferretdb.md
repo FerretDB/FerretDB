@@ -65,7 +65,7 @@ Dot notations `(.)` are used to reference a field in an embedded document or its
 Dot notations can be used to specify or query an array by concatenating a dot `(.)` with the index position of the field.
 
 ```js
-"array_name.index"
+'array_name.index'
 ```
 
 :::note
@@ -75,22 +75,22 @@ When using dot notations, the field name of the array and the specified value mu
 For example, let's take the following array field in a document:
 
 ```js
-animals: ["dog", "cat", "fish", "fox"]
+animals: ['dog', 'cat', 'fish', 'fox']
 ```
 
 To reference the fourth field in the array, use the dot notation `"animals.3"`.
 
 Here are more examples of dot notations on arrays:
 
-* [Query an array](basic-operations/read.md#retrieve-documents-containing-a-specific-value-in-an-array)
-* [Update an array](basic-operations/update.md#update-an-array-element)
+- [Query an array](basic-operations/read.md#retrieve-documents-containing-a-specific-value-in-an-array)
+- [Update an array](basic-operations/update.md#update-an-array-element)
 
 ### Embedded documents
 
 To reference or query a field in an embedded document, concatenate the name of the embedded document and the field name using the dot notation.
 
 ```js
-"embedded_document_name.field"
+'embedded_document_name.field'
 ```
 
 Take the following document, for example:
@@ -115,8 +115,8 @@ To reference the `city` field in the embedded document, use the dot notation `"c
 
 For dot notation examples on embedded documents, see here:
 
-* [Query an embedded document](basic-operations/read.md#query-on-an-embedded-or-nested-document)
-* [Update an embedded document](basic-operations/update.md#update-an-embedded-document)
+- [Query an embedded document](basic-operations/read.md#query-on-an-embedded-or-nested-document)
+- [Update an embedded document](basic-operations/update.md#update-an-embedded-document)
 
 ## Collections
 
@@ -130,18 +130,18 @@ For example, the following collection contains three documents.
 {
   Scientists: [
     {
-      first: "Alan",
-      last: "Turing",
+      first: 'Alan',
+      last: 'Turing',
       born: 1912
     },
     {
-      first: "Thomas",
-      last: "Edison",
+      first: 'Thomas',
+      last: 'Edison',
       birth: 1847
     },
     {
-      first: "Nikola",
-      last: "Tesla",
+      first: 'Nikola',
+      last: 'Tesla',
       birth: 1856
     }
   ]
