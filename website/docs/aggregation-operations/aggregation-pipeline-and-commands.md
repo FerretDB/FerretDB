@@ -15,15 +15,15 @@ As shown above, the documents pass through the pipeline with the result of the p
 For example, say you have the following documents in a `sales` collection:
 
 ```js
-[
-  { "_id": 1, "category": "Electronics", "price": 1000 },
-  { "_id": 2, "category": "Electronics", "price": 800 },
-  { "_id": 3, "category": "Clothing", "price": 30 },
-  { "_id": 4, "category": "Clothing", "price": 50 },
-  { "_id": 5, "category": "Home", "price": 1500 },
-  { "_id": 6, "category": "Home", "price": 1200 },
-  { "_id": 7, "category": "Books", "price": 20 },
-  { "_id": 8, "category": "Books", "price": 40 }
+;[
+  { _id: 1, category: 'Electronics', price: 1000 },
+  { _id: 2, category: 'Electronics', price: 800 },
+  { _id: 3, category: 'Clothing', price: 30 },
+  { _id: 4, category: 'Clothing', price: 50 },
+  { _id: 5, category: 'Home', price: 1500 },
+  { _id: 6, category: 'Home', price: 1200 },
+  { _id: 7, category: 'Books', price: 20 },
+  { _id: 8, category: 'Books', price: 40 }
 ]
 ```
 
@@ -31,11 +31,11 @@ A typical aggregation pipeline would look like this:
 
 ```js
 db.sales.aggregate([
-  { $match: { category: { $ne: "Electronics" } } },
+  { $match: { category: { $ne: 'Electronics' } } },
   {
     $group: {
-      _id: "$category",
-      totalPrice: { $sum: "$price" },
+      _id: '$category',
+      totalPrice: { $sum: '$price' },
       productCount: { $sum: 1 }
     }
   },
@@ -72,6 +72,6 @@ db.collection.aggregate([
   // Stage 1: Matching documents based on a specific field and value
   { $match: { field: value } },
   // Stage 2: Grouping documents by the "category" field and calculating the sum of the "quantity" field
-  { $group: { _id: "$category", total: { $sum: "$quantity" } } }
+  { $group: { _id: '$category', total: { $sum: '$quantity' } } }
 ])
 ```
