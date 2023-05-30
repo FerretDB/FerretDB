@@ -1051,7 +1051,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
-		"TypeOperator": {
+		"RecursiveOperator": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 				bson.D{{"$group", bson.D{
@@ -1061,7 +1061,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2679",
+			skip: "https://github.com/FerretDB/FerretDB/issues/2694",
 		},
 	}
 
