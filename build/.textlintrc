@@ -1,7 +1,6 @@
 {
     "rules": {
         "@0x6b/normalize-whitespaces": true,
-        "doubled-spaces": true,
         "no-zero-width-spaces": true,
         "one-sentence-per-line": true
     }

@@ -12,32 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package common
 
 import (
-	"flag"
-	"os"
-	"testing"
+	"context"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// TestMain is the entry point for all integration tests.
-func TestMain(m *testing.M) {
-	flag.Parse()
+// MsgLogout is a common implementation of the logout command.
+func MsgLogout(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	conninfo.Get(ctx).SetAuth("", "")
 
-	var code int
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"ok", float64(1),
+		))},
+	}))
 
-	// ensure that Shutdown runs for any exit code or panic
-	func() {
-		// make `go test -list=.` work without side effects
-		if flag.Lookup("test.list").Value.String() == "" {
-			setup.Startup()
-			defer setup.Shutdown()
-		}
-
-		code = m.Run()
-	}()
-
-	os.Exit(code)
+	return &reply, nil
 }

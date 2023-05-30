@@ -37,7 +37,7 @@ const (
 // This shared data set is frozen. If you need more values, add them in the test itself.
 var Scalars = &Values[string]{
 	name:     "Scalars",
-	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "mongodb"},
+	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-hana", "mongodb"},
 	data: map[string]any{
 		"double":                    42.13,
 		"double-whole":              42.0,
@@ -305,7 +305,7 @@ var DateTimes = &Values[string]{
 // Nulls contains null value for tests.
 var Nulls = &Values[string]{
 	name:     "Nulls",
-	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "mongodb"}, // Not compatible with Tigris as it needs a data type to be set.
+	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-hana", "mongodb"}, // Not compatible with Tigris as it needs a data type to be set.
 	data: map[string]any{
 		"null": nil,
 	},
