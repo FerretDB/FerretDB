@@ -1,6 +1,5 @@
 ---
 sidebar_position: 2
-slug: /aggregation-stages/
 ---
 
 # Aggregation stages
