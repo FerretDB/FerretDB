@@ -1,6 +1,6 @@
 ---
 slug: ferretdb-v-0-9-3-improved-aggregation-pipeline-support
-title: "FerretDB v.0.9.3 - Improved Aggregation Pipeline Support"
+title: FerretDB v.0.9.3 - Improved Aggregation Pipeline Support
 authors: [alex]
 description: >
   We are thrilled to announce the release of FerretDB v.0.9.3, which includes exciting new features and improvements, and we can't wait for you to try it out
@@ -62,9 +62,7 @@ We can use the `$sort` aggregation pipeline stage to sort the documents in ascen
 For example, to sort the documents in descending order based on the `order_total` field, set the value to `-1`:
 
 ```js
-db.orders.aggregate([
-    { $sort: { order_total: -1 } }
-])
+db.orders.aggregate([{ $sort: { order_total: -1 } }])
 ```
 
 This will return the documents, sorted in descending order based on the `order_total` field.
@@ -74,12 +72,12 @@ For example, the following query groups and counts the total number of documents
 
 ```js
 db.orders.aggregate([
-    {
-        $group: {
-            _id: null,
-            count: { $count: {} }
-        }
+  {
+    $group: {
+      _id: null,
+      count: { $count: {} }
     }
+  }
 ])
 ```
 
