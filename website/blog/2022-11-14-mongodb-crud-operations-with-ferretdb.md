@@ -46,7 +46,7 @@ And if the database does not exist, FerretDB creates a new database.
 use league
 ```
 
-If there’s no existing database with this name, a new database (**league**) is created in your FerretDB storage backend on PostgreSQL.
+If there's no existing database with this name, a new database (**league**) is created in your FerretDB storage backend on PostgreSQL.
 Read on to learn more about all the basic MongoDB commands or operations you can perform with FerretDB.
 
 ## Create operation
@@ -55,15 +55,15 @@ Much like MongoDB, FerretDB provides the `insertOne()` and `insertMany()` method
 
 ### insertOne()
 
-Using the database we created earlier, let’s insert a single document record with fields and values into the collection by calling the `insertOne()` method.
+Using the database we created earlier, let's insert a single document record with fields and values into the collection by calling the `insertOne()` method.
 The syntax for this operation looks like this:
 
 ```js
 db.collection_name.insertOne({field1: value1, field2: value2, …fieldN: valueN})
 ```
 
-The process is identical to how you’d insert a single data record in MongoDB.
-To begin with, let’s insert a single document into the collection:
+The process is identical to how you'd insert a single data record in MongoDB.
+To begin with, let's insert a single document into the collection:
 
 ```js
 db.league.insertOne({
@@ -76,7 +76,7 @@ db.league.insertOne({
 ```
 
 This line of code creates a new document in your collection.
-If the operation is successful, you’ll get a response with `acknowledged` set as ‘true’, and the id of the inserted document (`insertedID`) containing the ObjectId.
+If the operation is successful, you'll get a response with `acknowledged` set as 'true', and the id of the inserted document (`insertedID`) containing the ObjectId.
 
 ```js
 {
@@ -148,7 +148,7 @@ In every database operation, you'll need to filter the documents or collection f
 The `find()` method filters and selects all the documents in a collection that matches the query parameters.
 
 If there is no query parameter for the method, all the records present in the collection are returned.
-First, let’s select all the documents in the **league** collection created earlier.
+First, let's select all the documents in the **league** collection created earlier.
 
 ```js
 db.league.find({})
@@ -252,7 +252,7 @@ The output:
 ### findOne()
 
 The `findOne()` method selects the first document that matches a specified set of query parameters.
-For instance, let’s filter the collection for documents with the _qualified_ set to true.
+For instance, let's filter the collection for documents with the _qualified_ set to true.
 
 ```js
 db.league.findOne({ qualified: true })
@@ -288,8 +288,8 @@ The following syntax depicts the update operation where the atomic operator `$se
 db.collection_name.updateOne({<query-params>}, {$set: {<update fields>}})
 ```
 
-Using our database, let’s update a document where the `club` field is `PSG` and set the new `points` field as `35`.
-This update operation will only affect the first document that’s retrieved in the collection.
+Using our database, let's update a document where the `club` field is `PSG` and set the new `points` field as `35`.
+This update operation will only affect the first document that's retrieved in the collection.
 
 ```js
 db.league.updateOne({ club: 'PSG' }, { $set: { points: 35 } })
@@ -310,7 +310,7 @@ If this operation is successful, the queried document will be updated.
 ### updateMany()
 
 The `updateMany()` method can take a query and make updates to many documents at once.
-For example, let’s update all documents with a _points_ field that’s less than or equal to 90 and set the `qualified` field to false.
+For example, let's update all documents with a _points_ field that's less than or equal to 90 and set the `qualified` field to false.
 
 ```js
 db.league.updateMany({ points: { $lte: 90 } }, { $set: { qualified: false } })
@@ -386,7 +386,7 @@ If we run `db.league.find({})`, our database now looks like this:
 ## Delete operation
 
 The delete operations are operations that only affect a single collection.
-Let’s check out two methods for deleting documents in a collection: deleteOne() and deleteMany().
+Let's check out two methods for deleting documents in a collection: deleteOne() and deleteMany().
 
 ### deleteOne()
 
@@ -430,12 +430,12 @@ Run `db.league.find({})` to show the current state of records of the database.
 ## Get started with FerretDB
 
 Voila!
-Just the exact MongoDB replacement you’ve been looking for.
+Just the exact MongoDB replacement you've been looking for.
 
 Beyond the basic CRUD operations in this post, you can pass even more complex MongoDB commands without having to reinvent the wheel to learn new commands or give up the option of using open-source software.
 
 [FerretDB](https://www.ferretdb.io/) serves as a truly open-source replacement for MongoDB.
-That means you don’t have to sacrifice the integrity and benefits of open-source software while still enjoying the benefits of a non-relational NoSQL database.
+That means you don't have to sacrifice the integrity and benefits of open-source software while still enjoying the benefits of a non-relational NoSQL database.
 
 To know more about the importance of an open-source alternative to MongoDB, read [this article](https://blog.ferretdb.io/open-source-is-in-danger/).
 

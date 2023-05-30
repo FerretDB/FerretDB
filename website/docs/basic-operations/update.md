@@ -61,7 +61,7 @@ db.scientists.insertMany([
 ```
 
 Using the document record in the collection, update the document where `firstname` is "Graham", and set it as "Alexander Graham".
-The `updateOne()` operation will only affect the first document that’s retrieved in the collection.
+The `updateOne()` operation will only affect the first document that's retrieved in the collection.
 
 ```js
 db.scientists.updateOne(

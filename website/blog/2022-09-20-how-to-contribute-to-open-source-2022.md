@@ -54,11 +54,11 @@ So, a GitHub account might be helpful or even crucial if you want to start contr
 GitHub has [detailed instructions](https://docs.github.com/en/get-started/signing-up-for-github/signing-up-for-a-new-github-account) for account creation.
 
 An important note here is that a free GitHub account will be more than enough.
-You don’t need any paid features to become an open-source contributor.
+You don't need any paid features to become an open-source contributor.
 
 Most likely, you might need an IDE or a code editor.
 At FerretDB, different engineers have their own preferences, but for your first steps in the open-source world, [Visual Studio Code](https://code.visualstudio.com/) is a good place to start.
-It supports all the popular formats and programming languages; it has handy integration with GitHub and other valuable tools, and, of course, it’s free.
+It supports all the popular formats and programming languages; it has handy integration with GitHub and other valuable tools, and, of course, it's free.
 
 In addition, Hacktoberfest's website has [a nice list of resources for beginners](https://hacktoberfest.com/participation/#beginner-resources).
 Check them out for further information.
@@ -66,10 +66,10 @@ Check them out for further information.
 ### 2. Find the right project for Hacktoberfest open-source contributions
 
 Even though plenty of communities are open and friendly, not all the projects and issues would be suitable for first-time contributors.
-It’s essential to find some "low-hanging fruit" that will give you inspiration for future contributions.
+It's essential to find some "low-hanging fruit" that will give you inspiration for future contributions.
 
 On GitHub, it might make sense to look for "good-first-issue" labels.
-Usually, issues that are marked with such a label don’t require special knowledge about the project.
+Usually, issues that are marked with such a label don't require special knowledge about the project.
 
 There is one more tradition here, in October, some open source projects mark their issues with the "[hacktoberfest](https://github.com/search?q=label%3Ahacktoberfest&type=issues)" label, and such issues are often suitable for first-time contributors.
 
@@ -79,7 +79,7 @@ So, if you are looking for something to contribute to, take a look at the good f
 ### 3. Select a good first issue and read the contribution guidelines
 
 You found some projects with good first issues.
-What’s next?
+What's next?
 It is essential to check that you understand the issue and how to implement it.
 
 Before jumping into implementation, it might make sense to take a look at the README document and CONTRIBUTING guidelines of the repository.
@@ -88,7 +88,7 @@ Quite often, the projects follow some good practices that help contributors, and
 Also, many projects offer chats where contributors can ask any questions.
 
 At FerretDB, we use Slack for our contributors and community, and we also offer weekly Open Office Hours calls.
-Don’t hesitate to join us!
+Don't hesitate to join us!
 You can find details in our [README](https://github.com/ferretdb/ferretdb#community).
 
 By the way, the contributing guidelines or documentation might be the most suitable for first-time contributors!
@@ -124,12 +124,12 @@ For example, GitHub [offers documentation](https://docs.github.com/en/desktop/co
 And, of course, after the changes are committed, they also need to be [pushed](https://docs.github.com/en/desktop/contributing-and-collaborating-using-github-desktop/making-changes-in-a-branch/pushing-changes-to-github).
 
 At FerretDB, we prefer to commit and push as often as possible.
-Usually, we don’t wait for a feature to be fully implemented, a tiny valuable piece of code can be pushed to a remote branch, so the changes won’t be lost even if the local environment gets broken.
+Usually, we don't wait for a feature to be fully implemented, a tiny valuable piece of code can be pushed to a remote branch, so the changes won't be lost even if the local environment gets broken.
 
 ### 7. Make your first Pull Request
 
 So, your changes are ready and pushed to your fork?
-It’s time to create your first pull request!
+It's time to create your first pull request!
 As usual, GitHub has a [detailed guide](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork) for it.
 Various projects might follow some practices to help contributors have their changes accepted as quickly as possible.
 
@@ -146,7 +146,7 @@ Congratulations!
 At FerretDB, we welcome all the open source contributors!
 From feature implementations to fixing typos in our documentation - we value everything!
 
-Whether it’s for Hacktoberfest or otherwise, you are welcome to take a look at [FerretDB projects](https://github.com/FerretDB/) and find something that interests you.
+Whether it's for Hacktoberfest or otherwise, you are welcome to take a look at [FerretDB projects](https://github.com/FerretDB/) and find something that interests you.
 To simplify the process, we prepared the [contributing guidelines](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md) to help you find something to work on, set up the development environment, prepare a pull request and pass code review.
 
 Are you looking forward to submitting your first pull request to FerretDB?

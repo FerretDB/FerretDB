@@ -7,14 +7,14 @@ image: /img/blog/image4-1024x683.jpg
 date: 2022-10-12
 ---
 
-In this post, you’ll find out how to properly configure and set up your Windows OS, avoid typical Windows environment issues, and start contributing to FerretDB.
+In this post, you'll find out how to properly configure and set up your Windows OS, avoid typical Windows environment issues, and start contributing to FerretDB.
 
 ![Contribute to FerretDB on Windows](/img/blog/image4-1024x683.jpg)
 
 <!--truncate-->
 
-Historically, I’ve always used Windows operating system on my laptop, and most times, it requires a bit of work to set up and configure specific development tools.
-When I started working with FerretDB, I encountered several difficulties, which inspired me to write this article so that Windows users won’t have to experience the same.
+Historically, I've always used Windows operating system on my laptop, and most times, it requires a bit of work to set up and configure specific development tools.
+When I started working with FerretDB, I encountered several difficulties, which inspired me to write this article so that Windows users won't have to experience the same.
 
 For all Windows users fascinated and interested in contributing to FerretDB, this article would help resolve some of the challenges you might face.
 
@@ -30,7 +30,7 @@ To start contributing to FerretDB on Windows, this is a list of software we'll b
 ## Git options that are extremely useful for Windows systems
 
 - **Lines endings**: Most operating systems handle line endings differently.
-  To ensure effective collaboration and consistency with people using other operating systems, we need to configure git’s line endings with the following command: git config --global core.autocrlf true
+  To ensure effective collaboration and consistency with people using other operating systems, we need to configure git's line endings with the following command: git config --global core.autocrlf true
 - **Global .gitignore**: It would help you to avoid committing unrelated files like executables and IDE settings.
   With the global .gitignore setting, you only need to set it up once, which would work for all repositories.
 
@@ -73,7 +73,7 @@ Once the cloning is complete, navigate to the source code folder via
 cd FerretDB
 ```
 
-While working on the project code locally, it’s crucial to synchronize it with the upstream repository and push changes to the forked repository.
+While working on the project code locally, it's crucial to synchronize it with the upstream repository and push changes to the forked repository.
 To do so, we need to set up remotes.
 To check if the local repository is linked with the upstream one, enter this command:
 
@@ -81,7 +81,7 @@ To check if the local repository is linked with the upstream one, enter this com
 git remote -v
 ```
 
-If you don’t see your remote repository called origin, you can easily add it with the following command:
+If you don't see your remote repository called origin, you can easily add it with the following command:
 
 ```js
  git remote add origin https://github.com/{username}/FerretDB.git
@@ -140,8 +140,8 @@ We can open another terminal window and run tests (_bin\task test_) or "mongosh"
 
 ## Start contributing to FerretDB on Windows
 
-For Windows users, starting your contribution journey to FerretDB might feel a bit challenging if it’s not correctly set up.
-We’ve covered all the known Windows-specific issues you might encounter in this article when contributing to FerretDB on Windows.
+For Windows users, starting your contribution journey to FerretDB might feel a bit challenging if it's not correctly set up.
+We've covered all the known Windows-specific issues you might encounter in this article when contributing to FerretDB on Windows.
 
 An excellent place to start contributing is to select any issue labeled as the [good first issue](https://github.com/FerretDB/FerretDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 Not to mention, we have an awesome community [Slack group where you can connect!](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A) And if you experience any other issues that aren't covered in this article or have any questions, please feel free to reach out to us on Slack or GitHub Discussions.

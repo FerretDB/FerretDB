@@ -11,7 +11,7 @@ Field update operators allow you to modify the value of a specified field in a d
 | [`$set`](#set)                 | Assigns the value of a given field                                                          |
 | [`$unset`](#unset)             | Deletes the records of a field from a document                                              |
 | [`$inc`](#inc)                 | Increments a given field's value                                                            |
-| [`$mul`](#mul)                 | Multiplies a given field’s value by a specific value                                        |
+| [`$mul`](#mul)                 | Multiplies a given field's value by a specific value                                        |
 | [`$rename`](#rename)           | Renames a given field with another name                                                     |
 | [`$min`](#min)                 | Updates a particular field only when the specified value is lesser than the specified value |
 | [`$max`](#max)                 | Updates a particular field only when the specified value is higher than the specified value |

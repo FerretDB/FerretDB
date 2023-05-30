@@ -14,11 +14,11 @@ In this article, we show how FerretDB stores and translates MongoDB's BSON forma
 <!--truncate-->
 
 At FerretDB, we are converting MongoDB wire protocol queries into SQL, to store information from BSON to PostgreSQL.
-To achieve this, we created our own mapping called PJSON which translates MongoDB’s BSON format into PostgreSQL’s JSONB.
+To achieve this, we created our own mapping called PJSON which translates MongoDB's BSON format into PostgreSQL's JSONB.
 
 Using BSON with JSONB offers us significantly faster operation, greater range of data types compared to regular JSON, and more flexibility in modeling data of any structure.
 
-In this article, we’ll show you how FerretDB converts and stores MongoDB data in PostgreSQL.
+In this article, we'll show you how FerretDB converts and stores MongoDB data in PostgreSQL.
 
 ## What is BSON?
 
@@ -27,7 +27,7 @@ It contains length information allowing serializer/deserializer to utilize it fo
 Additionally, it preserves the order of the fields.
 BSON also supports additional data types such as DateTime and binary.
 
-Let’s look at an example of how a JSON is encoded in BSON.
+Let's look at an example of how a JSON is encoded in BSON.
 Here the hexadecimal `\x00` notation represents `0000 0000` in bits and similarly `\x12` represents `0001 0010`.
 In BSON, `\x00` is a byte used as a terminator to indicate the end of a document.
 In BSON, field names use `cstring` which are UTF-8 characters followed by `\x00`.
@@ -55,7 +55,7 @@ In light of this, we need to store BSON equivalent information in JSON format wi
 To embed necessary information from BSON, we introduced special keys prefixed with `$`.
 PJSON contains `$` followed by a character to embed information about types and the order of the fields.
 PJSON is designed to be serialized to JSONB.
-Let’s look at a simple BSON with an `ObjectId` field and see how it is represented in PJSON.
+Let's look at a simple BSON with an `ObjectId` field and see how it is represented in PJSON.
 
 ```js
 {"_id": ObjectId("635202c8f75e487c16adc141")}
@@ -102,7 +102,7 @@ Also, regular expressions have an additional field `o` to specify options such a
 
 ## PJSON Example: Translating and storing BSON in JSONB
 
-Let’s look at an example of inserting BSON and storing it as PJSON using the following document.
+Let's look at an example of inserting BSON and storing it as PJSON using the following document.
 
 ```js
 db.groceries.insert({
@@ -153,7 +153,7 @@ The last field `\x10` is `int32` type, encoded in little-endian with 8 bytes len
 The field name `quantity\x00` is obtained by reading until the first `\x00`, and the field value of `int32` is obtained by reading the subsequent 8 bytes `\x03\x00\x00\x00`.
 The field value is little-endian format `int32` which is 3.
 
-The terminator `\x00` indicates it’s the end of the BSON document.
+The terminator `\x00` indicates it's the end of the BSON document.
 
 ### 2. Serialize to PJSON
 
@@ -217,7 +217,7 @@ This is how we store BSON information at FerretDB in PostgreSQL JSONB.
 
 ## Roundup
 
-So far, we’ve shown how we use PJSON mappings to store MongoDB BSON data in JSONB while preserving type information and field orders.
+So far, we've shown how we use PJSON mappings to store MongoDB BSON data in JSONB while preserving type information and field orders.
 This process includes deserializing BSON and mapping it to PJSON, and finally storing them in JSONB.
 
 For our community contributors and users, understanding how we convert BSON data in MongoDB to JSONB of PostgreSQL helps them gain more insight into how FerretDB works.
