@@ -28,7 +28,7 @@ import (
 // distinctCompatTestCase describes count compatibility test case.
 type distinctCompatTestCase struct {
 	field      string                   // required
-	filter     any                      // required
+	filter     bson.D                   // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 

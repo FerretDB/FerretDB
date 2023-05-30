@@ -17,7 +17,7 @@ package integration
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
@@ -33,6 +33,10 @@ func TestGetDistinctCommandInvalidQuery(t *testing.T) {
 		err        *mongo.CommandError
 		altMessage string
 	}{
+		"Empty": {
+			command: nil,
+			err:     nil,
+		},
 		"Int": {
 			command: bson.D{{"query", 1}},
 			err: &mongo.CommandError{
@@ -56,7 +60,11 @@ func TestGetDistinctCommandInvalidQuery(t *testing.T) {
 			command = append(command, tc.command...)
 			_, err := db.RunCommand(ctx, command).DecodeBytes()
 
-			assert.EqualError(t, err, tc.err.Error())
+			if err != nil {
+				AssertEqualCommandError(t, *tc.err, err)
+				return
+			}
+			require.NoError(t, err)
 		})
 	}
 }

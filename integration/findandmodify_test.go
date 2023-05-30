@@ -57,10 +57,10 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 func TestFindAndModifyErrors(t *testing.T) {
 	t.Parallel()
 
-	for name, tc := range map[string]struct {
+	for name, tc := range map[string]struct { //nolint:vet // for readability
 		command    bson.D
-		err        *mongo.CommandError
 		altMessage string
+		err        *mongo.CommandError
 	}{
 		"UpsertAndRemove": {
 			command: bson.D{
