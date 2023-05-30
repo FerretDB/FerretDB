@@ -87,30 +87,35 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 
 	testCases := map[string]findAndModifyCompatTestCase{
 		"NotEnoughParameters": {
-			command: bson.D{},
+			command:    bson.D{},
+			resultType: emptyResult,
 		},
 		"UpdateAndRemove": {
 			command: bson.D{
 				{"update", bson.D{}},
 				{"remove", true},
 			},
+			resultType: emptyResult,
 		},
 		"NewAndRemove": {
 			command: bson.D{
 				{"new", true},
 				{"remove", true},
 			},
+			resultType: emptyResult,
 		},
-		"BadUpdateType": {
+		"InvalidUpdateType": {
 			command: bson.D{
 				{"query", bson.D{}},
 				{"update", "123"},
 			},
+			resultType: emptyResult,
 		},
-		"BadMaxTimeMSTypeString": {
+		"InvalidMaxTimeMSType": {
 			command: bson.D{
 				{"maxTimeMS", "string"},
 			},
+			resultType: emptyResult,
 		},
 		"DollarPrefixedFieldName": {
 			command: bson.D{
@@ -118,6 +123,7 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 				{"upsert", true},
 				{"update", bson.D{{"v", "replaced"}}},
 			},
+			resultType: emptyResult,
 		},
 		"DollarPrefixedNestedFieldName": {
 			command: bson.D{
@@ -126,6 +132,7 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 				{"update", bson.D{{"v", "replaced"}}},
 			},
 			skipForTigris: "schema validation would fail",
+			resultType:    emptyResult,
 		},
 	}
 
@@ -195,6 +202,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
 				{"update", bson.D{{"$invalid", "non-existent-field"}}},
 			},
+			resultType: emptyResult,
 		},
 		"OperatorConflict": {
 			command: bson.D{
@@ -204,6 +212,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 					{"$inc", bson.D{{"v", 4}}},
 				}},
 			},
+			resultType: emptyResult,
 		},
 		"ConflictKey": {
 			command: bson.D{
@@ -213,6 +222,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 					{"$min", bson.D{{"v.foo", "val"}}},
 				}},
 			},
+			resultType: emptyResult,
 		},
 		"ConflictKeyPrefix": {
 			command: bson.D{
@@ -222,6 +232,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 					{"$min", bson.D{{"v", "val"}}},
 				}},
 			},
+			resultType: emptyResult,
 		},
 	}
 
@@ -260,6 +271,7 @@ func TestFindAndModifyCompatUpdateSet(t *testing.T) {
 			command: bson.D{
 				{"update", bson.D{{"$set", bson.D{{"_id", "non-existent"}}}}},
 			},
+			resultType: emptyResult, // _id must be an immutable field
 		},
 	}
 
@@ -275,6 +287,7 @@ func TestFindAndModifyCompatUpdateUnset(t *testing.T) {
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", true}}}}},
 				{"update", bson.D{{"$unset", "v"}}},
 			},
+			resultType: emptyResult,
 		},
 		"NonExistentExistsFalse": {
 			command: bson.D{
@@ -299,6 +312,7 @@ func TestFindAndModifyCompatUpdateUnset(t *testing.T) {
 				{"query", bson.D{{"_id", "double"}}},
 				{"update", bson.D{{"$unset", "non-existent-field"}}},
 			},
+			resultType: emptyResult,
 		},
 	}
 
@@ -417,13 +431,15 @@ func TestFindAndModifyCompatSort(t *testing.T) {
 				{"update", bson.D{{"$set", bson.D{{"v.0.foo.0.bar", "baz"}}}}},
 				{"sort", bson.D{{"v..foo", 1}, {"_id", 1}}},
 			},
+			resultType: emptyResult,
 		},
-		"BadDollarStart": {
+		"DollarPrefixedFieldName": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$in", bson.A{"array-documents-nested", "array-documents-nested-duplicate"}}}}}},
 				{"update", bson.D{{"$set", bson.D{{"v.0.foo.0.bar", "baz"}}}}},
 				{"sort", bson.D{{"$v.foo", 1}, {"_id", 1}}},
 			},
+			resultType: emptyResult,
 		},
 	}
 
@@ -485,12 +501,13 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
 			},
 		},
-		"ExistsTrueID": {
+		"UpdateID": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
 				{"upsert", true},
 				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
 			},
+			resultType: emptyResult, // _id must be an immutable field
 		},
 		"ExistsTrue": {
 			command: bson.D{
