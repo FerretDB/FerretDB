@@ -33,7 +33,7 @@ In BSON, `\x00` is a byte used as a terminator to indicate the end of a document
 In BSON, field names use `cstring` which are UTF-8 characters followed by `\x00`.
 
 ```json
-{"foo": "bar"}
+{ "foo": "bar" }
 ```
 
 |                         |                                                                                                                       |
@@ -106,8 +106,8 @@ Let’s look at an example of inserting BSON and storing it as PJSON using the f
 
 ```js
 db.groceries.insert({
-  _id: ObjectId("635202c8f75e487c16adc141"),
-  name: "milk",
+  _id: ObjectId('635202c8f75e487c16adc141'),
+  name: 'milk',
   quantity: 3
 })
 ```
