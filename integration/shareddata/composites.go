@@ -27,7 +27,7 @@ import (
 // This shared data set is not frozen yet, but please add to it only if it is really shared.
 var Composites = &Values[string]{
 	name:     "Composites",
-	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "mongodb"},
+	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-hana", "mongodb"},
 	data: map[string]any{
 		"document": bson.D{{"foo", int32(42)}},
 		"document-composite": bson.D{
@@ -77,7 +77,7 @@ var Composites = &Values[string]{
 // mixture of array and scalar documents.
 var Mixed = &Values[string]{
 	name:     "Mixed",
-	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "mongodb"},
+	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-hana", "mongodb"},
 	data: map[string]any{
 		"null":        nil,
 		"unset":       unset,
@@ -90,7 +90,7 @@ var Mixed = &Values[string]{
 // dot notation to find values from both document and array.
 var ArrayAndDocuments = &Values[string]{
 	name:     "ArrayAndDocuments",
-	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "mongodb"},
+	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-hana", "mongodb"},
 	data: map[string]any{
 		"document": bson.D{{"foo", int32(42)}},
 		"array-documents": bson.A{
@@ -105,7 +105,7 @@ var ArrayAndDocuments = &Values[string]{
 // on pg backend.
 var PostgresEdgeCases = &Values[string]{
 	name:     "PostgresEdgeCases",
-	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "mongodb"},
+	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-hana", "mongodb"},
 	data: map[string]any{
 		"document-notations": bson.D{
 			{"foo[0]", int32(42)},
@@ -185,7 +185,7 @@ var DocumentsDocuments = &Values[primitive.ObjectID]{
 // DocumentsDeeplyNested contains documents nested in multiple levels for tests.
 var DocumentsDeeplyNested = &Values[string]{
 	name:     "DocumentsDeeplyNested",
-	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "mongodb"},
+	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-hana", "mongodb"},
 	data: map[string]any{
 		"two":   bson.D{{"a", bson.D{{"b", 12}}}},
 		"three": bson.D{{"a", bson.D{{"b", bson.D{{"c", 12}}}}}},

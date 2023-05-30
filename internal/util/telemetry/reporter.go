@@ -287,6 +287,8 @@ func (r *Reporter) report(ctx context.Context) {
 		return
 	}
 
+	r.L.Debug("Read telemetry response.", zap.Any("response", response))
+
 	if response.LatestVersion == "" {
 		r.L.Debug("No latest version in telemetry response.")
 		return
@@ -300,9 +302,10 @@ func (r *Reporter) report(ctx context.Context) {
 		return
 	}
 
-	s = r.P.Get()
-	r.L.Info(
-		"A new version available!",
-		zap.String("current_version", request.Version), zap.String("latest_version", s.LatestVersion),
-	)
+	if s.UpdateAvailable {
+		r.L.Info(
+			"A new version available!",
+			zap.String("current_version", request.Version), zap.String("latest_version", s.LatestVersion),
+		)
+	}
 }
