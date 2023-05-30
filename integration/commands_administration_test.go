@@ -574,6 +574,31 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestCommandsAdministrationBuildInfoFerretdbExtensions(t *testing.T) {
+	setup.SkipForMongoDB(t, "FerretDB-specific command's extensions")
+
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	var actual bson.D
+	command := bson.D{{"buildInfo", int32(1)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+
+	ferretdbFeatures, err := doc.Get("ferretdbFeatures")
+	assert.NoError(t, err)
+	ferretdbFeaturesDoc, ok := ferretdbFeatures.(*types.Document)
+	assert.True(t, ok)
+	assert.NotNil(t, ferretdbFeatures)
+	aggregationStages, err := ferretdbFeaturesDoc.Get("aggregationStages")
+	aggregationStagesArray, ok := aggregationStages.(*types.Array)
+	assert.True(t, ok)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, aggregationStagesArray)
+}
+
 func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)

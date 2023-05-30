@@ -54,6 +54,9 @@ var (
 	errorTemplate = template.Must(template.New("error").Option("missingkey=error").Parse(string(errorTemplateB)))
 )
 
+// versionFile contains version information with leading v.
+const versionFile = "build/version/version.txt"
+
 // waitForPort waits for the given port to be available until ctx is done.
 func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) error {
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
@@ -366,6 +369,21 @@ func read(w io.Writer, paths ...string) error {
 	return nil
 }
 
+// packageVersion will print out FerretDB's package version (omitting leading v).
+func packageVersion(w io.Writer, file string) error {
+	b, err := os.ReadFile(file)
+	if err != nil {
+		return err
+	}
+
+	v := string(b)
+	v = strings.TrimPrefix(v, "v")
+
+	_, err = fmt.Fprint(w, v)
+
+	return err
+}
+
 // cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
@@ -382,6 +400,7 @@ var cli struct {
 			Paths []string `arg:"" name:"path" help:"Paths to read." type:"path"`
 		} `cmd:"" help:"read files"`
 	} `cmd:""`
+	PackageVersion struct{} `cmd:"" help:"Print package version"`
 }
 
 func main() {
@@ -414,6 +433,8 @@ func main() {
 		err = rmdir(cli.Shell.Rmdir.Paths...)
 	case "shell read <path>":
 		err = read(os.Stdout, cli.Shell.Read.Paths...)
+	case "package-version":
+		err = packageVersion(os.Stdout, versionFile)
 	default:
 		err = fmt.Errorf("unknown command: %s", cmd)
 	}
