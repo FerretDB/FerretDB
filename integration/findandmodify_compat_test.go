@@ -597,35 +597,43 @@ func TestFindAndModifyCompatUpsertUnset(t *testing.T) {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", true}}}}},
 				{"upsert", true},
-				{"update", bson.D{{"$unset", "v"}}},
+				{"update", bson.D{
+					{"$unset", bson.D{{"v", ""}}},
+					{"$set", bson.D{{"_id", "upserted"}}}, // to have the same _id for target and compat
+				}},
 			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2741",
 		},
 		"NonExistentExistsFalse": {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", false}}}}},
 				{"upsert", true},
-				{"update", bson.D{{"$unset", "v"}}},
+				{"update", bson.D{{"$unset", bson.D{{"v", ""}}}}},
 			},
 		},
 		"ExistsTrue": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
 				{"upsert", true},
-				{"update", bson.D{{"$unset", "v"}}},
+				{"update", bson.D{{"$unset", bson.D{{"v", ""}}}}},
 			},
 		},
 		"ExistsFalse": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
 				{"upsert", true},
-				{"update", bson.D{{"$unset", "v"}}},
+				{"update", bson.D{
+					{"$unset", bson.D{{"v", ""}}},
+					{"$set", bson.D{{"_id", "upserted"}}}, // to have the same _id for target and compat
+				}},
 			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2741",
 		},
 		"UnsetNonExistentField": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "double"}}},
 				{"upsert", true},
-				{"update", bson.D{{"$unset", "non-existent-field"}}},
+				{"update", bson.D{{"$unset", bson.D{{"non-existent-field", ""}}}}},
 			},
 		},
 	}
