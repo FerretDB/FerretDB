@@ -24,7 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-type insertCommandCompatTestCase struct {
+type insertCommandCompatTestCase struct { //nolint:vet // for readability
 	altErrorMsg string // optional, alternative error message in case of error
 	ordered     any    // required, ordered parameter
 	documents   []any  // required, slice of bson.D to be insert
