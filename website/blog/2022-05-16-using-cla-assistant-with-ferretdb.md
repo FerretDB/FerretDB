@@ -68,7 +68,7 @@ Next, we will need to register an OAuth App [there](https://github.com/settings/
 
 ![Register an Oauth App](/img/blog/cla1.jpg)
 
-App’s Authorization callback URL should be _`https://<domain>/auth/github/callback`_
+App’s Authorization callback URL should be `https://<domain>/auth/github/callback`.
 
 We also should register a [machine user account (a.k.a. bot)](https://docs.github.com/en/get-started/learning-about-github/types-of-github-accounts#personal-accounts) on GitHub and get a personal access token [there](https://github.com/settings/tokens) that will be used to call GitHub API on behalf of not authenticated users:
 
