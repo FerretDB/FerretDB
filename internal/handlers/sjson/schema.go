@@ -63,6 +63,8 @@ const (
 )
 
 // GetTypeOfValue returns sjson type of supported value.
+// It is used as internal type representation, and shouldn't
+// be used to represent the BSON type.
 func GetTypeOfValue(v any) string {
 	switch v.(type) {
 	case *types.Document:

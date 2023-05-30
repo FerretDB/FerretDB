@@ -140,7 +140,7 @@ func init() {
 	}
 }
 
-// AliasFromType returns type alias name for given value.
+// AliasFromType returns BSON type alias name for given value.
 func AliasFromType(v any) string {
 	switch v := v.(type) {
 	case *types.Document:
