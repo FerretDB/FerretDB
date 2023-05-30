@@ -583,6 +583,7 @@ func TestFindAndModifyCompatUpsertSet(t *testing.T) {
 				{"upsert", true},
 				{"update", bson.D{{"$set", bson.D{{"_id", "double"}}}}},
 			},
+			resultType: emptyResult, // _id must be an immutable field
 		},
 	}
 
