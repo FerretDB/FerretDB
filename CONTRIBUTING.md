@@ -237,7 +237,17 @@ We use the following naming conventions for integration tests:
 
 - Test files are named after the command they test, e.g. `find_test.go` for `find` command;
 - If the file contains compat tests than we add `_compat` suffix, e.g. `find_compat_test.go`;
-- 
+- Tests are named after the command they test, e.g. `TestFindCompat`;
+
+Some guidelines for naming tests:
+- Use descriptive names: Test case names should provide enough information about what functionality or condition they are testing. 
+If the test is checking for a specific error condition, the error type should be reflected in the name.
+- Keep it concise: While test names should be descriptive, it's also important to keep them concise.
+Use abbreviations where it makes sense, but avoid overly cryptic names.
+- Follow a consistent pattern: Consistency makes it easier for other team members to understand your tests. 
+A good pattern might be `[Context/Type][Scenario/Condition][ExpectedOutcome/Exception]`.
+- Avoid including test data in the name: While it may be tempting to include specific data points in the test name,
+this can lead to very long names and may not always provide useful information.
 
 ### Submitting code changes
 
