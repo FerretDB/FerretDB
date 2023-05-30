@@ -5,7 +5,7 @@ sidebar_position: 1
 # How to contribute to FerretDB
 
 FerretDB is an open source project and everyone – developers and non-developers – is welcome to contribute.
-If you’re interested in contributing to FerretDB projects, this documentation will help you get started.
+If you're interested in contributing to FerretDB projects, this documentation will help you get started.
 
 Here are some of the current FerretDB projects that you can fork and contribute to:
 
@@ -18,7 +18,7 @@ Please take a look at this post on [how to contribute to open source software](h
 
 ## Get started
 
-You don’t have to be a developer to contribute to FerretDB projects, you can even get started by helping us improve this documentation.
+You don't have to be a developer to contribute to FerretDB projects, you can even get started by helping us improve this documentation.
 If you have any questions or suggestions on how we can improve, kindly join our [community](/#community).
 We appreciate your feedback.
 

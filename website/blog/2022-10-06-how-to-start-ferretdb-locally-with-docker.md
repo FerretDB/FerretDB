@@ -31,7 +31,7 @@ To set up FerretDB locally using Docker, you will need to have the following ins
 
 Once the prerequisites are installed, the next thing to do is to create a `docker-compose.yml` file, which will contain declarative configuration of all required Docker containers.
 
-Note that, if you’ve already deployed a PostgreSQL compatible database in your environment, you can skip this step and use its address in later steps.
+Note that, if you've already deployed a PostgreSQL compatible database in your environment, you can skip this step and use its address in later steps.
 
 To begin with, we need to deploy our database of choice.
 For our example, we will be using PostgreSQL 14, which is the stable version of the database.
@@ -60,7 +60,7 @@ We can now run `docker-compose up -d` to start our environment from the docker-c
 The `-d` flag will run containers in the background.
 And If something isn't working as expected, it's worth it to remove the flag to check the logs.
 
-Let’s check the current status of our docker environment.
+Let's check the current status of our docker environment.
 Run the `docker-compose ps` command in the directory with `docker-compose.yml` file to easily check all running containers.
 
 ```js
@@ -95,7 +95,7 @@ The `--listen-addr` will set the port on which FerretDB will listen for requests
 The `--postgresql-url` is an address for FerretDB to connect to DB.
 The user, hostname, port and database name after the slash should match the values provided in the PostgreSQL deployment.
 
-It’s good practice to specify the PostgreSQL hostname by using the PostgreSQL container name.
+It's good practice to specify the PostgreSQL hostname by using the PostgreSQL container name.
 
 You can also specify other flags, but at the moment most of them are created for development and testing:
 
@@ -121,7 +121,7 @@ Flags:
 ```
 
 Now we can rerun `docker-compose up -d` to apply new changes.
-Let’s see if the FerretDB container has started properly.
+Let's see if the FerretDB container has started properly.
 
 ```js
 > docker-compose ps
@@ -133,7 +133,7 @@ postgres   docker-entrypoint.sh postgres    Up      0.0.0.0:5432->5432/tcp,:::54
 ```
 
 The container is up and running, it also forwards local :27017 port to the same port on the container.
-To be sure, let’s check FerretDB logs by using `docker logs` command with the container name or ID as an argument.
+To be sure, let's check FerretDB logs by using `docker logs` command with the container name or ID as an argument.
 
 ```js
 > docker-compose logs ferretdb
@@ -146,7 +146,7 @@ ferretdb    | 2022-10-05T23:45:35.995Z  INFO    debug   debug/debug.go:60       
 
 As we can see, FerretDB is waiting for incoming connections.
 
-Let’s add a network to make a container communication separated from your environment.
+Let's add a network to make a container communication separated from your environment.
 
 ```js
 networks:
@@ -181,8 +181,8 @@ test>
 
 ### Testing commands in FerretDB
 
-We’ve managed to create a sustainable environment for MongoDB drivers to run in!
-Let’s see what will happen if we try to insert something to the collection.
+We've managed to create a sustainable environment for MongoDB drivers to run in!
+Let's see what will happen if we try to insert something to the collection.
 
 ```js
 test> db.ferrets.insertOne({name: "Zippy", age: 4})
@@ -195,7 +195,7 @@ test>
 ```
 
 With the insertOne() comand, one document record is inserted into the collection.
-Let’s attempt to retrieve the documents in this collection using the find() method:
+Let's attempt to retrieve the documents in this collection using the find() method:
 
 ```js
 test> db.ferrets.find({})
@@ -211,7 +211,7 @@ We are able to run MongoDB queries and store them successfully in the database!
 ### Checking FerretDB data in PostgreSQL
 
 For our curiosity, let's see if the data is stored in the PostgreSQL database and in what way.
-To do that, let’s execute `psql` command on the PostgreSQL container:
+To do that, let's execute `psql` command on the PostgreSQL container:
 
 ```js
 > docker exec -ti postgres psql --user=user --db=ferretdb
@@ -222,7 +222,7 @@ ferretdb=#
 ```
 
 Now, we are able to control and run queries on the postgres database.
-Let’s check tables in `test` schema which was used by mongosh.
+Let's check tables in `test` schema which was used by mongosh.
 
 ```js
 List of relations
@@ -238,7 +238,7 @@ ferretdb=#
 ```
 
 As we can see, there is a table `ferrets_b90ada46` created for our collection.
-Now let’s print its content:
+Now let's print its content:
 
 ```text
 ferretdb=# SELECT * FROM test.ferrets_b90ada46;
@@ -254,10 +254,10 @@ From the output, we can conclude that the single MongoDB document is stored in a
 ## Recap
 
 There you have it!
-In just a few steps, we’ve been able to set up and run FerretDB locally using Docker.
-We’ve also tested it out by inserting and retrieving a document in a collection, and exploring how it’s stored in PostgreSQL.
+In just a few steps, we've been able to set up and run FerretDB locally using Docker.
+We've also tested it out by inserting and retrieving a document in a collection, and exploring how it's stored in PostgreSQL.
 
 Even though FerretDB is still under development and not suitable for production environments, running it locally using Docker gives you a taste of what's to come.
-But there’s still more to do.
+But there's still more to do.
 You can start contributing to FerretDB by taking a look at [this article](https://blog.ferretdb.io/how-to-contribute-to-open-source-2022/).
 To learn more about FerretDB, contribute to the project, or for any questions you might have, do reach out to us on [Slack](https://github.com/FerretDB/FerretDB#community) or [GitHub](https://github.com/FerretDB/FerretDB/discussions).

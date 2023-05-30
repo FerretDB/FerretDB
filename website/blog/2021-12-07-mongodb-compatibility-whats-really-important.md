@@ -13,7 +13,7 @@ In this recent [TheRegister Article](https://www.theregister.com/2021/12/06/aws_
 
 <!--truncate-->
 
-In the interview, Mark claims that Amazon’s DocumentDB - one of the leading MongoDB alternatives - is just 34% compatible with MongoDB itself.
+In the interview, Mark claims that Amazon's DocumentDB - one of the leading MongoDB alternatives - is just 34% compatible with MongoDB itself.
 
 This looks damning, until you remember the 80/20 rule, which applies here as "80% of applications require just 20% of functionality".
 And if one thing you can count on from AWS is that they are listening to their customers and [choosing functionality](https://docs.aws.amazon.com/documentdb/latest/developerguide/release-notes.html) to implement wisely.
@@ -27,7 +27,7 @@ They just provided the right features to be a great fit for certain applications
 We expect that this is how the MongoDB Alternatives Market will evolve - [DocumentDB](https://aws.amazon.com/documentdb/), [CosmosDB](https://docs.microsoft.com/en-us/azure/cosmos-db/mongodb/mongodb-introduction), [Oracle](https://blogs.oracle.com/database/post/introducing-oracle-database-api-for-mongodb), FerretDB (ourselves) will focus on implementing features which actually matter, not merely trying to achieve some higher compatibility number on arbitrary MongoDB test suites.
 Chances are, the companies will come together to standardize and implement useful extensions to MongoDB interfaces, which MongoDB itself is not pursuing.
 
-So do not get scared by [MongoDB’s Amazon DocumentDB bashing web site](https://www.isdocumentdbreallymongodb.com/) and self-serving compatibility ["evaluation"](https://www.mongodb.com/atlas-vs-amazon-documentdb/compatibility).
+So do not get scared by [MongoDB's Amazon DocumentDB bashing web site](https://www.isdocumentdbreallymongodb.com/) and self-serving compatibility ["evaluation"](https://www.mongodb.com/atlas-vs-amazon-documentdb/compatibility).
 Look into the functionality your application uses and plans to use and see whenever any of the MongoDB Alternatives support it.
 If they do not - let them know what is important to you .
 With FerretDB as an Open Source Project, you can both [file an issue](https://github.com/FerretDB/FerretDB/issues) or scratch your own itch by contributing the feature you need.

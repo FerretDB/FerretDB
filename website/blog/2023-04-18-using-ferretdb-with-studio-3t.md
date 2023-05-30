@@ -21,10 +21,10 @@ If you're new to [FerretDB](https://www.ferretdb.io/) and [Studio 3T](https://st
 
 <!--truncate-->
 
-As developers, we’re always on the hunt for tools that make our processes and applications easier to use, so we believe it’s an extra advantage to be able to use any GUI of your choice with FerretDB.
+As developers, we're always on the hunt for tools that make our processes and applications easier to use, so we believe it's an extra advantage to be able to use any GUI of your choice with FerretDB.
 
-With [the release of FerretDB 1.0 GA](https://blog.ferretdb.io/ferretdb-1-0-ga-opensource-mongodb-alternative/), you’re probably wondering about the kind of applications that FerretDB is compatible with, and what you can achieve with them.
-Well, we’re happy to let you know that FerretDB is compatible with a lot of MongoDB GUI applications such as Studio 3T, [Mingo UI](https://mingo.io/), [NoSQLBooster](https://nosqlbooster.com/), etc.
+With [the release of FerretDB 1.0 GA](https://blog.ferretdb.io/ferretdb-1-0-ga-opensource-mongodb-alternative/), you're probably wondering about the kind of applications that FerretDB is compatible with, and what you can achieve with them.
+Well, we're happy to let you know that FerretDB is compatible with a lot of MongoDB GUI applications such as Studio 3T, [Mingo UI](https://mingo.io/), [NoSQLBooster](https://nosqlbooster.com/), etc.
 
 With FerretDB, you can use similar commands and syntax as in MongoDB without licensing concerns or vendor lock-in.
 
@@ -36,7 +36,7 @@ In this article, we'll dive into how to use FerretDB with Studio 3T and show you
 
 FerretDB is now available for installation and testing on two cloud providers: [Scaleway](https://www.scaleway.com/en/blog/ferretdb-open-source-alternative-mongodb/) and [Civo Marketplace](https://www.civo.com/marketplace/FerretDB).
 
-For this tutorial, we’ll be using Docker to set up FerretDB.
+For this tutorial, we'll be using Docker to set up FerretDB.
 We can follow the [FerretDB Docker installation guide](https://docs.ferretdb.io/quickstart-guide/docker/) for more instructions.
 
 1. Install Docker on your machine if you haven't already done so.
@@ -80,14 +80,14 @@ We can follow the [FerretDB Docker installation guide](https://docs.ferretdb.io/
    mongodb://username:password@127.0.0.1/ferretdb?authMechanism=PLAIN
    ```
 
-   If you don’t have mongosh installed on your system (like me), you can execute it inside a temporary MongoDB container by running the following command:
+   If you don't have mongosh installed on your system (like me), you can execute it inside a temporary MongoDB container by running the following command:
 
    ```sh
    docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
    "mongodb://username:password@ferretdb/ferretdb?authMechanism=PLAIN"
    ```
 
-And that’s all we need to set up FerretDB on Docker.
+And that's all we need to set up FerretDB on Docker.
 
 ### Studio 3T Setup
 
@@ -102,7 +102,7 @@ Once installed, if you already have an account, you can proceed to sign in; othe
 
 ### Connect Studio 3T with FerretDB Instance
 
-Once we’ve finally installed and set up Studio 3T locally, the next thing to do is to connect Studio 3T with our FerretDB instance.
+Once we've finally installed and set up Studio 3T locally, the next thing to do is to connect Studio 3T with our FerretDB instance.
 
 1. To set up a connection, open Studio 3T and click on "New Connection" on the welcome screen.
    You will be given a "New Connection" dialog box that you should use to set up your connection.
@@ -132,20 +132,20 @@ Once we’ve finally installed and set up Studio 3T locally, the next thing to d
 
    If the test is successful, click on "Save" to save the connection.
 
-And that’s about it; we have connected Studio 3T with our FerretDB instance.
+And that's about it; we have connected Studio 3T with our FerretDB instance.
 Up next, we will try to run some basic and advanced operations on Studio 3T to see all the essential features of FerretDB.
 
 ## Basic Operations
 
 In this section, we will try to run some basic operations in Studio 3T and FerretDB, as we would with MongoDB.
 
-To begin, let’s create a database and collection using Studio 3T.
+To begin, let's create a database and collection using Studio 3T.
 If you already have some databases available in the FerretDB instance, this will be displayed in the list of available databases on the Studio 3T screen.
 
 If not, right-click on the added connection and select "Add Database", naming it "testing".
-Once that’s created, we repeat the process by right-clicking on the new database and then "Add Collection".
+Once that's created, we repeat the process by right-clicking on the new database and then "Add Collection".
 
-Let’s insert some documents into the collection we created:
+Let's insert some documents into the collection we created:
 
 Select the collection that will hold all your documents.
 
@@ -212,7 +212,7 @@ db.test.insertMany([
 ```
 
 This should insert 4 documents into the collection.
-If it’s not visible on the screen, right the collection and click "Refresh".
+If it's not visible on the screen, right the collection and click "Refresh".
 
 ![Insert operation](/img/blog/ferretdb-studio3t/image6.png)
 
@@ -220,13 +220,13 @@ If you run `db.test.find()` in intellishell, the list of added documents will be
 
 ![Read operation](/img/blog/ferretdb-studio3t/image7.png)
 
-Let’s run other queries on the FerretDB database to see how they perform in Studio 3T.
+Let's run other queries on the FerretDB database to see how they perform in Studio 3T.
 
 Here is a read example using the `$lte` operator:
 
 ![$lte operator](/img/blog/ferretdb-studio3t/image8.png)
 
-Let’s also try updating some documents in the database by extending the above query.
+Let's also try updating some documents in the database by extending the above query.
 
 ```js
 db.test.updateMany(
@@ -238,14 +238,14 @@ db.test.updateMany(
 This works perfectly, with two matched documents updated.
 
 It also works as expected when we try to delete a document from the collection.
-As we’ve shown, FerretDB is able to handle all basic operations on Studio 3T.
+As we've shown, FerretDB is able to handle all basic operations on Studio 3T.
 
 In the next section, we will try out more advanced operations and scenarios to see how it holds up.
 
 ## Advanced Operations
 
-With the release of FerretDB 1.0 GA, FerretDB is highly suitable for handling essential MongoDB features that you’d need in most applications.
-And since it’s constantly improving, compatibility is always an ever-growing process.
+With the release of FerretDB 1.0 GA, FerretDB is highly suitable for handling essential MongoDB features that you'd need in most applications.
+And since it's constantly improving, compatibility is always an ever-growing process.
 
 Say we want to perform operations on a new collection, `sales`, with the following document.
 
@@ -297,7 +297,7 @@ Let's assume we want to index the `order_total` field, which should help improve
 
 ## Get Started With FerretDB and Studio 3T
 
-In this article, we’ve covered a few common operations to show how you can use FerretDB and Studio 3T.
-However, please note that FerretDB is constantly improving and adding new features, and we’d be happy to learn all about your experience running FerretDB.
+In this article, we've covered a few common operations to show how you can use FerretDB and Studio 3T.
+However, please note that FerretDB is constantly improving and adding new features, and we'd be happy to learn all about your experience running FerretDB.
 
-We encourage you to try out FerretDB, and if you have any questions or feedback, please or run into any issues, please [reach out to us here](https://github.com/FerretDB/FerretDB/); we’d be happy to help!
+We encourage you to try out FerretDB, and if you have any questions or feedback, please or run into any issues, please [reach out to us here](https://github.com/FerretDB/FerretDB/); we'd be happy to help!

@@ -114,7 +114,7 @@ We are testing FerretDB against real-world applications, like [FastNetMon](https
 
 We also confirmed that popular database management tools such as `mongosh`, [MongoDB Compass](https://www.mongodb.com/products/compass), [NoSQL Booster](https://nosqlbooster.com/), [Mingo](https://mingo.io/) are able to leverage the current feature set of FerretDB.
 
-It’s like managing a MongoDB database, but it is FerretDB (and open source) under the hood.
+It's like managing a MongoDB database, but it is FerretDB (and open source) under the hood.
 We think this is insanely cool!
 
 ## What database backends does FerretDB support?
@@ -138,7 +138,7 @@ You can try it out on [their website](https://www.tigrisdata.com/).
 ### SAP HANA
 
 Our friends at [SAP](https://www.sap.com/index.html) are currently working on adding [SAP HANA](https://www.sap.com/products/technology-platform/hana.html) compatibility to FerretDB, which we are very excited about.
-It is also great to see SAP’s commitment to open source.
+It is also great to see SAP's commitment to open source.
 
 ### SQLite and future database backends
 

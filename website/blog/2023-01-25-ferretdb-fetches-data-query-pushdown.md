@@ -16,7 +16,7 @@ Find out how FerretDB uses query pushdown to fetch data from PostgreSQL.
 Pushdown is the method of optimizing a query by reducing the amount of data read and processed.
 It saves memory space, and network bandwidth, and reduces the query execution time by not prefetching unnecessary data to the database management system.
 
-When you fetch less data, you spend less memory, generate less network traffic (which can be time-consuming), and overall you operate on a smaller subset of data, as you don’t need to iterate over _huge_ piles of it.
+When you fetch less data, you spend less memory, generate less network traffic (which can be time-consuming), and overall you operate on a smaller subset of data, as you don't need to iterate over _huge_ piles of it.
 
 This article will give you a brief technical overview of how FerretDB fetches the data from the storage layer (also called as "backend"), and how we use query pushdowns to optimize this process.
 
@@ -31,7 +31,7 @@ That creates a need for fetching all the data from a storage layer, which for la
 
 Considering this fact, query pushdowns are a really important method for decreasing the data that we must fetch for every query.
 That's why FerretDB really can benefit from using them in such queries.
-Fortunately, we’ve managed to introduce the query pushdown with [this PR](https://github.com/FerretDB/FerretDB/pull/1207)!
+Fortunately, we've managed to introduce the query pushdown with [this PR](https://github.com/FerretDB/FerretDB/pull/1207)!
 
 ## How FerretDB fetches data using query pushdown
 
@@ -45,9 +45,9 @@ db.customers.find({ email: 'john.doe@example.com' }, { active: 1 })
 
 FerretDB will extract the command (`find`), filters (`{ 'email': 'john.doe@example.com' }`, and projections `{ active: 1 }`.
 
-To `find` the expected document, it needs to use the filter on every document inside `customers` collection, and as mentioned before, to operate on the collection’s data, FerretDB needs to fetch all of it from a storage layer (in our example - PostgreSQL).
+To `find` the expected document, it needs to use the filter on every document inside `customers` collection, and as mentioned before, to operate on the collection's data, FerretDB needs to fetch all of it from a storage layer (in our example - PostgreSQL).
 
-Let’s trace the queries sent to the backend!
+Let's trace the queries sent to the backend!
 
 At the beginning, FerretDB checks if PostgreSQL's `test` schema contains the `_ferretdb_database_metadata` table:
 
@@ -114,14 +114,14 @@ This doesn't seem like a big problem on a small set of data, but in this example
 Fetching all of this data creates an unnecessarily large amount of network traffic, and consumes too much memory and time.
 It's unreasonable to fetch all of this data, just to apply this simple filter that only a single document in the collection will satisfy.
 
-Let’s go back to our workflow and suppose that afterward the account was activated, so we want to ensure that.
-If we know the exact `_id` of the customer’s document, we can use it to benefit from the query pushdown:
+Let's go back to our workflow and suppose that afterward the account was activated, so we want to ensure that.
+If we know the exact `_id` of the customer's document, we can use it to benefit from the query pushdown:
 
 ```js
 db.customers.find({ _id: ObjectId('63aa97626786637ef1c4b725') }, { active: 1 })
 ```
 
-Let’s see what SQL queries FerretDB will send.
+Let's see what SQL queries FerretDB will send.
 The beginning of the process is the same as previous - it checks if a collection exists and fetches the table name.
 After that, to fetch the documents, it sends following query:
 
@@ -134,18 +134,18 @@ SELECT _jsonb FROM "test"."customers_c09344de" WHERE ((_jsonb->'_id')::jsonb = '
 
 As you can see the query that we sent now differs from the one sent on the past action.
 
-Surely we still fetch from the customers collection’s table, but as we only want the single customer and FerretDB supports pushdowns for filters with `_id` key and the value of the `ObjectID` type - we don’t fetch all documents, but we use the WHERE clause to get only one of them.
-As a result, we significantly reduced network traffic, FerretDB doesn’t iterate through thousands of records and most importantly the response time is much quicker!
+Surely we still fetch from the customers collection's table, but as we only want the single customer and FerretDB supports pushdowns for filters with `_id` key and the value of the `ObjectID` type - we don't fetch all documents, but we use the WHERE clause to get only one of them.
+As a result, we significantly reduced network traffic, FerretDB doesn't iterate through thousands of records and most importantly the response time is much quicker!
 
 ## Measuring performance gain
 
-Let’s check how pushdowns affected a simple operation in a benchmark!
+Let's check how pushdowns affected a simple operation in a benchmark!
 
-For the sake of this article, we’ve recreated the environment from the [quickstart guide](https://docs.ferretdb.io/quickstart_guide/docker/).
+For the sake of this article, we've recreated the environment from the [quickstart guide](https://docs.ferretdb.io/quickstart_guide/docker/).
 
-Afterwards, we’ve restored a dump with 10000 documents from [this dataset](https://github.com/mcampo2/mongodb-sample-databases/tree/master/dump/sample_weatherdata.).
+Afterwards, we've restored a dump with 10000 documents from [this dataset](https://github.com/mcampo2/mongodb-sample-databases/tree/master/dump/sample_weatherdata.).
 
-To measure differences between a pushdown query and the one without any pushdown, we’ve acknowledged that the pushdown for `_id` field is only done if the value is of the ObjectID or string type.
+To measure differences between a pushdown query and the one without any pushdown, we've acknowledged that the pushdown for `_id` field is only done if the value is of the ObjectID or string type.
 So, if we use any other field there, we are able to produce a non-optimized query.
 
 Our benchmark will run 3 cases.
