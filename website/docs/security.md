@@ -36,3 +36,5 @@ anonymous clients will be authenticated as user1,
 but clients that use `mongodb://user2:pass2@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN` MongoDB URI will be authenticated as user2.
 Since usernames and passwords are transferred in plain text,
 the use of TLS is highly recommended.
+
+#### PostgreSQL backend
