@@ -105,6 +105,32 @@ Our tooling will not reformat those blocks.
 ]
 ```
 
+Use `sql` for SQL queries.
+Use `text` for the `psql` output and in other cases.
+
+```sql
+SELECT _jsonb FROM "test"."_ferretdb_database_metadata" WHERE ((_jsonb->'_id')::jsonb = '"customers"');
+```
+
+```text
+ _jsonb ----------------------------------------------------------------------------------------------------------------------------------------------
+ {"$s": {"p": {"_id": {"t": "string"}, "table": {"t": "string"}}, "$k": ["_id", "table"]}, "_id": "customers", "table": "customers_c09344de"}
+```
+
+```text
+ferretdb=# \d test._ferretdb_settings
+          Table "test._ferretdb_settings"
+  Column  | Type  | Collation | Nullable | Default
+----------+-------+-----------+----------+---------
+ settings | jsonb |           |          |
+
+ferretdb=# SELECT settings FROM test._ferretdb_settings;
+                                             settings
+--------------------------------------------------------------------------------------------------
+ {"$k": ["collections"], "collections": {"$k": ["groceries"], "groceries": "groceries_6a5f9564"}}
+(1 row)
+```
+
 ## Terminologies
 
 To be sure that you're using the right descriptive term, please check our [glossary page](../reference/glossary.md) for relevant terms and terminologies about FerretDB.

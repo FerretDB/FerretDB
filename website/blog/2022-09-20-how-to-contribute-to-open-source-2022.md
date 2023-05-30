@@ -66,12 +66,12 @@ Check them out for further information.
 ### 2. Find the right project for Hacktoberfest open-source contributions
 
 Even though plenty of communities are open and friendly, not all the projects and issues would be suitable for first-time contributors.
-It’s essential to find some “low-hanging fruit” that will give you inspiration for future contributions.
+It’s essential to find some "low-hanging fruit" that will give you inspiration for future contributions.
 
-On GitHub, it might make sense to look for “good-first-issue” labels.
+On GitHub, it might make sense to look for "good-first-issue" labels.
 Usually, issues that are marked with such a label don’t require special knowledge about the project.
 
-There is one more tradition here, in October, some open source projects mark their issues with the “[hacktoberfest](https://github.com/search?q=label%3Ahacktoberfest&type=issues)” label, and such issues are often suitable for first-time contributors.
+There is one more tradition here, in October, some open source projects mark their issues with the "[hacktoberfest](https://github.com/search?q=label%3Ahacktoberfest&type=issues)" label, and such issues are often suitable for first-time contributors.
 
 At FerretDB, we are preparing for Hacktoberfest too!
 So, if you are looking for something to contribute to, take a look at the good first issues in our [FerretDB](https://github.com/FerretDB/FerretDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) and [github-actions](https://github.com/FerretDB/github-actions/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) repositories.
@@ -101,7 +101,7 @@ Help the project owners with such improvements, and they will be grateful!
 Most of the time, in order to make a contribution, you need to [fork a repository](https://docs.github.com/en/get-started/quickstart/fork-a-repo).
 Then you can clone your fork on your local environment, implement the changes, and test all the necessary things locally.
 
-We recommend that FerretDB contributors get familiar with the “[Setting up the environment](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-up-the-environment)” documentation.
+We recommend that FerretDB contributors get familiar with the "[Setting up the environment](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-up-the-environment)" documentation.
 
 ### 5. Ask questions or create an issue
 

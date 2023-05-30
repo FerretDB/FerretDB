@@ -91,7 +91,7 @@ SQL databases enable you to write complex queries and run different operations o
 
 Below is an example of a typical SQL query that selects all columns and prints out all records from the `user` table.
 
-```js
+```sql
 SELECT * FROM users;
 ```
 

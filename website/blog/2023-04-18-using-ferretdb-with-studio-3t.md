@@ -104,14 +104,14 @@ Once installed, if you already have an account, you can proceed to sign in; othe
 
 Once we’ve finally installed and set up Studio 3T locally, the next thing to do is to connect Studio 3T with our FerretDB instance.
 
-1. To set up a connection, open Studio 3T and click on “New Connection” on the welcome screen.
-   You will be given a “New Connection” dialog box that you should use to set up your connection.
+1. To set up a connection, open Studio 3T and click on "New Connection" on the welcome screen.
+   You will be given a "New Connection" dialog box that you should use to set up your connection.
 
    Connect FerretDB with any MongoDB client application like Studio 3T using MongoDB URI `mongodb://127.0.0.1:27017/`
 
    ![Studio 3T New Connection](/img/blog/ferretdb-studio3t/image3.png)
 
-   Click “Next” to proceed.
+   Click "Next" to proceed.
 
    ![Studio 3T Connection window](/img/blog/ferretdb-studio3t/image4.png)
 
@@ -142,8 +142,8 @@ In this section, we will try to run some basic operations in Studio 3T and Ferre
 To begin, let’s create a database and collection using Studio 3T.
 If you already have some databases available in the FerretDB instance, this will be displayed in the list of available databases on the Studio 3T screen.
 
-If not, right-click on the added connection and select “Add Database”, naming it “testing”.
-Once that’s created, we repeat the process by right-clicking on the new database and then “Add Collection”.
+If not, right-click on the added connection and select "Add Database", naming it "testing".
+Once that’s created, we repeat the process by right-clicking on the new database and then "Add Collection".
 
 Let’s insert some documents into the collection we created:
 
@@ -212,7 +212,7 @@ db.test.insertMany([
 ```
 
 This should insert 4 documents into the collection.
-If it’s not visible on the screen, right the collection and click “Refresh”.
+If it’s not visible on the screen, right the collection and click "Refresh".
 
 ![Insert operation](/img/blog/ferretdb-studio3t/image6.png)
 

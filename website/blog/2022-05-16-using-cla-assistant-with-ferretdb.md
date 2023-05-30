@@ -44,12 +44,12 @@ services:
 
 ```
 
-The first service starts PostgreSQL and creates “ferretdb” database, with data stored on the host system in “_./data/postgres_” directory.
+The first service starts PostgreSQL and creates "ferretdb" database, with data stored on the host system in "_./data/postgres_" directory.
 That ensures that data is not lost when you recreate this Compose project and makes the simplest way to do backups (by just copying this directory) possible.
 Of course, without more advanced backup solutions and with authentication disabled, that’s not a fully production-ready deployment, but good enough for an example.
 
 The second service starts FerretDB which would connect to this PostgreSQL instance and listen on the standard MongoDB port.
-FerretDB starts very fast and exits if it can’t connect to PostgreSQL; “_restart: on-failure_” ensures that it is restarted in that case.
+FerretDB starts very fast and exits if it can’t connect to PostgreSQL; "_restart: on-failure_" ensures that it is restarted in that case.
 
 Now we need to start CLA Assistant itself.
 They do not provide a prebuilt Docker image, but it is easy to build ourselves.
@@ -62,7 +62,7 @@ git checkout v2.13.0
 docker build --tag cla-assistant-local .
 ```
 
-That will produce a Docker image with tag “_cla-assistant-local:latest_” that you could see in the “_docker ls_” output.
+That will produce a Docker image with tag "_cla-assistant-local:latest_" that you could see in the "_docker ls_" output.
 
 Next, we will need to register an OAuth App [there](https://github.com/settings/developers) that will be used by CLA Assistant to receive webhooks from pull requests:
 
@@ -74,7 +74,7 @@ We also should register a [machine user account (a.k.a. bot)](https://docs.githu
 
 ![Get personal token access](/img/blog/cla2.jpg)
 
-The only required scope is “_public_repo_”.
+The only required scope is "_public_repo_".
 
 Now, let’s add CLA Assistant to our Docker Compose configuration:
 
@@ -115,8 +115,8 @@ services:
 
 ```
 
-Caddy will listen on both HTTP and HTTPS ports, and retrieve the TLS certificate from Let’s Encrypt that will be stored in “./data/caddy” on the host.
-For that, we need to create a file called “Caddyfile” on the host next to docker-compose.yml with the following content:
+Caddy will listen on both HTTP and HTTPS ports, and retrieve the TLS certificate from Let’s Encrypt that will be stored in "./data/caddy" on the host.
+For that, we need to create a file called "Caddyfile" on the host next to docker-compose.yml with the following content:
 
 ```js
   <domain> {

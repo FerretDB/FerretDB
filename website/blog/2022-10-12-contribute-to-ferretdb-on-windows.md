@@ -57,7 +57,7 @@ So we must fork the repository to make it possible to send PR.
 ![fork the FerretDB repository](/img/blog/image6.png)
 
 You need to set up old branch removal to keep your repository clean.
-You need to set up the “Automatically delete head branches” flag in the “General” section of your fork repository settings.
+You need to set up the "Automatically delete head branches" flag in the "General" section of your fork repository settings.
 
 ![delete head branches](/img/blog/image5.png)
 
@@ -94,7 +94,7 @@ git remote add upstream https://github.com/FerretDB/FerretDB.git
 ```
 
 Now that we are all set with git, we can start FerretDB locally.
-In FerretDB, we use the “task” tool to run every command.
+In FerretDB, we use the "task" tool to run every command.
 To install this tool, proceed with the following steps:
 
 ```js
@@ -102,9 +102,9 @@ cd tools
 go generate -x
 ```
 
-That command should install the “task” tool and some other helpful utilities.
+That command should install the "task" tool and some other helpful utilities.
 Installed tools will reside in **FerretDB/bin** directory.
-Once the “task” tool is installed, we can set up the local environment.
+Once the "task" tool is installed, we can set up the local environment.
 
 You can list all available commands with
 
@@ -134,7 +134,7 @@ bin\task run
 
 ![run FerretDB](/img/blog/image3.png)
 
-We can open another terminal window and run tests (_bin\task test_) or “mongosh” (_bin\task mongosh_).
+We can open another terminal window and run tests (_bin\task test_) or "mongosh" (_bin\task mongosh_).
 
 ![terminal window](/img/blog/image1-1.png)
 

@@ -2,7 +2,7 @@
 slug: ferretdb-fetches-data-query-pushdown
 title: How FerretDB fetches data - about query pushdown
 author: Patryk Kwiatek
-description: 'Find out how FerretDB uses query pushdown to fetch data from the storage layer (also called as “backend”)'
+description: 'Find out how FerretDB uses query pushdown to fetch data from the storage layer (also called as "backend")'
 image: /img/blog/ferretdb-query-pushdown.jpg
 ---
 
@@ -18,7 +18,7 @@ It saves memory space, and network bandwidth, and reduces the query execution ti
 
 When you fetch less data, you spend less memory, generate less network traffic (which can be time-consuming), and overall you operate on a smaller subset of data, as you don’t need to iterate over _huge_ piles of it.
 
-This article will give you a brief technical overview of how FerretDB fetches the data from the storage layer (also called as “backend”), and how we use query pushdowns to optimize this process.
+This article will give you a brief technical overview of how FerretDB fetches the data from the storage layer (also called as "backend"), and how we use query pushdowns to optimize this process.
 
 ## Why does FerretDB need SQL query pushdowns?
 
@@ -51,7 +51,7 @@ Let’s trace the queries sent to the backend!
 
 At the beginning, FerretDB checks if PostgreSQL's `test` schema contains the `_ferretdb_database_metadata` table:
 
-```js
+```sql
 SELECT EXISTS ( SELECT 1 FROM information_schema.columns WHERE table_schema = 'test' AND table_name = '_ferretdb_database_metadata' );
 ```
 
@@ -60,20 +60,22 @@ This method is required, as PostgreSQL has table name limitations (such as lengt
 
 Afterwards FerretDB takes the table name that matches the `customers` collection with the following query:
 
-```js
+```sql
 SELECT _jsonb FROM "test"."_ferretdb_database_metadata" WHERE ((_jsonb->'_id')::jsonb = '"customers"');
+```
 
+```text
  _jsonb ----------------------------------------------------------------------------------------------------------------------------------------------
  {"$s": {"p": {"_id": {"t": "string"}, "table": {"t": "string"}}, "$k": ["_id", "table"]}, "_id": "customers", "table": "customers_c09344de"}
 ```
 
 As we know that `customers` collection is mapped to the `customers_c09344de` table, we are ready to fetch the documents from it:
 
-```js
+```sql
 SELECT _jsonb FROM "test"."customers_c09344de";
 ```
 
-```js
+```text
 _jsonb -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
  {"$s": {"p": {"_id": {"t": "objectId"}, "name": {"t": "string"}, "email": {"t": "string"}, "active": {"t": "bool"}}, "$k": ["_id", "email", "name", "active"]}, "_id": "63aa97626786637ef1c4b722", "name": "Alice", "email": "alice@example.com", "active": true}
  {"$s": {"p": {"_id": {"t": "objectId"}, "name": {"t": "string"}, "email": {"t": "string"}, "active": {"t": "bool"}}, "$k": ["_id", "email", "name", "active"]}, "_id": "63aa97626786637ef1c4b723", "name": "Bob", "email": "bob@example.com", "active": true}
@@ -123,7 +125,7 @@ Let’s see what SQL queries FerretDB will send.
 The beginning of the process is the same as previous - it checks if a collection exists and fetches the table name.
 After that, to fetch the documents, it sends following query:
 
-```js
+```text
 SELECT _jsonb FROM "test"."customers_c09344de" WHERE ((_jsonb->'_id')::jsonb = '"63aa97626786637ef1c4b725"');
                                                                                                                                                         _jsonb
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

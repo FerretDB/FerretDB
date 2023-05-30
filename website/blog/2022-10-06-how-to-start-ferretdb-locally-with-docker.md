@@ -240,7 +240,7 @@ ferretdb=#
 As we can see, there is a table `ferrets_b90ada46` created for our collection.
 Now let’s print its content:
 
-```js
+```text
 ferretdb=# SELECT * FROM test.ferrets_b90ada46;
                                                 _jsonb
 ------------------------------------------------------------------------------------------------------
