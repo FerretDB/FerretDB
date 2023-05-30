@@ -190,17 +190,24 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 			},
 			skipForTigris: "schema validation would fail",
 		},
-
-		"MultipleOperatorsDotNotation": {
+		"Conflict": {
 			command: bson.D{
-				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
+				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{
-					{"$set", bson.D{{"v.0.field", 4}}},
-					{"$inc", bson.D{{"v.0.foo", 4}}},
+					{"$set", bson.D{{"v", 4}}},
+					{"$inc", bson.D{{"v", 4}}},
 				}},
 			},
 		},
-
+		"NoConflict": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v", 4}}},
+					{"$inc", bson.D{{"foo", 4}}},
+				}},
+			},
+		},
 		"InvalidOperator": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
@@ -230,27 +237,9 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 	testFindAndModifyCompat(t, testCases)
 }
 
-func TestFindAndModifyCompatConflict(t *testing.T) {
+func TestFindAndModifyCompatUpdateDotNotation(t *testing.T) {
 	testCases := map[string]findAndModifyCompatTestCase{
-		"Simple": {
-			command: bson.D{
-				{"query", bson.D{{"_id", "int64"}}},
-				{"update", bson.D{
-					{"$set", bson.D{{"v", 4}}},
-					{"$inc", bson.D{{"v", 4}}},
-				}},
-			},
-		},
-		"SimpleNoConflict": {
-			command: bson.D{
-				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
-				{"update", bson.D{
-					{"$set", bson.D{{"v", 4}}},
-					{"$inc", bson.D{{"foo", 4}}},
-				}},
-			},
-		},
-		"DotNotation": {
+		"Conflict": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
 				{"update", bson.D{
@@ -259,7 +248,7 @@ func TestFindAndModifyCompatConflict(t *testing.T) {
 				}},
 			},
 		},
-		"DotNotationNoConflict": {
+		"NoConflict": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
 				{"update", bson.D{
@@ -268,7 +257,7 @@ func TestFindAndModifyCompatConflict(t *testing.T) {
 				}},
 			},
 		},
-		"DotNotationNoIndex": {
+		"NoIndex": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
 				{"update", bson.D{
@@ -277,7 +266,7 @@ func TestFindAndModifyCompatConflict(t *testing.T) {
 				}},
 			},
 		},
-		"DotNotationParentConflict": {
+		"ParentConflict": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
 				{"update", bson.D{
