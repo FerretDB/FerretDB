@@ -22,7 +22,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -66,20 +65,10 @@ func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams
 //
 // If the key is found in the document, and the value is an array, each element of the array is added to the result.
 // Otherwise, the value itself is added to the result.
-func FilterDistinctValues(iter types.DocumentsIterator, key string) (*types.Array, error) {
-	distinct := types.MakeArray(0)
-	defer iter.Close()
+func FilterDistinctValues(docs []*types.Document, key string) (*types.Array, error) {
+	distinct := types.MakeArray(len(docs))
 
-	for {
-		_, doc, err := iter.Next()
-		if err != nil {
-			if err == iterator.ErrIteratorDone {
-				break
-			}
-
-			return nil, err
-		}
-
+	for _, doc := range docs {
 		// docsAtSuffix contains all documents exist at the suffix key.
 		docsAtSuffix := []*types.Document{doc}
 		suffix := key
