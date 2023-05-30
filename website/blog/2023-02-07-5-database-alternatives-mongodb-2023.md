@@ -13,9 +13,9 @@ The top 5 MongoDB-compatible alternatives to MongoDB include: FerretDB, Document
 
 <!--truncate-->
 
-MongoDB has profoundly impacted many developers and companies with its powerful and developer-friendly NoSQL database that’s resulted in a [45% market share among NoSQL databases in the world](https://www.slintel.com/tech/nosql-databases/mongodb-market-share).
+MongoDB has profoundly impacted many developers and companies with its powerful and developer-friendly NoSQL database that's resulted in a [45% market share among NoSQL databases in the world](https://www.slintel.com/tech/nosql-databases/mongodb-market-share).
 
-But that’s not the only reason for its popularity.
+But that's not the only reason for its popularity.
 MongoDB is a schemaless document-based database that allows you to build data models with increased flexibility and scalability.
 Through its cloud service offering, MongoDB Atlas, it enables users to run, deploy, scale, and manage their instances in the cloud.
 
@@ -44,7 +44,7 @@ None of these licenses have been endorsed by the Open Source Initiative, general
 
 While several euphemisms are used to describe these licenses as either free or open, _they are not_.
 They come with restrictions that go against the principles of OSS.
-For instance, under a proprietary license like SSPL, you can’t run MongoDB as a service unless you release all the support code and underlying infrastructure – or otherwise, pay for the enterprise version – MongoDB Atlas.
+For instance, under a proprietary license like SSPL, you can't run MongoDB as a service unless you release all the support code and underlying infrastructure – or otherwise, pay for the enterprise version – MongoDB Atlas.
 
 These proprietary database solutions can be pretty expensive and easily lead to vendor lock-in, especially for users who still consider them to be open source.
 
@@ -121,7 +121,7 @@ With PostgreSQL as the storage layer, ToroDB doesn't use jsonb; Instead, it uses
 ToroDB also implements the MongoDB protocol, making it compatible with most MongoDB applications.
 
 Despite ToroDB's potential as a viable MongoDB alternative, one big red flag is the absence of consistent updates or improvements on the database project for a while now, making it an unlikely choice for would-be users.
-In fact, there hasn’t been any activity on the project since 2019.
+In fact, there hasn't been any activity on the project since 2019.
 Nevertheless, the project is still available on GitHub, and users can happily experiment with it.
 
 ## Choosing the MongoDB alternative for your app

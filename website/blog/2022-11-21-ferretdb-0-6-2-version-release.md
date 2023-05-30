@@ -14,7 +14,7 @@ FerretDB 0.6.2 contains several upgrades especially support for Raspberry Pi.
 
 <!--truncate-->
 
-We are happy to announce FerretDB’s latest version release 0.6.2.
+We are happy to announce FerretDB's latest version release 0.6.2.
 Even though this is not a major version release, it does come with a few exciting features, bug fixes, and enhancements, as well as improved documentation.
 
 <!--truncate-->
@@ -24,7 +24,7 @@ Even though this is not a major version release, it does come with a few excitin
 For Raspberry Pi users, FerretDB now provides builds for `linux/arm/v7`.
 This new feature further expands the range of environments that FerretDB supports.
 We have also added a way for you to enable or disable telemetry at runtime.
-Besides that, we’ve implemented a new feature for setting and getting telemetry status at runtime, enabling you to use the same as MongoDB for free monitoring.
+Besides that, we've implemented a new feature for setting and getting telemetry status at runtime, enabling you to use the same as MongoDB for free monitoring.
 Please [check our documentation for more information](https://docs.ferretdb.io/telemetry/#enable-telemetry).
 
 ## Documentation
@@ -34,12 +34,12 @@ In the latest release, we have published our commands parity guide with MongoDB,
 
 ## Bug Fixes
 
-We’ve fixed issues with Unix socket listeners, where you get internal errors or panic when running FerretDB with a Unix socket listener.
+We've fixed issues with Unix socket listeners, where you get internal errors or panic when running FerretDB with a Unix socket listener.
 
 ## Other changes and enhancements
 
 In other changes, we've made it easier to configure FerretDB in container and cloud environments through environment variables.
-For identified errors, we’ve improved the accuracy of telemetry data in some cases where arguments or operators are present but not implemented, or return errors.
+For identified errors, we've improved the accuracy of telemetry data in some cases where arguments or operators are present but not implemented, or return errors.
 Furthermore, we have enabled the use of `-` in collection names in line with real-life app usages.
 
 Please find more details on the latest FerretDB version release [here on GitHub](https://github.com/FerretDB/FerretDB/releases).

@@ -21,7 +21,7 @@ Be sure to [check our roadmap for further details](https://github.com/orgs/Ferre
 
 :::caution
 Please note that this particular change breaks backward compatibility.
-To dump and restore the data, you’ll need connection strings to connect to FerretDB and PostgreSQL.
+To dump and restore the data, you'll need connection strings to connect to FerretDB and PostgreSQL.
 There are numerous ways to dump and restore your data.
 For example, you can follow the following steps:
 
