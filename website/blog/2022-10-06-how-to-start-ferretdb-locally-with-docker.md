@@ -1,6 +1,6 @@
 ---
 slug: how-to-start-ferretdb-locally-with-docker
-title: "How to start FerretDB locally with Docker"
+title: How to start FerretDB locally with Docker
 author: Patryk Kwiatek
 description: Learn to set up FerretDB locally using Docker by installing the essential software prerequisites, configuring Docker containers, and running insert() and find() commands.
 image: /img/blog/3g0okbkcve391.jpg
@@ -23,9 +23,9 @@ The process of installing and running FerretDB is not complicated at all, and yo
 
 To set up FerretDB locally using Docker, you will need to have the following installed:
 
-* [Docker](https://docs.docker.com/get-docker/)
-* [Docker Compose](https://docs.docker.com/compose/install/)
-* Text editor of choice
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+- Text editor of choice
 
 ## How to set up FerretDB environment locally
 
@@ -240,7 +240,7 @@ ferretdb=#
 As we can see, there is a table `ferrets_b90ada46` created for our collection.
 Now let’s print its content:
 
-```js
+```text
 ferretdb=# SELECT * FROM test.ferrets_b90ada46;
                                                 _jsonb
 ------------------------------------------------------------------------------------------------------

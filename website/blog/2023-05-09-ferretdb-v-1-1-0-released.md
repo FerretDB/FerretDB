@@ -1,6 +1,6 @@
 ---
 slug: ferretdb-v-1-1-0-released
-title: "FerretDB v1.1.0. Released"
+title: FerretDB v1.1.0 Released
 authors: [alex]
 description: >
   It is our pleasure to announce the release of [FerretDB](https://www.ferretdb.io/) version 1.1.0, which includes the addition of `renameCollection`, support for projection field assignments, and the `$project` pipeline aggregation stage, as well as `create` and `drop` commands in SAP HANA handler.
@@ -48,7 +48,7 @@ Say you have an `inventory` collection below:
 You can access the `renameCollection` command through the `db.collection.renameCollection()` method within the same database in mongosh, as shown below for a current `inventory` collection.
 
 ```js
-db.inventory.renameCollection("store")
+db.inventory.renameCollection('store')
 ```
 
 Note that `writeConcern`, `comment`, and `dropTarget` arguments are not currently implemented.
@@ -70,12 +70,12 @@ db.store.aggregate([
 
 The output document looks like this:
 
-```js
+```json5
 [
   {
     _id: 1,
     category: 'Electronics',
-    inventory: [ { product: 'Laptop', price: 1200, quantity: 10 } ]
+    inventory: [{ product: 'Laptop', price: 1200, quantity: 10 }]
   }
 ]
 ```
@@ -87,19 +87,19 @@ In the new release, we have added support for field projections assignment.
 With this feature, users can now specify which fields to retrieve from the database and assign new values to them in a single query.
 For instance, if we have a `users` collection as shown below:
 
-```js
+```json5
 [
   {
-    "_id": 1,
-    name: "John",
+    _id: 1,
+    name: 'John',
     age: 30,
-    email: "john@example.com"
+    email: 'john@example.com'
   },
   {
-    "_id": 2,
-    name: "Jane",
+    _id: 2,
+    name: 'Jane',
     age: 25,
-    email: "jane@example.com"
+    email: 'jane@example.com'
   }
 ]
 ```
@@ -112,8 +112,11 @@ db.users.find({}, { name: 'Anonymous' })
 
 The query will return:
 
-```js
-[ { _id: 1, name: 'Anonymous' }, { _id: 2, name: 'Anonymous' } ]
+```json5
+[
+  { _id: 1, name: 'Anonymous' },
+  { _id: 2, name: 'Anonymous' }
+]
 ```
 
 Also, thanks to one of our contributors, [@polyal](https://github.com/polyal), we now support `create` and `drop` commands in SAP HANA handler.

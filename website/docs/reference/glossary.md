@@ -6,7 +6,7 @@ sidebar_position: 2
 
 ## List of FerretDB terminologies
 
-*This section contains a list of common terminologies related to FerretDB*.
+_This section contains a list of common terminologies related to FerretDB_.
 
 ### A
 
