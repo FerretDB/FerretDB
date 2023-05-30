@@ -1,6 +1,6 @@
 ---
 slug: new-release-ferretdb-0-4-0
-title: "New release: FerretDB 0.4.0!"
+title: 'New release: FerretDB 0.4.0!'
 author: Peter Farkas
 description: We are happy to announce that FerretDB’s newest 0.4.0 release is now available on GitHub with some exciting new features and fixes in it.
 image: /img/blog/4ferrets.webp
@@ -8,7 +8,7 @@ tags: [release]
 date: 2022-06-28
 ---
 
-We are happy to announce that [FerretDB’s newest 0.4.0 release is now available on GitHub,](https://github.com/FerretDB/FerretDB/releases/tag/v0.4.0) with some exciting new features and fixes in it.
+We are happy to announce that [FerretDB's newest 0.4.0 release is now available on GitHub,](https://github.com/FerretDB/FerretDB/releases/tag/v0.4.0) with some exciting new features and fixes in it.
 
 ![New FerretDB release 0.4.0](/img/blog/4ferrets.webp)
 
@@ -18,9 +18,9 @@ We wish to thank everyone in the community who contributed to this release, eith
 Special thanks to [ribaraka](https://github.com/ribaraka) and [fenogentov](https://github.com/fenogentov) for their sustained efforts.
 
 Since 0.3.0, we are getting more and more user reports from those early adopters, who were curious enough to go ahead and replace their MongoDB instances with FerretDB - with success!
-The feedback we are getting is invaluable, though your mileage may vary based on the complexity of your application’s  database needs.
+The feedback we are getting is invaluable, though your mileage may vary based on the complexity of your application's database needs.
 
-As mentioned before, we are already compatible with applications, like SAP’s [CLA assistant](https://github.com/cla-assistant), and there will be many more to come in the next couple of months.
+As mentioned before, we are already compatible with applications, like SAP's [CLA assistant](https://github.com/cla-assistant), and there will be many more to come in the next couple of months.
 
 We anticipate that with 0.4.0, we are getting several steps closer to providing an open source MongoDB database experience for those who care about avoiding vendor lock-in.
 
@@ -33,7 +33,7 @@ With this release, we are adding support for specific field operators such as `$
 
 We are also adding support for array querying and the `$elemMatch` array query operator.
 
-Stubs were also added for features related to MongoDB’s Free Monitoring in preparation to implement such a feature in the future.
+Stubs were also added for features related to MongoDB's Free Monitoring in preparation to implement such a feature in the future.
 This is a feature which exists since MongoDB 4.0, and provides support for getting data from your running instances, such as resource utilization and execution times.
 
 ## Added support for Tigris
