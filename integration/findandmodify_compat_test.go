@@ -214,24 +214,6 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 				{"update", bson.D{{"$invalid", "non-existent-field"}}},
 			},
 		},
-		"ConflictKey": {
-			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
-				{"update", bson.D{
-					{"$set", bson.D{{"v", "val"}}},
-					{"$min", bson.D{{"v.foo", "val"}}},
-				}},
-			},
-		},
-		"ConflictKeyPrefix": {
-			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
-				{"update", bson.D{
-					{"$set", bson.D{{"v.foo", "val"}}},
-					{"$min", bson.D{{"v", "val"}}},
-				}},
-			},
-		},
 	}
 
 	testFindAndModifyCompat(t, testCases)
@@ -272,6 +254,25 @@ func TestFindAndModifyCompatUpdateDotNotation(t *testing.T) {
 				{"update", bson.D{
 					{"$set", bson.D{{"v.0.field", 4}}},
 					{"$inc", bson.D{{"v", 4}}},
+				}},
+			},
+		},
+
+		"ConflictKey": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v", "val"}}},
+					{"$min", bson.D{{"v.foo", "val"}}},
+				}},
+			},
+		},
+		"ConflictKeyPrefix": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.foo", "val"}}},
+					{"$min", bson.D{{"v", "val"}}},
 				}},
 			},
 		},
