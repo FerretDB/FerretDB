@@ -965,11 +965,12 @@ func (tree *pathValidator) validate(keys []string) bool {
 // validateOperatorKeys returns error if any key contains empty path or
 // the same path prefix exists in other key or other document.
 func validateOperatorKeys(command string, docs ...*types.Document) error {
-	paths := newPathValidator()
+	//paths := newPathValidator()
+	paths := []*types.Path{}
 
 	for _, doc := range docs {
 		for _, key := range doc.Keys() {
-			path, err := types.NewPathFromString(key)
+			nextPath, err := types.NewPathFromString(key)
 			if err != nil {
 				return newUpdateError(
 					commonerrors.ErrEmptyName,
@@ -981,19 +982,59 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 				)
 			}
 
-			if ok := paths.validate(path.Slice()); !ok {
-				return newUpdateError(
-					commonerrors.ErrConflictingUpdateOperators,
-					fmt.Sprintf(
-						"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
-					),
-					command,
-				)
+			for _, oldPath := range paths {
+				keys := oldPath.Slice()
+				keys2 := nextPath.Slice()
+
+				var isPrefix bool
+
+				if len(keys) > len(keys2) {
+					isPrefix = checkSlicePrefix(keys, keys2)
+				} else {
+					isPrefix = checkSlicePrefix(keys2, keys)
+				}
+
+				if isPrefix {
+					return newUpdateError(
+						commonerrors.ErrConflictingUpdateOperators,
+						fmt.Sprintf(
+							"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
+						),
+						command,
+					)
+				}
+
 			}
+			paths = append(paths, &nextPath)
 		}
 	}
 
 	return nil
+}
+
+// checkSlicePrefix returns true if prefix slice is the beginning of the target slice.
+// The example of slice prefix: target = ["a","b","c"] prefix = ["a","b"];
+// For empty prefix slice it returns false, if target slice is not empty.
+func checkSlicePrefix[T comparable](target, prefix []T) bool {
+	if len(target) < len(prefix) {
+		return false
+	}
+
+	if len(prefix) == 0 {
+		if len(target) == 0 {
+			return true
+		}
+
+		return false
+	}
+
+	for i := range prefix {
+		if prefix[i] != target[i] {
+			return false
+		}
+	}
+
+	return true
 }
 
 // extractValueFromUpdateOperator gets operator "op" value and returns CommandError for `findAndModify`
