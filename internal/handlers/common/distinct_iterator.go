@@ -97,6 +97,7 @@ func (iter *distinctIterator) Next() (struct{}, *types.Document, error) {
 					if errors.Is(err, iterator.ErrIteratorDone) {
 						break
 					}
+
 					if err != nil {
 						return unused, nil, lazyerrors.Error(err)
 					}
@@ -119,6 +120,12 @@ func (iter *distinctIterator) Next() (struct{}, *types.Document, error) {
 	return unused, must.NotFail(types.NewDocument(iter.path.Suffix(), distinct)), nil
 }
 
+// Close implements iterator.Interface.
 func (iter *distinctIterator) Close() {
 	iter.iter.Close()
 }
+
+// check interfaces
+var (
+	_ types.DocumentsIterator = (*distinctIterator)(nil)
+)

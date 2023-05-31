@@ -57,7 +57,9 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 
 	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		iter, _, err := pgdb.QueryDocuments(ctx, tx, &qp)
+		var iter types.DocumentsIterator
+
+		iter, _, err = pgdb.QueryDocuments(ctx, tx, &qp)
 		if err != nil {
 			return err
 		}

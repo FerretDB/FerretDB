@@ -57,7 +57,9 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	var distinct *types.Array
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		iter, _, err := pgdb.QueryDocuments(ctx, tx, &qp)
+		var iter types.DocumentsIterator
+
+		iter, _, err = pgdb.QueryDocuments(ctx, tx, &qp)
 		if err != nil {
 			return err
 		}
@@ -72,12 +74,16 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			return err
 		}
 
-		distinctDocs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+		var distinctDocs []*types.Document
+
+		distinctDocs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
 		if err != nil {
 			return err
 		}
 
-		path, err := types.NewPathFromString(dp.Key)
+		var path types.Path
+
+		path, err = types.NewPathFromString(dp.Key)
 		if err != nil {
 			return err
 		}
