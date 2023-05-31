@@ -19,12 +19,12 @@ If a collection does not exist, the insert command automatically creates one.
 
 ```js
 db.scientists.insertOne({
-    name: {
-        firstname: "Thomas",
-        lastname: "Edison"
-    },
-    born: 1847,
-    invention: "lightbulb"
+  name: {
+    firstname: 'Thomas',
+    lastname: 'Edison'
+  },
+  born: 1847,
+  invention: 'lightbulb'
 })
 ```
 
@@ -43,37 +43,37 @@ A collection can contain multiple documents.
 Using the `insertMany()` command, you can add multiple documents to a collection at once.
 
 ```js
-db.collection_name.insertMany([{document1}, {document2},... {documentN}])
+db.collection_name.insertMany([{ document1 }, { document2 }, ...{ documentN }])
 ```
 
 The following example shows how to insert multiple documents into a collection:
 
 ```js
 db.scientists.insertMany([
-    {
-        name: {
-        firstname: "Alan",
-        lastname: "Turing"
-        },
-        born: 1912,
-        invention: "Turing Machine"
+  {
+    name: {
+      firstname: 'Alan',
+      lastname: 'Turing'
     },
-    {
-        name: {
-        firstname: "Graham",
-        lastname: "Bell"
-        },
-        born: 1847,
-        invention: "telephone"
+    born: 1912,
+    invention: 'Turing Machine'
+  },
+  {
+    name: {
+      firstname: 'Graham',
+      lastname: 'Bell'
     },
-    {
-        name: {
-        firstname: "Ada",
-        lastname: "Lovelace"
-        },
-        born: 1815,
-        invention: "computer programming"
-    }
+    born: 1847,
+    invention: 'telephone'
+  },
+  {
+    name: {
+      firstname: 'Ada',
+      lastname: 'Lovelace'
+    },
+    born: 1815,
+    invention: 'computer programming'
+  }
 ])
 ```
 

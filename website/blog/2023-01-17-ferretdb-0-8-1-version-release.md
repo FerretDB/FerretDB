@@ -1,6 +1,6 @@
 ---
 slug: ferretdb-0-8-1-version-release
-title: "FerretDB new version release - 0.8.1"
+title: FerretDB new version release - 0.8.1
 author: Alexander Fashakin
 description: FerretDB 0.8.1 - the open-source MongoDB alternative - includes new features like version availability, `distinct` command & client TLS validation, and much more.
 image: /img/blog/FerretDB-v0.8.1.jpg
@@ -27,7 +27,7 @@ We are delighted to announce that we now report the availability of newer versio
 However, this is only available for users with telemetry enabled.
 If telemetry is enabled and a newer version of FerretDB is available, you'll be notified and can stay up-to-date with the latest and best version of FerretDB.
 
-If you are yet to enable telemetry and you’d love to access this feature, please [see our documentation here](https://docs.ferretdb.io/telemetry/).
+If you are yet to enable telemetry and you'd love to access this feature, please [see our documentation here](https://docs.ferretdb.io/telemetry/).
 
 Next, we've implemented the `distinct` command in FerretDB.
 With this command, you can easily find the unique values of specific fields in your data.

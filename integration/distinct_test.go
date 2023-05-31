@@ -25,46 +25,84 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestGetDistinctCommandInvalidQuery(t *testing.T) {
+func TestDistinctErrors(t *testing.T) {
 	t.Parallel()
 
+	ctx, coll := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+
 	for name, tc := range map[string]struct {
-		command    bson.D
-		err        *mongo.CommandError
-		altMessage string
+		command  any                // required
+		collName any                // optional
+		filter   bson.D             // required
+		err      mongo.CommandError // required
 	}{
-		"Empty": {
-			command: nil,
-			err:     nil,
+		"EmptyCollection": {
+			command:  "a",
+			filter:   bson.D{},
+			collName: "",
+			err: mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Invalid namespace specified 'TestDistinctErrors.'",
+			},
 		},
-		"Int": {
-			command: bson.D{{"query", 1}},
-			err: &mongo.CommandError{
+		"CollectionTypeObject": {
+			command:  "a",
+			filter:   bson.D{},
+			collName: bson.D{},
+			err: mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "collection name has invalid type object",
+			},
+		},
+		"WrongTypeObject": {
+			command: bson.D{},
+			filter:  bson.D{},
+			err: mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
-				Message: `BSON field 'distinct.query' is the wrong type 'int', expected type 'object'`,
+				Message: "BSON field 'distinct.key' is the wrong type 'object', expected type 'string'",
+			},
+		},
+		"WrongTypeArray": {
+			command: bson.A{},
+			filter:  bson.D{},
+			err: mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'distinct.key' is the wrong type 'array', expected type 'string'",
+			},
+		},
+		"WrongTypeNumber": {
+			command: int32(1),
+			filter:  bson.D{},
+			err: mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'distinct.key' is the wrong type 'int', expected type 'string'",
 			},
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			t.Helper()
+
 			t.Parallel()
 
-			ctx, collection := setup.Setup(t, shareddata.Doubles)
+			require.NotNil(t, tc.filter, "filter should be set")
 
-			db := collection.Database()
-
-			command := bson.D{{"distinct", collection.Name()}}
-			command = append(command, bson.E{"key", "a"})
-
-			command = append(command, tc.command...)
-			_, err := db.RunCommand(ctx, command).DecodeBytes()
-
-			if err != nil {
-				AssertEqualCommandError(t, *tc.err, err)
-				return
+			var collName any = coll.Name()
+			if tc.collName != nil {
+				collName = tc.collName
 			}
-			require.NoError(t, err)
+
+			command := bson.D{{"distinct", collName}, {"key", tc.command}, {"query", tc.filter}}
+
+			res := coll.Database().RunCommand(ctx, command)
+			require.Error(t, res.Err(), "expected error")
+
+			AssertEqualCommandError(t, tc.err, res.Err())
 		})
 	}
 }

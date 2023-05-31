@@ -37,18 +37,21 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	command := document.Command()
 
-	db, err := common.GetRequiredParam[string](document, "$db")
+	dbName, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	collection, err := common.GetRequiredParam[string](document, command)
+	collectionName, err := common.GetRequiredParam[string](document, command)
 	if err != nil {
 		return nil, err
 	}
 
-	err = h.b.Database(db).DropCollection(ctx, &backends.DropCollectionParams{
-		Name: collection,
+	db := h.b.Database(dbName)
+	defer db.Close()
+
+	err = db.DropCollection(ctx, &backends.DropCollectionParams{
+		Name: collectionName,
 	})
 
 	switch {
@@ -57,7 +60,7 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		must.NoError(reply.SetSections(wire.OpMsgSection{
 			Documents: []*types.Document{must.NotFail(types.NewDocument(
 				"nIndexesWas", int32(1), // TODO
-				"ns", db+"."+collection,
+				"ns", dbName+"."+collectionName,
 				"ok", float64(1),
 			))},
 		}))

@@ -24,56 +24,41 @@ For the examples in this section, insert the following documents into the `emplo
 ```js
 db.employees.insertMany([
   {
-     name: {
-        first: "Earl",
-        last: "Thomas"
-     },
-     employeeID: 1234,
-     age: 23,
-     role: "salesperson",
-     catalog: [
-        "printer",
-        "cardboard",
-        "crayons",
-        "books"
-     ]
+    name: {
+      first: 'Earl',
+      last: 'Thomas'
+    },
+    employeeID: 1234,
+    age: 23,
+    role: 'salesperson',
+    catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
-     name: {
-        first: "Sam",
-        last: "Johnson"
-     },
-     employeeID: 2234,
-     age: 35,
-     role: "salesperson",
-     catalog: [
-        "cabinet",
-        "fridge",
-        "blender",
-        "utensils"
-     ]
+    name: {
+      first: 'Sam',
+      last: 'Johnson'
+    },
+    employeeID: 2234,
+    age: 35,
+    role: 'salesperson',
+    catalog: ['cabinet', 'fridge', 'blender', 'utensils']
   },
   {
-     name: {
-        first: "Clarke",
-        last: "Dane"
-     },
-     employeeID: 3234,
-     age: 21,
-     role: "salesperson",
-     catalog: [
-        "printer",
-        "pencils",
-        "crayons",
-        "toys"
-     ]
+    name: {
+      first: 'Clarke',
+      last: 'Dane'
+    },
+    employeeID: 3234,
+    age: 21,
+    role: 'salesperson',
+    catalog: ['printer', 'pencils', 'crayons', 'toys']
   }
 ])
 ```
 
 ## $eq
 
-*Syntax*: `{ <field>: { $eq: <element> } }`
+_Syntax_: `{ <field>: { $eq: <element> } }`
 
 To select documents that exactly match a given query value, use the `$eq` operator.
 
@@ -83,15 +68,15 @@ This operator can be used to match values of different types, including document
 
 ```js
 db.employees.find({
-   age: {
-      $eq: 21
-   }
+  age: {
+    $eq: 21
+  }
 })
 ```
 
 The response returns a single document that matches the query:
 
-```js
+```json5
 [
   {
     _id: ObjectId("639a3cce071b6bed396a8f0e"),
@@ -99,7 +84,7 @@ The response returns a single document that matches the query:
     employeeID: 3234,
     age: 21,
     role: 'salesperson',
-    catalog: [ 'printer', 'pencils', 'crayons', 'toys' ]
+    catalog: ['printer', 'pencils', 'crayons', 'toys']
   }
 ]
 ```
@@ -109,15 +94,15 @@ The following operation queries the `employees` collection for documents that ma
 
 ```js
 db.employees.find({
-   "name.first":{
-      $eq: "Earl"
-   }
+  'name.first': {
+    $eq: 'Earl'
+  }
 })
 ```
 
 The response returns a single document that matches the query:
 
-```js
+```json5
 [
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
@@ -125,14 +110,14 @@ The response returns a single document that matches the query:
     employeeID: 1234,
     age: 23,
     role: 'salesperson',
-    catalog: [ 'printer', 'cardboard', 'crayons', 'books' ]
+    catalog: ['printer', 'cardboard', 'crayons', 'books']
   }
 ]
 ```
 
 ## $gt
 
-*Syntax*: `{ <field>: { $gt: <element> } }`
+_Syntax_: `{ <field>: { $gt: <element> } }`
 
 To identify documents containing elements that have a greater value than the specified one in the query, use the `$gt` operator.
 
@@ -140,15 +125,15 @@ To identify documents containing elements that have a greater value than the spe
 
 ```js
 db.employees.find({
-   age: {
-      $gt: 21
-   }
+  age: {
+    $gt: 21
+  }
 })
 ```
 
 The output:
 
-```js
+```json5
 [
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
@@ -156,7 +141,7 @@ The output:
     employeeID: 1234,
     age: 23,
     role: 'salesperson',
-    catalog: [ 'printer', 'cardboard', 'crayons', 'books' ]
+    catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
     _id: ObjectId("639a3cce071b6bed396a8f0d"),
@@ -164,14 +149,14 @@ The output:
     employeeID: 2234,
     age: 35,
     role: 'salesperson',
-    catalog: [ 'cabinet', 'fridge', 'blender', 'utensils' ]
+    catalog: ['cabinet', 'fridge', 'blender', 'utensils']
   }
 ]
 ```
 
 ## $gte
 
-*Syntax*: `{ <field>: { $gte: <element> } }`
+_Syntax_: `{ <field>: { $gte: <element> } }`
 
 Use the `$gte` to select document with elements that are greater than or equal to a specified value.
 
@@ -179,15 +164,15 @@ Use the `$gte` to select document with elements that are greater than or equal t
 
 ```js
 db.employees.find({
-   age: {
-      $gte: 21
-   }
+  age: {
+    $gte: 21
+  }
 })
 ```
 
 The output:
 
-```js
+```json5
 [
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
@@ -195,7 +180,7 @@ The output:
     employeeID: 1234,
     age: 23,
     role: 'salesperson',
-    catalog: [ 'printer', 'cardboard', 'crayons', 'books' ]
+    catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
     _id: ObjectId("639a3cce071b6bed396a8f0d"),
@@ -203,7 +188,7 @@ The output:
     employeeID: 2234,
     age: 35,
     role: 'salesperson',
-    catalog: [ 'cabinet', 'fridge', 'blender', 'utensils' ]
+    catalog: ['cabinet', 'fridge', 'blender', 'utensils']
   },
   {
     _id: ObjectId("639a3cce071b6bed396a8f0e"),
@@ -211,14 +196,14 @@ The output:
     employeeID: 3234,
     age: 21,
     role: 'salesperson',
-    catalog: [ 'printer', 'pencils', 'crayons', 'toys' ]
+    catalog: ['printer', 'pencils', 'crayons', 'toys']
   }
 ]
 ```
 
 ## $lt
 
-*Syntax*: `{ <field>: { $lt: <element> } }`
+_Syntax_: `{ <field>: { $lt: <element> } }`
 
 Contrary to the `$gt` operator, the `$lt` operator is ideal for selecting documents with elements that are of a lesser value than that of the specified query.
 
@@ -226,15 +211,15 @@ Contrary to the `$gt` operator, the `$lt` operator is ideal for selecting docume
 
 ```js
 db.employees.find({
-   age: {
-      $lt: 25
-   }
+  age: {
+    $lt: 25
+  }
 })
 ```
 
 The output:
 
-```js
+```json5
 [
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
@@ -242,7 +227,7 @@ The output:
     employeeID: 1234,
     age: 23,
     role: 'salesperson',
-    catalog: [ 'printer', 'cardboard', 'crayons', 'books' ]
+    catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
     _id: ObjectId("639a3cce071b6bed396a8f0e"),
@@ -250,14 +235,14 @@ The output:
     employeeID: 3234,
     age: 21,
     role: 'salesperson',
-    catalog: [ 'printer', 'pencils', 'crayons', 'toys' ]
+    catalog: ['printer', 'pencils', 'crayons', 'toys']
   }
 ]
 ```
 
 ## $lte
 
-*Syntax*: `{ <field>: { $lte: <element> } }`
+_Syntax_: `{ <field>: { $lte: <element> } }`
 
 The `$lte` operator is the opposite of the `$gte` operator.
 Use the `$lte` operator to select documents with elements that are less than or equal to the specified query value.
@@ -266,15 +251,15 @@ Use the `$lte` operator to select documents with elements that are less than or 
 
 ```js
 db.employees.find({
-   age: {
-      $lte: 21
-   }
+  age: {
+    $lte: 21
+  }
 })
 ```
 
 The output:
 
-```js
+```json5
 [
   {
     _id: ObjectId("639a3cce071b6bed396a8f0e"),
@@ -282,14 +267,14 @@ The output:
     employeeID: 3234,
     age: 21,
     role: 'salesperson',
-    catalog: [ 'printer', 'pencils', 'crayons', 'toys' ]
+    catalog: ['printer', 'pencils', 'crayons', 'toys']
   }
 ]
 ```
 
 ## $in
 
-*Syntax*: `{ <field>: { $in: [<element1>, <element2>, ... <elementN> ] } }`
+_Syntax_: `{ <field>: { $in: [<element1>, <element2>, ... <elementN> ] } }`
 
 To select documents containing any of the listed elements in a specified array field, use the `$in` operator.
 
@@ -297,15 +282,15 @@ To select documents containing any of the listed elements in a specified array f
 
 ```js
 db.employees.find({
-   age: {
-      $in: [ 21, 35 ]
-   }
+  age: {
+    $in: [21, 35]
+  }
 })
 ```
 
 The output:
 
-```js
+```json5
 [
   {
     _id: ObjectId("639a3cce071b6bed396a8f0d"),
@@ -313,7 +298,7 @@ The output:
     employeeID: 2234,
     age: 35,
     role: 'salesperson',
-    catalog: [ 'cabinet', 'fridge', 'blender', 'utensils' ]
+    catalog: ['cabinet', 'fridge', 'blender', 'utensils']
   },
   {
     _id: ObjectId("639a3cce071b6bed396a8f0e"),
@@ -321,14 +306,14 @@ The output:
     employeeID: 3234,
     age: 21,
     role: 'salesperson',
-    catalog: [ 'printer', 'pencils', 'crayons', 'toys' ]
+    catalog: ['printer', 'pencils', 'crayons', 'toys']
   }
 ]
 ```
 
 ## $ne
 
-*Syntax*: `{ <field>: { $ne: <element> } }`
+_Syntax_: `{ <field>: { $ne: <element> } }`
 
 Use the `$ne` operator to select all the documents with elements that are not equal to a given query.
 
@@ -336,15 +321,15 @@ Use the `$ne` operator to select all the documents with elements that are not eq
 
 ```js
 db.employees.find({
-   age: {
-      $ne: 21
-   }
+  age: {
+    $ne: 21
+  }
 })
 ```
 
 The output:
 
-```js
+```json5
 [
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
@@ -352,7 +337,7 @@ The output:
     employeeID: 1234,
     age: 23,
     role: 'salesperson',
-    catalog: [ 'printer', 'cardboard', 'crayons', 'books' ]
+    catalog: ['printer', 'cardboard', 'crayons', 'books']
   },
   {
     _id: ObjectId("639a3cce071b6bed396a8f0d"),
@@ -360,14 +345,14 @@ The output:
     employeeID: 2234,
     age: 35,
     role: 'salesperson',
-    catalog: [ 'cabinet', 'fridge', 'blender', 'utensils' ]
+    catalog: ['cabinet', 'fridge', 'blender', 'utensils']
   }
 ]
 ```
 
 ## $nin
 
-*Syntax*: `{ <field>: { $nin: [ <element1>, <element2> ... <elementN> ] } }`
+_Syntax_: `{ <field>: { $nin: [ <element1>, <element2> ... <elementN> ] } }`
 
 The `$nin` does exactly the opposite of the `$in` operator.
 Use the `$nin` operator when selecting documents that do match or contain any of the elements listed in an array query.
@@ -376,15 +361,15 @@ Use the `$nin` operator when selecting documents that do match or contain any of
 
 ```js
 db.employees.find({
-   age: {
-      $nin: [ 21, 35 ]
-   }
+  age: {
+    $nin: [21, 35]
+  }
 })
 ```
 
 The output:
 
-```js
+```json5
 [
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
@@ -392,6 +377,7 @@ The output:
     employeeID: 1234,
     age: 23,
     role: 'salesperson',
-    catalog: [ 'printer', 'cardboard', 'crayons', 'books' ]
+    catalog: ['printer', 'cardboard', 'crayons', 'books']
   }
 ]
+```

@@ -48,6 +48,7 @@ var (
 
 	postgreSQLURLF = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'pg' handler.")
 	tigrisURLSF    = flag.String("tigris-urls", "", "in-process FerretDB: Tigris URLs for 'tigris' handler (comma separated)")
+	hanaURLF       = flag.String("hana-url", "", "in-process FerretDB: Hana URL for 'hana' handler.")
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
 
@@ -62,7 +63,7 @@ var (
 
 // Other globals.
 var (
-	allBackends = []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"}
+	allBackends = []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-tigris", "ferretdb-hana", "mongodb"}
 
 	CertsRoot = filepath.Join("..", "build", "certs") // relative to `integration` directory
 )

@@ -186,7 +186,7 @@ func GetSkipStageParam(value any) (int64, error) {
 
 // getBinaryMaskParam matches value type, returning bit mask and error if match failed.
 // Possible values are: position array ([1,3,5] == 010101), whole number value and types.Binary value.
-func getBinaryMaskParam(mask any) (uint64, error) {
+func getBinaryMaskParam(operator string, mask any) (uint64, error) {
 	var bitmask uint64
 
 	switch mask := mask.(type) {
@@ -195,18 +195,30 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 		for i := 0; i < mask.Len(); i++ {
 			val := must.NotFail(mask.Get(i))
 
-			b, ok := val.(int32)
-			if !ok {
-				return 0, commonerrors.NewCommandError(
-					commonerrors.ErrBadValue,
-					fmt.Errorf(`Failed to parse bit position. Expected a number in: %d: %#v`, i, val),
-				)
+			b, err := commonparams.GetWholeNumberParam(val)
+			if err != nil {
+				switch {
+				case errors.Is(err, commonparams.ErrNotWholeNumber), errors.Is(err, commonparams.ErrInfinity),
+					errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
+					return 0, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrBadValue,
+						fmt.Sprintf(`Failed to parse bit position. Expected an integer: %d: %#v`, i, val),
+						operator,
+					)
+				default:
+					return 0, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrBadValue,
+						fmt.Sprintf(`Failed to parse bit position. Expected a number in: %d: %#v`, i, val),
+						operator,
+					)
+				}
 			}
 
 			if b < 0 {
-				return 0, commonerrors.NewCommandError(
+				return 0, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrBadValue,
-					fmt.Errorf("Failed to parse bit position. Expected a non-negative number in: %d: %d", i, b),
+					fmt.Sprintf("Failed to parse bit position. Expected a non-negative number in: %d: %d", i, b),
+					operator,
 				)
 			}
 
@@ -216,11 +228,19 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 	case float64:
 		// {field: {$bitsAllClear: bitmask}}
 		if mask != math.Trunc(mask) || math.IsInf(mask, 0) {
-			return 0, commonparams.ErrNotWholeNumber
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf("Expected an integer: %s: %#v", operator, mask),
+				operator,
+			)
 		}
 
 		if mask < 0 {
-			return 0, commonparams.ErrNegativeNumber
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf(`Expected a non-negative number in: %s: %.1f`, operator, mask),
+				operator,
+			)
 		}
 
 		bitmask = uint64(mask)
@@ -244,7 +264,11 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 	case int32:
 		// {field: {$bitsAllClear: bitmask}}
 		if mask < 0 {
-			return 0, commonparams.ErrNegativeNumber
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf(`Expected a non-negative number in: %s: %v`, operator, mask),
+				operator,
+			)
 		}
 
 		bitmask = uint64(mask)
@@ -252,13 +276,21 @@ func getBinaryMaskParam(mask any) (uint64, error) {
 	case int64:
 		// {field: {$bitsAllClear: bitmask}}
 		if mask < 0 {
-			return 0, commonparams.ErrNegativeNumber
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf(`Expected a non-negative number in: %s: %v`, operator, mask),
+				operator,
+			)
 		}
 
 		bitmask = uint64(mask)
 
 	default:
-		return 0, commonparams.ErrNotBinaryMask
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf(`value takes an Array, a number, or a BinData but received: %s: %#v`, operator, mask),
+			operator,
+		)
 	}
 
 	return bitmask, nil
@@ -389,8 +421,12 @@ func multiplyNumbers(v1, v2 any) (any, error) {
 		case float64:
 			return float64(v1) * v2, nil
 		case int32:
-			return multiplyLongSafely(v1, int64(v2))
+			v, err := multiplyLongSafely(v1, int64(v2))
+			if err != nil {
+				return 0, commonparams.ErrIntExceeded
+			}
 
+			return v, nil
 		case int64:
 			return multiplyLongSafely(v1, v2)
 

@@ -604,6 +604,12 @@ func TestAggregateCompatGroup(t *testing.T) {
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2123",
 		},
+		"IDTypeOperator": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", bson.D{{"$type", "_id"}}},
+			}}}},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2679",
+		},
 	}
 
 	testAggregateStagesCompat(t, testCases)
@@ -1045,6 +1051,18 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"RecursiveOperator": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$_id"},
+					// first $sum is accumulator operator, second $sum is operator
+					{"sum", bson.D{{"$sum", bson.D{{"$sum", "$v"}}}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2694",
+		},
 	}
 
 	testAggregateStagesCompatWithProviders(t, providers, testCases)
@@ -1399,6 +1417,27 @@ func TestAggregateCompatProject(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"ZeroOperators": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"v", bson.D{}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"TwoOperators": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"v", bson.D{{"$type", "foo"}, {"$sum", 1}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"DollarSignField": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"$v", 1}}}},
+			},
+			resultType: emptyResult,
+		},
 		"Include1Field": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
@@ -1557,6 +1596,13 @@ func TestAggregateCompatProject(t *testing.T) {
 				}}},
 			},
 			resultType: emptyResult,
+		},
+		"TypeOperator": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", "$v"}}}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2679",
 		},
 	}
 
