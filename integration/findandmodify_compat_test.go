@@ -208,6 +208,24 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 				}},
 			},
 		},
+		"EmptyKey": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"", 4}}},
+					{"$inc", bson.D{{"", 4}}},
+				}},
+			},
+		},
+		"EmptyKeyAndKey": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"", 4}}},
+					{"$inc", bson.D{{"v", 4}}},
+				}},
+			},
+		},
 		"InvalidOperator": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},

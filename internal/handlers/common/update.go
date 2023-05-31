@@ -899,73 +899,9 @@ func newUpdateError(code commonerrors.ErrorCode, msg, command string) error {
 	return commonerrors.NewWriteErrorMsg(code, msg)
 }
 
-// newPathValidator creates a root of pathValidator.
-// It shouldn't be used as a node of other pathValidator.
-func newPathValidator() *pathValidator {
-	return &pathValidator{
-		paths:    map[string]*pathValidator{},
-		rootNode: true,
-	}
-}
-
-// pathValidator stores validated paths and checks for any conflicts
-// between them. The conflict is when one path points to the part of
-// another path.
-//
-// Examples of conflicts:
-// `foo.bar, foo.bar`
-// `foo.bar, foo.bar.x`
-//
-// This is not a conflict:
-// `foo.bar.x, foo.bar.y`.
-type pathValidator struct {
-	paths map[string]*pathValidator
-	// rootNode indicates that validator is a root node.
-	// It stores all of top level path keys and doesn't have any parent node.
-	rootNode bool
-	// lastNode indicates that validator represents a last node of some path.
-	// For example for `foo.bar.x` the "x" node is the last one.
-	lastNode bool
-}
-
-// validate takes a slice of path keys and checks if the path
-// conflicts with previously validated path. If it's not, then
-// the path is saved in pathValidator.
-func (tree *pathValidator) validate(keys []string) bool {
-	if len(keys) == 0 && !tree.rootNode {
-		// if all keys were proceed correctly - path is not conflicting
-		tree.lastNode = true
-		return true
-	}
-
-	key, keys := keys[0], keys[1:]
-
-	if node, ok := tree.paths[key]; ok {
-		// if path exists in validator and it's the last element, conflict is detected
-		if node.lastNode {
-			return false
-		}
-
-		// if there's no more keys in current node,
-		// but child node exists, conflict is detected
-		if len(keys) == 0 {
-			return false
-		}
-
-		return node.validate(keys)
-	}
-
-	tree.paths[key] = &pathValidator{
-		paths: map[string]*pathValidator{},
-	}
-
-	return tree.paths[key].validate(keys)
-}
-
 // validateOperatorKeys returns error if any key contains empty path or
 // the same path prefix exists in other key or other document.
 func validateOperatorKeys(command string, docs ...*types.Document) error {
-	//paths := newPathValidator()
 	paths := []*types.Path{}
 
 	for _, doc := range docs {
@@ -983,15 +919,15 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 			}
 
 			for _, oldPath := range paths {
-				keys := oldPath.Slice()
-				keys2 := nextPath.Slice()
+				oldKeys := oldPath.Slice()
+				nextKeys := nextPath.Slice()
 
 				var isPrefix bool
 
-				if len(keys) > len(keys2) {
-					isPrefix = checkSlicePrefix(keys, keys2)
+				if len(oldKeys) > len(nextKeys) {
+					isPrefix = checkSlicePrefix(oldKeys, nextKeys)
 				} else {
-					isPrefix = checkSlicePrefix(keys2, keys)
+					isPrefix = checkSlicePrefix(nextKeys, oldKeys)
 				}
 
 				if isPrefix {
@@ -1003,7 +939,6 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 						command,
 					)
 				}
-
 			}
 			paths = append(paths, &nextPath)
 		}
@@ -1021,11 +956,7 @@ func checkSlicePrefix[T comparable](target, prefix []T) bool {
 	}
 
 	if len(prefix) == 0 {
-		if len(target) == 0 {
-			return true
-		}
-
-		return false
+		return len(target) == 0
 	}
 
 	for i := range prefix {
