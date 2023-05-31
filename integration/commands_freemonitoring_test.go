@@ -64,24 +64,6 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 
 		skip string
 	}{
-		"DocumentCommand": {
-			command: bson.D{{"setFreeMonitoring", bson.D{}}},
-			err: &mongo.CommandError{
-				Code:    40414,
-				Name:    "Location40414",
-				Message: `BSON field 'setFreeMonitoring.action' is missing but a required field`,
-			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2704",
-		},
-		"NilCommand": {
-			command: bson.D{{"setFreeMonitoring", nil}},
-			err: &mongo.CommandError{
-				Code:    40414,
-				Name:    "Location40414",
-				Message: `BSON field 'setFreeMonitoring.action' is missing but a required field`,
-			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2704",
-		},
 		"Enable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
 			expectedRes:    bson.D{{"ok", float64(1)}},
@@ -108,7 +90,26 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 				Message: `Enumeration value '' for field 'setFreeMonitoring.action' is not a valid value.`,
 			},
 		},
-		"DocumentAction": {
+		"DocumentCommand": {
+			command:        bson.D{{"setFreeMonitoring", bson.D{}}, {"action", "enable"}},
+			expectedRes:    bson.D{{"ok", float64(1)}},
+			expectedStatus: "enabled",
+		},
+		"NilCommand": {
+			command:        bson.D{{"setFreeMonitoring", nil}, {"action", "enable"}},
+			expectedRes:    bson.D{{"ok", float64(1)}},
+			expectedStatus: "enabled",
+		},
+		"ActionMissing": {
+			command: bson.D{{"setFreeMonitoring", nil}},
+			err: &mongo.CommandError{
+				Code:    40414,
+				Name:    "Location40414",
+				Message: `BSON field 'setFreeMonitoring.action' is missing but a required field`,
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2704",
+		},
+		"ActionTypeDocument": {
 			command: bson.D{{"setFreeMonitoring", 1}, {"action", bson.D{}}},
 			err: &mongo.CommandError{
 				Code:    14,
@@ -122,6 +123,10 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 
 		t.Run(name, func(t *testing.T) {
 			// these tests shouldn't be run in parallel, because they work on the same database
+
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
 
 			var actual bson.D
 			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
