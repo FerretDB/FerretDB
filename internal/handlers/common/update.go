@@ -939,7 +939,7 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 // checkSlicePrefix returns true if oneaslice is the beginning of another slice.
 // The example of slice prefix: arr1 = ["a","b","c"] arr2 = ["a","b"];
 // For empty prefix slice it returns false, if target slice is not empty.
-func checkSlicePrefix[T comparable](arr1, arr2 []T) bool {
+func checkSlicePrefix(arr1, arr2 []string) bool {
 	target, prefix := arr1, arr2
 
 	if len(target) < len(prefix) {
