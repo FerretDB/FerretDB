@@ -24,6 +24,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// DistinctIterator returns an iterator that returns a single document containing
+// the distinct values from documents on the specified key.
+// It will be added to the given closer.
+//
+// Next method return the distinct value of all documents in iterator.
+//
+// Close method closes the underlying iterator.
 func DistinctIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, key string) (types.DocumentsIterator, error) {
 	res := &distinctIterator{
 		iter: iter,
@@ -40,12 +47,17 @@ func DistinctIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser
 	return res, nil
 }
 
+// distinctIterator is returned by DistinctIterator.
 type distinctIterator struct {
 	iter types.DocumentsIterator
 	path types.Path
 	done atomic.Bool
 }
 
+// Next implements Iterator Interface.
+// The first call returns the array of distinct documents from underlyin iterator,
+// subsequent calls return ErrIteratorDone.
+// If iterator contains no document, it returns empty array.
 func (iter *distinctIterator) Next() (struct{}, *types.Document, error) {
 	var unused struct{}
 
