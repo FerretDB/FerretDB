@@ -33,12 +33,21 @@ func TestDistinctErrors(t *testing.T) {
 	for name, tc := range map[string]struct {
 		command  any                // required
 		collName any                // optional
-		filter   bson.D             // required
+		filter   any                // required
 		err      mongo.CommandError // required
 	}{
 		"EmptyFilter": {
 			command: "a",
 			filter:  nil,
+		},
+		"StringFilter": {
+			command: "a",
+			filter:  "a",
+			err: mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'distinct.query' is the wrong type 'string', expected type 'object'",
+			},
 		},
 		"EmptyCollection": {
 			command:  "a",
