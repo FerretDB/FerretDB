@@ -85,7 +85,7 @@ docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
 Using TLS is recommended if username and password are transferred in plain text.
 
 In this example, FerretDB uses TLS certificates to secure the connection.
-Replace `<CERT_PATH>` with certificate path.
+Replace `<CERT_PATH>` with the path to your certificates.
 
 ```yml
 services:
@@ -120,8 +120,10 @@ networks:
 ```
 
 Clients that specify username and password in MongoDB URI such as below uses TLS for securing connection.
+Replace `<CERT_PATH>` with the path to your certificates.
 
 ```sh
 docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
-`mongodb://user2:pass2@ferretdb:27018/ferretdb?uthMechanism=PLAIN&tls=true&tlsCertificateKeyFile=./build/certs/client.pem&tlsCaFile=./build/certs/rootCA-cert.pem`
+`mongodb://user2:pass2@ferretdb:27018/ferretdb?authMechanism=PLAIN&
+tls=true&tlsCertificateKeyFile=<CERT_PATH>/client.pem&tlsCaFile=<CERT_PATH>/rootCA-cert.pem`
 ```
