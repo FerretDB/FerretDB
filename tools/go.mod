@@ -9,7 +9,7 @@ require (
 	github.com/goreleaser/nfpm/v2 v2.29.0
 	github.com/quasilyte/go-consistent v0.0.0-20220429160651-4e46040fbc82
 	github.com/reviewdog/reviewdog v0.14.1
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	golang.org/x/oauth2 v0.8.0
 	golang.org/x/perf v0.0.0-20230427221525-d343f6398b76
 	golang.org/x/tools v0.9.1
