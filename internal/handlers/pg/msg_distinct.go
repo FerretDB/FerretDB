@@ -83,9 +83,12 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		}
 
 		distinct = must.NotFail(distinctDocs[0].Get(path.Suffix())).(*types.Array)
-
 		return nil
 	})
+
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
@@ -94,10 +97,6 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			"ok", float64(1),
 		))},
 	}))
-
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
 
 	return &reply, nil
 }
