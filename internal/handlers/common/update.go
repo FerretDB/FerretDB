@@ -902,7 +902,7 @@ func newUpdateError(code commonerrors.ErrorCode, msg, command string) error {
 // validateOperatorKeys returns error if any key contains empty path or
 // the same path prefix exists in other key or other document.
 func validateOperatorKeys(command string, docs ...*types.Document) error {
-	paths := []*types.Path{}
+	visistedPaths := []*types.Path{}
 
 	for _, doc := range docs {
 		for _, key := range doc.Keys() {
@@ -918,7 +918,7 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 				)
 			}
 
-			for _, oldPath := range paths {
+			for _, oldPath := range visistedPaths {
 				if checkSlicePrefix(oldPath.Slice(), nextPath.Slice()) {
 					return newUpdateError(
 						commonerrors.ErrConflictingUpdateOperators,
@@ -929,7 +929,7 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 					)
 				}
 			}
-			paths = append(paths, &nextPath)
+			visistedPaths = append(visistedPaths, &nextPath)
 		}
 	}
 
