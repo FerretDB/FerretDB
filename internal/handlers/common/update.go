@@ -919,18 +919,7 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 			}
 
 			for _, oldPath := range paths {
-				oldKeys := oldPath.Slice()
-				nextKeys := nextPath.Slice()
-
-				var isPrefix bool
-
-				if len(oldKeys) > len(nextKeys) {
-					isPrefix = checkSlicePrefix(oldKeys, nextKeys)
-				} else {
-					isPrefix = checkSlicePrefix(nextKeys, oldKeys)
-				}
-
-				if isPrefix {
+				if checkSlicePrefix(oldPath.Slice(), nextPath.Slice()) {
 					return newUpdateError(
 						commonerrors.ErrConflictingUpdateOperators,
 						fmt.Sprintf(
@@ -947,12 +936,14 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 	return nil
 }
 
-// checkSlicePrefix returns true if prefix slice is the beginning of the target slice.
-// The example of slice prefix: target = ["a","b","c"] prefix = ["a","b"];
+// checkSlicePrefix returns true if oneaslice is the beginning of another slice.
+// The example of slice prefix: arr1 = ["a","b","c"] arr2 = ["a","b"];
 // For empty prefix slice it returns false, if target slice is not empty.
-func checkSlicePrefix[T comparable](target, prefix []T) bool {
+func checkSlicePrefix[T comparable](arr1, arr2 []T) bool {
+	target, prefix := arr1, arr2
+
 	if len(target) < len(prefix) {
-		return false
+		target, prefix = prefix, target
 	}
 
 	if len(prefix) == 0 {
