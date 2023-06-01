@@ -12,10 +12,10 @@ These operations pass through one or more stages, which make up a pipeline.
 Each stage acts upon the returned documents of the previous stage, starting with the input documents.
 As shown above, the documents pass through the pipeline with the result of the previous stage acting as input for the next stage, going from `$match` => `$group` => `$sort` stage.
 
-For example, say you have the following documents in a `sales` collection:
+For example, insert the following documents in a `sales` collection:
 
 ```js
-;[
+db.sales.insertMany([
   { _id: 1, category: 'Electronics', price: 1000 },
   { _id: 2, category: 'Electronics', price: 800 },
   { _id: 3, category: 'Clothing', price: 30 },
@@ -24,7 +24,7 @@ For example, say you have the following documents in a `sales` collection:
   { _id: 6, category: 'Home', price: 1200 },
   { _id: 7, category: 'Books', price: 20 },
   { _id: 8, category: 'Books', price: 40 }
-]
+])
 ```
 
 A typical aggregation pipeline would look like this:
@@ -58,7 +58,7 @@ So the above aggregation pipeline operation would return the following result:
 ]
 ```
 
-This section of the documentation will focus on [`aggregate` command](#aggregate-command), [aggregation stages](../aggregation-stages), and aggregation operators.
+This section of the documentation will focus on [`aggregate` command](#aggregate-command), [aggregation stages](./aggregation-stages.md), and aggregation operators.
 
 ## `aggregate` command
 
