@@ -18,6 +18,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 )
 
@@ -68,6 +69,7 @@ func getAllTestNames(path string) ([]string, error) {
 	}
 	output := string(outputBytes)
 	tests = strings.Split(output, "\n")
+	sort.Strings(tests)
 
 	return tests, nil
 }
