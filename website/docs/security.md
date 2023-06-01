@@ -45,9 +45,13 @@ In the example, default username and password are specified in FerretDB's connec
 See more about [creating PostgreSQL user](https://www.postgresql.org/docs/current/sql-createuser.html)
 and [PostgreSQL authentication methods](https://www.postgresql.org/docs/current/auth-methods.html).
 
+Using `ferretdb` package, specify `--postgresql-url` with default username and password.
+
 ```sh
 ferretdb --postgresql-url=postgres://user1:pass1@postgres:5432/ferretdb
 ```
+
+For using docker, specify `FERRETDB_POSTGRESQL_URL` with default username and password.
 
 ```yml
 services:
@@ -74,21 +78,26 @@ networks:
 ```
 
 An anonymous user is authenticated with `user1` from `FERRETDB_POSTGRESQL_URL`.
-An example of anonymous user is below.
+An example of anonymous user is below using `mongosh`.
 
 ```sh
 mongosh `mongodb://127.0.0.1/ferretdb`
 ```
 
+If you don't have mongosh, run the following command to run it inside the temporary MongoDB container,
+attaching to the same Docker network. To use this, start `ferretdb` with docker compose.
+
 ```sh
 docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo `mongodb://ferretdb/ferretdb`
 ```
 
-Clients that specify username and password in MongoDB URI such as below is authenticated as `user2`.
+Clients that specify username and password in MongoDB URI such as below is authenticated as `user2` using `mongosh`.
 
 ```sh
 mongosh `mongodb://user2:pass2@127.0.0.1/ferretdb?authMechanism=PLAIN`
 ```
+
+For running it inside the temporary MongoDB container, use below.
 
 ```sh
 docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
