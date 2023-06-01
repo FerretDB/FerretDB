@@ -61,7 +61,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 
 		iter, _, err = pgdb.QueryDocuments(ctx, tx, &qp)
 		if err != nil {
-			return err
+			return lazyerrors.Error(err)
 		}
 
 		closer := iterator.NewMultiCloser(iter)

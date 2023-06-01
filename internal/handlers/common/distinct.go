@@ -88,6 +88,7 @@ func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams
 // Otherwise, the value itself is added to the result.
 func FilterDistinctValues(iter types.DocumentsIterator, key string) (*types.Array, error) {
 	distinct := types.MakeArray(0)
+
 	defer iter.Close()
 
 	for {
