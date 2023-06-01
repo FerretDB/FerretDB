@@ -16,48 +16,25 @@
 package stages
 
 import (
-	"context"
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 // newStageFunc is a type for a function that creates a new aggregation stage.
-type newStageFunc func(stage *types.Document) (Stage, error)
+type newStageFunc func(stage *types.Document) (aggregations.Stage, error)
 
-// StageType is a type for aggregation stage types.
-type StageType int
-
-const (
-	// StageTypeDocuments is a type for stages that process documents.
-	StageTypeDocuments StageType = iota
-
-	// StageTypeStats is a type for stages that process statistics and doesn't need documents.
-	StageTypeStats
-)
-
-// Stage is a common interface for all aggregation stages.
-// TODO use iterators instead of slices of documents
-// https://github.com/FerretDB/FerretDB/issues/1889.
-type Stage interface {
-	// Process applies an aggregate stage on `in` document, it could modify `in` in-place.
-	Process(ctx context.Context, in []*types.Document) ([]*types.Document, error)
-
-	// Type returns the type of the stage.
-	//
-	// TODO Remove it? https://github.com/FerretDB/FerretDB/issues/2423
-	Type() StageType
-}
-
-// stages maps all supported aggregation stages.
-var stages = map[string]newStageFunc{
+// Stages maps all supported aggregation Stages.
+var Stages = map[string]newStageFunc{
 	// sorted alphabetically
 	"$collStats": newCollStats,
 	"$count":     newCount,
 	"$group":     newGroup,
 	"$limit":     newLimit,
 	"$match":     newMatch,
+	"$project":   newProject,
 	"$skip":      newSkip,
 	"$sort":      newSort,
 	"$unwind":    newUnwind,
@@ -66,6 +43,7 @@ var stages = map[string]newStageFunc{
 
 // unsupportedStages maps all unsupported yet stages.
 var unsupportedStages = map[string]struct{}{
+	// sorted alphabetically
 	"$addFields":              {},
 	"$bucket":                 {},
 	"$bucketAuto":             {},
@@ -78,14 +56,12 @@ var unsupportedStages = map[string]struct{}{
 	"$geoNear":                {},
 	"$graphLookup":            {},
 	"$indexStats":             {},
-	"$limit":                  {},
 	"$listLocalSessions":      {},
 	"$listSessions":           {},
 	"$lookup":                 {},
 	"$merge":                  {},
 	"$out":                    {},
 	"$planCacheStats":         {},
-	"$project":                {},
 	"$redact":                 {},
 	"$replaceRoot":            {},
 	"$replaceWith":            {},
@@ -95,14 +71,14 @@ var unsupportedStages = map[string]struct{}{
 	"$set":                    {},
 	"$setWindowFields":        {},
 	"$sharedDataDistribution": {},
-	"$skip":                   {},
 	"$sortByCount":            {},
 	"$unionWith":              {},
 	"$unset":                  {},
+	// please keep sorted alphabetically
 }
 
 // NewStage creates a new aggregation stage.
-func NewStage(stage *types.Document) (Stage, error) {
+func NewStage(stage *types.Document) (aggregations.Stage, error) {
 	if stage.Len() != 1 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageInvalid,
@@ -113,16 +89,24 @@ func NewStage(stage *types.Document) (Stage, error) {
 
 	name := stage.Command()
 
-	f, ok := stages[name]
-	if !ok {
-		if _, ok := unsupportedStages[name]; ok {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
-				fmt.Sprintf("`aggregate` stage %q is not implemented yet", name),
-				name+" (stage)", // to differentiate update operator $set from aggregation stage $set, etc
-			)
-		}
+	f, supported := Stages[name]
+	_, unsupported := unsupportedStages[name]
 
+	switch {
+	case supported && unsupported:
+		panic(fmt.Sprintf("stage %q is in both `stages` and `unsupportedStages`", name))
+
+	case supported && !unsupported:
+		return f(stage)
+
+	case !supported && unsupported:
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
+			fmt.Sprintf("`aggregate` stage %q is not implemented yet", name),
+			name+" (stage)", // to differentiate update operator $set from aggregation stage $set, etc
+		)
+
+	case !supported && !unsupported:
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupInvalidAccumulator,
 			fmt.Sprintf("Unrecognized pipeline stage name: %q", name),
@@ -130,5 +114,5 @@ func NewStage(stage *types.Document) (Stage, error) {
 		)
 	}
 
-	return f(stage)
+	panic("not reached")
 }

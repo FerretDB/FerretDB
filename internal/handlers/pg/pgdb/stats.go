@@ -31,25 +31,31 @@ type ServerStats struct {
 
 // DBStats describes statistics for a FerretDB database (PostgreSQL schema).
 //
+// MongoDB uses "numbers" for those values that could be int32 or int64.
+// FerretDB always returns int64 for simplicity.
+//
 // TODO Include more data https://github.com/FerretDB/FerretDB/issues/2447.
 type DBStats struct {
-	CountCollections int32
-	CountObjects     int32
-	CountIndexes     int32
-	SizeTotal        int32
-	SizeIndexes      int32
-	SizeCollections  int32
+	CountCollections int64
+	CountObjects     int64
+	CountIndexes     int64
+	SizeTotal        int64
+	SizeIndexes      int64
+	SizeCollections  int64
 }
 
 // CollStats describes statistics for a FerretDB collection (PostgreSQL table).
 //
+// MongoDB uses "numbers" for those values that could be int32 or int64.
+// FerretDB always returns int64 for simplicity.
+//
 // TODO Include more data https://github.com/FerretDB/FerretDB/issues/2447.
 type CollStats struct {
-	CountObjects   int32
-	CountIndexes   int32
-	SizeTotal      int32
-	SizeIndexes    int32
-	SizeCollection int32
+	CountObjects   int64
+	CountIndexes   int64
+	SizeTotal      int64
+	SizeIndexes    int64
+	SizeCollection int64
 }
 
 // CalculateServerStats returns statistics for all the FerretDB databases on the server.
@@ -88,14 +94,14 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 	// It also includes the size of FerretDB metadata relations.
 	//  See also https://www.postgresql.org/docs/15/functions-admin.html#FUNCTIONS-ADMIN-DBOBJECT
 	sql = `
-		SELECT 
-		    SUM(pg_total_relation_size(schemaname || '.' || tablename)) 
-		FROM pg_tables 
+		SELECT
+		    SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))
+		FROM pg_tables
 		WHERE schemaname = $1`
 	args := []any{db}
 	row := tx.QueryRow(ctx, sql, args...)
 
-	var schemaSize *int32
+	var schemaSize *int64
 	if err := row.Scan(&schemaSize); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -109,14 +115,14 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 
 	// In this query we select all the tables in the given schema, but we exclude FerretDB metadata table (by reserved prefix).
 	sql = `
-		SELECT 
+		SELECT
 			COUNT(t.tablename)                       AS CountTables,
 			COUNT(i.indexname)                       AS CountIndexes,
 			COALESCE(SUM(c.reltuples), 0)            AS CountRows,
 			COALESCE(SUM(pg_table_size(c.oid)), 0) 	 AS SizeTables,
 			COALESCE(SUM(pg_indexes_size(c.oid)), 0) AS SizeIndexes
 		FROM pg_tables AS t
-			LEFT JOIN pg_class AS c ON c.relname = t.tablename AND c.relnamespace = t.schemaname::regnamespace
+			LEFT JOIN pg_class AS c ON c.relname = t.tablename AND c.relnamespace = quote_ident(t.schemaname)::regnamespace
 			LEFT JOIN pg_indexes AS i ON i.schemaname = t.schemaname AND i.tablename = t.tablename
 		WHERE t.schemaname = $1 AND t.tablename NOT LIKE $2`
 	args = []any{db, reservedPrefix + "%"}
@@ -161,9 +167,9 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 			COALESCE(pg_total_relation_size(oid), 0) AS SizeTotal,
 			COALESCE(pg_table_size(oid), 0)          AS SizeTable,
 			COALESCE(pg_indexes_size(oid), 0)        AS SizeIndexes
-		FROM pg_class 
-		WHERE oid = %s::regclass`,
-		quoteString(db+"."+metadata.table),
+		FROM pg_class
+		WHERE oid = '%s'::regclass`,
+		pgx.Identifier{db, metadata.table}.Sanitize(),
 	)
 	row := tx.QueryRow(ctx, sql)
 

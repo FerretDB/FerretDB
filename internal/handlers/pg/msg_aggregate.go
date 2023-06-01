@@ -23,6 +23,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -91,8 +92,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	aggregationStages := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
-	stagesDocuments := make([]stages.Stage, 0, len(aggregationStages))
-	stagesStats := make([]stages.Stage, 0, len(aggregationStages))
+	stagesDocuments := make([]aggregations.Stage, 0, len(aggregationStages))
+	stagesStats := make([]aggregations.Stage, 0, len(aggregationStages))
 
 	for i, d := range aggregationStages {
 		d, ok := d.(*types.Document)
@@ -104,17 +105,17 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			)
 		}
 
-		var s stages.Stage
+		var s aggregations.Stage
 
 		if s, err = stages.NewStage(d); err != nil {
 			return nil, err
 		}
 
 		switch s.Type() {
-		case stages.StageTypeDocuments:
+		case aggregations.StageTypeDocuments:
 			stagesDocuments = append(stagesDocuments, s)
 			stagesStats = append(stagesStats, s) // It's possible to apply "documents" stages to statistics
-		case stages.StageTypeStats:
+		case aggregations.StageTypeStats:
 			if i > 0 {
 				// TODO Add a test to cover this error: https://github.com/FerretDB/FerretDB/issues/2349
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -135,11 +136,20 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	// If stagesStats contains the same stages as stagesDocuments, we apply aggregation to documents fetched from the DB.
 	// If stagesStats contains more stages than stagesDocuments, we apply aggregation to statistics fetched from the DB.
 	if len(stagesStats) == len(stagesDocuments) {
+		filter, sort := aggregations.GetPushdownQuery(aggregationStages)
+
 		// only documents stages or no stages - fetch documents from the DB and apply stages to them
 		qp := pgdb.QueryParams{
 			DB:         db,
 			Collection: collection,
-			Filter:     stages.GetPushdownQuery(aggregationStages),
+		}
+
+		if !h.DisableFilterPushdown {
+			qp.Filter = filter
+		}
+
+		if h.EnableSortPushdown {
+			qp.Sort = sort
 		}
 
 		resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})
@@ -181,7 +191,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 type stagesDocumentsParams struct {
 	dbPool *pgdb.Pool
 	qp     *pgdb.QueryParams
-	stages []stages.Stage
+	stages []aggregations.Stage
 }
 
 // processStagesDocuments retrieves the documents from the database and then processes them through the stages.
@@ -189,23 +199,25 @@ func processStagesDocuments(ctx context.Context, p *stagesDocumentsParams) ([]*t
 	var docs []*types.Document
 
 	if err := p.dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		iter, getErr := pgdb.QueryDocuments(ctx, tx, p.qp)
-		if getErr != nil {
-			return getErr
+		var err error
+		iter, _, err := pgdb.QueryDocuments(ctx, tx, p.qp)
+		if err != nil {
+			return err
 		}
 
-		var err error
+		closer := iterator.NewMultiCloser(iter)
+		defer closer.Close()
+
+		for _, s := range p.stages {
+			if iter, err = s.Process(ctx, iter, closer); err != nil {
+				return err
+			}
+		}
+
 		docs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
 		return err
 	}); err != nil {
 		return nil, err
-	}
-
-	for _, s := range p.stages {
-		var err error
-		if docs, err = s.Process(ctx, docs); err != nil {
-			return nil, err
-		}
 	}
 
 	return docs, nil
@@ -217,7 +229,7 @@ type stagesStatsParams struct {
 	db         string
 	collection string
 	statistics map[stages.Statistic]struct{}
-	stages     []stages.Stage
+	stages     []aggregations.Stage
 }
 
 // processStagesStats retrieves the statistics from the database and then processes them through the stages.
@@ -266,25 +278,25 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 	}
 
 	if hasStorage {
-		var avgObjSize int32
+		var avgObjSize int64
 		if collStats.CountObjects > 0 {
-			avgObjSize = int32(collStats.SizeCollection) / collStats.CountObjects
+			avgObjSize = collStats.SizeCollection / collStats.CountObjects
 		}
 
 		doc.Set(
 			"storageStats", must.NotFail(types.NewDocument(
-				"size", int32(collStats.SizeTotal),
+				"size", collStats.SizeTotal,
 				"count", collStats.CountObjects,
 				"avgObjSize", avgObjSize,
-				"storageSize", int32(collStats.SizeCollection),
-				"freeStorageSize", int32(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"storageSize", collStats.SizeCollection,
+				"freeStorageSize", int64(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"nindexes", collStats.CountIndexes,
 				"indexDetails", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"totalIndexSize", int32(collStats.SizeIndexes),
-				"totalSize", int32(collStats.SizeTotal),
+				"totalIndexSize", collStats.SizeIndexes,
+				"totalSize", collStats.SizeTotal,
 				"indexSizes", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 			)),
 		)
@@ -297,13 +309,16 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 	}
 
 	// Process the retrieved statistics through the stages.
-	var res []*types.Document
+	iter := iterator.Values(iterator.ForSlice([]*types.Document{doc}))
+
+	closer := iterator.NewMultiCloser(iter)
+	defer closer.Close()
 
 	for _, s := range p.stages {
-		if res, err = s.Process(ctx, []*types.Document{doc}); err != nil {
+		if iter, err = s.Process(ctx, iter, closer); err != nil {
 			return nil, err
 		}
 	}
 
-	return res, nil
+	return iterator.ConsumeValues(iter)
 }

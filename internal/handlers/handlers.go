@@ -141,8 +141,14 @@ type Interface interface {
 	// MsgListIndexes returns a summary of indexes of the specified collection.
 	MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
+	// MsgLogout logs out from the current session
+	MsgLogout(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgPing returns a pong response.
 	MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
+	// MsgRenameCollection changes the name of an existing collection.
+	MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
 	// MsgSASLStart starts the SASL authentication process.
 	MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)

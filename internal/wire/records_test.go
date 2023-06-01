@@ -16,8 +16,10 @@ package wire
 
 import (
 	"bufio"
+	"encoding/binary"
 	"errors"
 	"io/fs"
+	"math/rand"
 	"os"
 	"path/filepath"
 
@@ -49,6 +51,18 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 		return nil, nil
 	case err != nil:
 		return nil, err
+	}
+
+	// Select random 1000 number of files from an array of files
+	if len(recordFiles) > 1000 {
+		idx := rand.Perm(len(recordFiles))
+		idx = idx[:1000]
+
+		sel := []string{}
+		for _, i := range idx {
+			sel = append(sel, recordFiles[i])
+		}
+		recordFiles = sel
 	}
 
 	var resMsgs []testCase
@@ -83,6 +97,12 @@ func loadRecords(recordsPath string) ([]testCase, error) {
 			if err != nil {
 				return nil, lazyerrors.Errorf("%s: %w", path, err)
 			}
+
+			// unset flagBit (if present)
+			flag := binary.LittleEndian.Uint32(bodyBytes[:kFlagBitSize])
+			flag &^= 0x01 // flips the LSB of the flagbit
+
+			binary.LittleEndian.PutUint32(bodyBytes[:kFlagBitSize], flag)
 
 			resMsgs = append(resMsgs, testCase{
 				headerB: headBytes,

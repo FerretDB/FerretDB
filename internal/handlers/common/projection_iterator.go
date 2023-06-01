@@ -15,8 +15,6 @@
 package common
 
 import (
-	"errors"
-
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -28,12 +26,8 @@ import (
 // Next method returns the next projected document.
 //
 // Close method closes the underlying iterator.
-func ProjectionIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, projection *types.Document) (types.DocumentsIterator, error) { //nolint:lll // for readability
-	projectionValidated, inclusion, err := validateProjection(projection)
-	if errors.Is(err, errProjectionEmpty) {
-		return iter, nil
-	}
-
+func ProjectionIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, projection, filter *types.Document) (types.DocumentsIterator, error) { //nolint:lll // for readability
+	projectionValidated, inclusion, err := ValidateProjection(projection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -41,6 +35,7 @@ func ProjectionIterator(iter types.DocumentsIterator, closer *iterator.MultiClos
 	res := &projectionIterator{
 		iter:       iter,
 		projection: projectionValidated,
+		filter:     filter,
 		inclusion:  inclusion,
 	}
 	closer.Add(res)
@@ -52,6 +47,7 @@ func ProjectionIterator(iter types.DocumentsIterator, closer *iterator.MultiClos
 type projectionIterator struct {
 	iter       types.DocumentsIterator
 	projection *types.Document
+	filter     *types.Document // filter is used by positional operator to get first matching array element.
 	inclusion  bool
 }
 
@@ -64,7 +60,7 @@ func (iter *projectionIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	projected, err := projectDocument(doc, iter.projection, iter.inclusion)
+	projected, err := ProjectDocument(doc, iter.projection, iter.filter, iter.inclusion)
 	if err != nil {
 		return unused, nil, lazyerrors.Error(err)
 	}

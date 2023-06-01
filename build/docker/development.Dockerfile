@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.20.3-2 AS development-build
+FROM ghcr.io/ferretdb/golang:1.20.4-1 AS development-build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -42,7 +42,8 @@ ENV GOCOVERDIR=cover
 ENV GORACE=halt_on_error=1,history_size=2
 ENV GOARM=7
 
-# do not raise it without providing a v1 build because v2+ is problematic for some virtualization platforms
+# do not raise it without providing a v1 build because v2+ is problematic
+# for some virtualization platforms and older hardware
 ENV GOAMD64=v1
 
 # TODO https://github.com/FerretDB/FerretDB/issues/2170
@@ -57,6 +58,8 @@ RUN --mount=type=cache,target=/cache \
 # (and that happens on GitHub-hosted Actions runners).
 RUN --mount=type=cache,target=/cache <<EOF
 set -ex
+
+git status
 
 RACE=false
 if test "$TARGETARCH" = "amd64"
@@ -77,7 +80,7 @@ EOF
 
 # final stage
 
-FROM golang:1.20.3 AS development
+FROM golang:1.20.4 AS development
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT

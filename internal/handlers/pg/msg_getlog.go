@@ -24,8 +24,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/build/version"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -59,7 +59,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			commonerrors.ErrTypeMismatch,
 			fmt.Errorf(
 				"BSON field 'getLog.getLog' is the wrong type '%s', expected type 'string'",
-				common.AliasFromType(getLog),
+				commonparams.AliasFromType(getLog),
 			),
 		)
 	}
@@ -88,6 +88,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		info := version.Get()
 
+		// it may be empty if no connection was established yet
 		hv, _, _ := strings.Cut(state.HandlerVersion, " ")
 		if hv != "" {
 			hv = " " + hv
@@ -105,7 +106,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				"The telemetry state is undecided.",
 				"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.",
 			)
-		case state.UpdateAvailable():
+		case state.UpdateAvailable:
 			startupWarnings = append(
 				startupWarnings,
 				fmt.Sprintf(

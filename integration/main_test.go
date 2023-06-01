@@ -30,8 +30,11 @@ func TestMain(m *testing.M) {
 
 	// ensure that Shutdown runs for any exit code or panic
 	func() {
-		setup.Startup()
-		defer setup.Shutdown()
+		// make `go test -list=.` work without side effects
+		if flag.Lookup("test.list").Value.String() == "" {
+			setup.Startup()
+			defer setup.Shutdown()
+		}
 
 		code = m.Run()
 	}()

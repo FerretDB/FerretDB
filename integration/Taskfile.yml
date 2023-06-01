@@ -3,8 +3,10 @@
 version: 3
 
 vars:
+  COUNT: 10
   BENCHTIME: 5s
-  RACEFLAG: -race={{ne OS "windows"}}
+  BENCHNAME: .
+  RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
 
 tasks:
   env-data:
@@ -19,11 +21,13 @@ tasks:
         -tags=ferretdb_testenvdata .
         -target-backend=ferretdb-pg
         -postgresql-url=postgres://username:password@127.0.0.1:5433/ferretdb?pool_min_conns=1
+      # no sqlite yet
       - >
         go test -count=1 {{.RACEFLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata,ferretdb_tigris .
         -target-backend=ferretdb-tigris
         -tigris-urls=127.0.0.1:8081
+      # no hana yet
       - >
         go test -count=1 {{.RACEFLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
@@ -54,8 +58,7 @@ tasks:
     desc: "Run benchmarks for `pg` handler"
     cmds:
       - >
-        go test -bench=. -run=XXX
-        -benchtime={{.BENCHTIME}}
+        go test -run=XXX -count={{.COUNT}} -bench={{.BENCHNAME}} -benchtime={{.BENCHTIME}} -benchmem
         -target-backend=ferretdb-pg
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb | tee new-pg.txt
       - ../bin/benchstat{{exeExt}} old-pg.txt new-pg.txt
@@ -64,19 +67,17 @@ tasks:
     desc: "Run benchmarks for `pg` with query pushdown disabled"
     cmds:
       - >
-        go test -bench=. -run=XXX
-        -benchtime={{.BENCHTIME}}
+        go test -run=XXX -count={{.COUNT}} -bench={{.BENCHNAME}} -benchtime={{.BENCHTIME}} -benchmem
         -target-backend=ferretdb-pg
-        -disable-pushdown
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb | tee new-pg-no-pushdown.txt
+        -- -disable-pushdown
       - ../bin/benchstat{{exeExt}} old-pg-no-pushdown.txt new-pg-no-pushdown.txt
 
   bench-mongodb:
     desc: "Run benchmarks for MongoDB"
     cmds:
       - >
-        go test -bench=. -run=XXX
-        -benchtime={{.BENCHTIME}}
+        go test -run=XXX -count={{.COUNT}} -bench={{.BENCHNAME}} -benchtime={{.BENCHTIME}} -benchmem
         -target-backend=mongodb
         -target-url=mongodb://127.0.0.1:47017/ | tee new-mongodb.txt
       - ../bin/benchstat{{exeExt}} old-mongodb.txt new-mongodb.txt

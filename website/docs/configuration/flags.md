@@ -16,6 +16,7 @@ Some default values are overridden in [our Docker image](quickstart-guide/docker
 <!-- Keep order in sync with the `--help` output -->
 
 <!-- For <br /> -->
+<!-- markdownlint-capture -->
 <!-- markdownlint-disable MD033 -->
 
 ## General
@@ -43,17 +44,23 @@ Some default values are overridden in [our Docker image](quickstart-guide/docker
 
 ## Backend handlers
 
+<!-- Do not document alpha backends -->
+
 ### PostgreSQL
 
-PostgreSQL backend can be enabled by `--handler=pg` flag or `FERRETDB_HANDLER=pg` environment variable.
+[PostgreSQL backend](../understanding-ferretdb.md#postgresql) can be enabled by
+`--handler=pg` flag or `FERRETDB_HANDLER=pg` environment variable.
 
 | Flag               | Description                     | Environment Variable      | Default Value                        |
 | ------------------ | ------------------------------- | ------------------------- | ------------------------------------ |
 | `--postgresql-url` | PostgreSQL URL for 'pg' handler | `FERRETDB_POSTGRESQL_URL` | `postgres://127.0.0.1:5432/ferretdb` |
 
+<!-- SQLite backend flags should be there once it is out of alpha -->
+
 ### Tigris (beta)
 
-Tigris backend can be enabled by `--handler=tigris` flag or `FERRETDB_HANDLER=tigris` environment variable.
+[Tigris backend](../understanding-ferretdb.md#tigris-beta) can be enabled by
+`--handler=tigris` flag or `FERRETDB_HANDLER=tigris` environment variable.
 
 | Flag                     | Description                     | Environment Variable            | Default Value    |
 | ------------------------ | ------------------------------- | ------------------------------- | ---------------- |
@@ -72,4 +79,4 @@ Tigris backend can be enabled by `--handler=tigris` flag or `FERRETDB_HANDLER=ti
 
 <!-- Do not document `--test-XXX` flags here -->
 
-<!-- markdownlint-enable MD033 -->
+<!-- markdownlint-restore -->

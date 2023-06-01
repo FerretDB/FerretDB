@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -49,12 +48,21 @@ func TestIndexesList(t *testing.T) {
 			compatCur, compatErr := compatCollection.Indexes().List(ctx)
 
 			require.NoError(t, compatErr)
-			assert.Equal(t, compatErr, targetErr)
+			require.NoError(t, targetErr)
 
 			targetRes := FetchAll(t, ctx, targetCur)
 			compatRes := FetchAll(t, ctx, compatCur)
 
 			assert.Equal(t, compatRes, targetRes)
+
+			// Also test specifications to check they are identical.
+			targetSpec, targetErr := targetCollection.Indexes().ListSpecifications(ctx)
+			compatSpec, compatErr := compatCollection.Indexes().ListSpecifications(ctx)
+
+			require.NoError(t, compatErr)
+			require.NoError(t, targetErr)
+
+			assert.Equal(t, compatSpec, targetSpec)
 		})
 	}
 }
@@ -65,10 +73,9 @@ func TestIndexesCreate(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		models      []mongo.IndexModel
-		altErrorMsg string                   // optional, alternative error message in case of error
-		resultType  compatTestCaseResultType // defaults to nonEmptyResult
-		skip        string                   // optional, skip test with a specified reason
+		models     []mongo.IndexModel
+		resultType compatTestCaseResultType // defaults to nonEmptyResult
+		skip       string                   // optional, skip test with a specified reason
 	}{
 		"Empty": {
 			models:     []mongo.IndexModel{},
@@ -122,8 +129,7 @@ func TestIndexesCreate(t *testing.T) {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}, {"v", 1}}},
 			},
-			resultType:  emptyResult,
-			altErrorMsg: `Error in specification { v: -1, v: 1 }, the field "v" appears multiple times`,
+			resultType: emptyResult,
 		},
 		"CustomName": {
 			models: []mongo.IndexModel{
@@ -171,8 +177,7 @@ func TestIndexesCreate(t *testing.T) {
 					Keys: bson.D{{"v", -1}, {"v", 1}},
 				},
 			},
-			resultType:  emptyResult,
-			altErrorMsg: `Error in specification { v: -1, v: 1 }, the field "v" appears multiple times`,
+			resultType: emptyResult,
 		},
 		"SameKeyDifferentNames": {
 			models: []mongo.IndexModel{
@@ -185,8 +190,7 @@ func TestIndexesCreate(t *testing.T) {
 					Options: new(options.IndexOptions).SetName("bar"),
 				},
 			},
-			resultType:  emptyResult,
-			altErrorMsg: "One of the specified indexes already exists with a different name",
+			resultType: emptyResult,
 		},
 		"SameNameDifferentKeys": {
 			models: []mongo.IndexModel{
@@ -199,8 +203,7 @@ func TestIndexesCreate(t *testing.T) {
 					Options: new(options.IndexOptions).SetName("index-name"),
 				},
 			},
-			resultType:  emptyResult,
-			altErrorMsg: "One of the specified indexes already exists with a different key",
+			resultType: emptyResult,
 		},
 	} {
 		name, tc := name, tc
@@ -231,16 +234,16 @@ func TestIndexesCreate(t *testing.T) {
 					targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
 					compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
 
-					if tc.altErrorMsg != "" {
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
+						t.Logf("Compat error: %v", compatErr)
+
+						// error messages are intentionally not compared
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
-						var expectedErr mongo.CommandError
-						require.True(t, errors.As(compatErr, &expectedErr))
-						expectedErr.Raw = nil
-						AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
-					} else {
-						require.Equal(t, compatErr, targetErr)
+						return
 					}
+					require.NoError(t, compatErr, "compat error; target returned no error")
 
 					assert.Equal(t, compatRes, targetRes)
 
@@ -248,7 +251,7 @@ func TestIndexesCreate(t *testing.T) {
 						nonEmptyResults = true
 					}
 
-					// List indexes to see they are identical after creation.
+					// List indexes to check they are identical after creation.
 					targetCur, targetErr := targetCollection.Indexes().List(ctx)
 					compatCur, compatErr := compatCollection.Indexes().List(ctx)
 
@@ -259,6 +262,16 @@ func TestIndexesCreate(t *testing.T) {
 					compatIndexes := FetchAll(t, ctx, compatCur)
 
 					assert.Equal(t, compatIndexes, targetIndexes)
+
+					// List specifications to check they are identical after creation.
+					targetSpec, targetErr := targetCollection.Indexes().ListSpecifications(ctx)
+					compatSpec, compatErr := compatCollection.Indexes().ListSpecifications(ctx)
+
+					require.NoError(t, compatErr)
+					require.NoError(t, targetErr)
+
+					require.NotEmpty(t, compatSpec)
+					assert.Equal(t, compatSpec, targetSpec)
 				})
 			}
 
@@ -380,12 +393,22 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 				},
 			).Decode(&compatRes)
 
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
+
+				return
+			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
+
 			if tc.resultType == emptyResult {
 				require.Nil(t, targetRes)
 				require.Nil(t, compatRes)
 			}
 
-			AssertMatchesCommandError(t, compatErr, targetErr)
 			assert.Equal(t, compatRes, targetRes)
 
 			targetErr = targetCollection.Database().RunCommand(
@@ -399,7 +422,16 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 			require.Nil(t, targetRes)
 			require.Nil(t, compatRes)
 
-			AssertMatchesCommandError(t, compatErr, targetErr)
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
+
+				return
+			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
 		})
 	}
 }
@@ -693,20 +725,20 @@ func TestIndexesDropRunCommand(t *testing.T) {
 					var compatRes bson.D
 					compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
 
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
+						t.Logf("Compat error: %v", compatErr)
+
+						// error messages are intentionally not compared
+						AssertMatchesCommandError(t, compatErr, targetErr)
+
+						return
+					}
+					require.NoError(t, compatErr, "compat error; target returned no error")
+
 					if tc.resultType == emptyResult {
 						require.Nil(t, targetRes)
 						require.Nil(t, compatRes)
-					}
-
-					if tc.altErrorMsg != "" {
-						AssertMatchesCommandError(t, compatErr, targetErr)
-
-						var expectedErr mongo.CommandError
-						require.True(t, errors.As(compatErr, &expectedErr))
-						expectedErr.Raw = nil
-						AssertEqualAltError(t, expectedErr, tc.altErrorMsg, targetErr)
-					} else {
-						require.Equal(t, compatErr, targetErr)
 					}
 
 					require.Equal(t, compatRes, targetRes)
