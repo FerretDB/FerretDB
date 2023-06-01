@@ -283,13 +283,13 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 }
 
 func TestCommandsDiagnosticValidateError(t *testing.T) {
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/2704")
+
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		command bson.D
 		err     *mongo.CommandError
-
-		skip string
 	}{
 		"InvalidTypeDocument": {
 			command: bson.D{{"validate", bson.D{}}},
@@ -298,7 +298,6 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 				Name:    "InvalidNamespace",
 				Message: "collection name has invalid type object",
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2704",
 		},
 		"NonExistentCollection": {
 			command: bson.D{{"validate", "nonExistentCollection"}},
@@ -307,7 +306,6 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 				Name:    "NamespaceNotFound",
 				Message: "Collection 'TestCommandsDiagnosticValidateError-NonExistentCollection.nonExistentCollection' does not exist to validate.",
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2704",
 		},
 	} {
 		name, tc := name, tc
