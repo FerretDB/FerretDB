@@ -100,11 +100,11 @@ docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
 Using TLS is recommended if username and password are transferred in plain text.
 
 In this example, FerretDB uses TLS certificates to secure the connection.
-Example certificates are found in https://github.com/FerretDB/FerretDB/tree/main/build/certs.
+Example certificates are found in [build/certs](https://github.com/FerretDB/FerretDB/tree/main/build/certs).
 
 The server uses TLS server certificate file, TLS private key file and root CA certificate file.
 
-```
+```console
 server-certs/
 ├── rootCA-cert.pem
 ├── server-cert.pem
@@ -126,7 +126,7 @@ ferretdb \
 For using docker to run FerretDB and those who do not have PostgreSQL server setup,
 `docker-compose.yml` example for TLS is provided in below.
 
-```
+```console
 .
 ├── docker-compose.yml
 └── server-certs
@@ -170,7 +170,7 @@ networks:
 The client uses TLS client certificate file and root CA certificate file.
 In this example, it uses `client-certs` for client authentication.
 
-```
+```console
 client-certs/
 ├── client.pem
 └── rootCA-cert.pem
