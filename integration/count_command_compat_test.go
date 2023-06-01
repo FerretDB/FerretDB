@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
-type countCompatCommandTestCase struct {
+type countCommandCompatTestCase struct {
 	skipForTigris  string
 	skip           string
 	collectionName any
@@ -33,7 +33,7 @@ type countCompatCommandTestCase struct {
 }
 
 // testQueryCompat tests query compatibility test cases.
-func testCountCompatCommand(t *testing.T, testCases map[string]countCompatCommandTestCase) {
+func testCountCommandCompat(t *testing.T, testCases map[string]countCommandCompatTestCase) {
 	t.Helper()
 
 	// Use shared setup because count queries can't modify data.
@@ -114,10 +114,10 @@ func testCountCompatCommand(t *testing.T, testCases map[string]countCompatComman
 	}
 }
 
-func TestCountCompatCommandErrors(t *testing.T) {
+func TestCountCommandCompatErrors(t *testing.T) {
 	t.Parallel()
 
-	testCases := map[string]countCompatCommandTestCase{
+	testCases := map[string]countCommandCompatTestCase{
 		"Pass": {
 			command: bson.D{
 				{"query", bson.D{}},
@@ -207,5 +207,5 @@ func TestCountCompatCommandErrors(t *testing.T) {
 		},
 	}
 
-	testCountCompatCommand(t, testCases)
+	testCountCommandCompat(t, testCases)
 }

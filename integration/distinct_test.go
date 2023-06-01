@@ -33,9 +33,22 @@ func TestDistinctErrors(t *testing.T) {
 	for name, tc := range map[string]struct {
 		command  any                // required
 		collName any                // optional
-		filter   bson.D             // required
+		filter   any                // required
 		err      mongo.CommandError // required
 	}{
+		"EmptyFilter": {
+			command: "a",
+			filter:  nil,
+		},
+		"StringFilter": {
+			command: "a",
+			filter:  "a",
+			err: mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'distinct.query' is the wrong type 'string', expected type 'object'",
+			},
+		},
 		"EmptyCollection": {
 			command:  "a",
 			filter:   bson.D{},
@@ -90,8 +103,6 @@ func TestDistinctErrors(t *testing.T) {
 
 			t.Parallel()
 
-			require.NotNil(t, tc.filter, "filter should be set")
-
 			var collName any = coll.Name()
 			if tc.collName != nil {
 				collName = tc.collName
@@ -100,9 +111,13 @@ func TestDistinctErrors(t *testing.T) {
 			command := bson.D{{"distinct", collName}, {"key", tc.command}, {"query", tc.filter}}
 
 			res := coll.Database().RunCommand(ctx, command)
-			require.Error(t, res.Err(), "expected error")
+			if res.Err() != nil {
+				AssertEqualCommandError(t, tc.err, res.Err())
 
-			AssertEqualCommandError(t, tc.err, res.Err())
+				return
+			}
+
+			require.NoError(t, res.Err(), "expected no error")
 		})
 	}
 }
