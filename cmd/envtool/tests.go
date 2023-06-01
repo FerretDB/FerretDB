@@ -23,12 +23,12 @@ import (
 )
 
 // shardIntegrationTests shards integration test names from the specified path.
-func shardIntegrationTests(w io.Writer, index, total uint) (string, error) {
+func shardIntegrationTests(w io.Writer, index, total uint) error {
 	var output strings.Builder
 
 	testNames, err := shardTests(index, total, "integration")
 	if err != nil {
-		return output.String(), err
+		return err
 	}
 	shardedTestNames := testNames[index:total]
 
@@ -36,7 +36,9 @@ func shardIntegrationTests(w io.Writer, index, total uint) (string, error) {
 	output.WriteString(strings.Join(shardedTestNames, "|"))
 	output.WriteString(")$")
 
-	return output.String(), nil
+	w.Write([]byte(output.String()))
+
+	return nil
 }
 
 // shardTests shards gotten test names from the specified path.

@@ -443,9 +443,8 @@ func main() {
 	case "package-version":
 		err = packageVersion(os.Stdout, versionFile)
 	case "tests shard":
-		_, err = shardIntegrationTests(os.Stdout, cli.Tests.Shard.Index, cli.Tests.Shard.Total)
+		err = shardIntegrationTests(os.Stdout, cli.Tests.Shard.Index, cli.Tests.Shard.Total)
 	default:
-		fmt.Println(cmd)
 		err = fmt.Errorf("unknown command: %s", cmd)
 	}
 
