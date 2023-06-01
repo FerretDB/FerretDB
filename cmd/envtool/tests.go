@@ -68,7 +68,10 @@ func getAllTestNames(path string) ([]string, error) {
 		return tests, err
 	}
 	output := string(outputBytes)
-	tests = strings.Split(output, "\n")
+
+	tests = strings.FieldsFunc(output, func(s rune) bool {
+		return s == '\n'
+	})
 	sort.Strings(tests)
 
 	return tests, nil
