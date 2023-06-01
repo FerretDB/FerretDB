@@ -69,27 +69,8 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 		iter = common.FilterIterator(iter, closer, qp.Filter)
 
-		iter, err = common.DistinctIterator(iter, closer, dp.Key)
-		if err != nil {
-			return err
-		}
-
-		var distinctDocs []*types.Document
-
-		distinctDocs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
-		if err != nil {
-			return err
-		}
-
-		var path types.Path
-
-		path, err = types.NewPathFromString(dp.Key)
-		if err != nil {
-			return err
-		}
-
-		distinct = must.NotFail(distinctDocs[0].Get(path.Suffix())).(*types.Array)
-		return nil
+		distinct, err = common.FilterDistinctValues(iter, dp.Key)
+		return err
 	})
 
 	if err != nil {
