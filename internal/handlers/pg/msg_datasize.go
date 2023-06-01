@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -47,17 +46,16 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	common.Ignored(document, h.L, "estimate")
 
-	m := document.Map()
-	target, ok := m["dataSize"].(string)
-	if !ok {
-		return nil, lazyerrors.New("no target collection")
-	}
-	targets := strings.Split(target, ".")
-	if len(targets) != 2 {
-		return nil, lazyerrors.New("target collection must be like: 'database.collection'")
+	command := document.Command()
+	target, err := common.GetRequiredParam[string](document, command)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	db, collection := targets[0], targets[1]
+	db, collection, err := splitNamespace(target)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	var stats *pgdb.CollStats
 
