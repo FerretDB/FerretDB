@@ -45,11 +45,27 @@ In the example, default username and password are specified in FerretDB's connec
 See more about [creating PostgreSQL user](https://www.postgresql.org/docs/current/sql-createuser.html)
 and [PostgreSQL authentication methods](https://www.postgresql.org/docs/current/auth-methods.html).
 
+#### Using `ferretdb` package
+
 Using `ferretdb` package, specify `--postgresql-url` with default username and password.
 
 ```sh
 ferretdb --postgresql-url=postgres://user1:pass1@postgres:5432/ferretdb
 ```
+
+An anonymous user is authenticated with `user1` from `--postgresql-url`.
+
+```sh
+mongosh `mongodb://127.0.0.1/ferretdb`
+```
+
+Clients that specify username and password in MongoDB URI such as below is authenticated as `user2` using `mongosh`.
+
+```sh
+mongosh `mongodb://user2:pass2@127.0.0.1/ferretdb?authMechanism=PLAIN`
+```
+
+#### Using docker
 
 For using docker, specify `FERRETDB_POSTGRESQL_URL` with default username and password.
 
@@ -77,27 +93,21 @@ networks:
     name: ferretdb
 ```
 
-An anonymous user is authenticated with `user1` from `FERRETDB_POSTGRESQL_URL`.
-An example of anonymous user is below using `mongosh`.
+To start `ferretdb`, use docker compose.
 
 ```sh
-mongosh `mongodb://127.0.0.1/ferretdb`
+docker compose up -d
 ```
 
-If you don't have mongosh, run the following command to run it inside the temporary MongoDB container,
-attaching to the same Docker network. To use this, start `ferretdb` with docker compose.
+An anonymous user is authenticated with `user1` from `FERRETDB_POSTGRESQL_URL`.
+Use following command to run `mongosh` inside the temporary MongoDB container,
+attaching to the same Docker network.
 
 ```sh
 docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo `mongodb://ferretdb/ferretdb`
 ```
 
-Clients that specify username and password in MongoDB URI such as below is authenticated as `user2` using `mongosh`.
-
-```sh
-mongosh `mongodb://user2:pass2@127.0.0.1/ferretdb?authMechanism=PLAIN`
-```
-
-For running it inside the temporary MongoDB container, use below.
+Clients that specify username and password in MongoDB URI such as below is authenticated as `user2`.
 
 ```sh
 docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
@@ -108,7 +118,7 @@ docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
 
 Using TLS is recommended if username and password are transferred in plain text.
 
-In this example, FerretDB uses TLS certificates to secure the connection.
+In these examples, FerretDB uses TLS certificates to secure the connection.
 Example certificates are found in [build/certs](https://github.com/FerretDB/FerretDB/tree/main/build/certs).
 
 The server uses TLS server certificate file, TLS private key file and root CA certificate file.
@@ -120,8 +130,19 @@ server-certs/
 └── server-key.pem
 ```
 
-This connects to localhost PostgreSQL instance using TLS with certificates in `server-certs` directory.
-Be sure to check that `server-certs` directory is present.
+The client uses TLS client certificate file and root CA certificate file.
+In the example below, it uses certificates in `client-certs` directory for client authentication.
+
+```console
+client-certs/
+├── client.pem
+└── rootCA-cert.pem
+```
+
+#### Using `ferretdb` package
+
+The example below connects to localhost PostgreSQL instance using TLS with certificates in `server-certs` directory.
+Be sure to check that `server-certs` directory and files are present.
 
 ```sh
 ferretdb \
@@ -132,19 +153,18 @@ ferretdb \
 --listen-tls-ca-file=./server-certs/rootCA-cert.pem
 ```
 
-For using docker to run FerretDB and those who do not have PostgreSQL server setup,
-`docker-compose.yml` example for TLS is provided in below.
+Using `mongosh`, the client connects to ferretdb as `user2` using TLS certificates.
+Be sure to check that `client-certs` directory and files are present.
 
-```console
-.
-├── docker-compose.yml
-└── server-certs
-    ├── rootCA-cert.pem
-    ├── server-cert.pem
-    └── server-key.pem
+```sh
+mongosh 'mongodb://user2:pass2@127.0.0.1:27018/ferretdb?authMechanism=PLAIN&tls=true&tlsCertificateKeyFile=./client-certs/client.pem&tlsCaFile=./client-certs/rootCA-cert.pem'
 ```
 
-In this example, it uses docker volume to mount `./server-certs` of docker host to `/etc/certs` docker container.
+#### Using docker
+
+For using docker to run FerretDB, `docker-compose.yml` example for TLS is provided in below.
+The docker host requires certificates `server-certs` directory,
+the volume is mounted from `./server-certs` of docker host to `/etc/certs` docker container.
 
 ```yml
 services:
@@ -176,30 +196,22 @@ networks:
     name: ferretdb
 ```
 
-The client uses TLS client certificate file and root CA certificate file.
-In this example, it uses `client-certs` for client authentication.
-
-```console
-client-certs/
-├── client.pem
-└── rootCA-cert.pem
-```
-
-If you have mongosh installed, following connects to mongosh to connect as `user2` using TLS
-with certificates in `client-certs` directory.
-Be sure to check that `client-certs` directory is present.
+To start `ferretdb`, use docker compose.
 
 ```sh
-mongosh 'mongodb://user2:pass2@127.0.0.1:27018/ferretdb?authMechanism=PLAIN&tls=true&tlsCertificateKeyFile=./client-certs/client.pem&tlsCaFile=./client-certs/rootCA-cert.pem'
+docker compose up -d
 ```
 
-Otherwise, you can use docker to connect as `user2`.
-In this example, it uses docker volume to mount `./server-certs` of docker host to `/clients` docker container.
+In the following example, clients connect to MongoDB URI using TLS certificates as `user2`.
+It uses docker volume to mount `./clients-certs` of docker host to `/clients` docker container.
 
 ```sh
-docker run --rm -it --network=ferretdb -v ./client-certs:/clients --entrypoint=mongosh mongo \
+docker run --rm -it \
+--network=ferretdb \
+--volume ./client-certs:/clients \
+--entrypoint=mongosh mongo \
 'mongodb://user2:pass2@host.docker.internal:27018/ferretdb?authMechanism=PLAIN&tls=true&tlsCertificateKeyFile=/clients/client.pem&tlsCaFile=/clients/rootCA-cert.pem'
 ```
 
-Note that it uses `host.docker.internal` host in the above, because it
+Note that mongodb url uses `host.docker.internal` host in above, because it
 needs to match certificate's [altnames](https://github.com/FerretDB/FerretDB/blob/main/build/certs/Makefile).
