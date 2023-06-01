@@ -138,7 +138,7 @@ client-certs/
 └── rootCA-cert.pem
 ```
 
-#### Using `ferretdb` package
+#### Using TLS with `ferretdb` package
 
 The example below connects to localhost PostgreSQL instance using TLS with certificates in `server-certs` directory.
 Be sure to check that `server-certs` directory and files are present.
@@ -159,7 +159,7 @@ Be sure to check that `client-certs` directory and files are present.
 mongosh 'mongodb://user2:pass2@127.0.0.1:27018/ferretdb?authMechanism=PLAIN&tls=true&tlsCertificateKeyFile=./client-certs/client.pem&tlsCaFile=./client-certs/rootCA-cert.pem'
 ```
 
-#### Using docker
+#### Using TLS with docker
 
 For using docker to run FerretDB, `docker-compose.yml` example for TLS is provided in below.
 The docker host requires certificates `server-certs` directory,
