@@ -401,6 +401,12 @@ var cli struct {
 		} `cmd:"" help:"read files"`
 	} `cmd:""`
 	PackageVersion struct{} `cmd:"" help:"Print package version"`
+	Tests          struct {
+		Shard struct {
+			Index uint `help:"Iteration's index" required:""`
+			Total uint `help:"Total number of integration tests to be listed" required:""`
+		} `cmd:"" help:"Print sharded integration tests"`
+	} `cmd:""`
 }
 
 func main() {
@@ -424,6 +430,7 @@ func main() {
 
 	var err error
 
+	fmt.Println(kongCtx.Command())
 	switch cmd := kongCtx.Command(); cmd {
 	case "setup":
 		err = setup(ctx, logger)
@@ -435,7 +442,10 @@ func main() {
 		err = read(os.Stdout, cli.Shell.Read.Paths...)
 	case "package-version":
 		err = packageVersion(os.Stdout, versionFile)
+	case "tests shard":
+		_, err = shardIntegrationTests(os.Stdout, cli.Tests.Shard.Index, cli.Tests.Shard.Total)
 	default:
+		fmt.Println(cmd)
 		err = fmt.Errorf("unknown command: %s", cmd)
 	}
 
