@@ -430,7 +430,6 @@ func main() {
 
 	var err error
 
-	fmt.Println(kongCtx.Command())
 	switch cmd := kongCtx.Command(); cmd {
 	case "setup":
 		err = setup(ctx, logger)
