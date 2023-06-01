@@ -77,12 +77,12 @@ The following steps describe a quick local setup:
 
 You can improve that setup by:
 
-* [securing connections with TLS](../security.md#securing-connections-with-tls);
-* adding backups.
+- [securing connections with TLS](../security.md#securing-connections-with-tls);
+- adding backups.
 
 Find out more about:
 
-* [getting logs](../configuration/logging.md#docker-logs).
+- [getting logs](../configuration/logging.md#docker-logs).
 
 ## Development image
 

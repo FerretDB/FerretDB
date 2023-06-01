@@ -1,6 +1,6 @@
 ---
 slug: ferretdb-v-1-2-0-minor-release
-title: "FerretDB v1.2.0. Minor Release"
+title: FerretDB v1.2.0. Minor Release
 authors: [alex]
 description: >
   FerretDB version 1.2.0 has just been released with minor changes that fixes the bugs in the previous release and enhance existing features and processes.

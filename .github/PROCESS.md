@@ -15,32 +15,32 @@ Tasks are estimated manually by engineers before or during Sprint planning.
 
 Task estimation depends on the following parameters:
 
-* Scope.
+- Scope.
   Are the changes required in one or multiple files, packages, components?
-* Difficulty.
+- Difficulty.
   How hard is the task?
   Does it require to cover a lot of test cases?
   edge cases?
-* Clarity.
+- Clarity.
   Are the description and definition of done clear?
   Or that's more of a research task?
 
 We use the following T-Shirt Sizes to estimate tasks:
 
-* **S**: Small simple clear task.
-* **M**: Only one parameter can be changed compared to **S** (e.g. a small but not completely clear task).
-* **L**: Two parameters can be changed compared to **S** (e.g. clear but big and somewhat complex task).
+- **S**: Small simple clear task.
+- **M**: Only one parameter can be changed compared to **S** (e.g. a small but not completely clear task).
+- **L**: Two parameters can be changed compared to **S** (e.g. clear but big and somewhat complex task).
 
 If the team thinks that the task is bigger than **L**, it should be decomposed into smaller tasks.
 
 Unless the issue explicitly states otherwise, the following things are always in the scope:
 
-* All handlers.
-* Tests.
+- All handlers.
+- Tests.
   See contributing documentation for general discussion about unit and integration tests.
-* Small spot refactorings.
+- Small spot refactorings.
   Larger refactorings should be in a separate issue with minimal behavior changes.
-* Minor updates to existing documentation.
+- Minor updates to existing documentation.
   Completely new documentation should be in a separate issue.
 
 Words "small", "spot", "larger", "minimal", "minor" and similar are defined to be not clearly defined.

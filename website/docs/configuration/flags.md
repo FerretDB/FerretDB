@@ -16,6 +16,7 @@ Some default values are overridden in [our Docker image](quickstart-guide/docker
 <!-- Keep order in sync with the `--help` output -->
 
 <!-- For <br /> -->
+<!-- markdownlint-capture -->
 <!-- markdownlint-disable MD033 -->
 
 ## General
@@ -78,4 +79,4 @@ Some default values are overridden in [our Docker image](quickstart-guide/docker
 
 <!-- Do not document `--test-XXX` flags here -->
 
-<!-- markdownlint-enable MD033 -->
+<!-- markdownlint-restore -->
