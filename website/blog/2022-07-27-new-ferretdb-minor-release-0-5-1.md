@@ -1,6 +1,6 @@
 ---
 slug: new-ferretdb-minor-release-0-5-1
-title: "New FerretDB minor release - 0.5.1"
+title: New FerretDB minor release - 0.5.1
 author: Peter Farkas
 description: Today we released FerretDB 0.5.1, a minor release which adds some new features, but mostly improvements and fixes.
 image: /img/blog/rescue-kitten-komari-ferret-brothers-47.jpg
@@ -19,7 +19,7 @@ A major version 0.y.z every month,, followed by a minor or patch release two wee
 Our plan is to release 1.0.0 by the end of the year, which would be the first FerretDB release recommended to be used as a replacement for MongoDB.
 You can [check out our roadmap on GitHub](http://www.github.com/orgs/FerretDB/projects/2).
 
-In this month’s patch release, we added features, some of the notable ones are:
+In this month's patch release, we added features, some of the notable ones are:
 
 **Array Query Operators, now all 3 of them!**
 

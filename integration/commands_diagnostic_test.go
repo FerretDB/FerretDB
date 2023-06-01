@@ -125,10 +125,10 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 	ctx, collection := res.Ctx, res.Collection
 
 	for name, tc := range map[string]struct {
-		command  bson.D
-		expected map[string]any
-		err      *mongo.CommandError
-		alt      string
+		command    bson.D
+		expected   map[string]any
+		err        *mongo.CommandError
+		altMessage string
 	}{
 		"Asterisk": {
 			command: bson.D{{"getLog", "*"}},
@@ -160,7 +160,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 				Name:    "OperationFailed",
 				Message: `No log named 'nonExistentName'`,
 			},
-			alt: `no RecentEntries named: nonExistentName`,
+			altMessage: `no RecentEntries named: nonExistentName`,
 		},
 		"Nil": {
 			command: bson.D{{"getLog", nil}},
@@ -186,7 +186,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			if tc.err != nil {
-				AssertEqualAltCommandError(t, *tc.err, tc.alt, err)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 			require.NoError(t, err)

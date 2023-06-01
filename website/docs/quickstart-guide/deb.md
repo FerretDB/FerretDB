@@ -33,4 +33,4 @@ You have to do it manually by running `ferretdb` binary with the [correct flags]
 
 Find out more about:
 
-* [getting logs](../configuration/logging.md#binary-executable-logs).
+- [getting logs](../configuration/logging.md#binary-executable-logs).

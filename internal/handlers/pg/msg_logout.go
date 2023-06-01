@@ -12,35 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package iterator
+package pg
 
-import "errors"
+import (
+	"context"
 
-// ConsumeCount returns the number of elements in the iterator.
-// ErrIteratorDone error is returned as nil; any other error is returned as-is.
-//
-// It always closes the iterator.
-func ConsumeCount[K, V any](iter Interface[K, V]) (int, error) {
-	if iter == nil {
-		panic("iter is nil")
-	}
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/wire"
+)
 
-	defer iter.Close()
-
-	var count int
-	var err error
-
-	for {
-		_, _, err = iter.Next()
-		if err == nil {
-			count++
-			continue
-		}
-
-		if errors.Is(err, ErrIteratorDone) {
-			err = nil
-		}
-
-		return count, err
-	}
+// MsgLogout implements HandlerInterface.
+func (h *Handler) MsgLogout(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return common.MsgLogout(ctx, msg)
 }

@@ -554,13 +554,14 @@ tasks:
           PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
           DOCKER_IMAGES: ignored
           OUTPUT: type=local,dest=tmp/build
-      - cmd: bin/nfpm{{exeExt}} package --config=build/nfpm.yml --packager=deb --target=tmp/debs/ferretdb.deb
-        env:
-          ARCH: amd64
-          VERSION:
-            sh: go run ./cmd/envtool shell read build/version/version.txt
-          POSTGRES_PACKAGE: postgresql
+      - bin/nfpm{{exeExt}} package --config=build/nfpm.yml --packager=deb --target=tmp/debs/ferretdb.deb
       - docker compose run --rm ubuntu /bin/sh -c 'dpkg -i /debs/ferretdb.deb && ferretdb --version'
+    env:
+      # nfpm parameters
+      ARCH: amd64
+      VERSION:
+        sh: go run ./cmd/envtool package-version
+      POSTGRES_PACKAGE: postgresql
 
   packages-rpm:
     cmds:
@@ -572,13 +573,14 @@ tasks:
           PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
           DOCKER_IMAGES: ignored
           OUTPUT: type=local,dest=tmp/build
-      - cmd: bin/nfpm{{exeExt}} package --config=build/nfpm.yml --packager=rpm --target=tmp/rpms/ferretdb.rpm
-        env:
-          ARCH: amd64
-          VERSION:
-            sh: go run ./cmd/envtool shell read build/version/version.txt
-          POSTGRES_PACKAGE: postgresql
+      - bin/nfpm{{exeExt}} package --config=build/nfpm.yml --packager=rpm --target=tmp/rpms/ferretdb.rpm
       - docker compose run --rm ubi /bin/sh -c 'rpm -i /rpms/ferretdb.rpm && ferretdb --version'
+    env:
+      # nfpm parameters
+      ARCH: amd64
+      VERSION:
+        sh: go run ./cmd/envtool package-version
+      POSTGRES_PACKAGE: postgresql
 
   fmt-yaml:
     desc: "Format YAML files"
@@ -600,10 +602,12 @@ tasks:
   # see https://github.com/DavidAnson/markdownlint-cli2#command-line for the reason we use double-quotes
   docs-fmt:
     desc: "Format and lint documentation"
+    run: once
     cmds:
       - bin/checkdocs
       - docker compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
-      - docker compose run --rm markdownlint "**/*.md" "#CHANGELOG.md"
+      - docker compose run --rm prettier --write --parser markdown --no-semi --single-quote --trailing-comma none "**/*.md"
+      - docker compose run --rm markdownlint "build/.markdownlint.yml" "**/*.md"
 
   docs-dev:
     desc: "Start documentation development server"

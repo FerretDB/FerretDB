@@ -1,9 +1,9 @@
 ---
 slug: ferretdb-1-0-ga-opensource-mongodb-alternative
-title: "Announcing FerretDB 1.0 GA - a truly Open Source MongoDB alternative"
+title: Announcing FerretDB 1.0 GA - a truly Open Source MongoDB alternative
 authors: [peter]
 description: >
-    After many months of development, FerretDB is now production-ready. We are excited to announce the general availability of FerretDB v1.0.
+  After many months of development, FerretDB is now production-ready. We are excited to announce the general availability of FerretDB v1.0.
 image: /img/blog/ferretdb-v1.0.jpg
 tags: [document database, mongodb alternative, mongodb compatible]
 ---
@@ -21,9 +21,9 @@ MongoDB is [no longer open source](https://blog.opensource.org/the-sspl-is-not-a
 We want to bring MongoDB database workloads back to its open source roots.
 We are enabling [PostgreSQL](https://www.postgresql.org/) and other database backends to run MongoDB workloads, retaining the opportunities provided by the existing ecosystem around MongoDB.
 
-* Deploy anywhere + stay in control of your data
-* Use it freely for your cloud-based projects
-* Use your existing PostgreSQL infra to run MongoDB workloads
+- Deploy anywhere + stay in control of your data
+- Use it freely for your cloud-based projects
+- Use your existing PostgreSQL infra to run MongoDB workloads
 
 ## How to get started
 
@@ -33,8 +33,8 @@ If you would like to test FerretDB, we provide an All-in-one Docker image, conta
 
 Additionally, thanks to our partners, FerretDB is available on two cloud providers for testing:
 
-* Scaleway ([see their blog post for more information](https://www.scaleway.com/en/blog/ferretdb-open-source-alternative-mongodb/))
-* On the [Civo Marketplace](https://www.civo.com/marketplace/FerretDB)
+- Scaleway ([see their blog post for more information](https://www.scaleway.com/en/blog/ferretdb-open-source-alternative-mongodb/))
+- On the [Civo Marketplace](https://www.civo.com/marketplace/FerretDB)
 
 ## Main feature additions to GA
 
@@ -68,7 +68,7 @@ To help you gather more information about your collections, databases, and serve
 To retrieve statistics about a collection, use the `collStats` command like this:
 
 ```js
-db.runCommand({ collStats: "users" })
+db.runCommand({ collStats: 'users' })
 ```
 
 If the statistics is about the database, run the command below:
@@ -80,7 +80,7 @@ db.runCommand({ dbStats: 1 })
 For the total data size of a collection, run the following command:
 
 ```js
-db.runCommand({ dataSize: "<database>.<collection>" })
+db.runCommand({ dataSize: '<database>.<collection>' })
 ```
 
 ## So where are we now?
@@ -89,10 +89,10 @@ With the release of FerretDB 1.0 GA, no breaking changes will be introduced in t
 
 We are also proud to announce that FerretDB now has:
 
-* 👨🏻‍💻 Over 40 code contributors with more than 130 merged pull requests from our community (see our thank you notes below)
-* ⭐️ Over 5300 Stars and 200 Forks on GitHub
-* 🔥 Over 100 running instances with [telemetry enabled](https://docs.ferretdb.io/telemetry/)
-* ⏫ Over 10000 FerretDB downloads
+- 👨🏻‍💻 Over 40 code contributors with more than 130 merged pull requests from our community (see our thank you notes below)
+- ⭐️ Over 5300 Stars and 200 Forks on GitHub
+- 🔥 Over 100 running instances with [telemetry enabled](https://docs.ferretdb.io/telemetry/)
+- ⏫ Over 10000 FerretDB downloads
 
 With the release of FerretDB 1.0, these numbers will only continue to grow.
 
@@ -114,7 +114,7 @@ We are testing FerretDB against real-world applications, like [FastNetMon](https
 
 We also confirmed that popular database management tools such as `mongosh`, [MongoDB Compass](https://www.mongodb.com/products/compass), [NoSQL Booster](https://nosqlbooster.com/), [Mingo](https://mingo.io/) are able to leverage the current feature set of FerretDB.
 
-It’s like managing a MongoDB database, but it is FerretDB (and open source) under the hood.
+It's like managing a MongoDB database, but it is FerretDB (and open source) under the hood.
 We think this is insanely cool!
 
 ## What database backends does FerretDB support?
@@ -138,7 +138,7 @@ You can try it out on [their website](https://www.tigrisdata.com/).
 ### SAP HANA
 
 Our friends at [SAP](https://www.sap.com/index.html) are currently working on adding [SAP HANA](https://www.sap.com/products/technology-platform/hana.html) compatibility to FerretDB, which we are very excited about.
-It is also great to see SAP’s commitment to open source.
+It is also great to see SAP's commitment to open source.
 
 ### SQLite and future database backends
 
@@ -147,9 +147,9 @@ Currently, we are in the process of adding basic support for [SQLite](https://ww
 
 ## How can I help?
 
-* Provide feedback
-* Contribute
-* Partner with us
+- Provide feedback
+- Contribute
+- Partner with us
 
 We are working with software publishers, infrastructure providers and the maintainers of popular JS frameworks to create compatibility with their software.
 
