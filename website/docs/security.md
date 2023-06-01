@@ -40,8 +40,14 @@ the use of TLS is highly recommended.
 ### PostgreSQL backend with default username and password
 
 PostgreSQL server may start with default username and password.
+
 In the example, default username and password are specified in FerretDB's connection string `user1:pass1`.
-See more about [PostgreSQL Authentication Methods](https://www.postgresql.org/docs/current/auth-methods.html).
+See more about [creating PostgreSQL user](https://www.postgresql.org/docs/current/sql-createuser.html)
+and [PostgreSQL authentication methods](https://www.postgresql.org/docs/current/auth-methods.html).
+
+```sh
+ferretdb --postgresql-url=postgres://user1:pass1@postgres:5432/ferretdb
+```
 
 ```yml
 services:
@@ -68,6 +74,7 @@ networks:
 ```
 
 An anonymous user is authenticated with `user1` from `FERRETDB_POSTGRESQL_URL`.
+An example of anonymous user is below.
 
 ```sh
 mongosh `mongodb://127.0.0.1/ferretdb`
@@ -96,6 +103,7 @@ In this example, FerretDB uses TLS certificates to secure the connection.
 Example certificates are found in https://github.com/FerretDB/FerretDB/tree/main/build/certs.
 
 The server uses TLS server certificate file, TLS private key file and root CA certificate file.
+
 ```
 server-certs/
 ├── rootCA-cert.pem
@@ -103,7 +111,21 @@ server-certs/
 └── server-key.pem
 ```
 
-For using docker to run ferret FerretDB, `docker-compose.yml` example for TLS is provided as below.
+This connects to localhost PostgreSQL instance using TLS with certificates in `server-certs` directory.
+Be sure to check that `server-certs` directory is present.
+
+```sh
+ferretdb \
+--postgresql-url=postgres://user1:pass1@localhost:5432/ferretdb \
+--listen-tls=:27018 \
+--listen-tls-cert-file=./server-certs/server-cert.pem \
+--listen-tls-key-file=./server-certs/server-key.pem \
+--listen-tls-ca-file=./server-certs/rootCA-cert.pem
+```
+
+For using docker to run FerretDB and those who do not have PostgreSQL server setup,
+`docker-compose.yml` example for TLS is provided in below.
+
 ```
 .
 ├── docker-compose.yml
@@ -112,6 +134,8 @@ For using docker to run ferret FerretDB, `docker-compose.yml` example for TLS is
     ├── server-cert.pem
     └── server-key.pem
 ```
+
+In this example, it uses docker volume to mount `./server-certs` of docker host to `/etc/certs` docker container.
 
 ```yml
 services:
@@ -144,24 +168,29 @@ networks:
 ```
 
 The client uses TLS client certificate file and root CA certificate file.
+In this example, it uses `client-certs` for client authentication.
 
 ```
 client-certs/
 ├── client.pem
 └── rootCA-cert.pem
 ```
-If you have mongosh installed, following connects to mongosh to connect as `user2`.
+
+If you have mongosh installed, following connects to mongosh to connect as `user2` using TLS
+with certificates in `client-certs` directory.
+Be sure to check that `client-certs` directory is present.
+
 ```sh
 mongosh 'mongodb://user2:pass2@127.0.0.1:27018/ferretdb?authMechanism=PLAIN&tls=true&tlsCertificateKeyFile=./client-certs/client.pem&tlsCaFile=./client-certs/rootCA-cert.pem'
 ```
 
 Otherwise, you can use docker to connect as `user2`.
+In this example, it uses docker volume to mount `./server-certs` of docker host to `/clients` docker container.
 
 ```sh
 docker run --rm -it --network=ferretdb -v ./client-certs:/clients --entrypoint=mongosh mongo \
 'mongodb://user2:pass2@host.docker.internal:27018/ferretdb?authMechanism=PLAIN&tls=true&tlsCertificateKeyFile=/clients/client.pem&tlsCaFile=/clients/rootCA-cert.pem'
 ```
 
-Note that it uses `host.docker.internal` host here, because certificates
-need to match certificate's [altnames](https://github.com/FerretDB/FerretDB/blob/main/build/certs/Makefile).
-These examples use certificates from https://github.com/FerretDB/FerretDB/tree/main/build/certs.
+Note that it uses `host.docker.internal` host in the above, because it
+needs to match certificate's [altnames](https://github.com/FerretDB/FerretDB/blob/main/build/certs/Makefile).
