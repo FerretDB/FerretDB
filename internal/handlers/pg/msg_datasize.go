@@ -47,6 +47,7 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	common.Ignored(document, h.L, "estimate")
 
 	command := document.Command()
+
 	target, err := common.GetRequiredParam[string](document, command)
 	if err != nil {
 		return nil, lazyerrors.Error(err)

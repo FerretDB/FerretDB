@@ -285,7 +285,7 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 func TestCommandsDiagnosticValidateError(t *testing.T) {
 	t.Parallel()
 
-	for name, tc := range map[string]struct {
+	for name, tc := range map[string]struct { //nolint:vet // for readability
 		command bson.D
 		err     *mongo.CommandError
 
