@@ -70,10 +70,18 @@ networks:
 An anonymous user is authenticated with `user1` from `FERRETDB_POSTGRESQL_URL`.
 
 ```sh
+mongosh `mongodb://127.0.0.1/ferretdb`
+```
+
+```sh
 docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo `mongodb://ferretdb/ferretdb`
 ```
 
 Clients that specify username and password in MongoDB URI such as below is authenticated as `user2`.
+
+```sh
+mongosh `mongodb://user2:pass2@127.0.0.1/ferretdb?authMechanism=PLAIN`
+```
 
 ```sh
 docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
@@ -85,7 +93,25 @@ docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
 Using TLS is recommended if username and password are transferred in plain text.
 
 In this example, FerretDB uses TLS certificates to secure the connection.
-Replace `<CERT_PATH>` with the path to your certificates.
+Example certificates are found in https://github.com/FerretDB/FerretDB/tree/main/build/certs.
+
+The server uses TLS server certificate file, TLS private key file and root CA certificate file.
+```
+server-certs/
+├── rootCA-cert.pem
+├── server-cert.pem
+└── server-key.pem
+```
+
+For using docker to run ferret FerretDB, `docker-compose.yml` example for TLS is provided as below.
+```
+.
+├── docker-compose.yml
+└── server-certs
+    ├── rootCA-cert.pem
+    ├── server-cert.pem
+    └── server-key.pem
+```
 
 ```yml
 services:
@@ -110,20 +136,32 @@ services:
       - FERRETDB_LISTEN_TLS_KEY_FILE=/etc/certs/server-key.pem
       - FERRETDB_LISTEN_TLS_CA_FILE=/etc/certs/rootCA-cert.pem
     volumes:
-      - <CERT_PATH>/server-cert.pem:/etc/certs/server-cert.pem:ro
-      - <CERT_PATH>/build/certs/server-key.pem:/etc/certs/server-key.pem:ro
-      - <CERT_PATH>/build/certs/rootCA-cert.pem:/etc/certs/rootCA-cert.pem:ro
+      - ./server-certs:/etc/certs
 
 networks:
   default:
     name: ferretdb
 ```
 
-Clients that specify username and password in MongoDB URI such as below uses TLS for securing connection.
-Replace `<CERT_PATH>` with the path to your certificates.
+The client uses TLS client certificate file and root CA certificate file.
+
+```
+client-certs/
+├── client.pem
+└── rootCA-cert.pem
+```
+If you have mongosh installed, following connects to mongosh to connect as `user2`.
+```sh
+mongosh 'mongodb://user2:pass2@127.0.0.1:27018/ferretdb?authMechanism=PLAIN&tls=true&tlsCertificateKeyFile=./client-certs/client.pem&tlsCaFile=./client-certs/rootCA-cert.pem'
+```
+
+Otherwise, you can use docker to connect as `user2`.
 
 ```sh
-docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
-`mongodb://user2:pass2@ferretdb:27018/ferretdb?authMechanism=PLAIN&
-tls=true&tlsCertificateKeyFile=<CERT_PATH>/client.pem&tlsCaFile=<CERT_PATH>/rootCA-cert.pem`
+docker run --rm -it --network=ferretdb -v ./client-certs:/clients --entrypoint=mongosh mongo \
+'mongodb://user2:pass2@host.docker.internal:27018/ferretdb?authMechanism=PLAIN&tls=true&tlsCertificateKeyFile=/clients/client.pem&tlsCaFile=/clients/rootCA-cert.pem'
 ```
+
+Note that it uses `host.docker.internal` host here, because certificates
+need to match certificate's [altnames](https://github.com/FerretDB/FerretDB/blob/main/build/certs/Makefile).
+These examples use certificates from https://github.com/FerretDB/FerretDB/tree/main/build/certs.
