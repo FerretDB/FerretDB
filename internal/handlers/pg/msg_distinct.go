@@ -61,7 +61,7 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 		iter, _, err = pgdb.QueryDocuments(ctx, tx, &qp)
 		if err != nil {
-			return err
+			return lazyerrors.Error(err)
 		}
 
 		closer := iterator.NewMultiCloser(iter)
@@ -70,11 +70,15 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		iter = common.FilterIterator(iter, closer, qp.Filter)
 
 		distinct, err = common.FilterDistinctValues(iter, dp.Key)
-		return err
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		return nil
 	})
 
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	var reply wire.OpMsg
