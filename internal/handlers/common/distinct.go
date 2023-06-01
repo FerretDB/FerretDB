@@ -15,6 +15,7 @@
 package common
 
 import (
+	"fmt"
 	"strings"
 
 	"go.uber.org/zap"
@@ -32,8 +33,10 @@ type DistinctParams struct {
 	DB         string          `ferretdb:"$db"`
 	Collection string          `ferretdb:"collection"`
 	Key        string          `ferretdb:"key"`
-	Filter     *types.Document `ferretdb:"query,opt"`
+	Filter     *types.Document `ferretdb:"-"`
 	Comment    string          `ferretdb:"comment,opt"`
+
+	Query any `ferretdb:"query,opt"`
 
 	Collation *types.Document `ferretdb:"collation,unimplemented"`
 
@@ -47,6 +50,22 @@ func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams
 	err := commonparams.ExtractParams(document, "distinct", &dp, l)
 	if err != nil {
 		return nil, err
+	}
+
+	switch filter := dp.Query.(type) {
+	case *types.Document:
+		dp.Filter = filter
+	case types.NullType, nil:
+		dp.Filter = types.MakeDocument(0)
+	default:
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrTypeMismatch,
+			fmt.Sprintf(
+				"BSON field 'distinct.query' is the wrong type '%s', expected type 'object'",
+				commonparams.AliasFromType(dp.Query),
+			),
+			"distinct",
+		)
 	}
 
 	if dp.Key == "" {
