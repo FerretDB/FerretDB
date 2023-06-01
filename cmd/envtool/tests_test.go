@@ -25,11 +25,11 @@ import (
 func TestShardIntegrationTests(t *testing.T) {
 	t.Parallel()
 
-	var w *bytes.Buffer
-	output, err := shardIntegrationTests(w, 0, 2)
+	var w bytes.Buffer
+	err := shardIntegrationTests(&w, 0, 2)
 	assert.NoError(t, err)
-	assert.NotNil(t, output)
-	assert.Regexp(t, "^\\^.*\\$$", output)
+	assert.NotNil(t, w)
+	assert.Regexp(t, "^\\^.*\\$$", w.String())
 }
 
 func TestShardTests(t *testing.T) {
