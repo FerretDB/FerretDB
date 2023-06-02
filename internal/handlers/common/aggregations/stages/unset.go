@@ -53,14 +53,17 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 				"$unset (stage)",
 			)
 		}
+
 		fieldIter := fields.Iterator()
 		defer fieldIter.Close()
+
 		for {
 			_, field, err := fieldIter.Next()
 			if err != nil {
 				if errors.Is(err, iterator.ErrIteratorDone) {
 					break
 				}
+
 				return nil, lazyerrors.Error(err)
 			}
 			fieldStr := field.(string)
@@ -74,6 +77,7 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 				"$unset (stage)",
 			)
 		}
+
 		fieldsToUnset.Set(fields, false)
 	}
 
@@ -83,8 +87,8 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 }
 
 // Process implements Stage interface.
-
-func (u *unset) Process(_ context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+func (u *unset) Process(_ context.Context,
+	iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
 	return common.ProjectionIterator(iter, closer, u.field)
 }
 
