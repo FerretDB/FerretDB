@@ -10,13 +10,13 @@ tags: [release]
 
 ![FerretDB v0.9.4](/img/blog/ferretdb-v0.9.4.jpg)
 
-We’ve just released FerretDB v0.9.4, which includes essential updates, such as support for the `$pull` array update operator and `$each` modifier, among others.
+We've just released FerretDB v0.9.4, which includes essential updates, such as support for the `$pull` array update operator and `$each` modifier, among others.
 
 <!--truncate-->
 
 Each [FerretDB](https://www.ferretdb.io) release takes us one step closer to the release of our GA, which we look forward to sharing with you soon (very soon!).
 
-In recent weeks, we’ve seen a steady increase in the usage and popularity of FerretDB, especially with more real-life use cases.
+In recent weeks, we've seen a steady increase in the usage and popularity of FerretDB, especially with more real-life use cases.
 This encourages us in our mission to bring you the open-source document database with MongoDB compatibility built-in.
 
 While this is a minor release with a few changes to the previous release, you still have much to look forward to, such as the new feature support, bug fixes, updated documentation, and many more.
@@ -24,7 +24,7 @@ See [here to learn more](https://blog.ferretdb.io/mangodb-has-a-new-name-and-the
 
 ## New Features
 
-In this release, we’ve added support for dot notation in sorting, which will allow users to sort nested documents within a collection.
+In this release, we've added support for dot notation in sorting, which will allow users to sort nested documents within a collection.
 For instance, in a `products` collection containing product listings with a `price` field within a nested document `details`, you can now use dot notation to sort by `price` as follows:
 
 ```js
@@ -71,16 +71,16 @@ db.users.updateOne({ name: 'Jane Doe' }, { $pull: { skills: 'Java' } })
 
 ## Fixed Bugs
 
-With this release, we’ve also shown our continued efforts to deliver a document database that works with many other backend engines with fixes to [SAP Hana](https://www.sap.com/products/technology-platform/hana.html) and [Tigris](https://www.tigrisdata.com/) handlers not initializing correctly.
+With this release, we've also shown our continued efforts to deliver a document database that works with many other backend engines with fixes to [SAP Hana](https://www.sap.com/products/technology-platform/hana.html) and [Tigris](https://www.tigrisdata.com/) handlers not initializing correctly.
 
-We’ve also fixed an issue with Long overflow detection when using the `$mul` operator, which resulted in false negatives and overflow errors for values that did not actually overflow.
+We've also fixed an issue with Long overflow detection when using the `$mul` operator, which resulted in false negatives and overflow errors for values that did not actually overflow.
 
 ## Documentation
 
 Our document is also steadily improving with more details on our all-in-one Docker image, which you can find here.
 We also added sections explaining supported usages for field and array update operators.
 
-We’ve also updated our security policy page, which should help significantly when reporting a vulnerability.
+We've also updated our security policy page, which should help significantly when reporting a vulnerability.
 
 Please see [our release notes](https://github.com/FerretDB/FerretDB/releases/tag/v0.9.4) for other changes and enhancements in this release.
 

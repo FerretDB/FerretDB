@@ -48,12 +48,21 @@ func TestIndexesList(t *testing.T) {
 			compatCur, compatErr := compatCollection.Indexes().List(ctx)
 
 			require.NoError(t, compatErr)
-			assert.Equal(t, compatErr, targetErr)
+			require.NoError(t, targetErr)
 
 			targetRes := FetchAll(t, ctx, targetCur)
 			compatRes := FetchAll(t, ctx, compatCur)
 
 			assert.Equal(t, compatRes, targetRes)
+
+			// Also test specifications to check they are identical.
+			targetSpec, targetErr := targetCollection.Indexes().ListSpecifications(ctx)
+			compatSpec, compatErr := compatCollection.Indexes().ListSpecifications(ctx)
+
+			require.NoError(t, compatErr)
+			require.NoError(t, targetErr)
+
+			assert.Equal(t, compatSpec, targetSpec)
 		})
 	}
 }
@@ -242,7 +251,7 @@ func TestIndexesCreate(t *testing.T) {
 						nonEmptyResults = true
 					}
 
-					// List indexes to see they are identical after creation.
+					// List indexes to check they are identical after creation.
 					targetCur, targetErr := targetCollection.Indexes().List(ctx)
 					compatCur, compatErr := compatCollection.Indexes().List(ctx)
 
@@ -253,6 +262,16 @@ func TestIndexesCreate(t *testing.T) {
 					compatIndexes := FetchAll(t, ctx, compatCur)
 
 					assert.Equal(t, compatIndexes, targetIndexes)
+
+					// List specifications to check they are identical after creation.
+					targetSpec, targetErr := targetCollection.Indexes().ListSpecifications(ctx)
+					compatSpec, compatErr := compatCollection.Indexes().ListSpecifications(ctx)
+
+					require.NoError(t, compatErr)
+					require.NoError(t, targetErr)
+
+					require.NotEmpty(t, compatSpec)
+					assert.Equal(t, compatSpec, targetSpec)
 				})
 			}
 

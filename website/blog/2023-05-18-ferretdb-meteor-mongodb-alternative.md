@@ -74,8 +74,8 @@ To stay up to date with the compatibility status and ongoing efforts, please ref
 While dealing with these compatibility issues, one of the [issues the FerretDB team has grappled with is the challenge of supporting `OpLog` tailing](https://github.com/meteor/meteor/discussions/12150).
 The introduction of `ChangeStreams` in MongoDB 3.6 and later allows real-time data access that bypasses the complications associated with `OpLog` tailing.
 
-Even though Meteor.js traditionally supports MongoDB’s `OpLog` tailing for real-time data sync, Meteor.js falls back to polling when `OpLog` is not available; however, while this is not ideal for many production use cases, it can occasionally do the job.
-At this stage, it’s unclear whether the hassles of implementing `OpLog` will be worth it, [especially with a few Meteor.js apps, like Rocket.Chat, moving to `ChangeStreams`](https://github.com/FerretDB/FerretDB/issues/1993#issuecomment-1518978149).
+Even though Meteor.js traditionally supports MongoDB's `OpLog` tailing for real-time data sync, Meteor.js falls back to polling when `OpLog` is not available; however, while this is not ideal for many production use cases, it can occasionally do the job.
+At this stage, it's unclear whether the hassles of implementing `OpLog` will be worth it, [especially with a few Meteor.js apps, like Rocket.Chat, moving to `ChangeStreams`](https://github.com/FerretDB/FerretDB/issues/1993#issuecomment-1518978149).
 
 Some of the other planned feature additions to help improve compatibility with Meteor.js include support for dot notation in query projections, `createIndexes` for unique indexes, support for partial indexes, and many more.
 In addition to these feature additions, FerretDB will also be publishing more blog posts that showcase how different applications can use FerretDB in Meteor.js.
