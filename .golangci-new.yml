@@ -6,6 +6,11 @@ run:
   timeout: 3m
 
 linters-settings:
+  asasalint:
+    exclude:
+      - ^lazyerrors\.Errorf$
+    use-builtin-exclusions: true
+    ignore-test: false
   errorlint:
     # see caveats at https://github.com/polyfloyd/go-errorlint#fmterrorf-wrapping-verb
     errorf: false
