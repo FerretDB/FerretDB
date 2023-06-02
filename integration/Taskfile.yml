@@ -45,10 +45,6 @@ tasks:
       - ../bin/go-consistent{{exeExt}} -pedantic ./...
       - ../bin/go-sumtype{{exeExt}} ./...
       - go vet -vettool=../bin/checkswitch{{exeExt}} ./...
-    sources:
-      - "**/*.go"
-      - "../**/go.mod"
-      - "../**/*.yml"
 
   integration-security:
     cmds:
