@@ -17,6 +17,7 @@ package setup
 import (
 	"context"
 	"net/http"
+	"runtime"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -106,4 +107,8 @@ func Shutdown() {
 	defer cancel()
 
 	must.NoError(jaegerExporter.Shutdown(ctx))
+
+	// to increase a chance of resource finalizers to spot problems
+	runtime.GC()
+	runtime.GC()
 }
