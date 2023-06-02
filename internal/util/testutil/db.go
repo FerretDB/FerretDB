@@ -75,7 +75,7 @@ func DatabaseName(tb testing.TB) string {
 	databaseNamesM.Lock()
 	defer databaseNamesM.Unlock()
 
-	// it maybe exactly the same if `go test -count=X` is used
+	// it may be exactly the same if `go test -count=X` is used
 	current := stack()
 	if another, ok := databaseNames[name]; ok && !bytes.Equal(current, another) {
 		tb.Logf("Database name %q already used by another test:\n%s", name, another)
