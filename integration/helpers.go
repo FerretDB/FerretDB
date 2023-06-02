@@ -130,6 +130,25 @@ func ConvertDocuments(t testing.TB, docs []bson.D) []*types.Document {
 	return res
 }
 
+func ConvertArray(t testing.TB, arr bson.A) *types.Array {
+	t.Helper()
+
+	v := convert(t, arr)
+
+	var res *types.Array
+	require.IsType(t, res, v)
+	return v.(*types.Array)
+}
+
+func AssertEqualArrays(t testing.TB, expected, actual bson.A) bool {
+	t.Helper()
+
+	expectedArr := ConvertArray(t, expected)
+	actualArr := ConvertArray(t, actual)
+
+	return testutil.AssertEqual(t, expectedArr, actualArr)
+}
+
 // AssertEqualDocuments asserts that two documents are equal in a way that is useful for tests
 // (NaNs are equal, etc).
 //
