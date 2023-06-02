@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// CreateSchema inserts a document into a collection in SAP HANA JSON Document Store.
+// InsertOne inserts a document into a collection in SAP HANA JSON Document Store.
 func (hanaPool *Pool) InsertOne(ctx context.Context, qp *QueryParams, doc *types.Document) error {
 	err := hanaPool.CreateSchemaIfNotExists(ctx, qp)
 
@@ -43,11 +43,11 @@ func (hanaPool *Pool) InsertOne(ctx context.Context, qp *QueryParams, doc *types
 		return err
 	}
 
-	return hanaPool.Insert(ctx, qp, doc)
+	return hanaPool.insert(ctx, qp, doc)
 }
 
-// CreateSchema inserts a document into a collection in SAP HANA JSON Document Store.
-func (hanaPool *Pool) Insert(ctx context.Context, qp *QueryParams, doc *types.Document) error {
+// insert inserts a document into a collection in SAP HANA JSON Document Store.
+func (hanaPool *Pool) insert(ctx context.Context, qp *QueryParams, doc *types.Document) error {
 	sqlStmt := fmt.Sprintf("insert into %q.%q values($1)", qp.DB, qp.Collection)
 
 	// sjson.MarshalSingleValue can be used because the Hana insert json format is just a json string
