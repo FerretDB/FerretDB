@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -23,7 +24,42 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
+
+func SortProviders(t *testing.T, providers shareddata.Providers) shareddata.Providers {
+	var resProviders []shareddata.Provider
+
+	for _, provider := range providers {
+		var arrInit bson.A
+
+		for _, item := range provider.Docs() {
+			arrInit = append(arrInit, item)
+		}
+
+		arr := ConvertArray(t, arrInit)
+		common.SortArray(arr, types.Ascending)
+
+		var newProvider shareddata.Values[]
+
+		iter := arr.Iterator()
+		for {
+			_, item, err := iter.Next()
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			require.NoError(t, err)
+
+			newProvider = append(newProvider, item)
+		}
+		resProviders = append(resProviders, arr)
+	}
+
+	return resProviders
+}
 
 // distinctCompatTestCase describes distinct compatibility test case.
 type distinctCompatTestCase struct {
