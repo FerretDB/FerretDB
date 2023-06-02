@@ -53,7 +53,7 @@ Be sure to check that `server-certs` directory and files are present.
 
 ```sh
 ferretdb \
---postgresql-url=postgres://user1:pass1@localhost:5432/ferretdb \
+--postgresql-url=postgres://localhost:5432/ferretdb \
 --listen-tls=:27018 \
 --listen-tls-cert-file=./server-certs/server-cert.pem \
 --listen-tls-key-file=./server-certs/server-key.pem \
@@ -90,7 +90,7 @@ services:
     ports:
       - 27018:27018
     environment:
-      - FERRETDB_POSTGRESQL_URL=postgres://user1:pass1@postgres:5432/ferretdb
+      - FERRETDB_POSTGRESQL_URL=postgres://postgres:5432/ferretdb
       - FERRETDB_LISTEN_TLS=:27018
       - FERRETDB_LISTEN_TLS_CERT_FILE=/etc/certs/server-cert.pem
       - FERRETDB_LISTEN_TLS_KEY_FILE=/etc/certs/server-key.pem
