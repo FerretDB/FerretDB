@@ -84,6 +84,8 @@ linters-settings:
         alias: dto
       - pkg: github.com/jackc/pgx-zap
         alias: zapadapter
+      - pkg: modernc.org/sqlite/lib
+        alias: sqlitelib
   # ineffassign
   lll:
     line-length: 130
