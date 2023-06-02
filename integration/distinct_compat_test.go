@@ -83,6 +83,21 @@ func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCas
 						assert.Equal(t, compatRes, targetRes)
 					}
 
+					targetDocs := make([]bson.D, len(targetRes))
+					compatDocs := make([]bson.D, len(compatRes))
+
+					for i, doc := range targetRes {
+						var ok bool
+						targetDocs[i], ok = doc.(bson.D)
+						require.True(t, ok)
+					}
+
+					for i, doc := range compatRes {
+						var ok bool
+						compatDocs[i], ok = doc.(bson.D)
+						require.True(t, ok)
+					}
+
 					// We can't check the exact data types because they might be different.
 					// For example, if targetRes is [float64(0), int32(1)] and compatRes is [int64(0), int64(1)],
 					// we consider them equal. If different documents use different types to store the same value
