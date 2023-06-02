@@ -16,11 +16,14 @@ package pg
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -46,16 +49,28 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	common.Ignored(document, h.L, "estimate")
 
-	command := document.Command()
+	var namespaceParam any
 
-	target, err := common.GetRequiredParam[string](document, command)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	if namespaceParam, err = document.Get(document.Command()); err != nil {
+		return nil, err
 	}
 
-	db, collection, err := splitNamespace(target)
+	namespace, ok := namespaceParam.(string)
+	if !ok {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", commonparams.AliasFromType(namespaceParam)),
+			document.Command(),
+		)
+	}
+
+	db, collection, err := splitNamespace(namespace)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidNamespace,
+			fmt.Sprintf("Invalid namespace specified '%s'", namespace),
+			"dataSize",
+		)
 	}
 
 	var stats *pgdb.CollStats

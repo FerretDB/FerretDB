@@ -734,6 +734,44 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 	})
 }
 
+func TestCommandsAdministrationDataSizeErrors(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+
+	for name, tc := range map[string]struct {
+		command bson.D
+		err     *mongo.CommandError
+	}{
+		"InvalidNamespace": {
+			command: bson.D{{"dataSize", "invalid"}},
+			err: &mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Invalid namespace specified 'invalid'",
+			},
+		},
+		"InvalidNamespaceTypeDocument": {
+			command: bson.D{{"dataSize", bson.D{}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type object",
+			},
+		},
+	} {
+		name, tc := name, tc
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			res := collection.Database().RunCommand(ctx, tc.command)
+
+			AssertEqualCommandError(t, *tc.err, res.Err())
+		})
+	}
+}
+
 func TestCommandsAdministrationDBStats(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
