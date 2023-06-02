@@ -16,7 +16,7 @@
 
   let code = 2; // BadValue for $mod in a $match pipeline stage.
 
-  const assertThrowsMsg = 'expected the following error code: ' + tojson(code);
+  let assertThrowsMsg = 'expected the following error code: ' + tojson(code);
   assert.commandFailedWithCode(res, code, assertThrowsMsg);
 
   pipe = {$project: {a: {$mod: [0 /* invalid */, 0]}}};
@@ -28,6 +28,7 @@
   // eslint-disable-next-line max-len
   code = 16610; // Failed to optimize pipeline :: caused by :: can't $mod by zero"
 
+  assertThrowsMsg = 'expected the following error code: ' + tojson(code);
   assert.commandFailedWithCode(res, code, assertThrowsMsg);
 
   print('test.js passed!');
