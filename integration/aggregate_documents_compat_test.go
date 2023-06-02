@@ -145,7 +145,6 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 					}
 				})
 			}
-
 			switch tc.resultType {
 			case nonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results")
@@ -1613,9 +1612,21 @@ func TestAggregateCompatUnset(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
+		"InvalidTypeArray": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{1, 2, 3}}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeArrayWithDifferentTypes": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"v", 42, false}}},
+			},
+			resultType: emptyResult,
+		},
 		"InvalidType": {
 			pipeline: bson.A{
-				bson.D{{"$unset", "invalid"}},
+				bson.D{{"$unset", false}},
 			},
 			resultType: emptyResult,
 		},
@@ -1626,12 +1637,13 @@ func TestAggregateCompatUnset(t *testing.T) {
 		},
 		"UnsetID": {
 			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 				bson.D{{"$unset", "_id"}},
 			},
 		},
 		"Unset2Fields": {
 			pipeline: bson.A{
-				bson.D{{"$unset", bson.A{"foo", "bar"}}},
+				bson.D{{"$unset", bson.A{"_id", "v"}}},
 			},
 		},
 		"DotNotationUnset": {

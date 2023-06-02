@@ -49,7 +49,7 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 		if fields.Len() == 0 {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrStageUnsetNoPath,
-				"no path specified to $unset stage",
+				"$unset specification must be a string or an array with at least one field",
 				"$unset (stage)",
 			)
 		}
@@ -66,19 +66,34 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 
 				return nil, lazyerrors.Error(err)
 			}
-			fieldStr := field.(string)
+
+			fieldStr, ok := field.(string)
+			if !ok {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrStageUnsetArrElementInvalidType,
+					"$unset specification must be a string or an array containing only string values",
+					"$unset (stage)",
+				)
+			}
+
 			fieldsToUnset.Set(fieldStr, false)
 		}
 	case string:
 		if fields == "" {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrStageUnsetNoPath,
-				"no path specified to $unset stage",
+				commonerrors.ErrEmptyFieldPath,
+				"Invalid $unset :: caused by :: FieldPath cannot be constructed with empty string",
 				"$unset (stage)",
 			)
 		}
 
 		fieldsToUnset.Set(fields, false)
+	default:
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageUnsetInvalidType,
+			"$unset specification must be a string or an array",
+			"$unset (stage)",
+		)
 	}
 
 	return &unset{
@@ -88,7 +103,8 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 
 // Process implements Stage interface.
 func (u *unset) Process(_ context.Context,
-	iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	iter types.DocumentsIterator, closer *iterator.MultiCloser,
+) (types.DocumentsIterator, error) {
 	return common.ProjectionIterator(iter, closer, u.field)
 }
 
