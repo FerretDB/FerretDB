@@ -393,10 +393,6 @@ tasks:
       - go vet -vettool=./bin/checkswitch{{exeExt}} ./...
       - bin/task{{exeExt}} -d integration integration-lint
       - bin/task{{exeExt}} -d tools tools-lint
-    sources:
-      - "**/*.go"
-      - "**/go.mod"
-      - "**/*.yml"
 
   security:
     desc: "Run security scanners"
