@@ -197,7 +197,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 			},
 			skipForTigris: "schema validation would fail",
 		},
-		"InvalidOperator": {
+		"Conflict": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
 				{"update", bson.D{{"$invalid", "non-existent-field"}}},
@@ -214,6 +214,88 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"NoConflict": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v", 4}}},
+					{"$inc", bson.D{{"foo", 4}}},
+				}},
+			},
+		},
+		"EmptyKey": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"", 4}}},
+					{"$inc", bson.D{{"", 4}}},
+				}},
+			},
+			resultType: emptyResult,
+		},
+		"EmptyKeyAndKey": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"", 4}}},
+					{"$inc", bson.D{{"v", 4}}},
+				}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidOperator": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{{"$invalid", "non-existent-field"}}},
+			},
+			resultType: emptyResult,
+		},
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
+
+func TestFindAndModifyCompatUpdateDotNotation(t *testing.T) {
+	testCases := map[string]findAndModifyCompatTestCase{
+		"Conflict": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.0.field", 4}}},
+					{"$inc", bson.D{{"v.0.field", 4}}},
+				}},
+			},
+			resultType: emptyResult,
+		},
+		"NoConflict": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.0.field", 4}}},
+					{"$inc", bson.D{{"v.0.foo", 4}}},
+				}},
+			},
+		},
+		"NoIndex": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.0.field", 4}}},
+					{"$inc", bson.D{{"v.field", 4}}},
+				}},
+			},
+		},
+		"ParentConflict": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.0.field", 4}}},
+					{"$inc", bson.D{{"v", 4}}},
+				}},
+			},
+			resultType: emptyResult,
+		},
+
 		"ConflictKey": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
