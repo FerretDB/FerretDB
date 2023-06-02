@@ -117,7 +117,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 		iter = common.LimitIterator(iter, closer, params.Limit)
 
-		iter, err = common.ProjectionIterator(iter, closer, params.Projection)
+		iter, err = common.ProjectionIterator(iter, closer, params.Projection, params.Filter)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -139,7 +139,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			Iter:       iter,
 			DB:         params.DB,
 			Collection: params.Collection,
-			BatchSize:  params.BatchSize,
+			BatchSize:  int32(params.BatchSize),
 		})
 
 		username, _ := conninfo.Get(ctx).Auth()

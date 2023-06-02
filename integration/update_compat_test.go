@@ -35,11 +35,13 @@ import (
 
 // updateCompatTestCase describes update compatibility test case.
 type updateCompatTestCase struct {
-	update     bson.D                   // required if replace is nil
-	replace    bson.D                   // required if update is nil
-	filter     bson.D                   // defaults to bson.D{{"_id", id}}
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
-	providers  []shareddata.Provider    // defaults to shareddata.AllProviders()
+	update      bson.D                   // required if replace is nil
+	replace     bson.D                   // required if update is nil
+	filter      bson.D                   // defaults to bson.D{{"_id", id}}
+	updateOpts  *options.UpdateOptions   // defaults to nil
+	replaceOpts *options.ReplaceOptions  // defaults to nil
+	resultType  compatTestCaseResultType // defaults to nonEmptyResult
+	providers   []shareddata.Provider    // defaults to shareddata.AllProviders()
 
 	skip          string // skips test if non-empty
 	skipForTigris string // skips test for Tigris if non-empty
@@ -108,17 +110,22 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 							// TODO replace with UpdateMany/ReplaceMany
 							// https://github.com/FerretDB/FerretDB/issues/1507
 							if update != nil {
-								targetUpdateRes, targetErr = targetCollection.UpdateOne(ctx, filter, update)
-								compatUpdateRes, compatErr = compatCollection.UpdateOne(ctx, filter, update)
+								targetUpdateRes, targetErr = targetCollection.UpdateOne(ctx, filter, update, tc.updateOpts)
+								compatUpdateRes, compatErr = compatCollection.UpdateOne(ctx, filter, update, tc.updateOpts)
 							} else {
-								targetUpdateRes, targetErr = targetCollection.ReplaceOne(ctx, filter, replace)
-								compatUpdateRes, compatErr = compatCollection.ReplaceOne(ctx, filter, replace)
+								targetUpdateRes, targetErr = targetCollection.ReplaceOne(ctx, filter, replace, tc.replaceOpts)
+								compatUpdateRes, compatErr = compatCollection.ReplaceOne(ctx, filter, replace, tc.replaceOpts)
 							}
 
 							if targetErr != nil {
 								t.Logf("Target error: %v", targetErr)
-								targetErr = UnsetRaw(t, targetErr)
-								compatErr = UnsetRaw(t, compatErr)
+
+								if targetErr.Error() == "update document must have at least one element" {
+									// mongo go driver sent error that the update document is empty.
+									require.Equal(t, compatErr, targetErr)
+
+									return
+								}
 
 								// Skip updates that could not be performed due to Tigris schema validation.
 								var e mongo.CommandError
@@ -126,7 +133,8 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 									setup.SkipForTigrisWithReason(t, targetErr.Error())
 								}
 
-								AssertMatchesWriteErrorCode(t, compatErr, targetErr)
+								// AssertMatchesWriteError compares error types and codes, it does not compare messages.
+								AssertMatchesWriteError(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
 							}
@@ -239,8 +247,7 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 
 							if targetErr != nil {
 								t.Logf("Target error: %v", targetErr)
-								targetErr = UnsetRaw(t, targetErr)
-								compatErr = UnsetRaw(t, compatErr)
+								t.Logf("Compat error: %v", compatErr)
 
 								// Skip updates that could not be performed due to Tigris schema validation.
 								var e mongo.CommandError
@@ -248,6 +255,7 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 									setup.SkipForTigrisWithReason(t, targetErr.Error())
 								}
 
+								// error messages are intentionally not compared
 								AssertMatchesCommandError(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
@@ -275,15 +283,17 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 
 								if targetErr != nil {
 									t.Logf("Target error: %v", targetErr)
+									t.Logf("Compat error: %v", compatErr)
+
+									// error messages are intentionally not compared
 									AssertMatchesCommandError(t, compatErr, targetErr)
 
 									return
 								}
 								require.NoError(t, compatErr, "compat error; target returned no error")
 
-								var targetRes, compatRes []bson.D
-								require.NoError(t, targetCursor.All(ctx, &targetRes))
-								require.NoError(t, compatCursor.All(ctx, &compatRes))
+								targetRes := FetchAll(t, ctx, targetCursor)
+								compatRes := FetchAll(t, ctx, compatCursor)
 
 								t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
 								t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))
@@ -371,10 +381,8 @@ func testUpdateCurrentDateCompat(t *testing.T, testCases map[string]updateCurren
 
 							if targetErr != nil {
 								t.Logf("Target error: %v", targetErr)
-								targetErr = UnsetRaw(t, targetErr)
-								compatErr = UnsetRaw(t, compatErr)
-
-								AssertMatchesWriteErrorCode(t, compatErr, targetErr)
+								// AssertMatchesWriteError compares error types and codes, it does not compare messages.
+								AssertMatchesWriteError(t, compatErr, targetErr)
 							} else {
 								require.NoError(t, compatErr, "compat error; target returned no error")
 							}
@@ -435,6 +443,18 @@ func TestUpdateCompat(t *testing.T) {
 		"ReplaceEmptyDocument": {
 			replace: bson.D{},
 		},
+		"ReplaceNonExistentUpsert": {
+			filter:      bson.D{{"non-existent", "no-match"}},
+			replace:     bson.D{{"_id", "new"}},
+			replaceOpts: &options.ReplaceOptions{Upsert: pointer.ToBool(true)},
+			resultType:  emptyResult,
+		},
+		"UpdateNonExistentUpsert": {
+			filter:     bson.D{{"_id", "non-existent"}},
+			update:     bson.D{{"$set", bson.D{{"v", int32(42)}}}},
+			updateOpts: &options.UpdateOptions{Upsert: pointer.ToBool(true)},
+			resultType: emptyResult,
+		},
 	}
 
 	testUpdateCompat(t, testCases)
@@ -483,6 +503,15 @@ func TestUpdateCompatMultiFlagCommand(t *testing.T) {
 			update:     bson.D{{"$set", bson.D{{"v", int32(43)}}}},
 			multi:      int32(0),
 			resultType: emptyResult,
+		},
+		"TrueEmptyDocument": {
+			update: bson.D{},
+			multi:  true,
+			skip:   "https://github.com/FerretDB/FerretDB/issues/2630",
+		},
+		"FalseEmptyDocument": {
+			update: bson.D{},
+			multi:  false,
 		},
 	}
 

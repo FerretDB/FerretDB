@@ -48,8 +48,8 @@ because it works for both editors/IDEs (Ctrl/⌘+click works) and Docusaurus.
 Always add `.md` extension to the file paths.
 Examples:
 
-* [file in the same directory](writing-guide.md)
-* [file in a parent directory](../telemetry.md)
+- [file in the same directory](writing-guide.md)
+- [file in a parent directory](../telemetry.md)
 
 ## Images
 
@@ -67,7 +67,7 @@ When you add a banner image, please use the title of the article as the alt text
 ### Image names
 
 Use of two or three descriptive words written in `kebab-case-with-dashes` as the names for the images.
-For example, *ferretdb-queries.jpg*.
+For example, _ferretdb-queries.jpg_.
 
 ### Image links
 
@@ -76,6 +76,60 @@ All assets (images, gifs, videos, etc.) relating to FerretDB documentation and b
 Rather than use relative paths, we strongly suggest the following approach, since our content engine renders all images directly from the `img` folder.
 
 `![FerretDB logo](/img/logo-dark.png)`.
+
+## Code blocks
+
+Always specify the language in Markdown code blocks.
+
+For MongoDB shell commands, use `js` language.
+Our tooling will automatically reformat those blocks.
+
+```js
+db.league.find({ club: 'PSG' })
+```
+
+For MongoDB shell results, use `json5` language and copy&paste the output as-is,
+with unquoted field names, single quotes for strings, without trailing commas, etc.
+Our tooling will not reformat those blocks.
+
+```json5
+[
+  {
+    _id: ObjectId("63109e9251bcc5e0155db0c2"),
+    club: 'PSG',
+    points: 30,
+    average_age: 30,
+    discipline: { red: 5, yellow: 30 },
+    qualified: false
+  }
+]
+```
+
+Use `sql` for SQL queries.
+Use `text` for the `psql` output and in other cases.
+
+```sql
+SELECT _jsonb FROM "test"."_ferretdb_database_metadata" WHERE ((_jsonb->'_id')::jsonb = '"customers"');
+```
+
+```text
+ _jsonb ----------------------------------------------------------------------------------------------------------------------------------------------
+ {"$s": {"p": {"_id": {"t": "string"}, "table": {"t": "string"}}, "$k": ["_id", "table"]}, "_id": "customers", "table": "customers_c09344de"}
+```
+
+```text
+ferretdb=# \d test._ferretdb_settings
+          Table "test._ferretdb_settings"
+  Column  | Type  | Collation | Nullable | Default
+----------+-------+-----------+----------+---------
+ settings | jsonb |           |          |
+
+ferretdb=# SELECT settings FROM test._ferretdb_settings;
+                                             settings
+--------------------------------------------------------------------------------------------------
+ {"$k": ["collections"], "collections": {"$k": ["groceries"], "groceries": "groceries_6a5f9564"}}
+(1 row)
+```
 
 ## Terminologies
 

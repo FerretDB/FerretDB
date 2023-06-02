@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
@@ -89,8 +90,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	aggregationStages := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
-	stagesDocuments := make([]stages.Stage, 0, len(aggregationStages))
-	stagesStats := make([]stages.Stage, 0, len(aggregationStages))
+	stagesDocuments := make([]aggregations.Stage, 0, len(aggregationStages))
+	stagesStats := make([]aggregations.Stage, 0, len(aggregationStages))
 
 	for i, d := range aggregationStages {
 		d, ok := d.(*types.Document)
@@ -102,17 +103,17 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			)
 		}
 
-		var s stages.Stage
+		var s aggregations.Stage
 
 		if s, err = stages.NewStage(d); err != nil {
 			return nil, err
 		}
 
 		switch s.Type() {
-		case stages.StageTypeDocuments:
+		case aggregations.StageTypeDocuments:
 			stagesDocuments = append(stagesDocuments, s)
 			stagesStats = append(stagesStats, s) // It's possible to apply "documents" stages to statistics
-		case stages.StageTypeStats:
+		case aggregations.StageTypeStats:
 			if i > 0 {
 				// TODO Add a test to cover this error: https://github.com/FerretDB/FerretDB/issues/2349
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -136,10 +137,9 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		qp := tigrisdb.QueryParams{
 			DB:         db,
 			Collection: collection,
-			Filter:     stages.GetPushdownQuery(aggregationStages),
 		}
 
-		qp.Filter = stages.GetPushdownQuery(aggregationStages)
+		qp.Filter, _ = aggregations.GetPushdownQuery(aggregationStages)
 
 		if resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{
 			dbPool, &qp, stagesDocuments,
@@ -181,7 +181,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 type stagesDocumentsParams struct {
 	dbPool *tigrisdb.TigrisDB
 	qp     *tigrisdb.QueryParams
-	stages []stages.Stage
+	stages []aggregations.Stage
 }
 
 // processStagesDocuments retrieves the documents from the database and then processes them through the stages.
@@ -213,7 +213,7 @@ type stagesStatsParams struct {
 	db         string
 	collection string
 	statistics map[stages.Statistic]struct{}
-	stages     []stages.Stage
+	stages     []aggregations.Stage
 }
 
 // processStagesStats retrieves the statistics from the database and then processes them through the stages.
@@ -269,18 +269,18 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 
 		doc.Set(
 			"storageStats", must.NotFail(types.NewDocument(
-				"size", int32(dbStats.Size),
+				"size", dbStats.Size,
 				"count", dbStats.NumObjects,
 				"avgObjSize", avgObjSize,
-				"storageSize", int32(dbStats.Size),
-				"freeStorageSize", int32(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"storageSize", dbStats.Size,
+				"freeStorageSize", int64(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"nindexes", int32(0), // Not supported for Tigris
+				"nindexes", int64(0), // Not supported for Tigris
 				"indexDetails", must.NotFail(types.NewDocument()), // Not supported for Tigris
 				"indexBuilds", must.NotFail(types.NewDocument()), // Not supported for Tigris
-				"totalIndexSize", int32(0), // Not supported for Tigris
-				"totalSize", int32(dbStats.Size),
+				"totalIndexSize", int64(0), // Not supported for Tigris
+				"totalSize", dbStats.Size,
 				"indexSizes", must.NotFail(types.NewDocument()), // Not supported for Tigris
 			)),
 		)

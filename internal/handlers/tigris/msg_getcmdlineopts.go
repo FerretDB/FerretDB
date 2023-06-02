@@ -17,11 +17,11 @@ package tigris
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commoncommands"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgGetCmdLineOpts implements HandlerInterface.
 func (h *Handler) MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.MsgGetCmdLineOpts(ctx, msg)
+	return commoncommands.MsgGetCmdLineOpts(ctx, msg)
 }

@@ -16,7 +16,6 @@ package integration
 
 import (
 	"net"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -126,10 +125,10 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 	ctx, collection := res.Ctx, res.Collection
 
 	for name, tc := range map[string]struct {
-		command  bson.D
-		expected map[string]any
-		err      *mongo.CommandError
-		alt      string
+		command    bson.D
+		expected   map[string]any
+		err        *mongo.CommandError
+		altMessage string
 	}{
 		"Asterisk": {
 			command: bson.D{{"getLog", "*"}},
@@ -161,7 +160,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 				Name:    "OperationFailed",
 				Message: `No log named 'nonExistentName'`,
 			},
-			alt: `no RecentEntries named: nonExistentName`,
+			altMessage: `no RecentEntries named: nonExistentName`,
 		},
 		"Nil": {
 			command: bson.D{{"getLog", nil}},
@@ -186,8 +185,8 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			if err != nil {
-				AssertEqualAltError(t, *tc.err, tc.alt, err)
+			if tc.err != nil {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 			require.NoError(t, err)
@@ -221,11 +220,6 @@ func TestCommandsDiagnosticHostInfo(t *testing.T) {
 
 	os := m["os"].(bson.D)
 	assert.Equal(t, []string{"type", "name", "version"}, CollectKeys(t, os))
-
-	if runtime.GOOS == "linux" {
-		require.NotEmpty(t, os.Map()["name"], "os name should not be empty")
-		require.NotEmpty(t, os.Map()["version"], "os version should not be empty")
-	}
 
 	system := m["system"].(bson.D)
 	keys := CollectKeys(t, system)

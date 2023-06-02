@@ -16,14 +16,13 @@ package pg
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -41,77 +40,49 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, lazyerrors.Error(err)
 	}
 
-	unimplementedFields := []string{
-		"collation",
-	}
-	if err := common.Unimplemented(document, unimplementedFields...); err != nil {
-		return nil, err
-	}
-
-	ignoredFields := []string{
-		"hint",
-		"readConcern",
-		"comment",
-	}
-	common.Ignored(document, h.L, ignoredFields...)
-
-	var filter *types.Document
-	if filter, err = common.GetOptionalParam(document, "query", filter); err != nil {
-		return nil, err
-	}
-
-	var skip, limit int64
-
-	if s, _ := document.Get("skip"); s != nil {
-		if skip, err = common.GetSkipParam("count", s); err != nil {
-			return nil, err
-		}
-	}
-
-	if l, _ := document.Get("limit"); l != nil {
-		if limit, err = common.GetLimitParam("count", l); err != nil {
-			return nil, err
-		}
-	}
-
-	var qp pgdb.QueryParams
-
-	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	collectionParam, err := document.Get(document.Command())
+	params, err := common.GetCountParams(document, h.L)
 	if err != nil {
 		return nil, err
 	}
 
-	var ok bool
-	if qp.Collection, ok = collectionParam.(string); !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrInvalidNamespace,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-			document.Command(),
-		)
+	qp := pgdb.QueryParams{
+		Filter:     params.Filter,
+		DB:         params.DB,
+		Collection: params.Collection,
 	}
 
-	qp.Filter = filter
+	if !h.DisableFilterPushdown {
+		qp.Filter = params.Filter
+	}
 
 	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		resDocs, err = fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisableFilterPushdown})
-		return err
+		var iter types.DocumentsIterator
+
+		iter, _, err = pgdb.QueryDocuments(ctx, tx, &qp)
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		closer := iterator.NewMultiCloser(iter)
+		defer closer.Close()
+
+		iter = common.FilterIterator(iter, closer, qp.Filter)
+
+		iter = common.SkipIterator(iter, closer, params.Skip)
+
+		iter = common.LimitIterator(iter, closer, params.Limit)
+
+		resDocs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		return nil
 	})
 
 	if err != nil {
 		return nil, err
-	}
-
-	if resDocs, err = common.SkipDocuments(resDocs, skip); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if resDocs, err = common.LimitDocuments(resDocs, limit); err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	var reply wire.OpMsg

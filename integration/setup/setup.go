@@ -48,6 +48,7 @@ var (
 
 	postgreSQLURLF = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'pg' handler.")
 	tigrisURLSF    = flag.String("tigris-urls", "", "in-process FerretDB: Tigris URLs for 'tigris' handler (comma separated)")
+	hanaURLF       = flag.String("hana-url", "", "in-process FerretDB: Hana URL for 'hana' handler.")
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
 
@@ -56,12 +57,13 @@ var (
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
 	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
+	enableSortPushdownF    = flag.Bool("enable-sort-pushdown", false, "enable sort pushdown")
 	enableCursorsF         = flag.Bool("enable-cursors", false, "enable cursors")
 )
 
 // Other globals.
 var (
-	allBackends = []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"}
+	allBackends = []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-tigris", "ferretdb-hana", "mongodb"}
 
 	CertsRoot = filepath.Join("..", "build", "certs") // relative to `integration` directory
 )
@@ -196,10 +198,11 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 
 	var inserted bool
 
-	if len(opts.Providers) > 0 {
+	switch {
+	case len(opts.Providers) > 0:
 		require.Nil(tb, opts.BenchmarkProvider, "Both Providers and BenchmarkProvider were set")
 		inserted = insertProviders(tb, ctx, collection, opts.Providers...)
-	} else {
+	case opts.BenchmarkProvider != nil:
 		inserted = insertBenchmarkProvider(tb, ctx, collection, opts.BenchmarkProvider)
 	}
 
@@ -284,27 +287,24 @@ func insertProviders(tb testing.TB, ctx context.Context, collection *mongo.Colle
 func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
 	tb.Helper()
 
-	if provider == nil {
-		return
-	}
+	collectionName := collection.Name()
 
-	spanName := fmt.Sprintf("insertBenchmarkProvider/%s/%s", collection.Name(), provider.Name())
+	spanName := fmt.Sprintf("insertBenchmarkProvider/%s/%s", collectionName, provider.Name())
 	provCtx, span := otel.Tracer("").Start(ctx, spanName)
 	region := trace.StartRegion(provCtx, spanName)
 
-	iter := provider.Docs()
+	iter := provider.NewIterator()
+	defer iter.Close()
 
 	for {
-		docs, err := iterator.ConsumeValuesN(iter, 10)
+		docs, err := iterator.ConsumeValuesN(iter, 100)
 		require.NoError(tb, err)
 
 		if len(docs) == 0 {
 			break
 		}
 
-		// convert []bson.D to []any, as mongodb requires.
 		insertDocs := make([]any, len(docs))
-
 		for i, doc := range docs {
 			insertDocs[i] = doc
 		}

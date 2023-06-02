@@ -17,11 +17,11 @@ package hana
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commoncommands"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgCurrentOp implements HandlerInterface.
 func (h *Handler) MsgCurrentOp(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.MsgCurrentOp(ctx, msg)
+	return commoncommands.MsgCurrentOp(ctx, msg)
 }

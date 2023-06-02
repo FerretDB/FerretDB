@@ -24,12 +24,15 @@ import (
 // init registers "hana" handler for Hana when "ferretdb_hana" build tag is provided.
 func init() {
 	registry["hana"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
+		opts.Logger.Warn("HANA handler is in alpha. It is not supported yet.")
+
 		handlerOpts := &hana.NewOpts{
 			HANAURL:       opts.HANAURL,
 			L:             opts.Logger,
 			Metrics:       opts.Metrics,
 			StateProvider: opts.StateProvider,
 		}
+
 		return hana.New(handlerOpts)
 	}
 }

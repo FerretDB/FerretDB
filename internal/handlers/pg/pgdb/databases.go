@@ -24,6 +24,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
+	"github.com/FerretDB/FerretDB/internal/util/contract"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -89,25 +90,27 @@ func CreateDatabaseIfNotExists(ctx context.Context, tx pgx.Tx, db string) error 
 }
 
 // DropDatabase drops FerretDB database.
-//
-// It returns ErrSchemaNotExist if schema does not exist.
-func DropDatabase(ctx context.Context, tx pgx.Tx, db string) error {
-	_, err := tx.Exec(ctx, `DROP SCHEMA `+pgx.Identifier{db}.Sanitize()+` CASCADE`)
-	if err == nil {
-		return nil
+func DropDatabase(ctx context.Context, tx pgx.Tx, db string) (err error) {
+	defer contract.EnsureError(err, ErrSchemaNotExist) // if schema does not exist
+
+	if _, err = tx.Exec(ctx, `DROP SCHEMA `+pgx.Identifier{db}.Sanitize()+` CASCADE`); err == nil {
+		return
 	}
 
 	pgErr, ok := err.(*pgconn.PgError)
 	if !ok {
-		return lazyerrors.Error(err)
+		err = lazyerrors.Error(err)
+		return
 	}
 
 	switch pgErr.Code {
 	case pgerrcode.InvalidSchemaName:
-		return ErrSchemaNotExist
+		err = ErrSchemaNotExist
 	default:
-		return lazyerrors.Error(err)
+		err = lazyerrors.Error(err)
 	}
+
+	return
 }
 
 // DatabaseSize returns the size of the current database in bytes.

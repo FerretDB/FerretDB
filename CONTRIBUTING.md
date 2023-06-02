@@ -8,11 +8,15 @@ We are interested in all contributions, big or small, in code or documentation.
 But unless you are fixing a very small issue like a typo,
 we kindly ask you first to [create an issue](https://github.com/FerretDB/FerretDB/issues/new/choose),
 to leave a comment on an existing issue if you want to work on it,
-or to [join our Slack chat](./README.md#community) and leave a message for us there.
+or to [join our Slack chat](./README.md#community) and leave a message for us in the `#dev` channel.
 This way, you will get help from us and avoid wasted efforts if something can't be worked on right now
 or someone is already working on it.
 
-You can find a list of good issues for first-time contributors [there](https://github.com/FerretDB/FerretDB/contribute).
+You can find a list of good first issues for contributors [there](https://github.com/FerretDB/FerretDB/contribute).
+Once you have some experience with contributing to FerretDB,
+feel free to pick any issue
+[that is not assigned to anyone and doesn't have `not ready` label](https://github.com/FerretDB/FerretDB/issues?q=is%3Aissue+is%3Aopen+no%3Aassignee+-label%3A%22not+ready%22).
+Still, please let us know as described above.
 
 ## Setting up the environment
 
@@ -110,29 +114,27 @@ They are installed into `bin/` by `cd tools; go generate -x`.
 
 The `internal` subpackages contain most of the FerretDB code:
 
-* `types` package provides Go types matching BSON types that don't have built-in Go equivalents:
+- `types` package provides Go types matching BSON types that don't have built-in Go equivalents:
   we use `int32` for BSON's int32, but `types.ObjectID` for BSON's ObjectId.
-* `types/fjson` provides converters from/to FJSON for built-in and `types` types.
-  FJSON adds some extensions to JSON for keeping object keys in order,
-  preserving BSON type information in the values themselves, etc.
+- `types/fjson` provides converters from/to FJSON for built-in and `types` types.
   It is used for logging of BSON values and wire protocol messages.
-* `bson` package provides converters from/to BSON for built-in and `types` types.
-* `wire` package provides wire protocol implementation.
-* `clientconn` package provides client connection implementation.
+- `bson` package provides converters from/to BSON for built-in and `types` types.
+- `wire` package provides wire protocol implementation.
+- `clientconn` package provides client connection implementation.
   It accepts client connections, reads `wire`/`bson` protocol messages, and passes them to `handlers`.
   Responses are then converted to `wire`/`bson` messages and sent back to the client.
-* `handlers` contains a common interface for backend handlers that they should implement.
+- `handlers` contains a common interface for backend handlers that they should implement.
   Handlers use `types` and `wire` packages, but `bson` package details are hidden.
-* `handlers/common` contains code shared by different handlers.
-* `handlers/dummy` contains a stub implementation of that interface that could be copied into a new package
-  as a starting point for the new handlers.
-* `handlers/pg` contains the implementation of the PostgreSQL handler.
-* `handlers/pg/pjson` provides converters from/to PJSON for built-in and `types` types.
-  PJSON adds some extensions to JSON for keeping object keys in order,
+- `handlers/common` contains code shared by different handlers.
+- `handlers/sjson` provides converters from/to SJSON for built-in and `types` types.
+  SJSON adds some extensions to JSON for keeping object keys in order,
   preserving BSON type information in the values themselves, etc.
-  It is used by `pg` handler.
-* `handlers/tigris` contains the implementation of the Tigris handler.
-* `handlers/tigris/tjson` provides converters from/to TJSON with JSON Schema for built-in and `types` types.
+  It is used by `sqlite` and `pg` handlers.
+- `handlers/sqlite` contains the implementation of the SQLite handler.
+  It is being converted into universal handler for all backends.
+- `handlers/pg` contains the implementation of the PostgreSQL handler.
+- `handlers/tigris` contains the implementation of the Tigris handler.
+- `handlers/tigris/tjson` provides converters from/to TJSON with JSON Schema for built-in and `types` types.
   BSON type information is preserved either in the schema (where possible) or in the values themselves.
   It is used by `tigris` handler.
 
@@ -155,10 +157,10 @@ Finally, some tests (so-called compatibility or "compat" tests) connect to two s
 send the same queries to both, and compare results.
 You can run them with:
 
-* `task test-integration-pg` for in-process FerretDB with `pg` handler and MongoDB;
-* `task test-integration-tigris` for in-process FerretDB with `tigris` handler and MongoDB;
-* `task test-integration-mongodb` for MongoDB only, skipping compat tests;
-* or `task test-integration` to run all in parallel.
+- `task test-integration-pg` for in-process FerretDB with `pg` handler and MongoDB;
+- `task test-integration-tigris` for in-process FerretDB with `tigris` handler and MongoDB;
+- `task test-integration-mongodb` for MongoDB only, skipping compat tests;
+- or `task test-integration` to run all in parallel.
 
 You may run all tests in parallel with `task test`.
 If tests fail and the output is too confusing, try running them sequentially by using the commands above.
@@ -170,15 +172,17 @@ you may also use all standard `go` tool facilities,
 including [`GOFLAGS` environment variable](https://pkg.go.dev/cmd/go#hdr-Environment_variables).
 For example:
 
-* to run a single test case for in-process FerretDB with `pg` handler
+- to run a single test case for in-process FerretDB with `pg` handler
   with all subtests running sequentially,
   you may use `env GOFLAGS='-run=TestName/TestCaseName -parallel=1' task test-integration-pg`;
-* to run all tests for in-process FerretDB with `tigris` handler
+- to run all tests for in-process FerretDB with `tigris` handler
   with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
   you may use `env GOFLAGS='-trace=trace.out' task test-integration-tigris`.
 
-(It is not recommended to set `GOFLAGS` and other Go environment variables with `export GOFLAGS=...`
-or `go env -w GOFLAGS=...` because they are invisible and easy to forget about, leading to confusion.)
+> **Note**
+>
+> It is not recommended to set `GOFLAGS` and other Go environment variables with `export GOFLAGS=...`
+> or `go env -w GOFLAGS=...` because they are invisible and easy to forget about, leading to confusion.
 
 In general, we prefer integration tests over unit tests,
 tests using real databases over short tests
@@ -235,9 +239,9 @@ Before submitting a pull request, please make sure that:
 
 1. Tests are added for new functionality or fixed bugs.
    Typical test cases include:
-     * happy paths;
-     * dot notation for existing and non-existent paths;
-     * edge cases for invalid or unexpected values or types.
+   - happy paths;
+   - dot notation for existing and non-existent paths;
+   - edge cases for invalid or unexpected values or types.
 2. Comments are added or updated for all new or changed code.
    Please add missing comments for all (both exported and unexported)
    new and changed top-level declarations (`package`, `var`, `const`, `func`, `type`).
@@ -250,6 +254,8 @@ Before submitting a pull request, please make sure that:
    please mention the issue number in the pull request **description** like `Closes #{issue_number}.`
    or `Closes org/repo#{issue_number}.`
    (You can just follow the pull request template).
+   Please do not use URLs like `https://github.com/org/repo/issue/{issue_number}`
+   or paths like `org/repo/issue/{issue_number}` even if they are rendered the same on GitHub.
    If you propose a tiny fix, there is no needed to create a new issue.
 2. There is no need to use draft pull requests.
    If you want to get feedback on something you are working on,
@@ -264,7 +270,9 @@ Before submitting a pull request, please make sure that:
    so there is **no need** to squash them manually, amend them, and/or do force pushes.
    But notice that the autogenerated GitHub's squash commit's body
    **should be** manually replaced by "Closes #{issue_number}.".
-5. Please don't forget to click "re-request review" buttons once PR is ready for re-review.
+5. Please don't forget to click
+   ["re-request review" buttons](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/requesting-a-pull-request-review)
+   once PR is ready for re-review.
 
 If you have interest in becoming or are a long-term contributor,
 please read [PROCESS.md](.github/PROCESS.md) for more details.
@@ -276,7 +284,9 @@ To help us accurately identify the cause, we encourage
 you to include a pull request with test script.
 Please write the test script in
 [build/legacy-mongo-shell/test.js](build/legacy-mongo-shell/test.js).
-You can find an example of how to prepare a test script in
+You can find an overview of the available assertions [here](build/legacy-mongo-shell/README.md).
+Use these assertions to validate your test's assumptions and invariants.
+You can also find an example of how to prepare a test script in
 [build/legacy-mongo-shell/test.example.js](build/legacy-mongo-shell/test.example.js).
 
 Test your script using following steps:

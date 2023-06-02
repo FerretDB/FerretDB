@@ -3,7 +3,7 @@
 version: 3
 
 vars:
-  RACEFLAG: -race={{ne OS "windows"}}
+  RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
 
 tasks:
   tools-test:
@@ -16,7 +16,3 @@ tasks:
       - ../bin/golangci-lint{{exeExt}} run --config=../.golangci-new.yml ./checkdocs/... ./checkswitch/...
       - ../bin/go-consistent{{exeExt}} -pedantic ./checkdocs/... ./checkswitch/...
       - go vet -vettool=../bin/checkswitch{{exeExt}} ./checkdocs/... ./checkswitch/...
-    sources:
-      - "**/*.go"
-      - "../**/go.mod"
-      - "../**/*.yml"

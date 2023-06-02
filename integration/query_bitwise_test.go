@@ -63,14 +63,32 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			},
 		},
 		"ArrayNegativeBitPositionValue": {
-			value: primitive.A{-1},
+			value: primitive.A{int32(-1)},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "Failed to parse bit position. Expected a non-negative number in: 0: -1",
 			},
 		},
-		"ArrayBadValue": {
+		"ArrayFloatWholeBitPositionValue": {
+			value: primitive.A{1.0},
+			expectedIDs: []any{
+				"double-1", "double-2", "double-4", "double-big",
+				"double-min-overflow-verge", "double-zero",
+				"int32-1", "int32-2", "int32-3", "int32-min", "int32-zero",
+				"int64-1", "int64-2", "int64-3", "int64-big",
+				"int64-double-big", "int64-min", "int64-zero",
+			},
+		},
+		"ArrayFloatNotWholeBitPositionValue": {
+			value: primitive.A{1.2},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Failed to parse bit position. Expected an integer: 0: 1.2",
+			},
+		},
+		"ArrayStringBitPositionValue": {
 			value: primitive.A{"123"},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -192,7 +210,11 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
 				require.Nil(t, tc.expectedIDs)
-				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+				if tc.altMessage != "" {
+					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+					return
+				}
+				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
 			require.NoError(t, err)

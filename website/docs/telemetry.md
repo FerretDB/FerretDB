@@ -1,5 +1,5 @@
 ---
-sidebar_position: 9
+sidebar_position: 10
 slug: /telemetry/ # referenced in many places; must not change
 ---
 
@@ -15,19 +15,19 @@ or share any of the data with third parties.
 
 The following data is collected:
 
-* FerretDB version
-* Random instance UUID
-* [Autonomous system](https://en.wikipedia.org/wiki/Autonomous_system_(Internet)) number,
+- FerretDB version
+- Random instance UUID
+- [Autonomous system](<https://en.wikipedia.org/wiki/Autonomous_system_(Internet)>) number,
   cloud provider region, or country derived from IP address (but the IP address itself)
-* Uptime
-* Backend (PostgreSQL or Tigris) version
-* Installation type (Docker, package, cloud provider marketplace, self-built)
-* Build configuration (Go version, build flags and tags)
-* Command statistics:
-  * protocol operation codes (e.g. `OP_MSG`, `OP_QUERY`);
-  * command names (e.g. `find`, `aggregate`);
-  * arguments (e.g. `sort`, `$count (stage)`);
-  * error codes (e.g. `NotImplemented`, `InternalError`; or `ok`).
+- Uptime
+- Backend (PostgreSQL or Tigris) version
+- Installation type (Docker, package, cloud provider marketplace, self-built)
+- Build configuration (Go version, build flags and tags)
+- Command statistics:
+  - protocol operation codes (e.g. `OP_MSG`, `OP_QUERY`);
+  - command names (e.g. `find`, `aggregate`);
+  - arguments (e.g. `sort`, `$count (stage)`);
+  - error codes (e.g. `NotImplemented`, `InternalError`; or `ok`).
 
 :::info
 Argument values, data field names, successful responses, or error messages are never collected.
@@ -47,10 +47,10 @@ ensure that you update early to take advantage of recent bug fixes, new features
 The telemetry reporter has three state settings: `enabled`, `disabled`, and `undecided` (default).
 The latter acts as if it is `enabled` with two differences:
 
-* When `enabled`, the first report is sent right after FerretDB starts.
+- When `enabled`, the first report is sent right after FerretDB starts.
   If `undecided`, the first report is delayed by one hour.
   That should give you enough time to disable it if you decide to do so.
-* Similarly, when `enabled`, the last report is sent right before FerretDB shuts down.
+- Similarly, when `enabled`, the last report is sent right before FerretDB shuts down.
   That does not happen when `undecided`.
 
 :::info
@@ -128,13 +128,13 @@ by setting one of the values:
 You can also use `FERRETDB_TELEMETRY` environment variable with same values
 or on runtime via `db.enableFreeMonitoring()` command.
 
-   ```sh
-   export FERRETDB_TELEMETRY=enable
-   ```
+```sh
+export FERRETDB_TELEMETRY=enable
+```
 
-   ```js
-   db.enableFreeMonitoring()
-   ```
+```js
+db.enableFreeMonitoring()
+```
 
 One case when explicitly enabling telemetry is useful is if you want to help us improve compatibility
 with your application by running its integration tests or just by testing it manually.
