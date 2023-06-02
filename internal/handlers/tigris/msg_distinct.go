@@ -20,6 +20,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -42,18 +43,28 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, err
 	}
 
+	filter := dp.Filter
+
 	qp := tigrisdb.QueryParams{
 		DB:         dp.DB,
 		Collection: dp.Collection,
-		Filter:     dp.Filter,
 	}
 
-	resDocs, err := fetchAndFilterDocs(ctx, &fetchParams{dbPool, &qp, h.DisableFilterPushdown})
+	if !h.DisableFilterPushdown {
+		qp.Filter = filter
+	}
+
+	iter, err := dbPool.QueryDocuments(ctx, &qp)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
-	distinct, err := common.FilterDistinctValues(resDocs, dp.Key)
+	closer := iterator.NewMultiCloser(iter)
+	defer closer.Close()
+
+	iter = common.FilterIterator(iter, closer, filter)
+
+	distinct, err := common.FilterDistinctValues(iter, dp.Key)
 	if err != nil {
 		return nil, err
 	}
