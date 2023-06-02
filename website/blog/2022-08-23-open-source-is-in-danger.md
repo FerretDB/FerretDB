@@ -1,6 +1,6 @@
 ---
 slug: open-source-is-in-danger
-title: "Open Source is in Danger as a Result Of Complacency, Plain Stupidity and Greed"
+title: Open Source is in Danger as a Result Of Complacency, Plain Stupidity and Greed
 author: Peter Farkas
 description: For those of us working in the IT industry, we should be well aware of the many benefits that open source software provides.
 image: /img/blog/Maintainer@5x-1-300x300.png
@@ -32,7 +32,7 @@ Anyone, including MongoDB, Elastic or Graylog should be allowed to release their
 Life happens, bad or strange decisions like this happen —- we can move on.
 
 However, in terms of what MongoDB did, the impact is just different.
-No one should decide to come up with their own terms on what to call Open Source, and  this is exactly what is happening.
+No one should decide to come up with their own terms on what to call Open Source, and this is exactly what is happening.
 The SSPL license was supposed to "save" open source companies from Amazon or GCP, so they can't make money on them without giving back to the community.
 
 Instead of "saving open source", however, what really happened, is that if you use MongoDB on a cloud provider, you will forever be at the mercy of MongoDB Inc. and the fees they will be charging you, through your infrastructure provider.

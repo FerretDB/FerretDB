@@ -1,6 +1,6 @@
 ---
 slug: ferretdb-new-release-with-tls
-title: "FerretDB v0.7.1 - Now offering basic TLS support"
+title: FerretDB v0.7.1 - Now offering basic TLS support
 author: Alexander Fashakin
 description: The new FerretDB release 0.7.1 comes with the introduction of basic TLS support, addition of `filter` for `listCollections`, and much more.
 image: /img/blog/TLS.webp
@@ -26,7 +26,7 @@ For Tigris users, we've implemented the `explain` command.
 
 ## Bug fixes
 
-In the latest release, we’ve also addressed issues with `unset` comparisons, ensuring it works in a similar way as MongoDB.
+In the latest release, we've also addressed issues with `unset` comparisons, ensuring it works in a similar way as MongoDB.
 This is in addition to previous bug fixes from the last release.
 For example, the issue with using the greater than and less than operators on array values comparison has been resolved.
 Furthermore, we've fixed the issue with parallel inserts causing concurrent database creation to fail when the database doesn't exist.

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 7
+sidebar_position: 8
 ---
 
 # Indexes
@@ -53,11 +53,11 @@ db.products.createIndex({ price: 1, category: 1 })
 
 :::note
 
-* If the `createIndexes()` command is called for a non-existent collection, it will create the collection and its given indexes.
-* If the `createIndexes()` command is called for a non-existent field, an index for the field is created without creating or adding the field to an existing collection.
-* If you attempt to create an index with the same name and key as an existing index, the system will not create a duplicate index.
-Instead, it will simply return the name and key of the existing index, since duplicate indexes would be redundant and inefficient.
-* Meanwhile, any attempt to call `createIndexes()` command for an existing index using the same name and different key, _or_ different name but the same key will return an error.
+- If the `createIndexes()` command is called for a non-existent collection, it will create the collection and its given indexes.
+- If the `createIndexes()` command is called for a non-existent field, an index for the field is created without creating or adding the field to an existing collection.
+- If you attempt to create an index with the same name and key as an existing index, the system will not create a duplicate index.
+  Instead, it will simply return the name and key of the existing index, since duplicate indexes would be redundant and inefficient.
+- Meanwhile, any attempt to call `createIndexes()` command for an existing index using the same name and different key, _or_ different name but the same key will return an error.
 
 :::
 
@@ -103,20 +103,20 @@ You can also use the `dropIndex()` method to call the `dropIndexes()` command to
 Using the returned indexes above, let's drop the index with the name `price_1`.
 
 ```js
-db.products.dropIndex( "price_1" )
+db.products.dropIndex('price_1')
 ```
 
 Another way to perform this action is to use the same index document as the index you want to drop.
 For the same example above, you can rewrite it as:
 
 ```js
-db.products.dropIndex( { "price" : 1 } )
+db.products.dropIndex({ price: 1 })
 ```
 
 Using the `dropIndexes()` command, specify the index as `"*"` to remove all indexes from the collection, except the `_id` index.
 
 ```js
-db.products.dropIndexes("*")
+db.products.dropIndexes('*')
 ```
 
 This will drop all the non-`_id` indexes from the collection.

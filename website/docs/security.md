@@ -1,5 +1,5 @@
 ---
-sidebar_position: 11
+sidebar_position: 12
 slug: /security/ # referenced in README.md
 description: TLS and authentication
 ---
@@ -11,14 +11,14 @@ description: TLS and authentication
 It is possible to encrypt connections between FerretDB and clients by using TLS.
 All you need to do is to start the server with the following flags or environment variables:
 
-* `--listen-tls` / `FERRETDB_LISTEN_TLS` specifies the TCP hostname and port
+- `--listen-tls` / `FERRETDB_LISTEN_TLS` specifies the TCP hostname and port
   that will be used for listening for incoming TLS connections.
   If empty, TLS listener is disabled;
-* `--listen-tls-cert-file` / `FERRETDB_LISTEN_TLS_CERT_FILE` specifies the PEM encoded, TLS certificate file
+- `--listen-tls-cert-file` / `FERRETDB_LISTEN_TLS_CERT_FILE` specifies the PEM encoded, TLS certificate file
   that will be presented to clients;
-* `--listen-tls-key-file` / `FERRETDB_LISTEN_TLS_KEY_FILE` specifies the TLS private key file
+- `--listen-tls-key-file` / `FERRETDB_LISTEN_TLS_KEY_FILE` specifies the TLS private key file
   that will be used to decrypt communications;
-* `--listen-tls-ca-file` / `FERRETDB_LISTEN_TLS_CA_FILE` specifies the root CA certificate file
+- `--listen-tls-ca-file` / `FERRETDB_LISTEN_TLS_CA_FILE` specifies the root CA certificate file
   that will be used to verify client certificates.
 
 Then use `tls` query parameters in MongoDB URI for the client.
