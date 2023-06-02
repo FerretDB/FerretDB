@@ -118,9 +118,6 @@ func insertDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb
 	toInsert := doc
 
 	if !toInsert.Has("_id") {
-		// Make a copy so that original document could be sent to the proxy as it is.
-		toInsert = doc.DeepCopy()
-
 		toInsert.Set("_id", types.NewObjectID())
 	}
 
