@@ -13,19 +13,19 @@ For example, if the server was started with `postgres://user1:pass1@postgres:543
 anonymous clients will be authenticated as user1,
 but clients that use `mongodb://user2:pass2@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN` MongoDB URI will be authenticated as user2.
 Since usernames and passwords are transferred in plain text,
-the use of TLS is highly recommended.
+the use of [TLS](../security/tls.md#securing-connections-with-tls) is highly recommended.
 
 ## PostgreSQL backend with default username and password
 
 PostgreSQL server may start with default username and password.
 
-In the example, default username and password are specified in FerretDB's connection string `user1:pass1`.
+In following examples, default username and password are specified in FerretDB's connection string `user1:pass1`.
 See more about [creating PostgreSQL user](https://www.postgresql.org/docs/current/sql-createuser.html)
 and [PostgreSQL authentication methods](https://www.postgresql.org/docs/current/auth-methods.html).
 
 ### Using `ferretdb` package
 
-Start `ferretdb` by specify `--postgresql-url` with default username and password.
+Start `ferretdb` by specifying `--postgresql-url` with default username and password.
 
 ```sh
 ferretdb --postgresql-url=postgres://user1:pass1@postgres:5432/ferretdb
@@ -34,14 +34,14 @@ ferretdb --postgresql-url=postgres://user1:pass1@postgres:5432/ferretdb
 An anonymous client is authenticated with default `user1` from `--postgresql-url`.
 
 ```sh
-mongosh `mongodb://127.0.0.1/ferretdb`
+mongosh 'mongodb://127.0.0.1/ferretdb'
 ```
 
 A client that specify username and password in MongoDB URI as below is authenticated as `user2`.
 See how to [create user](https://www.postgresql.org/docs/current/sql-createuser.html).
 
 ```sh
-mongosh `mongodb://user2:pass2@127.0.0.1/ferretdb?authMechanism=PLAIN`
+mongosh 'mongodb://user2:pass2@127.0.0.1/ferretdb?authMechanism=PLAIN'
 ```
 
 ### Using docker
@@ -75,7 +75,7 @@ networks:
 To start `ferretdb`, use docker compose.
 
 ```sh
-docker compose up -d
+docker compose up
 ```
 
 An anonymous client is authenticated with `user1` from `FERRETDB_POSTGRESQL_URL`.
@@ -83,12 +83,12 @@ Use following command to run `mongosh` inside the temporary MongoDB container,
 attached to the same Docker network.
 
 ```sh
-docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo `mongodb://ferretdb/ferretdb`
+docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo 'mongodb://ferretdb/ferretdb'
 ```
 
-Clients that specify username and password in MongoDB URI such as below is authenticated as `user2`.
+A client that specify username and password in MongoDB URI as below is authenticated as user2.
 
 ```sh
 docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
-`mongodb://user2:pass2@ferretdb/ferretdb?authMechanism=PLAIN`
+'mongodb://user2:pass2@ferretdb/ferretdb?authMechanism=PLAIN'
 ```

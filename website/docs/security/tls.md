@@ -29,7 +29,7 @@ Using TLS is recommended if username and password are transferred in plain text.
 
 In following examples, FerretDB uses TLS certificates to secure the connection.
 Example certificates are found in [build/certs](https://github.com/FerretDB/FerretDB/tree/main/build/certs).
-The server uses TLS server certificate file, TLS private key file and root CA certificate file.
+The `ferretdb` server uses TLS server certificate file, TLS private key file and root CA certificate file.
 
 ```console
 server-certs/
@@ -60,7 +60,7 @@ ferretdb \
 --listen-tls-ca-file=./server-certs/rootCA-cert.pem
 ```
 
-Using `mongosh`, the client connects to ferretdb as `user2` using TLS certificates in `client-certs` directory.
+Using `mongosh`, a client connects to ferretdb as `user2` using TLS certificates in `client-certs` directory.
 Be sure to check that `client-certs` directory and files are present.
 
 ```sh
@@ -69,9 +69,9 @@ mongosh 'mongodb://user2:pass2@127.0.0.1:27018/ferretdb?authMechanism=PLAIN&tls=
 
 ### Using TLS with docker
 
-For using docker to run FerretDB, `docker-compose.yml` example for TLS is provided in below.
+For using docker to run `ferretdb` server, `docker-compose.yml` example for TLS is provided in below.
 The docker host requires certificates `server-certs` directory,
-the volume is mounted from `./server-certs` of docker host to `/etc/certs` of docker container.
+and volume is mounted from `./server-certs` of docker host to `/etc/certs` of docker container.
 
 ```yml
 services:
@@ -106,10 +106,10 @@ networks:
 To start `ferretdb`, use docker compose.
 
 ```sh
-docker compose up -d
+docker compose up
 ```
 
-In the following example, clients connect to MongoDB URI using TLS certificates as `user2`.
+In the following example, a client connects to MongoDB URI using TLS certificates as `user2`.
 It uses docker volume to mount `./clients-certs` of docker host to `/clients` docker container.
 
 ```sh
