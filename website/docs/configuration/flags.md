@@ -35,7 +35,7 @@ Some default values are overridden in [our Docker image](quickstart-guide/docker
 | ------------------------ | -------------------------------------------------------- | ------------------------------- | -------------------------------------------- |
 | `--listen-addr`          | Listen TCP address                                       | `FERRETDB_LISTEN_ADDR`          | `127.0.0.1:27017`<br />(`:27017` for Docker) |
 | `--listen-unix`          | Listen Unix domain socket path                           | `FERRETDB_LISTEN_UNIX`          |                                              |
-| `--listen-tls`           | Listen TLS address (see [here](../security.md))          | `FERRETDB_LISTEN_TLS`           |                                              |
+| `--listen-tls`           | Listen TLS address (see [here](../security/tls.md))      | `FERRETDB_LISTEN_TLS`           |                                              |
 | `--listen-tls-cert-file` | TLS cert file path                                       | `FERRETDB_LISTEN_TLS_CERT_FILE` |                                              |
 | `--listen-tls-key-file`  | TLS key file path                                        | `FERRETDB_LISTEN_TLS_KEY_FILE`  |                                              |
 | `--listen-tls-ca-file`   | TLS CA file path                                         | `FERRETDB_LISTEN_TLS_CA_FILE`   |                                              |

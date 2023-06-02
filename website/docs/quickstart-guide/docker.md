@@ -65,7 +65,8 @@ The following steps describe a quick local setup:
    mongodb://username:password@127.0.0.1/ferretdb?authMechanism=PLAIN
    ```
 
-   See [Authentication](../security.md#authentication) for more details.
+   See [Authentication](../security/authentication.md#authentication) and
+   [Securing connection with TLS](../security/tls.md#securing-connections-with-tls) for more details.
 
    If you don't have `mongosh`, run the following command to run it inside the temporary MongoDB container,
    attaching to the same Docker network:
@@ -77,7 +78,7 @@ The following steps describe a quick local setup:
 
 You can improve that setup by:
 
-- [securing connections with TLS](../security.md#securing-connections-with-tls);
+- [securing connections with TLS](../security/tls.md#securing-connections-with-tls);
 - adding backups.
 
 Find out more about:
