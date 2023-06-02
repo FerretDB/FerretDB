@@ -98,6 +98,16 @@ var ArrayAndDocuments = &Values[string]{
 			bson.D{{"field", int32(44)}},
 			bson.D{{"foo", int32(42)}},
 		},
+		"array-documents-two-fields": bson.A{
+			bson.D{
+				{"field", int32(42)},
+				{"foo", int32(44)},
+			},
+			bson.D{
+				{"field", int32(44)},
+				{"foo", int32(42)},
+			},
+		},
 	},
 }
 
