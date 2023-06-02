@@ -291,14 +291,9 @@ func (c *conn) run(ctx context.Context) (err error) {
 		// It is set to the highest level of logging used to log response.
 		var diffLogLevel zapcore.Level
 
-		// handle request unless we are in proxy mode
-		var resCloseConn bool
-		if c.mode != ProxyMode {
-			resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
-			diffLogLevel = c.logResponse("Response", resHeader, resBody, resCloseConn)
-		}
-
-		// send request to proxy unless we are in normal mode
+		// send request to proxy first (unless we are in normal mode)
+		// because FerretDB's handling could modify reqBody's documents,
+		// creating a data race
 		var proxyHeader *wire.MsgHeader
 		var proxyBody wire.MsgBody
 		if c.mode != NormalMode {
@@ -307,11 +302,21 @@ func (c *conn) run(ctx context.Context) (err error) {
 			}
 
 			proxyHeader, proxyBody = c.proxy.Route(ctx, reqHeader, reqBody)
-			if level := c.logResponse("Proxy response", proxyHeader, proxyBody, resCloseConn); level != diffLogLevel {
-				// In principle, normal and proxy responses should be logged with the same level
-				// as they behave the same way. If it's not true, there is a bug somewhere, so
-				// we should log the diff as an error.
-				diffLogLevel = zap.ErrorLevel
+		}
+
+		// handle request unless we are in proxy mode
+		var resCloseConn bool
+		if c.mode != ProxyMode {
+			resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
+			if level := c.logResponse("Response", resHeader, resBody, resCloseConn); level > diffLogLevel {
+				diffLogLevel = level
+			}
+		}
+
+		// log proxy response after the normal response to make it less confusing
+		if c.mode != NormalMode {
+			if level := c.logResponse("Proxy response", proxyHeader, proxyBody, false); level > diffLogLevel {
+				diffLogLevel = level
 			}
 		}
 
