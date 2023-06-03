@@ -145,6 +145,7 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 					}
 				})
 			}
+
 			switch tc.resultType {
 			case nonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results")

@@ -102,9 +102,7 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 }
 
 // Process implements Stage interface.
-func (u *unset) Process(_ context.Context,
-	iter types.DocumentsIterator, closer *iterator.MultiCloser,
-) (types.DocumentsIterator, error) {
+func (u *unset) Process(_ context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	return common.ProjectionIterator(iter, closer, u.field, nil)
 }
 
