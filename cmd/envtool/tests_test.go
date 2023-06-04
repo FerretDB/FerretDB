@@ -17,6 +17,7 @@ package main
 import (
 	"bytes"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,9 +36,71 @@ func TestShardIntegrationTests(t *testing.T) {
 func TestShardTests(t *testing.T) {
 	t.Parallel()
 
-	testNames, err := shardTests(0, 2, "integration")
-	assert.NoError(t, err)
-	assert.Len(t, testNames, 2)
+	t.Run("Shard odd amount of tests into 2 parts", func(t *testing.T) {
+		tests := []string{}
+		for i := 0; i < 10; i++ {
+			tests = append(tests, strconv.Itoa(i))
+		}
+
+		testNames, err := shardTests(0, 2, tests...)
+		assert.NoError(t, err)
+		assert.Len(t, testNames, 5)
+		assert.Equal(t, tests[0:5], testNames)
+
+		testNames, err = shardTests(1, 2, tests...)
+		assert.NoError(t, err)
+		assert.Len(t, testNames, 5)
+		assert.Equal(t, tests[5:], testNames)
+	})
+
+	t.Run("Shard even amount of tests into 2 parts", func(t *testing.T) {
+		tests := []string{}
+		for i := 0; i < 11; i++ {
+			tests = append(tests, strconv.Itoa(i))
+		}
+
+		testNames, err := shardTests(0, 2, tests...)
+		assert.NoError(t, err)
+		assert.Len(t, testNames, 5)
+		assert.Equal(t, tests[0:5], testNames)
+
+		testNames, err = shardTests(1, 2, tests...)
+		assert.NoError(t, err)
+		assert.Len(t, testNames, 6)
+		assert.Equal(t, tests[5:], testNames)
+	})
+
+	t.Run("Shard one test when total is 2", func(t *testing.T) {
+		tests := []string{"1"}
+
+		testNames, err := shardTests(0, 2, tests...)
+		assert.EqualError(t, err, "Cannot shard when Total is greater than amount of tests (2 > 1)")
+		assert.Nil(t, testNames)
+	})
+
+	t.Run("Shard empty tests", func(t *testing.T) {
+		tests := []string{}
+
+		testNames, err := shardTests(0, 2, tests...)
+		assert.EqualError(t, err, "Cannot shard when Total is greater than amount of tests (2 > 0)")
+		assert.Nil(t, testNames)
+	})
+
+	t.Run("Index is greater than Total", func(t *testing.T) {
+		tests := []string{}
+
+		testNames, err := shardTests(2, 0, tests...)
+		assert.EqualError(t, err, "Cannot shard when Index is greater or equal to Total (2 >= 0)")
+		assert.Nil(t, testNames)
+	})
+
+	t.Run("Index is equal to Total", func(t *testing.T) {
+		tests := []string{}
+
+		testNames, err := shardTests(0, 0, tests...)
+		assert.EqualError(t, err, "Cannot shard when Index is greater or equal to Total (0 >= 0)")
+		assert.Nil(t, testNames)
+	})
 }
 
 func TestGetAllTestNames(t *testing.T) {

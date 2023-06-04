@@ -15,6 +15,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -26,14 +27,18 @@ import (
 func shardIntegrationTests(w io.Writer, index, total uint) error {
 	var output strings.Builder
 
-	testNames, err := shardTests(index, total, "integration")
+	tests, err := getAllTestNames("integration")
 	if err != nil {
 		return err
 	}
-	shardedTestNames := testNames[index:total]
+
+	shardedTests, err := shardTests(index, total, tests...)
+	if err != nil {
+		return err
+	}
 
 	output.WriteString("^(")
-	output.WriteString(strings.Join(shardedTestNames, "|"))
+	output.WriteString(strings.Join(shardedTests, "|"))
 	output.WriteString(")$")
 
 	w.Write([]byte(output.String()))
@@ -41,14 +46,27 @@ func shardIntegrationTests(w io.Writer, index, total uint) error {
 	return nil
 }
 
-// shardTests shards gotten test names from the specified path.
-func shardTests(index, total uint, path string) ([]string, error) {
-	testNames, err := getAllTestNames(path)
-	if err != nil {
-		return nil, err
+// shardTests shards gotten test names.
+func shardTests(index, total uint, tests ...string) ([]string, error) {
+	if index >= total {
+		return nil, fmt.Errorf("Cannot shard when Index is greater or equal to Total (%d >= %d)", index, total)
 	}
 
-	return testNames[index:total], nil
+	testsLen := uint(len(tests))
+	if total > testsLen {
+		return nil, fmt.Errorf("Cannot shard when Total is greater than amount of tests (%d > %d)", total, testsLen)
+	}
+
+	sharder := testsLen / total
+	start := sharder * index
+	end := sharder*index + sharder
+
+	if index == total-1 {
+		modulo := testsLen % total
+		end += modulo
+	}
+
+	return tests[start:end], nil
 }
 
 // getAllTestNames gets all test names from the specified path.
