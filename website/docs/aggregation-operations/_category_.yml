@@ -1,0 +1,6 @@
+---
+label: Aggregation Operations
+position: 6
+link:
+  description: >
+    This section details aggregation operations in FerretDB, including aggregation commands, stages, and operators
