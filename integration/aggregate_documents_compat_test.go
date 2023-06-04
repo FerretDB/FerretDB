@@ -1677,6 +1677,20 @@ func TestAggregateCompatAddFields(t *testing.T) {
 				bson.D{{"$addFields", bson.D{{"newField2", int32(2)}}}},
 			},
 		},
+		"UnsupportedExpressionObject": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField1", bson.D{{"$sum", 1}}}}}},
+			},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
+		},
+		"UnsupportedExpressionArray": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField1", bson.A{bson.D{{"$sum", 1}}}}}}},
+			},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
+		},
 	}
 
 	testAggregateStagesCompat(t, testCases)
@@ -1749,6 +1763,20 @@ func TestAggregateCompatSet(t *testing.T) {
 				bson.D{{"$set", bson.D{{"newField1", int32(1)}}}},
 				bson.D{{"$set", bson.D{{"newField2", int32(2)}}}},
 			},
+		},
+		"UnsupportedExpressionObject": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField1", bson.D{{"$sum", 1}}}}}},
+			},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
+		},
+		"UnsupportedExpressionArray": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField1", bson.A{bson.D{{"$sum", 1}}}}}}},
+			},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
 		},
 	}
 
