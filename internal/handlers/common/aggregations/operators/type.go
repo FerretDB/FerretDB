@@ -16,7 +16,6 @@
 package operators
 
 import (
-	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -43,22 +42,25 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 	var value any
 
 	typeParam := t.param
-	for i := 0; i <= 1; i++ {
 
+	var paramEvaluated bool
+
+	for !paramEvaluated {
+		paramEvaluated = true
 		switch param := typeParam.(type) {
 		case *types.Document:
-			operator, err := Get(param)
+			operator, err := NewOperator(param)
 			if err != nil {
 				panic("TODO")
 			}
-			i--
 
-			if typeParam, err = operator.Process(context.TODO(), doc); err != nil {
+			if typeParam, err = operator.Process(doc); err != nil {
 				panic("TODO")
 			}
 
-		case *types.Array:
-			panic("TODO")
+			// the result of nested operator needs to be evaluated
+			paramEvaluated = false
+
 		case string:
 			if strings.HasPrefix("$", param) {
 				expression, err := aggregations.NewExpression(param)
@@ -69,14 +71,14 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 				value = expression.Evaluate(doc)
 				continue
 			}
+
 			value = param
 
-		case float64, types.Binary, types.ObjectID, bool, time.Time, types.NullType, types.Regex, int32, types.Timestamp, int64:
+		case *types.Array, float64, types.Binary, types.ObjectID, bool, time.Time, types.NullType, types.Regex, int32, types.Timestamp, int64:
 			value = param
 		default:
 			panic(fmt.Sprint("wrong type of value: ", typeParam))
 		}
-
 	}
 
 	var res string

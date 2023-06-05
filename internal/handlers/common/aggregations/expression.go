@@ -132,15 +132,14 @@ func NewExpression(expression string) (*Expression, error) {
 }
 
 // Evaluate gets the value at the path.
-// It returns `types.Null` if the path does not exists.
+// It returns nil if the path does not exists.
 func (e *Expression) Evaluate(doc *types.Document) any {
 	path := e.path
 
 	if path.Len() == 1 {
 		val, err := doc.Get(path.String())
 		if err != nil {
-			// $group stage groups non-existent paths with `Null`
-			return types.Null
+			return nil
 		}
 
 		return val
