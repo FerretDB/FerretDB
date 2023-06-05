@@ -20,6 +20,8 @@ the use of [TLS](../security/tls.md#securing-connections-with-tls) is highly rec
 PostgreSQL server may start with default username and password.
 
 In following examples, default username and password are specified in FerretDB's connection string `user1:pass1`.
+Ensure `user1` is a PostgreSQL user with necessary
+[privileges](https://www.postgresql.org/docs/current/sql-grant.html).
 See more about [creating PostgreSQL user](https://www.postgresql.org/docs/current/sql-createuser.html)
 and [PostgreSQL authentication methods](https://www.postgresql.org/docs/current/auth-methods.html).
 
@@ -28,7 +30,7 @@ and [PostgreSQL authentication methods](https://www.postgresql.org/docs/current/
 Start `ferretdb` by specifying `--postgresql-url` with default username and password.
 
 ```sh
-ferretdb --postgresql-url=postgres://user1:pass1@postgres:5432/ferretdb
+ferretdb --postgresql-url=postgres://user1:pass1@localhost:5432/ferretdb
 ```
 
 An anonymous client is authenticated with default `user1` from `--postgresql-url`.
@@ -38,7 +40,6 @@ mongosh 'mongodb://127.0.0.1/ferretdb'
 ```
 
 A client that specify username and password in MongoDB URI as below is authenticated as `user2`.
-See how to [create user](https://www.postgresql.org/docs/current/sql-createuser.html).
 
 ```sh
 mongosh 'mongodb://user2:pass2@127.0.0.1/ferretdb?authMechanism=PLAIN'
@@ -86,7 +87,7 @@ attached to the same Docker network.
 docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo 'mongodb://ferretdb/ferretdb'
 ```
 
-A client that specify username and password in MongoDB URI as below is authenticated as user2.
+A client that specify username and password in MongoDB URI as below is authenticated as `user2`.
 
 ```sh
 docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
