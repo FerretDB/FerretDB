@@ -128,7 +128,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	if *debugSetupF {
 		level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	}
-	logger := testutil.Logger(tb, level)
+	logger := testutil.LevelLogger(tb, level)
 
 	var client *mongo.Client
 	var uri string

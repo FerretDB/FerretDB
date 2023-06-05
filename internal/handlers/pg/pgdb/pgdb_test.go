@@ -22,7 +22,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -32,7 +31,7 @@ import (
 func getPool(ctx context.Context, tb testing.TB) *Pool {
 	tb.Helper()
 
-	logger := testutil.Logger(tb, zap.NewAtomicLevelAt(zap.DebugLevel))
+	logger := testutil.Logger(tb)
 
 	p, err := state.NewProvider("")
 	require.NoError(tb, err)
