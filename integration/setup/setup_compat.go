@@ -92,7 +92,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	if *debugSetupF {
 		level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	}
-	logger := testutil.Logger(tb, level)
+	logger := testutil.LevelLogger(tb, level)
 
 	var targetClient *mongo.Client
 	if *targetURLF == "" {
