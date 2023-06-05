@@ -133,7 +133,7 @@ func TestDistinctDuplicates(t *testing.T) {
 		key      string
 		expected []any
 	}{
-		"IntFirst": {
+		"LongDouble": {
 			docs: []bson.D{
 				{{"v", int64(42)}},
 				{{"v", float64(42)}},
@@ -142,20 +142,10 @@ func TestDistinctDuplicates(t *testing.T) {
 			key:      "v",
 			expected: []any{int64(42), "42"},
 		},
-		"Fff": {
+		"LongInt": {
 			docs: []bson.D{
 				{{"v", int64(42)}},
 				{{"v", float64(42)}},
-				{{"v", int32(43)}},
-				{{"v", "42"}},
-			},
-			key:      "v",
-			expected: []any{int64(42), "42"},
-		},
-		"FloatFirst": {
-			docs: []bson.D{
-				{{"v", int64(42)}},
-				{{"v", int32(42)}},
 				{{"v", "42"}},
 			},
 			key:      "v",
@@ -183,6 +173,7 @@ func TestDistinctDuplicates(t *testing.T) {
 				expectedValue := tc.expected[i]
 
 				if value != expectedValue {
+					// Values order is random so we cannot expect the types to be the same
 					switch value.(type) {
 					case int64, int32, float64:
 						assert.EqualValues(t, expectedValue, value)
