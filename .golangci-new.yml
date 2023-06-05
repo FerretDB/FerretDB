@@ -11,6 +11,10 @@ linters-settings:
       - ^lazyerrors\.Errorf$
     use-builtin-exclusions: true
     ignore-test: false
+  errcheck:
+    check-type-assertions: false
+    check-blank: false
+    disable-default-exclusions: false
   errorlint:
     # see caveats at https://github.com/polyfloyd/go-errorlint#fmterrorf-wrapping-verb
     errorf: false
@@ -78,7 +82,6 @@ linters:
     - dogsled
     - dupl
     - durationcheck
-    - errcheck
     - errchkjson
     - errname
     - execinquery
