@@ -145,8 +145,14 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 				err := s.Collection.Database().RunCommand(s.Ctx, bson.D{{"getFreeMonitoringStatus", 1}}).Decode(&actual)
 				require.NoError(t, err)
 
-				actualStatus, ok := actual.Map()["debug"].(bson.D).Map()["state"]
+				actualStatus, ok := actual.Map()["state"]
 				require.True(t, ok)
+
+				if actualStatus == "disabled" {
+					if _, ok := actual.Map()["debug"]; ok {
+						actualStatus = actual.Map()["debug"].(bson.D).Map()["state"]
+					}
+				}
 
 				assert.Equal(t, tc.expectedStatus, actualStatus)
 			}
