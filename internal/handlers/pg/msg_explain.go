@@ -93,7 +93,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		"ferretdbVersion", version.Get().Version,
 	))
 
-	cmd := params.Command.DeepCopy()
+	cmd := params.Command
 	cmd.Set("$db", qp.DB)
 
 	var reply wire.OpMsg
