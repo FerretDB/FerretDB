@@ -67,11 +67,11 @@ Be sure to check that `client-certs` directory and files are present.
 mongosh 'mongodb://user2:pass2@127.0.0.1:27018/ferretdb?authMechanism=PLAIN&tls=true&tlsCertificateKeyFile=./client-certs/client.pem&tlsCaFile=./client-certs/rootCA-cert.pem'
 ```
 
-### Using TLS with docker
+### Using TLS with Docker
 
-For using docker to run `ferretdb` server, `docker-compose.yml` example for TLS is provided in below.
-The docker host requires certificates `server-certs` directory,
-and volume is mounted from `./server-certs` of docker host to `/etc/certs` of docker container.
+For using Docker to run `ferretdb` server, `docker-compose.yml` example for TLS is provided in below.
+The Docker host requires certificates `server-certs` directory,
+and volume is mounted from `./server-certs` of Docker host to `/etc/certs` of Docker container.
 
 ```yml
 services:
@@ -110,7 +110,7 @@ docker compose up
 ```
 
 In the following example, a client connects to MongoDB URI using TLS certificates as `user2`.
-It uses docker volume to mount `./clients-certs` of docker host to `/clients` docker container.
+It uses Docker volume to mount `./clients-certs` of Docker host to `/clients` Docker container.
 
 ```sh
 docker run --rm -it \

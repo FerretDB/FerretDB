@@ -45,9 +45,9 @@ A client that specify username and password in MongoDB URI as below is authentic
 mongosh 'mongodb://user2:pass2@127.0.0.1/ferretdb?authMechanism=PLAIN'
 ```
 
-### Using docker
+### Using Docker
 
-For using docker, specify `FERRETDB_POSTGRESQL_URL` with default username and password.
+For Docker, specify `FERRETDB_POSTGRESQL_URL` with default username and password.
 
 ```yml
 services:
