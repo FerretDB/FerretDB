@@ -66,7 +66,7 @@ The following steps describe a quick local setup:
    ```
 
    See [Authentication](../security/authentication.md) and
-   [Securing connection with TLS](../security/tls.md) for more details.
+   [Securing connection with TLS](../security/tls-connections.md) for more details.
 
    If you don't have `mongosh`, run the following command to run it inside the temporary MongoDB container,
    attaching to the same Docker network:
@@ -78,7 +78,7 @@ The following steps describe a quick local setup:
 
 You can improve that setup by:
 
-- [securing connections with TLS](../security/tls.md);
+- [securing connections with TLS](../security/tls-connections.md);
 - adding backups.
 
 Find out more about:
