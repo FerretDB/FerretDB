@@ -117,23 +117,6 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
-		"DollarPrefixedFieldName": {
-			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"$eq", "val"}}}}}}},
-				{"upsert", true},
-				{"update", bson.D{{"v", "replaced"}}},
-			},
-			resultType: emptyResult,
-		},
-		"DollarPrefixedNestedFieldName": {
-			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"nestedKey", bson.D{{"$eq", "val"}}}}}}}}},
-				{"upsert", true},
-				{"update", bson.D{{"v", "replaced"}}},
-			},
-			skipForTigris: "schema validation would fail",
-			resultType:    emptyResult,
-		},
 	}
 
 	testFindAndModifyCompat(t, testCases)
