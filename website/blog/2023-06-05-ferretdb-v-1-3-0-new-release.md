@@ -1,6 +1,6 @@
 ---
-slug: ferretdb-new-release-v-1-3-0
-title: FerretDB v1.3.0 Release
+slug: ferretdb-v-1-3-0-new-release
+title: FerretDB v1.3.0 New Release
 authors: [alex]
 description: >
   We’ve just announced the release of a new version of FerretDB v1.3.0, which now includes new feature additions, such as the `logout` command and positional operator in projection.
