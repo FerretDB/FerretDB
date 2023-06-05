@@ -31,7 +31,7 @@ In following examples, FerretDB uses TLS certificates to secure the connection.
 Example certificates are found in [build/certs](https://github.com/FerretDB/FerretDB/tree/main/build/certs).
 The `ferretdb` server uses TLS server certificate file, TLS private key file and root CA certificate file.
 
-```console
+```text
 server-certs/
 ├── rootCA-cert.pem
 ├── server-cert.pem
@@ -40,7 +40,7 @@ server-certs/
 
 The client uses TLS client certificate file and root CA certificate file.
 
-```console
+```text
 client-certs/
 ├── client.pem
 └── rootCA-cert.pem
@@ -53,11 +53,11 @@ Be sure to check that `server-certs` directory and files are present.
 
 ```sh
 ferretdb \
---postgresql-url=postgres://localhost:5432/ferretdb \
---listen-tls=:27018 \
---listen-tls-cert-file=./server-certs/server-cert.pem \
---listen-tls-key-file=./server-certs/server-key.pem \
---listen-tls-ca-file=./server-certs/rootCA-cert.pem
+  --postgresql-url=postgres://localhost:5432/ferretdb \
+  --listen-tls=:27018 \
+  --listen-tls-cert-file=./server-certs/server-cert.pem \
+  --listen-tls-key-file=./server-certs/server-key.pem \
+  --listen-tls-ca-file=./server-certs/rootCA-cert.pem
 ```
 
 Using `mongosh`, a client connects to ferretdb as `user2` using TLS certificates in `client-certs` directory.
@@ -73,7 +73,7 @@ For using Docker to run `ferretdb` server, `docker-compose.yml` example for TLS 
 The Docker host requires certificates `server-certs` directory,
 and volume is mounted from `./server-certs` of Docker host to `/etc/certs` of Docker container.
 
-```yml
+```yaml
 services:
   postgres:
     image: postgres
@@ -114,11 +114,8 @@ It uses Docker volume to mount `./clients-certs` of Docker host to `/clients` Do
 
 ```sh
 docker run --rm -it \
---network=ferretdb \
---volume ./client-certs:/clients \
---entrypoint=mongosh mongo \
-'mongodb://user2:pass2@host.docker.internal:27018/ferretdb?authMechanism=PLAIN&tls=true&tlsCertificateKeyFile=/clients/client.pem&tlsCaFile=/clients/rootCA-cert.pem'
+  --network=ferretdb \
+  --volume ./client-certs:/clients \
+  --entrypoint=mongosh \
+  mongo 'mongodb://user2:pass2@host.docker.internal:27018/ferretdb?authMechanism=PLAIN&tls=true&tlsCertificateKeyFile=/clients/client.pem&tlsCaFile=/clients/rootCA-cert.pem'
 ```
-
-Note that MongoDB URI uses `host.docker.internal` host in above, because it
-needs to match certificate's [altnames](https://github.com/FerretDB/FerretDB/blob/main/build/certs/Makefile).

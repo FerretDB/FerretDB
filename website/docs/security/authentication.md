@@ -17,8 +17,6 @@ the use of [TLS](../security/tls.md) is highly recommended.
 
 ## PostgreSQL backend with default username and password
 
-PostgreSQL server may start with default username and password.
-
 In following examples, default username and password are specified in FerretDB's connection string `user1:pass1`.
 Ensure `user1` is a PostgreSQL user with necessary
 [privileges](https://www.postgresql.org/docs/current/sql-grant.html).
@@ -49,7 +47,7 @@ mongosh 'mongodb://user2:pass2@127.0.0.1/ferretdb?authMechanism=PLAIN'
 
 For Docker, specify `FERRETDB_POSTGRESQL_URL` with default username and password.
 
-```yml
+```yaml
 services:
   postgres:
     image: postgres
@@ -84,12 +82,13 @@ Use following command to run `mongosh` inside the temporary MongoDB container,
 attached to the same Docker network.
 
 ```sh
-docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo 'mongodb://ferretdb/ferretdb'
+docker run --rm -it --network=ferretdb --entrypoint=mongosh \
+  mongo 'mongodb://ferretdb/ferretdb'
 ```
 
 A client that specify username and password in MongoDB URI as below is authenticated as `user2`.
 
 ```sh
-docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
-'mongodb://user2:pass2@ferretdb/ferretdb?authMechanism=PLAIN'
+docker run --rm -it --network=ferretdb --entrypoint=mongosh \
+  mongo 'mongodb://user2:pass2@ferretdb/ferretdb?authMechanism=PLAIN'
 ```
