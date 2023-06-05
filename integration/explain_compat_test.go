@@ -149,6 +149,10 @@ func TestExplainCompatError(t *testing.T) {
 			command: "find",
 			filter:  bson.D{{"v", int32(42)}},
 		},
+		"InvalidCommandGetLog": {
+			command: "create",
+			skip:    "https://github.com/FerretDB/FerretDB/issues/2704",
+		},
 	}
 
 	testExplainCompatError(t, testCases)

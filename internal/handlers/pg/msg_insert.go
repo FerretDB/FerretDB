@@ -139,9 +139,6 @@ func insertDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc an
 	toInsert := d
 
 	if !toInsert.Has("_id") {
-		// Make a copy so that original document could be sent to the proxy as it is.
-		toInsert = d.DeepCopy()
-
 		toInsert.Set("_id", types.NewObjectID())
 	}
 
