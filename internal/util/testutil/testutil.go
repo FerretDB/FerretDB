@@ -45,8 +45,9 @@ func Ctx(tb testing.TB) context.Context {
 		tb.Log("Stopping...")
 		stop()
 
-		// There is a weird interaction between terminal's process group/session,
-		// Task's signal handling, and this attempt to handle signals gracefully fails miserably.
+		// There is a weird interaction between terminal's process group/session signal handling,
+		// Task's signal handling,
+		// and this attempt to handle signals gracefully.
 		// It may cause tests to continue running in the background
 		// while terminal shows command-line prompt already.
 		//
@@ -58,7 +59,12 @@ func Ctx(tb testing.TB) context.Context {
 }
 
 // Logger returns zap test logger with valid configuration.
-func Logger(tb testing.TB, level zap.AtomicLevel) *zap.Logger {
+func Logger(tb testing.TB) *zap.Logger {
+	return LevelLogger(tb, zap.NewAtomicLevelAt(zap.DebugLevel))
+}
+
+// LevelLogger returns zap test logger with given level and valid configuration.
+func LevelLogger(tb testing.TB, level zap.AtomicLevel) *zap.Logger {
 	opts := []zaptest.LoggerOption{
 		zaptest.Level(level),
 		zaptest.WrapOptions(zap.AddCaller(), zap.Development()),
