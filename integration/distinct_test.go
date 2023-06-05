@@ -17,6 +17,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -122,7 +123,7 @@ func TestDistinctErrors(t *testing.T) {
 	}
 }
 
-func TestDistinct1Errors(t *testing.T) {
+func TestDistinctDuplicates(t *testing.T) {
 	t.Parallel()
 
 	ctx, coll := setup.Setup(t)
@@ -130,7 +131,7 @@ func TestDistinct1Errors(t *testing.T) {
 	for name, tc := range map[string]struct {
 		docs     []bson.D
 		key      string
-		expected bson.A
+		expected []any
 	}{
 		"IntFirst": {
 			docs: []bson.D{
@@ -138,6 +139,27 @@ func TestDistinct1Errors(t *testing.T) {
 				{{"v", float64(42)}},
 				{{"v", "42"}},
 			},
+			key:      "v",
+			expected: []any{int64(42), "42"},
+		},
+		"Fff": {
+			docs: []bson.D{
+				{{"v", int64(42)}},
+				{{"v", float64(42)}},
+				{{"v", int32(43)}},
+				{{"v", "42"}},
+			},
+			key:      "v",
+			expected: []any{int64(42), "42"},
+		},
+		"FloatFirst": {
+			docs: []bson.D{
+				{{"v", int64(42)}},
+				{{"v", int32(42)}},
+				{{"v", "42"}},
+			},
+			key:      "v",
+			expected: []any{int64(42), "42"},
 		},
 	} {
 		name, tc := name, tc
@@ -152,7 +174,23 @@ func TestDistinct1Errors(t *testing.T) {
 			_, err := coll.InsertMany(ctx, docs)
 			require.NoError(t, err)
 
-			distinct, err := coll.Distinct(ctx, tc.key, nil)
+			distinct, err := coll.Distinct(ctx, tc.key, bson.D{})
+			require.NoError(t, err)
+
+			assert.Equal(t, len(tc.expected), len(distinct), distinct)
+
+			for i, value := range distinct {
+				expectedValue := tc.expected[i]
+
+				if value != expectedValue {
+					switch value.(type) {
+					case int64, int32, float64:
+						assert.EqualValues(t, expectedValue, value)
+					default:
+						require.Equal(t, tc.expected, distinct)
+					}
+				}
+			}
 		})
 	}
 }
