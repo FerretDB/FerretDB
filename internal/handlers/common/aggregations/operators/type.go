@@ -27,7 +27,11 @@ type typeOp struct{}
 // newType creates a new $type aggregation operator.
 func newType(expression *types.Document) (Operator, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/2678
-	must.NotFail(expression.Get("$type"))
+	typeParam := must.NotFail(expression.Get("$type"))
+
+	switch typeParam.(type) {
+	case *types.Array:
+	}
 
 	return nil, commonerrors.NewCommandErrorMsgWithArgument(
 		commonerrors.ErrNotImplemented,
