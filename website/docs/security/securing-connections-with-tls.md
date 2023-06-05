@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-description: TLS
+description: Learn to secure connections using TLS
 ---
 
 # Securing connections with TLS
