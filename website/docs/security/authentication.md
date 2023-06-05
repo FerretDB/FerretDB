@@ -1,7 +1,6 @@
 ---
 sidebar_position: 1
-slug: /security/ # referenced in README.md
-description: Learn to use authentication mechanisms of the backend
+description: Learn to use authentication mechanisms
 ---
 
 # Authentication

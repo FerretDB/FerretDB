@@ -2,4 +2,5 @@
 label: Security
 position: 12
 link:
-  description: authentication and TLS
+  type: generated-index
+  description: Authentication and TLS
