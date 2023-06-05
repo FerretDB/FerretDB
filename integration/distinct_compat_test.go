@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,42 +23,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
-
-func SortProviders(t *testing.T, providers shareddata.Providers) shareddata.Providers {
-	var resProviders []shareddata.Provider
-
-	for _, provider := range providers {
-		var arrInit bson.A
-
-		for _, item := range provider.Docs() {
-			arrInit = append(arrInit, item)
-		}
-
-		arr := ConvertArray(t, arrInit)
-		common.SortArray(arr, types.Ascending)
-
-		var newProvider shareddata.Values[]
-
-		iter := arr.Iterator()
-		for {
-			_, item, err := iter.Next()
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
-			require.NoError(t, err)
-
-			newProvider = append(newProvider, item)
-		}
-		resProviders = append(resProviders, arr)
-	}
-
-	return resProviders
-}
 
 // distinctCompatTestCase describes distinct compatibility test case.
 type distinctCompatTestCase struct {
@@ -74,7 +38,7 @@ func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCas
 	// Use shared setup because distinct queries can't modify data.
 	// TODO Use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		Providers:                shareddata.AllProviders(),
+		Providers:                shareddata.AllProviders().Remove("Scalars"), // Remove provider with the same values with different types
 		AddNonExistentCollection: true,
 	})
 	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
@@ -118,21 +82,6 @@ func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCas
 					if len(compatRes) == 0 {
 						assert.Equal(t, compatRes, targetRes)
 					}
-
-					// Both handlers should return values in sorted order, it's not documented though,
-					// so it might change in the future.
-
-					//for i, doc := range targetRes {
-					//	var ok bool
-					//	targetDocs[i], ok = doc.(bson.D)
-					//	require.True(t, ok)
-					//}
-
-					//for i, doc := range compatRes {
-					//	var ok bool
-					//	compatDocs[i], ok = doc.(bson.D)
-					//	require.True(t, ok)
-					//}
 
 					// We can't check the exact data types because they might be different.
 					// For example, if targetRes is [float64(0), int32(1)] and compatRes is [int64(0), int64(1)],

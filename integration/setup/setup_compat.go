@@ -44,8 +44,6 @@ type SetupCompatOpts struct {
 	// TODO This flag is not needed, always add a non-existent collection https://github.com/FerretDB/FerretDB/issues/1545
 	AddNonExistentCollection bool
 
-	KeepOrder bool
-
 	databaseName       string
 	baseCollectionName string
 }
@@ -193,9 +191,6 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
-
-		if opts.KeepOrder {
-		}
 
 		res, err := collection.InsertMany(collCtx, docs)
 		require.NoError(tb, err, "%s: backend %q, collection %s", provider.Name(), backend, fullName)

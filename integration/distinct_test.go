@@ -121,3 +121,38 @@ func TestDistinctErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestDistinct1Errors(t *testing.T) {
+	t.Parallel()
+
+	ctx, coll := setup.Setup(t)
+
+	for name, tc := range map[string]struct {
+		docs     []bson.D
+		key      string
+		expected bson.A
+	}{
+		"IntFirst": {
+			docs: []bson.D{
+				{{"v", int64(42)}},
+				{{"v", float64(42)}},
+				{{"v", "42"}},
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			var docs = make([]any, len(tc.docs))
+
+			for i, doc := range tc.docs {
+				docs[i] = doc
+			}
+
+			_, err := coll.InsertMany(ctx, docs)
+			require.NoError(t, err)
+
+			distinct, err := coll.Distinct(ctx, tc.key, nil)
+		})
+	}
+}
