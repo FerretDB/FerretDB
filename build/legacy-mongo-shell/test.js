@@ -8,29 +8,19 @@
 
   t.drop();
 
-  const verycomplexDoc = {
-    _id: 1,
-    a: {
-      b: {
-        c: {
-          array: [
-            {
-              token: "aAOBX7fkiRB+XGH1oQ9fln7sM62ox06qzUKpaan7Bys="
-            }
-          ]
-        }
-      }
-    }
-  };
+  const doc = {_id: 1, a: [{x: 1}, {x: 2}, {x: 3}]};
 
-  assert.commandWorked(t.insert(verycomplexDoc));
+  assert.commandWorked(t.insert(doc));
 
-  const filter = {'a.b.c.array.token': 'aAOBX7fkiRB+XGH1oQ9fln7sM62ox06qzUKpaan7Bys='};
-  const proj = {'a.b.c.array.token.$': 1}; // add $ operator
+  const filter = {'a.x': 1}; // positional operator needs a filter
+  const proj = {'a.$': 1}; // add $ operator
 
+  // eslint-disable-next-line max-len
   const res = t.runCommand({'find': coll, 'filter': filter, 'projection': proj});
 
-  assert.commandFailed(res); // command must fail as we don't support $ projection
+  let expected = {'_id': 1, 'a': [{'x': 1}]};
+  expected = [expected];
+  assert.eq(res.cursor.firstBatch, expected);
 
   print('test.js passed!');
 })();
