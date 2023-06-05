@@ -16,41 +16,75 @@
 package operators
 
 import (
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"context"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// typeOp represent $type operator.
-type typeOp struct{}
+type typeOp struct {
+	param any
+}
 
-// newType creates a new $type aggregation operator.
-func newType(expression *types.Document) (Operator, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2678
-	typeParam := must.NotFail(expression.Get("$type"))
+func newType(operation *types.Document) (Operator, error) {
+	param := must.NotFail(operation.Get("$type"))
 
-	switch typeParam.(type) {
-	case *types.Array:
+	return &typeOp{
+		param: param,
+	}, nil
+}
+
+func (t *typeOp) Process(doc *types.Document) (any, error) {
+	var value any
+
+	typeParam := t.param
+	for i := 0; i <= 1; i++ {
+
+		switch param := typeParam.(type) {
+		case *types.Document:
+			operator, err := Get(param)
+			if err != nil {
+				panic("TODO")
+			}
+			i--
+
+			if typeParam, err = operator.Process(context.TODO(), doc); err != nil {
+				panic("TODO")
+			}
+
+		case *types.Array:
+			panic("TODO")
+		case string:
+			if strings.HasPrefix("$", param) {
+				expression, err := aggregations.NewExpression(param)
+				if err != nil {
+					return nil, err
+				}
+
+				value = expression.Evaluate(doc)
+				continue
+			}
+			value = param
+
+		case float64, types.Binary, types.ObjectID, bool, time.Time, types.NullType, types.Regex, int32, types.Timestamp, int64:
+			value = param
+		default:
+			panic(fmt.Sprint("wrong type of value: ", typeParam))
+		}
+
 	}
 
-	return nil, commonerrors.NewCommandErrorMsgWithArgument(
-		commonerrors.ErrNotImplemented,
-		"$type aggregation operator is not implemented yet",
-		"$type",
-	)
-}
+	var res string
+	if value == nil {
+		res = "missing"
+	} else {
+		res = sjson.GetTypeOfValue(value)
+	}
 
-// Process implements Operator interface.
-func (t *typeOp) Process(in *types.Document) (any, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2678
-	return nil, commonerrors.NewCommandErrorMsgWithArgument(
-		commonerrors.ErrNotImplemented,
-		"$type aggregation operator is not implemented yet",
-		"$type",
-	)
+	return res, nil
 }
-
-// check interfaces
-var (
-	_ Operator = (*typeOp)(nil)
-)
