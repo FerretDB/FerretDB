@@ -25,7 +25,7 @@ Let's find out.
 ## New features
 
 In this release, we've added the `logout` command.
-Even though it's a deprecated in MongoDB, it's necessary for our compatibility tests.
+Even though it's deprecated in MongoDB, it's necessary in some circumstances.
 This feature addition was made possible thanks to one of our contributors, @[@kropidlowsky](https://github.com/kropidlowsky).
 
 Similarly, we've been improving our projection features and just added a positional operator which should help users retrieve the first matching element from an array if the specified query conditions are met.
