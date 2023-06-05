@@ -23,7 +23,7 @@ require (
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 	golang.org/x/net v0.10.0
 	golang.org/x/sys v0.8.0
-	modernc.org/sqlite v1.22.1
+	modernc.org/sqlite v1.22.2-0.20230602133256-d18595094736 // wait for v1.22.2+ due to https://gitlab.com/cznic/sqlite/-/issues/148
 )
 
 require (

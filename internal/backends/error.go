@@ -40,21 +40,19 @@ const (
 
 // Error represents a backend error returned by all Backend, Database and Collection methods.
 type Error struct {
-	// this internal error can't be accessed by the caller
+	// this internal error can't be accessed by the caller;
+	// it may be nil
 	err error
 
 	code ErrorCode
 }
 
 // NewError creates a new backend error.
+//
+// Code must not be 0. Err may be nil.
 func NewError(code ErrorCode, err error) *Error {
 	if code == 0 {
 		panic("backends.NewError: code must not be 0")
-	}
-
-	// TODO we might allow nil error if needed
-	if err == nil {
-		panic("backends.NewError: err must not be nil")
 	}
 
 	return &Error{
@@ -76,17 +74,13 @@ func (err *Error) Error() string {
 }
 
 // ErrorCodeIs returns true if err is *Error with one of the given error codes.
-func ErrorCodeIs(err error, codes ...ErrorCode) bool {
-	if len(codes) == 0 {
-		panic("zero error codes")
-	}
-
+func ErrorCodeIs(err error, code ErrorCode, codes ...ErrorCode) bool {
 	e, ok := err.(*Error) //nolint:errorlint // do not inspect error chain
 	if !ok {
 		return false
 	}
 
-	return slices.Contains(codes, e.code)
+	return e.code == code || slices.Contains(codes, e.code)
 }
 
 // checkError enforces backend interfaces contracts.

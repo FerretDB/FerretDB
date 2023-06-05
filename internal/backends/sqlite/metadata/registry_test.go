@@ -12,16 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sqlite
+package metadata
 
-import (
-	"context"
+import "testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
-
-// MsgDelete implements HandlerInterface.
-func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+func TestDummy(t *testing.T) {
+	// we need at least one test per package to correctly calculate coverage
 }
