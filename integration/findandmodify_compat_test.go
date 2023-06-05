@@ -119,7 +119,7 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 		},
 		"DollarPrefixedFieldName": {
 			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"$invalid", "val"}}}}}}},
+				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"$eq", "val"}}}}}}},
 				{"upsert", true},
 				{"update", bson.D{{"v", "replaced"}}},
 			},
@@ -127,7 +127,7 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 		},
 		"DollarPrefixedNestedFieldName": {
 			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"nestedKey", bson.D{{"$invalid", "val"}}}}}}}}},
+				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"nestedKey", bson.D{{"$eq", "val"}}}}}}}}},
 				{"upsert", true},
 				{"update", bson.D{{"v", "replaced"}}},
 			},
