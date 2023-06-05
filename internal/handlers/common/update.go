@@ -902,11 +902,11 @@ func newUpdateError(code commonerrors.ErrorCode, msg, command string) error {
 // validateOperatorKeys returns error if any key contains empty path or
 // the same path prefix exists in other key or other document.
 func validateOperatorKeys(command string, docs ...*types.Document) error {
-	seen := map[string]struct{}{}
+	visitedPaths := []*types.Path{}
 
 	for _, doc := range docs {
 		for _, key := range doc.Keys() {
-			path, err := types.NewPathFromString(key)
+			nextPath, err := types.NewPathFromString(key)
 			if err != nil {
 				return newUpdateError(
 					commonerrors.ErrEmptyName,
@@ -918,21 +918,45 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 				)
 			}
 
-			if _, ok := seen[path.Prefix()]; ok {
-				return newUpdateError(
-					commonerrors.ErrConflictingUpdateOperators,
-					fmt.Sprintf(
-						"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
-					),
-					command,
-				)
+			for _, oldPath := range visitedPaths {
+				if checkSlicePrefix(oldPath.Slice(), nextPath.Slice()) {
+					return newUpdateError(
+						commonerrors.ErrConflictingUpdateOperators,
+						fmt.Sprintf(
+							"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
+						),
+						command,
+					)
+				}
 			}
-
-			seen[path.Prefix()] = struct{}{}
+			visitedPaths = append(visitedPaths, &nextPath)
 		}
 	}
 
 	return nil
+}
+
+// checkSlicePrefix returns true if one slice is the beginning of another slice.
+// The example of slice prefix: arr1 = ["a","b","c"] arr2 = ["a","b"];
+// If both slices are empty, it returns true. If one slice is empty and another slice is not, it returns false.
+func checkSlicePrefix(arr1, arr2 []string) bool {
+	target, prefix := arr1, arr2
+
+	if len(target) < len(prefix) {
+		target, prefix = prefix, target
+	}
+
+	if len(prefix) == 0 {
+		return len(target) == 0
+	}
+
+	for i := range prefix {
+		if prefix[i] != target[i] {
+			return false
+		}
+	}
+
+	return true
 }
 
 // extractValueFromUpdateOperator gets operator "op" value and returns CommandError for `findAndModify`

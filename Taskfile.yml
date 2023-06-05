@@ -393,10 +393,6 @@ tasks:
       - go vet -vettool=./bin/checkswitch{{exeExt}} ./...
       - bin/task{{exeExt}} -d integration integration-lint
       - bin/task{{exeExt}} -d tools tools-lint
-    sources:
-      - "**/*.go"
-      - "**/go.mod"
-      - "**/*.yml"
 
   security:
     desc: "Run security scanners"
@@ -602,10 +598,12 @@ tasks:
   # see https://github.com/DavidAnson/markdownlint-cli2#command-line for the reason we use double-quotes
   docs-fmt:
     desc: "Format and lint documentation"
+    run: once
     cmds:
       - bin/checkdocs
       - docker compose run --rm textlint --fix --config build/.textlintrc "**/*.md" ".github/**/*.md"
-      - docker compose run --rm markdownlint "**/*.md" "#CHANGELOG.md"
+      - docker compose run --rm prettier --write --parser markdown --no-semi --single-quote --trailing-comma none "**/*.md"
+      - docker compose run --rm markdownlint "build/.markdownlint.yml" "**/*.md"
 
   docs-dev:
     desc: "Start documentation development server"

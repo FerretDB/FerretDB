@@ -1,6 +1,6 @@
 ---
 slug: new-release-ferretdb-0-6-1
-title: "New release: FerretDB 0.6.1!"
+title: 'New release: FerretDB 0.6.1!'
 author: Alexander Fashakin
 description: We are happy to inform you that FerretDB is currently in Alpha, and we have a new release - FerretDB 0.6.1.
 image: /img/blog/six-ferrets-1024x917.jpg
@@ -16,7 +16,7 @@ We are happy to inform you that FerretDB is currently in Alpha, and we have a ne
 
 With the Alpha version, FerretDB has many notable and exciting features, bug fixes, and enhancements.
 This couldn't have been possible without the support, feedback, and help of many contributors from the community.
-Special thanks go to [@ronaudinho](https://github.com/ronaudinho), [@codingmickey](https://github.com/codingmickey), [@ndkhangvl](https://github.com/ndkhangvl), and [@zhiburt](https://github.com/zhiburt)  for their remarkable contributions.
+Special thanks go to [@ronaudinho](https://github.com/ronaudinho), [@codingmickey](https://github.com/codingmickey), [@ndkhangvl](https://github.com/ndkhangvl), and [@zhiburt](https://github.com/zhiburt) for their remarkable contributions.
 
 Starting from 0.6.0, we have added a basic telemetry service that collects anonymous usage data on FerretDB instances.
 This will help us quickly identify failed queries, prioritize issues, and achieve greater parity with MongoDB.

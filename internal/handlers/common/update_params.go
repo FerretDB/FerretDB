@@ -41,7 +41,7 @@ type UpdateParams struct {
 	// TODO: https://github.com/FerretDB/FerretDB/issues/2627
 	// get comment from query, e.g. db.collection.UpdateOne({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
 	Filter *types.Document `ferretdb:"q,opt"`
-	Update *types.Document `ferretdb:"u,opt"`
+	Update *types.Document `ferretdb:"u,opt"` // TODO https://github.com/FerretDB/FerretDB/issues/2742
 	Multi  bool            `ferretdb:"multi,opt"`
 	Upsert bool            `ferretdb:"upsert,opt,numericBool"`
 

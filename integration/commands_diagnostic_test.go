@@ -125,10 +125,10 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 	ctx, collection := res.Ctx, res.Collection
 
 	for name, tc := range map[string]struct {
-		command  bson.D
-		expected map[string]any
-		err      *mongo.CommandError
-		alt      string
+		command    bson.D
+		expected   map[string]any
+		err        *mongo.CommandError
+		altMessage string
 	}{
 		"Asterisk": {
 			command: bson.D{{"getLog", "*"}},
@@ -160,7 +160,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 				Name:    "OperationFailed",
 				Message: `No log named 'nonExistentName'`,
 			},
-			alt: `no RecentEntries named: nonExistentName`,
+			altMessage: `no RecentEntries named: nonExistentName`,
 		},
 		"Nil": {
 			command: bson.D{{"getLog", nil}},
@@ -186,7 +186,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			if tc.err != nil {
-				AssertEqualAltCommandError(t, *tc.err, tc.alt, err)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 			require.NoError(t, err)
@@ -280,6 +280,45 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 	actual.Remove("indexDetails")
 	testutil.CompareAndSetByPathNum(t, expected, actual, 39, types.NewStaticPath("nrecords"))
 	testutil.AssertEqual(t, expected, actual)
+}
+
+func TestCommandsDiagnosticValidateError(t *testing.T) {
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/2704")
+
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // for readability
+		command bson.D
+		err     *mongo.CommandError
+	}{
+		"InvalidTypeDocument": {
+			command: bson.D{{"validate", bson.D{}}},
+			err: &mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "collection name has invalid type object",
+			},
+		},
+		"NonExistentCollection": {
+			command: bson.D{{"validate", "nonExistentCollection"}},
+			err: &mongo.CommandError{
+				Code:    26,
+				Name:    "NamespaceNotFound",
+				Message: "Collection 'TestCommandsDiagnosticValidateError-NonExistentCollection.nonExistentCollection' does not exist to validate.",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx, collection := setup.Setup(t, shareddata.Doubles)
+
+			res := collection.Database().RunCommand(ctx, tc.command)
+
+			AssertEqualCommandError(t, *tc.err, res.Err())
+		})
+	}
 }
 
 func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {

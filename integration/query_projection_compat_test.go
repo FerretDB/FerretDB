@@ -347,6 +347,11 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 			},
 			projection: bson.D{{"v.foo.$", true}},
 		},
+		"TypeOperator": {
+			filter:     bson.D{},
+			projection: bson.D{{"type", bson.D{{"$type", "$v"}}}},
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2679",
+		},
 	}
 
 	testQueryCompat(t, testCases)

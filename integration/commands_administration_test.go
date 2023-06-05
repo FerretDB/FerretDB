@@ -574,6 +574,31 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestCommandsAdministrationBuildInfoFerretdbExtensions(t *testing.T) {
+	setup.SkipForMongoDB(t, "FerretDB-specific command's extensions")
+
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	var actual bson.D
+	command := bson.D{{"buildInfo", int32(1)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+
+	ferretdbFeatures, err := doc.Get("ferretdbFeatures")
+	assert.NoError(t, err)
+	ferretdbFeaturesDoc, ok := ferretdbFeatures.(*types.Document)
+	assert.True(t, ok)
+	assert.NotNil(t, ferretdbFeatures)
+	aggregationStages, err := ferretdbFeaturesDoc.Get("aggregationStages")
+	aggregationStagesArray, ok := aggregationStages.(*types.Array)
+	assert.True(t, ok)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, aggregationStagesArray)
+}
+
 func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
@@ -707,6 +732,44 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 		assert.EqualValues(t, 0, must.NotFail(doc.Get("numObjects")))
 		assert.InDelta(t, 159, must.NotFail(doc.Get("millis")), 159)
 	})
+}
+
+func TestCommandsAdministrationDataSizeErrors(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+
+	for name, tc := range map[string]struct { //nolint:vet // for readability
+		command bson.D
+		err     *mongo.CommandError
+	}{
+		"InvalidNamespace": {
+			command: bson.D{{"dataSize", "invalid"}},
+			err: &mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Invalid namespace specified 'invalid'",
+			},
+		},
+		"InvalidNamespaceTypeDocument": {
+			command: bson.D{{"dataSize", bson.D{}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type object",
+			},
+		},
+	} {
+		name, tc := name, tc
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			res := collection.Database().RunCommand(ctx, tc.command)
+
+			AssertEqualCommandError(t, *tc.err, res.Err())
+		})
+	}
 }
 
 func TestCommandsAdministrationDBStats(t *testing.T) {
