@@ -130,6 +130,7 @@ func ConvertDocuments(t testing.TB, docs []bson.D) []*types.Document {
 	return res
 }
 
+// ConvertArray converts given driver's array to FerretDB's *types.Array.
 func ConvertArray(t testing.TB, arr bson.A) *types.Array {
 	t.Helper()
 
@@ -137,9 +138,14 @@ func ConvertArray(t testing.TB, arr bson.A) *types.Array {
 
 	var res *types.Array
 	require.IsType(t, res, v)
+
 	return v.(*types.Array)
 }
 
+// AssertEqualArrays asserts that two arrays are equal in a way that is useful for tests
+// (NaNs are equal, etc).
+//
+// See testutil.AssertEqual for details.
 func AssertEqualArrays(t testing.TB, expected, actual bson.A) bool {
 	t.Helper()
 

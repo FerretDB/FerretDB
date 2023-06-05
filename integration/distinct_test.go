@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -167,7 +168,7 @@ func TestDistinctDuplicates(t *testing.T) {
 			distinct, err := coll.Distinct(ctx, tc.key, bson.D{})
 			require.NoError(t, err)
 
-			assert.Equal(t, len(tc.expected), len(distinct), distinct)
+			assert.Equal(t, len(tc.expected), len(distinct), fmt.Sprint(distinct))
 
 			for i, value := range distinct {
 				expectedValue := tc.expected[i]
