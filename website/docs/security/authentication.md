@@ -1,5 +1,6 @@
 ---
 sidebar_position: 1
+slug: /security/authentication/ # referenced in error messages
 description: Learn to use authentication mechanisms
 ---
 
@@ -12,7 +13,7 @@ For example, if the server was started with `postgres://user1:pass1@postgres:543
 anonymous clients will be authenticated as user1,
 but clients that use `mongodb://user2:pass2@ferretdb:27018/ferretdb?tls=true&authMechanism=PLAIN` MongoDB URI will be authenticated as user2.
 Since usernames and passwords are transferred in plain text,
-the use of [TLS](../security/securing-connections-with-tls.md#securing-connections-with-tls) is highly recommended.
+the use of [TLS](../security/tls.md) is highly recommended.
 
 ## PostgreSQL backend with default username and password
 
