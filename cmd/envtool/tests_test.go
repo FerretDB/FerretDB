@@ -27,12 +27,28 @@ import (
 func TestShardIntegrationTests(t *testing.T) {
 	t.Parallel()
 
-	var w bytes.Buffer
-	err := shardIntegrationTests(&w, 99, 150)
-	assert.NoError(t, err)
-	assert.NotNil(t, w)
-	s := w.String()
-	assert.Regexp(t, "^\\^.*\\$$", s)
+	t.Run("Successfully Shard Integration tests", func(t *testing.T) {
+		var w bytes.Buffer
+		err := shardIntegrationTests(&w, 0, 10)
+		assert.NoError(t, err)
+		assert.NotNil(t, w.Bytes())
+		s := w.String()
+		assert.Regexp(t, "^\\^.*\\$$", s)
+	})
+
+	t.Run("Fail Shard Integration tests - too big index", func(t *testing.T) {
+		var w bytes.Buffer
+		err := shardIntegrationTests(&w, 12, 10)
+		assert.EqualError(t, err, "Cannot shard when Index is greater or equal to Total (12 >= 10)")
+		assert.Nil(t, w.Bytes())
+	})
+
+	t.Run("Failp Shard Integration tests - too big index", func(t *testing.T) {
+		var w bytes.Buffer
+		err := shardIntegrationTests(&w, 12, 100000000000000)
+		assert.ErrorContains(t, err, "Cannot shard when Total is greater than amount of tests")
+		assert.Nil(t, w.Bytes())
+	})
 }
 
 func TestShardTests(t *testing.T) {
