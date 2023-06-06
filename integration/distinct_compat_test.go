@@ -83,7 +83,7 @@ func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCas
 						assert.Equal(t, compatRes, targetRes)
 					}
 
-					AssertEqualArrays(t, targetRes, compatRes)
+					assert.Equal(t, targetRes, compatRes)
 
 					if targetRes != nil || compatRes != nil {
 						nonEmptyResults = true
