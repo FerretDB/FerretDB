@@ -316,6 +316,12 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 			indexName:      "custom-name",
 			resultType:     emptyResult,
 		},
+		"empty-collection-name": {
+			collectionName: "",
+			key:            bson.D{{"v", -1}},
+			indexName:      "custom-name",
+			resultType:     emptyResult,
+		},
 		"index-name-not-set": {
 			collectionName: "test",
 			key:            bson.D{{"v", -1}},
