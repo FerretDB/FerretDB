@@ -19,11 +19,12 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"sort"
 	"strings"
 )
 
-// shardIntegrationTests shards integration test names from the specified path.
+// shardIntegrationTests shards integration test names from the specified directory.
 func shardIntegrationTests(w io.Writer, index, total uint) error {
 	var output strings.Builder
 
@@ -69,19 +70,17 @@ func shardTests(index, total uint, tests ...string) ([]string, error) {
 	return tests[start:end], nil
 }
 
-// getAllTestNames gets all test names from the specified path.
-func getAllTestNames(path string) ([]string, error) {
+// getAllTestNames gets all test names from the specified directory.
+func getAllTestNames(dir string) ([]string, error) {
 	var tests []string
 
-	if err := chdirToRoot(); err != nil {
-		return tests, err
-	}
-
-	if err := os.Chdir(path); err != nil {
+	newDir, err := getNewWorkingDir(dir)
+	if err != nil {
 		return tests, err
 	}
 
 	cmd := exec.Command("go", "test", "-list=.")
+	cmd.Dir = newDir
 
 	outputBytes, err := cmd.Output()
 	if err != nil {
@@ -97,16 +96,36 @@ func getAllTestNames(path string) ([]string, error) {
 	return tests, nil
 }
 
-// chdirToRoot changes the directory to the root of the repository.
-func chdirToRoot() error {
+// getNewWorkingDir gets the new working directory based on the repo root directory and passed destination.
+func getNewWorkingDir(dest string) (string, error) {
+	var rootDir, newWorkingDir string
+
+	rootDir, err := getRootDir()
+	if err != nil {
+		return rootDir, err
+	}
+
+	newWorkingDir = path.Join(rootDir, dest)
+	if _, err := os.Stat(newWorkingDir); err != nil {
+		return newWorkingDir, err
+	}
+
+	return newWorkingDir, nil
+}
+
+// getRootDir gets the repository's root directory.
+func getRootDir() (string, error) {
+	var rootDir string
+
 	workingDir, err := os.Getwd()
 	if err != nil {
-		return err
+		return rootDir, err
 	}
 
 	if strings.Contains(workingDir, "envtool") {
-		os.Chdir("../..")
+		rootDir = path.Join(workingDir, "..", "..")
+		return rootDir, nil
 	}
 
-	return nil
+	return workingDir, nil
 }

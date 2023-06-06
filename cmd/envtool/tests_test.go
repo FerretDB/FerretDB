@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,10 +28,11 @@ func TestShardIntegrationTests(t *testing.T) {
 	t.Parallel()
 
 	var w bytes.Buffer
-	err := shardIntegrationTests(&w, 0, 2)
+	err := shardIntegrationTests(&w, 99, 150)
 	assert.NoError(t, err)
 	assert.NotNil(t, w)
-	assert.Regexp(t, "^\\^.*\\$$", w.String())
+	s := w.String()
+	assert.Regexp(t, "^\\^.*\\$$", s)
 }
 
 func TestShardTests(t *testing.T) {
@@ -111,15 +113,29 @@ func TestGetAllTestNames(t *testing.T) {
 	assert.NotEmpty(t, testNames)
 }
 
-func TestChdirToRoot(t *testing.T) {
+func TestGetNewWorkingDir(t *testing.T) {
 	t.Parallel()
 
 	// while running the tests the current working location is where the test is
 	oldWorkingDir, err := os.Getwd()
 	assert.NoError(t, err)
-	err = chdirToRoot()
+	dir, err := getNewWorkingDir("integration")
 	assert.NoError(t, err)
-	NewWorkingDir, err := os.Getwd()
+	assert.NotEqual(t, oldWorkingDir, dir)
+	assert.Contains(t, dir, "integration")
+	assert.NotContains(t, dir, "envtool")
+	assert.True(t, strings.HasSuffix(dir, "/FerretDB/integration"))
+}
+
+func TestGetRootDir(t *testing.T) {
+	t.Parallel()
+
+	oldWorkingDir, err := os.Getwd()
 	assert.NoError(t, err)
-	assert.NotEqual(t, oldWorkingDir, NewWorkingDir)
+	rootDir, err := getRootDir()
+	assert.NoError(t, err)
+	assert.NotEqual(t, oldWorkingDir, rootDir)
+	assert.NotContains(t, rootDir, "integration")
+	assert.NotContains(t, rootDir, "envtool")
+	assert.True(t, strings.HasSuffix(rootDir, "/FerretDB"))
 }
