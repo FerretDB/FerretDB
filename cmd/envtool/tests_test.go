@@ -113,6 +113,31 @@ func TestGetAllTestNames(t *testing.T) {
 	assert.NotEmpty(t, testNames)
 }
 
+func TestPrepareTestNamesOutput(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Fails when the status is not OK", func(t *testing.T) {
+		output := `TestAggregateCommandCompat
+fail      github.com/FerretDB/FerretDB/integration        0.023s`
+
+		tests, err := prepareTestNamesOutput(output)
+		assert.ErrorContains(t, err, "Could not read test names:")
+		assert.Nil(t, tests)
+	})
+
+	t.Run("Passes when the status is OK", func(t *testing.T) {
+		output := `TestAggregateCommandCompat
+TestAggregateCompatStages
+BenchmarkInsertMany
+ok      github.com/FerretDB/FerretDB/integration        0.023s`
+		expectedOutput := []string{"BenchmarkInsertMany", "TestAggregateCommandCompat", "TestAggregateCompatStages"}
+
+		tests, err := prepareTestNamesOutput(output)
+		assert.NoError(t, err)
+		assert.Equal(t, tests, expectedOutput)
+	})
+}
+
 func TestGetNewWorkingDir(t *testing.T) {
 	t.Parallel()
 

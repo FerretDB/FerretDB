@@ -72,11 +72,9 @@ func shardTests(index, total uint, tests ...string) ([]string, error) {
 
 // getAllTestNames gets all test names from the specified directory.
 func getAllTestNames(dir string) ([]string, error) {
-	var tests []string
-
 	newDir, err := getNewWorkingDir(dir)
 	if err != nil {
-		return tests, err
+		return nil, err
 	}
 
 	cmd := exec.Command("go", "test", "-list=.")
@@ -84,13 +82,32 @@ func getAllTestNames(dir string) ([]string, error) {
 
 	outputBytes, err := cmd.Output()
 	if err != nil {
-		return tests, err
+		return nil, err
 	}
-	output := string(outputBytes)
 
-	tests = strings.FieldsFunc(output, func(s rune) bool {
+	tests, err := prepareTestNamesOutput(string(outputBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	return tests, nil
+}
+
+// prepareTestNamesOutput prepares test names output.
+func prepareTestNamesOutput(output string) ([]string, error) {
+	tests := strings.FieldsFunc(output, func(s rune) bool {
 		return s == '\n'
 	})
+
+	status := tests[len(tests)-1]
+	if !strings.Contains(status, "ok") {
+		return nil, fmt.Errorf("Could not read test names: %s", status)
+	}
+
+	if strings.Contains(status, "github.com/FerretDB/FerretDB/integration") {
+		tests = tests[:len(tests)-1]
+	}
+
 	sort.Strings(tests)
 
 	return tests, nil
