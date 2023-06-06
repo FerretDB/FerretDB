@@ -42,7 +42,7 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 	case *types.Array:
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupUnaryOperator,
-			"The $sum accumulator is a unary accumulator",
+			"The $sum accumulator is a unary operator",
 			"$sum (accumulator)",
 		)
 	case float64:
