@@ -149,12 +149,15 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 				require.True(t, ok)
 
 				if actualStatus == "disabled" {
-					if _, ok := actual.Map()["debug"]; ok {
-						actualStatus = actual.Map()["debug"].(bson.D).Map()["state"]
+					if v, ok := actual.Map()["debug"]; ok {
+						debug, ok := v.(bson.D)
+						require.True(t, ok)
+						actualStatus, ok = debug.Map()["state"]
+						require.True(t, ok)
 					}
-				}
 
-				assert.Equal(t, tc.expectedStatus, actualStatus)
+					assert.Equal(t, tc.expectedStatus, actualStatus)
+				}
 			}
 		})
 	}
