@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -129,60 +128,19 @@ func TestDistinctDuplicates(t *testing.T) {
 
 	ctx, coll := setup.Setup(t)
 
-	for name, tc := range map[string]struct {
-		docs     []bson.D
-		key      string
-		expected []any
-	}{
-		"LongDouble": {
-			docs: []bson.D{
-				{{"v", int64(42)}},
-				{{"v", float64(42)}},
-				{{"v", "42"}},
-			},
-			key:      "v",
-			expected: []any{int64(42), "42"},
-		},
-		"LongInt": {
-			docs: []bson.D{
-				{{"v", int64(42)}},
-				{{"v", float64(42)}},
-				{{"v", "42"}},
-			},
-			key:      "v",
-			expected: []any{int64(42), "42"},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			docs := make([]any, len(tc.docs))
-
-			for i, doc := range tc.docs {
-				docs[i] = doc
-			}
-
-			_, err := coll.InsertMany(ctx, docs)
-			require.NoError(t, err)
-
-			distinct, err := coll.Distinct(ctx, tc.key, bson.D{})
-			require.NoError(t, err)
-
-			assert.Equal(t, len(tc.expected), len(distinct), fmt.Sprint(distinct))
-
-			for i, value := range distinct {
-				expectedValue := tc.expected[i]
-
-				if value != expectedValue {
-					// Values order is random so we cannot expect the types to be the same
-					switch value.(type) {
-					case float64, int32, int64:
-						assert.EqualValues(t, expectedValue, value)
-					default:
-						require.Equal(t, tc.expected, distinct)
-					}
-				}
-			}
-		})
+	docs := []any{
+		bson.D{{"v", int64(42)}},
+		bson.D{{"v", float64(42)}},
+		bson.D{{"v", "42"}},
 	}
+
+	expected := []any{int64(42), "42"}
+
+	_, err := coll.InsertMany(ctx, docs)
+	require.NoError(t, err)
+
+	distinct, err := coll.Distinct(ctx, "v", bson.D{})
+	require.NoError(t, err)
+
+	assert.EqualValues(t, expected, distinct)
 }
