@@ -55,7 +55,8 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		"ok", float64(1),
 	))
 
-	// TODO
+	// TODO https://github.com/FerretDB/FerretDB/issues/2750
+	//
 	// if len(res.Errors) > 0 {
 	// 	var errs *commonerrors.WriteErrors
 	//
