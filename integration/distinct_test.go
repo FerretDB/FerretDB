@@ -176,7 +176,7 @@ func TestDistinctDuplicates(t *testing.T) {
 				if value != expectedValue {
 					// Values order is random so we cannot expect the types to be the same
 					switch value.(type) {
-					case int64, int32, float64:
+					case float64, int32, int64:
 						assert.EqualValues(t, expectedValue, value)
 					default:
 						require.Equal(t, tc.expected, distinct)
