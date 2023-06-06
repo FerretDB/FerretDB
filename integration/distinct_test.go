@@ -156,7 +156,7 @@ func TestDistinctDuplicates(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			var docs = make([]any, len(tc.docs))
+			docs := make([]any, len(tc.docs))
 
 			for i, doc := range tc.docs {
 				docs[i] = doc
