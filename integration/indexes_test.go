@@ -18,13 +18,75 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
+
+func TestIndexesCreateInvalidIndexes(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
+
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		indexes    any
+		err        *mongo.CommandError
+		altMessage string
+		skip       string
+	}{
+		"EmptyIndexes": {
+			indexes: bson.A{},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Must specify at least one index to create",
+			},
+		},
+		"NilIndexes": {
+			indexes: nil,
+			err: &mongo.CommandError{
+				Code:    10065,
+				Name:    "Location10065",
+				Message: "invalid parameter: expected an object (indexes)",
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
+		},
+		"InvalidType": {
+			indexes: 42,
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'createIndexes.indexes' is the wrong type 'int', expected type 'array'",
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			provider := shareddata.ArrayDocuments // one provider is enough to check for errors
+			ctx, collection := setup.Setup(t, provider)
+
+			command := bson.D{
+				{"createIndexes", collection.Name()},
+				{"indexes", tc.indexes},
+			}
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&res)
+
+			require.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
 
 func TestIndexesDropInvalidCollection(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")

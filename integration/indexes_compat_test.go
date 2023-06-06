@@ -489,6 +489,10 @@ func TestIndexesDrop(t *testing.T) {
 			dropIndexName: "nonexistent_1",
 			resultType:    emptyResult,
 		},
+		"Empty": {
+			dropIndexName: "",
+			resultType:    emptyResult,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
