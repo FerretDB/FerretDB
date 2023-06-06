@@ -86,9 +86,9 @@ func (s *sum) Accumulate(iter types.DocumentsIterator) (any, error) {
 
 		switch number := s.number.(type) {
 		case float64, int32, int64:
-			// Below is equivalent of len(grouped)*number,
-			// with conversion handling upon overflow of int32 and int64.
-			// For example, { $sum: 1 } is equivalent of $count.
+			// For number types, the result is equivalent of iterator len*number,
+			// with conversion handled upon overflow of int32 and int64.
+			// For example, { $sum: 1 } is equivalent of { $count: { } }.
 			numbers = append(numbers, number)
 		default:
 			// $sum returns 0 on non-existent and non-numeric field.
