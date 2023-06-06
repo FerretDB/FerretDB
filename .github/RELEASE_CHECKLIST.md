@@ -12,7 +12,8 @@
    - Tweak spacing, headers levels.
 6. Update CHANGELOG.md with the same release notes:
    - Check spacing, header levels.
-7. Push changes, check `git status`.
+   - Run `task docs-fmt`.
+7. Commit and push changes, check `git status`.
 
 ## Git tag
 

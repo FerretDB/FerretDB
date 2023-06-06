@@ -27,7 +27,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/tigrisdata/tigris-client-go/config"
 	"github.com/tigrisdata/tigris-client-go/driver"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -384,7 +383,7 @@ func setup(t *testing.T) (string, string, context.Context, *TigrisDB) {
 	p, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	logger := testutil.Logger(t, zap.NewAtomicLevelAt(zap.DebugLevel))
+	logger := testutil.Logger(t)
 	tdb, err := New(ctx, cfg, logger, p)
 	require.NoError(t, err)
 

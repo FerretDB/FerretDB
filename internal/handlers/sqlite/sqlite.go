@@ -51,6 +51,8 @@ type NewOpts struct {
 	L             *zap.Logger
 	Metrics       *connmetrics.ConnMetrics
 	StateProvider *state.Provider
+
+	DisableFilterPushdown bool
 }
 
 // New returns a new handler.
