@@ -1602,7 +1602,7 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", "$v"}}}}}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2679",
+			//skip: "https://github.com/FerretDB/FerretDB/issues/2679",
 		},
 	}
 

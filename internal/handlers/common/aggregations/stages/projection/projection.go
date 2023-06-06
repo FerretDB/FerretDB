@@ -18,6 +18,7 @@ package projection
 import (
 	"errors"
 	"fmt"
+	"github.com/AlekSi/pointer"
 	"strings"
 	"time"
 
@@ -143,6 +144,7 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 		case *types.Document:
 			// validate operators later
 			validated.Set(key, value)
+			projectionVal = pointer.To(true)
 
 		case *types.Array, string, types.Binary, types.ObjectID,
 			time.Time, types.NullType, types.Regex, types.Timestamp: // all this types are treated as new fields value

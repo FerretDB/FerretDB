@@ -21,7 +21,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -62,7 +62,7 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 			paramEvaluated = false
 
 		case string:
-			if strings.HasPrefix("$", param) {
+			if strings.HasPrefix(param, "$") {
 				expression, err := aggregations.NewExpression(param)
 				if err != nil {
 					return nil, err
@@ -85,7 +85,7 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 	if value == nil {
 		res = "missing"
 	} else {
-		res = sjson.GetTypeOfValue(value)
+		res = commonparams.AliasFromType(value)
 	}
 
 	return res, nil
