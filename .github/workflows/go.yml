@@ -128,6 +128,7 @@ jobs:
         with:
           file: ./cover.txt
           flag-name: unit
+          parallel: true
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
@@ -138,6 +139,138 @@ jobs:
         run: |
           git status
           git diff --exit-code
+
+  integration:
+    name: Integration ${{ matrix.name }}
+    runs-on:
+      group: paid
+    timeout-minutes: 45
+
+    # Do not run this job in parallel for any PR change or branch/tag push
+    # to save some resources.
+    concurrency:
+      group: integration-${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "MongoDB", task: "mongodb" }
+          - { name: "PostgreSQL", task: "pg" }
+          - { name: "SQLite", task: "sqlite" }
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: integration
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Start environment
+        run: bin/task env-up-detach
+
+      - name: Run init
+        run: bin/task init
+
+      - name: Wait for and setup environment
+        run: bin/task env-setup
+
+      - name: Run ${{ matrix.task }} tests
+        run: bin/task test-integration-${{ matrix.task }}
+
+      # The token is not required but should make uploads more stable.
+      # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
+      #
+      # Unfortunately, it seems that tokenless uploads fail too often.
+      # See https://github.com/codecov/codecov-action/issues/837.
+      #
+      # We also can't use ${{ vars.CODECOV_TOKEN }}: https://github.com/orgs/community/discussions/44322
+      - name: Upload coverage information to codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
+          files: ./integration/integration-${{ matrix.task }}.txt
+          flags: integration,${{ matrix.task }}
+          fail_ci_if_error: true
+          verbose: true
+
+      - name: Upload coverage information to coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          file: ./integration/integration-${{ matrix.task }}.txt
+          flag-name: integration-${{ matrix.task }}
+          parallel: true
+
+      # we don't want them on CI
+      - name: Clean test and fuzz caches
+        if: always()
+        run: go clean -testcache -fuzzcache
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code
+
+  # https://github.com/lemurheavy/coveralls-public/issues/1636
+  submit-coveralls:
+    name: Submit final coveralls report
+    runs-on: ubuntu-22.04
+
+    needs: [test, integration]
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
+
+    steps:
+      - name: Submit coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel-finished: true
+
+  env-data:
+    name: env-data
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: env-data
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Start environment
+        run: bin/task env-up-detach
+
+      - name: Run init
+        run: bin/task init
+
+      - name: Wait for and setup environment
+        run: bin/task env-setup
+
+      - name: Run env-data
+        run: bin/task env-data
 
   golangci-lint:
     name: golangci-lint
