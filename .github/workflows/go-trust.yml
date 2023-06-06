@@ -1,10 +1,11 @@
 ---
-# Integration tests that don't need access to secrets.
+# Integration tests that need access to secrets.
 
-name: Integration
+name: Go trusted
 on:
-  pull_request:
+  pull_request_target:
     types:
+      # not for "labeled" to prevent two builds for "labeled" and "unlabeled" when labels are changed
       - unlabeled # if GitHub Actions stuck, add and remove "not ready" label to force rebuild
       - opened
       - reopened
@@ -14,7 +15,7 @@ on:
       - main
       - releases/*
   schedule:
-    - cron: "12 0 * * *"
+    - cron: "12 2 * * *" # after integration workflow to reuse cache
 
 # Do not run this workflow in parallel for any PR change or branch/tag push
 # to save some resources.
@@ -30,23 +31,24 @@ env:
   GOPROXY: https://proxy.golang.org
 
 jobs:
-  test:
-    name: Test ${{ matrix.name }}
+  integration:
+    name: Integration ${{ matrix.name }}
     runs-on:
       group: paid
-    timeout-minutes: 45
+    timeout-minutes: 30
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
+    if: >
+      github.event_name != 'pull_request_target' ||
+      (
+        contains(github.event.pull_request.labels.*.name, 'trust') &&
+        !contains(github.event.pull_request.labels.*.name, 'not ready')
+      )
 
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { name: "MongoDB", task: "mongodb" }
-          - { name: "PostgreSQL", task: "pg" }
-          - { name: "SQLite", task: "sqlite" }
-          # - { name: "Tigris", task: "tigris" }
-          # - { name: "Tigris main", task: "tigris", tigris_dockerfile: "tigris_main" }
+          - { name: "Hana", task: "hana" }
 
     steps:
       - name: Checkout code
@@ -54,6 +56,21 @@ jobs:
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
+
+      - name: Checkout pull request code
+        if: github.event_name == 'pull_request_target'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: false
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # for branch.txt on pull_request_target; `main` is already checked out on push / schedule
+      - name: Name branch
+        if: github.event_name == 'pull_request_target'
+        env:
+          BRANCH: ${{ github.head_ref }} # see https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
+        run: git checkout -b $BRANCH
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
@@ -66,8 +83,6 @@ jobs:
 
       - name: Start environment
         run: bin/task env-up-detach
-        env:
-          TIGRIS_DOCKERFILE: ${{ matrix.tigris_dockerfile }}
 
       - name: Run init
         run: bin/task init
@@ -77,6 +92,8 @@ jobs:
 
       - name: Run ${{ matrix.task }} tests
         run: bin/task test-integration-${{ matrix.task }}
+        env:
+          FERRETDB_HANA_URL: ${{ secrets.FERRETDB_HANA_URL }}
 
       # The token is not required but should make uploads more stable.
       # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
@@ -94,12 +111,8 @@ jobs:
           fail_ci_if_error: true
           verbose: true
 
-      - name: Upload coverage information to coveralls
-        uses: coverallsapp/github-action@v2
-        with:
-          file: ./integration/integration-${{ matrix.task }}.txt
-          flag-name: integration-${{ matrix.task }}
-          parallel: true
+      # Do not submit to coveralls because it can't handle parallel workflows:
+      # https://github.com/lemurheavy/coveralls-public/issues/1636#issuecomment-1529460515
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
@@ -110,52 +123,3 @@ jobs:
         run: |
           git status
           git diff --exit-code
-
-  env-data:
-    name: env-data
-    runs-on: ubuntu-22.04
-    timeout-minutes: 10
-
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0 # for `git describe` to work
-          lfs: false # LFS is used only by website
-
-      - name: Setup Go
-        uses: FerretDB/github-actions/setup-go@main
-        with:
-          cache-key: env-data
-
-      - name: Install Task
-        run: go generate -x
-        working-directory: tools
-
-      - name: Start environment
-        run: bin/task env-up-detach
-
-      - name: Run init
-        run: bin/task init
-
-      - name: Wait for and setup environment
-        run: bin/task env-setup
-
-      - name: Run env-data
-        run: bin/task env-data
-
-  submit-coveralls:
-    name: Submit coveralls
-    runs-on: ubuntu-22.04
-
-    needs: test
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
-
-    steps:
-      - name: Submit coveralls
-        uses: coverallsapp/github-action@v2
-        with:
-          parallel-finished: true
-          carryforward: unit # workaround for https://github.com/lemurheavy/coveralls-public/issues/1636
