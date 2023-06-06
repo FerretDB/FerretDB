@@ -142,5 +142,10 @@ func TestDistinctDuplicates(t *testing.T) {
 	distinct, err := coll.Distinct(ctx, "v", bson.D{})
 	require.NoError(t, err)
 
+	// We can't check the exact data types because they might be different.
+	// For example, if expected is [int64(42), "42"] and distinct is [float64(42), "42"],
+	// we consider them equal. If different documents use different types to store the same value
+	// in the same field, it's hard to predict what type will be returned by distinct.
+	// This is why we use assert.EqualValues instead of assert.Equal.
 	assert.EqualValues(t, expected, distinct)
 }
