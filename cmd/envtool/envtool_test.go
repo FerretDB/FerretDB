@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -29,7 +28,7 @@ func TestPrintDiagnosticData(t *testing.T) {
 	t.Parallel()
 
 	assert.NotPanics(t, func() {
-		l := testutil.Logger(t, zap.NewAtomicLevelAt(zap.DebugLevel))
+		l := testutil.Logger(t)
 		printDiagnosticData(nil, l.Sugar())
 	})
 }

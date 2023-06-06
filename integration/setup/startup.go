@@ -17,6 +17,9 @@ package setup
 import (
 	"context"
 	"net/http"
+	"os"
+	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -33,7 +36,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// jaegerExporter is a global Jaeger exporter for tests.
 var jaegerExporter *jaeger.Exporter
+
+// sqliteDir is a fixed directory for SQLite backend tests.
+//
+// We don't use testing.T.TempDir() or something to make debugging of failed tests easier.
+var sqliteDir = filepath.Join("..", "tmp", "sqlite-tests")
 
 // Startup initializes things that should be initialized only once.
 func Startup() {
@@ -54,6 +63,9 @@ func Startup() {
 	if !slices.Contains(allBackends, *targetBackendF) {
 		zap.S().Fatalf("Unknown target backend %q.", *targetBackendF)
 	}
+
+	_ = os.Remove(sqliteDir)
+	must.NoError(os.MkdirAll(sqliteDir, 0o777))
 
 	if u := *targetURLF; u != "" {
 		client, err := makeClient(ctx, u)
@@ -106,4 +118,8 @@ func Shutdown() {
 	defer cancel()
 
 	must.NoError(jaegerExporter.Shutdown(ctx))
+
+	// to increase a chance of resource finalizers to spot problems
+	runtime.GC()
+	runtime.GC()
 }

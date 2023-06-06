@@ -22,7 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestError(t *testing.T) {
+func TestErrorNormal(t *testing.T) {
 	t.Parallel()
 
 	pe := &fs.PathError{
@@ -41,4 +41,17 @@ func TestError(t *testing.T) {
 	assert.Equal(t, pe, e.err)
 
 	assert.Equal(t, `ErrorCodeCollectionDoesNotExist: open database.db: EOF`, err.Error())
+}
+
+func TestErrorNil(t *testing.T) {
+	t.Parallel()
+
+	err := NewError(ErrorCodeCollectionDoesNotExist, nil)
+
+	var e *Error
+	assert.ErrorAs(t, err, &e)
+	assert.Equal(t, ErrorCodeCollectionDoesNotExist, e.code)
+	assert.Nil(t, e.err)
+
+	assert.Equal(t, `ErrorCodeCollectionDoesNotExist: <nil>`, err.Error())
 }
