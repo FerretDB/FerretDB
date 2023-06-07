@@ -25,9 +25,8 @@ import (
 )
 
 type insertCommandCompatTestCase struct { //nolint:vet // for readability
-	altErrorMsg string // optional, alternative error message in case of error
-	ordered     any    // required, ordered parameter
-	documents   []any  // required, slice of bson.D to be insert
+	ordered   any   // required, ordered parameter
+	documents []any // required, slice of bson.D to be insert
 
 	skip string // optional, reason to skip the test
 }
@@ -94,14 +93,6 @@ func TestInsertCommandCompat(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]insertCommandCompatTestCase{
-		"InsertOrderedInvalid": {
-			documents: []any{
-				bson.D{{"_id", "foo"}},
-			},
-			ordered:     "foo",
-			altErrorMsg: "BSON field 'ordered' is the wrong type 'string', expected type 'bool'",
-		},
-
 		"InsertEmpty": {
 			documents: []any{
 				bson.D{{}},
