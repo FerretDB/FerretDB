@@ -14,7 +14,7 @@ keywords: [FerretDB, mongodb alternative]
 
 ![How to install FerretDB on Ubuntu](/img/blog/install-ferretdb-ubuntu.jpg)
 
-*This is a duplicate post from [Tutornix](https://tutornix.com/how-to-install-ferretdb-mongodb-alternative-on-ubuntu-22-0420-04/) about installing FerretDB on Ubuntu*
+*This is a duplicate post from [Tutornix](https://tutornix.com/how-to-install-ferretdb-mongodb-alternative-on-ubuntu-22-0420-04/) about installing FerretDB on Ubuntu; we are grateful to the author for the permission to repost this on our blog.*
 
 <!--truncate-->
 
@@ -51,20 +51,20 @@ For that reason, we need to install it on our system.
 
 Before we begin, you need to ensure that your system and all the installed packages are updated to their latest stable versions:
 
-```js
+```sh
 sudo apt update
 sudo apt upgrade
 ```
 
 Once the system has been updated, install PostgreSQL
 
-```js
+```sh
 sudo apt install postgresql -y
 ```
 
 After installing, ensure that the service is runnning:
 
-```js
+```sh
 $ systemctl status postgresql
 ● postgresql.service - PostgreSQL RDBMS
      Loaded: loaded (/lib/systemd/system/postgresql.service; enabled; vendor preset: enabled)
@@ -77,7 +77,7 @@ $ systemctl status postgresql
 
 Connect to the instance:
 
-```js
+```sh
 sudo -u postgres psql
 ```
 
@@ -89,25 +89,25 @@ CREATE USER ferretuser WITH PASSWORD 'Passw0rd!';
 
 Create a database for the user:
 
-```js
+```sql
 CREATE DATABASE ferretuser OWNER ferretuser;
 ```
 
 Once created, exit the shell:
 
-```js
+```sh
 \q
 ```
 
 Create the user on your system:
 
-```js
+```sh
 sudo adduser ferretuser
 ```
 
 Verify if you can connect to the database using the user:
 
-```js
+```sh
 $ sudo -u ferretuser psql
 could not change directory to "/home/ubuntu22": Permission denied
 psql (14.7 (Ubuntu 14.7-0ubuntu0.22.04.1))
@@ -121,20 +121,20 @@ ferretuser=> \q
 To download the latest FerretDB release, visit the official [GitHub Release page](https://github.com/FerretDB/FerretDB/releases).
 Alternatively, you can pull the latest release using the command:
 
-```js
+```sh
 VER=v1.2.0
 wget https://github.com/FerretDB/FerretDB/releases/download/$VER/ferretdb.deb
 ```
 
 Once downloaded, install FerretDB using the command:
 
-```js
+```sh
 sudo apt install ./ferretdb.deb
 ```
 
 Sample Output:
 
-```js
+```sh
 Reading package lists... Done
 Building dependency tree
 Reading state information... Done
@@ -157,7 +157,7 @@ Setting up ferretdb (0.0.0~rc0) ...
 
 Check the installed version:
 
-```js
+```sh
 $ ferretdb --version
 version: v1.2.0
 commit: 3153c8fbf185126af1fe8fb364ac166d2287d093
@@ -188,7 +188,7 @@ FerretDB takes several arguments that include:
 
 Since FerretDB has not been started, we will create a systemd service file with all the desired variables:
 
-```js
+```sh
 sudo vim /etc/systemd/system/ferretdb.service
 ```
 
@@ -213,20 +213,20 @@ WantedBy=multi-user.target
 
 In the above command, remember to replace the credentials for **PostgreSQL** before you proceed with the below command to reload the system daemon:
 
-```js
+```sh
 sudo systemctl daemon-reload
 ```
 
 Start and enable the service:
 
-```js
+```sh
 sudo systemctl enable ferretdb
 sudo systemctl start ferretdb
 ```
 
 Check the status of the service:
 
-```js
+```sh
 $ systemctl status ferretdb
 ●  ferretdb.service - FerretDB
      Loaded: loaded (/etc/systemd/system/ferretdb.service; enabled; vendor preset: enabled)
@@ -253,7 +253,7 @@ You can connect to it using the Mongo shell.
 You need to have the Mongo Shell installed on your system before you proceed.
 First, add the MongoDB repo to your system.
 
-```js
+```sh
 sudo apt install wget curl gnupg2 software-properties-common apt-transport-https ca-certificates lsb-release -y
 curl -fsSL https://www.mongodb.org/static/pgp/server-6.0.asc|sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/mongodb-6.gpg
 echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
@@ -261,13 +261,13 @@ echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release
 
 Install the Mongo Shell on Ubuntu:
 
-```js
+```sh
 sudo apt update && sudo apt install mongodb-mongosh
 ```
 
 Now connect the FerretDB:
 
-```js
+```sh
 mongosh
 ```
 
@@ -277,7 +277,7 @@ Sample Output:
 
 Once connected, switch to the database created on PostgreSQL
 
-```js
+```sh
 test> use ferretuser
 switched to db ferretuser
 ferretuser> show dbs
@@ -306,7 +306,7 @@ userdetails
 
 This added table can also be viewed on the PostgreSQL database:
 
-```js
+```sh
 sudo -u ferretuser psql
 ```
 
