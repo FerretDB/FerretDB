@@ -42,7 +42,9 @@ func shardIntegrationTests(w io.Writer, index, total uint) error {
 	output.WriteString(strings.Join(shardedTests, "|"))
 	output.WriteString(")$")
 
-	w.Write([]byte(output.String()))
+	if _, err = w.Write([]byte(output.String())); err != nil {
+		return err
+	}
 
 	return nil
 }
