@@ -15,6 +15,7 @@
 package accumulators
 
 import (
+	"errors"
 	"math"
 	"math/big"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -40,7 +42,7 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 	case *types.Array:
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupUnaryOperator,
-			"The $sum accumulator is a unary accumulator",
+			"The $sum accumulator is a unary operator",
 			"$sum (accumulator)",
 		)
 	case float64:
@@ -64,38 +66,37 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 
 // Accumulate implements Accumulator interface.
 func (s *sum) Accumulate(iter types.DocumentsIterator) (any, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2706
-	grouped, err := iterator.ConsumeValues[struct{}, *types.Document](iter)
-	if err != nil {
-		return nil, err
-	}
+	var numbers []any
 
-	if s.expression != nil {
-		var values []any
+	for {
+		_, doc, err := iter.Next()
 
-		for _, doc := range grouped {
-			v := s.expression.Evaluate(doc)
-			values = append(values, v)
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
 		}
 
-		return sumNumbers(values...), nil
-	}
-
-	switch number := s.number.(type) {
-	case float64, int32, int64:
-		// Below is equivalent of len(grouped)*number,
-		// with conversion handling upon overflow of int32 and int64.
-		// For example, { $sum: 1 } is equivalent of $count.
-		numbers := make([]any, len(grouped))
-		for i := 0; i < len(grouped); i++ {
-			numbers[i] = number
+		if err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 
-		return sumNumbers(numbers...), nil
+		if s.expression != nil {
+			numbers = append(numbers, s.expression.Evaluate(doc))
+			continue
+		}
+
+		switch number := s.number.(type) {
+		case float64, int32, int64:
+			// For number types, the result is equivalent of iterator len*number,
+			// with conversion handled upon overflow of int32 and int64.
+			// For example, { $sum: 1 } is equivalent of { $count: { } }.
+			numbers = append(numbers, number)
+		default:
+			// $sum returns 0 on non-existent and non-numeric field.
+			return int32(0), nil
+		}
 	}
 
-	// $sum returns 0 on non-existent and non-numeric field.
-	return int32(0), nil
+	return sumNumbers(numbers...), nil
 }
 
 // sumNumbers accumulate numbers and returns the result of summation.

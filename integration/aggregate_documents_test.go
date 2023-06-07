@@ -23,6 +23,47 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
+func TestAggregateGroupErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		err        mongo.CommandError
+		altMessage string
+		skip       string
+		pipeline   bson.A
+	}{
+		"StageGroupUnaryOperatorSum": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"sum", bson.D{{"$sum", bson.A{}}}}}}},
+			},
+			err: mongo.CommandError{
+				Code:    40237,
+				Name:    "Location40237",
+				Message: "The $sum accumulator is a unary operator",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+			ctx, collection := setup.Setup(t)
+
+			_, err := collection.Aggregate(ctx, tc.pipeline)
+
+			if tc.altMessage != "" {
+				AssertEqualAltCommandError(t, tc.err, tc.altMessage, err)
+				return
+			}
+
+			AssertEqualCommandError(t, tc.err, err)
+		})
+	}
+}
+
 func TestAggregateProjectErrors(t *testing.T) {
 	t.Parallel()
 
