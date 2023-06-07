@@ -205,11 +205,13 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 	})
 
 	for name, tc := range map[string]struct {
-		command    bson.D
-		expected   map[string]any
-		unexpected []string
-		err        *mongo.CommandError
-		altMessage string
+		command    bson.D         // required, command to run
+		expected   map[string]any // optional, expected keys of response
+		unexpected []string       // optional, unexpected keys of response
+
+		err        *mongo.CommandError // optional
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"GetParameter_Asterisk1": {
 			command: bson.D{{"getParameter", "*"}},
@@ -510,15 +512,26 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.command, "command must not be nil")
 
 			var actual bson.D
 			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
-
 			if tc.err != nil {
-				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+				if tc.altMessage != "" {
+					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+					return
+				}
+
+				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
+
 			require.NoError(t, err)
 
 			m := actual.Map()
@@ -740,8 +753,11 @@ func TestCommandsAdministrationDataSizeErrors(t *testing.T) {
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		command bson.D
-		err     *mongo.CommandError
+		command bson.D // required, command to run
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"InvalidNamespace": {
 			command: bson.D{{"dataSize", "invalid"}},
@@ -763,11 +779,23 @@ func TestCommandsAdministrationDataSizeErrors(t *testing.T) {
 		name, tc := name, tc
 
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
 
-			res := collection.Database().RunCommand(ctx, tc.command)
+			require.NotNil(t, tc.command, "command must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
 
-			AssertEqualCommandError(t, *tc.err, res.Err())
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			if tc.altMessage != "" {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				return
+			}
+
+			AssertEqualCommandError(t, *tc.err, err)
 		})
 	}
 }
@@ -1000,9 +1028,12 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 	})
 
 	for name, tc := range map[string]struct {
-		expectedStatus string
-		err            *mongo.CommandError
-		command        bson.D
+		command        bson.D // required, command to run
+		expectedStatus string // optional
+
+		err        *mongo.CommandError // optional
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Enable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
@@ -1012,18 +1043,42 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
 			expectedStatus: "disabled",
 		},
+		"TypeMismatch": {
+			command: bson.D{{"setFreeMonitoring", 1}, {"action", 1}},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'setFreeMonitoring.action' is the wrong type 'int', expected type 'string'",
+			},
+		},
 	} {
 		name, tc := name, tc
 
 		t.Run(name, func(t *testing.T) {
-			res := s.Collection.Database().RunCommand(s.Ctx, tc.command)
-			require.NoError(t, res.Err())
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			require.NotNil(t, tc.command, "command must not be nil")
+
+			var actual bson.D
+			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
+			if tc.err != nil {
+				if tc.altMessage != "" {
+					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+					return
+				}
+
+				AssertEqualCommandError(t, *tc.err, err)
+				return
+			}
+
+			require.NoError(t, err)
 
 			// MongoDB might be slow to update the status
 			var status any
 			var retry int64
 			for i := 0; i < 3; i++ {
-				var actual bson.D
 				err := s.Collection.Database().RunCommand(s.Ctx, bson.D{{"serverStatus", 1}}).Decode(&actual)
 				require.NoError(t, err)
 

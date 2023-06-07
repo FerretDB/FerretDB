@@ -36,7 +36,7 @@ func TestIndexesDropRunCommandErrors(t *testing.T) {
 		command  bson.D             // optional, if set it runs this command instead of dropping toDrop
 
 		err        mongo.CommandError // required
-		altMessage string             // optional, alternative error message in case of error
+		altMessage string             // optional, alternative error message
 		skip       string             // optional, skip test with a specified reason
 	}{
 		"InvalidType": {
@@ -141,6 +141,8 @@ func TestIndexesDropRunCommandErrors(t *testing.T) {
 			} else {
 				require.NotNil(t, tc.toDrop, "toDrop must not be nil")
 			}
+
+			require.NotNil(t, tc.err, "err must not be nil")
 
 			s := setup.SetupWithOpts(t, &setup.SetupOpts{
 				Providers: []shareddata.Provider{shareddata.Composites},

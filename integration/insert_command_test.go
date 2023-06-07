@@ -33,7 +33,7 @@ func TestInsertCommandErrors(t *testing.T) {
 		ordered  any   // required, sets it to `ordered`
 
 		err        mongo.CommandError // required
-		altMessage string             // optional, alternative error message in case of error
+		altMessage string             // optional, alternative error message
 		skip       string             // optional, skip test with a specified reason
 	}{
 		"InsertOrderedInvalid": {
@@ -59,6 +59,7 @@ func TestInsertCommandErrors(t *testing.T) {
 
 			require.NotNil(t, tc.toInsert, "toInsert must not be nil")
 			require.NotNil(t, tc.ordered, "ordered must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
 
 			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 

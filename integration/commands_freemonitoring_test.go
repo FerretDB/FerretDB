@@ -57,12 +57,13 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 	})
 
 	for name, tc := range map[string]struct {
-		command        bson.D
-		err            *mongo.CommandError
-		expectedRes    bson.D
-		expectedStatus string
+		command        bson.D // required, command to run
+		expectedRes    bson.D // optional, expected response
+		expectedStatus string // optional, expected status
 
-		skip string
+		err        *mongo.CommandError // optional
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Enable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
@@ -128,10 +129,16 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 				t.Skip(tc.skip)
 			}
 
+			require.NotNil(t, tc.command, "command must not be nil")
+
 			var actual bson.D
 			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
-
 			if tc.err != nil {
+				if tc.altMessage != "" {
+					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+					return
+				}
+
 				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}

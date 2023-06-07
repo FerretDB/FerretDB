@@ -32,10 +32,13 @@ func TestDistinctErrors(t *testing.T) {
 	ctx, coll := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
-		command  any                // required
-		collName any                // optional
-		filter   any                // required
-		err      mongo.CommandError // required
+		command  any // required
+		collName any // optional
+		filter   any // optional
+
+		err        *mongo.CommandError // optional
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"EmptyFilter": {
 			command: "a",

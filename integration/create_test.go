@@ -289,8 +289,11 @@ func TestCreateTigris(t *testing.T) {
 		validator  string
 		schema     string
 		collection string
-		err        *mongo.CommandError
 		doc        bson.D
+
+		err        *mongo.CommandError // optional
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"BadValidator": {
 			validator:  "$bad",
@@ -390,10 +393,16 @@ func TestCreateTigris(t *testing.T) {
 			opts := options.CreateCollection().SetValidator(bson.D{{tc.validator, tc.schema}})
 			err := db.Client().Database(dbName).CreateCollection(ctx, tc.collection, opts)
 			if tc.err != nil {
-				AssertEqualError(t, *tc.err, err)
-			} else {
-				require.NoError(t, err)
+				if tc.altMessage != "" {
+					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+					return
+				}
+
+				AssertEqualCommandError(t, *tc.err, err)
+				return
 			}
+
+			require.NoError(t, err)
 
 			// to make sure that schema is correct, we try to insert a document
 			if tc.doc != nil {

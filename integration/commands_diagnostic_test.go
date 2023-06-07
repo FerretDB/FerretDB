@@ -125,10 +125,12 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 	ctx, collection := res.Ctx, res.Collection
 
 	for name, tc := range map[string]struct {
-		command    bson.D
-		expected   map[string]any
-		err        *mongo.CommandError
-		altMessage string
+		command  bson.D         // required, command to run
+		expected map[string]any // optional, expected keys of response
+
+		err        *mongo.CommandError // optional
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Asterisk": {
 			command: bson.D{{"getLog", "*"}},
@@ -181,14 +183,26 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.command, "command must not be nil")
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
 			if tc.err != nil {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				if tc.altMessage != "" {
+					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+					return
+				}
+
+				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
+
 			require.NoError(t, err)
 
 			m := actual.Map()
@@ -288,8 +302,11 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		command bson.D
-		err     *mongo.CommandError
+		command bson.D // required, command to run
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"InvalidTypeDocument": {
 			command: bson.D{{"validate", bson.D{}}},
@@ -310,13 +327,25 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.command, "command must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
 
 			ctx, collection := setup.Setup(t, shareddata.Doubles)
 
-			res := collection.Database().RunCommand(ctx, tc.command)
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(actual)
+			if tc.altMessage != "" {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				return
+			}
 
-			AssertEqualCommandError(t, *tc.err, res.Err())
+			AssertEqualCommandError(t, *tc.err, err)
 		})
 	}
 }
