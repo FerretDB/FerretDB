@@ -304,6 +304,7 @@ func TestCreateTigris(t *testing.T) {
 				Name:    "BadValue",
 				Message: `required parameter "$tigrisSchemaString" is missing`,
 			},
+			altMessage: `required parameter "$tigrisSchemaString" is missing`,
 		},
 		"EmptySchema": {
 			validator:  "$tigrisSchemaString",

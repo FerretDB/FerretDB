@@ -50,6 +50,7 @@ func TestQueryArrayDotNotation(t *testing.T) {
 				Name:    "BadValue",
 				Message: "Can't have RegEx as arg to predicate over field 'v.array.0'.",
 			},
+			altMessage: "Can't have RegEx as arg to predicate over field 'v.array.0'.",
 		},
 	} {
 		name, tc := name, tc

@@ -43,6 +43,7 @@ func TestAggregateGroupErrors(t *testing.T) {
 				Name:    "Location40237",
 				Message: "The $sum accumulator is a unary operator",
 			},
+			altMessage: "The $sum accumulator is a unary operator",
 		},
 	} {
 		name, tc := name, tc

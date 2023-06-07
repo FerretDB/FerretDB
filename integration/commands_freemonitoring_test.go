@@ -82,6 +82,7 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 				Name:    "BadValue",
 				Message: `Enumeration value 'foobar' for field 'setFreeMonitoring.action' is not a valid value.`,
 			},
+			altMessage: `Enumeration value 'foobar' for field 'setFreeMonitoring.action' is not a valid value.`,
 		},
 		"Empty": {
 			command: bson.D{{"setFreeMonitoring", 1}, {"action", ""}},

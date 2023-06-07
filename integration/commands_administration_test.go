@@ -766,6 +766,7 @@ func TestCommandsAdministrationDataSizeErrors(t *testing.T) {
 				Name:    "InvalidNamespace",
 				Message: "Invalid namespace specified 'invalid'",
 			},
+			altMessage: "Invalid namespace specified 'invalid'",
 		},
 		"InvalidNamespaceTypeDocument": {
 			command: bson.D{{"dataSize", bson.D{}}},
@@ -1030,10 +1031,6 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 	for name, tc := range map[string]struct {
 		command        bson.D // required, command to run
 		expectedStatus string // optional
-
-		err        *mongo.CommandError // optional
-		altMessage string              // optional, alternative error message
-		skip       string              // optional, skip test with a specified reason
 	}{
 		"Enable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
@@ -1043,42 +1040,20 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
 			expectedStatus: "disabled",
 		},
-		"TypeMismatch": {
-			command: bson.D{{"setFreeMonitoring", 1}, {"action", 1}},
-			err: &mongo.CommandError{
-				Code:    14,
-				Name:    "TypeMismatch",
-				Message: "BSON field 'setFreeMonitoring.action' is the wrong type 'int', expected type 'string'",
-			},
-		},
 	} {
 		name, tc := name, tc
 
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			require.NotNil(t, tc.command, "command must not be nil")
 
-			var actual bson.D
-			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
-			if tc.err != nil {
-				if tc.altMessage != "" {
-					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-					return
-				}
-
-				AssertEqualCommandError(t, *tc.err, err)
-				return
-			}
-
-			require.NoError(t, err)
+			res := s.Collection.Database().RunCommand(s.Ctx, tc.command)
+			require.NoError(t, res.Err())
 
 			// MongoDB might be slow to update the status
 			var status any
 			var retry int64
 			for i := 0; i < 3; i++ {
+				var actual bson.D
 				err := s.Collection.Database().RunCommand(s.Ctx, bson.D{{"serverStatus", 1}}).Decode(&actual)
 				require.NoError(t, err)
 

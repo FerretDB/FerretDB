@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -48,10 +47,6 @@ func TestQueryEvaluationRegex(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter      any   // required
 		expectedIDs []any // optional
-
-		err        *mongo.CommandError // optional
-		altMessage string              // optional, alternative error message
-		skip       string              // optional, skip test with a specified reason
 	}{
 		"Regex": {
 			filter:      bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
@@ -80,25 +75,11 @@ func TestQueryEvaluationRegex(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			require.NotNil(t, tc.filter, "filter must not be nil")
 
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err != nil {
-				if tc.altMessage != "" {
-					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-					return
-				}
-
-				AssertEqualCommandError(t, *tc.err, err)
-				return
-			}
-
 			require.NoError(t, err)
 
 			var actual []bson.D

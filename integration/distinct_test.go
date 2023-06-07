@@ -48,6 +48,7 @@ func TestDistinctErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'distinct.query' is the wrong type 'string', expected type 'object'",
 			},
+			altMessage: "BSON field 'distinct.query' is the wrong type 'string', expected type 'object'",
 		},
 		"EmptyCollection": {
 			command:  "a",

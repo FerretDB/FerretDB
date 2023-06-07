@@ -41,6 +41,7 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 				Message: "Invalid namespace specified 'TestFindAndModifyEmptyCollectionName-EmptyCollectionName.'",
 				Name:    "InvalidNamespace",
 			},
+			altMessage: "Invalid namespace specified 'TestFindAndModifyEmptyCollectionName-EmptyCollectionName.'",
 		},
 	} {
 		name, tc := name, tc

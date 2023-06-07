@@ -315,6 +315,7 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 				Name:    "InvalidNamespace",
 				Message: "collection name has invalid type object",
 			},
+			altMessage: "collection name has invalid type object",
 		},
 		"NonExistentCollection": {
 			command: bson.D{{"validate", "nonExistentCollection"}},
