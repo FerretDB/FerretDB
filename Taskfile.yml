@@ -206,6 +206,7 @@ tasks:
         -target-backend=ferretdb-sqlite
         -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -disable-filter-pushdown
 
   test-integration-tigris:
     desc: "Run integration tests for `tigris` handler"
@@ -300,6 +301,7 @@ tasks:
     desc: "Run FerretDB with `sqlite` handler"
     deps: [build-host]
     cmds:
+      - go run ./cmd/envtool shell mkdir tmp/sqlite
       - >
         bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
         --listen-addr=:27017
@@ -308,6 +310,7 @@ tasks:
         --handler=sqlite
         --sqlite-uri=tmp/sqlite
         --test-records-dir=tmp/records
+        --test-disable-filter-pushdown
 
   run-tigris:
     desc: "Run FerretDB with `tigris` handler"
@@ -393,10 +396,6 @@ tasks:
       - go vet -vettool=./bin/checkswitch{{exeExt}} ./...
       - bin/task{{exeExt}} -d integration integration-lint
       - bin/task{{exeExt}} -d tools tools-lint
-    sources:
-      - "**/*.go"
-      - "**/go.mod"
-      - "**/*.yml"
 
   security:
     desc: "Run security scanners"

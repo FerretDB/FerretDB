@@ -45,10 +45,6 @@ tasks:
       - ../bin/go-consistent{{exeExt}} -pedantic ./...
       - ../bin/go-sumtype{{exeExt}} ./...
       - go vet -vettool=../bin/checkswitch{{exeExt}} ./...
-    sources:
-      - "**/*.go"
-      - "../**/go.mod"
-      - "../**/*.yml"
 
   integration-security:
     cmds:
@@ -70,7 +66,7 @@ tasks:
         go test -run=XXX -count={{.COUNT}} -bench={{.BENCHNAME}} -benchtime={{.BENCHTIME}} -benchmem
         -target-backend=ferretdb-pg
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb | tee new-pg-no-pushdown.txt
-        -- -disable-pushdown
+        -- -disable-filter-pushdown
       - ../bin/benchstat{{exeExt}} old-pg-no-pushdown.txt new-pg-no-pushdown.txt
 
   bench-mongodb:

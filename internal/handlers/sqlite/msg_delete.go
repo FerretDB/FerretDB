@@ -17,68 +17,11 @@ package sqlite
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgDelete implements HandlerInterface.
 func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	params, err := common.GetDeleteParams(document, h.L)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	var deleted int64
-	var delErrors commonerrors.WriteErrors
-
-	db := h.b.Database(params.DB)
-	defer db.Close()
-
-	coll := db.Collection(params.Collection)
-
-	// process every delete filter
-	for i, deleteParams := range params.Deletes {
-		res, err := coll.Delete(ctx, &backends.DeleteParams{
-			Filter:  deleteParams.Filter,
-			Limited: deleteParams.Limited,
-		})
-
-		if err == nil {
-			deleted += res.Deleted
-			continue
-		}
-
-		delErrors.Append(err, int32(i))
-
-		if params.Ordered {
-			break
-		}
-	}
-
-	replyDoc := must.NotFail(types.NewDocument(
-		"ok", float64(1),
-	))
-
-	if delErrors.Len() > 0 {
-		replyDoc = delErrors.Document()
-	}
-
-	replyDoc.Set("n", deleted)
-
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{replyDoc},
-	}))
-
-	return &reply, nil
+	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }

@@ -61,6 +61,8 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 		err            *mongo.CommandError
 		expectedRes    bson.D
 		expectedStatus string
+
+		skip string
 	}{
 		"Enable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
@@ -88,17 +90,49 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 				Message: `Enumeration value '' for field 'setFreeMonitoring.action' is not a valid value.`,
 			},
 		},
+		"DocumentCommand": {
+			command:        bson.D{{"setFreeMonitoring", bson.D{}}, {"action", "enable"}},
+			expectedRes:    bson.D{{"ok", float64(1)}},
+			expectedStatus: "enabled",
+		},
+		"NilCommand": {
+			command:        bson.D{{"setFreeMonitoring", nil}, {"action", "enable"}},
+			expectedRes:    bson.D{{"ok", float64(1)}},
+			expectedStatus: "enabled",
+		},
+		"ActionMissing": {
+			command: bson.D{{"setFreeMonitoring", nil}},
+			err: &mongo.CommandError{
+				Code:    40414,
+				Name:    "Location40414",
+				Message: `BSON field 'setFreeMonitoring.action' is missing but a required field`,
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2704",
+		},
+		"ActionTypeDocument": {
+			command: bson.D{{"setFreeMonitoring", 1}, {"action", bson.D{}}},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'setFreeMonitoring.action' is the wrong type 'object', expected type 'string'",
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2704",
+		},
 	} {
 		name, tc := name, tc
 
 		t.Run(name, func(t *testing.T) {
 			// these tests shouldn't be run in parallel, because they work on the same database
 
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			var actual bson.D
 			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
 
 			if tc.err != nil {
-				AssertEqualError(t, *tc.err, err)
+				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
 
@@ -113,6 +147,15 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 
 				actualStatus, ok := actual.Map()["state"]
 				require.True(t, ok)
+
+				if actualStatus == "disabled" {
+					if v, ok := actual.Map()["debug"]; ok {
+						debug, ok := v.(bson.D)
+						require.True(t, ok)
+						actualStatus, ok = debug.Map()["state"]
+						require.True(t, ok)
+					}
+				}
 
 				assert.Equal(t, tc.expectedStatus, actualStatus)
 			}

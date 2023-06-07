@@ -27,9 +27,10 @@ import (
 )
 
 // queryIterator implements iterator.Interface to fetch documents from the database.
-type queryIterator struct { //nolint:vet // for readability
-	ctx       context.Context
-	unmarshal func(b []byte) (*types.Document, error) // defaults to sjson.Unmarshal
+//
+//nolint:vet // for readability
+type queryIterator struct {
+	ctx context.Context
 
 	m    sync.Mutex
 	rows *sql.Rows
@@ -37,26 +38,16 @@ type queryIterator struct { //nolint:vet // for readability
 	token *resource.Token
 }
 
-type queryIteratorParams struct {
-	unmarshal func(b []byte) (*types.Document, error) // defaults to sjson.Unmarshal
-}
-
-// newQueryIterator returns a new queryIterator for the given pgx.Rows.
+// newQueryIterator returns a new queryIterator for the given *sql.Rows.
 //
 // Iterator's Close method closes rows.
 //
 // Nil rows are possible and return already done iterator.
-func newQueryIterator(ctx context.Context, rows *sql.Rows, params *queryIteratorParams) types.DocumentsIterator {
-	unmarshalFunc := params.unmarshal
-	if unmarshalFunc == nil {
-		unmarshalFunc = sjson.Unmarshal
-	}
-
+func newQueryIterator(ctx context.Context, rows *sql.Rows) types.DocumentsIterator {
 	iter := &queryIterator{
-		ctx:       ctx,
-		unmarshal: unmarshalFunc,
-		rows:      rows,
-		token:     resource.NewToken(),
+		ctx:   ctx,
+		rows:  rows,
+		token: resource.NewToken(),
 	}
 	resource.Track(iter, iter.token)
 
@@ -71,8 +62,7 @@ func newQueryIterator(ctx context.Context, rows *sql.Rows, params *queryIterator
 //   - context.DeadlineExceeded;
 //   - something else.
 //
-// Otherwise, as the first value it returns the number of the current iteration (starting from 0),
-// as the second value it returns the document.
+// Otherwise, the next document is returned.
 func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 	iter.m.Lock()
 	defer iter.m.Unlock()
@@ -105,7 +95,7 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	doc, err := iter.unmarshal(b)
+	doc, err := sjson.Unmarshal(b)
 	if err != nil {
 		return unused, nil, lazyerrors.Error(err)
 	}
