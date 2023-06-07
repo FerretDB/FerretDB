@@ -211,8 +211,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 			// already processed, do nothing
 
 		case "unique":
-			// TODO https://github.com/FerretDB/FerretDB/issues/2045
-			// just ignore it for now, don't return error
+			index.Unique = true
 
 		case "background":
 			// ignore deprecated options
