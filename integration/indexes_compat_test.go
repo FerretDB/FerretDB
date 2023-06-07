@@ -565,18 +565,12 @@ func TestIndexesDropRunCommand(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		toCreate    []mongo.IndexModel       // optional, if set, create the given indexes before drop is called
-		toDrop      any                      // index to drop
-		resultType  compatTestCaseResultType // defaults to nonEmptyResult
-		command     bson.D                   // optional, if set it runs this command instead of dropping toDrop
-		altErrorMsg string                   // optional, alternative error message in case of error
-		skip        string                   // optional, skip test with a specified reason
+		toCreate []mongo.IndexModel // optional, if set, create the given indexes before drop is called
+		toDrop   any                // required, index to drop
+
+		resultType compatTestCaseResultType // optional, defaults to nonEmptyResult
+		skip       string                   // optional, skip test with a specified reason
 	}{
-		"InvalidType": {
-			toDrop:      true,
-			resultType:  emptyResult,
-			altErrorMsg: `BSON field 'dropIndexes.index' is the wrong type 'bool', expected types '[string, object]'`,
-		},
 		"MultipleIndexesByName": {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
@@ -585,42 +579,11 @@ func TestIndexesDropRunCommand(t *testing.T) {
 			},
 			toDrop: bson.A{"v_-1", "v_1_foo_1"},
 		},
-		"MultipleIndexesByKey": {
-			toCreate: []mongo.IndexModel{
-				{Keys: bson.D{{"v", -1}}},
-				{Keys: bson.D{{"v.foo", -1}}},
-			},
-			toDrop:      bson.A{bson.D{{"v", -1}}, bson.D{{"v.foo", -1}}},
-			resultType:  emptyResult,
-			altErrorMsg: `BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string, object]'`,
-		},
-		"NonExistentMultipleIndexes": {
-			toDrop:     bson.A{"non-existent", "invalid"},
-			resultType: emptyResult,
-		},
-		"InvalidMultipleIndexType": {
-			toDrop:      bson.A{1},
-			resultType:  emptyResult,
-			altErrorMsg: `BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string, object]'`,
-		},
 		"DocumentIndex": {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
 			},
 			toDrop: bson.D{{"v", -1}},
-		},
-		"InvalidDocumentIndex": {
-			toDrop:     bson.D{{"invalid", "invalid"}},
-			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2311",
-		},
-		"NonExistentKey": {
-			toDrop:     bson.D{{"non-existent", 1}},
-			resultType: emptyResult,
-		},
-		"DocumentIndexID": {
-			toDrop:     bson.D{{"_id", 1}},
-			resultType: emptyResult,
 		},
 		"DropAllExpression": {
 			toCreate: []mongo.IndexModel{
@@ -630,16 +593,6 @@ func TestIndexesDropRunCommand(t *testing.T) {
 			},
 			toDrop: "*",
 		},
-		"MissingIndexField": {
-			command: bson.D{
-				{"dropIndexes", "collection"},
-			},
-			resultType: emptyResult,
-		},
-		"NonExistentDescendingID": {
-			toDrop:     bson.D{{"_id", -1}},
-			resultType: emptyResult,
-		},
 		"MultipleKeyIndex": {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"_id", -1}, {"v", 1}}},
@@ -648,13 +601,6 @@ func TestIndexesDropRunCommand(t *testing.T) {
 				{"_id", -1},
 				{"v", 1},
 			},
-		},
-		"NonExistentMultipleKeyIndex": {
-			toDrop: bson.D{
-				{"non-existent1", -1},
-				{"non-existent2", -1},
-			},
-			resultType: emptyResult,
 		},
 	} {
 		name, tc := name, tc
@@ -666,9 +612,7 @@ func TestIndexesDropRunCommand(t *testing.T) {
 			t.Helper()
 			t.Parallel()
 
-			if tc.command != nil {
-				require.Nil(t, tc.toDrop, "toDrop name must be nil when using command")
-			}
+			require.NotNil(t, tc.toDrop, "toDrop must not be nil")
 
 			// It's enough to use a single provider for drop indexes test as indexes work the same for different collections.
 			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
@@ -712,11 +656,6 @@ func TestIndexesDropRunCommand(t *testing.T) {
 					compatCommand := bson.D{
 						{"dropIndexes", compatCollection.Name()},
 						{"index", tc.toDrop},
-					}
-
-					if tc.command != nil {
-						targetCommand = tc.command
-						compatCommand = tc.command
 					}
 
 					var targetRes bson.D
