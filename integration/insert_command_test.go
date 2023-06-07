@@ -25,22 +25,23 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestInsertCommand(t *testing.T) {
+func TestInsertCommandErrors(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
-		documents []any
-		ordered   any
+		toInsert []any // required, slice of bson.D to insert
+		ordered  any   // required, sets it to `ordered`
 
-		err        *mongo.CommandError
-		altMessage string
+		err        mongo.CommandError // required
+		altMessage string             // optional, alternative error message in case of error
+		skip       string             // optional, skip test with a specified reason
 	}{
 		"InsertOrderedInvalid": {
-			documents: []any{
+			toInsert: []any{
 				bson.D{{"_id", "foo"}},
 			},
 			ordered: "foo",
-			err: &mongo.CommandError{
+			err: mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
 				Message: "BSON field 'insert.ordered' is the wrong type 'string', expected type 'bool'",
@@ -50,19 +51,31 @@ func TestInsertCommand(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.toInsert, "toInsert must not be nil")
+			require.NotNil(t, tc.ordered, "ordered must not be nil")
 
 			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, bson.D{
 				{"insert", collection.Name()},
-				{"documents", tc.documents},
+				{"documents", tc.toInsert},
 				{"ordered", tc.ordered},
 			}).Decode(&actual)
 			require.Error(t, err)
 
-			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			if tc.altMessage != "" {
+				AssertEqualAltCommandError(t, tc.err, tc.altMessage, err)
+				return
+			}
+
+			AssertEqualCommandError(t, tc.err, err)
 		})
 	}
 }
