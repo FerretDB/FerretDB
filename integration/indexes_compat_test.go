@@ -321,6 +321,7 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 			key:            bson.D{{"v", -1}},
 			indexName:      "custom-name",
 			resultType:     emptyResult,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"index-name-not-set": {
 			collectionName: "test",

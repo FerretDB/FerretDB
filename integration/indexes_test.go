@@ -98,6 +98,7 @@ func TestIndexesDropInvalidCollection(t *testing.T) {
 		indexName      any
 		err            *mongo.CommandError
 		altMessage     string
+		skip           string
 	}{
 		"NonExistentCollection": {
 			collectionName: "non-existent",
@@ -116,6 +117,7 @@ func TestIndexesDropInvalidCollection(t *testing.T) {
 				Name:    "BadValue",
 				Message: "collection name has invalid type int",
 			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"NilCollection": {
 			collectionName: nil,
@@ -125,6 +127,7 @@ func TestIndexesDropInvalidCollection(t *testing.T) {
 				Name:    "BadValue",
 				Message: "collection name has invalid type null",
 			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"EmptyCollection": {
 			collectionName: "",
@@ -134,10 +137,15 @@ func TestIndexesDropInvalidCollection(t *testing.T) {
 				Name:    "InvalidNamespace",
 				Message: "Invalid namespace specified 'TestIndexesDropInvalidCollection-EmptyCollection.'",
 			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
 
 			provider := shareddata.ArrayDocuments // one provider is enough to check for errors
