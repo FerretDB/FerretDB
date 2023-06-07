@@ -155,7 +155,6 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 						actualStatus, ok = debug.Map()["state"]
 						require.True(t, ok)
 					}
-
 				}
 
 				assert.Equal(t, tc.expectedStatus, actualStatus)
