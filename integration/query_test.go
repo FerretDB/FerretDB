@@ -37,65 +37,67 @@ func TestQueryBadFindType(t *testing.T) {
 	ctx, collection := s.Ctx, s.Collection
 
 	for name, tc := range map[string]struct {
-		value any
-		err   string
+		value    any    // optional, used for find value
+		bsonType string // optional
+
+		altMessage string // optional, alternative error message
+		skip       string // optional, skip test with a specified reason
 	}{
 		"Document": {
-			value: bson.D{},
-			err:   "object",
+			value:    bson.D{},
+			bsonType: "object",
 		},
 		"Array": {
-			value: primitive.A{},
-			err:   "array",
+			value:    primitive.A{},
+			bsonType: "array",
 		},
 		"Double": {
-			value: 3.14,
-
-			err: "double",
+			value:    3.14,
+			bsonType: "double",
 		},
 		"Binary": {
-			value: primitive.Binary{},
-			err:   "binData",
+			value:    primitive.Binary{},
+			bsonType: "binData",
 		},
 		"ObjectID": {
-			value: primitive.ObjectID{},
-
-			err: "objectId",
+			value:    primitive.ObjectID{},
+			bsonType: "objectId",
 		},
 		"Bool": {
-			value: true,
-			err:   "bool",
+			value:    true,
+			bsonType: "bool",
 		},
 		"Date": {
-			value: time.Now(),
-
-			err: "date",
+			value:    time.Now(),
+			bsonType: "date",
 		},
 		"Null": {
-			value: nil,
-
-			err: "null",
+			value:    nil,
+			bsonType: "null",
 		},
 		"Regex": {
-			value: primitive.Regex{Pattern: "/foo/"},
-
-			err: "regex",
+			value:    primitive.Regex{Pattern: "/foo/"},
+			bsonType: "regex",
 		},
 		"Int": {
-			value: int32(42),
-			err:   "int",
+			value:    int32(42),
+			bsonType: "int",
 		},
 		"Timestamp": {
-			value: primitive.Timestamp{},
-			err:   "timestamp",
+			value:    primitive.Timestamp{},
+			bsonType: "timestamp",
 		},
 		"Long": {
-			value: int64(42),
-			err:   "long",
+			value:    int64(42),
+			bsonType: "long",
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
 
 			var actual bson.D
@@ -109,9 +111,15 @@ func TestQueryBadFindType(t *testing.T) {
 			expected := mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
-				Message: "collection name has invalid type " + tc.err,
+				Message: "collection name has invalid type " + tc.bsonType,
 			}
-			AssertEqualError(t, expected, err)
+
+			if tc.altMessage != "" {
+				AssertEqualAltCommandError(t, expected, tc.altMessage, err)
+				return
+			}
+
+			AssertEqualCommandError(t, expected, err)
 		})
 	}
 }
@@ -123,9 +131,11 @@ func TestQuerySortErrors(t *testing.T) {
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
-		command    bson.D
-		err        *mongo.CommandError
-		altMessage string
+		command bson.D // required, command to run
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"SortTypeDouble": {
 			command: bson.D{
@@ -205,13 +215,23 @@ func TestQuerySortErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.command, "command must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			require.Error(t, err)
+			if tc.altMessage != "" {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				return
+			}
 
-			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			AssertEqualCommandError(t, *tc.err, err)
 		})
 	}
 }
@@ -221,9 +241,11 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct {
-		command    bson.D
-		err        *mongo.CommandError
-		altMessage string
+		command bson.D // required, command to run
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"BadMaxTimeMSTypeDouble": {
 			command: bson.D{
@@ -327,12 +349,23 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.command, "command must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			require.Error(t, err)
-			AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+			if tc.altMessage != "" {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				return
+			}
+
+			AssertEqualCommandError(t, *tc.err, err)
 		})
 	}
 }

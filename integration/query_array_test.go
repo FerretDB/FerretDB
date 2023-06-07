@@ -35,9 +35,12 @@ func TestQueryArrayDotNotation(t *testing.T) {
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
-		filter      bson.D
-		expectedIDs []any
-		err         *mongo.CommandError
+		filter      bson.D // required
+		expectedIDs []any  // optional
+
+		err        *mongo.CommandError // optional
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"FieldPositionQueryRegex": {
 			// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1540
@@ -51,14 +54,25 @@ func TestQueryArrayDotNotation(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.filter, "filter must not be nil")
 
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				AssertEqualError(t, *tc.err, err)
+				if tc.altMessage != "" {
+					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+					return
+				}
+
+				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
+
 			require.NoError(t, err)
 
 			var actual []bson.D

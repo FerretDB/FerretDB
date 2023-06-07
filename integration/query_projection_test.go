@@ -32,15 +32,17 @@ func TestQueryProjectionErrors(t *testing.T) {
 	ctx, coll := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
-		filter     bson.D             // required
-		projection any                // required
-		err        mongo.CommandError // required
-		altMessage string             // optional
+		filter     bson.D // required
+		projection any    // required
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"EmptyKey": {
 			filter:     bson.D{{"v", 42}},
 			projection: bson.D{{"", true}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    40352,
 				Name:    "Location40352",
 				Message: "FieldPath cannot be constructed with empty string",
@@ -49,7 +51,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		"EmptyPath": {
 			filter:     bson.D{{"v", 42}},
 			projection: bson.D{{"v..d", true}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    15998,
 				Name:    "Location15998",
 				Message: "FieldPath field names may not be empty strings.",
@@ -58,7 +60,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		"ExcludeInclude": {
 			filter:     bson.D{},
 			projection: bson.D{{"foo", false}, {"bar", true}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    31253,
 				Name:    "Location31253",
 				Message: "Cannot do inclusion on field bar in exclusion projection",
@@ -67,7 +69,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		"IncludeExclude": {
 			filter:     bson.D{},
 			projection: bson.D{{"foo", true}, {"bar", false}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    31254,
 				Name:    "Location31254",
 				Message: "Cannot do exclusion on field bar in inclusion projection",
@@ -76,7 +78,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		"PositionalOperatorMultiple": {
 			filter:     bson.D{{"_id", "array-numbers-asc"}},
 			projection: bson.D{{"v.$.foo.$", true}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 31394,
 				Name: "Location31394",
 				Message: "As of 4.4, it's illegal to specify positional operator " +
@@ -93,7 +95,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		"PositionalOperatorMiddle": {
 			filter:     bson.D{{"_id", "array-numbers-asc"}},
 			projection: bson.D{{"v.$.foo", true}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 31394,
 				Name: "Location31394",
 				Message: "As of 4.4, it's illegal to specify positional operator " +
@@ -110,7 +112,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		"PositionalOperatorWrongLocations": {
 			filter:     bson.D{{"v", 42}},
 			projection: bson.D{{"$.v.$.foo", true}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 31394,
 				Name: "Location31394",
 				Message: "As of 4.4, it's illegal to specify positional operator " +
@@ -127,7 +129,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		"PositionalOperatorEmptyFilter": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.$", true}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 51246,
 				Name: "Location51246",
 				Message: "Executor error during find command :: caused by :: " +
@@ -137,7 +139,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		"PositionalOperatorEmptyArrayID": {
 			filter:     bson.D{{"_id", "array-empty"}},
 			projection: bson.D{{"v.$", true}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    51246,
 				Name:    "Location51246",
 				Message: "Executor error during find command :: caused by :: positional operator '.$' couldn't find a matching element in the array",
@@ -149,7 +151,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 			// e.g. missing {v: <val>} in the filter.
 			filter:     bson.D{{"_id", "array"}},
 			projection: bson.D{{"v.$", true}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    51246,
 				Name:    "Location51246",
 				Message: "Executor error during find command :: caused by :: positional operator '.$' couldn't find a matching element in the array",
@@ -160,7 +162,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 			// path prefixes cannot contain array.
 			filter:     bson.D{{"v", 42}},
 			projection: bson.D{{"v.foo.$", true}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    51247,
 				Name:    "Location51247",
 				Message: "Executor error during find command :: caused by :: positional operator '.$' element mismatch",
@@ -169,7 +171,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		"PositionalOperatorEmptyPath": {
 			filter:     bson.D{{"v", 42}},
 			projection: bson.D{{"v..$", true}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    40353,
 				Name:    "Location40353",
 				Message: "FieldPath must not end with a '.'.",
@@ -178,7 +180,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		"PositionalOperatorDollarKey": {
 			filter:     bson.D{{"v", 42}},
 			projection: bson.D{{"$", true}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    16410,
 				Name:    "Location16410",
 				Message: "FieldPath field names may not start with '$'. Consider using $getField or $setField.",
@@ -187,7 +189,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		"PositionalOperatorDollarInKey": {
 			filter:     bson.D{{"v", 42}},
 			projection: bson.D{{"$v", true}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    16410,
 				Name:    "Location16410",
 				Message: "FieldPath field names may not start with '$'. Consider using $getField or $setField.",
@@ -196,7 +198,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		"PositionalOperatorDollarPrefix": {
 			filter:     bson.D{{"v", 42}},
 			projection: bson.D{{"$.foo", true}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    16410,
 				Name:    "Location16410",
 				Message: "FieldPath field names may not start with '$'. Consider using $getField or $setField.",
@@ -205,7 +207,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		"PositionalOperatorDotNotationDollarInKey": {
 			filter:     bson.D{{"v", 42}},
 			projection: bson.D{{"v.$foo", true}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    16410,
 				Name:    "Location16410",
 				Message: "FieldPath field names may not start with '$'. Consider using $getField or $setField.",
@@ -214,7 +216,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		"PositionalOperatorPrefixSuffix": {
 			filter:     bson.D{{"_id", "array-numbers-asc"}},
 			projection: bson.D{{"$.foo.$", true}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    16410,
 				Name:    "Location16410",
 				Message: "FieldPath field names may not start with '$'. Consider using $getField or $setField.",
@@ -223,7 +225,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		"PositionalOperatorExclusion": {
 			filter:     bson.D{{"v", 42}},
 			projection: bson.D{{"v.$", false}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    31395,
 				Name:    "Location31395",
 				Message: "positional projection cannot be used with exclusion",
@@ -232,15 +234,23 @@ func TestQueryProjectionErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			t.Helper()
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
 
 			t.Parallel()
 
 			require.NotNil(t, tc.filter, "filter should be set")
 			require.NotNil(t, tc.projection, "projection should be set")
+			require.NotNil(t, tc.err, "err should be set")
 
 			_, err := coll.Find(ctx, tc.filter, options.Find().SetProjection(tc.projection))
-			AssertEqualAltCommandError(t, tc.err, tc.altMessage, err)
+			if tc.altMessage != "" {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				return
+			}
+
+			AssertEqualCommandError(t, *tc.err, err)
 		})
 	}
 }

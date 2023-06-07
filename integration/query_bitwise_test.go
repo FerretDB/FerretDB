@@ -47,10 +47,12 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		value       any
-		expectedIDs []any
-		err         *mongo.CommandError
-		altMessage  string
+		value       any   // required, used for $bitsAllClear filter value
+		expectedIDs []any // optional
+
+		err        *mongo.CommandError // optional
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Array": {
 			value: primitive.A{1, 5},
@@ -204,19 +206,26 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.value, "value must not be nil")
 
 			filter := bson.D{{"v", bson.D{{"$bitsAllClear", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
 				if tc.altMessage != "" {
 					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 					return
 				}
+
 				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
+
 			require.NoError(t, err)
 
 			var actual []bson.D
@@ -244,10 +253,12 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		value       any
-		expectedIDs []any
-		err         *mongo.CommandError
-		altMessage  string
+		value       any   // required, used for $bitsAllSet filter value
+		expectedIDs []any // optional
+
+		err        *mongo.CommandError // optional
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Array": {
 			value:       primitive.A{1, 5},
@@ -338,15 +349,26 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.value, "value must not be nil")
 
 			filter := bson.D{{"v", bson.D{{"$bitsAllSet", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+				if tc.altMessage != "" {
+					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+					return
+				}
+
+				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
+
 			require.NoError(t, err)
 
 			var actual []bson.D
@@ -374,10 +396,12 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		value       any
-		expectedIDs []any
-		err         *mongo.CommandError
-		altMessage  string
+		value       any   // required, used for $bitsAnyClear filter value
+		expectedIDs []any // optional
+
+		err        *mongo.CommandError // optional
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Array": {
 			value: primitive.A{1, 5},
@@ -508,15 +532,26 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.value, "value must not be nil")
 
 			filter := bson.D{{"v", bson.D{{"$bitsAnyClear", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+				if tc.altMessage != "" {
+					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+					return
+				}
+
+				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
+
 			require.NoError(t, err)
 
 			var actual []bson.D
@@ -544,10 +579,12 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		value       any
-		expectedIDs []any
-		err         *mongo.CommandError
-		altMessage  string
+		value       any   // required, used for $bitsAnySet filter value
+		expectedIDs []any // optional
+
+		err        *mongo.CommandError // optional
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Array": {
 			value: primitive.A{1, 5},
@@ -656,15 +693,26 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.value, "value must not be nil")
 
 			filter := bson.D{{"v", bson.D{{"$bitsAnySet", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+				if tc.altMessage != "" {
+					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+					return
+				}
+
+				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
+
 			require.NoError(t, err)
 
 			var actual []bson.D

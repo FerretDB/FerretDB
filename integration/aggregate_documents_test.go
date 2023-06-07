@@ -65,11 +65,6 @@ func TestAggregateGroupErrors(t *testing.T) {
 				return
 			}
 
-			if tc.altMessage != "" {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-				return
-			}
-
 			AssertEqualCommandError(t, *tc.err, err)
 		})
 	}

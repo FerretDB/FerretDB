@@ -46,10 +46,12 @@ func TestQueryEvaluationRegex(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		filter      any
-		expectedIDs []any
-		err         *mongo.CommandError
-		altMessage  string
+		filter      any   // required
+		expectedIDs []any // optional
+
+		err        *mongo.CommandError // optional
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Regex": {
 			filter:      bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
@@ -78,14 +80,25 @@ func TestQueryEvaluationRegex(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.filter, "filter must not be nil")
 
 			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+				if tc.altMessage != "" {
+					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+					return
+				}
+
+				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
+
 			require.NoError(t, err)
 
 			var actual []bson.D

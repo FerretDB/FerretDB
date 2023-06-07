@@ -32,22 +32,18 @@ func TestDistinctErrors(t *testing.T) {
 	ctx, coll := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
-		command  any // required
-		collName any // optional
-		filter   any // optional
+		command  any // required, command to run
+		collName any // optional, defaults to coll.Name()
+		filter   any // required
 
 		err        *mongo.CommandError // optional
 		altMessage string              // optional, alternative error message
 		skip       string              // optional, skip test with a specified reason
 	}{
-		"EmptyFilter": {
-			command: "a",
-			filter:  nil,
-		},
 		"StringFilter": {
 			command: "a",
 			filter:  "a",
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
 				Message: "BSON field 'distinct.query' is the wrong type 'string', expected type 'object'",
@@ -57,7 +53,7 @@ func TestDistinctErrors(t *testing.T) {
 			command:  "a",
 			filter:   bson.D{},
 			collName: "",
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    73,
 				Name:    "InvalidNamespace",
 				Message: "Invalid namespace specified 'TestDistinctErrors.'",
@@ -67,7 +63,7 @@ func TestDistinctErrors(t *testing.T) {
 			command:  "a",
 			filter:   bson.D{},
 			collName: bson.D{},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    73,
 				Name:    "InvalidNamespace",
 				Message: "collection name has invalid type object",
@@ -76,7 +72,7 @@ func TestDistinctErrors(t *testing.T) {
 		"WrongTypeObject": {
 			command: bson.D{},
 			filter:  bson.D{},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
 				Message: "BSON field 'distinct.key' is the wrong type 'object', expected type 'string'",
@@ -85,7 +81,7 @@ func TestDistinctErrors(t *testing.T) {
 		"WrongTypeArray": {
 			command: bson.A{},
 			filter:  bson.D{},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
 				Message: "BSON field 'distinct.key' is the wrong type 'array', expected type 'string'",
@@ -94,7 +90,7 @@ func TestDistinctErrors(t *testing.T) {
 		"WrongTypeNumber": {
 			command: int32(1),
 			filter:  bson.D{},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
 				Message: "BSON field 'distinct.key' is the wrong type 'int', expected type 'string'",
@@ -103,9 +99,14 @@ func TestDistinctErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			t.Helper()
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
 
 			t.Parallel()
+
+			require.NotNil(t, tc.command, "command must not be nil")
+			require.NotNil(t, tc.filter, "filter must not be nil")
 
 			var collName any = coll.Name()
 			if tc.collName != nil {
@@ -114,14 +115,19 @@ func TestDistinctErrors(t *testing.T) {
 
 			command := bson.D{{"distinct", collName}, {"key", tc.command}, {"query", tc.filter}}
 
-			res := coll.Database().RunCommand(ctx, command)
-			if res.Err() != nil {
-				AssertEqualCommandError(t, tc.err, res.Err())
+			var actual bson.D
+			err := coll.Database().RunCommand(ctx, command).Decode(actual)
+			if tc.err != nil {
+				if tc.altMessage != "" {
+					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+					return
+				}
 
+				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
 
-			require.NoError(t, res.Err(), "expected no error")
+			require.NoError(t, err)
 		})
 	}
 }
