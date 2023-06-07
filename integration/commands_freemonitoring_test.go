@@ -156,8 +156,9 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 						require.True(t, ok)
 					}
 
-					assert.Equal(t, tc.expectedStatus, actualStatus)
 				}
+
+				assert.Equal(t, tc.expectedStatus, actualStatus)
 			}
 		})
 	}
