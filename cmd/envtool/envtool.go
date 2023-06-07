@@ -403,7 +403,7 @@ var cli struct {
 	PackageVersion struct{} `cmd:"" help:"Print package version"`
 	Tests          struct {
 		Shard struct {
-			Index uint `help:"Shard index" required:""`
+			Index uint `required:""`
 			Total uint `help:"Total number of shards" required:""`
 		} `cmd:"" help:"Print sharded integration tests"`
 	} `cmd:""`
