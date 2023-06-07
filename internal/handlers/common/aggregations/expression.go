@@ -162,8 +162,8 @@ func (e *Expression) Evaluate(doc *types.Document) any {
 			return must.NotFail(types.NewArray())
 		}
 
-		// $group stage groups non-existent paths with `Null`
-		return types.Null
+		// TODO $group stage groups non-existent paths with `Null`
+		return nil
 	}
 
 	if len(vals) == 1 && !isPrefixArray {

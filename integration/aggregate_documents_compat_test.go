@@ -604,7 +604,7 @@ func TestAggregateCompatGroup(t *testing.T) {
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2123",
 		},
-		"IDTypeOperator": {
+		"IDType": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", bson.D{{"$type", "_id"}}},
 			}}}},
@@ -1597,12 +1597,47 @@ func TestAggregateCompatProject(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
-		"TypeOperator": {
+		"Type": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", "$v"}}}}}},
 			},
-			//skip: "https://github.com/FerretDB/FerretDB/issues/2679",
+		},
+		"TypeNonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", "$foo"}}}}}},
+			},
+		},
+		"TypeDotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", "$v.foo"}}}}}},
+			},
+		},
+		"TypeRecursive": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", "$v"}}}}}}}},
+			},
+		},
+		"TypeValue": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", int32(42)}}}}}},
+			},
+		},
+		"TypeRecursiveNonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$non-existent", "$v"}}}}}}}},
+			},
+		},
+		"TypeRecursiveInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"v", "$v"}}}}}}}},
+			},
 		},
 	}
 

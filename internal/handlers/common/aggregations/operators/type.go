@@ -16,6 +16,7 @@
 package operators
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -23,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -50,12 +52,17 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 		switch param := typeParam.(type) {
 		case *types.Document:
 			operator, err := NewOperator(param)
+			if errors.Is(err, ErrNoOperator) {
+				value = param
+				continue
+			}
+
 			if err != nil {
-				panic("TODO")
+				return nil, err
 			}
 
 			if typeParam, err = operator.Process(doc); err != nil {
-				panic("TODO")
+				return nil, lazyerrors.Error(err)
 			}
 
 			// the result of nested operator needs to be evaluated
