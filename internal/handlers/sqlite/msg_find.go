@@ -66,12 +66,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	db := h.b.Database(params.DB)
 	defer db.Close()
 
-	res, err := db.Collection(params.Collection).Query(ctx, nil)
+	queryRes, err := db.Collection(params.Collection).Query(ctx, nil)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter := res.DocsIterator
+	iter := queryRes.Iter
 
 	closer := iterator.NewMultiCloser(iter)
 	defer closer.Close()
@@ -101,17 +101,15 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	var resDocs []*types.Document
-
-	resDocs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+	res, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	var cursorID int64
 
-	firstBatch := types.MakeArray(len(resDocs))
-	for _, doc := range resDocs {
+	firstBatch := types.MakeArray(len(res))
+	for _, doc := range res {
 		firstBatch.Append(doc)
 	}
 

@@ -6,7 +6,6 @@ run:
 
 linters-settings:
   # asciicheck
-  # depguard:
   exhaustive:
     default-signifies-exhaustive: false
   gci:
@@ -96,7 +95,6 @@ linters:
   disable-all: true
   enable:
     - asciicheck
-    - depguard
     - exhaustive
     - gci
     - goconst

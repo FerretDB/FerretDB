@@ -17,6 +17,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -120,4 +121,31 @@ func TestDistinctErrors(t *testing.T) {
 			require.NoError(t, res.Err(), "expected no error")
 		})
 	}
+}
+
+func TestDistinctDuplicates(t *testing.T) {
+	t.Parallel()
+
+	ctx, coll := setup.Setup(t)
+
+	docs := []any{
+		bson.D{{"v", int64(42)}},
+		bson.D{{"v", float64(42)}},
+		bson.D{{"v", "42"}},
+	}
+
+	expected := []any{int64(42), "42"}
+
+	_, err := coll.InsertMany(ctx, docs)
+	require.NoError(t, err)
+
+	distinct, err := coll.Distinct(ctx, "v", bson.D{})
+	require.NoError(t, err)
+
+	// We can't check the exact data types because they might be different.
+	// For example, if expected is [int64(42), "42"] and distinct is [float64(42), "42"],
+	// we consider them equal. If different documents use different types to store the same value
+	// in the same field, it's hard to predict what type will be returned by distinct.
+	// This is why we use assert.EqualValues instead of assert.Equal.
+	assert.EqualValues(t, expected, distinct)
 }

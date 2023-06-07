@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
@@ -62,7 +63,7 @@ type QueryParams struct {
 
 // QueryResult represents the results of Collection.Query method.
 type QueryResult struct {
-	DocsIterator types.DocumentsIterator
+	Iter types.DocumentsIterator
 }
 
 // Query executes a query against the collection.
@@ -76,14 +77,14 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (r
 
 // InsertParams represents the parameters of Collection.Insert method.
 type InsertParams struct {
-	Docs    *types.Array
-	Ordered bool
+	// TODO that should be types.DocumentIterator
+	// https://github.com/FerretDB/FerretDB/issues/2750
+	Iter iterator.Interface[int, any]
 }
 
 // InsertResult represents the results of Collection.Insert method.
 type InsertResult struct {
-	Errors        []error
-	InsertedCount int64
+	Inserted int64
 }
 
 // Insert inserts documents into the collection.
@@ -118,8 +119,7 @@ func (cc *collectionContract) Update(ctx context.Context, params *UpdateParams) 
 
 // DeleteParams represents the parameters of Collection.Delete method.
 type DeleteParams struct {
-	Filter  *types.Document
-	Limited bool
+	IDs []any
 }
 
 // DeleteResult represents the results of Collection.Delete method.

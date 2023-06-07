@@ -74,13 +74,10 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 		opts = new(SetupCompatOpts)
 	}
 
-	// strip "ferretdb-" prefix, so database name does not go over 64 characters.
-	suffix := strings.ReplaceAll(*targetBackendF, "ferretdb-", "")
-
 	// When we use `task all` to run `pg` and `tigris` compat tests in parallel,
 	// they both use the same MongoDB instance.
 	// Add the backend's name to prevent the usage of the same database.
-	opts.databaseName = testutil.DatabaseName(tb) + "_" + suffix
+	opts.databaseName = testutil.DatabaseName(tb) + "_" + strings.TrimPrefix(*targetBackendF, "ferretdb-")
 
 	// When database name is too long, database is created but inserting documents
 	// fail with InvalidNamespace error.
