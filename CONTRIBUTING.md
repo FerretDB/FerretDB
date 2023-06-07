@@ -246,7 +246,7 @@ Also, we should use driver methods as much as possible instead of testing comman
    If the test is checking for a specific error scenario, include the error scenario in the name.
 6. Keep test names concise, avoiding overly cryptic names. Use abbreviations when appropriate.
 7. Avoid including test data in the name to maintain clarity and prevent excessively long names.
-8. Test case names should follow TitleCase capitalization style.
+8. Test case names should follow `TitleCase` capitalization style.
 9. Test and subtest names should not exceed 64 characters.
 
 ### Submitting code changes
