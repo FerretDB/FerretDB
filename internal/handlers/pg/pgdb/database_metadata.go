@@ -365,7 +365,7 @@ func documentToMetadataIndex(doc *types.Document) (*metadataIndex, error) {
 		Index: Index{
 			Name:   must.NotFail(doc.Get("name")).(string),
 			Key:    key,
-			Unique: must.NotFail(doc.Get("unique")).(bool),
+			Unique: must.NotFail(doc.Get("unique")),
 		},
 		pgIndex: must.NotFail(doc.Get("pgindex")).(string),
 	}, nil
@@ -458,7 +458,7 @@ func collectionNameToTableName(name string) string {
 //   - ErrTableNotExist - if the metadata table doesn't exist.
 //   - ErrIndexKeyAlreadyExist - if the given index key already exists.
 //   - ErrIndexNameAlreadyExist - if the given index name already exists.
-func (ms *metadataStorage) setIndex(ctx context.Context, index string, key IndexKey, unique bool) (pgTable string, pgIndex string, err error) { //nolint:lll // for readability
+func (ms *metadataStorage) setIndex(ctx context.Context, index string, key IndexKey, unique any) (pgTable string, pgIndex string, err error) { //nolint:lll // for readability
 	metadata, err := ms.get(ctx, true)
 	if err != nil {
 		return
@@ -466,6 +466,11 @@ func (ms *metadataStorage) setIndex(ctx context.Context, index string, key Index
 
 	pgTable = metadata.table
 	pgIndex = indexNameToPgIndexName(ms.collection, index)
+
+	switch unique.(type) {
+	case nil:
+		unique = types.NullType{}
+	}
 
 	newIndex := metadataIndex{
 		Index: Index{

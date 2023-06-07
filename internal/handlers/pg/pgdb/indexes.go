@@ -29,7 +29,7 @@ import (
 type Index struct {
 	Name   string
 	Key    IndexKey
-	Unique bool
+	Unique any
 }
 
 // IndexKey is a list of field name + sort order pairs.
@@ -73,7 +73,12 @@ func CreateIndexIfNotExists(ctx context.Context, tx pgx.Tx, db, collection strin
 		return err
 	}
 
-	if err := createPgIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, i.Key, i.Unique); err != nil {
+	var unique bool
+	if uniqueValue, ok := i.Unique.(bool); ok {
+		unique = uniqueValue
+	}
+
+	if err := createPgIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, i.Key, unique); err != nil {
 		return err
 	}
 

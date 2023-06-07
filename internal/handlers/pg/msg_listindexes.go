@@ -94,11 +94,17 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 			indexKey.Set(key.Field, int32(key.Order))
 		}
 
-		firstBatch.Append(must.NotFail(types.NewDocument(
+		indexDoc := must.NotFail(types.NewDocument(
 			"v", int32(2),
 			"key", indexKey,
 			"name", index.Name,
-		)))
+		))
+
+		if uniqueVal, ok := index.Unique.(bool); ok && index.Name != "_id_" {
+			indexDoc.Set("unique", uniqueVal)
+		}
+
+		firstBatch.Append(indexDoc)
 	}
 
 	var reply wire.OpMsg

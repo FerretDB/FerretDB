@@ -205,6 +205,14 @@ func TestIndexesCreate(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"UniqueIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"foo", 1}},
+					Options: new(options.IndexOptions).SetUnique(true),
+				},
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
