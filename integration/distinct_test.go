@@ -26,7 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestDistinctErrors(t *testing.T) {
+func TestDistinctCommandErrors(t *testing.T) {
 	t.Parallel()
 
 	ctx, coll := setup.Setup(t, shareddata.Scalars, shareddata.Composites)

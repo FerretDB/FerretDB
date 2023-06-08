@@ -65,7 +65,7 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 	}
 }
 
-func TestFindAndModifyErrors(t *testing.T) {
+func TestFindAndModifyCommandErrors(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // it is used for test only
@@ -434,7 +434,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 	}
 }
 
-func TestFindAndModifyUpsertComplex(t *testing.T) {
+func TestFindAndModifyCommandUpsert(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {

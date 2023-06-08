@@ -26,7 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestIndexesDropRunCommandErrors(t *testing.T) {
+func TestIndexesDropCommandErrors(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
 
 	t.Parallel()
