@@ -97,18 +97,25 @@ func getAllTestNames(dir string) ([]string, error) {
 
 // shardTests shards given test names.
 func shardTests(index, total uint, tests []string) ([]string, error) {
-	if index >= total {
-		return nil, fmt.Errorf("cannot shard when index is greater or equal to total (%d >= %d)", index, total)
+	if index == 0 {
+		return nil, fmt.Errorf("index must be greater than 0")
+	}
+	if total == 0 {
+		return nil, fmt.Errorf("total must be greater than 0")
+	}
+	if index > total {
+		return nil, fmt.Errorf("cannot shard when index is greater to total (%d > %d)", index, total)
 	}
 
 	testsLen := uint(len(tests))
 	if total > testsLen {
-		return nil, fmt.Errorf("cannot shard when Total is greater than amount of tests (%d > %d)", total, testsLen)
+		return nil, fmt.Errorf("cannot shard when total is greater than amount of tests (%d > %d)", total, testsLen)
 	}
 
 	// use different shards for tests with similar names for better load balancing
 	res := make([]string, 0, testsLen/total)
-	var test, shard uint
+	var test uint
+	var shard uint = 1
 	for {
 		if test == testsLen {
 			return res, nil
@@ -119,6 +126,6 @@ func shardTests(index, total uint, tests []string) ([]string, error) {
 		}
 
 		test++
-		shard = (shard + 1) % total
+		shard = shard%total + 1
 	}
 }

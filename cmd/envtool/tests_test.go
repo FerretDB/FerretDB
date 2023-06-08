@@ -33,28 +33,34 @@ func TestTestsShard(t *testing.T) {
 	t.Run("ShardTestsInvalidIndex", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := shardTests(3, 3, tests)
-		assert.EqualError(t, err, "cannot shard when index is greater or equal to total (3 >= 3)")
+		_, err := shardTests(0, 3, tests)
+		assert.EqualError(t, err, "index must be greater than 0")
+
+		_, err = shardTests(3, 3, tests)
+		assert.NoError(t, err)
+
+		_, err = shardTests(4, 3, tests)
+		assert.EqualError(t, err, "cannot shard when index is greater to total (4 > 3)")
 	})
 
 	t.Run("ShardTestsInvalidTotal", func(t *testing.T) {
 		t.Parallel()
 
 		_, err := shardTests(3, 1000, tests[:42])
-		assert.EqualError(t, err, "cannot shard when Total is greater than amount of tests (1000 > 42)")
+		assert.EqualError(t, err, "cannot shard when total is greater than amount of tests (1000 > 42)")
 	})
 
 	t.Run("ShardTestsValid", func(t *testing.T) {
 		t.Parallel()
 
-		res, err := shardTests(0, 3, tests)
+		res, err := shardTests(1, 3, tests)
 		require.NoError(t, err)
 		assert.Equal(t, tests[0], res[0])
 		assert.NotEqual(t, tests[1], res[1])
 		assert.NotEqual(t, tests[2], res[1])
 		assert.Equal(t, tests[3], res[1])
 
-		res, err = shardTests(2, 3, tests)
+		res, err = shardTests(3, 3, tests)
 		require.NoError(t, err)
 		assert.NotEqual(t, tests[0], res[0])
 		assert.NotEqual(t, tests[1], res[0])

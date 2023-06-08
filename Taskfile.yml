@@ -197,7 +197,7 @@ tasks:
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
     vars:
       RUN:
-        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 0}} --total={{.SHARD_TOTAL | default 1}}
+        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 1}} --total={{.SHARD_TOTAL | default 1}}
 
   test-integration-sqlite:
     desc: "Run integration tests for `sqlite` handler"
@@ -212,7 +212,7 @@ tasks:
         -disable-filter-pushdown
     vars:
       RUN:
-        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 0}} --total={{.SHARD_TOTAL | default 1}}
+        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 1}} --total={{.SHARD_TOTAL | default 1}}
 
   test-integration-tigris:
     desc: "Run integration tests for `tigris` handler"
@@ -227,7 +227,7 @@ tasks:
         -compat-url=mongodb://127.0.0.1:47017/
     vars:
       RUN:
-        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 0}} --total={{.SHARD_TOTAL | default 1}}
+        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 1}} --total={{.SHARD_TOTAL | default 1}}
 
   test-integration-hana:
     desc: "Run integration tests for `hana` handler"
@@ -242,7 +242,7 @@ tasks:
         -compat-url=mongodb://127.0.0.1:47017/
     vars:
       RUN:
-        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 0}} --total={{.SHARD_TOTAL | default 1}}
+        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 1}} --total={{.SHARD_TOTAL | default 1}}
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -255,7 +255,7 @@ tasks:
         -target-backend=mongodb
     vars:
       RUN:
-        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 0}} --total={{.SHARD_TOTAL | default 1}}
+        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 1}} --total={{.SHARD_TOTAL | default 1}}
 
   bench-unit-short:
     desc: "Benchmark internal package for about 25 seconds (with default BENCHTIME)"
