@@ -324,8 +324,8 @@ func TestCollectionName(t *testing.T) {
 	cases := map[string]struct {
 		collection string // collection name, defaults to empty string
 
-		err        *mongo.CommandError // optional
-		altMessage string              // optional, alternative error message
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"TooLongForBothDBs": {
@@ -410,12 +410,7 @@ func TestCollectionName(t *testing.T) {
 
 			err := collection.Database().CreateCollection(ctx, tc.collection)
 			if tc.err != nil {
-				if tc.altMessage != "" {
-					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-					return
-				}
-
-				AssertEqualCommandError(t, *tc.err, err)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 
@@ -452,8 +447,8 @@ func TestDatabaseName(t *testing.T) {
 		cases := map[string]struct {
 			db string // database name, defaults to empty string
 
-			err        *mongo.CommandError // required
-			altMessage string              // optional, alternative error message
+			err        *mongo.CommandError // required, expected error from MongoDB
+			altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 			skip       string              // optional, skip test with a specified reason
 		}{
 			"TooLongForBothDBs": {
@@ -510,15 +505,7 @@ func TestDatabaseName(t *testing.T) {
 
 				// there is no explicit command to create database, so create collection instead
 				err := collection.Database().Client().Database(tc.db).CreateCollection(ctx, collection.Name())
-				if tc.err != nil {
-					if tc.altMessage != "" {
-						AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-						return
-					}
-
-					AssertEqualCommandError(t, *tc.err, err)
-					return
-				}
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 			})
 		}
 	})

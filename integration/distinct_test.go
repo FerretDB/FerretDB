@@ -36,8 +36,8 @@ func TestDistinctErrors(t *testing.T) {
 		collName any // optional, defaults to coll.Name()
 		filter   any // required
 
-		err        *mongo.CommandError // optional
-		altMessage string              // optional, alternative error message
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"StringFilter": {
@@ -116,15 +116,12 @@ func TestDistinctErrors(t *testing.T) {
 
 			command := bson.D{{"distinct", collName}, {"key", tc.command}, {"query", tc.filter}}
 
-			var actual bson.D
-			err := coll.Database().RunCommand(ctx, command).Decode(actual)
+			var res bson.D
+			err := coll.Database().RunCommand(ctx, command).Decode(res)
 			if tc.err != nil {
-				if tc.altMessage != "" {
-					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-					return
-				}
+				assert.Nil(t, res)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 
-				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
 

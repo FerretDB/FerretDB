@@ -281,7 +281,10 @@ func AssertEqualAltCommandError(t testing.TB, expected mongo.CommandError, altMe
 		return true
 	}
 
-	expected.Message = altMessage
+	if altMessage != "" {
+		expected.Message = altMessage
+	}
+
 	return assert.Equal(t, expected, a)
 }
 

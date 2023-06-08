@@ -50,8 +50,8 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		value       any   // required, used for $bitsAllClear filter value
 		expectedIDs []any // optional
 
-		err        *mongo.CommandError // optional
-		altMessage string              // optional, alternative error message
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"Array": {
@@ -217,12 +217,9 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			filter := bson.D{{"v", bson.D{{"$bitsAllClear", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				if tc.altMessage != "" {
-					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-					return
-				}
+				assert.Nil(t, cursor)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 
-				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
 
@@ -256,8 +253,8 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		value       any   // required, used for $bitsAllSet filter value
 		expectedIDs []any // optional
 
-		err        *mongo.CommandError // optional
-		altMessage string              // optional, alternative error message
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"Array": {
@@ -360,12 +357,9 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 			filter := bson.D{{"v", bson.D{{"$bitsAllSet", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				if tc.altMessage != "" {
-					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-					return
-				}
+				assert.Nil(t, cursor)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 
-				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
 
@@ -399,8 +393,8 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		value       any   // required, used for $bitsAnyClear filter value
 		expectedIDs []any // optional
 
-		err        *mongo.CommandError // optional
-		altMessage string              // optional, alternative error message
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"Array": {
@@ -543,12 +537,9 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			filter := bson.D{{"v", bson.D{{"$bitsAnyClear", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				if tc.altMessage != "" {
-					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-					return
-				}
+				assert.Nil(t, cursor)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 
-				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
 
@@ -582,8 +573,8 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		value       any   // required, used for $bitsAnySet filter value
 		expectedIDs []any // optional
 
-		err        *mongo.CommandError // optional
-		altMessage string              // optional, alternative error message
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"Array": {
@@ -704,12 +695,9 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 			filter := bson.D{{"v", bson.D{{"$bitsAnySet", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				if tc.altMessage != "" {
-					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-					return
-				}
+				assert.Nil(t, cursor)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 
-				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
 

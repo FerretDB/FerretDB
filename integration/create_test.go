@@ -291,8 +291,8 @@ func TestCreateTigris(t *testing.T) {
 		collection string
 		doc        bson.D
 
-		err        *mongo.CommandError // optional
-		altMessage string              // optional, alternative error message
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"BadValidator": {
@@ -394,12 +394,7 @@ func TestCreateTigris(t *testing.T) {
 			opts := options.CreateCollection().SetValidator(bson.D{{tc.validator, tc.schema}})
 			err := db.Client().Database(dbName).CreateCollection(ctx, tc.collection, opts)
 			if tc.err != nil {
-				if tc.altMessage != "" {
-					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-					return
-				}
-
-				AssertEqualCommandError(t, *tc.err, err)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 

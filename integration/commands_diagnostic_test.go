@@ -128,8 +128,8 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 		command  bson.D         // required, command to run
 		expected map[string]any // optional, expected keys of response
 
-		err        *mongo.CommandError // optional
-		altMessage string              // optional, alternative error message
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"Asterisk": {
@@ -191,22 +191,19 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 
 			require.NotNil(t, tc.command, "command must not be nil")
 
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&res)
 			if tc.err != nil {
-				if tc.altMessage != "" {
-					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-					return
-				}
+				assert.Nil(t, res)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 
-				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
 
 			require.NoError(t, err)
 
-			m := actual.Map()
-			k := CollectKeys(t, actual)
+			m := res.Map()
+			k := CollectKeys(t, res)
 
 			for key, item := range tc.expected {
 				assert.Contains(t, k, key)
@@ -304,8 +301,8 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		command bson.D // required, command to run
 
-		err        *mongo.CommandError // required
-		altMessage string              // optional, alternative error message
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"InvalidTypeDocument": {
@@ -339,14 +336,11 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 
 			ctx, collection := setup.Setup(t, shareddata.Doubles)
 
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(actual)
-			if tc.altMessage != "" {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-				return
-			}
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(res)
 
-			AssertEqualCommandError(t, *tc.err, err)
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }

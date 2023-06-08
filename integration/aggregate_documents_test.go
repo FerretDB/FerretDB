@@ -17,6 +17,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -30,8 +31,8 @@ func TestAggregateGroupErrors(t *testing.T) {
 	for name, tc := range map[string]struct {
 		pipeline bson.A // required, aggregation pipeline stages
 
-		err        *mongo.CommandError // required
-		altMessage string              // optional, alternative error message
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"StageGroupUnaryOperatorSum": {
@@ -59,14 +60,10 @@ func TestAggregateGroupErrors(t *testing.T) {
 
 			ctx, collection := setup.Setup(t)
 
-			_, err := collection.Aggregate(ctx, tc.pipeline)
+			res, err := collection.Aggregate(ctx, tc.pipeline)
 
-			if tc.altMessage != "" {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-				return
-			}
-
-			AssertEqualCommandError(t, *tc.err, err)
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }

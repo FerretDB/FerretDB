@@ -31,8 +31,8 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		err        *mongo.CommandError // required
-		altMessage string              // optional, alternative error message
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"EmptyCollectionName": {
@@ -56,14 +56,11 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 
 			ctx, collection := setup.Setup(t, shareddata.Doubles)
 
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, bson.D{{"findAndModify", ""}}).Decode(&actual)
-			if tc.altMessage != "" {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-				return
-			}
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, bson.D{{"findAndModify", ""}}).Decode(&res)
 
-			AssertEqualCommandError(t, *tc.err, err)
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }

@@ -17,6 +17,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -32,16 +33,16 @@ func TestInsertCommandErrors(t *testing.T) {
 		toInsert []any // required, slice of bson.D to insert
 		ordered  any   // required, sets it to `ordered`
 
-		err        mongo.CommandError // required
-		altMessage string             // optional, alternative error message
-		skip       string             // optional, skip test with a specified reason
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"InsertOrderedInvalid": {
 			toInsert: []any{
 				bson.D{{"_id", "foo"}},
 			},
 			ordered: "foo",
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
 				Message: "BSON field 'insert.ordered' is the wrong type 'string', expected type 'bool'",
@@ -63,20 +64,15 @@ func TestInsertCommandErrors(t *testing.T) {
 
 			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-			var actual bson.D
+			var res bson.D
 			err := collection.Database().RunCommand(ctx, bson.D{
 				{"insert", collection.Name()},
 				{"documents", tc.toInsert},
 				{"ordered", tc.ordered},
-			}).Decode(&actual)
-			require.Error(t, err)
+			}).Decode(&res)
 
-			if tc.altMessage != "" {
-				AssertEqualAltCommandError(t, tc.err, tc.altMessage, err)
-				return
-			}
-
-			AssertEqualCommandError(t, tc.err, err)
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }

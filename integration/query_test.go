@@ -39,8 +39,8 @@ func TestQueryBadFindType(t *testing.T) {
 	for name, tc := range map[string]struct {
 		value any // optional, used for find value
 
-		err        *mongo.CommandError // required
-		altMessage string              // optional, alternative error message
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"Document": {
@@ -151,19 +151,16 @@ func TestQueryBadFindType(t *testing.T) {
 
 			require.NotNil(t, tc.err, "err must not be nil")
 
-			var actual bson.D
 			cmd := bson.D{
 				{"find", tc.value},
 				{"projection", bson.D{{"v", "some"}}},
 			}
 
-			err := collection.Database().RunCommand(ctx, cmd).Decode(&actual)
-			if tc.altMessage != "" {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-				return
-			}
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, cmd).Decode(&res)
 
-			AssertEqualCommandError(t, *tc.err, err)
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
@@ -268,14 +265,11 @@ func TestQuerySortErrors(t *testing.T) {
 			require.NotNil(t, tc.command, "command must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			if tc.altMessage != "" {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-				return
-			}
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&res)
 
-			AssertEqualCommandError(t, *tc.err, err)
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
@@ -287,8 +281,8 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 	for name, tc := range map[string]struct {
 		command bson.D // required, command to run
 
-		err        *mongo.CommandError // required
-		altMessage string              // optional, alternative error message
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"BadMaxTimeMSTypeDouble": {
@@ -403,14 +397,11 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 			require.NotNil(t, tc.command, "command must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			if tc.altMessage != "" {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-				return
-			}
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&res)
 
-			AssertEqualCommandError(t, *tc.err, err)
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }

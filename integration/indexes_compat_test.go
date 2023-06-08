@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestIndexesList(t *testing.T) {
+func TestIndexesListCompat(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
@@ -67,7 +67,7 @@ func TestIndexesList(t *testing.T) {
 	}
 }
 
-func TestIndexesCreate(t *testing.T) {
+func TestIndexesCreateCompat(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
 
 	t.Parallel()
@@ -288,7 +288,7 @@ func TestIndexesCreate(t *testing.T) {
 }
 
 // TestIndexesCreateRunCommand tests specific behavior for index creation that can be only provided through RunCommand.
-func TestIndexesCreateRunCommand(t *testing.T) {
+func TestIndexesCreateRunCommandCompat(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
 
 	t.Parallel()
@@ -436,7 +436,7 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 	}
 }
 
-func TestIndexesDrop(t *testing.T) {
+func TestIndexesDropCompat(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
 
 	t.Parallel()
@@ -559,7 +559,7 @@ func TestIndexesDrop(t *testing.T) {
 	}
 }
 
-func TestIndexesDropRunCommand(t *testing.T) {
+func TestIndexesDropRunCommandCompat(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
 
 	t.Parallel()

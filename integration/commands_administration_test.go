@@ -209,8 +209,8 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 		expected   map[string]any // optional, expected keys of response
 		unexpected []string       // optional, unexpected keys of response
 
-		err        *mongo.CommandError // optional
-		altMessage string              // optional, alternative error message
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"GetParameter_Asterisk1": {
@@ -523,12 +523,7 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			var actual bson.D
 			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
 			if tc.err != nil {
-				if tc.altMessage != "" {
-					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-					return
-				}
-
-				AssertEqualCommandError(t, *tc.err, err)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 
@@ -755,8 +750,8 @@ func TestCommandsAdministrationDataSizeErrors(t *testing.T) {
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		command bson.D // required, command to run
 
-		err        *mongo.CommandError // required
-		altMessage string              // optional, alternative error message
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"InvalidNamespace": {
@@ -791,12 +786,9 @@ func TestCommandsAdministrationDataSizeErrors(t *testing.T) {
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			if tc.altMessage != "" {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-				return
-			}
 
-			AssertEqualCommandError(t, *tc.err, err)
+			assert.Nil(t, actual)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }

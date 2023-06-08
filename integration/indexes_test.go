@@ -17,6 +17,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -35,13 +36,13 @@ func TestIndexesDropRunCommandErrors(t *testing.T) {
 		toDrop   any                // required, index to drop
 		command  bson.D             // optional, if set it runs this command instead of dropping toDrop
 
-		err        mongo.CommandError // required
-		altMessage string             // optional, alternative error message
-		skip       string             // optional, skip test with a specified reason
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"InvalidType": {
 			toDrop: true,
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
 				Message: "BSON field 'dropIndexes.index' is the wrong type 'bool', expected types '[string, object']",
@@ -54,7 +55,7 @@ func TestIndexesDropRunCommandErrors(t *testing.T) {
 				{Keys: bson.D{{"v.foo", -1}}},
 			},
 			toDrop: bson.A{bson.D{{"v", -1}}, bson.D{{"v.foo", -1}}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
 				Message: "BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string']",
@@ -62,7 +63,7 @@ func TestIndexesDropRunCommandErrors(t *testing.T) {
 			altMessage: `BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string, object]'`,
 		},
 		"NonExistentMultipleIndexes": {
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    27,
 				Name:    "IndexNotFound",
 				Message: "index not found with name [non-existent]",
@@ -71,7 +72,7 @@ func TestIndexesDropRunCommandErrors(t *testing.T) {
 		},
 		"InvalidMultipleIndexType": {
 			toDrop: bson.A{1},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
 				Message: "BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string']",
@@ -84,7 +85,7 @@ func TestIndexesDropRunCommandErrors(t *testing.T) {
 		},
 		"NonExistentKey": {
 			toDrop: bson.D{{"non-existent", 1}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    27,
 				Name:    "IndexNotFound",
 				Message: "can't find index with key: { non-existent: 1 }",
@@ -92,7 +93,7 @@ func TestIndexesDropRunCommandErrors(t *testing.T) {
 		},
 		"DocumentIndexID": {
 			toDrop: bson.D{{"_id", 1}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    72,
 				Name:    "InvalidOptions",
 				Message: "cannot drop _id index",
@@ -102,7 +103,7 @@ func TestIndexesDropRunCommandErrors(t *testing.T) {
 			command: bson.D{
 				{"dropIndexes", "collection"},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    40414,
 				Name:    "Location40414",
 				Message: "BSON field 'dropIndexes.index' is missing but a required field",
@@ -110,7 +111,7 @@ func TestIndexesDropRunCommandErrors(t *testing.T) {
 		},
 		"NonExistentDescendingID": {
 			toDrop: bson.D{{"_id", -1}},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    27,
 				Name:    "IndexNotFound",
 				Message: "can't find index with key: { _id: -1 }",
@@ -121,7 +122,7 @@ func TestIndexesDropRunCommandErrors(t *testing.T) {
 				{"non-existent1", -1},
 				{"non-existent2", -1},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    27,
 				Name:    "IndexNotFound",
 				Message: "can't find index with key: { non-existent1: -1, non-existent2: -1 }",
@@ -163,15 +164,11 @@ func TestIndexesDropRunCommandErrors(t *testing.T) {
 				command = tc.command
 			}
 
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&res)
 
-			if tc.altMessage != "" {
-				AssertEqualAltCommandError(t, tc.err, tc.altMessage, err)
-				return
-			}
-
-			AssertEqualCommandError(t, tc.err, err)
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }

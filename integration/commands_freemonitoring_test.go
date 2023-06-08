@@ -61,8 +61,8 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 		expectedRes    bson.D // optional, expected response
 		expectedStatus string // optional, expected status
 
-		err        *mongo.CommandError // optional
-		altMessage string              // optional, alternative error message
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"Enable": {
@@ -132,21 +132,18 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 
 			require.NotNil(t, tc.command, "command must not be nil")
 
-			var actual bson.D
-			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
+			var res bson.D
+			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&res)
 			if tc.err != nil {
-				if tc.altMessage != "" {
-					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-					return
-				}
+				assert.Nil(t, res)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 
-				AssertEqualCommandError(t, *tc.err, err)
 				return
 			}
 
 			require.NoError(t, err)
 
-			AssertEqualDocuments(t, tc.expectedRes, actual)
+			AssertEqualDocuments(t, tc.expectedRes, res)
 
 			if tc.expectedStatus != "" {
 				var actual bson.D

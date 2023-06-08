@@ -17,6 +17,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -35,8 +36,8 @@ func TestQueryProjectionErrors(t *testing.T) {
 		filter     bson.D // required
 		projection any    // required
 
-		err        *mongo.CommandError // required
-		altMessage string              // optional, alternative error message
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"EmptyKey": {
@@ -244,13 +245,10 @@ func TestQueryProjectionErrors(t *testing.T) {
 			require.NotNil(t, tc.projection, "projection should be set")
 			require.NotNil(t, tc.err, "err should be set")
 
-			_, err := coll.Find(ctx, tc.filter, options.Find().SetProjection(tc.projection))
-			if tc.altMessage != "" {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-				return
-			}
+			res, err := coll.Find(ctx, tc.filter, options.Find().SetProjection(tc.projection))
 
-			AssertEqualCommandError(t, *tc.err, err)
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
