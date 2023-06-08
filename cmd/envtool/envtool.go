@@ -329,8 +329,8 @@ func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
 	})
 }
 
-// mkdir creates all directories from given paths.
-func mkdir(paths ...string) error {
+// shellMkDir creates all directories from given paths.
+func shellMkDir(paths ...string) error {
 	var errs error
 
 	for _, path := range paths {
@@ -342,8 +342,8 @@ func mkdir(paths ...string) error {
 	return errs
 }
 
-// rmdir removes all directories from given paths.
-func rmdir(paths ...string) error {
+// shellRmDir removes all directories from given paths.
+func shellRmDir(paths ...string) error {
 	var errs error
 
 	for _, path := range paths {
@@ -355,8 +355,8 @@ func rmdir(paths ...string) error {
 	return errs
 }
 
-// read will show the content of a file.
-func read(w io.Writer, paths ...string) error {
+// shellRead will show the content of a file.
+func shellRead(w io.Writer, paths ...string) error {
 	for _, path := range paths {
 		b, err := os.ReadFile(path)
 		if err != nil {
@@ -403,8 +403,8 @@ var cli struct {
 	PackageVersion struct{} `cmd:"" help:"Print package version"`
 	Tests          struct {
 		Shard struct {
-			Index uint `required:""`
-			Total uint `help:"Total number of shards" required:""`
+			Index uint `help:"Shard index, starting from 1" required:""`
+			Total uint `help:"Total number of shards"       required:""`
 		} `cmd:"" help:"Print sharded integration tests"`
 	} `cmd:""`
 }
@@ -434,15 +434,15 @@ func main() {
 	case "setup":
 		err = setup(ctx, logger)
 	case "shell mkdir <path>":
-		err = mkdir(cli.Shell.Mkdir.Paths...)
+		err = shellMkDir(cli.Shell.Mkdir.Paths...)
 	case "shell rmdir <path>":
-		err = rmdir(cli.Shell.Rmdir.Paths...)
+		err = shellRmDir(cli.Shell.Rmdir.Paths...)
 	case "shell read <path>":
-		err = read(os.Stdout, cli.Shell.Read.Paths...)
+		err = shellRead(os.Stdout, cli.Shell.Read.Paths...)
 	case "package-version":
 		err = packageVersion(os.Stdout, versionFile)
 	case "tests shard":
-		err = shardIntegrationTests(os.Stdout, cli.Tests.Shard.Index, cli.Tests.Shard.Total)
+		err = testsShard(os.Stdout, cli.Tests.Shard.Index, cli.Tests.Shard.Total)
 	default:
 		err = fmt.Errorf("unknown command: %s", cmd)
 	}
