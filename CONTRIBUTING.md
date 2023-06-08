@@ -240,17 +240,19 @@ Also, we should use driver methods as much as possible instead of testing comman
 3. If the test doesn't use driver method but runs a command directly via `RunCommand`,
    the suffix `Command` should be added.
    For example, `TestDistinctCommand`.
-4. If the file contains compatibility tests, add the `_compat` suffix.
+4. If the test is both compat and runs a command, the suffix `CommandCompat` should be added.
+   For example, `TestInsertCommandCompat`.
+5. If the file consists of compatibility tests, add the `_compat` suffix.
    For example, `distinct_compat_test.go`.
-5. Test names should be descriptive and provide information about the functionality or condition being tested.
+6. Test names should be descriptive and provide information about the functionality or condition being tested.
    If the test is checking for a specific error scenario, include the error scenario in the name.
-6. Keep test names concise, avoiding overly cryptic names.
+7. Keep test names concise, avoiding overly cryptic names.
    Use abbreviations when appropriate.
-7. Avoid including test data in the name to maintain clarity and prevent excessively long names.
-8. Test case names should follow `TitleCase` capitalization style.
+8. Avoid including test data in the name to maintain clarity and prevent excessively long names.
+9. Test case names should follow `TitleCase` capitalization style.
    No spaces, dashes or underscores should be used neither for test names nor for test case names.
-9. Keep the concatenation of test name segments (test, subtests, and handler) within 64 characters
-   to satisfy the maximum limit for database names.
+10. Keep the concatenation of test name segments (test, subtests, and handler) within 64 characters
+    to satisfy the maximum limit for database names.
 
 ### Submitting code changes
 
