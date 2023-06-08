@@ -144,7 +144,7 @@ jobs:
     name: Integration ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
     runs-on:
       group: paid
-    timeout-minutes: 15
+    timeout-minutes: 20
 
     # Do not run this job in parallel for any PR change or branch/tag push
     # to save some resources.
@@ -189,7 +189,7 @@ jobs:
       - name: Wait for and setup environment
         run: bin/task env-setup
 
-      - name: Run ${{ matrix.task }} tests
+      - name: Run ${{ matrix.name }} tests (${{ matrix.shard_index }}/${{ matrix.shard_total }})
         run: bin/task test-integration-${{ matrix.task }} SHARD_INDEX=${{ matrix.shard_index }} SHARD_TOTAL=${{ matrix.shard_total }}
 
       # The token is not required but should make uploads more stable.
@@ -231,7 +231,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     needs: [test, integration]
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
+    if: always() && (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready'))
 
     steps:
       - name: Submit coveralls
