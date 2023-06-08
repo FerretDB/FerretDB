@@ -45,7 +45,7 @@ var (
 	ErrNotImplemented = fmt.Errorf("The operator is not implemented yet")
 
 	// ErrNotImplemented indicates that given operator does not exist.
-	ErrInvalidExpression = fmt.Errorf("Unrecognized expression") // TODO add '$operator' to the message
+	ErrInvalidExpression = fmt.Errorf("Unrecognized expression")
 
 	// ErrNoOperator indicates that given document does not contain any operator.
 	ErrNoOperator = fmt.Errorf("No operator in document")

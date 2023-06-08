@@ -162,7 +162,6 @@ func (e *Expression) Evaluate(doc *types.Document) any {
 			return must.NotFail(types.NewArray())
 		}
 
-		// TODO $group stage groups non-existent paths with `Null`
 		return nil
 	}
 
