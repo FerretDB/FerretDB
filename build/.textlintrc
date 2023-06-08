@@ -30,7 +30,7 @@
                     "message": "Use en dashes with spaces",
                     "pattern": "/(\\S)–([\\S])/",
                     "replace": "$1 – $2",
-                    "force,Code": true
+                    "forceCode": true
                 }
             ]
         }
