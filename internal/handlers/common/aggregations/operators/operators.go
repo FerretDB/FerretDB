@@ -31,26 +31,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-var (
-	// ErrWrongType indicates that operator field is not a document.
-	ErrWrongType = fmt.Errorf("Invalid type of operator field (expected document)")
-
-	// ErrEmptyField indicates that operator field does not specify any operator.
-	ErrEmptyField = fmt.Errorf("The operator field is empty (expected document)")
-
-	// ErrTooManyFields indicates that operator field specifes more than one operators.
-	ErrTooManyFields = fmt.Errorf("The operator field specifies more than one operator")
-
-	// ErrNotImplemented indicates that given operator is not implemented yet.
-	ErrNotImplemented = fmt.Errorf("The operator is not implemented yet")
-
-	// ErrNotImplemented indicates that given operator does not exist.
-	ErrInvalidExpression = fmt.Errorf("Unrecognized expression") // TODO add '$operator' to the message
-
-	// ErrNoOperator indicates that given document does not contain any operator.
-	ErrNoOperator = fmt.Errorf("No operator in document")
-)
-
 // newOperatorFunc is a type for a function that creates a standard aggregation operator.
 //
 // By standard aggregation operator we mean any operator that is not accumulator.
@@ -70,11 +50,11 @@ type Operator interface {
 func NewOperator(doc any) (Operator, error) {
 	operatorDoc, ok := doc.(*types.Document)
 	if !ok {
-		return nil, ErrWrongType
+		return nil, NewOperatorError(ErrWrongType, "", fmt.Errorf("Invalid type of operator field (expected document)"))
 	}
 
 	if operatorDoc.Len() == 0 {
-		return nil, ErrEmptyField
+		return nil, NewOperatorError(ErrEmptyField, "", fmt.Errorf("The operator field is empty (expected document)"))
 	}
 
 	iter := operatorDoc.Iterator()
@@ -99,17 +79,16 @@ func NewOperator(doc any) (Operator, error) {
 
 	switch {
 	case !operatorExists:
-		return nil, ErrNoOperator
+		return nil, NewOperatorError(ErrNoOperator, "", fmt.Errorf("No operator in document"))
 	case operatorDoc.Len() > 1:
-		return nil, ErrTooManyFields
+		return nil, NewOperatorError(ErrTooManyFields, "", fmt.Errorf("The operator field specifies more than one operator"))
 	}
 
 	operator := operatorDoc.Command()
 
 	newOperator, ok := Operators[operator]
 	if !ok {
-		return nil, ErrNotImplemented
-		// TODO return ErrInvalidExpression
+		return nil, NewOperatorError(ErrNotImplemented, operator, fmt.Errorf("The operator is not implemented yet"))
 	}
 
 	return newOperator(operatorDoc)
