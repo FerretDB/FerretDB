@@ -28,10 +28,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// typeOp represents `$type` operator.
 type typeOp struct {
 	param any
 }
 
+// newType returns `$type` operator.
 func newType(operation *types.Document) (Operator, error) {
 	param := must.NotFail(operation.Get("$type"))
 
@@ -40,6 +42,7 @@ func newType(operation *types.Document) (Operator, error) {
 	}, nil
 }
 
+// Process implements Operator interface.
 func (t *typeOp) Process(doc *types.Document) (any, error) {
 	var value any
 
@@ -49,6 +52,7 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 
 	for !paramEvaluated {
 		paramEvaluated = true
+
 		switch param := typeParam.(type) {
 		case *types.Document:
 			operator, err := NewOperator(param)
@@ -68,6 +72,10 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 			// the result of nested operator needs to be evaluated
 			paramEvaluated = false
 
+		case *types.Array, float64, types.Binary, types.ObjectID, bool, time.Time,
+			types.NullType, types.Regex, int32, types.Timestamp, int64:
+			value = param
+
 		case string:
 			if strings.HasPrefix(param, "$") {
 				expression, err := aggregations.NewExpression(param)
@@ -76,13 +84,12 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 				}
 
 				value = expression.Evaluate(doc)
+
 				continue
 			}
 
 			value = param
 
-		case *types.Array, float64, types.Binary, types.ObjectID, bool, time.Time, types.NullType, types.Regex, int32, types.Timestamp, int64:
-			value = param
 		default:
 			panic(fmt.Sprint("wrong type of value: ", typeParam))
 		}

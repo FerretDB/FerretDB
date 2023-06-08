@@ -44,7 +44,7 @@ var (
 	// ErrNotImplemented indicates that given operator is not implemented yet.
 	ErrNotImplemented = fmt.Errorf("The operator is not implemented yet")
 
-	// ErrNotImplemented indicates that given operator does not exist.
+	// ErrInvalidExpression indicates that given operator does not exist.
 	ErrInvalidExpression = fmt.Errorf("Unrecognized expression")
 
 	// ErrNoOperator indicates that given document does not contain any operator.
@@ -81,6 +81,7 @@ func NewOperator(doc any) (Operator, error) {
 	defer iter.Close()
 
 	var operatorExists bool
+
 	for {
 		k, _, err := iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {

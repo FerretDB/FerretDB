@@ -220,6 +220,9 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 
 	for _, doc := range in {
 		val := expression.Evaluate(doc)
+		if val == nil {
+			val = types.Null
+		}
 		group.addOrAppend(val, doc)
 	}
 
