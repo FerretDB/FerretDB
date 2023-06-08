@@ -94,6 +94,7 @@ func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDataba
 	defer observability.FuncCall(ctx)()
 	defer checkError(err)
 	res, err = bc.b.ListDatabases(ctx, params)
+
 	return
 }
 

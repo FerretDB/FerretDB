@@ -57,12 +57,13 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 	})
 
 	for name, tc := range map[string]struct {
-		command        bson.D
-		err            *mongo.CommandError
-		expectedRes    bson.D
-		expectedStatus string
+		command        bson.D // required, command to run
+		expectedRes    bson.D // optional, expected response
+		expectedStatus string // optional, expected status
 
-		skip string
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Enable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
@@ -81,6 +82,7 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 				Name:    "BadValue",
 				Message: `Enumeration value 'foobar' for field 'setFreeMonitoring.action' is not a valid value.`,
 			},
+			altMessage: `Enumeration value 'foobar' for field 'setFreeMonitoring.action' is not a valid value.`,
 		},
 		"Empty": {
 			command: bson.D{{"setFreeMonitoring", 1}, {"action", ""}},
@@ -128,17 +130,20 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 				t.Skip(tc.skip)
 			}
 
-			var actual bson.D
-			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
+			require.NotNil(t, tc.command, "command must not be nil")
 
+			var res bson.D
+			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&res)
 			if tc.err != nil {
-				AssertEqualCommandError(t, *tc.err, err)
+				assert.Nil(t, res)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
 				return
 			}
 
 			require.NoError(t, err)
 
-			AssertEqualDocuments(t, tc.expectedRes, actual)
+			AssertEqualDocuments(t, tc.expectedRes, res)
 
 			if tc.expectedStatus != "" {
 				var actual bson.D
@@ -147,6 +152,15 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 
 				actualStatus, ok := actual.Map()["state"]
 				require.True(t, ok)
+
+				if actualStatus == "disabled" {
+					if v, ok := actual.Map()["debug"]; ok {
+						debug, ok := v.(bson.D)
+						require.True(t, ok)
+						actualStatus, ok = debug.Map()["state"]
+						require.True(t, ok)
+					}
+				}
 
 				assert.Equal(t, tc.expectedStatus, actualStatus)
 			}
