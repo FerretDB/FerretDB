@@ -20,37 +20,34 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestQueryArrayDotNotation(t *testing.T) {
-	setup.SkipForTigris(t)
-
+func TestInsertCommandErrors(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-	for name, tc := range map[string]struct {
-		filter      bson.D // required
-		expectedIDs []any  // optional
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		toInsert []any // required, slice of bson.D to insert
+		ordered  any   // required, sets it to `ordered`
 
 		err        *mongo.CommandError // optional, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
-		"FieldPositionQueryRegex": {
-			// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1540
-			filter: bson.D{{"v.array.0", bson.D{{"$lt", primitive.Regex{Pattern: "^$"}}}}},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "Can't have RegEx as arg to predicate over field 'v.array.0'.",
+		"InsertOrderedInvalid": {
+			toInsert: []any{
+				bson.D{{"_id", "foo"}},
 			},
-			altMessage: "Can't have RegEx as arg to predicate over field 'v.array.0'.",
+			ordered: "foo",
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'insert.ordered' is the wrong type 'string', expected type 'bool'",
+			},
+			altMessage: "BSON field 'ordered' is the wrong type 'string', expected type 'bool'",
 		},
 	} {
 		name, tc := name, tc
@@ -61,22 +58,21 @@ func TestQueryArrayDotNotation(t *testing.T) {
 
 			t.Parallel()
 
-			require.NotNil(t, tc.filter, "filter must not be nil")
+			require.NotNil(t, tc.toInsert, "toInsert must not be nil")
+			require.NotNil(t, tc.ordered, "ordered must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
 
-			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			if tc.err != nil {
-				assert.Nil(t, cursor)
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-				return
-			}
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, bson.D{
+				{"insert", collection.Name()},
+				{"documents", tc.toInsert},
+				{"ordered", tc.ordered},
+			}).Decode(&res)
 
-			require.NoError(t, err)
-
-			var actual []bson.D
-			err = cursor.All(ctx, &actual)
-			require.NoError(t, err)
-			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
