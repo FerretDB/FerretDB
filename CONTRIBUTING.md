@@ -233,23 +233,24 @@ Also, we should use driver methods as much as possible instead of testing comman
 
 #### Integration tests naming guidelines
 
-1. Test files should be named after the command they test.
-   For example, `find_test.go` for testing the find command.
-   Test files belonging to the same commands group are organized into folders named after this group,
-   such as `aggregation`, `operations`, `diagnostic`, etc.
-2. If the file contains compatibility tests, add the `_compat` suffix.
-   For example, `find_compat_test.go`.
-3. Test names should include the name of the command being tested.
+1. Test names should include the name of the command being tested.
    For instance, `TestDistinct` for testing the distinct command.
-4. Compatibility tests should have `Compat` in the name, following the command.
+2. Compatibility tests should have `Compat` in the name, following the command.
    For example, `TestDistinctCompat`.
+3. If the test doesn't use driver method but runs a command directly via `RunCommand`,
+   the suffix `Command` should be added.
+   For example, `TestDistinctCommand`.
+4. If the file contains compatibility tests, add the `_compat` suffix.
+   For example, `distinct_compat_test.go`.
 5. Test names should be descriptive and provide information about the functionality or condition being tested.
    If the test is checking for a specific error scenario, include the error scenario in the name.
 6. Keep test names concise, avoiding overly cryptic names.
    Use abbreviations when appropriate.
 7. Avoid including test data in the name to maintain clarity and prevent excessively long names.
 8. Test case names should follow `TitleCase` capitalization style.
-9. Test and subtest names should not exceed 64 characters.
+   No spaces, dashes or underscores should be used neither for test names nor for test case names.
+9. Keep the concatenation of test name segments (test, subtests, and handler) within 64 characters
+   to satisfy the maximum limit for database names.
 
 ### Submitting code changes
 
