@@ -39,12 +39,15 @@ func testsShard(w io.Writer, index, total uint) error {
 	}
 
 	fmt.Fprint(w, "^(")
+
 	for i, t := range sharded {
 		fmt.Fprint(w, t)
+
 		if i != len(sharded)-1 {
 			fmt.Fprint(w, "|")
 		}
 	}
+
 	fmt.Fprint(w, ")$")
 
 	return nil
@@ -60,11 +63,12 @@ func getAllTestNames(dir string) ([]string, error) {
 		return nil, err
 	}
 
-	tests := make(map[string]struct{})
+	tests := make(map[string]struct{}, 200)
 
 	s := bufio.NewScanner(bytes.NewReader(b))
 	for s.Scan() {
 		l := s.Text()
+
 		switch {
 		case strings.HasPrefix(l, "Test"):
 		case strings.HasPrefix(l, "Benchmark"):
@@ -100,9 +104,11 @@ func shardTests(index, total uint, tests []string) ([]string, error) {
 	if index == 0 {
 		return nil, fmt.Errorf("index must be greater than 0")
 	}
+
 	if total == 0 {
 		return nil, fmt.Errorf("total must be greater than 0")
 	}
+
 	if index > total {
 		return nil, fmt.Errorf("cannot shard when index is greater to total (%d > %d)", index, total)
 	}
@@ -112,10 +118,11 @@ func shardTests(index, total uint, tests []string) ([]string, error) {
 		return nil, fmt.Errorf("cannot shard when total is greater than amount of tests (%d > %d)", total, testsLen)
 	}
 
-	// use different shards for tests with similar names for better load balancing
 	res := make([]string, 0, testsLen/total)
 	var test uint
-	var shard uint = 1
+	shard := uint(1)
+
+	// use different shards for tests with similar names for better load balancing
 	for {
 		if test == testsLen {
 			return res, nil
