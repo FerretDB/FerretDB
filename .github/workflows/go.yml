@@ -204,7 +204,7 @@ jobs:
         with:
           token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
           files: ./integration/integration-${{ matrix.task }}.txt
-          flags: integration,${{ matrix.task }}
+          flags: integration,${{ matrix.task }},shard-${{ matrix.shard_index }}
           fail_ci_if_error: true
           verbose: true
 
@@ -212,7 +212,7 @@ jobs:
         uses: coverallsapp/github-action@v2
         with:
           file: ./integration/integration-${{ matrix.task }}.txt
-          flag-name: integration-${{ matrix.task }}
+          flag-name: integration-${{ matrix.task }}-${{ matrix.shard_index }}
           parallel: true
 
       # we don't want them on CI
