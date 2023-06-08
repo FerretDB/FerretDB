@@ -230,7 +230,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 			fields = append(fields, field{key: key, value: types.Binary(v)})
 
 		case tagUndefined:
-			return lazyerrors.Errorf("bson.Document.ReadFrom: unhandled element type `Undefined (value) — Deprecated`")
+			return lazyerrors.Errorf("bson.Document.ReadFrom: unhandled element type `Undefined (value) Deprecated`")
 
 		case tagObjectID:
 			var v objectIDType
