@@ -15,136 +15,124 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
-	"path"
 	"sort"
 	"strings"
+
+	"golang.org/x/exp/maps"
 )
 
-// shardIntegrationTests shards integration test names from the specified directory.
-func shardIntegrationTests(w io.Writer, index, total uint) error {
-	var output strings.Builder
-
-	tests, err := getAllTestNames("integration")
+// testsShard shards integration test names.
+func testsShard(w io.Writer, index, total uint) error {
+	all, err := getAllTestNames("integration")
 	if err != nil {
 		return err
 	}
 
-	shardedTests, err := shardTests(index, total, tests...)
+	sharded, err := shardTests(index, total, all)
 	if err != nil {
 		return err
 	}
 
-	output.WriteString("^(")
-	output.WriteString(strings.Join(shardedTests, "|"))
-	output.WriteString(")$")
+	fmt.Fprint(w, "^(")
 
-	if _, err = w.Write([]byte(output.String())); err != nil {
-		return err
+	for i, t := range sharded {
+		fmt.Fprint(w, t)
+
+		if i != len(sharded)-1 {
+			fmt.Fprint(w, "|")
+		}
 	}
+
+	fmt.Fprint(w, ")$")
 
 	return nil
 }
 
-// shardTests shards gotten test names.
-func shardTests(index, total uint, tests ...string) ([]string, error) {
-	if index >= total {
-		return nil, fmt.Errorf("Cannot shard when Index is greater or equal to Total (%d >= %d)", index, total)
+// getAllTestNames returns a sorted slice of all tests in the specified directory and subdirectories.
+func getAllTestNames(dir string) ([]string, error) {
+	cmd := exec.Command("go", "test", "-list=.", "./...")
+	cmd.Dir = dir
+
+	b, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+
+	tests := make(map[string]struct{}, 200)
+
+	s := bufio.NewScanner(bytes.NewReader(b))
+	for s.Scan() {
+		l := s.Text()
+
+		switch {
+		case strings.HasPrefix(l, "Test"):
+		case strings.HasPrefix(l, "Benchmark"):
+		case strings.HasPrefix(l, "Example"):
+		case strings.HasPrefix(l, "Fuzz"):
+		case strings.HasPrefix(l, "? "):
+			continue
+		case strings.HasPrefix(l, "ok "):
+			continue
+		default:
+			return nil, fmt.Errorf("can't parse line %q", l)
+		}
+
+		if _, dup := tests[l]; dup {
+			return nil, fmt.Errorf("duplicate test name %q", l)
+		}
+
+		tests[l] = struct{}{}
+	}
+
+	if err := s.Err(); err != nil {
+		return nil, err
+	}
+
+	res := maps.Keys(tests)
+	sort.Strings(res)
+
+	return res, nil
+}
+
+// shardTests shards given test names.
+func shardTests(index, total uint, tests []string) ([]string, error) {
+	if index == 0 {
+		return nil, fmt.Errorf("index must be greater than 0")
+	}
+
+	if total == 0 {
+		return nil, fmt.Errorf("total must be greater than 0")
+	}
+
+	if index > total {
+		return nil, fmt.Errorf("cannot shard when index is greater to total (%d > %d)", index, total)
 	}
 
 	testsLen := uint(len(tests))
 	if total > testsLen {
-		return nil, fmt.Errorf("Cannot shard when Total is greater than amount of tests (%d > %d)", total, testsLen)
+		return nil, fmt.Errorf("cannot shard when total is greater than amount of tests (%d > %d)", total, testsLen)
 	}
 
-	sharder := testsLen / total
-	start := sharder * index
-	end := sharder*index + sharder
+	res := make([]string, 0, testsLen/total)
+	var test uint
+	shard := uint(1)
 
-	if index == total-1 {
-		modulo := testsLen % total
-		end += modulo
+	// use different shards for tests with similar names for better load balancing
+	for {
+		if test == testsLen {
+			return res, nil
+		}
+
+		if index == shard {
+			res = append(res, tests[test])
+		}
+
+		test++
+		shard = shard%total + 1
 	}
-
-	return tests[start:end], nil
-}
-
-// getAllTestNames gets all test names from the specified directory.
-func getAllTestNames(dir string) ([]string, error) {
-	newDir, err := getNewWorkingDir(dir)
-	if err != nil {
-		return nil, err
-	}
-
-	cmd := exec.Command("go", "test", "-list=.")
-	cmd.Dir = newDir
-
-	outputBytes, err := cmd.Output()
-	if err != nil {
-		return nil, err
-	}
-
-	tests, err := prepareTestNamesOutput(string(outputBytes))
-	if err != nil {
-		return nil, err
-	}
-
-	return tests, nil
-}
-
-// prepareTestNamesOutput prepares test names output.
-func prepareTestNamesOutput(output string) ([]string, error) {
-	tests := strings.FieldsFunc(output, func(s rune) bool {
-		return s == '\n'
-	})
-
-	status := tests[len(tests)-1]
-	if !strings.Contains(status, "ok") {
-		return nil, fmt.Errorf("Could not read test names: %s", status)
-	}
-
-	if strings.Contains(status, "github.com/FerretDB/FerretDB/integration") {
-		tests = tests[:len(tests)-1]
-	}
-
-	sort.Strings(tests)
-
-	return tests, nil
-}
-
-// getNewWorkingDir gets the new working directory based on the repo root directory and passed destination.
-func getNewWorkingDir(dest string) (string, error) {
-	var rootDir, newWorkingDir string
-
-	rootDir, err := getRootDir()
-	if err != nil {
-		return rootDir, err
-	}
-
-	newWorkingDir = path.Join(rootDir, dest)
-	if _, err := os.Stat(newWorkingDir); err != nil {
-		return newWorkingDir, err
-	}
-
-	return newWorkingDir, nil
-}
-
-// getRootDir gets the repository's root directory.
-func getRootDir() (string, error) {
-	var rootDir string
-
-	workingDir, err := os.Getwd()
-	if err != nil {
-		return rootDir, err
-	}
-
-	if strings.Contains(workingDir, "envtool") {
-		rootDir = path.Join(workingDir, "..", "..")
-		return rootDir, nil
-	}
-
-	return workingDir, nil
 }
