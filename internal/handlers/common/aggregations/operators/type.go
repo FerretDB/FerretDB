@@ -52,21 +52,13 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 		switch param := typeParam.(type) {
 		case *types.Document:
 			operator, err := NewOperator(param)
+			if errors.Is(err, ErrNoOperator) {
+				value = param
+				continue
+			}
 
 			if err != nil {
-				var opErr OperatorError
-				if !errors.As(err, &opErr) {
-					return nil, lazyerrors.Error(err)
-				}
-
-				switch opErr.Code() {
-				case ErrNoOperator:
-					value = param
-					continue
-
-				case ErrWrongType, ErrEmptyField, ErrTooManyFields, ErrNotImplemented, ErrInvalidExpression:
-					return nil, opErr
-				}
+				return nil, err
 			}
 
 			if typeParam, err = operator.Process(doc); err != nil {
