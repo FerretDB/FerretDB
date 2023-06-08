@@ -37,81 +37,130 @@ func TestQueryBadFindType(t *testing.T) {
 	ctx, collection := s.Ctx, s.Collection
 
 	for name, tc := range map[string]struct {
-		value any
-		err   string
+		value any // optional, used for find value
+
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Document": {
 			value: bson.D{},
-			err:   "object",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type object",
+			},
+			altMessage: "collection name has invalid type object",
 		},
 		"Array": {
 			value: primitive.A{},
-			err:   "array",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type array",
+			},
 		},
 		"Double": {
 			value: 3.14,
-
-			err: "double",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type double",
+			},
 		},
 		"Binary": {
 			value: primitive.Binary{},
-			err:   "binData",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type binData",
+			},
 		},
 		"ObjectID": {
 			value: primitive.ObjectID{},
-
-			err: "objectId",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type objectId",
+			},
 		},
 		"Bool": {
 			value: true,
-			err:   "bool",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type bool",
+			},
 		},
 		"Date": {
 			value: time.Now(),
-
-			err: "date",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type date",
+			},
 		},
 		"Null": {
 			value: nil,
-
-			err: "null",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type null",
+			},
 		},
 		"Regex": {
 			value: primitive.Regex{Pattern: "/foo/"},
-
-			err: "regex",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type regex",
+			},
 		},
 		"Int": {
 			value: int32(42),
-			err:   "int",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type int",
+			},
 		},
 		"Timestamp": {
 			value: primitive.Timestamp{},
-			err:   "timestamp",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type timestamp",
+			},
 		},
 		"Long": {
 			value: int64(42),
-			err:   "long",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type long",
+			},
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
 
-			var actual bson.D
+			require.NotNil(t, tc.err, "err must not be nil")
+
 			cmd := bson.D{
 				{"find", tc.value},
 				{"projection", bson.D{{"v", "some"}}},
 			}
-			err := collection.Database().RunCommand(ctx, cmd).Decode(&actual)
-			require.Error(t, err)
 
-			expected := mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type " + tc.err,
-			}
-			AssertEqualError(t, expected, err)
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, cmd).Decode(&res)
+
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
@@ -123,9 +172,11 @@ func TestQuerySortErrors(t *testing.T) {
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
-		command    bson.D
-		err        *mongo.CommandError
-		altMessage string
+		command bson.D // required, command to run
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"SortTypeDouble": {
 			command: bson.D{
@@ -205,12 +256,19 @@ func TestQuerySortErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
 
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			require.Error(t, err)
+			require.NotNil(t, tc.command, "command must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
 
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&res)
+
+			assert.Nil(t, res)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
@@ -221,9 +279,11 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct {
-		command    bson.D
-		err        *mongo.CommandError
-		altMessage string
+		command bson.D // required, command to run
+
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"BadMaxTimeMSTypeDouble": {
 			command: bson.D{
@@ -235,6 +295,7 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 				Name:    "BadValue",
 				Message: "maxTimeMS has non-integral value",
 			},
+			altMessage: "maxTimeMS has non-integral value",
 		},
 		"BadMaxTimeMSNegativeDouble": {
 			command: bson.D{
@@ -327,12 +388,20 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
 
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			require.Error(t, err)
-			AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+			require.NotNil(t, tc.command, "command must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&res)
+
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }

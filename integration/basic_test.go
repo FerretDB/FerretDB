@@ -322,9 +322,11 @@ func TestCollectionName(t *testing.T) {
 	collectionName235 := strings.Repeat("a", 235)
 
 	cases := map[string]struct {
-		collection string
-		err        *mongo.CommandError
-		alt        string
+		collection string // collection name, defaults to empty string
+
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"TooLongForBothDBs": {
 			collection: collectionName300,
@@ -336,7 +338,7 @@ func TestCollectionName(t *testing.T) {
 					collectionName300,
 				),
 			},
-			alt: fmt.Sprintf("Invalid collection name: 'TestCollectionName.%s'", collectionName300),
+			altMessage: fmt.Sprintf("Invalid collection name: 'TestCollectionName.%s'", collectionName300),
 		},
 		"LongEnough": {
 			collection: collectionName235,
@@ -351,7 +353,7 @@ func TestCollectionName(t *testing.T) {
 				Code:    73,
 				Message: `Invalid collection name: collection_name_with_a-$`,
 			},
-			alt: `Invalid collection name: 'TestCollectionName.collection_name_with_a-$'`,
+			altMessage: `Invalid collection name: 'TestCollectionName.collection_name_with_a-$'`,
 		},
 		"WithADash": {
 			collection: "collection_name_with_a-",
@@ -366,7 +368,7 @@ func TestCollectionName(t *testing.T) {
 				Code:    73,
 				Message: "Invalid namespace specified 'TestCollectionName.'",
 			},
-			alt: "Invalid collection name: 'TestCollectionName.'",
+			altMessage: "Invalid collection name: 'TestCollectionName.'",
 		},
 		"Null": {
 			collection: "\x00",
@@ -375,7 +377,7 @@ func TestCollectionName(t *testing.T) {
 				Code:    73,
 				Message: "namespaces cannot have embedded null characters",
 			},
-			alt: "Invalid collection name: 'TestCollectionName.\x00'",
+			altMessage: "Invalid collection name: 'TestCollectionName.\x00'",
 		},
 		"Dot": {
 			collection: "collection.name",
@@ -400,11 +402,15 @@ func TestCollectionName(t *testing.T) {
 	for name, tc := range cases {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
 
 			err := collection.Database().CreateCollection(ctx, tc.collection)
 			if tc.err != nil {
-				AssertEqualAltError(t, *tc.err, tc.alt, err)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 
@@ -439,9 +445,11 @@ func TestDatabaseName(t *testing.T) {
 		dbName64 := strings.Repeat("a", 64)
 
 		cases := map[string]struct {
-			db  string
-			err *mongo.CommandError
-			alt string
+			db string // database name, defaults to empty string
+
+			err        *mongo.CommandError // required, expected error from MongoDB
+			altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+			skip       string              // optional, skip test with a specified reason
 		}{
 			"TooLongForBothDBs": {
 				db: dbName64,
@@ -454,7 +462,7 @@ func TestDatabaseName(t *testing.T) {
 						"TestDatabaseName-Err",
 					),
 				},
-				alt: fmt.Sprintf("Invalid namespace: %s.%s", dbName64, "TestDatabaseName-Err"),
+				altMessage: fmt.Sprintf("Invalid namespace: %s.%s", dbName64, "TestDatabaseName-Err"),
 			},
 			"WithADollarSign": {
 				db: "name_with_a-$",
@@ -471,7 +479,7 @@ func TestDatabaseName(t *testing.T) {
 					Code:    73,
 					Message: `Invalid namespace specified 'data base.TestDatabaseName-Err'`,
 				},
-				alt: `Invalid namespace: data base.TestDatabaseName-Err`,
+				altMessage: `Invalid namespace: data base.TestDatabaseName-Err`,
 			},
 			"WithDot": {
 				db: "database.test",
@@ -480,18 +488,24 @@ func TestDatabaseName(t *testing.T) {
 					Code:    73,
 					Message: `'.' is an invalid character in the database name: database.test`,
 				},
-				alt: `Invalid namespace: database.test.TestDatabaseName-Err`,
+				altMessage: `Invalid namespace: database.test.TestDatabaseName-Err`,
 			},
 		}
 
 		for name, tc := range cases {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
+				if tc.skip != "" {
+					t.Skip(tc.skip)
+				}
+
 				t.Parallel()
+
+				require.NotNil(t, tc.err, "err must not be nil")
 
 				// there is no explicit command to create database, so create collection instead
 				err := collection.Database().Client().Database(tc.db).CreateCollection(ctx, collection.Name())
-				AssertEqualAltError(t, *tc.err, tc.alt, err)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 			})
 		}
 	})
