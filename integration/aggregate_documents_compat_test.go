@@ -1632,7 +1632,6 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$non-existent", "$v"}}}}}}}},
 			},
-			skip: "TODO",
 		},
 		"TypeRecursiveInvalid": {
 			pipeline: bson.A{
