@@ -162,7 +162,9 @@ jobs:
           - { name: "PostgreSQL", task: "pg", shard_index: 1, shard_total: 3 }
           - { name: "PostgreSQL", task: "pg", shard_index: 2, shard_total: 3 }
           - { name: "PostgreSQL", task: "pg", shard_index: 3, shard_total: 3 }
-          - { name: "SQLite", task: "sqlite", shard_index: 1, shard_total: 1 }
+          - { name: "SQLite", task: "sqlite", shard_index: 1, shard_total: 3 }
+          - { name: "SQLite", task: "sqlite", shard_index: 2, shard_total: 3 }
+          - { name: "SQLite", task: "sqlite", shard_index: 3, shard_total: 3 }
 
     steps:
       - name: Checkout code
