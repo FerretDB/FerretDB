@@ -57,7 +57,7 @@ func TestDistinctCommandErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    73,
 				Name:    "InvalidNamespace",
-				Message: "Invalid namespace specified 'TestDistinctErrors.'",
+				Message: "Invalid namespace specified 'TestDistinctCommandErrors.'",
 			},
 		},
 		"CollectionTypeObject": {
