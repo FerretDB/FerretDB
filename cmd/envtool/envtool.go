@@ -401,6 +401,12 @@ var cli struct {
 		} `cmd:"" help:"read files"`
 	} `cmd:""`
 	PackageVersion struct{} `cmd:"" help:"Print package version"`
+	Tests          struct {
+		Shard struct {
+			Index uint `required:""`
+			Total uint `help:"Total number of shards" required:""`
+		} `cmd:"" help:"Print sharded integration tests"`
+	} `cmd:""`
 }
 
 func main() {
@@ -435,6 +441,8 @@ func main() {
 		err = read(os.Stdout, cli.Shell.Read.Paths...)
 	case "package-version":
 		err = packageVersion(os.Stdout, versionFile)
+	case "tests shard":
+		err = shardIntegrationTests(os.Stdout, cli.Tests.Shard.Index, cli.Tests.Shard.Total)
 	default:
 		err = fmt.Errorf("unknown command: %s", cmd)
 	}
