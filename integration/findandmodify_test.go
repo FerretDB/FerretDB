@@ -31,8 +31,9 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		err        *mongo.CommandError
-		altMessage string
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"EmptyCollectionName": {
 			err: &mongo.CommandError{
@@ -40,30 +41,40 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 				Message: "Invalid namespace specified 'TestFindAndModifyEmptyCollectionName-EmptyCollectionName.'",
 				Name:    "InvalidNamespace",
 			},
+			altMessage: "Invalid namespace specified 'TestFindAndModifyEmptyCollectionName-EmptyCollectionName.'",
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.err, "err must not be nil")
+
 			ctx, collection := setup.Setup(t, shareddata.Doubles)
 
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, bson.D{{"findAndModify", ""}}).Decode(&actual)
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, bson.D{{"findAndModify", ""}}).Decode(&res)
 
-			AssertEqualError(t, *tc.err, err)
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
 
-func TestFindAndModifyErrors(t *testing.T) {
+func TestFindAndModifyCommandErrors(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // it is used for test only
-		command  bson.D
+		command  bson.D              // required, command to run
 		provider shareddata.Provider // optional, default uses shareddata.ArrayDocuments
 
-		err        *mongo.CommandError
-		altMessage string
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"UpsertAndRemove": {
 			command: bson.D{
@@ -389,7 +400,14 @@ func TestFindAndModifyErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.command, "command must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
 
 			provider := tc.provider
 			if provider == nil {
@@ -406,17 +424,21 @@ func TestFindAndModifyErrors(t *testing.T) {
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+			if tc.altMessage != "" {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				return
+			}
 
-			AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+			AssertEqualCommandError(t, *tc.err, err)
 		})
 	}
 }
 
-func TestFindAndModifyUpsertComplex(t *testing.T) {
+func TestFindAndModifyCommandUpsert(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		command         bson.D
+		command         bson.D // required, command to run
 		lastErrorObject bson.D
 		skipForTigris   string
 	}{
@@ -491,6 +513,9 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 			}
 
 			t.Parallel()
+
+			require.NotNil(t, tc.command, "command must not be nil")
+
 			ctx, collection := setup.Setup(t, shareddata.Doubles)
 
 			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
