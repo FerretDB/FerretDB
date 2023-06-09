@@ -619,18 +619,8 @@ func TestQueryCommandBatchSize(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	// generateFunc generates documents with _id ranging from start to end.
-	// it returns in bson.A because that is how cursor returns documents.
-	generateFunc := func(start, end int32) bson.A {
-		var docs bson.A
-		for i := start; i < end; i++ {
-			docs = append(docs, bson.D{{"_id", i}})
-		}
-
-		return docs
-	}
-
-	docs := generateFunc(0, 110)
+	// the number of documents is set to slightly above the default batchSize of 101
+	docs := generateDocuments(0, 110)
 	_, err := collection.InsertMany(ctx, docs)
 	require.NoError(t, err)
 
@@ -638,7 +628,7 @@ func TestQueryCommandBatchSize(t *testing.T) {
 		batchSize  any         // optional, nil to leave it unset
 		firstBatch primitive.A // optional, expected response
 
-		err        *mongo.CommandError // required, expected error from MongoDB
+		err        *mongo.CommandError // optional, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
@@ -693,12 +683,12 @@ func TestQueryCommandBatchSize(t *testing.T) {
 		"Unset": {
 			// default batchSize is 101 when unset
 			batchSize:  nil,
-			firstBatch: generateFunc(0, 101),
+			firstBatch: generateDocuments(0, 101),
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"LargeBatchSize": {
 			batchSize:  102,
-			firstBatch: generateFunc(0, 102),
+			firstBatch: generateDocuments(0, 102),
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 	} {
@@ -754,19 +744,8 @@ func TestQueryBatchSize(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	// generateFunc generates documents with _id ranging from start to end.
-	// it returns in bson.A because that is how cursor returns documents.
-	generateFunc := func(start, end int32) bson.A {
-		var docs bson.A
-		for i := start; i < end; i++ {
-			docs = append(docs, bson.D{{"_id", i}})
-		}
-
-		return docs
-	}
-
-	num := int32(220)
-	docs := generateFunc(0, num)
+	// the number of documents is set to much bigger than the default batchSize of 101
+	docs := generateDocuments(0, 220)
 	_, err := collection.InsertMany(ctx, docs)
 	require.NoError(t, err)
 
