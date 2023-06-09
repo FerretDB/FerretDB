@@ -35,7 +35,6 @@ func _() {
 	_ = x[ErrDocumentValidationFailure-121]
 	_ = x[ErrNotImplemented-238]
 	_ = x[ErrDuplicateKeyInsert-11000]
-	_ = x[ErrDuplicateKeyIndex-11000]
 	_ = x[ErrStageGroupInvalidFields-15947]
 	_ = x[ErrStageGroupID-15948]
 	_ = x[ErrStageGroupMissingID-15955]
