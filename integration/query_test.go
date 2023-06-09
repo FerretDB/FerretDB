@@ -613,3 +613,133 @@ func TestQueryNonExistingCollection(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, actual, 0)
 }
+
+func TestQueryCommandBatchSize(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	// generateFunc generates documents with _id ranging from start to end.
+	// it returns in bson.A because that is how cursor returns document.
+	generateFunc := func(start, end int32) bson.A {
+		var docs bson.A
+		for i := start; i < end; i++ {
+			docs = append(docs, bson.D{{"_id", i}})
+		}
+
+		return docs
+	}
+
+	docs := generateFunc(0, 110)
+	_, err := collection.InsertMany(ctx, docs)
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		batchSize any         // optional, nil to leave it unset
+		res       primitive.A // optional, expected response
+
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"Int": {
+			batchSize: 1,
+			res:       bson.A{bson.D{{"_id", int32(0)}}},
+		},
+		"Long": {
+			batchSize: int64(2),
+			res: bson.A{
+				bson.D{{"_id", int32(0)}},
+				bson.D{{"_id", int32(1)}},
+			},
+		},
+		"LongZero": {
+			batchSize: int64(0),
+			res:       bson.A{},
+		},
+		"LongNegative": {
+			batchSize: int64(-1),
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
+			},
+		},
+		"DoubleNegative": {
+			batchSize: -1.1,
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
+			},
+		},
+		"DoubleFloor": {
+			batchSize: 1.9,
+			res:       bson.A{bson.D{{"_id", int32(0)}}},
+		},
+		"Bool": {
+			batchSize: true,
+			res:       bson.A{bson.D{{"_id", int32(0)}}},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'FindCommandRequest.batchSize' is the wrong type 'bool', expected types '[long, int, decimal, double']",
+			},
+		},
+		"Unset": {
+			// default batchSize is 101 when unset
+			batchSize: nil,
+			res:       generateFunc(0, 101),
+		},
+		"LargeBatchSize": {
+			batchSize: 102,
+			res:       generateFunc(0, 102),
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			var rest bson.D
+			if tc.batchSize != nil {
+				rest = append(rest, bson.E{Key: "batchSize", Value: tc.batchSize})
+			}
+
+			command := append(
+				bson.D{
+					{"find", collection.Name()},
+				},
+				rest...,
+			)
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&res)
+			if tc.err != nil {
+				assert.Nil(t, res)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
+				return
+			}
+
+			require.NoError(t, err)
+
+			v, ok := res.Map()["cursor"]
+			require.True(t, ok)
+
+			cursor, ok := v.(bson.D)
+			require.True(t, ok)
+
+			// Do not check the value of cursor id, FerretDB has a different id.
+			cursorID := cursor.Map()["id"]
+			assert.NotNil(t, cursorID)
+
+			firstBatch, ok := cursor.Map()["firstBatch"]
+			require.True(t, ok)
+
+			require.Equal(t, tc.res, firstBatch)
+		})
+	}
+}
