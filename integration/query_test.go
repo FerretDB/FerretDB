@@ -634,27 +634,29 @@ func TestQueryCommandBatchSize(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
-		batchSize any         // optional, nil to leave it unset
-		res       primitive.A // optional, expected response
+		batchSize  any         // optional, nil to leave it unset
+		firstBatch primitive.A // optional, expected response
 
 		err        *mongo.CommandError // required, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"Int": {
-			batchSize: 1,
-			res:       bson.A{bson.D{{"_id", int32(0)}}},
+			batchSize:  1,
+			firstBatch: bson.A{bson.D{{"_id", int32(0)}}},
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"Long": {
 			batchSize: int64(2),
-			res: bson.A{
+			firstBatch: bson.A{
 				bson.D{{"_id", int32(0)}},
 				bson.D{{"_id", int32(1)}},
 			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"LongZero": {
-			batchSize: int64(0),
-			res:       bson.A{},
+			batchSize:  int64(0),
+			firstBatch: bson.A{},
 		},
 		"LongNegative": {
 			batchSize: int64(-1),
@@ -673,26 +675,30 @@ func TestQueryCommandBatchSize(t *testing.T) {
 			},
 		},
 		"DoubleFloor": {
-			batchSize: 1.9,
-			res:       bson.A{bson.D{{"_id", int32(0)}}},
+			batchSize:  1.9,
+			firstBatch: bson.A{bson.D{{"_id", int32(0)}}},
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"Bool": {
-			batchSize: true,
-			res:       bson.A{bson.D{{"_id", int32(0)}}},
+			batchSize:  true,
+			firstBatch: bson.A{bson.D{{"_id", int32(0)}}},
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
 				Message: "BSON field 'FindCommandRequest.batchSize' is the wrong type 'bool', expected types '[long, int, decimal, double']",
 			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"Unset": {
 			// default batchSize is 101 when unset
-			batchSize: nil,
-			res:       generateFunc(0, 101),
+			batchSize:  nil,
+			firstBatch: generateFunc(0, 101),
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"LargeBatchSize": {
-			batchSize: 102,
-			res:       generateFunc(0, 102),
+			batchSize:  102,
+			firstBatch: generateFunc(0, 102),
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 	} {
 		name, tc := name, tc
@@ -709,9 +715,7 @@ func TestQueryCommandBatchSize(t *testing.T) {
 			}
 
 			command := append(
-				bson.D{
-					{"find", collection.Name()},
-				},
+				bson.D{{"find", collection.Name()}},
 				rest...,
 			)
 
@@ -739,7 +743,7 @@ func TestQueryCommandBatchSize(t *testing.T) {
 			firstBatch, ok := cursor.Map()["firstBatch"]
 			require.True(t, ok)
 
-			require.Equal(t, tc.res, firstBatch)
+			require.Equal(t, tc.firstBatch, firstBatch)
 		})
 	}
 }
