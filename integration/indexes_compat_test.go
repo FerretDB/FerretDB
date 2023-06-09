@@ -732,6 +732,15 @@ func TestCreateIndexesUniqueCompat(t *testing.T) {
 			},
 			insertDoc: bson.D{{"v", "baz"}},
 		},
+		"NotExistingFieldIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"not-existing-field", 1}},
+					Options: new(options.IndexOptions).SetUnique(true),
+				},
+			},
+			insertDoc: bson.D{{"not-existing-field", "baz"}},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -752,11 +761,11 @@ func TestCreateIndexesUniqueCompat(t *testing.T) {
 			targetCollection := targetCollections[0]
 			compatCollection := compatCollections[0]
 
-			_, targetErr := targetCollection.InsertOne(ctx, tc.insertDoc)
-			_, compatErr := compatCollection.InsertOne(ctx, tc.insertDoc)
-
-			require.NoError(t, targetErr)
-			require.NoError(t, compatErr)
+			//_, targetErr := targetCollection.InsertOne(ctx, tc.insertDoc)
+			//_, compatErr := compatCollection.InsertOne(ctx, tc.insertDoc)
+			//
+			//require.NoError(t, targetErr)
+			//require.NoError(t, compatErr)
 
 			targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
 			compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
@@ -777,7 +786,14 @@ func TestCreateIndexesUniqueCompat(t *testing.T) {
 			_, targetErr = targetCollection.InsertOne(ctx, tc.insertDoc)
 			_, compatErr = compatCollection.InsertOne(ctx, tc.insertDoc)
 
+			require.NoError(t, targetErr)
+			require.NoError(t, compatErr)
+
+			_, targetErr = targetCollection.InsertOne(ctx, tc.insertDoc)
+			_, compatErr = compatCollection.InsertOne(ctx, tc.insertDoc)
+
 			AssertMatchesWriteError(t, compatErr, targetErr)
+
 		})
 	}
 }
