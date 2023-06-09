@@ -711,3 +711,73 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 		})
 	}
 }
+
+func TestIndexesCreateUniqueCompat(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
+
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // for readability
+		models    []mongo.IndexModel
+		insertDoc bson.D
+
+		skip string // optional, skip test with a specified reason
+	}{
+		"ExistingFieldIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"v", 1}},
+					Options: new(options.IndexOptions).SetUnique(true),
+				},
+			},
+			insertDoc: bson.D{{"v", "baz"}},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Helper()
+			t.Parallel()
+
+			res := setup.SetupCompatWithOpts(t,
+				&setup.SetupCompatOpts{
+					Providers: []shareddata.Provider{shareddata.Int32s},
+				})
+
+			ctx, targetCollections, compatCollections := res.Ctx, res.TargetCollections, res.CompatCollections
+
+			targetCollection := targetCollections[0]
+			compatCollection := compatCollections[0]
+
+			_, targetErr := targetCollection.InsertOne(ctx, tc.insertDoc)
+			_, compatErr := compatCollection.InsertOne(ctx, tc.insertDoc)
+
+			require.NoError(t, targetErr)
+			require.NoError(t, compatErr)
+
+			targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
+			compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
+
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
+
+				return
+			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
+
+			assert.Equal(t, compatRes, targetRes)
+
+			_, targetErr = targetCollection.InsertOne(ctx, tc.insertDoc)
+			_, compatErr = compatCollection.InsertOne(ctx, tc.insertDoc)
+
+			AssertMatchesWriteError(t, compatErr, targetErr)
+		})
+	}
+}

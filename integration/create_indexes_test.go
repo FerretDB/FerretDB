@@ -79,11 +79,11 @@ func TestCreateIndexesErrors(t *testing.T) {
 			fmt.Println(res)
 
 			_, err = collection.Indexes().CreateMany(ctx, tc.models)
-			//if tc.err != nil {
-			//	AssertRegexCommandError(t, *tc.err, err)
-			//
-			//	return
-			//}
+			if tc.err != nil {
+				AssertRegexCommandError(t, *tc.err, err)
+
+				return
+			}
 
 			require.NoError(t, err)
 		})
