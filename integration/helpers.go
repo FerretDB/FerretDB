@@ -324,7 +324,8 @@ func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessag
 func AssertRegexCommandError(t *testing.T, expected mongo.CommandError, actual error) bool {
 	t.Helper()
 
-	a, ok := actual.(mongo.CommandError)
+	a, ok := actual.(mongo.CommandError) //nolint:errorlint // do not inspect error chain
+
 	if !ok {
 		return assert.Equal(t, expected, actual)
 	}
