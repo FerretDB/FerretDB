@@ -58,14 +58,15 @@ func TestDeleteSimple(t *testing.T) {
 	}
 }
 
-func TestDeleteErrors(t *testing.T) {
+func TestDelete(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		deletes    bson.A
-		err        *mongo.CommandError
-		altMessage string
-		skip       string
+		deletes bson.A // required, set to deletes parameter
+
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"QueryNotSet": {
 			deletes: bson.A{bson.D{}},
@@ -116,18 +117,24 @@ func TestDeleteErrors(t *testing.T) {
 			}
 
 			t.Parallel()
+
+			require.NotNil(t, tc.deletes, "deletes must not be nil")
+
 			ctx, collection := setup.Setup(t)
 
-			res := collection.Database().RunCommand(ctx, bson.D{
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, bson.D{
 				{"delete", collection.Name()},
 				{"deletes", tc.deletes},
-			})
-
+			}).Decode(&res)
 			if tc.err != nil {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, res.Err())
+				assert.Nil(t, res)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
 				return
 			}
-			require.NoError(t, res.Err())
+
+			require.NoError(t, err)
 		})
 	}
 }

@@ -312,7 +312,10 @@ func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessag
 		return true
 	}
 
-	expected.Message = altMessage
+	if altMessage != "" {
+		expected.Message = altMessage
+	}
+
 	return assert.Equal(t, expected, a)
 }
 

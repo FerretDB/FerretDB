@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestIndexesList(t *testing.T) {
+func TestIndexesCompatList(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
@@ -67,7 +67,7 @@ func TestIndexesList(t *testing.T) {
 	}
 }
 
-func TestIndexesCreate(t *testing.T) {
+func TestIndexesCompatCreate(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
 
 	t.Parallel()
@@ -443,7 +443,7 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 	}
 }
 
-func TestIndexesDrop(t *testing.T) {
+func TestIndexesCompatDrop(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
 
 	t.Parallel()
@@ -570,24 +570,18 @@ func TestIndexesDrop(t *testing.T) {
 	}
 }
 
-func TestIndexesDropRunCommand(t *testing.T) {
+func TestIndexesCompatDropRunCommand(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
 
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		toCreate   []mongo.IndexModel       // optional, if set, create the given indexes before drop is called
-		toDrop     any                      // index to drop
-		resultType compatTestCaseResultType // defaults to nonEmptyResult
-		command    bson.D                   // optional, if set it runs this command instead of dropping toDrop
-		altMessage string                   // optional, alternative error message in case of error
+		toCreate []mongo.IndexModel // optional, if set, create the given indexes before drop is called
+		toDrop   any                // required, index to drop
+
+		resultType compatTestCaseResultType // optional, defaults to nonEmptyResult
 		skip       string                   // optional, skip test with a specified reason
 	}{
-		"InvalidType": {
-			toDrop:     true,
-			resultType: emptyResult,
-			altMessage: `BSON field 'dropIndexes.index' is the wrong type 'bool', expected types '[string, object]'`,
-		},
 		"MultipleIndexesByName": {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
@@ -603,7 +597,6 @@ func TestIndexesDropRunCommand(t *testing.T) {
 			},
 			toDrop:     bson.A{bson.D{{"v", -1}}, bson.D{{"v.foo", -1}}},
 			resultType: emptyResult,
-			altMessage: `BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string, object]'`,
 		},
 		"NonExistentMultipleIndexes": {
 			toDrop:     bson.A{"non-existent", "invalid"},
@@ -612,26 +605,12 @@ func TestIndexesDropRunCommand(t *testing.T) {
 		"InvalidMultipleIndexType": {
 			toDrop:     bson.A{1},
 			resultType: emptyResult,
-			altMessage: `BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string, object]'`,
 		},
 		"DocumentIndex": {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
 			},
 			toDrop: bson.D{{"v", -1}},
-		},
-		"InvalidDocumentIndex": {
-			toDrop:     bson.D{{"invalid", "invalid"}},
-			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2311",
-		},
-		"NonExistentKey": {
-			toDrop:     bson.D{{"non-existent", 1}},
-			resultType: emptyResult,
-		},
-		"DocumentIndexID": {
-			toDrop:     bson.D{{"_id", 1}},
-			resultType: emptyResult,
 		},
 		"DropAllExpression": {
 			toCreate: []mongo.IndexModel{
@@ -669,13 +648,6 @@ func TestIndexesDropRunCommand(t *testing.T) {
 				{"v", 1},
 			},
 		},
-		"NonExistentMultipleKeyIndex": {
-			toDrop: bson.D{
-				{"non-existent1", -1},
-				{"non-existent2", -1},
-			},
-			resultType: emptyResult,
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -686,9 +658,7 @@ func TestIndexesDropRunCommand(t *testing.T) {
 			t.Helper()
 			t.Parallel()
 
-			if tc.command != nil {
-				require.Nil(t, tc.toDrop, "toDrop name must be nil when using command")
-			}
+			require.NotNil(t, tc.toDrop, "toDrop must not be nil")
 
 			// It's enough to use a single provider for drop indexes test as indexes work the same for different collections.
 			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
