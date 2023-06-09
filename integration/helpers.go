@@ -17,6 +17,7 @@ package integration
 
 import (
 	"context"
+	"regexp"
 	"testing"
 	"time"
 
@@ -311,6 +312,26 @@ func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessag
 
 	expected.Message = altMessage
 	return assert.Equal(t, expected, a)
+}
+
+// AssertRegexCommandError asserts that the expected error message regex matches the actual error message.
+func AssertRegexCommandError(t *testing.T, expected mongo.CommandError, actual error) bool {
+	t.Helper()
+
+	a, ok := actual.(mongo.CommandError)
+	if !ok {
+		return assert.Equal(t, expected, actual)
+	}
+
+	// set expected fields that might be helpful in the test output
+	require.Nil(t, expected.Raw)
+	expected.Raw = a.Raw
+
+	if assert.ObjectsAreEqual(expected, a) {
+		return true
+	}
+
+	return assert.Regexp(t, regexp.MustCompile(expected.Message), a.Message)
 }
 
 // UnsetRaw returns error with all Raw fields unset. It returns nil if err is nil.

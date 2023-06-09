@@ -122,6 +122,14 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 			"One of the specified indexes already exists with a different key",
 			document.Command(),
 		)
+	case errors.Is(err, pgdb.ErrUniqueViolation):
+		// TODO: implement proper error handling: https://github.com/FerretDB/FerretDB/issues/2045
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrDuplicateKey,
+			"Index build failed",
+			document.Command(),
+		)
+	case errors.Is(err, nil):
 	default:
 		return nil, lazyerrors.Error(err)
 	}

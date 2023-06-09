@@ -168,19 +168,19 @@ func TestIndexesCreate(t *testing.T) {
 		"UniqueIndex": {
 			models: []mongo.IndexModel{
 				{
-					Keys:    bson.D{{"foo", 1}},
-					Options: new(options.IndexOptions).SetUnique(true),
+					Keys:    bson.D{{"v", 1}},
+					Options: new(options.IndexOptions).SetName("foo_unique").SetUnique(true),
 				},
 			},
 		},
 		"UniqueIndexDuplicate": {
 			models: []mongo.IndexModel{
 				{
-					Keys:    bson.D{{"foo", 1}},
+					Keys:    bson.D{{"bar", 1}},
 					Options: new(options.IndexOptions).SetUnique(true),
 				},
 				{
-					Keys:    bson.D{{"foo", 1}},
+					Keys:    bson.D{{"baz", 1}},
 					Options: new(options.IndexOptions).SetUnique(true),
 				},
 			},
@@ -430,7 +430,7 @@ func TestIndexesCreateUniqueCompat(t *testing.T) {
 		"One": {
 			models: []mongo.IndexModel{
 				{
-					Keys:    bson.D{{"bar", 1}},
+					Keys:    bson.D{{"non-existing-field", 1}},
 					Options: new(options.IndexOptions).SetUnique(true),
 				},
 			},
