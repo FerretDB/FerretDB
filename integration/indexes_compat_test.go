@@ -559,7 +559,7 @@ func TestIndexesCompatDrop(t *testing.T) {
 	}
 }
 
-func TestIndexesDropCommandCompat(t *testing.T) {
+func TestDropIndexesCommandCompat(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
 
 	t.Parallel()
