@@ -39,10 +39,10 @@ So imagine you are to collate data on a number of published books; one book cont
 
 When modeling these records a relational database, you would have to create a table for these books, and the table would have to contain the same columns, even if some of the columns are empty.
 
-| id | title        | author      | number_of_pages | publisher  | genre | isbn   |
-|----|--------------|-------------|-----------------|------------|-------|--------|
-| 1  | Book Title 1 | Author 1    | 200             | NULL       | NULL  | NULL   |
-| 2  | Book Title 2 | Author 2    | 300             | Publisher 2| Genre 2| ISBN-2 |
+| id  | title        | author   | number_of_pages | publisher   | genre   | isbn   |
+| --- | ------------ | -------- | --------------- | ----------- | ------- | ------ |
+| 1   | Book Title 1 | Author 1 | 200             | NULL        | NULL    | NULL   |
+| 2   | Book Title 2 | Author 2 | 300             | Publisher 2 | Genre 2 | ISBN-2 |
 
 Situations like this are where document databases truly thrive.
 Instead of having empty columns, these two books can be stored as separate documents with each containing all the necessary information for that particular book - no fixed schema or structure.
