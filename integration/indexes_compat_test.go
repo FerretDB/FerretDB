@@ -718,8 +718,9 @@ func TestCreateIndexesUniqueCompat(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		models    []mongo.IndexModel
-		insertDoc bson.D
+		models    []mongo.IndexModel // required, index to create
+		insertDoc bson.D             // required, document to insert for uniqueness check
+		new       bool               // optional, insert new document before check uniqueness
 
 		skip string // optional, skip test with a specified reason
 	}{
@@ -730,7 +731,8 @@ func TestCreateIndexesUniqueCompat(t *testing.T) {
 					Options: new(options.IndexOptions).SetUnique(true),
 				},
 			},
-			insertDoc: bson.D{{"v", "baz"}},
+			insertDoc: bson.D{{"v", "value"}},
+			new:       true,
 		},
 		"NotExistingFieldIndex": {
 			models: []mongo.IndexModel{
@@ -739,7 +741,7 @@ func TestCreateIndexesUniqueCompat(t *testing.T) {
 					Options: new(options.IndexOptions).SetUnique(true),
 				},
 			},
-			insertDoc: bson.D{{"not-existing-field", "baz"}},
+			insertDoc: bson.D{{"not-existing-field", "value"}},
 		},
 		"CompoundIndex": {
 			models: []mongo.IndexModel{
@@ -749,6 +751,16 @@ func TestCreateIndexesUniqueCompat(t *testing.T) {
 				},
 			},
 			insertDoc: bson.D{{"v", "baz"}, {"foo", "bar"}},
+		},
+		"ExistingFieldInsertDuplicate": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"v", 1}},
+					Options: new(options.IndexOptions).SetUnique(true),
+				},
+			},
+			insertDoc: bson.D{{"v", int32(42)}},
+			skip:      "https://github.com/FerretDB/FerretDB/issues/2045",
 		},
 	} {
 		name, tc := name, tc
@@ -795,17 +807,28 @@ func TestCreateIndexesUniqueCompat(t *testing.T) {
 
 			assert.Equal(t, compatSpec, targetSpec)
 
+			if tc.new {
+				_, targetErr = targetCollection.InsertOne(ctx, tc.insertDoc)
+				_, compatErr = compatCollection.InsertOne(ctx, tc.insertDoc)
+
+				require.NoError(t, compatErr)
+				require.NoError(t, targetErr)
+			}
+
 			_, targetErr = targetCollection.InsertOne(ctx, tc.insertDoc)
 			_, compatErr = compatCollection.InsertOne(ctx, tc.insertDoc)
 
-			require.NoError(t, targetErr)
-			require.NoError(t, compatErr)
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
 
-			_, targetErr = targetCollection.InsertOne(ctx, tc.insertDoc)
-			_, compatErr = compatCollection.InsertOne(ctx, tc.insertDoc)
+				// error messages are intentionally not compared
+				AssertMatchesWriteError(t, compatErr, targetErr)
 
-			AssertMatchesWriteError(t, compatErr, targetErr)
+				return
+			}
 
+			require.NoError(t, compatErr, "compat error; target returned no error")
 		})
 	}
 }
