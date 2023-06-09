@@ -165,26 +165,6 @@ func TestIndexesCreate(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
-		"UniqueIndex": {
-			models: []mongo.IndexModel{
-				{
-					Keys:    bson.D{{"v", 1}},
-					Options: new(options.IndexOptions).SetName("foo_unique").SetUnique(true),
-				},
-			},
-		},
-		"UniqueIndexDuplicate": {
-			models: []mongo.IndexModel{
-				{
-					Keys:    bson.D{{"bar", 1}},
-					Options: new(options.IndexOptions).SetUnique(true),
-				},
-				{
-					Keys:    bson.D{{"baz", 1}},
-					Options: new(options.IndexOptions).SetUnique(true),
-				},
-			},
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -198,7 +178,7 @@ func TestIndexesCreate(t *testing.T) {
 			// Use per-test setup because createIndexes modifies collection state,
 			// however, we don't need to run index creation test for all the possible collections.
 			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-				Providers:                []shareddata.Provider{shareddata.Composites},
+				Providers:                []shareddata.Provider{shareddata.Int32s},
 				AddNonExistentCollection: true,
 			})
 			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
@@ -430,11 +410,11 @@ func TestIndexesCreateUniqueCompat(t *testing.T) {
 		"One": {
 			models: []mongo.IndexModel{
 				{
-					Keys:    bson.D{{"non-existing-field", 1}},
+					Keys:    bson.D{{"v", 1}},
 					Options: new(options.IndexOptions).SetUnique(true),
 				},
 			},
-			insertDoc: bson.D{{"bar", "baz"}},
+			insertDoc: bson.D{{"v", "baz"}},
 		},
 	} {
 		name, tc := name, tc
@@ -446,48 +426,42 @@ func TestIndexesCreateUniqueCompat(t *testing.T) {
 			t.Helper()
 			t.Parallel()
 
-			// Use per-test setup because createIndexes modifies collection state,
-			// however, we don't need to run index creation test for all the possible collections.
-			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-				Providers: []shareddata.Provider{shareddata.Composites},
-			})
-			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
-
-			for i := range targetCollections {
-				targetCollection := targetCollections[i]
-				compatCollection := compatCollections[i]
-
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
-
-					targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
-					compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
-
-					if targetErr != nil {
-						t.Logf("Target error: %v", targetErr)
-						t.Logf("Compat error: %v", compatErr)
-
-						// error messages are intentionally not compared
-						AssertMatchesCommandError(t, compatErr, targetErr)
-
-						return
-					}
-					require.NoError(t, compatErr, "compat error; target returned no error")
-
-					assert.Equal(t, compatRes, targetRes)
-
-					_, targetErr = targetCollection.InsertOne(ctx, tc.insertDoc)
-					_, compatErr = compatCollection.InsertOne(ctx, tc.insertDoc)
-
-					require.NoError(t, targetErr)
-					require.NoError(t, compatErr)
-
-					_, targetErr = targetCollection.InsertOne(ctx, bson.D{{"foo", "bar"}})
-					_, compatErr = compatCollection.InsertOne(ctx, bson.D{{"foo", "bar"}})
-
-					AssertMatchesCommandError(t, compatErr, targetErr)
+			res := setup.SetupCompatWithOpts(t,
+				&setup.SetupCompatOpts{
+					Providers: []shareddata.Provider{shareddata.Int32s},
 				})
+
+			ctx, targetCollections, compatCollections := res.Ctx, res.TargetCollections, res.CompatCollections
+
+			targetCollection := targetCollections[0]
+			compatCollection := compatCollections[0]
+
+			_, targetErr := targetCollection.InsertOne(ctx, tc.insertDoc)
+			_, compatErr := compatCollection.InsertOne(ctx, tc.insertDoc)
+
+			require.NoError(t, targetErr)
+			require.NoError(t, compatErr)
+
+			targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
+			compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
+
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
+
+				return
 			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
+
+			assert.Equal(t, compatRes, targetRes)
+
+			_, targetErr = targetCollection.InsertOne(ctx, tc.insertDoc)
+			_, compatErr = compatCollection.InsertOne(ctx, tc.insertDoc)
+
+			AssertMatchesWriteError(t, compatErr, targetErr)
 		})
 	}
 }

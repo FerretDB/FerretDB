@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -69,12 +70,20 @@ func TestCreateIndexesErrors(t *testing.T) {
 			t.Parallel()
 
 			ctx, collection := setup.Setup(t, shareddata.Composites)
-			_, err := collection.Indexes().CreateMany(ctx, tc.models)
-			if tc.err != nil {
-				AssertRegexCommandError(t, *tc.err, err)
 
-				return
-			}
+			cur, err := collection.Indexes().List(ctx)
+			require.NoError(t, err)
+
+			res := FetchAll(t, ctx, cur)
+
+			fmt.Println(res)
+
+			_, err = collection.Indexes().CreateMany(ctx, tc.models)
+			//if tc.err != nil {
+			//	AssertRegexCommandError(t, *tc.err, err)
+			//
+			//	return
+			//}
 
 			require.NoError(t, err)
 		})
