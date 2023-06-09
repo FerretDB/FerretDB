@@ -287,8 +287,8 @@ func TestIndexesCompatCreate(t *testing.T) {
 	}
 }
 
-// TestIndexesCreateRunCommand tests specific behavior for index creation that can be only provided through RunCommand.
-func TestIndexesCreateRunCommand(t *testing.T) {
+// TestCreateIndexesCommand tests specific behavior for index creation that can be only provided through RunCommand.
+func TestCreateIndexesCommand(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
 
 	t.Parallel()
