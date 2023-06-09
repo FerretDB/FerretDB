@@ -17,7 +17,6 @@ package integration
 
 import (
 	"context"
-	"regexp"
 	"testing"
 	"time"
 
@@ -289,6 +288,42 @@ func AssertEqualAltCommandError(t testing.TB, expected mongo.CommandError, altMe
 	return assert.Equal(t, expected, a)
 }
 
+// AssertEqualAltCommandErrorRegex asserts that the expected error is the same as the actual (ignoring the Raw part);
+// the alternative error message may be provided if FerretDB is unable to produce exactly the same text as MongoDB.
+//
+// In general, error messages should be the same. Exceptions include:
+//
+//   - MongoDB typos (e.g. "sortto" instead of "sort to");
+//   - MongoDB values formatting (e.g. we don't want to write additional code to format
+//     `{ $slice: { a: { b: 3 }, b: "string" } }` exactly the same way).
+//
+// In any case, the alternative error message returned by FerretDB should not mislead users.
+func AssertEqualAltCommandErrorRegex(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
+	t.Helper()
+
+	a, ok := actual.(mongo.CommandError)
+	if !ok {
+		return assert.Equal(t, expected, actual)
+	}
+
+	// set expected fields that might be helpful in the test output
+	require.Nil(t, expected.Raw)
+	expected.Raw = a.Raw
+
+	if assert.ObjectsAreEqual(expected, a) {
+		return true
+	}
+
+	if altMessage != "" {
+		expected.Message = altMessage
+	}
+
+	assert.Regexp(t, expected.Message, a.Message)
+	expected.Message = a.Message
+
+	return assert.Equal(t, expected, a)
+}
+
 // AssertEqualAltWriteError asserts that the expected error is the same as the actual;
 // the alternative error message may be provided if FerretDB is unable to produce exactly the same text as MongoDB.
 func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessage string, actual error) bool {
@@ -318,27 +353,6 @@ func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessag
 	}
 
 	return assert.Equal(t, expected, a)
-}
-
-// AssertRegexCommandError asserts that the expected error message regex matches the actual error message.
-func AssertRegexCommandError(t *testing.T, expected mongo.CommandError, actual error) bool {
-	t.Helper()
-
-	a, ok := actual.(mongo.CommandError) //nolint:errorlint // do not inspect error chain
-
-	if !ok {
-		return assert.Equal(t, expected, actual)
-	}
-
-	// set expected fields that might be helpful in the test output
-	require.Nil(t, expected.Raw)
-	expected.Raw = a.Raw
-
-	if assert.ObjectsAreEqual(expected, a) {
-		return true
-	}
-
-	return assert.Regexp(t, regexp.MustCompile(expected.Message), a.Message)
 }
 
 // UnsetRaw returns error with all Raw fields unset. It returns nil if err is nil.

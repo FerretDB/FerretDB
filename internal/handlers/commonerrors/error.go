@@ -107,8 +107,8 @@ const (
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 
-	// ErrDuplicateKey indicates duplicate key violation.
-	ErrDuplicateKey = ErrorCode(11000) // Location11000
+	// ErrDuplicateKeyInsert indicates duplicate key violation on inserting document.
+	ErrDuplicateKeyInsert = ErrorCode(11000) // Location11000
 
 	// ErrStageGroupInvalidFields indicates group's fields must be an object.
 	ErrStageGroupInvalidFields = ErrorCode(15947) // Location15947

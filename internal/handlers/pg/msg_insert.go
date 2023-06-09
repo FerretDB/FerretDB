@@ -157,7 +157,7 @@ func insertDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc an
 		idMasrshaled := must.NotFail(json.Marshal(must.NotFail(d.Get("_id"))))
 
 		return commonerrors.NewWriteErrorMsg(
-			commonerrors.ErrDuplicateKey,
+			commonerrors.ErrDuplicateKeyInsert,
 			fmt.Sprintf(
 				`E11000 duplicate key error collection: %s.%s index: _id_ dup key: { _id: %s }`,
 				qp.DB, qp.Collection, idMasrshaled,

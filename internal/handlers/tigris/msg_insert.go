@@ -139,7 +139,7 @@ func insertDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb
 			idMasrshaled := must.NotFail(json.Marshal(must.NotFail(doc.Get("_id"))))
 
 			return commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrDuplicateKey,
+				commonerrors.ErrDuplicateKeyInsert,
 				fmt.Sprintf(
 					`E11000 duplicate key error collection: %s.%s index: _id_ dup key: { _id: %s }`,
 					qp.DB, qp.Collection, idMasrshaled,

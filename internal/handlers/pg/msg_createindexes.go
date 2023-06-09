@@ -125,7 +125,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	case errors.Is(err, pgdb.ErrUniqueViolation):
 		// TODO: implement proper error handling: https://github.com/FerretDB/FerretDB/issues/2045
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrDuplicateKey,
+			commonerrors.ErrDuplicateKeyInsert,
 			"Index build failed",
 			document.Command(),
 		)

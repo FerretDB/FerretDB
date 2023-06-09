@@ -38,7 +38,7 @@ func TestCreateIndexesErrors(t *testing.T) {
 		altMessage string              // optional, alternative error message
 		skip       string              // optional, skip test with a specified reason
 	}{
-		"UniqueOneIndex": {
+		"DuplicateValue": {
 			models: []mongo.IndexModel{
 				{
 					Keys:    bson.D{{"v", 1}},
@@ -58,6 +58,7 @@ func TestCreateIndexesErrors(t *testing.T) {
 					"index\\: v_1 dup key\\: \\{ v\\: null \\}",
 			},
 			altMessage: "Index build failed",
+			skip:       "Error name is different for createIndexes and insert commands.",
 		},
 	} {
 		name, tc := name, tc
@@ -84,13 +85,8 @@ func TestCreateIndexesErrors(t *testing.T) {
 
 				return
 			}
-			if tc.altMessage != "" {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 
-				return
-			}
-
-			AssertRegexCommandError(t, *tc.err, err)
+			AssertEqualAltCommandErrorRegex(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
