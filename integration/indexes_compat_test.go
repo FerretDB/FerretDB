@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestIndexesCompatList(t *testing.T) {
+func TestListIndexesCompat(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
@@ -67,7 +67,7 @@ func TestIndexesCompatList(t *testing.T) {
 	}
 }
 
-func TestIndexesCompatCreate(t *testing.T) {
+func TestCreateIndexesCompat(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
 
 	t.Parallel()
@@ -436,7 +436,7 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 	}
 }
 
-func TestIndexesCompatDrop(t *testing.T) {
+func TestDropIndexesCompat(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
 
 	t.Parallel()
@@ -712,7 +712,7 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 	}
 }
 
-func TestIndexesCreateUniqueCompat(t *testing.T) {
+func TestCreateIndexesUniqueCompat(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
 
 	t.Parallel()
