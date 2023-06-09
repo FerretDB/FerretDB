@@ -42,6 +42,7 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 	for name, tc := range map[string]struct {
 		expectedDefinition string // the expected index definition in postgresql
 		index              Index  // the index to create
+		unique             bool   // whether the index is unique
 	}{
 		"keyWithoutNestedField": {
 			index: Index{
@@ -71,6 +72,29 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 			},
 			expectedDefinition: "((((_jsonb -> 'foo'::text) -> 'bar'::text) -> 'c'::text))",
 		},
+		"uniqueIndexOneField": {
+			index: Index{
+				Name:   "foo_unique",
+				Unique: true,
+				Key: []IndexKeyPair{
+					{Field: "foo", Order: types.Ascending},
+				},
+			},
+			expectedDefinition: "((_jsonb -> 'foo'::text))",
+			unique:             true,
+		},
+		"uniqueIndexTwoFields": {
+			index: Index{
+				Name:   "foo_and_baz_unique",
+				Unique: true,
+				Key: []IndexKeyPair{
+					{Field: "foo", Order: types.Ascending},
+					{Field: "baz", Order: types.Descending},
+				},
+			},
+			expectedDefinition: "((_jsonb -> 'foo'::text)), ((_jsonb -> 'baz'::text)) DESC",
+			unique:             true,
+		},
 	} {
 		tc := tc
 
@@ -86,19 +110,25 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 			tableName := collectionNameToTableName(collectionName)
 			pgIndexName := indexNameToPgIndexName(collectionName, tc.index.Name)
 
-			var indexdef string
+			var indexDef string
 			err = pool.p.QueryRow(
 				ctx,
 				"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
 				databaseName, tableName, pgIndexName,
-			).Scan(&indexdef)
+			).Scan(&indexDef)
 			require.NoError(t, err)
 
-			expectedIndexdef := fmt.Sprintf(
-				"CREATE INDEX %s ON \"%s\".%s USING btree (%s)",
+			expectedIndexDef := "CREATE"
+
+			if tc.unique {
+				expectedIndexDef += " UNIQUE"
+			}
+
+			expectedIndexDef += fmt.Sprintf(
+				" INDEX %s ON \"%s\".%s USING btree (%s)",
 				pgIndexName, databaseName, tableName, tc.expectedDefinition,
 			)
-			assert.Equal(t, expectedIndexdef, indexdef)
+			assert.Equal(t, expectedIndexDef, indexDef)
 		})
 	}
 }
