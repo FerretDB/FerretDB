@@ -26,7 +26,7 @@ There are numerous ways to dump and restore your data.
 For example, you can follow the following steps:
 
 1. Backup FerretDB databases with `mongodump`.
-   Set your FerretDB connection string in `-—uri` and run:
+   Set your FerretDB connection string in `--uri` and run:
    `mongodump --uri="mongodb://127.0.0.1:27017"`
    This command will create a directory with dumps for each FerretDB database on the given server.
    Later, we will use this dump to restore the database.
