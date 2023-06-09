@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestIndexesCompatList(t *testing.T) {
+func TestListIndexesCompat(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
@@ -67,7 +67,7 @@ func TestIndexesCompatList(t *testing.T) {
 	}
 }
 
-func TestIndexesCompatCreate(t *testing.T) {
+func TestCreateIndexesCompat(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
 
 	t.Parallel()
@@ -287,8 +287,8 @@ func TestIndexesCompatCreate(t *testing.T) {
 	}
 }
 
-// TestCreateIndexesCommand tests specific behavior for index creation that can be only provided through RunCommand.
-func TestCreateIndexesCommand(t *testing.T) {
+// TestCreateIndexesCommandCompat tests specific behavior for index creation that can be only provided through RunCommand.
+func TestCreateIndexesCommandCompat(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
 
 	t.Parallel()
@@ -304,62 +304,62 @@ func TestCreateIndexesCommand(t *testing.T) {
 		resultType     compatTestCaseResultType // defaults to nonEmptyResult
 		skip           string                   // optional, skip test with a specified reason
 	}{
-		"invalid-collection-name": {
+		"InvalidCollectionName": {
 			collectionName: 42,
 			key:            bson.D{{"v", -1}},
 			indexName:      "custom-name",
 			resultType:     emptyResult,
 		},
-		"nil-collection-name": {
+		"NilCollectionName": {
 			collectionName: nil,
 			key:            bson.D{{"v", -1}},
 			indexName:      "custom-name",
 			resultType:     emptyResult,
 		},
-		"empty-collection-name": {
+		"EmptyCollectionName": {
 			collectionName: "",
 			key:            bson.D{{"v", -1}},
 			indexName:      "custom-name",
 			resultType:     emptyResult,
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
-		"index-name-not-set": {
+		"IndexNameNotSet": {
 			collectionName: "test",
 			key:            bson.D{{"v", -1}},
 			indexName:      nil,
 			resultType:     emptyResult,
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
-		"empty-index-name": {
+		"EmptyIndexName": {
 			collectionName: "test",
 			key:            bson.D{{"v", -1}},
 			indexName:      "",
 			resultType:     emptyResult,
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
-		"non-string-index-name": {
+		"NonStringIndexName": {
 			collectionName: "test",
 			key:            bson.D{{"v", -1}},
 			indexName:      42,
 			resultType:     emptyResult,
 		},
-		"existing-name-different-key-length": {
+		"ExistingNameDifferentKeyLength": {
 			collectionName: "test",
 			key:            bson.D{{"_id", 1}, {"v", 1}},
 			indexName:      "_id_", // the same name as the default index
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
-		"invalid-key": {
+		"InvalidKey": {
 			collectionName: "test",
 			key:            42,
 			resultType:     emptyResult,
 		},
-		"empty-key": {
+		"EmptyKey": {
 			collectionName: "test",
 			key:            bson.D{},
 			resultType:     emptyResult,
 		},
-		"key-not-set": {
+		"KeyNotSet": {
 			collectionName: "test",
 			resultType:     emptyResult,
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
@@ -443,7 +443,7 @@ func TestCreateIndexesCommand(t *testing.T) {
 	}
 }
 
-func TestIndexesCompatDrop(t *testing.T) {
+func TestDropIndexesCompat(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
 
 	t.Parallel()
@@ -570,7 +570,7 @@ func TestIndexesCompatDrop(t *testing.T) {
 	}
 }
 
-func TestIndexesCompatDropRunCommand(t *testing.T) {
+func TestDropIndexesCommandCompat(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
 
 	t.Parallel()

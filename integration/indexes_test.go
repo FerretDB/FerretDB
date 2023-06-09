@@ -174,7 +174,7 @@ func TestIndexesDropCommandErrors(t *testing.T) {
 	}
 }
 
-func TestIndexesCreateInvalidIndexes(t *testing.T) {
+func TestCreateIndexesInvalidSpec(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
 
 	t.Parallel()
@@ -237,7 +237,7 @@ func TestIndexesCreateInvalidIndexes(t *testing.T) {
 	}
 }
 
-func TestIndexesDropInvalidCollection(t *testing.T) {
+func TestDropIndexesInvalidCollection(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
 
 	t.Parallel()
