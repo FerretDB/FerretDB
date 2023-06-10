@@ -1619,6 +1619,24 @@ func TestAggregateCompatUnset(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"EmptyArray": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{}}},
+			},
+			resultType: emptyResult,
+		},
+		"EmptyString": {
+			pipeline: bson.A{
+				bson.D{{"$unset", ""}},
+			},
+			resultType: emptyResult,
+		},
+		"ArrayWithEmptyString": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{""}}},
+			},
+			resultType: emptyResult,
+		},
 		"InvalidTypeArrayWithDifferentTypes": {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{"v", 42, false}}},

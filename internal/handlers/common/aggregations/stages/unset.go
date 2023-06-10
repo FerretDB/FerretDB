@@ -18,8 +18,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages/projection"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -42,6 +42,8 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
+	// fieldsToUnset contains keys with `false` values. They are used to specify projection exclusion later.
 	fieldsToUnset := must.NotFail(types.NewDocument())
 
 	switch fields := fields.(type) {
@@ -103,7 +105,7 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 
 // Process implements Stage interface.
 func (u *unset) Process(_ context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
-	return common.ProjectionIterator(iter, closer, u.field, nil)
+	return projection.ProjectionIterator(iter, closer, u.field)
 }
 
 // Type implements Stage interface.
