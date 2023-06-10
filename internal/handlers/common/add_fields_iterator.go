@@ -54,16 +54,6 @@ func (iter *addFieldsIterator) Next() (struct{}, *types.Document, error) {
 
 	for _, key := range iter.newField.Keys() {
 		val := must.NotFail(iter.newField.Get(key))
-		switch value := val.(type) {
-		case *types.Document:
-			if err := ValidateDocumentExpression(value, "$addFields/$set"); err != nil {
-				return unused, nil, lazyerrors.Error(err)
-			}
-		case *types.Array:
-			if err := ValidateArrayExpression(value, "$addFields/$set"); err != nil {
-				return unused, nil, lazyerrors.Error(err)
-			}
-		}
 		doc.Set(key, val)
 	}
 

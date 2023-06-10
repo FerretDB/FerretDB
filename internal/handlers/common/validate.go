@@ -134,3 +134,22 @@ func ValidateArrayExpression(arr *types.Array, stageName string) error {
 		}
 	}
 }
+
+// ValidateArrayAndDocExpression returns error when there is unsupported expression present either in the array/document.
+// Currently it raises error if there is any expression(which have a prefix $) inside the array/document.
+func ValidateArrayAndDocExpression(fieldsDoc *types.Document, expression string) error {
+	for _, key := range fieldsDoc.Keys() {
+		val := must.NotFail(fieldsDoc.Get(key))
+		switch value := val.(type) {
+		case *types.Document:
+			if err := ValidateDocumentExpression(value, expression); err != nil {
+				return lazyerrors.Error(err)
+			}
+		case *types.Array:
+			if err := ValidateArrayExpression(value, expression); err != nil {
+				return lazyerrors.Error(err)
+			}
+		}
+	}
+	return nil
+}

@@ -37,7 +37,8 @@ type set struct {
 
 // newSet validates projection document and creates a new $set stage.
 func newSet(stage *types.Document) (aggregations.Stage, error) {
-	fields, err := stage.Get("$set")
+	const stageName = "$set"
+	fields, err := stage.Get(stageName)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -46,9 +47,13 @@ func newSet(stage *types.Document) (aggregations.Stage, error) {
 	if !ok {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrSetBadExpression,
-			fmt.Sprintf("$set specification stage must be an object, got %T", fields),
-			"$set (stage)",
+			fmt.Sprintf("%s specification stage must be an object, got %T", stageName, fields),
+			fmt.Sprintf("%s (stage)", stageName),
 		)
+	}
+
+	if err := common.ValidateArrayAndDocExpression(fieldsDoc, stageName); err != nil {
+		return nil, err
 	}
 
 	return &set{
