@@ -15,6 +15,7 @@
 package aggregations
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -162,7 +163,7 @@ func (e *Expression) Evaluate(doc *types.Document) (any, error) {
 			return must.NotFail(types.NewArray()), nil
 		}
 
-		return nil, nil
+		return nil, fmt.Errorf("no document found under %s path", path)
 	}
 
 	if len(vals) == 1 && !isPrefixArray {

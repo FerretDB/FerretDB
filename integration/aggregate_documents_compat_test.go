@@ -1656,7 +1656,7 @@ func TestAggregateCompatProject(t *testing.T) {
 		"TypeDocument": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", {"foo", "bar"}}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"foo", "bar"}}}}}}}},
 			},
 		},
 		"TypeArray": {
