@@ -740,8 +740,6 @@ func TestQueryCommandBatchSize(t *testing.T) {
 }
 
 func TestQueryBatchSize(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/2005")
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -751,6 +749,10 @@ func TestQueryBatchSize(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("SetBatchSize", func(t *testing.T) {
+		t.Skip("https://github.com/FerretDB/FerretDB/issues/2005")
+
+		t.Parallel()
+
 		// set BatchSize to 2
 		cursor, err := collection.Find(ctx, bson.D{}, &options.FindOptions{BatchSize: pointer.ToInt32(2)})
 		require.NoError(t, err)
@@ -799,6 +801,10 @@ func TestQueryBatchSize(t *testing.T) {
 	})
 
 	t.Run("DefaultBatchSize", func(t *testing.T) {
+		t.Skip("https://github.com/FerretDB/FerretDB/issues/2005")
+
+		t.Parallel()
+
 		// leave batchSize unset, firstBatch uses default batchSize 101
 		cursor, err := collection.Find(ctx, bson.D{})
 		require.NoError(t, err)
@@ -824,6 +830,8 @@ func TestQueryBatchSize(t *testing.T) {
 	})
 
 	t.Run("SingleBatch", func(t *testing.T) {
+		t.Parallel()
+
 		// set limit to negative, it ignores batchSize and returns single document in the firstBatch.
 		cursor, err := collection.Find(ctx, bson.D{}, &options.FindOptions{
 			Limit:     pointer.ToInt64(-1),
