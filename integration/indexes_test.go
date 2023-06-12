@@ -254,7 +254,7 @@ func TestDropIndexesInvalidCollection(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    26,
 				Name:    "NamespaceNotFound",
-				Message: "ns not found TestIndexesDropInvalidCollection-NonExistentCollection.non-existent",
+				Message: "ns not found TestDropIndexesInvalidCollection-NonExistentCollection.non-existent",
 			},
 		},
 		"InvalidTypeCollection": {
