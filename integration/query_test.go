@@ -626,7 +626,7 @@ func TestQueryCommandBatchSize(t *testing.T) {
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
 		batchSize  any         // optional, nil to leave batchSize unset
-		firstBatch primitive.A // optional, expected response
+		firstBatch primitive.A // optional, expected firstBatch
 
 		err        *mongo.CommandError // optional, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
