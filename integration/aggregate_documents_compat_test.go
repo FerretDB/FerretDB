@@ -868,9 +868,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 		Remove("ArrayAndDocuments").
 		// TODO: handle $sum of doubles near max precision.
 		// https://github.com/FerretDB/FerretDB/issues/2300
-		Remove("Doubles").
-		// TODO: https://github.com/FerretDB/FerretDB/issues/2616
-		Remove("ArrayDocuments")
+		Remove("Doubles")
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"GroupNullID": {
@@ -1157,6 +1155,15 @@ func TestAggregateCompatSort(t *testing.T) {
 				{"_id", -1},
 			}}}},
 		},
+		"DescendingArrayValue": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$or", bson.A{
+					bson.D{{"_id", "array-documents-nested"}},
+					bson.D{{"_id", "array-two-documents"}},
+					bson.D{{"_id", "array-three-documents"}},
+				}}}}},
+				bson.D{{"$sort", bson.D{{"v", -1}}}},
+			}},
 
 		"DotNotationIndex": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{

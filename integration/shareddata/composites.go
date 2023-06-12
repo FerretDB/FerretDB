@@ -426,6 +426,10 @@ var ArrayDocuments = &Values[string]{
 				"foo",
 				bson.A{bson.D{{"bar", "hello"}}},
 			}},
+			bson.D{{
+				"zoo",
+				bson.A{bson.D{{"bar", "world"}}},
+			}},
 		},
 	},
 }
