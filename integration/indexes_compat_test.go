@@ -760,7 +760,6 @@ func TestCreateIndexesUniqueCompat(t *testing.T) {
 				},
 			},
 			insertDoc: bson.D{{"v", int32(42)}},
-			skip:      "https://github.com/FerretDB/FerretDB/issues/2045",
 		},
 	} {
 		name, tc := name, tc
