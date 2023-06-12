@@ -44,8 +44,6 @@ func newType(operation *types.Document) (Operator, error) {
 
 // Process implements Operator interface.
 func (t *typeOp) Process(doc *types.Document) (any, error) {
-	var value any
-
 	typeParam := t.param
 
 	var paramEvaluated bool
@@ -57,8 +55,7 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 		case *types.Document:
 			operator, err := NewOperator(param)
 			if errors.Is(err, ErrNoOperator) {
-				value = param
-				continue
+				return commonparams.AliasFromType(param), nil
 			}
 
 			if err != nil {
@@ -74,7 +71,7 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 
 		case *types.Array, float64, types.Binary, types.ObjectID, bool, time.Time,
 			types.NullType, types.Regex, int32, types.Timestamp, int64:
-			value = param
+			return commonparams.AliasFromType(param), nil
 
 		case string:
 			if strings.HasPrefix(param, "$") {
@@ -83,24 +80,20 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 					return nil, err
 				}
 
-				value = expression.Evaluate(doc)
+				value, err := expression.Evaluate(doc)
+				if err != nil {
+					return "missing", nil
+				}
 
-				continue
+				return commonparams.AliasFromType(value), nil
 			}
 
-			value = param
+			return commonparams.AliasFromType(param), nil
 
 		default:
 			panic(fmt.Sprint("wrong type of value: ", typeParam))
 		}
 	}
 
-	var res string
-	if value == nil {
-		res = "missing"
-	} else {
-		res = commonparams.AliasFromType(value)
-	}
-
-	return res, nil
+	return nil, nil
 }

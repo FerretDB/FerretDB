@@ -121,7 +121,13 @@ func (u *unwind) Process(ctx context.Context, iter types.DocumentsIterator, clos
 	key := u.field.GetExpressionSuffix()
 
 	for _, doc := range docs {
-		d := u.field.Evaluate(doc)
+		d, err := u.field.Evaluate(doc)
+
+		if err != nil {
+			// Ignore non-existent values
+			continue
+		}
+
 		switch d := d.(type) {
 		case *types.Array:
 			iter := d.Iterator()
@@ -142,8 +148,8 @@ func (u *unwind) Process(ctx context.Context, iter types.DocumentsIterator, clos
 				newDoc := must.NotFail(types.NewDocument("_id", id, key, v))
 				out = append(out, newDoc)
 			}
-		case types.NullType, nil:
-			// Ignore Nulls and non-existent values
+		case types.NullType:
+			// Ignore Nulls
 		default:
 			out = append(out, doc)
 		}

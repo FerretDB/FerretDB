@@ -219,8 +219,8 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 	var group groupMap
 
 	for _, doc := range in {
-		val := expression.Evaluate(doc)
-		if val == nil {
+		val, err := expression.Evaluate(doc)
+		if err != nil {
 			// $group treats non-existent fields as nulls
 			val = types.Null
 		}
