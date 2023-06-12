@@ -93,9 +93,10 @@ func getWholeParamStrict(command string, param string, value any) (int64, error)
 			)
 		case errors.Is(err, ErrNotWholeNumber):
 			if math.Signbit(value.(float64)) {
-				return 0, commonerrors.NewCommandError(
+				return 0, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrValueNegative,
-					fmt.Errorf("BSON field '%s' value must be >= 0, actual value '%d'", param, int(math.Ceil(value.(float64)))),
+					fmt.Sprintf("BSON field '%s' value must be >= 0, actual value '%d'", param, int(math.Ceil(value.(float64)))),
+					param,
 				)
 			}
 
@@ -106,9 +107,10 @@ func getWholeParamStrict(command string, param string, value any) (int64, error)
 			return math.MaxInt64, nil
 
 		case errors.Is(err, ErrLongExceededNegative):
-			return 0, commonerrors.NewCommandError(
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrValueNegative,
-				fmt.Errorf("BSON field '%s' value must be >= 0, actual value '%d'", param, int(math.Ceil(value.(float64)))),
+				fmt.Sprintf("BSON field '%s' value must be >= 0, actual value '%d'", param, int(math.Ceil(value.(float64)))),
+				param,
 			)
 
 		default:
@@ -117,9 +119,10 @@ func getWholeParamStrict(command string, param string, value any) (int64, error)
 	}
 
 	if whole < 0 {
-		return 0, commonerrors.NewCommandError(
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrValueNegative,
-			fmt.Errorf("BSON field '%s' value must be >= 0, actual value '%d'", param, whole),
+			fmt.Sprintf("BSON field '%s' value must be >= 0, actual value '%d'", param, whole),
+			param,
 		)
 	}
 

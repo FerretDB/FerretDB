@@ -29,61 +29,61 @@ import (
 //
 // If the value is valid, it returns its int32 representation,
 // otherwise it returns a command error with the given command being mentioned.
-func GetScaleParam(command string, value any) (int32, error) {
+func GetScaleParam(command string, value any) (int64, error) {
 	scaleValue, err := commonparams.GetWholeNumberParam(value)
+	if err != nil {
+		switch {
+		case errors.Is(err, commonparams.ErrUnexpectedType):
+			if _, ok := value.(types.NullType); ok {
+				return 1, nil
+			}
 
-	if err == nil {
-		if scaleValue <= 0 {
 			return 0, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrValueNegative,
-				fmt.Sprintf("BSON field 'scale' value must be >= 1, actual value '%d'", scaleValue),
+				commonerrors.ErrTypeMismatch,
+				fmt.Sprintf(
+					`BSON field '%s.scale' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
+					command, commonparams.AliasFromType(value),
+				),
 				"scale",
 			)
-		}
+		case errors.Is(err, commonparams.ErrNotWholeNumber):
+			if math.Signbit(value.(float64)) {
+				return 0, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrValueNegative,
+					fmt.Sprintf("BSON field 'scale' value must be >= %d, actual value '%d'", 1, int(math.Ceil(value.(float64)))),
+					"scale",
+				)
+			}
 
-		if scaleValue > math.MaxInt32 {
+			// for non-integer numbers, scale value is rounded to the greatest integer value less than the given value.
+			return int64(math.Floor(value.(float64))), nil
+
+		case errors.Is(err, commonparams.ErrLongExceededPositive):
 			return math.MaxInt32, nil
-		}
 
-		return int32(scaleValue), nil
+		case errors.Is(err, commonparams.ErrLongExceededNegative):
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrValueNegative,
+				fmt.Sprintf("BSON field 'scale' value must be >= %d, actual value '%d'", 1, math.MinInt32),
+				"scale",
+			)
+
+		default:
+			return 0, lazyerrors.Error(err)
+		}
 	}
 
-	switch {
-	case errors.Is(err, commonparams.ErrUnexpectedType):
-		if _, ok := value.(types.NullType); ok {
-			return 1, nil
-		}
-
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrTypeMismatch,
-			fmt.Sprintf(
-				`BSON field '%s.scale' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
-				command, commonparams.AliasFromType(value),
-			),
-			"scale",
-		)
-	case errors.Is(err, commonparams.ErrNotWholeNumber):
-		if math.Signbit(value.(float64)) {
-			return 0, commonerrors.NewCommandError(
-				commonerrors.ErrValueNegative,
-				fmt.Errorf("BSON field 'scale' value must be >= 1, actual value '%d'", int(math.Ceil(value.(float64)))),
-			)
-		}
-
-		// for non-integer numbers, scale value is rounded to the greatest integer value less than the given value.
-		return int32(math.Floor(value.(float64))), nil
-
-	case errors.Is(err, commonparams.ErrLongExceededPositive):
-		return math.MaxInt32, nil
-
-	case errors.Is(err, commonparams.ErrLongExceededNegative):
+	if scaleValue < 1 {
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrValueNegative,
-			fmt.Sprintf("BSON field 'scale' value must be >= 1, actual value '%d'", math.MinInt32),
+			fmt.Sprintf("BSON field 'scale' value must be >= 1, actual value '%d'", scaleValue),
 			"scale",
 		)
-
-	default:
-		return 0, lazyerrors.Error(err)
 	}
+
+	if scaleValue > math.MaxInt32 {
+		return math.MaxInt32, nil
+	}
+
+	return scaleValue, nil
 }

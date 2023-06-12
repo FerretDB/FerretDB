@@ -49,7 +49,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	scale := int32(1)
+	scale := int64(1)
 
 	var s any
 	if s, err = document.Get("scale"); err == nil {
@@ -67,7 +67,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	pairs := []any{
 		"ns", db + "." + collection,
-		"size", stats.Size / int64(scale),
+		"size", stats.Size / scale,
 		"count", stats.NumObjects,
 	}
 
@@ -77,11 +77,11 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	pairs = append(pairs,
-		"storageSize", int32(stats.Size)/scale,
+		"storageSize", stats.Size/scale,
 		"nindexes", int32(0),
 		"totalIndexSize", int32(0),
-		"totalSize", int32(stats.Size)/scale,
-		"scaleFactor", scale,
+		"totalSize", stats.Size/scale,
+		"scaleFactor", int32(scale),
 		"ok", float64(1),
 	)
 

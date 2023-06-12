@@ -38,7 +38,7 @@ type collStats struct {
 
 // storageStats represents $collStats.storageStats field.
 type storageStats struct {
-	scale int32
+	scale int64
 }
 
 // newCollStats creates a new $collStats stage.

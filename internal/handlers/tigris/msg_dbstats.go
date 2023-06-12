@@ -46,7 +46,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, err
 	}
 
-	scale := int32(1)
+	scale := int64(1)
 
 	var s any
 	if s, err = document.Get("scale"); err == nil {
