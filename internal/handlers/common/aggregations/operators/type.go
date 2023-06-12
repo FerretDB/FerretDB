@@ -77,6 +77,7 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 			if strings.HasPrefix(param, "$") {
 				expression, err := aggregations.NewExpression(param)
 				if err != nil {
+					// TODO https://github.com/FerretDB/FerretDB/issues/2678
 					return nil, err
 				}
 
