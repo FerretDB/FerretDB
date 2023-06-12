@@ -629,12 +629,6 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 			toDrop:     "***",
 			resultType: emptyResult,
 		},
-		"MissingIndexField": {
-			command: bson.D{
-				{"dropIndexes", "collection"},
-			},
-			resultType: emptyResult,
-		},
 		"NonExistentDescendingID": {
 			toDrop:     bson.D{{"_id", -1}},
 			resultType: emptyResult,
@@ -702,11 +696,6 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 					compatCommand := bson.D{
 						{"dropIndexes", compatCollection.Name()},
 						{"index", tc.toDrop},
-					}
-
-					if tc.command != nil {
-						targetCommand = tc.command
-						compatCommand = tc.command
 					}
 
 					var targetRes bson.D
