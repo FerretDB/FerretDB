@@ -792,7 +792,6 @@ func TestQueryBatchSize(t *testing.T) {
 		var res bson.D
 		err = cursor.All(ctx, &res)
 		require.NoError(t, err)
-		require.Equal(t, 0, cursor.RemainingBatchLength())
 
 		// cursor is exhausted
 		ok = cursor.Next(ctx)
@@ -822,5 +821,29 @@ func TestQueryBatchSize(t *testing.T) {
 		ok := cursor.Next(ctx)
 		require.True(t, ok, "expected to have next document")
 		require.Equal(t, 118, cursor.RemainingBatchLength())
+	})
+
+	t.Run("SingleBatch", func(t *testing.T) {
+		// set limit to negative, it ignores batchSize and returns single document in the firstBatch.
+		cursor, err := collection.Find(ctx, bson.D{}, &options.FindOptions{
+			Limit:     pointer.ToInt64(-1),
+			BatchSize: pointer.ToInt32(10),
+		})
+		require.NoError(t, err)
+
+		defer cursor.Close(ctx)
+
+		// firstBatch has remaining 1 document
+		require.Equal(t, 1, cursor.RemainingBatchLength())
+
+		// firstBatch contains single document
+		ok := cursor.Next(ctx)
+		require.True(t, ok, "expected to have next document")
+		require.Equal(t, 0, cursor.RemainingBatchLength())
+
+		// there is no remaining batch, cursor is exhausted
+		ok = cursor.Next(ctx)
+		require.False(t, ok, "cursor exhausted, not expecting next document")
+		require.Equal(t, 0, cursor.RemainingBatchLength())
 	})
 }
