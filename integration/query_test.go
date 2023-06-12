@@ -625,7 +625,7 @@ func TestQueryCommandBatchSize(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
-		batchSize  any         // optional, nil to leave it unset
+		batchSize  any         // optional, nil to leave batchSize unset
 		firstBatch primitive.A // optional, expected response
 
 		err        *mongo.CommandError // optional, expected error from MongoDB
@@ -656,6 +656,7 @@ func TestQueryCommandBatchSize(t *testing.T) {
 				Name:    "Location51024",
 				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
 			},
+			altMessage: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
 		},
 		"DoubleNegative": {
 			batchSize: -1.1,
@@ -756,7 +757,7 @@ func TestQueryBatchSize(t *testing.T) {
 
 		defer cursor.Close(ctx)
 
-		// batch has 2 documents
+		// firstBatch has remaining 2 documents
 		require.Equal(t, 2, cursor.RemainingBatchLength())
 
 		// get first document from firstBatch
@@ -787,24 +788,25 @@ func TestQueryBatchSize(t *testing.T) {
 		require.True(t, ok, "expected to have next document")
 		require.Equal(t, 4, cursor.RemainingBatchLength())
 
-		// get rest of documents from cursor
+		// get rest of documents from the cursor
 		var res bson.D
 		err = cursor.All(ctx, &res)
 		require.NoError(t, err)
+		require.Equal(t, 0, cursor.RemainingBatchLength())
 
 		// cursor is exhausted
 		ok = cursor.Next(ctx)
-		require.False(t, ok, "batchSize has reached, not expecting next document")
+		require.False(t, ok, "cursor exhausted, not expecting next document")
 	})
 
 	t.Run("DefaultBatchSize", func(t *testing.T) {
-		// set BatchSize to 2
+		// leave batchSize unset, firstBatch uses default batchSize 101
 		cursor, err := collection.Find(ctx, bson.D{})
 		require.NoError(t, err)
 
 		defer cursor.Close(ctx)
 
-		// firstBatch has default 101 documents
+		// firstBatch has remaining 101 documents
 		require.Equal(t, 101, cursor.RemainingBatchLength())
 
 		// get 101 documents from firstBatch
@@ -815,7 +817,7 @@ func TestQueryBatchSize(t *testing.T) {
 
 		require.Equal(t, 0, cursor.RemainingBatchLength())
 
-		// secondBatch has all the rest of the documents, not only 109 documents
+		// secondBatch has the rest of the documents, not only 109 documents
 		// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
 		ok := cursor.Next(ctx)
 		require.True(t, ok, "expected to have next document")
