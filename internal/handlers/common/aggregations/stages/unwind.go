@@ -122,7 +122,6 @@ func (u *unwind) Process(ctx context.Context, iter types.DocumentsIterator, clos
 
 	for _, doc := range docs {
 		d, err := u.field.Evaluate(doc)
-
 		if err != nil {
 			// Ignore non-existent values
 			continue

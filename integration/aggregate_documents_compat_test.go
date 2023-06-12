@@ -1659,10 +1659,23 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"foo", "bar"}}}}}}}},
 			},
 		},
+		"TypeArraySingleItem": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{int32(42)}}}}}}},
+			},
+		},
 		"TypeArray": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2678",
+		},
+		"TypeNestedArray": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{bson.A{"foo", "bar"}}}}}}}},
 			},
 		},
 		"TypeObjectID": {

@@ -59,17 +59,32 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 			}
 
 			if err != nil {
+				// TODO https://github.com/FerretDB/FerretDB/issues/2678
 				return nil, err
 			}
 
 			if typeParam, err = operator.Process(doc); err != nil {
+				// TODO https://github.com/FerretDB/FerretDB/issues/2678
 				return nil, lazyerrors.Error(err)
 			}
 
 			// the result of nested operator needs to be evaluated
 			paramEvaluated = false
 
-		case *types.Array, float64, types.Binary, types.ObjectID, bool, time.Time,
+		case *types.Array:
+			if param.Len() != 1 {
+				// TODO https://github.com/FerretDB/FerretDB/issues/2678
+				return nil, fmt.Errorf("Expression $type takes exactly 1 arguments. %d were passed in.", param.Len())
+			}
+
+			value, err := param.Get(0)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			return commonparams.AliasFromType(value), nil
+
+		case float64, types.Binary, types.ObjectID, bool, time.Time,
 			types.NullType, types.Regex, int32, types.Timestamp, int64:
 			return commonparams.AliasFromType(param), nil
 
