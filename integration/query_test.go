@@ -854,6 +854,8 @@ func TestQueryBatchSize(t *testing.T) {
 }
 
 func TestQueryCommandGetMore(t *testing.T) {
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/2005")
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -865,9 +867,9 @@ func TestQueryCommandGetMore(t *testing.T) {
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
 		findBatchSize    any         // optional, nil to leave findBatchSize unset
 		getMoreBatchSize any         // optional, nil to leave getMoreBatchSize unset
-		collection       any         // optional, defaults to collection.Name()
+		collection       any         // optional, nil to leave collection unset
 		cursorID         any         // optional, defaults to cursorID from find()
-		firstBatch       primitive.A // required,
+		firstBatch       primitive.A // required, expected find firstBatch
 		nextBatch        primitive.A // optional, expected getMore nextBatch
 
 		err        *mongo.CommandError // optional, expected error from MongoDB
@@ -877,13 +879,14 @@ func TestQueryCommandGetMore(t *testing.T) {
 		"Int": {
 			findBatchSize:    1,
 			getMoreBatchSize: int32(1),
+			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			nextBatch:        docs[1:2],
-			skip:             "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"IntNegative": {
 			findBatchSize:    1,
 			getMoreBatchSize: int32(-1),
+			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			err: &mongo.CommandError{
 				Code:    51024,
@@ -891,112 +894,112 @@ func TestQueryCommandGetMore(t *testing.T) {
 				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
 			},
 			altMessage: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"IntZero": {
 			findBatchSize:    1,
 			getMoreBatchSize: int32(0),
+			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			nextBatch:        docs[1:],
-			skip:             "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"Long": {
 			findBatchSize:    1,
 			getMoreBatchSize: int64(1),
+			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			nextBatch:        docs[1:2],
-			skip:             "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"LongNegative": {
 			findBatchSize:    1,
 			getMoreBatchSize: int64(-1),
+			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			err: &mongo.CommandError{
 				Code:    51024,
 				Name:    "Location51024",
 				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"LongZero": {
 			findBatchSize:    1,
 			getMoreBatchSize: int64(0),
+			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			nextBatch:        docs[1:],
-			skip:             "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"Double": {
 			findBatchSize:    1,
 			getMoreBatchSize: float64(1),
+			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			nextBatch:        docs[1:2],
-			skip:             "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"DoubleNegative": {
 			findBatchSize:    1,
 			getMoreBatchSize: float64(-1),
+			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			err: &mongo.CommandError{
 				Code:    51024,
 				Name:    "Location51024",
 				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"DoubleZero": {
 			findBatchSize:    1,
 			getMoreBatchSize: float64(0),
+			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			nextBatch:        docs[1:],
-			skip:             "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"DoubleFloor": {
 			findBatchSize:    1,
 			getMoreBatchSize: 1.9,
+			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			nextBatch:        docs[1:2],
-			skip:             "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"GetMoreCursorExhausted": {
 			findBatchSize:    200,
 			getMoreBatchSize: int32(1),
+			collection:       collection.Name(),
 			firstBatch:       docs[:110],
 			err: &mongo.CommandError{
 				Code:    43,
 				Name:    "CursorNotFound",
 				Message: "cursor id 0 not found",
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"Bool": {
 			findBatchSize:    1,
 			getMoreBatchSize: false,
+			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
 				Message: "BSON field 'getMore.batchSize' is the wrong type 'bool', expected types '[long, int, decimal, double']",
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"Unset": {
 			findBatchSize: 1,
 			// unset getMore batchSize gets all remaining documents
 			getMoreBatchSize: nil,
+			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			nextBatch:        docs[1:],
-			skip:             "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"LargeBatchSize": {
 			findBatchSize:    1,
 			getMoreBatchSize: 105,
+			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			nextBatch:        docs[1:106],
-			skip:             "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"StringCursorID": {
 			findBatchSize:    1,
 			getMoreBatchSize: 1,
+			collection:       collection.Name(),
 			cursorID:         "invalid",
 			firstBatch:       docs[:1],
 			err: &mongo.CommandError{
@@ -1004,11 +1007,11 @@ func TestQueryCommandGetMore(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'getMore.getMore' is the wrong type 'string', expected type 'long'",
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"NotFoundCursorID": {
 			findBatchSize:    1,
 			getMoreBatchSize: 1,
+			collection:       collection.Name(),
 			cursorID:         int64(1234),
 			firstBatch:       docs[:1],
 			err: &mongo.CommandError{
@@ -1016,7 +1019,6 @@ func TestQueryCommandGetMore(t *testing.T) {
 				Name:    "CursorNotFound",
 				Message: "cursor id 1234 not found",
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"WrongTypeNamespace": {
 			findBatchSize:    1,
@@ -1028,7 +1030,6 @@ func TestQueryCommandGetMore(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'getMore.collection' is the wrong type 'object', expected type 'string'",
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"InvalidNamespace": {
 			findBatchSize:    1,
@@ -1041,7 +1042,6 @@ func TestQueryCommandGetMore(t *testing.T) {
 				Message: "Requested getMore on namespace 'TestQueryCommandGetMore.invalid'," +
 					" but cursor belongs to a different namespace TestQueryCommandGetMore.TestQueryCommandGetMore",
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"EmptyCollectionName": {
 			findBatchSize:    1,
@@ -1053,7 +1053,17 @@ func TestQueryCommandGetMore(t *testing.T) {
 				Name:    "InvalidNamespace",
 				Message: "Collection names cannot be empty",
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2005",
+		},
+		"MissingCollectionName": {
+			findBatchSize:    1,
+			getMoreBatchSize: 1,
+			collection:       nil,
+			firstBatch:       docs[:1],
+			err: &mongo.CommandError{
+				Code:    40414,
+				Name:    "Location40414",
+				Message: "BSON field 'getMore.collection' is missing but a required field",
+			},
 		},
 	} {
 		name, tc := name, tc
@@ -1101,20 +1111,18 @@ func TestQueryCommandGetMore(t *testing.T) {
 				cursorID = tc.cursorID
 			}
 
-			var collectionName any = collection.Name()
-			if tc.collection != nil {
-				collectionName = tc.collection
-			}
-
 			var getMoreRest bson.D
 			if tc.getMoreBatchSize != nil {
 				getMoreRest = append(getMoreRest, bson.E{Key: "batchSize", Value: tc.getMoreBatchSize})
 			}
 
+			if tc.collection != nil {
+				getMoreRest = append(getMoreRest, bson.E{Key: "collection", Value: tc.collection})
+			}
+
 			getMoreCommand := append(
 				bson.D{
 					{"getMore", cursorID},
-					{"collection", collectionName},
 				},
 				getMoreRest...,
 			)
