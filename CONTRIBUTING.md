@@ -167,7 +167,7 @@ If tests fail and the output is too confusing, try running them sequentially by 
 
 You can also run `task -C 1` to limit the number of concurrent tasks, which is useful for debugging.
 
-To run a single test case you may want to use predefined variable `TEST_RUN`. For example to run a single test case
+To run a single test case you may want to use predefined variable `TEST_RUN`. For example, to run a single test case
 for in-process FerretDB with `pg` handler you may use `task test-integration-pg TEST_RUN='TestName/TestCaseName'`.
 
 Finally, since all tests just run `go test` with various arguments and flags under the hood,
