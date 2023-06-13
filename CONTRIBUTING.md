@@ -181,7 +181,7 @@ For example:
 
 > **Note**
 >
-> It is not recommended to set `GOFLAGS`, `TEST_RUN` and other Go environment variables with `export GOFLAGS=...`
+> It is not recommended to set `GOFLAGS` and other Go environment variables with `export GOFLAGS=...`
 > or `go env -w GOFLAGS=...` because they are invisible and easy to forget about, leading to confusion.
 
 In general, we prefer integration tests over unit tests,
