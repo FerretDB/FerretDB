@@ -174,6 +174,7 @@ or predefined variable `TEST_RUN`.
 For example:
 
 - to run a single test case for in-process FerretDB with `pg` handler
+  with all subtests running sequentially,
   you may use `env GOFLAGS='-parallel=1' task test-integration-pg TEST_RUN='TestName/TestCaseName' `;
 - to run all tests for in-process FerretDB with `tigris` handler
   with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,

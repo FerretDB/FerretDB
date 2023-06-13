@@ -220,7 +220,7 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-tigris.txt .
         -target-backend=ferretdb-tigris
         {{.UNIXSOCKETFLAG}}
