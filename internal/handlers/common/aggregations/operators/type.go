@@ -48,6 +48,8 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 
 	var paramEvaluated bool
 
+	var res any
+
 	for !paramEvaluated {
 		paramEvaluated = true
 
@@ -55,7 +57,8 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 		case *types.Document:
 			operator, err := NewOperator(param)
 			if errors.Is(err, ErrNoOperator) {
-				return commonparams.AliasFromType(param), nil
+				res = param
+				continue
 			}
 
 			if err != nil {
@@ -82,11 +85,11 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			return commonparams.AliasFromType(value), nil
+			res = value
 
 		case float64, types.Binary, types.ObjectID, bool, time.Time,
 			types.NullType, types.Regex, int32, types.Timestamp, int64:
-			return commonparams.AliasFromType(param), nil
+			res = param
 
 		case string:
 			if strings.HasPrefix(param, "$") {
@@ -101,15 +104,16 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 					return "missing", nil
 				}
 
-				return commonparams.AliasFromType(value), nil
+				res = value
+				continue
 			}
 
-			return commonparams.AliasFromType(param), nil
+			res = param
 
 		default:
 			panic(fmt.Sprint("wrong type of value: ", typeParam))
 		}
 	}
 
-	return nil, nil
+	return commonparams.AliasFromType(res), nil
 }
