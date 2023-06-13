@@ -56,19 +56,36 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 		switch param := typeParam.(type) {
 		case *types.Document:
 			operator, err := NewOperator(param)
-			if errors.Is(err, ErrNoOperator) {
-				res = param
-				continue
-			}
 
 			if err != nil {
-				// TODO https://github.com/FerretDB/FerretDB/issues/2678
-				return nil, err
+				var opErr OperatorError
+				if !errors.As(err, &opErr) {
+					return nil, lazyerrors.Error(err)
+				}
+
+				if opErr.Code() == ErrNoOperator {
+					res = param
+					continue
+				}
+
+				if err != nil {
+					// TODO test
+					return nil, err
+				}
 			}
 
 			if typeParam, err = operator.Process(doc); err != nil {
-				// TODO https://github.com/FerretDB/FerretDB/issues/2678
-				return nil, lazyerrors.Error(err)
+				if err != nil {
+					var opErr OperatorError
+					if !errors.As(err, &opErr) {
+						return nil, lazyerrors.Error(err)
+					}
+
+					if err != nil {
+						// TODO test
+						return nil, err
+					}
+				}
 			}
 
 			// the result of nested operator needs to be evaluated
@@ -76,6 +93,7 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 
 		case *types.Array:
 			if param.Len() != 1 {
+				// TODO test
 				return nil, NewOperatorError(
 					ErrArgsInvalidLen,
 					fmt.Errorf("Expression $type takes exactly 1 arguments. %d were passed in.", param.Len()),
@@ -97,17 +115,17 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 			if strings.HasPrefix(param, "$") {
 				expression, err := aggregations.NewExpression(param)
 				if err != nil {
-					// TODO https://github.com/FerretDB/FerretDB/issues/2678
+					// TODO test
 					return nil, err
 				}
 
 				value, err := expression.Evaluate(doc)
 				if err != nil {
+					// TODO test
 					return "missing", nil
 				}
 
 				res = value
-
 				continue
 			}
 

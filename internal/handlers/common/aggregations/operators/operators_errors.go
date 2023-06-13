@@ -20,6 +20,24 @@ type OperatorErrorCode uint
 const (
 	_ OperatorErrorCode = iota
 	ErrArgsInvalidLen
+
+	// ErrWrongType indicates that operator field is not a document.
+	ErrWrongType // Invalid type of operator field (expected document)
+
+	// ErrEmptyField indicates that operator field does not specify any operator.
+	ErrEmptyField // The operator field is empty (expected document)
+
+	// ErrTooManyFields indicates that operator field specifes more than one operators.
+	ErrTooManyFields // The operator field specifies more than one operator
+
+	// ErrNotImplemented indicates that given operator is not implemented yet.
+	ErrNotImplemented // The operator is not implemented yet
+
+	// // ErrNotImplemented indicates that given operator does not exist.
+	// ErrInvalidExpression // Unrecognized expression
+
+	// ErrNoOperator indicates that given document does not contain any operator.
+	ErrNoOperator // No operator in document
 )
 
 func NewOperatorError(code OperatorErrorCode, err error) error {
@@ -40,4 +58,8 @@ type OperatorError struct {
 
 func (opErr OperatorError) Error() string {
 	return opErr.Error()
+}
+
+func (opErr OperatorError) Code() OperatorErrorCode {
+	return opErr.code
 }
