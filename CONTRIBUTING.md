@@ -174,7 +174,7 @@ or predefined variable `TEST_RUN`.
 For example:
 
 - to run a single test case for in-process FerretDB with `pg` handler
-  you may use `env TEST_RUN='TestName/TestCaseName' task test-integration-pg`;
+  you may use `env GOFLAGS='-parallel=1' task test-integration-pg TEST_RUN='TestName/TestCaseName' `;
 - to run all tests for in-process FerretDB with `tigris` handler
   with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
   you may use `env GOFLAGS='-trace=trace.out' task test-integration-tigris`.
