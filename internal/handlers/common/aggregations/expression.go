@@ -15,6 +15,7 @@
 package aggregations
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -132,18 +133,17 @@ func NewExpression(expression string) (*Expression, error) {
 }
 
 // Evaluate gets the value at the path.
-// It returns `types.Null` if the path does not exists.
-func (e *Expression) Evaluate(doc *types.Document) any {
+// It returns error if the path does not exists.
+func (e *Expression) Evaluate(doc *types.Document) (any, error) {
 	path := e.path
 
 	if path.Len() == 1 {
 		val, err := doc.Get(path.String())
 		if err != nil {
-			// $group stage groups non-existent paths with `Null`
-			return types.Null
+			return nil, err
 		}
 
-		return val
+		return val, nil
 	}
 
 	var isPrefixArray bool
@@ -160,16 +160,15 @@ func (e *Expression) Evaluate(doc *types.Document) any {
 	if len(vals) == 0 {
 		if isPrefixArray {
 			// when the prefix is array, return empty array.
-			return must.NotFail(types.NewArray())
+			return must.NotFail(types.NewArray()), nil
 		}
 
-		// $group stage groups non-existent paths with `Null`
-		return types.Null
+		return nil, fmt.Errorf("no document found under %s path", path)
 	}
 
 	if len(vals) == 1 && !isPrefixArray {
 		// when the prefix is not array, return the value
-		return vals[0]
+		return vals[0], nil
 	}
 
 	// when the prefix is array, return an array of value.
@@ -178,7 +177,7 @@ func (e *Expression) Evaluate(doc *types.Document) any {
 		arr.Append(v)
 	}
 
-	return arr
+	return arr, nil
 }
 
 // GetExpressionSuffix returns suffix of pathExpression.

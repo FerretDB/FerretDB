@@ -17,26 +17,72 @@ package integration
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
+func TestAggregateGroupErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		pipeline bson.A // required, aggregation pipeline stages
+
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"StageGroupUnaryOperatorSum": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"sum", bson.D{{"$sum", bson.A{}}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    40237,
+				Name:    "Location40237",
+				Message: "The $sum accumulator is a unary operator",
+			},
+			altMessage: "The $sum accumulator is a unary operator",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			ctx, collection := setup.Setup(t)
+
+			res, err := collection.Aggregate(ctx, tc.pipeline)
+
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
 func TestAggregateProjectErrors(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		err        mongo.CommandError
-		altMessage string
-		skip       string
-		pipeline   bson.A
+		pipeline bson.A // required, aggregation pipeline stages
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"EmptyPipeline": {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    51272,
 				Name:    "Location51272",
 				Message: "Invalid $project :: caused by :: projection specification must have at least one field",
@@ -46,7 +92,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v", bson.D{}}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    51270,
 				Name:    "Location51270",
 				Message: "Invalid $project :: caused by :: An empty sub-projection is not a valid value. Found empty object at path",
@@ -57,7 +103,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 40352,
 				Name: "Location40352",
 				Message: "Invalid $project :: caused by :: " +
@@ -68,7 +114,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v..d", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    15998,
 				Name:    "Location15998",
 				Message: "Invalid $project :: caused by :: FieldPath field names may not be empty strings.",
@@ -78,7 +124,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"foo", false}, {"bar", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    31253,
 				Name:    "Location31253",
 				Message: "Invalid $project :: caused by :: Cannot do inclusion on field bar in exclusion projection",
@@ -89,7 +135,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"foo", true}, {"bar", false}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    31254,
 				Name:    "Location31254",
 				Message: "Invalid $project :: caused by :: Cannot do exclusion on field bar in inclusion projection",
@@ -100,7 +146,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v.$.foo.$", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 31324,
 				Name: "Location31324",
 				Message: "Invalid $project :: caused by :: " +
@@ -111,7 +157,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v.$.foo", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 31394,
 				Name: "Location31394",
 				Message: "Invalid $project :: caused by :: " +
@@ -131,7 +177,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"$.v.$.foo", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 31394,
 				Name: "Location31394",
 				Message: "Invalid $project :: caused by :: " +
@@ -151,7 +197,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v..$", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 31324,
 				Name: "Location31324",
 				Message: "Invalid $project :: caused by :: " +
@@ -162,7 +208,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"$", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 16410,
 				Name: "Location16410",
 				Message: "Invalid $project :: caused by :: " +
@@ -173,7 +219,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"$v", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 16410,
 				Name: "Location16410",
 				Message: "Invalid $project :: caused by :: " +
@@ -184,7 +230,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"$.foo", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 16410,
 				Name: "Location16410",
 				Message: "Invalid $project :: caused by :: " +
@@ -195,7 +241,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v.$foo", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 16410,
 				Name: "Location16410",
 				Message: "Invalid $project :: caused by :: " +
@@ -206,7 +252,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"$.v.$", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 31324,
 				Name: "Location31324",
 				Message: "Invalid $project :: caused by :: " +
@@ -217,7 +263,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v.$", false}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 31324,
 				Name: "Location31324",
 				Message: "Invalid $project :: caused by :: " +
@@ -228,7 +274,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v.$", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    31324,
 				Name:    "Location31324",
 				Message: "Invalid $project :: caused by :: Cannot use positional projection in aggregation projection",
@@ -242,11 +288,20 @@ func TestAggregateProjectErrors(t *testing.T) {
 			}
 
 			t.Parallel()
+
+			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
 			ctx, collection := setup.Setup(t)
 
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 
-			AssertEqualAltCommandError(t, tc.err, tc.altMessage, err)
+			if tc.altMessage != "" {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				return
+			}
+
+			AssertEqualCommandError(t, *tc.err, err)
 		})
 	}
 }

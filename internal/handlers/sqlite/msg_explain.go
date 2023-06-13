@@ -60,7 +60,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"explainVersion", "1",
 			"command", cmd,
-			// "pushdown", !h.DisableFilterPushdown,
+			"pushdown", !h.DisableFilterPushdown,
 			"serverInfo", serverInfo,
 			"ok", float64(1),
 		))},

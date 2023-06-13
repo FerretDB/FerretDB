@@ -281,7 +281,10 @@ func AssertEqualAltCommandError(t testing.TB, expected mongo.CommandError, altMe
 		return true
 	}
 
-	expected.Message = altMessage
+	if altMessage != "" {
+		expected.Message = altMessage
+	}
+
 	return assert.Equal(t, expected, a)
 }
 
@@ -309,7 +312,10 @@ func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessag
 		return true
 	}
 
-	expected.Message = altMessage
+	if altMessage != "" {
+		expected.Message = altMessage
+	}
+
 	return assert.Equal(t, expected, a)
 }
 
@@ -398,4 +404,15 @@ func FindAll(t testing.TB, ctx context.Context, collection *mongo.Collection) []
 	require.NoError(t, err)
 
 	return FetchAll(t, ctx, cursor)
+}
+
+// generateDocuments generates documents with _id ranging from startID to endID.
+// It returns bson.A containing bson.D documents.
+func generateDocuments(startID, endID int32) bson.A {
+	var docs bson.A
+	for i := startID; i < endID; i++ {
+		docs = append(docs, bson.D{{"_id", i}})
+	}
+
+	return docs
 }

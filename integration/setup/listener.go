@@ -75,7 +75,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
 
-	var handler string
+	var handler, sqliteURI string
 
 	switch *targetBackendF {
 	case "ferretdb-pg":
@@ -83,23 +83,31 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
 		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
 		handler = "pg"
+
 	case "ferretdb-sqlite":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
 		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
 		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
 		handler = "sqlite"
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/2753
+		sqliteURI = sqliteDir
+
 	case "ferretdb-tigris":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
 		require.NotEmpty(tb, *tigrisURLSF, "-tigris-urls must be set for %q", *targetBackendF)
 		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
 		handler = "tigris"
+
 	case "ferretdb-hana":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
 		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
 		require.NotEmpty(tb, *hanaURLF, "-hana-url must be set for %q", *targetBackendF)
 		handler = "hana"
+
 	case "mongodb":
 		tb.Fatal("can't start in-process MongoDB")
+
 	default:
 		// that should be caught by Startup function
 		panic("not reached")
@@ -117,7 +125,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 		PostgreSQLURL: *postgreSQLURLF,
 
-		SQLiteURI: filepath.Join("..", "tmp", "sqlite-tests"),
+		SQLiteURI: sqliteURI,
 
 		TigrisURL: nextTigrisUrl(),
 

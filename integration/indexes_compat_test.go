@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestIndexesList(t *testing.T) {
+func TestListIndexesCompat(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
@@ -67,7 +67,7 @@ func TestIndexesList(t *testing.T) {
 	}
 }
 
-func TestIndexesCreate(t *testing.T) {
+func TestCreateIndexesCompat(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
 
 	t.Parallel()
@@ -287,8 +287,8 @@ func TestIndexesCreate(t *testing.T) {
 	}
 }
 
-// TestIndexesCreateRunCommand tests specific behavior for index creation that can be only provided through RunCommand.
-func TestIndexesCreateRunCommand(t *testing.T) {
+// TestCreateIndexesCommandCompat tests specific behavior for index creation that can be only provided through RunCommand.
+func TestCreateIndexesCommandCompat(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
 
 	t.Parallel()
@@ -304,55 +304,62 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 		resultType     compatTestCaseResultType // defaults to nonEmptyResult
 		skip           string                   // optional, skip test with a specified reason
 	}{
-		"invalid-collection-name": {
+		"InvalidCollectionName": {
 			collectionName: 42,
 			key:            bson.D{{"v", -1}},
 			indexName:      "custom-name",
 			resultType:     emptyResult,
 		},
-		"nil-collection-name": {
+		"NilCollectionName": {
 			collectionName: nil,
 			key:            bson.D{{"v", -1}},
 			indexName:      "custom-name",
 			resultType:     emptyResult,
 		},
-		"index-name-not-set": {
+		"EmptyCollectionName": {
+			collectionName: "",
+			key:            bson.D{{"v", -1}},
+			indexName:      "custom-name",
+			resultType:     emptyResult,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
+		},
+		"IndexNameNotSet": {
 			collectionName: "test",
 			key:            bson.D{{"v", -1}},
 			indexName:      nil,
 			resultType:     emptyResult,
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
-		"empty-index-name": {
+		"EmptyIndexName": {
 			collectionName: "test",
 			key:            bson.D{{"v", -1}},
 			indexName:      "",
 			resultType:     emptyResult,
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
-		"non-string-index-name": {
+		"NonStringIndexName": {
 			collectionName: "test",
 			key:            bson.D{{"v", -1}},
 			indexName:      42,
 			resultType:     emptyResult,
 		},
-		"existing-name-different-key-length": {
+		"ExistingNameDifferentKeyLength": {
 			collectionName: "test",
 			key:            bson.D{{"_id", 1}, {"v", 1}},
 			indexName:      "_id_", // the same name as the default index
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
-		"invalid-key": {
+		"InvalidKey": {
 			collectionName: "test",
 			key:            42,
 			resultType:     emptyResult,
 		},
-		"empty-key": {
+		"EmptyKey": {
 			collectionName: "test",
 			key:            bson.D{},
 			resultType:     emptyResult,
 		},
-		"key-not-set": {
+		"KeyNotSet": {
 			collectionName: "test",
 			resultType:     emptyResult,
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
@@ -436,7 +443,7 @@ func TestIndexesCreateRunCommand(t *testing.T) {
 	}
 }
 
-func TestIndexesDrop(t *testing.T) {
+func TestDropIndexesCompat(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
 
 	t.Parallel()
@@ -481,6 +488,10 @@ func TestIndexesDrop(t *testing.T) {
 		},
 		"NonExistent": {
 			dropIndexName: "nonexistent_1",
+			resultType:    emptyResult,
+		},
+		"Empty": {
+			dropIndexName: "",
 			resultType:    emptyResult,
 		},
 	} {
@@ -559,24 +570,18 @@ func TestIndexesDrop(t *testing.T) {
 	}
 }
 
-func TestIndexesDropRunCommand(t *testing.T) {
+func TestDropIndexesCommandCompat(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
 
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		toCreate    []mongo.IndexModel       // optional, if set, create the given indexes before drop is called
-		toDrop      any                      // index to drop
-		resultType  compatTestCaseResultType // defaults to nonEmptyResult
-		command     bson.D                   // optional, if set it runs this command instead of dropping toDrop
-		altErrorMsg string                   // optional, alternative error message in case of error
-		skip        string                   // optional, skip test with a specified reason
+		toCreate []mongo.IndexModel // optional, if set, create the given indexes before drop is called
+		toDrop   any                // required, index to drop
+
+		resultType compatTestCaseResultType // optional, defaults to nonEmptyResult
+		skip       string                   // optional, skip test with a specified reason
 	}{
-		"InvalidType": {
-			toDrop:      true,
-			resultType:  emptyResult,
-			altErrorMsg: `BSON field 'dropIndexes.index' is the wrong type 'bool', expected types '[string, object]'`,
-		},
 		"MultipleIndexesByName": {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
@@ -590,37 +595,22 @@ func TestIndexesDropRunCommand(t *testing.T) {
 				{Keys: bson.D{{"v", -1}}},
 				{Keys: bson.D{{"v.foo", -1}}},
 			},
-			toDrop:      bson.A{bson.D{{"v", -1}}, bson.D{{"v.foo", -1}}},
-			resultType:  emptyResult,
-			altErrorMsg: `BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string, object]'`,
+			toDrop:     bson.A{bson.D{{"v", -1}}, bson.D{{"v.foo", -1}}},
+			resultType: emptyResult,
 		},
 		"NonExistentMultipleIndexes": {
 			toDrop:     bson.A{"non-existent", "invalid"},
 			resultType: emptyResult,
 		},
 		"InvalidMultipleIndexType": {
-			toDrop:      bson.A{1},
-			resultType:  emptyResult,
-			altErrorMsg: `BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string, object]'`,
+			toDrop:     bson.A{1},
+			resultType: emptyResult,
 		},
 		"DocumentIndex": {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
 			},
 			toDrop: bson.D{{"v", -1}},
-		},
-		"InvalidDocumentIndex": {
-			toDrop:     bson.D{{"invalid", "invalid"}},
-			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2311",
-		},
-		"NonExistentKey": {
-			toDrop:     bson.D{{"non-existent", 1}},
-			resultType: emptyResult,
-		},
-		"DocumentIndexID": {
-			toDrop:     bson.D{{"_id", 1}},
-			resultType: emptyResult,
 		},
 		"DropAllExpression": {
 			toCreate: []mongo.IndexModel{
@@ -630,10 +620,13 @@ func TestIndexesDropRunCommand(t *testing.T) {
 			},
 			toDrop: "*",
 		},
-		"MissingIndexField": {
-			command: bson.D{
-				{"dropIndexes", "collection"},
+		"WrongExpression": {
+			toCreate: []mongo.IndexModel{
+				{Keys: bson.D{{"v", -1}}},
+				{Keys: bson.D{{"foo.bar", 1}}},
+				{Keys: bson.D{{"foo", 1}, {"bar", 1}}},
 			},
+			toDrop:     "***",
 			resultType: emptyResult,
 		},
 		"NonExistentDescendingID": {
@@ -649,13 +642,6 @@ func TestIndexesDropRunCommand(t *testing.T) {
 				{"v", 1},
 			},
 		},
-		"NonExistentMultipleKeyIndex": {
-			toDrop: bson.D{
-				{"non-existent1", -1},
-				{"non-existent2", -1},
-			},
-			resultType: emptyResult,
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -666,9 +652,7 @@ func TestIndexesDropRunCommand(t *testing.T) {
 			t.Helper()
 			t.Parallel()
 
-			if tc.command != nil {
-				require.Nil(t, tc.toDrop, "toDrop name must be nil when using command")
-			}
+			require.NotNil(t, tc.toDrop, "toDrop must not be nil")
 
 			// It's enough to use a single provider for drop indexes test as indexes work the same for different collections.
 			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
@@ -712,11 +696,6 @@ func TestIndexesDropRunCommand(t *testing.T) {
 					compatCommand := bson.D{
 						{"dropIndexes", compatCollection.Name()},
 						{"index", tc.toDrop},
-					}
-
-					if tc.command != nil {
-						targetCommand = tc.command
-						compatCommand = tc.command
 					}
 
 					var targetRes bson.D

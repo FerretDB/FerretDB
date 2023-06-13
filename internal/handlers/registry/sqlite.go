@@ -30,6 +30,8 @@ func init() {
 			L:             opts.Logger,
 			Metrics:       opts.Metrics,
 			StateProvider: opts.StateProvider,
+
+			DisableFilterPushdown: opts.DisableFilterPushdown,
 		}
 
 		return sqlite.New(handlerOpts)
