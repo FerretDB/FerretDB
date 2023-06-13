@@ -304,55 +304,62 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 		resultType     compatTestCaseResultType // defaults to nonEmptyResult
 		skip           string                   // optional, skip test with a specified reason
 	}{
-		"invalid-collection-name": {
+		"InvalidCollectionName": {
 			collectionName: 42,
 			key:            bson.D{{"v", -1}},
 			indexName:      "custom-name",
 			resultType:     emptyResult,
 		},
-		"nil-collection-name": {
+		"NilCollectionName": {
 			collectionName: nil,
 			key:            bson.D{{"v", -1}},
 			indexName:      "custom-name",
 			resultType:     emptyResult,
 		},
-		"index-name-not-set": {
+		"EmptyCollectionName": {
+			collectionName: "",
+			key:            bson.D{{"v", -1}},
+			indexName:      "custom-name",
+			resultType:     emptyResult,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
+		},
+		"IndexNameNotSet": {
 			collectionName: "test",
 			key:            bson.D{{"v", -1}},
 			indexName:      nil,
 			resultType:     emptyResult,
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
-		"empty-index-name": {
+		"EmptyIndexName": {
 			collectionName: "test",
 			key:            bson.D{{"v", -1}},
 			indexName:      "",
 			resultType:     emptyResult,
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
-		"non-string-index-name": {
+		"NonStringIndexName": {
 			collectionName: "test",
 			key:            bson.D{{"v", -1}},
 			indexName:      42,
 			resultType:     emptyResult,
 		},
-		"existing-name-different-key-length": {
+		"ExistingNameDifferentKeyLength": {
 			collectionName: "test",
 			key:            bson.D{{"_id", 1}, {"v", 1}},
 			indexName:      "_id_", // the same name as the default index
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
-		"invalid-key": {
+		"InvalidKey": {
 			collectionName: "test",
 			key:            42,
 			resultType:     emptyResult,
 		},
-		"empty-key": {
+		"EmptyKey": {
 			collectionName: "test",
 			key:            bson.D{},
 			resultType:     emptyResult,
 		},
-		"key-not-set": {
+		"KeyNotSet": {
 			collectionName: "test",
 			resultType:     emptyResult,
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
@@ -483,6 +490,10 @@ func TestDropIndexesCompat(t *testing.T) {
 			dropIndexName: "nonexistent_1",
 			resultType:    emptyResult,
 		},
+		"Empty": {
+			dropIndexName: "",
+			resultType:    emptyResult,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -579,6 +590,22 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 			},
 			toDrop: bson.A{"v_-1", "v_1_foo_1"},
 		},
+		"MultipleIndexesByKey": {
+			toCreate: []mongo.IndexModel{
+				{Keys: bson.D{{"v", -1}}},
+				{Keys: bson.D{{"v.foo", -1}}},
+			},
+			toDrop:     bson.A{bson.D{{"v", -1}}, bson.D{{"v.foo", -1}}},
+			resultType: emptyResult,
+		},
+		"NonExistentMultipleIndexes": {
+			toDrop:     bson.A{"non-existent", "invalid"},
+			resultType: emptyResult,
+		},
+		"InvalidMultipleIndexType": {
+			toDrop:     bson.A{1},
+			resultType: emptyResult,
+		},
 		"DocumentIndex": {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
@@ -592,6 +619,19 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 				{Keys: bson.D{{"foo", 1}, {"bar", 1}}},
 			},
 			toDrop: "*",
+		},
+		"WrongExpression": {
+			toCreate: []mongo.IndexModel{
+				{Keys: bson.D{{"v", -1}}},
+				{Keys: bson.D{{"foo.bar", 1}}},
+				{Keys: bson.D{{"foo", 1}, {"bar", 1}}},
+			},
+			toDrop:     "***",
+			resultType: emptyResult,
+		},
+		"NonExistentDescendingID": {
+			toDrop:     bson.D{{"_id", -1}},
+			resultType: emptyResult,
 		},
 		"MultipleKeyIndex": {
 			toCreate: []mongo.IndexModel{
