@@ -74,7 +74,7 @@ func GetWholeNumberParam(value any) (int64, error) {
 //
 // If the value is valid, it returns its int64 representation,
 // otherwise it returns a command error with the given command being mentioned.
-func GetWholeParamStrict(command string, param string, value any, boundary int) (int64, error) {
+func GetWholeParamStrict(command string, param string, value any, boundary int64) (int64, error) {
 	whole, err := GetWholeNumberParam(value)
 	if err != nil {
 		switch {
@@ -124,7 +124,7 @@ func GetWholeParamStrict(command string, param string, value any, boundary int) 
 		}
 	}
 
-	if whole < 0 {
+	if whole < boundary {
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrValueNegative,
 			fmt.Sprintf("BSON field '%s' value must be >= %d, actual value '%d'", param, boundary, whole),
