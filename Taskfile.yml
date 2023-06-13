@@ -204,14 +204,14 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{.RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -run='{{or .RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-sqlite.txt .
         -target-backend=ferretdb-sqlite
         -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
         -disable-filter-pushdown
     vars:
-      RUN:
+      SHARD_RUN:
         sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 1}} --total={{.SHARD_TOTAL | default 1}}
 
   test-integration-tigris:
@@ -219,14 +219,14 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{.RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -run='{{{or .RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-tigris.txt .
         -target-backend=ferretdb-tigris
         {{.UNIXSOCKETFLAG}}
         -tigris-urls=127.0.0.1:8081,127.0.0.1:8091,127.0.0.1:8092,127.0.0.1:8093,127.0.0.1:8094
         -compat-url=mongodb://127.0.0.1:47017/
     vars:
-      RUN:
+      SHARD_RUN:
         sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 1}} --total={{.SHARD_TOTAL | default 1}}
 
   test-integration-hana:
@@ -234,14 +234,14 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{.RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -run='{{or .RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-hana.txt .
         -target-backend=ferretdb-hana
         {{.UNIXSOCKETFLAG}}
         -hana-url=$FERRETDB_HANA_URL
         -compat-url=mongodb://127.0.0.1:47017/
     vars:
-      RUN:
+      SHARD_RUN:
         sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 1}} --total={{.SHARD_TOTAL | default 1}}
 
   test-integration-mongodb:
@@ -249,12 +249,12 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{.RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -run='{{or .RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-mongodb.txt .
         -target-url=mongodb://127.0.0.1:47017/
         -target-backend=mongodb
     vars:
-      RUN:
+      SHARD_RUN:
         sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 1}} --total={{.SHARD_TOTAL | default 1}}
 
   bench-unit-short:
