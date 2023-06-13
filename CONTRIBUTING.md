@@ -44,12 +44,13 @@ Finally, you will also need [git-lfs](https://git-lfs.github.com) installed and 
 Fork the [FerretDB repository on GitHub](https://github.com/FerretDB/FerretDB/fork).
 To have all the tags in the repository and what they point to, copy all branches by removing checkmark for `copy the main branch only` before forking.
 
-After forking FerretDB on GitHub, you can clone the repository:
+After forking FerretDB on GitHub, you can clone the repository and add upstream repository as a remote:
 
 ```sh
 git clone git@github.com:<YOUR_GITHUB_USERNAME>/FerretDB.git
 cd FerretDB
 git remote add upstream https://github.com/FerretDB/FerretDB.git
+git fetch --all --tags
 ```
 
 To run development commands, you should first install the [`task`](https://taskfile.dev/) tool.
