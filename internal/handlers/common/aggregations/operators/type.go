@@ -76,8 +76,10 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 
 		case *types.Array:
 			if param.Len() != 1 {
-				// TODO https://github.com/FerretDB/FerretDB/issues/2678
-				return nil, fmt.Errorf("Expression $type takes exactly 1 arguments. %d were passed in.", param.Len())
+				return nil, NewOperatorError(
+					ErrArgsInvalidLen,
+					fmt.Errorf("Expression $type takes exactly 1 arguments. %d were passed in.", param.Len()),
+				)
 			}
 
 			value, err := param.Get(0)
