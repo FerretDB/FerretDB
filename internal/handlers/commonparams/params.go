@@ -107,7 +107,7 @@ func GetWholeParamStrict(command string, param string, value any, boundary int64
 			return int64(math.Floor(value.(float64))), nil
 
 		case errors.Is(err, ErrLongExceededPositive):
-			return math.MaxInt64, nil
+			return math.MaxInt32, nil
 
 		case errors.Is(err, ErrLongExceededNegative):
 			return 0, commonerrors.NewCommandErrorMsgWithArgument(
@@ -130,6 +130,10 @@ func GetWholeParamStrict(command string, param string, value any, boundary int64
 			fmt.Sprintf("BSON field '%s' value must be >= %d, actual value '%d'", param, boundary, whole),
 			param,
 		)
+	}
+
+	if whole > math.MaxInt32 {
+		return math.MaxInt32, nil
 	}
 
 	return whole, nil
