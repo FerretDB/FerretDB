@@ -67,6 +67,7 @@ type Operator interface {
 func NewOperator(doc any) (Operator, error) {
 	operatorDoc, ok := doc.(*types.Document)
 	if !ok {
+		// TODO: https://github.com/FerretDB/FerretDB/pull/2789
 		return nil, ErrWrongType
 	}
 
