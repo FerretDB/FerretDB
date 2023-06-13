@@ -14,7 +14,7 @@ keywords: [FerretDB, mongodb alternative]
 
 ![How to install FerretDB on Ubuntu](/img/blog/install-ferretdb-ubuntu.jpg)
 
-*This is a duplicate post from [Tutornix](https://tutornix.com/how-to-install-ferretdb-mongodb-alternative-on-ubuntu-22-0420-04/) about installing FerretDB on Ubuntu; we are grateful to the author for the permission to repost this on our blog.*
+_This is a duplicate post from [Tutornix](https://tutornix.com/how-to-install-ferretdb-mongodb-alternative-on-ubuntu-22-0420-04/) about installing FerretDB on Ubuntu; we are grateful to the author for the permission to repost this on our blog._
 
 <!--truncate-->
 
@@ -171,20 +171,20 @@ debugBuild: false
 
 FerretDB takes several arguments that include:
 
-- **-h, –help**: Show context-sensitive help.
-- _–version_: Print version to stdout and exit.
-- **–handler="pg"** : Backend handler: 'dummy', 'pg', 'tigris' \
-  ($FERRETDB_HANDLER).
-- –**-mode="normal"**: Operation mode: 'normal', 'proxy', 'diff-normal', \
-  'diff-proxy' ($FERRETDB_MODE).
-- **–state-dir="."**: Process state directory ($FERRETDB_STATE_DIR).
-- **–listen-addr="127.0.0.1:27017″**: Listen TCP address ($FERRETDB_LISTEN_ADDR).
-- **–listen-unix=""**: Listen Unix domain socket path ($FERRETDB_LISTEN_UNIX).
-- **–listen-tls=""**: Listen TLS address ($FERRETDB_LISTEN_TLS).
-- **–listen-tls-cert-file=""** : TLS cert file path ($FERRETDB_LISTEN_TLS_CERT_FILE).
-- **–listen-tls-key-file=""** : TLS key file path ($FERRETDB_LISTEN_TLS_KEY_FILE).
-- **–listen-tls-ca-file=""** : TLS CA file path ($FERRETDB_LISTEN_TLS_CA_FILE).
-- **–postgresql-url="postgres://127.0.0.1:5432/ferretdb"** : PostgreSQL URL for 'pg' handler
+- **`-h`, `–help`**: Show context-sensitive help.
+- **`--version`**: Print version to stdout and exit.
+- **`--handler`=`pg`** : Backend handler: `dummy`, `pg` (Default), `tigris` \
+  (`$FERRETDB_HANDLER`).
+- –**`--mode`=`normal`**: Operation mode: `normal`, `proxy`, `diff-normal`, \
+  `diff-proxy` (`$FERRETDB_MODE`).
+- **`–-state-dir`=`.`**: Process state directory (`$FERRETDB_STATE_DIR`).
+- **`–-listen-addr`=`127.0.0.1:27017`**: Listen TCP address (`$FERRETDB_LISTEN_ADDR`).
+- **`–-listen-unix`=""**: Listen Unix domain socket path (`$FERRETDB_LISTEN_UNIX`).
+- **`-–listen-tls`=""**: Listen TLS address (`$FERRETDB_LISTEN_TLS`).
+- **`–-listen-tls-cert-file`=""** : TLS cert file path (`$FERRETDB_LISTEN_TLS_CERT_FILE`).
+- **`–-listen-tls-key-file`=""** : TLS key file path (`$FERRETDB_LISTEN_TLS_KEY_FILE`).
+- **`–-listen-tls-ca-file`=""** : TLS CA file path (`$FERRETDB_LISTEN_TLS_CA_FILE`).
+- **`–-postgresql-url`=`postgres://127.0.0.1:5432/ferretdb`** : PostgreSQL URL for `pg` handler
 
 Since FerretDB has not been started, we will create a systemd service file with all the desired variables:
 
