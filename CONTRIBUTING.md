@@ -169,19 +169,19 @@ You can also run `task -C 1` to limit the number of concurrent tasks, which is u
 
 Finally, since all tests just run `go test` with various arguments and flags under the hood,
 you may also use all standard `go` tool facilities,
-including [`GOFLAGS` environment variable](https://pkg.go.dev/cmd/go#hdr-Environment_variables).
+including [`GOFLAGS` environment variable](https://pkg.go.dev/cmd/go#hdr-Environment_variables)
+or predefined variable `TEST_RUN`.
 For example:
 
 - to run a single test case for in-process FerretDB with `pg` handler
-  with all subtests running sequentially,
-  you may use `env RUN='TestName/TestCaseName' task test-integration-pg`;
+  you may use `env TEST_RUN='TestName/TestCaseName' task test-integration-pg`;
 - to run all tests for in-process FerretDB with `tigris` handler
   with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
   you may use `env GOFLAGS='-trace=trace.out' task test-integration-tigris`.
 
 > **Note**
 >
-> It is not recommended to set `GOFLAGS` and other Go environment variables with `export GOFLAGS=...`
+> It is not recommended to set `GOFLAGS`, `TEST_RUN` and other Go environment variables with `export GOFLAGS=...`
 > or `go env -w GOFLAGS=...` because they are invisible and easy to forget about, leading to confusion.
 
 In general, we prefer integration tests over unit tests,

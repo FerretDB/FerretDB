@@ -189,7 +189,7 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{or .RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-pg.txt .
         -target-backend=ferretdb-pg
         -target-tls
@@ -204,7 +204,7 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{or .RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-sqlite.txt .
         -target-backend=ferretdb-sqlite
         -target-tls
@@ -219,7 +219,7 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{{or .RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -run='{{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-tigris.txt .
         -target-backend=ferretdb-tigris
         {{.UNIXSOCKETFLAG}}
@@ -234,7 +234,7 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{or .RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-hana.txt .
         -target-backend=ferretdb-hana
         {{.UNIXSOCKETFLAG}}
@@ -249,7 +249,7 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{or .RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-mongodb.txt .
         -target-url=mongodb://127.0.0.1:47017/
         -target-backend=mongodb
