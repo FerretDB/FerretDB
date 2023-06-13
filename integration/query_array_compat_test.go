@@ -52,7 +52,7 @@ func TestQueryArrayCompatSize(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"NotFound": {
-			filter:     bson.D{{"v", bson.D{{"$size", 5}}}},
+			filter:     bson.D{{"v", bson.D{{"$size", 10}}}},
 			resultType: emptyResult,
 		},
 		"NotWhole": {
