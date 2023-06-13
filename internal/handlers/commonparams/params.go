@@ -80,7 +80,7 @@ func GetWholeParamStrict(command string, param string, value any, boundary int64
 		switch {
 		case errors.Is(err, ErrUnexpectedType):
 			if _, ok := value.(types.NullType); ok {
-				return 0, nil
+				return boundary, nil
 			}
 
 			return 0, commonerrors.NewCommandErrorMsgWithArgument(
