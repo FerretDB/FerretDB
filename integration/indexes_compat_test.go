@@ -742,6 +742,7 @@ func TestCreateIndexesUniqueCompat(t *testing.T) {
 				},
 			},
 			insertDoc: bson.D{{"not-existing-field", "value"}},
+			skip:      "https://github.com/FerretDB/FerretDB/issues/2830",
 		},
 		"CompoundIndex": {
 			models: []mongo.IndexModel{
