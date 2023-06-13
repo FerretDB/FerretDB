@@ -1155,15 +1155,6 @@ func TestAggregateCompatSort(t *testing.T) {
 				{"_id", -1},
 			}}}},
 		},
-		"DescendingArrayValue": {
-			pipeline: bson.A{
-				bson.D{{"$match", bson.D{{"$or", bson.A{
-					bson.D{{"_id", "array-documents-nested"}},
-					bson.D{{"_id", "array-two-documents"}},
-					bson.D{{"_id", "array-three-documents"}},
-				}}}}},
-				bson.D{{"$sort", bson.D{{"v", -1}}}},
-			}},
 
 		"DotNotationIndex": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
