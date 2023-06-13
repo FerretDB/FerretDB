@@ -92,6 +92,7 @@ func NewOperator(doc any) (Operator, error) {
 			ErrNoOperator,
 			fmt.Errorf("No operator in document"),
 		)
+
 	case operatorDoc.Len() > 1:
 		// TODO tests
 		return nil, NewOperatorError(
