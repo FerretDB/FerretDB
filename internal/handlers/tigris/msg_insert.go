@@ -16,7 +16,6 @@ package tigris
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -135,14 +134,11 @@ func insertDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb
 			return commonerrors.NewCommandErrorMsg(commonerrors.ErrDocumentValidationFailure, err.Error())
 
 		case tigrisdb.IsAlreadyExists(err):
-			// TODO Extend message for non-_id unique indexes in https://github.com/FerretDB/FerretDB/issues/2045
-			idMasrshaled := must.NotFail(json.Marshal(must.NotFail(doc.Get("_id"))))
-
 			return commonerrors.NewWriteErrorMsg(
 				commonerrors.ErrDuplicateKeyInsert,
 				fmt.Sprintf(
-					`E11000 duplicate key error collection: %s.%s index: _id_ dup key: { _id: %s }`,
-					qp.DB, qp.Collection, idMasrshaled,
+					`E11000 duplicate key error collection: %s.%s`,
+					qp.DB, qp.Collection,
 				),
 			)
 
