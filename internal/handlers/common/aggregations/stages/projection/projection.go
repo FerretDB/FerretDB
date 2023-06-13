@@ -577,31 +577,38 @@ func setBySourceOrder(key string, val any, source, projected *types.Document) {
 // processOperatorError takes internal error related to operator evaluation and
 // returns proper CommandError that can be returned by $process aggregation stage.
 func processOperatorError(err error) error {
-	switch {
-	case err == nil:
+	if err == nil {
 		return nil
-	case errors.Is(err, operators.ErrEmptyField):
+	}
+
+	var opErr operators.OperatorError
+	if !errors.As(err, &opErr) {
+		return lazyerrors.Error(err)
+	}
+
+	switch opErr.Code() {
+	case operators.ErrEmptyField:
 		return commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrEmptySubProject,
 			"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
 				" Found empty object at path",
 			"$project (stage)",
 		)
-	case errors.Is(err, operators.ErrTooManyFields):
+	case operators.ErrTooManyFields:
 		return commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrFieldPathInvalidName,
 			"Invalid $project :: caused by :: FieldPath field names may not start with '$'."+
 				" Consider using $getField or $setField.",
 			"$project (stage)",
 		)
-	case errors.Is(err, operators.ErrNotImplemented):
+	case operators.ErrNotImplemented:
 		return commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrEmptySubProject,
 			"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
 				" Found empty object at path",
 			"$project (stage)",
 		)
-	case errors.Is(err, operators.ErrWrongType):
+	case operators.ErrWrongType:
 		fallthrough
 	default:
 		return lazyerrors.Error(err)
