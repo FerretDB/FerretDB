@@ -172,7 +172,7 @@ for in-process FerretDB with `pg` handler you may use `task test-integration-pg 
 
 Finally, since all tests just run `go test` with various arguments and flags under the hood,
 you may also use all standard `go` tool facilities,
-including [`GOFLAGS` environment variable](https://pkg.go.dev/cmd/go#hdr-Environment_variables)
+including [`GOFLAGS` environment variable](https://pkg.go.dev/cmd/go#hdr-Environment_variables).
 For example:
 
 - to run a single test case for in-process FerretDB with `pg` handler
