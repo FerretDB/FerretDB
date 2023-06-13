@@ -32,7 +32,7 @@ import (
 // aggregateStagesCompatTestCase describes aggregation stages compatibility test case.
 type aggregateStagesCompatTestCase struct {
 	pipeline       bson.A                               // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
-	resultType     integration.CompatTestCaseResultType // defaults to nonEmptyResult
+	resultType     integration.CompatTestCaseResultType // defaults to integration.NonEmptyResult
 	resultPushdown bool                                 // defaults to false
 
 	skip          string // skip test for all handlers, must have issue number mentioned
@@ -162,7 +162,7 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 // aggregateCommandCompatTestCase describes aggregate compatibility test case.
 type aggregateCommandCompatTestCase struct {
 	command    bson.D                               // required
-	resultType integration.CompatTestCaseResultType // defaults to nonEmptyResult
+	resultType integration.CompatTestCaseResultType // defaults to integration.NonEmptyResult
 
 	skip string // skip test for all handlers, must have issue number mentioned
 }

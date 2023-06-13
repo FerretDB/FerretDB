@@ -33,16 +33,16 @@ import (
 
 //go:generate ../bin/stringer  -type compatTestCaseResultType
 
-// documentValidationFailureCode is returned by Tigris schema validation code.
-// TODO tigris provider should only use collections that does not produce
-// validation error for each test case.
-// https://github.com/FerretDB/FerretDB/issues/2253
-const documentValidationFailureCode = 121
-
 // CompatTestCaseResultType represents compatibility test case result type.
 //
 // It is used to avoid errors with invalid queries making tests pass.
 type CompatTestCaseResultType int
+
+// DocumentValidationFailureCode is returned by Tigris schema validation code.
+// TODO tigris provider should only use collections that does not produce
+// validation error for each test case.
+// https://github.com/FerretDB/FerretDB/issues/2253
+const DocumentValidationFailureCode = 121
 
 const (
 	// NonEmptyResult indicates that the test case should return non-empty result at least for one collection/provider.
@@ -406,9 +406,9 @@ func FindAll(t testing.TB, ctx context.Context, collection *mongo.Collection) []
 	return FetchAll(t, ctx, cursor)
 }
 
-// generateDocuments generates documents with _id ranging from startID to endID.
+// GenerateDocuments generates documents with _id ranging from startID to endID.
 // It returns bson.A containing bson.D documents.
-func generateDocuments(startID, endID int32) bson.A {
+func GenerateDocuments(startID, endID int32) bson.A {
 	var docs bson.A
 	for i := startID; i < endID; i++ {
 		docs = append(docs, bson.D{{"_id", i}})

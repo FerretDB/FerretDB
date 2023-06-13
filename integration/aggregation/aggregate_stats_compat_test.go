@@ -32,7 +32,7 @@ func TestAggregateCompatCollStats(t *testing.T) {
 	for name, tc := range map[string]struct {
 		skip       string                               // skip test for all handlers, must have issue number mentioned
 		collStats  bson.D                               // required
-		resultType integration.CompatTestCaseResultType // defaults to nonEmptyResult
+		resultType integration.CompatTestCaseResultType // defaults to integration.NonEmptyResult
 	}{
 		"NilCollStats": {
 			collStats:  nil,
