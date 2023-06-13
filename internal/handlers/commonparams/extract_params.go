@@ -244,7 +244,7 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 	switch fv.Kind() { //nolint: exhaustive // all other types are not supported
 	case reflect.Int32, reflect.Int64, reflect.Float64:
 		if o.positiveNumber {
-			settable, err = GetWholeParamStrict(command, key, val, 0)
+			settable, err = GetValidatedNumberParamWithBoundary(command, key, val, 0)
 			if err != nil {
 				return err
 			}

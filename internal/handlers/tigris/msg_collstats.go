@@ -54,7 +54,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var s any
 	if s, err = document.Get("scale"); err == nil {
-		if scale, err = commonparams.GetWholeParamStrict(command, "scale", s, 1); err != nil {
+		if scale, err = commonparams.GetValidatedNumberParamWithBoundary(command, "scale", s, 1); err != nil {
 			return nil, err
 		}
 	}

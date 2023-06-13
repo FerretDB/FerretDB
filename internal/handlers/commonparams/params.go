@@ -70,11 +70,13 @@ func GetWholeNumberParam(value any) (int64, error) {
 	}
 }
 
-// GetWholeParamStrict validates the given value for find and count commands.
+// GetValidatedNumberParamWithBoundary converts and validates a value into a int64 number.
 //
-// If the value is valid, it returns its int64 representation,
-// otherwise it returns a command error with the given command being mentioned.
-func GetWholeParamStrict(command string, param string, value any, boundary int64) (int64, error) {
+// The function checks the type, ensures it can be represented as a whole number,
+// isn't negative and falls within a given boundary and the limit of a 32-bit integer.
+//
+// It returns the processed integer value, or an error if the value fails validation.
+func GetValidatedNumberParamWithBoundary(command string, param string, value any, boundary int64) (int64, error) {
 	whole, err := GetWholeNumberParam(value)
 	if err != nil {
 		switch {

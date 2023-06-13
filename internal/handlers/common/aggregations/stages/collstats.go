@@ -71,7 +71,7 @@ func newCollStats(stage *types.Document) (aggregations.Stage, error) {
 
 		var s any
 		if s, err = storageStatsFields.Get("scale"); err == nil {
-			cs.storageStats.scale, err = commonparams.GetWholeParamStrict(
+			cs.storageStats.scale, err = commonparams.GetValidatedNumberParamWithBoundary(
 				"$collStats.storageStats", "scale", s, 1,
 			)
 			if err != nil {
