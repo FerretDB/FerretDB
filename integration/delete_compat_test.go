@@ -31,7 +31,7 @@ import (
 type deleteCompatTestCase struct {
 	filters    []bson.D                 // required
 	ordered    bool                     // defaults to false
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	resultType CompatTestCaseResultType // defaults to NonEmptyResult
 }
 
 func TestDeleteCompat(t *testing.T) {
@@ -40,7 +40,7 @@ func TestDeleteCompat(t *testing.T) {
 	testCases := map[string]deleteCompatTestCase{
 		"Empty": {
 			filters:    []bson.D{},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 
 		"One": {
@@ -115,7 +115,7 @@ func TestDeleteCompat(t *testing.T) {
 				{{"v", bson.D{{"$all", 9}}}},
 			},
 			ordered:    true,
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"UnorderedAllErrors": {
 			filters: []bson.D{
@@ -123,7 +123,7 @@ func TestDeleteCompat(t *testing.T) {
 				{{"v", bson.D{{"$eq", 9}}}},
 				{{"v", bson.D{{"$all", 9}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -189,9 +189,9 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be deleted)")
-			case emptyResult:
+			case EmptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results (no documents should be deleted)")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)

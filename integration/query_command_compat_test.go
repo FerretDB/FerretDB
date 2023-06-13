@@ -36,7 +36,7 @@ type queryCommandCompatTestCase struct {
 
 	optSkip        any                      // defaults to nil to leave unset
 	limit          *int64                   // defaults to nil to leave unset
-	resultType     compatTestCaseResultType // defaults to nonEmptyResult
+	resultType     CompatTestCaseResultType // defaults to NonEmptyResult
 	resultPushdown bool                     // defaults to false
 
 	skip          string // skip test for all handlers, must have issue number mentioned
@@ -160,9 +160,9 @@ func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompa
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results")
-			case emptyResult:
+			case EmptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
@@ -178,22 +178,22 @@ func TestQueryCommandCompatSkip(t *testing.T) {
 		"MaxInt64": {
 			filter:     bson.D{},
 			optSkip:    math.MaxInt64,
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Int64Overflow": {
 			filter:     bson.D{},
 			optSkip:    float64(1 << 86),
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NegativeInt64": {
 			filter:     bson.D{},
 			optSkip:    int64(-2),
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NegativeFloat64": {
 			filter:     bson.D{},
 			optSkip:    -2.8,
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Float64": {
 			filter:  bson.D{},

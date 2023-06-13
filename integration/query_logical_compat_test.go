@@ -29,7 +29,7 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 			filter: bson.D{{
 				"$and", bson.A{},
 			}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"One": {
 			filter: bson.D{{
@@ -70,7 +70,7 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 		},
 		"BadInput": {
 			filter:     bson.D{{"$and", nil}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"BadValue": {
 			filter: bson.D{{
@@ -79,7 +79,7 @@ func TestQueryLogicalCompatAnd(t *testing.T) {
 					true,
 				},
 			}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -94,7 +94,7 @@ func TestQueryLogicalCompatOr(t *testing.T) {
 			filter: bson.D{{
 				"$or", bson.A{},
 			}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"One": {
 			filter: bson.D{{
@@ -124,7 +124,7 @@ func TestQueryLogicalCompatOr(t *testing.T) {
 		},
 		"BadInput": {
 			filter:     bson.D{{"$or", nil}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"BadValue": {
 			filter: bson.D{{
@@ -133,7 +133,7 @@ func TestQueryLogicalCompatOr(t *testing.T) {
 					true,
 				},
 			}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -148,7 +148,7 @@ func TestQueryLogicalCompatNor(t *testing.T) {
 			filter: bson.D{{
 				"$nor", bson.A{},
 			}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"One": {
 			filter: bson.D{{
@@ -167,7 +167,7 @@ func TestQueryLogicalCompatNor(t *testing.T) {
 		},
 		"BadInput": {
 			filter:     bson.D{{"$nor", nil}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"BadValue": {
 			filter: bson.D{{
@@ -176,7 +176,7 @@ func TestQueryLogicalCompatNor(t *testing.T) {
 					true,
 				},
 			}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -196,7 +196,7 @@ func TestQueryLogicalCompatNot(t *testing.T) {
 			filter: bson.D{{
 				"_id", bson.D{{"$not", nil}},
 			}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NotEqNull": {
 			filter: bson.D{{

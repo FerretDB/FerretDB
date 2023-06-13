@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package aggregation
 
 import (
 	"testing"
@@ -22,6 +22,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
+	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
@@ -63,7 +64,7 @@ func TestAggregateGroupErrors(t *testing.T) {
 			res, err := collection.Aggregate(ctx, tc.pipeline)
 
 			assert.Nil(t, res)
-			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			integration.AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
@@ -297,11 +298,11 @@ func TestAggregateProjectErrors(t *testing.T) {
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 
 			if tc.altMessage != "" {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				integration.AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 
-			AssertEqualCommandError(t, *tc.err, err)
+			integration.AssertEqualCommandError(t, *tc.err, err)
 		})
 	}
 }

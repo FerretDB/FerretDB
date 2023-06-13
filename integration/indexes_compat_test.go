@@ -74,12 +74,12 @@ func TestCreateIndexesCompat(t *testing.T) {
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		models     []mongo.IndexModel
-		resultType compatTestCaseResultType // defaults to nonEmptyResult
+		resultType CompatTestCaseResultType // defaults to NonEmptyResult
 		skip       string                   // optional, skip test with a specified reason
 	}{
 		"Empty": {
 			models:     []mongo.IndexModel{},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"SingleIndex": {
 			models: []mongo.IndexModel{
@@ -103,7 +103,7 @@ func TestCreateIndexesCompat(t *testing.T) {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"_id", -1}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NonExistentField": {
 			models: []mongo.IndexModel{
@@ -129,7 +129,7 @@ func TestCreateIndexesCompat(t *testing.T) {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}, {"v", 1}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"CustomName": {
 			models: []mongo.IndexModel{
@@ -165,7 +165,7 @@ func TestCreateIndexesCompat(t *testing.T) {
 				{Keys: bson.D{{"v", 1}}},
 				{Keys: bson.D{{"v", 1}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"MultiWithInvalid": {
@@ -177,7 +177,7 @@ func TestCreateIndexesCompat(t *testing.T) {
 					Keys: bson.D{{"v", -1}, {"v", 1}},
 				},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"SameKeyDifferentNames": {
 			models: []mongo.IndexModel{
@@ -190,7 +190,7 @@ func TestCreateIndexesCompat(t *testing.T) {
 					Options: new(options.IndexOptions).SetName("bar"),
 				},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"SameNameDifferentKeys": {
 			models: []mongo.IndexModel{
@@ -203,7 +203,7 @@ func TestCreateIndexesCompat(t *testing.T) {
 					Options: new(options.IndexOptions).SetName("index-name"),
 				},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	} {
 		name, tc := name, tc
@@ -276,9 +276,9 @@ func TestCreateIndexesCompat(t *testing.T) {
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
-			case emptyResult:
+			case EmptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
@@ -301,47 +301,47 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 		collectionName any
 		indexName      any
 		key            any
-		resultType     compatTestCaseResultType // defaults to nonEmptyResult
+		resultType     CompatTestCaseResultType // defaults to NonEmptyResult
 		skip           string                   // optional, skip test with a specified reason
 	}{
 		"InvalidCollectionName": {
 			collectionName: 42,
 			key:            bson.D{{"v", -1}},
 			indexName:      "custom-name",
-			resultType:     emptyResult,
+			resultType:     EmptyResult,
 		},
 		"NilCollectionName": {
 			collectionName: nil,
 			key:            bson.D{{"v", -1}},
 			indexName:      "custom-name",
-			resultType:     emptyResult,
+			resultType:     EmptyResult,
 		},
 		"EmptyCollectionName": {
 			collectionName: "",
 			key:            bson.D{{"v", -1}},
 			indexName:      "custom-name",
-			resultType:     emptyResult,
+			resultType:     EmptyResult,
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"IndexNameNotSet": {
 			collectionName: "test",
 			key:            bson.D{{"v", -1}},
 			indexName:      nil,
-			resultType:     emptyResult,
+			resultType:     EmptyResult,
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"EmptyIndexName": {
 			collectionName: "test",
 			key:            bson.D{{"v", -1}},
 			indexName:      "",
-			resultType:     emptyResult,
+			resultType:     EmptyResult,
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"NonStringIndexName": {
 			collectionName: "test",
 			key:            bson.D{{"v", -1}},
 			indexName:      42,
-			resultType:     emptyResult,
+			resultType:     EmptyResult,
 		},
 		"ExistingNameDifferentKeyLength": {
 			collectionName: "test",
@@ -352,16 +352,16 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 		"InvalidKey": {
 			collectionName: "test",
 			key:            42,
-			resultType:     emptyResult,
+			resultType:     EmptyResult,
 		},
 		"EmptyKey": {
 			collectionName: "test",
 			key:            bson.D{},
-			resultType:     emptyResult,
+			resultType:     EmptyResult,
 		},
 		"KeyNotSet": {
 			collectionName: "test",
-			resultType:     emptyResult,
+			resultType:     EmptyResult,
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 	} {
@@ -411,7 +411,7 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 			}
 			require.NoError(t, compatErr, "compat error; target returned no error")
 
-			if tc.resultType == emptyResult {
+			if tc.resultType == EmptyResult {
 				require.Nil(t, targetRes)
 				require.Nil(t, compatRes)
 			}
@@ -451,7 +451,7 @@ func TestDropIndexesCompat(t *testing.T) {
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		dropIndexName string                   // name of a single index to drop
 		dropAll       bool                     // set true for drop all indexes, if true dropIndexName must be empty.
-		resultType    compatTestCaseResultType // defaults to nonEmptyResult
+		resultType    CompatTestCaseResultType // defaults to NonEmptyResult
 		toCreate      []mongo.IndexModel       // optional, if not nil create indexes before dropping
 	}{
 		"DropAllCommand": {
@@ -465,7 +465,7 @@ func TestDropIndexesCompat(t *testing.T) {
 		},
 		"ID": {
 			dropIndexName: "_id_",
-			resultType:    emptyResult,
+			resultType:    EmptyResult,
 		},
 		"AscendingValue": {
 			toCreate: []mongo.IndexModel{
@@ -484,15 +484,15 @@ func TestDropIndexesCompat(t *testing.T) {
 				{Keys: bson.D{{"v", -1}}},
 			},
 			dropIndexName: "*",
-			resultType:    emptyResult,
+			resultType:    EmptyResult,
 		},
 		"NonExistent": {
 			dropIndexName: "nonexistent_1",
-			resultType:    emptyResult,
+			resultType:    EmptyResult,
 		},
 		"Empty": {
 			dropIndexName: "",
-			resultType:    emptyResult,
+			resultType:    EmptyResult,
 		},
 	} {
 		name, tc := name, tc
@@ -559,9 +559,9 @@ func TestDropIndexesCompat(t *testing.T) {
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				require.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
-			case emptyResult:
+			case EmptyResult:
 				require.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
@@ -579,7 +579,7 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 		toCreate []mongo.IndexModel // optional, if set, create the given indexes before drop is called
 		toDrop   any                // required, index to drop
 
-		resultType compatTestCaseResultType // optional, defaults to nonEmptyResult
+		resultType CompatTestCaseResultType // optional, defaults to NonEmptyResult
 		skip       string                   // optional, skip test with a specified reason
 	}{
 		"MultipleIndexesByName": {
@@ -596,15 +596,15 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 				{Keys: bson.D{{"v.foo", -1}}},
 			},
 			toDrop:     bson.A{bson.D{{"v", -1}}, bson.D{{"v.foo", -1}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NonExistentMultipleIndexes": {
 			toDrop:     bson.A{"non-existent", "invalid"},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidMultipleIndexType": {
 			toDrop:     bson.A{1},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DocumentIndex": {
 			toCreate: []mongo.IndexModel{
@@ -627,11 +627,11 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 				{Keys: bson.D{{"foo", 1}, {"bar", 1}}},
 			},
 			toDrop:     "***",
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NonExistentDescendingID": {
 			toDrop:     bson.D{{"_id", -1}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MultipleKeyIndex": {
 			toCreate: []mongo.IndexModel{
@@ -715,7 +715,7 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 					}
 					require.NoError(t, compatErr, "compat error; target returned no error")
 
-					if tc.resultType == emptyResult {
+					if tc.resultType == EmptyResult {
 						require.Nil(t, targetRes)
 						require.Nil(t, compatRes)
 					}
@@ -741,9 +741,9 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				require.True(t, nonEmptyResults, "expected non-empty results (some indexes should be deleted)")
-			case emptyResult:
+			case EmptyResult:
 				require.False(t, nonEmptyResults, "expected empty results (no indexes should be deleted)")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)

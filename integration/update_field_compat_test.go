@@ -36,19 +36,19 @@ func TestUpdateFieldCompatCurrentDate(t *testing.T) {
 	testCases := map[string]updateCurrentDateCompatTestCase{
 		"DocumentEmpty": {
 			update:     bson.D{{"$currentDate", bson.D{}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ArrayEmpty": {
 			update:     bson.D{{"$currentDate", bson.A{}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Int32Wrong": {
 			update:     bson.D{{"$currentDate", int32(1)}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Nil": {
 			update:     bson.D{{"$currentDate", nil}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"BoolTrue": {
 			update: bson.D{{"$currentDate", bson.D{{"v", true}}}},
@@ -67,7 +67,7 @@ func TestUpdateFieldCompatCurrentDate(t *testing.T) {
 		},
 		"Int32": {
 			update:     bson.D{{"$currentDate", bson.D{{"v", int32(1)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Timestamp": {
 			update: bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "timestamp"}}}}}},
@@ -75,7 +75,7 @@ func TestUpdateFieldCompatCurrentDate(t *testing.T) {
 		},
 		"TimestampCapitalised": {
 			update:     bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "Timestamp"}}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Date": {
 			update: bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "date"}}}}}},
@@ -83,7 +83,7 @@ func TestUpdateFieldCompatCurrentDate(t *testing.T) {
 		},
 		"WrongType": {
 			update:     bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", bson.D{{"abcd", int32(1)}}}}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NoField": {
 			update: bson.D{{"$currentDate", bson.D{{"nonexistent", bson.D{{"$type", "date"}}}}}},
@@ -96,14 +96,14 @@ func TestUpdateFieldCompatCurrentDate(t *testing.T) {
 				"$currentDate",
 				bson.D{{"v", bson.D{{"array", bson.D{{"unexsistent", bson.D{}}}}}}},
 			}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DuplicateKeys": {
 			update: bson.D{{"$currentDate", bson.D{
 				{"v", bson.D{{"$type", "timestamp"}}},
 				{"v", bson.D{{"$type", "timestamp"}}},
 			}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -132,11 +132,11 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 		},
 		"WrongIncTypeArray": {
 			update:     bson.D{{"$inc", bson.A{}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DuplicateKeys": {
 			update:     bson.D{{"$inc", bson.D{{"v", int32(42)}, {"v", int32(43)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -192,15 +192,15 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 		},
 		"IncOnString": {
 			update:     bson.D{{"$inc", "string"}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"IncWithStringValue": {
 			update:     bson.D{{"$inc", bson.D{{"v", "bad value"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NotExistStringValue": {
 			update:     bson.D{{"$inc", bson.D{{"foo.bar", "bad value"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationFieldExist": {
 			update: bson.D{{"$inc", bson.D{{"v.foo", int32(1)}}}},
@@ -213,7 +213,7 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 		},
 		"DotNotationMissingField": {
 			update:     bson.D{{"$inc", bson.D{{"v..", int32(42)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationNegativeIndex": {
 			update: bson.D{{"$inc", bson.D{{"v.-1", int32(42)}}}},
@@ -282,7 +282,7 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		},
 		"DuplicateKeys": {
 			update:     bson.D{{"$max", bson.D{{"v", int32(39)}, {"v", int32(30)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 
 		// Strings are not converted to numbers (except for Tigris with int64 fields)
@@ -318,7 +318,7 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		},
 		"EmptyOperand": {
 			update:     bson.D{{"$max", bson.D{}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DateTime": {
 			update:        bson.D{{"$max", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 12, 18, 42, 123000000, time.UTC))}}}},
@@ -365,7 +365,7 @@ func TestUpdateFieldCompatMax(t *testing.T) {
 		},
 		"DotNotationMissingField": {
 			update:     bson.D{{"$max", bson.D{{"v..", int32(42)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationNegativeIndex": {
 			update:        bson.D{{"$max", bson.D{{"v.-1", int32(42)}}}},
@@ -425,7 +425,7 @@ func TestUpdateFieldCompatMin(t *testing.T) {
 		},
 		"DuplicateKeys": {
 			update:     bson.D{{"$min", bson.D{{"v", int32(39)}, {"v", int32(30)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"StringIntegerHigher": {
 			update:        bson.D{{"$min", bson.D{{"v", "60"}}}},
@@ -460,7 +460,7 @@ func TestUpdateFieldCompatMin(t *testing.T) {
 		},
 		"EmptyOperand": {
 			update:     bson.D{{"$min", bson.D{}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DateTime": {
 			update:        bson.D{{"$min", bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 12, 18, 42, 123000000, time.UTC))}}}},
@@ -507,7 +507,7 @@ func TestUpdateFieldCompatMin(t *testing.T) {
 		},
 		"DotNotationMissingField": {
 			update:     bson.D{{"$min", bson.D{{"v..", int32(42)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationNegativeIndex": {
 			update:        bson.D{{"$min", bson.D{{"v.-1", int32(42)}}}},
@@ -531,47 +531,47 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		},
 		"DuplicateField": {
 			update:     bson.D{{"$rename", bson.D{{"v", "v"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NonExistingField": {
 			update:     bson.D{{"$rename", bson.D{{"foo", "bar"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"EmptyField": {
 			update:     bson.D{{"$rename", bson.D{{"", "v"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"EmptyDest": {
 			update:     bson.D{{"$rename", bson.D{{"v", ""}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MultipleConflictDestSource": {
 			update:     bson.D{{"$rename", bson.D{{"v", "foo"}, {"foo", "bar"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MultipleConflictSourceDest": {
 			update:     bson.D{{"$rename", bson.D{{"v", "foo"}, {"bar", "v"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MultipleConflictDestFields": {
 			update:     bson.D{{"$rename", bson.D{{"v", "foo"}, {"v", "bar"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MultipleSecondInvalid": {
 			update:     bson.D{{"$rename", bson.D{{"v.foo", "boo"}, {"v.array", 1}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"FieldEmpty": {
 			update:     bson.D{{"$rename", bson.D{}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidString": {
 			update:     bson.D{{"$rename", "string"}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidDoc": {
 			update:     bson.D{{"$rename", primitive.D{}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationDocumentMove": {
 			update:        bson.D{{"$rename", bson.D{{"v.foo", "boo"}}}},
@@ -583,15 +583,15 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		},
 		"DotNotationDocNonExistent": {
 			update:     bson.D{{"$rename", bson.D{{"not.existent.path", ""}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationArrayField": {
 			update:     bson.D{{"$rename", bson.D{{"v.array.0", ""}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationArrayNonExisting": {
 			update:     bson.D{{"$rename", bson.D{{"foo.0.baz", int32(1)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationMultipleFields": {
 			update:        bson.D{{"$rename", bson.D{{"v.foo", "v.bar"}, {"v.42", "v.43"}}}},
@@ -599,15 +599,15 @@ func TestUpdateFieldCompatRename(t *testing.T) {
 		},
 		"DotNotationMissingField": {
 			update:     bson.D{{"$rename", bson.D{{"v..", "v.bar"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationNegativeIndex": {
 			update:     bson.D{{"$rename", bson.D{{"v.-1.bar", "v.-1.baz"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationIndexOutOfArray": {
 			update:     bson.D{{"$rename", bson.D{{"v.100.bar", "v.100.baz"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -623,33 +623,33 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 		},
 		"NonExisting": {
 			update:     bson.D{{"$unset", bson.D{{"foo", ""}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Nested": {
 			update: bson.D{{"$unset", bson.D{{"v", bson.D{{"array", ""}}}}}},
 		},
 		"DuplicateKeys": {
 			update:     bson.D{{"$unset", bson.D{{"v", ""}, {"v", ""}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Empty": {
 			update:     bson.D{{"$unset", bson.D{}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DocumentField": {
 			update:     bson.D{{"$unset", bson.D{{"foo", ""}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"EmptyArray": {
 			update:     bson.D{{"$unset", bson.A{}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotation": {
 			update: bson.D{{"$unset", bson.D{{"v.foo", ""}}}},
 		},
 		"DotNotationNonExistentPath": {
 			update:     bson.D{{"$unset", bson.D{{"not.existent.path", ""}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotArrayField": {
 			update: bson.D{{"$unset", bson.D{{"v.array.0", ""}}}},
@@ -657,19 +657,19 @@ func TestUpdateFieldCompatUnset(t *testing.T) {
 		},
 		"DotNotationArrNonExistentPath": {
 			update:     bson.D{{"$unset", bson.D{{"non.0.existent", int32(1)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationMissingField": {
 			update:     bson.D{{"$unset", bson.D{{"v..", ""}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationNegativeIndex": {
 			update:     bson.D{{"$unset", bson.D{{"v.-1.bar", ""}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationIndexOutOfArray": {
 			update:     bson.D{{"$unset", bson.D{{"v.100.bar", ""}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -692,19 +692,19 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 		},
 		"DuplicateKeys": {
 			update:     bson.D{{"$set", bson.D{{"v", 42}, {"v", "hello"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NilOperand": {
 			update:     bson.D{{"$set", nil}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"String": {
 			update:     bson.D{{"$set", "string"}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"EmptyDoc": {
 			update:     bson.D{{"$set", bson.D{}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"OkSetString": {
 			update: bson.D{{"$set", bson.D{{"v", "ok value"}}}},
@@ -843,7 +843,7 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 		},
 		"DotNotationMissingField": {
 			update:     bson.D{{"$set", bson.D{{"v..", int32(1)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationNegativeIndex": {
 			update:        bson.D{{"$set", bson.D{{"v.-1.bar", int32(1)}}}},
@@ -855,21 +855,21 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 		},
 		"ID": {
 			update:     bson.D{{"$set", bson.D{{"_id", "non-existent"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ConflictKey": {
 			update: bson.D{
 				{"$set", bson.D{{"v", "val"}}},
 				{"$min", bson.D{{"v.foo", "val"}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ConflictKeyPrefix": {
 			update: bson.D{
 				{"$set", bson.D{{"v.foo", "val"}}},
 				{"$min", bson.D{{"v", "val"}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -885,7 +885,7 @@ func TestUpdateFieldCompatSetArray(t *testing.T) {
 		},
 		"Array": {
 			update:     bson.D{{"$set", bson.A{}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ArrayNil": {
 			update:        bson.D{{"$set", bson.D{{"v", bson.A{nil}}}}},
@@ -924,59 +924,59 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 	testCases := map[string]updateCompatTestCase{
 		"Nil": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v", nil}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"EmptyDoc": {
 			update:     bson.D{{"$setOnInsert", bson.D{}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DoubleDouble": {
 			update:     bson.D{{"$setOnInsert", 43.13}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ErrString": {
 			update:     bson.D{{"$setOnInsert", "any string"}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ErrNil": {
 			update:     bson.D{{"$setOnInsert", nil}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DuplicateKeys": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v", 1}, {"v", 2}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DocumentFieldExist": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.foo", int32(1)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DocumentFieldNotExist": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"foo.bar", int32(1)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ArrayFieldExist": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.array.0", int32(1)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ArrFieldNotExist": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"foo.0.baz", int32(1)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DocArrFieldNotExist": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.0.foo", int32(1)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationMissingField": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v..", int32(1)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationNegativeIdx": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.-1.bar", int32(1)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationIndexOutOfArr": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.100.bar", int32(1)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -989,11 +989,11 @@ func TestUpdateFieldCompatSetOnInsertArray(t *testing.T) {
 	testCases := map[string]updateCompatTestCase{
 		"Array": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v", bson.A{}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"EmptyArray": {
 			update:     bson.D{{"$setOnInsert", bson.A{}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -1010,7 +1010,7 @@ func TestUpdateFieldCompatMixed(t *testing.T) {
 				{"$set", bson.D{{"foo", int32(12)}}},
 				{"$setOnInsert", bson.D{{"v", nil}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"SetIncSetOnInsert": {
 			filter: bson.D{{"_id", "test"}},
@@ -1019,12 +1019,12 @@ func TestUpdateFieldCompatMixed(t *testing.T) {
 				{"$inc", bson.D{{"foo", int32(1)}}},
 				{"$setOnInsert", bson.D{{"v", nil}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"UnknownOperator": {
 			filter:     bson.D{{"_id", "test"}},
 			update:     bson.D{{"$foo", bson.D{{"foo", int32(1)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -1092,23 +1092,23 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 		},
 		"Empty": {
 			update:     bson.D{{"$mul", bson.D{}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Null": {
 			update:     bson.D{{"$mul", bson.D{{"v", nil}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"String": {
 			update:     bson.D{{"$mul", bson.D{{"v", "string"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MissingField": {
 			update:     bson.D{{"$mul", "invalid"}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"StringFieldNotExist": {
 			update:     bson.D{{"$mul", bson.D{{"foo.bar", "bad value"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"FieldNotExist": {
 			update: bson.D{{"$mul", bson.D{{"foo", int32(45)}}}},
@@ -1118,11 +1118,11 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 		},
 		"DuplicateKeys": {
 			update:     bson.D{{"$mul", bson.D{{"v", int32(42)}, {"v", int32(43)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidLastField": {
 			update:     bson.D{{"$mul", bson.D{{"foo", int32(12)}, {"v", "string"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MultipleOperator": {
 			update: bson.D{
@@ -1137,7 +1137,7 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 				{"$pop", bson.D{{"v", -1}}},
 			},
 			providers:  providers,
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ConflictSet": {
 			update: bson.D{
@@ -1145,7 +1145,7 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 				{"$set", bson.D{{"v", int32(43)}}},
 			},
 			providers:  providers,
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ConflictInc": {
 			update: bson.D{
@@ -1153,7 +1153,7 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 				{"$inc", bson.D{{"v", int32(43)}}},
 			},
 			providers:  providers,
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ConflictMin": {
 			update: bson.D{
@@ -1161,7 +1161,7 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 				{"$min", bson.D{{"v", int32(30)}}},
 			},
 			providers:  providers,
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ConflictMax": {
 			update: bson.D{
@@ -1169,7 +1169,7 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 				{"$mul", bson.D{{"v", int32(42)}}},
 			},
 			providers:  providers,
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ConflictSetOnInsert": {
 			update: bson.D{
@@ -1177,7 +1177,7 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 				{"$setOnInsert", 43.13},
 			},
 			providers:  providers,
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ConflictUnset": {
 			update: bson.D{
@@ -1185,7 +1185,7 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 				{"$unset", bson.D{{"v", ""}}},
 			},
 			providers:  providers,
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ConflictCurrentDate": {
 			update: bson.D{
@@ -1193,7 +1193,7 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 				{"$currentDate", bson.D{{"v", bson.D{{"$type", "date"}}}}},
 			},
 			providers:  providers,
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotation": {
 			update: bson.D{{"$mul", bson.D{{"v.foo", int32(45)}}}},
@@ -1209,7 +1209,7 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 		},
 		"DotNotationMissingField": {
 			update:     bson.D{{"$mul", bson.D{{"v..", int32(45)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotationIndexExceedsArrayLength": {
 			update: bson.D{{"$mul", bson.D{{"v.100.bar", int32(45)}}}},

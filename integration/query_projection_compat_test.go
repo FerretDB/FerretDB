@@ -87,12 +87,12 @@ func TestQueryProjectionCompat(t *testing.T) {
 		"Include1FieldExclude1Field": {
 			filter:     bson.D{},
 			projection: bson.D{{"foo", int32(0)}, {"bar", true}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Exclude1FieldInclude1Field": {
 			filter:     bson.D{},
 			projection: bson.D{{"foo", int32(1)}, {"bar", false}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"IncludeID": {
 			filter:     bson.D{},
@@ -178,7 +178,7 @@ func TestQueryProjectionCompat(t *testing.T) {
 		"DotNotationIncludeExclude": {
 			filter:     bson.D{},
 			projection: bson.D{{"v.foo", true}, {"v.array", false}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DotNotation5LevelInclude": {
 			filter:     bson.D{},
@@ -256,7 +256,7 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 			filter:         bson.D{{"v", "non-existent"}},
 			projection:     bson.D{{"v.$", true}},
 			resultPushdown: true,
-			resultType:     emptyResult,
+			resultType:     EmptyResult,
 		},
 		"Eq": {
 			filter:         bson.D{{"v", bson.D{{"$eq", 45.5}}}},
@@ -270,7 +270,7 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 		"GtNoMatch": {
 			filter:     bson.D{{"v", bson.D{{"$gt", math.MaxFloat64}}}},
 			projection: bson.D{{"v.$", true}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DollarEndingKey": {
 			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
@@ -289,7 +289,7 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 			filter:         bson.D{{"v", "non-existent"}},
 			projection:     bson.D{{"v.foo.$", true}},
 			resultPushdown: true,
-			resultType:     emptyResult,
+			resultType:     EmptyResult,
 		},
 		"GtDotNotation": {
 			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},
@@ -339,7 +339,7 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 				{"v.foo", bson.D{{"$gt", 42}}},
 			},
 			projection: bson.D{{"v.$", true}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"PartialFilter": {
 			filter: bson.D{

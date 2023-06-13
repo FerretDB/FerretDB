@@ -30,7 +30,7 @@ type explainCompatTestCase struct {
 	command    string                   // required
 	filter     bson.D                   // ignored if nil
 	pipeline   bson.A                   // ignored if nil
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	resultType CompatTestCaseResultType // defaults to NonEmptyResult
 
 	skip string // skip test for all handlers, must have issue number mentioned
 }
@@ -119,9 +119,9 @@ func testExplainCompatError(t *testing.T, testCases map[string]explainCompatTest
 				}
 
 				switch tc.resultType {
-				case nonEmptyResult:
+				case NonEmptyResult:
 					assert.True(t, nonEmptyResults, "expected non-empty results")
-				case emptyResult:
+				case EmptyResult:
 					assert.False(t, nonEmptyResults, "expected empty results")
 				default:
 					t.Fatalf("unknown result type %v", tc.resultType)

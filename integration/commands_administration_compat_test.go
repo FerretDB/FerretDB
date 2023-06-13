@@ -39,24 +39,24 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		scale      any
-		resultType compatTestCaseResultType
+		resultType CompatTestCaseResultType
 	}{
 		"scaleOne":           {scale: int32(1)},
 		"scaleBig":           {scale: int64(1000)},
 		"scaleMaxInt":        {scale: math.MaxInt64},
-		"scaleZero":          {scale: int32(0), resultType: emptyResult},
-		"scaleNegative":      {scale: int32(-100), resultType: emptyResult},
+		"scaleZero":          {scale: int32(0), resultType: EmptyResult},
+		"scaleNegative":      {scale: int32(-100), resultType: EmptyResult},
 		"scaleFloat":         {scale: 2.8},
-		"scaleFloatNegative": {scale: -2.8, resultType: emptyResult},
-		"scaleMinFloat":      {scale: -math.MaxFloat64, resultType: emptyResult},
+		"scaleFloatNegative": {scale: -2.8, resultType: EmptyResult},
+		"scaleMinFloat":      {scale: -math.MaxFloat64, resultType: EmptyResult},
 		"scaleMaxFloat":      {scale: math.MaxFloat64},
 		"scaleString": {
 			scale:      "1",
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"scaleObject": {
 			scale:      bson.D{{"a", 1}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"scaleNull": {scale: nil},
 	} {
@@ -109,7 +109,7 @@ func TestCommandsAdministrationCompatDBStatsWithScale(t *testing.T) {
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		scale      any
-		resultType compatTestCaseResultType
+		resultType CompatTestCaseResultType
 	}{
 		"scaleOne":   {scale: int32(1)},
 		"scaleBig":   {scale: int64(1000)},

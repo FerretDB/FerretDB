@@ -47,7 +47,7 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 		},
 		"DocumentShuffledKeys": {
 			filter:     bson.D{{"v", bson.D{{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DocumentDotNotation": {
 			filter:        bson.D{{"v.foo", int32(42)}},
@@ -55,19 +55,19 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 		},
 		"DocumentDotNotationNoSuchField": {
 			filter:     bson.D{{"no-such-field.some", 42}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ArrayNoSuchField": {
 			filter:     bson.D{{"no-such-field", bson.A{42}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ArrayShuffledValues": {
 			filter:     bson.D{{"v", bson.A{"foo", nil, int32(42)}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ArrayDotNotationNoSuchField": {
 			filter:     bson.D{{"v.some.0", bson.A{42}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Int32": {
 			filter:         bson.D{{"v", int32(42)}},
@@ -198,21 +198,21 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 		},
 		"IDNull": {
 			filter:     bson.D{{"_id", nil}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"IDInt32": {
 			filter:         bson.D{{"_id", int32(1)}},
-			resultType:     emptyResult,
+			resultType:     EmptyResult,
 			resultPushdown: true,
 		},
 		"IDInt64": {
 			filter:         bson.D{{"_id", int64(1)}},
-			resultType:     emptyResult,
+			resultType:     EmptyResult,
 			resultPushdown: true,
 		},
 		"IDDouble": {
 			filter:         bson.D{{"_id", 4.2}},
-			resultType:     emptyResult,
+			resultType:     EmptyResult,
 			resultPushdown: true,
 		},
 		"IDString": {
@@ -239,7 +239,7 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 
 		"EmptyKey": {
 			filter:         bson.D{{"", "foo"}},
-			resultType:     emptyResult,
+			resultType:     EmptyResult,
 			resultPushdown: true,
 			skipForTigris:  "Tigris field name cannot be empty",
 		},
@@ -267,7 +267,7 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 				}},
 			}}},
 			skipForTigris: "Tigris does not support mixed types in arrays",
-			resultType:    emptyResult,
+			resultType:    EmptyResult,
 		},
 		"DocumentDotNotation": {
 			filter: bson.D{{"v.foo", bson.D{{"$eq", int32(42)}}}},
@@ -293,7 +293,7 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 		},
 		"ArrayShuffledValues": {
 			filter:     bson.D{{"v", bson.D{{"$eq", bson.A{"foo", nil, int32(42)}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ArrayReverse": {
 			filter:        bson.D{{"v", bson.D{{"$eq", bson.A{nil, "foo", int32(42)}}}}},
@@ -438,7 +438,7 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 		},
 		"RegexWithoutOption": {
 			filter:     bson.D{{"v", bson.D{{"$eq", primitive.Regex{Pattern: "foo"}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"RegexWithOption": {
 			filter: bson.D{{"v", bson.D{{"$eq", primitive.Regex{Pattern: "foo", Options: "i"}}}}},
@@ -537,7 +537,7 @@ func TestQueryComparisonCompatEq(t *testing.T) {
 
 		"IDNull": {
 			filter:     bson.D{{"_id", bson.D{{"$eq", nil}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NoSuchFieldNull": {
 			filter: bson.D{{"no-such-field", bson.D{{"$eq", nil}}}},
@@ -612,7 +612,7 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 		},
 		"DoubleMax": {
 			filter:     bson.D{{"v", bson.D{{"$gt", math.MaxFloat64}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"String": {
 			filter: bson.D{{"v", bson.D{{"$gt", "boo"}}}},
@@ -646,11 +646,11 @@ func TestQueryComparisonCompatGt(t *testing.T) {
 		},
 		"Null": {
 			filter:     bson.D{{"v", bson.D{{"$gt", nil}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Regex": {
 			filter:     bson.D{{"v", bson.D{{"$gt", primitive.Regex{Pattern: "foo"}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Int32": {
 			filter: bson.D{{"v", bson.D{{"$gt", int32(42)}}}},
@@ -782,7 +782,7 @@ func TestQueryComparisonCompatGte(t *testing.T) {
 		},
 		"Regex": {
 			filter:     bson.D{{"v", bson.D{{"$gte", primitive.Regex{Pattern: "foo"}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Int32": {
 			filter: bson.D{{"v", bson.D{{"$gte", int32(42)}}}},
@@ -834,11 +834,11 @@ func TestQueryComparisonCompatLt(t *testing.T) {
 		},
 		"DocumentEmpty": {
 			filter:     bson.D{{"v", bson.D{{"$lt", bson.D{}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ArrayEmpty": {
 			filter:     bson.D{{"v", bson.D{{"$lt", bson.A{}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ArrayOne": {
 			filter: bson.D{{"v", bson.D{{"$lt", bson.A{int32(42)}}}}},
@@ -872,7 +872,7 @@ func TestQueryComparisonCompatLt(t *testing.T) {
 		},
 		"StringEmpty": {
 			filter:     bson.D{{"v", bson.D{{"$lt", ""}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"StringAsc": {
 			filter: bson.D{{"v", bson.D{{"$lt", "b"}}}},
@@ -885,14 +885,14 @@ func TestQueryComparisonCompatLt(t *testing.T) {
 		},
 		"BinaryEmpty": {
 			filter:     bson.D{{"v", bson.D{{"$lt", primitive.Binary{}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ObjectID": {
 			filter: bson.D{{"v", bson.D{{"$lt", must.NotFail(primitive.ObjectIDFromHex("000102030405060708091012"))}}}},
 		},
 		"ObjectIDEmpty": {
 			filter:     bson.D{{"v", bson.D{{"$lt", primitive.NilObjectID}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Bool": {
 			filter: bson.D{{"v", bson.D{{"$lt", true}}}},
@@ -902,11 +902,11 @@ func TestQueryComparisonCompatLt(t *testing.T) {
 		},
 		"Null": {
 			filter:     bson.D{{"v", bson.D{{"$lt", nil}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Regex": {
 			filter:     bson.D{{"v", bson.D{{"$lt", primitive.Regex{Pattern: "foo"}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Int32": {
 			filter: bson.D{{"v", bson.D{{"$lt", int32(42)}}}},
@@ -1024,7 +1024,7 @@ func TestQueryComparisonCompatLte(t *testing.T) {
 		},
 		"Regex": {
 			filter:     bson.D{{"v", bson.D{{"$lte", primitive.Regex{Pattern: "foo"}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Int32": {
 			filter: bson.D{{"v", bson.D{{"$lte", int32(42)}}}},
@@ -1075,7 +1075,7 @@ func TestQueryComparisonCompatNin(t *testing.T) {
 		},
 		"RegexString": {
 			filter:     bson.D{{"v", bson.D{{"$nin", bson.A{bson.D{{"$regex", "/foo/"}}}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Regex": {
 			filter: bson.D{{"v", bson.D{{"$nin", bson.A{primitive.Regex{Pattern: "foo", Options: "i"}}}}}},
@@ -1083,11 +1083,11 @@ func TestQueryComparisonCompatNin(t *testing.T) {
 		},
 		"NilInsteadOfArray": {
 			filter:     bson.D{{"v", bson.D{{"$nin", nil}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"StringInsteadOfArray": {
 			filter:     bson.D{{"v", bson.D{{"$nin", "foo"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -1117,7 +1117,7 @@ func TestQueryComparisonCompatIn(t *testing.T) {
 		},
 		"RegexString": {
 			filter:     bson.D{{"v", bson.D{{"$in", bson.A{bson.D{{"$regex", "/foo/"}}}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Regex": {
 			filter: bson.D{{"v", bson.D{{"$in", bson.A{primitive.Regex{Pattern: "foo", Options: "i"}}}}}},
@@ -1125,11 +1125,11 @@ func TestQueryComparisonCompatIn(t *testing.T) {
 		},
 		"NilInsteadOfArray": {
 			filter:     bson.D{{"v", bson.D{{"$in", nil}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"StringInsteadOfArray": {
 			filter:     bson.D{{"v", bson.D{{"$in", "foo"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -1340,7 +1340,7 @@ func TestQueryComparisonCompatNe(t *testing.T) {
 		},
 		"Regex": {
 			filter:     bson.D{{"v", bson.D{{"$ne", primitive.Regex{Pattern: "foo"}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Document": {
 			filter: bson.D{{"v", bson.D{{"$ne", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},

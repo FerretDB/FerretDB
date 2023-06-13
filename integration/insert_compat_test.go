@@ -31,7 +31,7 @@ import (
 type insertCompatTestCase struct {
 	insert     []any                    // required, slice of bson.D to be insert
 	ordered    bool                     // defaults to false
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	resultType CompatTestCaseResultType // defaults to NonEmptyResult
 }
 
 // testInsertCompat tests insert compatibility test cases.
@@ -154,9 +154,9 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 				}
 
 				switch tc.resultType {
-				case nonEmptyResult:
+				case NonEmptyResult:
 					assert.True(t, nonEmptyResults, "expected non-empty results")
-				case emptyResult:
+				case EmptyResult:
 					assert.False(t, nonEmptyResults, "expected empty results")
 				default:
 					t.Fatalf("unknown result type %v", tc.resultType)
@@ -172,11 +172,11 @@ func TestInsertCompat(t *testing.T) {
 	testCases := map[string]insertCompatTestCase{
 		"InsertIDArray": {
 			insert:     []any{bson.D{{"_id", bson.A{"foo", "bar"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InsertIDRegex": {
 			insert:     []any{bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 
 		"InsertOrderedAllErrors": {
@@ -185,7 +185,7 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 			},
 			ordered:    true,
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InsertUnorderedAllErrors": {
 			insert: []any{
@@ -193,7 +193,7 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 			},
 			ordered:    false,
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 
 		"InsertOrderedOneError": {

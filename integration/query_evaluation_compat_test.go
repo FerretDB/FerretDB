@@ -29,71 +29,71 @@ func TestQueryEvaluationCompatRegexErrors(t *testing.T) {
 	testCases := map[string]queryCompatTestCase{
 		"MissingClosingParen": {
 			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "g(-z]+ng  wrong regex"}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MissingClosingBracket": {
 			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "g[-z+ng  wrong regex"}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidEscape": {
 			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "\\uZ"}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NamedCapture": {
 			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "(?P<name)"}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"UnexpectedParen": {
 			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: ")"}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"TrailingBackslash": {
 			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `abc\`}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidRepetition": {
 			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `a**`}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MissingRepetitionArgumentStar": {
 			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `*`}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MissingRepetitionArgumentPlus": {
 			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `+`}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MissingRepetitionArgumentQuestion": {
 			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `?`}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidClassRange": {
 			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `[z-a]`}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidNestedRepetitionOperatorStar": {
 			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: `a**`}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidPerlOp": {
 			filter:     bson.D{{"v", bson.D{{"$regex", `(?z)`}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidRepeatSize": {
 			filter:     bson.D{{"v", bson.D{{"$regex", `(aa){3,10001}`}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"RegexNoSuchField": {
 			filter:     bson.D{{"no-such-field", bson.D{{"$regex", primitive.Regex{Pattern: "foo"}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"RegexNoSuchFieldString": {
 			filter:     bson.D{{"no-such-field", bson.D{{"$regex", "foo"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"RegexBadOption": {
 			filter:     bson.D{{"v", bson.D{{"$regex", primitive.Regex{Pattern: "foo", Options: "123"}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -119,7 +119,7 @@ func TestQueryEvaluationCompatMod(t *testing.T) {
 		},
 		"Int32_emptyAnswer": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{268435000, float64(400)}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Int64": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{1099511620000, 8000}}}}},
@@ -132,67 +132,67 @@ func TestQueryEvaluationCompatMod(t *testing.T) {
 		},
 		"Int64_emptyAnswer": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{1234567890, float64(111)}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MaxInt64_Divisor": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{math.MaxInt64, 0}}}}},
 		},
 		"MaxInt64_Remainder": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{1, math.MaxInt64}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MaxInt64_floatDivisor": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{float64(math.MaxInt64), 0}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MaxInt64_floatRemainder": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{1, float64(math.MaxInt64)}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MaxInt64_plus": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{9.223372036854775808e+18, 0}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MaxInt64_1": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{922337203685477580, 7}}}}},
 		},
 		"MaxInt64_2": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{9.223372036854775807e+17, 7}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MaxInt64_3": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{9.223372036854775800e+17, 7}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MaxInt64_4": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{922337203, 6854775807}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MaxInt64_overflowVerge": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{9.223372036854776832e+18, 0}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MaxInt64_overflowDivisor": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{9.223372036854776833e+18, 0}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MaxInt64_overflowBoth": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{9.223372036854776833e+18, 9.223372036854776833e+18}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MinInt64_Divisor": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{math.MinInt64, 0}}}}},
 		},
 		"MinInt64_Remainder": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{1, math.MinInt64}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MinInt64_floatDivisor": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{float64(math.MinInt64), 0}}}}},
 		},
 		"MinInt64_floatRemainder": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{1, float64(math.MinInt64)}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MinInt64_minus": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854775809e+18, 0}}}}},
@@ -202,38 +202,38 @@ func TestQueryEvaluationCompatMod(t *testing.T) {
 		},
 		"MinInt64_2": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854775808e+17, -8}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MinInt64_3": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854775800e+17, -8}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MinInt64_4": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{-922337203, -6854775808}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MinInt64_overflowVerge": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854776832e+18, 0}}}}},
 		},
 		"MinInt64_overflowDivisor": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854776833e+18, 0}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MinInt64_overflowBoth": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{-9.223372036854776833e+18, -9.223372036854776833e+18}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Float64_1": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{1.79769e+307, 0}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Float64_2": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{math.MaxFloat64, 0}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Float64_3": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{math.MaxFloat64, math.MaxFloat64}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NegativeDivisor": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{-100, 89}}}}},
@@ -255,50 +255,50 @@ func TestQueryEvaluationCompatMod(t *testing.T) {
 		},
 		"DivisorZero": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{0, 1}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DivisorSmallestNonzeroFloat64": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{math.SmallestNonzeroFloat64, 1}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"RemainderSmallestNonzeroFloat64": {
 			filter: bson.D{{"v", bson.D{{"$mod", bson.A{23456789, math.SmallestNonzeroFloat64}}}}},
 		},
 		"EmptyArray": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NotEnoughElements": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{1}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"TooManyElements": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{1, 2, 3}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DivisorNotNumber": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{"1", 2}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"RemainderNotNumber": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{1, "2"}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Nil": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{nil, 3}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InfinityNegative": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{1, math.Inf(-1)}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Infinity": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{1, math.Inf(0)}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InfinityPositive": {
 			filter:     bson.D{{"v", bson.D{{"$mod", bson.A{math.Inf(+1), 0}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 

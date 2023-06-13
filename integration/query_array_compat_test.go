@@ -37,27 +37,27 @@ func TestQueryArrayCompatSize(t *testing.T) {
 		},
 		"Infinity": {
 			filter:     bson.D{{"v", bson.D{{"$size", math.Inf(+1)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidUse": {
 			filter:     bson.D{{"$size", 2}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidType": {
 			filter:     bson.D{{"v", bson.D{{"$size", bson.D{{"$gt", 1}}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Negative": {
 			filter:     bson.D{{"v", bson.D{{"$size", -1}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NotFound": {
 			filter:     bson.D{{"v", bson.D{{"$size", 4}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NotWhole": {
 			filter:     bson.D{{"v", bson.D{{"$size", 2.1}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Zero": {
 			filter: bson.D{{"v", bson.D{{"$size", 0}}}},
@@ -73,7 +73,7 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 	testCases := map[string]queryCompatTestCase{
 		"PositionIndexGreaterThanArrayLength": {
 			filter:     bson.D{{"v.5", bson.D{{"$type", "double"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"PositionIndexAtTheEndOfArray": {
 			filter: bson.D{{"v.1", bson.D{{"$type", "string"}}}},
@@ -86,7 +86,7 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 		},
 		"NoSuchFieldPosition": {
 			filter:     bson.D{{"v.some.0", bson.A{42}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Field": {
 			filter:        bson.D{{"v.array", int32(42)}},
@@ -102,7 +102,7 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 		},
 		"FieldPositionQueryNonArray": {
 			filter:     bson.D{{"v.document.0", bson.D{{"$lt", int32(42)}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DocumentDotNotationArrayDocument": {
 			filter:        bson.D{{"v.0.foo.0.bar", "hello"}},
@@ -150,7 +150,7 @@ func TestQueryArrayCompatElemMatch(t *testing.T) {
 				{"_id", "double"},
 				{"v", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}},
 			},
-			resultType:     emptyResult,
+			resultType:     EmptyResult,
 			resultPushdown: true,
 		},
 		"GtZero": {
@@ -190,15 +190,15 @@ func TestQueryArrayCompatElemMatch(t *testing.T) {
 		},
 		"UnexpectedFilterString": {
 			filter:     bson.D{{"v", bson.D{{"$elemMatch", "foo"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"WhereInsideElemMatch": {
 			filter:     bson.D{{"v", bson.D{{"$elemMatch", bson.D{{"$where", "123"}}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"TextInsideElemMatch": {
 			filter:     bson.D{{"v", bson.D{{"$elemMatch", bson.D{{"$text", "123"}}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"GtField": {
 			filter: bson.D{{"v", bson.D{
@@ -210,7 +210,7 @@ func TestQueryArrayCompatElemMatch(t *testing.T) {
 					},
 				},
 			}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -226,7 +226,7 @@ func TestQueryArrayCompatEquality(t *testing.T) {
 		},
 		"Two": {
 			filter:     bson.D{{"v", bson.A{42, "foo"}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Three": {
 			filter:        bson.D{{"v", bson.A{int32(42), "foo", nil}}},
@@ -265,7 +265,7 @@ func TestQueryArrayCompatAll(t *testing.T) {
 		},
 		"WholeNotFound": {
 			filter:     bson.D{{"v", bson.D{{"$all", bson.A{int32(46)}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Zero": {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{0}}}}},
@@ -288,19 +288,19 @@ func TestQueryArrayCompatAll(t *testing.T) {
 		},
 		"Empty": {
 			filter:     bson.D{{"v", bson.D{{"$all", bson.A{}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NotFound": {
 			filter:     bson.D{{"v", bson.D{{"$all", bson.A{"hello"}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"$allNeedsAnArrayInt": {
 			filter:     bson.D{{"v", bson.D{{"$all", 1}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"$allNeedsAnArrayNil": {
 			filter:     bson.D{{"v", bson.D{{"$all", nil}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"WholeInTheMiddle": {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{int32(43)}}}}},

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package aggregation
 
 import (
 	"math"
@@ -24,15 +24,16 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
+	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 // aggregateStagesCompatTestCase describes aggregation stages compatibility test case.
 type aggregateStagesCompatTestCase struct {
-	pipeline       bson.A                   // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
-	resultType     compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown bool                     // defaults to false
+	pipeline       bson.A                               // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
+	resultType     integration.CompatTestCaseResultType // defaults to nonEmptyResult
+	resultPushdown bool                                 // defaults to false
 
 	skip          string // skip test for all handlers, must have issue number mentioned
 	skipForTigris string // skip test for Tigris handler, must have issue number mentioned
@@ -129,16 +130,16 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 						t.Logf("Compat error: %v", compatErr)
 
 						// error messages are intentionally not compared
-						AssertMatchesCommandError(t, compatErr, targetErr)
+						integration.AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
 					}
 					require.NoError(t, compatErr, "compat error; target returned no error")
 
-					targetRes := FetchAll(t, ctx, targetCursor)
-					compatRes := FetchAll(t, ctx, compatCursor)
+					targetRes := integration.FetchAll(t, ctx, targetCursor)
+					compatRes := integration.FetchAll(t, ctx, compatCursor)
 
-					AssertEqualDocumentsSlice(t, compatRes, targetRes)
+					integration.AssertEqualDocumentsSlice(t, compatRes, targetRes)
 
 					if len(targetRes) > 0 || len(compatRes) > 0 {
 						nonEmptyResults = true
@@ -147,9 +148,9 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case integration.NonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results")
-			case emptyResult:
+			case integration.EmptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
@@ -160,8 +161,8 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 
 // aggregateCommandCompatTestCase describes aggregate compatibility test case.
 type aggregateCommandCompatTestCase struct {
-	command    bson.D                   // required
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	command    bson.D                               // required
+	resultType integration.CompatTestCaseResultType // defaults to nonEmptyResult
 
 	skip string // skip test for all handlers, must have issue number mentioned
 }
@@ -208,13 +209,13 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 					t.Logf("Compat error: %v", compatErr)
 
 					// error messages are intentionally not compared
-					AssertMatchesCommandError(t, compatErr, targetErr)
+					integration.AssertMatchesCommandError(t, compatErr, targetErr)
 
 					return
 				}
 				require.NoError(t, compatErr, "compat error; target returned no error")
 
-				AssertEqualDocumentsSlice(t, compatRes, targetRes)
+				integration.AssertEqualDocumentsSlice(t, compatRes, targetRes)
 
 				if len(targetRes) > 0 || len(compatRes) > 0 {
 					nonEmptyResults = true
@@ -222,9 +223,9 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 			})
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case integration.NonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results")
-			case emptyResult:
+			case integration.EmptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
@@ -247,28 +248,28 @@ func TestAggregateCommandCompat(t *testing.T) {
 			command: bson.D{
 				{"aggregate", 2},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"PipelineTypeMismatch": {
 			command: bson.D{
 				{"aggregate", "collection-name"},
 				{"pipeline", 1},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"StageTypeMismatch": {
 			command: bson.D{
 				{"aggregate", "collection-name"},
 				{"pipeline", bson.A{1}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidStage": {
 			command: bson.D{
 				{"aggregate", "collection-name"},
 				{"pipeline", bson.A{"$invalid-stage"}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 	}
 
@@ -333,23 +334,23 @@ func TestAggregateCompatCount(t *testing.T) {
 		},
 		"CountGroupID": {
 			pipeline:   bson.A{bson.D{{"$count", "_id"}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"CountNonString": {
 			pipeline:   bson.A{bson.D{{"$count", 1}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"CountEmpty": {
 			pipeline:   bson.A{bson.D{{"$count", ""}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"CountBadValue": {
 			pipeline:   bson.A{bson.D{{"$count", "v.foo"}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"CountBadPrefix": {
 			pipeline:   bson.A{bson.D{{"$count", "$foo"}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 	}
 
@@ -528,80 +529,80 @@ func TestAggregateCompatGroup(t *testing.T) {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$"},
 			}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"EmptyVariable": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$$"},
 			}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidVariable$": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$$$"},
 			}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidVariable$s": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$$$s"},
 			}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"NonExistingVariable": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$$s"},
 			}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"SystemVariable": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$$NOW"},
 			}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2275",
 		},
 		"GroupInvalidFields": {
 			pipeline:   bson.A{bson.D{{"$group", 1}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"EmptyGroup": {
 			pipeline:   bson.A{bson.D{{"$group", bson.D{}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"MissingID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"bla", 1},
 			}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidAccumulator": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", nil},
 				{"v", 1},
 			}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"EmptyAccumulator": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", nil},
 				{"v", bson.D{}},
 			}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"GroupMultipleAccumulator": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", nil},
 				{"v", bson.D{{"$count", "v"}, {"$count", "v"}}},
 			}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"GroupInvalidAccumulator": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", nil},
 				{"v", bson.D{{"invalid", "v"}}},
 			}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2123",
 		},
 		"IDType": {
@@ -709,14 +710,14 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 				{"_id", nil},
 				{"count", bson.D{{"$count", ""}}},
 			}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"NonEmptyExpression": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", nil},
 				{"count", bson.D{{"$count", bson.D{{"a", 1}}}}},
 			}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"NonExistentField": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
@@ -730,7 +731,7 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 				{"count", bson.D{{"$count", bson.D{}}}},
 				{"count", bson.D{{"$count", bson.D{}}}},
 			}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 	}
 
@@ -746,7 +747,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", 0}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"One": {
 			pipeline: bson.A{
@@ -765,14 +766,14 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", "5"}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"Double": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", 4.5}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"DoubleInt": {
 			pipeline: bson.A{
@@ -791,35 +792,35 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", math.MinInt64}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"Negative": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", -1}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"NegativeDouble": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", -2.1}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"Document": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", bson.D{}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"Int64Overflow": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", float64(1 << 86)}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"AfterMatch": {
 			pipeline: bson.A{
@@ -835,7 +836,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$limit", 1}},
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"NoSortAfterMatch": {
 			pipeline: bson.A{
@@ -957,7 +958,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"Int32": {
 			pipeline: bson.A{
@@ -1049,7 +1050,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"RecursiveOperator": {
 			pipeline: bson.A{
@@ -1116,7 +1117,7 @@ func TestAggregateCompatMatch(t *testing.T) {
 		},
 		"MatchBadValue": {
 			pipeline:   bson.A{bson.D{{"$match", 1}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 	}
 
@@ -1174,24 +1175,24 @@ func TestAggregateCompatSort(t *testing.T) {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"v..foo", 1},
 			}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 
 		"SortBadExpression": {
 			pipeline:   bson.A{bson.D{{"$sort", 1}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"SortBadOrder": {
 			pipeline:   bson.A{bson.D{{"$sort", bson.D{{"_id", 0}}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"SortMissingKey": {
 			pipeline:   bson.A{bson.D{{"$sort", bson.D{}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"BadDollarStart": {
 			pipeline:   bson.A{bson.D{{"$sort", bson.D{{"$v.foo", 1}}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 	}
 
@@ -1232,14 +1233,14 @@ func TestAggregateCompatUnwind(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 				bson.D{{"$unwind", "$non-existent"}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"Invalid": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 				bson.D{{"$unwind", "invalid"}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"DotNotation": {
 			pipeline: bson.A{
@@ -1252,25 +1253,25 @@ func TestAggregateCompatUnwind(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 				bson.D{{"$unwind", "$v.non-existent"}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"ArrayDotNotation": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 				bson.D{{"$unwind", "$v.0"}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"ArrayDotNotationKey": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 				bson.D{{"$unwind", "$v.0.foo"}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"Null": {
 			pipeline:   bson.A{bson.D{{"$unwind", nil}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"ID": {
 			pipeline: bson.A{
@@ -1280,43 +1281,43 @@ func TestAggregateCompatUnwind(t *testing.T) {
 		},
 		"NameAsExpression": {
 			pipeline:   bson.A{bson.D{{"$unwind", "$add"}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"EmptyPath": {
 			pipeline:   bson.A{bson.D{{"$unwind", "$"}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"EmptyVariable": {
 			pipeline:   bson.A{bson.D{{"$unwind", "$$"}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidVariable$": {
 			pipeline:   bson.A{bson.D{{"$unwind", "$$$"}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidVariable$s": {
 			pipeline:   bson.A{bson.D{{"$unwind", "$$$s"}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"NonExistingVariable": {
 			pipeline:   bson.A{bson.D{{"$unwind", "$$s"}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"SystemVariable": {
 			pipeline:   bson.A{bson.D{{"$unwind", "$$NOW"}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"Empty": {
 			pipeline:   bson.A{bson.D{{"$unwind", ""}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"Number": {
 			pipeline:   bson.A{bson.D{{"$unwind", 42}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"Array": {
 			pipeline:   bson.A{bson.D{{"$unwind", bson.A{"$v"}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 	}
 
@@ -1329,7 +1330,7 @@ func TestAggregateCompatSkip(t *testing.T) {
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"Document": {
 			pipeline:   bson.A{bson.D{{"$skip", bson.D{}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"Zero": {
 			pipeline: bson.A{
@@ -1348,43 +1349,43 @@ func TestAggregateCompatSkip(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", int32(1000)}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"StringInt": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", "1"}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"NegativeValue": {
 			pipeline:   bson.A{bson.D{{"$skip", int32(-1)}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"NegativeDouble": {
 			pipeline:   bson.A{bson.D{{"$skip", -3.2}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"MaxInt64": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", math.MaxInt64}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"MinInt64": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", math.MinInt64}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"Int64Overflow": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", float64(1 << 86)}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"AfterMatch": {
 			pipeline: bson.A{
@@ -1415,28 +1416,28 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", "invalid"}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"ZeroOperators": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"v", bson.D{}}}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"TwoOperators": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"v", bson.D{{"$type", "foo"}, {"$sum", 1}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"DollarSignField": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"$v", 1}}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"Include1Field": {
 			pipeline: bson.A{
@@ -1481,7 +1482,7 @@ func TestAggregateCompatProject(t *testing.T) {
 
 				bson.D{{"$project", bson.D{{"foo", int32(0)}, {"bar", true}}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"Exclude1FieldInclude1Field": {
 			pipeline: bson.A{
@@ -1489,7 +1490,7 @@ func TestAggregateCompatProject(t *testing.T) {
 
 				bson.D{{"$project", bson.D{{"foo", int32(1)}, {"bar", false}}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"IncludeFieldExcludeID": {
 			pipeline: bson.A{
@@ -1595,7 +1596,7 @@ func TestAggregateCompatProject(t *testing.T) {
 					{"v.array.42", false},
 				}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"Type": {
 			pipeline: bson.A{

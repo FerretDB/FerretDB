@@ -40,7 +40,7 @@ type updateCompatTestCase struct {
 	filter      bson.D                   // defaults to bson.D{{"_id", id}}
 	updateOpts  *options.UpdateOptions   // defaults to nil
 	replaceOpts *options.ReplaceOptions  // defaults to nil
-	resultType  compatTestCaseResultType // defaults to nonEmptyResult
+	resultType  CompatTestCaseResultType // defaults to NonEmptyResult
 	providers   []shareddata.Provider    // defaults to shareddata.AllProviders()
 
 	skip          string // skips test if non-empty
@@ -155,9 +155,9 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
-			case emptyResult:
+			case EmptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
@@ -171,7 +171,7 @@ type updateCommandCompatTestCase struct {
 	multi      any                      // defaults to false, if true updates multiple documents
 	update     bson.D                   // required
 	filter     bson.D                   // defaults to bson.D{{"_id", id}}
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	resultType CompatTestCaseResultType // defaults to NonEmptyResult
 
 	skip string // skips test if non-empty
 }
@@ -305,9 +305,9 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
-			case emptyResult:
+			case EmptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
@@ -321,7 +321,7 @@ type updateCurrentDateCompatTestCase struct {
 	paths      []types.Path             // paths to check after update
 	update     bson.D                   // required
 	filter     bson.D                   // defaults to bson.D{{"_id", id}}
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	resultType CompatTestCaseResultType // defaults to NonEmptyResult
 
 	skip string // skips test if non-empty
 }
@@ -411,9 +411,9 @@ func testUpdateCurrentDateCompat(t *testing.T, testCases map[string]updateCurren
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
-			case emptyResult:
+			case EmptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
@@ -428,7 +428,7 @@ func TestUpdateCompat(t *testing.T) {
 	testCases := map[string]updateCompatTestCase{
 		"UpdateEmptyDocument": {
 			update:     bson.D{},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ReplaceSimple": {
 			replace: bson.D{{"v", "foo"}},
@@ -447,13 +447,13 @@ func TestUpdateCompat(t *testing.T) {
 			filter:      bson.D{{"non-existent", "no-match"}},
 			replace:     bson.D{{"_id", "new"}},
 			replaceOpts: &options.ReplaceOptions{Upsert: pointer.ToBool(true)},
-			resultType:  emptyResult,
+			resultType:  EmptyResult,
 		},
 		"UpdateNonExistentUpsert": {
 			filter:     bson.D{{"_id", "non-existent"}},
 			update:     bson.D{{"$set", bson.D{{"v", int32(42)}}}},
 			updateOpts: &options.UpdateOptions{Upsert: pointer.ToBool(true)},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -496,13 +496,13 @@ func TestUpdateCompatMultiFlagCommand(t *testing.T) {
 			filter:     bson.D{{"v", int32(42)}},
 			update:     bson.D{{"$set", bson.D{{"v", int32(43)}}}},
 			multi:      "false",
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Int": {
 			filter:     bson.D{{"v", int32(42)}},
 			update:     bson.D{{"$set", bson.D{{"v", int32(43)}}}},
 			multi:      int32(0),
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"TrueEmptyDocument": {
 			update: bson.D{},

@@ -30,14 +30,14 @@ func TestQueryElementCompatExist(t *testing.T) {
 		},
 		"IDExistsFalse": {
 			filter:     bson.D{{"_id", bson.D{{"$exists", false}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ExistsSecondField": {
 			filter: bson.D{{"v", bson.D{{"$exists", true}}}},
 		},
 		"NonExistentField": {
 			filter:     bson.D{{"non-existent", bson.D{{"$exists", true}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ExistsFalse": {
 			filter: bson.D{{"field", bson.D{{"$exists", false}}}},
@@ -98,11 +98,11 @@ func TestQueryElementCompatElementType(t *testing.T) {
 		},
 		"BadTypeCode": {
 			filter:     bson.D{{"v", bson.D{{"$type", 42}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"BadTypeName": {
 			filter:     bson.D{{"v", bson.D{{"$type", "float"}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"IntegerNumericalInput": {
 			filter: bson.D{{"v", bson.D{{"$type", 16}}}},
@@ -121,19 +121,19 @@ func TestQueryElementCompatElementType(t *testing.T) {
 		},
 		"TypeArrayBadValue": {
 			filter:     bson.D{{"v", bson.D{{"$type", []any{"binData", -123}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"TypeArrayBadValuePlusInf": {
 			filter:     bson.D{{"v", bson.D{{"$type", []any{"binData", math.Inf(+1)}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"TypeArrayBadValueMinusInf": {
 			filter:     bson.D{{"v", bson.D{{"$type", []any{"binData", math.Inf(-1)}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"TypeArrayBadValueNegativeFloat": {
 			filter:     bson.D{{"v", bson.D{{"$type", []any{"binData", -1.123}}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"TypeArrayFloat": {
 			filter: bson.D{{"v", bson.D{{"$type", []any{5, 8.0}}}}},

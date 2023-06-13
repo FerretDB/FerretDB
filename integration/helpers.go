@@ -39,17 +39,17 @@ import (
 // https://github.com/FerretDB/FerretDB/issues/2253
 const documentValidationFailureCode = 121
 
-// compatTestCaseResultType represents compatibility test case result type.
+// CompatTestCaseResultType represents compatibility test case result type.
 //
 // It is used to avoid errors with invalid queries making tests pass.
-type compatTestCaseResultType int
+type CompatTestCaseResultType int
 
 const (
-	// Test case should return non-empty result at least for one collection/provider.
-	nonEmptyResult compatTestCaseResultType = iota
+	// NonEmptyResult indicates that the test case should return non-empty result at least for one collection/provider.
+	NonEmptyResult CompatTestCaseResultType = iota
 
-	// Test case should return empty result for all collections/providers.
-	emptyResult
+	// EmptyResult indicates that the test case should return empty result for all collections/providers.
+	EmptyResult
 )
 
 // convert converts given driver value (bson.D, bson.A, etc) to FerretDB types package value.

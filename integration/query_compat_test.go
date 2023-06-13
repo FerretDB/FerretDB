@@ -38,7 +38,7 @@ type queryCompatTestCase struct {
 	limit          *int64                   // defaults to nil to leave unset
 	batchSize      *int32                   // defaults to nil to leave unset
 	projection     bson.D                   // nil for leaving projection unset
-	resultType     compatTestCaseResultType // defaults to nonEmptyResult
+	resultType     CompatTestCaseResultType // defaults to NonEmptyResult
 	resultPushdown bool                     // defaults to false
 
 	skipIDCheck   bool   // skip check collected IDs, use it when no ids returned from query
@@ -173,9 +173,9 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results")
-			case emptyResult:
+			case EmptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
@@ -212,7 +212,7 @@ func TestQueryCompatFilter(t *testing.T) {
 		},
 		"UnknownFilterOperator": {
 			filter:     bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -251,17 +251,17 @@ func TestQueryCompatSort(t *testing.T) {
 		"Bad": {
 			filter:     bson.D{},
 			sort:       bson.D{{"v", 13}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"BadZero": {
 			filter:     bson.D{},
 			sort:       bson.D{{"v", 0}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"BadNull": {
 			filter:     bson.D{},
 			sort:       bson.D{{"v", nil}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 
 		"DotNotationIndex": {
@@ -275,23 +275,23 @@ func TestQueryCompatSort(t *testing.T) {
 		"DotNotationMissingField": {
 			filter:     bson.D{},
 			sort:       bson.D{{"v..foo", 1}, {"_id", 1}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 
 		"BadDollarStart": {
 			filter:     bson.D{},
 			sort:       bson.D{{"$v.foo", 1}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"BadDollarMid": {
 			filter:     bson.D{},
 			sort:       bson.D{{"v.$foo.bar", 1}, {"_id", 1}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"BadDollarEnd": {
 			filter:     bson.D{},
 			sort:       bson.D{{"_id", 1}, {"v.$foo", 1}},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DollarPossible": {
 			filter: bson.D{},
@@ -346,7 +346,7 @@ func TestQueryCompatSkip(t *testing.T) {
 		"Big": {
 			filter:     bson.D{},
 			optSkip:    pointer.ToInt64(1000),
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Zero": {
 			filter:  bson.D{},
@@ -355,17 +355,17 @@ func TestQueryCompatSkip(t *testing.T) {
 		"Bad": {
 			filter:     bson.D{},
 			optSkip:    pointer.ToInt64(-1),
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MaxInt64": {
 			filter:     bson.D{},
 			optSkip:    pointer.ToInt64(math.MaxInt64),
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"MinInt64": {
 			filter:     bson.D{},
 			optSkip:    pointer.ToInt64(math.MinInt64),
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -440,12 +440,12 @@ func TestQueryCompatBatchSize(t *testing.T) {
 		"Zero": {
 			filter:     bson.D{},
 			batchSize:  pointer.ToInt32(0),
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"Bad": {
 			filter:     bson.D{},
 			batchSize:  pointer.ToInt32(-1),
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 

@@ -29,7 +29,7 @@ import (
 type distinctCompatTestCase struct {
 	field      string                   // required
 	filter     bson.D                   // required
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	resultType CompatTestCaseResultType // defaults to NonEmptyResult
 }
 
 func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCase) {
@@ -92,9 +92,9 @@ func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCas
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results")
-			case emptyResult:
+			case EmptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
@@ -110,7 +110,7 @@ func TestDistinctCompat(t *testing.T) {
 		"EmptyField": {
 			field:      "",
 			filter:     bson.D{},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"IDAny": {
 			field:  "_id",

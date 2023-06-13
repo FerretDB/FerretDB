@@ -36,7 +36,7 @@ type countCompatTestCase struct {
 	optSkip any   // optional, skip option for the query, defaults to nil
 	limit   int64 // optional, limit option for the query, defaults to 0
 
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	resultType CompatTestCaseResultType // defaults to NonEmptyResult
 }
 
 // testCountCompat tests count compatibility test cases.
@@ -106,9 +106,9 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results")
-			case emptyResult:
+			case EmptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
@@ -190,22 +190,22 @@ func TestCountCompat(t *testing.T) {
 		"SkipNegative": {
 			filter:     bson.D{},
 			optSkip:    -1,
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"SkipNegativeDouble": {
 			filter:     bson.D{},
 			optSkip:    -1.111,
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"SkipNegativeDoubleCeil": {
 			filter:     bson.D{},
 			optSkip:    -1.888,
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"SkipMinFloat": {
 			filter:     bson.D{},
 			optSkip:    -math.MaxFloat64,
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"SkipNull": {
 			filter: bson.D{},
@@ -213,7 +213,7 @@ func TestCountCompat(t *testing.T) {
 		"SkipString": {
 			filter:     bson.D{},
 			optSkip:    "foo",
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 

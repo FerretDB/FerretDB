@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package aggregation
 
 import (
 	"testing"
@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
+	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
@@ -29,13 +30,13 @@ func TestAggregateCompatCollStats(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		skip       string                   // skip test for all handlers, must have issue number mentioned
-		collStats  bson.D                   // required
-		resultType compatTestCaseResultType // defaults to nonEmptyResult
+		skip       string                               // skip test for all handlers, must have issue number mentioned
+		collStats  bson.D                               // required
+		resultType integration.CompatTestCaseResultType // defaults to nonEmptyResult
 	}{
 		"NilCollStats": {
 			collStats:  nil,
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"EmptyCollStats": {
 			collStats: bson.D{},
@@ -51,14 +52,14 @@ func TestAggregateCompatCollStats(t *testing.T) {
 		},
 		"StorageStatsNegativeScale": {
 			collStats:  bson.D{{"storageStats", bson.D{{"scale", -1000}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"StorageStatsFloatScale": {
 			collStats: bson.D{{"storageStats", bson.D{{"scale", 42.42}}}},
 		},
 		"StorageStatsInvalidScale": {
 			collStats:  bson.D{{"storageStats", bson.D{{"scale", "invalid"}}}},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"CountAndStorageStats": {
 			collStats: bson.D{{"count", bson.D{}}, {"storageStats", bson.D{}}},
@@ -105,22 +106,22 @@ func TestAggregateCompatCollStats(t *testing.T) {
 						t.Logf("Compat error: %v", compatErr)
 
 						// error messages are intentionally not compared
-						AssertMatchesCommandError(t, compatErr, targetErr)
+						integration.AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
 					}
 					require.NoError(t, compatErr, "compat error; target returned no error")
 
-					targetRes := FetchAll(t, ctx, targetCursor)
-					compatRes := FetchAll(t, ctx, compatCursor)
+					targetRes := integration.FetchAll(t, ctx, targetCursor)
+					compatRes := integration.FetchAll(t, ctx, compatCursor)
 
 					// $collStats returns one document per shard.
 					require.Equal(t, 1, len(compatRes))
 					require.Equal(t, 1, len(targetRes))
 
 					// Check the keys are the same
-					targetKeys := CollectKeys(t, targetRes[0])
-					compatKeys := CollectKeys(t, compatRes[0])
+					targetKeys := integration.CollectKeys(t, targetRes[0])
+					compatKeys := integration.CollectKeys(t, compatRes[0])
 
 					require.Equal(t, compatKeys, targetKeys)
 
@@ -133,9 +134,9 @@ func TestAggregateCompatCollStats(t *testing.T) {
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case integration.NonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
-			case emptyResult:
+			case integration.EmptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)

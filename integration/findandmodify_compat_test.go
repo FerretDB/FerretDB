@@ -88,34 +88,34 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 	testCases := map[string]findAndModifyCompatTestCase{
 		"NotEnoughParameters": {
 			command:    bson.D{},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"UpdateAndRemove": {
 			command: bson.D{
 				{"update", bson.D{}},
 				{"remove", true},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NewAndRemove": {
 			command: bson.D{
 				{"new", true},
 				{"remove", true},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidUpdateType": {
 			command: bson.D{
 				{"query", bson.D{}},
 				{"update", "123"},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidMaxTimeMSType": {
 			command: bson.D{
 				{"maxTimeMS", "string"},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -185,7 +185,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
 				{"update", bson.D{{"$invalid", "non-existent-field"}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"OperatorConflict": {
 			command: bson.D{
@@ -195,7 +195,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 					{"$inc", bson.D{{"v", 4}}},
 				}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NoConflict": {
 			command: bson.D{
@@ -214,7 +214,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 					{"$inc", bson.D{{"", 4}}},
 				}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"EmptyKeyAndKey": {
 			command: bson.D{
@@ -224,14 +224,14 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 					{"$inc", bson.D{{"v", 4}}},
 				}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidOperator": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
 				{"update", bson.D{{"$invalid", "non-existent-field"}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -248,7 +248,7 @@ func TestFindAndModifyCompatUpdateDotNotation(t *testing.T) {
 					{"$inc", bson.D{{"v.0.field", 4}}},
 				}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NoConflict": {
 			command: bson.D{
@@ -276,7 +276,7 @@ func TestFindAndModifyCompatUpdateDotNotation(t *testing.T) {
 					{"$inc", bson.D{{"v", 4}}},
 				}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 
 		"ConflictKey": {
@@ -287,7 +287,7 @@ func TestFindAndModifyCompatUpdateDotNotation(t *testing.T) {
 					{"$min", bson.D{{"v.foo", "val"}}},
 				}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"ConflictKeyPrefix": {
 			command: bson.D{
@@ -297,7 +297,7 @@ func TestFindAndModifyCompatUpdateDotNotation(t *testing.T) {
 					{"$min", bson.D{{"v", "val"}}},
 				}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -336,7 +336,7 @@ func TestFindAndModifyCompatUpdateSet(t *testing.T) {
 			command: bson.D{
 				{"update", bson.D{{"$set", bson.D{{"_id", "non-existent"}}}}},
 			},
-			resultType: emptyResult, // _id must be an immutable field
+			resultType: EmptyResult, // _id must be an immutable field
 		},
 	}
 
@@ -391,35 +391,35 @@ func TestFindAndModifyCompatUpdateCurrentDate(t *testing.T) {
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", 1}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"UnknownOption": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{{"foo", int32(1)}}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidType": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", int32(1)}}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"UnknownType": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "unknown"}}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"InvalidValue": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", bson.D{{"v", 1}}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -435,35 +435,35 @@ func TestFindAndModifyCompatUpdateRename(t *testing.T) {
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"$rename", 1}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"NonStringTargetField": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"$rename", bson.D{{"v", 0}}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"SameTargetField": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"$rename", bson.D{{"v", "v"}}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DuplicateSource": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"$rename", bson.D{{"v", "w"}, {"v", "x"}}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DuplicateTarget": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"$rename", bson.D{{"v", "w"}, {"x", "w"}}}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -504,7 +504,7 @@ func TestFindAndModifyCompatSort(t *testing.T) {
 				{"update", bson.D{{"$set", bson.D{{"v.0.foo.0.bar", "baz"}}}}},
 				{"sort", bson.D{{"v..foo", 1}, {"_id", 1}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 		"DollarPrefixedFieldName": {
 			command: bson.D{
@@ -512,7 +512,7 @@ func TestFindAndModifyCompatSort(t *testing.T) {
 				{"update", bson.D{{"$set", bson.D{{"v.0.foo.0.bar", "baz"}}}}},
 				{"sort", bson.D{{"$v.foo", 1}, {"_id", 1}}},
 			},
-			resultType: emptyResult,
+			resultType: EmptyResult,
 		},
 	}
 
@@ -580,7 +580,7 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"upsert", true},
 				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
 			},
-			resultType: emptyResult, // _id must be an immutable field
+			resultType: EmptyResult, // _id must be an immutable field
 		},
 		"ExistsTrue": {
 			command: bson.D{
@@ -648,7 +648,7 @@ func TestFindAndModifyCompatUpsertSet(t *testing.T) {
 				{"upsert", true},
 				{"update", bson.D{{"$set", bson.D{{"_id", "double"}}}}},
 			},
-			resultType: emptyResult, // _id must be an immutable field
+			resultType: EmptyResult, // _id must be an immutable field
 		},
 	}
 
@@ -744,7 +744,7 @@ type findAndModifyCompatTestCase struct {
 	skip          string // skips test if non-empty
 	skipForTigris string // skips test for Tigris if non-empty
 
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	resultType CompatTestCaseResultType // defaults to NonEmptyResult
 }
 
 // testFindAndModifyCompat tests findAndModify compatibility test cases.
@@ -841,9 +841,9 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 			}
 
 			switch tc.resultType {
-			case nonEmptyResult:
+			case NonEmptyResult:
 				assert.True(t, nonEmptyResults, "expected non-empty results")
-			case emptyResult:
+			case EmptyResult:
 				assert.False(t, nonEmptyResults, "expected empty results")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
