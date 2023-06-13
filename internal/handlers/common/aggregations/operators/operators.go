@@ -22,9 +22,13 @@
 package operators
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 var (
@@ -39,6 +43,9 @@ var (
 
 	// ErrNotImplemented indicates that given operator is not implemented yet.
 	ErrNotImplemented = fmt.Errorf("The operator is not implemented yet")
+
+	// ErrNoOperator indicates that given document does not contain any operator.
+	ErrNoOperator = fmt.Errorf("No operator in document")
 )
 
 // newOperatorFunc is a type for a function that creates a standard aggregation operator.
@@ -59,12 +66,39 @@ type Operator interface {
 // The document should look like: `{<$operator>: <operator-value>}`.
 func NewOperator(doc any) (Operator, error) {
 	operatorDoc, ok := doc.(*types.Document)
+	if !ok {
+		// TODO: https://github.com/FerretDB/FerretDB/pull/2789
+		return nil, ErrWrongType
+	}
+
+	if operatorDoc.Len() == 0 {
+		return nil, ErrEmptyField
+	}
+
+	iter := operatorDoc.Iterator()
+	defer iter.Close()
+
+	var operatorExists bool
+
+	for {
+		k, _, err := iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if strings.HasPrefix(k, "$") {
+			operatorExists = true
+			break
+		}
+	}
 
 	switch {
-	case !ok:
-		return nil, ErrWrongType
-	case operatorDoc.Len() == 0:
-		return nil, ErrEmptyField
+	case !operatorExists:
+		return nil, ErrNoOperator
 	case operatorDoc.Len() > 1:
 		return nil, ErrTooManyFields
 	}

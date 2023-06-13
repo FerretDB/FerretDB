@@ -121,7 +121,12 @@ func (u *unwind) Process(ctx context.Context, iter types.DocumentsIterator, clos
 	key := u.field.GetExpressionSuffix()
 
 	for _, doc := range docs {
-		d := u.field.Evaluate(doc)
+		d, err := u.field.Evaluate(doc)
+		if err != nil {
+			// Ignore non-existent values
+			continue
+		}
+
 		switch d := d.(type) {
 		case *types.Array:
 			iter := d.Iterator()

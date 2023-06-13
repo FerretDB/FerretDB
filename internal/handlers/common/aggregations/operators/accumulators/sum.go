@@ -80,7 +80,13 @@ func (s *sum) Accumulate(iter types.DocumentsIterator) (any, error) {
 		}
 
 		if s.expression != nil {
-			numbers = append(numbers, s.expression.Evaluate(doc))
+			value, err := s.expression.Evaluate(doc)
+
+			// sum fields that exist
+			if err == nil {
+				numbers = append(numbers, value)
+			}
+
 			continue
 		}
 
