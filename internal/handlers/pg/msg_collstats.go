@@ -21,6 +21,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -56,7 +57,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var s any
 	if s, err = document.Get("scale"); err == nil {
-		if scale, err = common.GetScaleParam(command, s); err != nil {
+		if scale, err = commonparams.GetWholeParamStrict(command, "scale", s, 1); err != nil {
 			return nil, err
 		}
 	}

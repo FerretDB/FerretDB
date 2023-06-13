@@ -70,11 +70,11 @@ func GetWholeNumberParam(value any) (int64, error) {
 	}
 }
 
-// getWholeParamStrict validates the given value for find and count commands.
+// GetWholeParamStrict validates the given value for find and count commands.
 //
 // If the value is valid, it returns its int64 representation,
 // otherwise it returns a command error with the given command being mentioned.
-func getWholeParamStrict(command string, param string, value any) (int64, error) {
+func GetWholeParamStrict(command string, param string, value any, boundary int) (int64, error) {
 	whole, err := GetWholeNumberParam(value)
 	if err != nil {
 		switch {
@@ -95,7 +95,10 @@ func getWholeParamStrict(command string, param string, value any) (int64, error)
 			if math.Signbit(value.(float64)) {
 				return 0, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrValueNegative,
-					fmt.Sprintf("BSON field '%s' value must be >= 0, actual value '%d'", param, int(math.Ceil(value.(float64)))),
+					fmt.Sprintf(
+						"BSON field '%s' value must be >= %d, actual value '%d'",
+						param, boundary, int(math.Ceil(value.(float64))),
+					),
 					param,
 				)
 			}
@@ -109,7 +112,10 @@ func getWholeParamStrict(command string, param string, value any) (int64, error)
 		case errors.Is(err, ErrLongExceededNegative):
 			return 0, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrValueNegative,
-				fmt.Sprintf("BSON field '%s' value must be >= 0, actual value '%d'", param, int(math.Ceil(value.(float64)))),
+				fmt.Sprintf(
+					"BSON field '%s' value must be >= %d, actual value '%d'",
+					param, boundary, int(math.Ceil(value.(float64))),
+				),
 				param,
 			)
 
@@ -121,7 +127,7 @@ func getWholeParamStrict(command string, param string, value any) (int64, error)
 	if whole < 0 {
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrValueNegative,
-			fmt.Sprintf("BSON field '%s' value must be >= 0, actual value '%d'", param, whole),
+			fmt.Sprintf("BSON field '%s' value must be >= %d, actual value '%d'", param, boundary, whole),
 			param,
 		)
 	}
