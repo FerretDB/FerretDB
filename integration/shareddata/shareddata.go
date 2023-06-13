@@ -16,8 +16,6 @@
 package shareddata
 
 import (
-	"fmt"
-
 	"golang.org/x/exp/maps"
 )
 
@@ -109,21 +107,6 @@ func Docs(providers ...Provider) []any {
 	for _, p := range providers {
 		for _, doc := range p.Docs() {
 			res = append(res, doc)
-		}
-	}
-	return res
-}
-
-// IDs returns all document's _id values (that must be present in each document) from given providers.
-func IDs(providers ...Provider) []any {
-	var res []any
-	for _, p := range providers {
-		for _, doc := range p.Docs() {
-			id, ok := doc.Map()["_id"]
-			if !ok {
-				panic(fmt.Sprintf("no _id in %+v", doc))
-			}
-			res = append(res, id)
 		}
 	}
 	return res

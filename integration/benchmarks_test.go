@@ -15,16 +15,17 @@
 package integration
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
+/*
 func BenchmarkQuery(b *testing.B) {
 	provider := shareddata.BenchmarkSmallDocuments
 
@@ -104,41 +105,44 @@ func BenchmarkReplaceLargeDocument(b *testing.B) {
 		runsCount++
 	})
 }
+*/
 
 func BenchmarkInsertMany(b *testing.B) {
-	ctx, coll := setup.Setup(b)
-	db := coll.Database()
+	ctx, collection := setup.Setup(b)
+	// db := collection.Database()
 
-	provider := shareddata.BenchmarkLessSmallDocuments
-
-	b.Run(provider.Name(), func(b *testing.B) {
-		b.StopTimer()
-		for i := 0; i < b.N; i++ {
-			iter := provider.NewIterator()
-
-			for {
-				docs, err := iterator.ConsumeValuesN(iter, 30)
-				require.NoError(b, err)
-
-				if docs == nil {
-					break
-				}
-
-				insertDocs := make([]any, len(docs))
-				for i := range insertDocs {
-					insertDocs[i] = docs[i]
-				}
-
-				b.StartTimer()
-
-				_, err = coll.InsertMany(ctx, insertDocs)
-				require.NoError(b, err)
-
+	for _, provider := range shareddata.AllBenchmarkProviders() {
+		for _, batchSize := range []int{1, 10, 100, 1000} {
+			b.Run(fmt.Sprintf("%s/%d", provider.Name(), batchSize), func(b *testing.B) {
 				b.StopTimer()
 
-				require.NoError(b, coll.Drop(ctx))
-				coll = db.Collection(coll.Name())
-			}
+				for i := 0; i < b.N; i++ {
+					iter := provider.NewIterator()
+
+					for {
+						docs, err := iterator.ConsumeValuesN(iter, batchSize)
+						require.NoError(b, err)
+
+						if docs == nil {
+							break
+						}
+
+						insertDocs := make([]any, len(docs))
+						for i := range insertDocs {
+							insertDocs[i] = docs[i]
+						}
+
+						b.StartTimer()
+
+						_, err = collection.InsertMany(ctx, insertDocs)
+						require.NoError(b, err)
+
+						b.StopTimer()
+					}
+
+					require.NoError(b, collection.Drop(ctx))
+				}
+			})
 		}
-	})
+	}
 }

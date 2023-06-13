@@ -16,6 +16,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.16.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
+	syreclabs.com/go/faker v1.2.3
 )
 
 require (
