@@ -219,7 +219,12 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 	var group groupMap
 
 	for _, doc := range in {
-		val := expression.Evaluate(doc)
+		val, err := expression.Evaluate(doc)
+		if err != nil {
+			// $group treats non-existent fields as nulls
+			val = types.Null
+		}
+
 		group.addOrAppend(val, doc)
 	}
 
