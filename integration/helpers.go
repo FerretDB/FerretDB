@@ -33,16 +33,16 @@ import (
 
 //go:generate ../bin/stringer  -type compatTestCaseResultType
 
-// CompatTestCaseResultType represents compatibility test case result type.
-//
-// It is used to avoid errors with invalid queries making tests pass.
-type CompatTestCaseResultType int
-
 // DocumentValidationFailureCode is returned by Tigris schema validation code.
 // TODO tigris provider should only use collections that does not produce
 // validation error for each test case.
 // https://github.com/FerretDB/FerretDB/issues/2253
 const DocumentValidationFailureCode = 121
+
+// CompatTestCaseResultType represents compatibility test case result type.
+//
+// It is used to avoid errors with invalid queries making tests pass.
+type CompatTestCaseResultType int
 
 const (
 	// NonEmptyResult indicates that the test case should return non-empty result at least for one collection/provider.
