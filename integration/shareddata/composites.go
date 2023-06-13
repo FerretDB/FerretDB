@@ -415,6 +415,10 @@ var ArrayDocuments = &Values[string]{
 		},
 		"array-three-documents": bson.A{
 			bson.D{{
+				"zoo",
+				bson.A{bson.D{{"a", "b"}}},
+			}},
+			bson.D{{
 				"bar",
 				bson.A{bson.D{{"a", "b"}}},
 			}},
@@ -425,10 +429,6 @@ var ArrayDocuments = &Values[string]{
 			bson.D{{
 				"foo",
 				bson.A{bson.D{{"bar", "hello"}}},
-			}},
-			bson.D{{
-				"zoo",
-				bson.A{bson.D{{"bar", "world"}}},
 			}},
 		},
 	},
