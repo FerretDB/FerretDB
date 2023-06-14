@@ -100,11 +100,23 @@ func NewOperator(doc any) (Operator, error) {
 
 	operator := operatorDoc.Command()
 
-	newOperator, ok := Operators[operator]
-	if !ok {
+	newOperator, supported := Operators[operator]
+	_, unsupported := unsupportedOperators[operator]
+
+	switch {
+	case supported && unsupported:
+		panic(fmt.Sprintf("operator %q is in both `operators` and `unsupportedOperators`", operator))
+	case supported && !unsupported:
+		return newOperator(operatorDoc)
+	case !supported && unsupported:
 		return nil, NewOperatorError(
 			ErrNotImplemented,
 			fmt.Errorf("The operator %s is not implemented yet", operator),
+		)
+	case !supported && !unsupported:
+		return nil, NewOperatorError(
+			ErrInvalidExpression,
+			fmt.Errorf("Unrecognized expression '%s'", operator),
 		)
 	}
 
@@ -267,7 +279,6 @@ var unsupportedOperators = map[string]struct{}{
 	"$trunc":            {},
 	"$tsIncrement":      {},
 	"$tsSecond":         {},
-	"$type":             {},
 	"$unsetField":       {},
 	"$week":             {},
 	"$year":             {},

@@ -104,6 +104,9 @@ const (
 	// ErrDocumentValidationFailure indicates that document validation failed.
 	ErrDocumentValidationFailure = ErrorCode(121) // DocumentValidationFailure
 
+	// ErrInvalidPipelineOperator indicates that provided aggregation operator is invalid.
+	ErrInvalidPipelineOperator = ErrorCode(168) // InvalidPipelineOperator
+
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 

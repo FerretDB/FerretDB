@@ -614,6 +614,12 @@ func processOperatorError(err error) error {
 			"Invalid $project :: caused by :: "+opErr.Error(),
 			"$project (stage)",
 		)
+	case operators.ErrInvalidExpression:
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidPipelineOperator,
+			"Invalid $project :: caused by :: "+opErr.Error(),
+			"$project (stage)",
+		)
 	case operators.ErrWrongType:
 		fallthrough
 	default:

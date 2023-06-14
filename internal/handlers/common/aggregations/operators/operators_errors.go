@@ -33,8 +33,8 @@ const (
 	// ErrNotImplemented indicates that given operator is not implemented yet.
 	ErrNotImplemented // The operator is not implemented yet
 
-	// // ErrNotImplemented indicates that given operator does not exist.
-	// ErrInvalidExpression // Unrecognized expression
+	// ErrNotImplemented indicates that given operator does not exist.
+	ErrInvalidExpression // Unrecognized expression
 
 	// ErrNoOperator indicates that given document does not contain any operator.
 	ErrNoOperator // No operator in document
