@@ -191,7 +191,7 @@ tasks:
     cmds:
       - >
         go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-pg.txt .
+        -coverprofile=integration-pg.txt ./...
         -target-backend=ferretdb-pg
         -target-tls
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
@@ -206,7 +206,7 @@ tasks:
     cmds:
       - >
         go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-sqlite.txt .
+        -coverprofile=integration-sqlite.txt ./...
         -target-backend=ferretdb-sqlite
         -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
@@ -221,7 +221,7 @@ tasks:
     cmds:
       - >
         go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-tigris.txt .
+        -coverprofile=integration-tigris.txt ./...
         -target-backend=ferretdb-tigris
         {{.UNIXSOCKETFLAG}}
         -tigris-urls=127.0.0.1:8081,127.0.0.1:8091,127.0.0.1:8092,127.0.0.1:8093,127.0.0.1:8094
@@ -236,7 +236,7 @@ tasks:
     cmds:
       - >
         go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-hana.txt .
+        -coverprofile=integration-hana.txt ./...
         -target-backend=ferretdb-hana
         {{.UNIXSOCKETFLAG}}
         -hana-url=$FERRETDB_HANA_URL
@@ -251,7 +251,7 @@ tasks:
     cmds:
       - >
         go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-mongodb.txt .
+        -coverprofile=integration-mongodb.txt ./...
         -target-url=mongodb://127.0.0.1:47017/
         -target-backend=mongodb
     vars:
