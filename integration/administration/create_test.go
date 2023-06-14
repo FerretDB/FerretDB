@@ -231,7 +231,7 @@ func TestCreateStressSameCollection(t *testing.T) {
 			if err == nil {
 				created.Add(1)
 			} else {
-				integration.AssertEqualError(
+				integration.AssertEqualCommandError(
 					t,
 					mongo.CommandError{
 						Code:    48,

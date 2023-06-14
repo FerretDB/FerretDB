@@ -66,7 +66,7 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 		Name:    "NamespaceNotFound",
 		Message: `ns not found`,
 	}
-	integration.AssertEqualError(t, expectedErr, err)
+	integration.AssertEqualCommandError(t, expectedErr, err)
 
 	err = db.CreateCollection(ctx, name)
 	require.NoError(t, err)
@@ -77,7 +77,7 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 		Name:    "NamespaceExists",
 		Message: `Collection TestCommandsAdministrationCreateDropList.TestCommandsAdministrationCreateDropList already exists.`,
 	}
-	integration.AssertEqualError(t, expectedErr, err)
+	integration.AssertEqualCommandError(t, expectedErr, err)
 
 	names, err = db.ListCollectionNames(ctx, bson.D{})
 	require.NoError(t, err)
@@ -94,7 +94,7 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 		Name:    "NamespaceNotFound",
 		Message: `ns not found`,
 	}
-	integration.AssertEqualError(t, expectedErr, err)
+	integration.AssertEqualCommandError(t, expectedErr, err)
 }
 
 func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
