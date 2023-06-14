@@ -63,10 +63,10 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 							compatInsertRes, compatErr := compatCollection.InsertOne(ctx, doc)
 
 							if targetErr != nil {
-								switch targetErr.(type) {
+								switch targetErr := targetErr.(type) {
 								case mongo.WriteException:
 									// Skip inserts that could not be performed due to Tigris schema validation.
-									if targetErr.(mongo.WriteException).HasErrorCode(documentValidationFailureCode) {
+									if targetErr.HasErrorCode(documentValidationFailureCode) {
 										setup.SkipForTigrisWithReason(t, targetErr.Error())
 									}
 
@@ -125,10 +125,10 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 						}
 
 						if targetErr != nil {
-							switch targetErr.(type) {
+							switch targetErr := targetErr.(type) {
 							case mongo.WriteException:
 								// Skip inserts that could not be performed due to Tigris schema validation.
-								if targetErr.(mongo.WriteException).HasErrorCode(documentValidationFailureCode) {
+								if targetErr.HasErrorCode(documentValidationFailureCode) {
 									setup.SkipForTigrisWithReason(t, targetErr.Error())
 								}
 
