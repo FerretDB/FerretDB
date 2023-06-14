@@ -289,7 +289,7 @@ func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage s
 func AssertEqualAltCommandError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
 	t.Helper()
 
-	a, ok := actual.(mongo.CommandError) //nolint:errorlint // do not inspect error chain
+	a, ok := actual.(mongo.CommandError)
 	if !ok {
 		return assert.Equal(t, expected, actual)
 	}
