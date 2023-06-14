@@ -15,6 +15,7 @@
 // Package operators provides aggregation operators.
 package operators
 
+// operatorErrorCode represents the type of error.
 type operatorErrorCode uint
 
 const (
@@ -35,14 +36,15 @@ const (
 	// ErrNotImplemented indicates that given operator is not implemented yet.
 	ErrNotImplemented // The operator is not implemented yet
 
-	// ErrNotImplemented indicates that given operator does not exist.
+	// ErrInvalidExpression indicates that given operator does not exist.
 	ErrInvalidExpression // Unrecognized expression
 
 	// ErrNoOperator indicates that given document does not contain any operator.
 	ErrNoOperator // No operator in document
 )
 
-func NewOperatorError(code operatorErrorCode, err error) error {
+// newOperatorError returns new OperatorError.
+func newOperatorError(code operatorErrorCode, err error) error {
 	if err == nil {
 		panic("Provided err mustn't be nil")
 	}
@@ -53,15 +55,18 @@ func NewOperatorError(code operatorErrorCode, err error) error {
 	}
 }
 
+// OperatorError is used for reporting operator errors.
 type OperatorError struct {
-	code operatorErrorCode
 	err  error
+	code operatorErrorCode
 }
 
+// Error implements error interface.
 func (opErr OperatorError) Error() string {
 	return opErr.err.Error()
 }
 
+// Code returns operatorError code.
 func (opErr OperatorError) Code() operatorErrorCode {
 	return opErr.code
 }

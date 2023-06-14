@@ -50,14 +50,14 @@ type Operator interface {
 func NewOperator(doc any) (Operator, error) {
 	operatorDoc, ok := doc.(*types.Document)
 	if !ok {
-		return nil, NewOperatorError(
+		return nil, newOperatorError(
 			ErrWrongType,
 			fmt.Errorf("Invalid type of operator field (expected document)"),
 		)
 	}
 
 	if operatorDoc.Len() == 0 {
-		return nil, NewOperatorError(
+		return nil, newOperatorError(
 			ErrEmptyField,
 			fmt.Errorf("The operator field is empty (expected document)"),
 		)
@@ -86,13 +86,13 @@ func NewOperator(doc any) (Operator, error) {
 
 	switch {
 	case !operatorExists:
-		return nil, NewOperatorError(
+		return nil, newOperatorError(
 			ErrNoOperator,
 			fmt.Errorf("No operator in document"),
 		)
 
 	case operatorDoc.Len() > 1:
-		return nil, NewOperatorError(
+		return nil, newOperatorError(
 			ErrTooManyFields,
 			fmt.Errorf("The operator field specifies more than one operator"),
 		)
@@ -109,12 +109,12 @@ func NewOperator(doc any) (Operator, error) {
 	case supported && !unsupported:
 		return newOperator(operatorDoc)
 	case !supported && unsupported:
-		return nil, NewOperatorError(
+		return nil, newOperatorError(
 			ErrNotImplemented,
 			fmt.Errorf("The operator %s is not implemented yet", operator),
 		)
 	case !supported && !unsupported:
-		return nil, NewOperatorError(
+		return nil, newOperatorError(
 			ErrInvalidExpression,
 			fmt.Errorf("Unrecognized expression '%s'", operator),
 		)

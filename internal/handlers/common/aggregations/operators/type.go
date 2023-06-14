@@ -67,23 +67,17 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 					continue
 				}
 
-				if err != nil {
-					return nil, err
-				}
+				return nil, err
 			}
 
 			if typeParam, err = operator.Process(doc); err != nil {
-				if err != nil {
-					var opErr OperatorError
-					if !errors.As(err, &opErr) {
-						return nil, lazyerrors.Error(err)
-					}
-
-					if err != nil {
-						// TODO test
-						return nil, err
-					}
+				var opErr OperatorError
+				if !errors.As(err, &opErr) {
+					return nil, lazyerrors.Error(err)
 				}
+
+				// TODO test
+				return nil, err
 			}
 
 			// the result of nested operator needs to be evaluated
@@ -91,7 +85,7 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 
 		case *types.Array:
 			if param.Len() != 1 {
-				return nil, NewOperatorError(
+				return nil, newOperatorError(
 					ErrArgsInvalidLen,
 					fmt.Errorf("Expression $type takes exactly 1 arguments. %d were passed in.", param.Len()),
 				)
@@ -122,6 +116,7 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 				}
 
 				res = value
+
 				continue
 			}
 
