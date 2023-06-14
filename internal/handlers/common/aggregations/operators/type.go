@@ -56,7 +56,6 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 		switch param := typeParam.(type) {
 		case *types.Document:
 			operator, err := NewOperator(param)
-
 			if err != nil {
 				var opErr OperatorError
 				if !errors.As(err, &opErr) {

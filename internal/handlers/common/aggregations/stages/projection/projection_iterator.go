@@ -59,8 +59,9 @@ func (iter *projectionIterator) Next() (struct{}, *types.Document, error) {
 	}
 
 	projected, err := ProjectDocument(doc, iter.projection, iter.inclusion)
-	if err != nil {
-		return unused, nil, lazyerrors.Error(err)
+
+	if err = processOperatorError(err); err != nil {
+		return unused, nil, err
 	}
 
 	return unused, projected, nil

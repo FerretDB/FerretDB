@@ -1626,6 +1626,7 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$non-existent", "$v"}}}}}}}},
 			},
+			resultType: emptyResult,
 		},
 		"TypeRecursiveInvalid": {
 			pipeline: bson.A{
@@ -1669,6 +1670,7 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
 			},
+			resultType: emptyResult,
 		},
 		"TypeNestedArray": {
 			pipeline: bson.A{

@@ -608,6 +608,12 @@ func processOperatorError(err error) error {
 				" Found empty object at path",
 			"$project (stage)",
 		)
+	case operators.ErrArgsInvalidLen:
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrOperatorWrongLenOfArgs,
+			"Invalid $project :: caused by :: "+opErr.Error(),
+			"$project (stage)",
+		)
 	case operators.ErrWrongType:
 		fallthrough
 	default:

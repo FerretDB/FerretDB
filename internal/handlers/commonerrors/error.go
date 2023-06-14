@@ -146,6 +146,10 @@ const (
 	// ErrPathContainsEmptyElement indicates that the path contains an empty element.
 	ErrPathContainsEmptyElement = ErrorCode(15998) // Location15998
 
+	// ErrOperatorWrongLenOfArgs indicates that aggregation operator contains
+	// wrong amount of arguments.
+	ErrOperatorWrongLenOfArgs = ErrorCode(16020) // Location16020
+
 	// ErrFieldPathInvalidName indicates that FieldPath is invalid.
 	ErrFieldPathInvalidName = ErrorCode(16410) // Location16410
 
