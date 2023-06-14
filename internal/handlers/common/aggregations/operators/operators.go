@@ -118,9 +118,9 @@ func NewOperator(doc any) (Operator, error) {
 			ErrInvalidExpression,
 			fmt.Errorf("Unrecognized expression '%s'", operator),
 		)
+	default:
+		panic("Unreachable")
 	}
-
-	return newOperator(operatorDoc)
 }
 
 // Operators maps all standard aggregation operators.

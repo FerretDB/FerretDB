@@ -76,7 +76,6 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 					return nil, lazyerrors.Error(err)
 				}
 
-				// TODO test
 				return nil, err
 			}
 
@@ -106,7 +105,6 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 			if strings.HasPrefix(param, "$") {
 				expression, err := aggregations.NewExpression(param)
 				if err != nil {
-					// TODO test
 					return nil, err
 				}
 
