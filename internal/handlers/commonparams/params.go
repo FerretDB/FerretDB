@@ -75,7 +75,10 @@ func GetWholeNumberParam(value any) (int64, error) {
 // The function checks the type, ensures it can be represented as a whole number,
 // isn't negative and falls within a given minimum value and the limit of a 32-bit integer.
 //
-// It returns the processed integer value, or an error if the value fails validation.
+// It returns the processed integer value, or a commonerrors.CommandError error if the value fails validation.
+// Error codes list:
+// - ErrTypeMismatch - if the value is not a number
+// - ErrValueNegative - if the value is negative of lower than the minimum value
 func GetValidatedNumberParamWithMinValue(command string, param string, value any, minValue int64) (int64, error) {
 	whole, err := GetWholeNumberParam(value)
 	if err != nil {
@@ -91,7 +94,7 @@ func GetValidatedNumberParamWithMinValue(command string, param string, value any
 					`BSON field '%s.%s' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
 					command, param, AliasFromType(value),
 				),
-				param,
+				command,
 			)
 		case errors.Is(err, ErrNotWholeNumber):
 			if math.Signbit(value.(float64)) {
@@ -101,7 +104,7 @@ func GetValidatedNumberParamWithMinValue(command string, param string, value any
 						"BSON field '%s' value must be >= %d, actual value '%d'",
 						param, minValue, int(math.Ceil(value.(float64))),
 					),
-					param,
+					command,
 				)
 			}
 
@@ -118,7 +121,7 @@ func GetValidatedNumberParamWithMinValue(command string, param string, value any
 					"BSON field '%s' value must be >= %d, actual value '%d'",
 					param, minValue, int(math.Ceil(value.(float64))),
 				),
-				param,
+				command,
 			)
 
 		default:
@@ -130,7 +133,7 @@ func GetValidatedNumberParamWithMinValue(command string, param string, value any
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrValueNegative,
 			fmt.Sprintf("BSON field '%s' value must be >= %d, actual value '%d'", param, minValue, whole),
-			param,
+			command,
 		)
 	}
 
