@@ -79,13 +79,13 @@ func GetWholeNumberParam(value any) (int64, error) {
 // Error codes list:
 // - ErrTypeMismatch - if the value is not a number
 // - ErrValueNegative - if the value is negative of lower than the minimum value
-func GetValidatedNumberParamWithMinValue(command string, param string, value any, minValue int64) (int64, error) {
+func GetValidatedNumberParamWithMinValue(command string, param string, value any, minValue int32) (int64, error) {
 	whole, err := GetWholeNumberParam(value)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUnexpectedType):
 			if _, ok := value.(types.NullType); ok {
-				return minValue, nil
+				return int64(minValue), nil
 			}
 
 			return 0, commonerrors.NewCommandErrorMsgWithArgument(
@@ -129,7 +129,7 @@ func GetValidatedNumberParamWithMinValue(command string, param string, value any
 		}
 	}
 
-	if whole < minValue {
+	if whole < int64(minValue) {
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrValueNegative,
 			fmt.Sprintf("BSON field '%s' value must be >= %d, actual value '%d'", param, minValue, whole),
