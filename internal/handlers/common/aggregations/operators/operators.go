@@ -50,7 +50,6 @@ type Operator interface {
 func NewOperator(doc any) (Operator, error) {
 	operatorDoc, ok := doc.(*types.Document)
 	if !ok {
-		// TODO tests
 		return nil, NewOperatorError(
 			ErrWrongType,
 			fmt.Errorf("Invalid type of operator field (expected document)"),
@@ -58,7 +57,6 @@ func NewOperator(doc any) (Operator, error) {
 	}
 
 	if operatorDoc.Len() == 0 {
-		// TODO tests
 		return nil, NewOperatorError(
 			ErrEmptyField,
 			fmt.Errorf("The operator field is empty (expected document)"),
@@ -94,7 +92,6 @@ func NewOperator(doc any) (Operator, error) {
 		)
 
 	case operatorDoc.Len() > 1:
-		// TODO tests
 		return nil, NewOperatorError(
 			ErrTooManyFields,
 			fmt.Errorf("The operator field specifies more than one operator"),

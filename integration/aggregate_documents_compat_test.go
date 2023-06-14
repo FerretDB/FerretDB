@@ -1688,6 +1688,22 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", true}}}}}},
 			},
 		},
+
+		"ProjectEmpty": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{}}},
+			},
+			resultType: emptyResult,
+		},
+
+		"ProjectManyOperators": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"$type", "foo"}, {"$op", "foo"}}}},
+			},
+			resultType: emptyResult,
+		},
 	}
 
 	testAggregateStagesCompat(t, testCases)

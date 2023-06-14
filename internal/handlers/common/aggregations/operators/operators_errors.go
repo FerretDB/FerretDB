@@ -57,7 +57,7 @@ type OperatorError struct {
 }
 
 func (opErr OperatorError) Error() string {
-	return opErr.Error()
+	return opErr.err.Error()
 }
 
 func (opErr OperatorError) Code() OperatorErrorCode {
