@@ -150,6 +150,7 @@ func sumNumbers(vs ...any) any {
 		case float64:
 			hasFloat64 = true
 
+			// Set precision to 2048, it is assumed precision used for MongoDB.
 			floatSum = floatSum.Add(floatSum, big.NewFloat(v).SetPrec(uint(2048)))
 		case int32:
 			intSum.Add(intSum, big.NewInt(int64(v)))
