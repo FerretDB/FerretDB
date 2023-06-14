@@ -31,13 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-//go:generate ../bin/stringer  -type compatTestCaseResultType
-
-// DocumentValidationFailureCode is returned by Tigris schema validation code.
-// TODO tigris provider should only use collections that does not produce
-// validation error for each test case.
-// https://github.com/FerretDB/FerretDB/issues/2253
-const DocumentValidationFailureCode = 121
+//go:generate ../bin/stringer  -type CompatTestCaseResultType
 
 // CompatTestCaseResultType represents compatibility test case result type.
 //
@@ -51,6 +45,12 @@ const (
 	// EmptyResult indicates that the test case should return empty result for all collections/providers.
 	EmptyResult
 )
+
+// DocumentValidationFailureCode is returned by Tigris schema validation code.
+// TODO tigris provider should only use collections that does not produce
+// validation error for each test case.
+// https://github.com/FerretDB/FerretDB/issues/2253
+const DocumentValidationFailureCode = 121
 
 // convert converts given driver value (bson.D, bson.A, etc) to FerretDB types package value.
 //

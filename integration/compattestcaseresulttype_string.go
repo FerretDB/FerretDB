@@ -12,13 +12,13 @@ func _() {
 	_ = x[EmptyResult-1]
 }
 
-const _compatTestCaseResultType_name = "nonEmptyResultemptyResult"
+const _CompatTestCaseResultType_name = "NonEmptyResultEmptyResult"
 
-var _compatTestCaseResultType_index = [...]uint8{0, 14, 25}
+var _CompatTestCaseResultType_index = [...]uint8{0, 14, 25}
 
 func (i CompatTestCaseResultType) String() string {
-	if i < 0 || i >= CompatTestCaseResultType(len(_compatTestCaseResultType_index)-1) {
+	if i < 0 || i >= CompatTestCaseResultType(len(_CompatTestCaseResultType_index)-1) {
 		return "CompatTestCaseResultType(" + strconv.FormatInt(int64(i), 10) + ")"
 	}
-	return _compatTestCaseResultType_name[_compatTestCaseResultType_index[i]:_compatTestCaseResultType_index[i+1]]
+	return _CompatTestCaseResultType_name[_CompatTestCaseResultType_index[i]:_CompatTestCaseResultType_index[i+1]]
 }
