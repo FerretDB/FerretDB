@@ -15,11 +15,13 @@
 // Package operators provides aggregation operators.
 package operators
 
-type OperatorErrorCode uint
+type operatorErrorCode uint
 
 const (
-	_ OperatorErrorCode = iota
-	ErrArgsInvalidLen
+	_ operatorErrorCode = iota
+
+	// ErrArgsInvalidLen indicates that operator have invalid amount of arguments.
+	ErrArgsInvalidLen // Expression takes different amount of arguments.
 
 	// ErrWrongType indicates that operator field is not a document.
 	ErrWrongType // Invalid type of operator field (expected document)
@@ -40,7 +42,7 @@ const (
 	ErrNoOperator // No operator in document
 )
 
-func NewOperatorError(code OperatorErrorCode, err error) error {
+func NewOperatorError(code operatorErrorCode, err error) error {
 	if err == nil {
 		panic("Provided err mustn't be nil")
 	}
@@ -52,7 +54,7 @@ func NewOperatorError(code OperatorErrorCode, err error) error {
 }
 
 type OperatorError struct {
-	code OperatorErrorCode
+	code operatorErrorCode
 	err  error
 }
 
@@ -60,6 +62,6 @@ func (opErr OperatorError) Error() string {
 	return opErr.err.Error()
 }
 
-func (opErr OperatorError) Code() OperatorErrorCode {
+func (opErr OperatorError) Code() operatorErrorCode {
 	return opErr.code
 }

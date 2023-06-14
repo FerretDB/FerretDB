@@ -68,7 +68,6 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 				}
 
 				if err != nil {
-					// TODO test
 					return nil, err
 				}
 			}
@@ -92,7 +91,6 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 
 		case *types.Array:
 			if param.Len() != 1 {
-				// TODO test
 				return nil, NewOperatorError(
 					ErrArgsInvalidLen,
 					fmt.Errorf("Expression $type takes exactly 1 arguments. %d were passed in.", param.Len()),
@@ -120,7 +118,6 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 
 				value, err := expression.Evaluate(doc)
 				if err != nil {
-					// TODO test
 					return "missing", nil
 				}
 
