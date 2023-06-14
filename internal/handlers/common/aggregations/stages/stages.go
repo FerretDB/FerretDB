@@ -39,6 +39,7 @@ var Stages = map[string]newStageFunc{
 	"$set":       newSet,
 	"$skip":      newSkip,
 	"$sort":      newSort,
+	"$unset":     newUnset,
 	"$unwind":    newUnwind,
 	// please keep sorted alphabetically
 }
@@ -73,7 +74,6 @@ var unsupportedStages = map[string]struct{}{
 	"$sharedDataDistribution": {},
 	"$sortByCount":            {},
 	"$unionWith":              {},
-	"$unset":                  {},
 	// please keep sorted alphabetically
 }
 

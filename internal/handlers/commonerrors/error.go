@@ -164,6 +164,15 @@ const (
 	// ErrSliceFirstArg for $slice indicates that the first argument is not an array.
 	ErrSliceFirstArg = ErrorCode(28724) // Location28724
 
+	// ErrStageUnsetNoPath indicates that $unwind aggregation stage is empty.
+	ErrStageUnsetNoPath = ErrorCode(31119) // Location31119
+
+	// ErrStageUnsetArrElementInvalidType indicates that $unset stage arguments has array with unexpected type.
+	ErrStageUnsetArrElementInvalidType = ErrorCode(31120) // Location31120
+
+	// ErrStageUnsetInvalidType indicates that $unset stage arguments has unexpected type.
+	ErrStageUnsetInvalidType = ErrorCode(31002) // Location31002
+
 	// ErrStageUnwindNoPath indicates that $unwind aggregation stage is empty.
 	ErrStageUnwindNoPath = ErrorCode(28812) // Location28812
 

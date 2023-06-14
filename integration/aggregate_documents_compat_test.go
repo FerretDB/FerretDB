@@ -1865,6 +1865,80 @@ func TestAggregateCompatSet(t *testing.T) {
 			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
 		},
 	}
+	testAggregateStagesCompat(t, testCases)
+}
 
+func TestAggregateCompatUnset(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"InvalidTypeArray": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{1, 2, 3}}},
+			},
+			resultType: emptyResult,
+		},
+		"EmptyArray": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{}}},
+			},
+			resultType: emptyResult,
+		},
+		"EmptyString": {
+			pipeline: bson.A{
+				bson.D{{"$unset", ""}},
+			},
+			resultType: emptyResult,
+		},
+		"ArrayWithEmptyString": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{""}}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeArrayWithDifferentTypes": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"v", 42, false}}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidType": {
+			pipeline: bson.A{
+				bson.D{{"$unset", false}},
+			},
+			resultType: emptyResult,
+		},
+		"Unset1Field": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "v"}},
+			},
+		},
+		"UnsetID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unset", "_id"}},
+			},
+		},
+		"Unset2Fields": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"_id", "v"}}},
+			},
+		},
+		"DotNotationUnset": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "v.foo"}},
+			},
+		},
+		"DotNotationUnsetTwo": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"v.foo", "v.array"}}},
+			},
+		},
+		"DotNotationUnsetSecondLevel": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "v.array.42"}},
+			},
+		},
+	}
 	testAggregateStagesCompat(t, testCases)
 }
