@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -64,30 +63,20 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 							compatInsertRes, compatErr := compatCollection.InsertOne(ctx, doc)
 
 							if targetErr != nil {
-								// Skip inserts that could not be performed due to Tigris schema validation.
-								var e mongo.WriteException
-								if errors.As(targetErr, &e) && e.HasErrorCode(documentValidationFailureCode) {
-									setup.SkipForTigrisWithReason(t, targetErr.Error())
-								}
-
-								t.Logf("Target error: %v", targetErr)
-								require.IsType(t, compatErr, targetErr) // target and compat collections return exactly the same error type
-								targetErr = UnsetRaw(t, targetErr)
-								compatErr = UnsetRaw(t, compatErr)
-
-								var targetBulk mongo.BulkWriteException
-								if errors.As(targetErr, &targetBulk) {
-									compatErr, ok := compatErr.(mongo.BulkWriteException)
-									require.True(t, ok, "target returned BulkWriteException, but compat returned %T", compatErr)
-
-									for i, we := range targetBulk.WriteErrors {
-										AssertMatchesWriteError(t, we.WriteError, compatErr.WriteErrors[i].WriteError)
+								switch targetErr.(type) {
+								case mongo.WriteException:
+									// Skip inserts that could not be performed due to Tigris schema validation.
+									if targetErr.(mongo.WriteException).HasErrorCode(documentValidationFailureCode) {
+										setup.SkipForTigrisWithReason(t, targetErr.Error())
 									}
 
-									continue
+									AssertMatchesWriteError(t, compatErr, targetErr)
+								case mongo.BulkWriteException:
+									AssertMatchesBulkException(t, compatErr, targetErr)
+								default:
+									assert.Equal(t, compatErr, targetErr)
 								}
 
-								assert.Equal(t, compatErr, targetErr)
 								continue
 							}
 
@@ -136,30 +125,20 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 						}
 
 						if targetErr != nil {
-							// Skip inserts that could not be performed due to Tigris schema validation.
-							var e mongo.BulkWriteException
-							if errors.As(targetErr, &e) && e.HasErrorCode(documentValidationFailureCode) {
-								setup.SkipForTigrisWithReason(t, targetErr.Error())
-							}
-
-							t.Logf("Target error: %v", targetErr)
-							require.IsType(t, compatErr, targetErr) // target and compat collections return exactly the same error type
-							targetErr = UnsetRaw(t, targetErr)
-							compatErr = UnsetRaw(t, compatErr)
-
-							var targetBulk mongo.BulkWriteException
-							if errors.As(targetErr, &targetBulk) {
-								compatBulk, ok := compatErr.(mongo.BulkWriteException)
-								require.True(t, ok, "target returned BulkWriteException, but compat returned %T", compatBulk)
-
-								for i, we := range targetBulk.WriteErrors {
-									AssertMatchesWriteError(t, we.WriteError, compatBulk.WriteErrors[i].WriteError)
+							switch targetErr.(type) {
+							case mongo.WriteException:
+								// Skip inserts that could not be performed due to Tigris schema validation.
+								if targetErr.(mongo.WriteException).HasErrorCode(documentValidationFailureCode) {
+									setup.SkipForTigrisWithReason(t, targetErr.Error())
 								}
 
-								return
+								AssertMatchesWriteError(t, compatErr, targetErr)
+							case mongo.BulkWriteException:
+								AssertMatchesBulkException(t, compatErr, targetErr)
+							default:
+								assert.Equal(t, compatErr, targetErr)
 							}
 
-							assert.Equal(t, compatErr, targetErr)
 							return
 						}
 
