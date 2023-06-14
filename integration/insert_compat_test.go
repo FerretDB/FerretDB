@@ -75,6 +75,18 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 								targetErr = UnsetRaw(t, targetErr)
 								compatErr = UnsetRaw(t, compatErr)
 
+								var targetBulk mongo.BulkWriteException
+								if errors.As(targetErr, &targetBulk) {
+									compatErr, ok := compatErr.(mongo.BulkWriteException)
+									require.True(t, ok, "target returned BulkWriteException, but compat returned %T", compatErr)
+
+									for i, we := range targetBulk.WriteErrors {
+										AssertMatchesWriteError(t, we.WriteError, compatErr.WriteErrors[i].WriteError)
+									}
+
+									continue
+								}
+
 								assert.Equal(t, compatErr, targetErr)
 								continue
 							}
@@ -134,6 +146,18 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 							require.IsType(t, compatErr, targetErr) // target and compat collections return exactly the same error type
 							targetErr = UnsetRaw(t, targetErr)
 							compatErr = UnsetRaw(t, compatErr)
+
+							var targetBulk mongo.BulkWriteException
+							if errors.As(targetErr, &targetBulk) {
+								compatBulk, ok := compatErr.(mongo.BulkWriteException)
+								require.True(t, ok, "target returned BulkWriteException, but compat returned %T", compatBulk)
+
+								for i, we := range targetBulk.WriteErrors {
+									AssertMatchesWriteError(t, we.WriteError, compatBulk.WriteErrors[i].WriteError)
+								}
+
+								return
+							}
 
 							assert.Equal(t, compatErr, targetErr)
 							return
