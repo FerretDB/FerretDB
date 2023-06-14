@@ -165,7 +165,7 @@ func sumNumbers(vs ...any) any {
 
 	// handle float64 or intSum bigger than the maximum of int64.
 	if hasFloat64 || !intSum.IsInt64() {
-		// ignore accuracy because precision is upon assigning big.Big.
+		// ignore accuracy because precision is set upon assigning big.Float.
 		float, _ := floatSum.Add(floatSum, new(big.Float).SetInt(intSum)).Float64()
 
 		return float
