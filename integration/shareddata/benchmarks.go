@@ -17,7 +17,6 @@ package shareddata
 import (
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/exp/maps"
-	_ "syreclabs.com/go/faker"
 )
 
 // BenchmarkSmallDocuments provides documents that look like:
@@ -37,66 +36,57 @@ var BenchmarkSmallDocuments = newGeneratorBenchmarkProvider("SmallDocuments", fu
 	}
 	l := len(values)
 
-	var i int
+	var total int
 
 	return func() bson.D {
-		if i >= docs {
+		if total >= docs {
 			return nil
 		}
+
 		doc := bson.D{
-			{"_id", int32(i)},
-			{"id", int32(i)},
-			{"v", values[i%l]},
+			{"_id", int32(total)},
+			{"id", int32(total)},
+			{"v", values[total%l]},
 		}
-		i++
+
+		total++
 
 		return doc
 	}
 })
 
-/*
-// BenchmarkLargeDocuments provides a single large document with 123 fields of various types that consists
-// of different long keys and simple values.
-var BenchmarkLargeDocuments = newGeneratorBenchmarkProvider("LargeDocuments", func(docs int) generatorFunc {
-	values := []any{
-		true, "foo", false, true, 512, true, 42, false, -42, "42", false, false, true,
-		bson.D{{"42", "hello"}},
-		primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
-		false, true, 42.13, 501,
-	}
-	vLen := len(values)
-
-	elements := make([]bson.E, docs)
-	elements[0] = bson.E{"_id", 0}
-
-	for i := 1; i < len(elements); i++ {
-		elements[i] = bson.E{
-			Key:   genLetters(i, 50),
-			Value: values[i%vLen],
-		}
-	}
-
-	doc := bson.D(elements)
-
-	var done bool
+// BenchmarkSettingsDocuments provides large documents with 100 fields of various types.
+//
+// It simulates a settings document like the one FastNetMon uses.
+var BenchmarkSettingsDocuments = newGeneratorBenchmarkProvider("LargeDocuments", func(docs int) generatorFunc {
+	var total int
+	f := newFaker()
 
 	return func() bson.D {
-		if done {
+		if total >= docs {
 			return nil
 		}
 
-		done = true
+		doc := make(bson.D, 100)
+		doc[0] = bson.E{"_id", f.ObjectID()}
+		for i := 1; i < len(doc); i++ {
+			doc[i] = bson.E{
+				Key:   f.FieldName(),
+				Value: f.ScalarValue(),
+			}
+		}
+
+		total++
 
 		return doc
 	}
 })
-*/
 
 // AllBenchmarkProviders returns all benchmark providers in random order.
 func AllBenchmarkProviders() []BenchmarkProvider {
 	providers := []BenchmarkProvider{
 		BenchmarkSmallDocuments,
-		// FIXME BenchmarkLargeDocuments,
+		BenchmarkSettingsDocuments,
 	}
 
 	// check that bse names are unique and randomize order

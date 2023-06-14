@@ -109,7 +109,6 @@ func BenchmarkReplaceLargeDocument(b *testing.B) {
 
 func BenchmarkInsertMany(b *testing.B) {
 	ctx, collection := setup.Setup(b)
-	// db := collection.Database()
 
 	for _, provider := range shareddata.AllBenchmarkProviders() {
 		for _, batchSize := range []int{1, 10, 100, 1000} {
