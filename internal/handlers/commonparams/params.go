@@ -70,19 +70,19 @@ func GetWholeNumberParam(value any) (int64, error) {
 	}
 }
 
-// GetValidatedNumberParamWithBoundary converts and validates a value into a int64 number.
+// GetValidatedNumberParamWithMinValue converts and validates a value into a number.
 //
 // The function checks the type, ensures it can be represented as a whole number,
-// isn't negative and falls within a given boundary and the limit of a 32-bit integer.
+// isn't negative and falls within a given minimum value and the limit of a 32-bit integer.
 //
 // It returns the processed integer value, or an error if the value fails validation.
-func GetValidatedNumberParamWithBoundary(command string, param string, value any, boundary int64) (int64, error) {
+func GetValidatedNumberParamWithMinValue(command string, param string, value any, minValue int64) (int64, error) {
 	whole, err := GetWholeNumberParam(value)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUnexpectedType):
 			if _, ok := value.(types.NullType); ok {
-				return boundary, nil
+				return minValue, nil
 			}
 
 			return 0, commonerrors.NewCommandErrorMsgWithArgument(
@@ -99,7 +99,7 @@ func GetValidatedNumberParamWithBoundary(command string, param string, value any
 					commonerrors.ErrValueNegative,
 					fmt.Sprintf(
 						"BSON field '%s' value must be >= %d, actual value '%d'",
-						param, boundary, int(math.Ceil(value.(float64))),
+						param, minValue, int(math.Ceil(value.(float64))),
 					),
 					param,
 				)
@@ -116,7 +116,7 @@ func GetValidatedNumberParamWithBoundary(command string, param string, value any
 				commonerrors.ErrValueNegative,
 				fmt.Sprintf(
 					"BSON field '%s' value must be >= %d, actual value '%d'",
-					param, boundary, int(math.Ceil(value.(float64))),
+					param, minValue, int(math.Ceil(value.(float64))),
 				),
 				param,
 			)
@@ -126,10 +126,10 @@ func GetValidatedNumberParamWithBoundary(command string, param string, value any
 		}
 	}
 
-	if whole < boundary {
+	if whole < minValue {
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrValueNegative,
-			fmt.Sprintf("BSON field '%s' value must be >= %d, actual value '%d'", param, boundary, whole),
+			fmt.Sprintf("BSON field '%s' value must be >= %d, actual value '%d'", param, minValue, whole),
 			param,
 		)
 	}
