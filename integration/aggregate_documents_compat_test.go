@@ -866,9 +866,6 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 		Remove("ArrayInt32s").
 		Remove("Mixed").
 		Remove("ArrayAndDocuments").
-		// TODO: handle $sum of doubles near max precision.
-		// https://github.com/FerretDB/FerretDB/issues/2300
-		Remove("Doubles").
 		// TODO: https://github.com/FerretDB/FerretDB/issues/2616
 		Remove("ArrayDocuments")
 

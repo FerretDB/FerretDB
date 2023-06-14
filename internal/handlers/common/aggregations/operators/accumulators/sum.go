@@ -18,6 +18,7 @@ import (
 	"errors"
 	"math"
 	"math/big"
+	"sort"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -106,12 +107,41 @@ func (s *sum) Accumulate(iter types.DocumentsIterator) (any, error) {
 // This should only be used for aggregation, aggregation does not return
 // error on overflow.
 func sumNumbers(vs ...any) any {
+	sort.Slice(vs, func(i, j int) bool {
+		var absi, absj any
+		switch vi := vs[i].(type) {
+		case float64:
+			absi = math.Abs(vi)
+		case int32:
+			absi = math.Abs(float64(vi))
+		case int64:
+			absi = math.Abs(float64(vi))
+		default:
+			absi = vi
+		}
+
+		switch vj := vs[j].(type) {
+		case float64:
+			absj = math.Abs(vj)
+		case int32:
+			absj = math.Abs(float64(vj))
+		case int64:
+			absj = math.Abs(float64(vj))
+		default:
+			absj = vj
+		}
+
+		// vs is ordered in descending absolute value order to compute
+		// sum of overflow values then move on to non-overflow values.
+		return types.Greater == types.Compare(absi, absj)
+	})
+
 	// use big.Int to accumulate values larger than math.MaxInt64.
 	intSum := big.NewInt(0)
 
 	// TODO: handle accumulation of doubles close to max precision.
 	// https://github.com/FerretDB/FerretDB/issues/2300
-	var floatSum float64
+	floatSum := new(big.Float)
 
 	var hasFloat64, hasInt64 bool
 
@@ -120,7 +150,7 @@ func sumNumbers(vs ...any) any {
 		case float64:
 			hasFloat64 = true
 
-			floatSum = floatSum + v
+			floatSum = floatSum.Add(floatSum, big.NewFloat(v).SetPrec(uint(2048)))
 		case int32:
 			intSum.Add(intSum, big.NewInt(int64(v)))
 		case int64:
@@ -134,10 +164,10 @@ func sumNumbers(vs ...any) any {
 
 	// handle float64 or intSum bigger than the maximum of int64.
 	if hasFloat64 || !intSum.IsInt64() {
-		// ignore accuracy because there is no rounding from int64.
-		intAsFloat, _ := new(big.Float).SetInt(intSum).Float64()
+		// ignore accuracy because precision is upon assigning big.Big.
+		float, _ := floatSum.Add(floatSum, new(big.Float).SetInt(intSum)).Float64()
 
-		return intAsFloat + floatSum
+		return float
 	}
 
 	integer := intSum.Int64()
