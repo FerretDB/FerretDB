@@ -77,8 +77,8 @@ func GetWholeNumberParam(value any) (int64, error) {
 //
 // It returns the processed integer value, or a commonerrors.CommandError error if the value fails validation.
 // Error codes list:
-// - ErrTypeMismatch - if the value is not a number
-// - ErrValueNegative - if the value is negative of lower than the minimum value
+// - ErrTypeMismatch - if the value is not a number;
+// - ErrValueNegative - if the value is negative of lower than the minimum value.
 func GetValidatedNumberParamWithMinValue(command string, param string, value any, minValue int32) (int64, error) {
 	whole, err := GetWholeNumberParam(value)
 	if err != nil {
