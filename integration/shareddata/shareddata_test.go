@@ -17,5 +17,6 @@ package shareddata
 import "testing"
 
 func TestInit(t *testing.T) {
+	panic(1)
 	// nothing, just test init()
 }
