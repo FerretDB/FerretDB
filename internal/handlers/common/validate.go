@@ -151,5 +151,6 @@ func ValidateArrayAndDocExpression(fieldsDoc *types.Document, expression string)
 			}
 		}
 	}
+
 	return nil
 }

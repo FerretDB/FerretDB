@@ -1852,14 +1852,14 @@ func TestAggregateCompatSet(t *testing.T) {
 		},
 		"UnsupportedExpressionObject": {
 			pipeline: bson.A{
-				bson.D{{"$addFields", bson.D{{"newField1", bson.D{{"$sum", 1}}}}}},
+				bson.D{{"$set", bson.D{{"newField1", bson.D{{"$sum", 1}}}}}},
 			},
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
 		},
 		"UnsupportedExpressionArray": {
 			pipeline: bson.A{
-				bson.D{{"$addFields", bson.D{{"newField1", bson.A{bson.D{{"$sum", 1}}}}}}},
+				bson.D{{"$set", bson.D{{"newField1", bson.A{bson.D{{"$sum", 1}}}}}}},
 			},
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
