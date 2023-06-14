@@ -405,3 +405,14 @@ func FindAll(t testing.TB, ctx context.Context, collection *mongo.Collection) []
 
 	return FetchAll(t, ctx, cursor)
 }
+
+// generateDocuments generates documents with _id ranging from startID to endID.
+// It returns bson.A containing bson.D documents.
+func generateDocuments(startID, endID int32) bson.A {
+	var docs bson.A
+	for i := startID; i < endID; i++ {
+		docs = append(docs, bson.D{{"_id", i}})
+	}
+
+	return docs
+}
