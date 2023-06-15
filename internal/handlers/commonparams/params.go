@@ -70,17 +70,22 @@ func GetWholeNumberParam(value any) (int64, error) {
 	}
 }
 
-// getWholeParamStrict validates the given value for find and count commands.
+// GetValidatedNumberParamWithMinValue converts and validates a value into a number.
 //
-// If the value is valid, it returns its int64 representation,
-// otherwise it returns a command error with the given command being mentioned.
-func getWholeParamStrict(command string, param string, value any) (int64, error) {
+// The function checks the type, ensures it can be represented as a whole number,
+// isn't negative and falls within a given minimum value and the limit of a 32-bit integer.
+//
+// It returns the processed integer value, or a commonerrors.CommandError error if the value fails validation.
+// Error codes list:
+// - ErrTypeMismatch - if the value is not a number;
+// - ErrValueNegative - if the value is negative of lower than the minimum value.
+func GetValidatedNumberParamWithMinValue(command string, param string, value any, minValue int32) (int64, error) {
 	whole, err := GetWholeNumberParam(value)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUnexpectedType):
 			if _, ok := value.(types.NullType); ok {
-				return 0, nil
+				return int64(minValue), nil
 			}
 
 			return 0, commonerrors.NewCommandErrorMsgWithArgument(
@@ -89,13 +94,17 @@ func getWholeParamStrict(command string, param string, value any) (int64, error)
 					`BSON field '%s.%s' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
 					command, param, AliasFromType(value),
 				),
-				param,
+				command,
 			)
 		case errors.Is(err, ErrNotWholeNumber):
 			if math.Signbit(value.(float64)) {
-				return 0, commonerrors.NewCommandError(
+				return 0, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrValueNegative,
-					fmt.Errorf("BSON field '%s' value must be >= 0, actual value '%d'", param, int(math.Ceil(value.(float64)))),
+					fmt.Sprintf(
+						"BSON field '%s' value must be >= %d, actual value '%d'",
+						param, minValue, int(math.Ceil(value.(float64))),
+					),
+					command,
 				)
 			}
 
@@ -103,12 +112,16 @@ func getWholeParamStrict(command string, param string, value any) (int64, error)
 			return int64(math.Floor(value.(float64))), nil
 
 		case errors.Is(err, ErrLongExceededPositive):
-			return math.MaxInt64, nil
+			return math.MaxInt32, nil
 
 		case errors.Is(err, ErrLongExceededNegative):
-			return 0, commonerrors.NewCommandError(
+			return 0, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrValueNegative,
-				fmt.Errorf("BSON field '%s' value must be >= 0, actual value '%d'", param, int(math.Ceil(value.(float64)))),
+				fmt.Sprintf(
+					"BSON field '%s' value must be >= %d, actual value '%d'",
+					param, minValue, int(math.Ceil(value.(float64))),
+				),
+				command,
 			)
 
 		default:
@@ -116,11 +129,16 @@ func getWholeParamStrict(command string, param string, value any) (int64, error)
 		}
 	}
 
-	if whole < 0 {
-		return 0, commonerrors.NewCommandError(
+	if whole < int64(minValue) {
+		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrValueNegative,
-			fmt.Errorf("BSON field '%s' value must be >= 0, actual value '%d'", param, whole),
+			fmt.Sprintf("BSON field '%s' value must be >= %d, actual value '%d'", param, minValue, whole),
+			command,
 		)
+	}
+
+	if whole > math.MaxInt32 {
+		return math.MaxInt32, nil
 	}
 
 	return whole, nil

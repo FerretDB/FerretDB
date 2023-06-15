@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -38,7 +39,7 @@ type collStats struct {
 
 // storageStats represents $collStats.storageStats field.
 type storageStats struct {
-	scale int32
+	scale int64
 }
 
 // newCollStats creates a new $collStats stage.
@@ -70,7 +71,10 @@ func newCollStats(stage *types.Document) (aggregations.Stage, error) {
 
 		var s any
 		if s, err = storageStatsFields.Get("scale"); err == nil {
-			if cs.storageStats.scale, err = common.GetScaleParam("$collStats.storageStats", s); err != nil {
+			cs.storageStats.scale, err = commonparams.GetValidatedNumberParamWithMinValue(
+				"$collStats.storageStats", "scale", s, 1,
+			)
+			if err != nil {
 				return nil, err
 			}
 		}
