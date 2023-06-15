@@ -113,13 +113,11 @@ func NewOperator(doc any) (Operator, error) {
 			ErrNotImplemented,
 			fmt.Sprintf("The operator %s is not implemented yet", operator),
 		)
-	case !supported && !unsupported:
+	default:
 		return nil, newOperatorError(
 			ErrInvalidExpression,
 			fmt.Sprintf("Unrecognized expression '%s'", operator),
 		)
-	default:
-		panic("Unreachable")
 	}
 }
 
