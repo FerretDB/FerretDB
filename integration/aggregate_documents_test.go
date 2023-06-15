@@ -46,6 +46,16 @@ func TestAggregateAddFieldsErrors(t *testing.T) {
 			},
 			altMessage: "$addFields specification stage must be an object, got string",
 		},
+		"InvalidFieldPath": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"$foo", "v"}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16410,
+				Name:    "Location16410",
+				Message: "Invalid $addFields :: caused by :: FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -373,6 +383,16 @@ func TestAggregateSetErrors(t *testing.T) {
 				Message: "$set specification stage must be an object, got string",
 			},
 			altMessage: "$set specification stage must be an object, got string",
+		},
+		"InvalidFieldPath": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"$foo", "v"}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16410,
+				Name:    "Location16410",
+				Message: "Invalid $set :: caused by :: FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+			},
 		},
 	} {
 		name, tc := name, tc
