@@ -30,19 +30,22 @@ import (
 
 // BenchmarkProvider is implemented by shared data sets that provide documents for benchmarks.
 type BenchmarkProvider interface {
-	BaseName() string
-
-	// Name returns benchmark provider name.
+	// Name returns full benchmark provider name.
 	Name() string
+
+	// BaseName returns a part of the full name that does not include a number of documents and their hash.
+	BaseName() string
 
 	// NewIterator returns a new iterator for the same documents.
 	NewIterator() iterator.Interface[struct{}, bson.D]
 }
 
+// BenchmarkGenerator provides documents for benchmarks by generating them.
 type BenchmarkGenerator interface {
-	BenchmarkProvider
-
+	// Init sets the number of documents to generate.
 	Init(docs int)
+
+	BenchmarkProvider
 }
 
 // hashBenchmarkProvider checks that BenchmarkProvider's NewIterator methods returns a new iterator
@@ -113,13 +116,9 @@ func newGeneratorBenchmarkProvider(baseName string, genFuncConstructor generator
 	}
 }
 
+// Name implements BenchmarkGenerator.
 func (gbp *generatorBenchmarkProvider) Init(docs int) {
 	gbp.docs = docs
-}
-
-// Name implements BenchmarkProvider.
-func (gbp *generatorBenchmarkProvider) BaseName() string {
-	return gbp.baseName
 }
 
 // Name implements BenchmarkProvider.
@@ -127,6 +126,11 @@ func (gbp *generatorBenchmarkProvider) Name() string {
 	hash := hashBenchmarkProvider(gbp)
 
 	return fmt.Sprintf("%s/Docs%d/%s", gbp.baseName, gbp.docs, hash)
+}
+
+// Name implements BenchmarkProvider.
+func (gbp *generatorBenchmarkProvider) BaseName() string {
+	return gbp.baseName
 }
 
 // NewIterator implements BenchmarkProvider.
