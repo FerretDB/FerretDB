@@ -3,33 +3,34 @@
 version: 3
 
 vars:
-  BENCHTIME: 5s
-  BENCHNAME: .
+  BENCH_NAME: .
+  BENCH_COUNT: 10
+  BENCH_TIME: 5s
   BENCH_DOCS: 0
-  RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
+  RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
 
 tasks:
   env-data:
     cmds:
       - >
-        go test -count=1 {{.RACEFLAG}} -run=TestEnvData
+        go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
         -target-backend=ferretdb-pg
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
       - >
-        go test -count=1 {{.RACEFLAG}} -run=TestEnvData
+        go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
         -target-backend=ferretdb-pg
         -postgresql-url=postgres://username:password@127.0.0.1:5433/ferretdb?pool_min_conns=1
       # no sqlite yet
       - >
-        go test -count=1 {{.RACEFLAG}} -run=TestEnvData
+        go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata,ferretdb_tigris .
         -target-backend=ferretdb-tigris
         -tigris-urls=127.0.0.1:8081
       # no hana yet
       - >
-        go test -count=1 {{.RACEFLAG}} -run=TestEnvData
+        go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
         -target-backend=mongodb
         -target-url=mongodb://127.0.0.1:47017/
@@ -54,7 +55,7 @@ tasks:
     desc: "Run benchmarks for `pg` handler"
     cmds:
       - >
-        go test -run=XXX -count=10 -bench={{.BENCHNAME}} -benchtime={{.BENCHTIME}} -benchmem
+        go test -run=XXX -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-pg
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
@@ -65,7 +66,7 @@ tasks:
     desc: "Run benchmarks for `pg` with query pushdown disabled"
     cmds:
       - >
-        go test -run=XXX -count=10 -bench={{.BENCHNAME}} -benchtime={{.BENCHTIME}} -benchmem
+        go test -run=XXX -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-pg
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
@@ -77,7 +78,7 @@ tasks:
     desc: "Run benchmarks for `sqlite` handler"
     cmds:
       - >
-        go test -run=XXX -count=10 -bench={{.BENCHNAME}} -benchtime={{.BENCHTIME}} -benchmem
+        go test -run=XXX -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-sqlite
         | tee new-sqlite.txt
@@ -87,7 +88,7 @@ tasks:
     desc: "Run benchmarks for `sqlite` with query pushdown disabled"
     cmds:
       - >
-        go test -run=XXX -count=10 -bench={{.BENCHNAME}} -benchtime={{.BENCHTIME}} -benchmem
+        go test -run=XXX -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-sqlite
         -- -disable-filter-pushdown
@@ -98,7 +99,7 @@ tasks:
     desc: "Run benchmarks for MongoDB"
     cmds:
       - >
-        go test -run=XXX -count=10 -bench={{.BENCHNAME}} -benchtime={{.BENCHTIME}} -benchmem
+        go test -run=XXX -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=mongodb
         -target-url=mongodb://127.0.0.1:47017/
