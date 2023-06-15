@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/AlekSi/pointer"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -243,7 +244,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 				)
 			}
 
-			index.Unique = true
+			index.Unique = pointer.ToBool(true)
 
 		case "background":
 			// ignore deprecated options

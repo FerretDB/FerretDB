@@ -100,8 +100,8 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 			"name", index.Name,
 		))
 
-		if uniqueVal, ok := index.Unique.(bool); ok && index.Name != "_id_" {
-			indexDoc.Set("unique", uniqueVal)
+		if index.Unique != nil && index.Name != "_id_" {
+			indexDoc.Set("unique", *index.Unique)
 		}
 
 		firstBatch.Append(indexDoc)

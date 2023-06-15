@@ -21,6 +21,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/AlekSi/pointer"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -75,7 +76,7 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 		"uniqueIndexOneField": {
 			index: Index{
 				Name:   "foo_unique",
-				Unique: true,
+				Unique: pointer.To(true),
 				Key: []IndexKeyPair{
 					{Field: "foo", Order: types.Ascending},
 				},
@@ -86,7 +87,7 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 		"uniqueIndexTwoFields": {
 			index: Index{
 				Name:   "foo_and_baz_unique",
-				Unique: true,
+				Unique: pointer.To(true),
 				Key: []IndexKeyPair{
 					{Field: "foo", Order: types.Ascending},
 					{Field: "baz", Order: types.Descending},
@@ -157,7 +158,7 @@ func TestDropIndexes(t *testing.T) {
 			toCreate: []Index{},
 			toDrop:   []Index{{Name: "foo_1"}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
 			},
 			expectedErr: ErrIndexNotExist,
 		},
@@ -167,7 +168,7 @@ func TestDropIndexes(t *testing.T) {
 			},
 			toDrop: []Index{{Name: "foo_1"}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
 			},
 		},
 		"DropOneByKey": {
@@ -176,7 +177,7 @@ func TestDropIndexes(t *testing.T) {
 			},
 			toDrop: []Index{{Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
 			},
 		},
 		"DropNestedField": {
@@ -185,7 +186,7 @@ func TestDropIndexes(t *testing.T) {
 			},
 			toDrop: []Index{{Key: []IndexKeyPair{{Field: "foo.bar", Order: types.Ascending}}}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
 			},
 		},
 		"DropOneFromTheBeginning": {
@@ -196,9 +197,9 @@ func TestDropIndexes(t *testing.T) {
 			},
 			toDrop: []Index{{Name: "foo_1"}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
-				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}, Unique: types.NullType{}},
-				{Name: "car_1", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}, Unique: types.NullType{}},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
+				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}, Unique: nil},
+				{Name: "car_1", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}, Unique: nil},
 			},
 		},
 		"DropOneFromTheMiddle": {
@@ -209,9 +210,9 @@ func TestDropIndexes(t *testing.T) {
 			},
 			toDrop: []Index{{Name: "bar_1"}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
-				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}, Unique: types.NullType{}},
-				{Name: "car_1", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}, Unique: types.NullType{}},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
+				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}, Unique: nil},
+				{Name: "car_1", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}, Unique: nil},
 			},
 		},
 		"DropOneFromTheEnd": {
@@ -222,9 +223,9 @@ func TestDropIndexes(t *testing.T) {
 			},
 			toDrop: []Index{{Name: "car_1"}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
-				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}, Unique: types.NullType{}},
-				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}, Unique: types.NullType{}},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
+				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}, Unique: nil},
+				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}, Unique: nil},
 			},
 		},
 		"DropTwo": {
@@ -235,8 +236,8 @@ func TestDropIndexes(t *testing.T) {
 			},
 			toDrop: []Index{{Name: "car_1"}, {Name: "foo_1"}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
-				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}, Unique: types.NullType{}},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
+				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}, Unique: nil},
 			},
 		},
 		"DropComplicated": {
@@ -247,8 +248,8 @@ func TestDropIndexes(t *testing.T) {
 			},
 			toDrop: []Index{{Name: "v_-1"}, {Name: "v_1_foo_1"}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
-				{Name: "v.foo_-1", Key: []IndexKeyPair{{Field: "v.foo", Order: types.Descending}}, Unique: types.NullType{}},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
+				{Name: "v.foo_-1", Key: []IndexKeyPair{{Field: "v.foo", Order: types.Descending}}, Unique: nil},
 			},
 		},
 		"DropAll": {
@@ -259,7 +260,7 @@ func TestDropIndexes(t *testing.T) {
 			},
 			toDrop: []Index{{Name: "bar_1"}, {Name: "car_1"}, {Name: "foo_1"}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
 			},
 		},
 	} {
