@@ -66,6 +66,8 @@ linters-settings:
         alias: otelsemconv
       - pkg: go.opentelemetry.io/otel/sdk/trace
         alias: oteltrace
+      - pkg: github.com/jaswdr/faker
+        alias: fakerlib
   # ineffassign
   lll:
     line-length: 175 # TODO reduce it to 130

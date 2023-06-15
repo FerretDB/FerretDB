@@ -114,8 +114,6 @@ linters-settings:
         alias: zapadapter
       - pkg: modernc.org/sqlite/lib
         alias: sqlitelib
-      - pkg: github.com/jaswdr/faker
-        alias: fakerlib
   # ineffassign
   lll:
     line-length: 130
