@@ -104,6 +104,9 @@ const (
 	// ErrDocumentValidationFailure indicates that document validation failed.
 	ErrDocumentValidationFailure = ErrorCode(121) // DocumentValidationFailure
 
+	// ErrInvalidIndexSpecificationOption indicates that the index option is invalid.
+	ErrInvalidIndexSpecificationOption = ErrorCode(197) // InvalidIndexSpecificationOption
+
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 

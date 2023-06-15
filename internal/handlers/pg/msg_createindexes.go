@@ -232,6 +232,17 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 				)
 			}
 
+			if len(index.Key) == 1 && index.Key[0].Field == "_id" {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrInvalidIndexSpecificationOption,
+					fmt.Sprintf("The field 'unique' is not valid for an _id index specification. "+
+						"Specification: { key: %s, name: %s, unique: true, v: 2 }",
+						types.FormatAnyValue(must.NotFail(indexDoc.Get("key"))), index.Name,
+					),
+					"createIndexes",
+				)
+			}
+
 			index.Unique = true
 
 		case "background":

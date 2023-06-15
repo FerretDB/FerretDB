@@ -783,6 +783,15 @@ func TestCreateIndexesUniqueCompat(t *testing.T) {
 
 		skip string // optional, skip test with a specified reason
 	}{
+		"IDIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"_id", 1}},
+					Options: new(options.IndexOptions).SetUnique(true),
+				},
+			},
+			insertDoc: bson.D{{"_id", "int322"}},
+		},
 		"ExistingFieldIndex": {
 			models: []mongo.IndexModel{
 				{
