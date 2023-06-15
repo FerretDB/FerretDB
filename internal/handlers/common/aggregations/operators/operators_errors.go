@@ -27,7 +27,7 @@ const (
 	// ErrWrongType indicates that operator field is not a document.
 	ErrWrongType // Invalid type of operator field (expected document)
 
-	// ErrEmptyField indicates that operator field does not specify any operator.
+	// ErrEmptyField indicates that operator field is empty.
 	ErrEmptyField // The operator field is empty (expected document)
 
 	// ErrTooManyFields indicates that operator field specifes more than one operators.
