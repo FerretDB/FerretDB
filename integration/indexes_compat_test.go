@@ -301,6 +301,7 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 		collectionName any
 		indexName      any
 		key            any
+		unique         any
 		resultType     compatTestCaseResultType // defaults to nonEmptyResult
 		skip           string                   // optional, skip test with a specified reason
 	}{
@@ -364,6 +365,20 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 			resultType:     emptyResult,
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
+		"UniqueFalse": {
+			collectionName: "unique_false",
+			key:            bson.D{{"v", 1}},
+			indexName:      "unique_false",
+			unique:         false,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/2845",
+		},
+		"UniqueTypeDocument": {
+			collectionName: "test",
+			key:            bson.D{{"v", 1}},
+			indexName:      "test",
+			unique:         bson.D{},
+			resultType:     emptyResult,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -382,6 +397,10 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 
 			if tc.indexName != nil {
 				indexesDoc = append(indexesDoc, bson.E{"name", tc.indexName})
+			}
+
+			if tc.unique != nil {
+				indexesDoc = append(indexesDoc, bson.E{Key: "unique", Value: tc.unique})
 			}
 
 			var targetRes bson.D

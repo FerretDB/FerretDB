@@ -218,6 +218,20 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 			// already processed, do nothing
 
 		case "unique":
+			val, ok := must.NotFail(indexDoc.Get("unique")).(bool)
+			if !ok {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrTypeMismatch,
+					fmt.Sprintf(
+						"Error in specification { key: %s, name: %s, unique: {} } "+
+							":: caused by :: "+
+							"The field 'unique' has value unique: %s, which is not convertible to bool",
+						types.FormatAnyValue(must.NotFail(indexDoc.Get("key"))), index.Name, types.FormatAnyValue(val),
+					),
+					"createIndexes",
+				)
+			}
+
 			index.Unique = true
 
 		case "background":
