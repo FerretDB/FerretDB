@@ -1634,6 +1634,13 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"v", "$v"}}}}}}}},
 			},
 		},
+		"TypeRecursiveArrayInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{{"1", "2"}}}}}}}},
+			},
+			resultType: emptyResult,
+		},
 
 		"TypeInt": {
 			pipeline: bson.A{
@@ -1690,7 +1697,6 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", true}}}}}},
 			},
 		},
-
 		"ProjectEmpty": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
@@ -1698,7 +1704,6 @@ func TestAggregateCompatProject(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
-
 		"ProjectManyOperators": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},

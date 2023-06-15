@@ -22,48 +22,44 @@ const (
 	_ operatorErrorCode = iota
 
 	// ErrArgsInvalidLen indicates that operator have invalid amount of arguments.
-	ErrArgsInvalidLen // Expression takes different amount of arguments.
+	ErrArgsInvalidLen
 
 	// ErrWrongType indicates that operator field is not a document.
-	ErrWrongType // Invalid type of operator field (expected document)
+	ErrWrongType
 
 	// ErrEmptyField indicates that operator field is empty.
 	ErrEmptyField // The operator field is empty (expected document)
 
 	// ErrTooManyFields indicates that operator field specifes more than one operators.
-	ErrTooManyFields // The operator field specifies more than one operator
+	ErrTooManyFields
 
 	// ErrNotImplemented indicates that given operator is not implemented yet.
-	ErrNotImplemented // The operator is not implemented yet
+	ErrNotImplemented
 
 	// ErrInvalidExpression indicates that given operator does not exist.
-	ErrInvalidExpression // Unrecognized expression
+	ErrInvalidExpression
 
 	// ErrNoOperator indicates that given document does not contain any operator.
-	ErrNoOperator // No operator in document
+	ErrNoOperator
 )
 
 // newOperatorError returns new OperatorError.
-func newOperatorError(code operatorErrorCode, err error) error {
-	if err == nil {
-		panic("Provided err mustn't be nil")
-	}
-
+func newOperatorError(code operatorErrorCode, msg string) error {
 	return OperatorError{
 		code: code,
-		err:  err,
+		msg:  msg,
 	}
 }
 
 // OperatorError is used for reporting operator errors.
 type OperatorError struct {
-	err  error
+	msg  string
 	code operatorErrorCode
 }
 
 // Error implements error interface.
 func (opErr OperatorError) Error() string {
-	return opErr.err.Error()
+	return opErr.msg
 }
 
 // Code returns operatorError code.

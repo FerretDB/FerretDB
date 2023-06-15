@@ -52,14 +52,14 @@ func NewOperator(doc any) (Operator, error) {
 	if !ok {
 		return nil, newOperatorError(
 			ErrWrongType,
-			fmt.Errorf("Invalid type of operator field (expected document)"),
+			"Invalid type of operator field (expected document)",
 		)
 	}
 
 	if operatorDoc.Len() == 0 {
 		return nil, newOperatorError(
 			ErrEmptyField,
-			fmt.Errorf("The operator field is empty (expected document)"),
+			"The operator field is empty (expected document)",
 		)
 	}
 
@@ -88,13 +88,13 @@ func NewOperator(doc any) (Operator, error) {
 	case !operatorExists:
 		return nil, newOperatorError(
 			ErrNoOperator,
-			fmt.Errorf("No operator in document"),
+			"No operator in document",
 		)
 
 	case operatorDoc.Len() > 1:
 		return nil, newOperatorError(
 			ErrTooManyFields,
-			fmt.Errorf("The operator field specifies more than one operator"),
+			"The operator field specifies more than one operator",
 		)
 	}
 
@@ -111,12 +111,12 @@ func NewOperator(doc any) (Operator, error) {
 	case !supported && unsupported:
 		return nil, newOperatorError(
 			ErrNotImplemented,
-			fmt.Errorf("The operator %s is not implemented yet", operator),
+			fmt.Sprintf("The operator %s is not implemented yet", operator),
 		)
 	case !supported && !unsupported:
 		return nil, newOperatorError(
 			ErrInvalidExpression,
-			fmt.Errorf("Unrecognized expression '%s'", operator),
+			fmt.Sprintf("Unrecognized expression '%s'", operator),
 		)
 	default:
 		panic("Unreachable")
