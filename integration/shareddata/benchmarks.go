@@ -58,7 +58,7 @@ var BenchmarkSmallDocuments = newGeneratorBenchmarkProvider("SmallDocuments", fu
 // BenchmarkSettingsDocuments provides large documents with 100 fields of various types.
 //
 // It simulates a settings document like the one FastNetMon uses.
-var BenchmarkSettingsDocuments = newGeneratorBenchmarkProvider("LargeDocuments", func(docs int) generatorFunc {
+var BenchmarkSettingsDocuments = newGeneratorBenchmarkProvider("SettingsDocuments", func(docs int) generatorFunc {
 	var total int
 	f := newFaker()
 

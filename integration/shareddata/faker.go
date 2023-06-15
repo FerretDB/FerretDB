@@ -18,9 +18,10 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	fakerlib "github.com/jaswdr/faker"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // faker generates stable fake data for tests.
@@ -40,8 +41,10 @@ func newFaker() *faker {
 	}
 }
 
-// https://github.com/jaswdr/faker/issues/142
+// FieldName generates a random document field name.
 func (f *faker) FieldName() string {
+	// TODO https://github.com/jaswdr/faker/issues/142
+
 	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
 	const firstChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"
 
@@ -55,6 +58,7 @@ func (f *faker) FieldName() string {
 	return res
 }
 
+// ObjectID generates a random non-zero ObjectID.
 func (f *faker) ObjectID() primitive.ObjectID {
 	var id primitive.ObjectID
 	for id.IsZero() {
@@ -63,6 +67,7 @@ func (f *faker) ObjectID() primitive.ObjectID {
 	return id
 }
 
+// ScalarValue generates a random scalar value.
 func (f *faker) ScalarValue() any {
 	for {
 		switch f.r.Intn(0x13) + 1 {
