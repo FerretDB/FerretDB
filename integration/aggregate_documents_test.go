@@ -314,6 +314,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v", bson.D{{"$non-existent", "foo"}}}}}},
 			},
+			altMessage: "Invalid $project :: caused by :: Unrecognized expression '$non-existent'",
 			err: &mongo.CommandError{
 				Code:    31325,
 				Name:    "Location31325",

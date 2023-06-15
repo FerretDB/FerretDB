@@ -197,6 +197,9 @@ const (
 	// ErrAggregatePositionalProject indicates that positional projection cannot be used in aggregation.
 	ErrAggregatePositionalProject = ErrorCode(31324) // Location31324
 
+	// ErrAggregateInvalidExpression indicates that projection expression does not exist.
+	ErrAggregateInvalidExpression = ErrorCode(31325) // Location31325
+
 	// ErrWrongPositionalOperatorLocation indicates that there can only be one positional
 	// operator at the end.
 	ErrWrongPositionalOperatorLocation = ErrorCode(31394) // Location31394

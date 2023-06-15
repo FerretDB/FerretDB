@@ -39,6 +39,9 @@ const (
 	// ErrInvalidExpression indicates that given operator does not exist.
 	ErrInvalidExpression
 
+	// ErrInvalidNestedExpression indicates that operator inside the target operator does not exist.
+	ErrInvalidNestedExpression
+
 	// ErrNoOperator indicates that given document does not contain any operator.
 	ErrNoOperator
 )

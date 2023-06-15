@@ -67,7 +67,11 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 					continue
 				}
 
-				return nil, err
+				if opErr.Code() == ErrInvalidExpression {
+					opErr.code = ErrInvalidNestedExpression
+				}
+
+				return nil, opErr
 			}
 
 			if typeParam, err = operator.Process(doc); err != nil {

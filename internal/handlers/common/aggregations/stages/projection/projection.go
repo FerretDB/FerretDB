@@ -633,6 +633,12 @@ func processOperatorError(err error) error {
 		)
 	case operators.ErrInvalidExpression:
 		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrAggregateInvalidExpression,
+			"Invalid $project :: caused by :: "+opErr.Error(),
+			"$project (stage)",
+		)
+	case operators.ErrInvalidNestedExpression:
+		return commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrInvalidPipelineOperator,
 			"Invalid $project :: caused by :: "+opErr.Error(),
 			"$project (stage)",
