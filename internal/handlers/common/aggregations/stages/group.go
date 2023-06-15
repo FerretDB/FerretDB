@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
@@ -83,7 +82,7 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 
 		if field == "_id" {
 			if doc, ok := v.(*types.Document); ok {
-				if err = validateDocumentExpression(doc); err != nil {
+				if err = common.ValidateDocumentExpression(doc, "$group"); err != nil {
 					return nil, err
 				}
 			}
@@ -260,38 +259,6 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 		groupID:   groupKey,
 		documents: docs,
 	})
-}
-
-// validateDocumentExpression returns error when there is unsupported expression present.
-func validateDocumentExpression(doc *types.Document) error {
-	iter := doc.Iterator()
-	defer iter.Close()
-
-	for {
-		k, v, err := iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			return nil
-		}
-
-		if err != nil {
-			return err
-		}
-
-		if strings.HasPrefix(k, "$") {
-			// TODO: https://github.com/FerretDB/FerretDB/issues/2165
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
-				fmt.Sprintf("%s operator is not implemented for $group key expression yet", k),
-				"$group (stage)",
-			)
-		}
-
-		if docVal, ok := v.(*types.Document); ok {
-			if err = validateDocumentExpression(docVal); err != nil {
-				return err
-			}
-		}
-	}
 }
 
 // Type implements Stage interface.
