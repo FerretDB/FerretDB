@@ -22,12 +22,12 @@ Welcome to this guide on how to install [FerretDB](https://www.ferretdb.io/) - M
 But before we dive into the nub of this matter, we need to know what FerretDB is!
 
 Databases are majorly categorised as Relational and Non-relational.
-Today, our key focus is on non-relational databases(also known as NoSQL).
+Today, our key focus is on non-relational databases (also known as NoSQL).
 These databases do not observe the traditional tabular relational database model of rows and columns with pre-defined schemas, but instead use a variety of data models, such as key-value, document, column-family, and graph models, to store and manage data.
 
 They are often used to store and manage unstructured or semi-structured data, such as text, images, videos, social media posts, and sensor data, that may not fit well into traditional relational databases.
 They are known for better scalability, performance, and availability than traditional relational databases, particularly for web-scale applications with high volumes of data and traffic.
-The most popular NoSQL databases are [MongoDB](https://www.mongodb.com/), [Redis](https://redis.io/), [Couchbase](https://www.couchbase.com/), [Cassandra](https://cassandra.apache.org/_/index.html), [Neo4j](https://neo4j.com/) etc.
+The most popular NoSQL databases are [MongoDB](https://www.mongodb.com/), [Redis](https://redis.io/), [Couchbase](https://www.couchbase.com/), [Cassandra](https://cassandra.apache.org/), [Neo4j](https://neo4j.com/) etc.
 
 FerretDB is a free and open-source alternative to MongoDB, built on [Postgres](https://www.postgresql.org/).
 It translates the MongoDB wire protocol queries to SQL with the help of PostgreSQL as the database engine.
@@ -35,8 +35,8 @@ FerretDB was introduced after the popular MongoDB deviated from its open-source 
 It acts as a drop-in replacement for MongoDB users looking for an open-source alternative to MongoDB.
 
 One of the amazing features is that FerretDB is compatible with MongoDB drivers and can serve as a direct replacement for MongoDB 6.0+.
-It is cross-platform as it can be installed on Linux, MacOS and Windows systems.
-There is also a docker image for those who want to spin it in containers.
+It is cross-platform as it can be installed on Linux, macOS and Windows systems.
+There is also a Docker image for those who want to spin it in containers.
 
 To run FerretDB in Docker containers, follow the guide below:
 
@@ -56,7 +56,7 @@ sudo apt update
 sudo apt upgrade
 ```
 
-Once the system has been updated, install PostgreSQL
+Once the system has been updated, install PostgreSQL:
 
 ```sh
 sudo apt install postgresql -y
@@ -83,7 +83,7 @@ sudo -u postgres psql
 
 Create the FerretDB user:
 
-```js
+```sql
 CREATE USER ferretuser WITH PASSWORD 'Passw0rd!';
 ```
 
