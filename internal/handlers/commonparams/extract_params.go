@@ -205,7 +205,7 @@ func tagOptionsFromList(optionsList []string) *tagOptions {
 		switch tt {
 		case "opt":
 			to.optional = true
-		case "non-default":
+		case "unimplemented-non-default":
 			to.nonDefault = true
 		case "unimplemented":
 			to.unimplemented = true
