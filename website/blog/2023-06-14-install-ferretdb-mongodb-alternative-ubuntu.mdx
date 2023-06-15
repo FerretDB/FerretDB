@@ -5,7 +5,7 @@ author: Klinsmann Öteyo
 description: >
   This is a guide on how to install FerretDB - the MongoDB alternative - on Ubuntu.
 image: /img/blog/install-ferretdb-ubuntu.jpg
-keywords: [FerretDB, mongodb alternative]
+keywords: [install ferretdb, install ferretdb ubuntu, ferretdb ubuntu installation, mongodb ubuntu installation]
 ---
 
 <head>
@@ -14,11 +14,11 @@ keywords: [FerretDB, mongodb alternative]
 
 ![How to install FerretDB on Ubuntu](/img/blog/install-ferretdb-ubuntu.jpg)
 
-_This is a duplicate post from [Tutornix](https://tutornix.com/how-to-install-ferretdb-mongodb-alternative-on-ubuntu-22-0420-04/) about installing FerretDB on Ubuntu; we are grateful to the author for the permission to repost this on our blog._
+_This is a repost of an article from [Tutornix](https://tutornix.com/how-to-install-ferretdb-mongodb-alternative-on-ubuntu-22-0420-04/) about installing FerretDB on Ubuntu; we are grateful to the author for the permission to repost this on our blog._
 
 <!--truncate-->
 
-Welcome to this guide on how to install [FerretDB](https://www.ferretdb.io/) - MongoDB Alternative - on Ubuntu.
+Welcome to this guide on how to install [FerretDB](https://www.ferretdb.io/) on Ubuntu.
 But before we dive into the nub of this matter, we need to know what FerretDB is!
 
 Databases are majorly categorised as Relational and Non-relational.
@@ -30,7 +30,7 @@ They are known for better scalability, performance, and availability than tradit
 The most popular NoSQL databases are [MongoDB](https://www.mongodb.com/), [Redis](https://redis.io/), [Couchbase](https://www.couchbase.com/), [Cassandra](https://cassandra.apache.org/), [Neo4j](https://neo4j.com/) etc.
 
 FerretDB is a free and open-source alternative to MongoDB, built on [Postgres](https://www.postgresql.org/).
-It translates the MongoDB wire protocol queries to SQL with the help of PostgreSQL as the database engine.
+It translates the MongoDB wire protocol queries to SQL, and uses PostgreSQL as the database engine.
 FerretDB was introduced after the popular MongoDB deviated from its open-source roots and switched to the SSPL license.
 It acts as a drop-in replacement for MongoDB users looking for an open-source alternative to MongoDB.
 
@@ -119,12 +119,18 @@ ferretuser=> \q
 ## Step 2 – Download and Install FerretDB on Ubuntu
 
 To download the latest FerretDB release, visit the official [GitHub Release page](https://github.com/FerretDB/FerretDB/releases).
+
 Alternatively, you can pull the latest release using the command:
 
 ```sh
 VER=v1.2.0
 wget https://github.com/FerretDB/FerretDB/releases/download/$VER/ferretdb.deb
 ```
+:::caution
+The blog post was written when the latest version of FerretDB was v1.2.0.
+You can check the latest version [here](https://github.com/FerretDB/FerretDB/releases).
+We've also [addressed the issue](https://blog.ferretdb.io/ferretdb-v-1-3-0-new-release/#fixed-bugs) with version fields for .deb packages which were not accurately reflecting the correct versions during installation, as seen in the sample output for the command below.
+:::
 
 Once downloaded, install FerretDB using the command:
 
@@ -171,20 +177,22 @@ debugBuild: false
 
 FerretDB takes several arguments that include:
 
-- **`-h`, `–help`**: Show context-sensitive help.
-- **`--version`**: Print version to stdout and exit.
-- **`--handler`=`pg`** : Backend handler: `dummy`, `pg` (Default), `tigris` \
-  (`$FERRETDB_HANDLER`).
-- –**`--mode`=`normal`**: Operation mode: `normal`, `proxy`, `diff-normal`, \
-  `diff-proxy` (`$FERRETDB_MODE`).
-- **`–-state-dir`=`.`**: Process state directory (`$FERRETDB_STATE_DIR`).
-- **`–-listen-addr`=`127.0.0.1:27017`**: Listen TCP address (`$FERRETDB_LISTEN_ADDR`).
-- **`–-listen-unix`=""**: Listen Unix domain socket path (`$FERRETDB_LISTEN_UNIX`).
-- **`-–listen-tls`=""**: Listen TLS address (`$FERRETDB_LISTEN_TLS`).
-- **`–-listen-tls-cert-file`=""** : TLS cert file path (`$FERRETDB_LISTEN_TLS_CERT_FILE`).
-- **`–-listen-tls-key-file`=""** : TLS key file path (`$FERRETDB_LISTEN_TLS_KEY_FILE`).
-- **`–-listen-tls-ca-file`=""** : TLS CA file path (`$FERRETDB_LISTEN_TLS_CA_FILE`).
-- **`–-postgresql-url`=`postgres://127.0.0.1:5432/ferretdb`** : PostgreSQL URL for `pg` handler
+```sh
+  -h, --help                                                   Show context-sensitive help.
+      --version                                                Print version to stdout and exit.
+      --handler="pg"                                           Backend handler: 'pg', 'sqlite', 'tigris' ($FERRETDB_HANDLER).
+      --mode="normal"                                          Operation mode: 'normal', 'proxy', 'diff-normal', 'diff-proxy' ($FERRETDB_MODE).
+      --state-dir="."                                          Process state directory ($FERRETDB_STATE_DIR).
+      --listen-addr="127.0.0.1:27017"                          Listen TCP address ($FERRETDB_LISTEN_ADDR).
+      --listen-unix=""                                         Listen Unix domain socket path ($FERRETDB_LISTEN_UNIX).
+      --listen-tls=""                                          Listen TLS address ($FERRETDB_LISTEN_TLS).
+      --listen-tls-cert-file=""                                TLS cert file path ($FERRETDB_LISTEN_TLS_CERT_FILE).
+      --listen-tls-key-file=""                                 TLS key file path ($FERRETDB_LISTEN_TLS_KEY_FILE).
+      --listen-tls-ca-file=""                                  TLS CA file path ($FERRETDB_LISTEN_TLS_CA_FILE).
+      --proxy-addr=""                                          Proxy address ($FERRETDB_PROXY_ADDR).
+      --debug-addr="127.0.0.1:8088"                            Listen address for HTTP handlers for metrics, pprof, etc ($FERRETDB_DEBUG_ADDR).
+      --postgresql-url="postgres://127.0.0.1:5432/ferretdb"    PostgreSQL URL for 'pg' handler ($FERRETDB_POSTGRESQL_URL).
+```
 
 Since FerretDB has not been started, we will create a systemd service file with all the desired variables:
 
@@ -194,7 +202,7 @@ sudo vim /etc/systemd/system/ferretdb.service
 
 In the file, add the below lines
 
-```js
+```ini
 [Unit]
 Description=FerretDB
 After=network-online.target
@@ -275,7 +283,13 @@ Sample Output:
 
 ![Run FerretDB on Ubuntu](/img/blog/ferretdb-ubuntu/run-ferretdb-ubuntu.webp)
 
-Once connected, switch to the database created on PostgreSQL
+Once connected, switch the context to `ferretuser`:
+
+:::note
+Please note that the `use <name>` command does NOT create a database.
+Instead, it switches the context from the current database to a non-existing database.
+In the example below, `ferretuser` will not be visible when you run `show dbs` since no data has been inserted; the database is created ONLY when you first insert data into it.
+:::
 
 ```sh
 test> use ferretuser
@@ -285,7 +299,7 @@ public  0 B
 ferretuser>
 ```
 
-Add tables to the database:
+Add a document to the database (this will now create the database on the fly):
 
 ```js
 db.userdetails.insertOne({
@@ -297,9 +311,13 @@ db.userdetails.insertOne({
 })
 ```
 
-View the added collections:
+View the added database and collections:
 
-```js
+```sh
+ferretuser> show dbs
+ferretuser   32.00 KiB
+public       0 B
+ferretuser>
 > show collections
 userdetails
 ```
@@ -319,3 +337,9 @@ Now view if the tables exist here too:
 That marks the end of this amazing guide on how to install FerretDB on Ubuntu.
 You can now enjoy the awesomeness of FerretDB, a free and open-source alternative to MongoDB.
 I hope this was helpful.
+
+:::tip
+If you would like to publish an article on FerretDB, we welcome all [contributions to FerretDB](https://docs.ferretdb.io/contributing/), including blog posts.
+You can also contribute to the development of FerretDB, or submit bug reports, and feature requests.
+Please reach out to us on our [community channels](https://docs.ferretdb.io/#community) if you have any questions or feedback.
+:::
