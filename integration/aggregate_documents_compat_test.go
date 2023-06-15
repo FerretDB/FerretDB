@@ -1637,7 +1637,7 @@ func TestAggregateCompatProject(t *testing.T) {
 		"TypeRecursiveArrayInvalid": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{{"1", "2"}}}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{"1", "2"}}}}}}},
 			},
 			resultType: emptyResult,
 		},

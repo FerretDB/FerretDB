@@ -280,6 +280,56 @@ func TestAggregateProjectErrors(t *testing.T) {
 				Message: "Invalid $project :: caused by :: Cannot use positional projection in aggregation projection",
 			},
 		},
+		"ProjectTypeEmpty": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"v", bson.D{}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    51270,
+				Name:    "Location51270",
+				Message: "Invalid $project :: caused by :: An empty sub-projection is not a valid value." + " Found empty object at path",
+			},
+		},
+		"ProjectTwoOperators": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"v", bson.D{{"$type", int32(42)}, {"$op", int32(42)}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16410,
+				Name:    "Location16410",
+				Message: "Invalid $project :: caused by :: FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+			},
+		},
+		"ProjectTypeInvalidLen": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"v", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16020,
+				Name:    "Location16020",
+				Message: "Invalid $project :: caused by :: Expression $type takes exactly 1 arguments. 2 were passed in.",
+			},
+		},
+		"ProjectNonExistentOperator": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"v", bson.D{{"$non-existent", "foo"}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    31325,
+				Name:    "Location31325",
+				Message: "Invalid $project :: caused by :: Unknown expression $non-existent",
+			},
+		},
+		"ProjectRecursiveNonExistentOperator": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"v", bson.D{{"$type", bson.D{{"$non-existent", "foo"}}}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    168,
+				Name:    "InvalidPipelineOperator",
+				Message: "Invalid $project :: caused by :: Unrecognized expression '$non-existent'",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

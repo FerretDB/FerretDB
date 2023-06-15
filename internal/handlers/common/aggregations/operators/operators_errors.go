@@ -28,7 +28,7 @@ const (
 	ErrWrongType
 
 	// ErrEmptyField indicates that operator field is empty.
-	ErrEmptyField // The operator field is empty (expected document)
+	ErrEmptyField
 
 	// ErrTooManyFields indicates that operator field specifes more than one operators.
 	ErrTooManyFields
