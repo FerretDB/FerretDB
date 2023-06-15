@@ -141,8 +141,19 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		switch value := value.(type) {
 		case *types.Document:
+			op, err := operators.NewOperator(value)
+			if err = processOperatorError(err); err != nil {
+				return nil, false, err
+			}
+
+			_, err = op.Process(must.NotFail(types.NewDocument("key", "value")))
+			if err = processOperatorError(err); err != nil {
+				return nil, false, err
+			}
+
 			// validate operators later
 			validated.Set(key, value)
+
 			result = true
 
 		case *types.Array, string, types.Binary, types.ObjectID,
