@@ -36,6 +36,7 @@ type faker struct {
 // newFaker creates a new faker.
 func newFaker() *faker {
 	src := rand.NewSource(1)
+
 	return &faker{
 		r: rand.New(src),
 		f: fakerlib.NewWithSeed(src),
@@ -56,6 +57,7 @@ func (f *faker) ObjectID() primitive.ObjectID {
 	for id.IsZero() {
 		must.NotFail(f.r.Read(id[:]))
 	}
+
 	return id
 }
 

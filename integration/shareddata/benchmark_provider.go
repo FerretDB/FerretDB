@@ -116,7 +116,7 @@ func newGeneratorBenchmarkProvider(baseName string, genFuncConstructor generator
 	}
 }
 
-// Name implements BenchmarkGenerator.
+// Init implements BenchmarkGenerator.
 func (gbp *generatorBenchmarkProvider) Init(docs int) {
 	gbp.docs = docs
 }
@@ -128,7 +128,7 @@ func (gbp *generatorBenchmarkProvider) Name() string {
 	return fmt.Sprintf("%s/Docs%d/%s", gbp.baseName, gbp.docs, hash)
 }
 
-// Name implements BenchmarkProvider.
+// BaseName implements BenchmarkProvider.
 func (gbp *generatorBenchmarkProvider) BaseName() string {
 	return gbp.baseName
 }
