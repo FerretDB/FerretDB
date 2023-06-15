@@ -26,16 +26,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
-func BenchmarkQuery(b *testing.B) {
+func BenchmarkQuerySmallDocuments(b *testing.B) {
 	provider := shareddata.BenchmarkSmallDocuments
 
 	b.Run(provider.Name(), func(b *testing.B) {
 		s := setup.SetupWithOpts(b, &setup.SetupOpts{
 			BenchmarkProvider: provider,
 		})
-
-		total, err := iterator.ConsumeCount(provider.NewIterator())
-		require.NoError(b, err)
 
 		for name, bc := range map[string]struct {
 			filter bson.D
@@ -73,7 +70,6 @@ func BenchmarkQuery(b *testing.B) {
 				require.Len(b, docs, len(firstDocs))
 
 				b.ReportMetric(float64(len(docs)), "docs-returned")
-				b.ReportMetric(float64(total), "docs-total")
 			})
 		}
 	})
@@ -84,24 +80,26 @@ func BenchmarkReplaceSettingsDocument(b *testing.B) {
 
 	iter := shareddata.BenchmarkSettingsDocuments.NewIterator()
 	_, doc, err := iter.Next()
+	iter.Close()
+
 	require.NoError(b, err)
 	require.Equal(b, "_id", doc[0].Key)
 	require.NotEmpty(b, doc[0].Value)
-	iter.Close()
+	require.NotZero(b, doc[1].Value)
 
 	_, err = collection.InsertOne(ctx, doc)
 	require.NoError(b, err)
 
-	b.ResetTimer()
+	b.Run("Replace", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			doc[1].Value = i + 1
 
-	for i := 0; i < b.N; i++ {
-		doc[1].Value = i
-
-		res, err := collection.ReplaceOne(ctx, bson.D{}, doc)
-		require.NoError(b, err)
-		require.Equal(b, int64(1), res.MatchedCount)
-		require.Equal(b, int64(1), res.ModifiedCount)
-	}
+			res, err := collection.ReplaceOne(ctx, bson.D{}, doc)
+			require.NoError(b, err)
+			require.Equal(b, int64(1), res.MatchedCount)
+			require.Equal(b, int64(1), res.ModifiedCount)
+		}
+	})
 }
 
 func BenchmarkInsertMany(b *testing.B) {
@@ -109,11 +107,12 @@ func BenchmarkInsertMany(b *testing.B) {
 
 	for _, provider := range shareddata.AllBenchmarkProviders() {
 		for _, batchSize := range []int{1, 10, 100, 1000} {
-			b.Run(fmt.Sprintf("%s/%d", provider.Name(), batchSize), func(b *testing.B) {
+			b.Run(fmt.Sprintf("%s/Batch%d", provider.Name(), batchSize), func(b *testing.B) {
 				b.StopTimer()
 
 				total, err := iterator.ConsumeCount(provider.NewIterator())
 				require.NoError(b, err)
+				require.GreaterOrEqual(b, total, batchSize)
 
 				for i := 0; i < b.N; i++ {
 					require.NoError(b, collection.Drop(ctx))
@@ -141,8 +140,6 @@ func BenchmarkInsertMany(b *testing.B) {
 						b.StopTimer()
 					}
 				}
-
-				b.ReportMetric(float64(total), "docs-total")
 			})
 		}
 	}

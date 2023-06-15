@@ -15,6 +15,7 @@
 package shareddata
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -45,17 +46,8 @@ func newFaker() *faker {
 func (f *faker) FieldName() string {
 	// TODO https://github.com/jaswdr/faker/issues/142
 
-	const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
-	const firstChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"
-
-	res := string(firstChars[f.r.Intn(len(firstChars))])
-
-	l := f.r.Intn(50) + 1
-	for i := 1; i < l; i++ {
-		res += string(chars[f.r.Intn(len(chars))])
-	}
-
-	return res
+	// somewhat surprisingly, generating "better" field names generates duplicates too often
+	return fmt.Sprintf("field_%d", f.r.Int())
 }
 
 // ObjectID generates a random non-zero ObjectID.

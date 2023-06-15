@@ -80,7 +80,7 @@ func hashBenchmarkProvider(bp BenchmarkProvider) string {
 				panic("iter2 should be done too")
 			}
 
-			return hex.EncodeToString(h.Sum(nil)[:4])
+			return hex.EncodeToString(h.Sum(nil)[:2])
 
 		default:
 			panic(err)
@@ -126,7 +126,7 @@ func (gbp *generatorBenchmarkProvider) BaseName() string {
 func (gbp *generatorBenchmarkProvider) Name() string {
 	hash := hashBenchmarkProvider(gbp)
 
-	return fmt.Sprintf("%s/%d/%s", gbp.baseName, gbp.docs, hash)
+	return fmt.Sprintf("%s/Docs%d/%s", gbp.baseName, gbp.docs, hash)
 }
 
 // NewIterator implements BenchmarkProvider.
