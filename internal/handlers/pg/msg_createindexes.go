@@ -123,12 +123,6 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 			"One of the specified indexes already exists with a different key",
 			document.Command(),
 		)
-	case errors.Is(err, pgdb.ErrUniqueViolation):
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrDuplicateKeyInsert,
-			"Index build failed",
-			document.Command(),
-		)
 	case errors.Is(err, nil):
 	default:
 		return nil, lazyerrors.Error(err)
