@@ -575,7 +575,14 @@ func setBySourceOrder(key string, val any, source, projected *types.Document) {
 }
 
 // processOperatorError takes internal error related to operator evaluation and
-// returns proper CommandError that can be returned by $process aggregation stage.
+// returns proper CommandError that can be returned by $project aggregation stage.
+//
+// Command error codes:
+// - ErrEmptySubProject when operator value is empty.
+// - ErrFieldPathInvalidName when FieldPath is invalid.
+// - ErrNotImplemented when the operator is not implemented yet.
+// - ErrOperatorWrongLenOfArgs when the operator has an invalid number of arguments.
+// - ErrInvalidPipelineOperator when an the operator does not exist.
 func processOperatorError(err error) error {
 	if err == nil {
 		return nil
@@ -603,9 +610,8 @@ func processOperatorError(err error) error {
 		)
 	case operators.ErrNotImplemented:
 		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrEmptySubProject,
-			"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
-				" Found empty object at path",
+			commonerrors.ErrNotImplemented,
+			"Invalid $project :: caused by :: "+opErr.Error(),
 			"$project (stage)",
 		)
 	case operators.ErrArgsInvalidLen:
