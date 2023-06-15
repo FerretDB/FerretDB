@@ -25,6 +25,53 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
+func TestAggregateAddFieldsErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		pipeline bson.A // required, aggregation pipeline stages
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"NotDocument": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", "not-document"}},
+			},
+			err: &mongo.CommandError{
+				Code:    40272,
+				Name:    "Location40272",
+				Message: "$addFields specification stage must be an object, got string",
+			},
+			altMessage: "$addFields specification stage must be an object, got string",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			ctx, collection := setup.Setup(t)
+
+			_, err := collection.Aggregate(ctx, tc.pipeline)
+
+			if tc.altMessage != "" {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				return
+			}
+
+			AssertEqualCommandError(t, *tc.err, err)
+		})
+	}
+}
+
 func TestAggregateGroupErrors(t *testing.T) {
 	t.Parallel()
 
@@ -279,6 +326,53 @@ func TestAggregateProjectErrors(t *testing.T) {
 				Name:    "Location31324",
 				Message: "Invalid $project :: caused by :: Cannot use positional projection in aggregation projection",
 			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			ctx, collection := setup.Setup(t)
+
+			_, err := collection.Aggregate(ctx, tc.pipeline)
+
+			if tc.altMessage != "" {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				return
+			}
+
+			AssertEqualCommandError(t, *tc.err, err)
+		})
+	}
+}
+
+func TestAggregateSetErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		pipeline bson.A // required, aggregation pipeline stages
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"NotDocument": {
+			pipeline: bson.A{
+				bson.D{{"$set", "not-document"}},
+			},
+			err: &mongo.CommandError{
+				Code:    40272,
+				Name:    "Location40272",
+				Message: "$set specification stage must be an object, got string",
+			},
+			altMessage: "$set specification stage must be an object, got string",
 		},
 	} {
 		name, tc := name, tc
