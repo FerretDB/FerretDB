@@ -15,9 +15,7 @@
 // Package shareddata provides data for tests and benchmarks.
 package shareddata
 
-import (
-	"golang.org/x/exp/maps"
-)
+import "golang.org/x/exp/maps"
 
 // unset represents a field that should not be set.
 var unset = struct{}{}
