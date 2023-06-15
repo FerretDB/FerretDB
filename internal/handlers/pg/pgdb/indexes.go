@@ -32,7 +32,7 @@ import (
 type Index struct {
 	Name   string
 	Key    IndexKey
-	Unique *bool
+	Unique *bool // we have to use pointer to determine whether the field was set or not
 }
 
 // IndexKey is a list of field name + sort order pairs.
