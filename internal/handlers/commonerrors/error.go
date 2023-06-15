@@ -110,6 +110,9 @@ const (
 	// ErrDuplicateKey indicates duplicate key violation.
 	ErrDuplicateKey = ErrorCode(11000) // Location11000
 
+	// ErrSetBadExpression indicates set expression is not object.
+	ErrSetBadExpression = ErrorCode(40272) // Location40272
+
 	// ErrStageGroupInvalidFields indicates group's fields must be an object.
 	ErrStageGroupInvalidFields = ErrorCode(15947) // Location15947
 
