@@ -467,8 +467,9 @@ func (ms *metadataStorage) setIndex(ctx context.Context, index string, key Index
 	pgTable = metadata.table
 	pgIndex = indexNameToPgIndexName(ms.collection, index)
 
-	switch unique.(type) {
-	case nil:
+	// If unique is nil, it wasn't passed with index definition.
+	// We have to set it to types.NullType in order to be able to save index metadata.
+	if unique == nil {
 		unique = types.NullType{}
 	}
 
