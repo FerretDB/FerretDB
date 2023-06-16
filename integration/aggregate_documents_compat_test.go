@@ -1618,21 +1618,28 @@ func TestAggregateCompatProject(t *testing.T) {
 		"TypeRecursive": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", "$v"}}}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", bson.D{{"$type", "$v"}}}}}}}}}},
 			},
 		},
 		"TypeRecursiveNonExistent": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$non-existent", "$v"}}}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", bson.D{{"$non-existent", "$v"}}}}}}}}}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2678",
+			resultType: emptyResult,
 		},
 		"TypeRecursiveInvalid": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"v", "$v"}}}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", bson.D{{"v", "$v"}}}}}}}}}},
 			},
+		},
+		"TypeRecursiveArrayInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", bson.A{"1", "2"}}}}}}}}},
+			},
+			resultType: emptyResult,
 		},
 
 		"TypeInt": {
@@ -1670,7 +1677,7 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2678",
+			resultType: emptyResult,
 		},
 		"TypeNestedArray": {
 			pipeline: bson.A{
@@ -1689,6 +1696,13 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", true}}}}}},
 			},
+		},
+		"ProjectManyOperators": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"$type", "foo"}, {"$op", "foo"}}}},
+			},
+			resultType: emptyResult,
 		},
 	}
 
