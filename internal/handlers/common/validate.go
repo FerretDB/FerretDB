@@ -16,15 +16,10 @@ package common
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"strings"
 
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -73,84 +68,4 @@ func Validate(ctx context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.OpMsg,
 	}))
 
 	return &reply, nil
-}
-
-// ValidateDocumentExpression returns error when there is unsupported expression present in the document.
-// Currently it raises error if there is any expression(which have a prefix $).
-func ValidateDocumentExpression(doc *types.Document, stageName string) error {
-	iter := doc.Iterator()
-	defer iter.Close()
-
-	for {
-		k, v, err := iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			return nil
-		}
-
-		if err != nil {
-			return err
-		}
-
-		if strings.HasPrefix(k, "$") {
-			// TODO: https://github.com/FerretDB/FerretDB/issues/2165
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
-				fmt.Sprintf("%s operator is not implemented for %s key expression yet", k, stageName),
-				fmt.Sprintf("%s (stage)", stageName),
-			)
-		}
-
-		if docVal, ok := v.(*types.Document); ok {
-			if err = ValidateDocumentExpression(docVal, stageName); err != nil {
-				return err
-			}
-		}
-	}
-}
-
-// ValidateArrayExpression returns error when there is unsupported expression present in the array.
-// Currently it raises error if there is any expression(which have a prefix $) inside the array.
-func ValidateArrayExpression(arr *types.Array, stageName string) error {
-	iter := arr.Iterator()
-	defer iter.Close()
-
-	for {
-		_, arrDoc, err := iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			return nil
-		}
-
-		if err != nil {
-			return err
-		}
-
-		doc, ok := arrDoc.(*types.Document)
-		if !ok {
-			return nil
-		}
-
-		if err := ValidateDocumentExpression(doc, stageName); err != nil {
-			return err
-		}
-	}
-}
-
-// ValidateArrayAndDocExpression returns error when there is unsupported expression present either in the array/document.
-// Currently it raises error if there is any expression(which have a prefix $) inside the array/document.
-func ValidateArrayAndDocExpression(fieldsDoc *types.Document, expression string) error {
-	for _, key := range fieldsDoc.Keys() {
-		val := must.NotFail(fieldsDoc.Get(key))
-		switch value := val.(type) {
-		case *types.Document:
-			if err := ValidateDocumentExpression(value, expression); err != nil {
-				return lazyerrors.Error(err)
-			}
-		case *types.Array:
-			if err := ValidateArrayExpression(value, expression); err != nil {
-				return lazyerrors.Error(err)
-			}
-		}
-	}
-
-	return nil
 }
