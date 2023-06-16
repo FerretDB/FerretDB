@@ -18,6 +18,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // CreateCollection creates a new SAP HANA JSON Document Store collection.
@@ -54,4 +56,28 @@ func (hanaPool *Pool) DropCollection(ctx context.Context, qp *QueryParams) error
 	_, err := hanaPool.ExecContext(ctx, sql)
 
 	return getHanaErrorIfExists(err)
+}
+
+// CollectionSize calculates the size of the given collection.
+//
+// Returns 0 if schema or collection doesn't exist, otherwise returns its size.
+func (hanaPool *Pool) CollectionSize(ctx context.Context, qp *QueryParams) (int64, error) {
+	sqlStmt := "SELECT TABLE_SIZE FROM M_TABLES WHERE SCHEMA_NAME = $1 AND TABLE_NAME = $2 AND TABLE_TYPE = 'COLLECTION'"
+
+	var size any
+	if err := hanaPool.QueryRowContext(ctx, sqlStmt, qp.DB, qp.Collection).Scan(&size); err != nil {
+		return 0, lazyerrors.Error(err)
+	}
+
+	var collectionSize int64
+	switch size := size.(type) {
+	case int64:
+		collectionSize = size
+	case nil:
+		collectionSize = 0
+	default:
+		return 0, lazyerrors.Errorf("Got wrong type for tableSize. Got: %T", collectionSize)
+	}
+
+	return collectionSize, nil
 }

@@ -18,11 +18,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // CreateSchema creates a schema in SAP HANA JSON Document Store.
 //
-//	Returns ErrSchemaAlreadyExist if schema already exists.
+// Returns ErrSchemaAlreadyExist if schema already exists.
 func (hanaPool *Pool) CreateSchema(ctx context.Context, qp *QueryParams) error {
 	sqlStmt := fmt.Sprintf("CREATE SCHEMA %q", qp.DB)
 
@@ -54,4 +56,92 @@ func (hanaPool *Pool) DropSchema(ctx context.Context, qp *QueryParams) error {
 	_, err := hanaPool.ExecContext(ctx, sql)
 
 	return getHanaErrorIfExists(err)
+}
+
+// ListSchemas lists all schemas that aren't related to Hana SYS schemas and SYS owner.
+func (hanaPool *Pool) ListSchemas(ctx context.Context) ([]string, error) {
+	const excludeSYS = "%SYS%"
+	sqlStmt := "SELECT SCHEMA_NAME FROM SCHEMAS WHERE SCHEMA_NAME NOT LIKE $1 AND SCHEMA_OWNER NOT LIKE $2"
+
+	rows, err := hanaPool.QueryContext(ctx, sqlStmt, excludeSYS, excludeSYS)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer rows.Close()
+
+	res := make([]string, 0, 2)
+
+	for rows.Next() {
+		var name string
+		if err = rows.Scan(&name); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res = append(res, name)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
+}
+
+// ListCollections lists all collections under a given schema.
+//
+// Returns an empty array if schema doesn't exist.
+func (hanaPool *Pool) ListCollections(ctx context.Context, qp *QueryParams) ([]string, error) {
+	sqlStmt := "SELECT TABLE_NAME FROM M_TABLES WHERE SCHEMA_NAME = $1 AND TABLE_TYPE = 'COLLECTION'"
+
+	rows, err := hanaPool.QueryContext(ctx, sqlStmt, qp.DB)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer rows.Close()
+
+	res := make([]string, 0, 2)
+
+	for rows.Next() {
+		var name string
+		if err = rows.Scan(&name); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res = append(res, name)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return res, nil
+}
+
+// SchemaSize calculates the total size of collections under schema.
+//
+// Returns 0 if schema doesn't exist, otherwise returns its size.
+func (hanaPool *Pool) SchemaSize(ctx context.Context, qp *QueryParams) (int64, error) {
+	collections, err := hanaPool.ListCollections(ctx, qp)
+	if err != nil {
+		return 0, lazyerrors.Error(err)
+	}
+
+	qpCopy := QueryParams{
+		DB: qp.DB,
+	}
+
+	var totalSize int64
+
+	for _, collection := range collections {
+		qpCopy.Collection = collection
+		size, err := hanaPool.CollectionSize(ctx, &qpCopy)
+
+		if err != nil {
+			return 0, lazyerrors.Error(err)
+		}
+
+		totalSize += size
+	}
+
+	return totalSize, nil
 }
