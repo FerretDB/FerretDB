@@ -17,14 +17,12 @@ We've got you covered.
 
 <!--truncate-->
 
-We've set up the [FerretDB](https://www.ferretdb.io/) demo page so you can experiment and see what FerretDB looks like in action: creating your own database, performing CRUD operations, running indexes, or aggregation pipeline commands, basically all the commands you're already used to.
+We've set up the [FerretDB demo page](https://try.ferretdb.io/) so you can experiment and see what FerretDB looks like in action: creating your own database, performing CRUD operations, running indexes, or aggregation pipeline commands, basically all the commands you're already used to.
 
-If you're new to FerretDB and wondering what it's all about, FerretDB is an open-source database committed to restoring MongoDB workloads to their open-source origins while enabling developers to use the same syntax and commands.
-Basically, we convert MongoDB wire protocols to SQL with PostgreSQL as the backend engine.
+If you're new to FerretDB and wondering what it's all about, [FerretDB](https://www.ferretdb.io/) is an open-source database committed to restoring MongoDB workloads to their open-source origins while enabling developers to use the same syntax and commands.
+Basically, we [convert MongoDB wire protocols to SQL with PostgreSQL](https://blog.ferretdb.io/pjson-how-to-store-bson-in-jsonb/) as the backend engine.
 
 Now that we know what FerretDB is all about, let's jump into the demo and try it out.
-
-Let's get started.
 
 ## Prerequisites
 
@@ -39,7 +37,7 @@ In this blog post, we'll be showcasing the FerretDB demo page and what you can a
 
 The FerretDB demo is quick to set up, and you can get started through the demo site.
 
-- [Demo site](https://tryferretdb.civo.com/)
+- [Demo site](https://try.ferretdb.io/)
 
 Once you are on the site, you can click the "launch a database for free" button to create your own FerretDB database at Civo.com - a cloud marketplace and service platform.
 
@@ -168,6 +166,7 @@ db.demo.createIndex({ email: 1 })
 ```
 
 You can try several combinations of commands; here is a list of the currently [supported commands on FerretDB](https://docs.ferretdb.io/reference/supported-commands/).
+You can also check out this blog post on some of the [basic CRUD commands you can run on FerretDB](https://blog.ferretdb.io/mongodb-crud-operations-with-ferretdb/).
 
 Feel free to experiment and explore all the capabilities of FerretDB.
 
