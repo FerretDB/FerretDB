@@ -15,6 +15,7 @@
 package common
 
 import (
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -54,6 +55,20 @@ func (iter *addFieldsIterator) Next() (struct{}, *types.Document, error) {
 
 	for _, key := range iter.newField.Keys() {
 		val := must.NotFail(iter.newField.Get(key))
+		switch v := val.(type) {
+		case *types.Document:
+			op, err := operators.NewOperator(v)
+			if err != nil {
+				return unused, nil, err
+			}
+
+			val, err = op.Process(doc)
+			if err != nil {
+				return unused, nil, err
+			}
+
+		}
+
 		doc.Set(key, val)
 	}
 

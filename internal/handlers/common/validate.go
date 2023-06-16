@@ -17,12 +17,9 @@ package common
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strings"
 
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -82,7 +79,7 @@ func ValidateDocumentExpression(doc *types.Document, stageName string) error {
 	defer iter.Close()
 
 	for {
-		k, v, err := iter.Next()
+		_, v, err := iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			return nil
 		}
@@ -91,14 +88,14 @@ func ValidateDocumentExpression(doc *types.Document, stageName string) error {
 			return err
 		}
 
-		if strings.HasPrefix(k, "$") {
-			// TODO: https://github.com/FerretDB/FerretDB/issues/2165
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
-				fmt.Sprintf("%s operator is not implemented for %s key expression yet", k, stageName),
-				fmt.Sprintf("%s (stage)", stageName),
-			)
-		}
+		//if strings.HasPrefix(k, "$") {
+		//	// TODO: https://github.com/FerretDB/FerretDB/issues/2165
+		//	return commonerrors.NewCommandErrorMsgWithArgument(
+		//		commonerrors.ErrNotImplemented,
+		//		fmt.Sprintf("%s operator is not implemented for %s key expression yet", k, stageName),
+		//		fmt.Sprintf("%s (stage)", stageName),
+		//	)
+		//}
 
 		if docVal, ok := v.(*types.Document); ok {
 			if err = ValidateDocumentExpression(docVal, stageName); err != nil {
