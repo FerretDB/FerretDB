@@ -31,6 +31,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -55,6 +56,12 @@ func Startup() {
 	defer cancel()
 
 	// do basic flags validation earlier, before all tests
+
+	for _, p := range shareddata.AllBenchmarkProviders() {
+		if g, ok := p.(shareddata.BenchmarkGenerator); ok {
+			g.Init(*benchDocsF)
+		}
+	}
 
 	if *targetBackendF == "" {
 		zap.S().Fatal("-target-backend must be set.")
