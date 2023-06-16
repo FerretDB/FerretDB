@@ -15,6 +15,8 @@
 package common
 
 import (
+	"errors"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -59,7 +61,12 @@ func (iter *addFieldsIterator) Next() (struct{}, *types.Document, error) {
 		case *types.Document:
 			op, err := operators.NewOperator(v)
 			if err != nil {
-				return unused, nil, err
+				var opErr operators.OperatorError
+
+				if errors.Is(err, &opErr) {
+
+					return unused, nil, err
+				}
 			}
 
 			val, err = op.Process(doc)
