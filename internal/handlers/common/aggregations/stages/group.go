@@ -82,7 +82,7 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 
 		if field == "_id" {
 			if doc, ok := v.(*types.Document); ok {
-				if err = common.ValidateDocumentExpression(doc, "$group"); err != nil {
+				if err = validateExpression("$group", doc); err != nil {
 					return nil, err
 				}
 			}
