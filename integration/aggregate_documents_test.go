@@ -352,13 +352,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			ctx, collection := setup.Setup(t)
 
 			_, err := collection.Aggregate(ctx, tc.pipeline)
-
-			if tc.altMessage != "" {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-				return
-			}
-
-			AssertEqualCommandError(t, *tc.err, err)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
@@ -409,13 +403,88 @@ func TestAggregateSetErrors(t *testing.T) {
 			ctx, collection := setup.Setup(t)
 
 			_, err := collection.Aggregate(ctx, tc.pipeline)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
 
-			if tc.altMessage != "" {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-				return
+func TestAggregateUnsetErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		pipeline bson.A // required, aggregation pipeline stages
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"EmptyArray": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{}}},
+			},
+			err: &mongo.CommandError{
+				Code:    31119,
+				Name:    "Location31119",
+				Message: "$unset specification must be a string or an array with at least one field",
+			},
+			altMessage: "$unset specification must be a string or an array with at least one field",
+		},
+		"ArrayInvalidValue": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"field1", 1}}},
+			},
+			err: &mongo.CommandError{
+				Code:    31120,
+				Name:    "Location31120",
+				Message: "$unset specification must be a string or an array containing only string values",
+			},
+		},
+		"ArrayEmptyString": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{""}}},
+			},
+			err: &mongo.CommandError{
+				Code:    40352,
+				Name:    "Location40352",
+				Message: "Invalid $unset :: caused by :: FieldPath cannot be constructed with empty string",
+			},
+		},
+		"EmptyString": {
+			pipeline: bson.A{
+				bson.D{{"$unset", ""}},
+			},
+			err: &mongo.CommandError{
+				Code:    40352,
+				Name:    "Location40352",
+				Message: "Invalid $unset :: caused by :: FieldPath cannot be constructed with empty string",
+			},
+		},
+		"InvalidValue": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.D{}}},
+			},
+			err: &mongo.CommandError{
+				Code:    31002,
+				Name:    "Location31002",
+				Message: "$unset specification must be a string or an array",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
 			}
 
-			AssertEqualCommandError(t, *tc.err, err)
+			t.Parallel()
+
+			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			ctx, collection := setup.Setup(t)
+
+			_, err := collection.Aggregate(ctx, tc.pipeline)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
