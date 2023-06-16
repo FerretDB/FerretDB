@@ -124,6 +124,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 			document.Command(),
 		)
 	case errors.Is(err, pgdb.ErrUniqueViolation):
+		// TODO: Add test for this case https://github.com/FerretDB/FerretDB/issues/2852
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrDuplicateKeyInsert,
 			"Index build failed",
@@ -219,6 +220,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 
 		case "unique":
 			uniqueVal := must.NotFail(indexDoc.Get("unique"))
+
 			_, ok := uniqueVal.(bool)
 			if !ok {
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
