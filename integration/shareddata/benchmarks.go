@@ -89,7 +89,7 @@ func AllBenchmarkProviders() []BenchmarkProvider {
 		BenchmarkSettingsDocuments,
 	}
 
-	// check that bse names are unique and randomize order
+	// check that base names are unique and randomize order
 	res := make(map[string]BenchmarkProvider, len(providers))
 
 	for _, p := range providers {
