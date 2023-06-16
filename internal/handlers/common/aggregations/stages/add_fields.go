@@ -33,7 +33,7 @@ type addFields struct {
 	newField *types.Document
 }
 
-// newAddFields validates projection document and creates a new $addFields stage.
+// newAddFields validates stage document and creates a new $addFields stage.
 func newAddFields(stage *types.Document) (aggregations.Stage, error) {
 	fields, err := stage.Get("$addFields")
 	if err != nil {
@@ -49,7 +49,11 @@ func newAddFields(stage *types.Document) (aggregations.Stage, error) {
 		)
 	}
 
-	if err := common.ValidateArrayAndDocExpression(fieldsDoc, "$addFields"); err != nil {
+	if err := validateFieldPath("$addFields", fieldsDoc); err != nil {
+		return nil, err
+	}
+
+	if err := validateExpression("$addFields", fieldsDoc); err != nil {
 		return nil, err
 	}
 

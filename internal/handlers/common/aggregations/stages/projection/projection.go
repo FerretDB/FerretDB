@@ -141,8 +141,19 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		switch value := value.(type) {
 		case *types.Document:
+			op, err := operators.NewOperator(value)
+			if err = processOperatorError(err); err != nil {
+				return nil, false, err
+			}
+
+			_, err = op.Process(must.NotFail(types.NewDocument("key", "value")))
+			if err = processOperatorError(err); err != nil {
+				return nil, false, err
+			}
+
 			// validate operators later
 			validated.Set(key, value)
+
 			result = true
 
 		case *types.Array, string, types.Binary, types.ObjectID,
@@ -575,33 +586,64 @@ func setBySourceOrder(key string, val any, source, projected *types.Document) {
 }
 
 // processOperatorError takes internal error related to operator evaluation and
-// returns proper CommandError that can be returned by $process aggregation stage.
+// returns proper CommandError that can be returned by $project aggregation stage.
+//
+// Command error codes:
+// - ErrEmptySubProject when operator value is empty.
+// - ErrFieldPathInvalidName when FieldPath is invalid.
+// - ErrNotImplemented when the operator is not implemented yet.
+// - ErrOperatorWrongLenOfArgs when the operator has an invalid number of arguments.
+// - ErrInvalidPipelineOperator when an the operator does not exist.
 func processOperatorError(err error) error {
-	switch {
-	case err == nil:
+	if err == nil {
 		return nil
-	case errors.Is(err, operators.ErrEmptyField):
+	}
+
+	var opErr operators.OperatorError
+	if !errors.As(err, &opErr) {
+		return lazyerrors.Error(err)
+	}
+
+	switch opErr.Code() {
+	case operators.ErrEmptyField:
 		return commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrEmptySubProject,
 			"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
 				" Found empty object at path",
 			"$project (stage)",
 		)
-	case errors.Is(err, operators.ErrTooManyFields):
+	case operators.ErrTooManyFields:
 		return commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrFieldPathInvalidName,
 			"Invalid $project :: caused by :: FieldPath field names may not start with '$'."+
 				" Consider using $getField or $setField.",
 			"$project (stage)",
 		)
-	case errors.Is(err, operators.ErrNotImplemented):
+	case operators.ErrNotImplemented:
 		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrEmptySubProject,
-			"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
-				" Found empty object at path",
+			commonerrors.ErrNotImplemented,
+			"Invalid $project :: caused by :: "+opErr.Error(),
 			"$project (stage)",
 		)
-	case errors.Is(err, operators.ErrWrongType):
+	case operators.ErrArgsInvalidLen:
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrOperatorWrongLenOfArgs,
+			"Invalid $project :: caused by :: "+opErr.Error(),
+			"$project (stage)",
+		)
+	case operators.ErrInvalidExpression:
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrAggregateInvalidExpression,
+			"Invalid $project :: caused by :: "+opErr.Error(),
+			"$project (stage)",
+		)
+	case operators.ErrInvalidNestedExpression:
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidPipelineOperator,
+			"Invalid $project :: caused by :: "+opErr.Error(),
+			"$project (stage)",
+		)
+	case operators.ErrNoOperator, operators.ErrWrongType:
 		fallthrough
 	default:
 		return lazyerrors.Error(err)

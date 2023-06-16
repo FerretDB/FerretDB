@@ -104,11 +104,17 @@ const (
 	// ErrDocumentValidationFailure indicates that document validation failed.
 	ErrDocumentValidationFailure = ErrorCode(121) // DocumentValidationFailure
 
+	// ErrInvalidIndexSpecificationOption indicates that the index option is invalid.
+	ErrInvalidIndexSpecificationOption = ErrorCode(197) // InvalidIndexSpecificationOption
+
+	// ErrInvalidPipelineOperator indicates that provided aggregation operator is invalid.
+	ErrInvalidPipelineOperator = ErrorCode(168) // InvalidPipelineOperator
+
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 
-	// ErrDuplicateKey indicates duplicate key violation.
-	ErrDuplicateKey = ErrorCode(11000) // Location11000
+	// ErrDuplicateKeyInsert indicates duplicate key violation on inserting document.
+	ErrDuplicateKeyInsert = ErrorCode(11000) // Location11000
 
 	// ErrSetBadExpression indicates set expression is not object.
 	ErrSetBadExpression = ErrorCode(40272) // Location40272
@@ -148,6 +154,10 @@ const (
 
 	// ErrPathContainsEmptyElement indicates that the path contains an empty element.
 	ErrPathContainsEmptyElement = ErrorCode(15998) // Location15998
+
+	// ErrOperatorWrongLenOfArgs indicates that aggregation operator contains
+	// wrong amount of arguments.
+	ErrOperatorWrongLenOfArgs = ErrorCode(16020) // Location16020
 
 	// ErrFieldPathInvalidName indicates that FieldPath is invalid.
 	ErrFieldPathInvalidName = ErrorCode(16410) // Location16410
@@ -189,6 +199,9 @@ const (
 
 	// ErrAggregatePositionalProject indicates that positional projection cannot be used in aggregation.
 	ErrAggregatePositionalProject = ErrorCode(31324) // Location31324
+
+	// ErrAggregateInvalidExpression indicates that projection expression does not exist.
+	ErrAggregateInvalidExpression = ErrorCode(31325) // Location31325
 
 	// ErrWrongPositionalOperatorLocation indicates that there can only be one positional
 	// operator at the end.

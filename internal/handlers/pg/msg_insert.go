@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -153,14 +152,11 @@ func insertDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc an
 		return commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
 
 	case errors.Is(err, pgdb.ErrUniqueViolation):
-		// TODO Extend message for non-_id unique indexes in https://github.com/FerretDB/FerretDB/issues/2045
-		idMasrshaled := must.NotFail(json.Marshal(must.NotFail(d.Get("_id"))))
-
 		return commonerrors.NewWriteErrorMsg(
-			commonerrors.ErrDuplicateKey,
+			commonerrors.ErrDuplicateKeyInsert,
 			fmt.Sprintf(
-				`E11000 duplicate key error collection: %s.%s index: _id_ dup key: { _id: %s }`,
-				qp.DB, qp.Collection, idMasrshaled,
+				`E11000 duplicate key error collection: %s.%s`,
+				qp.DB, qp.Collection,
 			),
 		)
 

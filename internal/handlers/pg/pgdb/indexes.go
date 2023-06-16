@@ -16,10 +16,13 @@ package pgdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -29,7 +32,7 @@ import (
 type Index struct {
 	Name   string
 	Key    IndexKey
-	Unique bool
+	Unique *bool // we have to use pointer to determine whether the field was set or not
 }
 
 // IndexKey is a list of field name + sort order pairs.
@@ -73,7 +76,12 @@ func CreateIndexIfNotExists(ctx context.Context, tx pgx.Tx, db, collection strin
 		return err
 	}
 
-	if err := createPgIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, i.Key, i.Unique); err != nil {
+	var unique bool
+	if i.Unique != nil {
+		unique = *i.Unique
+	}
+
+	if err := createPgIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, i.Key, unique); err != nil {
 		return err
 	}
 
@@ -218,11 +226,22 @@ func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, ind
 	sql := `CREATE` + unique + ` INDEX IF NOT EXISTS ` + pgx.Identifier{index}.Sanitize() +
 		` ON ` + pgx.Identifier{schema, table}.Sanitize() + ` (` + strings.Join(fieldsDef, `, `) + `)`
 
-	if _, err = tx.Exec(ctx, sql); err != nil {
+	_, err = tx.Exec(ctx, sql)
+	if err == nil {
+		return nil
+	}
+
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) {
 		return lazyerrors.Error(err)
 	}
 
-	return nil
+	switch pgErr.Code {
+	case pgerrcode.UniqueViolation:
+		return ErrUniqueViolation
+	default:
+		return lazyerrors.Error(err)
+	}
 }
 
 // dropPgIndex drops the given index.
