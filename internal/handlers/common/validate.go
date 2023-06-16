@@ -73,7 +73,7 @@ func Validate(ctx context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.OpMsg,
 }
 
 // ValidateDocumentExpression returns error when there is unsupported expression present in the document.
-// Currently it raises error if there is any expression(which have a prefix $).
+// Currently it raises error if there is any expression (which have a prefix $).
 func ValidateDocumentExpression(doc *types.Document, stageName string) error {
 	iter := doc.Iterator()
 	defer iter.Close()

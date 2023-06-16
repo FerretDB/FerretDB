@@ -66,7 +66,6 @@ func (iter *addFieldsIterator) Next() (struct{}, *types.Document, error) {
 			if err != nil {
 				return unused, nil, err
 			}
-
 		}
 
 		doc.Set(key, val)
