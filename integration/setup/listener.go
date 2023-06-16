@@ -171,12 +171,20 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 	l := clientconn.NewListener(&listenerOpts)
 
-	done := make(chan struct{})
+	runCtx, runCancel := context.WithCancel(ctx)
+	runDone := make(chan struct{})
+
+	// that prevents the deadlock on failed client setup; see below
+	defer func() {
+		if tb.Failed() {
+			runCancel()
+		}
+	}()
 
 	go func() {
-		defer close(done)
+		defer close(runDone)
 
-		err := l.Run(ctx)
+		err := l.Run(runCtx)
 		if err == nil || errors.Is(err, context.Canceled) {
 			logger.Info("Listener stopped without error")
 		} else {
@@ -186,7 +194,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 	// ensure that all listener's logs are written before test ends
 	tb.Cleanup(func() {
-		<-done
+		<-runDone
 		h.Close()
 	})
 
@@ -202,6 +210,8 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		clientOpts.hostPort = l.TCPAddr().String()
 	}
 
+	// those will fail the test if in-process FerretDB is not working;
+	// for example, when backend is down
 	uri := mongoDBURI(tb, &clientOpts)
 	client := setupClient(tb, ctx, uri)
 
