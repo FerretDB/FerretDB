@@ -123,6 +123,12 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 			"One of the specified indexes already exists with a different key",
 			document.Command(),
 		)
+	case errors.Is(err, pgdb.ErrUniqueViolation):
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrDuplicateKeyInsert,
+			"Index build failed",
+			document.Command(),
+		)
 	default:
 		return nil, lazyerrors.Error(err)
 	}
@@ -212,17 +218,17 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 			// already processed, do nothing
 
 		case "unique":
-			_, ok := must.NotFail(indexDoc.Get("unique")).(bool)
+			uniqueVal := must.NotFail(indexDoc.Get("unique"))
+			_, ok := uniqueVal.(bool)
 			if !ok {
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrTypeMismatch,
 					fmt.Sprintf(
 						"Error in specification { key: %s, name: \"%s\", unique: %s } "+
 							":: caused by :: "+
-							"The field 'unique' has value unique: %s, which is not convertible to bool",
+							"The field 'unique' has value unique: %[3]s, which is not convertible to bool",
 						types.FormatAnyValue(must.NotFail(indexDoc.Get("key"))),
-						index.Name, types.FormatAnyValue(must.NotFail(indexDoc.Get("unique"))),
-						types.FormatAnyValue(must.NotFail(indexDoc.Get("unique"))),
+						index.Name, types.FormatAnyValue(uniqueVal),
 					),
 					"createIndexes",
 				)
