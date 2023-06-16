@@ -38,7 +38,7 @@ func TestParse(t *testing.T) {
 	}
 
 	type nonDefaultTag struct {
-		Find bool `ferretdb:"find,non-default"`
+		Find bool `ferretdb:"find,unimplemented-non-default"`
 	}
 
 	type update struct {
