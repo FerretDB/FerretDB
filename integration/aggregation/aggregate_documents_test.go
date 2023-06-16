@@ -74,11 +74,11 @@ func TestAggregateAddFieldsErrors(t *testing.T) {
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 
 			if tc.altMessage != "" {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				integration.AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 
-			AssertEqualCommandError(t, *tc.err, err)
+			integration.AssertEqualCommandError(t, *tc.err, err)
 		})
 	}
 }
@@ -406,11 +406,11 @@ func TestAggregateProjectErrors(t *testing.T) {
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 
 			if tc.altMessage != "" {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				integration.AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 				return
 			}
 
-			AssertEqualCommandError(t, *tc.err, err)
+			integration.AssertEqualCommandError(t, *tc.err, err)
 		})
 	}
 }

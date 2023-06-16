@@ -1627,7 +1627,7 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", bson.D{{"$non-existent", "$v"}}}}}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"TypeRecursiveInvalid": {
 			pipeline: bson.A{
@@ -1640,7 +1640,7 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", bson.A{"1", "2"}}}}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 
 		"TypeInt": {
@@ -1678,7 +1678,7 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"TypeNestedArray": {
 			pipeline: bson.A{
@@ -1703,7 +1703,7 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"$type", "foo"}, {"$op", "foo"}}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 	}
 
@@ -1718,49 +1718,49 @@ func TestAggregateCompatAddFields(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$addFields", "invalid"}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidTypeBool": {
 			pipeline: bson.A{
 				bson.D{{"$addFields", false}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidTypeArray": {
 			pipeline: bson.A{
 				bson.D{{"$addFields", bson.A{}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidTypeInt32": {
 			pipeline: bson.A{
 				bson.D{{"$addFields", int32(1)}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidTypeInt64": {
 			pipeline: bson.A{
 				bson.D{{"$addFields", int64(1)}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidTypeFloat32": {
 			pipeline: bson.A{
 				bson.D{{"$addFields", float32(1)}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidTypeFloat64": {
 			pipeline: bson.A{
 				bson.D{{"$addFields", float64(1)}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidTypeNull": {
 			pipeline: bson.A{
 				bson.D{{"$addFields", nil}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"Include1Field": {
 			pipeline: bson.A{
@@ -1797,14 +1797,14 @@ func TestAggregateCompatAddFields(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$addFields", bson.D{{"newField1", bson.D{{"$sum", 1}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
 		},
 		"UnsupportedExpressionArray": {
 			pipeline: bson.A{
 				bson.D{{"$addFields", bson.D{{"newField1", bson.A{bson.D{{"$sum", 1}}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
 		},
 	}
@@ -1820,49 +1820,49 @@ func TestAggregateCompatSet(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$set", "invalid"}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidTypeBool": {
 			pipeline: bson.A{
 				bson.D{{"$set", false}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidTypeArray": {
 			pipeline: bson.A{
 				bson.D{{"$set", bson.A{}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidTypeInt32": {
 			pipeline: bson.A{
 				bson.D{{"$set", int32(1)}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidTypeInt64": {
 			pipeline: bson.A{
 				bson.D{{"$set", int64(1)}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidTypeFloat32": {
 			pipeline: bson.A{
 				bson.D{{"$set", float32(1)}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidTypeFloat64": {
 			pipeline: bson.A{
 				bson.D{{"$set", float64(1)}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidTypeNull": {
 			pipeline: bson.A{
 				bson.D{{"$set", nil}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"Include1Field": {
 			pipeline: bson.A{
@@ -1899,14 +1899,14 @@ func TestAggregateCompatSet(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$set", bson.D{{"newField1", bson.D{{"$sum", 1}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
 		},
 		"UnsupportedExpressionArray": {
 			pipeline: bson.A{
 				bson.D{{"$set", bson.D{{"newField1", bson.A{bson.D{{"$sum", 1}}}}}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
 		},
 	}
@@ -1921,37 +1921,37 @@ func TestAggregateCompatUnset(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{1, 2, 3}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"EmptyArray": {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"EmptyString": {
 			pipeline: bson.A{
 				bson.D{{"$unset", ""}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"ArrayWithEmptyString": {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{""}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidTypeArrayWithDifferentTypes": {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{"v", 42, false}}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"InvalidType": {
 			pipeline: bson.A{
 				bson.D{{"$unset", false}},
 			},
-			resultType: emptyResult,
+			resultType: integration.EmptyResult,
 		},
 		"Unset1Field": {
 			pipeline: bson.A{
