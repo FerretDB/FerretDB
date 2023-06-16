@@ -78,7 +78,7 @@ func CollectionName(tb testing.TB) string {
 	defer collectionNamesM.Unlock()
 
 	// it may be the same test if `go test -count=X` is used
-	if t, ok := databaseNames[name]; ok && t != tb.Name() {
+	if t, ok := collectionNames[name]; ok && t != tb.Name() {
 		panic(fmt.Sprintf("Collection name %q already used by another test %q.", name, tb.Name()))
 	}
 
