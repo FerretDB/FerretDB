@@ -418,7 +418,67 @@ func TestAggregateUnsetErrors(t *testing.T) {
 		altMessage string              // optional, alternative error message
 		skip       string              // optional, skip test with a specified reason
 	}{
-		"EmptyArray": {
+		"EmptyString": {
+			pipeline: bson.A{
+				bson.D{{"$unset", ""}},
+			},
+			err: &mongo.CommandError{
+				Code:    40352,
+				Name:    "Location40352",
+				Message: "Invalid $unset :: caused by :: FieldPath cannot be constructed with empty string",
+			},
+		},
+		"InvalidType": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.D{}}},
+			},
+			err: &mongo.CommandError{
+				Code:    31002,
+				Name:    "Location31002",
+				Message: "$unset specification must be a string or an array",
+			},
+		},
+		"PathEmptyKey": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "v..foo"}},
+			},
+			err: &mongo.CommandError{
+				Code:    15998,
+				Name:    "Location15998",
+				Message: "Invalid $unset :: caused by :: FieldPath field names may not be empty strings.",
+			},
+		},
+		"PathEmptySuffixKey": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "v."}},
+			},
+			err: &mongo.CommandError{
+				Code:    40353,
+				Name:    "Location40353",
+				Message: "Invalid $unset :: caused by :: FieldPath must not end with a '.'.",
+			},
+		},
+		"PathEmptyPrefixKey": {
+			pipeline: bson.A{
+				bson.D{{"$unset", ".v"}},
+			},
+			err: &mongo.CommandError{
+				Code:    15998,
+				Name:    "Location15998",
+				Message: "Invalid $unset :: caused by :: FieldPath field names may not be empty strings.",
+			},
+		},
+		"PathDollarPrefix": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "$v"}},
+			},
+			err: &mongo.CommandError{
+				Code:    16410,
+				Name:    "Location16410",
+				Message: "Invalid $unset :: caused by :: FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+			},
+		},
+		"ArrayEmpty": {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{}}},
 			},
@@ -429,7 +489,7 @@ func TestAggregateUnsetErrors(t *testing.T) {
 			},
 			altMessage: "$unset specification must be a string or an array with at least one field",
 		},
-		"ArrayInvalidValue": {
+		"ArrayInvalidType": {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{"field1", 1}}},
 			},
@@ -449,24 +509,84 @@ func TestAggregateUnsetErrors(t *testing.T) {
 				Message: "Invalid $unset :: caused by :: FieldPath cannot be constructed with empty string",
 			},
 		},
-		"EmptyString": {
+		"ArrayPathDuplicate": {
 			pipeline: bson.A{
-				bson.D{{"$unset", ""}},
+				bson.D{{"$unset", bson.A{"v", "v"}}},
 			},
 			err: &mongo.CommandError{
-				Code:    40352,
-				Name:    "Location40352",
-				Message: "Invalid $unset :: caused by :: FieldPath cannot be constructed with empty string",
+				Code:    31250,
+				Name:    "Location31250",
+				Message: "Invalid $unset :: caused by :: Path collision at v",
 			},
 		},
-		"InvalidValue": {
+		"ArrayPathOverlapSuffix": {
 			pipeline: bson.A{
-				bson.D{{"$unset", bson.D{}}},
+				bson.D{{"$unset", bson.A{"v", "v.foo"}}},
 			},
 			err: &mongo.CommandError{
-				Code:    31002,
-				Name:    "Location31002",
-				Message: "$unset specification must be a string or an array",
+				Code:    31249,
+				Name:    "Location31249",
+				Message: "Invalid $unset :: caused by :: Path collision at v.foo remaining portion foo",
+			},
+		},
+		"ArrayPathOverlapMiddle": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"v", "v.foo.bar"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    31249,
+				Name:    "Location31249",
+				Message: "Invalid $unset :: caused by :: Path collision at v.foo.bar remaining portion foo.bar",
+			},
+		},
+		"ArrayPathOverlapPrefix": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"v.foo", "v"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    31250,
+				Name:    "Location31250",
+				Message: "Invalid $unset :: caused by :: Path collision at v",
+			},
+		},
+		"ArrayPathEmptyKey": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"v..foo"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    15998,
+				Name:    "Location15998",
+				Message: "Invalid $unset :: caused by :: FieldPath field names may not be empty strings.",
+			},
+		},
+		"ArrayPathEmptySuffixKey": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"v."}}},
+			},
+			err: &mongo.CommandError{
+				Code:    40353,
+				Name:    "Location40353",
+				Message: "Invalid $unset :: caused by :: FieldPath must not end with a '.'.",
+			},
+		},
+		"ArrayPathEmptyPrefixKey": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{".v"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    15998,
+				Name:    "Location15998",
+				Message: "Invalid $unset :: caused by :: FieldPath field names may not be empty strings.",
+			},
+		},
+		"ArrayPathDollarPrefix": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"$v"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16410,
+				Name:    "Location16410",
+				Message: "Invalid $unset :: caused by :: FieldPath field names may not start with '$'. Consider using $getField or $setField.",
 			},
 		},
 	} {
