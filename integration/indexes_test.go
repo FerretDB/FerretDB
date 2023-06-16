@@ -210,6 +210,38 @@ func TestCreateIndexesInvalidSpec(t *testing.T) {
 			},
 			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
+		"IDIndex": {
+			indexes: bson.A{
+				bson.D{
+					{"key", bson.D{{"_id", 1}}},
+					{"name", "_id_"},
+					{"unique", true},
+				},
+			},
+			err: &mongo.CommandError{
+				Code: 197,
+				Name: "InvalidIndexSpecificationOption",
+				Message: `The field 'unique' is not valid for an _id index specification.` +
+					` Specification: { key: { _id: 1 }, name: "_id_", unique: true, v: 2 }`,
+			},
+		},
+		"UniqueTypeDocument": {
+			indexes: bson.A{
+				bson.D{
+					{"key", bson.D{{"v", 1}}},
+					{"name", "unique_index"},
+					{"unique", bson.D{}},
+				},
+			},
+			err: &mongo.CommandError{
+				Code: 14,
+				Name: "TypeMismatch",
+				Message: `Error in specification { key: { v: 1 }, name: "unique_index", unique: {} } ` +
+					`:: caused by :: The field 'unique has value unique: {}, which is not convertible to bool`,
+			},
+			altMessage: `Error in specification { key: { v: 1 }, name: "unique_index", unique: {  } } ` +
+				`:: caused by :: The field 'unique' has value unique: {  }, which is not convertible to bool`,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

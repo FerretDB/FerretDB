@@ -33,7 +33,8 @@ func TestInsertCommandErrors(t *testing.T) {
 		toInsert []any // required, slice of bson.D to insert
 		ordered  any   // required, sets it to `ordered`
 
-		err        *mongo.CommandError // optional, expected error from MongoDB
+		cerr       *mongo.CommandError // optional, expected command error from MongoDB
+		werr       *mongo.WriteError   // optional, expected write error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
@@ -42,12 +43,24 @@ func TestInsertCommandErrors(t *testing.T) {
 				bson.D{{"_id", "foo"}},
 			},
 			ordered: "foo",
-			err: &mongo.CommandError{
+			cerr: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
 				Message: "BSON field 'insert.ordered' is the wrong type 'string', expected type 'bool'",
 			},
 			altMessage: "BSON field 'ordered' is the wrong type 'string', expected type 'bool'",
+		},
+		"InsertDuplicateKey": {
+			toInsert: []any{
+				bson.D{{"_id", "double"}},
+			},
+			ordered: false,
+			werr: &mongo.WriteError{
+				Code: 11000,
+				Message: `E11000 duplicate key error collection: ` +
+					`TestInsertCommandErrors-InsertDuplicateKey.TestInsertCommandErrors-InsertDuplicateKey index: _id_ dup key: { _id: "double" }`,
+			},
+			altMessage: "E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKey.TestInsertCommandErrors-InsertDuplicateKey",
 		},
 	} {
 		name, tc := name, tc
@@ -60,7 +73,6 @@ func TestInsertCommandErrors(t *testing.T) {
 
 			require.NotNil(t, tc.toInsert, "toInsert must not be nil")
 			require.NotNil(t, tc.ordered, "ordered must not be nil")
-			require.NotNil(t, tc.err, "err must not be nil")
 
 			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -72,7 +84,14 @@ func TestInsertCommandErrors(t *testing.T) {
 			}).Decode(&res)
 
 			assert.Nil(t, res)
-			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
+			if tc.cerr != nil {
+				AssertEqualAltCommandError(t, *tc.cerr, tc.altMessage, err)
+			}
+
+			if tc.werr != nil {
+				AssertEqualAltWriteError(t, *tc.werr, tc.altMessage, err)
+			}
 		})
 	}
 }
