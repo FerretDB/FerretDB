@@ -56,7 +56,7 @@ tasks:
     desc: "Run benchmarks for `pg` handler"
     cmds:
       - >
-        go test -tags={{.BUILD_TAGS}} -timeout=3h -run=XXX
+        go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
         -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
@@ -69,7 +69,7 @@ tasks:
     desc: "Run benchmarks for `pg` with query pushdown disabled"
     cmds:
       - >
-        go test -tags={{.BUILD_TAGS}} -timeout=3h -run=XXX
+        go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
         -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
@@ -83,7 +83,7 @@ tasks:
     desc: "Run benchmarks for `sqlite` handler"
     cmds:
       - >
-        go test -tags={{.BUILD_TAGS}} -timeout=3h -run=XXX
+        go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
         -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
@@ -95,7 +95,7 @@ tasks:
     desc: "Run benchmarks for `sqlite` with query pushdown disabled"
     cmds:
       - >
-        go test -tags={{.BUILD_TAGS}} -timeout=3h -run=XXX
+        go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
         -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
@@ -108,7 +108,7 @@ tasks:
     desc: "Run benchmarks for MongoDB"
     cmds:
       - >
-        go test -tags={{.BUILD_TAGS}} -timeout=3h -run=XXX
+        go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
         -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
