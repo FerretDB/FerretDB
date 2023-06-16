@@ -59,8 +59,7 @@ func (iter *projectionIterator) Next() (struct{}, *types.Document, error) {
 	}
 
 	projected, err := ProjectDocument(doc, iter.projection, iter.inclusion)
-
-	if err = processOperatorError(err); err != nil {
+	if err != nil {
 		return unused, nil, err
 	}
 
