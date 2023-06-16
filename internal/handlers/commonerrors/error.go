@@ -104,11 +104,17 @@ const (
 	// ErrDocumentValidationFailure indicates that document validation failed.
 	ErrDocumentValidationFailure = ErrorCode(121) // DocumentValidationFailure
 
+	// ErrInvalidPipelineOperator indicates that provided aggregation operator is invalid.
+	ErrInvalidPipelineOperator = ErrorCode(168) // InvalidPipelineOperator
+
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 
 	// ErrDuplicateKey indicates duplicate key violation.
 	ErrDuplicateKey = ErrorCode(11000) // Location11000
+
+	// ErrSetBadExpression indicates set expression is not object.
+	ErrSetBadExpression = ErrorCode(40272) // Location40272
 
 	// ErrStageGroupInvalidFields indicates group's fields must be an object.
 	ErrStageGroupInvalidFields = ErrorCode(15947) // Location15947
@@ -146,6 +152,10 @@ const (
 	// ErrPathContainsEmptyElement indicates that the path contains an empty element.
 	ErrPathContainsEmptyElement = ErrorCode(15998) // Location15998
 
+	// ErrOperatorWrongLenOfArgs indicates that aggregation operator contains
+	// wrong amount of arguments.
+	ErrOperatorWrongLenOfArgs = ErrorCode(16020) // Location16020
+
 	// ErrFieldPathInvalidName indicates that FieldPath is invalid.
 	ErrFieldPathInvalidName = ErrorCode(16410) // Location16410
 
@@ -160,6 +170,15 @@ const (
 
 	// ErrSliceFirstArg for $slice indicates that the first argument is not an array.
 	ErrSliceFirstArg = ErrorCode(28724) // Location28724
+
+	// ErrStageUnsetNoPath indicates that $unwind aggregation stage is empty.
+	ErrStageUnsetNoPath = ErrorCode(31119) // Location31119
+
+	// ErrStageUnsetArrElementInvalidType indicates that $unset stage arguments has array with unexpected type.
+	ErrStageUnsetArrElementInvalidType = ErrorCode(31120) // Location31120
+
+	// ErrStageUnsetInvalidType indicates that $unset stage arguments has unexpected type.
+	ErrStageUnsetInvalidType = ErrorCode(31002) // Location31002
 
 	// ErrStageUnwindNoPath indicates that $unwind aggregation stage is empty.
 	ErrStageUnwindNoPath = ErrorCode(28812) // Location28812
@@ -177,6 +196,9 @@ const (
 
 	// ErrAggregatePositionalProject indicates that positional projection cannot be used in aggregation.
 	ErrAggregatePositionalProject = ErrorCode(31324) // Location31324
+
+	// ErrAggregateInvalidExpression indicates that projection expression does not exist.
+	ErrAggregateInvalidExpression = ErrorCode(31325) // Location31325
 
 	// ErrWrongPositionalOperatorLocation indicates that there can only be one positional
 	// operator at the end.

@@ -56,19 +56,31 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 		switch param := typeParam.(type) {
 		case *types.Document:
 			operator, err := NewOperator(param)
-			if errors.Is(err, ErrNoOperator) {
-				res = param
-				continue
-			}
-
 			if err != nil {
-				// TODO https://github.com/FerretDB/FerretDB/issues/2678
-				return nil, err
+				var opErr OperatorError
+				if !errors.As(err, &opErr) {
+					return nil, lazyerrors.Error(err)
+				}
+
+				if opErr.Code() == ErrNoOperator {
+					res = param
+					continue
+				}
+
+				if opErr.Code() == ErrInvalidExpression {
+					opErr.code = ErrInvalidNestedExpression
+				}
+
+				return nil, opErr
 			}
 
 			if typeParam, err = operator.Process(doc); err != nil {
-				// TODO https://github.com/FerretDB/FerretDB/issues/2678
-				return nil, lazyerrors.Error(err)
+				var opErr OperatorError
+				if !errors.As(err, &opErr) {
+					return nil, lazyerrors.Error(err)
+				}
+
+				return nil, err
 			}
 
 			// the result of nested operator needs to be evaluated
@@ -76,8 +88,10 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 
 		case *types.Array:
 			if param.Len() != 1 {
-				// TODO https://github.com/FerretDB/FerretDB/issues/2678
-				return nil, fmt.Errorf("Expression $type takes exactly 1 arguments. %d were passed in.", param.Len())
+				return nil, newOperatorError(
+					ErrArgsInvalidLen,
+					fmt.Sprintf("Expression $type takes exactly 1 arguments. %d were passed in.", param.Len()),
+				)
 			}
 
 			value, err := param.Get(0)
@@ -95,7 +109,6 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 			if strings.HasPrefix(param, "$") {
 				expression, err := aggregations.NewExpression(param)
 				if err != nil {
-					// TODO https://github.com/FerretDB/FerretDB/issues/2678
 					return nil, err
 				}
 
