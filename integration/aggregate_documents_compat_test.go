@@ -1763,6 +1763,21 @@ func TestAggregateCompatAddFields(t *testing.T) {
 				bson.D{{"$addFields", bson.D{{"newField2", int32(2)}}}},
 			},
 		},
+		"IncludeDocument": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField", bson.D{{"doc", int32(1)}}}}}},
+			},
+		},
+		"IncludeNestedDocument": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField", bson.D{{"doc", bson.D{{"nested", int32(1)}}}}}}}},
+			},
+		},
+		"IncludeArray": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField", bson.A{bson.D{{"elem", int32(1)}}}}}}},
+			},
+		},
 		"UnsupportedExpressionObject": {
 			pipeline: bson.A{
 				bson.D{{"$addFields", bson.D{{"newField1", bson.D{{"$sum", 1}}}}}},
@@ -1848,6 +1863,21 @@ func TestAggregateCompatSet(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$set", bson.D{{"newField1", int32(1)}}}},
 				bson.D{{"$set", bson.D{{"newField2", int32(2)}}}},
+			},
+		},
+		"IncludeDocument": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField", bson.D{{"doc", int32(1)}}}}}},
+			},
+		},
+		"IncludeNestedDocument": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField", bson.D{{"doc", bson.D{{"nested", int32(1)}}}}}}}},
+			},
+		},
+		"IncludeArray": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField", bson.A{bson.D{{"elem", int32(1)}}}}}}},
 			},
 		},
 		"UnsupportedExpressionObject": {

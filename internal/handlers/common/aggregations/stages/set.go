@@ -35,7 +35,7 @@ type set struct {
 	newField *types.Document
 }
 
-// newSet validates projection document and creates a new $set stage.
+// newSet validates stage document and creates a new $set stage.
 func newSet(stage *types.Document) (aggregations.Stage, error) {
 	fields, err := stage.Get("$set")
 	if err != nil {
@@ -51,7 +51,11 @@ func newSet(stage *types.Document) (aggregations.Stage, error) {
 		)
 	}
 
-	if err := common.ValidateArrayAndDocExpression(fieldsDoc, "$set"); err != nil {
+	if err := validateFieldPath("$set", fieldsDoc); err != nil {
+		return nil, err
+	}
+
+	if err := validateExpression("$set", fieldsDoc); err != nil {
 		return nil, err
 	}
 
