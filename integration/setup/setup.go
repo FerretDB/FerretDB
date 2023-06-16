@@ -52,6 +52,8 @@ var (
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
 
+	benchDocsF = flag.Int("bench-docs", 0, "benchmarks: number of documents to generate per iteration")
+
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
