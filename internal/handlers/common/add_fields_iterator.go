@@ -63,10 +63,15 @@ func (iter *addFieldsIterator) Next() (struct{}, *types.Document, error) {
 			if err != nil {
 				var opErr operators.OperatorError
 
-				if errors.Is(err, &opErr) {
-
+				if !errors.As(err, &opErr) {
 					return unused, nil, err
 				}
+
+				if opErr.Code() == operators.ErrNoOperator {
+					break
+				}
+
+				return unused, nil, err
 			}
 
 			val, err = op.Process(doc)
