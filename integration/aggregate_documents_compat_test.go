@@ -1406,80 +1406,80 @@ func TestAggregateCompatSkip(t *testing.T) {
 	testAggregateStagesCompat(t, testCases)
 }
 
-func TestAggregateCompataddFields(t *testing.T) {
+func TestAggregateCompatProject(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"InvalidType": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", "invalid"}},
+				bson.D{{"$project", "invalid"}},
 			},
 			resultType: emptyResult,
 		},
 		"ZeroOperators": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"v", bson.D{}}}}},
+				bson.D{{"$project", bson.D{{"v", bson.D{}}}}},
 			},
 			resultType: emptyResult,
 		},
 		"TwoOperators": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"v", bson.D{{"$type", "foo"}, {"$sum", 1}}}}}},
+				bson.D{{"$project", bson.D{{"v", bson.D{{"$type", "foo"}, {"$sum", 1}}}}}},
 			},
 			resultType: emptyResult,
 		},
 		"DollarSignField": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"$v", 1}}}},
+				bson.D{{"$project", bson.D{{"$v", 1}}}},
 			},
 			resultType: emptyResult,
 		},
 		"Include1Field": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"v", int32(1)}}}},
+				bson.D{{"$project", bson.D{{"v", int32(1)}}}},
 			},
 		},
 		"Exclude1Field": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"v", int64(0)}}}},
+				bson.D{{"$project", bson.D{{"v", int64(0)}}}},
 			},
 		},
 		"IncludeID": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"_id", 1.42}}}},
+				bson.D{{"$project", bson.D{{"_id", 1.42}}}},
 			},
 		},
 		"ExcludeID": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"_id", false}}}},
+				bson.D{{"$project", bson.D{{"_id", false}}}},
 			},
 		},
 		"Include2Fields": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"foo", 1.24}, {"bar", true}}}},
+				bson.D{{"$project", bson.D{{"foo", 1.24}, {"bar", true}}}},
 			},
 		},
 		"Exclude2Fields": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 
-				bson.D{{"$addFields", bson.D{{"foo", int32(0)}, {"bar", false}}}},
+				bson.D{{"$project", bson.D{{"foo", int32(0)}, {"bar", false}}}},
 			},
 		},
 		"Include1FieldExclude1Field": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 
-				bson.D{{"$addFields", bson.D{{"foo", int32(0)}, {"bar", true}}}},
+				bson.D{{"$project", bson.D{{"foo", int32(0)}, {"bar", true}}}},
 			},
 			resultType: emptyResult,
 		},
@@ -1487,67 +1487,67 @@ func TestAggregateCompataddFields(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 
-				bson.D{{"$addFields", bson.D{{"foo", int32(1)}, {"bar", false}}}},
+				bson.D{{"$project", bson.D{{"foo", int32(1)}, {"bar", false}}}},
 			},
 			resultType: emptyResult,
 		},
 		"IncludeFieldExcludeID": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"_id", false}, {"v", true}}}},
+				bson.D{{"$project", bson.D{{"_id", false}, {"v", true}}}},
 			},
 		},
 		"ExcludeFieldIncludeID": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"_id", true}, {"v", false}}}},
+				bson.D{{"$project", bson.D{{"_id", true}, {"v", false}}}},
 			},
 		},
 		"ExcludeFieldExcludeID": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"_id", false}, {"v", false}}}},
+				bson.D{{"$project", bson.D{{"_id", false}, {"v", false}}}},
 			},
 		},
 		"IncludeFieldIncludeID": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"_id", true}, {"v", true}}}},
+				bson.D{{"$project", bson.D{{"_id", true}, {"v", true}}}},
 			},
 		},
 		"Assign1Field": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"foo", primitive.NewObjectID()}}}},
+				bson.D{{"$project", bson.D{{"foo", primitive.NewObjectID()}}}},
 			},
 		},
 		"AssignID": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"_id", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
+				bson.D{{"$project", bson.D{{"_id", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
 			},
 		},
 		"Assign1FieldIncludeID": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"_id", true}, {"foo", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
+				bson.D{{"$project", bson.D{{"_id", true}, {"foo", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
 			},
 		},
 		"Assign2FieldsIncludeID": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"_id", true}, {"foo", nil}, {"bar", "qux"}}}},
+				bson.D{{"$project", bson.D{{"_id", true}, {"foo", nil}, {"bar", "qux"}}}},
 			},
 		},
 		"Assign1FieldExcludeID": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"_id", false}, {"foo", primitive.Regex{Pattern: "^fo"}}}}},
+				bson.D{{"$project", bson.D{{"_id", false}, {"foo", primitive.Regex{Pattern: "^fo"}}}}},
 			},
 		},
 		"DotNotationInclude": {
 			pipeline: bson.A{
-				bson.D{{"$addFields", bson.D{
+				bson.D{{"$project", bson.D{
 					{"_id", true},
 					{"v.foo", true},
 				}}},
@@ -1555,7 +1555,7 @@ func TestAggregateCompataddFields(t *testing.T) {
 		},
 		"DotNotationIncludeTwo": {
 			pipeline: bson.A{
-				bson.D{{"$addFields", bson.D{
+				bson.D{{"$project", bson.D{
 					{"_id", true},
 					{"v.foo", true},
 					{"v.array", true},
@@ -1564,7 +1564,7 @@ func TestAggregateCompataddFields(t *testing.T) {
 		},
 		"DotNotationExclude": {
 			pipeline: bson.A{
-				bson.D{{"$addFields", bson.D{
+				bson.D{{"$project", bson.D{
 					{"_id", true},
 					{"v.foo", false},
 				}}},
@@ -1572,7 +1572,7 @@ func TestAggregateCompataddFields(t *testing.T) {
 		},
 		"DotNotationExcludeTwo": {
 			pipeline: bson.A{
-				bson.D{{"$addFields", bson.D{
+				bson.D{{"$project", bson.D{
 					{"_id", true},
 					{"v.foo", false},
 					{"v.array", false},
@@ -1581,7 +1581,7 @@ func TestAggregateCompataddFields(t *testing.T) {
 		},
 		"DotNotationExcludeSecondLevel": {
 			pipeline: bson.A{
-				bson.D{{"$addFields", bson.D{
+				bson.D{{"$project", bson.D{
 					{"_id", true},
 					{"v.array.42", false},
 				}}},
@@ -1589,7 +1589,7 @@ func TestAggregateCompataddFields(t *testing.T) {
 		},
 		"DotNotationIncludeExclude": {
 			pipeline: bson.A{
-				bson.D{{"$addFields", bson.D{
+				bson.D{{"$project", bson.D{
 					{"_id", true},
 					{"v.foo", true},
 					{"v.array.42", false},
@@ -1600,38 +1600,38 @@ func TestAggregateCompataddFields(t *testing.T) {
 		"Type": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "$v"}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", "$v"}}}}}},
 			},
 		},
 		"TypeNonExistent": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "$foo"}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", "$foo"}}}}}},
 			},
 		},
 		"TypeDotNotation": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "$v.foo"}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", "$v.foo"}}}}}},
 			},
 		},
 		"TypeRecursive": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", "$v"}}}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", "$v"}}}}}}}},
 			},
 		},
 		"TypeRecursiveNonExistent": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.D{{"$non-existent", "$v"}}}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$non-existent", "$v"}}}}}}}},
 			},
 			resultType: emptyResult,
 		},
 		"TypeRecursiveInvalid": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.D{{"v", "$v"}}}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"v", "$v"}}}}}}}},
 			},
 		},
 		"TypeRecursiveArrayInvalid": {
@@ -1645,56 +1645,56 @@ func TestAggregateCompataddFields(t *testing.T) {
 		"TypeInt": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", int32(42)}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", int32(42)}}}}}},
 			},
 		},
 		"TypeLong": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", int64(42)}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", int64(42)}}}}}},
 			},
 		},
 		"TypeString": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "42"}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", "42"}}}}}},
 			},
 		},
 		"TypeDocument": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.D{{"foo", "bar"}}}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"foo", "bar"}}}}}}}},
 			},
 		},
 		"TypeArraySingleItem": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.A{int32(42)}}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{int32(42)}}}}}}},
 			},
 		},
 		"TypeArray": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
 			},
 			resultType: emptyResult,
 		},
 		"TypeNestedArray": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.A{bson.A{"foo", "bar"}}}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{bson.A{"foo", "bar"}}}}}}}},
 			},
 		},
 		"TypeObjectID": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", primitive.NewObjectID()}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", primitive.NewObjectID()}}}}}},
 			},
 		},
 		"TypeBool": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", true}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", true}}}}}},
 			},
 		},
 		"ProjectManyOperators": {
