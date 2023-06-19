@@ -21,6 +21,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/AlekSi/pointer"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -133,7 +134,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 	indexParams := &Index{
 		Name:   "_id_",
 		Key:    IndexKey{{Field: "_id", Order: types.Ascending}},
-		Unique: true,
+		Unique: pointer.ToBool(true),
 	}
 
 	if err := CreateIndexIfNotExists(ctx, tx, db, collection, indexParams); err != nil {
