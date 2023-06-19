@@ -657,6 +657,10 @@ func TestQueryCommandBatchSize(t *testing.T) {
 			},
 			altMessage: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
 		},
+		"DoubleZero": {
+			batchSize:  float64(0),
+			firstBatch: bson.A{},
+		},
 		"DoubleNegative": {
 			batchSize: -1.1,
 			err: &mongo.CommandError{
@@ -664,6 +668,11 @@ func TestQueryCommandBatchSize(t *testing.T) {
 				Name:    "Location51024",
 				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
 			},
+		},
+		"Double": {
+			filter:     bson.D{{"_id", bson.D{{"$in", bson.A{0, 1, 2, 3, 4, 5}}}}},
+			batchSize:  6.9,
+			firstBatch: docs[:6],
 		},
 		"DoubleFloor": {
 			batchSize:         1.9,
