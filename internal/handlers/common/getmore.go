@@ -16,9 +16,11 @@ package common
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -54,7 +56,11 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 
 	cursor := registry.Cursor(username, cursorID)
 	if cursor == nil {
-		return nil, lazyerrors.Errorf("no cursor %d", cursorID)
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrCursorNotFound,
+			fmt.Sprintf("cursor id %d not found", cursorID),
+			"getMore",
+		)
 	}
 
 	// TODO this logic should be tested
