@@ -62,7 +62,8 @@ Below is an example of a unique index for the `name` field from the `products` c
 db.products.createIndex({ name: 1 }, { unique: true })
 ```
 
-Unique indexes can be compound:
+Unique indexes can be compound. Here is an example of a unique index consisting 
+of the `category` and `name` fields from the `products` collection.
 
 ```js
 db.products.createIndex({ category: 1, name: 1 }, { unique: true })
