@@ -18,6 +18,7 @@ import (
 	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -71,12 +72,102 @@ func (iter *addFieldsIterator) Next() (struct{}, *types.Document, error) {
 					break
 				}
 
-				return unused, nil, err
+				switch opErr.Code() {
+				case operators.ErrEmptyField:
+					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrEmptySubProject,
+						"Invalid $addFields :: caused by :: An empty sub-projection is not a valid value."+
+							" Found empty object at path",
+						"$addFields (stage)",
+					)
+				case operators.ErrTooManyFields:
+					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrFieldPathInvalidName,
+						"Invalid $addFields :: caused by :: FieldPath field names may not start with '$'."+
+							" Consider using $getField or $setField.",
+						"$addFields (stage)",
+					)
+				case operators.ErrNotImplemented:
+					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrNotImplemented,
+						"Invalid $addFields :: caused by :: "+opErr.Error(),
+						"$addFields (stage)",
+					)
+				case operators.ErrArgsInvalidLen:
+					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrOperatorWrongLenOfArgs,
+						"Invalid $addFields :: caused by :: "+opErr.Error(),
+						"$addFields (stage)",
+					)
+				case operators.ErrInvalidExpression:
+					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrAggregateInvalidExpression,
+						"Invalid $addFields :: caused by :: "+opErr.Error(),
+						"$addFields (stage)",
+					)
+				case operators.ErrInvalidNestedExpression:
+					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrInvalidPipelineOperator,
+						"Invalid $addFields :: caused by :: "+opErr.Error(),
+						"$addFields (stage)",
+					)
+				case operators.ErrWrongType:
+					fallthrough
+				default:
+					return unused, nil, lazyerrors.Error(err)
+				}
+
 			}
 
 			val, err = op.Process(doc)
 			if err != nil {
-				return unused, nil, err
+				var opErr operators.OperatorError
+
+				if !errors.As(err, &opErr) {
+					return unused, nil, err
+				}
+
+				if opErr.Code() == operators.ErrNoOperator {
+					break
+				}
+
+				switch opErr.Code() {
+				case operators.ErrTooManyFields:
+					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrFieldPathInvalidName,
+						"Invalid $addFields :: caused by :: FieldPath field names may not start with '$'."+
+							" Consider using $getField or $setField.",
+						"$addFields (stage)",
+					)
+				case operators.ErrNotImplemented:
+					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrNotImplemented,
+						"Invalid $addFields :: caused by :: "+opErr.Error(),
+						"$addFields (stage)",
+					)
+				case operators.ErrArgsInvalidLen:
+					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrOperatorWrongLenOfArgs,
+						"Invalid $addFields :: caused by :: "+opErr.Error(),
+						"$addFields (stage)",
+					)
+				case operators.ErrInvalidExpression:
+					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrAggregateInvalidExpression,
+						"Invalid $addFields :: caused by :: "+opErr.Error(),
+						"$addFields (stage)",
+					)
+				case operators.ErrInvalidNestedExpression:
+					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrInvalidPipelineOperator,
+						"Invalid $addFields :: caused by :: "+opErr.Error(),
+						"$addFields (stage)",
+					)
+				case operators.ErrWrongType:
+					fallthrough
+				default:
+					return unused, nil, lazyerrors.Error(err)
+				}
 			}
 		}
 
