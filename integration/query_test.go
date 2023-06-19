@@ -628,19 +628,20 @@ func TestQueryCommandBatchSize(t *testing.T) {
 		batchSize  any         // optional, nil to leave batchSize unset
 		firstBatch primitive.A // optional, expected firstBatch
 
-		err        *mongo.CommandError // optional, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		err               *mongo.CommandError // optional, expected error from MongoDB
+		altMessage        string              // optional, alternative error message for FerretDB, ignored if empty
+		skip              string              // optional, skip test with a specified reason
+		skipExceptMongoDB string              // optional, skip test except MongoDB backend.
 	}{
 		"Int": {
-			batchSize:  1,
-			firstBatch: docs[:1],
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2005",
+			batchSize:         1,
+			firstBatch:        docs[:1],
+			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"Long": {
-			batchSize:  int64(2),
-			firstBatch: docs[:2],
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2005",
+			batchSize:         int64(2),
+			firstBatch:        docs[:2],
+			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"LongZero": {
 			batchSize:  int64(0),
@@ -664,9 +665,9 @@ func TestQueryCommandBatchSize(t *testing.T) {
 			},
 		},
 		"DoubleFloor": {
-			batchSize:  1.9,
-			firstBatch: docs[:1],
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2005",
+			batchSize:         1.9,
+			firstBatch:        docs[:1],
+			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"Bool": {
 			batchSize:  true,
@@ -676,24 +677,28 @@ func TestQueryCommandBatchSize(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'FindCommandRequest.batchSize' is the wrong type 'bool', expected types '[long, int, decimal, double']",
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2005",
+			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"Unset": {
 			// default batchSize is 101 when unset
-			batchSize:  nil,
-			firstBatch: docs[:101],
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2005",
+			batchSize:         nil,
+			firstBatch:        docs[:101],
+			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"LargeBatchSize": {
-			batchSize:  102,
-			firstBatch: docs[:102],
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2005",
+			batchSize:         102,
+			firstBatch:        docs[:102],
+			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
+			}
+
+			if tc.skipExceptMongoDB != "" {
+				setup.SkipExceptMongoDB(t, tc.skipExceptMongoDB)
 			}
 
 			t.Parallel()
@@ -746,7 +751,7 @@ func TestQueryBatchSize(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("SetBatchSize", func(t *testing.T) {
-		t.Skip("https://github.com/FerretDB/FerretDB/issues/2005")
+		setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/2005")
 
 		t.Parallel()
 
@@ -798,7 +803,7 @@ func TestQueryBatchSize(t *testing.T) {
 	})
 
 	t.Run("DefaultBatchSize", func(t *testing.T) {
-		t.Skip("https://github.com/FerretDB/FerretDB/issues/2005")
+		setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/2005")
 
 		t.Parallel()
 
@@ -854,7 +859,7 @@ func TestQueryBatchSize(t *testing.T) {
 }
 
 func TestQueryCommandGetMore(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/2005")
+	setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/2005")
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
