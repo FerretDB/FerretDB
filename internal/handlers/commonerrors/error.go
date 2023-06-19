@@ -104,14 +104,17 @@ const (
 	// ErrDocumentValidationFailure indicates that document validation failed.
 	ErrDocumentValidationFailure = ErrorCode(121) // DocumentValidationFailure
 
+	// ErrInvalidIndexSpecificationOption indicates that the index option is invalid.
+	ErrInvalidIndexSpecificationOption = ErrorCode(197) // InvalidIndexSpecificationOption
+
 	// ErrInvalidPipelineOperator indicates that provided aggregation operator is invalid.
 	ErrInvalidPipelineOperator = ErrorCode(168) // InvalidPipelineOperator
 
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 
-	// ErrDuplicateKey indicates duplicate key violation.
-	ErrDuplicateKey = ErrorCode(11000) // Location11000
+	// ErrDuplicateKeyInsert indicates duplicate key violation on inserting document.
+	ErrDuplicateKeyInsert = ErrorCode(11000) // Location11000
 
 	// ErrSetBadExpression indicates set expression is not object.
 	ErrSetBadExpression = ErrorCode(40272) // Location40272
