@@ -71,15 +71,13 @@ of the `category` and `name` fields from the `products` collection:
 db.products.createIndex({ category: 1, name: 1 }, { unique: true })
 ```
 
-:::note
+### Index creation details
 
 - If the `createIndexes()` command is called for a non-existent collection, it will create the collection and its given indexes.
 - If the `createIndexes()` command is called for a non-existent field, an index for the field is created without creating or adding the field to an existing collection.
 - If you attempt to create an index with the same name and key as an existing index, the system will not create a duplicate index.
   Instead, it will simply return the name and key of the existing index, since duplicate indexes would be redundant and inefficient.
 - Meanwhile, any attempt to call `createIndexes()` command for an existing index using the same name and different key, _or_ different name but the same key will return an error.
-
-:::
 
 ## How to list Indexes
 
