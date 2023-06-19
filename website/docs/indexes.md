@@ -51,6 +51,23 @@ Below is an example of a compound index that uses `price` and `category` fields 
 db.products.createIndex({ price: 1, category: 1 })
 ```
 
+### Unique Indexes
+
+You can create unique indexes to ensure that the indexed fields do not contain duplicate values.
+To create a unique index, set the `unique` option as `true` when calling `createIndexes()` command.
+
+Below is an example of a unique index for the `name` field from the `products` collection.
+
+```js
+db.products.createIndex({ name: 1 }, { unique: true })
+```
+
+Unique indexes can be compound:
+
+```js
+db.products.createIndex({ category: 1, name: 1 }, { unique: true })
+```
+
 :::note
 
 - If the `createIndexes()` command is called for a non-existent collection, it will create the collection and its given indexes.
