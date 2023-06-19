@@ -58,8 +58,7 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 		iter := fields.Iterator()
 		defer iter.Close()
 
-		conflictFields := map[string]struct{}{}
-		unset := struct{}{}
+		var visitedPaths []types.Path
 
 		for {
 			_, v, err := iter.Next()
@@ -85,41 +84,38 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 				return nil, err
 			}
 
-			if _, ok = conflictFields[field]; ok {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrUnsetPathDuplicate,
-					fmt.Sprintf("Invalid $unset :: caused by :: Path collision at %s", field),
-					"$unset (stage)",
-				)
-			}
+			err = types.IsConflictPath(visitedPaths, *path)
+			var pathErr *types.DocumentPathError
 
-			trimmedPath := *path
-			i := path.Len()
+			if errors.As(err, &pathErr) {
+				if pathErr.Code() == types.ErrDocumentPathConflictOverwrite {
+					// the path overwrites one of visitedPaths.
+					return nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrUnsetPathDuplicate,
+						fmt.Sprintf("Invalid $unset :: caused by :: Path collision at %s", field),
+						"$unset (stage)",
+					)
+				}
 
-			// Add field and its parents fields to conflictFields.
-			// For a field "v.foo.bar", conflictFields contains "v", "v.foo" and "v.foo.bar".
-			for {
-				if _, ok = conflictFields[trimmedPath.String()]; ok {
+				if pathErr.Code() == types.ErrDocumentPathConflictCollision {
+					// the path creates collision at one of visitedPaths.
 					return nil, commonerrors.NewCommandErrorMsgWithArgument(
 						commonerrors.ErrUnsetPathOverlap,
 						fmt.Sprintf(
 							"Invalid $unset :: caused by :: Path collision at %s remaining portion %s",
 							path.String(),
-							strings.Join(path.Slice()[i:], "."),
+							pathErr.Error(),
 						),
 						"$unset (stage)",
 					)
 				}
-
-				conflictFields[trimmedPath.String()] = unset
-
-				if trimmedPath.Len() <= 1 {
-					break
-				}
-
-				trimmedPath = trimmedPath.TrimSuffix()
-				i--
 			}
+
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			visitedPaths = append(visitedPaths, *path)
 
 			exclusion.Set(field, false)
 		}
