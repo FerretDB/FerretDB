@@ -189,11 +189,11 @@ const (
 	// ErrStageUnwindNoPrefix indicates that $unwind aggregation stage doesn't include '$' prefix.
 	ErrStageUnwindNoPrefix = ErrorCode(28818) // Location28818
 
-	// ErrUnsetPathOverlap indicates that $unset arguments have overlap paths.
-	ErrUnsetPathOverlap = ErrorCode(31249) // Location31249
+	// ErrUnsetPathCollision indicates that an $unset path creates collision at another path in arguments.
+	ErrUnsetPathCollision = ErrorCode(31249) // Location31249
 
-	// ErrUnsetPathDuplicate indicates that $unset arguments have duplicate paths.
-	ErrUnsetPathDuplicate = ErrorCode(31250) // Location31250
+	// ErrUnsetPathOverwrite indicates that an $unset path have overwrites another path in arguments.
+	ErrUnsetPathOverwrite = ErrorCode(31250) // Location31250
 
 	// ErrProjectionInEx for $elemMatch indicates that inclusion statement found
 	// while projection document already marked as exclusion.

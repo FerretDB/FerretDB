@@ -91,7 +91,7 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 				if pathErr.Code() == types.ErrDocumentPathConflictOverwrite {
 					// the path overwrites one of visitedPaths.
 					return nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrUnsetPathDuplicate,
+						commonerrors.ErrUnsetPathOverwrite,
 						fmt.Sprintf("Invalid $unset :: caused by :: Path collision at %s", field),
 						"$unset (stage)",
 					)
@@ -100,7 +100,7 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 				if pathErr.Code() == types.ErrDocumentPathConflictCollision {
 					// the path creates collision at one of visitedPaths.
 					return nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrUnsetPathOverlap,
+						commonerrors.ErrUnsetPathCollision,
 						fmt.Sprintf(
 							"Invalid $unset :: caused by :: Path collision at %s remaining portion %s",
 							path.String(),

@@ -570,7 +570,7 @@ func TestAggregateUnsetErrors(t *testing.T) {
 				Message: "Invalid $unset :: caused by :: Path collision at v",
 			},
 		},
-		"ArrayPathOverlapSuffix": {
+		"ArrayPathOverwrites": {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{"v", "v.foo"}}},
 			},
@@ -580,7 +580,7 @@ func TestAggregateUnsetErrors(t *testing.T) {
 				Message: "Invalid $unset :: caused by :: Path collision at v.foo remaining portion foo",
 			},
 		},
-		"ArrayPathOverlapMiddle": {
+		"ArrayPathOverwritesRemaining": {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{"v", "v.foo.bar"}}},
 			},
@@ -590,7 +590,7 @@ func TestAggregateUnsetErrors(t *testing.T) {
 				Message: "Invalid $unset :: caused by :: Path collision at v.foo.bar remaining portion foo.bar",
 			},
 		},
-		"ArrayPathOverlapPrefix": {
+		"ArrayPathCollision": {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{"v.foo", "v"}}},
 			},
