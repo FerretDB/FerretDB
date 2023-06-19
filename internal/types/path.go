@@ -52,6 +52,12 @@ const (
 
 	// ErrDocumentPathEmptyKey indicates that provided path contains empty key.
 	ErrDocumentPathEmptyKey
+
+	// ErrDocumentPathConflictOverwrite indicates a path overwrites another path.
+	ErrDocumentPathConflictOverwrite
+
+	// ErrDocumentPathConflictCollision indicates a path creates collision at another path.
+	ErrDocumentPathConflictCollision
 )
 
 // DocumentPathError describes an error that could occur on document path related operations.
@@ -165,6 +171,50 @@ func (p Path) Append(elem string) Path {
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
 func RemoveByPath[T CompositeTypeInterface](comp T, path Path) {
 	removeByPath(comp, path)
+}
+
+// IsConflictPath returns DocumentPathError error if adding a path creates conflict at any of paths.
+// Returned DocumentPathError error codes:
+//
+//   - ErrDocumentPathConflictOverwrite when path overwrites any paths: paths = []{{"a","b"}} path = {"a"};
+//   - ErrDocumentPathConflictCollision when path creates collision:    paths = []{{"a"}}     path = {"a","b"};
+func IsConflictPath(paths []Path, path Path) error {
+	for _, p := range paths {
+		target, prefix := p.Slice(), path.Slice()
+
+		if len(target) < len(prefix) {
+			target, prefix = prefix, target
+		}
+
+		if len(prefix) == 0 {
+			panic("path cannot be empty string")
+		}
+
+		var different bool
+
+		for i := range prefix {
+			if prefix[i] != target[i] {
+				different = true
+				break
+			}
+		}
+
+		if different {
+			continue
+		}
+
+		if p.Len() >= path.Len() {
+			return newDocumentPathError(ErrDocumentPathConflictOverwrite, errors.New("path overwrites previous path"))
+		}
+
+		// collisionPart is part of the path which creates collision, used in command error message.
+		// If visitedPath is `a.b` and path is `a.b.c`, collisionPart is `b.c`.
+		collisionPart := strings.Join(target[len(prefix):], ".")
+
+		return newDocumentPathError(ErrDocumentPathConflictCollision, errors.New(collisionPart))
+	}
+
+	return nil
 }
 
 // getByPath returns a value by path - a sequence of indexes and keys.
