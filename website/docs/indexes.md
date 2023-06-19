@@ -45,7 +45,8 @@ If it's `-1`, it specifies a descending order direction for the index.
 ### Compound Indexes
 
 For compound indexes, you can create an index key combining multiple fields together as a key.
-Below is an example of a compound index that uses `price` and `category` fields from the `products` collection as the index key.
+Below is an example of a compound index that uses `price` and `category` fields
+from the `products` collection as the index key:
 
 ```js
 db.products.createIndex({ price: 1, category: 1 })
@@ -56,14 +57,15 @@ db.products.createIndex({ price: 1, category: 1 })
 You can create unique indexes to ensure that the indexed fields do not contain duplicate values.
 To create a unique index, set the `unique` option as `true` when calling `createIndexes()` command.
 
-Below is an example of a unique index for the `name` field from the `products` collection.
+Below is an example of a unique index for the `name` field from the `products` collection:
 
 ```js
 db.products.createIndex({ name: 1 }, { unique: true })
 ```
 
-Unique indexes can be compound. Here is an example of a unique index consisting 
-of the `category` and `name` fields from the `products` collection.
+Unique indexes can be compound.
+Here is an example of a unique index consisting
+of the `category` and `name` fields from the `products` collection:
 
 ```js
 db.products.createIndex({ category: 1, name: 1 }, { unique: true })
