@@ -749,6 +749,102 @@ func TestQueryCommandBatchSize(t *testing.T) {
 	}
 }
 
+func TestQueryCommandSingleBatch(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	docs := generateDocuments(0, 5)
+	_, err := collection.InsertMany(ctx, docs)
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		batchSize    any  // optional, nil to leave batchSize unset
+		singleBatch  any  // optional, nil to leave singleBatch unset
+		cursorClosed bool // optional, set true for expected cursor closed
+
+		err               *mongo.CommandError // optional, expected error from MongoDB
+		altMessage        string              // optional, alternative error message for FerretDB, ignored if empty
+		skip              string              // optional, skip test with a specified reason
+		skipExceptMongoDB string              // optional, skip test except MongoDB backend with a specified reason.
+	}{
+		"True": {
+			singleBatch:  true,
+			batchSize:    3,
+			cursorClosed: true,
+			//	skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
+		},
+		"False": {
+			singleBatch:  false,
+			batchSize:    3,
+			cursorClosed: false,
+		},
+		"Int": {
+			singleBatch: int32(1),
+			batchSize:   3,
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "Field 'singleBatch' should be a boolean value, but found: int",
+			},
+			altMessage: "BSON field 'find.singleBatch' is the wrong type 'int', expected type 'bool'",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			if tc.skipExceptMongoDB != "" {
+				setup.SkipExceptMongoDB(t, tc.skipExceptMongoDB)
+			}
+
+			t.Parallel()
+
+			var rest bson.D
+			if tc.batchSize != nil {
+				rest = append(rest, bson.E{Key: "batchSize", Value: tc.batchSize})
+			}
+
+			if tc.singleBatch != nil {
+				rest = append(rest, bson.E{Key: "singleBatch", Value: tc.singleBatch})
+			}
+
+			command := append(
+				bson.D{{"find", collection.Name()}},
+				rest...,
+			)
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&res)
+			if tc.err != nil {
+				assert.Nil(t, res)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
+				return
+			}
+
+			require.NoError(t, err)
+
+			v, ok := res.Map()["cursor"]
+			require.True(t, ok)
+
+			cursor, ok := v.(bson.D)
+			require.True(t, ok)
+
+			cursorID := cursor.Map()["id"]
+			assert.NotNil(t, cursorID)
+
+			if !tc.cursorClosed {
+				assert.NotZero(t, cursorID)
+				return
+			}
+
+			assert.Equal(t, int64(0), cursorID)
+		})
+	}
+}
+
 func TestQueryBatchSize(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
@@ -839,7 +935,7 @@ func TestQueryBatchSize(t *testing.T) {
 		require.Equal(t, 118, cursor.RemainingBatchLength())
 	})
 
-	t.Run("SingleBatch", func(t *testing.T) {
+	t.Run("NegativeLimit", func(t *testing.T) {
 		t.Parallel()
 
 		// set limit to negative, it ignores batchSize and returns single document in the firstBatch.
@@ -1029,7 +1125,7 @@ func TestQueryCommandGetMore(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
-				Message: "BSON field 'getMore.getMore' is the wrong type 'string', expected type 'long'",
+				Message: "BSON field 'getMore.getMore' is the wrong type 'int', expected type 'long'",
 			},
 			altMessage: "BSON field 'getMore.getMore' is the wrong type, expected type 'long'",
 		},

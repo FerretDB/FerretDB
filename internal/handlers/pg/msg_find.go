@@ -133,7 +133,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	var cursorID int64
 
-	if h.EnableCursors {
+	if h.EnableCursors && !params.SingleBatch {
+		// do not create cursor for singleBatch,
+		// since cursor is closed after the firstBatch.
 		iter := iterator.Values(iterator.ForSlice(resDocs))
 		c := cursor.New(&cursor.NewParams{
 			Iter:       iter,
