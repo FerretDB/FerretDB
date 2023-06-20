@@ -75,7 +75,7 @@ func (iter *addFieldsIterator) Next() (struct{}, *types.Document, error) {
 				switch opErr.Code() {
 				case operators.ErrTooManyFields:
 					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
-						40181,
+						commonerrors.ErrAddFieldsExpressionWrongAmountOfArgs,
 						"Invalid $addFields :: caused by :: FieldPath field names may not start with '$'."+
 							" Consider using $getField or $setField.",
 						"$addFields (stage)",
