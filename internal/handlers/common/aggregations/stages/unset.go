@@ -17,6 +17,8 @@ package stages
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages/projection"
@@ -33,18 +35,15 @@ import (
 //
 //	or { $unset: [ "<field1>", "<field2>", ... ] }
 type unset struct {
-	field *types.Document
+	exclusion *types.Document
 }
 
 // newUnset validates unset document and creates a new $unset stage.
 func newUnset(stage *types.Document) (aggregations.Stage, error) {
-	fields, err := stage.Get("$unset")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	fields := must.NotFail(stage.Get("$unset"))
 
-	// fieldsToUnset contains keys with `false` values. They are used to specify projection exclusion later.
-	fieldsToUnset := must.NotFail(types.NewDocument())
+	// exclusion contains keys with `false` values to specify projection exclusion later.
+	exclusion := must.NotFail(types.NewDocument())
 
 	switch fields := fields.(type) {
 	case *types.Array:
@@ -56,11 +55,13 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 			)
 		}
 
-		fieldIter := fields.Iterator()
-		defer fieldIter.Close()
+		iter := fields.Iterator()
+		defer iter.Close()
+
+		var visitedPaths []types.Path
 
 		for {
-			_, field, err := fieldIter.Next()
+			_, v, err := iter.Next()
 			if err != nil {
 				if errors.Is(err, iterator.ErrIteratorDone) {
 					break
@@ -69,7 +70,7 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			fieldStr, ok := field.(string)
+			field, ok := v.(string)
 			if !ok {
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrStageUnsetArrElementInvalidType,
@@ -78,18 +79,52 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 				)
 			}
 
-			fieldsToUnset.Set(fieldStr, false)
+			path, err := validateUnsetField(field)
+			if err != nil {
+				return nil, err
+			}
+
+			err = types.IsConflictPath(visitedPaths, *path)
+			var pathErr *types.DocumentPathError
+
+			if errors.As(err, &pathErr) {
+				if pathErr.Code() == types.ErrDocumentPathConflictOverwrite {
+					// the path overwrites one of visitedPaths.
+					return nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrUnsetPathOverwrite,
+						fmt.Sprintf("Invalid $unset :: caused by :: Path collision at %s", field),
+						"$unset (stage)",
+					)
+				}
+
+				if pathErr.Code() == types.ErrDocumentPathConflictCollision {
+					// the path creates collision at one of visitedPaths.
+					return nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrUnsetPathCollision,
+						fmt.Sprintf(
+							"Invalid $unset :: caused by :: Path collision at %s remaining portion %s",
+							path.String(),
+							pathErr.Error(),
+						),
+						"$unset (stage)",
+					)
+				}
+			}
+
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			visitedPaths = append(visitedPaths, *path)
+
+			exclusion.Set(field, false)
 		}
 	case string:
-		if fields == "" {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrEmptyFieldPath,
-				"Invalid $unset :: caused by :: FieldPath cannot be constructed with empty string",
-				"$unset (stage)",
-			)
+		if _, err := validateUnsetField(fields); err != nil {
+			return nil, err
 		}
 
-		fieldsToUnset.Set(fields, false)
+		exclusion.Set(fields, false)
 	default:
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageUnsetInvalidType,
@@ -99,18 +134,58 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 	}
 
 	return &unset{
-		field: fieldsToUnset,
+		exclusion: exclusion,
 	}, nil
 }
 
 // Process implements Stage interface.
 func (u *unset) Process(_ context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
-	return projection.ProjectionIterator(iter, closer, u.field)
+	// Use $project to unset fields, $unset is alias for $project exclusion.
+	return projection.ProjectionIterator(iter, closer, u.exclusion)
 }
 
 // Type implements Stage interface.
 func (u *unset) Type() aggregations.StageType {
 	return aggregations.StageTypeDocuments
+}
+
+// validateUnsetField returns error on invalid field value.
+func validateUnsetField(field string) (*types.Path, error) {
+	if field == "" {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrEmptyFieldPath,
+			"Invalid $unset :: caused by :: FieldPath cannot be constructed with empty string",
+			"$unset (stage)",
+		)
+	}
+
+	if strings.HasPrefix(field, "$") {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrFieldPathInvalidName,
+			"Invalid $unset :: caused by :: FieldPath field names may not start with '$'. "+
+				"Consider using $getField or $setField.",
+			"$unset (stage)",
+		)
+	}
+
+	if strings.HasSuffix(field, ".") {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidFieldPath,
+			"Invalid $unset :: caused by :: FieldPath must not end with a '.'.",
+			"$unset (stage)",
+		)
+	}
+
+	path, err := types.NewPathFromString(field)
+	if err != nil {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrPathContainsEmptyElement,
+			"Invalid $unset :: caused by :: FieldPath field names may not be empty strings.",
+			"$unset (stage)",
+		)
+	}
+
+	return &path, nil
 }
 
 // check interfaces
