@@ -625,10 +625,10 @@ func TestQueryCommandBatchSize(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
-		filter     any         // optional, nil to leave filter unset
-		batchSize  any         // optional, nil to leave batchSize unset
-		firstBatch primitive.A // optional, expected firstBatch
+		filter    any // optional, nil to leave filter unset
+		batchSize any // optional, nil to leave batchSize unset
 
+		firstBatch primitive.A         // optional, expected firstBatch
 		err        *mongo.CommandError // optional, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
@@ -754,13 +754,13 @@ func TestQueryCommandSingleBatch(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
-		batchSize    any  // optional, nil to leave batchSize unset
-		singleBatch  any  // optional, nil to leave singleBatch unset
-		cursorClosed bool // optional, set true for expecting cursor to be closed
+		batchSize   any // optional, nil to leave batchSize unset
+		singleBatch any // optional, nil to leave singleBatch unset
 
-		err        *mongo.CommandError // optional, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		cursorClosed bool                // optional, set true for expecting cursor to be closed
+		err          *mongo.CommandError // optional, expected error from MongoDB
+		altMessage   string              // optional, alternative error message for FerretDB, ignored if empty
+		skip         string              // optional, skip test with a specified reason
 	}{
 		"True": {
 			singleBatch:  true,
@@ -958,13 +958,13 @@ func TestQueryCommandGetMore(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
-		findBatchSize    any         // optional, nil to leave findBatchSize unset
-		getMoreBatchSize any         // optional, nil to leave getMoreBatchSize unset
-		collection       any         // optional, nil to leave collection unset
-		cursorID         any         // optional, defaults to cursorID from find()
-		firstBatch       primitive.A // required, expected find firstBatch
-		nextBatch        primitive.A // optional, expected getMore nextBatch
+		findBatchSize    any // optional, nil to leave findBatchSize unset
+		getMoreBatchSize any // optional, nil to leave getMoreBatchSize unset
+		collection       any // optional, nil to leave collection unset
+		cursorID         any // optional, defaults to cursorID from find()
 
+		firstBatch primitive.A         // required, expected find firstBatch
+		nextBatch  primitive.A         // optional, expected getMore nextBatch
 		err        *mongo.CommandError // optional, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
