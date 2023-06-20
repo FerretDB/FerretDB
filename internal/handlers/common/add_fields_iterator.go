@@ -70,18 +70,17 @@ func (iter *addFieldsIterator) Next() (struct{}, *types.Document, error) {
 			}
 
 			op, err := operators.NewOperator(v)
-			if err := processAddFieldsError(err); err != nil {
+			if err = processAddFieldsError(err); err != nil {
 				return unused, nil, err
 			}
 
 			val, err = op.Process(doc)
-			if err := processAddFieldsError(err); err != nil {
+			if err = processAddFieldsError(err); err != nil {
 				return unused, nil, err
 			}
-
 		}
-		doc.Set(key, val)
 
+		doc.Set(key, val)
 	}
 
 	return unused, doc, nil
@@ -135,7 +134,7 @@ func processAddFieldsError(err error) error {
 			"Invalid $addFields :: caused by :: "+opErr.Error(),
 			"$addFields (stage)",
 		)
-	case operators.ErrWrongType:
+	case operators.ErrNoOperator, operators.ErrEmptyField, operators.ErrWrongType:
 		fallthrough
 	default:
 		return lazyerrors.Error(err)

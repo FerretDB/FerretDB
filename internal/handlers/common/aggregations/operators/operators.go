@@ -44,15 +44,19 @@ type Operator interface {
 	Process(in *types.Document) (any, error)
 }
 
+// IsOperator returns true if provided document should be
+// treated as operator document.
 func IsOperator(doc *types.Document) bool {
 	iter := doc.Iterator()
 	defer iter.Close()
+
 	for {
 		key, _, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
 			}
+
 			return false
 		}
 
@@ -60,6 +64,7 @@ func IsOperator(doc *types.Document) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
