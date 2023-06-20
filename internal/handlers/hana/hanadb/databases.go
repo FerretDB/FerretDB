@@ -134,8 +134,8 @@ func (hanaPool *Pool) SchemaSize(ctx context.Context, qp *QueryParams) (int64, e
 
 	for _, collection := range collections {
 		qpCopy.Collection = collection
-		size, err := hanaPool.CollectionSize(ctx, &qpCopy)
 
+		size, err := hanaPool.CollectionSize(ctx, &qpCopy)
 		if err != nil {
 			return 0, lazyerrors.Error(err)
 		}
