@@ -854,7 +854,7 @@ func TestQueryBatchSize(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("SetBatchSize", func(t *testing.T) {
-		setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/2005")
+		//setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/2005")
 
 		t.Parallel()
 
@@ -906,7 +906,7 @@ func TestQueryBatchSize(t *testing.T) {
 	})
 
 	t.Run("DefaultBatchSize", func(t *testing.T) {
-		setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/2005")
+		//		setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/2005")
 
 		t.Parallel()
 
