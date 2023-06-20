@@ -629,20 +629,17 @@ func TestQueryCommandBatchSize(t *testing.T) {
 		batchSize  any         // optional, nil to leave batchSize unset
 		firstBatch primitive.A // optional, expected firstBatch
 
-		err               *mongo.CommandError // optional, expected error from MongoDB
-		altMessage        string              // optional, alternative error message for FerretDB, ignored if empty
-		skip              string              // optional, skip test with a specified reason
-		skipExceptMongoDB string              // optional, skip test except MongoDB backend with a specified reason.
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Int": {
-			batchSize:         1,
-			firstBatch:        docs[:1],
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
+			batchSize:  1,
+			firstBatch: docs[:1],
 		},
 		"Long": {
-			batchSize:         int64(2),
-			firstBatch:        docs[:2],
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
+			batchSize:  int64(2),
+			firstBatch: docs[:2],
 		},
 		"LongZero": {
 			batchSize:  int64(0),
@@ -675,9 +672,8 @@ func TestQueryCommandBatchSize(t *testing.T) {
 			firstBatch: docs[:6],
 		},
 		"DoubleFloor": {
-			batchSize:         1.9,
-			firstBatch:        docs[:1],
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
+			batchSize:  1.9,
+			firstBatch: docs[:1],
 		},
 		"Bool": {
 			batchSize:  true,
@@ -691,14 +687,16 @@ func TestQueryCommandBatchSize(t *testing.T) {
 		},
 		"Unset": {
 			// default batchSize is 101 when unset
-			batchSize:         nil,
-			firstBatch:        docs[:101],
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
+			batchSize:  nil,
+			firstBatch: docs[:101],
+		},
+		"Unset101Filter": {
+			batchSize:  nil,
+			firstBatch: docs[:101],
 		},
 		"LargeBatchSize": {
-			batchSize:         102,
-			firstBatch:        docs[:102],
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
+			batchSize:  102,
+			firstBatch: docs[:102],
 		},
 		"LargeBatchSizeFilter": {
 			filter:     bson.D{{"_id", bson.D{{"$in", bson.A{0, 1, 2, 3, 4, 5}}}}},
@@ -710,10 +708,6 @@ func TestQueryCommandBatchSize(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
-			}
-
-			if tc.skipExceptMongoDB != "" {
-				setup.SkipExceptMongoDB(t, tc.skipExceptMongoDB)
 			}
 
 			t.Parallel()
@@ -894,18 +888,16 @@ func TestQueryCommandGetMore(t *testing.T) {
 		firstBatch       primitive.A // required, expected find firstBatch
 		nextBatch        primitive.A // optional, expected getMore nextBatch
 
-		err               *mongo.CommandError // optional, expected error from MongoDB
-		altMessage        string              // optional, alternative error message for FerretDB, ignored if empty
-		skip              string              // optional, skip test with a specified reason
-		skipExceptMongoDB string              // optional, skip test except MongoDB backend with a specified reason.
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Int": {
-			findBatchSize:     1,
-			getMoreBatchSize:  int32(1),
-			collection:        collection.Name(),
-			firstBatch:        docs[:1],
-			nextBatch:         docs[1:2],
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
+			findBatchSize:    1,
+			getMoreBatchSize: int32(1),
+			collection:       collection.Name(),
+			firstBatch:       docs[:1],
+			nextBatch:        docs[1:2],
 		},
 		"IntNegative": {
 			findBatchSize:    1,
@@ -917,24 +909,20 @@ func TestQueryCommandGetMore(t *testing.T) {
 				Name:    "Location51024",
 				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
 			},
-			altMessage:        "BSON field 'batchSize' value must be >= 0, actual value '-1'",
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"IntZero": {
-			findBatchSize:     1,
-			getMoreBatchSize:  int32(0),
-			collection:        collection.Name(),
-			firstBatch:        docs[:1],
-			nextBatch:         docs[1:],
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
+			findBatchSize:    1,
+			getMoreBatchSize: int32(0),
+			collection:       collection.Name(),
+			firstBatch:       docs[:1],
+			nextBatch:        docs[1:],
 		},
 		"Long": {
-			findBatchSize:     1,
-			getMoreBatchSize:  int64(1),
-			collection:        collection.Name(),
-			firstBatch:        docs[:1],
-			nextBatch:         docs[1:2],
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
+			findBatchSize:    1,
+			getMoreBatchSize: int64(1),
+			collection:       collection.Name(),
+			firstBatch:       docs[:1],
+			nextBatch:        docs[1:2],
 		},
 		"LongNegative": {
 			findBatchSize:    1,
@@ -946,23 +934,20 @@ func TestQueryCommandGetMore(t *testing.T) {
 				Name:    "Location51024",
 				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
 			},
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"LongZero": {
-			findBatchSize:     1,
-			getMoreBatchSize:  int64(0),
-			collection:        collection.Name(),
-			firstBatch:        docs[:1],
-			nextBatch:         docs[1:],
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
+			findBatchSize:    1,
+			getMoreBatchSize: int64(0),
+			collection:       collection.Name(),
+			firstBatch:       docs[:1],
+			nextBatch:        docs[1:],
 		},
 		"Double": {
-			findBatchSize:     1,
-			getMoreBatchSize:  float64(1),
-			collection:        collection.Name(),
-			firstBatch:        docs[:1],
-			nextBatch:         docs[1:2],
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
+			findBatchSize:    1,
+			getMoreBatchSize: float64(1),
+			collection:       collection.Name(),
+			firstBatch:       docs[:1],
+			nextBatch:        docs[1:2],
 		},
 		"DoubleNegative": {
 			findBatchSize:    1,
@@ -974,23 +959,20 @@ func TestQueryCommandGetMore(t *testing.T) {
 				Name:    "Location51024",
 				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
 			},
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"DoubleZero": {
-			findBatchSize:     1,
-			getMoreBatchSize:  float64(0),
-			collection:        collection.Name(),
-			firstBatch:        docs[:1],
-			nextBatch:         docs[1:],
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
+			findBatchSize:    1,
+			getMoreBatchSize: float64(0),
+			collection:       collection.Name(),
+			firstBatch:       docs[:1],
+			nextBatch:        docs[1:],
 		},
 		"DoubleFloor": {
-			findBatchSize:     1,
-			getMoreBatchSize:  1.9,
-			collection:        collection.Name(),
-			firstBatch:        docs[:1],
-			nextBatch:         docs[1:2],
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
+			findBatchSize:    1,
+			getMoreBatchSize: 1.9,
+			collection:       collection.Name(),
+			firstBatch:       docs[:1],
+			nextBatch:        docs[1:2],
 		},
 		"GetMoreCursorExhausted": {
 			findBatchSize:    200,
@@ -1013,24 +995,22 @@ func TestQueryCommandGetMore(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'getMore.batchSize' is the wrong type 'bool', expected types '[long, int, decimal, double']",
 			},
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
+			altMessage: "BSON field 'getMore.batchSize' is the wrong type 'bool', expected types '[long, int, decimal, double]'",
 		},
 		"Unset": {
 			findBatchSize: 1,
 			// unset getMore batchSize gets all remaining documents
-			getMoreBatchSize:  nil,
-			collection:        collection.Name(),
-			firstBatch:        docs[:1],
-			nextBatch:         docs[1:],
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
+			getMoreBatchSize: nil,
+			collection:       collection.Name(),
+			firstBatch:       docs[:1],
+			nextBatch:        docs[1:],
 		},
 		"LargeBatchSize": {
-			findBatchSize:     1,
-			getMoreBatchSize:  105,
-			collection:        collection.Name(),
-			firstBatch:        docs[:1],
-			nextBatch:         docs[1:106],
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
+			findBatchSize:    1,
+			getMoreBatchSize: 105,
+			collection:       collection.Name(),
+			firstBatch:       docs[:1],
+			nextBatch:        docs[1:106],
 		},
 		"StringCursorID": {
 			findBatchSize:    1,
@@ -1043,7 +1023,20 @@ func TestQueryCommandGetMore(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'getMore.getMore' is the wrong type 'string', expected type 'long'",
 			},
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
+			altMessage: "BSON field 'getMore.getMore' is the wrong type, expected type 'long'",
+		},
+		"Int32CursorID": {
+			findBatchSize:    1,
+			getMoreBatchSize: 1,
+			collection:       collection.Name(),
+			cursorID:         int32(1111),
+			firstBatch:       docs[:1],
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'getMore.getMore' is the wrong type 'string', expected type 'long'",
+			},
+			altMessage: "BSON field 'getMore.getMore' is the wrong type, expected type 'long'",
 		},
 		"NotFoundCursorID": {
 			findBatchSize:    1,
@@ -1056,7 +1049,6 @@ func TestQueryCommandGetMore(t *testing.T) {
 				Name:    "CursorNotFound",
 				Message: "cursor id 1234 not found",
 			},
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"WrongTypeNamespace": {
 			findBatchSize:    1,
@@ -1068,7 +1060,6 @@ func TestQueryCommandGetMore(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'getMore.collection' is the wrong type 'object', expected type 'string'",
 			},
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"InvalidNamespace": {
 			findBatchSize:    1,
@@ -1081,7 +1072,6 @@ func TestQueryCommandGetMore(t *testing.T) {
 				Message: "Requested getMore on namespace 'TestQueryCommandGetMore.invalid'," +
 					" but cursor belongs to a different namespace TestQueryCommandGetMore.TestQueryCommandGetMore",
 			},
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"EmptyCollectionName": {
 			findBatchSize:    1,
@@ -1093,7 +1083,6 @@ func TestQueryCommandGetMore(t *testing.T) {
 				Name:    "InvalidNamespace",
 				Message: "Collection names cannot be empty",
 			},
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"MissingCollectionName": {
 			findBatchSize:    1,
@@ -1105,17 +1094,12 @@ func TestQueryCommandGetMore(t *testing.T) {
 				Name:    "Location40414",
 				Message: "BSON field 'getMore.collection' is missing but a required field",
 			},
-			skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
-			}
-
-			if tc.skipExceptMongoDB != "" {
-				setup.SkipExceptMongoDB(t, tc.skipExceptMongoDB)
 			}
 
 			// Do not run tests in parallel, MongoDB throws error that session and cursor do not match.
