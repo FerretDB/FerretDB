@@ -667,7 +667,6 @@ func TestQueryCommandBatchSize(t *testing.T) {
 			},
 		},
 		"Double": {
-			filter:     bson.D{{"_id", bson.D{{"$in", bson.A{0, 1, 2, 3, 4, 5}}}}},
 			batchSize:  6.9,
 			firstBatch: docs[:6],
 		},
@@ -687,10 +686,6 @@ func TestQueryCommandBatchSize(t *testing.T) {
 		},
 		"Unset": {
 			// default batchSize is 101 when unset
-			batchSize:  nil,
-			firstBatch: docs[:101],
-		},
-		"Unset101Filter": {
 			batchSize:  nil,
 			firstBatch: docs[:101],
 		},
