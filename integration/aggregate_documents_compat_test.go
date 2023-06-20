@@ -1639,6 +1639,7 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", bson.A{"1", "2"}}}}}}}}},
 			},
+			resultType: emptyResult,
 		},
 
 		"TypeInt": {

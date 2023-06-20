@@ -643,7 +643,15 @@ func processOperatorError(err error) error {
 			"Invalid $project :: caused by :: "+opErr.Error(),
 			"$project (stage)",
 		)
-	case operators.ErrNoOperator, operators.ErrWrongType:
+	case operators.ErrNoOperator:
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrEmptySubProject,
+			"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
+				" Found empty object at path",
+			"$project (stage)",
+		)
+
+	case operators.ErrWrongType:
 		fallthrough
 	default:
 		return lazyerrors.Error(err)
