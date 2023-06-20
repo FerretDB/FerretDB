@@ -771,7 +771,6 @@ func TestQueryCommandSingleBatch(t *testing.T) {
 			singleBatch:  true,
 			batchSize:    3,
 			cursorClosed: true,
-			//	skipExceptMongoDB: "https://github.com/FerretDB/FerretDB/issues/2005",
 		},
 		"False": {
 			singleBatch:  false,
