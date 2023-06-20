@@ -73,13 +73,6 @@ func (iter *addFieldsIterator) Next() (struct{}, *types.Document, error) {
 				}
 
 				switch opErr.Code() {
-				case operators.ErrEmptyField:
-					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrEmptySubProject,
-						"Invalid $addFields :: caused by :: An empty sub-projection is not a valid value."+
-							" Found empty object at path",
-						"$addFields (stage)",
-					)
 				case operators.ErrTooManyFields:
 					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
 						commonerrors.ErrFieldPathInvalidName,
@@ -116,7 +109,6 @@ func (iter *addFieldsIterator) Next() (struct{}, *types.Document, error) {
 				default:
 					return unused, nil, lazyerrors.Error(err)
 				}
-
 			}
 
 			val, err = op.Process(doc)

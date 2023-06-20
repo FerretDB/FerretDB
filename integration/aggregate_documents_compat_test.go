@@ -1665,6 +1665,12 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"foo", "bar"}}}}}}}},
 			},
 		},
+		"TypeEmpty": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{}}}}}}},
+			},
+		},
 		"TypeArraySingleItem": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
@@ -1879,6 +1885,7 @@ func TestAggregateCompatAddFields(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "foo"}, {"$operator", "foo"}}}}}},
 			},
+			resultType: emptyResult,
 		},
 		"TypeArraySingleItem": {
 			pipeline: bson.A{

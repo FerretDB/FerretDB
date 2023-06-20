@@ -56,13 +56,6 @@ func NewOperator(doc any) (Operator, error) {
 		)
 	}
 
-	if operatorDoc.Len() == 0 {
-		return nil, newOperatorError(
-			ErrEmptyField,
-			"The operator field is empty (expected document)",
-		)
-	}
-
 	iter := operatorDoc.Iterator()
 	defer iter.Close()
 
