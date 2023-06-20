@@ -17,10 +17,12 @@ package integration
 import (
 	"testing"
 
+	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
@@ -658,4 +660,106 @@ func TestAggregateUnsetErrors(t *testing.T) {
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
+}
+
+func TestAggregateBatchSize(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	// the number of documents is set to much bigger than the default batchSize of 101
+	docs := generateDocuments(0, 220)
+	_, err := collection.InsertMany(ctx, docs)
+	require.NoError(t, err)
+
+	t.Run("SetBatchSize", func(t *testing.T) {
+		t.Parallel()
+
+		// set BatchSize to 2
+		cursor, err := collection.Aggregate(ctx, bson.D{}, &options.AggregateOptions{BatchSize: pointer.ToInt32(2)})
+		require.NoError(t, err)
+
+		defer cursor.Close(ctx)
+
+		// firstBatch has remaining 2 documents
+		require.Equal(t, 2, cursor.RemainingBatchLength())
+
+		// get first document from firstBatch
+		ok := cursor.Next(ctx)
+		require.True(t, ok, "expected to have next document")
+		require.Equal(t, 1, cursor.RemainingBatchLength())
+
+		// get second document from firstBatch
+		ok = cursor.Next(ctx)
+		require.True(t, ok, "expected to have next document")
+		require.Equal(t, 0, cursor.RemainingBatchLength())
+
+		// get first document from secondBatch
+		ok = cursor.Next(ctx)
+		require.True(t, ok, "expected to have next document")
+		require.Equal(t, 1, cursor.RemainingBatchLength())
+
+		// get second document from secondBatch
+		ok = cursor.Next(ctx)
+		require.True(t, ok, "expected to have next document")
+		require.Equal(t, 0, cursor.RemainingBatchLength())
+
+		// increase batchSize
+		cursor.SetBatchSize(5)
+
+		// get first document from thirdBatch
+		ok = cursor.Next(ctx)
+		require.True(t, ok, "expected to have next document")
+		require.Equal(t, 4, cursor.RemainingBatchLength())
+
+		// get rest of documents from the cursor
+		var res bson.D
+		err = cursor.All(ctx, &res)
+		require.NoError(t, err)
+
+		// cursor is exhausted
+		ok = cursor.Next(ctx)
+		require.False(t, ok, "cursor exhausted, not expecting next document")
+	})
+
+	t.Run("Size", func(t *testing.T) {
+		t.Parallel()
+
+		// leave batchSize unset, firstBatch uses default batchSize 101
+		cursor, err := collection.Aggregate(ctx, bson.D{}, &options.AggregateOptions{BatchSize: pointer.ToInt32(220)})
+		require.NoError(t, err)
+
+		defer cursor.Close(ctx)
+
+		// firstBatch has the rest of the documents.
+		// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
+		ok := cursor.Next(ctx)
+		require.True(t, ok, "expected to have next document")
+		require.Equal(t, 219, cursor.RemainingBatchLength())
+	})
+
+	t.Run("DefaultBatchSize", func(t *testing.T) {
+		t.Parallel()
+
+		// leave batchSize unset, firstBatch uses default batchSize 101
+		cursor, err := collection.Aggregate(ctx, bson.D{})
+		require.NoError(t, err)
+
+		defer cursor.Close(ctx)
+
+		// firstBatch has remaining 101 documents
+		require.Equal(t, 101, cursor.RemainingBatchLength())
+
+		// get 101 documents from firstBatch
+		for i := 0; i < 101; i++ {
+			ok := cursor.Next(ctx)
+			require.True(t, ok, "expected to have next document")
+		}
+		require.Equal(t, 0, cursor.RemainingBatchLength())
+
+		// secondBatch has the rest of the documents, not only 101 documents
+		// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
+		ok := cursor.Next(ctx)
+		require.True(t, ok, "expected to have next document")
+		require.Equal(t, 118, cursor.RemainingBatchLength())
+	})
 }

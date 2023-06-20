@@ -49,23 +49,27 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1892
 	cursorDoc, err := common.GetOptionalParam[*types.Document](document, "cursor", new(types.Document))
 	if err != nil {
 		return nil, err
 	}
 
+	var firstBatchSize, nextBatchSize int64
 	v, _ := cursorDoc.Get("batchSize")
+
 	if v == nil || types.Compare(v, int32(0)) == types.Equal {
 		// TODO: Use 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
 		// Unlimited default batchSize is used for missing batchSize and zero values,
 		// set 250 assuming it is small enough not to crash FerretDB.
-		v = int32(250)
-	}
+		nextBatchSize = int64(250)
+		firstBatchSize = int64(101)
+	} else {
+		firstBatchSize, err = commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "batchSize", v, 0)
+		if err != nil {
+			return nil, err
+		}
 
-	batchSize, err := commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "batchSize", v, 0)
-	if err != nil {
-		return nil, err
+		nextBatchSize = firstBatchSize
 	}
 
 	common.Ignored(document, h.L, "lsid")
@@ -189,18 +193,18 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var cursorID int64
 
-	if h.EnableCursors && int64(len(resDocs)) > batchSize {
+	if h.EnableCursors && int64(len(resDocs)) > firstBatchSize {
 		// Cursor is not created when resDocs is less than batchSize, it all fits in the firstBatch.
 		iter := iterator.Values(iterator.ForSlice(resDocs))
 		c := cursor.New(&cursor.NewParams{
 			Iter:       iter,
 			DB:         db,
 			Collection: collection,
-			BatchSize:  int32(batchSize),
+			BatchSize:  int32(nextBatchSize),
 		})
 		username, _ := conninfo.Get(ctx).Auth()
 		cursorID = h.registry.StoreCursor(username, c)
-		resDocs, err = iterator.ConsumeValuesN(iter, int(batchSize))
+		resDocs, err = iterator.ConsumeValuesN(iter, int(firstBatchSize))
 
 		if err != nil {
 			return nil, lazyerrors.Error(err)
