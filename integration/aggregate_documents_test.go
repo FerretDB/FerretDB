@@ -876,16 +876,16 @@ func TestAggregateBatchSize(t *testing.T) {
 		require.False(t, ok, "cursor exhausted, not expecting next document")
 	})
 
-	t.Run("Size", func(t *testing.T) {
+	t.Run("ZeroBatchSize", func(t *testing.T) {
 		t.Parallel()
 
-		// leave batchSize unset, firstBatch uses default batchSize 101
-		cursor, err := collection.Aggregate(ctx, bson.D{}, &options.AggregateOptions{BatchSize: pointer.ToInt32(220)})
+		// set BatchSize to 2
+		cursor, err := collection.Aggregate(ctx, bson.D{}, &options.AggregateOptions{BatchSize: pointer.ToInt32(0)})
 		require.NoError(t, err)
 
 		defer cursor.Close(ctx)
 
-		// firstBatch has the rest of the documents.
+		// nextBatch has the rest of the documents.
 		// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
 		ok := cursor.Next(ctx)
 		require.True(t, ok, "expected to have next document")
