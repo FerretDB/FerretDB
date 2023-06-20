@@ -14,11 +14,13 @@ func _() {
 	_ = x[ErrDocumentPathIndexOutOfBound-4]
 	_ = x[ErrDocumentPathCannotCreateField-5]
 	_ = x[ErrDocumentPathEmptyKey-6]
+	_ = x[ErrDocumentPathConflictOverwrite-7]
+	_ = x[ErrDocumentPathConflictCollision-8]
 }
 
-const _DocumentPathErrorCode_name = "ErrDocumentPathKeyNotFoundErrDocumentPathCannotAccessErrDocumentPathArrayInvalidIndexErrDocumentPathIndexOutOfBoundErrDocumentPathCannotCreateFieldErrDocumentPathEmptyKey"
+const _DocumentPathErrorCode_name = "ErrDocumentPathKeyNotFoundErrDocumentPathCannotAccessErrDocumentPathArrayInvalidIndexErrDocumentPathIndexOutOfBoundErrDocumentPathCannotCreateFieldErrDocumentPathEmptyKeyErrDocumentPathConflictOverwriteErrDocumentPathConflictCollision"
 
-var _DocumentPathErrorCode_index = [...]uint8{0, 26, 53, 85, 115, 147, 170}
+var _DocumentPathErrorCode_index = [...]uint8{0, 26, 53, 85, 115, 147, 170, 202, 234}
 
 func (i DocumentPathErrorCode) String() string {
 	i -= 1

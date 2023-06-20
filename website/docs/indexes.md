@@ -45,21 +45,39 @@ If it's `-1`, it specifies a descending order direction for the index.
 ### Compound Indexes
 
 For compound indexes, you can create an index key combining multiple fields together as a key.
-Below is an example of a compound index that uses `price` and `category` fields from the `products` collection as the index key.
+Below is an example of a compound index that uses `price` and `category` fields
+from the `products` collection as the index key:
 
 ```js
 db.products.createIndex({ price: 1, category: 1 })
 ```
 
-:::note
+### Unique Indexes
+
+You can create unique indexes to ensure that the indexed fields do not contain duplicate values.
+To create a unique index, set the `unique` option as `true` when calling `createIndexes()` command.
+
+Below is an example of a unique index for the `name` field from the `products` collection:
+
+```js
+db.products.createIndex({ name: 1 }, { unique: true })
+```
+
+Unique indexes can be compound.
+Here is an example of a unique index consisting
+of the `category` and `name` fields from the `products` collection:
+
+```js
+db.products.createIndex({ category: 1, name: 1 }, { unique: true })
+```
+
+### Index creation details
 
 - If the `createIndexes()` command is called for a non-existent collection, it will create the collection and its given indexes.
 - If the `createIndexes()` command is called for a non-existent field, an index for the field is created without creating or adding the field to an existing collection.
 - If you attempt to create an index with the same name and key as an existing index, the system will not create a duplicate index.
   Instead, it will simply return the name and key of the existing index, since duplicate indexes would be redundant and inefficient.
 - Meanwhile, any attempt to call `createIndexes()` command for an existing index using the same name and different key, _or_ different name but the same key will return an error.
-
-:::
 
 ## How to list Indexes
 
