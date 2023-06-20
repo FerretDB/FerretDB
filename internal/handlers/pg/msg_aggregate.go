@@ -49,15 +49,31 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	cursorDoc, err := common.GetOptionalParam[*types.Document](document, "cursor", new(types.Document))
-	if err != nil {
-		return nil, err
+	v, _ := document.Get("cursor")
+	if v == nil {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrFailedToParse,
+			"The 'cursor' option is required, except for aggregate with the explain argument",
+			document.Command(),
+		)
+	}
+
+	cursorDoc, ok := v.(*types.Document)
+	if !ok {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrTypeMismatch,
+			fmt.Sprintf(
+				`BSON field 'cursor' is the wrong type '%s', expected type 'object'`,
+				commonparams.AliasFromType(v),
+			),
+			document.Command(),
+		)
 	}
 
 	var firstBatchSize, nextBatchSize int64
-	v, _ := cursorDoc.Get("batchSize")
+	v, _ = cursorDoc.Get("batchSize")
 
-	if v == nil || types.Compare(v, int32(0)) == types.Equal {
+	if v == nil {
 		// TODO: Use 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
 		// Unlimited default batchSize is used for missing batchSize and zero values,
 		// set 250 assuming it is small enough not to crash FerretDB.
@@ -96,7 +112,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	// TODO handle collection-agnostic pipelines ({aggregate: 1})
 	// https://github.com/FerretDB/FerretDB/issues/1890
-	var ok bool
 	var collection string
 
 	if collection, ok = collectionParam.(string); !ok {

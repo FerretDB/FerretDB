@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -658,6 +659,160 @@ func TestAggregateUnsetErrors(t *testing.T) {
 
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestAggregateCommandCursor(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	// the number of documents is set to slightly above the default batchSize of 101
+	docs := generateDocuments(0, 110)
+	_, err := collection.InsertMany(ctx, docs)
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		pipeline any // optional, defaults to bson.A{}
+		cursor   any // optional, nil to leave cursor unset
+
+		firstBatch primitive.A         // optional, expected firstBatch
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"Int": {
+			cursor:     bson.D{{"batchSize", 1}},
+			firstBatch: docs[:1],
+		},
+		"Long": {
+			cursor:     bson.D{{"batchSize", int64(2)}},
+			firstBatch: docs[:2],
+		},
+		"LongZero": {
+			cursor:     bson.D{{"batchSize", int64(0)}},
+			firstBatch: bson.A{},
+		},
+		"LongNegative": {
+			cursor: bson.D{{"batchSize", int64(-1)}},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
+			},
+			altMessage: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
+		},
+		"DoubleZero": {
+			cursor:     bson.D{{"batchSize", float64(0)}},
+			firstBatch: bson.A{},
+		},
+		"DoubleNegative": {
+			cursor: bson.D{{"batchSize", -1.1}},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
+			},
+		},
+		"DoubleFloor": {
+			cursor:     bson.D{{"batchSize", 1.9}},
+			firstBatch: docs[:1],
+		},
+		"Bool": {
+			cursor:     bson.D{{"batchSize", true}},
+			firstBatch: docs[:1],
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'cursor.batchSize' is the wrong type 'bool', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'aggregate.batchSize' is the wrong type 'bool', expected types '[long, int, decimal, double]'",
+		},
+		"Unset": {
+			cursor:     nil,
+			firstBatch: docs[:101],
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "The 'cursor' option is required, except for aggregate with the explain argument",
+			},
+		},
+		"Empty": {
+			cursor:     bson.D{},
+			firstBatch: docs[:101],
+		},
+		"String": {
+			cursor:     "invalid",
+			firstBatch: docs[:101],
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "cursor field must be missing or an object",
+			},
+			altMessage: "BSON field 'cursor' is the wrong type 'string', expected type 'object'",
+		},
+		"LargeBatchSize": {
+			cursor:     bson.D{{"batchSize", 102}},
+			firstBatch: docs[:102],
+		},
+		"LargeBatchSizeMatch": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"_id", bson.D{{"$in", bson.A{0, 1, 2, 3, 4, 5}}}}}}},
+			},
+			cursor:     bson.D{{"batchSize", 102}},
+			firstBatch: docs[:6],
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			var pipeline any = bson.A{}
+			if tc.pipeline != nil {
+				pipeline = tc.pipeline
+			}
+
+			var rest bson.D
+			if tc.cursor != nil {
+				rest = append(rest, bson.E{Key: "cursor", Value: tc.cursor})
+			}
+
+			command := append(
+				bson.D{
+					{"aggregate", collection.Name()},
+					{"pipeline", pipeline},
+				},
+				rest...,
+			)
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&res)
+			if tc.err != nil {
+				assert.Nil(t, res)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
+				return
+			}
+
+			require.NoError(t, err)
+
+			v, ok := res.Map()["cursor"]
+			require.True(t, ok)
+
+			cursor, ok := v.(bson.D)
+			require.True(t, ok)
+
+			// Do not check the value of cursor id, FerretDB has a different id.
+			cursorID := cursor.Map()["id"]
+			assert.NotNil(t, cursorID)
+
+			firstBatch, ok := cursor.Map()["firstBatch"]
+			require.True(t, ok)
+			require.Equal(t, tc.firstBatch, firstBatch)
 		})
 	}
 }
