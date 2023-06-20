@@ -1888,6 +1888,20 @@ func TestAggregateCompatAddFields(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"MultipleOperatorFirst": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "foo"}, {"not-operator", "foo"}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"MultipleOperatorLast": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"not-operator", "foo"}, {"$type", "foo"}}}}}},
+			},
+			resultType: emptyResult,
+		},
 		"TypeArraySingleItem": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},

@@ -16,6 +16,7 @@ package common
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -58,112 +59,49 @@ func (iter *addFieldsIterator) Next() (struct{}, *types.Document, error) {
 
 	for _, key := range iter.newField.Keys() {
 		val := must.NotFail(iter.newField.Get(key))
+
 		switch v := val.(type) {
 		case *types.Document:
-			op, err := operators.NewOperator(v)
-			if err != nil {
-				var opErr operators.OperatorError
+			if v.Len() == 0 {
+				break
+			}
 
-				if !errors.As(err, &opErr) {
-					return unused, nil, err
-				}
+			var isOperator bool
 
-				if opErr.Code() == operators.ErrNoOperator {
-					break
-				}
-
-				switch opErr.Code() {
-				case operators.ErrTooManyFields:
-					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrAddFieldsExpressionWrongAmountOfArgs,
-						"Invalid $addFields :: caused by :: FieldPath field names may not start with '$'."+
-							" Consider using $getField or $setField.",
-						"$addFields (stage)",
-					)
-				case operators.ErrNotImplemented:
-					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrNotImplemented,
-						"Invalid $addFields :: caused by :: "+opErr.Error(),
-						"$addFields (stage)",
-					)
-				case operators.ErrArgsInvalidLen:
-					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrOperatorWrongLenOfArgs,
-						"Invalid $addFields :: caused by :: "+opErr.Error(),
-						"$addFields (stage)",
-					)
-				case operators.ErrInvalidExpression:
-					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrAggregateInvalidExpression,
-						"Invalid $addFields :: caused by :: "+opErr.Error(),
-						"$addFields (stage)",
-					)
-				case operators.ErrInvalidNestedExpression:
-					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrInvalidPipelineOperator,
-						"Invalid $addFields :: caused by :: "+opErr.Error(),
-						"$addFields (stage)",
-					)
-				case operators.ErrWrongType:
-					fallthrough
-				default:
+			iter := v.Iterator()
+			defer iter.Close()
+			for {
+				docKey, _, err := iter.Next()
+				if err != nil {
+					if errors.Is(err, iterator.ErrIteratorDone) {
+						break
+					}
 					return unused, nil, lazyerrors.Error(err)
 				}
+
+				if strings.HasPrefix(v.Keys()[0], docKey) {
+					isOperator = true
+					break
+				}
+			}
+
+			if !isOperator {
+				break
+			}
+
+			op, err := operators.NewOperator(v)
+			if err := processAddFieldsError(err); err != nil {
+				return unused, nil, err
 			}
 
 			val, err = op.Process(doc)
-			if err != nil {
-				var opErr operators.OperatorError
-
-				if !errors.As(err, &opErr) {
-					return unused, nil, err
-				}
-
-				if opErr.Code() == operators.ErrNoOperator {
-					break
-				}
-
-				switch opErr.Code() {
-				case operators.ErrTooManyFields:
-					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrFieldPathInvalidName,
-						"Invalid $addFields :: caused by :: FieldPath field names may not start with '$'."+
-							" Consider using $getField or $setField.",
-						"$addFields (stage)",
-					)
-				case operators.ErrNotImplemented:
-					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrNotImplemented,
-						"Invalid $addFields :: caused by :: "+opErr.Error(),
-						"$addFields (stage)",
-					)
-				case operators.ErrArgsInvalidLen:
-					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrOperatorWrongLenOfArgs,
-						"Invalid $addFields :: caused by :: "+opErr.Error(),
-						"$addFields (stage)",
-					)
-				case operators.ErrInvalidExpression:
-					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrAggregateInvalidExpression,
-						"Invalid $addFields :: caused by :: "+opErr.Error(),
-						"$addFields (stage)",
-					)
-				case operators.ErrInvalidNestedExpression:
-					return unused, nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrInvalidPipelineOperator,
-						"Invalid $addFields :: caused by :: "+opErr.Error(),
-						"$addFields (stage)",
-					)
-				case operators.ErrWrongType:
-					fallthrough
-				default:
-					return unused, nil, lazyerrors.Error(err)
-				}
+			if err := processAddFieldsError(err); err != nil {
+				return unused, nil, err
 			}
-		}
 
+		}
 		doc.Set(key, val)
+
 	}
 
 	return unused, doc, nil
@@ -172,6 +110,56 @@ func (iter *addFieldsIterator) Next() (struct{}, *types.Document, error) {
 // Close implements iterator.Interface. See AddFieldsIterator for details.
 func (iter *addFieldsIterator) Close() {
 	iter.iter.Close()
+}
+
+func processAddFieldsError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	var opErr operators.OperatorError
+
+	if !errors.As(err, &opErr) {
+		return err
+	}
+
+	switch opErr.Code() {
+	case operators.ErrTooManyFields:
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrAddFieldsExpressionWrongAmountOfArgs,
+			"Invalid $addFields :: caused by :: FieldPath field names may not start with '$'."+
+				" Consider using $getField or $setField.",
+			"$addFields (stage)",
+		)
+	case operators.ErrNotImplemented:
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
+			"Invalid $addFields :: caused by :: "+opErr.Error(),
+			"$addFields (stage)",
+		)
+	case operators.ErrArgsInvalidLen:
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrOperatorWrongLenOfArgs,
+			"Invalid $addFields :: caused by :: "+opErr.Error(),
+			"$addFields (stage)",
+		)
+	case operators.ErrInvalidExpression:
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrAggregateInvalidExpression,
+			"Invalid $addFields :: caused by :: "+opErr.Error(),
+			"$addFields (stage)",
+		)
+	case operators.ErrInvalidNestedExpression:
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidPipelineOperator,
+			"Invalid $addFields :: caused by :: "+opErr.Error(),
+			"$addFields (stage)",
+		)
+	case operators.ErrWrongType:
+		fallthrough
+	default:
+		return lazyerrors.Error(err)
+	}
 }
 
 // check interfaces
