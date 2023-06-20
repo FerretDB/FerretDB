@@ -45,6 +45,25 @@ type Operator interface {
 	Process(in *types.Document) (any, error)
 }
 
+func IsOperator(doc *types.Document) bool {
+	iter := doc.Iterator()
+	defer iter.Close()
+	for {
+		key, _, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+			return false
+		}
+
+		if strings.HasPrefix(key, "$") {
+			return true
+		}
+	}
+	return false
+}
+
 // NewOperator returns operator from provided document.
 // The document should look like: `{<$operator>: <operator-value>}`.
 func NewOperator(doc any) (Operator, error) {
