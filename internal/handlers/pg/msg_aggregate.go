@@ -22,10 +22,13 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -47,7 +50,25 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1892
-	common.Ignored(document, h.L, "cursor", "lsid")
+	cursorDoc, err := common.GetOptionalParam[*types.Document](document, "cursor", new(types.Document))
+	if err != nil {
+		return nil, err
+	}
+
+	v, _ := cursorDoc.Get("batchSize")
+	if v == nil || types.Compare(v, int32(0)) == types.Equal {
+		// TODO: Use 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
+		// Unlimited default batchSize is used for missing batchSize and zero values,
+		// set 250 assuming it is small enough not to crash FerretDB.
+		v = int32(250)
+	}
+
+	batchSize, err := commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "batchSize", v, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	common.Ignored(document, h.L, "lsid")
 
 	if err = common.Unimplemented(document, "explain", "collation", "let"); err != nil {
 		return nil, err
@@ -166,7 +187,26 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1892
+	var cursorID int64
+
+	if h.EnableCursors && int64(len(resDocs)) > batchSize {
+		// Cursor is not created when resDocs is less than batchSize, it all fits in the firstBatch.
+		iter := iterator.Values(iterator.ForSlice(resDocs))
+		c := cursor.New(&cursor.NewParams{
+			Iter:       iter,
+			DB:         db,
+			Collection: collection,
+			BatchSize:  int32(batchSize),
+		})
+		username, _ := conninfo.Get(ctx).Auth()
+		cursorID = h.registry.StoreCursor(username, c)
+		resDocs, err = iterator.ConsumeValuesN(iter, int(batchSize))
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
 	firstBatch := types.MakeArray(len(resDocs))
 	for _, doc := range resDocs {
 		firstBatch.Append(doc)
@@ -177,7 +217,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
-				"id", int64(0),
+				"id", cursorID,
 				"ns", db+"."+collection,
 			)),
 			"ok", float64(1),
