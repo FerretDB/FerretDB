@@ -55,6 +55,8 @@ jobs:
 
       - name: Run short unit tests
         run: bin/task test-unit-short
+        env:
+          GOFLAGS: ${{ runner.debug == '1' && '-v' }}
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
@@ -106,6 +108,8 @@ jobs:
 
       - name: Run unit tests
         run: bin/task test-unit
+        env:
+          GOFLAGS: ${{ runner.debug == '1' && '-v' }}
 
       # The token is not required but should make uploads more stable.
       # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
@@ -193,6 +197,8 @@ jobs:
 
       - name: Run ${{ matrix.name }} tests (${{ matrix.shard_index }}/${{ matrix.shard_total }})
         run: bin/task test-integration-${{ matrix.task }} SHARD_INDEX=${{ matrix.shard_index }} SHARD_TOTAL=${{ matrix.shard_total }}
+        env:
+          GOFLAGS: ${{ runner.debug == '1' && '-v' }}
 
       # The token is not required but should make uploads more stable.
       # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
@@ -275,6 +281,8 @@ jobs:
 
       - name: Run env-data
         run: bin/task env-data
+        env:
+          GOFLAGS: ${{ runner.debug == '1' && '-v' }}
 
   golangci-lint:
     name: golangci-lint
