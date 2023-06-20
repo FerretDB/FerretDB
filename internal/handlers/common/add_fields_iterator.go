@@ -61,10 +61,6 @@ func (iter *addFieldsIterator) Next() (struct{}, *types.Document, error) {
 
 		switch v := val.(type) {
 		case *types.Document:
-			if v.Len() == 0 {
-				break
-			}
-
 			if !operators.IsOperator(v) {
 				break
 			}
@@ -91,6 +87,8 @@ func (iter *addFieldsIterator) Close() {
 	iter.iter.Close()
 }
 
+// processAddFieldsError takes internal error related to operator evaluation and
+// returns proper CommandError that can be returned by $addFields aggregation stage.
 func processAddFieldsError(err error) error {
 	if err == nil {
 		return nil
