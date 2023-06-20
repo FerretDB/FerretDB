@@ -49,6 +49,12 @@ var sqliteDir = filepath.Join("..", "tmp", "sqlite-tests")
 func Startup() {
 	logging.Setup(zap.DebugLevel, "")
 
+	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
+	if os.Getenv("RUNNER_DEBUG") == "1" {
+		zap.S().Info("Enabling setup debug logging on GitHub Actions.")
+		*debugSetupF = true
+	}
+
 	// use any available port to allow running different configuration in parallel
 	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
