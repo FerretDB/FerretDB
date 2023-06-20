@@ -95,23 +95,16 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 	}
 
 	v, err = document.Get("batchSize")
-	if err != nil {
-		// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
-		// default batchSize is unlimited for getMore,
-		// set 500 here which is a number that should not crash FerretDB.
-		v = int32(500)
+	if err != nil || types.Compare(v, int32(0)) == types.Equal {
+		// TODO: Use 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
+		// unlimited default batchSize is used for unset batchSize and zero values,
+		// set 250 assuming it is small enough not to crash FerretDB.
+		v = int32(250)
 	}
 
 	batchSize, err := commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "batchSize", v, 0)
 	if err != nil {
 		return nil, err
-	}
-
-	if batchSize == 0 {
-		// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
-		// default batchSize is unlimited for getMore,
-		// set 500 here which is a number that should not crash FerretDB.
-		batchSize = 500
 	}
 
 	if cursor.DB != db || cursor.Collection != collection {

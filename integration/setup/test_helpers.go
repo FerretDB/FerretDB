@@ -33,19 +33,6 @@ func SkipForMongoDB(tb testing.TB, reason string) {
 	}
 }
 
-// SkipExceptMongoDB skips the current test except for MongoDB with `mongodb` backend.
-//
-// This function should not be used lightly.
-func SkipExceptMongoDB(tb testing.TB, reason string) {
-	tb.Helper()
-
-	require.NotEmpty(tb, reason, "reason must not be empty")
-
-	if *targetBackendF != "mongodb" {
-		tb.Skipf("Skipping for non-mongodb: %s", reason)
-	}
-}
-
 // IsTigris returns true if tests are running against FerretDB with `ferretdb-tigris` backend.
 //
 // This function should not be used lightly.

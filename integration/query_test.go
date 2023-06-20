@@ -666,10 +666,6 @@ func TestQueryCommandBatchSize(t *testing.T) {
 				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
 			},
 		},
-		"Double": {
-			batchSize:  6.9,
-			firstBatch: docs[:6],
-		},
 		"DoubleFloor": {
 			batchSize:  1.9,
 			firstBatch: docs[:1],
@@ -760,12 +756,11 @@ func TestQueryCommandSingleBatch(t *testing.T) {
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
 		batchSize    any  // optional, nil to leave batchSize unset
 		singleBatch  any  // optional, nil to leave singleBatch unset
-		cursorClosed bool // optional, set true for expected cursor closed
+		cursorClosed bool // optional, set true for expecting cursor to be closed
 
-		err               *mongo.CommandError // optional, expected error from MongoDB
-		altMessage        string              // optional, alternative error message for FerretDB, ignored if empty
-		skip              string              // optional, skip test with a specified reason
-		skipExceptMongoDB string              // optional, skip test except MongoDB backend with a specified reason.
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"True": {
 			singleBatch:  true,
@@ -792,10 +787,6 @@ func TestQueryCommandSingleBatch(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
-			}
-
-			if tc.skipExceptMongoDB != "" {
-				setup.SkipExceptMongoDB(t, tc.skipExceptMongoDB)
 			}
 
 			t.Parallel()
@@ -854,8 +845,6 @@ func TestQueryBatchSize(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("SetBatchSize", func(t *testing.T) {
-		//setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/2005")
-
 		t.Parallel()
 
 		// set BatchSize to 2
@@ -906,8 +895,6 @@ func TestQueryBatchSize(t *testing.T) {
 	})
 
 	t.Run("DefaultBatchSize", func(t *testing.T) {
-		//		setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/2005")
-
 		t.Parallel()
 
 		// leave batchSize unset, firstBatch uses default batchSize 101
@@ -1192,6 +1179,7 @@ func TestQueryCommandGetMore(t *testing.T) {
 				t.Skip(tc.skip)
 			}
 
+			// TODO: https://github.com/FerretDB/FerretDB/issues/1807
 			// Do not run tests in parallel, MongoDB throws error that session and cursor do not match.
 			// > Location50738
 			// > Cannot run getMore on cursor 2053655655200551971,
