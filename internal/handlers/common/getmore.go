@@ -94,10 +94,10 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 		)
 	}
 
-	v, err = document.Get("batchSize")
-	if err != nil || types.Compare(v, int32(0)) == types.Equal {
+	v, _ = document.Get("batchSize")
+	if v == nil || types.Compare(v, int32(0)) == types.Equal {
 		// TODO: Use 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
-		// unlimited default batchSize is used for unset batchSize and zero values,
+		// Unlimited default batchSize is used for missing batchSize and zero values,
 		// set 250 assuming it is small enough not to crash FerretDB.
 		v = int32(250)
 	}
