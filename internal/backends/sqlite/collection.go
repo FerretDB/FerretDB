@@ -35,7 +35,7 @@ type collection struct {
 	name   string
 }
 
-// newDatabase creates a new Collection.
+// newCollection creates a new Collection.
 func newCollection(r *metadata.Registry, dbName, name string) backends.Collection {
 	return backends.CollectionContract(&collection{
 		r:      r,
