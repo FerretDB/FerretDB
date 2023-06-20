@@ -141,6 +141,15 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		switch value := value.(type) {
 		case *types.Document:
+			if !operators.IsOperator(value) {
+				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrEmptySubProject,
+					"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
+						" Found empty object at path",
+					"$project (stage)",
+				)
+			}
+
 			op, err := operators.NewOperator(value)
 			if err = processOperatorError(err); err != nil {
 				return nil, false, err

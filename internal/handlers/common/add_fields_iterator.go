@@ -16,7 +16,6 @@ package common
 
 import (
 	"errors"
-	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -66,26 +65,7 @@ func (iter *addFieldsIterator) Next() (struct{}, *types.Document, error) {
 				break
 			}
 
-			var isOperator bool
-
-			iter := v.Iterator()
-			defer iter.Close()
-			for {
-				docKey, _, err := iter.Next()
-				if err != nil {
-					if errors.Is(err, iterator.ErrIteratorDone) {
-						break
-					}
-					return unused, nil, lazyerrors.Error(err)
-				}
-
-				if strings.HasPrefix(v.Keys()[0], docKey) {
-					isOperator = true
-					break
-				}
-			}
-
-			if !isOperator {
+			if !operators.IsOperator(v) {
 				break
 			}
 
