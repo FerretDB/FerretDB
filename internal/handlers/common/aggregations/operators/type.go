@@ -67,11 +67,6 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 					return nil, lazyerrors.Error(err)
 				}
 
-				if opErr.Code() == ErrNoOperator {
-					res = param
-					continue
-				}
-
 				if opErr.Code() == ErrInvalidExpression {
 					opErr.code = ErrInvalidNestedExpression
 				}

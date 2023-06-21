@@ -1597,6 +1597,28 @@ func TestAggregateCompatProject(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"EmptyDocument": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"foo", bson.D{}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"Document": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"foo", bson.D{{"v", "foo"}}}}}},
+			},
+		},
+		"DocumentAndValue": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{
+					{"foo", bson.D{{"v", "foo"}}},
+					{"v", 1},
+				}}},
+			},
+		},
 		"Type": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},

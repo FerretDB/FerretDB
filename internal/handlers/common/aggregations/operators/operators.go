@@ -70,6 +70,9 @@ func IsOperator(doc *types.Document) bool {
 
 // NewOperator returns operator from provided document.
 // The document should look like: `{<$operator>: <operator-value>}`.
+//
+// Before calling NewOperator on document it's recommended to validate
+// document before by using IsOperator on it.
 func NewOperator(doc any) (Operator, error) {
 	operatorDoc, ok := doc.(*types.Document)
 	if !ok {
@@ -86,13 +89,7 @@ func NewOperator(doc any) (Operator, error) {
 		)
 	}
 
-	switch {
-	case !IsOperator(operatorDoc):
-		return nil, newOperatorError(
-			ErrNoOperator,
-			"No operator in document",
-		)
-	case operatorDoc.Len() > 1:
+	if operatorDoc.Len() > 1 {
 		return nil, newOperatorError(
 			ErrTooManyFields,
 			"The operator field specifies more than one operator",

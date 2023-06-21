@@ -142,12 +142,18 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 		switch value := value.(type) {
 		case *types.Document:
 			if !operators.IsOperator(value) {
-				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrEmptySubProject,
-					"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
-						" Found empty object at path",
-					"$project (stage)",
-				)
+				if value.Len() == 0 {
+					return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrEmptySubProject,
+						"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
+							" Found empty object at path",
+						"$project (stage)",
+					)
+				}
+
+				validated.Set(key, value)
+				result = true
+				break
 			}
 
 			op, err := operators.NewOperator(value)
@@ -241,6 +247,20 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 			var op operators.Operator
 			var value any
 
+			if !operators.IsOperator(idValue) {
+				if idValue.Len() == 0 {
+					return nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrEmptySubProject,
+						"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
+							" Found empty object at path",
+						"$project (stage)",
+					)
+				}
+
+				projected.Set("_id", idValue)
+				break
+			}
+
 			op, err = operators.NewOperator(idValue)
 			if err != nil {
 				return nil, processOperatorError(err)
@@ -320,6 +340,20 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 		case *types.Document: // field: { $elemMatch: { field2: value }}
 			var op operators.Operator
 			var v any
+
+			if !operators.IsOperator(value) {
+				if value.Len() == 0 {
+					return nil, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrEmptySubProject,
+						"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
+							" Found empty object at path",
+						"$project (stage)",
+					)
+				}
+
+				projected.Set(key, value)
+				break
+			}
 
 			op, err = operators.NewOperator(value)
 			if err != nil {
@@ -652,14 +686,6 @@ func processOperatorError(err error) error {
 			"Invalid $project :: caused by :: "+opErr.Error(),
 			"$project (stage)",
 		)
-	case operators.ErrNoOperator:
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrEmptySubProject,
-			"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
-				" Found empty object at path",
-			"$project (stage)",
-		)
-
 	case operators.ErrWrongType:
 		fallthrough
 	default:

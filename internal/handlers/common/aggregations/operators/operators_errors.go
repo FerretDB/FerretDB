@@ -41,9 +41,6 @@ const (
 
 	// ErrInvalidNestedExpression indicates that operator inside the target operator does not exist.
 	ErrInvalidNestedExpression
-
-	// ErrNoOperator indicates that given document does not contain any operator.
-	ErrNoOperator
 )
 
 // newOperatorError returns new OperatorError.

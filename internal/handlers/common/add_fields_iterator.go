@@ -132,7 +132,7 @@ func processAddFieldsError(err error) error {
 			"Invalid $addFields :: caused by :: "+opErr.Error(),
 			"$addFields (stage)",
 		)
-	case operators.ErrNoOperator, operators.ErrEmptyField, operators.ErrWrongType:
+	case operators.ErrEmptyField, operators.ErrWrongType:
 		fallthrough
 	default:
 		return lazyerrors.Error(err)
