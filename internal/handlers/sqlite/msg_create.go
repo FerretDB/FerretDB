@@ -81,9 +81,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	db := h.b.Database(dbName)
 	defer db.Close()
 
-	err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
-		Name: collectionName,
-	})
+	err = createCollection(ctx, db, collectionName)
 
 	switch {
 	case err == nil:
@@ -107,4 +105,12 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	default:
 		return nil, lazyerrors.Error(err)
 	}
+}
+
+func createCollection(ctx context.Context, db backends.Database, collName string) error {
+	err := db.CreateCollection(ctx, &backends.CreateCollectionParams{
+		Name: collName,
+	})
+
+	return err
 }
