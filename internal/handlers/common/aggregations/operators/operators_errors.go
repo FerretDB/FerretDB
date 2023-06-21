@@ -24,9 +24,6 @@ const (
 	// ErrArgsInvalidLen indicates that operator have invalid amount of arguments.
 	ErrArgsInvalidLen
 
-	// ErrWrongType indicates that operator field is not a document.
-	ErrWrongType
-
 	// ErrEmptyField indicates that operator field is empty.
 	ErrEmptyField
 

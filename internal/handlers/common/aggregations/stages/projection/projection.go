@@ -686,8 +686,6 @@ func processOperatorError(err error) error {
 			"Invalid $project :: caused by :: "+opErr.Error(),
 			"$project (stage)",
 		)
-	case operators.ErrWrongType:
-		fallthrough
 	default:
 		return lazyerrors.Error(err)
 	}

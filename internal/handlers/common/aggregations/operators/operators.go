@@ -73,30 +73,22 @@ func IsOperator(doc *types.Document) bool {
 //
 // Before calling NewOperator on document it's recommended to validate
 // document before by using IsOperator on it.
-func NewOperator(doc any) (Operator, error) {
-	operatorDoc, ok := doc.(*types.Document)
-	if !ok {
-		return nil, newOperatorError(
-			ErrWrongType,
-			"Invalid type of operator field (expected document)",
-		)
-	}
-
-	if operatorDoc.Len() == 0 {
+func NewOperator(doc *types.Document) (Operator, error) {
+	if doc.Len() == 0 {
 		return nil, newOperatorError(
 			ErrEmptyField,
 			"The operator field is empty (expected document)",
 		)
 	}
 
-	if operatorDoc.Len() > 1 {
+	if doc.Len() > 1 {
 		return nil, newOperatorError(
 			ErrTooManyFields,
 			"The operator field specifies more than one operator",
 		)
 	}
 
-	operator := operatorDoc.Command()
+	operator := doc.Command()
 
 	newOperator, supported := Operators[operator]
 	_, unsupported := unsupportedOperators[operator]
@@ -105,7 +97,7 @@ func NewOperator(doc any) (Operator, error) {
 	case supported && unsupported:
 		panic(fmt.Sprintf("operator %q is in both `operators` and `unsupportedOperators`", operator))
 	case supported && !unsupported:
-		return newOperator(operatorDoc)
+		return newOperator(doc)
 	case !supported && unsupported:
 		return nil, newOperatorError(
 			ErrNotImplemented,
