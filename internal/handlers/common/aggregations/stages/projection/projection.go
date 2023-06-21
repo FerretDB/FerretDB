@@ -259,6 +259,7 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 				}
 
 				projected.Set("_id", idValue)
+				set = true
 
 				break
 			}
@@ -273,6 +274,7 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 				return nil, err
 			}
 
+			set = true
 			projected.Set("_id", value)
 
 		case *types.Array, string, types.Binary, types.ObjectID,
