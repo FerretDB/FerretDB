@@ -1813,6 +1813,12 @@ func TestAggregateCompatAddFields(t *testing.T) {
 			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
 		},
 
+		"InvalidOperator": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"value", bson.D{{"$invalid-operator", "foo"}}}}}},
+			},
+		},
 		"Type": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
