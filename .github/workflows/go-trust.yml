@@ -93,6 +93,7 @@ jobs:
       - name: Run ${{ matrix.task }} tests
         run: bin/task test-integration-${{ matrix.task }}
         env:
+          GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
           FERRETDB_HANA_URL: ${{ secrets.FERRETDB_HANA_URL }}
 
       # The token is not required but should make uploads more stable.

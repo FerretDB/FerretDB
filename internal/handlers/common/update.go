@@ -902,7 +902,7 @@ func newUpdateError(code commonerrors.ErrorCode, msg, command string) error {
 // validateOperatorKeys returns error if any key contains empty path or
 // the same path prefix exists in other key or other document.
 func validateOperatorKeys(command string, docs ...*types.Document) error {
-	visitedPaths := []*types.Path{}
+	var visitedPaths []types.Path
 
 	for _, doc := range docs {
 		for _, key := range doc.Keys() {
@@ -918,8 +918,12 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 				)
 			}
 
-			for _, oldPath := range visitedPaths {
-				if checkSlicePrefix(oldPath.Slice(), nextPath.Slice()) {
+			err = types.IsConflictPath(visitedPaths, nextPath)
+			var pathErr *types.DocumentPathError
+
+			if errors.As(err, &pathErr) {
+				if pathErr.Code() == types.ErrDocumentPathConflictOverwrite ||
+					pathErr.Code() == types.ErrDocumentPathConflictCollision {
 					return newUpdateError(
 						commonerrors.ErrConflictingUpdateOperators,
 						fmt.Sprintf(
@@ -929,34 +933,16 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 					)
 				}
 			}
-			visitedPaths = append(visitedPaths, &nextPath)
+
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			visitedPaths = append(visitedPaths, nextPath)
 		}
 	}
 
 	return nil
-}
-
-// checkSlicePrefix returns true if one slice is the beginning of another slice.
-// The example of slice prefix: arr1 = ["a","b","c"] arr2 = ["a","b"];
-// If both slices are empty, it returns true. If one slice is empty and another slice is not, it returns false.
-func checkSlicePrefix(arr1, arr2 []string) bool {
-	target, prefix := arr1, arr2
-
-	if len(target) < len(prefix) {
-		target, prefix = prefix, target
-	}
-
-	if len(prefix) == 0 {
-		return len(target) == 0
-	}
-
-	for i := range prefix {
-		if prefix[i] != target[i] {
-			return false
-		}
-	}
-
-	return true
 }
 
 // extractValueFromUpdateOperator gets operator "op" value and returns CommandError for `findAndModify`

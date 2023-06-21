@@ -168,6 +168,9 @@ If tests fail and the output is too confusing, try running them sequentially by 
 
 You can also run `task -C 1` to limit the number of concurrent tasks, which is useful for debugging.
 
+To run a single test case, you may use Task variable `TEST_RUN`.
+For example, to run a single test case for in-process FerretDB with `pg` handler you may use `task test-integration-pg TEST_RUN=TestName/TestCaseName`.
+
 Finally, since all tests just run `go test` with various arguments and flags under the hood,
 you may also use all standard `go` tool facilities,
 including [`GOFLAGS` environment variable](https://pkg.go.dev/cmd/go#hdr-Environment_variables).
@@ -175,7 +178,7 @@ For example:
 
 - to run a single test case for in-process FerretDB with `pg` handler
   with all subtests running sequentially,
-  you may use `env GOFLAGS='-run=TestName/TestCaseName -parallel=1' task test-integration-pg`;
+  you may use `env GOFLAGS='-parallel=1' task test-integration-pg TEST_RUN=TestName/TestCaseName`;
 - to run all tests for in-process FerretDB with `tigris` handler
   with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
   you may use `env GOFLAGS='-trace=trace.out' task test-integration-tigris`.

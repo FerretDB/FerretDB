@@ -32,8 +32,8 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `hint`                     | ⚠️     | Ignored                                                   |
 |                 | `skip`                     | ⚠️     |                                                           |
 |                 | `limit`                    | ✅     |                                                           |
-|                 | `batchSize`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/2005) |
-|                 | `singleBatch`              | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/2005) |
+|                 | `batchSize`                | ✅     |                                                           |
+|                 | `singleBatch`              | ✅     |                                                           |
 |                 | `comment`                  | ⚠️     | Not implemented in Tigris                                 |
 |                 | `maxTimeMS`                | ✅     |                                                           |
 |                 | `readConcern`              | ⚠️     | Ignored                                                   |
@@ -584,7 +584,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 |                                   | `indexes`                      |                           | ✅     |                                                                   |
 |                                   |                                | `key`                     | ✅     |                                                                   |
 |                                   |                                | `name`                    | ✅️    |                                                                   |
-|                                   |                                | `unique`                  | ❌     | [Unimplemented](https://github.com/FerretDB/FerretDB/issues/2045) |
+|                                   |                                | `unique`                  | ✅     |                                                                   |
 |                                   |                                | `partialFilterExpression` | ❌     | [Unimplemented](https://github.com/FerretDB/FerretDB/issues/2448) |
 |                                   |                                | `sparse`                  | ❌     | [Unimplemented](https://github.com/FerretDB/FerretDB/issues/2448) |
 |                                   |                                | `expireAfterSeconds`      | ❌     | [Unimplemented](https://github.com/FerretDB/FerretDB/issues/2415) |

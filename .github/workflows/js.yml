@@ -75,7 +75,7 @@ jobs:
           2> ferretdb.log &
 
       - name: Run testjs for MongoDB
-        run: bin/task testjs PORT=47017
+        run: bin/task testjs TESTJS_PORT=47017
 
       - name: Run testjs for FerretDB
         run: bin/task testjs

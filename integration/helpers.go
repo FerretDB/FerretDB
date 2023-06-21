@@ -248,6 +248,27 @@ func AssertMatchesWriteError(t testing.TB, expected, actual error) {
 	}
 }
 
+// AssertMatchesBulkException asserts that both errors are BulkWriteExceptions containing the same number of WriteErrors,
+// and those WriteErrors are equal, except messages (and ignoring the Raw part).
+func AssertMatchesBulkException(t testing.TB, expected, actual error) {
+	t.Helper()
+
+	a, ok := actual.(mongo.BulkWriteException) //nolint:errorlint // do not inspect error chain
+	require.Truef(t, ok, "actual is %T, not mongo.BulkWriteException", actual)
+
+	e, ok := expected.(mongo.BulkWriteException) //nolint:errorlint // do not inspect error chain
+	require.Truef(t, ok, "expected is %T, not mongo.BulkWriteException", expected)
+
+	for i, we := range a.WriteErrors {
+		expectedWe := e.WriteErrors[i]
+
+		expectedWe.Message = we.Message
+		expectedWe.Raw = we.Raw
+
+		assert.Equal(t, expectedWe, we)
+	}
+}
+
 // AssertEqualAltError is a deprecated alias for AssertEqualAltCommandError.
 //
 // Deprecated: use AssertEqualAltCommandError instead.
@@ -404,4 +425,15 @@ func FindAll(t testing.TB, ctx context.Context, collection *mongo.Collection) []
 	require.NoError(t, err)
 
 	return FetchAll(t, ctx, cursor)
+}
+
+// generateDocuments generates documents with _id ranging from startID to endID.
+// It returns bson.A containing bson.D documents.
+func generateDocuments(startID, endID int32) bson.A {
+	var docs bson.A
+	for i := startID; i < endID; i++ {
+		docs = append(docs, bson.D{{"_id", i}})
+	}
+
+	return docs
 }

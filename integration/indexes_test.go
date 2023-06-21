@@ -172,3 +172,175 @@ func TestIndexesDropCommandErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateIndexesInvalidSpec(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
+
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		indexes    any
+		err        *mongo.CommandError
+		altMessage string
+		skip       string
+	}{
+		"EmptyIndexes": {
+			indexes: bson.A{},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Must specify at least one index to create",
+			},
+		},
+		"NilIndexes": {
+			indexes: nil,
+			err: &mongo.CommandError{
+				Code:    10065,
+				Name:    "Location10065",
+				Message: "invalid parameter: expected an object (indexes)",
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
+		},
+		"InvalidType": {
+			indexes: 42,
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'createIndexes.indexes' is the wrong type 'int', expected type 'array'",
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
+		},
+		"IDIndex": {
+			indexes: bson.A{
+				bson.D{
+					{"key", bson.D{{"_id", 1}}},
+					{"name", "_id_"},
+					{"unique", true},
+				},
+			},
+			err: &mongo.CommandError{
+				Code: 197,
+				Name: "InvalidIndexSpecificationOption",
+				Message: `The field 'unique' is not valid for an _id index specification.` +
+					` Specification: { key: { _id: 1 }, name: "_id_", unique: true, v: 2 }`,
+			},
+		},
+		"UniqueTypeDocument": {
+			indexes: bson.A{
+				bson.D{
+					{"key", bson.D{{"v", 1}}},
+					{"name", "unique_index"},
+					{"unique", bson.D{}},
+				},
+			},
+			err: &mongo.CommandError{
+				Code: 14,
+				Name: "TypeMismatch",
+				Message: `Error in specification { key: { v: 1 }, name: "unique_index", unique: {} } ` +
+					`:: caused by :: The field 'unique has value unique: {}, which is not convertible to bool`,
+			},
+			altMessage: `Error in specification { key: { v: 1 }, name: "unique_index", unique: {  } } ` +
+				`:: caused by :: The field 'unique' has value unique: {  }, which is not convertible to bool`,
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			provider := shareddata.ArrayDocuments // one provider is enough to check for errors
+			ctx, collection := setup.Setup(t, provider)
+
+			command := bson.D{
+				{"createIndexes", collection.Name()},
+				{"indexes", tc.indexes},
+			}
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&res)
+
+			require.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestDropIndexesInvalidCollection(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
+
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		collectionName any
+		indexName      any
+		err            *mongo.CommandError
+		altMessage     string
+		skip           string
+	}{
+		"NonExistentCollection": {
+			collectionName: "non-existent",
+			indexName:      "index",
+			err: &mongo.CommandError{
+				Code:    26,
+				Name:    "NamespaceNotFound",
+				Message: "ns not found TestDropIndexesInvalidCollection-NonExistentCollection.non-existent",
+			},
+		},
+		"InvalidTypeCollection": {
+			collectionName: 42,
+			indexName:      "index",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type int",
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
+		},
+		"NilCollection": {
+			collectionName: nil,
+			indexName:      "index",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type null",
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
+		},
+		"EmptyCollection": {
+			collectionName: "",
+			indexName:      "index",
+			err: &mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Invalid namespace specified 'TestIndexesDropInvalidCollection-EmptyCollection.'",
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			provider := shareddata.ArrayDocuments // one provider is enough to check for errors
+			ctx, collection := setup.Setup(t, provider)
+
+			command := bson.D{
+				{"dropIndexes", tc.collectionName},
+				{"index", tc.indexName},
+			}
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&res)
+
+			require.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}

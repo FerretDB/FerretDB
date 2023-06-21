@@ -19,6 +19,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -29,11 +30,22 @@ import (
 
 // BenchmarkProvider is implemented by shared data sets that provide documents for benchmarks.
 type BenchmarkProvider interface {
-	// Name returns benchmark provider name.
+	// Name returns full benchmark provider name.
 	Name() string
 
-	// NewIterator returns a new iterator for documents in the same order.
+	// BaseName returns a part of the full name that does not include a number of documents and their hash.
+	BaseName() string
+
+	// NewIterator returns a new iterator for the same documents.
 	NewIterator() iterator.Interface[struct{}, bson.D]
+}
+
+// BenchmarkGenerator provides documents for benchmarks by generating them.
+type BenchmarkGenerator interface {
+	// Init sets the number of documents to generate.
+	Init(docs int)
+
+	BenchmarkProvider
 }
 
 // hashBenchmarkProvider checks that BenchmarkProvider's NewIterator methods returns a new iterator
@@ -71,7 +83,7 @@ func hashBenchmarkProvider(bp BenchmarkProvider) string {
 				panic("iter2 should be done too")
 			}
 
-			return hex.EncodeToString(h.Sum(nil)[:8])
+			return hex.EncodeToString(h.Sum(nil)[:2])
 
 		default:
 			panic(err)
@@ -84,41 +96,51 @@ func hashBenchmarkProvider(bp BenchmarkProvider) string {
 // The order of documents returned must be deterministic.
 type generatorFunc func() bson.D
 
-// generatorFuncConstructor returns a new generatorFunc that return n documents.
+// generatorFuncConstructor returns a new generatorFunc that returns documents.
 //
 // All returned functions should be independent from each other, but return the same documents in the same order.
-type generatorFuncConstructor func(n int) generatorFunc
+type generatorFuncConstructor func(docs int) generatorFunc
 
 // generatorBenchmarkProvider uses generator functions to implement BenchmarkProvider.
 type generatorBenchmarkProvider struct {
-	genFuncConstructor generatorFuncConstructor
 	baseName           string
-	hash               string
-	n                  int
+	genFuncConstructor generatorFuncConstructor
+	docs               int
 }
 
 // newGeneratorBenchmarkProvider returns BenchmarkProvider with a given base name and newGeneratorFunc.
-func newGeneratorBenchmarkProvider(baseName string, n int, genFuncConstructor generatorFuncConstructor) BenchmarkProvider {
-	gbp := &generatorBenchmarkProvider{
+func newGeneratorBenchmarkProvider(baseName string, genFuncConstructor generatorFuncConstructor) BenchmarkProvider {
+	return &generatorBenchmarkProvider{
 		baseName:           baseName,
-		n:                  n,
 		genFuncConstructor: genFuncConstructor,
 	}
-
-	gbp.hash = hashBenchmarkProvider(gbp)
-
-	return gbp
 }
 
-// Name returns name of provider that consists of name and hash of its documents.
+// Init implements BenchmarkGenerator.
+func (gbp *generatorBenchmarkProvider) Init(docs int) {
+	gbp.docs = docs
+}
+
+// Name implements BenchmarkProvider.
 func (gbp *generatorBenchmarkProvider) Name() string {
-	return gbp.baseName + "/" + gbp.hash
+	hash := hashBenchmarkProvider(gbp)
+
+	return fmt.Sprintf("%s/Docs%d/%s", gbp.baseName, gbp.docs, hash)
 }
 
-// NewIterator returns the iterator that returns all documents from provider.
+// BaseName implements BenchmarkProvider.
+func (gbp *generatorBenchmarkProvider) BaseName() string {
+	return gbp.baseName
+}
+
+// NewIterator implements BenchmarkProvider.
 func (gbp *generatorBenchmarkProvider) NewIterator() iterator.Interface[struct{}, bson.D] {
+	if gbp.docs == 0 {
+		panic("A number of documents must be more than zero")
+	}
+
 	var unused struct{}
-	next := gbp.genFuncConstructor(gbp.n)
+	next := gbp.genFuncConstructor(gbp.docs)
 
 	f := func() (struct{}, bson.D, error) {
 		v := next()
@@ -134,5 +156,6 @@ func (gbp *generatorBenchmarkProvider) NewIterator() iterator.Interface[struct{}
 
 // check interfaces
 var (
-	_ BenchmarkProvider = (*generatorBenchmarkProvider)(nil)
+	_ BenchmarkProvider  = (*generatorBenchmarkProvider)(nil)
+	_ BenchmarkGenerator = (*generatorBenchmarkProvider)(nil)
 )
