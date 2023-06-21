@@ -93,6 +93,10 @@ func (a *Array) Set(index int, value any) error {
 
 // Append appends given values to the array.
 func (a *Array) Append(values ...any) {
+	if a == nil {
+		panic("types.Array.Append: nil array")
+	}
+
 	if a.s == nil {
 		a.s = values
 		return
