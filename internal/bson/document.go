@@ -41,7 +41,8 @@ type document interface {
 
 // Document represents BSON Document type.
 type Document struct {
-	fields []field
+	fields  []field
+	nesting int
 }
 
 // field represents a field in the document.
@@ -181,9 +182,13 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 
 		switch tag(t) {
 		case tagDocument:
-			// TODO check max nesting https://github.com/FerretDB/FerretDB/issues/1639
-
 			var v Document
+			v.nesting = doc.nesting + 1
+
+			if v.nesting > maxNesting {
+				return lazyerrors.Errorf("bson.Document.ReadFrom (over nested document. Max supported nesting: %d)", maxNesting)
+			}
+
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (embedded document): %w", err)
 			}
@@ -196,9 +201,13 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 			fields = append(fields, field{key: key, value: value})
 
 		case tagArray:
-			// TODO check max nesting https://github.com/FerretDB/FerretDB/issues/1639
-
 			var v arrayType
+
+			doc.nesting = +1
+			if doc.nesting > maxNesting {
+				return lazyerrors.Errorf("bson.Document.ReadFrom (over nested document. Max supported nesting: %d)", maxNesting)
+			}
+
 			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Array): %w", err)
 			}

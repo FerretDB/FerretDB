@@ -582,3 +582,35 @@ func TestDebugError(t *testing.T) {
 		require.NoError(t, db.Client().Ping(ctx, nil), "other errors should not close connection")
 	})
 }
+
+func TestCheckingNestedDocuments(t *testing.T) {
+	t.Parallel()
+
+	t.Run("1ok", func(t *testing.T) {
+		ctx, collection := setup.Setup(t)
+		nestedBson := CreateNestedDocument(1)
+		_, err := collection.InsertOne(ctx, nestedBson)
+		require.NoError(t, err)
+	})
+
+	t.Run("10ok", func(t *testing.T) {
+		ctx, collection := setup.Setup(t)
+		nestedBson := CreateNestedDocument(10)
+		_, err := collection.InsertOne(ctx, nestedBson)
+		require.NoError(t, err)
+	})
+
+	t.Run("100ok", func(t *testing.T) {
+		ctx, collection := setup.Setup(t)
+		nestedBson := CreateNestedDocument(100)
+		_, err := collection.InsertOne(ctx, nestedBson)
+		require.NoError(t, err)
+	})
+
+	t.Run("1000Fail", func(t *testing.T) {
+		ctx, collection := setup.Setup(t)
+		nestedBson := CreateNestedDocument(1000)
+		_, err := collection.InsertOne(ctx, nestedBson)
+		require.Error(t, err, "bson.Document.ReadFrom (over nested document. Max supported nesting: 1000.")
+	})
+}
