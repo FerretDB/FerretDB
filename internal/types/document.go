@@ -236,6 +236,7 @@ func (d *Document) Has(key string) bool {
 
 // Get returns a value at the given key.
 // If the key is duplicated, it panics.
+// It returns nil for nil Document.
 //
 // The only possible error is returned for a missing key.
 // In that case, Get returns nil for the value.
@@ -246,6 +247,10 @@ func (d *Document) Has(key string) bool {
 //
 // The error value will be removed in the future.
 func (d *Document) Get(key string) (any, error) {
+	if d == nil {
+		return nil, fmt.Errorf("types.Document.Get: key not found: %q (nil document)", key)
+	}
+
 	if d.isKeyDuplicate(key) {
 		panic(fmt.Sprintf("types.Document.Get: key is duplicated: %s", key))
 	}

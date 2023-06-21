@@ -24,7 +24,7 @@ import (
 )
 
 // CountIterator returns an iterator that returns a single document containing
-// the number of input documents in the specified field: {field: count}.
+// the number of input documents (as int32) in the specified field: {field: count}.
 // It will be added to the given closer.
 //
 // Next method returns that document, subsequent calls return ErrIteratorDone.
