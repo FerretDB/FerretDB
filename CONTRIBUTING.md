@@ -222,7 +222,7 @@ Some of our idiosyncrasies:
 2. We generally pass and return `struct`s by pointers.
    There are some exceptions like `types.Path` that has value semantics, but when in doubt – use pointers.
 3. Code comments:
-   - All top-level declarations, even unexpected, should have documentation comments.
+   - All top-level declarations, even unexported, should have documentation comments.
    - In documentation comments do not describe the name in terms of the name itself (`// Registry is a registry of …`).
      Use other words instead; often, they could add additional information and make reading more pleasant (`// Registry stores …`).
    - In code comments, in general, do not describe _what_ the code does: it should be clear from the code itself
