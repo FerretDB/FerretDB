@@ -16,6 +16,7 @@ package pg
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jackc/pgx/v5"
 
@@ -55,7 +56,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		qp.Filter = params.Filter
 	}
 
-	var resDocs []*types.Document
+	var n int32
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var iter types.DocumentsIterator
 
@@ -73,10 +74,21 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 
 		iter = common.LimitIterator(iter, closer, params.Limit)
 
-		resDocs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+		iter = common.CountIterator(iter, closer, "count")
+
+		var res *types.Document
+
+		_, res, err = iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			err = nil
+		}
+
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
+
+		count, _ := res.Get("count")
+		n, _ = count.(int32)
 
 		return nil
 	})
@@ -88,7 +100,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"n", int32(len(resDocs)),
+			"n", n,
 			"ok", float64(1),
 		))},
 	}))
