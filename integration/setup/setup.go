@@ -86,6 +86,8 @@ type SetupOpts struct {
 
 	// Benchmark data provider. If empty, collection is not created.
 	BenchmarkProvider shareddata.BenchmarkProvider
+
+	PoolSize uint64
 }
 
 // SetupResult represents setup results.
@@ -138,7 +140,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	if *targetURLF == "" {
 		client, uri = setupListener(tb, ctx, logger)
 	} else {
-		client = setupClient(tb, ctx, *targetURLF)
+		client = setupClient(tb, ctx, *targetURLF, opts.PoolSize)
 		uri = *targetURLF
 	}
 

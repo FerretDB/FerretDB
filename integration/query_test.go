@@ -950,7 +950,11 @@ func TestQueryBatchSize(t *testing.T) {
 
 func TestQueryCommandGetMore(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup.Setup(t)
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		PoolSize: 1,
+	})
+
+	ctx, collection := s.Ctx, s.Collection
 
 	// the number of documents is set to slightly above the default batchSize of 101
 	docs := generateDocuments(0, 110)
@@ -1179,12 +1183,7 @@ func TestQueryCommandGetMore(t *testing.T) {
 				t.Skip(tc.skip)
 			}
 
-			// TODO: https://github.com/FerretDB/FerretDB/issues/1807
-			// Do not run tests in parallel, MongoDB throws error that session and cursor do not match.
-			// > Location50738
-			// > Cannot run getMore on cursor 2053655655200551971,
-			// > which was created in session 2926eea5-9775-41a3-a563-096969f1c7d5 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  - ,
-			// > in session 774d9ac6-b24a-4fd8-9874-f92ab1c9c8f5 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  -
+			t.Parallel()
 
 			require.NotNil(t, tc.firstBatch, "firstBatch must not be nil")
 
