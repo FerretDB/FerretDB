@@ -4,7 +4,7 @@ title: 'FerretDB Demo: Launch and Test a Database in Minutes'
 authors: [alex]
 description: >
   Want to find out how FerretDB really works? Let's guide you through our demo to learn more.
-image: /img/blog/ferretdb-meteor.jpg
+image: /img/blog/launch-ferretdb-demo-database.jpg
 keywords: [launch ferretdb database, test ferretdb, ferretdb demo]
 tags: [tutorial, demo, cloud]
 ---
