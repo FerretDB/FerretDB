@@ -78,13 +78,7 @@ func mongoDBURI(tb testing.TB, opts *mongoDBURIOpts) string {
 }
 
 // makeClient returns new client for the given working MongoDB URI.
-func makeClient(ctx context.Context, uri string, poolSize uint64) (*mongo.Client, error) {
-	clientOpts := options.Client().ApplyURI(uri)
-
-	if poolSize != 0 {
-		clientOpts.SetMaxPoolSize(poolSize)
-	}
-
+func makeClient(ctx context.Context, clientOpts *options.ClientOptions) (*mongo.Client, error) {
 	clientOpts.SetMonitor(otelmongo.NewMonitor())
 
 	client, err := mongo.Connect(ctx, clientOpts)
@@ -107,7 +101,7 @@ func makeClient(ctx context.Context, uri string, poolSize uint64) (*mongo.Client
 //
 // If the connection can't be established, it panics,
 // as it doesn't make sense to proceed with other tests if we couldn't connect in one of them.
-func setupClient(tb testing.TB, ctx context.Context, uri string, poolSize uint64) *mongo.Client {
+func setupClient(tb testing.TB, ctx context.Context, clientOpts *options.ClientOptions) *mongo.Client {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
@@ -115,7 +109,7 @@ func setupClient(tb testing.TB, ctx context.Context, uri string, poolSize uint64
 
 	defer trace.StartRegion(ctx, "setupClient").End()
 
-	client, err := makeClient(ctx, uri, poolSize)
+	client, err := makeClient(ctx, clientOpts)
 	if err != nil {
 		tb.Error(err)
 		panic("setupClient: " + err.Error())

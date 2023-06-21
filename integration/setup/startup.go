@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/jaeger"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -81,7 +82,7 @@ func Startup() {
 	must.NoError(os.MkdirAll(sqliteDir, 0o777))
 
 	if u := *targetURLF; u != "" {
-		client, err := makeClient(ctx, u, 0)
+		client, err := makeClient(ctx, options.Client().ApplyURI(u))
 		if err != nil {
 			zap.S().Fatalf("Failed to connect to target system %s: %s", u, err)
 		}
@@ -94,7 +95,7 @@ func Startup() {
 	}
 
 	if u := *compatURLF; u != "" {
-		client, err := makeClient(ctx, u, 0)
+		client, err := makeClient(ctx, options.Client().ApplyURI(u))
 		if err != nil {
 			zap.S().Fatalf("Failed to connect to compat system %s: %s", u, err)
 		}

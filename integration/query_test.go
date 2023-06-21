@@ -951,7 +951,7 @@ func TestQueryBatchSize(t *testing.T) {
 func TestQueryCommandGetMore(t *testing.T) {
 	t.Parallel()
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		PoolSize: 1,
+		ClientOptions: options.Client().SetMaxPoolSize(1),
 	})
 
 	ctx, collection := s.Ctx, s.Collection
