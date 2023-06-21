@@ -154,14 +154,17 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		)
 	}
 
-	var batchSize, nextBatchSize int64
 	v, _ = cursorDoc.Get("batchSize")
 	if v == nil {
-		batchSize = 101
-	} else {
-		batchSize, err = commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "batchSize", v, 0)
+		v = int32(101)
 	}
 
+	batchSize, err := commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "batchSize", v, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	var nextBatchSize int64
 	if batchSize == 0 {
 		// TODO: Use 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
 		// If batchSize is 0, firstBatch size is 0 and nextBatch size is unlimited.
