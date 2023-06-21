@@ -164,14 +164,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	var nextBatchSize int64
-	if batchSize == 0 {
-		// TODO: Use 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
-		// If batchSize is 0, firstBatch size is 0 and nextBatch size is unlimited.
-		// Set nextBatchSize to 250 assuming it is small enough not to crash FerretDB.
-		nextBatchSize = 250
-	}
-
 	var resDocs []*types.Document
 
 	// At this point we have a list of stages to apply to the documents or stats.
@@ -217,7 +209,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			Iter:       iter,
 			DB:         db,
 			Collection: collection,
-			BatchSize:  int32(nextBatchSize),
+			BatchSize:  int32(batchSize),
 		})
 		username, _ := conninfo.Get(ctx).Auth()
 		cursorID = h.registry.StoreCursor(username, c)
