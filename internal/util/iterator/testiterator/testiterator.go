@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package testiterator provides a helper for checking iterator implementations.
+//
+// It is in a separate package to avoid import cycles.
 package testiterator
 
 import (

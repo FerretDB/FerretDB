@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package iterator_test
+package iterator_test // to avoid import cycle
 
 import (
 	"testing"

@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package teststress provides a helper for stress testing.
+//
+// It is in a separate package to avoid import cycles.
 package teststress
 
 import (
