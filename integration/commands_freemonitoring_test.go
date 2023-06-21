@@ -57,13 +57,13 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 	})
 
 	for name, tc := range map[string]struct {
-		command        bson.D // required, command to run
-		expectedRes    bson.D // optional, expected response
-		expectedStatus string // optional, expected status
+		command bson.D // required, command to run
 
-		err        *mongo.CommandError // optional, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		expectedRes    bson.D              // optional, expected response
+		expectedStatus string              // optional, expected status
+		err            *mongo.CommandError // optional, expected error from MongoDB
+		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
+		skip           string              // optional, skip test with a specified reason
 	}{
 		"Enable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},

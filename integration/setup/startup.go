@@ -31,6 +31,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -48,6 +49,12 @@ var sqliteDir = filepath.Join("..", "tmp", "sqlite-tests")
 func Startup() {
 	logging.Setup(zap.DebugLevel, "")
 
+	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
+	if os.Getenv("RUNNER_DEBUG") == "1" {
+		zap.S().Info("Enabling setup debug logging on GitHub Actions.")
+		*debugSetupF = true
+	}
+
 	// use any available port to allow running different configuration in parallel
 	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
@@ -55,6 +62,12 @@ func Startup() {
 	defer cancel()
 
 	// do basic flags validation earlier, before all tests
+
+	for _, p := range shareddata.AllBenchmarkProviders() {
+		if g, ok := p.(shareddata.BenchmarkGenerator); ok {
+			g.Init(*benchDocsF)
+		}
+	}
 
 	if *targetBackendF == "" {
 		zap.S().Fatal("-target-backend must be set.")

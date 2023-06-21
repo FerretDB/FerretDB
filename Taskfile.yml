@@ -5,15 +5,18 @@ env:
   GORACE: halt_on_error=1,history_size=2
 
 vars:
-  INTEGRATIONTIME: 35m
-  BENCHTIME: 5s
-  FUZZTIME: 15s
-  FUZZCORPUS: ../fuzz-corpus
-  RACEFLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
-  UNIXSOCKETFLAG: -target-unix-socket={{ne OS "windows"}}
-  BUILDTAGS: ferretdb_debug,ferretdb_tigris,ferretdb_hana
-  SERVICES: postgres postgres_secured tigris tigris1 tigris2 tigris3 tigris4 mongodb mongodb_secured jaeger
+  SHARD_INDEX: 1
+  SHARD_TOTAL: 1
   TEST_RUN: ""
+  TEST_TIMEOUT: 35m
+  BENCH_TIME: 5s
+  FUZZ_TIME: 15s
+  FUZZ_CORPUS: ../fuzz-corpus
+  TESTJS_PORT: 27017
+  RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
+  TEST_UNIX_SOCKET_FLAG: -target-unix-socket={{ne OS "windows"}}
+  BUILD_TAGS: ferretdb_debug,ferretdb_tigris,ferretdb_hana
+  SERVICES: postgres postgres_secured tigris tigris1 tigris2 tigris3 tigris4 mongodb mongodb_secured jaeger
 
 tasks:
   # invoked when `task` is run without arguments
@@ -95,7 +98,7 @@ tasks:
   env-setup:
     deps: [gen-version]
     cmds:
-      - go run {{.RACEFLAG}} ./cmd/envtool setup
+      - go run {{.RACE_FLAG}} ./cmd/envtool setup
 
   env-logs:
     cmds:
@@ -140,7 +143,7 @@ tasks:
     run: once
     deps: [gen-version]
     cmds:
-      - go test -c -o=bin/ferretdb{{exeExt}} {{.RACEFLAG}} -tags=ferretdb_testcover,{{.BUILDTAGS}} -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb{{exeExt}} {{.RACE_FLAG}} -tags=ferretdb_testcover,{{.BUILD_TAGS}} -coverpkg=./... ./cmd/ferretdb
 
   gen:
     desc: "Generate (and format) Go code"
@@ -166,14 +169,14 @@ tasks:
   test-unit-short:
     desc: "Run short unit tests (with caching)"
     cmds:
-      - go test -short {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
+      - go test -short {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
       - bin/task{{exeExt}} -d tools tools-test
 
   test-unit:
     desc: "Run all unit tests"
     cmds:
-      - go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
-      - go test -count=1 {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -bench=. -benchtime=1x ./...
+      - go test -count=1 {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
+      - go test -count=1 {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -bench=. -benchtime=1x ./...
       - bin/task{{exeExt}} -d tools tools-test
 
   test-integration:
@@ -190,22 +193,23 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-pg.txt .
         -target-backend=ferretdb-pg
         -target-tls
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -enable-cursors
     vars:
       SHARD_RUN:
-        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 1}} --total={{.SHARD_TOTAL | default 1}}
+        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
 
   test-integration-sqlite:
     desc: "Run integration tests for `sqlite` handler"
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-sqlite.txt .
         -target-backend=ferretdb-sqlite
         -target-tls
@@ -213,61 +217,59 @@ tasks:
         -disable-filter-pushdown
     vars:
       SHARD_RUN:
-        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 1}} --total={{.SHARD_TOTAL | default 1}}
+        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
 
   test-integration-tigris:
     desc: "Run integration tests for `tigris` handler"
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-tigris.txt .
         -target-backend=ferretdb-tigris
-        {{.UNIXSOCKETFLAG}}
+        {{.TEST_UNIX_SOCKET_FLAG}}
         -tigris-urls=127.0.0.1:8081,127.0.0.1:8091,127.0.0.1:8092,127.0.0.1:8093,127.0.0.1:8094
         -compat-url=mongodb://127.0.0.1:47017/
     vars:
       SHARD_RUN:
-        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 1}} --total={{.SHARD_TOTAL | default 1}}
+        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
 
   test-integration-hana:
     desc: "Run integration tests for `hana` handler"
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-hana.txt .
         -target-backend=ferretdb-hana
-        {{.UNIXSOCKETFLAG}}
+        {{.TEST_UNIX_SOCKET_FLAG}}
         -hana-url=$FERRETDB_HANA_URL
         -compat-url=mongodb://127.0.0.1:47017/
     vars:
       SHARD_RUN:
-        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 1}} --total={{.SHARD_TOTAL | default 1}}
+        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.INTEGRATIONTIME}} {{.RACEFLAG}} -tags={{.BUILDTAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-mongodb.txt .
         -target-url=mongodb://127.0.0.1:47017/
         -target-backend=mongodb
     vars:
       SHARD_RUN:
-        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX | default 1}} --total={{.SHARD_TOTAL | default 1}}
+        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
 
-  bench-unit-short:
-    desc: "Benchmark internal package for about 25 seconds (with default BENCHTIME)"
+  bench-unit:
+    desc: "Run unit benchmarks"
     cmds:
       - go test -list='Benchmark.*' ./...
-      - echo 'Running five functions for {{.BENCHTIME}} each...'
-      - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/bson/                  | tee -a new.txt
-      - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/bson/                  | tee -a new.txt
-      - go test -bench=BenchmarkArray    -benchtime={{.BENCHTIME}} ./internal/handlers/sjson/     | tee -a new.txt
-      - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/sjson/     | tee -a new.txt
-      - go test -bench=BenchmarkDocument -benchtime={{.BENCHTIME}} ./internal/handlers/tigris/tjson/ | tee -a new.txt
+      - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/bson/                  | tee -a new.txt
+      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/bson/                  | tee -a new.txt
+      - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/handlers/sjson/        | tee -a new.txt
+      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/handlers/sjson/        | tee -a new.txt
       - bin/benchstat{{exeExt}} old.txt new.txt
 
   # That's not quite correct: https://github.com/golang/go/issues/15513
@@ -280,25 +282,24 @@ tasks:
   # Those commands should still run tests (i.e., should not have -run=XXX flags)
   # to fill seed corpus for fuzz tests that use WriteSeedCorpusFile (e.g., FuzzHandler).
   fuzz:
-    desc: "Fuzz for about 2 minutes (with default FUZZTIME)"
+    desc: "Fuzz for about 2 minutes (with default FUZZ_TIME)"
     cmds:
       - go test -list='Fuzz.*' ./...
-      - echo 'Running eight functions for {{.FUZZTIME}} each...'
-      - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/bson/
-      - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/bson/
-      - go test -fuzz=FuzzArray    -fuzztime={{.FUZZTIME}} ./internal/handlers/sjson/
-      - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/handlers/sjson/
-      - go test -fuzz=FuzzDocument -fuzztime={{.FUZZTIME}} ./internal/handlers/tigris/tjson/
-      - go test -fuzz=FuzzMsg      -fuzztime={{.FUZZTIME}} ./internal/wire/
-      - go test -fuzz=FuzzQuery    -fuzztime={{.FUZZTIME}} ./internal/wire/
-      - go test -fuzz=FuzzReply    -fuzztime={{.FUZZTIME}} ./internal/wire/
+      - go test -fuzz=FuzzArray    -fuzztime={{.FUZZ_TIME}} ./internal/bson/
+      - go test -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/bson/
+      - go test -fuzz=FuzzArray    -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
+      - go test -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
+      - go test -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/handlers/tigris/tjson/
+      - go test -fuzz=FuzzMsg      -fuzztime={{.FUZZ_TIME}} ./internal/wire/
+      - go test -fuzz=FuzzQuery    -fuzztime={{.FUZZ_TIME}} ./internal/wire/
+      - go test -fuzz=FuzzReply    -fuzztime={{.FUZZ_TIME}} ./internal/wire/
 
   fuzz-corpus:
-    desc: "Sync seed and generated fuzz corpora with FUZZCORPUS"
+    desc: "Sync seed and generated fuzz corpora with FUZZ_CORPUS"
     cmds:
-      - go run {{.RACEFLAG}} ./cmd/fuzztool corpus generated {{.FUZZCORPUS}}
-      - go run {{.RACEFLAG}} ./cmd/fuzztool corpus seed {{.FUZZCORPUS}}
-      - go run {{.RACEFLAG}} ./cmd/fuzztool corpus {{.FUZZCORPUS}} generated
+      - go run {{.RACE_FLAG}} ./cmd/fuzztool corpus generated {{.FUZZ_CORPUS}}
+      - go run {{.RACE_FLAG}} ./cmd/fuzztool corpus seed {{.FUZZ_CORPUS}}
+      - go run {{.RACE_FLAG}} ./cmd/fuzztool corpus {{.FUZZ_CORPUS}} generated
 
   run:
     desc: "Run FerretDB with `pg` handler"
@@ -472,7 +473,7 @@ tasks:
     cmds:
       - >
         docker compose run --rm legacy-mongo-shell
-        'mongodb://host.docker.internal:{{.PORT | default 27017}}/'
+        'mongodb://host.docker.internal:{{.TESTJS_PORT}}/'
         /legacy-mongo-shell/test.js
 
   docker-init:

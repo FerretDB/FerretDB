@@ -44,12 +44,13 @@ Finally, you will also need [git-lfs](https://git-lfs.github.com) installed and 
 Fork the [FerretDB repository on GitHub](https://github.com/FerretDB/FerretDB/fork).
 To have all the tags in the repository and what they point to, copy all branches by removing checkmark for `copy the main branch only` before forking.
 
-After forking FerretDB on GitHub, you can clone the repository:
+After forking FerretDB on GitHub, you can clone the repository and add upstream repository as a remote:
 
 ```sh
 git clone git@github.com:<YOUR_GITHUB_USERNAME>/FerretDB.git
 cd FerretDB
 git remote add upstream https://github.com/FerretDB/FerretDB.git
+git fetch --all --tags
 ```
 
 To run development commands, you should first install the [`task`](https://taskfile.dev/) tool.
@@ -167,8 +168,8 @@ If tests fail and the output is too confusing, try running them sequentially by 
 
 You can also run `task -C 1` to limit the number of concurrent tasks, which is useful for debugging.
 
-To run a single test case, you may want to use the predefined variable `TEST_RUN`.
-For example, to run a single test case for in-process FerretDB with `pg` handler you may use `task test-integration-pg TEST_RUN='TestName/TestCaseName'`.
+To run a single test case, you may use Task variable `TEST_RUN`.
+For example, to run a single test case for in-process FerretDB with `pg` handler you may use `task test-integration-pg TEST_RUN=TestName/TestCaseName`.
 
 Finally, since all tests just run `go test` with various arguments and flags under the hood,
 you may also use all standard `go` tool facilities,
@@ -177,7 +178,7 @@ For example:
 
 - to run a single test case for in-process FerretDB with `pg` handler
   with all subtests running sequentially,
-  you may use `env GOFLAGS='-parallel=1' task test-integration-pg TEST_RUN='TestName/TestCaseName'`;
+  you may use `env GOFLAGS='-parallel=1' task test-integration-pg TEST_RUN=TestName/TestCaseName`;
 - to run all tests for in-process FerretDB with `tigris` handler
   with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
   you may use `env GOFLAGS='-trace=trace.out' task test-integration-tigris`.
@@ -220,6 +221,18 @@ Some of our idiosyncrasies:
    It may seem random, but it is only pseudo-random and follows BSON spec: <https://bsonspec.org/spec.html>
 2. We generally pass and return `struct`s by pointers.
    There are some exceptions like `types.Path` that has value semantics, but when in doubt – use pointers.
+3. Code comments:
+   - All top-level declarations, even unexported, should have documentation comments.
+   - In documentation comments do not describe the name in terms of the name itself (`// Registry is a registry of …`).
+     Use other words instead; often, they could add additional information and make reading more pleasant (`// Registry stores …`).
+   - In code comments, in general, do not describe _what_ the code does: it should be clear from the code itself
+     (and when it doesn't and the code is tricky, simplify it instead).
+     Instead, describe _why_ the code does that if it is not clear from the surrounding context, names, etc.
+     There is no need to add comments just because there are no comments if everything is already clear without them.
+   - For code comments, write either
+     sentence fragments (do not start it with a capital letter, do not end it with a dot, use the simplified grammar) for short notes
+     or full sentences (do start them with capital letters, do end them with dots, do check their grammar) when a longer (2+ sentences)
+     explanation is needed (and the code could not be simplified).
 
 #### Integration tests conventions
 

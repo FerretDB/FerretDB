@@ -55,6 +55,8 @@ jobs:
 
       - name: Run short unit tests
         run: bin/task test-unit-short
+        env:
+          GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
@@ -106,6 +108,8 @@ jobs:
 
       - name: Run unit tests
         run: bin/task test-unit
+        env:
+          GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
 
       # The token is not required but should make uploads more stable.
       # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
@@ -193,6 +197,8 @@ jobs:
 
       - name: Run ${{ matrix.name }} tests (${{ matrix.shard_index }}/${{ matrix.shard_total }})
         run: bin/task test-integration-${{ matrix.task }} SHARD_INDEX=${{ matrix.shard_index }} SHARD_TOTAL=${{ matrix.shard_total }}
+        env:
+          GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
 
       # The token is not required but should make uploads more stable.
       # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
@@ -275,6 +281,8 @@ jobs:
 
       - name: Run env-data
         run: bin/task env-data
+        env:
+          GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
 
   golangci-lint:
     name: golangci-lint
@@ -371,19 +379,32 @@ jobs:
       # `secrets` are not supported in `if`, so we have to do this trick with environment variable:
       # https://docs.github.com/en/actions/learn-github-actions/contexts#context-availability
       # https://github.com/actions/runner/issues/520
-      - name: Push corpus
-        if: ${{ always() && env.KEY != '' }}
+
+      - name: Push corpus if possible
+        if: always() && env.KEY != ''
         env:
           KEY: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
         run: |
           git config user.name ferretdb-bot
           git config user.email ferretdb-bot@ferretdb.io
           git add --all .
+          git diff-index --patch
           git diff-index --quiet HEAD || git commit --message 'Update corpus'
           git fetch
           git rebase origin/main
           git push
         working-directory: fuzz-corpus
+
+      - name: Upload corpus if push is not possible
+        if: failure() && env.KEY == ''
+        env:
+          KEY: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: fuzz-corpus
+          path: fuzz-corpus.zip
+          retention-days: 1
+          if-no-files-found: error
 
       - name: Collect Linux logs
         if: failure()

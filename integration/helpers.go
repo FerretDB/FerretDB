@@ -249,6 +249,27 @@ func AssertMatchesWriteError(t testing.TB, expected, actual error) {
 	}
 }
 
+// AssertMatchesBulkException asserts that both errors are BulkWriteExceptions containing the same number of WriteErrors,
+// and those WriteErrors are equal, except messages (and ignoring the Raw part).
+func AssertMatchesBulkException(t testing.TB, expected, actual error) {
+	t.Helper()
+
+	a, ok := actual.(mongo.BulkWriteException) //nolint:errorlint // do not inspect error chain
+	require.Truef(t, ok, "actual is %T, not mongo.BulkWriteException", actual)
+
+	e, ok := expected.(mongo.BulkWriteException) //nolint:errorlint // do not inspect error chain
+	require.Truef(t, ok, "expected is %T, not mongo.BulkWriteException", expected)
+
+	for i, we := range a.WriteErrors {
+		expectedWe := e.WriteErrors[i]
+
+		expectedWe.Message = we.Message
+		expectedWe.Raw = we.Raw
+
+		assert.Equal(t, expectedWe, we)
+	}
+}
+
 // AssertEqualAltError is a deprecated alias for AssertEqualAltCommandError.
 //
 // Deprecated: use AssertEqualAltCommandError instead.

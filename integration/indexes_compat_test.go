@@ -44,14 +44,21 @@ func TestListIndexesCompat(t *testing.T) {
 			t.Helper()
 			t.Parallel()
 
-			targetCur, targetErr := targetCollection.Indexes().List(ctx)
-			compatCur, compatErr := compatCollection.Indexes().List(ctx)
+			targetCursor, targetErr := targetCollection.Indexes().List(ctx)
+			compatCursor, compatErr := compatCollection.Indexes().List(ctx)
 
-			require.NoError(t, compatErr)
+			if targetCursor != nil {
+				defer targetCursor.Close(ctx)
+			}
+			if compatCursor != nil {
+				defer compatCursor.Close(ctx)
+			}
+
 			require.NoError(t, targetErr)
+			require.NoError(t, compatErr)
 
-			targetRes := FetchAll(t, ctx, targetCur)
-			compatRes := FetchAll(t, ctx, compatCur)
+			targetRes := FetchAll(t, ctx, targetCursor)
+			compatRes := FetchAll(t, ctx, compatCursor)
 
 			assert.Equal(t, compatRes, targetRes)
 
@@ -252,14 +259,21 @@ func TestCreateIndexesCompat(t *testing.T) {
 					}
 
 					// List indexes to check they are identical after creation.
-					targetCur, targetErr := targetCollection.Indexes().List(ctx)
-					compatCur, compatErr := compatCollection.Indexes().List(ctx)
+					targetCursor, targetErr := targetCollection.Indexes().List(ctx)
+					compatCursor, compatErr := compatCollection.Indexes().List(ctx)
 
+					if targetCursor != nil {
+						defer targetCursor.Close(ctx)
+					}
+					if compatCursor != nil {
+						defer compatCursor.Close(ctx)
+					}
+
+					require.NoError(t, targetErr)
 					require.NoError(t, compatErr)
-					assert.Equal(t, compatErr, targetErr)
 
-					targetIndexes := FetchAll(t, ctx, targetCur)
-					compatIndexes := FetchAll(t, ctx, compatCur)
+					targetIndexes := FetchAll(t, ctx, targetCursor)
+					compatIndexes := FetchAll(t, ctx, compatCursor)
 
 					assert.Equal(t, compatIndexes, targetIndexes)
 
@@ -301,6 +315,7 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 		collectionName any
 		indexName      any
 		key            any
+		unique         any
 		resultType     compatTestCaseResultType // defaults to nonEmptyResult
 		skip           string                   // optional, skip test with a specified reason
 	}{
@@ -364,6 +379,20 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 			resultType:     emptyResult,
 			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
+		"UniqueFalse": {
+			collectionName: "unique_false",
+			key:            bson.D{{"v", 1}},
+			indexName:      "unique_false",
+			unique:         false,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/2845",
+		},
+		"UniqueTypeDocument": {
+			collectionName: "test",
+			key:            bson.D{{"v", 1}},
+			indexName:      "test",
+			unique:         bson.D{},
+			resultType:     emptyResult,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -382,6 +411,10 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 
 			if tc.indexName != nil {
 				indexesDoc = append(indexesDoc, bson.E{"name", tc.indexName})
+			}
+
+			if tc.unique != nil {
+				indexesDoc = append(indexesDoc, bson.E{Key: "unique", Value: tc.unique})
 			}
 
 			var targetRes bson.D
@@ -545,14 +578,21 @@ func TestDropIndexesCompat(t *testing.T) {
 					}
 
 					// List indexes to see they are identical after drop.
-					targetCur, targetErr := targetCollection.Indexes().List(ctx)
-					compatCur, compatErr := compatCollection.Indexes().List(ctx)
+					targetCursor, targetErr := targetCollection.Indexes().List(ctx)
+					compatCursor, compatErr := compatCollection.Indexes().List(ctx)
 
+					if targetCursor != nil {
+						defer targetCursor.Close(ctx)
+					}
+					if compatCursor != nil {
+						defer compatCursor.Close(ctx)
+					}
+
+					require.NoError(t, targetErr)
 					require.NoError(t, compatErr)
-					require.Equal(t, compatErr, targetErr)
 
-					targetIndexes := FetchAll(t, ctx, targetCur)
-					compatIndexes := FetchAll(t, ctx, compatCur)
+					targetIndexes := FetchAll(t, ctx, targetCursor)
+					compatIndexes := FetchAll(t, ctx, compatCursor)
 
 					require.Equal(t, compatIndexes, targetIndexes)
 				})
@@ -676,14 +716,21 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 						require.NoError(t, targetErr)
 
 						// List indexes to see they are identical after creation.
-						targetCur, targetListErr := targetCollection.Indexes().List(ctx)
-						compatCur, compatListErr := compatCollection.Indexes().List(ctx)
+						targetCursor, targetListErr := targetCollection.Indexes().List(ctx)
+						compatCursor, compatListErr := compatCollection.Indexes().List(ctx)
 
-						require.NoError(t, compatListErr)
+						if targetCursor != nil {
+							defer targetCursor.Close(ctx)
+						}
+						if compatCursor != nil {
+							defer compatCursor.Close(ctx)
+						}
+
 						require.NoError(t, targetListErr)
+						require.NoError(t, compatListErr)
 
-						targetList := FetchAll(t, ctx, targetCur)
-						compatList := FetchAll(t, ctx, compatCur)
+						targetList := FetchAll(t, ctx, targetCursor)
+						compatList := FetchAll(t, ctx, compatCursor)
 
 						require.Equal(t, compatList, targetList)
 					}
@@ -727,14 +774,21 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 					}
 
 					// List indexes to see they are identical after deletion.
-					targetCur, targetListErr := targetCollection.Indexes().List(ctx)
-					compatCur, compatListErr := compatCollection.Indexes().List(ctx)
+					targetCursor, targetListErr := targetCollection.Indexes().List(ctx)
+					compatCursor, compatListErr := compatCollection.Indexes().List(ctx)
 
+					if targetCursor != nil {
+						defer targetCursor.Close(ctx)
+					}
+					if compatCursor != nil {
+						defer compatCursor.Close(ctx)
+					}
+
+					require.NoError(t, targetListErr)
 					require.NoError(t, compatListErr)
-					assert.Equal(t, compatListErr, targetListErr)
 
-					targetList := FetchAll(t, ctx, targetCur)
-					compatList := FetchAll(t, ctx, compatCur)
+					targetList := FetchAll(t, ctx, targetCursor)
+					compatList := FetchAll(t, ctx, compatCursor)
 
 					assert.Equal(t, compatList, targetList)
 				})
@@ -748,6 +802,136 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
 			}
+		})
+	}
+}
+
+func TestCreateIndexesUniqueCompat(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
+
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // for readability
+		models    []mongo.IndexModel // required, index to create
+		insertDoc bson.D             // required, document to insert for uniqueness check
+		new       bool               // optional, insert new document before check uniqueness
+
+		skip string // optional, skip test with a specified reason
+	}{
+		"IDIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"_id", 1}},
+					Options: new(options.IndexOptions).SetUnique(true),
+				},
+			},
+			insertDoc: bson.D{{"_id", "int322"}},
+		},
+		"ExistingFieldIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"v", 1}},
+					Options: new(options.IndexOptions).SetUnique(true),
+				},
+			},
+			insertDoc: bson.D{{"v", "value"}},
+			new:       true,
+		},
+		"NotExistingFieldIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"not-existing-field", 1}},
+					Options: new(options.IndexOptions).SetUnique(true),
+				},
+			},
+			insertDoc: bson.D{{"not-existing-field", "value"}},
+			skip:      "https://github.com/FerretDB/FerretDB/issues/2830",
+		},
+		"CompoundIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"v", 1}, {"foo", 1}},
+					Options: new(options.IndexOptions).SetUnique(true),
+				},
+			},
+			insertDoc: bson.D{{"v", "baz"}, {"foo", "bar"}},
+		},
+		"ExistingFieldInsertDuplicate": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"v", 1}},
+					Options: new(options.IndexOptions).SetUnique(true),
+				},
+			},
+			insertDoc: bson.D{{"v", int32(42)}},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Helper()
+			t.Parallel()
+
+			res := setup.SetupCompatWithOpts(t,
+				&setup.SetupCompatOpts{
+					Providers: []shareddata.Provider{shareddata.Int32s},
+				})
+
+			ctx, targetCollections, compatCollections := res.Ctx, res.TargetCollections, res.CompatCollections
+
+			targetCollection := targetCollections[0]
+			compatCollection := compatCollections[0]
+
+			targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
+			compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
+
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
+
+				return
+			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
+
+			assert.Equal(t, compatRes, targetRes)
+
+			// List specifications to check they are identical after creation.
+			targetSpec, targetErr := targetCollection.Indexes().ListSpecifications(ctx)
+			compatSpec, compatErr := compatCollection.Indexes().ListSpecifications(ctx)
+
+			require.NoError(t, compatErr)
+			require.NoError(t, targetErr)
+
+			assert.Equal(t, compatSpec, targetSpec)
+
+			if tc.new {
+				_, targetErr = targetCollection.InsertOne(ctx, tc.insertDoc)
+				_, compatErr = compatCollection.InsertOne(ctx, tc.insertDoc)
+
+				require.NoError(t, compatErr)
+				require.NoError(t, targetErr)
+			}
+
+			_, targetErr = targetCollection.InsertOne(ctx, tc.insertDoc)
+			_, compatErr = compatCollection.InsertOne(ctx, tc.insertDoc)
+
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				AssertMatchesWriteError(t, compatErr, targetErr)
+
+				return
+			}
+
+			require.NoError(t, compatErr, "compat error; target returned no error")
 		})
 	}
 }

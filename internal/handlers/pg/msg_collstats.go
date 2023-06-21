@@ -21,6 +21,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -52,11 +53,11 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	scale := int32(1)
+	scale := int64(1)
 
 	var s any
 	if s, err = document.Get("scale"); err == nil {
-		if scale, err = common.GetScaleParam(command, s); err != nil {
+		if scale, err = commonparams.GetValidatedNumberParamWithMinValue(command, "scale", s, 1); err != nil {
 			return nil, err
 		}
 	}
@@ -92,11 +93,11 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	pairs = append(pairs,
-		"storageSize", stats.SizeTotal/int64(scale),
+		"storageSize", stats.SizeTotal/scale,
 		"nindexes", stats.CountIndexes,
-		"totalIndexSize", stats.SizeIndexes/int64(scale),
-		"totalSize", stats.SizeTotal/int64(scale),
-		"scaleFactor", scale,
+		"totalIndexSize", stats.SizeIndexes/scale,
+		"totalSize", stats.SizeTotal/scale,
+		"scaleFactor", int32(scale),
 		"ok", float64(1),
 	)
 

@@ -219,6 +219,14 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 }
 
 // ProjectDocument applies projection to the copy of the document.
+// It returns proper CommandError that can be returned by $project aggregation stage.
+//
+// Command error codes:
+// - ErrEmptySubProject when operator value is empty.
+// - ErrFieldPathInvalidName when FieldPath is invalid.
+// - ErrNotImplemented when the operator is not implemented yet.
+// - ErrOperatorWrongLenOfArgs when the operator has an invalid number of arguments.
+// - ErrInvalidPipelineOperator when an the operator does not exist.
 func ProjectDocument(doc, projection, filter *types.Document, inclusion bool) (*types.Document, error) {
 	projected, err := types.NewDocument("_id", must.NotFail(doc.Get("_id")))
 	if err != nil {

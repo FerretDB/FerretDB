@@ -397,6 +397,36 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 				Message: "The update path 'v.' contains an empty field name, which is not allowed.",
 			},
 		},
+		"ConflictCollision": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v", "val"}}},
+					{"$min", bson.D{{"v.foo", "val"}}},
+				}},
+			},
+			err: &mongo.CommandError{
+				Code:    40,
+				Name:    "ConflictingUpdateOperators",
+				Message: "Updating the path 'v.foo' would create a conflict at 'v'",
+			},
+			altMessage: "Updating the path 'v' would create a conflict at 'v'",
+		},
+		"ConflictOverwrite": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.foo", "val"}}},
+					{"$min", bson.D{{"v", "val"}}},
+				}},
+			},
+			err: &mongo.CommandError{
+				Code:    40,
+				Name:    "ConflictingUpdateOperators",
+				Message: "Updating the path 'v' would create a conflict at 'v'",
+			},
+			altMessage: "Updating the path 'v.foo' would create a conflict at 'v.foo'",
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
