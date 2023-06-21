@@ -117,7 +117,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 		iter = common.LimitIterator(iter, closer, params.Limit)
 
-		iter, err = common.ProjectionIterator(iter, closer, params.Projection)
+		iter, err = common.ProjectionIterator(iter, closer, params.Projection, params.Filter)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -133,13 +133,15 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	var cursorID int64
 
-	if h.EnableCursors {
+	if h.EnableCursors && !params.SingleBatch && int64(len(resDocs)) > params.BatchSize {
+		// Cursor is not created for singleBatch, and when resDocs is less than batchSize,
+		// all response fits in the firstBatch.
 		iter := iterator.Values(iterator.ForSlice(resDocs))
 		c := cursor.New(&cursor.NewParams{
 			Iter:       iter,
 			DB:         params.DB,
 			Collection: params.Collection,
-			BatchSize:  params.BatchSize,
+			BatchSize:  int32(params.BatchSize),
 		})
 
 		username, _ := conninfo.Get(ctx).Auth()

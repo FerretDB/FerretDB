@@ -26,17 +26,20 @@ import (
 // newStageFunc is a type for a function that creates a new aggregation stage.
 type newStageFunc func(stage *types.Document) (aggregations.Stage, error)
 
-// stages maps all supported aggregation stages.
-var stages = map[string]newStageFunc{
+// Stages maps all supported aggregation Stages.
+var Stages = map[string]newStageFunc{
 	// sorted alphabetically
+	"$addFields": newAddFields,
 	"$collStats": newCollStats,
 	"$count":     newCount,
 	"$group":     newGroup,
 	"$limit":     newLimit,
 	"$match":     newMatch,
 	"$project":   newProject,
+	"$set":       newSet,
 	"$skip":      newSkip,
 	"$sort":      newSort,
+	"$unset":     newUnset,
 	"$unwind":    newUnwind,
 	// please keep sorted alphabetically
 }
@@ -44,7 +47,6 @@ var stages = map[string]newStageFunc{
 // unsupportedStages maps all unsupported yet stages.
 var unsupportedStages = map[string]struct{}{
 	// sorted alphabetically
-	"$addFields":              {},
 	"$bucket":                 {},
 	"$bucketAuto":             {},
 	"$changeStream":           {},
@@ -56,7 +58,6 @@ var unsupportedStages = map[string]struct{}{
 	"$geoNear":                {},
 	"$graphLookup":            {},
 	"$indexStats":             {},
-	"$limit":                  {},
 	"$listLocalSessions":      {},
 	"$listSessions":           {},
 	"$lookup":                 {},
@@ -69,13 +70,10 @@ var unsupportedStages = map[string]struct{}{
 	"$sample":                 {},
 	"$search":                 {},
 	"$searchMeta":             {},
-	"$set":                    {},
 	"$setWindowFields":        {},
 	"$sharedDataDistribution": {},
-	"$skip":                   {},
 	"$sortByCount":            {},
 	"$unionWith":              {},
-	"$unset":                  {},
 	// please keep sorted alphabetically
 }
 
@@ -91,16 +89,24 @@ func NewStage(stage *types.Document) (aggregations.Stage, error) {
 
 	name := stage.Command()
 
-	f, ok := stages[name]
-	if !ok {
-		if _, ok := unsupportedStages[name]; ok {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
-				fmt.Sprintf("`aggregate` stage %q is not implemented yet", name),
-				name+" (stage)", // to differentiate update operator $set from aggregation stage $set, etc
-			)
-		}
+	f, supported := Stages[name]
+	_, unsupported := unsupportedStages[name]
 
+	switch {
+	case supported && unsupported:
+		panic(fmt.Sprintf("stage %q is in both `stages` and `unsupportedStages`", name))
+
+	case supported && !unsupported:
+		return f(stage)
+
+	case !supported && unsupported:
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
+			fmt.Sprintf("`aggregate` stage %q is not implemented yet", name),
+			name+" (stage)", // to differentiate update operator $set from aggregation stage $set, etc
+		)
+
+	case !supported && !unsupported:
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupInvalidAccumulator,
 			fmt.Sprintf("Unrecognized pipeline stage name: %q", name),
@@ -108,5 +114,5 @@ func NewStage(stage *types.Document) (aggregations.Stage, error) {
 		)
 	}
 
-	return f(stage)
+	panic("not reached")
 }

@@ -361,11 +361,16 @@ func documentToMetadataIndex(doc *types.Document) (*metadataIndex, error) {
 		}
 	}
 
+	var unique *bool
+	if u, ok := must.NotFail(doc.Get("unique")).(bool); ok {
+		unique = &u
+	}
+
 	return &metadataIndex{
 		Index: Index{
 			Name:   must.NotFail(doc.Get("name")).(string),
 			Key:    key,
-			Unique: must.NotFail(doc.Get("unique")).(bool),
+			Unique: unique,
 		},
 		pgIndex: must.NotFail(doc.Get("pgindex")).(string),
 	}, nil
@@ -396,11 +401,19 @@ func metadataToDocument(metadata *metadata) *types.Document {
 			keyDoc.Set(pair.Field, int32(pair.Order)) // order is set as int32 to be sjson-marshaled correctly
 		}
 
+		// If unique is nil, it wasn't passed with index definition.
+		// We have to set it to types.NullType in order to be able to save index metadata.
+		var unique any = types.NullType{}
+
+		if idx.Unique != nil {
+			unique = *idx.Unique
+		}
+
 		indexesArr.Append(must.NotFail(types.NewDocument(
 			"pgindex", idx.pgIndex,
 			"name", idx.Name,
 			"key", keyDoc,
-			"unique", idx.Unique,
+			"unique", unique,
 		)))
 	}
 
@@ -458,7 +471,7 @@ func collectionNameToTableName(name string) string {
 //   - ErrTableNotExist - if the metadata table doesn't exist.
 //   - ErrIndexKeyAlreadyExist - if the given index key already exists.
 //   - ErrIndexNameAlreadyExist - if the given index name already exists.
-func (ms *metadataStorage) setIndex(ctx context.Context, index string, key IndexKey, unique bool) (pgTable string, pgIndex string, err error) { //nolint:lll // for readability
+func (ms *metadataStorage) setIndex(ctx context.Context, index string, key IndexKey, unique *bool) (pgTable string, pgIndex string, err error) { //nolint:lll // for readability
 	metadata, err := ms.get(ctx, true)
 	if err != nil {
 		return

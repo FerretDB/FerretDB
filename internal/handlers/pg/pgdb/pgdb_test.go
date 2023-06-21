@@ -22,7 +22,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -32,7 +31,7 @@ import (
 func getPool(ctx context.Context, tb testing.TB) *Pool {
 	tb.Helper()
 
-	logger := testutil.Logger(tb, zap.NewAtomicLevelAt(zap.DebugLevel))
+	logger := testutil.Logger(tb)
 
 	p, err := state.NewProvider("")
 	require.NoError(tb, err)
@@ -57,21 +56,22 @@ func setupDatabase(ctx context.Context, tb testing.TB, pool *Pool, db string) {
 	tb.Cleanup(dropDatabase)
 }
 
-func TestValidUTF8Locale(t *testing.T) {
+func TestIsSupportedLocale(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
 		locale   string
 		expected bool
 	}{
+		{"c", true},
+		{"POSIX", true},
+		{"C.UTF8", true},
 		{"en_US.utf8", true},
 		{"en_US.utf-8", true},
 		{"en_US.UTF8", true},
 		{"en_US.UTF-8", true},
 		{"en_UK.UTF-8", false},
-		{"en_UK.utf--8", false},
 		{"en_US", false},
-		{"utf8", false},
 	}
 
 	for _, tc := range cases {
@@ -79,7 +79,7 @@ func TestValidUTF8Locale(t *testing.T) {
 		t.Run(tc.locale, func(t *testing.T) {
 			t.Parallel()
 
-			actual := isValidUTF8Locale(tc.locale)
+			actual := isSupportedLocale(tc.locale)
 			assert.Equal(t, tc.expected, actual)
 		})
 	}

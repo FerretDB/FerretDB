@@ -21,6 +21,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -30,14 +31,13 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/telemetry"
@@ -65,8 +65,6 @@ var cli struct {
 	ProxyAddr string `default:""                help:"Proxy address."`
 	DebugAddr string `default:"127.0.0.1:8088"  help:"Listen address for HTTP handlers for metrics, pprof, etc."`
 
-	PostgreSQLURL string `name:"postgresql-url" default:"${default_postgresql_url}" help:"PostgreSQL URL for 'pg' handler."`
-
 	// see setCLIPlugins
 	kong.Plugins
 
@@ -82,7 +80,7 @@ var cli struct {
 	Test struct {
 		RecordsDir            string `default:"" help:"Experimental: directory for record files."`
 		DisableFilterPushdown bool   `default:"false" help:"Experimental: disable filter pushdown."`
-		EnableSortingPushdown bool   `default:"false" help:"Experimental: enable sorting pushdown."`
+		EnableSortPushdown    bool   `default:"false" help:"Experimental: enable sort pushdown."`
 		EnableCursors         bool   `default:"false" help:"Experimental: enable cursors."`
 
 		//nolint:lll // for readability
@@ -96,7 +94,21 @@ var cli struct {
 	} `embed:"" prefix:"test-"`
 }
 
-// The tigrisFlags struct represents flags that are used specifically by "tigris" handler.
+// The pgFlags struct represents flags that are used by the "pg" handler.
+//
+// See main_pg.go.
+var pgFlags struct {
+	PostgreSQLURL string `name:"postgresql-url" default:"${default_postgresql_url}" help:"PostgreSQL URL for 'pg' handler."`
+}
+
+// The sqliteFlags struct represents flags that are used by the "sqlite" handler.
+//
+// See main_sqlite.go.
+var sqliteFlags struct {
+	SQLiteURI string `name:"sqlite-uri" default:"." help:"Directory path or 'file' URI for 'sqlite' handler."`
+}
+
+// The tigrisFlags struct represents flags that are used by the "tigris" handler.
 //
 // See main_tigris.go.
 var tigrisFlags struct {
@@ -105,7 +117,7 @@ var tigrisFlags struct {
 	TigrisClientSecret string `default:""               help:"Tigris Client secret."`
 }
 
-// The hanaFlags struct represents flags that are used specifically by "hana" handler.
+// The hanaFlags struct represents flags that are used by the "hana" handler.
 //
 // See main_hana.go.
 var hanaFlags struct {
@@ -115,13 +127,21 @@ var hanaFlags struct {
 // handlerFlags is a map of handler names to their flags.
 var handlerFlags = map[string]any{}
 
-// setCLIPlugins adds Kong flags for handlers in the stable order.
+// setCLIPlugins adds Kong flags for handlers in the right order.
 func setCLIPlugins() {
-	handlers := maps.Keys(handlerFlags)
-	slices.Sort(handlers)
+	handlers := registry.Handlers()
+
+	if len(handlers) != len(handlerFlags) {
+		panic("handlers and handlerFlags are not in sync")
+	}
 
 	for _, h := range handlers {
-		cli.Plugins = append(cli.Plugins, handlerFlags[h])
+		f := handlerFlags[h]
+		if f == nil {
+			panic(fmt.Sprintf("handler %q has no flags", h))
+		}
+
+		cli.Plugins = append(cli.Plugins, f)
 	}
 }
 
@@ -262,6 +282,14 @@ func dumpMetrics() {
 
 // run sets up environment based on provided flags and runs FerretDB.
 func run() {
+	// to increase a chance of resource finalizers to spot problems
+	if debugbuild.Enabled {
+		defer func() {
+			runtime.GC()
+			runtime.GC()
+		}()
+	}
+
 	info := version.Get()
 
 	if p := cli.Test.Telemetry.Package; p != "" {
@@ -318,6 +346,7 @@ func run() {
 				P:              stateProvider,
 				ConnMetrics:    metrics.ConnMetrics,
 				L:              logger.Named("telemetry"),
+				Handler:        cli.Handler,
 				UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
 				ReportInterval: cli.Test.Telemetry.ReportInterval,
 				ReportTimeout:  cli.Test.Telemetry.ReportTimeout,
@@ -330,7 +359,9 @@ func run() {
 		Metrics:       metrics.ConnMetrics,
 		StateProvider: stateProvider,
 
-		PostgreSQLURL: cli.PostgreSQLURL,
+		PostgreSQLURL: pgFlags.PostgreSQLURL,
+
+		SQLiteURI: sqliteFlags.SQLiteURI,
 
 		TigrisURL:          tigrisFlags.TigrisURL,
 		TigrisClientID:     tigrisFlags.TigrisClientID,
@@ -340,7 +371,7 @@ func run() {
 
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
-			EnableSortPushdown:    cli.Test.EnableSortingPushdown,
+			EnableSortPushdown:    cli.Test.EnableSortPushdown,
 			EnableCursors:         cli.Test.EnableCursors,
 		},
 	})

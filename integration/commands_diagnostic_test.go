@@ -125,10 +125,12 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 	ctx, collection := res.Ctx, res.Collection
 
 	for name, tc := range map[string]struct {
-		command  bson.D
-		expected map[string]any
-		err      *mongo.CommandError
-		alt      string
+		command bson.D // required, command to run
+
+		expected   map[string]any      // optional, expected keys of response
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Asterisk": {
 			command: bson.D{{"getLog", "*"}},
@@ -160,7 +162,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 				Name:    "OperationFailed",
 				Message: `No log named 'nonExistentName'`,
 			},
-			alt: `no RecentEntries named: nonExistentName`,
+			altMessage: `no RecentEntries named: nonExistentName`,
 		},
 		"Nil": {
 			command: bson.D{{"getLog", nil}},
@@ -181,18 +183,27 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
 
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			if err != nil {
-				AssertEqualAltError(t, *tc.err, tc.alt, err)
+			require.NotNil(t, tc.command, "command must not be nil")
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&res)
+			if tc.err != nil {
+				assert.Nil(t, res)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
 				return
 			}
+
 			require.NoError(t, err)
 
-			m := actual.Map()
-			k := CollectKeys(t, actual)
+			m := res.Map()
+			k := CollectKeys(t, res)
 
 			for key, item := range tc.expected {
 				assert.Contains(t, k, key)
@@ -280,6 +291,58 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 	actual.Remove("indexDetails")
 	testutil.CompareAndSetByPathNum(t, expected, actual, 39, types.NewStaticPath("nrecords"))
 	testutil.AssertEqual(t, expected, actual)
+}
+
+func TestCommandsDiagnosticValidateError(t *testing.T) {
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/2704")
+
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // for readability
+		command bson.D // required, command to run
+
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"InvalidTypeDocument": {
+			command: bson.D{{"validate", bson.D{}}},
+			err: &mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "collection name has invalid type object",
+			},
+			altMessage: "collection name has invalid type object",
+		},
+		"NonExistentCollection": {
+			command: bson.D{{"validate", "nonExistentCollection"}},
+			err: &mongo.CommandError{
+				Code:    26,
+				Name:    "NamespaceNotFound",
+				Message: "Collection 'TestCommandsDiagnosticValidateError-NonExistentCollection.nonExistentCollection' does not exist to validate.",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.command, "command must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			ctx, collection := setup.Setup(t, shareddata.Doubles)
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(res)
+
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
 }
 
 func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {

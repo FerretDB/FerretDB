@@ -7,21 +7,49 @@ run:
 linters-settings:
   # asciicheck
   depguard:
-    list-type: blacklist
-    packages:
-      - golang.org/x/net/context # use stdlib's context instead
-      - github.com/FerretDB/FerretDB/internal/bson
-      - github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb
-      - github.com/FerretDB/FerretDB/internal/handlers/sjson
-      - github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb
-      - github.com/FerretDB/FerretDB/internal/handlers/tigris/tjson
-      - github.com/FerretDB/FerretDB/internal/types/fjson
-      - github.com/jackc/pgconn
-      - github.com/jackc/pgproto3
-      - github.com/jackc/pgtype
-      - github.com/jackc/pgx/v4
-      - github.com/tigrisdata/tigris-client-go/api/client/v1/api
-      - github.com/tigrisdata/tigris-client-go/filter # We use our own filter without generics (see tigris/tigrisdb/filter)
+    rules:
+      old:
+        files:
+          - $all
+        deny:
+          - pkg: golang.org/x/net/context
+            desc: use `context` package instead
+          - pkg: github.com/jackc/pgconn
+            desc: use `github.com/jackc/pgx/v5/pgconn` package instead
+          - pkg: github.com/jackc/pgproto3
+            desc: use `github.com/jackc/pgx/v5/pgproto3` package instead
+          - pkg: github.com/jackc/pgtype
+            desc: use `github.com/jackc/pgx/v5/pgtype` package instead
+          - pkg: github.com/jackc/pgx/v4
+            desc: use `github.com/jackc/pgx/v5` package instead
+      fjson:
+        files:
+          - $all
+          - "!**/internal/bson/*_test.go"
+          - "!**/internal/util/testutil/*.go"
+          - "!**/internal/wire/*.go"
+        deny:
+          - pkg: github.com/FerretDB/FerretDB/internal/types/fjson
+      bson:
+        files:
+          - $all
+          - "!**/internal/wire/*.go"
+        deny:
+          - pkg: github.com/FerretDB/FerretDB/internal/bson
+      sjson:
+        files:
+          - $all
+          - "!**/internal/backends/sqlite/*.go"
+          - "!**/internal/handlers/pg/pgdb/*.go"
+        deny:
+          - pkg: github.com/FerretDB/FerretDB/internal/handlers/sjson
+      pgdb:
+        files:
+          - $all
+          - "!**/internal/handlers/pg/*.go"
+          - "!**/cmd/envtool/*.go"
+        deny:
+          - pkg: github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb
   exhaustive:
     default-signifies-exhaustive: false
   gci:
@@ -84,6 +112,8 @@ linters-settings:
         alias: dto
       - pkg: github.com/jackc/pgx-zap
         alias: zapadapter
+      - pkg: modernc.org/sqlite/lib
+        alias: sqlitelib
   # ineffassign
   lll:
     line-length: 130
@@ -140,54 +170,6 @@ issues:
 
   exclude-use-default: false
   exclude-rules:
-    # only `wire` package can import `bson` package
-    - linters: [depguard]
-      path: internal/wire
-      text: bson
-
-    # only `testutil`, `bson` (for testing), and `wire` packages can import `fjson` package
-    - linters: [depguard]
-      path: internal/util/testutil
-      text: fjson
-    - linters: [depguard]
-      path: internal/bson
-      text: fjson
-    - linters: [depguard]
-      path: internal/wire
-      text: fjson
-
-    # only `pg` handler can import `pgdb` package, no other handler can do that
-    - linters: [depguard]
-      path: internal/handlers/pg
-      text: pgdb
-    - linters: [depguard]
-      path: internal/handlers/registry
-      text: pgdb
-    - linters: [depguard]
-      path: cmd/envtool
-      text: pgdb
-
-    # only `pg` handler can import `sjson` package, no other handler can do that
-    - linters: [depguard]
-      path: internal/handlers/pg
-      text: sjson
-
-    # only `tigris` handler can import `tigrisdb` package, no other handler can do that
-    - linters: [depguard]
-      path: internal/handlers/tigris
-      text: tigrisdb
-    - linters: [depguard]
-      path: internal/handlers/registry
-      text: tigrisdb
-    - linters: [depguard]
-      path: cmd/envtool
-      text: tigrisdb
-
-    # only `tigris` handler can import `tjson` package, no other handler can do that
-    - linters: [depguard]
-      path: internal/handlers/tigris
-      text: tjson
-
     # we don't want to introduce that constant
     - linters: [goconst]
       text: "^string `_id` has \\d+ occurrences, make it a constant"

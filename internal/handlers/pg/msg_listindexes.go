@@ -23,6 +23,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -60,7 +61,7 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	if !ok {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			fmt.Sprintf("collection name has invalid type %s", commonparams.AliasFromType(collectionParam)),
 			document.Command(),
 		)
 	}
@@ -93,11 +94,17 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 			indexKey.Set(key.Field, int32(key.Order))
 		}
 
-		firstBatch.Append(must.NotFail(types.NewDocument(
+		indexDoc := must.NotFail(types.NewDocument(
 			"v", int32(2),
 			"key", indexKey,
 			"name", index.Name,
-		)))
+		))
+
+		if index.Unique != nil && index.Name != "_id_" {
+			indexDoc.Set("unique", *index.Unique)
+		}
+
+		firstBatch.Append(indexDoc)
 	}
 
 	var reply wire.OpMsg

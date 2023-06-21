@@ -4,7 +4,7 @@ on:
   pull_request_target:
     types:
       # not for "labeled" to prevent two builds for "labeled" and "unlabeled" when labels are changed
-      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - unlabeled # if GitHub Actions stuck, add and remove "not ready" label to force rebuild
       - opened
       - reopened
       - synchronize
@@ -30,7 +30,7 @@ jobs:
 
     if: >
       contains(github.event.pull_request.labels.*.name, 'trust') &&
-      !contains(github.event.pull_request.labels.*.name, 'no ci') &&
+      !contains(github.event.pull_request.labels.*.name, 'not ready') &&
       (contains(github.event.pull_request.labels.*.name, 'blog/engineering') ||
       contains(github.event.pull_request.labels.*.name, 'blog/marketing'))
 
@@ -75,7 +75,7 @@ jobs:
           git diff --exit-code
 
       - name: Deploy to Cloudflare Pages
-        run: bin/task blog-cloudflare-preview | tee deploy.txt
+        run: bin/task --exit-code blog-cloudflare-preview | tee deploy.txt
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -91,7 +91,7 @@ jobs:
 
     if: >
       contains(github.event.pull_request.labels.*.name, 'trust') &&
-      !contains(github.event.pull_request.labels.*.name, 'no ci') &&
+      !contains(github.event.pull_request.labels.*.name, 'not ready') &&
       contains(github.event.pull_request.labels.*.name, 'documentation')
 
     environment:
@@ -140,7 +140,7 @@ jobs:
           git diff --exit-code
 
       - name: Deploy to Cloudflare Pages
-        run: bin/task docs-cloudflare-preview | tee deploy.txt
+        run: bin/task --exit-code docs-cloudflare-preview | tee deploy.txt
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

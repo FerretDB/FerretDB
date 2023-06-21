@@ -14,13 +14,14 @@ on:
   pull_request_target:
     types:
       # not for "labeled" to prevent two builds for "labeled" and "unlabeled" when labels are changed
-      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - unlabeled # if GitHub Actions stuck, add and remove "not ready" label to force rebuild
       - opened
       - reopened
       - synchronize
   push:
     branches:
       - main
+      - releases/*
     tags:
       - "*"
   schedule:
@@ -45,13 +46,13 @@ jobs:
     name: Build packages
     runs-on:
       group: paid
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     if: >
       github.event_name != 'pull_request_target' ||
       (
         contains(github.event.pull_request.labels.*.name, 'trust') &&
-        !contains(github.event.pull_request.labels.*.name, 'no ci') &&
+        !contains(github.event.pull_request.labels.*.name, 'not ready') &&
         contains(github.event.pull_request.labels.*.name, 'packages')
       )
 

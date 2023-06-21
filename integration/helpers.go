@@ -17,7 +17,6 @@ package integration
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -206,10 +205,10 @@ func AssertMatchesCommandError(t testing.TB, expected, actual error) {
 	t.Helper()
 
 	a, ok := actual.(mongo.CommandError) //nolint:errorlint // do not inspect error chain
-	require.Truef(t, ok, "actual is %T, not mongo.CommandError", a)
+	require.Truef(t, ok, "actual is %T, not mongo.CommandError", actual)
 
 	e, ok := expected.(mongo.CommandError) //nolint:errorlint // do not inspect error chain
-	require.Truef(t, ok, "expected is %T, not mongo.CommandError", e)
+	require.Truef(t, ok, "expected is %T, not mongo.CommandError", expected)
 
 	a.Raw = nil
 	e.Raw = nil
@@ -222,26 +221,52 @@ func AssertMatchesCommandError(t testing.TB, expected, actual error) {
 	}
 }
 
-// AssertMatchesWriteError asserts error codes are the same.
-//
-// TODO check not only code; make is look similar to AssertMatchesCommandError above.
-// https://github.com/FerretDB/FerretDB/issues/2545
+// AssertMatchesWriteError asserts that both errors are WriteExceptions containing exactly one WriteError,
+// and those WriteErrors are equal, except messages (and ignoring the Raw part).
 func AssertMatchesWriteError(t testing.TB, expected, actual error) {
 	t.Helper()
 
-	var aErr, eErr mongo.WriteException
+	a, ok := actual.(mongo.WriteException) //nolint:errorlint // do not inspect error chain
+	require.Truef(t, ok, "actual is %T, not mongo.WriteException", actual)
+	require.Lenf(t, a.WriteErrors, 1, "actual is %v, expected one mongo.WriteError", a.WriteErrors)
 
-	if ok := errors.As(actual, &aErr); !ok || len(aErr.WriteErrors) != 1 {
-		assert.Equal(t, expected, actual)
-		return
+	e, ok := expected.(mongo.WriteException) //nolint:errorlint // do not inspect error chain
+	require.Truef(t, ok, "expected is %T, not mongo.WriteException", expected)
+	require.Lenf(t, e.WriteErrors, 1, "expected is %v, expected one mongo.WriteError", e.WriteErrors)
+
+	aErr := a.WriteErrors[0]
+	eErr := e.WriteErrors[0]
+
+	aErr.Raw = nil
+	eErr.Raw = nil
+
+	actualMessage := aErr.Message
+	aErr.Message = eErr.Message
+
+	if !AssertEqualWriteError(t, eErr, aErr) {
+		t.Logf("actual message: %s", actualMessage)
 	}
+}
 
-	if ok := errors.As(expected, &eErr); !ok || len(eErr.WriteErrors) != 1 {
-		assert.Equal(t, expected, actual)
-		return
+// AssertMatchesBulkException asserts that both errors are BulkWriteExceptions containing the same number of WriteErrors,
+// and those WriteErrors are equal, except messages (and ignoring the Raw part).
+func AssertMatchesBulkException(t testing.TB, expected, actual error) {
+	t.Helper()
+
+	a, ok := actual.(mongo.BulkWriteException) //nolint:errorlint // do not inspect error chain
+	require.Truef(t, ok, "actual is %T, not mongo.BulkWriteException", actual)
+
+	e, ok := expected.(mongo.BulkWriteException) //nolint:errorlint // do not inspect error chain
+	require.Truef(t, ok, "expected is %T, not mongo.BulkWriteException", expected)
+
+	for i, we := range a.WriteErrors {
+		expectedWe := e.WriteErrors[i]
+
+		expectedWe.Message = we.Message
+		expectedWe.Raw = we.Raw
+
+		assert.Equal(t, expectedWe, we)
 	}
-
-	assert.Equal(t, eErr.WriteErrors[0].Code, aErr.WriteErrors[0].Code)
 }
 
 // AssertEqualAltError is a deprecated alias for AssertEqualAltCommandError.
@@ -277,7 +302,10 @@ func AssertEqualAltCommandError(t testing.TB, expected mongo.CommandError, altMe
 		return true
 	}
 
-	expected.Message = altMessage
+	if altMessage != "" {
+		expected.Message = altMessage
+	}
+
 	return assert.Equal(t, expected, a)
 }
 
@@ -305,7 +333,10 @@ func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessag
 		return true
 	}
 
-	expected.Message = altMessage
+	if altMessage != "" {
+		expected.Message = altMessage
+	}
+
 	return assert.Equal(t, expected, a)
 }
 
@@ -394,4 +425,15 @@ func FindAll(t testing.TB, ctx context.Context, collection *mongo.Collection) []
 	require.NoError(t, err)
 
 	return FetchAll(t, ctx, cursor)
+}
+
+// generateDocuments generates documents with _id ranging from startID to endID.
+// It returns bson.A containing bson.D documents.
+func generateDocuments(startID, endID int32) bson.A {
+	var docs bson.A
+	for i := startID; i < endID; i++ {
+		docs = append(docs, bson.D{{"_id", i}})
+	}
+
+	return docs
 }

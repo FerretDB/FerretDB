@@ -55,7 +55,6 @@ func newIterator(ctx context.Context, rows pgx.Rows, p *iteratorParams) types.Do
 		rows:      rows,
 		token:     resource.NewToken(),
 	}
-
 	resource.Track(iter, iter.token)
 
 	return iter
@@ -69,8 +68,7 @@ func newIterator(ctx context.Context, rows pgx.Rows, p *iteratorParams) types.Do
 //   - context.DeadlineExceeded;
 //   - something else.
 //
-// Otherwise, as the first value it returns the number of the current iteration (starting from 0),
-// as the second value it returns the document.
+// Otherwise, the next document is returned.
 func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 	iter.m.Lock()
 	defer iter.m.Unlock()

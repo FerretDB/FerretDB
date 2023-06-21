@@ -1,6 +1,6 @@
 ---
 slug: open-source-is-in-danger
-title: "Open Source is in Danger as a Result Of Complacency, Plain Stupidity and Greed"
+title: Open Source is in Danger as a Result Of Complacency, Plain Stupidity and Greed
 author: Peter Farkas
 description: For those of us working in the IT industry, we should be well aware of the many benefits that open source software provides.
 image: /img/blog/Maintainer@5x-1-300x300.png
@@ -20,19 +20,19 @@ And many of today's developers started out with a simple contribution to their f
 As for myself, I can't imagine a world without Open Source software.
 
 However, as with many things we benefit from in life, over time, we tend to take them for granted.
-And open source itself is definitely not a shiny new toy—we have Linux, SQLite, PostgreSQL, and an endless amount of tools that make our lives and work easier.
+And open source itself is definitely not a shiny new toy – we have Linux, SQLite, PostgreSQL, and an endless amount of tools that make our lives and work easier.
 We also have Open Source hardware.
 
-In 2018, when we heard about[MongoDB's changeover to the non-open source Server Side Public License, or SSPL](https://www.mongodb.com/blog/post/mongodb-now-released-under-the-server-side-public-license), our first thought was "wow, how stupid of MongoDB".
+In 2018, when we heard about [MongoDB's changeover to the non-open source Server Side Public License, or SSPL](https://www.mongodb.com/blog/post/mongodb-now-released-under-the-server-side-public-license), our first thought was "wow, how stupid of MongoDB".
 They will lose contributors and users.
 As it turned out, this knee-jerk reaction is not an accurate representation of the implications of MongoDB's move on Open Source.
 For some, this move may have not resulted in significant differences.
 
 Anyone, including MongoDB, Elastic or Graylog should be allowed to release their products under whatever license they would like to use, and the community should be free to continue if they want.
-Life happens, bad or strange decisions like this happen —- we can move on.
+Life happens, bad or strange decisions like this happen – we can move on.
 
 However, in terms of what MongoDB did, the impact is just different.
-No one should decide to come up with their own terms on what to call Open Source, and  this is exactly what is happening.
+No one should decide to come up with their own terms on what to call Open Source, and this is exactly what is happening.
 The SSPL license was supposed to "save" open source companies from Amazon or GCP, so they can't make money on them without giving back to the community.
 
 Instead of "saving open source", however, what really happened, is that if you use MongoDB on a cloud provider, you will forever be at the mercy of MongoDB Inc. and the fees they will be charging you, through your infrastructure provider.
@@ -51,7 +51,7 @@ However, [MongoDB proceeded to continue calling theselves Open Source](https://w
 They still do.
 They decided that they understand better what the definition of open source is.
 
-As [OpenUK](https://openuk.uk/)'s Amanda Brock[put it](https://www.computing.co.uk/analysis/4027028/elastic-stretched-patience-open-source) when Elastic adopted SSPL: "Let's be really clear - it's a move from open to proprietary as a consequence of a failed business model decision"
+As [OpenUK](https://openuk.uk/)'s Amanda Brock [put it](https://www.computing.co.uk/analysis/4027028/elastic-stretched-patience-open-source) when Elastic adopted SSPL: "Let's be really clear - it's a move from open to proprietary as a consequence of a failed business model decision"
 
 The compounding effect of this, in the long run, is the inevitable dilution of the true meaning, the true definition of Open Source.
 New generations of users will have a very different understanding of what open source is.

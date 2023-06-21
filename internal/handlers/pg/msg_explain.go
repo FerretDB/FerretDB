@@ -88,10 +88,12 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		"host", hostname,
 		"version", version.Get().MongoDBVersion,
 		"gitVersion", version.Get().Commit,
+
+		// our extensions
 		"ferretdbVersion", version.Get().Version,
 	))
 
-	cmd := params.Command.DeepCopy()
+	cmd := params.Command
 	cmd.Set("$db", qp.DB)
 
 	var reply wire.OpMsg

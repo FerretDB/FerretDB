@@ -127,15 +127,16 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
 						t.Logf("Compat error: %v", compatErr)
+
+						// error messages are intentionally not compared
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
 					}
 					require.NoError(t, compatErr, "compat error; target returned no error")
 
-					var targetRes, compatRes []bson.D
-					require.NoError(t, targetCursor.All(ctx, &targetRes))
-					require.NoError(t, compatCursor.All(ctx, &compatRes))
+					targetRes := FetchAll(t, ctx, targetCursor)
+					compatRes := FetchAll(t, ctx, compatCursor)
 
 					AssertEqualDocumentsSlice(t, compatRes, targetRes)
 
@@ -205,6 +206,8 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 				if targetErr != nil {
 					t.Logf("Target error: %v", targetErr)
 					t.Logf("Compat error: %v", compatErr)
+
+					// error messages are intentionally not compared
 					AssertMatchesCommandError(t, compatErr, targetErr)
 
 					return
@@ -521,12 +524,6 @@ func TestAggregateCompatGroup(t *testing.T) {
 				{"_id", "$add"},
 			}}}},
 		},
-		"DotNotationID": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$v.foo"},
-			}}}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2166",
-		},
 		"EmptyPath": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$"},
@@ -607,81 +604,58 @@ func TestAggregateCompatGroup(t *testing.T) {
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2123",
 		},
+		"IDType": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", bson.D{{"$type", "_id"}}},
+			}}}},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2679",
+		},
 	}
 
 	testAggregateStagesCompat(t, testCases)
 }
 
-func TestAggregateCompatGroupDotNotation(t *testing.T) {
+func TestAggregateCompatGroupExpressionDottedFields(t *testing.T) {
 	t.Parallel()
 
-	// Providers Composites, ArrayAndDocuments and Mixed
+	// TODO Use all providers after fixing $sort problem:  https://github.com/FerretDB/FerretDB/issues/2276.
+	//
+	// Currently, providers Composites, DocumentsDeeplyNested and Mixed
 	// cannot be used due to sorting difference.
 	// FerretDB always sorts empty array is less than null.
 	// In compat, for `.sort()` an empty array is less than null.
 	// In compat, for aggregation `$sort` null is less than an empty array.
-	// https://github.com/FerretDB/FerretDB/issues/2276
-
-	providers := []shareddata.Provider{
-		shareddata.Scalars,
-
-		shareddata.Doubles,
-		shareddata.OverflowVergeDoubles,
-		shareddata.SmallDoubles,
-		shareddata.Strings,
-		shareddata.Binaries,
-		shareddata.ObjectIDs,
-		shareddata.Bools,
-		shareddata.DateTimes,
-		shareddata.Nulls,
-		shareddata.Regexes,
-		shareddata.Int32s,
-		shareddata.Timestamps,
-		shareddata.Int64s,
-		shareddata.Unsets,
-		shareddata.ObjectIDKeys,
-
-		// shareddata.Composites,
-		shareddata.PostgresEdgeCases,
-
-		shareddata.DocumentsDoubles,
-		shareddata.DocumentsStrings,
-		shareddata.DocumentsDocuments,
-
-		shareddata.ArrayStrings,
-		shareddata.ArrayDoubles,
-		shareddata.ArrayInt32s,
-		shareddata.ArrayRegexes,
-		shareddata.ArrayDocuments,
-
-		// shareddata.Mixed,
-		// shareddata.ArrayAndDocuments,
-	}
+	providers := shareddata.AllProviders().Remove("Mixed", "Composites", "DocumentsDeeplyNested")
 
 	testCases := map[string]aggregateStagesCompatTestCase{
-		"DocDotNotation": {
+		"NestedInDocument": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.foo"},
 			}}}},
 		},
-		"ArrayDotNotation": {
+		"DeeplyNested": { // Expect non-empty results for DocumentsDeeplyNested provider
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.a.b.c"},
+			}}}},
+		},
+		"ArrayIndex": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.0"},
 			}}}},
 		},
-		"ArrayDocDotNotation": {
+		"NestedInArray": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.0.foo"},
 			}}}},
 		},
-		"NestedDotNotation": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$v.0.foo.0.bar"},
-			}}}},
-		},
-		"NonExistentDotNotation": {
+		"NonExistentParent": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$non.existent"},
+			}}}},
+		},
+		"NonExistentChild": {
+			pipeline: bson.A{bson.D{{"$group", bson.D{
+				{"_id", "$v.non.existent"},
 			}}}},
 		},
 	}
@@ -689,56 +663,25 @@ func TestAggregateCompatGroupDotNotation(t *testing.T) {
 	testAggregateStagesCompatWithProviders(t, providers, testCases)
 }
 
-func TestAggregateCompatGroupDocDotNotation(t *testing.T) {
+func TestAggregateCompatGroupExpressionDottedFieldsDocs(t *testing.T) {
 	t.Parallel()
 
-	// Providers Composites and Mixed cannot be used due to sorting difference.
-	// FerretDB always sorts empty array is less than null.
-	// In compat, for `.sort()` an empty array is less than null.
-	// In compat, for aggregation `$sort` null is less than an empty array.
+	// TODO Merge the current function with TestAggregateCompatGroupExpressionDottedFields
+	// and use all providers when $sort problem is fixed:
 	// https://github.com/FerretDB/FerretDB/issues/2276
 
 	providers := []shareddata.Provider{
-		shareddata.Scalars,
-
-		shareddata.Doubles,
-		shareddata.OverflowVergeDoubles,
-		shareddata.SmallDoubles,
-		shareddata.Strings,
-		shareddata.Binaries,
-		shareddata.ObjectIDs,
-		shareddata.Bools,
-		shareddata.DateTimes,
-		shareddata.Nulls,
-		shareddata.Regexes,
-		shareddata.Int32s,
-		shareddata.Timestamps,
-		shareddata.Int64s,
-		shareddata.Unsets,
-		shareddata.ObjectIDKeys,
-
-		// shareddata.Composites,
-		shareddata.PostgresEdgeCases,
-
-		shareddata.DocumentsDoubles,
-		shareddata.DocumentsStrings,
-		shareddata.DocumentsDocuments,
-
-		shareddata.ArrayStrings,
-		shareddata.ArrayDoubles,
-		shareddata.ArrayInt32s,
-		shareddata.ArrayRegexes,
-		shareddata.ArrayDocuments,
-
-		// shareddata.Mixed,
-		shareddata.ArrayAndDocuments,
+		shareddata.DocumentsDeeplyNested,
 	}
 
 	testCases := map[string]aggregateStagesCompatTestCase{
-		"DocDotNotation": {
+		"DeeplyNested": { // Expect non-empty results for DocumentsDeeplyNested provider
 			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$v.foo"},
+				{"_id", "$v.a.b.c"},
 			}}}},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2276",
+			// compat results [ { _id: null }, { _id: 12 }, { _id: { d: 123 } }, { _id: [ 1, 2 ] } ]
+			// target results [ { _id: null }, { _id: [ 1, 2 ] }, { _id: 12 }, { _id: { d: 123 } } ]
 		},
 	}
 
@@ -925,7 +868,9 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 		Remove("ArrayAndDocuments").
 		// TODO: handle $sum of doubles near max precision.
 		// https://github.com/FerretDB/FerretDB/issues/2300
-		Remove("Doubles")
+		Remove("Doubles").
+		// TODO: https://github.com/FerretDB/FerretDB/issues/2616
+		Remove("ArrayDocuments")
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"GroupNullID": {
@@ -1106,6 +1051,18 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"RecursiveOperator": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$_id"},
+					// first $sum is accumulator operator, second $sum is operator
+					{"sum", bson.D{{"$sum", bson.D{{"$sum", "$v"}}}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2694",
+		},
 	}
 
 	testAggregateStagesCompatWithProviders(t, providers, testCases)
@@ -1188,13 +1145,19 @@ func TestAggregateCompatSort(t *testing.T) {
 				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
 		},
-
-		"DotNotation": {
+		"AscendingValueDescendingID": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
-				{"v.foo", 1},
-				{"_id", 1}, // sort by _id when v is the same.
+				{"v", 1},
+				{"_id", -1},
 			}}}},
 		},
+		"DescendingValueDescendingID": {
+			pipeline: bson.A{bson.D{{"$sort", bson.D{
+				{"v", -1},
+				{"_id", -1},
+			}}}},
+		},
+
 		"DotNotationIndex": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"v.0", 1},
@@ -1233,6 +1196,25 @@ func TestAggregateCompatSort(t *testing.T) {
 	}
 
 	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatSortDotNotation(t *testing.T) {
+	t.Parallel()
+
+	providers := shareddata.AllProviders().
+		// TODO: https://github.com/FerretDB/FerretDB/issues/2617
+		Remove("ArrayDocuments")
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"DotNotation": {
+			pipeline: bson.A{bson.D{{"$sort", bson.D{
+				{"v.foo", 1},
+				{"_id", 1}, // sort by _id when v is the same.
+			}}}},
+		},
+	}
+
+	testAggregateStagesCompatWithProviders(t, providers, testCases)
 }
 
 func TestAggregateCompatUnwind(t *testing.T) {
@@ -1435,6 +1417,27 @@ func TestAggregateCompatProject(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"ZeroOperators": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"v", bson.D{}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"TwoOperators": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"v", bson.D{{"$type", "foo"}, {"$sum", 1}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"DollarSignField": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"$v", 1}}}},
+			},
+			resultType: emptyResult,
+		},
 		"Include1Field": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
@@ -1542,7 +1545,444 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$project", bson.D{{"_id", false}, {"foo", primitive.Regex{Pattern: "^fo"}}}}},
 			},
 		},
+		"DotNotationInclude": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", true},
+				}}},
+			},
+		},
+		"DotNotationIncludeTwo": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", true},
+					{"v.array", true},
+				}}},
+			},
+		},
+		"DotNotationExclude": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", false},
+				}}},
+			},
+		},
+		"DotNotationExcludeTwo": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", false},
+					{"v.array", false},
+				}}},
+			},
+		},
+		"DotNotationExcludeSecondLevel": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.array.42", false},
+				}}},
+			},
+		},
+		"DotNotationIncludeExclude": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"_id", true},
+					{"v.foo", true},
+					{"v.array.42", false},
+				}}},
+			},
+			resultType: emptyResult,
+		},
+		"Type": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", "$v"}}}}}},
+			},
+		},
+		"TypeNonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", "$foo"}}}}}},
+			},
+		},
+		"TypeDotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", "$v.foo"}}}}}},
+			},
+		},
+		"TypeRecursive": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", bson.D{{"$type", "$v"}}}}}}}}}},
+			},
+		},
+		"TypeRecursiveNonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", bson.D{{"$non-existent", "$v"}}}}}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"TypeRecursiveInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", bson.D{{"v", "$v"}}}}}}}}}},
+			},
+		},
+		"TypeRecursiveArrayInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", bson.A{"1", "2"}}}}}}}}},
+			},
+			resultType: emptyResult,
+		},
+
+		"TypeInt": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", int32(42)}}}}}},
+			},
+		},
+		"TypeLong": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", int64(42)}}}}}},
+			},
+		},
+		"TypeString": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", "42"}}}}}},
+			},
+		},
+		"TypeDocument": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"foo", "bar"}}}}}}}},
+			},
+		},
+		"TypeArraySingleItem": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{int32(42)}}}}}}},
+			},
+		},
+		"TypeArray": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"TypeNestedArray": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{bson.A{"foo", "bar"}}}}}}}},
+			},
+		},
+		"TypeObjectID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", primitive.NewObjectID()}}}}}},
+			},
+		},
+		"TypeBool": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", true}}}}}},
+			},
+		},
+		"ProjectManyOperators": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"$type", "foo"}, {"$op", "foo"}}}},
+			},
+			resultType: emptyResult,
+		},
 	}
 
+	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatAddFields(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"InvalidTypeString": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", "invalid"}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeBool": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", false}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeArray": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.A{}}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeInt32": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", int32(1)}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeInt64": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", int64(1)}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeFloat32": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", float32(1)}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeFloat64": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", float64(1)}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeNull": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", nil}},
+			},
+			resultType: emptyResult,
+		},
+		"Include1Field": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField", int32(1)}}}},
+			},
+		},
+		"Include2Fields": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField1", int32(1)}, {"newField2", int32(2)}}}},
+			},
+		},
+		"Include2Stages": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField1", int32(1)}}}},
+				bson.D{{"$addFields", bson.D{{"newField2", int32(2)}}}},
+			},
+		},
+		"IncludeDocument": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField", bson.D{{"doc", int32(1)}}}}}},
+			},
+		},
+		"IncludeNestedDocument": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField", bson.D{{"doc", bson.D{{"nested", int32(1)}}}}}}}},
+			},
+		},
+		"IncludeArray": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField", bson.A{bson.D{{"elem", int32(1)}}}}}}},
+			},
+		},
+		"UnsupportedExpressionObject": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField1", bson.D{{"$sum", 1}}}}}},
+			},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
+		},
+		"UnsupportedExpressionArray": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField1", bson.A{bson.D{{"$sum", 1}}}}}}},
+			},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatSet(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"InvalidTypeString": {
+			pipeline: bson.A{
+				bson.D{{"$set", "invalid"}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeBool": {
+			pipeline: bson.A{
+				bson.D{{"$set", false}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeArray": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.A{}}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeInt32": {
+			pipeline: bson.A{
+				bson.D{{"$set", int32(1)}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeInt64": {
+			pipeline: bson.A{
+				bson.D{{"$set", int64(1)}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeFloat32": {
+			pipeline: bson.A{
+				bson.D{{"$set", float32(1)}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeFloat64": {
+			pipeline: bson.A{
+				bson.D{{"$set", float64(1)}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeNull": {
+			pipeline: bson.A{
+				bson.D{{"$set", nil}},
+			},
+			resultType: emptyResult,
+		},
+		"Include1Field": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField", int32(1)}}}},
+			},
+		},
+		"Include2Fields": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField1", int32(1)}, {"newField2", int32(2)}}}},
+			},
+		},
+		"Include2Stages": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField1", int32(1)}}}},
+				bson.D{{"$set", bson.D{{"newField2", int32(2)}}}},
+			},
+		},
+		"IncludeDocument": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField", bson.D{{"doc", int32(1)}}}}}},
+			},
+		},
+		"IncludeNestedDocument": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField", bson.D{{"doc", bson.D{{"nested", int32(1)}}}}}}}},
+			},
+		},
+		"IncludeArray": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField", bson.A{bson.D{{"elem", int32(1)}}}}}}},
+			},
+		},
+		"UnsupportedExpressionObject": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField1", bson.D{{"$sum", 1}}}}}},
+			},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
+		},
+		"UnsupportedExpressionArray": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField1", bson.A{bson.D{{"$sum", 1}}}}}}},
+			},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
+		},
+	}
+	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatUnset(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"InvalidTypeArray": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{1, 2, 3}}},
+			},
+			resultType: emptyResult,
+		},
+		"EmptyArray": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{}}},
+			},
+			resultType: emptyResult,
+		},
+		"EmptyString": {
+			pipeline: bson.A{
+				bson.D{{"$unset", ""}},
+			},
+			resultType: emptyResult,
+		},
+		"ArrayWithEmptyString": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{""}}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeArrayWithDifferentTypes": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"v", 42, false}}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidType": {
+			pipeline: bson.A{
+				bson.D{{"$unset", false}},
+			},
+			resultType: emptyResult,
+		},
+		"Unset1Field": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "v"}},
+			},
+		},
+		"UnsetID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unset", "_id"}},
+			},
+		},
+		"Unset2Fields": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"_id", "v"}}},
+			},
+		},
+		"DotNotationUnset": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "v.foo"}},
+			},
+		},
+		"DotNotationUnsetTwo": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"v.foo", "v.array"}}},
+			},
+		},
+		"DotNotationUnsetSecondLevel": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "v.array.42"}},
+			},
+		},
+	}
 	testAggregateStagesCompat(t, testCases)
 }

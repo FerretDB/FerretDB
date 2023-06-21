@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-// distinctCompatTestCase describes count compatibility test case.
+// distinctCompatTestCase describes distinct compatibility test case.
 type distinctCompatTestCase struct {
 	field      string                   // required
 	filter     bson.D                   // required
@@ -38,7 +38,7 @@ func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCas
 	// Use shared setup because distinct queries can't modify data.
 	// TODO Use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		Providers:                shareddata.AllProviders(),
+		Providers:                shareddata.AllProviders().Remove("Scalars"), // Remove provider with the same values with different types
 		AddNonExistentCollection: true,
 	})
 	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
@@ -83,14 +83,7 @@ func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCas
 						assert.Equal(t, compatRes, targetRes)
 					}
 
-					// We can't check the exact data types because they might be different.
-					// For example, if targetRes is [float64(0), int32(1)] and compatRes is [int64(0), int64(1)],
-					// we consider them equal. If different documents use different types to store the same value
-					// in the same field, it's hard to predict what type will be returned by distinct.
-					// This is why we iterate through results and use assert.EqualValues instead of assert.Equal.
-					for i := range compatRes {
-						assert.EqualValues(t, compatRes[i], targetRes[i])
-					}
+					assert.Equal(t, targetRes, compatRes)
 
 					if targetRes != nil || compatRes != nil {
 						nonEmptyResults = true

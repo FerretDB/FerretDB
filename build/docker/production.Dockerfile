@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.20.3-2 AS production-build
+FROM ghcr.io/ferretdb/golang:1.20.5-1 AS production-build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -38,7 +38,8 @@ ENV GOPROXY https://proxy.golang.org
 ENV CGO_ENABLED=0
 ENV GOARM=7
 
-# do not raise it without providing a v1 build because v2+ is problematic for some virtualization platforms
+# do not raise it without providing a v1 build because v2+ is problematic
+# for some virtualization platforms and older hardware
 ENV GOAMD64=v1
 
 # TODO https://github.com/FerretDB/FerretDB/issues/2170
@@ -49,6 +50,8 @@ RUN --mount=type=cache,target=/cache \
 
 RUN --mount=type=cache,target=/cache <<EOF
 set -ex
+
+git status
 
 # check that stdlib was cached
 go install -v -race=false std

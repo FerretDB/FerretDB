@@ -50,7 +50,6 @@ func newQueryIterator(ctx context.Context, titer driver.Iterator, schema *tjson.
 		iter:   titer,
 		token:  resource.NewToken(),
 	}
-
 	resource.Track(iter, iter.token)
 
 	return iter
@@ -64,8 +63,7 @@ func newQueryIterator(ctx context.Context, titer driver.Iterator, schema *tjson.
 //   - context.DeadlineExceeded;
 //   - something else.
 //
-// Otherwise, as the first value it returns the number of the current iteration (starting from 0),
-// as the second value it returns the document.
+// Otherwise, the next document is returned.
 func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 	iter.m.Lock()
 	defer iter.m.Unlock()

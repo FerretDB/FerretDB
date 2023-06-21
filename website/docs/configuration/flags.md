@@ -16,6 +16,7 @@ Some default values are overridden in [our Docker image](quickstart-guide/docker
 <!-- Keep order in sync with the `--help` output -->
 
 <!-- For <br /> -->
+<!-- markdownlint-capture -->
 <!-- markdownlint-disable MD033 -->
 
 ## General
@@ -30,30 +31,36 @@ Some default values are overridden in [our Docker image](quickstart-guide/docker
 
 ## Interfaces
 
-| Flag                     | Description                                              | Environment Variable            | Default Value                                |
-| ------------------------ | -------------------------------------------------------- | ------------------------------- | -------------------------------------------- |
-| `--listen-addr`          | Listen TCP address                                       | `FERRETDB_LISTEN_ADDR`          | `127.0.0.1:27017`<br />(`:27017` for Docker) |
-| `--listen-unix`          | Listen Unix domain socket path                           | `FERRETDB_LISTEN_UNIX`          |                                              |
-| `--listen-tls`           | Listen TLS address (see [here](../security.md))          | `FERRETDB_LISTEN_TLS`           |                                              |
-| `--listen-tls-cert-file` | TLS cert file path                                       | `FERRETDB_LISTEN_TLS_CERT_FILE` |                                              |
-| `--listen-tls-key-file`  | TLS key file path                                        | `FERRETDB_LISTEN_TLS_KEY_FILE`  |                                              |
-| `--listen-tls-ca-file`   | TLS CA file path                                         | `FERRETDB_LISTEN_TLS_CA_FILE`   |                                              |
-| `--proxy-addr`           | Proxy address                                            | `FERRETDB_PROXY_ADDR`           |                                              |
-| `--debug-addr`           | Listen address for HTTP handlers for metrics, pprof, etc | `FERRETDB_DEBUG_ADDR`           | `127.0.0.1:8088`<br />(`:8088` for Docker)   |
+| Flag                     | Description                                                     | Environment Variable            | Default Value                                |
+| ------------------------ | --------------------------------------------------------------- | ------------------------------- | -------------------------------------------- |
+| `--listen-addr`          | Listen TCP address                                              | `FERRETDB_LISTEN_ADDR`          | `127.0.0.1:27017`<br />(`:27017` for Docker) |
+| `--listen-unix`          | Listen Unix domain socket path                                  | `FERRETDB_LISTEN_UNIX`          |                                              |
+| `--listen-tls`           | Listen TLS address (see [here](../security/tls-connections.md)) | `FERRETDB_LISTEN_TLS`           |                                              |
+| `--listen-tls-cert-file` | TLS cert file path                                              | `FERRETDB_LISTEN_TLS_CERT_FILE` |                                              |
+| `--listen-tls-key-file`  | TLS key file path                                               | `FERRETDB_LISTEN_TLS_KEY_FILE`  |                                              |
+| `--listen-tls-ca-file`   | TLS CA file path                                                | `FERRETDB_LISTEN_TLS_CA_FILE`   |                                              |
+| `--proxy-addr`           | Proxy address                                                   | `FERRETDB_PROXY_ADDR`           |                                              |
+| `--debug-addr`           | Listen address for HTTP handlers for metrics, pprof, etc        | `FERRETDB_DEBUG_ADDR`           | `127.0.0.1:8088`<br />(`:8088` for Docker)   |
 
 ## Backend handlers
 
+<!-- Do not document alpha backends -->
+
 ### PostgreSQL
 
-PostgreSQL backend can be enabled by `--handler=pg` flag or `FERRETDB_HANDLER=pg` environment variable.
+[PostgreSQL backend](../understanding-ferretdb.md#postgresql) can be enabled by
+`--handler=pg` flag or `FERRETDB_HANDLER=pg` environment variable.
 
 | Flag               | Description                     | Environment Variable      | Default Value                        |
 | ------------------ | ------------------------------- | ------------------------- | ------------------------------------ |
 | `--postgresql-url` | PostgreSQL URL for 'pg' handler | `FERRETDB_POSTGRESQL_URL` | `postgres://127.0.0.1:5432/ferretdb` |
 
+<!-- SQLite backend flags should be there once it is out of alpha -->
+
 ### Tigris (beta)
 
-Tigris backend can be enabled by `--handler=tigris` flag or `FERRETDB_HANDLER=tigris` environment variable.
+[Tigris backend](../understanding-ferretdb.md#tigris-beta) can be enabled by
+`--handler=tigris` flag or `FERRETDB_HANDLER=tigris` environment variable.
 
 | Flag                     | Description                     | Environment Variable            | Default Value    |
 | ------------------------ | ------------------------------- | ------------------------------- | ---------------- |
@@ -72,4 +79,4 @@ Tigris backend can be enabled by `--handler=tigris` flag or `FERRETDB_HANDLER=ti
 
 <!-- Do not document `--test-XXX` flags here -->
 
-<!-- markdownlint-enable MD033 -->
+<!-- markdownlint-restore -->

@@ -37,28 +37,28 @@
 //
 // Composite types
 //
-//	Alias      types package    sjson package        sjson schema                                            JSON representation
+//	Alias      types package    sjson package        sjson schema                                             JSON representation
 //
 //	object     *types.Document  *sjson.documentType  {"t":"object", "$s": {"$k":[<keys>], "p":{<properties>}} JSON object
-//	array      *types.Array     *sjson.arrayType     {"t":"array", "i": [<item 1>, <item 2>]}                JSON array
+//	array      *types.Array     *sjson.arrayType     {"t":"array", "i": [<item 1>, <item 2>]}                 JSON array
 //
 // Scalar types
 //
-//	Alias      types package   sjson package         sjson schema                         JSON representation
+//	Alias      types package    sjson package         sjson schema                           JSON representation
 //
-//	double     float64         *sjson.doubleType    {"t":"double"}                        JSON number
-//	string     string          *sjson.stringType    {"t":"string"}                        JSON string
-//	binData    types.Binary    *sjson.binaryType    {"t":"binData",
-//	                                                 "s":<subtype number>}                "<base 64 string>"
-//	objectId   types.ObjectID  *sjson.objectIDType  {"t":"objectId"}                      "<ObjectID as 24 character hex string>"
-//	bool       bool            *sjson.boolType      {"t":"bool"}                          JSON true / false values
-//	date       time.Time       *sjson.dateTimeType  {"t":"date"}                          milliseconds since epoch as JSON number
-//	null       types.NullType  *sjson.nullType      {"t":"null"}                          JSON null
-//	regex      types.Regex     *sjson.regexType     {"t":"regex",
-//	                                                 "o": "<string w/o terminating 0x0>"} "<string w/o terminating 0x0>"
-//	int        int32           *sjson.int32Type     {"t":"int"}                           JSON number
-//	timestamp  types.Timestamp *sjson.timestampType {"t":"timestamp"}                     JSON number
-//	long       int64           *sjson.int64Type     {"t":"long"}                          JSON number
+//	double     float64          *sjson.doubleType     {"t":"double"}                         JSON number
+//	string     string           *sjson.stringType     {"t":"string"}                         JSON string
+//	binData    types.Binary     *sjson.binaryType     {"t":"binData",
+//	                                                   "s":<subtype number>}                 "<base 64 string>"
+//	objectId   types.ObjectID   *sjson.objectIDType   {"t":"objectId"}                       "<ObjectID as 24 character hex string>"
+//	bool       bool             *sjson.boolType       {"t":"bool"}                           JSON true / false values
+//	date       time.Time        *sjson.dateTimeType   {"t":"date"}                           milliseconds since epoch as JSON number
+//	null       types.NullType   *sjson.nullType       {"t":"null"}                           JSON null
+//	regex      types.Regex      *sjson.regexType      {"t":"regex",
+//	                                                   "o": "<string w/o terminating 0x0>"}  "<string w/o terminating 0x0>"
+//	int        int32            *sjson.int32Type      {"t":"int"}                            JSON number
+//	timestamp  types.Timestamp  *sjson.timestampType  {"t":"timestamp"}                      JSON number
+//	long       int64            *sjson.int64Type      {"t":"long"}                           JSON number
 //
 //nolint:lll // for readability
 //nolint:dupword // false positive

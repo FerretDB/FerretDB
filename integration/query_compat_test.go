@@ -147,15 +147,17 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
+						t.Logf("Compat error: %v", compatErr)
+
+						// error messages are intentionally not compared
 						AssertMatchesCommandError(t, compatErr, targetErr)
 
 						return
 					}
 					require.NoError(t, compatErr, "compat error; target returned no error")
 
-					var targetRes, compatRes []bson.D
-					require.NoError(t, targetCursor.All(ctx, &targetRes))
-					require.NoError(t, compatCursor.All(ctx, &compatRes))
+					targetRes := FetchAll(t, ctx, targetCursor)
+					compatRes := FetchAll(t, ctx, compatCursor)
 
 					if !tc.skipIDCheck {
 						t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
@@ -229,6 +231,22 @@ func TestQueryCompatSort(t *testing.T) {
 			filter: bson.D{},
 			sort:   bson.D{{"v", -1}, {"_id", 1}},
 		},
+		"AscDesc": {
+			filter: bson.D{},
+			sort:   bson.D{{"v", 1}, {"_id", -1}},
+		},
+		"DescDesc": {
+			filter: bson.D{},
+			sort:   bson.D{{"v", -1}, {"_id", -1}},
+		},
+		"AscSingle": {
+			filter: bson.D{},
+			sort:   bson.D{{"_id", 1}},
+		},
+		"DescSingle": {
+			filter: bson.D{},
+			sort:   bson.D{{"_id", -1}},
+		},
 
 		"Bad": {
 			filter:     bson.D{},
@@ -246,10 +264,6 @@ func TestQueryCompatSort(t *testing.T) {
 			resultType: emptyResult,
 		},
 
-		"DotNotation": {
-			filter: bson.D{},
-			sort:   bson.D{{"v.foo", 1}, {"_id", 1}},
-		},
 		"DotNotationIndex": {
 			filter: bson.D{},
 			sort:   bson.D{{"v.0", 1}, {"_id", 1}},
@@ -286,6 +300,22 @@ func TestQueryCompatSort(t *testing.T) {
 	}
 
 	testQueryCompat(t, testCases)
+}
+
+func TestQueryCompatSortDotNotation(t *testing.T) {
+	t.Parallel()
+
+	providers := shareddata.AllProviders().
+		// TODO: https://github.com/FerretDB/FerretDB/issues/2618
+		Remove("ArrayDocuments")
+
+	testCases := map[string]queryCompatTestCase{
+		"DotNotation": {
+			filter: bson.D{},
+			sort:   bson.D{{"v.foo", 1}, {"_id", 1}},
+		},
+	}
+	testQueryCompatWithProviders(t, providers, testCases)
 }
 
 func TestQueryCompatSkip(t *testing.T) {

@@ -15,13 +15,16 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -29,51 +32,42 @@ import (
 //
 //nolint:vet // for readability
 type DistinctParams struct {
-	DB         string
-	Collection string
-	Key        string
-	Filter     *types.Document
-	Comment    string
+	DB         string          `ferretdb:"$db"`
+	Collection string          `ferretdb:"collection"`
+	Key        string          `ferretdb:"key"`
+	Filter     *types.Document `ferretdb:"-"`
+	Comment    string          `ferretdb:"comment,opt"`
+
+	Query any `ferretdb:"query,opt"`
+
+	Collation *types.Document `ferretdb:"collation,unimplemented"`
+
+	ReadConcern *types.Document `ferretdb:"readConcern,ignored"`
 }
 
 // GetDistinctParams returns `distinct` command parameters.
 func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams, error) {
-	var err error
-
-	unimplementedFields := []string{
-		"collation",
-	}
-	if err = Unimplemented(document, unimplementedFields...); err != nil {
-		return nil, err
-	}
-
-	ignoredFields := []string{
-		"readConcern",
-	}
-	Ignored(document, l, ignoredFields...)
-
 	var dp DistinctParams
 
-	if dp.DB, err = GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	collectionParam, err := document.Get(document.Command())
+	err := commonparams.ExtractParams(document, "distinct", &dp, l)
 	if err != nil {
 		return nil, err
 	}
 
-	var ok bool
-	if dp.Collection, ok = collectionParam.(string); !ok {
+	switch filter := dp.Query.(type) {
+	case *types.Document:
+		dp.Filter = filter
+	case types.NullType, nil:
+		dp.Filter = types.MakeDocument(0)
+	default:
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrInvalidNamespace,
-			fmt.Sprintf("collection name has invalid type %s", AliasFromType(collectionParam)),
-			document.Command(),
+			commonerrors.ErrTypeMismatch,
+			fmt.Sprintf(
+				"BSON field 'distinct.query' is the wrong type '%s', expected type 'object'",
+				commonparams.AliasFromType(dp.Query),
+			),
+			"distinct",
 		)
-	}
-
-	if dp.Key, err = GetRequiredParam[string](document, "key"); err != nil {
-		return nil, err
 	}
 
 	if dp.Key == "" {
@@ -81,14 +75,6 @@ func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams
 			commonerrors.ErrEmptyFieldPath,
 			"FieldPath cannot be constructed with empty string",
 		)
-	}
-
-	if dp.Filter, err = GetOptionalParam(document, "query", dp.Filter); err != nil {
-		return nil, err
-	}
-
-	if dp.Comment, err = GetOptionalParam(document, "comment", dp.Comment); err != nil {
-		return nil, err
 	}
 
 	return &dp, nil
@@ -100,10 +86,21 @@ func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams
 //
 // If the key is found in the document, and the value is an array, each element of the array is added to the result.
 // Otherwise, the value itself is added to the result.
-func FilterDistinctValues(docs []*types.Document, key string) (*types.Array, error) {
-	distinct := types.MakeArray(len(docs))
+func FilterDistinctValues(iter types.DocumentsIterator, key string) (*types.Array, error) {
+	distinct := types.MakeArray(0)
 
-	for _, doc := range docs {
+	defer iter.Close()
+
+	for {
+		_, doc, err := iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
 		// docsAtSuffix contains all documents exist at the suffix key.
 		docsAtSuffix := []*types.Document{doc}
 		suffix := key

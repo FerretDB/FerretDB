@@ -48,20 +48,24 @@ var (
 
 	postgreSQLURLF = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'pg' handler.")
 	tigrisURLSF    = flag.String("tigris-urls", "", "in-process FerretDB: Tigris URLs for 'tigris' handler (comma separated)")
+	hanaURLF       = flag.String("hana-url", "", "in-process FerretDB: Hana URL for 'hana' handler.")
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
+
+	benchDocsF = flag.Int("bench-docs", 0, "benchmarks: number of documents to generate per iteration")
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
 	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
+	enableSortPushdownF    = flag.Bool("enable-sort-pushdown", false, "enable sort pushdown")
 	enableCursorsF         = flag.Bool("enable-cursors", false, "enable cursors")
 )
 
 // Other globals.
 var (
-	allBackends = []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"}
+	allBackends = []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-tigris", "ferretdb-hana", "mongodb"}
 
 	CertsRoot = filepath.Join("..", "build", "certs") // relative to `integration` directory
 )
@@ -126,7 +130,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	if *debugSetupF {
 		level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	}
-	logger := testutil.Logger(tb, level)
+	logger := testutil.LevelLogger(tb, level)
 
 	var client *mongo.Client
 	var uri string

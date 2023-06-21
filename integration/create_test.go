@@ -286,27 +286,31 @@ func TestCreateTigris(t *testing.T) {
 	dbName := db.Name()
 
 	for name, tc := range map[string]struct {
-		validator   string
-		schema      string
-		collection  string
-		expectedErr *mongo.CommandError
-		doc         bson.D
+		validator  string
+		schema     string
+		collection string
+		doc        bson.D
+
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"BadValidator": {
 			validator:  "$bad",
 			schema:     "{}",
 			collection: collection.Name() + "wrong",
-			expectedErr: &mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: `required parameter "$tigrisSchemaString" is missing`,
 			},
+			altMessage: `required parameter "$tigrisSchemaString" is missing`,
 		},
 		"EmptySchema": {
 			validator:  "$tigrisSchemaString",
 			schema:     "",
 			collection: collection.Name() + "_empty",
-			expectedErr: &mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "empty schema is not allowed",
@@ -316,7 +320,7 @@ func TestCreateTigris(t *testing.T) {
 			validator:  "$tigrisSchemaString",
 			schema:     "bad",
 			collection: collection.Name() + "_bad",
-			expectedErr: &mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "invalid character 'b' looking for beginning of value",
@@ -359,7 +363,7 @@ func TestCreateTigris(t *testing.T) {
 			}`, collection.Name(),
 			),
 			collection: collection.Name() + "_pkey",
-			expectedErr: &mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "json: cannot unmarshal number into Go struct field Schema.primary_key of type string",
@@ -375,7 +379,7 @@ func TestCreateTigris(t *testing.T) {
 			}`, collection.Name(),
 			),
 			collection: collection.Name() + "_wp",
-			expectedErr: &mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "json: cannot unmarshal string into Go struct field Schema.properties of type map[string]*tjson.Schema",
@@ -389,11 +393,12 @@ func TestCreateTigris(t *testing.T) {
 
 			opts := options.CreateCollection().SetValidator(bson.D{{tc.validator, tc.schema}})
 			err := db.Client().Database(dbName).CreateCollection(ctx, tc.collection, opts)
-			if tc.expectedErr != nil {
-				AssertEqualError(t, *tc.expectedErr, err)
-			} else {
-				require.NoError(t, err)
+			if tc.err != nil {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				return
 			}
+
+			require.NoError(t, err)
 
 			// to make sure that schema is correct, we try to insert a document
 			if tc.doc != nil {

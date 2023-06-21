@@ -38,7 +38,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commoncommands"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -291,14 +291,9 @@ func (c *conn) run(ctx context.Context) (err error) {
 		// It is set to the highest level of logging used to log response.
 		var diffLogLevel zapcore.Level
 
-		// handle request unless we are in proxy mode
-		var resCloseConn bool
-		if c.mode != ProxyMode {
-			resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
-			diffLogLevel = c.logResponse("Response", resHeader, resBody, resCloseConn)
-		}
-
-		// send request to proxy unless we are in normal mode
+		// send request to proxy first (unless we are in normal mode)
+		// because FerretDB's handling could modify reqBody's documents,
+		// creating a data race
 		var proxyHeader *wire.MsgHeader
 		var proxyBody wire.MsgBody
 		if c.mode != NormalMode {
@@ -307,11 +302,21 @@ func (c *conn) run(ctx context.Context) (err error) {
 			}
 
 			proxyHeader, proxyBody = c.proxy.Route(ctx, reqHeader, reqBody)
-			if level := c.logResponse("Proxy response", proxyHeader, proxyBody, resCloseConn); level != diffLogLevel {
-				// In principle, normal and proxy responses should be logged with the same level
-				// as they behave the same way. If it's not true, there is a bug somewhere, so
-				// we should log the diff as an error.
-				diffLogLevel = zap.ErrorLevel
+		}
+
+		// handle request unless we are in proxy mode
+		var resCloseConn bool
+		if c.mode != ProxyMode {
+			resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
+			if level := c.logResponse("Response", resHeader, resBody, resCloseConn); level > diffLogLevel {
+				diffLogLevel = level
+			}
+		}
+
+		// log proxy response after the normal response to make it less confusing
+		if c.mode != NormalMode {
+			if level := c.logResponse("Proxy response", proxyHeader, proxyBody, false); level > diffLogLevel {
+				diffLogLevel = level
 			}
 		}
 
@@ -329,11 +334,22 @@ func (c *conn) run(ctx context.Context) (err error) {
 				return
 			}
 
+			// resBody can be nil if we got a message we could not handle at all, like unsupported OpQuery.
+			var resBodyString, proxyBodyString string
+
+			if resBody != nil {
+				resBodyString = resBody.String()
+			}
+
+			if proxyBody != nil {
+				proxyBodyString = proxyBody.String()
+			}
+
 			var diffBody string
 			diffBody, err = difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
-				A:        difflib.SplitLines(resBody.String()),
+				A:        difflib.SplitLines(resBodyString),
 				FromFile: "res body",
-				B:        difflib.SplitLines(proxyBody.String()),
+				B:        difflib.SplitLines(proxyBodyString),
 				ToFile:   "proxy body",
 				Context:  1,
 			})
@@ -373,6 +389,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 //
 // Handlers to which it routes, should not panic on bad input, but may do so in "impossible" cases.
 // They also should not use recover(). That allows us to use fuzzing.
+//
+// Returned resBody can be nil.
 func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wire.MsgBody) (resHeader *wire.MsgHeader, resBody wire.MsgBody, closeConn bool) { //nolint:lll // argument list is too long
 	var command, result, argument string
 	defer func() {
@@ -400,7 +418,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		resHeader.OpCode = wire.OpCodeMsg
 
 		if err == nil {
-			// do not store typed nil in interface, it make it non-nil
+			// do not store typed nil in interface, it makes it non-nil
 
 			var resMsg *wire.OpMsg
 			resMsg, err = c.handleOpMsg(ctx, msg, command)
@@ -414,7 +432,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		query := reqBody.(*wire.OpQuery)
 		resHeader.OpCode = wire.OpCodeReply
 
-		// do not store typed nil in interface, it make it non-nil
+		// do not store typed nil in interface, it makes it non-nil
 
 		var resReply *wire.OpReply
 		resReply, err = c.h.CmdQuery(ctx, query)
@@ -488,7 +506,8 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			// do not panic to make fuzzing easier
 			closeConn = true
 			result = "unhandled"
-			c.l.Error(
+
+			c.l.Desugar().Error(
 				"Handler error for unhandled response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
 			)
@@ -498,7 +517,8 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			// do not panic to make fuzzing easier
 			closeConn = true
 			result = "unexpected"
-			c.l.Error(
+
+			c.l.Desugar().Error(
 				"Handler error for unexpected response opcode",
 				zap.Error(err), zap.Stringer("opcode", resHeader.OpCode),
 			)
@@ -526,7 +546,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 }
 
 func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
-	if cmd, ok := common.Commands[command]; ok {
+	if cmd, ok := commoncommands.Commands[command]; ok {
 		if cmd.Handler != nil {
 			// TODO move it to route, closer to Prometheus metrics
 			defer trace.StartRegion(ctx, command).End()

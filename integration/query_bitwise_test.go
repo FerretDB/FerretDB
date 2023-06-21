@@ -47,10 +47,12 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		value       any
-		expectedIDs []any
-		err         *mongo.CommandError
-		altMessage  string
+		value       any   // required, used for $bitsAllClear filter value
+		expectedIDs []any // optional
+
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Array": {
 			value: primitive.A{1, 5},
@@ -63,14 +65,32 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			},
 		},
 		"ArrayNegativeBitPositionValue": {
-			value: primitive.A{-1},
+			value: primitive.A{int32(-1)},
 			err: &mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "Failed to parse bit position. Expected a non-negative number in: 0: -1",
 			},
 		},
-		"ArrayBadValue": {
+		"ArrayFloatWholeBitPositionValue": {
+			value: primitive.A{1.0},
+			expectedIDs: []any{
+				"double-1", "double-2", "double-4", "double-big",
+				"double-min-overflow-verge", "double-zero",
+				"int32-1", "int32-2", "int32-3", "int32-min", "int32-zero",
+				"int64-1", "int64-2", "int64-3", "int64-big",
+				"int64-double-big", "int64-min", "int64-zero",
+			},
+		},
+		"ArrayFloatNotWholeBitPositionValue": {
+			value: primitive.A{1.2},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "Failed to parse bit position. Expected an integer: 0: 1.2",
+			},
+		},
+		"ArrayStringBitPositionValue": {
 			value: primitive.A{"123"},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -186,15 +206,23 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.value, "value must not be nil")
 
 			filter := bson.D{{"v", bson.D{{"$bitsAllClear", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+				assert.Nil(t, cursor)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
 				return
 			}
+
 			require.NoError(t, err)
 
 			var actual []bson.D
@@ -222,10 +250,12 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		value       any
-		expectedIDs []any
-		err         *mongo.CommandError
-		altMessage  string
+		value       any   // required, used for $bitsAllSet filter value
+		expectedIDs []any // optional
+
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Array": {
 			value:       primitive.A{1, 5},
@@ -316,15 +346,23 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.value, "value must not be nil")
 
 			filter := bson.D{{"v", bson.D{{"$bitsAllSet", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+				assert.Nil(t, cursor)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
 				return
 			}
+
 			require.NoError(t, err)
 
 			var actual []bson.D
@@ -352,10 +390,12 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		value       any
-		expectedIDs []any
-		err         *mongo.CommandError
-		altMessage  string
+		value       any   // required, used for $bitsAnyClear filter value
+		expectedIDs []any // optional
+
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Array": {
 			value: primitive.A{1, 5},
@@ -486,15 +526,23 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.value, "value must not be nil")
 
 			filter := bson.D{{"v", bson.D{{"$bitsAnyClear", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+				assert.Nil(t, cursor)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
 				return
 			}
+
 			require.NoError(t, err)
 
 			var actual []bson.D
@@ -522,10 +570,12 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		value       any
-		expectedIDs []any
-		err         *mongo.CommandError
-		altMessage  string
+		value       any   // required, used for $bitsAnySet filter value
+		expectedIDs []any // optional
+
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Array": {
 			value: primitive.A{1, 5},
@@ -634,15 +684,23 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.value, "value must not be nil")
 
 			filter := bson.D{{"v", bson.D{{"$bitsAnySet", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+				assert.Nil(t, cursor)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
 				return
 			}
+
 			require.NoError(t, err)
 
 			var actual []bson.D

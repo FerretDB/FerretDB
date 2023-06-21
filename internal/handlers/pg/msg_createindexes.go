@@ -19,10 +19,12 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/AlekSi/pointer"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -121,6 +123,13 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 			"One of the specified indexes already exists with a different key",
 			document.Command(),
 		)
+	case errors.Is(err, pgdb.ErrUniqueViolation):
+		// TODO: Add test for this case https://github.com/FerretDB/FerretDB/issues/2852
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrDuplicateKeyInsert,
+			"Index build failed",
+			document.Command(),
+		)
 	default:
 		return nil, lazyerrors.Error(err)
 	}
@@ -180,7 +189,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 			var order int64
 
 			if val, err = keyDoc.Get("_id"); err == nil {
-				if order, err = common.GetWholeNumberParam(val); err == nil && order == -1 {
+				if order, err = commonparams.GetWholeNumberParam(val); err == nil && order == -1 {
 					return nil, commonerrors.NewCommandErrorMsgWithArgument(
 						commonerrors.ErrBadValue,
 						"The field 'key' for an _id index must be {_id: 1}, but got { _id: -1 }",
@@ -210,8 +219,35 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 			// already processed, do nothing
 
 		case "unique":
-			// TODO https://github.com/FerretDB/FerretDB/issues/2045
-			// just ignore it for now, don't return error
+			uniqueVal := must.NotFail(indexDoc.Get("unique"))
+
+			_, ok := uniqueVal.(bool)
+			if !ok {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrTypeMismatch,
+					fmt.Sprintf(
+						"Error in specification { key: %s, name: \"%s\", unique: %s } "+
+							":: caused by :: "+
+							"The field 'unique' has value unique: %[3]s, which is not convertible to bool",
+						types.FormatAnyValue(must.NotFail(indexDoc.Get("key"))),
+						index.Name, types.FormatAnyValue(uniqueVal),
+					),
+					"createIndexes",
+				)
+			}
+
+			if len(index.Key) == 1 && index.Key[0].Field == "_id" {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrInvalidIndexSpecificationOption,
+					fmt.Sprintf("The field 'unique' is not valid for an _id index specification. "+
+						"Specification: { key: %s, name: \"%s\", unique: true, v: 2 }",
+						types.FormatAnyValue(must.NotFail(indexDoc.Get("key"))), index.Name,
+					),
+					"createIndexes",
+				)
+			}
+
+			index.Unique = pointer.ToBool(true)
 
 		case "background":
 			// ignore deprecated options
@@ -271,8 +307,7 @@ func processIndexKey(keyDoc *types.Document) (pgdb.IndexKey, error) {
 
 		var orderParam int64
 
-		if orderParam, err = common.GetWholeNumberParam(order); err != nil {
-			// TODO Add better validation and return proper error: https://github.com/FerretDB/FerretDB/issues/2311
+		if orderParam, err = commonparams.GetWholeNumberParam(order); err != nil {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,
 				fmt.Sprintf("Index key value %q is not implemented yet", order),
@@ -288,7 +323,6 @@ func processIndexKey(keyDoc *types.Document) (pgdb.IndexKey, error) {
 		case -1:
 			indexOrder = types.Descending
 		default:
-			// TODO Add better validation: https://github.com/FerretDB/FerretDB/issues/2311
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,
 				fmt.Sprintf("Index key value %q is not implemented yet", orderParam),
