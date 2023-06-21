@@ -16,7 +16,10 @@ package sqlite
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"regexp"
+	"unicode/utf8"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -94,6 +97,10 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		return &reply, nil
 
+	case errors.Is(err, ErrInvalidCollectionName):
+		msg := fmt.Sprintf("Invalid collection name: '%s.%s'", dbName, collectionName)
+		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
+
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionAlreadyExists):
 		msg := fmt.Sprintf("Collection %s.%s already exists.", dbName, collectionName)
 		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNamespaceExists, msg)
@@ -107,10 +114,22 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 }
 
-func createCollection(ctx context.Context, db backends.Database, collName string) error {
-	err := db.CreateCollection(ctx, &backends.CreateCollectionParams{
-		Name: collName,
-	})
+// validateCollectionNameRe validates collection names.
+// Empty collection name, names with `$` and `\x00` are not allowed.
+var validateCollectionNameRe = regexp.MustCompile("^[^$\x00]{1,235}$")
 
-	return err
+var (
+	// ErrInvalidCollectionName indicates that a collection didn't pass name checks.
+	ErrInvalidCollectionName = fmt.Errorf("invalid FerretDB collection name")
+)
+
+func createCollection(ctx context.Context, db backends.Database, collectionName string) error {
+	if !validateCollectionNameRe.MatchString(collectionName) ||
+		!utf8.ValidString(collectionName) {
+		return ErrInvalidCollectionName
+	}
+
+	return db.CreateCollection(ctx, &backends.CreateCollectionParams{
+		Name: collectionName,
+	})
 }

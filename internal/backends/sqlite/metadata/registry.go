@@ -22,9 +22,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"regexp"
-	"strings"
-	"unicode/utf8"
 
 	"go.uber.org/zap"
 	"modernc.org/sqlite"
@@ -41,10 +38,6 @@ const (
 	// metadataTableName is a SQLite table name where FerretDB metadata is stored.
 	metadataTableName = reservedPrefix + "collections"
 )
-
-// validateCollectionNameRe validates collection names.
-// Empty collection name, names with `$` and `\x00` are not allowed.
-var validateCollectionNameRe = regexp.MustCompile("^[^$\x00]{1,235}$")
 
 // Registry provides access to SQLite databases and collections information.
 type Registry struct {
@@ -71,17 +64,11 @@ func (r *Registry) Close() {
 }
 
 // CollectionToTable converts FerretDB collection name to SQLite table name.
-func (r *Registry) CollectionToTable(collectionName string) (string, error) {
-	// should that be in backends.collection?
-	if !validateCollectionNameRe.MatchString(collectionName) ||
-		strings.HasPrefix(collectionName, reservedPrefix) ||
-		!utf8.ValidString(collectionName) {
-		return "", fmt.Errorf("Invalid collection name")
-	}
-
+func (r *Registry) CollectionToTable(collectionName string) string {
+	// strings.HasPrefix(collectionName, reservedPrefix) ||
 	// TODO https://github.com/FerretDB/FerretDB/issues/2749
 	h := sha1.Sum([]byte(collectionName))
-	return hex.EncodeToString(h[:]), nil
+	return hex.EncodeToString(h[:])
 }
 
 // DatabaseList returns a sorted list of existing databases.
