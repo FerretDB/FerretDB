@@ -24,9 +24,6 @@ const (
 	// ErrArgsInvalidLen indicates that operator have invalid amount of arguments.
 	ErrArgsInvalidLen
 
-	// ErrEmptyField indicates that operator field is empty.
-	ErrEmptyField
-
 	// ErrTooManyFields indicates that operator field specifes more than one operators.
 	ErrTooManyFields
 

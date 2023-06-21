@@ -122,7 +122,7 @@ func processAddFieldsError(err error) error {
 		)
 	case operators.ErrInvalidExpression:
 		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrAggregateInvalidExpression,
+			commonerrors.ErrInvalidPipelineOperator,
 			"Invalid $addFields :: caused by :: "+opErr.Error(),
 			"$addFields (stage)",
 		)

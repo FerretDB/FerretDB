@@ -28,6 +28,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // newOperatorFunc is a type for a function that creates a standard aggregation operator.
@@ -75,9 +76,8 @@ func IsOperator(doc *types.Document) bool {
 // document before by using IsOperator on it.
 func NewOperator(doc *types.Document) (Operator, error) {
 	if doc.Len() == 0 {
-		return nil, newOperatorError(
-			ErrEmptyField,
-			"The operator field is empty (expected document)",
+		return nil, lazyerrors.New(
+			"The operator field is empty",
 		)
 	}
 

@@ -153,6 +153,7 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 
 				validated.Set(key, value)
 				result = true
+
 				break
 			}
 
@@ -258,6 +259,7 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 				}
 
 				projected.Set("_id", idValue)
+
 				break
 			}
 
@@ -352,6 +354,7 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 				}
 
 				projected.Set(key, value)
+
 				break
 			}
 
@@ -648,13 +651,6 @@ func processOperatorError(err error) error {
 	}
 
 	switch opErr.Code() {
-	case operators.ErrEmptyField:
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrEmptySubProject,
-			"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
-				" Found empty object at path",
-			"$project (stage)",
-		)
 	case operators.ErrTooManyFields:
 		return commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrFieldPathInvalidName,

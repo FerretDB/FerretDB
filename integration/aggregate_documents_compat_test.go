@@ -1840,6 +1840,7 @@ func TestAggregateCompatAddFields(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$addFields", bson.D{{"value", bson.D{{"$invalid-operator", "foo"}}}}}},
 			},
+			resultType: emptyResult,
 		},
 		"Type": {
 			pipeline: bson.A{
