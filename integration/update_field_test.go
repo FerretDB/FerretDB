@@ -33,12 +33,12 @@ func TestUpdateFieldSet(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		id      string              // optional, defaults to empty
-		update  bson.D              // required, used for update parameter
+		id     string // optional, defaults to empty
+		update bson.D // required, used for update parameter
+
 		res     *mongo.UpdateResult // optional, expected response from update
 		findRes bson.D              // optional, expected response from find
-
-		skip string // optional, skip test with a specified reason
+		skip    string              // optional, skip test with a specified reason
 	}{
 		"ArrayNil": {
 			id:      "string",

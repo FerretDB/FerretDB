@@ -32,8 +32,8 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `hint`                     | ⚠️     | Ignored                                                   |
 |                 | `skip`                     | ⚠️     |                                                           |
 |                 | `limit`                    | ✅     |                                                           |
-|                 | `batchSize`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/2005) |
-|                 | `singleBatch`              | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/2005) |
+|                 | `batchSize`                | ✅     |                                                           |
+|                 | `singleBatch`              | ✅     |                                                           |
 |                 | `comment`                  | ⚠️     | Not implemented in Tigris                                 |
 |                 | `maxTimeMS`                | ✅     |                                                           |
 |                 | `readConcern`              | ⚠️     | Ignored                                                   |
