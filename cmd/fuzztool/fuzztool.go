@@ -16,6 +16,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/hex"
 	"io"
 	"io/fs"
 	"os"
@@ -71,7 +72,7 @@ func collectFiles(root string, logger *zap.SugaredLogger) (map[string]struct{}, 
 		}
 
 		// skip other files
-		if len(info.Name()) != 64 {
+		if _, err = hex.DecodeString(info.Name()); err != nil {
 			return nil
 		}
 
