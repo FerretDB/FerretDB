@@ -32,7 +32,6 @@ Both Percona events are free to attend.
 You can grab your tickets here:
 
 - Casablanca, Technopark, 27th of June - [https://www.eventbrite.com/e/percona-university-morocco-2023-tickets-643139326037](https://www.eventbrite.com/e/percona-university-morocco-2023-tickets-643139326037)
-
 - Belgrade, Singidunum University, 5th of July - [https://www.eventbrite.com/e/percona-university-serbia-2023-tickets-657635093267](https://www.eventbrite.com/e/percona-university-serbia-2023-tickets-657635093267)
 
 Register to save your spot.
