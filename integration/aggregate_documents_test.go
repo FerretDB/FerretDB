@@ -806,7 +806,7 @@ func TestAggregateCommandCursor(t *testing.T) {
 			cursor, ok := v.(bson.D)
 			require.True(t, ok)
 
-			// Do not check the value of cursor id, FerretDB has a different id.
+			// do not check the value of cursor id, FerretDB has a different id
 			cursorID := cursor.Map()["id"]
 			assert.NotNil(t, cursorID)
 
@@ -829,66 +829,54 @@ func TestAggregateBatchSize(t *testing.T) {
 	t.Run("SetBatchSize", func(t *testing.T) {
 		t.Parallel()
 
-		// set BatchSize to 2
 		cursor, err := collection.Aggregate(ctx, bson.D{}, &options.AggregateOptions{BatchSize: pointer.ToInt32(2)})
 		require.NoError(t, err)
 
 		defer cursor.Close(ctx)
 
-		// firstBatch has remaining 2 documents
-		require.Equal(t, 2, cursor.RemainingBatchLength())
+		require.Equal(t, 2, cursor.RemainingBatchLength(), "expected 2 documents in first batch")
 
-		// get first document from firstBatch
-		ok := cursor.Next(ctx)
-		require.True(t, ok, "expected to have next document")
-		require.Equal(t, 1, cursor.RemainingBatchLength())
+		for i := 2; i > 0; i-- {
+			ok := cursor.Next(ctx)
+			require.True(t, ok, "expected to have next document in first batch")
+			require.Equal(t, i-1, cursor.RemainingBatchLength())
+		}
 
-		// get second document from firstBatch
-		ok = cursor.Next(ctx)
-		require.True(t, ok, "expected to have next document")
-		require.Equal(t, 0, cursor.RemainingBatchLength())
+		// batchSize of 2 is applied to second batch, this is not the case for 0 and unset batchSize
+		for i := 2; i > 0; i-- {
+			ok := cursor.Next(ctx)
+			require.True(t, ok, "expected to have next document in second batch")
+			require.Equal(t, i-1, cursor.RemainingBatchLength())
+		}
 
-		// get first document from secondBatch
-		ok = cursor.Next(ctx)
-		require.True(t, ok, "expected to have next document")
-		require.Equal(t, 1, cursor.RemainingBatchLength())
-
-		// get second document from secondBatch
-		ok = cursor.Next(ctx)
-		require.True(t, ok, "expected to have next document")
-		require.Equal(t, 0, cursor.RemainingBatchLength())
-
-		// increase batchSize
 		cursor.SetBatchSize(5)
 
-		// get first document from thirdBatch
-		ok = cursor.Next(ctx)
-		require.True(t, ok, "expected to have next document")
-		require.Equal(t, 4, cursor.RemainingBatchLength())
+		for i := 5; i > 0; i-- {
+			ok := cursor.Next(ctx)
+			require.True(t, ok, "expected to have next document in third batch")
+			require.Equal(t, i-1, cursor.RemainingBatchLength())
+		}
 
-		// get rest of documents from the cursor
+		// get rest of documents from the cursor to ensure cursor is exhausted
 		var res bson.D
 		err = cursor.All(ctx, &res)
 		require.NoError(t, err)
 
-		// cursor is exhausted
-		ok = cursor.Next(ctx)
+		ok := cursor.Next(ctx)
 		require.False(t, ok, "cursor exhausted, not expecting next document")
 	})
 
 	t.Run("ZeroBatchSize", func(t *testing.T) {
 		t.Parallel()
 
-		// set BatchSize to 0
 		cursor, err := collection.Aggregate(ctx, bson.D{}, &options.AggregateOptions{BatchSize: pointer.ToInt32(0)})
 		require.NoError(t, err)
 
 		defer cursor.Close(ctx)
 
-		// firstBatch has 0 document
 		require.Equal(t, 0, cursor.RemainingBatchLength())
 
-		// nextBatch has the rest of the documents
+		// batchSize of 0 only applies to first batch, next batch has the rest of the documents
 		// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
 		ok := cursor.Next(ctx)
 		require.True(t, ok, "expected to have next document")
@@ -898,23 +886,21 @@ func TestAggregateBatchSize(t *testing.T) {
 	t.Run("DefaultBatchSize", func(t *testing.T) {
 		t.Parallel()
 
-		// leave batchSize unset, firstBatch uses default batchSize 101
+		// unset batchSize uses default batchSize 101 for the first batch
 		cursor, err := collection.Aggregate(ctx, bson.D{})
 		require.NoError(t, err)
 
 		defer cursor.Close(ctx)
 
-		// firstBatch has remaining 101 documents
 		require.Equal(t, 101, cursor.RemainingBatchLength())
 
-		// get 101 documents from firstBatch
-		for i := 0; i < 101; i++ {
+		for i := 101; i > 0; i-- {
 			ok := cursor.Next(ctx)
 			require.True(t, ok, "expected to have next document")
+			require.Equal(t, i-1, cursor.RemainingBatchLength())
 		}
-		require.Equal(t, 0, cursor.RemainingBatchLength())
 
-		// secondBatch has the rest of the documents, not only 101 documents
+		// default batchSize of 101 only applies to the first batch, next batch has the rest of the documents
 		// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
 		ok := cursor.Next(ctx)
 		require.True(t, ok, "expected to have next document")
