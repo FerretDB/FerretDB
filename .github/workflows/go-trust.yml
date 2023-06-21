@@ -32,10 +32,16 @@ env:
 
 jobs:
   integration:
-    name: Integration ${{ matrix.name }}
+    name: Integration ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
     runs-on:
       group: paid
-    timeout-minutes: 30
+    timeout-minutes: 20
+
+    # Do not run this job in parallel for any PR change or branch/tag push
+    # to save some resources.
+    concurrency:
+      group: ${{ github.workflow }}-${{ matrix.name }}-${{ matrix.shard_index }}-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
 
     if: >
       github.event_name != 'pull_request_target' ||
@@ -48,7 +54,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { name: "Hana", task: "hana" }
+          - { name: "Hana", task: "hana", shard_index: 1, shard_total: 3 }
+          - { name: "Hana", task: "hana", shard_index: 2, shard_total: 3 }
+          - { name: "Hana", task: "hana", shard_index: 3, shard_total: 3 }
 
     steps:
       - name: Checkout code
@@ -90,8 +98,8 @@ jobs:
       - name: Wait for and setup environment
         run: bin/task env-setup
 
-      - name: Run ${{ matrix.task }} tests
-        run: bin/task test-integration-${{ matrix.task }}
+      - name: Run ${{ matrix.name }} tests (${{ matrix.shard_index }}/${{ matrix.shard_total }})
+        run: bin/task test-integration-${{ matrix.task }} SHARD_INDEX=${{ matrix.shard_index }} SHARD_TOTAL=${{ matrix.shard_total }}
         env:
           GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
           FERRETDB_HANA_URL: ${{ secrets.FERRETDB_HANA_URL }}
@@ -108,7 +116,7 @@ jobs:
         with:
           token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
           files: ./integration/integration-${{ matrix.task }}.txt
-          flags: integration,${{ matrix.task }}
+          flags: integration,${{ matrix.task }},shard-${{ matrix.shard_index }}
           fail_ci_if_error: true
           verbose: true
 

@@ -41,6 +41,7 @@ linters-settings:
           - $all
           - "!**/internal/backends/sqlite/*.go"
           - "!**/internal/handlers/pg/pgdb/*.go"
+          - "!**/internal/handlers/hana/hanadb/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handlers/sjson
       pgdb:

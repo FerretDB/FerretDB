@@ -125,9 +125,9 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 	ctx, collection := res.Ctx, res.Collection
 
 	for name, tc := range map[string]struct {
-		command  bson.D         // required, command to run
-		expected map[string]any // optional, expected keys of response
+		command bson.D // required, command to run
 
+		expected   map[string]any      // optional, expected keys of response
 		err        *mongo.CommandError // optional, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason

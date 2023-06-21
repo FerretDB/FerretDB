@@ -32,8 +32,8 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `hint`                     | ⚠️     | Ignored                                                   |
 |                 | `skip`                     | ⚠️     |                                                           |
 |                 | `limit`                    | ✅     |                                                           |
-|                 | `batchSize`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/2005) |
-|                 | `singleBatch`              | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/2005) |
+|                 | `batchSize`                | ✅     |                                                           |
+|                 | `singleBatch`              | ✅     |                                                           |
 |                 | `comment`                  | ⚠️     | Not implemented in Tigris                                 |
 |                 | `maxTimeMS`                | ✅     |                                                           |
 |                 | `readConcern`              | ⚠️     | Ignored                                                   |
@@ -304,7 +304,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 
 | Stage                | Status | Comments                                                  |
 | -------------------- | ------ | --------------------------------------------------------- |
-| `$addFields`         | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1413) |
+| `$addFields`         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1413) |
 | `$bucket`            | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1414) |
 | `$bucketAuto`        | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1414) |
 | `$changeStream`      | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1415) |
@@ -336,13 +336,13 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 | `$sample`            | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1435) |
 | `$search`            | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1436) |
 | `$searchMeta`        | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1436) |
-| `$set`               | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1413) |
+| `$set`               | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1413) |
 | `$setWindowFields`   | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1437) |
 | `$skip`              | ✅️    |                                                           |
 | `$sort`              | ✅️    |                                                           |
 | `$sortByCount`       | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1440) |
 | `$unionWith`         | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1441) |
-| `$unset`             | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1432) |
+| `$unset`             | ✅️    |                                                           |
 | `$unwind`            | ✅️    |                                                           |
 
 ### Aggregation pipeline operators
@@ -492,7 +492,8 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 | `$substrCP`               | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1463) |
 | `$subtract` (arithmetic)  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1453) |
 | `$subtract` (date)        | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1460) |
-| `$sum`                    | ✅️    |                                                           |
+| `$sum` (accumulator)      | ✅️    |                                                           |
+| `$sum` (operator)         | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/2680) |
 | `$switch`                 | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1457) |
 | `$tan`                    | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1465) |
 | `$tanh`                   | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1465) |
