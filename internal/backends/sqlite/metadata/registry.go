@@ -66,6 +66,8 @@ func (r *Registry) Close() {
 // CollectionToTable converts FerretDB collection name to SQLite table name.
 func (r *Registry) CollectionToTable(collectionName string) string {
 	// strings.HasPrefix(collectionName, reservedPrefix) ||
+	// Capital letter
+
 	// TODO https://github.com/FerretDB/FerretDB/issues/2749
 	h := sha1.Sum([]byte(collectionName))
 	return hex.EncodeToString(h[:])
@@ -173,6 +175,25 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 	}
 
 	return true, nil
+}
+
+func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionName string) (string, error) {
+	db := r.p.GetExisting(ctx, dbName)
+	if db == nil {
+		return "", nil
+	}
+
+	query := fmt.Sprintf("SELECT table_name FROM %q WHERE name = ?", metadataTableName)
+	rows, err := db.QueryContext(ctx, query, collectionName)
+	if err != nil {
+		return "", lazyerrors.Error(err)
+	}
+	defer rows.Close()
+
+	var name string
+	err = rows.Scan(&name)
+
+	return name, err
 }
 
 // CollectionDrop drops a collection in the database.
