@@ -373,7 +373,7 @@ jobs:
         if: always()
         run: |
           bin/task fuzz-corpus
-          go run ./cmd/fuzztool corpus seed ../fuzz-corpus
+          go run ./cmd/envtool corpus seed ../fuzz-corpus
         working-directory: source
 
       # `secrets` are not supported in `if`, so we have to do this trick with environment variable:
