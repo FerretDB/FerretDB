@@ -53,7 +53,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	tableName := c.r.CollectionToTable(c.name)
+	tableName := metadata.CollectionToTable(c.name)
 
 	query := fmt.Sprintf(`SELECT _ferretdb_sjson FROM %q`, tableName)
 
@@ -76,7 +76,7 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2750
 
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
-	query := fmt.Sprintf(`INSERT INTO %q (_ferretdb_sjson) VALUES (?)`, c.r.CollectionToTable(c.name))
+	query := fmt.Sprintf(`INSERT INTO %q (_ferretdb_sjson) VALUES (?)`, metadata.CollectionToTable(c.name))
 
 	var res backends.InsertResult
 
@@ -117,7 +117,7 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		return nil, lazyerrors.Errorf("no database %q", c.dbName)
 	}
 
-	tableName := c.r.CollectionToTable(c.name)
+	tableName := metadata.CollectionToTable(c.name)
 
 	query := fmt.Sprintf(`UPDATE %q SET _ferretdb_sjson = ? WHERE json_extract(_ferretdb_sjson, '$._id') = ?`, tableName)
 

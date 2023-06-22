@@ -64,7 +64,7 @@ func (r *Registry) Close() {
 }
 
 // CollectionToTable converts FerretDB collection name to SQLite table name.
-func (r *Registry) CollectionToTable(collectionName string) string {
+func CollectionToTable(collectionName string) string {
 	// strings.HasPrefix(collectionName, reservedPrefix) ||
 	// Capital letter
 
@@ -153,7 +153,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 		return false, lazyerrors.Error(err)
 	}
 
-	tableName := r.CollectionToTable(collectionName)
+	tableName := CollectionToTable(collectionName)
 
 	// TODO use transactions
 	// https://github.com/FerretDB/FerretDB/issues/2747
@@ -206,7 +206,7 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 		return false, nil
 	}
 
-	tableName := r.CollectionToTable(collectionName)
+	tableName := CollectionToTable(collectionName)
 
 	// TODO use transactions
 	// https://github.com/FerretDB/FerretDB/issues/2747
