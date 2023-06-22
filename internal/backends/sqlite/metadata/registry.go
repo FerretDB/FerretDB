@@ -206,7 +206,10 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 		return false, nil
 	}
 
-	tableName := CollectionToTable(collectionName)
+	tableName, err := r.CollectionGet(ctx, dbName, collectionName)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
 
 	// TODO use transactions
 	// https://github.com/FerretDB/FerretDB/issues/2747
