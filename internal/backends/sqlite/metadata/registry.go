@@ -190,10 +190,22 @@ func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionN
 	}
 	defer rows.Close()
 
-	var name string
-	err = rows.Scan(&name)
+	var res []string
 
-	return name, err
+	for rows.Next() {
+		var name string
+		if err = rows.Scan(&name); err != nil {
+			return "", lazyerrors.Error(err)
+		}
+
+		res = append(res, name)
+	}
+
+	if len(res) != 1 {
+		return "", fmt.Errorf("res:%d", len(res))
+	}
+
+	return res[0], err
 }
 
 // CollectionDrop drops a collection in the database.
@@ -208,7 +220,7 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 
 	tableName, err := r.CollectionGet(ctx, dbName, collectionName)
 	if err != nil {
-		return false, lazyerrors.Error(err)
+		return false, nil
 	}
 
 	// TODO use transactions
