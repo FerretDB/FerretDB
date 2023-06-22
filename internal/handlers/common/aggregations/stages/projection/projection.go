@@ -249,15 +249,6 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 			var value any
 
 			if !operators.IsOperator(idValue) {
-				if idValue.Len() == 0 {
-					return nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrEmptySubProject,
-						"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
-							" Found empty object at path",
-						"$project (stage)",
-					)
-				}
-
 				projected.Set("_id", idValue)
 				set = true
 
@@ -282,6 +273,7 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 			projected.Set("_id", idValue)
 
 			set = true
+
 		case bool:
 			set = idValue
 
@@ -346,17 +338,7 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 			var v any
 
 			if !operators.IsOperator(value) {
-				if value.Len() == 0 {
-					return nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrEmptySubProject,
-						"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
-							" Found empty object at path",
-						"$project (stage)",
-					)
-				}
-
 				projected.Set(key, value)
-
 				break
 			}
 
