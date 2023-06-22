@@ -20,8 +20,8 @@ type flagBit uint32
 
 type flags uint32
 
-// FlagsSize represents flags size in bytes.
-const FlagsSize = 4
+// flagsSize represents flags size in bytes.
+const flagsSize = 4
 
 func (flags flags) strings(bitStringer func(flagBit) string) []string {
 	res := make([]string, 0, 2)

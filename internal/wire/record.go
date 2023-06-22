@@ -16,7 +16,6 @@ package wire
 
 import (
 	"bufio"
-	"encoding/binary"
 	"errors"
 	"io/fs"
 	"math/rand"
@@ -50,7 +49,7 @@ func LoadRecords(dir string, limit int) ([]Record, error) {
 	})
 
 	switch {
-	case os.IsNotExist(err):
+	case errors.Is(err, fs.ErrNotExist):
 		return nil, nil
 	case err != nil:
 		return nil, lazyerrors.Error(err)
@@ -107,11 +106,6 @@ func loadRecordFile(file string) ([]Record, error) {
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-
-		// TODO "fix" checksum if present instead
-		flags := binary.LittleEndian.Uint32(bodyB[:FlagsSize])
-		flags &^= uint32(OpMsgChecksumPresent)
-		binary.LittleEndian.PutUint32(bodyB[:FlagsSize], flags)
 
 		res = append(res, Record{
 			Header:  header,

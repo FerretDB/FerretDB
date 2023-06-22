@@ -141,7 +141,7 @@ func getChecksum(data []byte) (uint32, error) {
 	// ensure that the length of the body is at least the size of a flagbit
 	// and a crc32 checksum
 	n := len(data)
-	if n < crc32.Size+FlagsSize {
+	if n < crc32.Size+flagsSize {
 		return 0, lazyerrors.New("Invalid message size for an OpMsg containing a checksum")
 	}
 
@@ -155,11 +155,11 @@ func getChecksum(data []byte) (uint32, error) {
 //
 // TODO The callers of checksum validation should be closer to OP_MSG handling: https://github.com/FerretDB/FerretDB/issues/2690
 func validateChecksum(header *MsgHeader, body []byte) error {
-	if len(body) < FlagsSize {
+	if len(body) < flagsSize {
 		return lazyerrors.New("Message contains illegal flags value")
 	}
 
-	flagBit := OpMsgFlags(binary.LittleEndian.Uint32(body[:FlagsSize]))
+	flagBit := OpMsgFlags(binary.LittleEndian.Uint32(body[:flagsSize]))
 	if !flagBit.FlagSet(OpMsgChecksumPresent) {
 		return nil
 	}
