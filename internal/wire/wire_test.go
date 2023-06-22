@@ -50,6 +50,27 @@ type testCase struct {
 	err       string // unwrapped
 }
 
+// setExpectedB checks and sets expectedB fields from headerB and bodyB.
+func (tc *testCase) setExpectedB(tb testing.TB) {
+	tb.Helper()
+
+	if (len(tc.headerB) == 0) != (len(tc.bodyB) == 0) {
+		tb.Fatalf("header dump and body dump are not in sync")
+	}
+
+	if (len(tc.headerB) == 0) == (len(tc.expectedB) == 0) {
+		tb.Fatalf("header/body dumps and expectedB are not in sync")
+	}
+
+	if len(tc.expectedB) == 0 {
+		tc.expectedB = make([]byte, 0, len(tc.headerB)+len(tc.bodyB))
+		tc.expectedB = append(tc.expectedB, tc.headerB...)
+		tc.expectedB = append(tc.expectedB, tc.bodyB...)
+		tc.headerB = nil
+		tc.bodyB = nil
+	}
+}
+
 func testMessages(t *testing.T, testCases []testCase) {
 	for _, tc := range testCases {
 		tc := tc
@@ -58,19 +79,7 @@ func testMessages(t *testing.T, testCases []testCase) {
 
 			require.NotEmpty(t, tc.name, "name should not be empty")
 
-			if (len(tc.headerB) == 0) != (len(tc.bodyB) == 0) {
-				t.Fatalf("header dump and body dump are not in sync")
-			}
-			if (len(tc.headerB) == 0) == (len(tc.expectedB) == 0) {
-				t.Fatalf("header/body dumps and expectedB are not in sync")
-			}
-
-			if len(tc.expectedB) == 0 {
-				expectedB := make([]byte, 0, len(tc.headerB)+len(tc.bodyB))
-				expectedB = append(expectedB, tc.headerB...)
-				expectedB = append(expectedB, tc.bodyB...)
-				tc.expectedB = expectedB
-			}
+			tc.setExpectedB(t)
 
 			t.Run("ReadMessage", func(t *testing.T) {
 				t.Parallel()
@@ -128,18 +137,22 @@ func testMessages(t *testing.T, testCases []testCase) {
 
 func fuzzMessages(f *testing.F, testCases []testCase) {
 	for _, tc := range testCases {
+		tc.setExpectedB(f)
 		f.Add(tc.expectedB)
 	}
 
 	if !testing.Short() {
-		records, err := loadRecords(filepath.Join("..", "..", "tmp", "records"))
+		records, err := LoadRecords(filepath.Join("..", "..", "tmp", "records"), 1000)
 		require.NoError(f, err)
 
-		f.Logf("%d recorded messages were added to the seed corpus", len(records))
-
 		for _, rec := range records {
-			f.Add(rec.bodyB)
+			b := make([]byte, 0, len(rec.HeaderB)+len(rec.BodyB))
+			b = append(b, rec.HeaderB...)
+			b = append(b, rec.BodyB...)
+			f.Add(b)
 		}
+
+		f.Logf("%d recorded messages were added to the seed corpus", len(records))
 	}
 
 	f.Fuzz(func(t *testing.T, b []byte) {
