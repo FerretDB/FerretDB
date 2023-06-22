@@ -260,7 +260,7 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 				return nil, processOperatorError(err)
 			}
 
-			value, err = op.Process(projected)
+			value, err = op.Process(doc)
 			if err != nil {
 				return nil, err
 			}
