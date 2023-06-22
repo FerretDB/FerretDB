@@ -64,10 +64,11 @@ func LoadRecords(dir string, limit int) ([]Record, error) {
 	}
 
 	var res []Record
+
 	for _, file := range files {
 		r, err := loadRecordFile(file)
 		if err != nil {
-			lazyerrors.Errorf("%s: %w", file, err)
+			return nil, lazyerrors.Errorf("%s: %w", file, err)
 		}
 
 		res = append(res, r...)
@@ -83,16 +84,18 @@ func loadRecordFile(file string) ([]Record, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	defer f.Close()
+	defer f.Close() //nolint:errcheck // we are only reading it
 
 	r := bufio.NewReader(f)
 
 	var res []Record
+
 	for {
 		header, body, err := ReadMessage(r)
 		if errors.Is(err, ErrZeroRead) {
 			break
 		}
+
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

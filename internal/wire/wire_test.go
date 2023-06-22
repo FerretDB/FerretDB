@@ -57,6 +57,7 @@ func (tc *testCase) setExpectedB(tb testing.TB) {
 	if (len(tc.headerB) == 0) != (len(tc.bodyB) == 0) {
 		tb.Fatalf("header dump and body dump are not in sync")
 	}
+
 	if (len(tc.headerB) == 0) == (len(tc.expectedB) == 0) {
 		tb.Fatalf("header/body dumps and expectedB are not in sync")
 	}
@@ -144,14 +145,14 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 		records, err := LoadRecords(filepath.Join("..", "..", "tmp", "records"), 1000)
 		require.NoError(f, err)
 
-		f.Logf("%d recorded messages were added to the seed corpus", len(records))
-
 		for _, rec := range records {
 			b := make([]byte, 0, len(rec.HeaderB)+len(rec.BodyB))
 			b = append(b, rec.HeaderB...)
 			b = append(b, rec.BodyB...)
 			f.Add(b)
 		}
+
+		f.Logf("%d recorded messages were added to the seed corpus", len(records))
 	}
 
 	f.Fuzz(func(t *testing.T, b []byte) {
