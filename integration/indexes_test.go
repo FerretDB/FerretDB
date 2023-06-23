@@ -210,7 +210,15 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				Message: "invalid parameter: expected an object (indexes)",
 			},
 		},
-		"InvalidType": {
+		"InvalidTypeObject": {
+			indexes: bson.D{},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'createIndexes.indexes' is the wrong type 'int', expected type 'array'",
+			},
+		},
+		"InvalidTypeInt": {
 			indexes: 42,
 			err: &mongo.CommandError{
 				Code:    14,

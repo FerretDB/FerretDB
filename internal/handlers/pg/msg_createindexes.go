@@ -70,6 +70,14 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	idxArr, ok := v.(*types.Array)
 	if !ok {
+		if _, ok = v.(types.NullType); ok {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrIndexesWrongType,
+				"invalid parameter: expected an object (indexes)",
+				document.Command(),
+			)
+		}
+
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrTypeMismatch,
 			"BSON field 'createIndexes.indexes' is the wrong type 'int', expected type 'array'",
