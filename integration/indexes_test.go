@@ -179,10 +179,12 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		indexes    any
-		err        *mongo.CommandError
-		altMessage string
-		skip       string
+		indexes        any  // optional
+		missingIndexes bool // optional, if set indexes must be nil
+
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"EmptyIndexes": {
 			indexes: bson.A{},
@@ -192,6 +194,14 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				Message: "Must specify at least one index to create",
 			},
 		},
+		"MissingIndexes": {
+			missingIndexes: true,
+			err: &mongo.CommandError{
+				Code:    40414,
+				Name:    "Location40414",
+				Message: "BSON field 'createIndexes.indexes' is missing but a required field",
+			},
+		},
 		"NilIndexes": {
 			indexes: nil,
 			err: &mongo.CommandError{
@@ -199,7 +209,6 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				Name:    "Location10065",
 				Message: "invalid parameter: expected an object (indexes)",
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"InvalidType": {
 			indexes: 42,
@@ -208,7 +217,6 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'createIndexes.indexes' is the wrong type 'int', expected type 'array'",
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"IDIndex": {
 			indexes: bson.A{
@@ -251,13 +259,24 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 
 			t.Parallel()
 
+			if tc.missingIndexes {
+				require.Nil(t, tc.indexes, "indexes must be nil if missingIndexes is true")
+			}
+
 			provider := shareddata.ArrayDocuments // one provider is enough to check for errors
 			ctx, collection := setup.Setup(t, provider)
 
-			command := bson.D{
-				{"createIndexes", collection.Name()},
-				{"indexes", tc.indexes},
+			var rest bson.D
+
+			if !tc.missingIndexes {
+				rest = append(rest, bson.E{Key: "indexes", Value: tc.indexes})
 			}
+
+			command := append(bson.D{
+				{"createIndexes", collection.Name()},
+			},
+				rest...,
+			)
 
 			var res bson.D
 			err := collection.Database().RunCommand(ctx, command).Decode(&res)

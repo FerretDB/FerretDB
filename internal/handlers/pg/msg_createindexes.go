@@ -59,9 +59,22 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	idxArr, err := common.GetRequiredParam[*types.Array](document, "indexes")
-	if err != nil {
-		return nil, err
+	v, _ := document.Get("indexes")
+	if v == nil {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrMissingField,
+			"BSON field 'createIndexes.indexes' is missing but a required field",
+			document.Command(),
+		)
+	}
+
+	idxArr, ok := v.(*types.Array)
+	if !ok {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrTypeMismatch,
+			"BSON field 'createIndexes.indexes' is the wrong type 'int', expected type 'array'",
+			document.Command(),
+		)
 	}
 
 	if idxArr.Len() == 0 {

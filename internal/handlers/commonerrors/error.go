@@ -116,6 +116,9 @@ const (
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 
+	// ErrIndexesWrongType indicates that indexes parameter has wrong type.
+	ErrIndexesWrongType = ErrorCode(10065) // Location10065
+
 	// ErrDuplicateKeyInsert indicates duplicate key violation on inserting document.
 	ErrDuplicateKeyInsert = ErrorCode(11000) // Location11000
 
