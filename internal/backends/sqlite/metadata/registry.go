@@ -201,22 +201,16 @@ func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionN
 	}
 	defer rows.Close()
 
-	var res []string
-
-	for rows.Next() {
-		var name string
-		if err = rows.Scan(&name); err != nil {
-			return "", lazyerrors.Error(err)
-		}
-
-		res = append(res, name)
+	if !rows.Next() {
+		return "", lazyerrors.New("no collection found")
 	}
 
-	if len(res) != 1 {
-		return "", fmt.Errorf("res:%d", len(res))
+	var name string
+	if err = rows.Scan(&name); err != nil {
+		return "", lazyerrors.Error(err)
 	}
 
-	return res[0], err
+	return name, nil
 }
 
 // CollectionDrop drops a collection in the database.
