@@ -123,6 +123,7 @@ var (
 	ErrInvalidCollectionName = fmt.Errorf("invalid FerretDB collection name")
 )
 
+// createCollection validates the collection name and creates collection.
 func createCollection(ctx context.Context, db backends.Database, collectionName string) error {
 	if !validateCollectionNameRe.MatchString(collectionName) ||
 		!utf8.ValidString(collectionName) {
