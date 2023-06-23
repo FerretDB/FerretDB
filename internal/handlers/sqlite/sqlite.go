@@ -18,6 +18,8 @@
 package sqlite
 
 import (
+	"fmt"
+
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -26,6 +28,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
+)
+
+var (
+	// ErrInvalidCollectionName indicates that a collection didn't pass name checks.
+	ErrInvalidCollectionName = fmt.Errorf("invalid FerretDB collection name")
 )
 
 // notImplemented returns error for stub command handlers.

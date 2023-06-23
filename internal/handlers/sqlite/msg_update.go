@@ -19,6 +19,7 @@ import (
 	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -75,6 +76,10 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionAlreadyExists) {
 		err = nil
 	}
+	if errors.Is(err, metadata.ErrInvalidCollectionName) {
+		return 0, 0, nil, ErrInvalidCollectionName
+	}
+
 	if err != nil {
 		return 0, 0, nil, lazyerrors.Error(err)
 	}

@@ -22,6 +22,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 
 	"go.uber.org/zap"
 	"modernc.org/sqlite"
@@ -37,6 +38,11 @@ const (
 
 	// metadataTableName is a SQLite table name where FerretDB metadata is stored.
 	metadataTableName = reservedPrefix + "collections"
+)
+
+var (
+	// ErrInvalidCollectionName indicates that a collection didn't pass name checks.
+	ErrInvalidCollectionName = fmt.Errorf("invalid FerretDB collection name")
 )
 
 // Registry provides access to SQLite databases and collections information.
@@ -64,11 +70,14 @@ func (r *Registry) Close() {
 }
 
 // collectionToTable converts FerretDB collection name to SQLite table name.
-func collectionToTable(collectionName string) string {
-	// strings.HasPrefix(collectionName, reservedPrefix) ||
+// It returns error if the name is incorrect for SQLite backend.
+func collectionToTable(collectionName string) (string, error) {
+	if strings.HasPrefix(collectionName, reservedPrefix) {
+		return "", ErrInvalidCollectionName
+	}
 
 	h := sha1.Sum([]byte(collectionName))
-	return hex.EncodeToString(h[:])
+	return hex.EncodeToString(h[:]), nil
 }
 
 // DatabaseList returns a sorted list of existing databases.
@@ -145,13 +154,17 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]string,
 //
 // Returned boolean value indicates whether the collection was created.
 // If collection already exists, (false, nil) is returned.
+// If collection name doesn't pass backend level validation it returns ErrInvalidCollectionName.
 func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collectionName string) (bool, error) {
 	db, err := r.DatabaseGetOrCreate(ctx, dbName)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	tableName := collectionToTable(collectionName)
+	tableName, err := collectionToTable(collectionName)
+	if err != nil {
+		return false, err
+	}
 
 	// TODO use transactions
 	// https://github.com/FerretDB/FerretDB/issues/2747

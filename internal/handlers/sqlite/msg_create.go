@@ -22,6 +22,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -118,11 +119,6 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // Empty collection name, names with `$` and `\x00` are not allowed.
 var validateCollectionNameRe = regexp.MustCompile("^[^$\x00]{1,235}$")
 
-var (
-	// ErrInvalidCollectionName indicates that a collection didn't pass name checks.
-	ErrInvalidCollectionName = fmt.Errorf("invalid FerretDB collection name")
-)
-
 // createCollection validates the collection name and creates collection.
 func createCollection(ctx context.Context, db backends.Database, collectionName string) error {
 	if !validateCollectionNameRe.MatchString(collectionName) ||
@@ -130,7 +126,12 @@ func createCollection(ctx context.Context, db backends.Database, collectionName 
 		return ErrInvalidCollectionName
 	}
 
-	return db.CreateCollection(ctx, &backends.CreateCollectionParams{
+	err := db.CreateCollection(ctx, &backends.CreateCollectionParams{
 		Name: collectionName,
 	})
+	if errors.Is(err, metadata.ErrInvalidCollectionName) {
+		return ErrInvalidCollectionName
+	}
+
+	return err
 }

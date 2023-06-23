@@ -73,6 +73,9 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 // Insert implements backends.Collection interface.
 func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) (*backends.InsertResult, error) {
 	if _, err := c.r.CollectionCreate(ctx, c.dbName, c.name); err != nil {
+		if errors.Is(err, metadata.ErrInvalidCollectionName) {
+			return nil, err
+		}
 		return nil, lazyerrors.Error(err)
 	}
 
