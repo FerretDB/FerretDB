@@ -619,7 +619,8 @@ func TestQueryCommandBatchSize(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	// the number of documents is set to slightly above the default batchSize of 101
+	// the number of documents is set above the default batchSize of 101
+	// for testing unset batchSize returning default batchSize
 	docs := generateDocuments(0, 110)
 	_, err := collection.InsertMany(ctx, docs)
 	require.NoError(t, err)
@@ -839,7 +840,10 @@ func TestQueryBatchSize(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	// the number of documents is set to much bigger than the default batchSize of 101
+	// The test cases call `find`, then may implicitly call `getMore` upon `cursor.Next()`.
+	// The batchSize set by `find` is used also by `getMore` unless
+	// `find` has default batchSize or 0 batchSize, then `getMore` has unlimited batchSize.
+	// To test that, the number of documents is set to more than the double of default batchSize 101.
 	docs := generateDocuments(0, 220)
 	_, err := collection.InsertMany(ctx, docs)
 	require.NoError(t, err)
@@ -860,7 +864,7 @@ func TestQueryBatchSize(t *testing.T) {
 			require.Equal(t, i-1, cursor.RemainingBatchLength())
 		}
 
-		// batchSize of 2 is applied to second batch, this is not the case for 0 and unset batchSize
+		// batchSize of 2 is applied to second batch which is obtained by implicit call to `getMore`
 		for i := 2; i > 0; i-- {
 			ok := cursor.Next(ctx)
 			require.True(t, ok, "expected to have next document in second batch")
@@ -901,7 +905,7 @@ func TestQueryBatchSize(t *testing.T) {
 			require.Equal(t, i-1, cursor.RemainingBatchLength())
 		}
 
-		// default batchSize of 101 only applies to the first batch, next batch has the rest of the documents
+		// next batch obtain from implicit call to `getMore` has the rest of the documents, not default batchSize
 		// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
 		ok := cursor.Next(ctx)
 		require.True(t, ok, "expected to have next document")
@@ -918,7 +922,7 @@ func TestQueryBatchSize(t *testing.T) {
 
 		require.Equal(t, 0, cursor.RemainingBatchLength())
 
-		// batchSize of 0 only applies to first batch, next batch has the rest of the documents
+		// next batch obtain from implicit call to `getMore` has the rest of the documents, not 0 batchSize
 		// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
 		ok := cursor.Next(ctx)
 		require.True(t, ok, "expected to have next document")
@@ -954,7 +958,8 @@ func TestQueryCommandGetMore(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	// the number of documents is set to slightly above the default batchSize of 101
+	// the number of documents is set above the default batchSize of 101
+	// for testing unset batchSize returning default batchSize
 	docs := generateDocuments(0, 110)
 	_, err := collection.InsertMany(ctx, docs)
 	require.NoError(t, err)
