@@ -292,7 +292,6 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		FlagBits: OpMsgFlags(OpMsgChecksumPresent),
-		checksum: 1737537506,
 		sections: []OpMsgSection{{
 			Kind:       1,
 			Identifier: "documents",
@@ -307,6 +306,7 @@ var msgTestCases = []testCase{{
 				"$db", "test",
 			))},
 		}},
+		checksum: 1737537506,
 	},
 	command: "insert",
 }, {
@@ -364,7 +364,6 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		FlagBits: OpMsgFlags(OpMsgChecksumPresent),
-		checksum: 2932997361,
 		sections: []OpMsgSection{{
 			Kind:       1,
 			Identifier: "updates",
@@ -387,6 +386,7 @@ var msgTestCases = []testCase{{
 				"$db", "test",
 			))},
 		}},
+		checksum: 2932997361,
 	},
 	command: "update",
 }, {
@@ -429,7 +429,6 @@ var msgTestCases = []testCase{{
 	},
 	msgBody: &OpMsg{
 		FlagBits: OpMsgFlags(OpMsgChecksumPresent),
-		checksum: 1737537506,
 		sections: []OpMsgSection{{
 			Kind:       1,
 			Identifier: "documents",
@@ -444,6 +443,7 @@ var msgTestCases = []testCase{{
 				"$db", "test",
 			))},
 		}},
+		checksum: 1737537506,
 	},
 	err: "OP_MSG checksum does not match contents.",
 }}
