@@ -215,8 +215,9 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
-				Message: "BSON field 'createIndexes.indexes' is the wrong type 'int', expected type 'array'",
+				Message: "BSON field 'createIndexes.indexes' is the wrong type 'object', expected type 'array'",
 			},
+			altMessage: "BSON field 'createIndexes.indexes' is the wrong type, expected type 'array'",
 		},
 		"InvalidTypeInt": {
 			indexes: 42,
@@ -225,6 +226,7 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'createIndexes.indexes' is the wrong type 'int', expected type 'array'",
 			},
+			altMessage: "BSON field 'createIndexes.indexes' is the wrong type, expected type 'array'",
 		},
 		"IDIndex": {
 			indexes: bson.A{
@@ -324,7 +326,7 @@ func TestDropIndexesCommandInvalidCollection(t *testing.T) {
 				Name:    "BadValue",
 				Message: "collection name has invalid type int",
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
+			altMessage: "required parameter \"dropIndexes\" has type int32 (expected string)",
 		},
 		"NilCollection": {
 			collectionName: nil,
@@ -334,7 +336,7 @@ func TestDropIndexesCommandInvalidCollection(t *testing.T) {
 				Name:    "BadValue",
 				Message: "collection name has invalid type null",
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
+			altMessage: "required parameter \"dropIndexes\" has type types.NullType (expected string)",
 		},
 		"EmptyCollection": {
 			collectionName: "",
@@ -342,9 +344,8 @@ func TestDropIndexesCommandInvalidCollection(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    73,
 				Name:    "InvalidNamespace",
-				Message: "Invalid namespace specified 'TestIndexesDropInvalidCollection-EmptyCollection.'",
+				Message: "Invalid namespace specified 'TestDropIndexesCommandInvalidCollection-EmptyCollection.'",
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 	} {
 		name, tc := name, tc

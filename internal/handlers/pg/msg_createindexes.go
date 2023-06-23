@@ -80,7 +80,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrTypeMismatch,
-			"BSON field 'createIndexes.indexes' is the wrong type 'int', expected type 'array'",
+			"BSON field 'createIndexes.indexes' is the wrong type, expected type 'array'",
 			document.Command(),
 		)
 	}
