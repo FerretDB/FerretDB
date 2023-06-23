@@ -76,6 +76,21 @@ func collectionToTable(collectionName string) (string, error) {
 		return "", ErrInvalidCollectionName
 	}
 
+	// TODO
+	// hash32 := fnv.New32a()
+	// must.NotFail(hash32.Write([]byte(name)))
+
+	// mangled := specialCharacters.ReplaceAllString(name, "_")
+
+	// nameSymbolsLeft := maxTableNameLength - hash32.Size()*2 - 1
+	// truncateTo := len(mangled)
+
+	// if truncateTo > nameSymbolsLeft {
+	// 	truncateTo = nameSymbolsLeft
+	// }
+
+	// return mangled[:truncateTo] + "_" + hex.EncodeToString(hash32.Sum(nil))
+
 	h := sha1.Sum([]byte(collectionName))
 	return hex.EncodeToString(h[:]), nil
 }
