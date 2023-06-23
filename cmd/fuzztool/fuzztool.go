@@ -17,6 +17,7 @@ package main
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"io"
 	"io/fs"
 	"os"
@@ -43,7 +44,7 @@ func generatedCorpus() (string, error) {
 	path := filepath.Join(string(bytes.TrimSpace(b)), "fuzz", "github.com", "FerretDB", "FerretDB")
 
 	if _, err = os.Stat(path); err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			err = os.MkdirAll(path, 0o777)
 		}
 
@@ -129,7 +130,7 @@ func copyFile(src, dst string) error {
 	dir := filepath.Dir(dst)
 
 	_, err = os.Stat(dir)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		err = os.MkdirAll(dir, 0o777)
 	}
 
