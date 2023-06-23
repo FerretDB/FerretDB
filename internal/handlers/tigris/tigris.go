@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/tigrisdata/tigris-client-go/config"
 	"go.uber.org/zap"
 
@@ -145,6 +146,16 @@ func (h *Handler) DBPool(ctx context.Context) (*tigrisdb.TigrisDB, error) {
 	h.pools[ap] = p
 
 	return p, nil
+}
+
+// Describe implements handlers.Interface.
+func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
+	// TODO
+}
+
+// Collect implements handlers.Interface.
+func (h *Handler) Collect(ch chan<- prometheus.Metric) {
+	// TODO
 }
 
 // check interfaces

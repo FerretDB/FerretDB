@@ -31,7 +31,6 @@ import (
 	"time"
 
 	"github.com/pmezard/go-difflib/difflib"
-	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -591,18 +590,3 @@ func (c *conn) logResponse(who string, resHeader *wire.MsgHeader, resBody wire.M
 
 	return level
 }
-
-// Describe implements prometheus.Collector.
-func (c *conn) Describe(ch chan<- *prometheus.Desc) {
-	c.m.Describe(ch)
-}
-
-// Collect implements prometheus.Collector.
-func (c *conn) Collect(ch chan<- prometheus.Metric) {
-	c.m.Collect(ch)
-}
-
-// check interfaces
-var (
-	_ prometheus.Collector = (*conn)(nil)
-)

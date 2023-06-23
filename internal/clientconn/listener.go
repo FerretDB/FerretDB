@@ -339,11 +339,13 @@ func (l *Listener) TLSAddr() net.Addr {
 // Describe implements prometheus.Collector.
 func (l *Listener) Describe(ch chan<- *prometheus.Desc) {
 	l.Metrics.Describe(ch)
+	l.Handler.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (l *Listener) Collect(ch chan<- prometheus.Metric) {
 	l.Metrics.Collect(ch)
+	l.Handler.Collect(ch)
 }
 
 // check interfaces
