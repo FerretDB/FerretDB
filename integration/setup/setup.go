@@ -19,6 +19,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"runtime/trace"
 	"strings"
@@ -87,8 +88,8 @@ type SetupOpts struct {
 	// Benchmark data provider. If empty, collection is not created.
 	BenchmarkProvider shareddata.BenchmarkProvider
 
-	// ClientOptions overwrites the options set in MongoDB URI when the same option is set.
-	ClientOptions *options.ClientOptions
+	// ExtraOptions overwrites the options set in MongoDB URI when the same option is set.
+	ExtraOptions url.Values
 }
 
 // SetupResult represents setup results.
@@ -141,9 +142,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	if *targetURLF == "" {
 		client, uri = setupListener(tb, ctx, logger)
 	} else {
-		clientOpts := options.Client().ApplyURI(*targetURLF)
-		clientOpts = options.MergeClientOptions(clientOpts, opts.ClientOptions)
-		client = setupClient(tb, ctx, clientOpts)
+		client = setupClient(tb, ctx, *targetURLF, opts.ExtraOptions)
 		uri = *targetURLF
 	}
 

@@ -95,7 +95,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	if *targetURLF == "" {
 		targetClient, _ = setupListener(tb, setupCtx, logger)
 	} else {
-		targetClient = setupClient(tb, setupCtx, options.Client().ApplyURI(*targetURLF))
+		targetClient = setupClient(tb, setupCtx, *targetURLF, nil)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
@@ -103,7 +103,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	targetCollections := setupCompatCollections(tb, setupCtx, targetClient, opts, *targetBackendF)
 
-	compatClient := setupClient(tb, setupCtx, options.Client().ApplyURI(*compatURLF))
+	compatClient := setupClient(tb, setupCtx, *compatURLF, nil)
 	compatCollections := setupCompatCollections(tb, setupCtx, compatClient, opts, "mongodb")
 
 	level.SetLevel(*logLevelF)

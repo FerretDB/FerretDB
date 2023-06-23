@@ -16,6 +16,7 @@ package integration
 
 import (
 	"math"
+	"net/url"
 	"testing"
 	"time"
 
@@ -950,8 +951,13 @@ func TestQueryBatchSize(t *testing.T) {
 
 func TestQueryCommandGetMore(t *testing.T) {
 	t.Parallel()
+
+	q := url.Values{}
+	q.Set("maxPoolSize", "1")
+	q.Set("minPoolSize", "1")
+
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		ClientOptions: options.Client().SetMaxPoolSize(1),
+		ExtraOptions: q,
 	})
 
 	ctx, collection := s.Ctx, s.Collection

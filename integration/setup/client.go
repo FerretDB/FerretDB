@@ -77,8 +77,25 @@ func mongoDBURI(tb testing.TB, opts *mongoDBURIOpts) string {
 	return u.String()
 }
 
-// makeClient returns new client for the given MongoDB client options.
-func makeClient(ctx context.Context, clientOpts *options.ClientOptions) (*mongo.Client, error) {
+// makeClient returns new client for the given MongoDB URI and extra options.
+func makeClient(ctx context.Context, uri string, extraOpts url.Values) (*mongo.Client, error) {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return nil, err
+	}
+
+	q := u.Query()
+
+	for k, v := range extraOpts {
+		if len(v) == 0 {
+			continue
+		}
+
+		// when multiple values are assigned for the same key, use the first one only
+		q.Set(k, v[0])
+	}
+
+	clientOpts := options.Client().ApplyURI(u.String())
 	clientOpts.SetMonitor(otelmongo.NewMonitor())
 
 	client, err := mongo.Connect(ctx, clientOpts)
@@ -101,7 +118,7 @@ func makeClient(ctx context.Context, clientOpts *options.ClientOptions) (*mongo.
 //
 // If the connection can't be established, it panics,
 // as it doesn't make sense to proceed with other tests if we couldn't connect in one of them.
-func setupClient(tb testing.TB, ctx context.Context, clientOpts *options.ClientOptions) *mongo.Client {
+func setupClient(tb testing.TB, ctx context.Context, uri string, extraOpts url.Values) *mongo.Client {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
@@ -109,7 +126,7 @@ func setupClient(tb testing.TB, ctx context.Context, clientOpts *options.ClientO
 
 	defer trace.StartRegion(ctx, "setupClient").End()
 
-	client, err := makeClient(ctx, clientOpts)
+	client, err := makeClient(ctx, uri, extraOpts)
 	if err != nil {
 		tb.Error(err)
 		panic("setupClient: " + err.Error())
