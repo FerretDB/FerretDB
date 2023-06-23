@@ -26,7 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestIndexesDropCommandErrors(t *testing.T) {
+func TestDropIndexesCommandErrors(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
 
 	t.Parallel()
@@ -173,7 +173,7 @@ func TestIndexesDropCommandErrors(t *testing.T) {
 	}
 }
 
-func TestCreateIndexesInvalidSpec(t *testing.T) {
+func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
 
 	t.Parallel()
@@ -268,7 +268,7 @@ func TestCreateIndexesInvalidSpec(t *testing.T) {
 	}
 }
 
-func TestDropIndexesInvalidCollection(t *testing.T) {
+func TestDropIndexesCommandInvalidCollection(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
 
 	t.Parallel()
@@ -286,7 +286,7 @@ func TestDropIndexesInvalidCollection(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    26,
 				Name:    "NamespaceNotFound",
-				Message: "ns not found TestDropIndexesInvalidCollection-NonExistentCollection.non-existent",
+				Message: "ns not found TestDropIndexesCommandInvalidCollection-NonExistentCollection.non-existent",
 			},
 		},
 		"InvalidTypeCollection": {

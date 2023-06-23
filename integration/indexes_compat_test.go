@@ -806,7 +806,7 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 	}
 }
 
-func TestCreateIndexesUniqueCompat(t *testing.T) {
+func TestCreateIndexesCompatUnique(t *testing.T) {
 	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
 
 	t.Parallel()
