@@ -34,6 +34,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -173,7 +174,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	ctx, span := otel.Tracer("").Start(ctx, "setupCollection")
 	defer span.End()
 
-	defer trace.StartRegion(ctx, "setupCollection").End()
+	defer observability.FuncCall(ctx)()
 
 	var ownDatabase bool
 	databaseName := opts.DatabaseName

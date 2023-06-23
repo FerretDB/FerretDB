@@ -57,7 +57,7 @@ var (
 // versionFile contains version information with leading v.
 const versionFile = "build/version/version.txt"
 
-// waitForPort waits for the given port to be available until ctx is done.
+// waitForPort waits for the given port to be available until ctx is canceled.
 func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) error {
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	logger.Infof("Waiting for %s to be up...", addr)
