@@ -63,13 +63,14 @@ You can also [install `task` globally](https://taskfile.dev/#/installation),
 but that might lead to the version skew.
 
 With `task` installed,
-you should install development tools with `task init`
+you can see all available tasks by running `task -l` in the root of the repository
+(not in the `tools` directory).
+
+After that, you should install development tools with `task init`
 and download required Docker images with `task env-pull`.
 
 If something does not work correctly,
 you can reset the environment with `task env-reset`.
-
-You can see all available `task` tasks with `task -l`.
 
 ### Building a production release binary
 
