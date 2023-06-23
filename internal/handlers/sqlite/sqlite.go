@@ -18,6 +18,7 @@
 package sqlite
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -26,7 +27,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 // notImplemented returns error for stub command handlers.

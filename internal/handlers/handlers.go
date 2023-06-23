@@ -18,8 +18,9 @@ package handlers
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/wire"
 	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // Interface contains methods that should be implemented by all handlers.
