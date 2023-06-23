@@ -26,7 +26,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"runtime/trace"
 	"sync/atomic"
 	"time"
 
@@ -43,6 +42,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -121,7 +121,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	}, nil
 }
 
-// run runs the client connection until ctx is done, client disconnects,
+// run runs the client connection until ctx is canceled, client disconnects,
 // or fatal error or panic is encountered.
 //
 // Returned error is always non-nil.
@@ -386,6 +386,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 
 // route sends request to a handler's command based on the op code provided in the request header.
 //
+// The passed context is canceled when the client disconnects.
+//
 // Handlers to which it routes, should not panic on bad input, but may do so in "impossible" cases.
 // They also should not use recover(). That allows us to use fuzzing.
 //
@@ -544,11 +546,14 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	return
 }
 
+// handleOpMsg processes OP_MSG request.
+//
+// The passed context is canceled when the client disconnects.
 func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
 	if cmd, ok := commoncommands.Commands[command]; ok {
 		if cmd.Handler != nil {
 			// TODO move it to route, closer to Prometheus metrics
-			defer trace.StartRegion(ctx, command).End()
+			defer observability.FuncCall(ctx)()
 
 			return cmd.Handler(c.h, ctx, msg)
 		}

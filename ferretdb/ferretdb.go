@@ -157,7 +157,7 @@ func New(config *Config) (*FerretDB, error) {
 	}, nil
 }
 
-// Run runs FerretDB until ctx is done.
+// Run runs FerretDB until ctx is canceled.
 //
 // When this method returns, listener and all connections are closed.
 func (f *FerretDB) Run(ctx context.Context) error {

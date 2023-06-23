@@ -29,6 +29,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -132,7 +133,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 	ctx, span := otel.Tracer("").Start(ctx, "setupCompatCollections")
 	defer span.End()
 
-	defer trace.StartRegion(ctx, "setupCompatCollections").End()
+	defer observability.FuncCall(ctx)()
 
 	database := client.Database(opts.databaseName)
 
