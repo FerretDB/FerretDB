@@ -34,6 +34,10 @@ func TestDocument(t *testing.T) {
 		assert.Nil(t, doc.Map())
 		assert.Nil(t, doc.Keys())
 		assert.Equal(t, "", doc.Command())
+
+		value, err := doc.Get("foo")
+		assert.Error(t, err)
+		assert.Nil(t, value)
 	})
 
 	t.Run("ZeroValues", func(t *testing.T) {

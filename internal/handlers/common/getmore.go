@@ -42,8 +42,8 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 	}
 
 	// TODO: Use ExtractParam https://github.com/FerretDB/FerretDB/issues/2859
-	v, err := document.Get("collection")
-	if err != nil {
+	v, _ := document.Get("collection")
+	if v == nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrMissingField,
 			"BSON field 'getMore.collection' is missing but a required field",
@@ -110,7 +110,8 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 	if cursor.DB != db || cursor.Collection != collection {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrUnauthorized,
-			fmt.Sprintf("Requested getMore on namespace '%s.%s', but cursor belongs to a different namespace %s.%s",
+			fmt.Sprintf(
+				"Requested getMore on namespace '%s.%s', but cursor belongs to a different namespace %s.%s",
 				db,
 				collection,
 				cursor.DB,

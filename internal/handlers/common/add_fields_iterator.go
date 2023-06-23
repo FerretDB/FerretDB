@@ -15,6 +15,10 @@
 package common
 
 import (
+	"errors"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -54,6 +58,24 @@ func (iter *addFieldsIterator) Next() (struct{}, *types.Document, error) {
 
 	for _, key := range iter.newField.Keys() {
 		val := must.NotFail(iter.newField.Get(key))
+
+		switch v := val.(type) {
+		case *types.Document:
+			if !operators.IsOperator(v) {
+				break
+			}
+
+			op, err := operators.NewOperator(v)
+			if err = processAddFieldsError(err); err != nil {
+				return unused, nil, err
+			}
+
+			val, err = op.Process(doc)
+			if err = processAddFieldsError(err); err != nil {
+				return unused, nil, err
+			}
+		}
+
 		doc.Set(key, val)
 	}
 
@@ -63,6 +85,56 @@ func (iter *addFieldsIterator) Next() (struct{}, *types.Document, error) {
 // Close implements iterator.Interface. See AddFieldsIterator for details.
 func (iter *addFieldsIterator) Close() {
 	iter.iter.Close()
+}
+
+// processAddFieldsError takes internal error related to operator evaluation and
+// returns proper CommandError that can be returned by $addFields aggregation stage.
+func processAddFieldsError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	var opErr operators.OperatorError
+
+	if !errors.As(err, &opErr) {
+		return err
+	}
+
+	switch opErr.Code() {
+	case operators.ErrTooManyFields:
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrAddFieldsExpressionWrongAmountOfArgs,
+			"Invalid $addFields :: caused by :: FieldPath field names may not start with '$'."+
+				" Consider using $getField or $setField.",
+			"$addFields (stage)",
+		)
+	case operators.ErrNotImplemented:
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
+			"Invalid $addFields :: caused by :: "+opErr.Error(),
+			"$addFields (stage)",
+		)
+	case operators.ErrArgsInvalidLen:
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrOperatorWrongLenOfArgs,
+			"Invalid $addFields :: caused by :: "+opErr.Error(),
+			"$addFields (stage)",
+		)
+	case operators.ErrInvalidExpression:
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidPipelineOperator,
+			"Invalid $addFields :: caused by :: "+opErr.Error(),
+			"$addFields (stage)",
+		)
+	case operators.ErrInvalidNestedExpression:
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidPipelineOperator,
+			"Invalid $addFields :: caused by :: "+opErr.Error(),
+			"$addFields (stage)",
+		)
+	default:
+		return lazyerrors.Error(err)
+	}
 }
 
 // check interfaces

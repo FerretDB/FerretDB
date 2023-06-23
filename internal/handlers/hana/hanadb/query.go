@@ -12,29 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package wire
+package hanadb
 
-import "strings"
-
-type flagBit uint32
-
-type flags uint32
-
-// flagsSize represents flags size in bytes.
-const flagsSize = 4
-
-func (flags flags) strings(bitStringer func(flagBit) string) []string {
-	res := make([]string, 0, 2)
-	for shift := 0; shift < 32; shift++ {
-		bit := flags >> shift
-		if bit&1 == 1 {
-			res = append(res, bitStringer(1<<shift))
-		}
-	}
-	return res
-}
-
-func (flags flags) string(bitStringer func(flagBit) string) string {
-	res := flags.strings(bitStringer)
-	return "[" + strings.Join(res, "|") + "]"
+// QueryParams represents options/parameters used for SQL query/statement.
+type QueryParams struct {
+	DB         string
+	Collection string
 }

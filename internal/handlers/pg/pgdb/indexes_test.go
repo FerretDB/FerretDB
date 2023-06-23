@@ -340,6 +340,8 @@ func TestDropIndexes(t *testing.T) {
 }
 
 func TestDropIndexesStress(t *testing.T) {
+	// TODO rewrite using teststress.Stress
+
 	ctx := testutil.Ctx(t)
 	pool := getPool(ctx, t)
 

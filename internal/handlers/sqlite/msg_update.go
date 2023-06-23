@@ -67,7 +67,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // updateDocument iterate through all documents in collection and update them.
 func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesParams) (int32, int32, *types.Array, error) {
 	var matched, modified int32
-	var upserted *types.Array
+	var upserted types.Array
 
 	db := h.b.Database(params.DB)
 	defer db.Close()
@@ -183,5 +183,5 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 		}
 	}
 
-	return matched, modified, upserted, nil
+	return matched, modified, &upserted, nil
 }

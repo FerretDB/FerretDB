@@ -80,10 +80,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		if params.BatchSize == 0 {
-			return nil
-		}
-
 		var iter types.DocumentsIterator
 		var queryRes pgdb.QueryResults
 

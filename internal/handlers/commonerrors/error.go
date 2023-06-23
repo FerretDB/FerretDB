@@ -231,6 +231,10 @@ const (
 	// ErrStageCountBadValue indicates that $count stage contains invalid value.
 	ErrStageCountBadValue = ErrorCode(40160) // Location40160
 
+	// ErrAddFieldsExpressionWrongAmountOfArgs indicates that $addFields stage expression contain invalid
+	// amount of arguments.
+	ErrAddFieldsExpressionWrongAmountOfArgs = ErrorCode(40181) // Location40181
+
 	// ErrStageGroupUnaryOperator indicates that $sum is a unary operator.
 	ErrStageGroupUnaryOperator = ErrorCode(40237) // Location40237
 

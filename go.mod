@@ -4,12 +4,12 @@ go 1.20
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/SAP/go-hdb v1.3.6
+	github.com/SAP/go-hdb v1.3.8
 	github.com/alecthomas/kong v0.7.1
 	github.com/google/uuid v1.3.0
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
 	github.com/jackc/pgx-zap v0.0.0-20221202020421-94b1cb2f889f
-	github.com/jackc/pgx/v5 v5.4.0
+	github.com/jackc/pgx/v5 v5.4.1
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/prometheus/client_golang v1.16.0
 	github.com/prometheus/client_model v0.4.0
@@ -52,7 +52,7 @@ require (
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/prometheus/procfs v0.10.1 // indirect
+	github.com/prometheus/procfs v0.11.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect

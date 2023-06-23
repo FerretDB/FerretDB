@@ -44,14 +44,21 @@ func TestListIndexesCompat(t *testing.T) {
 			t.Helper()
 			t.Parallel()
 
-			targetCur, targetErr := targetCollection.Indexes().List(ctx)
-			compatCur, compatErr := compatCollection.Indexes().List(ctx)
+			targetCursor, targetErr := targetCollection.Indexes().List(ctx)
+			compatCursor, compatErr := compatCollection.Indexes().List(ctx)
 
-			require.NoError(t, compatErr)
+			if targetCursor != nil {
+				defer targetCursor.Close(ctx)
+			}
+			if compatCursor != nil {
+				defer compatCursor.Close(ctx)
+			}
+
 			require.NoError(t, targetErr)
+			require.NoError(t, compatErr)
 
-			targetRes := FetchAll(t, ctx, targetCur)
-			compatRes := FetchAll(t, ctx, compatCur)
+			targetRes := FetchAll(t, ctx, targetCursor)
+			compatRes := FetchAll(t, ctx, compatCursor)
 
 			assert.Equal(t, compatRes, targetRes)
 
@@ -252,14 +259,21 @@ func TestCreateIndexesCompat(t *testing.T) {
 					}
 
 					// List indexes to check they are identical after creation.
-					targetCur, targetErr := targetCollection.Indexes().List(ctx)
-					compatCur, compatErr := compatCollection.Indexes().List(ctx)
+					targetCursor, targetErr := targetCollection.Indexes().List(ctx)
+					compatCursor, compatErr := compatCollection.Indexes().List(ctx)
 
+					if targetCursor != nil {
+						defer targetCursor.Close(ctx)
+					}
+					if compatCursor != nil {
+						defer compatCursor.Close(ctx)
+					}
+
+					require.NoError(t, targetErr)
 					require.NoError(t, compatErr)
-					assert.Equal(t, compatErr, targetErr)
 
-					targetIndexes := FetchAll(t, ctx, targetCur)
-					compatIndexes := FetchAll(t, ctx, compatCur)
+					targetIndexes := FetchAll(t, ctx, targetCursor)
+					compatIndexes := FetchAll(t, ctx, compatCursor)
 
 					assert.Equal(t, compatIndexes, targetIndexes)
 
@@ -564,14 +578,21 @@ func TestDropIndexesCompat(t *testing.T) {
 					}
 
 					// List indexes to see they are identical after drop.
-					targetCur, targetErr := targetCollection.Indexes().List(ctx)
-					compatCur, compatErr := compatCollection.Indexes().List(ctx)
+					targetCursor, targetErr := targetCollection.Indexes().List(ctx)
+					compatCursor, compatErr := compatCollection.Indexes().List(ctx)
 
+					if targetCursor != nil {
+						defer targetCursor.Close(ctx)
+					}
+					if compatCursor != nil {
+						defer compatCursor.Close(ctx)
+					}
+
+					require.NoError(t, targetErr)
 					require.NoError(t, compatErr)
-					require.Equal(t, compatErr, targetErr)
 
-					targetIndexes := FetchAll(t, ctx, targetCur)
-					compatIndexes := FetchAll(t, ctx, compatCur)
+					targetIndexes := FetchAll(t, ctx, targetCursor)
+					compatIndexes := FetchAll(t, ctx, compatCursor)
 
 					require.Equal(t, compatIndexes, targetIndexes)
 				})
@@ -695,14 +716,21 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 						require.NoError(t, targetErr)
 
 						// List indexes to see they are identical after creation.
-						targetCur, targetListErr := targetCollection.Indexes().List(ctx)
-						compatCur, compatListErr := compatCollection.Indexes().List(ctx)
+						targetCursor, targetListErr := targetCollection.Indexes().List(ctx)
+						compatCursor, compatListErr := compatCollection.Indexes().List(ctx)
 
-						require.NoError(t, compatListErr)
+						if targetCursor != nil {
+							defer targetCursor.Close(ctx)
+						}
+						if compatCursor != nil {
+							defer compatCursor.Close(ctx)
+						}
+
 						require.NoError(t, targetListErr)
+						require.NoError(t, compatListErr)
 
-						targetList := FetchAll(t, ctx, targetCur)
-						compatList := FetchAll(t, ctx, compatCur)
+						targetList := FetchAll(t, ctx, targetCursor)
+						compatList := FetchAll(t, ctx, compatCursor)
 
 						require.Equal(t, compatList, targetList)
 					}
@@ -746,14 +774,21 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 					}
 
 					// List indexes to see they are identical after deletion.
-					targetCur, targetListErr := targetCollection.Indexes().List(ctx)
-					compatCur, compatListErr := compatCollection.Indexes().List(ctx)
+					targetCursor, targetListErr := targetCollection.Indexes().List(ctx)
+					compatCursor, compatListErr := compatCollection.Indexes().List(ctx)
 
+					if targetCursor != nil {
+						defer targetCursor.Close(ctx)
+					}
+					if compatCursor != nil {
+						defer compatCursor.Close(ctx)
+					}
+
+					require.NoError(t, targetListErr)
 					require.NoError(t, compatListErr)
-					assert.Equal(t, compatListErr, targetListErr)
 
-					targetList := FetchAll(t, ctx, targetCur)
-					compatList := FetchAll(t, ctx, compatCur)
+					targetList := FetchAll(t, ctx, targetCursor)
+					compatList := FetchAll(t, ctx, compatCursor)
 
 					assert.Equal(t, compatList, targetList)
 				})
