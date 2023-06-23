@@ -27,6 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/hana/hanadb"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // notImplemented returns error for stub command handlers.
@@ -108,6 +109,16 @@ func (h *Handler) DBPool(ctx context.Context) (*hanadb.Pool, error) {
 	h.pools[url] = p
 
 	return p, nil
+}
+
+// Describe implements handlers.Interface.
+func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
+	// TODO
+}
+
+// Collect implements handlers.Interface.
+func (h *Handler) Collect(ch chan<- prometheus.Metric) {
+	// TODO
 }
 
 // check interfaces

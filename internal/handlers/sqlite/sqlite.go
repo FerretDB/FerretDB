@@ -26,6 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // notImplemented returns error for stub command handlers.
@@ -72,6 +73,16 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 
 // Close implements handlers.Interface.
 func (h *Handler) Close() {}
+
+// Describe implements handlers.Interface.
+func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
+	// TODO
+}
+
+// Collect implements handlers.Interface.
+func (h *Handler) Collect(ch chan<- prometheus.Metric) {
+	// TODO
+}
 
 // check interfaces
 var (
