@@ -379,6 +379,9 @@ func TestCollectionName(t *testing.T) {
 			},
 			altMessage: "Invalid collection name: 'TestCollectionName.\x00'",
 		},
+		"DotSurround": {
+			collection: ".collection..",
+		},
 		"Dot": {
 			collection: "collection.name",
 		},
