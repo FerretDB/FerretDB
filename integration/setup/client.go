@@ -77,7 +77,7 @@ func mongoDBURI(tb testing.TB, opts *mongoDBURIOpts) string {
 	return u.String()
 }
 
-// makeClient returns new client for the given working MongoDB URI.
+// makeClient returns new client for the given MongoDB client options.
 func makeClient(ctx context.Context, clientOpts *options.ClientOptions) (*mongo.Client, error) {
 	clientOpts.SetMonitor(otelmongo.NewMonitor())
 

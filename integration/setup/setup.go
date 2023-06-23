@@ -87,8 +87,7 @@ type SetupOpts struct {
 	// Benchmark data provider. If empty, collection is not created.
 	BenchmarkProvider shareddata.BenchmarkProvider
 
-	// ClientOptions specifies parameters set for client.
-	// If MongoDB URI sets the same option, this overwrites it.
+	// ClientOptions overwrites the options set in MongoDB URI when the same option is set.
 	ClientOptions *options.ClientOptions
 }
 
@@ -142,8 +141,8 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	if *targetURLF == "" {
 		client, uri = setupListener(tb, ctx, logger)
 	} else {
-		uriClientOpts := options.Client().ApplyURI(*targetURLF)
-		clientOpts := options.MergeClientOptions(uriClientOpts, opts.ClientOptions)
+		clientOpts := options.Client().ApplyURI(*targetURLF)
+		clientOpts = options.MergeClientOptions(clientOpts, opts.ClientOptions)
 		client = setupClient(tb, ctx, clientOpts)
 		uri = *targetURLF
 	}
