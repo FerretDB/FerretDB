@@ -38,7 +38,7 @@ More information on contributing to the documentation can be found [here](https:
 
 ## Contributing to dance
 
-- To start contributing to the [dance repository](https://github.com/FerretDB/github-actions) for integration testing, follow the guidelines in the [CONTRIBUTING.md](https://github.com/FerretDB/dance/blob/main/CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](https://github.com/FerretDB/dance/blob/main/CODE_OF_CONDUCT.md) files.
+- To start contributing to the [dance repository](https://github.com/FerretDB/dance) for integration testing, follow the guidelines in the [CONTRIBUTING.md](https://github.com/FerretDB/dance/blob/main/CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](https://github.com/FerretDB/dance/blob/main/CODE_OF_CONDUCT.md) files.
 - Looking for something to work on?
   Check out the [open issues](https://github.com/FerretDB/dance/issues) for this repository.
 
