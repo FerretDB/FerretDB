@@ -80,13 +80,14 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 		)
 	}
 
-	// TODO maxTimeMS, comment
+	// TODO maxTimeMS https://github.com/FerretDB/FerretDB/issues/1808
+	// TODO comment
 
 	username, _ := conninfo.Get(ctx).Auth()
 
 	// TODO: Use ExtractParam https://github.com/FerretDB/FerretDB/issues/2859
-	cursor := registry.Cursor(username, cursorID)
-	if cursor == nil {
+	cursor := registry.Get(cursorID)
+	if cursor == nil || cursor.Username != username {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrCursorNotFound,
 			fmt.Sprintf("cursor id %d not found", cursorID),
@@ -121,7 +122,7 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 		)
 	}
 
-	resDocs, err := iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor.Iter), int(batchSize))
+	resDocs, err := iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor), int(batchSize))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

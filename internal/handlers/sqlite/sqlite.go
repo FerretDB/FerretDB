@@ -24,6 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -40,7 +41,10 @@ func notImplemented(command string) error {
 // Handler implements handlers.Interface.
 type Handler struct {
 	*NewOpts
+
 	b backends.Backend
+
+	cursors *cursor.Registry
 }
 
 // NewOpts represents handler configuration.
@@ -53,7 +57,9 @@ type NewOpts struct {
 	Metrics       *connmetrics.ConnMetrics
 	StateProvider *state.Provider
 
+	// test options
 	DisableFilterPushdown bool
+	EnableCursors         bool
 }
 
 // New returns a new handler.
@@ -66,8 +72,9 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	}
 
 	return &Handler{
-		NewOpts: opts,
 		b:       b,
+		NewOpts: opts,
+		cursors: cursor.NewRegistry(),
 	}, nil
 }
 
@@ -76,12 +83,12 @@ func (h *Handler) Close() {}
 
 // Describe implements handlers.Interface.
 func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
-	// TODO
+	h.cursors.Describe(ch)
 }
 
 // Collect implements handlers.Interface.
 func (h *Handler) Collect(ch chan<- prometheus.Metric) {
-	// TODO
+	h.cursors.Collect(ch)
 }
 
 // check interfaces

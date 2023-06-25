@@ -202,19 +202,20 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var cursorID int64
 
+	// don't create a cursor if all docs fit in the firstBatch
 	if h.EnableCursors && int64(len(resDocs)) > batchSize {
-		// Cursor is not created when resDocs is less than batchSize, it all fits in the firstBatch.
-		iter := iterator.Values(iterator.ForSlice(resDocs))
-		c := cursor.New(&cursor.NewParams{
-			Iter:       iter,
+		username, _ := conninfo.Get(ctx).Auth()
+
+		cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
+			Iter:       iterator.Values(iterator.ForSlice(resDocs)),
 			DB:         db,
 			Collection: collection,
-			BatchSize:  int32(batchSize),
+			Username:   username,
 		})
-		username, _ := conninfo.Get(ctx).Auth()
-		cursorID = h.registry.StoreCursor(username, c)
-		resDocs, err = iterator.ConsumeValuesN(iter, int(batchSize))
 
+		cursorID = cursor.ID
+
+		resDocs, err = iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor), int(batchSize))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

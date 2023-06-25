@@ -129,21 +129,20 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	var cursorID int64
 
-	if h.EnableCursors && !params.SingleBatch && int64(len(resDocs)) > params.BatchSize {
-		// Cursor is not created for singleBatch, and when resDocs is less than batchSize,
-		// all response fits in the firstBatch.
-		iter := iterator.Values(iterator.ForSlice(resDocs))
-		c := cursor.New(&cursor.NewParams{
-			Iter:       iter,
+	// don't create a cursor if all docs fit in the firstBatch or a single batch is requested
+	if h.EnableCursors && int64(len(resDocs)) > params.BatchSize && !params.SingleBatch {
+		username, _ := conninfo.Get(ctx).Auth()
+
+		cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
+			Iter:       iterator.Values(iterator.ForSlice(resDocs)),
 			DB:         params.DB,
 			Collection: params.Collection,
-			BatchSize:  int32(params.BatchSize),
+			Username:   username,
 		})
 
-		username, _ := conninfo.Get(ctx).Auth()
-		cursorID = h.registry.StoreCursor(username, c)
+		cursorID = cursor.ID
 
-		resDocs, err = iterator.ConsumeValuesN(iter, int(params.BatchSize))
+		resDocs, err = iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor), int(params.BatchSize))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

@@ -37,8 +37,8 @@ import (
 type Handler struct {
 	*NewOpts
 
-	url      url.URL
-	registry *cursor.Registry
+	url     url.URL
+	cursors *cursor.Registry
 
 	// accessed by DBPool(ctx)
 	rw    sync.RWMutex
@@ -71,10 +71,10 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	}
 
 	h := &Handler{
-		NewOpts:  opts,
-		url:      *u,
-		registry: cursor.NewRegistry(),
-		pools:    make(map[string]*pgdb.Pool, 1),
+		NewOpts: opts,
+		url:     *u,
+		cursors: cursor.NewRegistry(),
+		pools:   make(map[string]*pgdb.Pool, 1),
 	}
 
 	return h, nil

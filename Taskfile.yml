@@ -215,6 +215,7 @@ tasks:
         -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
         -disable-filter-pushdown
+        -enable-cursors
     vars:
       SHARD_RUN:
         sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
@@ -326,6 +327,7 @@ tasks:
         --sqlite-uri=tmp/sqlite
         --test-records-dir=tmp/records
         --test-disable-filter-pushdown
+        --test-enable-cursors
 
   run-tigris:
     desc: "Run FerretDB with `tigris` handler"
