@@ -89,6 +89,8 @@ func (h *Handler) Close() {
 		p.Close()
 		delete(h.pools, k)
 	}
+
+	h.cursors.Close()
 }
 
 // DBPool returns database connection pool for the given client connection.

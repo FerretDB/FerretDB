@@ -52,7 +52,8 @@ type Registry struct {
 	rw sync.RWMutex
 	m  map[int64]*Cursor
 
-	l *zap.Logger
+	l  *zap.Logger
+	wg sync.WaitGroup
 }
 
 // NewRegistry creates a new Registry.
@@ -61,6 +62,13 @@ func NewRegistry(l *zap.Logger) *Registry {
 		m: map[int64]*Cursor{},
 		l: l,
 	}
+}
+
+// Close waits for all cursors to be closed.
+func (r *Registry) Close() {
+	// we mainly do that for tests; see https://github.com/uber-go/zap/issues/687
+
+	r.wg.Wait()
 }
 
 // NewParams represent parameters for NewCursor.
@@ -95,9 +103,15 @@ func (r *Registry) NewCursor(ctx context.Context, params *NewParams) *Cursor {
 	c := newCursor(id, params.DB, params.Collection, params.Username, params.Iter, r)
 	r.m[id] = c
 
+	r.wg.Add(1)
 	go func() {
-		<-ctx.Done()
-		c.Close()
+		defer r.wg.Done()
+
+		select {
+		case <-ctx.Done():
+			c.Close()
+		case <-c.closed:
+		}
 	}()
 
 	return c

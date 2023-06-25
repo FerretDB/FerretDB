@@ -42,6 +42,7 @@ type Cursor struct {
 	iter       types.DocumentsIterator
 	r          *Registry
 	token      *resource.Token
+	closed     chan struct{}
 	DB         string
 	Collection string
 	Username   string
@@ -59,6 +60,7 @@ func newCursor(id int64, db, collection, username string, iter types.DocumentsIt
 		iter:       iter,
 		r:          r,
 		token:      resource.NewToken(),
+		closed:     make(chan struct{}),
 	}
 
 	resource.Track(c, c.token)
@@ -75,7 +77,11 @@ func (c *Cursor) Next() (struct{}, *types.Document, error) {
 func (c *Cursor) Close() {
 	c.closeOnce.Do(func() {
 		c.r.delete(c.ID)
+
 		c.iter.Close()
+		c.iter = nil
+		close(c.closed)
+
 		resource.Untrack(c, c.token)
 	})
 }

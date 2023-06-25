@@ -88,6 +88,8 @@ func (h *Handler) Close() {
 		p.Driver.Close()
 		delete(h.pools, k)
 	}
+
+	h.registry.Close()
 }
 
 // DBPool returns database connection pool for the given client connection.

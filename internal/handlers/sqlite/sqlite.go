@@ -80,7 +80,9 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 }
 
 // Close implements handlers.Interface.
-func (h *Handler) Close() {}
+func (h *Handler) Close() {
+	h.cursors.Close()
+}
 
 // Describe implements handlers.Interface.
 func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
