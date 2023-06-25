@@ -202,8 +202,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var cursorID int64
 
-	// don't create a cursor if all docs fit in the firstBatch
-	if h.EnableCursors && int64(len(resDocs)) > batchSize {
+	// don't create a cursor if all docs fit in the firstBatch // FIXME
+	if int64(len(resDocs)) > batchSize {
 		username, _ := conninfo.Get(ctx).Auth()
 
 		cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
@@ -215,6 +215,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		cursorID = cursor.ID
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/1733
 		resDocs, err = iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor), int(batchSize))
 		if err != nil {
 			return nil, lazyerrors.Error(err)

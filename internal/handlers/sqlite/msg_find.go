@@ -110,21 +110,17 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	var cursorID int64
 	var docs []*types.Document
 
-	if h.EnableCursors {
-		cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
-			Iter:       cIter,
-			DB:         params.DB,
-			Collection: params.Collection,
-		})
+	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
+		Iter:       cIter,
+		DB:         params.DB,
+		Collection: params.Collection,
+	})
 
-		cursorID = cursor.ID
+	cursorID = cursor.ID
 
-		cIter = cursor
+	cIter = cursor
 
-		docs, err = iterator.ConsumeValuesN(cIter, int(params.BatchSize))
-	} else {
-		docs, err = iterator.ConsumeValues(cIter)
-	}
+	docs, err = iterator.ConsumeValuesN(cIter, int(params.BatchSize))
 
 	if err != nil {
 		return nil, lazyerrors.Error(err)

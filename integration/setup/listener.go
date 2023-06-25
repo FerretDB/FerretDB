@@ -134,7 +134,6 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown: *disableFilterPushdownF,
 			EnableSortPushdown:    *enableSortPushdownF,
-			EnableCursors:         *enableCursorsF,
 		},
 	}
 	h, err := registry.NewHandler(handler, handlerOpts)

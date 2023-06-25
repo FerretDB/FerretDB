@@ -61,7 +61,6 @@ var (
 
 	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
 	enableSortPushdownF    = flag.Bool("enable-sort-pushdown", false, "enable sort pushdown")
-	enableCursorsF         = flag.Bool("enable-cursors", false, "enable cursors")
 )
 
 // Other globals.

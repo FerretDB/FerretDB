@@ -56,7 +56,6 @@ type NewOpts struct {
 
 	// test options
 	DisableFilterPushdown bool
-	EnableCursors         bool
 }
 
 // AuthParams represents authentication parameters.
