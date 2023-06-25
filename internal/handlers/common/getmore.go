@@ -87,7 +87,25 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 
 	// TODO: Use ExtractParam https://github.com/FerretDB/FerretDB/issues/2859
 	cursor := registry.Get(cursorID)
-	if cursor == nil || cursor.Username != username {
+
+	// FIXME
+	if cursor == nil {
+		var reply wire.OpMsg
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"cursor", must.NotFail(types.NewDocument(
+					"nextBatch", types.MakeArray(0),
+					"id", cursorID,
+					"ns", db+"."+collection,
+				)),
+				"ok", float64(1),
+			))},
+		}))
+
+		return &reply, nil
+	}
+
+	if cursor.Username != username {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrCursorNotFound,
 			fmt.Sprintf("cursor id %d not found", cursorID),
