@@ -73,7 +73,7 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	h := &Handler{
 		NewOpts: opts,
 		url:     *u,
-		cursors: cursor.NewRegistry(),
+		cursors: cursor.NewRegistry(opts.L.Named("cursors")),
 		pools:   make(map[string]*pgdb.Pool, 1),
 	}
 

@@ -74,7 +74,7 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 
 	return &Handler{
 		NewOpts:  opts,
-		registry: cursor.NewRegistry(),
+		registry: cursor.NewRegistry(opts.L.Named("cursors")),
 		pools:    make(map[AuthParams]*tigrisdb.TigrisDB, 1),
 	}, nil
 }

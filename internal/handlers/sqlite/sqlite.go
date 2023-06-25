@@ -66,6 +66,7 @@ type NewOpts struct {
 func New(opts *NewOpts) (handlers.Interface, error) {
 	b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
 		Dir: opts.Dir,
+		L:   opts.L,
 	})
 	if err != nil {
 		return nil, err
@@ -74,7 +75,7 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	return &Handler{
 		b:       b,
 		NewOpts: opts,
-		cursors: cursor.NewRegistry(),
+		cursors: cursor.NewRegistry(opts.L.Named("cursors")),
 	}, nil
 }
 

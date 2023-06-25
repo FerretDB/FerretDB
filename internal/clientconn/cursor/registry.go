@@ -56,10 +56,10 @@ type Registry struct {
 }
 
 // NewRegistry creates a new Registry.
-func NewRegistry() *Registry {
+func NewRegistry(l *zap.Logger) *Registry {
 	return &Registry{
 		m: map[int64]*Cursor{},
-		l: zap.L().Named("cursors"),
+		l: l,
 	}
 }
 
