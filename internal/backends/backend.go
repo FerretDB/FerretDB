@@ -17,6 +17,7 @@ package backends
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
@@ -93,6 +94,7 @@ type DatabaseInfo struct {
 func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDatabasesParams) (res *ListDatabasesResult, err error) {
 	defer observability.FuncCall(ctx)()
 	defer checkError(err)
+	must.NotBeZero(params)
 	res, err = bc.b.ListDatabases(ctx, params)
 
 	return
@@ -107,6 +109,7 @@ type DropDatabaseParams struct {
 func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabaseParams) (err error) {
 	defer observability.FuncCall(ctx)()
 	defer checkError(err, ErrorCodeDatabaseDoesNotExist)
+	must.NotBeZero(params)
 	err = bc.b.DropDatabase(ctx, params)
 
 	return

@@ -14,3 +14,19 @@
 
 // Package sqlite provides SQLite backend.
 package sqlite
+
+// https://www.sqlite.org/limits.html#max_variable_number
+const maxPlaceholders = 1000
+
+func placeholders(n int) []string {
+	if n > maxPlaceholders {
+		panic("too many placeholders")
+	}
+
+	r := make([]string, n)
+	for i := 0; i < n; i++ {
+		r[i] = "?"
+	}
+
+	return r
+}

@@ -19,6 +19,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
@@ -97,6 +98,7 @@ type InsertResult struct {
 func (cc *collectionContract) Insert(ctx context.Context, params *InsertParams) (res *InsertResult, err error) {
 	defer observability.FuncCall(ctx)()
 	defer checkError(err)
+	must.NotBeZero(params)
 	res, err = cc.c.Insert(ctx, params)
 
 	return
@@ -116,6 +118,7 @@ type UpdateResult struct {
 func (cc *collectionContract) Update(ctx context.Context, params *UpdateParams) (res *UpdateResult, err error) {
 	defer observability.FuncCall(ctx)()
 	defer checkError(err)
+	must.NotBeZero(params)
 	res, err = cc.c.Update(ctx, params)
 
 	return
@@ -135,6 +138,7 @@ type DeleteResult struct {
 func (cc *collectionContract) Delete(ctx context.Context, params *DeleteParams) (res *DeleteResult, err error) {
 	defer observability.FuncCall(ctx)()
 	defer checkError(err)
+	must.NotBeZero(params)
 	res, err = cc.c.Delete(ctx, params)
 
 	return

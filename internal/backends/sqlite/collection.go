@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
@@ -164,9 +165,50 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 
 // Delete implements backends.Collection interface.
 func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) (*backends.DeleteResult, error) {
+	db := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if db == nil {
+		return nil, lazyerrors.Errorf("no database %q", c.dbName)
+	}
+
+	tableName := c.r.CollectionToTable(c.name)
+
+	iter := iterator.ForSlice(params.IDs)
+	defer iter.Close()
+
+	var deleted int64
+
+	for {
+		ids, err := iterator.ConsumeValuesN(iter, maxPlaceholders)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if len(ids) == 0 {
+			break
+		}
+
+		query := fmt.Sprintf(
+			`DELETE FROM %q WHERE json_extract(_ferretdb_sjson, '$._id') IN (%s)`,
+			tableName,
+			strings.Join(placeholders(len(ids)), ", "),
+		)
+
+		res, err := db.ExecContext(ctx, query, ids...)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		a, err := res.RowsAffected()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		deleted += a
+	}
+
 	// TODO https://github.com/FerretDB/FerretDB/issues/2751
 	return &backends.DeleteResult{
-		Deleted: 0,
+		Deleted: deleted,
 	}, nil
 }
 

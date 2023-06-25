@@ -17,6 +17,7 @@ package backends
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
@@ -99,6 +100,7 @@ type CollectionInfo struct {
 func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCollectionsParams) (res *ListCollectionsResult, err error) {
 	defer observability.FuncCall(ctx)()
 	defer checkError(err)
+	must.NotBeZero(params)
 	res, err = dbc.db.ListCollections(ctx, params)
 
 	return
@@ -115,6 +117,7 @@ type CreateCollectionParams struct {
 func (dbc *databaseContract) CreateCollection(ctx context.Context, params *CreateCollectionParams) (err error) {
 	defer observability.FuncCall(ctx)()
 	defer checkError(err, ErrorCodeCollectionAlreadyExists, ErrorCodeCollectionNameIsInvalid)
+	must.NotBeZero(params)
 	err = dbc.db.CreateCollection(ctx, params)
 
 	return
@@ -131,6 +134,7 @@ type DropCollectionParams struct {
 func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCollectionParams) (err error) {
 	defer observability.FuncCall(ctx)()
 	defer checkError(err, ErrorCodeCollectionDoesNotExist) // TODO: ErrorCodeDatabaseDoesNotExist ?
+	must.NotBeZero(params)
 	err = dbc.db.DropCollection(ctx, params)
 
 	return
