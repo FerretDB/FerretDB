@@ -123,7 +123,13 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 				return err
 			}
 
-			if err = pgdb.CreateIndexIfNotExists(ctx, tx, db, collection, index); err != nil {
+			err = pgdb.CreateIndexIfNotExists(ctx, tx, db, collection, index)
+			if errors.Is(err, pgdb.ErrIndexKeyAlreadyExist) && index.Name == "_id_1" {
+				// ascending _id index is created by default
+				return nil
+			}
+
+			if err != nil {
 				return err
 			}
 		}

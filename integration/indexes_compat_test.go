@@ -104,7 +104,6 @@ func TestCreateIndexesCompat(t *testing.T) {
 					Keys: bson.D{{"_id", 1}}, // this index is already created by default
 				},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"DescendingID": {
 			models: []mongo.IndexModel{
