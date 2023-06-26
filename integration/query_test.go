@@ -955,7 +955,7 @@ func TestQueryCommandGetMore(t *testing.T) {
 	q := url.Values{}
 
 	// set 1 to ensure only one pool exists duration of the test,
-	// which forces a client to use a single pool
+	// which forces a client to use a single connection pool
 	q.Set("maxPoolSize", "1")
 	q.Set("minPoolSize", "1")
 

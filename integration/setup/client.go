@@ -78,6 +78,7 @@ func mongoDBURI(tb testing.TB, opts *mongoDBURIOpts) string {
 }
 
 // makeClient returns new client for the given MongoDB URI and extra options.
+// The extraOpts that comes later overwrites value for the query key.
 func makeClient(ctx context.Context, uri string, extraOpts url.Values) (*mongo.Client, error) {
 	u, err := url.Parse(uri)
 	if err != nil {
