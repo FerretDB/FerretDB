@@ -141,6 +141,11 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		cursorID = 0
 	}
 
+	if params.SingleBatch {
+		cIter.Close()
+		cursorID = 0
+	}
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(

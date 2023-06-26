@@ -195,7 +195,6 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	// ensure that all listener's logs are written before test ends
 	tb.Cleanup(func() {
 		<-runDone
-		h.Close()
 	})
 
 	var clientOpts mongoDBURIOpts
