@@ -474,10 +474,13 @@ func TestCommandWhatsMyURIConnection(t *testing.T) {
 
 		close(ports)
 
-		previousPort := <-ports
+		var allPorts []string
 		for port := range ports {
-			assert.Equal(t, previousPort, port)
-			previousPort = port
+			allPorts = append(allPorts, port)
+		}
+
+		for _, port := range allPorts {
+			require.Equal(t, allPorts[0], port, "expected same client uses the same port: %s", allPorts)
 		}
 	})
 
