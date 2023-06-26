@@ -248,7 +248,7 @@ What we want to do now is to explore and view the data we just inserted through 
 
 In your terminal, we will open a new `psql` terminal that takes us directly to the `ferretdb` database we created earlier, and contains our data.
 
-```sh
+```text
 ~$ sudo su - postgres
 postgres@Alexander-ubuntu:~$ psql ferretdb
 psql (13.10 - Percona Distribution (Ubuntu 2:13.10-1.focal))
