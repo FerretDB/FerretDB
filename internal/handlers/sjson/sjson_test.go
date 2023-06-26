@@ -191,6 +191,10 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() sjsontype) {
 			}
 
 			for _, doc := range docs {
+				if doc.ValidateData() != nil {
+					continue
+				}
+
 				j, err := MarshalSingleValue(doc)
 				require.NoError(f, err)
 
