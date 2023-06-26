@@ -135,6 +135,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		firstBatch.Append(doc)
 	}
 
+	if firstBatch.Len() < int(params.BatchSize) {
+		// Cursor ID 0 lets the client know that there are no more results.
+		// Cursor is already closed and removed from the registry by this point.
+		cursorID = 0
+	}
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(

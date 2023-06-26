@@ -104,6 +104,7 @@ func (r *Registry) NewCursor(ctx context.Context, params *NewParams) *Cursor {
 	r.m[id] = c
 
 	r.wg.Add(1)
+
 	go func() {
 		defer r.wg.Done()
 
