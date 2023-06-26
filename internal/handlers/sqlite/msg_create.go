@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -102,6 +103,10 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		msg := fmt.Sprintf("Invalid collection name: '%s.%s'", dbName, collectionName)
 		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
 
+	case errors.Is(err, ErrCollectionStartsWithDot):
+		msg := fmt.Sprintf("Collection names cannot start with '.': %s", collectionName)
+		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
+
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionAlreadyExists):
 		msg := fmt.Sprintf("Collection %s.%s already exists.", dbName, collectionName)
 		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNamespaceExists, msg)
@@ -122,6 +127,10 @@ var validateCollectionNameRe = regexp.MustCompile("^[^.$\x00][^$\x00]{0,234}$")
 
 // createCollection validates the collection name and creates collection.
 func createCollection(ctx context.Context, db backends.Database, collectionName string) error {
+	if strings.HasPrefix(collectionName, ".") {
+		return ErrCollectionStartsWithDot
+	}
+
 	if !validateCollectionNameRe.MatchString(collectionName) ||
 		!utf8.ValidString(collectionName) {
 		return ErrInvalidCollectionName
