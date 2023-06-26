@@ -172,7 +172,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 			if _, ok := duplicateChecker[index.Name]; ok {
 				return commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrIndexAlreadyExists,
+					commonerrors.ErrIndexKeySpecsConflict,
 					fmt.Sprintf("Identical index already exists: %s", index.Name),
 					document.Command(),
 				)
