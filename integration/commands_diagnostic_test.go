@@ -434,6 +434,8 @@ func TestCommandWhatsMyURIConnection(t *testing.T) {
 	t.Run("SameClient", func(t *testing.T) {
 		setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/2906")
 
+		t.Parallel()
+
 		num := runtime.GOMAXPROCS(-1) * 10
 		ready := make(chan struct{}, num)
 		start := make(chan struct{})
@@ -492,6 +494,8 @@ func TestCommandWhatsMyURIConnection(t *testing.T) {
 	})
 
 	t.Run("DifferentClient", func(t *testing.T) {
+		t.Parallel()
+
 		u, err := url.Parse(s.MongoDBURI)
 		require.NoError(t, err)
 
