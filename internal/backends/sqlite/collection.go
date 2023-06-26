@@ -164,9 +164,33 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 
 // Delete implements backends.Collection interface.
 func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) (*backends.DeleteResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2751
+	db := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if db == nil {
+		return nil, lazyerrors.Errorf("no database %q", c.dbName)
+	}
+
+	tableName := c.r.CollectionToTable(c.name)
+
+	query := fmt.Sprintf(`DELETE FROM %q WHERE json_extract(_ferretdb_sjson, '$._id') = ?`, tableName)
+
+	var deleted int64
+
+	for _, id := range params.IDs {
+		res, err := db.ExecContext(ctx, query, id)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		rowsAffected, err := res.RowsAffected()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		deleted += rowsAffected
+	}
+
 	return &backends.DeleteResult{
-		Deleted: 0,
+		Deleted: deleted,
 	}, nil
 }
 
