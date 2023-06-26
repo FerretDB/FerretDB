@@ -141,6 +141,8 @@ func execDelete(ctx context.Context, dp *execDeleteParams) (int32, error) {
 
 		// if limit is set, no need to fetch all the documents
 		if dp.limited {
+			iter.Close()
+
 			break
 		}
 	}
@@ -149,9 +151,6 @@ func execDelete(ctx context.Context, dp *execDeleteParams) (int32, error) {
 	if len(ids) == 0 {
 		return 0, nil
 	}
-
-	// close iterator to free db connection.
-	iter.Close()
 
 	deleteRes, err := dp.coll.Delete(ctx, &backends.DeleteParams{IDs: ids})
 	if err != nil {
