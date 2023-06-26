@@ -118,6 +118,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			return lazyerrors.Error(err)
 		}
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/1733
 		resDocs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
 
 		return err
@@ -129,8 +130,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	var cursorID int64
 
-	// don't create a cursor if all docs fit in the firstBatch or a single batch is requested
-	if h.EnableCursors && int64(len(resDocs)) > params.BatchSize && !params.SingleBatch {
+	// don't create a cursor if all docs fit in the firstBatch or a single batch is requested // FIXME
+	if int64(len(resDocs)) > params.BatchSize && !params.SingleBatch {
 		username, _ := conninfo.Get(ctx).Auth()
 
 		cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{

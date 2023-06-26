@@ -59,7 +59,6 @@ type NewOpts struct {
 
 	// test options
 	DisableFilterPushdown bool
-	EnableCursors         bool
 }
 
 // New returns a new handler.
