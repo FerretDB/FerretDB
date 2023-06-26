@@ -403,6 +403,22 @@ tasks:
         --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
         --test-records-dir=tmp/records
 
+  run-sqlite-proxy:
+    desc: "Run FerretDB with `sqlite` handler in diff-proxy mode"
+    deps: [build-host]
+    cmds:
+      - go run ./cmd/envtool shell mkdir tmp/sqlite
+      - >
+        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
+        --listen-addr=:27017
+        --proxy-addr=127.0.0.1:47017
+        --mode=diff-proxy
+        --handler=sqlite
+        --sqlite-uri=tmp/sqlite
+        --test-records-dir=tmp/records
+        --test-disable-filter-pushdown
+        --test-enable-cursors
+
   lint:
     desc: "Run linters"
     cmds:

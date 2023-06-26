@@ -87,25 +87,7 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 
 	// TODO: Use ExtractParam https://github.com/FerretDB/FerretDB/issues/2859
 	cursor := registry.Get(cursorID)
-
-	// FIXME
-	if cursor == nil {
-		var reply wire.OpMsg
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"cursor", must.NotFail(types.NewDocument(
-					"nextBatch", types.MakeArray(0),
-					"id", cursorID,
-					"ns", db+"."+collection,
-				)),
-				"ok", float64(1),
-			))},
-		}))
-
-		return &reply, nil
-	}
-
-	if cursor.Username != username {
+	if cursor == nil || cursor.Username != username {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrCursorNotFound,
 			fmt.Sprintf("cursor id %d not found", cursorID),
@@ -148,6 +130,12 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 	nextBatch := types.MakeArray(len(resDocs))
 	for _, doc := range resDocs {
 		nextBatch.Append(doc)
+	}
+
+	if nextBatch.Len() < int(batchSize) {
+		// Cursor ID 0 lets the client know that there are no more results.
+		// Cursor is already closed and removed from the registry by this point.
+		cursorID = 0
 	}
 
 	var reply wire.OpMsg
