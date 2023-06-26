@@ -110,16 +110,14 @@ func execDelete(ctx context.Context, dp *execDeleteParams) (int32, error) {
 		return 0, err
 	}
 
-	iter := res.Iter
-
-	defer iter.Close()
+	defer res.Iter.Close()
 
 	ids := make([]any, 0, 16)
 
 	for {
 		var doc *types.Document
 
-		if _, doc, err = iter.Next(); err != nil {
+		if _, doc, err = res.Iter.Next(); err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
 			}
@@ -141,7 +139,7 @@ func execDelete(ctx context.Context, dp *execDeleteParams) (int32, error) {
 
 		// if limit is set, no need to fetch all the documents
 		if dp.limited {
-			iter.Close()
+			res.Iter.Close()
 
 			break
 		}
