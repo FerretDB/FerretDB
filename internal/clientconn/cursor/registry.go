@@ -127,6 +127,7 @@ func (r *Registry) Get(id int64) *Cursor {
 	return r.m[id]
 }
 
+// All returns a shallow copy of all stored cursors.
 func (r *Registry) All() []*Cursor {
 	r.rw.RLock()
 	defer r.rw.RUnlock()
