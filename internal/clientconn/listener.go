@@ -124,8 +124,12 @@ func (l *Listener) Run(ctx context.Context) error {
 		logger.Sugar().Infof("Listening on TLS %s ...", l.TLSAddr())
 	}
 
-	// close listeners on context cancellation to exit from listenLoop
+	var wg sync.WaitGroup
+
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
+
 		<-ctx.Done()
 
 		if l.tcpListener != nil {
@@ -140,8 +144,6 @@ func (l *Listener) Run(ctx context.Context) error {
 			l.tlsListener.Close()
 		}
 	}()
-
-	var wg sync.WaitGroup
 
 	if l.TCP != "" {
 		wg.Add(1)
