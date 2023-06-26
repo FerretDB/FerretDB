@@ -42,7 +42,7 @@ Other notable solutions of the Percona Distribution for PostgreSQL include Perco
 
 ## Introducing FerretDB
 
-[FerretDB](https://www.ferretdb.io/) is open source document database that acts as a MongoDB-alternative for users looking for open-source solutions with the same query language and commands, ease of use, and flexibility.
+[FerretDB](https://www.ferretdb.io/) is open source document database that acts as a MongoDB alternative for users looking for open-source solutions with the same query language and commands, ease of use, and flexibility.
 
 Using PostgreSQL as the backend, FerretDB converts the wire protocols of MongoDB to SQL, enabling you to manage MongoDB workloads with PostgreSQL (We wrote a really great article that explains how this works – [check it out here](https://blog.ferretdb.io/pjson-how-to-store-bson-in-jsonb/)).
 
