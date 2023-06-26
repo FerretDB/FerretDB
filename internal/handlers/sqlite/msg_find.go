@@ -19,6 +19,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -42,6 +43,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	if params.BatchSize == 0 {
+		// collection does not have to exist
 		var reply wire.OpMsg
 		must.NoError(reply.SetSections(wire.OpMsgSection{
 			Documents: []*types.Document{must.NotFail(types.NewDocument(
@@ -57,12 +59,14 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return &reply, nil
 	}
 
+	username, _ := conninfo.Get(ctx).Auth()
+
 	db := h.b.Database(params.DB)
 	defer db.Close()
 
 	cancel := func() {}
 	if params.MaxTimeMS != 0 {
-		// It is not if maxTimeMS affects only find, or both find and getMore (as the current code does).
+		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
 		// TODO https://github.com/FerretDB/FerretDB/issues/1808
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
 	}
@@ -73,11 +77,13 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter := queryRes.Iter
+	// closer accumulates all things that should be closed / canceled
+	closer := iterator.NewMultiCloser(queryRes.Iter)
 
-	closer := iterator.NewMultiCloser(iter, iterator.CloserFunc(cancel))
+	// to free maxTimeMS's context resources when they are not needed
+	closer.Add(iterator.CloserFunc(cancel))
 
-	iter = common.FilterIterator(iter, closer, params.Filter)
+	iter := common.FilterIterator(queryRes.Iter, closer, params.Filter)
 
 	iter, err = common.SortIterator(iter, closer, params.Sort)
 	if err != nil {
@@ -105,41 +111,33 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	cIter := iterator.WithClose(iterator.Interface[struct{}, *types.Document](iter), closer.Close)
-
-	var cursorID int64
-	var docs []*types.Document
-
+	// Combine iterators chain and closer into a cursor to pass around.
+	// The context will be canceled when client disconnects or after maxTimeMS.
 	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
-		Iter:       cIter,
+		Iter:       iterator.WithClose(iterator.Interface[struct{}, *types.Document](iter), closer.Close),
 		DB:         params.DB,
 		Collection: params.Collection,
+		Username:   username,
 	})
 
-	cursorID = cursor.ID
+	cursorID := cursor.ID
 
-	cIter = cursor
-
-	docs, err = iterator.ConsumeValuesN(cIter, int(params.BatchSize))
-
+	firstBatchDocs, err := iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor), int(params.BatchSize))
 	if err != nil {
+		cursor.Close()
 		return nil, lazyerrors.Error(err)
 	}
 
-	firstBatch := types.MakeArray(len(docs))
-	for _, doc := range docs {
+	firstBatch := types.MakeArray(len(firstBatchDocs))
+	for _, doc := range firstBatchDocs {
 		firstBatch.Append(doc)
 	}
 
-	if firstBatch.Len() < int(params.BatchSize) {
-		// Cursor ID 0 lets the client know that there are no more results.
-		// Cursor is already closed and removed from the registry by this point.
+	if params.SingleBatch || firstBatch.Len() < int(params.BatchSize) {
+		// let the client know that there are no more results
 		cursorID = 0
-	}
 
-	if params.SingleBatch {
-		cIter.Close()
-		cursorID = 0
+		cursor.Close()
 	}
 
 	var reply wire.OpMsg
