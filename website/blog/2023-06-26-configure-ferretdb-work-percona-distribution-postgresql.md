@@ -178,7 +178,7 @@ For the purpose of this guide, we'll be using Studio 3T – a MongoDB GUI tool.
 
 Once Studio 3T is installed, launch the application and add a connection using the right MongoDB URI.
 
-```sh
+```text
 mongodb://username:password@127.0.0.1/ferretdb?authMechanism=PLAIN
 ```
 
