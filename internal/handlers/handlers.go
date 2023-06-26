@@ -18,6 +18,8 @@ package handlers
 import (
 	"context"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -34,6 +36,8 @@ import (
 type Interface interface {
 	// Close gracefully shutdowns handler.
 	Close()
+
+	prometheus.Collector
 
 	// CmdQuery queries collections for documents.
 	// Used by deprecated OP_QUERY message during connection handshake with an old client.

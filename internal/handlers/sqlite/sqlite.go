@@ -18,6 +18,7 @@
 package sqlite
 
 import (
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -72,6 +73,16 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 
 // Close implements handlers.Interface.
 func (h *Handler) Close() {}
+
+// Describe implements handlers.Interface.
+func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
+	// TODO
+}
+
+// Collect implements handlers.Interface.
+func (h *Handler) Collect(ch chan<- prometheus.Metric) {
+	// TODO
+}
 
 // check interfaces
 var (

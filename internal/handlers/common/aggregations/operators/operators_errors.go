@@ -24,12 +24,6 @@ const (
 	// ErrArgsInvalidLen indicates that operator have invalid amount of arguments.
 	ErrArgsInvalidLen
 
-	// ErrWrongType indicates that operator field is not a document.
-	ErrWrongType
-
-	// ErrEmptyField indicates that operator field is empty.
-	ErrEmptyField
-
 	// ErrTooManyFields indicates that operator field specifes more than one operators.
 	ErrTooManyFields
 
@@ -41,9 +35,6 @@ const (
 
 	// ErrInvalidNestedExpression indicates that operator inside the target operator does not exist.
 	ErrInvalidNestedExpression
-
-	// ErrNoOperator indicates that given document does not contain any operator.
-	ErrNoOperator
 )
 
 // newOperatorError returns new OperatorError.

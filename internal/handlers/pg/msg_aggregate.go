@@ -22,10 +22,13 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -46,8 +49,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1892
-	common.Ignored(document, h.L, "cursor", "lsid")
+	common.Ignored(document, h.L, "lsid")
 
 	if err = common.Unimplemented(document, "explain", "collation", "let"); err != nil {
 		return nil, err
@@ -130,6 +132,38 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 	}
 
+	// validate cursor after validating pipeline stages to keep compatibility
+	v, _ := document.Get("cursor")
+	if v == nil {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrFailedToParse,
+			"The 'cursor' option is required, except for aggregate with the explain argument",
+			document.Command(),
+		)
+	}
+
+	cursorDoc, ok := v.(*types.Document)
+	if !ok {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrTypeMismatch,
+			fmt.Sprintf(
+				`BSON field 'cursor' is the wrong type '%s', expected type 'object'`,
+				commonparams.AliasFromType(v),
+			),
+			document.Command(),
+		)
+	}
+
+	v, _ = cursorDoc.Get("batchSize")
+	if v == nil {
+		v = int32(101)
+	}
+
+	batchSize, err := commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "batchSize", v, 0)
+	if err != nil {
+		return nil, err
+	}
+
 	var resDocs []*types.Document
 
 	// At this point we have a list of stages to apply to the documents or stats.
@@ -166,7 +200,26 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/1892
+	var cursorID int64
+
+	if h.EnableCursors && int64(len(resDocs)) > batchSize {
+		// Cursor is not created when resDocs is less than batchSize, it all fits in the firstBatch.
+		iter := iterator.Values(iterator.ForSlice(resDocs))
+		c := cursor.New(&cursor.NewParams{
+			Iter:       iter,
+			DB:         db,
+			Collection: collection,
+			BatchSize:  int32(batchSize),
+		})
+		username, _ := conninfo.Get(ctx).Auth()
+		cursorID = h.registry.StoreCursor(username, c)
+		resDocs, err = iterator.ConsumeValuesN(iter, int(batchSize))
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
 	firstBatch := types.MakeArray(len(resDocs))
 	for _, doc := range resDocs {
 		firstBatch.Append(doc)
@@ -177,7 +230,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
-				"id", int64(0),
+				"id", cursorID,
 				"ns", db+"."+collection,
 			)),
 			"ok", float64(1),

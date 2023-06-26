@@ -40,8 +40,8 @@ type OpMsgSection struct {
 type OpMsg struct {
 	FlagBits OpMsgFlags
 
-	checksum uint32
 	sections []OpMsgSection
+	checksum uint32
 }
 
 // SetSections of the OpMsg.
