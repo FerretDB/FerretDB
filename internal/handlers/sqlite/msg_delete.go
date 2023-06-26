@@ -118,6 +118,7 @@ func execDelete(ctx context.Context, dp *execDeleteParams) (int32, error) {
 
 	for {
 		var doc *types.Document
+
 		if _, doc, err = iter.Next(); err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
@@ -127,6 +128,7 @@ func execDelete(ctx context.Context, dp *execDeleteParams) (int32, error) {
 		}
 
 		var matches bool
+
 		if matches, err = common.FilterDocument(doc, filter); err != nil {
 			return 0, err
 		}
