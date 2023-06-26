@@ -42,23 +42,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	if params.BatchSize == 0 {
-		// collection does not have to exist
-		var reply wire.OpMsg
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"cursor", must.NotFail(types.NewDocument(
-					"firstBatch", types.MakeArray(0),
-					"id", int64(0),
-					"ns", params.DB+"."+params.Collection,
-				)),
-				"ok", float64(1),
-			))},
-		}))
-
-		return &reply, nil
-	}
-
 	username, _ := conninfo.Get(ctx).Auth()
 
 	db := h.b.Database(params.DB)
