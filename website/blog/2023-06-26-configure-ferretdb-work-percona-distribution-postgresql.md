@@ -50,7 +50,7 @@ This means you can take advantage of many MongoDB tools as well while leveraging
 Pretty neat, right?
 We think so too.
 
-FerretDB works natively with Percona Distribution of PostgreSQL, meaning you can take advantage of all its exceptional PostgreSQL features right out of the box, such as backup, monitoring, and more.
+FerretDB works natively with Percona Distribution for PostgreSQL, meaning you can take advantage of all its exceptional PostgreSQL features right out of the box, such as backup, monitoring, and more.
 
 ## Setting up environment and packages
 
