@@ -84,27 +84,12 @@ func collectionToTable(collectionName string) (string, error) {
 	must.NotFail(hash32.Write([]byte(collectionName)))
 
 	// SQLite table cannot start with _sqlite prefix
-	if strings.HasPrefix(collectionName, reservedTablePrefix) {
+	if strings.HasPrefix(strings.ToLower(collectionName), reservedTablePrefix) {
 		collectionName = "_" + collectionName
 	}
+	// TODO case insensitive
 
-	// TODO https://www.tutlane.com/tutorial/sqlite/sqlite-syntax
-	// - case insensitive
-	// - must begin with letter or underscore character which is followed by any alphanuymeric character or underscore. Other characters are invalid
-	//
-
-	//nameSymbolsLeft := maxTableNameLength - hash32.Size()*2 - 1
-	//truncateTo := len(mangled)
-
-	//if truncateTo > nameSymbolsLeft {
-	//	truncateTo = nameSymbolsLeft
-	//}
-
-	//return mangled[:truncateTo] + "_" + hex.EncodeToString(hash32.Sum(nil))
 	return collectionName + "_" + hex.EncodeToString(hash32.Sum(nil)), nil
-
-	//h := sha1.Sum([]byte(collectionName))
-	//return hex.EncodeToString(h[:]), nil
 }
 
 // DatabaseList returns a sorted list of existing databases.
