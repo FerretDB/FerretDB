@@ -7,8 +7,10 @@
   assert.commandWorked(coll.insert({a: 1}));
 
   const pipeline = [
-    {$limit: 10}, // to prevent pushing the match into the query layer
-    {$match: {'a.$c': 4}}, // legal path in query system, but illegal in aggregation
+    // to prevent pushing the match into the query layer
+    {$limit: 10},
+    // legal path in query system, but illegal in aggregation system
+    {$match: {'a.$c': 4}},
     // This inclusion-projection allows the planner to determine that the only necessary fields
     // we need to fetch from the document are "_id" (by default), "a.$c" (since we do a match
     // on it) and "dummy" since we include/rename it as part of this $project.
