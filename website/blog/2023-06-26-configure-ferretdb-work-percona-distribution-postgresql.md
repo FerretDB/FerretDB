@@ -4,13 +4,13 @@ title: 'How to Configure FerretDB to Work on Percona Distribution of PostgreSQL'
 authors: [alex]
 description: >
   In this article, we’ll guide you through the advantages of using FerretDB and how you can configure it to work natively on Percona Distribution of PostgreSQL.
-image: /img/blog/ferretdb-percona-postgres.jpg
+image: /img/blog/percona-ferretdb.png
 keywords:
   [enterprise postgresql, run mongodb workload on postgresql, postgresql tools]
 tags: [tutorial, postgresql tools]
 ---
 
-![Meet FerretDB at Percona University in Casablanca and Belgrade](/img/blog/ferretdb-percona-postgres.jpg)
+![Meet FerretDB at Percona University in Casablanca and Belgrade](/img/blog/percona-ferretdb.png)
 
 Imagine being able to leverage the flexibility and simplicity of the MongoDB query language through FerretDB together with the robust enterprise PostgreSQL tools and services provided by Percona.
 
@@ -22,13 +22,17 @@ In this article, we'll guide you through the advantages of using FerretDB and ho
 
 Before we go into the technical details, let's find out what these two solutions are all about.
 
-## What is Percona Distrubution of PostgreSQL
+## What is Percona Distrubution of PostgreSQL?
 
 [Percona Distribution for PostgreSQL](https://www.percona.com/software/postgresql-distribution) is a software package provided by Percona, a world-class company that provides open source database software, support, and services.
 
 Basically, this is a distribution of the PostgreSQL database management system (DBMS) that includes enhanced features to make it more manageable, scalable, and performant.
 
 PostgreSQL database, widely used by millions of developers across the globe, has had a significant impact on open-source development.
+
+![PostgreSQL Database](/img/blog/postgresql.png)
+_source: [PostgreSQL website](https://www.postgresql.org/)_
+
 Many software companies have built their applications on top of the database, extended its functionality, and provided robust infrastructures and services for it.
 Percona is one of those companies, and have contributed immensely to the ecosystem with their array of PostgreSQL tools, extensions, and services.
 
@@ -139,7 +143,7 @@ We've connected to the Percona server for PostgreSQL and we're ready to start us
 
 Note that FerretDB provides a list of flags for configuring your database – see them [here](https://docs.ferretdb.io/configuration/flags/).
 
-Now let's access the PostgreSQL command line:
+From a new terminal, let's access the PostgreSQL command line:
 
 ```sh
 sudo su - postgres -c psql
@@ -179,7 +183,7 @@ mongodb://username:password@127.0.0.1/ferretdb?authMechanism=PLAIN
 ```
 
 After setting up the connection, navigate and switch the context to the `ferretdb` database.
-Let's insert some documents through the shell on Studio 3T.
+Using the Intellishell, let's insert some documents through the shell on Studio 3T.
 
 ```js
 db.test.insertMany([
@@ -237,6 +241,8 @@ db.test.insertMany([
   }
 ])
 ```
+
+![Displaying data through Studio 3T](/img/blog/displaying-studio3t-data.png)
 
 What we want to do now is to explore and view the data we just inserted through FerretDB on the Percona server for PostgreSQL.
 
