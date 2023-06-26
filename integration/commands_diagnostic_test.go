@@ -16,6 +16,9 @@ package integration
 
 import (
 	"net"
+	"net/url"
+	"runtime"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -405,4 +408,121 @@ func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
 		require.Equal(t, 2, len(ports))
 		assert.NotEqual(t, ports[0], ports[1])
 	}
+}
+
+func TestCommandWhatsMyURIConnection(t *testing.T) {
+	t.Parallel()
+
+	// Set 1 to ensure only one pool exists duration of the test
+	q1 := url.Values{}
+	q1.Set("maxPoolSize", "1")
+	q1.Set("minPoolSize", "1")
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		ExtraOptions: q1,
+	})
+
+	collection1 := s.Collection
+	databaseName := s.Collection.Database().Name()
+	collectionName := s.Collection.Name()
+
+	t.Run("SameClient", func(t *testing.T) {
+		num := runtime.GOMAXPROCS(-1) * 10
+		ready := make(chan struct{}, num)
+		start := make(chan struct{})
+		ports := make(chan string, num)
+
+		var wg sync.WaitGroup
+		for i := 0; i < num; i++ {
+			wg.Add(1)
+
+			go func(i int) {
+				defer wg.Done()
+
+				ready <- struct{}{}
+
+				<-start
+
+				var res bson.D
+				err := collection1.Database().RunCommand(s.Ctx, bson.D{{"whatsmyuri", int32(1)}}).Decode(&res)
+				require.NoError(t, err)
+
+				doc := ConvertDocument(t, res)
+				v, _ := doc.Get("ok")
+				resOk, ok := v.(float64)
+				require.True(t, ok)
+				assert.Equal(t, float64(1), resOk)
+
+				v, _ = doc.Get("you")
+				you, ok := v.(string)
+				require.True(t, ok)
+
+				_, port, err := net.SplitHostPort(you)
+				require.NoError(t, err)
+				assert.NotEmpty(t, port)
+				ports <- port
+			}(i)
+		}
+
+		for i := 0; i < num; i++ {
+			<-ready
+		}
+
+		close(start)
+
+		wg.Wait()
+
+		close(ports)
+
+		previousPort := <-ports
+		for port := range ports {
+			assert.Equal(t, previousPort, port)
+			previousPort = port
+		}
+	})
+
+	t.Run("DifferentClient", func(t *testing.T) {
+		u, err := url.Parse(s.MongoDBURI)
+		require.NoError(t, err)
+
+		q2 := u.Query()
+		q2.Set("maxPoolSize", "1")
+		q2.Set("minPoolSize", "1")
+		u.RawQuery = q2.Encode()
+
+		client2, err := mongo.Connect(s.Ctx, options.Client().ApplyURI(u.String()))
+		require.NoError(t, err)
+
+		defer client2.Disconnect(s.Ctx)
+
+		collection2 := client2.Database(databaseName).Collection(collectionName)
+
+		var ports []string
+
+		for _, collection := range []*mongo.Collection{collection1, collection2} {
+			var res bson.D
+			err := collection.Database().RunCommand(s.Ctx, bson.D{{"whatsmyuri", int32(1)}}).Decode(&res)
+			require.NoError(t, err)
+
+			doc := ConvertDocument(t, res)
+			v, _ := doc.Get("ok")
+			resOk, ok := v.(float64)
+			require.True(t, ok)
+			assert.Equal(t, float64(1), resOk)
+
+			v, _ = doc.Get("you")
+			you, ok := v.(string)
+			require.True(t, ok)
+
+			_, port, err := net.SplitHostPort(you)
+			require.NoError(t, err)
+			assert.NotEmpty(t, port)
+
+			ports = append(ports, port)
+		}
+
+		// compare ports from two different clients are not equal.
+		require.Equal(t, 2, len(ports))
+		assert.NotEqual(t, ports[0], ports[1])
+	})
 }
