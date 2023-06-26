@@ -148,6 +148,9 @@ func execDelete(ctx context.Context, dp *execDeleteParams) (int32, error) {
 		return 0, nil
 	}
 
+	// close iterator to free db connection.
+	iter.Close()
+
 	deleteRes, err := dp.coll.Delete(ctx, &backends.DeleteParams{IDs: ids})
 	if err != nil {
 		return 0, err
