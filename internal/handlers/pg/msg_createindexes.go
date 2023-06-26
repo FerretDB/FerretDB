@@ -342,7 +342,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 		case "unique":
 			v := must.NotFail(indexDoc.Get("unique"))
 
-			unique, ok := v.(bool)
+			_, ok := v.(bool)
 			if !ok {
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrTypeMismatch,
@@ -430,8 +430,8 @@ func processIndexKey(keyDoc *types.Document) (pgdb.IndexKey, error) {
 
 		if orderParam, err = commonparams.GetWholeNumberParam(order); err != nil {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
-				fmt.Sprintf("Index key value %q is not implemented yet", order),
+				commonerrors.ErrIndexNotFound,
+				fmt.Sprintf("can't find index with key: { %s: \"%s\" }", field, order),
 				"createIndexes",
 			)
 		}

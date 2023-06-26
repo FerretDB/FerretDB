@@ -86,7 +86,6 @@ func TestDropIndexesCommandErrors(t *testing.T) {
 				Name:    "IndexNotFound",
 				Message: "can't find index with key: { invalid: \"invalid\" }",
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"NonExistentKey": {
 			toDrop: bson.D{{"non-existent", 1}},
