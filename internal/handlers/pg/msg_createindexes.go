@@ -109,7 +109,8 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	var isUniqueSpecified bool
 	var numIndexesBefore, numIndexesAfter int32
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		indexesBefore, err := pgdb.Indexes(ctx, tx, db, collection)
+		var indexesBefore []pgdb.Index
+		indexesBefore, err = pgdb.Indexes(ctx, tx, db, collection)
 		if err == nil {
 			numIndexesBefore = int32(len(indexesBefore))
 		}
@@ -130,8 +131,8 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 			case err == nil:
 				// do nothing
 			case errors.Is(err, iterator.ErrIteratorDone):
-				// iterator is done, no more indexes to create
-				indexesAfter, err := pgdb.Indexes(ctx, tx, db, collection)
+				var indexesAfter []pgdb.Index
+				indexesAfter, err = pgdb.Indexes(ctx, tx, db, collection)
 				if err != nil {
 					return lazyerrors.Error(err)
 				}
