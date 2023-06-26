@@ -1,24 +1,24 @@
 ---
 slug: configure-ferretdb-work-percona-distribution-postgresql
-title: 'How to Configure FerretDB to Work on Percona Distribution of PostgreSQL'
+title: 'How to Configure FerretDB to Work on Percona Distribution for PostgreSQL'
 authors: [alex]
 description: >
-  In this article, we’ll guide you through the advantages of using FerretDB and how you can configure it to work natively on Percona Distribution of PostgreSQL.
+  In this article, we’ll guide you through the advantages of using FerretDB and how you can configure it to work natively on Percona Distribution for PostgreSQL.
 image: /img/blog/percona-ferretdb.png
 keywords:
   [enterprise postgresql, run mongodb workload on postgresql, postgresql tools]
 tags: [tutorial, postgresql tools]
 ---
 
-![Meet FerretDB at Percona University in Casablanca and Belgrade](/img/blog/percona-ferretdb.png)
+![How to Configure FerretDB to Work on Percona Distribution for PostgreSQL](/img/blog/percona-ferretdb.png)
 
 Imagine being able to leverage the flexibility and simplicity of the MongoDB query language through FerretDB together with the robust enterprise PostgreSQL tools and services provided by Percona.
 
 <!--truncate-->
 
-That's exactly what you get when you configure FerretDB for your Percona Distribution of PostgreSQL!
+That's exactly what you get when you configure FerretDB for your Percona Distribution for PostgreSQL!
 
-In this article, we'll guide you through the advantages of using FerretDB and how you can configure it to work natively on Percona Distribution of PostgreSQL and explore how FerretDB's commands appear in PostgreSQL, on Percona.
+In this article, we'll guide you through the advantages of using FerretDB and how you can configure it to work natively on Percona Distribution for PostgreSQL and explore how FerretDB's stored data appear in PostgreSQL.
 
 Before we go into the technical details, let's find out what these two solutions are all about.
 
@@ -36,15 +36,15 @@ _source: [PostgreSQL website](https://www.postgresql.org/)_
 Many software companies have built their applications on top of the database, extended its functionality, and provided robust infrastructures and services for it.
 Percona is one of those companies, and have contributed immensely to the ecosystem with their array of PostgreSQL tools, extensions, and services.
 
-A core part of the PostgreSQL Distribution provided by Percona is the Percona Server for PostgreSQL which is an enhanced version of the PostgreSQL DBMS itself, containing optimized features for better query performance, storage engine, and monitoring capabilities.
+With the PostgreSQL Distribution provided by Percona, users get an enhanced version of the PostgreSQL DBMS itself, containing optimized features for better query performance, storage engine, and monitoring capabilities.
 
-Other notable solutions of the Percona Distribution for PostgreSQL include Percona Backup for PostgreSQL, Percona Toolkit for PostgreSQL, Percona Monitoring and Management (PMM), Percona Distribution for PostgreSQL Installer.
+Notable solutions in the Percona Distribution for PostgreSQL include pgAudit, pgBackRest, Patroni, pgRepack, among others.
 
 ## Introducing FerretDB
 
 [FerretDB](https://www.ferretdb.io/) is open source document database that acts as a MongoDB alternative for users looking for open-source solutions with the same query language and commands, ease of use, and flexibility.
 
-Using PostgreSQL as the backend, FerretDB converts the wire protocols of MongoDB to SQL, enabling you to manage MongoDB workloads with PostgreSQL (We wrote a really great article that explains how this works – [check it out here](https://blog.ferretdb.io/pjson-how-to-store-bson-in-jsonb/)).
+Using PostgreSQL as the backend, FerretDB converts the wire protocols of MongoDB to SQL, enabling you to manage MongoDB workloads with PostgreSQL.
 
 This means you can take advantage of many MongoDB tools as well while leveraging all the operational and management features for your PostgreSQL DBMS.
 Pretty neat, right?
@@ -56,7 +56,7 @@ FerretDB works natively with Percona Distribution for PostgreSQL, meaning you ca
 
 ### Prerequisites
 
-We'll be using the Debian package for both FerretDB and Percona Distribution of PostgreSQL, so having a Unix-like operating system such as Ubuntu is important.
+We'll be using the Debian package for both FerretDB and Percona Distribution for PostgreSQL, so having a Unix-like operating system such as Ubuntu is important.
 
 You also need to remove any preexisting installation of PostgreSQL to avoid conflicts.
 To remove PostgreSQL, use the following command:
@@ -65,13 +65,13 @@ To remove PostgreSQL, use the following command:
 sudo apt-get --purge remove postgresql
 ```
 
-Also, you'll need to download the [Studio 3T linux version](https://studio3t.com/knowledge-base/articles/how-to-install-studio-3t-on-linux/); we'll be using the MongoDB GUI tool to showcase how FerretDB works with Percona Distribution of PostgreSQL.
+Also, you'll need to download the [Studio 3T linux version](https://studio3t.com/knowledge-base/articles/how-to-install-studio-3t-on-linux/); we'll be using the MongoDB GUI tool to showcase how FerretDB works with Percona Distribution for PostgreSQL.
 
 ### Installation
 
 We need to install the Debian packages for both software.
 
-#### Installing Debian Package of Percona Distribution of PostgreSQL
+#### Installing Debian Package of Percona Distribution for PostgreSQL
 
 Start by downloading the Debian package for Percona release packages.
 
@@ -91,17 +91,16 @@ Once that's done, you should refresh your local cache:
 sudo apt update
 ```
 
-We'll be focusing on just one tool in this guide which is the Percona Server for PostgreSQL.
-See [here](https://docs.percona.com/postgresql/15/installing.html) for the installation guide on other PostgreSQL tools provided by Percona.
+See [here](https://docs.percona.com/postgresql/15/installing.html) for the installation guide on all the PostgreSQL solutions provided by Percona.
 
-The next step is to install the Percona Server for PostgreSQL from Percona repositories.
+The next step is to install the latest version of Percona Distribution for PostgreSQL from the repositories provided by Percona.
 
 ```sh
-sudo percona-release setup ppg-13
-sudo apt install percona-ppg-server-13
+sudo percona-release setup ppg-15
+sudo apt install percona-ppg-server-15
 ```
 
-At this point, you should have the Percona server for PostgreSQL running on your system.
+At this point, you should have the Percona Distribution for PostgreSQL running on your system.
 Run this command just to be sure:
 
 ```sh
@@ -126,20 +125,20 @@ sudo dpkg -i ferretdb.deb
 
 Please check that the installation works fine by running `ferretdb --version`.
 
-## Configuring Percona Distribution of PostgreSQL to work with FerretDB
+## Configuring Percona Distribution for PostgreSQL to work with FerretDB
 
-The FerretDB installation does not include PostgreSQL or any other backend so you'll need to have that separately and since you have Percona Distribution of PostgreSQL installed (mainly Percona Server for PostgreSQL), then we can use that.
+The FerretDB installation does not include PostgreSQL or any other backend so you'll need to have that separately and since you have Percona Distribution for PostgreSQL installed, then we can use that.
 
-And since we're already running Percona server for PostgreSQL, we can just connect to it.
+And since we're already running Percona Distribution for PostgreSQL, we can just connect to it.
 
-To connect to the Percona server for PostgreSQL using appropriate FerretDB flags, run the command:
+To connect to the Percona Distribution for PostgreSQL using appropriate FerretDB flags, run the command:
 
 ```sh
 ferretdb --handler=pg --postgresql-url=postgres://127.0.0.1:5432/ferretdb --listen-addr=127.0.0.1:27017
 ```
 
 Great!
-We've connected to the Percona server for PostgreSQL and we're ready to start using FerretDB.
+We've connected to the Percona Distribution for PostgreSQL and we're ready to start using FerretDB.
 
 Note that FerretDB provides a list of flags for configuring your database – see them [here](https://docs.ferretdb.io/configuration/flags/).
 
@@ -169,7 +168,7 @@ Grant all privileges on the `ferretdb` database to the new user:
 GRANT ALL PRIVILEGES ON DATABASE ferretdb TO username;
 ```
 
-Now, you should be able to connect to FerretDB using the following MongoDB URI format on any MongoDB tools or GUI, which may look like this:
+Now, you should be able to connect to FerretDB using the following MongoDB URI format on any MongoDB tools or GUI.
 
 ## Experimenting with FerretDB through Studio 3T
 
@@ -244,21 +243,21 @@ db.test.insertMany([
 
 ![Displaying data through Studio 3T](/img/blog/displaying-studio3t-data.png)
 
-What we want to do now is to explore and view the data we just inserted through FerretDB on the Percona server for PostgreSQL.
+What we want to do now is to explore and view the data we just inserted through FerretDB on the Percona Distribution for PostgreSQL.
 
 In your terminal, we will open a new `psql` terminal that takes us directly to the `ferretdb` database we created earlier, and contains our data.
 
 ```text
 ~$ sudo su - postgres
 postgres@Alexander-ubuntu:~$ psql ferretdb
-psql (13.10 - Percona Distribution (Ubuntu 2:13.10-1.focal))
+psql (15.2 - Percona Distribution, server 13.10 - Percona Distribution (Ubuntu 2:13.10-1.focal))
 Type "help" for help.
 ```
 
 `ferretdb` database should now be in context.
 Let's proceed by setting `SET search_path TO ferretdb;` and then displaying the tables (this is akin to the collection we created earlier) in the database using `\dt`.
 
-```sql
+```text
 ferretdb=# set search_path to ferretdb;
 SET
 ferretdb=# \dt
@@ -273,11 +272,11 @@ ferretdb=# \dt
 We can see two tables: one containing the metadata for the database and the other containing the `test` collection we created on Studio 3T.
 Let's view the table content in PostgreSQL:
 
-```sql
+```text
 ferretdb=# table test_afd071e5;
 ```
 
-```sh
+```text
                                                                                                                                                                                                                                                                                                                                                                                    _jsonb
 
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -289,7 +288,7 @@ ferretdb=# table test_afd071e5;
 ```
 
 Brilliant!
-Just by using FerretDB, we've been able to store data using MongoDB commands and query language and have it displayed in Percona Server for PostgreSQL.
+Just by using FerretDB, we've been able to store data using MongoDB commands and query language and have it displayed in Percona Distribution for PostgreSQL.
 
 ## Round-up
 
