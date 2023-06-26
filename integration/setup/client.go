@@ -86,15 +86,13 @@ func makeClient(ctx context.Context, uri string, extraOpts url.Values) (*mongo.C
 
 	q := u.Query()
 
-	for k, v := range extraOpts {
-		if len(v) == 0 {
-			continue
+	for k, vs := range extraOpts {
+		for _, v := range vs {
+			q.Set(k, v)
 		}
-
-		// when multiple values are assigned for the same key, use the first one only
-		q.Set(k, v[0])
 	}
 
+	u.RawQuery = q.Encode()
 	clientOpts := options.Client().ApplyURI(u.String())
 	clientOpts.SetMonitor(otelmongo.NewMonitor())
 

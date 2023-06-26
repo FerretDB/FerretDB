@@ -953,6 +953,8 @@ func TestQueryCommandGetMore(t *testing.T) {
 	t.Parallel()
 
 	q := url.Values{}
+
+	// Set 1 to ensure only one pool exists duration of the test
 	q.Set("maxPoolSize", "1")
 	q.Set("minPoolSize", "1")
 
