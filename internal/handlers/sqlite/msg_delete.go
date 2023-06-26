@@ -50,12 +50,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	// process every delete filter
 	for i, deleteParams := range params.Deletes {
-		del, err := execDelete(ctx, &execDeleteParams{
-			coll,
-			deleteParams.Filter,
-			params.Collection,
-			deleteParams.Limited,
-		})
+		del, err := execDelete(ctx, coll, deleteParams.Filter, deleteParams.Limited)
 		if err == nil {
 			deleted += del
 			continue
@@ -86,26 +81,14 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	return &reply, nil
 }
 
-// execDeleteParams contains parameters for execDelete function.
-type execDeleteParams struct {
-	coll       backends.Collection
-	filter     *types.Document
-	collection string
-	limited    bool
-}
-
 // execDelete fetches documents, filters them out, limits them (if needed) and deletes them.
 // If limit is true, only the first matched document is chosen for deletion, otherwise all matched documents are chosen.
 // It returns the number of deleted documents or an error.
-func execDelete(ctx context.Context, dp *execDeleteParams) (int32, error) {
+func execDelete(ctx context.Context, coll backends.Collection, filter *types.Document, limited bool) (int32, error) {
 	var deleted int32
 
-	// filter is used to filter documents on the FerretDB side,
-	// qp.Filter is used to filter documents on the PostgreSQL side (query pushdown).
-	filter := dp.filter
-
 	// query documents here
-	res, err := dp.coll.Query(ctx, nil)
+	res, err := coll.Query(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
@@ -138,7 +121,7 @@ func execDelete(ctx context.Context, dp *execDeleteParams) (int32, error) {
 		ids = append(ids, must.NotFail(doc.Get("_id")))
 
 		// if limit is set, no need to fetch all the documents
-		if dp.limited {
+		if limited {
 			res.Iter.Close()
 
 			break
@@ -150,7 +133,7 @@ func execDelete(ctx context.Context, dp *execDeleteParams) (int32, error) {
 		return 0, nil
 	}
 
-	deleteRes, err := dp.coll.Delete(ctx, &backends.DeleteParams{IDs: ids})
+	deleteRes, err := coll.Delete(ctx, &backends.DeleteParams{IDs: ids})
 	if err != nil {
 		return 0, err
 	}
