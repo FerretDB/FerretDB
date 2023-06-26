@@ -84,6 +84,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		)
 	}
 
+	username, _ := conninfo.Get(ctx).Auth()
+
 	pipeline, err := common.GetRequiredParam[*types.Array](document, "pipeline")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -186,6 +188,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			qp.Sort = sort
 		}
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/1733
 		resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})
 	} else {
 		// stats stages are provided - fetch stats from the DB and apply stages to them
@@ -200,31 +203,31 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	var cursorID int64
+	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
+		Iter:       iterator.Values(iterator.ForSlice(resDocs)),
+		DB:         db,
+		Collection: collection,
+		Username:   username,
+	})
 
-	// don't create a cursor if all docs fit in the firstBatch // FIXME
-	if int64(len(resDocs)) > batchSize {
-		username, _ := conninfo.Get(ctx).Auth()
+	cursorID := cursor.ID
 
-		cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
-			Iter:       iterator.Values(iterator.ForSlice(resDocs)),
-			DB:         db,
-			Collection: collection,
-			Username:   username,
-		})
-
-		cursorID = cursor.ID
-
-		// TODO https://github.com/FerretDB/FerretDB/issues/1733
-		resDocs, err = iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor), int(batchSize))
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	firstBatchDocs, err := iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor), int(batchSize))
+	if err != nil {
+		cursor.Close()
+		return nil, lazyerrors.Error(err)
 	}
 
-	firstBatch := types.MakeArray(len(resDocs))
-	for _, doc := range resDocs {
+	firstBatch := types.MakeArray(len(firstBatchDocs))
+	for _, doc := range firstBatchDocs {
 		firstBatch.Append(doc)
+	}
+
+	if firstBatch.Len() < int(batchSize) {
+		// let the client know that there are no more results
+		cursorID = 0
+
+		cursor.Close()
 	}
 
 	var reply wire.OpMsg
