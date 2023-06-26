@@ -410,10 +410,15 @@ func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
 	}
 }
 
+// TestCommandWhatsMyURIConnection tests that a client uses the same connection for
+// all commands run by the client, and different clients use different connection.
+// The port number is used to validate if the same connection is used or not,
+// since unique port number is assigned to each client in the test setup.
 func TestCommandWhatsMyURIConnection(t *testing.T) {
 	t.Parallel()
 
-	// Set 1 to ensure only one pool exists duration of the test
+	// set 1 to ensure only one pool exists duration of the test,
+	// which forces a client to use a single pool
 	q1 := url.Values{}
 	q1.Set("maxPoolSize", "1")
 	q1.Set("minPoolSize", "1")
@@ -427,6 +432,8 @@ func TestCommandWhatsMyURIConnection(t *testing.T) {
 	collectionName := s.Collection.Name()
 
 	t.Run("SameClient", func(t *testing.T) {
+		setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/2906")
+
 		num := runtime.GOMAXPROCS(-1) * 10
 		ready := make(chan struct{}, num)
 		start := make(chan struct{})
