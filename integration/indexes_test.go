@@ -257,7 +257,7 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 					` Specification: { key: { _id: 1 }, name: "_id_", unique: true, v: 2 }`,
 			},
 		},
-		"NameNotSet": {
+		"MissingName": {
 			indexes: bson.A{
 				bson.D{
 					{"key", bson.D{{"v", 1}}},
@@ -268,6 +268,30 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				Name: "FailedToParse",
 				Message: `Error in specification { key: { v: 1 } } :: caused by :: ` +
 					`The 'name' field is a required property of an index specification`,
+			},
+		},
+		"EmptyName": {
+			indexes: bson.A{
+				bson.D{
+					{"key", bson.D{{"v", -1}}},
+					{"name", ""},
+				},
+			},
+			err: &mongo.CommandError{
+				Code:    67,
+				Name:    "CannotCreateIndex",
+				Message: `Error in specification { key: { v: -1 }, name: "", v: 2 } :: caused by :: index name cannot be empty`,
+			},
+			altMessage: `Error in specification { key: { v: -1 }, name: "" } :: caused by :: index name cannot be empty`,
+		},
+		"MissingKey": {
+			indexes: bson.A{
+				bson.D{},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: `Error in specification {} :: caused by :: The 'key' field is a required property of an index specification`,
 			},
 		},
 		"UniqueTypeDocument": {

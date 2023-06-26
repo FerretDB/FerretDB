@@ -136,6 +136,17 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 				return err
 			}
 
+			if index.Name == "" {
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrCannotCreateIndex,
+					fmt.Sprintf(
+						"Error in specification %s :: caused by :: index name cannot be empty",
+						types.FormatAnyValue(indexDoc),
+					),
+					document.Command(),
+				)
+			}
+
 			if _, ok := duplicateChecker[index.Name]; ok {
 				return commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrIndexAlreadyExists,
@@ -169,7 +180,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		)
 	case errors.Is(err, pgdb.ErrIndexNameAlreadyExist):
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrIndexKeySpecsConflict,
+			commonerrors.ErrBadValue,
 			"One of the specified indexes already exists with a different key",
 			document.Command(),
 		)
@@ -201,6 +212,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 	iter := indexDoc.Iterator()
 	defer iter.Close()
 
+	var hasValue bool
 	for {
 		opt, _, err := iter.Next()
 
@@ -208,10 +220,23 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 		case err == nil:
 			// do nothing
 		case errors.Is(err, iterator.ErrIteratorDone):
+			if !hasValue {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrFailedToParse,
+					fmt.Sprintf(
+						"Error in specification {} :: caused by :: "+
+							"The 'key' field is a required property of an index specification",
+					),
+					"createIndexes",
+				)
+			}
+
 			return &index, nil
 		default:
 			return nil, lazyerrors.Error(err)
 		}
+
+		hasValue = true
 
 		// Process required param "key"
 		var keyDoc *types.Document

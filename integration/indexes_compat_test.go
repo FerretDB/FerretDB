@@ -347,7 +347,6 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 			key:            bson.D{{"v", -1}},
 			indexName:      "",
 			resultType:     emptyResult,
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"NonStringIndexName": {
 			collectionName: "test",
@@ -359,7 +358,6 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 			collectionName: "test",
 			key:            bson.D{{"_id", 1}, {"v", 1}},
 			indexName:      "_id_", // the same name as the default index
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"InvalidKey": {
 			collectionName: "test",
@@ -374,7 +372,6 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 		"KeyNotSet": {
 			collectionName: "test",
 			resultType:     emptyResult,
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"UniqueFalse": {
 			collectionName: "unique_false",
