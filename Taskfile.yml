@@ -414,7 +414,6 @@ tasks:
         --sqlite-uri=tmp/sqlite
         --test-records-dir=tmp/records
         --test-disable-filter-pushdown
-        --test-enable-cursors
 
   lint:
     desc: "Run linters"
