@@ -22,6 +22,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
@@ -124,6 +125,13 @@ func (r *Registry) Get(id int64) *Cursor {
 	defer r.rw.RUnlock()
 
 	return r.m[id]
+}
+
+func (r *Registry) All() []*Cursor {
+	r.rw.RLock()
+	defer r.rw.RUnlock()
+
+	return maps.Values(r.m)
 }
 
 // This method should be called only from cursor.Close().
