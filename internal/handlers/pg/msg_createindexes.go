@@ -59,6 +59,14 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
+	if collection == "" {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidNamespace,
+			fmt.Sprintf("Invalid namespace specified '%s.'", db),
+			command,
+		)
+	}
+
 	v, _ := document.Get("indexes")
 	if v == nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -246,9 +254,19 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 			return nil, err
 		}
 
-		// Process required param "name"
-		index.Name, err = common.GetRequiredParam[string](indexDoc, "name")
-		if err != nil {
+		v, _ := indexDoc.Get("name")
+		if v == nil {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf("Error in specification %s :: caused by :: The 'name' field is a required property of an index specification", types.FormatAnyValue(index.Key)),
+				"createIndexes",
+			)
+		}
+
+		var ok bool
+		index.Name, ok = v.(string)
+
+		if !ok {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrTypeMismatch,
 				"'name' option must be specified as a string",

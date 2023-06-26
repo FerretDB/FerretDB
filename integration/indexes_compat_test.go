@@ -335,14 +335,12 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 			key:            bson.D{{"v", -1}},
 			indexName:      "custom-name",
 			resultType:     emptyResult,
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"IndexNameNotSet": {
 			collectionName: "test",
 			key:            bson.D{{"v", -1}},
 			indexName:      nil,
 			resultType:     emptyResult,
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"EmptyIndexName": {
 			collectionName: "test",

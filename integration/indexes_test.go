@@ -257,6 +257,19 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 					` Specification: { key: { _id: 1 }, name: "_id_", unique: true, v: 2 }`,
 			},
 		},
+		"NameNotSet": {
+			indexes: bson.A{
+				bson.D{
+					{"key", bson.D{{"v", 1}}},
+				},
+			},
+			err: &mongo.CommandError{
+				Code: 9,
+				Name: "FailedToParse",
+				Message: `Error in specification { key: { v: 1 } } :: caused by :: ` +
+					`The 'name' field is a required property of an index specification`,
+			},
+		},
 		"UniqueTypeDocument": {
 			indexes: bson.A{
 				bson.D{
@@ -301,6 +314,88 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 			},
 				rest...,
 			)
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&res)
+
+			require.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestCreateIndexesCommandInvalidCollection(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
+
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		collectionName any
+		indexes        any
+		err            *mongo.CommandError
+		altMessage     string
+		skip           string
+	}{
+		"InvalidTypeCollection": {
+			collectionName: 42,
+			indexes: bson.A{
+				bson.D{
+					{"key", bson.D{{"v", 1}}},
+					{"name", "v_1"},
+				},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type int",
+			},
+			altMessage: "required parameter \"createIndexes\" has type int32 (expected string)",
+		},
+		"NilCollection": {
+			collectionName: nil,
+			indexes: bson.A{
+				bson.D{
+					{"key", bson.D{{"v", 1}}},
+					{"name", "v_1"},
+				},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type null",
+			},
+			altMessage: "required parameter \"createIndexes\" has type types.NullType (expected string)",
+		},
+		"EmptyCollection": {
+			collectionName: "",
+			indexes: bson.A{
+				bson.D{
+					{"key", bson.D{{"v", 1}}},
+					{"name", "v_1"},
+				},
+			},
+			err: &mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Invalid namespace specified 'TestCreateIndexesCommandInvalidCollection-EmptyCollection.'",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			provider := shareddata.ArrayDocuments // one provider is enough to check for errors
+			ctx, collection := setup.Setup(t, provider)
+
+			command := bson.D{
+				{"createIndexes", tc.collectionName},
+				{"indexes", tc.indexes},
+			}
 
 			var res bson.D
 			err := collection.Database().RunCommand(ctx, command).Decode(&res)
