@@ -96,10 +96,12 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	iter := idxArr.Iterator()
 	defer iter.Close()
 
+	duplicateChecker := make(map[string]struct{})
+
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		for {
 			var val any
-			_, val, err = iter.Next()
+			i, val, err := iter.Next()
 
 			switch {
 			case err == nil:
@@ -113,8 +115,11 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 			indexDoc, ok := val.(*types.Document)
 			if !ok {
-				// TODO Add better validation and return proper error: https://github.com/FerretDB/FerretDB/issues/2311
-				return lazyerrors.Errorf("expected index document, got %T", val)
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrTypeMismatch,
+					fmt.Sprintf("BSON field 'createIndexes.indexes.%d' is the wrong type, expected type 'object'", i),
+					document.Command(),
+				)
 			}
 
 			var index *pgdb.Index
@@ -122,6 +127,16 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 			if index, err = processIndexOptions(indexDoc); err != nil {
 				return err
 			}
+
+			if _, ok := duplicateChecker[index.Name]; ok {
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrIndexAlreadyExists,
+					fmt.Sprintf("Identical index already exists: %s", index.Name),
+					document.Command(),
+				)
+			}
+
+			duplicateChecker[index.Name] = struct{}{}
 
 			err = pgdb.CreateIndexIfNotExists(ctx, tx, db, collection, index)
 			if errors.Is(err, pgdb.ErrIndexKeyAlreadyExist) && index.Name == "_id_1" {

@@ -89,6 +89,9 @@ const (
 	// ErrCannotCreateIndex indicates that index creation process failed because some data are not valid.
 	ErrCannotCreateIndex = ErrorCode(67) // CannotCreateIndex
 
+	// ErrIndexAlreadyExists indicates that identical index already exists.
+	ErrIndexAlreadyExists = ErrorCode(68) // IndexAlreadyExists
+
 	// ErrInvalidOptions indicates that _id index cannot be deleted.
 	ErrInvalidOptions = ErrorCode(72) // InvalidOptions
 

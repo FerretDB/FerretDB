@@ -233,6 +233,15 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 			},
 			altMessage: "BSON field 'createIndexes.indexes' is the wrong type, expected type 'array'",
 		},
+		"InvalidTypeArrayString": {
+			indexes: bson.A{"invalid"},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'createIndexes.indexes.0' is the wrong type 'string', expected type 'object'",
+			},
+			altMessage: "BSON field 'createIndexes.indexes.0' is the wrong type, expected type 'object'",
+		},
 		"IDIndex": {
 			indexes: bson.A{
 				bson.D{
