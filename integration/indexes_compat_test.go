@@ -172,7 +172,18 @@ func TestCreateIndexesCompat(t *testing.T) {
 				{Keys: bson.D{{"v", 1}}},
 			},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2311",
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2910",
+			// the error for existing and non-existing collection are different,
+			// below is the error for existing collection.
+			//
+			// &mongo.CommandError{
+			//	Code: 96,
+			//	Name: "OperationFailed",
+			//	Message: `Index build failed: 7a1c4cc3-8ac6-44d3-92e0-57853e6bc837: Collection ` +
+			//		`TestCreateIndexesCommandInvalidSpec-SameIndex.TestCreateIndexesCommandInvalidSpec-SameIndex ` +
+			//		`( 020f17e0-7847-45f2-8397-c631c5e9bdaf ) :: caused by :: Cannot build two identical indexes. ` +
+			//		`Try again without duplicate indexes.`,
+			// },
 		},
 		"MultiWithInvalid": {
 			models: []mongo.IndexModel{

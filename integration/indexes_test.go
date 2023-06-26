@@ -185,6 +185,7 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 	for name, tc := range map[string]struct {
 		indexes        any  // optional
 		missingIndexes bool // optional, if set indexes must be nil
+		noProvider     bool // if set, no provider is added.
 
 		err        *mongo.CommandError // required, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
@@ -293,6 +294,25 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				Message: `Error in specification {} :: caused by :: The 'key' field is a required property of an index specification`,
 			},
 		},
+		"SameIndex": {
+			indexes: bson.A{
+				bson.D{
+					{"key", bson.D{{"v", 1}}},
+					{"name", "v_1"},
+				},
+				bson.D{
+					{"key", bson.D{{"v", 1}}},
+					{"name", "v_1"},
+				},
+			},
+			noProvider: true,
+			err: &mongo.CommandError{
+				Code:    68,
+				Name:    "IndexAlreadyExists",
+				Message: `Identical index already exists: v_1`,
+			},
+			skip: "",
+		},
 		"UniqueTypeDocument": {
 			indexes: bson.A{
 				bson.D{
@@ -323,8 +343,13 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				require.Nil(t, tc.indexes, "indexes must be nil if missingIndexes is true")
 			}
 
-			provider := shareddata.ArrayDocuments // one provider is enough to check for errors
-			ctx, collection := setup.Setup(t, provider)
+			var providers []shareddata.Provider
+			if !tc.noProvider {
+				// one provider is enough to check for errors
+				providers = append(providers, shareddata.ArrayDocuments)
+			}
+
+			ctx, collection := setup.Setup(t, providers...)
 
 			var rest bson.D
 
