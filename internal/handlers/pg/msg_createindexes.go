@@ -104,12 +104,12 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	iter := idxArr.Iterator()
 	defer iter.Close()
 
-	duplicateChecker := make(map[string]struct{})
+	duplicateChecker := map[string]struct{}{}
 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		for {
-			var val any
-			i, val, err := iter.Next()
+			var key, val any
+			key, val, err = iter.Next()
 
 			switch {
 			case err == nil:
@@ -125,7 +125,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 			if !ok {
 				return commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrTypeMismatch,
-					fmt.Sprintf("BSON field 'createIndexes.indexes.%d' is the wrong type, expected type 'object'", i),
+					fmt.Sprintf("BSON field 'createIndexes.indexes.%d' is the wrong type, expected type 'object'", key),
 					document.Command(),
 				)
 			}
@@ -258,7 +258,11 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 		if v == nil {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
-				fmt.Sprintf("Error in specification %s :: caused by :: The 'name' field is a required property of an index specification", types.FormatAnyValue(index.Key)),
+				fmt.Sprintf(
+					"Error in specification { key: %s } :: caused by :: "+
+						"The 'name' field is a required property of an index specification",
+					types.FormatAnyValue(keyDoc),
+				),
 				"createIndexes",
 			)
 		}
