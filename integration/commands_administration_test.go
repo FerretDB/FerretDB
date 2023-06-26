@@ -1071,6 +1071,8 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 }
 
 func TestCommandsAdministrationServerStatusStress(t *testing.T) {
+	// TODO rewrite using teststress.Stress
+
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1507")
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently

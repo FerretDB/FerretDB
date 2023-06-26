@@ -19,7 +19,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"runtime/trace"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -32,6 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -63,7 +63,7 @@ func unixSocketPath(tb testing.TB) string {
 	return f.Name()
 }
 
-// setupListener starts in-process FerretDB server that runs until ctx is done.
+// setupListener starts in-process FerretDB server that runs until ctx is canceled.
 // It returns client and MongoDB URI of that listener.
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mongo.Client, string) {
 	tb.Helper()
@@ -71,7 +71,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
 	defer span.End()
 
-	defer trace.StartRegion(ctx, "setupListener").End()
+	defer observability.FuncCall(ctx)()
 
 	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
 
@@ -192,10 +192,9 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		}
 	}()
 
-	// ensure that all listener's logs are written before test ends
+	// ensure that all listener's and handler's logs are written before test ends
 	tb.Cleanup(func() {
 		<-runDone
-		h.Close()
 	})
 
 	var clientOpts mongoDBURIOpts

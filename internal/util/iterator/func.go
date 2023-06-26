@@ -77,6 +77,5 @@ func (iter *funcIterator[K, V]) Close() {
 // check interfaces
 var (
 	_ Interface[any, any] = (*funcIterator[any, any])(nil)
-	_ NextFunc[any, any]  = (*funcIterator[any, any])(nil).Next
 	_ Closer              = (*funcIterator[any, any])(nil)
 )

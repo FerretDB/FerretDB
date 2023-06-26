@@ -1597,6 +1597,40 @@ func TestAggregateCompatProject(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"EmptyDocument": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"foo", bson.D{}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"Document": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"foo", bson.D{{"v", "foo"}}}}}},
+			},
+		},
+		"IDDocument": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", bson.D{{"v", "foo"}}}}}},
+			},
+		},
+		"IDType": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", bson.D{{"$type", "$v"}}}}}},
+			},
+		},
+		"DocumentAndValue": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{
+					{"foo", bson.D{{"v", "foo"}}},
+					{"v", 1},
+				}}},
+			},
+		},
 		"Type": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
@@ -1618,20 +1652,20 @@ func TestAggregateCompatProject(t *testing.T) {
 		"TypeRecursive": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", bson.D{{"$type", "$v"}}}}}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", "$v"}}}}}}}},
 			},
 		},
 		"TypeRecursiveNonExistent": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", bson.D{{"$non-existent", "$v"}}}}}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$non-existent", "$v"}}}}}}}},
 			},
 			resultType: emptyResult,
 		},
 		"TypeRecursiveInvalid": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", bson.D{{"v", "$v"}}}}}}}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"v", "$v"}}}}}}}},
 			},
 		},
 		"TypeRecursiveArrayInvalid": {
@@ -1664,6 +1698,12 @@ func TestAggregateCompatProject(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"foo", "bar"}}}}}}}},
+			},
+		},
+		"TypeEmpty": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{}}}}}}},
 			},
 		},
 		"TypeArraySingleItem": {
@@ -1805,6 +1845,134 @@ func TestAggregateCompatAddFields(t *testing.T) {
 			},
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
+		},
+
+		"InvalidOperator": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"value", bson.D{{"$invalid-operator", "foo"}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"Type": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "$v"}}}}}},
+			},
+		},
+		"TypeNonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "$foo"}}}}}},
+			},
+		},
+		"TypeDotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "$v.foo"}}}}}},
+			},
+		},
+		"TypeRecursive": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", "$v"}}}}}}}},
+			},
+		},
+		"TypeRecursiveNonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.D{{"$non-existent", "$v"}}}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"TypeRecursiveInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.D{{"v", "$v"}}}}}}}},
+			},
+		},
+
+		"TypeInt": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", int32(42)}}}}}},
+			},
+		},
+		"TypeLong": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", int64(42)}}}}}},
+			},
+		},
+		"TypeString": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "42"}}}}}},
+			},
+		},
+		"TypeDocument": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.D{{"foo", "bar"}}}}}}}},
+			},
+		},
+		"TypeEmpty": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.D{}}}}}}},
+			},
+		},
+		"MultipleOperators": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "foo"}, {"$operator", "foo"}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"MultipleOperatorFirst": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "foo"}, {"not-operator", "foo"}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"MultipleOperatorLast": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"not-operator", "foo"}, {"$type", "foo"}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"TypeArraySingleItem": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.A{int32(42)}}}}}}},
+			},
+		},
+		"TypeArray": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"TypeNestedArray": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.A{bson.A{"foo", "bar"}}}}}}}},
+			},
+		},
+		"TypeObjectID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", primitive.NewObjectID()}}}}}},
+			},
+		},
+		"TypeBool": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", true}}}}}},
+			},
 		},
 	}
 

@@ -24,13 +24,15 @@ import (
 )
 
 // CountIterator returns an iterator that returns a single document containing
-// the number of input documents in the specified field: {field: count}.
+// the number of input documents (as int32) in the specified field: {field: count}.
 // It will be added to the given closer.
 //
 // Next method returns that document, subsequent calls return ErrIteratorDone.
 // If input iterator contains no document, it returns ErrIteratorDone.
 //
 // Close method closes the underlying iterator.
+//
+// Deprecated: remove this function, use iterator.ConsumeCount instead.
 func CountIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, field string) types.DocumentsIterator {
 	res := &countIterator{
 		iter:  iter,

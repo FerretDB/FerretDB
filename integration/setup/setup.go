@@ -34,6 +34,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -136,16 +137,16 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	var uri string
 
 	if *targetURLF == "" {
-		client, uri = setupListener(tb, ctx, logger)
+		client, uri = setupListener(tb, setupCtx, logger)
 	} else {
-		client = setupClient(tb, ctx, *targetURLF)
+		client = setupClient(tb, setupCtx, *targetURLF)
 		uri = *targetURLF
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	collection := setupCollection(tb, ctx, client, opts)
+	collection := setupCollection(tb, setupCtx, client, opts)
 
 	level.SetLevel(*logLevelF)
 
@@ -173,7 +174,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	ctx, span := otel.Tracer("").Start(ctx, "setupCollection")
 	defer span.End()
 
-	defer trace.StartRegion(ctx, "setupCollection").End()
+	defer observability.FuncCall(ctx)()
 
 	var ownDatabase bool
 	databaseName := opts.DatabaseName

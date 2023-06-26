@@ -35,22 +35,13 @@ func validateExpression(stage string, doc *types.Document) error {
 	defer iter.Close()
 
 	for {
-		k, v, err := iter.Next()
+		_, v, err := iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			return nil
 		}
 
 		if err != nil {
 			return lazyerrors.Error(err)
-		}
-
-		if strings.HasPrefix(k, "$") {
-			// TODO: https://github.com/FerretDB/FerretDB/issues/2165
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
-				fmt.Sprintf("%s operator is not implemented for %s key expression yet", k, stage),
-				fmt.Sprintf("%s (stage)", stage),
-			)
 		}
 
 		switch value := v.(type) {
