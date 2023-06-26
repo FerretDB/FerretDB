@@ -19,6 +19,8 @@ import (
 	"errors"
 	"fmt"
 
+	"modernc.org/sqlite"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
@@ -59,6 +61,14 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
+		var serr *sqlite.Error
+		// No such table returned, so we can return empty result.
+		if errors.As(err, &serr) && serr.Code() == 1 { // TODO: use constant to check error code
+			return &backends.QueryResult{
+				Iter: newQueryIterator(ctx, nil),
+			}, nil
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 
