@@ -405,6 +405,9 @@ func TestCollectionName(t *testing.T) {
 		"Capital": {
 			collection: "A",
 		},
+		"sqlite": {
+			collection: "sqlite",
+		},
 	}
 
 	for name, tc := range cases {

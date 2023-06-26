@@ -17,11 +17,11 @@ package metadata
 
 import (
 	"context"
-	"crypto/sha1"
 	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"strings"
 
 	"go.uber.org/zap"
@@ -30,11 +30,15 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
 	// Reserved prefix for database and collection names.
 	reservedPrefix = "_ferretdb_"
+
+	// Reserved prefix for SQLite table name.
+	reservedTablePrefix = "sqlite"
 
 	// metadataTableName is a SQLite table name where FerretDB metadata is stored.
 	metadataTableName = reservedPrefix + "collections"
@@ -76,23 +80,31 @@ func collectionToTable(collectionName string) (string, error) {
 		return "", ErrInvalidCollectionName
 	}
 
-	// TODO
-	// hash32 := fnv.New32a()
-	// must.NotFail(hash32.Write([]byte(name)))
+	hash32 := fnv.New32a()
+	must.NotFail(hash32.Write([]byte(collectionName)))
 
-	// mangled := specialCharacters.ReplaceAllString(name, "_")
+	// SQLite table cannot start with _sqlite prefix
+	if strings.HasPrefix(collectionName, reservedTablePrefix) {
+		collectionName = "_" + collectionName
+	}
 
-	// nameSymbolsLeft := maxTableNameLength - hash32.Size()*2 - 1
-	// truncateTo := len(mangled)
+	// TODO https://www.tutlane.com/tutorial/sqlite/sqlite-syntax
+	// - case insensitive
+	// - must begin with letter or underscore character which is followed by any alphanuymeric character or underscore. Other characters are invalid
+	//
 
-	// if truncateTo > nameSymbolsLeft {
-	// 	truncateTo = nameSymbolsLeft
-	// }
+	//nameSymbolsLeft := maxTableNameLength - hash32.Size()*2 - 1
+	//truncateTo := len(mangled)
 
-	// return mangled[:truncateTo] + "_" + hex.EncodeToString(hash32.Sum(nil))
+	//if truncateTo > nameSymbolsLeft {
+	//	truncateTo = nameSymbolsLeft
+	//}
 
-	h := sha1.Sum([]byte(collectionName))
-	return hex.EncodeToString(h[:]), nil
+	//return mangled[:truncateTo] + "_" + hex.EncodeToString(hash32.Sum(nil))
+	return collectionName + "_" + hex.EncodeToString(hash32.Sum(nil)), nil
+
+	//h := sha1.Sum([]byte(collectionName))
+	//return hex.EncodeToString(h[:]), nil
 }
 
 // DatabaseList returns a sorted list of existing databases.
