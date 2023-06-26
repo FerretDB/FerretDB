@@ -40,6 +40,7 @@ import (
 type Cursor struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
+	created    time.Time
 	iter       types.DocumentsIterator
 	r          *Registry
 	token      *resource.Token
@@ -49,7 +50,6 @@ type Cursor struct {
 	Username   string
 	ID         int64
 	closeOnce  sync.Once
-	created    time.Time
 }
 
 // newCursor creates a new cursor.
