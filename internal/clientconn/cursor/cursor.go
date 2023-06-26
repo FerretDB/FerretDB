@@ -17,6 +17,7 @@ package cursor
 
 import (
 	"sync"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
@@ -48,6 +49,7 @@ type Cursor struct {
 	Username   string
 	ID         int64
 	closeOnce  sync.Once
+	created    time.Time
 }
 
 // newCursor creates a new cursor.
@@ -59,8 +61,9 @@ func newCursor(id int64, db, collection, username string, iter types.DocumentsIt
 		Username:   username,
 		iter:       iter,
 		r:          r,
-		token:      resource.NewToken(),
+		created:    time.Now(),
 		closed:     make(chan struct{}),
+		token:      resource.NewToken(),
 	}
 
 	resource.Track(c, c.token)
@@ -76,10 +79,11 @@ func (c *Cursor) Next() (struct{}, *types.Document, error) {
 // Close implements types.DocumentsIterator interface.
 func (c *Cursor) Close() {
 	c.closeOnce.Do(func() {
-		c.r.delete(c.ID)
-
 		c.iter.Close()
 		c.iter = nil
+
+		c.r.delete(c)
+
 		close(c.closed)
 
 		resource.Untrack(c, c.token)

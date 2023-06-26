@@ -19,6 +19,7 @@ import (
 	"math/rand"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -55,6 +56,9 @@ type Registry struct {
 
 	l  *zap.Logger
 	wg sync.WaitGroup
+
+	created  *prometheus.CounterVec
+	duration *prometheus.HistogramVec
 }
 
 // NewRegistry creates a new Registry.
@@ -62,6 +66,38 @@ func NewRegistry(l *zap.Logger) *Registry {
 	return &Registry{
 		m: map[int64]*Cursor{},
 		l: l,
+		created: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: namespace,
+				Subsystem: subsystem,
+				Name:      "created_total",
+				Help:      "Total number of cursors created.",
+			},
+			[]string{"db", "collection", "username"},
+		),
+		duration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Namespace: namespace,
+				Subsystem: subsystem,
+				Name:      "duration_seconds",
+				Help:      "Cursors lifetime in seconds.",
+				Buckets: []float64{
+					1 * time.Millisecond.Seconds(),
+					5 * time.Millisecond.Seconds(),
+					10 * time.Millisecond.Seconds(),
+					25 * time.Millisecond.Seconds(),
+					50 * time.Millisecond.Seconds(),
+					100 * time.Millisecond.Seconds(),
+					250 * time.Millisecond.Seconds(),
+					500 * time.Millisecond.Seconds(),
+					1000 * time.Millisecond.Seconds(),
+					2500 * time.Millisecond.Seconds(),
+					5000 * time.Millisecond.Seconds(),
+					10000 * time.Millisecond.Seconds(),
+				},
+			},
+			[]string{"db", "collection", "username"},
+		),
 	}
 }
 
@@ -101,6 +137,8 @@ func (r *Registry) NewCursor(ctx context.Context, params *NewParams) *Cursor {
 		zap.String("collection", params.Collection),
 	)
 
+	r.created.WithLabelValues(params.DB, params.Collection, params.Username).Inc()
+
 	c := newCursor(id, params.DB, params.Collection, params.Username, params.Iter, r)
 	r.m[id] = c
 
@@ -136,37 +174,33 @@ func (r *Registry) All() []*Cursor {
 }
 
 // This method should be called only from cursor.Close().
-func (r *Registry) delete(id int64) {
+func (r *Registry) delete(c *Cursor) {
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
+	d := time.Since(c.created)
 	r.l.Debug(
 		"Deleting",
 		zap.Int("total", len(r.m)),
-		zap.Int64("id", id),
+		zap.Int64("id", c.ID),
+		zap.Duration("duration", d),
 	)
 
-	delete(r.m, id)
+	r.duration.WithLabelValues(c.DB, c.Collection, c.Username).Observe(d.Seconds())
+
+	delete(r.m, c.ID)
 }
 
 // Describe implements prometheus.Collector.
 func (r *Registry) Describe(ch chan<- *prometheus.Desc) {
-	prometheus.DescribeByCollect(r, ch)
+	r.created.Describe(ch)
+	r.duration.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (r *Registry) Collect(ch chan<- prometheus.Metric) {
-	r.rw.RLock()
-
-	current := len(r.m)
-
-	r.rw.RUnlock()
-
-	ch <- prometheus.MustNewConstMetric(
-		prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "current"), "The current number of cursors.", nil, nil),
-		prometheus.GaugeValue,
-		float64(current),
-	)
+	r.created.Collect(ch)
+	r.duration.Collect(ch)
 }
 
 // check interfaces
