@@ -80,8 +80,10 @@ func NewListener(opts *NewListenerOpts) *Listener {
 
 // Run runs the listener until ctx is canceled or some unrecoverable error occurs.
 //
-// When this method returns, listener and all connections are closed.
+// When this method returns, listener and all connections, as well as handler are closed.
 func (l *Listener) Run(ctx context.Context) error {
+	defer l.Handler.Close()
+
 	logger := l.Logger.Named("listener")
 
 	if l.TCP != "" {
@@ -122,8 +124,12 @@ func (l *Listener) Run(ctx context.Context) error {
 		logger.Sugar().Infof("Listening on TLS %s ...", l.TLSAddr())
 	}
 
-	// close listeners on context cancellation to exit from listenLoop
+	var wg sync.WaitGroup
+
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
+
 		<-ctx.Done()
 
 		if l.tcpListener != nil {
@@ -138,8 +144,6 @@ func (l *Listener) Run(ctx context.Context) error {
 			l.tlsListener.Close()
 		}
 	}()
-
-	var wg sync.WaitGroup
 
 	if l.TCP != "" {
 		wg.Add(1)

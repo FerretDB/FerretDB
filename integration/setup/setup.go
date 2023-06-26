@@ -137,16 +137,16 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	var uri string
 
 	if *targetURLF == "" {
-		client, uri = setupListener(tb, ctx, logger)
+		client, uri = setupListener(tb, setupCtx, logger)
 	} else {
-		client = setupClient(tb, ctx, *targetURLF)
+		client = setupClient(tb, setupCtx, *targetURLF)
 		uri = *targetURLF
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	collection := setupCollection(tb, ctx, client, opts)
+	collection := setupCollection(tb, setupCtx, client, opts)
 
 	level.SetLevel(*logLevelF)
 

@@ -35,6 +35,7 @@ import (
 // Please keep methods documentation in sync with commands help text in the handlers/common package.
 type Interface interface {
 	// Close gracefully shutdowns handler.
+	// It should be called after listener closes all client connections and stops listening.
 	Close()
 
 	prometheus.Collector
