@@ -378,7 +378,6 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 			key:            bson.D{{"v", 1}},
 			indexName:      "unique_false",
 			unique:         false,
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2845",
 		},
 		"UniqueTypeDocument": {
 			collectionName: "test",
@@ -445,27 +444,31 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 
 			assert.Equal(t, compatRes, targetRes)
 
-			targetErr = targetCollection.Database().RunCommand(
-				ctx, bson.D{{"listIndexes", tc.collectionName}},
-			).Decode(&targetRes)
+			targetCursor, targetErr := targetCollection.Indexes().List(ctx)
+			compatCursor, compatErr := compatCollection.Indexes().List(ctx)
 
-			compatErr = compatCollection.Database().RunCommand(
-				ctx, bson.D{{"listIndexes", tc.collectionName}},
-			).Decode(&targetRes)
-
-			require.Nil(t, targetRes)
-			require.Nil(t, compatRes)
-
-			if targetErr != nil {
-				t.Logf("Target error: %v", targetErr)
-				t.Logf("Compat error: %v", compatErr)
-
-				// error messages are intentionally not compared
-				AssertMatchesCommandError(t, compatErr, targetErr)
-
-				return
+			if targetCursor != nil {
+				defer targetCursor.Close(ctx)
 			}
-			require.NoError(t, compatErr, "compat error; target returned no error")
+			if compatCursor != nil {
+				defer compatCursor.Close(ctx)
+			}
+
+			require.NoError(t, targetErr)
+			require.NoError(t, compatErr)
+
+			targetListRes := FetchAll(t, ctx, targetCursor)
+			compatListRes := FetchAll(t, ctx, compatCursor)
+
+			assert.Equal(t, compatListRes, targetListRes)
+
+			targetSpec, targetErr := targetCollection.Indexes().ListSpecifications(ctx)
+			compatSpec, compatErr := compatCollection.Indexes().ListSpecifications(ctx)
+
+			require.NoError(t, compatErr)
+			require.NoError(t, targetErr)
+
+			assert.Equal(t, compatSpec, targetSpec)
 		})
 	}
 }

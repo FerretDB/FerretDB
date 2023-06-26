@@ -106,7 +106,22 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	duplicateChecker := map[string]struct{}{}
 
+	var isUniqueSpecified bool
+	var numIndexesBefore, numIndexesAfter int32
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		indexesBefore, err := pgdb.Indexes(ctx, tx, db, collection)
+		if err == nil {
+			numIndexesBefore = int32(len(indexesBefore))
+		}
+		if errors.Is(err, pgdb.ErrTableNotExist) {
+			numIndexesBefore = 1
+			err = nil
+		}
+
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
 		for {
 			var key, val any
 			key, val, err = iter.Next()
@@ -116,6 +131,13 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 				// do nothing
 			case errors.Is(err, iterator.ErrIteratorDone):
 				// iterator is done, no more indexes to create
+				indexesAfter, err := pgdb.Indexes(ctx, tx, db, collection)
+				if err != nil {
+					return lazyerrors.Error(err)
+				}
+
+				numIndexesAfter = int32(len(indexesAfter))
+
 				return nil
 			default:
 				return lazyerrors.Error(err)
@@ -166,6 +188,8 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 			if err != nil {
 				return err
 			}
+
+			isUniqueSpecified = index.Unique != nil
 		}
 	})
 
@@ -195,11 +219,19 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, lazyerrors.Error(err)
 	}
 
+	res := new(types.Document)
+
+	if isUniqueSpecified {
+		res.Set("numIndexesBefore", numIndexesBefore)
+		res.Set("numIndexesAfter", numIndexesAfter)
+		res.Set("createdCollectionAutomatically", true)
+	}
+
+	res.Set("ok", float64(1))
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		))},
+		Documents: []*types.Document{res},
 	}))
 
 	return &reply, nil
@@ -308,9 +340,9 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 			// already processed, do nothing
 
 		case "unique":
-			uniqueVal := must.NotFail(indexDoc.Get("unique"))
+			v := must.NotFail(indexDoc.Get("unique"))
 
-			_, ok := uniqueVal.(bool)
+			unique, ok := v.(bool)
 			if !ok {
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrTypeMismatch,
@@ -319,7 +351,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 							":: caused by :: "+
 							"The field 'unique' has value unique: %[3]s, which is not convertible to bool",
 						types.FormatAnyValue(must.NotFail(indexDoc.Get("key"))),
-						index.Name, types.FormatAnyValue(uniqueVal),
+						index.Name, types.FormatAnyValue(v),
 					),
 					"createIndexes",
 				)
