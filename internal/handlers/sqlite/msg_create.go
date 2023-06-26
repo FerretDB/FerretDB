@@ -117,7 +117,8 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 // validateCollectionNameRe validates collection names.
 // Empty collection name, names with `$` and `\x00` are not allowed.
-var validateCollectionNameRe = regexp.MustCompile("^[^$\x00]{1,235}$")
+// TODO
+var validateCollectionNameRe = regexp.MustCompile("^[^.$\x00][^$\x00]{0,234}$")
 
 // createCollection validates the collection name and creates collection.
 func createCollection(ctx context.Context, db backends.Database, collectionName string) error {

@@ -381,6 +381,11 @@ func TestCollectionName(t *testing.T) {
 		},
 		"DotSurround": {
 			collection: ".collection..",
+			err: &mongo.CommandError{
+				Name:    "InvalidNamespace",
+				Code:    73,
+				Message: "Collection names cannot start with '.': .collection..",
+			},
 		},
 		"Dot": {
 			collection: "collection.name",
