@@ -22,7 +22,7 @@ In this article, we'll guide you through the advantages of using FerretDB and ho
 
 Before we go into the technical details, let's find out what these two solutions are all about.
 
-## What is Percona Distrubution of PostgreSQL?
+## What is Percona Distribution for PostgreSQL?
 
 [Percona Distribution for PostgreSQL](https://www.percona.com/software/postgresql-distribution) is a software package provided by Percona, a world-class company that provides open source database software, support, and services.
 
