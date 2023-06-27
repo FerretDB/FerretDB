@@ -66,7 +66,7 @@ func mongoDBURI(tb testing.TB, opts *mongoDBURIOpts) string {
 		host = u.Host
 		q = u.Query()
 	default:
-		require.Empty(tb, opts.unixSocketPath, "one of baseURI, hostPort or unixSocketPath should be set")
+		tb.Fatal("one of baseURI, hostPort or unixSocketPath should be set")
 	}
 
 	var user *url.Userinfo
