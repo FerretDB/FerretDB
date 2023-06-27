@@ -44,10 +44,8 @@ const (
 	metadataTableName = reservedPrefix + "collections"
 )
 
-var (
-	// ErrInvalidCollectionName indicates that a collection didn't pass name checks.
-	ErrInvalidCollectionName = fmt.Errorf("invalid FerretDB collection name")
-)
+// ErrInvalidCollectionName indicates that a collection didn't pass name checks.
+var ErrInvalidCollectionName = fmt.Errorf("invalid FerretDB collection name")
 
 // Registry provides access to SQLite databases and collections information.
 type Registry struct {
@@ -208,8 +206,8 @@ func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionN
 	}
 
 	query := fmt.Sprintf("SELECT table_name FROM %q WHERE name = ?", metadataTableName)
-	rows, err := db.QueryContext(ctx, query, collectionName)
 
+	rows, err := db.QueryContext(ctx, query, collectionName)
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
