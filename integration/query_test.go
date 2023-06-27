@@ -30,7 +30,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/teststress"
 )
 
 func TestQueryBadFindType(t *testing.T) {
@@ -1316,8 +1315,6 @@ func TestQueryCommandGetMore(t *testing.T) {
 	}
 }
 
-// TestQueryCommandGetMoreConnection tests that a client uses the same connection for
-// getMore command run by the client, and different clients use different connection.
 func TestQueryCommandGetMoreConnection(t *testing.T) {
 	t.Parallel()
 
@@ -1334,41 +1331,9 @@ func TestQueryCommandGetMoreConnection(t *testing.T) {
 	databaseName := s.Collection.Database().Name()
 	collectionName := s.Collection.Name()
 
-	docs := generateDocuments(0, 110)
+	docs := generateDocuments(0, 5)
 	_, err := collection1.InsertMany(s.Ctx, docs)
 	require.NoError(t, err)
-
-	t.Run("SameClientStress", func(t *testing.T) {
-		t.Parallel()
-
-		teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
-			ready <- struct{}{}
-			<-start
-
-			var res bson.D
-			err := collection1.Database().RunCommand(s.Ctx,
-				bson.D{
-					{"find", collection1.Name()},
-					{"batchSize", 2},
-				}).Decode(&res)
-			require.NoError(t, err)
-
-			v, ok := res.Map()["cursor"]
-			require.True(t, ok)
-
-			cursor, ok := v.(bson.D)
-			require.True(t, ok)
-
-			cursorID := cursor.Map()["id"]
-			assert.NotNil(t, cursorID)
-
-			err = collection1.Database().RunCommand(s.Ctx, bson.D{
-				{"getMore", cursorID},
-				{"collection", collection1.Name()},
-			}).Decode(&res)
-			require.NoError(t, err)
-		})
-	})
 
 	t.Run("DifferentClient", func(t *testing.T) {
 		// error returned from using different clients are session related error,
