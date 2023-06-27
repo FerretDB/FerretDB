@@ -406,7 +406,7 @@ func TestCollectionName(t *testing.T) {
 			collection: "A",
 		},
 		"sqlite": {
-			collection: "sqlite",
+			collection: "sqlite_",
 		},
 	}
 

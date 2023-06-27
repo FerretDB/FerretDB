@@ -38,6 +38,7 @@ const (
 	reservedPrefix = "_ferretdb_"
 
 	// Reserved prefix for SQLite table name.
+	// https://www.sqlite.org/lang_createtable.html
 	reservedTablePrefix = "sqlite"
 
 	// SQLite table name where FerretDB metadata is stored.
@@ -72,7 +73,7 @@ func (r *Registry) Close() {
 }
 
 // collectionToTable converts FerretDB collection name to SQLite table name.
-// It returns error if the name is incorrect for SQLite backend.
+// It returns ErrInvalidCollectionName error if the name is incorrect for SQLite backend.
 func collectionToTable(collectionName string) (string, error) {
 	if strings.HasPrefix(collectionName, reservedPrefix) {
 		return "", ErrInvalidCollectionName
@@ -199,6 +200,8 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 }
 
 // CollectionGet returns table name associated with provided collection.
+//
+// If database does not exist, no error is returned.
 func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionName string) (string, error) {
 	db := r.p.GetExisting(ctx, dbName)
 	if db == nil {
@@ -215,6 +218,7 @@ func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionN
 
 	if !rows.Next() {
 		return "", lazyerrors.New("no collection found")
+		// TODO return ErrDontExist or smth
 	}
 
 	var name string
@@ -237,6 +241,7 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 
 	tableName, err := r.CollectionGet(ctx, dbName, collectionName)
 	if err != nil {
+		// TODO return nil for nonexistent collection but lazyerror for anything else
 		return false, nil
 	}
 
