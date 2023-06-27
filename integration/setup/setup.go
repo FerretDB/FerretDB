@@ -142,18 +142,11 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	if *targetURLF == "" {
 		client, uri = setupListener(tb, setupCtx, opts.ExtraOptions, logger)
 	} else {
-		u, err := url.Parse(*targetURLF)
-		require.NoError(tb, err)
-
-		q := u.Query()
-		for k, vs := range opts.ExtraOptions {
-			for _, v := range vs {
-				q.Set(k, v)
-			}
-		}
-
-		u.RawQuery = q.Encode()
-		uri = u.String()
+		uri = mongoDBURI(tb, &mongoDBURIOpts{
+			baseURI:     *targetURLF,
+			maxPoolSize: opts.ExtraOptions.Get("maxPoolSize"),
+			minPoolSize: opts.ExtraOptions.Get("minPoolSize"),
+		})
 		client = setupClient(tb, setupCtx, uri)
 	}
 

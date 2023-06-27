@@ -42,7 +42,7 @@ func SkipExceptMongoDB(tb testing.TB, reason string) {
 	if *targetBackendF != "mongodb" {
 		require.NotEmpty(tb, reason, "reason must not be empty")
 
-		tb.Skipf("Skipping for MongoDB: %s.", reason)
+		tb.Skipf("Skipping for %s: %s.", *targetBackendF, reason)
 	}
 }
 

@@ -33,6 +33,7 @@ import (
 
 // mongoDBURIOpts represents mongoDBURI's options.
 type mongoDBURIOpts struct {
+	baseURI        string
 	hostPort       string // for TCP and TLS
 	unixSocketPath string
 	tlsAndAuth     bool
@@ -45,16 +46,30 @@ func mongoDBURI(tb testing.TB, opts *mongoDBURIOpts) string {
 	tb.Helper()
 
 	var host string
+	q := make(url.Values)
 
-	if opts.hostPort != "" {
-		require.Empty(tb, opts.unixSocketPath, "both hostPort and unixSocketPath are set")
+	switch {
+	case opts.hostPort != "":
+		require.Empty(tb, opts.unixSocketPath, "only one of baseURI, hostPort or unixSocketPath should be set")
+		require.Empty(tb, opts.baseURI, "only one of baseURI, hostPort or unixSocketPath should be set")
 		host = opts.hostPort
-	} else {
+	case opts.unixSocketPath != "":
+		require.Empty(tb, opts.hostPort, "only one of baseURI, hostPort or unixSocketPath should be set")
+		require.Empty(tb, opts.baseURI, "only one of baseURI, hostPort or unixSocketPath should be set")
 		host = opts.unixSocketPath
+	case opts.baseURI != "":
+		require.Empty(tb, opts.unixSocketPath, "only one of baseURI, hostPort or unixSocketPath should be set")
+		require.Empty(tb, opts.hostPort, "only one of baseURI, hostPort or unixSocketPath should be set")
+		u, err := url.Parse(opts.baseURI)
+		require.NoError(tb, err)
+
+		host = u.Host
+		q = u.Query()
+	default:
+		require.Empty(tb, opts.unixSocketPath, "one of baseURI, hostPort or unixSocketPath should be set")
 	}
 
 	var user *url.Userinfo
-	q := make(url.Values)
 
 	if opts.tlsAndAuth {
 		require.Empty(tb, opts.unixSocketPath, "unixSocketPath cannot be used with TLS")
@@ -90,6 +105,7 @@ func mongoDBURI(tb testing.TB, opts *mongoDBURIOpts) string {
 // makeClient returns new client for the given working MongoDB URI.
 func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 	clientOpts := options.Client().ApplyURI(uri)
+
 	clientOpts.SetMonitor(otelmongo.NewMonitor())
 
 	client, err := mongo.Connect(ctx, clientOpts)
