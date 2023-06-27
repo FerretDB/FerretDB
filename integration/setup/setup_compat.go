@@ -94,7 +94,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 
 	var targetClient *mongo.Client
 	if *targetURLF == "" {
-		targetClient, _ = setupListener(tb, setupCtx, logger)
+		targetClient, _ = setupListener(tb, setupCtx, nil, logger)
 	} else {
 		targetClient = setupClient(tb, setupCtx, *targetURLF)
 	}

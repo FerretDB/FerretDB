@@ -36,6 +36,8 @@ type mongoDBURIOpts struct {
 	hostPort       string // for TCP and TLS
 	unixSocketPath string
 	tlsAndAuth     bool
+	maxPoolSize    string
+	minPoolSize    string
 }
 
 // mongoDBURI builds MongoDB URI with given options.
@@ -63,6 +65,14 @@ func mongoDBURI(tb testing.TB, opts *mongoDBURIOpts) string {
 		q.Set("tlsCaFile", filepath.Join(CertsRoot, "rootCA-cert.pem"))
 		q.Set("authMechanism", "PLAIN")
 		user = url.UserPassword("username", "password")
+	}
+
+	if opts.maxPoolSize != "" {
+		q.Set("maxPoolSize", opts.maxPoolSize)
+	}
+
+	if opts.minPoolSize != "" {
+		q.Set("minPoolSize", opts.minPoolSize)
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/1507

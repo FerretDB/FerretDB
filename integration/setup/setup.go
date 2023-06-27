@@ -140,7 +140,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	var uri string
 
 	if *targetURLF == "" {
-		client, uri = setupListener(tb, setupCtx, logger)
+		client, uri = setupListener(tb, setupCtx, opts.ExtraOptions, logger)
 	} else {
 		u, err := url.Parse(*targetURLF)
 		require.NoError(tb, err)
@@ -153,8 +153,8 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 		}
 
 		u.RawQuery = q.Encode()
-		client = setupClient(tb, setupCtx, u.String())
-		uri = *targetURLF
+		uri = u.String()
+		client = setupClient(tb, setupCtx, uri)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs

@@ -1396,11 +1396,6 @@ func TestQueryCommandGetMoreConnection(t *testing.T) {
 		u, err := url.Parse(s.MongoDBURI)
 		require.NoError(t, err)
 
-		q2 := u.Query()
-		q2.Set("maxPoolSize", "1")
-		q2.Set("minPoolSize", "1")
-		u.RawQuery = q2.Encode()
-
 		client2, err := mongo.Connect(s.Ctx, options.Client().ApplyURI(u.String()))
 		require.NoError(t, err)
 
