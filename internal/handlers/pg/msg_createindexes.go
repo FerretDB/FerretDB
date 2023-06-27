@@ -88,7 +88,10 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrTypeMismatch,
-			"BSON field 'createIndexes.indexes' is the wrong type, expected type 'array'",
+			fmt.Sprintf(
+				"BSON field 'createIndexes.indexes' is the wrong type '%s', expected type 'array'",
+				commonparams.AliasFromType(v),
+			),
 			document.Command(),
 		)
 	}
@@ -148,7 +151,11 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 			if !ok {
 				return commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrTypeMismatch,
-					fmt.Sprintf("BSON field 'createIndexes.indexes.%d' is the wrong type, expected type 'object'", key),
+					fmt.Sprintf(
+						"BSON field 'createIndexes.indexes.%d' is the wrong type '%s', expected type 'object'",
+						key,
+						commonparams.AliasFromType(val),
+					),
 					document.Command(),
 				)
 			}

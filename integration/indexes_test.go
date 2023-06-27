@@ -222,7 +222,6 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'createIndexes.indexes' is the wrong type 'object', expected type 'array'",
 			},
-			altMessage: "BSON field 'createIndexes.indexes' is the wrong type, expected type 'array'",
 		},
 		"InvalidTypeInt": {
 			indexes: 42,
@@ -231,7 +230,6 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'createIndexes.indexes' is the wrong type 'int', expected type 'array'",
 			},
-			altMessage: "BSON field 'createIndexes.indexes' is the wrong type, expected type 'array'",
 		},
 		"InvalidTypeArrayString": {
 			indexes: bson.A{"invalid"},
@@ -240,7 +238,6 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'createIndexes.indexes.0' is the wrong type 'string', expected type 'object'",
 			},
-			altMessage: "BSON field 'createIndexes.indexes.0' is the wrong type, expected type 'object'",
 		},
 		"IDIndex": {
 			indexes: bson.A{
