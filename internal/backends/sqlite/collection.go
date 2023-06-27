@@ -176,7 +176,7 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) (*backends.DeleteResult, error) {
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
-		return nil, nil
+		return &backends.DeleteResult{Deleted: 0}, nil
 	}
 
 	tableName := c.r.CollectionToTable(c.name)
