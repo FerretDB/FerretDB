@@ -45,8 +45,13 @@ const (
 	metadataTableName = reservedPrefix + "collections"
 )
 
-// ErrInvalidCollectionName indicates that a collection didn't pass name checks.
-var ErrInvalidCollectionName = fmt.Errorf("invalid FerretDB collection name")
+var (
+	// ErrInvalidCollectionName indicates that a collection didn't pass name checks.
+	ErrInvalidCollectionName = fmt.Errorf("invalid FerretDB collection name")
+
+	// ErrCollectionDoesNotExist indicates that collection does not exist.
+	ErrCollectionDoesNotExist = fmt.Errorf("collection does not exist")
+)
 
 // Registry provides access to SQLite databases and collections information.
 type Registry struct {
@@ -218,8 +223,7 @@ func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionN
 	defer rows.Close()
 
 	if !rows.Next() {
-		return "", lazyerrors.New("no collection found")
-		// TODO return ErrDontExist or smth
+		return "", ErrCollectionDoesNotExist
 	}
 
 	var name string
@@ -241,9 +245,12 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 	}
 
 	tableName, err := r.CollectionGet(ctx, dbName, collectionName)
-	if err != nil {
-		// TODO return nil for nonexistent collection but lazyerror for anything else
+	if errors.Is(err, ErrCollectionDoesNotExist) {
 		return false, nil
+	}
+
+	if err != nil {
+		return false, lazyerrors.Error(err)
 	}
 
 	// TODO use transactions
