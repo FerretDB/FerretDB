@@ -42,7 +42,6 @@ func Ctx(tb testing.TB) context.Context {
 		select {
 		case <-testDone:
 			signalsCancel()
-			return
 
 		case <-signalsCtx.Done():
 			// There is a weird interaction between terminal's process group/session signal handling,
