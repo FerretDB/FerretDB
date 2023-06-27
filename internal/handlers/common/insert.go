@@ -31,6 +31,7 @@ type InsertParams struct {
 	WriteConcern             any    `ferretdb:"writeConcern,ignored"`
 	BypassDocumentValidation bool   `ferretdb:"bypassDocumentValidation,ignored"`
 	Comment                  string `ferretdb:"comment,ignored"`
+	LSID                     any    `ferretdb:"lsid,ignored"`
 }
 
 // GetInsertParams returns the parameters for an insert command.
