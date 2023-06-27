@@ -82,11 +82,12 @@ func collectionToTable(collectionName string) (string, error) {
 	hash32 := fnv.New32a()
 	must.NotFail(hash32.Write([]byte(collectionName)))
 
+	collectionName = strings.ToLower(collectionName)
+
 	// SQLite table cannot start with _sqlite prefix
-	if strings.HasPrefix(strings.ToLower(collectionName), reservedTablePrefix) {
+	if strings.HasPrefix(collectionName, reservedTablePrefix) {
 		collectionName = "_" + collectionName
 	}
-	// TODO case insensitive
 
 	return collectionName + "_" + hex.EncodeToString(hash32.Sum(nil)), nil
 }
