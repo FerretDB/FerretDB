@@ -216,7 +216,10 @@ func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionN
 	defer rows.Close()
 
 	if !rows.Next() {
-		return "", backends.NewError(backends.ErrorCodeCollectionDoesNotExist, nil)
+		return "", backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			fmt.Errorf("Collection %q does not exist", collectionName),
+		)
 	}
 
 	var name string
