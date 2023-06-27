@@ -137,9 +137,4 @@ func createCollection(ctx context.Context, db backends.Database, collectionName 
 		Name: collectionName,
 	})
 
-	//if errors.Is(err, metadata.ErrInvalidCollectionName) {
-	//	return ErrInvalidCollectionName
-	//}
-
-	// return err
 }
