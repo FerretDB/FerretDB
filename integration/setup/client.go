@@ -77,24 +77,9 @@ func mongoDBURI(tb testing.TB, opts *mongoDBURIOpts) string {
 	return u.String()
 }
 
-// makeClient returns new client for the given MongoDB URI and extra options.
-// The extraOpts that comes later overwrites value for the query key.
-func makeClient(ctx context.Context, uri string, extraOpts url.Values) (*mongo.Client, error) {
-	u, err := url.Parse(uri)
-	if err != nil {
-		return nil, err
-	}
-
-	q := u.Query()
-
-	for k, vs := range extraOpts {
-		for _, v := range vs {
-			q.Set(k, v)
-		}
-	}
-
-	u.RawQuery = q.Encode()
-	clientOpts := options.Client().ApplyURI(u.String())
+// makeClient returns new client for the given working MongoDB URI.
+func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
+	clientOpts := options.Client().ApplyURI(uri)
 	clientOpts.SetMonitor(otelmongo.NewMonitor())
 
 	client, err := mongo.Connect(ctx, clientOpts)
@@ -117,7 +102,7 @@ func makeClient(ctx context.Context, uri string, extraOpts url.Values) (*mongo.C
 //
 // If the connection can't be established, it panics,
 // as it doesn't make sense to proceed with other tests if we couldn't connect in one of them.
-func setupClient(tb testing.TB, ctx context.Context, uri string, extraOpts url.Values) *mongo.Client {
+func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
@@ -125,7 +110,7 @@ func setupClient(tb testing.TB, ctx context.Context, uri string, extraOpts url.V
 
 	defer observability.FuncCall(ctx)()
 
-	client, err := makeClient(ctx, uri, extraOpts)
+	client, err := makeClient(ctx, uri)
 	if err != nil {
 		tb.Error(err)
 		panic("setupClient: " + err.Error())

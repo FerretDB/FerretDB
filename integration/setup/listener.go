@@ -212,7 +212,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	// those will fail the test if in-process FerretDB is not working;
 	// for example, when backend is down
 	uri := mongoDBURI(tb, &clientOpts)
-	client := setupClient(tb, ctx, uri, nil)
+	client := setupClient(tb, ctx, uri)
 
 	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
 

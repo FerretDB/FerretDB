@@ -143,7 +143,18 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	if *targetURLF == "" {
 		client, uri = setupListener(tb, setupCtx, logger)
 	} else {
-		client = setupClient(tb, setupCtx, *targetURLF, opts.ExtraOptions)
+		u, err := url.Parse(*targetURLF)
+		require.NoError(tb, err)
+
+		q := u.Query()
+		for k, vs := range opts.ExtraOptions {
+			for _, v := range vs {
+				q.Set(k, v)
+			}
+		}
+
+		u.RawQuery = q.Encode()
+		client = setupClient(tb, setupCtx, u.String())
 		uri = *targetURLF
 	}
 
