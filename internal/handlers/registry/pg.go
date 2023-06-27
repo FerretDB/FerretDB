@@ -31,7 +31,6 @@ func init() {
 
 			DisableFilterPushdown: opts.DisableFilterPushdown,
 			EnableSortPushdown:    opts.EnableSortPushdown,
-			EnableCursors:         opts.EnableCursors,
 		}
 
 		return pg.New(handlerOpts)

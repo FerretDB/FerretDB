@@ -23,26 +23,29 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
 // queryIterator implements iterator.Interface to fetch documents from the database.
-//
-//nolint:vet // for readability
 type queryIterator struct {
-	ctx context.Context
+	// the order of fields is weird to make the struct smaller due to alignment
 
-	m    sync.Mutex
-	rows *sql.Rows
-
+	ctx   context.Context
+	rows  *sql.Rows // protected by m
 	token *resource.Token
+	m     sync.Mutex
 }
 
 // newQueryIterator returns a new queryIterator for the given *sql.Rows.
 //
 // Iterator's Close method closes rows.
+// They are also closed by the Next method on any error, including context cancellation,
+// to make sure that the database connection is released as early as possible.
+// In that case, the iterator's Close method should still be called.
 //
 // Nil rows are possible and return already done iterator.
+// It still should be Close'd.
 func newQueryIterator(ctx context.Context, rows *sql.Rows) types.DocumentsIterator {
 	iter := &queryIterator{
 		ctx:   ctx,
@@ -55,15 +58,9 @@ func newQueryIterator(ctx context.Context, rows *sql.Rows) types.DocumentsIterat
 }
 
 // Next implements iterator.Interface.
-//
-// Errors (possibly wrapped) are:
-//   - iterator.ErrIteratorDone;
-//   - context.Canceled;
-//   - context.DeadlineExceeded;
-//   - something else.
-//
-// Otherwise, the next document is returned.
 func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
+	defer observability.FuncCall(iter.ctx)()
+
 	iter.m.Lock()
 	defer iter.m.Unlock()
 
@@ -75,28 +72,31 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 	}
 
 	if err := context.Cause(iter.ctx); err != nil {
+		iter.close()
 		return unused, nil, lazyerrors.Error(err)
 	}
 
 	if !iter.rows.Next() {
-		if err := iter.rows.Err(); err != nil {
-			return unused, nil, lazyerrors.Error(err)
-		}
+		err := iter.rows.Err()
 
-		// to avoid context cancellation changing the next `Next()` error
-		// from `iterator.ErrIteratorDone` to `context.Canceled`
 		iter.close()
 
-		return unused, nil, iterator.ErrIteratorDone
+		if err == nil {
+			err = iterator.ErrIteratorDone
+		}
+
+		return unused, nil, lazyerrors.Error(err)
 	}
 
 	var b []byte
 	if err := iter.rows.Scan(&b); err != nil {
+		iter.close()
 		return unused, nil, lazyerrors.Error(err)
 	}
 
 	doc, err := sjson.Unmarshal(b)
 	if err != nil {
+		iter.close()
 		return unused, nil, lazyerrors.Error(err)
 	}
 
@@ -105,6 +105,8 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 
 // Close implements iterator.Interface.
 func (iter *queryIterator) Close() {
+	defer observability.FuncCall(iter.ctx)()
+
 	iter.m.Lock()
 	defer iter.m.Unlock()
 
@@ -115,6 +117,8 @@ func (iter *queryIterator) Close() {
 //
 // This should be called only when the caller already holds the mutex.
 func (iter *queryIterator) close() {
+	defer observability.FuncCall(iter.ctx)()
+
 	if iter.rows != nil {
 		iter.rows.Close()
 		iter.rows = nil
