@@ -136,5 +136,4 @@ func createCollection(ctx context.Context, db backends.Database, collectionName 
 	return db.CreateCollection(ctx, &backends.CreateCollectionParams{
 		Name: collectionName,
 	})
-
 }
