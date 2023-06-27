@@ -107,7 +107,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	iter := idxArr.Iterator()
 	defer iter.Close()
 
-	duplicateChecker := map[string]struct{}{}
+	indexes := map[*types.Document]*pgdb.Index{}
 
 	var isUniqueSpecified bool
 	var numIndexesBefore, numIndexesAfter int32
@@ -177,15 +177,40 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 				)
 			}
 
-			if _, ok := duplicateChecker[index.Name]; ok {
-				return commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrIndexKeySpecsConflict,
-					fmt.Sprintf("Identical index already exists: %s", index.Name),
-					document.Command(),
-				)
+			for doc, existing := range indexes {
+				if existing.Key.Equal(index.Key) && existing.Name == index.Name {
+					return commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrIndexAlreadyExists,
+						fmt.Sprintf("Identical index already exists: %s", existing.Name),
+						document.Command(),
+					)
+				}
+
+				if existing.Key.Equal(index.Key) {
+					return commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrIndexOptionsConflict,
+						fmt.Sprintf("Index already exists with a different name: %s", existing.Name),
+						document.Command(),
+					)
+				}
+
+				if existing.Name == index.Name {
+					return commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrIndexKeySpecsConflict,
+						fmt.Sprintf("An existing index has the same name as the requested index. "+
+							"When index names are not specified, they are auto generated and can "+
+							"cause conflicts. Please refer to our documentation. "+
+							"Requested index: %s, "+
+							"existing index: %s",
+							types.FormatAnyValue(indexDoc),
+							types.FormatAnyValue(doc),
+						),
+						document.Command(),
+					)
+				}
 			}
 
-			duplicateChecker[index.Name] = struct{}{}
+			indexes[indexDoc] = index
 
 			err = pgdb.CreateIndexIfNotExists(ctx, tx, db, collection, index)
 			if errors.Is(err, pgdb.ErrIndexKeyAlreadyExist) && index.Name == "_id_1" {
