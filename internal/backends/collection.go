@@ -134,6 +134,8 @@ type DeleteResult struct {
 }
 
 // Delete deletes documents in collection.
+//
+// If request database is not exist it returns 0 deleted documents.
 func (cc *collectionContract) Delete(ctx context.Context, params *DeleteParams) (res *DeleteResult, err error) {
 	defer observability.FuncCall(ctx)()
 	defer checkError(err)
