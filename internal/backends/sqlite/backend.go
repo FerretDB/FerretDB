@@ -16,6 +16,7 @@ package sqlite
 
 import (
 	"context"
+	"net/url"
 	"os"
 
 	"go.uber.org/zap"
@@ -29,34 +30,43 @@ import (
 // backend implements backends.Backend interface.
 type backend struct {
 	r   *metadata.Registry
-	dir string
+	uri *url.URL
 }
 
 // NewBackendParams represents the parameters of NewBackend function.
 type NewBackendParams struct {
-	Dir string
+	URI string
 	L   *zap.Logger
 }
 
 // NewBackend creates a new SQLite backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	fi, err := os.Stat(params.Dir)
+	uri, err := url.Parse(params.URI)
 	if err != nil {
-		return nil, lazyerrors.Errorf("%q should be an existing directory: %w", params.Dir, err)
+		return nil, lazyerrors.Errorf("failed to parse backend URI: %w", err)
+	}
+
+	if uri.Host != "" {
+		return nil, lazyerrors.Errorf("backend URI should not contain host: %q", params.URI)
+	}
+
+	fi, err := os.Stat(uri.Path)
+	if err != nil {
+		return nil, lazyerrors.Errorf("%q should be an existing directory: %w", params.URI, err)
 	}
 
 	if !fi.IsDir() {
-		return nil, lazyerrors.Errorf("%q should be an existing directory", params.Dir)
+		return nil, lazyerrors.Errorf("%q should be an existing directory", params.URI)
 	}
 
-	r, err := metadata.NewRegistry(params.Dir, params.L.Named("metadata"))
+	r, err := metadata.NewRegistry(uri.Path, params.L.Named("metadata"))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	return backends.BackendContract(&backend{
 		r:   r,
-		dir: params.Dir,
+		uri: uri,
 	}), nil
 }
 

@@ -64,7 +64,7 @@ type NewOpts struct {
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
 	b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
-		Dir: opts.Dir,
+		URI: opts.Dir,
 		L:   opts.L,
 	})
 	if err != nil {
