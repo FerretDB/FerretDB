@@ -405,7 +405,7 @@ func TestCollectionName(t *testing.T) {
 		"Capital": {
 			collection: "A",
 		},
-		"sqlite": {
+		"Sqlite": {
 			collection: "sqlite_",
 		},
 	}
@@ -417,7 +417,8 @@ func TestCollectionName(t *testing.T) {
 				t.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			// TODO https://github.com/FerretDB/FerretDB/issues/2923
+			// t.Parallel()
 
 			err := collection.Database().CreateCollection(ctx, tc.collection)
 			if tc.err != nil {
