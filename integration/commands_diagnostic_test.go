@@ -428,8 +428,6 @@ func TestCommandWhatsMyURIConnection(t *testing.T) {
 	collectionName := s.Collection.Name()
 
 	t.Run("SameClientStress", func(t *testing.T) {
-		setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/2906")
-
 		t.Parallel()
 
 		ports := make(chan string, teststress.NumGoroutines)

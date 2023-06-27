@@ -30,6 +30,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/teststress"
 )
 
 func TestQueryBadFindType(t *testing.T) {
@@ -958,15 +959,13 @@ func TestQueryBatchSize(t *testing.T) {
 func TestQueryCommandGetMore(t *testing.T) {
 	t.Parallel()
 
-	q := url.Values{}
-
-	// set 1 to ensure only one pool exists duration of the test,
+	// set minPoolSize and maxPoolSize 1 to ensure only one pool exists duration of the test,
 	// which forces a client to use a single connection pool
-	q.Set("maxPoolSize", "1")
-	q.Set("minPoolSize", "1")
-
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		ExtraOptions: q,
+		ExtraOptions: url.Values{
+			"minPoolSize": []string{"1"},
+			"maxPoolSize": []string{"1"},
+		},
 	})
 
 	ctx, collection := s.Ctx, s.Collection
@@ -1315,4 +1314,117 @@ func TestQueryCommandGetMore(t *testing.T) {
 			require.Equal(t, tc.nextBatch, nextBatch)
 		})
 	}
+}
+
+// TestQueryCommandGetMoreConnection tests that a client uses the same connection for
+// getMore command run by the client, and different clients use different connection.
+func TestQueryCommandGetMoreConnection(t *testing.T) {
+	t.Parallel()
+
+	// set minPoolSize and maxPoolSize 1 to ensure only one pool exists duration of the test,
+	// which forces a client to use a single connection pool
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		ExtraOptions: url.Values{
+			"minPoolSize": []string{"1"},
+			"maxPoolSize": []string{"1"},
+		},
+	})
+
+	collection1 := s.Collection
+	databaseName := s.Collection.Database().Name()
+	collectionName := s.Collection.Name()
+
+	docs := generateDocuments(0, 110)
+	_, err := collection1.InsertMany(s.Ctx, docs)
+	require.NoError(t, err)
+
+	t.Run("SameClientStress", func(t *testing.T) {
+		t.Parallel()
+
+		teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+			ready <- struct{}{}
+			<-start
+
+			var res bson.D
+			err := collection1.Database().RunCommand(s.Ctx,
+				bson.D{
+					{"find", collection1.Name()},
+					{"batchSize", 2},
+				}).Decode(&res)
+			require.NoError(t, err)
+
+			v, ok := res.Map()["cursor"]
+			require.True(t, ok)
+
+			cursor, ok := v.(bson.D)
+			require.True(t, ok)
+
+			cursorID := cursor.Map()["id"]
+			assert.NotNil(t, cursorID)
+
+			err = collection1.Database().RunCommand(s.Ctx, bson.D{
+				{"getMore", cursorID},
+				{"collection", collection1.Name()},
+			}).Decode(&res)
+			require.NoError(t, err)
+		})
+	})
+
+	t.Run("DifferentClient", func(t *testing.T) {
+		// error returned from using different clients are session related error,
+		// currently FerretDB does not return an error
+		setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/153")
+
+		t.Parallel()
+
+		u, err := url.Parse(s.MongoDBURI)
+		require.NoError(t, err)
+
+		q2 := u.Query()
+		q2.Set("maxPoolSize", "1")
+		q2.Set("minPoolSize", "1")
+		u.RawQuery = q2.Encode()
+
+		client2, err := mongo.Connect(s.Ctx, options.Client().ApplyURI(u.String()))
+		require.NoError(t, err)
+
+		defer client2.Disconnect(s.Ctx)
+
+		collection2 := client2.Database(databaseName).Collection(collectionName)
+
+		var res bson.D
+		err = collection1.Database().RunCommand(s.Ctx,
+			bson.D{
+				{"find", collection1.Name()},
+				{"batchSize", 2},
+			}).Decode(&res)
+		require.NoError(t, err)
+
+		v, ok := res.Map()["cursor"]
+		require.True(t, ok)
+
+		cursor, ok := v.(bson.D)
+		require.True(t, ok)
+
+		cursorID := cursor.Map()["id"]
+		assert.NotNil(t, cursorID)
+
+		err = collection2.Database().RunCommand(s.Ctx, bson.D{
+			{"getMore", cursorID},
+			{"collection", collection2.Name()},
+		}).Decode(&res)
+
+		// use AssertEqualCommandError because message cannot be compared as it contains specific session ID
+		AssertMatchesCommandError(
+			t,
+			mongo.CommandError{
+				Code: 50738,
+				Name: "Location50738",
+				Message: "Cannot run getMore on cursor 5720627396082469624, which was created in session " +
+					"95326129-ff9c-48a4-9060-464b4ea3ee06 - 47DEQpj8HBSa+/TImW+5JC\neuQeRkm5NMpJWZG3hSuFU= -  - , " +
+					"in session 9e8902e9-338c-4156-9fd8-50e5d62ac992 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  - ",
+			},
+			err,
+		)
+	})
 }
