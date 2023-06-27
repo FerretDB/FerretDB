@@ -36,11 +36,13 @@ func openDB(uri string) (*db, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/2909
+
 	// TODO https://github.com/FerretDB/FerretDB/issues/2755
 	sqlDB.SetConnMaxIdleTime(0)
 	sqlDB.SetConnMaxLifetime(0)
-	sqlDB.SetMaxIdleConns(1)
-	sqlDB.SetMaxOpenConns(1)
+	// sqlDB.SetMaxIdleConns(5)
+	// sqlDB.SetMaxOpenConns(5)
 
 	if err = sqlDB.Ping(); err != nil {
 		_ = sqlDB.Close()

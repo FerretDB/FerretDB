@@ -56,7 +56,6 @@ type NewOpts struct {
 
 	// test options
 	DisableFilterPushdown bool
-	EnableCursors         bool
 }
 
 // AuthParams represents authentication parameters.
@@ -74,7 +73,7 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 
 	return &Handler{
 		NewOpts:  opts,
-		registry: cursor.NewRegistry(),
+		registry: cursor.NewRegistry(opts.L.Named("cursors")),
 		pools:    make(map[AuthParams]*tigrisdb.TigrisDB, 1),
 	}, nil
 }
@@ -88,6 +87,8 @@ func (h *Handler) Close() {
 		p.Driver.Close()
 		delete(h.pools, k)
 	}
+
+	h.registry.Close()
 }
 
 // DBPool returns database connection pool for the given client connection.

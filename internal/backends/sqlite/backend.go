@@ -35,6 +35,7 @@ type backend struct {
 // NewBackendParams represents the parameters of NewBackend function.
 type NewBackendParams struct {
 	Dir string
+	L   *zap.Logger
 }
 
 // NewBackend creates a new SQLite backend.
@@ -48,7 +49,7 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 		return nil, lazyerrors.Errorf("%q should be an existing directory", params.Dir)
 	}
 
-	r, err := metadata.NewRegistry(params.Dir, zap.L().Named("sqlite").Named("metadata"))
+	r, err := metadata.NewRegistry(params.Dir, params.L.Named("metadata"))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

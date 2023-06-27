@@ -86,9 +86,7 @@ func Track(obj any, token *Token) {
 			msg += "\nObject created by " + string(stack)
 		}
 
-		// TODO
-		_ = msg
-		// panic(msg)
+		panic(msg)
 	})
 }
 
