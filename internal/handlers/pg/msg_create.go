@@ -105,6 +105,10 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			msg := fmt.Sprintf("Invalid collection name: '%s.%s'", db, collection)
 			return commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
 
+		case errors.Is(err, pgdb.ErrCollectionStartsWithDot):
+			msg := fmt.Sprintf("Collection names cannot start with '.': %s", collection)
+			return commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
+
 		default:
 			return lazyerrors.Error(err)
 		}

@@ -378,7 +378,6 @@ func run() {
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
-	defer h.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		TCP:         cli.Listen.Addr,
