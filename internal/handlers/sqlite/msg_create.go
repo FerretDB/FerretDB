@@ -17,6 +17,7 @@ package sqlite
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -76,6 +77,13 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	collectionName, err := common.GetRequiredParam[string](document, command)
 	if err != nil {
 		return nil, err
+	}
+
+	// validateDatabaseNameRe validates FerretDB database name.
+	validateDatabaseNameRe := regexp.MustCompile("^[a-zA-Z_-][a-zA-Z0-9_-]{0,62}$")
+
+	if !validateDatabaseNameRe.MatchString(dbName) {
+		return nil, fmt.Errorf("TODO error")
 	}
 
 	db := h.b.Database(dbName)
