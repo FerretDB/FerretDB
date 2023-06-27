@@ -95,7 +95,7 @@ func execDelete(ctx context.Context, coll backends.Collection, filter *types.Doc
 
 	defer res.Iter.Close()
 
-	ids := make([]any, 0)
+	var ids []any
 
 	for {
 		var doc *types.Document
