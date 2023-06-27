@@ -1276,6 +1276,18 @@ func TestQueryCommandGetMore(t *testing.T) {
 				getMoreRest...,
 			)
 
+			// Even `find` and `getMore` use the same connection by setting `minPoolSize` and `maxPoolSize` to 1,
+			// on rare occasion it may return session error due to different session calling `find` and `getMore`.
+			// If that happens too frequently, removing t.Parallel() in subtests reduces the occurrence.
+			// Supporting session would help us understand fix it https://github.com/FerretDB/FerretDB/issues/153.
+			//
+			//mongo.CommandError{
+			//	Code: 50738,
+			//	Name: "Location50738",
+			//	Message: "Cannot run getMore on cursor 5720627396082469624, which was created in session " +
+			//		"95326129-ff9c-48a4-9060-464b4ea3ee06 - 47DEQpj8HBSa+/TImW+5JC\neuQeRkm5NMpJWZG3hSuFU= -  - , " +
+			//		"in session 9e8902e9-338c-4156-9fd8-50e5d62ac992 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  - ",
+			//},
 			err = collection.Database().RunCommand(ctx, getMoreCommand).Decode(&res)
 			if tc.err != nil {
 				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
@@ -1335,9 +1347,48 @@ func TestQueryCommandGetMoreConnection(t *testing.T) {
 	_, err := collection1.InsertMany(s.Ctx, docs)
 	require.NoError(t, err)
 
+	t.Run("SameClient", func(t *testing.T) {
+		t.Parallel()
+
+		var res bson.D
+		err = collection1.Database().RunCommand(s.Ctx,
+			bson.D{
+				{"find", collection1.Name()},
+				{"batchSize", 2},
+			}).Decode(&res)
+		require.NoError(t, err)
+
+		v, ok := res.Map()["cursor"]
+		require.True(t, ok)
+
+		cursor, ok := v.(bson.D)
+		require.True(t, ok)
+
+		cursorID := cursor.Map()["id"]
+		assert.NotNil(t, cursorID)
+
+		// Even `find` and `getMore` use the same connection by setting `minPoolSize` and `maxPoolSize` to 1,
+		// on rare occasion it may return session error due to different session calling `find` and `getMore`.
+		// If that happens too frequently, removing t.Parallel() in subtests reduces the occurrence.
+		// Supporting session would help us understand fix it https://github.com/FerretDB/FerretDB/issues/153.
+		//
+		//mongo.CommandError{
+		//	Code: 50738,
+		//	Name: "Location50738",
+		//	Message: "Cannot run getMore on cursor 5720627396082469624, which was created in session " +
+		//		"95326129-ff9c-48a4-9060-464b4ea3ee06 - 47DEQpj8HBSa+/TImW+5JC\neuQeRkm5NMpJWZG3hSuFU= -  - , " +
+		//		"in session 9e8902e9-338c-4156-9fd8-50e5d62ac992 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  - ",
+		//},
+		err = collection1.Database().RunCommand(s.Ctx, bson.D{
+			{"getMore", cursorID},
+			{"collection", collection1.Name()},
+		}).Decode(&res)
+		require.NoError(t, err)
+	})
+
 	t.Run("DifferentClient", func(t *testing.T) {
 		// error returned from using different clients are session related error,
-		// currently FerretDB does not return an error
+		// hence currently FerretDB does not return an error
 		setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/153")
 
 		t.Parallel()
@@ -1379,7 +1430,7 @@ func TestQueryCommandGetMoreConnection(t *testing.T) {
 			{"collection", collection2.Name()},
 		}).Decode(&res)
 
-		// use AssertEqualCommandError because message cannot be compared as it contains specific session ID
+		// use AssertEqualCommandError because message cannot be compared as it contains session ID
 		AssertMatchesCommandError(
 			t,
 			mongo.CommandError{
