@@ -45,60 +45,50 @@ type Operator interface {
 	Process(in *types.Document) (any, error)
 }
 
-// NewOperator returns operator from provided document.
-// The document should look like: `{<$operator>: <operator-value>}`.
-func NewOperator(doc any) (Operator, error) {
-	operatorDoc, ok := doc.(*types.Document)
-	if !ok {
-		return nil, newOperatorError(
-			ErrWrongType,
-			"Invalid type of operator field (expected document)",
-		)
-	}
-
-	if operatorDoc.Len() == 0 {
-		return nil, newOperatorError(
-			ErrEmptyField,
-			"The operator field is empty (expected document)",
-		)
-	}
-
-	iter := operatorDoc.Iterator()
+// IsOperator returns true if provided document should be
+// treated as operator document.
+func IsOperator(doc *types.Document) bool {
+	iter := doc.Iterator()
 	defer iter.Close()
 
-	var operatorExists bool
-
 	for {
-		k, _, err := iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
-		}
-
+		key, _, err := iter.Next()
 		if err != nil {
-			return nil, lazyerrors.Error(err)
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return false
 		}
 
-		if strings.HasPrefix(k, "$") {
-			operatorExists = true
-			break
+		if strings.HasPrefix(key, "$") {
+			return true
 		}
 	}
 
-	switch {
-	case !operatorExists:
-		return nil, newOperatorError(
-			ErrNoOperator,
-			"No operator in document",
-		)
+	return false
+}
 
-	case operatorDoc.Len() > 1:
+// NewOperator returns operator from provided document.
+// The document should look like: `{<$operator>: <operator-value>}`.
+//
+// Before calling NewOperator on document it's recommended to validate
+// document before by using IsOperator on it.
+func NewOperator(doc *types.Document) (Operator, error) {
+	if doc.Len() == 0 {
+		return nil, lazyerrors.New(
+			"The operator field is empty",
+		)
+	}
+
+	if doc.Len() > 1 {
 		return nil, newOperatorError(
 			ErrTooManyFields,
 			"The operator field specifies more than one operator",
 		)
 	}
 
-	operator := operatorDoc.Command()
+	operator := doc.Command()
 
 	newOperator, supported := Operators[operator]
 	_, unsupported := unsupportedOperators[operator]
@@ -107,7 +97,7 @@ func NewOperator(doc any) (Operator, error) {
 	case supported && unsupported:
 		panic(fmt.Sprintf("operator %q is in both `operators` and `unsupportedOperators`", operator))
 	case supported && !unsupported:
-		return newOperator(operatorDoc)
+		return newOperator(doc)
 	case !supported && unsupported:
 		return nil, newOperatorError(
 			ErrNotImplemented,

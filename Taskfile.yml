@@ -279,20 +279,18 @@ tasks:
     cmds:
       - go test -count=0 ./...
 
-  # Those commands should still run tests (i.e., should not have -run=XXX flags)
-  # to fill seed corpus for fuzz tests that use WriteSeedCorpusFile (e.g., FuzzHandler).
   fuzz:
     desc: "Fuzz for about 2 minutes (with default FUZZ_TIME)"
     cmds:
       - go test -list='Fuzz.*' ./...
-      - go test -fuzz=FuzzArray    -fuzztime={{.FUZZ_TIME}} ./internal/bson/
-      - go test -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/bson/
-      - go test -fuzz=FuzzArray    -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      - go test -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      - go test -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/handlers/tigris/tjson/
-      - go test -fuzz=FuzzMsg      -fuzztime={{.FUZZ_TIME}} ./internal/wire/
-      - go test -fuzz=FuzzQuery    -fuzztime={{.FUZZ_TIME}} ./internal/wire/
-      - go test -fuzz=FuzzReply    -fuzztime={{.FUZZ_TIME}} ./internal/wire/
+      - go test -run=XXX -fuzz=FuzzArray    -fuzztime={{.FUZZ_TIME}} ./internal/bson/
+      - go test -run=XXX -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/bson/
+      - go test -run=XXX -fuzz=FuzzArray    -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
+      - go test -run=XXX -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
+      - go test -run=XXX -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/handlers/tigris/tjson/
+      - go test -run=XXX -fuzz=FuzzMsg      -fuzztime={{.FUZZ_TIME}} ./internal/wire/
+      - go test -run=XXX -fuzz=FuzzQuery    -fuzztime={{.FUZZ_TIME}} ./internal/wire/
+      - go test -run=XXX -fuzz=FuzzReply    -fuzztime={{.FUZZ_TIME}} ./internal/wire/
 
   fuzz-corpus:
     desc: "Sync seed and generated fuzz corpora with FUZZ_CORPUS"

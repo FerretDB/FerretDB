@@ -26,34 +26,43 @@ import (
 )
 
 // Ctx returns test context.
+// It is canceled when test is finished or interrupted.
 func Ctx(tb testing.TB) context.Context {
 	tb.Helper()
 
-	ctx, span := otel.Tracer("").Start(context.Background(), tb.Name())
+	signalsCtx, signalsCancel := notifyTestsTermination(context.Background())
+
+	testDone := make(chan struct{})
+
+	tb.Cleanup(func() {
+		close(testDone)
+	})
+
+	go func() {
+		select {
+		case <-testDone:
+			signalsCancel()
+			return
+
+		case <-signalsCtx.Done():
+			// There is a weird interaction between terminal's process group/session signal handling,
+			// Task's signal handling,
+			// and this attempt to handle signals gracefully.
+			// It may cause tests to continue running in the background
+			// while terminal shows command-line prompt already.
+			//
+			// Panic to surely stop tests.
+			panic("Stopping everything")
+		}
+	}()
+
+	ctx, span := otel.Tracer("").Start(signalsCtx, tb.Name())
 	tb.Cleanup(func() {
 		span.End()
 	})
 
 	ctx, task := trace.NewTask(ctx, tb.Name())
 	tb.Cleanup(task.End)
-
-	ctx, stop := notifyTestsTermination(ctx)
-
-	go func() {
-		<-ctx.Done()
-
-		tb.Log("Stopping...")
-		stop()
-
-		// There is a weird interaction between terminal's process group/session signal handling,
-		// Task's signal handling,
-		// and this attempt to handle signals gracefully.
-		// It may cause tests to continue running in the background
-		// while terminal shows command-line prompt already.
-		//
-		// Panic to surely stop tests.
-		panic("Stopping everything")
-	}()
 
 	return ctx
 }

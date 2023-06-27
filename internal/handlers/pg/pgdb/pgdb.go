@@ -45,6 +45,9 @@ var (
 	// ErrInvalidCollectionName indicates that a collection didn't pass name checks.
 	ErrInvalidCollectionName = fmt.Errorf("invalid FerretDB collection name")
 
+	// ErrCollectionStartsWithDot indicates that collection name starts with dot, but it shouldn't.
+	ErrCollectionStartsWithDot = fmt.Errorf("Collection names cannot start with '.'")
+
 	// ErrInvalidDatabaseName indicates that a database didn't pass name checks.
 	ErrInvalidDatabaseName = fmt.Errorf("invalid FerretDB database name")
 

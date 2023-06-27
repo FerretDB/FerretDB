@@ -620,7 +620,8 @@ func TestQueryCommandBatchSize(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	// the number of documents is set to slightly above the default batchSize of 101
+	// the number of documents is set above the default batchSize of 101
+	// for testing unset batchSize returning default batchSize
 	docs := generateDocuments(0, 110)
 	_, err := collection.InsertMany(ctx, docs)
 	require.NoError(t, err)
@@ -840,7 +841,10 @@ func TestQueryBatchSize(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	// the number of documents is set to much bigger than the default batchSize of 101
+	// The test cases call `find`, then may implicitly call `getMore` upon `cursor.Next()`.
+	// The batchSize set by `find` is used also by `getMore` unless
+	// `find` has default batchSize or 0 batchSize, then `getMore` has unlimited batchSize.
+	// To test that, the number of documents is set to more than the double of default batchSize 101.
 	docs := generateDocuments(0, 220)
 	_, err := collection.InsertMany(ctx, docs)
 	require.NoError(t, err)
@@ -848,78 +852,82 @@ func TestQueryBatchSize(t *testing.T) {
 	t.Run("SetBatchSize", func(t *testing.T) {
 		t.Parallel()
 
-		// set BatchSize to 2
 		cursor, err := collection.Find(ctx, bson.D{}, &options.FindOptions{BatchSize: pointer.ToInt32(2)})
 		require.NoError(t, err)
 
 		defer cursor.Close(ctx)
 
-		// firstBatch has remaining 2 documents
-		require.Equal(t, 2, cursor.RemainingBatchLength())
+		require.Equal(t, 2, cursor.RemainingBatchLength(), "expected 2 documents in first batch")
 
-		// get first document from firstBatch
-		ok := cursor.Next(ctx)
-		require.True(t, ok, "expected to have next document")
-		require.Equal(t, 1, cursor.RemainingBatchLength())
+		for i := 2; i > 0; i-- {
+			ok := cursor.Next(ctx)
+			require.True(t, ok, "expected to have next document in first batch")
+			require.Equal(t, i-1, cursor.RemainingBatchLength())
+		}
 
-		// get second document from firstBatch
-		ok = cursor.Next(ctx)
-		require.True(t, ok, "expected to have next document")
-		require.Equal(t, 0, cursor.RemainingBatchLength())
+		// batchSize of 2 is applied to second batch which is obtained by implicit call to `getMore`
+		for i := 2; i > 0; i-- {
+			ok := cursor.Next(ctx)
+			require.True(t, ok, "expected to have next document in second batch")
+			require.Equal(t, i-1, cursor.RemainingBatchLength())
+		}
 
-		// get first document from secondBatch
-		ok = cursor.Next(ctx)
-		require.True(t, ok, "expected to have next document")
-		require.Equal(t, 1, cursor.RemainingBatchLength())
-
-		// get second document from secondBatch
-		ok = cursor.Next(ctx)
-		require.True(t, ok, "expected to have next document")
-		require.Equal(t, 0, cursor.RemainingBatchLength())
-
-		// increase batchSize
 		cursor.SetBatchSize(5)
 
-		// get first document from thirdBatch
-		ok = cursor.Next(ctx)
-		require.True(t, ok, "expected to have next document")
-		require.Equal(t, 4, cursor.RemainingBatchLength())
+		for i := 5; i > 0; i-- {
+			ok := cursor.Next(ctx)
+			require.True(t, ok, "expected to have next document in third batch")
+			require.Equal(t, i-1, cursor.RemainingBatchLength())
+		}
 
-		// get rest of documents from the cursor
+		// get rest of documents from the cursor to ensure cursor is exhausted
 		var res bson.D
 		err = cursor.All(ctx, &res)
 		require.NoError(t, err)
 
-		// cursor is exhausted
-		ok = cursor.Next(ctx)
+		ok := cursor.Next(ctx)
 		require.False(t, ok, "cursor exhausted, not expecting next document")
 	})
 
 	t.Run("DefaultBatchSize", func(t *testing.T) {
 		t.Parallel()
 
-		// leave batchSize unset, firstBatch uses default batchSize 101
+		// unset batchSize uses default batchSize 101 for the first batch
 		cursor, err := collection.Find(ctx, bson.D{})
 		require.NoError(t, err)
 
 		defer cursor.Close(ctx)
 
-		// firstBatch has remaining 101 documents
 		require.Equal(t, 101, cursor.RemainingBatchLength())
 
-		// get 101 documents from firstBatch
-		for i := 0; i < 101; i++ {
+		for i := 101; i > 0; i-- {
 			ok := cursor.Next(ctx)
 			require.True(t, ok, "expected to have next document")
+			require.Equal(t, i-1, cursor.RemainingBatchLength())
 		}
 
-		require.Equal(t, 0, cursor.RemainingBatchLength())
-
-		// secondBatch has the rest of the documents, not only 109 documents
+		// next batch obtain from implicit call to `getMore` has the rest of the documents, not default batchSize
 		// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
 		ok := cursor.Next(ctx)
 		require.True(t, ok, "expected to have next document")
 		require.Equal(t, 118, cursor.RemainingBatchLength())
+	})
+
+	t.Run("ZeroBatchSize", func(t *testing.T) {
+		t.Parallel()
+
+		cursor, err := collection.Find(ctx, bson.D{}, &options.FindOptions{BatchSize: pointer.ToInt32(0)})
+		require.NoError(t, err)
+
+		defer cursor.Close(ctx)
+
+		require.Equal(t, 0, cursor.RemainingBatchLength())
+
+		// next batch obtain from implicit call to `getMore` has the rest of the documents, not 0 batchSize
+		// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
+		ok := cursor.Next(ctx)
+		require.True(t, ok, "expected to have next document")
+		require.Equal(t, 219, cursor.RemainingBatchLength())
 	})
 
 	t.Run("NegativeLimit", func(t *testing.T) {
@@ -934,15 +942,13 @@ func TestQueryBatchSize(t *testing.T) {
 
 		defer cursor.Close(ctx)
 
-		// firstBatch has remaining 1 document
-		require.Equal(t, 1, cursor.RemainingBatchLength())
+		require.Equal(t, 1, cursor.RemainingBatchLength(), "expected 1 document in first batch")
 
-		// firstBatch contains single document
 		ok := cursor.Next(ctx)
 		require.True(t, ok, "expected to have next document")
 		require.Equal(t, 0, cursor.RemainingBatchLength())
 
-		// there is no remaining batch, cursor is exhausted
+		// there is no remaining batch due to negative limit
 		ok = cursor.Next(ctx)
 		require.False(t, ok, "cursor exhausted, not expecting next document")
 		require.Equal(t, 0, cursor.RemainingBatchLength())
@@ -965,7 +971,8 @@ func TestQueryCommandGetMore(t *testing.T) {
 
 	ctx, collection := s.Ctx, s.Collection
 
-	// the number of documents is set to slightly above the default batchSize of 101
+	// the number of documents is set above the default batchSize of 101
+	// for testing unset batchSize returning default batchSize
 	docs := generateDocuments(0, 110)
 	_, err := collection.InsertMany(ctx, docs)
 	require.NoError(t, err)

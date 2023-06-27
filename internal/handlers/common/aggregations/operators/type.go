@@ -55,16 +55,16 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 
 		switch param := typeParam.(type) {
 		case *types.Document:
+			if !IsOperator(param) {
+				res = param
+				break
+			}
+
 			operator, err := NewOperator(param)
 			if err != nil {
 				var opErr OperatorError
 				if !errors.As(err, &opErr) {
 					return nil, lazyerrors.Error(err)
-				}
-
-				if opErr.Code() == ErrNoOperator {
-					res = param
-					continue
 				}
 
 				if opErr.Code() == ErrInvalidExpression {

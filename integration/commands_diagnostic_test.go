@@ -349,8 +349,6 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 }
 
 func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/1759")
-
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)

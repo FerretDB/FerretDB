@@ -18,7 +18,6 @@ import (
 	"context"
 	"net/url"
 	"path/filepath"
-	"runtime/trace"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -29,6 +28,7 @@ import (
 	"go.opentelemetry.io/otel"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
 // mongoDBURIOpts represents mongoDBURI's options.
@@ -123,7 +123,7 @@ func setupClient(tb testing.TB, ctx context.Context, uri string, extraOpts url.V
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
 	defer span.End()
 
-	defer trace.StartRegion(ctx, "setupClient").End()
+	defer observability.FuncCall(ctx)()
 
 	client, err := makeClient(ctx, uri, extraOpts)
 	if err != nil {

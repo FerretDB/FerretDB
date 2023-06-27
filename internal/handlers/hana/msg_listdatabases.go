@@ -17,11 +17,106 @@ package hana
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handlers/hana/hanadb"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgListDatabases implements HandlerInterface.
 func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var filter *types.Document
+	if filter, err = common.GetOptionalParam(document, "filter", filter); err != nil {
+		return nil, err
+	}
+
+	common.Ignored(document, h.L, "comment", "authorizedDatabases")
+
+	databaseNames, err := dbPool.ListSchemas(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var nameOnly bool
+	if v, _ := document.Get("nameOnly"); v != nil {
+		nameOnly, err = commonparams.GetBoolOptionalParam("nameOnly", v)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var totalSize int64
+	databases := types.MakeArray(len(databaseNames))
+	qp := hanadb.QueryParams{}
+
+	for _, databaseName := range databaseNames {
+		qp.DB = databaseName
+
+		size, err := dbPool.SchemaSize(ctx, &qp)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		totalSize += size
+
+		d := must.NotFail(types.NewDocument(
+			"name", databaseName,
+			"sizeOnDisk", size,
+			"empty", size == 0,
+		))
+
+		matches, err := common.FilterDocument(d, filter)
+		if err != nil {
+			return nil, err
+		}
+
+		if !matches {
+			continue
+		}
+
+		if nameOnly {
+			d = must.NotFail(types.NewDocument(
+				"name", databaseName,
+			))
+		}
+
+		databases.Append(d)
+	}
+
+	if nameOnly {
+		var reply wire.OpMsg
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"databases", databases,
+				"ok", float64(1),
+			))},
+		}))
+
+		return &reply, nil
+	}
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"databases", databases,
+			"totalSize", totalSize,
+			"totalSizeMb", totalSize/1024/1024,
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }
