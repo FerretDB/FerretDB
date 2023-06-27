@@ -1192,6 +1192,34 @@ func TestQueryCommandGetMore(t *testing.T) {
 				Message: "BSON field 'getMore.collection' is missing but a required field",
 			},
 		},
+		"UnsetAllBatchSize": {
+			findBatchSize:    nil,
+			getMoreBatchSize: nil,
+			collection:       collection.Name(),
+			firstBatch:       docs[:101],
+			nextBatch:        docs[101:],
+		},
+		"UnsetFindBatchSize": {
+			findBatchSize:    nil,
+			getMoreBatchSize: 5,
+			collection:       collection.Name(),
+			firstBatch:       docs[:101],
+			nextBatch:        docs[101:106],
+		},
+		"UnsetGetMoreBatchSize": {
+			findBatchSize:    5,
+			getMoreBatchSize: nil,
+			collection:       collection.Name(),
+			firstBatch:       docs[:5],
+			nextBatch:        docs[5:],
+		},
+		"BatchSize": {
+			findBatchSize:    3,
+			getMoreBatchSize: 5,
+			collection:       collection.Name(),
+			firstBatch:       docs[:3],
+			nextBatch:        docs[3:8],
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
