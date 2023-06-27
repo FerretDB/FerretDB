@@ -186,8 +186,7 @@ func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) 
 	var deleted int64
 
 	for _, id := range params.IDs {
-		//idArg := strings.ReplaceAll(string(must.NotFail(sjson.MarshalSingleValue(id))), "\"", "")
-		idArg := string(must.NotFail(sjson.MarshalSingleValue(id)))
+		idArg := strings.ReplaceAll(string(must.NotFail(sjson.MarshalSingleValue(id))), "\"", "")
 
 		res, err := db.ExecContext(ctx, query, idArg)
 		if err != nil {
