@@ -154,7 +154,7 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		id, _ := doc.Get("_id")
 		must.NotBeZero(id)
 		docArg := must.NotFail(sjson.Marshal(doc))
-		idArg := string(must.NotFail(sjson.MarshalSingleValue(id)))
+		idArg := strings.ReplaceAll(string(must.NotFail(sjson.MarshalSingleValue(id))), "\"", "")
 
 		r, err := db.ExecContext(ctx, query, docArg, idArg)
 		if err != nil {
@@ -176,7 +176,7 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) (*backends.DeleteResult, error) {
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
-		return nil, lazyerrors.Errorf("no database %q", c.dbName)
+		return nil, nil
 	}
 
 	tableName := c.r.CollectionToTable(c.name)
