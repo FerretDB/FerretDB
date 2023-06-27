@@ -17,8 +17,6 @@ package integration
 import (
 	"net"
 	"net/url"
-	"runtime"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -31,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/teststress"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -428,55 +427,36 @@ func TestCommandWhatsMyURIConnection(t *testing.T) {
 	databaseName := s.Collection.Database().Name()
 	collectionName := s.Collection.Name()
 
-	t.Run("SameClient", func(t *testing.T) {
+	t.Run("SameClientStress", func(t *testing.T) {
 		setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/2906")
 
 		t.Parallel()
 
-		num := runtime.GOMAXPROCS(-1) * 10
-		ready := make(chan struct{}, num)
-		start := make(chan struct{})
-		ports := make(chan string, num)
+		ports := make(chan string, teststress.NumGoroutines)
 
-		var wg sync.WaitGroup
-		for i := 0; i < num; i++ {
-			wg.Add(1)
+		teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+			ready <- struct{}{}
+			<-start
 
-			go func(i int) {
-				defer wg.Done()
+			var res bson.D
+			err := collection1.Database().RunCommand(s.Ctx, bson.D{{"whatsmyuri", int32(1)}}).Decode(&res)
+			require.NoError(t, err)
 
-				ready <- struct{}{}
+			doc := ConvertDocument(t, res)
+			v, _ := doc.Get("ok")
+			resOk, ok := v.(float64)
+			require.True(t, ok)
+			assert.Equal(t, float64(1), resOk)
 
-				<-start
+			v, _ = doc.Get("you")
+			you, ok := v.(string)
+			require.True(t, ok)
 
-				var res bson.D
-				err := collection1.Database().RunCommand(s.Ctx, bson.D{{"whatsmyuri", int32(1)}}).Decode(&res)
-				require.NoError(t, err)
-
-				doc := ConvertDocument(t, res)
-				v, _ := doc.Get("ok")
-				resOk, ok := v.(float64)
-				require.True(t, ok)
-				assert.Equal(t, float64(1), resOk)
-
-				v, _ = doc.Get("you")
-				you, ok := v.(string)
-				require.True(t, ok)
-
-				_, port, err := net.SplitHostPort(you)
-				require.NoError(t, err)
-				assert.NotEmpty(t, port)
-				ports <- port
-			}(i)
-		}
-
-		for i := 0; i < num; i++ {
-			<-ready
-		}
-
-		close(start)
-
-		wg.Wait()
+			_, port, err := net.SplitHostPort(you)
+			require.NoError(t, err)
+			assert.NotEmpty(t, port)
+			ports <- port
+		})
 
 		close(ports)
 
