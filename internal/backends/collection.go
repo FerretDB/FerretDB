@@ -67,6 +67,10 @@ type QueryResult struct {
 }
 
 // Query executes a query against the collection.
+//
+// The passed context should be used for canceling the initial query.
+// It also can be used to close the returned iterator and free underlying resources,
+// but doing so is not necessary - the handler will do that anyway.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (res *QueryResult, err error) {
 	defer observability.FuncCall(ctx)()
 	defer checkError(err)
