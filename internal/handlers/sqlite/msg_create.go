@@ -16,14 +16,12 @@ package sqlite
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"regexp"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -99,11 +97,11 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		return &reply, nil
 
-	case errors.Is(err, ErrInvalidCollectionName):
+	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
 		msg := fmt.Sprintf("Invalid collection name: '%s.%s'", dbName, collectionName)
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "create")
 
-	case errors.Is(err, ErrCollectionStartsWithDot):
+	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionStartsWithDot):
 		msg := fmt.Sprintf("Collection names cannot start with '.': %s", collectionName)
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "create")
 
@@ -111,40 +109,37 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		msg := fmt.Sprintf("Collection %s.%s already exists.", dbName, collectionName)
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNamespaceExists, msg, "create")
 
-	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
-		msg := fmt.Sprintf("Invalid namespace: %s.%s", dbName, collectionName)
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "create")
-
 	default:
 		return nil, lazyerrors.Error(err)
 	}
 }
 
-// validateCollectionNameRe validates collection names.
-// Empty collection name, names with `$` and `\x00`,
-// or exceeding the 255 bytes limit are not allowed.
-// Collection names that start with `.` are also not allowed.
-var validateCollectionNameRe = regexp.MustCompile("^[^.$\x00][^$\x00]{0,234}$")
-
 // createCollection validates the collection name and creates collection.
 // It returns ErrInvalidCollectionName when the collection name is invalid.
 // It returns ErrCollectionStartsWithDot if collection starts with a dot.
 func createCollection(ctx context.Context, db backends.Database, collectionName string) error {
+	// validateCollectionNameRe validates collection names.
+	// Empty collection name, names with `$` and `\x00`,
+	// or exceeding the 255 bytes limit are not allowed.
+	// Collection names that start with `.` are also not allowed.
+	validateCollectionNameRe := regexp.MustCompile("^[^.$\x00][^$\x00]{0,234}$")
+
 	if strings.HasPrefix(collectionName, ".") {
-		return ErrCollectionStartsWithDot
+		return backends.NewError(backends.ErrorCodeCollectionStartsWithDot, nil)
 	}
 
 	if !validateCollectionNameRe.MatchString(collectionName) ||
 		!utf8.ValidString(collectionName) {
-		return ErrInvalidCollectionName
+		return backends.NewError(backends.ErrorCodeCollectionNameIsInvalid, nil)
 	}
 
-	err := db.CreateCollection(ctx, &backends.CreateCollectionParams{
+	return db.CreateCollection(ctx, &backends.CreateCollectionParams{
 		Name: collectionName,
 	})
-	if errors.Is(err, metadata.ErrInvalidCollectionName) {
-		return ErrInvalidCollectionName
-	}
 
-	return err
+	//if errors.Is(err, metadata.ErrInvalidCollectionName) {
+	//	return ErrInvalidCollectionName
+	//}
+
+	//return err
 }

@@ -28,6 +28,7 @@ import (
 	"modernc.org/sqlite"
 	sqlitelib "modernc.org/sqlite/lib"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -43,14 +44,6 @@ const (
 
 	// SQLite table name where FerretDB metadata is stored.
 	metadataTableName = reservedPrefix + "collections"
-)
-
-var (
-	// ErrInvalidCollectionName indicates that a collection didn't pass name checks.
-	ErrInvalidCollectionName = fmt.Errorf("invalid FerretDB collection name")
-
-	// ErrCollectionDoesNotExist indicates that collection does not exist.
-	ErrCollectionDoesNotExist = fmt.Errorf("collection does not exist")
 )
 
 // Registry provides access to SQLite databases and collections information.
@@ -81,7 +74,7 @@ func (r *Registry) Close() {
 // It returns ErrInvalidCollectionName error if the name is incorrect for SQLite backend.
 func collectionToTable(collectionName string) (string, error) {
 	if strings.HasPrefix(collectionName, reservedPrefix) {
-		return "", ErrInvalidCollectionName
+		return "", backends.NewError(backends.ErrorCodeCollectionNameIsInvalid, nil)
 	}
 
 	hash32 := fnv.New32a()
@@ -223,7 +216,7 @@ func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionN
 	defer rows.Close()
 
 	if !rows.Next() {
-		return "", ErrCollectionDoesNotExist
+		return "", backends.NewError(backends.ErrorCodeCollectionDoesNotExist, nil)
 	}
 
 	var name string
@@ -245,7 +238,7 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 	}
 
 	tableName, err := r.CollectionGet(ctx, dbName, collectionName)
-	if errors.Is(err, ErrCollectionDoesNotExist) {
+	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 		return false, nil
 	}
 
