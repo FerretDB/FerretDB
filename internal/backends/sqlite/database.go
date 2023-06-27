@@ -72,7 +72,7 @@ func (db *database) CreateCollection(ctx context.Context, params *backends.Creat
 	created, err := db.r.CollectionCreate(ctx, db.name, params.Name)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
-			//TODO
+			// TODO
 			return err
 		}
 		return lazyerrors.Error(err)

@@ -77,7 +77,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 	}
 
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
-		//TODO: check if its needed
+		// TODO: check if its needed
 		return 0, 0, nil, err
 	}
 
