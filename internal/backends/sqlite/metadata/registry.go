@@ -40,7 +40,7 @@ const (
 	// Reserved prefix for SQLite table name.
 	reservedTablePrefix = "sqlite"
 
-	// metadataTableName is a SQLite table name where FerretDB metadata is stored.
+	// SQLite table name where FerretDB metadata is stored.
 	metadataTableName = reservedPrefix + "collections"
 )
 
@@ -200,6 +200,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 	return true, nil
 }
 
+// CollectionGet returns table name associated with provided collection.
 func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionName string) (string, error) {
 	db := r.p.GetExisting(ctx, dbName)
 	if db == nil {
@@ -208,6 +209,7 @@ func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionN
 
 	query := fmt.Sprintf("SELECT table_name FROM %q WHERE name = ?", metadataTableName)
 	rows, err := db.QueryContext(ctx, query, collectionName)
+
 	if err != nil {
 		return "", lazyerrors.Error(err)
 	}
