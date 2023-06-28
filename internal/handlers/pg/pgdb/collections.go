@@ -153,18 +153,22 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 // CreateCollectionIfNotExists ensures that given FerretDB database and collection exist.
 // If the database does not exist, it will be created.
 //
+// It returns true if the collection was created, false if it already existed or an error occurred.
+//
 // It returns possibly wrapped error:
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
 //   - ErrInvalidCollectionName - if the given collection name doesn't conform to restrictions.
 //   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
-func CreateCollectionIfNotExists(ctx context.Context, tx pgx.Tx, db, collection string) error {
+func CreateCollectionIfNotExists(ctx context.Context, tx pgx.Tx, db, collection string) (bool, error) {
 	err := CreateCollection(ctx, tx, db, collection)
 
 	switch {
-	case err == nil, errors.Is(err, ErrAlreadyExist):
-		return nil
+	case err == nil:
+		return true, nil
+	case errors.Is(err, ErrAlreadyExist):
+		return false, nil
 	default:
-		return lazyerrors.Error(err)
+		return false, lazyerrors.Error(err)
 	}
 }
 

@@ -109,7 +109,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	indexes := map[*types.Document]*pgdb.Index{}
 
-	var isUniqueSpecified bool
+	//	var isUniqueSpecified bool
 	var numIndexesBefore, numIndexesAfter int32
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		var indexesBefore []pgdb.Index
@@ -222,7 +222,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 				return err
 			}
 
-			isUniqueSpecified = index.Unique != nil
+			//	isUniqueSpecified = index.Unique != nil
 		}
 	})
 
@@ -254,11 +254,11 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	res := new(types.Document)
 
-	if isUniqueSpecified {
-		res.Set("numIndexesBefore", numIndexesBefore)
-		res.Set("numIndexesAfter", numIndexesAfter)
-		res.Set("createdCollectionAutomatically", true)
-	}
+	// if isUniqueSpecified {
+	res.Set("numIndexesBefore", numIndexesBefore)
+	res.Set("numIndexesAfter", numIndexesAfter)
+	res.Set("createdCollectionAutomatically", true)
+	//	}
 
 	res.Set("ok", float64(1))
 

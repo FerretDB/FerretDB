@@ -48,7 +48,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		return pgdb.CreateCollectionIfNotExists(ctx, tx, params.DB, params.Collection)
+		_, err := pgdb.CreateCollectionIfNotExists(ctx, tx, params.DB, params.Collection)
+		return err
 	})
 
 	switch {
