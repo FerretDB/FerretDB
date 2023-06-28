@@ -447,6 +447,43 @@ func TestDatabaseName(t *testing.T) {
 
 	t.Parallel()
 
+	t.Run("SpecialCharacters", func(t *testing.T) {
+		ctx, collection := setup.Setup(t)
+		for name, tc := range map[string]struct {
+			db string // database name, defaults to empty string
+
+			err        *mongo.CommandError // required, expected error from MongoDB
+			altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+			skip       string              // optional, skip test with a specified reason
+		}{
+			"QuestionMark": {
+				db: "?",
+			},
+			"Asterix": {
+				db: "*",
+			},
+			"Aaaa": {
+				db: "aaaaa",
+			},
+		} {
+			name, tc := name, tc
+			t.Run(name, func(t *testing.T) {
+				if tc.skip != "" {
+					t.Skip(tc.skip)
+				}
+
+				//t.Parallel()
+
+				// there is no explicit command to create database, so create collection instead
+				err := collection.Database().Client().Database(tc.db).CreateCollection(ctx, collection.Name())
+				require.NoError(t, err)
+
+				err = collection.Database().Client().Database(tc.db).Drop(ctx)
+				require.NoError(t, err)
+			})
+		}
+	})
+
 	t.Run("Err", func(t *testing.T) {
 		ctx, collection := setup.Setup(t)
 
@@ -471,6 +508,23 @@ func TestDatabaseName(t *testing.T) {
 					),
 				},
 				altMessage: fmt.Sprintf("Invalid namespace: %s.%s", dbName64, "TestDatabaseName-Err"),
+			},
+			"WithASlash": {
+				db: "/",
+				err: &mongo.CommandError{
+					Name:    "InvalidNamespace",
+					Code:    73,
+					Message: `Invalid namespace specified '/.TestDatabaseName-Err'`,
+				},
+			},
+
+			"WithABackslash": {
+				db: "\\",
+				err: &mongo.CommandError{
+					Name:    "InvalidNamespace",
+					Code:    73,
+					Message: `Invalid namespace specified '\.TestDatabaseName-Err'`,
+				},
 			},
 			"WithADollarSign": {
 				db: "name_with_a-$",
