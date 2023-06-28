@@ -132,7 +132,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	closer.Add(iterator.CloserFunc(func() {
-		_ = keepTx.Commit(ctx)
+		// ctx could be cancelled already
+		_ = keepTx.Rollback(context.Background())
 	}))
 
 	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
