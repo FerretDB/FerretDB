@@ -1,0 +1,30 @@
+---
+name: Permissions
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "The name of the workflow file to analyze"
+        required: true
+        type: string
+      count:
+        description: "How many last runs to analyze"
+        required: false
+        type: number
+        default: 10
+
+permissions:
+  actions: read
+
+jobs:
+  advisor:
+    name: Advisor
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Analyze permissions
+        uses: GitHubSecurityLab/actions-permissions/advisor@v1
+        with:
+          name: ${{ inputs.name }}
+          count: ${{ inputs.count }}
