@@ -77,16 +77,18 @@ func listenerMongoDBURI(tb testing.TB, hostPort, unixSocketPath string, tlsAndAu
 	}
 
 	var user *url.Userinfo
-	q := make(url.Values)
+	var q url.Values
 
 	if tlsAndAuth {
 		require.Empty(tb, unixSocketPath, "unixSocketPath cannot be used with TLS")
 
 		// we don't separate TLS and auth just for simplicity of our test configurations
-		q.Set("tls", "true")
-		q.Set("tlsCertificateKeyFile", filepath.Join(CertsRoot, "client.pem"))
-		q.Set("tlsCaFile", filepath.Join(CertsRoot, "rootCA-cert.pem"))
-		q.Set("authMechanism", "PLAIN")
+		q = url.Values{
+			"tls":                   []string{"true"},
+			"tlsCertificateKeyFile": []string{filepath.Join(CertsRoot, "client.pem")},
+			"tlsCaFile":             []string{filepath.Join(CertsRoot, "rootCA-cert.pem")},
+			"authMechanism":         []string{"PLAIN"},
+		}
 		user = url.UserPassword("username", "password")
 	}
 
