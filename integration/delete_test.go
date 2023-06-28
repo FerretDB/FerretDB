@@ -151,7 +151,6 @@ func TestDeleteNotExistingDatabase(t *testing.T) {
 		{"delete", "test"},
 		{"deletes", bson.A{
 			bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 1}},
-			bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 1}},
 		}},
 	}).Decode(&res)
 

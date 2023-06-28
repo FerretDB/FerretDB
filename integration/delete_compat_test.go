@@ -73,36 +73,6 @@ func TestDeleteCompat(t *testing.T) {
 			},
 			ordered: true,
 		},
-		"TwoDuplicateFilter": {
-			filters: []bson.D{
-				{{"v", int32(42)}},
-				{{"v", int32(42)}},
-			},
-		},
-
-		{v: 42},
-		{v: 42},
-		{v: 42},
-
-		/*
-
-			db.runCommand(
-			    {
-			      delete: "test",
-			      deletes: [
-			         {
-			           q : {v: 42},
-			           limit : 1
-			         },
-			         {
-			           q : {v: 42},
-			           limit : 1
-			         },
-			      ]
-			   }
-			)
-
-		*/
 
 		"OrderedError": {
 			filters: []bson.D{

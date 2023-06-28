@@ -64,14 +64,16 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	replyDoc := must.NotFail(types.NewDocument(
-		"ok", float64(1),
+		"n", deleted,
 	))
 
 	if delErrors.Len() > 0 {
 		replyDoc = delErrors.Document()
+	} else {
+		replyDoc.Set("ok", float64(1))
 	}
 
-	replyDoc.Set("n", deleted)
+	//replyDoc.Set("n", deleted)
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
@@ -119,7 +121,7 @@ func execDelete(ctx context.Context, coll backends.Collection, filter *types.Doc
 
 		// if limit is set, no need to fetch all the documents
 		if limited {
-			res.Iter.Close() // good comment
+			res.Iter.Close() // call Close() to release the underlying connection early
 
 			break
 		}
