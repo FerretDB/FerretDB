@@ -54,9 +54,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
 	}
 
-	// FIXME
 	// closer accumulates all things that should be closed / canceled.
-	// to free maxTimeMS's context resources when they are not needed
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
 
 	queryRes, err := db.Collection(params.Collection).Query(ctx, nil)

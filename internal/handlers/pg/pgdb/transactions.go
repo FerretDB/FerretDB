@@ -55,6 +55,7 @@ func (e *transactionConflictError) Error() string {
 // for example, errors.Is(err, ErrSchemaNotExist).
 func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (err error) {
 	var keepTx pgx.Tx
+
 	err = pgPool.InTransactionKeep(ctx, func(tx pgx.Tx) error {
 		keepTx = tx
 		return f(tx)
@@ -95,6 +96,7 @@ func (pgPool *Pool) InTransactionKeep(ctx context.Context, f func(pgx.Tx) error)
 		if done {
 			return
 		}
+
 		if err == nil {
 			err = lazyerrors.Errorf("transaction was not committed")
 		}

@@ -52,13 +52,14 @@ func TestInTransactionKeep(t *testing.T) {
 		t.Parallel()
 
 		var keepTx pgx.Tx
-		pool.InTransactionKeep(ctx, func(tx pgx.Tx) error {
+		err := pool.InTransactionKeep(ctx, func(tx pgx.Tx) error {
 			keepTx = tx
 			return nil
 		})
+		require.NoError(t, err)
 
 		var res int
-		err := keepTx.QueryRow(ctx, "SELECT 1").Scan(&res)
+		err = keepTx.QueryRow(ctx, "SELECT 1").Scan(&res)
 		require.NoError(t, keepTx.Commit(ctx))
 		require.NoError(t, err)
 		assert.Equal(t, 1, res)
@@ -68,13 +69,14 @@ func TestInTransactionKeep(t *testing.T) {
 		t.Parallel()
 
 		var keepTx pgx.Tx
-		pool.InTransactionKeep(ctx, func(tx pgx.Tx) error {
+		err := pool.InTransactionKeep(ctx, func(tx pgx.Tx) error {
 			keepTx = tx
 			return errors.New("boom")
 		})
+		require.Error(t, err)
 
 		var res int
-		err := keepTx.QueryRow(ctx, "SELECT 1").Scan(&res)
+		err = keepTx.QueryRow(ctx, "SELECT 1").Scan(&res)
 		require.Equal(t, pgx.ErrTxClosed, keepTx.Commit(ctx))
 		require.Equal(t, pgx.ErrTxClosed, keepTx.Rollback(ctx))
 		require.Equal(t, pgx.ErrTxClosed, err)
