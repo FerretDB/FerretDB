@@ -40,7 +40,7 @@ const (
 
 	// Reserved prefix for SQLite table name.
 	// https://www.sqlite.org/lang_createtable.html
-	reservedTablePrefix = "sqlite"
+	reservedTablePrefix = "sqlite_"
 
 	// SQLite table name where FerretDB metadata is stored.
 	metadataTableName = reservedPrefix + "collections"
@@ -78,12 +78,14 @@ func collectionToTable(collectionName string) (string, error) {
 
 	collectionName = strings.ToLower(collectionName)
 
-	// SQLite table cannot start with _sqlite prefix
-	if strings.HasPrefix(collectionName, reservedTablePrefix) {
-		collectionName = "_" + collectionName
+	tableName := collectionName + "_" + hex.EncodeToString(hash32.Sum(nil))
+
+	// SQLite table cannot start with sqlite_ prefix
+	if strings.HasPrefix(tableName, reservedTablePrefix) {
+		tableName = "_" + tableName
 	}
 
-	return collectionName + "_" + hex.EncodeToString(hash32.Sum(nil)), nil
+	return tableName, nil
 }
 
 // DatabaseList returns a sorted list of existing databases.
