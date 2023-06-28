@@ -73,10 +73,6 @@ func (r *Registry) Close() {
 // collectionToTable converts FerretDB collection name to SQLite table name.
 // It returns ErrInvalidCollectionName error if the name is incorrect for SQLite backend.
 func collectionToTable(collectionName string) (string, error) {
-	if strings.HasPrefix(collectionName, reservedPrefix) {
-		return "", backends.NewError(backends.ErrorCodeCollectionNameIsInvalid, nil)
-	}
-
 	hash32 := fnv.New32a()
 	must.NotFail(hash32.Write([]byte(collectionName)))
 

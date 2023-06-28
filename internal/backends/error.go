@@ -35,8 +35,6 @@ const (
 
 	ErrorCodeCollectionDoesNotExist
 	ErrorCodeCollectionAlreadyExists
-	ErrorCodeCollectionNameIsInvalid
-	ErrorCodeCollectionStartsWithDot
 )
 
 // Error represents a backend error returned by all Backend, Database and Collection methods.
