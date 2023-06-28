@@ -82,36 +82,33 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // execDelete fetches documents, filters them out, limits them (if needed) and deletes them.
-// If limit is true, only the first matched document is chosen for deletion, otherwise all matched documents are chosen.
+// If limited is true, only the first matched document is chosen for deletion, otherwise all matched documents are chosen.
 // It returns the number of deleted documents or an error.
 func execDelete(ctx context.Context, coll backends.Collection, filter *types.Document, limited bool) (int32, error) {
-	var deleted int32
-
 	// query documents here
 	res, err := coll.Query(ctx, nil)
 	if err != nil {
-		return 0, err
+		return 0, lazyerrors.Error(err)
 	}
 
 	defer res.Iter.Close()
 
 	var ids []any
+	var deleted int32
 
 	for {
-		var doc *types.Document
-
-		if _, doc, err = res.Iter.Next(); err != nil {
+		_, doc, err := res.Iter.Next()
+		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
 			}
 
-			return 0, err
+			return 0, lazyerrors.Error(err)
 		}
 
-		var matches bool
-
-		if matches, err = common.FilterDocument(doc, filter); err != nil {
-			return 0, err
+		matches, err := common.FilterDocument(doc, filter)
+		if err != nil {
+			return 0, lazyerrors.Error(err)
 		}
 
 		if !matches {
@@ -122,7 +119,7 @@ func execDelete(ctx context.Context, coll backends.Collection, filter *types.Doc
 
 		// if limit is set, no need to fetch all the documents
 		if limited {
-			res.Iter.Close()
+			res.Iter.Close() // good comment
 
 			break
 		}

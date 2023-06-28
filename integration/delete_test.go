@@ -149,7 +149,10 @@ func TestDeleteNotExistingDatabase(t *testing.T) {
 	var res bson.D
 	err := db.RunCommand(ctx, bson.D{
 		{"delete", "test"},
-		{"deletes", bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 1}}}},
+		{"deletes", bson.A{
+			bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 1}},
+			bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 1}},
+		}},
 	}).Decode(&res)
 
 	assert.NoError(t, err)
