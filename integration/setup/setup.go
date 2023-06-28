@@ -136,14 +136,12 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	}
 	logger := testutil.LevelLogger(tb, level)
 
-	var client *mongo.Client
 	uri := *targetURLF
-
-	if *targetURLF == "" {
-		client, uri = setupListener(tb, setupCtx, logger)
+	if uri == "" {
+		uri = setupListener(tb, setupCtx, logger)
 	}
 
-	if opts.ExtraOptions != nil || *targetURLF != "" {
+	if opts.ExtraOptions != nil {
 		u, err := url.Parse(uri)
 		require.NoError(tb, err)
 
@@ -157,12 +155,10 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 
 		u.RawQuery = q.Encode()
 		uri = u.String()
-
-		// If ExtraOptions is set for in-process FerretDB, two clients are created
-		// on purpose. setupListener creates a client to check in-process FerretDB
-		// options, and this client is created with extra options used for tests.
-		client = setupClient(tb, setupCtx, uri)
+		tb.Logf("URI with extra options: %s", uri)
 	}
+
+	client := setupClient(tb, setupCtx, uri)
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)

@@ -17,6 +17,7 @@ package setup
 import (
 	"context"
 	"errors"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,7 +25,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/mongo"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
@@ -63,9 +63,48 @@ func unixSocketPath(tb testing.TB) string {
 	return f.Name()
 }
 
+// listenerMongoDBURI builds MongoDB URI for in-process FerretDB.
+func listenerMongoDBURI(tb testing.TB, hostPort, unixSocketPath string, tlsAndAuth bool) string {
+	tb.Helper()
+
+	var host string
+
+	if hostPort != "" {
+		require.Empty(tb, unixSocketPath, "both hostPort and unixSocketPath are set")
+		host = hostPort
+	} else {
+		host = unixSocketPath
+	}
+
+	var user *url.Userinfo
+	q := make(url.Values)
+
+	if tlsAndAuth {
+		require.Empty(tb, unixSocketPath, "unixSocketPath cannot be used with TLS")
+
+		// we don't separate TLS and auth just for simplicity of our test configurations
+		q.Set("tls", "true")
+		q.Set("tlsCertificateKeyFile", filepath.Join(CertsRoot, "client.pem"))
+		q.Set("tlsCaFile", filepath.Join(CertsRoot, "rootCA-cert.pem"))
+		q.Set("authMechanism", "PLAIN")
+		user = url.UserPassword("username", "password")
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/1507
+	u := &url.URL{
+		Scheme:   "mongodb",
+		Host:     host,
+		Path:     "/",
+		User:     user,
+		RawQuery: q.Encode(),
+	}
+
+	return u.String()
+}
+
 // setupListener starts in-process FerretDB server that runs until ctx is canceled.
-// It returns client and MongoDB URI of that listener.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mongo.Client, string) {
+// It returns basic MongoDB URI for that listener.
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) string {
 	tb.Helper()
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
@@ -170,20 +209,12 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 	l := clientconn.NewListener(&listenerOpts)
 
-	runCtx, runCancel := context.WithCancel(ctx)
 	runDone := make(chan struct{})
-
-	// that prevents the deadlock on failed client setup; see below
-	defer func() {
-		if tb.Failed() {
-			runCancel()
-		}
-	}()
 
 	go func() {
 		defer close(runDone)
 
-		err := l.Run(runCtx)
+		err := l.Run(ctx)
 		if err == nil || errors.Is(err, context.Canceled) {
 			logger.Info("Listener stopped without error")
 		} else {
@@ -196,24 +227,22 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		<-runDone
 	})
 
-	var opts buildInProcessFerretDBURIOpts
+	var hostPort, unixSocketPath string
+	var tlsAndAuth bool
 
 	switch {
 	case *targetTLSF:
-		opts.hostPort = l.TLSAddr().String()
-		opts.tlsAndAuth = true
+		hostPort = l.TLSAddr().String()
+		tlsAndAuth = true
 	case *targetUnixSocketF:
-		opts.unixSocketPath = l.UnixAddr().String()
+		unixSocketPath = l.UnixAddr().String()
 	default:
-		opts.hostPort = l.TCPAddr().String()
+		hostPort = l.TCPAddr().String()
 	}
 
-	// those will fail the test if in-process FerretDB is not working;
-	// for example, when backend is down
-	uri := buildInProcessFerretDBURI(tb, &opts)
-	client := setupClient(tb, ctx, uri)
+	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, tlsAndAuth)
 
 	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
 
-	return client, uri
+	return uri
 }

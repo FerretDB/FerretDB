@@ -16,8 +16,6 @@ package setup
 
 import (
 	"context"
-	"net/url"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -30,52 +28,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
-
-// buildInProcessFerretDBURIOpts represents buildInProcessFerretDBURI's options.
-type buildInProcessFerretDBURIOpts struct {
-	hostPort       string // for TCP and TLS
-	unixSocketPath string
-	tlsAndAuth     bool
-}
-
-// buildInProcessFerretDBURI is used to construct URI from options obtained from in-process FerretDB.
-func buildInProcessFerretDBURI(tb testing.TB, opts *buildInProcessFerretDBURIOpts) string {
-	tb.Helper()
-
-	var host string
-
-	if opts.hostPort != "" {
-		require.Empty(tb, opts.unixSocketPath, "both hostPort and unixSocketPath are set")
-		host = opts.hostPort
-	} else {
-		host = opts.unixSocketPath
-	}
-
-	var user *url.Userinfo
-	q := make(url.Values)
-
-	if opts.tlsAndAuth {
-		require.Empty(tb, opts.unixSocketPath, "unixSocketPath cannot be used with TLS")
-
-		// we don't separate TLS and auth just for simplicity of our test configurations
-		q.Set("tls", "true")
-		q.Set("tlsCertificateKeyFile", filepath.Join(CertsRoot, "client.pem"))
-		q.Set("tlsCaFile", filepath.Join(CertsRoot, "rootCA-cert.pem"))
-		q.Set("authMechanism", "PLAIN")
-		user = url.UserPassword("username", "password")
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/1507
-	u := &url.URL{
-		Scheme:   "mongodb",
-		Host:     host,
-		Path:     "/",
-		User:     user,
-		RawQuery: q.Encode(),
-	}
-
-	return u.String()
-}
 
 // makeClient returns new client for the given working MongoDB URI.
 func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
