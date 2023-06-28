@@ -138,25 +138,3 @@ func TestDelete(t *testing.T) {
 		})
 	}
 }
-
-func TestDeleteNotExistingDatabase(t *testing.T) {
-	t.Parallel()
-
-	ctx, collection := setup.Setup(t)
-
-	db := collection.Database().Client().Database("doesnotexist")
-
-	var res bson.D
-	err := db.RunCommand(ctx, bson.D{
-		{"delete", "test"},
-		{"deletes", bson.A{
-			bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 1}},
-		}},
-	}).Decode(&res)
-
-	assert.NoError(t, err)
-
-	expectedRes := bson.D{{"n", int32(0)}, {"ok", float64(1)}}
-
-	assert.Equal(t, expectedRes, res)
-}

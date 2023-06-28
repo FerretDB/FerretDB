@@ -22,6 +22,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 // deleteCommandCompatTestCase describes delete compatibility test case.
@@ -114,4 +115,36 @@ func TestDeleteCommandCompat(t *testing.T) {
 	}
 
 	testDeleteCommandCompat(t, testCases)
+}
+
+func TestDeleteCommandCompatNotExistingDatabase(t *testing.T) {
+	t.Parallel()
+
+	res := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers: []shareddata.Provider{shareddata.Int32s},
+	})
+	ctx, targetColl, compatColl := res.Ctx, res.TargetCollections[0], res.CompatCollections[0]
+
+	targetDB := targetColl.Database().Client().Database("doesnotexist")
+	compatDB := compatColl.Database().Client().Database("doesnotexist")
+
+	var targetRes, compatRes bson.D
+
+	targetErr := targetDB.RunCommand(ctx, bson.D{
+		{"delete", "test"},
+		{"deletes", bson.A{
+			bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 1}},
+		}},
+	}).Decode(&targetRes)
+	compatErr := compatDB.RunCommand(ctx, bson.D{
+		{"delete", "test"},
+		{"deletes", bson.A{
+			bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 1}},
+		}},
+	}).Decode(&compatRes)
+
+	assert.NoError(t, targetErr)
+	assert.NoError(t, compatErr)
+
+	assert.Equal(t, compatRes, targetRes)
 }
