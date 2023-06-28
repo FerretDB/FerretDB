@@ -12,7 +12,7 @@ jobs:
     if: false
 
     steps:
-      - name: Setup permssions monitoring
+      - name: Setup permissions monitoring
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
 
       - uses: actions/checkout@v3

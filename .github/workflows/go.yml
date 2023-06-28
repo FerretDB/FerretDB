@@ -35,7 +35,7 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permssions monitoring
+      - name: Setup permissions monitoring
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
 
       - name: Checkout code
@@ -84,7 +84,7 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permssions monitoring
+      - name: Setup permissions monitoring
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
 
       - name: Checkout code
@@ -182,7 +182,7 @@ jobs:
           - { name: "SQLite", task: "sqlite", shard_index: 3, shard_total: 3 }
 
     steps:
-      - name: Setup permssions monitoring
+      - name: Setup permissions monitoring
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
 
       - name: Checkout code
@@ -256,7 +256,7 @@ jobs:
     if: always() && (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready'))
 
     steps:
-      - name: Setup permssions monitoring
+      - name: Setup permissions monitoring
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
 
       - name: Submit coveralls
@@ -277,7 +277,7 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permssions monitoring
+      - name: Setup permissions monitoring
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
 
       - name: Checkout code
@@ -322,7 +322,7 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permssions monitoring
+      - name: Setup permissions monitoring
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
 
       - name: Checkout code
@@ -352,7 +352,7 @@ jobs:
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
-      - name: Setup permssions monitoring
+      - name: Setup permissions monitoring
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
 
       - name: Checkout code

@@ -39,7 +39,7 @@ jobs:
       url: ${{ steps.extract.outputs.extracted_url }}
 
     steps:
-      - name: Setup permssions monitoring
+      - name: Setup permissions monitoring
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
 
       - name: Checkout code
@@ -107,7 +107,7 @@ jobs:
       # Just build them again instead.
       # That also allows us to pass branch name, commit hash, etc from git to wrangler.
 
-      - name: Setup permssions monitoring
+      - name: Setup permissions monitoring
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
 
       - name: Checkout code
