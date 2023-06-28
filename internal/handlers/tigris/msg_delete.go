@@ -84,7 +84,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	))
 
 	if delErrors.Len() > 0 {
-		replyDoc = delErrors.Document()
+		replyDoc.Set("writeErrors", must.NotFail(delErrors.Document().Get("writeErrors")))
 	}
 
 	replyDoc.Set("ok", float64(1))
