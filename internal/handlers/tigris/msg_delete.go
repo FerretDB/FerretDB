@@ -84,6 +84,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	))
 
 	if delErrors.Len() > 0 {
+		// "writeErrors" should be after "n" field
 		replyDoc.Set("writeErrors", must.NotFail(delErrors.Document().Get("writeErrors")))
 	}
 
