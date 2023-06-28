@@ -17,6 +17,7 @@ package sqlite
 import (
 	"context"
 	"os"
+	"strings"
 
 	"go.uber.org/zap"
 	_ "modernc.org/sqlite"
@@ -88,11 +89,22 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	if dropped := b.r.DatabaseDrop(ctx, params.Name); !dropped {
+	dbName := translateDatabaseName(params.Name)
+
+	if dropped := b.r.DatabaseDrop(ctx, dbName); !dropped {
 		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, nil)
 	}
 
 	return nil
+}
+
+// translateDatabaseName translates FerretDB database name into
+// the proper SQLite database name that can be used for queries.
+func translateDatabaseName(dbName string) string {
+	// go-sqlite treats `?` as query parameter prefix.
+	// This line also doesn't collide with anything as
+	// `/` is invalid name for FerretDB collection.
+	return strings.ReplaceAll(dbName, "?", "\\%3F")
 }
 
 // check interfaces

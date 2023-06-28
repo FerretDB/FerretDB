@@ -32,7 +32,7 @@ type database struct {
 func newDatabase(r *metadata.Registry, name string) backends.Database {
 	return backends.DatabaseContract(&database{
 		r:    r,
-		name: name,
+		name: translateDatabaseName(name),
 	})
 }
 
