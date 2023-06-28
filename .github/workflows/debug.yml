@@ -34,6 +34,9 @@ jobs:
     if: false
 
     steps:
+      - name: Setup permssions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+
       - name: Checkout code
         uses: actions/checkout@v3
         with:

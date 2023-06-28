@@ -74,6 +74,9 @@ jobs:
       # Do not add a source code checkout step because we don't check the `trust` label.
       # See the warning at the top of the file.
 
+      - name: Setup permssions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
         with:

@@ -39,6 +39,9 @@ jobs:
       url: ${{ steps.extract.outputs.extracted_url }}
 
     steps:
+      - name: Setup permssions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+
       - name: Checkout code
         uses: actions/checkout@v3
         with:
@@ -103,6 +106,9 @@ jobs:
       # https://github.com/actions/download-artifact/issues/172
       # Just build them again instead.
       # That also allows us to pass branch name, commit hash, etc from git to wrangler.
+
+      - name: Setup permssions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
 
       - name: Checkout code
         uses: actions/checkout@v3

@@ -6,12 +6,15 @@ on:
 
 jobs:
   scan-old-package:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     # disable for now
     if: false
 
     steps:
+      - name: Setup permssions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+
       - uses: actions/checkout@v3
       - name: Set up Go
         uses: actions/setup-go@v4

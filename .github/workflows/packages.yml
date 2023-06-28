@@ -60,6 +60,9 @@ jobs:
       packages: write
 
     steps:
+      - name: Setup permssions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+
       - name: Checkout code
         if: github.event_name != 'pull_request_target'
         uses: actions/checkout@v3
