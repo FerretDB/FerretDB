@@ -9,8 +9,8 @@ github.com/AlekSi/pointer v1.2.0/go.mod h1:gZGfd3dpW4vEc/UlyfKKi1roIqcCgwOIvb0tS
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/RaveNoX/go-jsoncommentstrip v1.0.0/go.mod h1:78ihd09MekBnJnxpICcwzCMzGrKSKYe4AqU6PDYYpjk=
-github.com/SAP/go-hdb v1.3.8 h1:o1HyjliL9SrrGLN+P+yI4K0vJFhn/SWiXuaQhak/TgY=
-github.com/SAP/go-hdb v1.3.8/go.mod h1:rGEDo4STw4LOWnmd+pJpqXr+7QEoy32bREK6hMn/Emk=
+github.com/SAP/go-hdb v1.3.9 h1:vaOwlwJJ6j5MBuizV3p/rtr5YDXiBIfvs73ohCGtdto=
+github.com/SAP/go-hdb v1.3.9/go.mod h1:rGEDo4STw4LOWnmd+pJpqXr+7QEoy32bREK6hMn/Emk=
 github.com/alecthomas/assert/v2 v2.1.0 h1:tbredtNcQnoSd3QBhQWI7QZ3XHOVkw1Moklp2ojoH/0=
 github.com/alecthomas/kong v0.7.1 h1:azoTh0IOfwlAX3qN9sHWTxACE2oV8Bg2gAwBsMwDQY4=
 github.com/alecthomas/kong v0.7.1/go.mod h1:n1iCIO2xS46oE8ZfYCNDqdR0b0wZNrXAIAqro/2132U=
