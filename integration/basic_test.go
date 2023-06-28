@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -25,7 +26,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/x/mongo/driver"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -528,7 +528,7 @@ func TestDatabaseName(t *testing.T) {
 		ctx, collection := setup.Setup(t)
 
 		err := collection.Database().Client().Database("").CreateCollection(ctx, collection.Name())
-		expectedErr := driver.InvalidOperationError(driver.InvalidOperationError{MissingField: "Database"})
+		expectedErr := errors.New("database name cannot be empty")
 		assert.Equal(t, expectedErr, err)
 	})
 
