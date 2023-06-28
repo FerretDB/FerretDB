@@ -196,7 +196,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		<-runDone
 	})
 
-	var opts buildURIForInProcessFerretDBOpts
+	var opts buildInProcessFerretDBURIOpts
 
 	switch {
 	case *targetTLSF:
@@ -210,7 +210,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 	// those will fail the test if in-process FerretDB is not working;
 	// for example, when backend is down
-	uri := buildURIForInProcessFerretDB(tb, &opts)
+	uri := buildInProcessFerretDBURI(tb, &opts)
 	client := setupClient(tb, ctx, uri)
 
 	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))

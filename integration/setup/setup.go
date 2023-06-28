@@ -157,9 +157,9 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 		u.RawQuery = q.Encode()
 		uri = u.String()
 
-		// If ExtraOptions is set for in-process FerretDB, two clients are created.
-		// setupListener creates a client to check in-process FerretDB parameters,
-		// and this client used for tests with extra options.
+		// If ExtraOptions is set for in-process FerretDB, two clients are created
+		// on purpose. setupListener creates a client to check in-process FerretDB
+		// options, and this client is created with extra options used for tests.
 		client = setupClient(tb, setupCtx, uri)
 	}
 

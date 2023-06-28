@@ -31,15 +31,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
-// buildURIForInProcessFerretDBOpts represents buildURIForInProcessFerretDB's options.
-type buildURIForInProcessFerretDBOpts struct {
+// buildInProcessFerretDBURIOpts represents buildInProcessFerretDBURI's options.
+type buildInProcessFerretDBURIOpts struct {
 	hostPort       string // for TCP and TLS
 	unixSocketPath string
 	tlsAndAuth     bool
 }
 
-// buildURIForInProcessFerretDB is used to construct URI from options obtained from in-process FerretDB.
-func buildURIForInProcessFerretDB(tb testing.TB, opts *buildURIForInProcessFerretDBOpts) string {
+// buildInProcessFerretDBURI is used to construct URI from options obtained from in-process FerretDB.
+func buildInProcessFerretDBURI(tb testing.TB, opts *buildInProcessFerretDBURIOpts) string {
 	tb.Helper()
 
 	var host string

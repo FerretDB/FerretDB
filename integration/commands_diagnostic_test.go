@@ -412,7 +412,7 @@ func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
 func TestCommandWhatsMyURIConnection(t *testing.T) {
 	t.Parallel()
 
-	// single connection is used by the client created from setup
+	// options are applied to create a client that uses single connection pool
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		ExtraOptions: url.Values{
 			"minPoolSize":   []string{"1"},

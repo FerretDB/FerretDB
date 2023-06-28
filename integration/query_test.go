@@ -958,7 +958,7 @@ func TestQueryBatchSize(t *testing.T) {
 func TestQueryCommandGetMore(t *testing.T) {
 	t.Parallel()
 
-	// single connection is used by the client created from setup
+	// options are applied to create a client that uses single connection pool
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		ExtraOptions: url.Values{
 			"minPoolSize":   []string{"1"},
@@ -1326,7 +1326,7 @@ func TestQueryCommandGetMore(t *testing.T) {
 func TestQueryCommandGetMoreConnection(t *testing.T) {
 	t.Parallel()
 
-	// single connection is used by the client created from setup
+	// options are applied to create a client that uses single connection pool
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		ExtraOptions: url.Values{
 			"minPoolSize":   []string{"1"},
@@ -1389,7 +1389,7 @@ func TestQueryCommandGetMoreConnection(t *testing.T) {
 		// return an error because db, collection and username are the same.
 		setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/153")
 
-		// Do not run subtest in t.Parallel() to avoid breaking when another subtest is added.
+		// do not run subtest in parallel to avoid breaking another parallel subtest
 
 		u, err := url.Parse(s.MongoDBURI)
 		require.NoError(t, err)
