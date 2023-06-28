@@ -28,6 +28,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// validateDatabaseNameRe validates FerretDB database name.
+var validateDatabaseNameRe = regexp.MustCompile("^[a-zA-Z_-][a-zA-Z0-9_-]{0,62}$")
+
 // MsgCreate implements HandlerInterface.
 func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
@@ -79,11 +82,9 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	// validateDatabaseNameRe validates FerretDB database name.
-	validateDatabaseNameRe := regexp.MustCompile("^[a-zA-Z_-][a-zA-Z0-9_-]{0,62}$")
-
 	if !validateDatabaseNameRe.MatchString(dbName) {
-		return nil, fmt.Errorf("TODO error")
+		msg := fmt.Sprintf("Invalid namespace: %s.%s", dbName, collectionName)
+		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
 	}
 
 	db := h.b.Database(dbName)
