@@ -481,7 +481,7 @@ func TestDatabaseName(t *testing.T) {
 					t.Skip(tc.skip)
 				}
 
-				//t.Parallel()
+				// t.Parallel()
 
 				// there is no explicit command to create database, so create collection instead
 				err := collection.Database().Client().Database(tc.db).CreateCollection(ctx, collection.Name())
