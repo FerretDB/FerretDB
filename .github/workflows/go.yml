@@ -14,11 +14,6 @@ on:
   schedule:
     - cron: "12 0 * * *"
 
-# Do not run this workflow in parallel for any PR change.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: false
-
 env:
   GOPATH: /home/runner/go
   GOCACHE: /home/runner/go/cache
@@ -31,6 +26,11 @@ jobs:
     name: Short test
     runs-on: ubuntu-22.04
     timeout-minutes: 10
+
+    # Do not run this job in parallel for any PR change or branch push.
+    concurrency:
+      group: ${{ github.workflow }}-short-test-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
@@ -75,6 +75,11 @@ jobs:
     name: Test
     runs-on: ubuntu-22.04
     timeout-minutes: 10
+
+    # Do not run this job in parallel for any PR change or branch push.
+    concurrency:
+      group: ${{ github.workflow }}-test-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
@@ -156,10 +161,10 @@ jobs:
       group: paid
     timeout-minutes: 20
 
-    # Do not run this job in parallel for any PR change or branch/tag push
+    # Do not run this job in parallel for any PR change or branch push
     # to save some resources.
     concurrency:
-      group: ${{ github.workflow }}-${{ matrix.name }}-${{ matrix.shard_index }}-${{ github.head_ref || github.ref_name }}
+      group: ${{ github.workflow }}-integration-${{ matrix.name }}-${{ matrix.shard_index }}-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: true
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
@@ -264,6 +269,11 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
 
+    # Do not run this job in parallel for any PR change or branch push.
+    concurrency:
+      group: ${{ github.workflow }}-env-data-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
+
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
@@ -304,6 +314,11 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
 
+    # Do not run this job in parallel for any PR change or branch push.
+    concurrency:
+      group: ${{ github.workflow }}-golangci-lint-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
+
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
@@ -328,6 +343,11 @@ jobs:
     name: Fuzz short
     runs-on: ubuntu-22.04
     timeout-minutes: 10
+
+    # Do not run this job in parallel for any PR change or branch push.
+    concurrency:
+      group: ${{ github.workflow }}-fuzz-short-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
