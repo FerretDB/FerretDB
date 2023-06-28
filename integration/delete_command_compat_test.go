@@ -25,7 +25,7 @@ import (
 )
 
 // deleteCommandCompatTestCase describes delete compatibility test case.
-type deleteCommandCompatTestCase struct {
+type deleteCommandCompatTestCase struct { //nolint:vet // for readability
 	deletes    bson.A                   // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 

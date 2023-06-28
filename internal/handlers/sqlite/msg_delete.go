@@ -73,8 +73,6 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		replyDoc.Set("ok", float64(1))
 	}
 
-	//replyDoc.Set("n", deleted)
-
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{replyDoc},
@@ -96,11 +94,11 @@ func execDelete(ctx context.Context, coll backends.Collection, filter *types.Doc
 	defer res.Iter.Close()
 
 	var ids []any
-	var deleted int32
+	var doc *types.Document
+	var matches bool
 
 	for {
-		_, doc, err := res.Iter.Next()
-		if err != nil {
+		if _, doc, err = res.Iter.Next(); err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
 			}
@@ -108,8 +106,7 @@ func execDelete(ctx context.Context, coll backends.Collection, filter *types.Doc
 			return 0, lazyerrors.Error(err)
 		}
 
-		matches, err := common.FilterDocument(doc, filter)
-		if err != nil {
+		if matches, err = common.FilterDocument(doc, filter); err != nil {
 			return 0, lazyerrors.Error(err)
 		}
 
@@ -137,7 +134,5 @@ func execDelete(ctx context.Context, coll backends.Collection, filter *types.Doc
 		return 0, err
 	}
 
-	deleted = int32(deleteRes.Deleted)
-
-	return deleted, nil
+	return int32(deleteRes.Deleted), nil
 }
