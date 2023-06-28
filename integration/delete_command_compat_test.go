@@ -25,11 +25,9 @@ import (
 )
 
 // deleteCommandCompatTestCase describes delete compatibility test case.
-type deleteCommandCompatTestCase struct { //nolint:vet // for readability
-	deletes    bson.A                   // required
-	resultType compatTestCaseResultType // defaults to nonEmptyResult
-
-	skip string // optional, skip test with a specified reason
+type deleteCommandCompatTestCase struct {
+	skip    string // optional, skip test with a specified reason
+	deletes bson.A // required
 }
 
 func testDeleteCommandCompat(t *testing.T, testCases map[string]deleteCommandCompatTestCase) {
@@ -40,12 +38,15 @@ func testDeleteCommandCompat(t *testing.T, testCases map[string]deleteCommandCom
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
 
 			// Use per-test setup because deletes modify data set.
 			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
-			var nonEmptyResults bool
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
@@ -83,15 +84,6 @@ func testDeleteCommandCompat(t *testing.T, testCases map[string]deleteCommandCom
 					AssertEqualDocumentsSlice(t, compatDocs, targetDocs)
 				})
 			}
-
-			switch tc.resultType {
-			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be deleted)")
-			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results (no documents should be deleted)")
-			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
-			}
 		})
 	}
 }
@@ -100,6 +92,18 @@ func TestDeleteCompatCommand(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]deleteCommandCompatTestCase{
+		"OneLimited": {
+			deletes: bson.A{
+				bson.D{{"q", bson.D{{"v", int32(0)}}}, {"limit", 1}},
+			},
+		},
+		"TwoLimited": {
+			deletes: bson.A{
+				bson.D{{"q", bson.D{{"v", int32(42)}}}, {"limit", 1}},
+				bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 1}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2935",
+		},
 		"DuplicateFilter": {
 			deletes: bson.A{
 				bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 1}},
