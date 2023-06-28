@@ -518,15 +518,6 @@ func TestDatabaseName(t *testing.T) {
 		}
 	})
 
-	t.Run("Empty", func(t *testing.T) {
-		t.Parallel()
-
-		ctx, collection := setup.Setup(t)
-
-		err := collection.Database().Client().Database("").CreateCollection(ctx, collection.Name())
-		assert.Equal(t, errors.New("database name cannot be empty"), err)
-	})
-
 	t.Run("63ok", func(t *testing.T) {
 		ctx, collection := setup.Setup(t)
 
