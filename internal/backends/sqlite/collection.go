@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"modernc.org/sqlite"
 	sqlitelib "modernc.org/sqlite/lib"
@@ -129,7 +128,7 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 
 	tableName := c.r.CollectionToTable(c.name)
 
-	query := fmt.Sprintf(`UPDATE %q SET _ferretdb_sjson = ? WHERE json_extract(_ferretdb_sjson, '$._id') = ?`, tableName)
+	query := fmt.Sprintf(`UPDATE %q SET _ferretdb_sjson = ? WHERE _ferretdb_sjson -> '$._id' = ?`, tableName)
 
 	var res backends.UpdateResult
 
@@ -154,7 +153,7 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		id, _ := doc.Get("_id")
 		must.NotBeZero(id)
 		docArg := must.NotFail(sjson.Marshal(doc))
-		idArg := strings.ReplaceAll(string(must.NotFail(sjson.MarshalSingleValue(id))), "\"", "")
+		idArg := string(must.NotFail(sjson.MarshalSingleValue(id)))
 
 		r, err := db.ExecContext(ctx, query, docArg, idArg)
 		if err != nil {
@@ -181,12 +180,12 @@ func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) 
 
 	tableName := c.r.CollectionToTable(c.name)
 
-	query := fmt.Sprintf(`DELETE FROM %q WHERE json_extract(_ferretdb_sjson, '$._id') = ?`, tableName)
+	query := fmt.Sprintf(`DELETE FROM %q WHERE _ferretdb_sjson -> '$._id' = ?`, tableName)
 
 	var deleted int64
 
 	for _, id := range params.IDs {
-		idArg := strings.ReplaceAll(string(must.NotFail(sjson.MarshalSingleValue(id))), "\"", "")
+		idArg := string(must.NotFail(sjson.MarshalSingleValue(id)))
 
 		res, err := db.ExecContext(ctx, query, idArg)
 		if err != nil {
