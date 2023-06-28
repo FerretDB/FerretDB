@@ -409,6 +409,7 @@ func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
 
 // TestCommandWhatsMyURIConnection tests that integration test setup applies
 // minPoolSize, maxPoolSize and maxIdleTimeMS correctly to the driver.
+// It also tests that the driver behaves like we think it should.
 func TestCommandWhatsMyURIConnection(t *testing.T) {
 	t.Parallel()
 
