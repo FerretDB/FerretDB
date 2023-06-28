@@ -148,6 +148,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 		require.NoError(tb, err)
 
 		q := u.Query()
+
 		for k, vs := range opts.ExtraOptions {
 			for _, v := range vs {
 				q.Set(k, v)

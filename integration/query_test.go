@@ -30,6 +30,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 func TestQueryBadFindType(t *testing.T) {
@@ -1365,13 +1366,15 @@ func TestQueryCommandGetMoreConnection(t *testing.T) {
 		).Decode(&res)
 		require.NoError(t, err)
 
-		v, ok := res.Map()["cursor"]
+		doc := ConvertDocument(t, res)
+
+		v, _ := doc.Get("cursor")
+		require.NotNil(t, v)
+
+		cursor, ok := v.(*types.Document)
 		require.True(t, ok)
 
-		cursor, ok := v.(bson.D)
-		require.True(t, ok)
-
-		cursorID := cursor.Map()["id"]
+		cursorID, _ := cursor.Get("id")
 		assert.NotNil(t, cursorID)
 
 		err = collection1.Database().RunCommand(
@@ -1411,13 +1414,15 @@ func TestQueryCommandGetMoreConnection(t *testing.T) {
 		).Decode(&res)
 		require.NoError(t, err)
 
-		v, ok := res.Map()["cursor"]
+		doc := ConvertDocument(t, res)
+
+		v, _ := doc.Get("cursor")
+		require.NotNil(t, v)
+
+		cursor, ok := v.(*types.Document)
 		require.True(t, ok)
 
-		cursor, ok := v.(bson.D)
-		require.True(t, ok)
-
-		cursorID := cursor.Map()["id"]
+		cursorID, _ := cursor.Get("id")
 		assert.NotNil(t, cursorID)
 
 		err = collection2.Database().RunCommand(
