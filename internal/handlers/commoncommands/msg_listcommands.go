@@ -33,6 +33,8 @@ type command struct {
 	Help string
 
 	// Handler processes this command.
+	//
+	// The passed context is canceled when the client disconnects.
 	Handler func(handlers.Interface, context.Context, *wire.OpMsg) (*wire.OpMsg, error)
 }
 

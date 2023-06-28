@@ -26,12 +26,10 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"runtime/trace"
 	"sync/atomic"
 	"time"
 
 	"github.com/pmezard/go-difflib/difflib"
-	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -44,6 +42,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -122,7 +121,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	}, nil
 }
 
-// run runs the client connection until ctx is done, client disconnects,
+// run runs the client connection until ctx is canceled, client disconnects,
 // or fatal error or panic is encountered.
 //
 // Returned error is always non-nil.
@@ -291,14 +290,9 @@ func (c *conn) run(ctx context.Context) (err error) {
 		// It is set to the highest level of logging used to log response.
 		var diffLogLevel zapcore.Level
 
-		// handle request unless we are in proxy mode
-		var resCloseConn bool
-		if c.mode != ProxyMode {
-			resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
-			diffLogLevel = c.logResponse("Response", resHeader, resBody, resCloseConn)
-		}
-
-		// send request to proxy unless we are in normal mode
+		// send request to proxy first (unless we are in normal mode)
+		// because FerretDB's handling could modify reqBody's documents,
+		// creating a data race
 		var proxyHeader *wire.MsgHeader
 		var proxyBody wire.MsgBody
 		if c.mode != NormalMode {
@@ -307,11 +301,21 @@ func (c *conn) run(ctx context.Context) (err error) {
 			}
 
 			proxyHeader, proxyBody = c.proxy.Route(ctx, reqHeader, reqBody)
-			if level := c.logResponse("Proxy response", proxyHeader, proxyBody, resCloseConn); level != diffLogLevel {
-				// In principle, normal and proxy responses should be logged with the same level
-				// as they behave the same way. If it's not true, there is a bug somewhere, so
-				// we should log the diff as an error.
-				diffLogLevel = zap.ErrorLevel
+		}
+
+		// handle request unless we are in proxy mode
+		var resCloseConn bool
+		if c.mode != ProxyMode {
+			resHeader, resBody, resCloseConn = c.route(ctx, reqHeader, reqBody)
+			if level := c.logResponse("Response", resHeader, resBody, resCloseConn); level > diffLogLevel {
+				diffLogLevel = level
+			}
+		}
+
+		// log proxy response after the normal response to make it less confusing
+		if c.mode != NormalMode {
+			if level := c.logResponse("Proxy response", proxyHeader, proxyBody, false); level > diffLogLevel {
+				diffLogLevel = level
 			}
 		}
 
@@ -381,6 +385,8 @@ func (c *conn) run(ctx context.Context) (err error) {
 }
 
 // route sends request to a handler's command based on the op code provided in the request header.
+//
+// The passed context is canceled when the client disconnects.
 //
 // Handlers to which it routes, should not panic on bad input, but may do so in "impossible" cases.
 // They also should not use recover(). That allows us to use fuzzing.
@@ -540,11 +546,14 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	return
 }
 
+// handleOpMsg processes OP_MSG request.
+//
+// The passed context is canceled when the client disconnects.
 func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
 	if cmd, ok := commoncommands.Commands[command]; ok {
 		if cmd.Handler != nil {
 			// TODO move it to route, closer to Prometheus metrics
-			defer trace.StartRegion(ctx, command).End()
+			defer observability.FuncCall(ctx)()
 
 			return cmd.Handler(c.h, ctx, msg)
 		}
@@ -586,18 +595,3 @@ func (c *conn) logResponse(who string, resHeader *wire.MsgHeader, resBody wire.M
 
 	return level
 }
-
-// Describe implements prometheus.Collector.
-func (c *conn) Describe(ch chan<- *prometheus.Desc) {
-	c.m.Describe(ch)
-}
-
-// Collect implements prometheus.Collector.
-func (c *conn) Collect(ch chan<- prometheus.Metric) {
-	c.m.Collect(ch)
-}
-
-// check interfaces
-var (
-	_ prometheus.Collector = (*conn)(nil)
-)

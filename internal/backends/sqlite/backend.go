@@ -17,76 +17,82 @@ package sqlite
 import (
 	"context"
 	"os"
-	"path/filepath"
 
+	"go.uber.org/zap"
 	_ "modernc.org/sqlite"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // backend implements backends.Backend interface.
 type backend struct {
-	dir             string
-	pool            *connPool
-	metadataStorage *metadataStorage
+	r   *metadata.Registry
+	dir string
 }
 
 // NewBackendParams represents the parameters of NewBackend function.
 type NewBackendParams struct {
 	Dir string
+	L   *zap.Logger
 }
 
 // NewBackend creates a new SQLite backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	pool := newConnPool(params.Dir)
-
-	storage, err := newMetadataStorage(params.Dir, pool)
+	fi, err := os.Stat(params.Dir)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Errorf("%q should be an existing directory: %w", params.Dir, err)
+	}
+
+	if !fi.IsDir() {
+		return nil, lazyerrors.Errorf("%q should be an existing directory", params.Dir)
+	}
+
+	r, err := metadata.NewRegistry(params.Dir, params.L.Named("metadata"))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	return backends.BackendContract(&backend{
-		dir:             params.Dir,
-		pool:            pool,
-		metadataStorage: storage,
+		r:   r,
+		dir: params.Dir,
 	}), nil
 }
 
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
-	b.pool.Close()
+	b.r.Close()
 }
 
 // Database implements backends.Backend interface.
 func (b *backend) Database(name string) backends.Database {
-	return newDatabase(b, name)
+	return newDatabase(b.r, name)
 }
 
 // ListDatabases implements backends.Backend interface.
 //
 //nolint:lll // for readability
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
-	list, err := b.metadataStorage.listDatabases()
-	if err != nil {
-		return nil, err
+	list := b.r.DatabaseList(ctx)
+
+	res := &backends.ListDatabasesResult{
+		Databases: make([]backends.DatabaseInfo, len(list)),
+	}
+	for i, db := range list {
+		res.Databases[i] = backends.DatabaseInfo{Name: db}
 	}
 
-	var result backends.ListDatabasesResult
-	for _, db := range list {
-		result.Databases = append(result.Databases, backends.DatabaseInfo{Name: db})
-	}
-
-	return &result, nil
+	return res, nil
 }
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	err := os.Remove(filepath.Join(b.dir, params.Name+dbExtension))
-	if os.IsNotExist(err) {
-		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, err)
+	if dropped := b.r.DatabaseDrop(ctx, params.Name); !dropped {
+		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, nil)
 	}
 
-	return err
+	return nil
 }
 
 // check interfaces

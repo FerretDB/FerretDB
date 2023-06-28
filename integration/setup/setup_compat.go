@@ -29,6 +29,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -74,13 +75,10 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 		opts = new(SetupCompatOpts)
 	}
 
-	// strip "ferretdb-" prefix, so database name does not go over 64 characters.
-	suffix := strings.ReplaceAll(*targetBackendF, "ferretdb-", "")
-
 	// When we use `task all` to run `pg` and `tigris` compat tests in parallel,
 	// they both use the same MongoDB instance.
 	// Add the backend's name to prevent the usage of the same database.
-	opts.databaseName = testutil.DatabaseName(tb) + "_" + suffix
+	opts.databaseName = testutil.DatabaseName(tb) + "_" + strings.TrimPrefix(*targetBackendF, "ferretdb-")
 
 	// When database name is too long, database is created but inserting documents
 	// fail with InvalidNamespace error.
@@ -92,7 +90,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 	if *debugSetupF {
 		level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	}
-	logger := testutil.Logger(tb, level)
+	logger := testutil.LevelLogger(tb, level)
 
 	var targetClient *mongo.Client
 	if *targetURLF == "" {
@@ -135,7 +133,7 @@ func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Cl
 	ctx, span := otel.Tracer("").Start(ctx, "setupCompatCollections")
 	defer span.End()
 
-	defer trace.StartRegion(ctx, "setupCompatCollections").End()
+	defer observability.FuncCall(ctx)()
 
 	database := client.Database(opts.databaseName)
 

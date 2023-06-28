@@ -2,6 +2,124 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.4.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.4.0) (2023-06-19)
+
+### New Features 🎉
+
+- Implement `$type` aggregation operator by @noisersup in https://github.com/FerretDB/FerretDB/pull/2789
+- Implement `$unset` aggregation pipeline stage by @shibasisp in https://github.com/FerretDB/FerretDB/pull/2676
+- Implement simple `$addFields/$set` aggregation pipeline stages by @shibasisp in https://github.com/FerretDB/FerretDB/pull/2783
+- Implement `createIndexes` for unique indexes by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2814
+
+### Documentation 📄
+
+- Add blog post for FerretDB v1.3.0 by @Fashander in https://github.com/FerretDB/FerretDB/pull/2791
+- Add `release` tag to release blog post by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2792
+- Add textlint rules for en dashes and em dashes by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2823
+- Add Blog Post on Document Databases by @Fashander in https://github.com/FerretDB/FerretDB/pull/2204
+- Add user documentation about unique index creation by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2856
+
+### Other Changes 🤖
+
+- Make `testutil.Logger` easier to use by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2790
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2798
+- Refactor SQLite handler by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2731
+- Merge test workflows to fix coverage calculation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2801
+- Improve `testDistinctCompat` by @noisersup in https://github.com/FerretDB/FerretDB/pull/2782
+- Use iterator in `$sum` aggregation accumulator by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2799
+- Bump Go to 1.20.5 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2810
+- Fix free monitoring tests for MongoDB 6.0.6 by @jeremyphua in https://github.com/FerretDB/FerretDB/pull/2784
+- Bump MongoDB to 6.0.6 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2727
+- Bump MongoDB Go driver by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2817
+- Implement `envtool tests shard` command by @kropidlowsky in https://github.com/FerretDB/FerretDB/pull/2773
+- Check error message in non compat integration tests by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2806
+- Shard integration tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2820
+- Describe current test naming conventions in the contributing guidelines by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2821
+- Add tests for `find`/`getMore` `batchSize` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2825
+- Add more test cases for index validation by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2752
+- Fix running single test with `task` by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2832
+- Refactor `getWholeParamStrict` and `GetScaleParam` functions by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2831
+- Prevent tests deadlock when backend is down by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2846
+- Fix `unimplemented-non-default` tag usages by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2848
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2849
+- Add more tests for `$set` and `$addFields` aggregation stages by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2844
+- Improve benchmarks by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2833
+- Handle `$type` aggregation operator errors properly by @noisersup in https://github.com/FerretDB/FerretDB/pull/2829
+
+## New Contributors
+
+- @shibasisp made their first contribution in https://github.com/FerretDB/FerretDB/pull/2676
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/44?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.3.0...v1.4.0).
+
+## [v1.3.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.3.0) (2023-06-05)
+
+### New Features 🎉
+
+- Implement positional operator in projection by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2688
+- Implement `logout` command by @kropidlowsky in https://github.com/FerretDB/FerretDB/pull/2639
+
+### Fixed Bugs 🐛
+
+- Fix reporting of updates availability by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2653
+- Fix `.deb` and `.rpm` package versions by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2725
+- Allow query to be type null in `distinct` command by @b1ron in https://github.com/FerretDB/FerretDB/pull/2658
+- Fix path collisions for multiple update operators by @noisersup in https://github.com/FerretDB/FerretDB/pull/2713
+
+### Enhancements 🛠
+
+- Fix `_id` formatting in update error messages by @noisersup in https://github.com/FerretDB/FerretDB/pull/2711
+
+### Documentation 📄
+
+- Add release blog post for FerretDB version 1.2.0 by @Fashander in https://github.com/FerretDB/FerretDB/pull/2686
+- Update `$project` in Supported Commands by @Fashander in https://github.com/FerretDB/FerretDB/pull/2710
+- Add formatter for markdown tables by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2693
+- Reformat and lint more documentation files by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2740
+- Document aggregation operations by @Fashander in https://github.com/FerretDB/FerretDB/pull/2672
+- Improve authentication documentation by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2737
+
+### Other Changes 🤖
+
+- Refactor `gitBinaryMaskParam` function by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2634
+- Add `distinct` command errors test by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2687
+- Clarify what's left in handling OP_MSG checksum by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2677
+- Return a better error for authentication problems by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2703
+- Aggregation operators refactor by @noisersup in https://github.com/FerretDB/FerretDB/pull/2664
+- Implement `envtool version` command by @jeremyphua in https://github.com/FerretDB/FerretDB/pull/2714
+- Make `go test -list=.` work by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2718
+- Include Hana in integration tests by @polyal in https://github.com/FerretDB/FerretDB/pull/2715
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2702
+- Add `logout` test for all backend by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2726
+- Fix telemetry reporter logging by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2707
+- Add supported aggregations to the `buildInfo` output by @kropidlowsky in https://github.com/FerretDB/FerretDB/pull/2716
+- Add aggregation operator tests by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2724
+- Add more consistency to table tests' field names by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2717
+- Don't use `sjson.GetTypeOfValue` where it shouldn't be used by @noisersup in https://github.com/FerretDB/FerretDB/pull/2728
+- Unify test file names by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2709
+- Make `testFindAndModifyCompat` work with `compatTestCaseResultType` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2739
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2745
+- Call `ListSpecifications` driver's method in tests to check indexes by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2746
+- Simplify `CountIterator` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2759
+- Check for `nil` values in iterators explicitly by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2758
+- Trigger GC to run finalizers by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2771
+- Update `golangci-lint` config by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2772
+- Remove the need to call `DeepCopy` in some places by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2774
+- Clean-up `lazyerrors`, use them in more places by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2770
+- Replace document slices with iterators by @noisersup in https://github.com/FerretDB/FerretDB/pull/2730
+- Fix `findAndModify` tests for MongoDB 6.0.6 by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2779
+- Implement a few command stubs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2777
+- Add more handler tests by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2769
+- Remove `findAndModify` integration tests with `$` prefixed key for MongoDB 6.0.6 compatibility by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2785
+
+## New Contributors
+
+- @jeremyphua made their first contribution in https://github.com/FerretDB/FerretDB/pull/2714
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/42?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.2.1...v1.3.0).
+
 ## [v1.2.1](https://github.com/FerretDB/FerretDB/releases/tag/v1.2.1) (2023-05-24)
 
 ### Fixed Bugs 🐛

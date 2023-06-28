@@ -31,6 +31,8 @@ import (
 )
 
 func TestCreateStress(t *testing.T) {
+	// TODO rewrite using teststress.Stress
+
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	db := collection.Database()
 
@@ -109,6 +111,8 @@ func TestCreateStress(t *testing.T) {
 }
 
 func TestCreateOnInsertStressSameCollection(t *testing.T) {
+	// TODO rewrite using teststress.Stress
+
 	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1341")
 	ctx, collection := setup.Setup(t)
 	// do not toLower() db name as it may contain uppercase letters
@@ -148,6 +152,8 @@ func TestCreateOnInsertStressSameCollection(t *testing.T) {
 }
 
 func TestCreateOnInsertStressDiffCollection(t *testing.T) {
+	// TODO rewrite using teststress.Stress
+
 	ctx, collection := setup.Setup(t)
 	// do not toLower() db name as it may contain uppercase letters
 	db := collection.Database().Client().Database(t.Name())
@@ -187,6 +193,8 @@ func TestCreateOnInsertStressDiffCollection(t *testing.T) {
 }
 
 func TestCreateStressSameCollection(t *testing.T) {
+	// TODO rewrite using teststress.Stress
+
 	ctx, collection := setup.Setup(t) // no providers there, we will create collection from the test
 	db := collection.Database()
 
@@ -289,8 +297,11 @@ func TestCreateTigris(t *testing.T) {
 		validator  string
 		schema     string
 		collection string
-		err        *mongo.CommandError
 		doc        bson.D
+
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"BadValidator": {
 			validator:  "$bad",
@@ -301,6 +312,7 @@ func TestCreateTigris(t *testing.T) {
 				Name:    "BadValue",
 				Message: `required parameter "$tigrisSchemaString" is missing`,
 			},
+			altMessage: `required parameter "$tigrisSchemaString" is missing`,
 		},
 		"EmptySchema": {
 			validator:  "$tigrisSchemaString",
@@ -390,10 +402,11 @@ func TestCreateTigris(t *testing.T) {
 			opts := options.CreateCollection().SetValidator(bson.D{{tc.validator, tc.schema}})
 			err := db.Client().Database(dbName).CreateCollection(ctx, tc.collection, opts)
 			if tc.err != nil {
-				AssertEqualError(t, *tc.err, err)
-			} else {
-				require.NoError(t, err)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				return
 			}
+
+			require.NoError(t, err)
 
 			// to make sure that schema is correct, we try to insert a document
 			if tc.doc != nil {

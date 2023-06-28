@@ -21,6 +21,10 @@ import "errors"
 //
 // It always closes the iterator.
 func ConsumeCount[K, V any](iter Interface[K, V]) (int, error) {
+	if iter == nil {
+		panic("iter is nil")
+	}
+
 	defer iter.Close()
 
 	var count int

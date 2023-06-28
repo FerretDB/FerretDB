@@ -17,6 +17,9 @@ package setup
 import (
 	"context"
 	"net/http"
+	"os"
+	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -28,16 +31,29 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// jaegerExporter is a global Jaeger exporter for tests.
 var jaegerExporter *jaeger.Exporter
+
+// sqliteDir is a fixed directory for SQLite backend tests.
+//
+// We don't use testing.T.TempDir() or something to make debugging of failed tests easier.
+var sqliteDir = filepath.Join("..", "tmp", "sqlite-tests")
 
 // Startup initializes things that should be initialized only once.
 func Startup() {
 	logging.Setup(zap.DebugLevel, "")
+
+	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
+	if os.Getenv("RUNNER_DEBUG") == "1" {
+		zap.S().Info("Enabling setup debug logging on GitHub Actions.")
+		*debugSetupF = true
+	}
 
 	// use any available port to allow running different configuration in parallel
 	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
@@ -47,6 +63,12 @@ func Startup() {
 
 	// do basic flags validation earlier, before all tests
 
+	for _, p := range shareddata.AllBenchmarkProviders() {
+		if g, ok := p.(shareddata.BenchmarkGenerator); ok {
+			g.Init(*benchDocsF)
+		}
+	}
+
 	if *targetBackendF == "" {
 		zap.S().Fatal("-target-backend must be set.")
 	}
@@ -54,6 +76,9 @@ func Startup() {
 	if !slices.Contains(allBackends, *targetBackendF) {
 		zap.S().Fatalf("Unknown target backend %q.", *targetBackendF)
 	}
+
+	_ = os.Remove(sqliteDir)
+	must.NoError(os.MkdirAll(sqliteDir, 0o777))
 
 	if u := *targetURLF; u != "" {
 		client, err := makeClient(ctx, u)
@@ -106,4 +131,8 @@ func Shutdown() {
 	defer cancel()
 
 	must.NoError(jaegerExporter.Shutdown(ctx))
+
+	// to increase a chance of resource finalizers to spot problems
+	runtime.GC()
+	runtime.GC()
 }

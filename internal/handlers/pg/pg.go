@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
@@ -36,8 +37,8 @@ import (
 type Handler struct {
 	*NewOpts
 
-	url      url.URL
-	registry *cursor.Registry
+	url     url.URL
+	cursors *cursor.Registry
 
 	// accessed by DBPool(ctx)
 	rw    sync.RWMutex
@@ -55,7 +56,6 @@ type NewOpts struct {
 	// test options
 	DisableFilterPushdown bool
 	EnableSortPushdown    bool
-	EnableCursors         bool
 }
 
 // New returns a new handler.
@@ -70,10 +70,10 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	}
 
 	h := &Handler{
-		NewOpts:  opts,
-		url:      *u,
-		registry: cursor.NewRegistry(),
-		pools:    make(map[string]*pgdb.Pool, 1),
+		NewOpts: opts,
+		url:     *u,
+		cursors: cursor.NewRegistry(opts.L.Named("cursors")),
+		pools:   make(map[string]*pgdb.Pool, 1),
 	}
 
 	return h, nil
@@ -88,6 +88,8 @@ func (h *Handler) Close() {
 		p.Close()
 		delete(h.pools, k)
 	}
+
+	h.cursors.Close()
 }
 
 // DBPool returns database connection pool for the given client connection.
@@ -142,6 +144,16 @@ func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
 	h.pools[url] = p
 
 	return p, nil
+}
+
+// Describe implements handlers.Interface.
+func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
+	// TODO
+}
+
+// Collect implements handlers.Interface.
+func (h *Handler) Collect(ch chan<- prometheus.Metric) {
+	// TODO
 }
 
 // check interfaces

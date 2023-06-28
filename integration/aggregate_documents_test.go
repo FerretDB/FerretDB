@@ -17,26 +17,132 @@ package integration
 import (
 	"testing"
 
+	"github.com/AlekSi/pointer"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
+
+func TestAggregateAddFieldsErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		pipeline bson.A // required, aggregation pipeline stages
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"NotDocument": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", "not-document"}},
+			},
+			err: &mongo.CommandError{
+				Code:    40272,
+				Name:    "Location40272",
+				Message: "$addFields specification stage must be an object, got string",
+			},
+			altMessage: "$addFields specification stage must be an object, got string",
+		},
+		"InvalidFieldPath": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"$foo", "v"}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16410,
+				Name:    "Location16410",
+				Message: "Invalid $addFields :: caused by :: FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			ctx, collection := setup.Setup(t)
+
+			_, err := collection.Aggregate(ctx, tc.pipeline)
+
+			if tc.altMessage != "" {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				return
+			}
+
+			AssertEqualCommandError(t, *tc.err, err)
+		})
+	}
+}
+
+func TestAggregateGroupErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		pipeline bson.A // required, aggregation pipeline stages
+
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"StageGroupUnaryOperatorSum": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"sum", bson.D{{"$sum", bson.A{}}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    40237,
+				Name:    "Location40237",
+				Message: "The $sum accumulator is a unary operator",
+			},
+			altMessage: "The $sum accumulator is a unary operator",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			ctx, collection := setup.Setup(t)
+
+			res, err := collection.Aggregate(ctx, tc.pipeline)
+
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
 
 func TestAggregateProjectErrors(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		err        mongo.CommandError
-		altMessage string
-		skip       string
-		pipeline   bson.A
+		pipeline bson.A // required, aggregation pipeline stages
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"EmptyPipeline": {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    51272,
 				Name:    "Location51272",
 				Message: "Invalid $project :: caused by :: projection specification must have at least one field",
@@ -46,7 +152,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v", bson.D{}}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    51270,
 				Name:    "Location51270",
 				Message: "Invalid $project :: caused by :: An empty sub-projection is not a valid value. Found empty object at path",
@@ -57,7 +163,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 40352,
 				Name: "Location40352",
 				Message: "Invalid $project :: caused by :: " +
@@ -68,7 +174,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v..d", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    15998,
 				Name:    "Location15998",
 				Message: "Invalid $project :: caused by :: FieldPath field names may not be empty strings.",
@@ -78,7 +184,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"foo", false}, {"bar", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    31253,
 				Name:    "Location31253",
 				Message: "Invalid $project :: caused by :: Cannot do inclusion on field bar in exclusion projection",
@@ -89,7 +195,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"foo", true}, {"bar", false}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    31254,
 				Name:    "Location31254",
 				Message: "Invalid $project :: caused by :: Cannot do exclusion on field bar in inclusion projection",
@@ -100,7 +206,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v.$.foo.$", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 31324,
 				Name: "Location31324",
 				Message: "Invalid $project :: caused by :: " +
@@ -111,7 +217,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v.$.foo", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 31394,
 				Name: "Location31394",
 				Message: "Invalid $project :: caused by :: " +
@@ -131,7 +237,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"$.v.$.foo", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 31394,
 				Name: "Location31394",
 				Message: "Invalid $project :: caused by :: " +
@@ -151,7 +257,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v..$", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 31324,
 				Name: "Location31324",
 				Message: "Invalid $project :: caused by :: " +
@@ -162,7 +268,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"$", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 16410,
 				Name: "Location16410",
 				Message: "Invalid $project :: caused by :: " +
@@ -173,7 +279,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"$v", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 16410,
 				Name: "Location16410",
 				Message: "Invalid $project :: caused by :: " +
@@ -184,7 +290,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"$.foo", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 16410,
 				Name: "Location16410",
 				Message: "Invalid $project :: caused by :: " +
@@ -195,7 +301,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v.$foo", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 16410,
 				Name: "Location16410",
 				Message: "Invalid $project :: caused by :: " +
@@ -206,7 +312,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"$.v.$", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 31324,
 				Name: "Location31324",
 				Message: "Invalid $project :: caused by :: " +
@@ -217,7 +323,7 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v.$", false}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code: 31324,
 				Name: "Location31324",
 				Message: "Invalid $project :: caused by :: " +
@@ -228,10 +334,61 @@ func TestAggregateProjectErrors(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{{"v.$", true}}}},
 			},
-			err: mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    31324,
 				Name:    "Location31324",
 				Message: "Invalid $project :: caused by :: Cannot use positional projection in aggregation projection",
+			},
+		},
+		"ProjectTypeEmpty": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"v", bson.D{}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    51270,
+				Name:    "Location51270",
+				Message: "Invalid $project :: caused by :: An empty sub-projection is not a valid value." + " Found empty object at path",
+			},
+		},
+		"ProjectTwoOperators": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"v", bson.D{{"$type", int32(42)}, {"$op", int32(42)}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16410,
+				Name:    "Location16410",
+				Message: "Invalid $project :: caused by :: FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+			},
+		},
+		"ProjectTypeInvalidLen": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"v", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16020,
+				Name:    "Location16020",
+				Message: "Invalid $project :: caused by :: Expression $type takes exactly 1 arguments. 2 were passed in.",
+			},
+		},
+		"ProjectNonExistentOperator": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"v", bson.D{{"$non-existent", "foo"}}}}}},
+			},
+			altMessage: "Invalid $project :: caused by :: Unrecognized expression '$non-existent'",
+			err: &mongo.CommandError{
+				Code:    31325,
+				Name:    "Location31325",
+				Message: "Invalid $project :: caused by :: Unknown expression $non-existent",
+			},
+		},
+		"ProjectRecursiveNonExistentOperator": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{{"v", bson.D{{"$type", bson.D{{"$non-existent", "foo"}}}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    168,
+				Name:    "InvalidPipelineOperator",
+				Message: "Invalid $project :: caused by :: Unrecognized expression '$non-existent'",
 			},
 		},
 	} {
@@ -242,11 +399,515 @@ func TestAggregateProjectErrors(t *testing.T) {
 			}
 
 			t.Parallel()
+
+			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
 			ctx, collection := setup.Setup(t)
 
 			_, err := collection.Aggregate(ctx, tc.pipeline)
-
-			AssertEqualAltCommandError(t, tc.err, tc.altMessage, err)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
+}
+
+func TestAggregateSetErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		pipeline bson.A // required, aggregation pipeline stages
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"NotDocument": {
+			pipeline: bson.A{
+				bson.D{{"$set", "not-document"}},
+			},
+			err: &mongo.CommandError{
+				Code:    40272,
+				Name:    "Location40272",
+				Message: "$set specification stage must be an object, got string",
+			},
+			altMessage: "$set specification stage must be an object, got string",
+		},
+		"InvalidFieldPath": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"$foo", "v"}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16410,
+				Name:    "Location16410",
+				Message: "Invalid $set :: caused by :: FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			ctx, collection := setup.Setup(t)
+
+			_, err := collection.Aggregate(ctx, tc.pipeline)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestAggregateUnsetErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		pipeline bson.A // required, aggregation pipeline stages
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"EmptyString": {
+			pipeline: bson.A{
+				bson.D{{"$unset", ""}},
+			},
+			err: &mongo.CommandError{
+				Code:    40352,
+				Name:    "Location40352",
+				Message: "Invalid $unset :: caused by :: FieldPath cannot be constructed with empty string",
+			},
+		},
+		"InvalidType": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.D{}}},
+			},
+			err: &mongo.CommandError{
+				Code:    31002,
+				Name:    "Location31002",
+				Message: "$unset specification must be a string or an array",
+			},
+		},
+		"PathEmptyKey": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "v..foo"}},
+			},
+			err: &mongo.CommandError{
+				Code:    15998,
+				Name:    "Location15998",
+				Message: "Invalid $unset :: caused by :: FieldPath field names may not be empty strings.",
+			},
+		},
+		"PathEmptySuffixKey": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "v."}},
+			},
+			err: &mongo.CommandError{
+				Code:    40353,
+				Name:    "Location40353",
+				Message: "Invalid $unset :: caused by :: FieldPath must not end with a '.'.",
+			},
+		},
+		"PathEmptyPrefixKey": {
+			pipeline: bson.A{
+				bson.D{{"$unset", ".v"}},
+			},
+			err: &mongo.CommandError{
+				Code:    15998,
+				Name:    "Location15998",
+				Message: "Invalid $unset :: caused by :: FieldPath field names may not be empty strings.",
+			},
+		},
+		"PathDollarPrefix": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "$v"}},
+			},
+			err: &mongo.CommandError{
+				Code:    16410,
+				Name:    "Location16410",
+				Message: "Invalid $unset :: caused by :: FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+			},
+		},
+		"ArrayEmpty": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{}}},
+			},
+			err: &mongo.CommandError{
+				Code:    31119,
+				Name:    "Location31119",
+				Message: "$unset specification must be a string or an array with at least one field",
+			},
+			altMessage: "$unset specification must be a string or an array with at least one field",
+		},
+		"ArrayInvalidType": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"field1", 1}}},
+			},
+			err: &mongo.CommandError{
+				Code:    31120,
+				Name:    "Location31120",
+				Message: "$unset specification must be a string or an array containing only string values",
+			},
+		},
+		"ArrayEmptyString": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{""}}},
+			},
+			err: &mongo.CommandError{
+				Code:    40352,
+				Name:    "Location40352",
+				Message: "Invalid $unset :: caused by :: FieldPath cannot be constructed with empty string",
+			},
+		},
+		"ArrayPathDuplicate": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"v", "v"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    31250,
+				Name:    "Location31250",
+				Message: "Invalid $unset :: caused by :: Path collision at v",
+			},
+		},
+		"ArrayPathOverwrites": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"v", "v.foo"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    31249,
+				Name:    "Location31249",
+				Message: "Invalid $unset :: caused by :: Path collision at v.foo remaining portion foo",
+			},
+		},
+		"ArrayPathOverwritesRemaining": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"v", "v.foo.bar"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    31249,
+				Name:    "Location31249",
+				Message: "Invalid $unset :: caused by :: Path collision at v.foo.bar remaining portion foo.bar",
+			},
+		},
+		"ArrayPathCollision": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"v.foo", "v"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    31250,
+				Name:    "Location31250",
+				Message: "Invalid $unset :: caused by :: Path collision at v",
+			},
+		},
+		"ArrayPathEmptyKey": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"v..foo"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    15998,
+				Name:    "Location15998",
+				Message: "Invalid $unset :: caused by :: FieldPath field names may not be empty strings.",
+			},
+		},
+		"ArrayPathEmptySuffixKey": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"v."}}},
+			},
+			err: &mongo.CommandError{
+				Code:    40353,
+				Name:    "Location40353",
+				Message: "Invalid $unset :: caused by :: FieldPath must not end with a '.'.",
+			},
+		},
+		"ArrayPathEmptyPrefixKey": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{".v"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    15998,
+				Name:    "Location15998",
+				Message: "Invalid $unset :: caused by :: FieldPath field names may not be empty strings.",
+			},
+		},
+		"ArrayPathDollarPrefix": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"$v"}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16410,
+				Name:    "Location16410",
+				Message: "Invalid $unset :: caused by :: FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			ctx, collection := setup.Setup(t)
+
+			_, err := collection.Aggregate(ctx, tc.pipeline)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestAggregateCommandCursor(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	// the number of documents is set above the default batchSize of 101
+	// for testing unset batchSize returning default batchSize
+	docs := generateDocuments(0, 110)
+	_, err := collection.InsertMany(ctx, docs)
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		pipeline any // optional, defaults to bson.A{}
+		cursor   any // optional, nil to leave cursor unset
+
+		firstBatch primitive.A         // optional, expected firstBatch
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"Int": {
+			cursor:     bson.D{{"batchSize", 1}},
+			firstBatch: docs[:1],
+		},
+		"Long": {
+			cursor:     bson.D{{"batchSize", int64(2)}},
+			firstBatch: docs[:2],
+		},
+		"LongZero": {
+			cursor:     bson.D{{"batchSize", int64(0)}},
+			firstBatch: bson.A{},
+		},
+		"LongNegative": {
+			cursor: bson.D{{"batchSize", int64(-1)}},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
+			},
+			altMessage: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
+		},
+		"DoubleZero": {
+			cursor:     bson.D{{"batchSize", float64(0)}},
+			firstBatch: bson.A{},
+		},
+		"DoubleNegative": {
+			cursor: bson.D{{"batchSize", -1.1}},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
+			},
+		},
+		"DoubleFloor": {
+			cursor:     bson.D{{"batchSize", 1.9}},
+			firstBatch: docs[:1],
+		},
+		"Bool": {
+			cursor:     bson.D{{"batchSize", true}},
+			firstBatch: docs[:1],
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'cursor.batchSize' is the wrong type 'bool', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'aggregate.batchSize' is the wrong type 'bool', expected types '[long, int, decimal, double]'",
+		},
+		"Unset": {
+			cursor:     nil,
+			firstBatch: docs[:101],
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "The 'cursor' option is required, except for aggregate with the explain argument",
+			},
+		},
+		"Empty": {
+			cursor:     bson.D{},
+			firstBatch: docs[:101],
+		},
+		"String": {
+			cursor:     "invalid",
+			firstBatch: docs[:101],
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "cursor field must be missing or an object",
+			},
+			altMessage: "BSON field 'cursor' is the wrong type 'string', expected type 'object'",
+		},
+		"LargeBatchSize": {
+			cursor:     bson.D{{"batchSize", 102}},
+			firstBatch: docs[:102],
+		},
+		"LargeBatchSizeMatch": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"_id", bson.D{{"$in", bson.A{0, 1, 2, 3, 4, 5}}}}}}},
+			},
+			cursor:     bson.D{{"batchSize", 102}},
+			firstBatch: docs[:6],
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			var pipeline any = bson.A{}
+			if tc.pipeline != nil {
+				pipeline = tc.pipeline
+			}
+
+			var rest bson.D
+			if tc.cursor != nil {
+				rest = append(rest, bson.E{Key: "cursor", Value: tc.cursor})
+			}
+
+			command := append(
+				bson.D{
+					{"aggregate", collection.Name()},
+					{"pipeline", pipeline},
+				},
+				rest...,
+			)
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&res)
+			if tc.err != nil {
+				assert.Nil(t, res)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
+				return
+			}
+
+			require.NoError(t, err)
+
+			v, ok := res.Map()["cursor"]
+			require.True(t, ok)
+
+			cursor, ok := v.(bson.D)
+			require.True(t, ok)
+
+			// do not check the value of cursor id, FerretDB has a different id
+			cursorID := cursor.Map()["id"]
+			assert.NotNil(t, cursorID)
+
+			firstBatch, ok := cursor.Map()["firstBatch"]
+			require.True(t, ok)
+			require.Equal(t, tc.firstBatch, firstBatch)
+		})
+	}
+}
+
+func TestAggregateBatchSize(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	// The test cases call `aggregate`, then may implicitly call `getMore` upon `cursor.Next()`.
+	// The batchSize set by `aggregate` is used also by `getMore` unless
+	// `aggregate` has default batchSize or 0 batchSize, then `getMore` has unlimited batchSize.
+	// To test that, the number of documents is set to more than the double of default batchSize 101.
+	docs := generateDocuments(0, 220)
+	_, err := collection.InsertMany(ctx, docs)
+	require.NoError(t, err)
+
+	t.Run("SetBatchSize", func(t *testing.T) {
+		t.Parallel()
+
+		cursor, err := collection.Aggregate(ctx, bson.D{}, &options.AggregateOptions{BatchSize: pointer.ToInt32(2)})
+		require.NoError(t, err)
+
+		defer cursor.Close(ctx)
+
+		require.Equal(t, 2, cursor.RemainingBatchLength(), "expected 2 documents in first batch")
+
+		for i := 2; i > 0; i-- {
+			ok := cursor.Next(ctx)
+			require.True(t, ok, "expected to have next document in first batch")
+			require.Equal(t, i-1, cursor.RemainingBatchLength())
+		}
+
+		// batchSize of 2 is applied to second batch which is obtained by implicit call to `getMore`
+		for i := 2; i > 0; i-- {
+			ok := cursor.Next(ctx)
+			require.True(t, ok, "expected to have next document in second batch")
+			require.Equal(t, i-1, cursor.RemainingBatchLength())
+		}
+
+		cursor.SetBatchSize(5)
+
+		for i := 5; i > 0; i-- {
+			ok := cursor.Next(ctx)
+			require.True(t, ok, "expected to have next document in third batch")
+			require.Equal(t, i-1, cursor.RemainingBatchLength())
+		}
+
+		// get rest of documents from the cursor to ensure cursor is exhausted
+		var res bson.D
+		err = cursor.All(ctx, &res)
+		require.NoError(t, err)
+
+		ok := cursor.Next(ctx)
+		require.False(t, ok, "cursor exhausted, not expecting next document")
+	})
+
+	t.Run("ZeroBatchSize", func(t *testing.T) {
+		t.Parallel()
+
+		cursor, err := collection.Aggregate(ctx, bson.D{}, &options.AggregateOptions{BatchSize: pointer.ToInt32(0)})
+		require.NoError(t, err)
+
+		defer cursor.Close(ctx)
+
+		require.Equal(t, 0, cursor.RemainingBatchLength())
+
+		// next batch obtain from implicit call to `getMore` has the rest of the documents, not 0 batchSize
+		// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
+		ok := cursor.Next(ctx)
+		require.True(t, ok, "expected to have next document")
+		require.Equal(t, 219, cursor.RemainingBatchLength())
+	})
+
+	t.Run("DefaultBatchSize", func(t *testing.T) {
+		t.Parallel()
+
+		// unset batchSize uses default batchSize 101 for the first batch
+		cursor, err := collection.Aggregate(ctx, bson.D{})
+		require.NoError(t, err)
+
+		defer cursor.Close(ctx)
+
+		require.Equal(t, 101, cursor.RemainingBatchLength())
+
+		for i := 101; i > 0; i-- {
+			ok := cursor.Next(ctx)
+			require.True(t, ok, "expected to have next document")
+			require.Equal(t, i-1, cursor.RemainingBatchLength())
+		}
+
+		// next batch obtain from implicit call to `getMore` has the rest of the documents, not default batchSize
+		// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
+		ok := cursor.Next(ctx)
+		require.True(t, ok, "expected to have next document")
+		require.Equal(t, 118, cursor.RemainingBatchLength())
+	})
 }

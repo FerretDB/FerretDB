@@ -21,6 +21,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/AlekSi/pointer"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -34,7 +35,8 @@ import (
 
 // validateCollectionNameRe validates collection names.
 // Empty collection name, names with `$` and `\x00` are not allowed.
-var validateCollectionNameRe = regexp.MustCompile("^[^$\x00]{1,235}$")
+// Collection names that start with `.` are also not allowed.
+var validateCollectionNameRe = regexp.MustCompile("^[^.$\x00][^$\x00]{0,234}$")
 
 // Collections returns a sorted list of FerretDB collection names.
 //
@@ -107,9 +109,14 @@ func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bo
 // It returns possibly wrapped error:
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
 //   - ErrInvalidCollectionName - if the given collection name doesn't conform to restrictions.
+//   - ErrCollectionStartsWithDot - if the given collection name starts with dot.
 //   - ErrAlreadyExist - if a FerretDB collection with the given name already exists.
 //   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
 func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
+	if strings.HasPrefix(collection, ".") {
+		return ErrCollectionStartsWithDot
+	}
+
 	if !validateCollectionNameRe.MatchString(collection) ||
 		strings.HasPrefix(collection, reservedPrefix) ||
 		!utf8.ValidString(collection) {
@@ -133,7 +140,7 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 	indexParams := &Index{
 		Name:   "_id_",
 		Key:    IndexKey{{Field: "_id", Order: types.Ascending}},
-		Unique: true,
+		Unique: pointer.ToBool(true),
 	}
 
 	if err := CreateIndexIfNotExists(ctx, tx, db, collection, indexParams); err != nil {

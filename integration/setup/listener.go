@@ -19,7 +19,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"runtime/trace"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -32,6 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -63,7 +63,7 @@ func unixSocketPath(tb testing.TB) string {
 	return f.Name()
 }
 
-// setupListener starts in-process FerretDB server that runs until ctx is done.
+// setupListener starts in-process FerretDB server that runs until ctx is canceled.
 // It returns client and MongoDB URI of that listener.
 func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mongo.Client, string) {
 	tb.Helper()
@@ -71,11 +71,11 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
 	defer span.End()
 
-	defer trace.StartRegion(ctx, "setupListener").End()
+	defer observability.FuncCall(ctx)()
 
 	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
 
-	var handler string
+	var handler, sqliteURI string
 
 	switch *targetBackendF {
 	case "ferretdb-pg":
@@ -83,23 +83,31 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
 		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
 		handler = "pg"
+
 	case "ferretdb-sqlite":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
 		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
 		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
 		handler = "sqlite"
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/2753
+		sqliteURI = sqliteDir
+
 	case "ferretdb-tigris":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
 		require.NotEmpty(tb, *tigrisURLSF, "-tigris-urls must be set for %q", *targetBackendF)
 		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
 		handler = "tigris"
+
 	case "ferretdb-hana":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
 		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
 		require.NotEmpty(tb, *hanaURLF, "-hana-url must be set for %q", *targetBackendF)
 		handler = "hana"
+
 	case "mongodb":
 		tb.Fatal("can't start in-process MongoDB")
+
 	default:
 		// that should be caught by Startup function
 		panic("not reached")
@@ -117,7 +125,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 		PostgreSQLURL: *postgreSQLURLF,
 
-		SQLiteURI: filepath.Join("..", "tmp", "sqlite-tests"),
+		SQLiteURI: sqliteURI,
 
 		TigrisURL: nextTigrisUrl(),
 
@@ -126,7 +134,6 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown: *disableFilterPushdownF,
 			EnableSortPushdown:    *enableSortPushdownF,
-			EnableCursors:         *enableCursorsF,
 		},
 	}
 	h, err := registry.NewHandler(handler, handlerOpts)
@@ -163,12 +170,20 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 
 	l := clientconn.NewListener(&listenerOpts)
 
-	done := make(chan struct{})
+	runCtx, runCancel := context.WithCancel(ctx)
+	runDone := make(chan struct{})
+
+	// that prevents the deadlock on failed client setup; see below
+	defer func() {
+		if tb.Failed() {
+			runCancel()
+		}
+	}()
 
 	go func() {
-		defer close(done)
+		defer close(runDone)
 
-		err := l.Run(ctx)
+		err := l.Run(runCtx)
 		if err == nil || errors.Is(err, context.Canceled) {
 			logger.Info("Listener stopped without error")
 		} else {
@@ -176,10 +191,9 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		}
 	}()
 
-	// ensure that all listener's logs are written before test ends
+	// ensure that all listener's and handler's logs are written before test ends
 	tb.Cleanup(func() {
-		<-done
-		h.Close()
+		<-runDone
 	})
 
 	var clientOpts mongoDBURIOpts
@@ -194,6 +208,8 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		clientOpts.hostPort = l.TCPAddr().String()
 	}
 
+	// those will fail the test if in-process FerretDB is not working;
+	// for example, when backend is down
 	uri := mongoDBURI(tb, &clientOpts)
 	client := setupClient(tb, ctx, uri)
 

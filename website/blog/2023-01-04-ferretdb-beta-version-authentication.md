@@ -26,7 +26,7 @@ There are numerous ways to dump and restore your data.
 For example, you can follow the following steps:
 
 1. Backup FerretDB databases with `mongodump`.
-   Set your FerretDB connection string in `-—uri` and run:
+   Set your FerretDB connection string in `--uri` and run:
    `mongodump --uri="mongodb://127.0.0.1:27017"`
    This command will create a directory with dumps for each FerretDB database on the given server.
    Later, we will use this dump to restore the database.
@@ -63,7 +63,7 @@ In this blog post, we'll be sharing detailed information about the FerretDB beta
 Since the last release (0.7.2), we've made great strides in adding new features to FerretDB, especially the introduction of authentication for PostgreSQL.
 With authentication, users can now connect securely using passwords, ensuring that only authorized connections are established.
 You can do this by specifying your username and password in the FerretDB connection string as `mongodb://username:password@ferretdb:27018/?tls=true&authMechanism=PLAIN`.
-See more details [in our documentation](https://docs.ferretdb.io/security/#authentication).
+See more details [in our documentation](https://docs.ferretdb.io/security/authentication/).
 
 But that's not all - in addition to the `$max` update operator, FerretDB beta now includes support for the `$min` update operator:
 

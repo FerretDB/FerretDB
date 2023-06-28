@@ -16,7 +16,6 @@ package common
 
 import (
 	"errors"
-	"sync/atomic"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -25,12 +24,15 @@ import (
 )
 
 // CountIterator returns an iterator that returns a single document containing
-// the number of documents on the specified field.
+// the number of input documents (as int32) in the specified field: {field: count}.
 // It will be added to the given closer.
 //
-// Next method returns the next document that matches the filter.
+// Next method returns that document, subsequent calls return ErrIteratorDone.
+// If input iterator contains no document, it returns ErrIteratorDone.
 //
 // Close method closes the underlying iterator.
+//
+// Deprecated: remove this function, use iterator.ConsumeCount instead.
 func CountIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, field string) types.DocumentsIterator {
 	res := &countIterator{
 		iter:  iter,
@@ -46,45 +48,39 @@ func CountIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, f
 type countIterator struct {
 	iter  types.DocumentsIterator
 	field string
-	done  atomic.Bool
+	done  bool
 }
 
-// Next implements Iterator interface.
-// The first call returns the number of documents, subsequent calls return ErrIteratorDone.
-// If iterator contains no document, it returns ErrIteratorDone.
+// Next implements iterator.Interface. See FilterIterator for details.
 func (iter *countIterator) Next() (struct{}, *types.Document, error) {
 	var unused struct{}
 
-	done := iter.done.Swap(true)
-	if done {
-		// subsequent calls return error.
+	if iter.done {
 		return unused, nil, iterator.ErrIteratorDone
 	}
 
-	// only first call reaches here, safe to use local variable for count.
 	var count int32
-
 	for {
 		_, _, err := iter.iter.Next()
-
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
-		}
-
 		if err != nil {
+			iter.done = true
+
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				if count == 0 {
+					return unused, nil, iterator.ErrIteratorDone
+				}
+
+				return unused, must.NotFail(types.NewDocument(iter.field, count)), nil
+			}
+
 			return unused, nil, lazyerrors.Error(err)
 		}
+
 		count++
 	}
-
-	if count == 0 {
-		return unused, nil, iterator.ErrIteratorDone
-	}
-
-	return unused, must.NotFail(types.NewDocument(iter.field, count)), nil
 }
 
-// Close implements iterator.Interface.
+// Close implements iterator.Interface. See CountIterator for details.
 func (iter *countIterator) Close() {
 	iter.iter.Close()
 }

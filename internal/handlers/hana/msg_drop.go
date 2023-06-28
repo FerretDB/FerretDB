@@ -53,7 +53,12 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	err = dbPool.DropCollection(ctx, db, collection)
+	qp := hanadb.QueryParams{
+		DB:         db,
+		Collection: collection,
+	}
+
+	err = dbPool.DropCollection(ctx, &qp)
 
 	switch {
 	case err == nil:

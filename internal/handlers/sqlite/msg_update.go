@@ -66,43 +66,46 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // updateDocument iterate through all documents in collection and update them.
 func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesParams) (int32, int32, *types.Array, error) {
 	var matched, modified int32
-	var upserted *types.Array
+	var upserted types.Array
 
 	db := h.b.Database(params.DB)
 	defer db.Close()
 
 	err := db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: params.Collection})
+	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionAlreadyExists) {
+		err = nil
+	}
 	if err != nil {
-		return 0, 0, nil, err
+		return 0, 0, nil, lazyerrors.Error(err)
 	}
 
 	for _, u := range params.Updates {
 		res, err := db.Collection(params.Collection).Query(ctx, nil)
 		if err != nil {
-			return 0, 0, nil, err
+			return 0, 0, nil, lazyerrors.Error(err)
 		}
 
 		var resDocs []*types.Document
 
-		defer res.DocsIterator.Close()
+		defer res.Iter.Close()
 
 		for {
 			var doc *types.Document
 
-			_, doc, err = res.DocsIterator.Next()
+			_, doc, err = res.Iter.Next()
 			if err != nil {
 				if errors.Is(err, iterator.ErrIteratorDone) {
 					break
 				}
 
-				return 0, 0, nil, err
+				return 0, 0, nil, lazyerrors.Error(err)
 			}
 
 			var matches bool
 
 			matches, err = common.FilterDocument(doc, u.Filter)
 			if err != nil {
-				return 0, 0, nil, err
+				return 0, 0, nil, lazyerrors.Error(err)
 			}
 
 			if !matches {
@@ -112,7 +115,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 			resDocs = append(resDocs, doc)
 		}
 
-		res.DocsIterator.Close()
+		res.Iter.Close()
 
 		if len(resDocs) == 0 {
 			if !u.Upsert {
@@ -122,7 +125,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 
 			doc := u.Filter.DeepCopy()
 			if _, err = common.UpdateDocument("update", doc, u.Update); err != nil {
-				return 0, 0, nil, err
+				return 0, 0, nil, lazyerrors.Error(err)
 			}
 
 			if !doc.Has("_id") {
@@ -137,7 +140,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 			// TODO https://github.com/FerretDB/FerretDB/issues/2612
 
 			_, err := db.Collection(params.Collection).Insert(ctx, &backends.InsertParams{
-				Docs: must.NotFail(types.NewArray(doc)),
+				Iter: must.NotFail(types.NewArray(doc)).Iterator(),
 			})
 			if err != nil {
 				return 0, 0, nil, err
@@ -157,7 +160,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 		for _, doc := range resDocs {
 			changed, err := common.UpdateDocument("update", doc, u.Update)
 			if err != nil {
-				return 0, 0, nil, err
+				return 0, 0, nil, lazyerrors.Error(err)
 			}
 
 			if !changed {
@@ -168,12 +171,12 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 				Collection(params.Collection).
 				Update(ctx, &backends.UpdateParams{Docs: must.NotFail(types.NewArray(doc))})
 			if err != nil {
-				return 0, 0, nil, err
+				return 0, 0, nil, lazyerrors.Error(err)
 			}
 
 			modified += int32(updateRes.Updated)
 		}
 	}
 
-	return matched, modified, upserted, nil
+	return matched, modified, &upserted, nil
 }

@@ -902,11 +902,11 @@ func newUpdateError(code commonerrors.ErrorCode, msg, command string) error {
 // validateOperatorKeys returns error if any key contains empty path or
 // the same path prefix exists in other key or other document.
 func validateOperatorKeys(command string, docs ...*types.Document) error {
-	seen := map[string]struct{}{}
+	var visitedPaths []types.Path
 
 	for _, doc := range docs {
 		for _, key := range doc.Keys() {
-			path, err := types.NewPathFromString(key)
+			nextPath, err := types.NewPathFromString(key)
 			if err != nil {
 				return newUpdateError(
 					commonerrors.ErrEmptyName,
@@ -918,17 +918,27 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 				)
 			}
 
-			if _, ok := seen[path.Prefix()]; ok {
-				return newUpdateError(
-					commonerrors.ErrConflictingUpdateOperators,
-					fmt.Sprintf(
-						"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
-					),
-					command,
-				)
+			err = types.IsConflictPath(visitedPaths, nextPath)
+			var pathErr *types.DocumentPathError
+
+			if errors.As(err, &pathErr) {
+				if pathErr.Code() == types.ErrDocumentPathConflictOverwrite ||
+					pathErr.Code() == types.ErrDocumentPathConflictCollision {
+					return newUpdateError(
+						commonerrors.ErrConflictingUpdateOperators,
+						fmt.Sprintf(
+							"Updating the path '%[1]s' would create a conflict at '%[1]s'", key,
+						),
+						command,
+					)
+				}
 			}
 
-			seen[path.Prefix()] = struct{}{}
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			visitedPaths = append(visitedPaths, nextPath)
 		}
 	}
 

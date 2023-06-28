@@ -44,12 +44,13 @@ Finally, you will also need [git-lfs](https://git-lfs.github.com) installed and 
 Fork the [FerretDB repository on GitHub](https://github.com/FerretDB/FerretDB/fork).
 To have all the tags in the repository and what they point to, copy all branches by removing checkmark for `copy the main branch only` before forking.
 
-After forking FerretDB on GitHub, you can clone the repository:
+After forking FerretDB on GitHub, you can clone the repository and add upstream repository as a remote:
 
 ```sh
 git clone git@github.com:<YOUR_GITHUB_USERNAME>/FerretDB.git
 cd FerretDB
 git remote add upstream https://github.com/FerretDB/FerretDB.git
+git fetch --all --tags
 ```
 
 To run development commands, you should first install the [`task`](https://taskfile.dev/) tool.
@@ -62,13 +63,14 @@ You can also [install `task` globally](https://taskfile.dev/#/installation),
 but that might lead to the version skew.
 
 With `task` installed,
-you should install development tools with `task init`
+you can see all available tasks by running `task -l` in the root of the repository
+(not in the `tools` directory).
+
+After that, you should install development tools with `task init`
 and download required Docker images with `task env-pull`.
 
 If something does not work correctly,
 you can reset the environment with `task env-reset`.
-
-You can see all available `task` tasks with `task -l`.
 
 ### Building a production release binary
 
@@ -167,6 +169,9 @@ If tests fail and the output is too confusing, try running them sequentially by 
 
 You can also run `task -C 1` to limit the number of concurrent tasks, which is useful for debugging.
 
+To run a single test case, you may use Task variable `TEST_RUN`.
+For example, to run a single test case for in-process FerretDB with `pg` handler you may use `task test-integration-pg TEST_RUN=TestName/TestCaseName`.
+
 Finally, since all tests just run `go test` with various arguments and flags under the hood,
 you may also use all standard `go` tool facilities,
 including [`GOFLAGS` environment variable](https://pkg.go.dev/cmd/go#hdr-Environment_variables).
@@ -174,7 +179,7 @@ For example:
 
 - to run a single test case for in-process FerretDB with `pg` handler
   with all subtests running sequentially,
-  you may use `env GOFLAGS='-run=TestName/TestCaseName -parallel=1' task test-integration-pg`;
+  you may use `env GOFLAGS='-parallel=1' task test-integration-pg TEST_RUN=TestName/TestCaseName`;
 - to run all tests for in-process FerretDB with `tigris` handler
   with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
   you may use `env GOFLAGS='-trace=trace.out' task test-integration-tigris`.
@@ -217,6 +222,18 @@ Some of our idiosyncrasies:
    It may seem random, but it is only pseudo-random and follows BSON spec: <https://bsonspec.org/spec.html>
 2. We generally pass and return `struct`s by pointers.
    There are some exceptions like `types.Path` that has value semantics, but when in doubt – use pointers.
+3. Code comments:
+   - All top-level declarations, even unexported, should have documentation comments.
+   - In documentation comments do not describe the name in terms of the name itself (`// Registry is a registry of …`).
+     Use other words instead; often, they could add additional information and make reading more pleasant (`// Registry stores …`).
+   - In code comments, in general, do not describe _what_ the code does: it should be clear from the code itself
+     (and when it doesn't and the code is tricky, simplify it instead).
+     Instead, describe _why_ the code does that if it is not clear from the surrounding context, names, etc.
+     There is no need to add comments just because there are no comments if everything is already clear without them.
+   - For code comments, write either
+     sentence fragments (do not start it with a capital letter, do not end it with a dot, use the simplified grammar) for short notes
+     or full sentences (do start them with capital letters, do end them with dots, do check their grammar) when a longer (2+ sentences)
+     explanation is needed (and the code could not be simplified).
 
 #### Integration tests conventions
 
@@ -230,6 +247,29 @@ The bar for using other ways of branching, such as checking error codes and mess
 Writing separate tests might be much better than making a single test that checks error text.
 
 Also, we should use driver methods as much as possible instead of testing commands directly via `RunCommand`.
+
+#### Integration tests naming guidelines
+
+1. Test names should include the name of the command being tested.
+   For instance, `TestDistinct` for testing the distinct command.
+2. Compatibility tests should have `Compat` in the name, following the command.
+   For example, `TestDistinctCompat`.
+3. If the test doesn't use driver method but runs a command directly via `RunCommand`,
+   the suffix `Command` should be added.
+   For example, `TestDistinctCommand`.
+4. If the test is both compat and runs a command, the suffix `CommandCompat` should be added.
+   For example, `TestInsertCommandCompat`.
+5. If the file consists of compatibility tests, add the `_compat` suffix.
+   For example, `distinct_compat_test.go`.
+6. Test names should be descriptive and provide information about the functionality or condition being tested.
+   If the test is checking for a specific error scenario, include the error scenario in the name.
+7. Keep test names concise, avoiding overly cryptic names.
+   Use abbreviations when appropriate.
+8. Avoid including test data in the name to maintain clarity and prevent excessively long names.
+9. Test case names should follow `TitleCase` capitalization style.
+   No spaces, dashes or underscores should be used neither for test names nor for test case names.
+10. Keep the concatenation of test name segments (test, subtests, and handler) within 64 characters
+    to satisfy the maximum limit for database names.
 
 ### Submitting code changes
 

@@ -50,11 +50,13 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	if params.MaxTimeMS != 0 {
-		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
-		defer cancel()
+	username, _ := conninfo.Get(ctx).Auth()
 
-		ctx = ctxWithTimeout
+	cancel := func() {}
+	if params.MaxTimeMS != 0 {
+		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
+		// TODO https://github.com/FerretDB/FerretDB/issues/1808
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
 	}
 
 	qp := &pgdb.QueryParams{
@@ -66,6 +68,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	// get comment from query, e.g. db.collection.find({$comment: "test"})
 	if params.Filter != nil {
 		if qp.Comment, err = common.GetOptionalParam(params.Filter, "$comment", qp.Comment); err != nil {
+			cancel()
 			return nil, err
 		}
 	}
@@ -80,10 +83,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	var resDocs []*types.Document
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		if params.BatchSize == 0 {
-			return nil
-		}
-
 		var iter types.DocumentsIterator
 		var queryRes pgdb.QueryResults
 
@@ -122,38 +121,45 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			return lazyerrors.Error(err)
 		}
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/1733
 		resDocs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
 
 		return err
 	})
 
 	if err != nil {
+		cancel()
 		return nil, lazyerrors.Error(err)
 	}
 
-	var cursorID int64
+	iter := iterator.Values(iterator.ForSlice(resDocs))
+	closer := iterator.NewMultiCloser(iter, iterator.CloserFunc(cancel))
 
-	if h.EnableCursors {
-		iter := iterator.Values(iterator.ForSlice(resDocs))
-		c := cursor.New(&cursor.NewParams{
-			Iter:       iter,
-			DB:         params.DB,
-			Collection: params.Collection,
-			BatchSize:  int32(params.BatchSize),
-		})
+	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
+		Iter:       iterator.WithClose(iter, closer.Close),
+		DB:         params.DB,
+		Collection: params.Collection,
+		Username:   username,
+	})
 
-		username, _ := conninfo.Get(ctx).Auth()
-		cursorID = h.registry.StoreCursor(username, c)
+	cursorID := cursor.ID
 
-		resDocs, err = iterator.ConsumeValuesN(iter, int(params.BatchSize))
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	firstBatchDocs, err := iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor), int(params.BatchSize))
+	if err != nil {
+		cursor.Close()
+		return nil, lazyerrors.Error(err)
 	}
 
-	firstBatch := types.MakeArray(len(resDocs))
-	for _, doc := range resDocs {
+	firstBatch := types.MakeArray(len(firstBatchDocs))
+	for _, doc := range firstBatchDocs {
 		firstBatch.Append(doc)
+	}
+
+	if params.SingleBatch || firstBatch.Len() < int(params.BatchSize) {
+		// let the client know that there are no more results
+		cursorID = 0
+
+		cursor.Close()
 	}
 
 	var reply wire.OpMsg

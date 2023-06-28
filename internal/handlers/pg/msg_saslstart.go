@@ -51,7 +51,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		username, password, err = common.SASLStartPlain(doc)
 	default:
 		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
-			"See https://docs.ferretdb.io/security/#authentication for more details."
+			"See https://docs.ferretdb.io/security/authentication/ for more details."
 		err = commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrAuthenticationFailed,
 			msg,
@@ -69,7 +69,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		if errors.As(err, &pgErr) && pgerrcode.IsInvalidAuthorizationSpecification(pgErr.Code) {
 			msg := "FerretDB failed to authenticate you in PostgreSQL:\n" +
 				strings.TrimSpace(pgErr.Error()) + "\n" +
-				"See https://docs.ferretdb.io/security/#authentication for more details."
+				"See https://docs.ferretdb.io/security/authentication/ for more details."
 
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrAuthenticationFailed,
