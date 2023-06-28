@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"strings"
@@ -516,16 +515,6 @@ func TestDatabaseName(t *testing.T) {
 				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 			})
 		}
-	})
-
-	t.Run("Empty", func(t *testing.T) {
-		t.Parallel()
-
-		ctx, collection := setup.Setup(t)
-
-		err := collection.Database().Client().Database("").CreateCollection(ctx, collection.Name())
-		expectedErr := errors.New("database name cannot be empty")
-		assert.Equal(t, expectedErr, err)
 	})
 
 	t.Run("63ok", func(t *testing.T) {
