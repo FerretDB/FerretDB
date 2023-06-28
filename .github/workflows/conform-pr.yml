@@ -76,6 +76,7 @@ jobs:
 
       - name: Setup permissions monitoring
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
+        if: false
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
