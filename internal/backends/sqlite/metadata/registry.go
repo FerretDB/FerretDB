@@ -99,7 +99,7 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*sql
 //
 // Returned boolean value indicates whether the database was dropped.
 func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
-	return r.p.Drop(ctx, dbName)
+	return r.p.Drop(ctx, translateDatabaseName(params.Name))
 }
 
 // CollectionList returns a sorted list of collections in the database.

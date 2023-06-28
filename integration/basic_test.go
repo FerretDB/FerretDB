@@ -471,6 +471,9 @@ func TestDatabaseName(t *testing.T) {
 			"Colon": {
 				db: ":",
 			},
+			"Percentage": {
+				db: "%3F",
+			},
 			"All": {
 				db: "+-*<>=~!@#%^&|`?()[],;:",
 			},
