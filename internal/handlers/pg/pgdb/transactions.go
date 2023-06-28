@@ -68,7 +68,7 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 	err = keepTx.Commit(ctx)
 	if err != nil {
 		err = lazyerrors.Error(err)
-		return
+		_ = keepTx.Rollback(ctx)
 	}
 
 	return

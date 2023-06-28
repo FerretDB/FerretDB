@@ -55,7 +55,7 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	// This is mainly needed for tests. See SQLite/universal handler.
+	// PostgreSQL would block on `DropDatabase` below otherwise
 	for _, c := range h.cursors.All() {
 		if c.DB == db && c.Collection == collection {
 			c.Close()
