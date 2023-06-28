@@ -471,6 +471,9 @@ func TestDatabaseName(t *testing.T) {
 			"Colon": {
 				db: ":",
 			},
+			"All": {
+				db: "+-*<>=~!@#%^&|`?()[],;:",
+			},
 		} {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
