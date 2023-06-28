@@ -88,7 +88,7 @@ func testDeleteCommandCompat(t *testing.T, testCases map[string]deleteCommandCom
 	}
 }
 
-func TestDeleteCompatCommand(t *testing.T) {
+func TestDeleteCommandCompat(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]deleteCommandCompatTestCase{

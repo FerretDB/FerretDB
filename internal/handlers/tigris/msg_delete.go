@@ -80,14 +80,14 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	replyDoc := must.NotFail(types.NewDocument(
-		"n", deleted,
+		"ok", float64(1),
 	))
 
 	if delErrors.Len() > 0 {
 		replyDoc = delErrors.Document()
-	} else {
-		replyDoc.Set("ok", float64(1))
 	}
+
+	replyDoc.Set("n", deleted)
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
