@@ -109,7 +109,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	indexes := map[*types.Document]*pgdb.Index{}
 
-	//	var isUniqueSpecified bool
+	var collCreated bool
 	var numIndexesBefore, numIndexesAfter int32
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		var indexesBefore []pgdb.Index
@@ -212,7 +212,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 			indexes[indexDoc] = index
 
-			err = pgdb.CreateIndexIfNotExists(ctx, tx, db, collection, index)
+			collCreated, err = pgdb.CreateIndexIfNotExists(ctx, tx, db, collection, index)
 			if errors.Is(err, pgdb.ErrIndexKeyAlreadyExist) && index.Name == "_id_1" {
 				// ascending _id index is created by default
 				return nil
@@ -257,7 +257,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	// if isUniqueSpecified {
 	res.Set("numIndexesBefore", numIndexesBefore)
 	res.Set("numIndexesAfter", numIndexesAfter)
-	res.Set("createdCollectionAutomatically", true)
+	res.Set("createdCollectionAutomatically", collCreated)
 	//	}
 
 	res.Set("ok", float64(1))
