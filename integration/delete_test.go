@@ -156,7 +156,7 @@ func TestDeleteNotExistingDatabase(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	expectedRes := bson.D{{"ok", float64(1)}, {"n", int32(0)}}
+	expectedRes := bson.D{{"n", int32(0)}, {"ok", float64(1)}}
 
 	assert.Equal(t, expectedRes, res)
 }
