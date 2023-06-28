@@ -88,7 +88,7 @@ type SetupOpts struct {
 	// Benchmark data provider. If empty, collection is not created.
 	BenchmarkProvider shareddata.BenchmarkProvider
 
-	// ExtraOptions overwrites the options set in MongoDB URI when the same option is set.
+	// ExtraOptions sets the options in MongoDB URI, when the option exists it overwrites that option.
 	ExtraOptions url.Values
 }
 

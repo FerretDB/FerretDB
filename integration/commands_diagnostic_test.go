@@ -407,19 +407,17 @@ func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
 	}
 }
 
-// TestCommandWhatsMyURIConnection tests that a client uses the same connection for
-// all commands run by the client, and different clients use different connection.
-// The port number is used to validate if the same connection is used or not,
-// since unique port number is assigned to each client connection in the test setup.
+// TestCommandWhatsMyURIConnection tests that integration test setup applies
+// minPoolSize, maxPoolSize and maxIdleTimeMS correctly to the driver.
 func TestCommandWhatsMyURIConnection(t *testing.T) {
 	t.Parallel()
 
-	// set minPoolSize and maxPoolSize 1 to ensure only one pool exists duration of the test,
-	// which forces a client to use a single connection pool
+	// single connection is used by the client created from setup
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		ExtraOptions: url.Values{
-			"minPoolSize": []string{"1"},
-			"maxPoolSize": []string{"1"},
+			"minPoolSize":   []string{"1"},
+			"maxPoolSize":   []string{"1"},
+			"maxIdleTimeMS": []string{"0"},
 		},
 	})
 
@@ -458,13 +456,9 @@ func TestCommandWhatsMyURIConnection(t *testing.T) {
 
 		close(ports)
 
-		var allPorts []string
+		firstPort := <-ports
 		for port := range ports {
-			allPorts = append(allPorts, port)
-		}
-
-		for _, port := range allPorts {
-			require.Equal(t, allPorts[0], port, "expected same client uses the same port: %s", allPorts)
+			require.Equal(t, firstPort, port, "expected same client to use the same port")
 		}
 	})
 

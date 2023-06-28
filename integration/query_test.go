@@ -958,12 +958,12 @@ func TestQueryBatchSize(t *testing.T) {
 func TestQueryCommandGetMore(t *testing.T) {
 	t.Parallel()
 
-	// set minPoolSize and maxPoolSize 1 to ensure only one pool exists duration of the test,
-	// which forces a client to use a single connection pool
+	// single connection is used by the client created from setup
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		ExtraOptions: url.Values{
-			"minPoolSize": []string{"1"},
-			"maxPoolSize": []string{"1"},
+			"minPoolSize":   []string{"1"},
+			"maxPoolSize":   []string{"1"},
+			"maxIdleTimeMS": []string{"0"},
 		},
 	})
 
@@ -1225,10 +1225,8 @@ func TestQueryCommandGetMore(t *testing.T) {
 				t.Skip(tc.skip)
 			}
 
-			// Do not run subtests in t.Parallel() to reduce the occurrence
-			// of session error. Even the same connection is used for the test
-			// by setting `minPoolSize` and `maxPoolSize` to 1, on rare occasion
-			// it returns error due to different session calling `find` and `getMore`.
+			// Do not run subtests in t.Parallel() to eliminate the occurrence
+			// of session error.
 			// Supporting session would help us understand fix it
 			// https://github.com/FerretDB/FerretDB/issues/153.
 			//
@@ -1328,28 +1326,27 @@ func TestQueryCommandGetMore(t *testing.T) {
 func TestQueryCommandGetMoreConnection(t *testing.T) {
 	t.Parallel()
 
-	// set minPoolSize and maxPoolSize 1 to ensure only one pool exists duration of the test,
-	// which forces a client to use a single connection pool
+	// single connection is used by the client created from setup
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		ExtraOptions: url.Values{
-			"minPoolSize": []string{"1"},
-			"maxPoolSize": []string{"1"},
+			"minPoolSize":   []string{"1"},
+			"maxPoolSize":   []string{"1"},
+			"maxIdleTimeMS": []string{"0"},
 		},
 	})
 
+	ctx := s.Ctx
 	collection1 := s.Collection
 	databaseName := s.Collection.Database().Name()
 	collectionName := s.Collection.Name()
 
 	docs := generateDocuments(0, 5)
-	_, err := collection1.InsertMany(s.Ctx, docs)
+	_, err := collection1.InsertMany(ctx, docs)
 	require.NoError(t, err)
 
 	t.Run("SameClient", func(t *testing.T) {
-		// Do not run subtests in t.Parallel() to reduce the occurrence
-		// of session error. Even the same connection is used for the test
-		// by setting `minPoolSize` and `maxPoolSize` to 1, on rare occasion
-		// it returns error due to different session calling `find` and `getMore`.
+		// Do not run subtests in t.Parallel() to eliminate the occurrence
+		// of session error.
 		// Supporting session would help us understand fix it
 		// https://github.com/FerretDB/FerretDB/issues/153.
 		//
@@ -1359,11 +1356,13 @@ func TestQueryCommandGetMoreConnection(t *testing.T) {
 		// > in session 774d9ac6-b24a-4fd8-9874-f92ab1c9c8f5 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  -
 
 		var res bson.D
-		err = collection1.Database().RunCommand(s.Ctx,
+		err = collection1.Database().RunCommand(
+			ctx,
 			bson.D{
 				{"find", collection1.Name()},
 				{"batchSize", 2},
-			}).Decode(&res)
+			},
+		).Decode(&res)
 		require.NoError(t, err)
 
 		v, ok := res.Map()["cursor"]
@@ -1375,36 +1374,41 @@ func TestQueryCommandGetMoreConnection(t *testing.T) {
 		cursorID := cursor.Map()["id"]
 		assert.NotNil(t, cursorID)
 
-		err = collection1.Database().RunCommand(s.Ctx, bson.D{
-			{"getMore", cursorID},
-			{"collection", collection1.Name()},
-		}).Decode(&res)
+		err = collection1.Database().RunCommand(
+			ctx,
+			bson.D{
+				{"getMore", cursorID},
+				{"collection", collection1.Name()},
+			},
+		).Decode(&res)
 		require.NoError(t, err)
 	})
 
 	t.Run("DifferentClient", func(t *testing.T) {
-		// error returned from using different clients are session related error,
-		// hence currently FerretDB does not return an error
+		// The error returned from MongoDB is a session error, FerretDB does not
+		// return an error because db, collection and username are the same.
 		setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/153")
 
-		t.Parallel()
+		// Do not run subtest in t.Parallel() to avoid breaking when another subtest is added.
 
 		u, err := url.Parse(s.MongoDBURI)
 		require.NoError(t, err)
 
-		client2, err := mongo.Connect(s.Ctx, options.Client().ApplyURI(u.String()))
+		client2, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
 		require.NoError(t, err)
 
-		defer client2.Disconnect(s.Ctx)
+		defer client2.Disconnect(ctx)
 
 		collection2 := client2.Database(databaseName).Collection(collectionName)
 
 		var res bson.D
-		err = collection1.Database().RunCommand(s.Ctx,
+		err = collection1.Database().RunCommand(
+			ctx,
 			bson.D{
 				{"find", collection1.Name()},
 				{"batchSize", 2},
-			}).Decode(&res)
+			},
+		).Decode(&res)
 		require.NoError(t, err)
 
 		v, ok := res.Map()["cursor"]
@@ -1416,10 +1420,13 @@ func TestQueryCommandGetMoreConnection(t *testing.T) {
 		cursorID := cursor.Map()["id"]
 		assert.NotNil(t, cursorID)
 
-		err = collection2.Database().RunCommand(s.Ctx, bson.D{
-			{"getMore", cursorID},
-			{"collection", collection2.Name()},
-		}).Decode(&res)
+		err = collection2.Database().RunCommand(
+			ctx,
+			bson.D{
+				{"getMore", cursorID},
+				{"collection", collection2.Name()},
+			},
+		).Decode(&res)
 
 		// use AssertMatchesCommandError because message cannot be compared as it contains session ID
 		AssertMatchesCommandError(
