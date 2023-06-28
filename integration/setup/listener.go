@@ -17,7 +17,6 @@ package setup
 import (
 	"context"
 	"errors"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -66,7 +65,7 @@ func unixSocketPath(tb testing.TB) string {
 
 // setupListener starts in-process FerretDB server that runs until ctx is canceled.
 // It returns client and MongoDB URI of that listener.
-func setupListener(tb testing.TB, ctx context.Context, extraOpts url.Values, logger *zap.Logger) (*mongo.Client, string) {
+func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mongo.Client, string) {
 	tb.Helper()
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
@@ -197,10 +196,7 @@ func setupListener(tb testing.TB, ctx context.Context, extraOpts url.Values, log
 		<-runDone
 	})
 
-	clientOpts := mongoDBURIOpts{
-		maxPoolSize: extraOpts.Get("maxPoolSize"),
-		minPoolSize: extraOpts.Get("minPoolSize"),
-	}
+	var clientOpts mongoDBURIOpts
 
 	switch {
 	case *targetTLSF:

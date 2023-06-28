@@ -137,16 +137,29 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	logger := testutil.LevelLogger(tb, level)
 
 	var client *mongo.Client
-	var uri string
+	uri := *targetURLF
 
 	if *targetURLF == "" {
-		client, uri = setupListener(tb, setupCtx, opts.ExtraOptions, logger)
-	} else {
-		uri = mongoDBURI(tb, &mongoDBURIOpts{
-			baseURI:     *targetURLF,
-			maxPoolSize: opts.ExtraOptions.Get("maxPoolSize"),
-			minPoolSize: opts.ExtraOptions.Get("minPoolSize"),
-		})
+		client, uri = setupListener(tb, setupCtx, logger)
+	}
+
+	if opts.ExtraOptions != nil || *targetURLF != "" {
+		u, err := url.Parse(uri)
+		require.NoError(tb, err)
+
+		q := u.Query()
+		for k, vs := range opts.ExtraOptions {
+			for _, v := range vs {
+				q.Set(k, v)
+			}
+		}
+
+		u.RawQuery = q.Encode()
+		uri = u.String()
+
+		// If ExtraOptions is set for in-process FerretDB, two clients are created.
+		// setupListener creates a client to check in-process FerretDB,
+		// and this client used for tests with extra options.
 		client = setupClient(tb, setupCtx, uri)
 	}
 
