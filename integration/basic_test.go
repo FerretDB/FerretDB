@@ -462,8 +462,14 @@ func TestDatabaseName(t *testing.T) {
 			"Asterix": {
 				db: "*",
 			},
-			"Aaaa": {
-				db: "aaaaa",
+			"Pipe": {
+				db: "|",
+			},
+			"Arrows": {
+				db: "<>><>",
+			},
+			"Colon": {
+				db: ":",
 			},
 		} {
 			name, tc := name, tc
