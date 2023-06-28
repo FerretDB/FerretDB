@@ -71,8 +71,7 @@ func (r *Registry) Close() {
 }
 
 // collectionToTable converts FerretDB collection name to SQLite table name.
-// It returns ErrInvalidCollectionName error if the name is incorrect for SQLite backend.
-func collectionToTable(collectionName string) (string, error) {
+func collectionToTable(collectionName string) string {
 	hash32 := fnv.New32a()
 	must.NotFail(hash32.Write([]byte(collectionName)))
 
@@ -85,7 +84,7 @@ func collectionToTable(collectionName string) (string, error) {
 		tableName = "_" + tableName
 	}
 
-	return tableName, nil
+	return tableName
 }
 
 // DatabaseList returns a sorted list of existing databases.
@@ -169,10 +168,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 		return false, lazyerrors.Error(err)
 	}
 
-	tableName, err := collectionToTable(collectionName)
-	if err != nil {
-		return false, err
-	}
+	tableName := collectionToTable(collectionName)
 
 	// TODO use transactions
 	// https://github.com/FerretDB/FerretDB/issues/2747
