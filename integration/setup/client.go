@@ -31,15 +31,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
-// mongoDBURIOpts represents mongoDBURI's options.
-type mongoDBURIOpts struct {
+// buildURIForInProcessFerretDBOpts represents buildURIForInProcessFerretDB's options.
+type buildURIForInProcessFerretDBOpts struct {
 	hostPort       string // for TCP and TLS
 	unixSocketPath string
 	tlsAndAuth     bool
 }
 
-// mongoDBURI builds MongoDB URI with given options.
-func mongoDBURI(tb testing.TB, opts *mongoDBURIOpts) string {
+// buildURIForInProcessFerretDB is used to construct URI from options obtained from in-process FerretDB.
+func buildURIForInProcessFerretDB(tb testing.TB, opts *buildURIForInProcessFerretDBOpts) string {
 	tb.Helper()
 
 	var host string

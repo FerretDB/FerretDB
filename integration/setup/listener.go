@@ -196,21 +196,21 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) (*mon
 		<-runDone
 	})
 
-	var clientOpts mongoDBURIOpts
+	var opts buildURIForInProcessFerretDBOpts
 
 	switch {
 	case *targetTLSF:
-		clientOpts.hostPort = l.TLSAddr().String()
-		clientOpts.tlsAndAuth = true
+		opts.hostPort = l.TLSAddr().String()
+		opts.tlsAndAuth = true
 	case *targetUnixSocketF:
-		clientOpts.unixSocketPath = l.UnixAddr().String()
+		opts.unixSocketPath = l.UnixAddr().String()
 	default:
-		clientOpts.hostPort = l.TCPAddr().String()
+		opts.hostPort = l.TCPAddr().String()
 	}
 
 	// those will fail the test if in-process FerretDB is not working;
 	// for example, when backend is down
-	uri := mongoDBURI(tb, &clientOpts)
+	uri := buildURIForInProcessFerretDB(tb, &opts)
 	client := setupClient(tb, ctx, uri)
 
 	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
