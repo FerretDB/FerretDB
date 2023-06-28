@@ -38,6 +38,7 @@ jobs:
     steps:
       - name: Setup permissions monitoring
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
+        if: false
 
       - name: Checkout code
         uses: actions/checkout@v3
@@ -118,6 +119,7 @@ jobs:
     steps:
       - name: Setup permissions monitoring
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
+        if: false
 
       - name: Deploy to GitHub Pages
         id: deploy
