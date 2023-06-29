@@ -32,13 +32,13 @@ import (
 
 // aggregateStagesCompatTestCase describes aggregation stages compatibility test case.
 type aggregateStagesCompatTestCase struct {
-	pipeline       bson.A         // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
-	maxTime        *time.Duration // optional, leave nil for unset maxTime
-	resultPushdown bool           // defaults to false
+	pipeline bson.A         // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
+	maxTime  *time.Duration // optional, leave nil for unset maxTime
 
-	resultType    compatTestCaseResultType // defaults to nonEmptyResult
-	skip          string                   // skip test for all handlers, must have issue number mentioned
-	skipForTigris string                   // skip test for Tigris handler, must have issue number mentioned
+	resultType     compatTestCaseResultType // defaults to nonEmptyResult
+	resultPushdown bool                     // defaults to false
+	skip           string                   // skip test for all handlers, must have issue number mentioned
+	skipForTigris  string                   // skip test for Tigris handler, must have issue number mentioned
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -284,11 +284,11 @@ func TestAggregateCommandCompat(t *testing.T) {
 	testAggregateCommandCompat(t, testCases)
 }
 
-func TestAggregateCompat(t *testing.T) {
+func TestAggregateCompatOptions(t *testing.T) {
 	t.Parallel()
 
 	providers := []shareddata.Provider{
-		// one provider is sufficient to test aggregate options.
+		// one provider is sufficient to test aggregate options
 		shareddata.Unsets,
 	}
 

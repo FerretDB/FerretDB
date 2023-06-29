@@ -93,7 +93,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	maxTimeMS, err := commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "maxTimeMS", v, 0)
 	if err != nil {
-		// unreachable because MongoDB driver validates maxTimeMS parameter
+		// unreachable for MongoDB GO driver, it validates maxTimeMS parameter
 		return nil, err
 	}
 
