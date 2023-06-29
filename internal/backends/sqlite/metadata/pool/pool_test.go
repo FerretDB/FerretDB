@@ -15,6 +15,7 @@
 package pool
 
 import (
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -25,7 +26,10 @@ import (
 func TestCreateDrop(t *testing.T) {
 	ctx := testutil.Ctx(t)
 
-	p, err := New(t.TempDir(), testutil.Logger(t))
+	url, err := url.Parse("file:" + t.TempDir())
+	require.NoError(t, err)
+
+	p, err := New(url, testutil.Logger(t))
 	require.NoError(t, err)
 
 	defer p.Close()
