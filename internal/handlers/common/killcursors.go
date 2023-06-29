@@ -18,12 +18,23 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // KillCursors is a part of common implementation of the killCursors command.
 func KillCursors(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*wire.OpMsg, error) {
-	return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNotImplemented, must.NotFail(msg.Document()).Command())
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"cursorsKilled", types.MakeArray(0),
+			"cursorsNotFound", types.MakeArray(0),
+			"cursorsAlive", types.MakeArray(0),
+			"cursorsUnknown", types.MakeArray(0),
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }

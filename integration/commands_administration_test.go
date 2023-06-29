@@ -1164,9 +1164,25 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 
 	ctx, collection := setup.Setup(t, shareddata.Strings)
 
-	err := collection.Database().RunCommand(ctx, bson.D{
-		{"killCursors", collection.Name()},
-		{"cursors", bson.A{}},
-	}).Err()
-	require.NoError(t, err)
+	type killCursorsResult struct {
+		CursorsKilled   []int
+		CursorsNotFound []int
+		CursorsAlive    []int
+		CursorsUnknown  []int
+	}
+
+	t.Run("Empty", func(t *testing.T) {
+		t.Parallel()
+
+		var res killCursorsResult
+		err := collection.Database().RunCommand(ctx, bson.D{
+			{"killCursors", collection.Name()},
+			{"cursors", bson.A{}},
+		}).Decode(&res)
+		require.NoError(t, err)
+		assert.Empty(t, res.CursorsKilled)
+		assert.Empty(t, res.CursorsNotFound)
+		assert.Empty(t, res.CursorsAlive)
+		assert.Empty(t, res.CursorsUnknown)
+	})
 }
