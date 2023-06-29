@@ -94,6 +94,7 @@ func validateParams(params *NewBackendParams) (*url.URL, error) {
 	if !fi.IsDir() {
 		return nil, lazyerrors.Errorf("%q should be an existing directory", params.URI)
 	}
+
 	return uri, nil
 }
 

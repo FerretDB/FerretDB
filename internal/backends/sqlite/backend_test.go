@@ -109,12 +109,19 @@ func TestNewBackend(t *testing.T) {
 			},
 			errRegex: `.*"file:./nodir/" should be an existing directory: stat ./nodir/: no such file or directory`,
 		},
-		"FileInsteadOfDirectory": {
+		"PathIsNotEndsWithSlash": {
 			params: &NewBackendParams{
 				URI: "file:./tmp/file",
 				L:   zap.NewNop(),
 			},
 			errRegex: `.*backend URI should be a directory: "file:./tmp/file"`,
+		},
+		"FileInsteadOfDirectory": {
+			params: &NewBackendParams{
+				URI: "file:./tmp/file/",
+				L:   zap.NewNop(),
+			},
+			errRegex: `.*file:./tmp/file/" should be an existing directory: stat ./tmp/file/: not a directory`,
 		},
 		"MalformedURI": {
 			params: &NewBackendParams{
