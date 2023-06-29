@@ -41,9 +41,30 @@ type NewBackendParams struct {
 
 // NewBackend creates a new SQLite backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
+	uri, err := validateParams(params)
+	if err != nil {
+		return nil, err
+	}
+
+	r, err := metadata.NewRegistry(uri.Path, params.L.Named("metadata"))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return backends.BackendContract(&backend{
+		r:   r,
+		uri: uri,
+	}), nil
+}
+
+func validateParams(params *NewBackendParams) (*url.URL, error) {
 	uri, err := url.Parse(params.URI)
 	if err != nil {
 		return nil, lazyerrors.Errorf("failed to parse backend URI: %w", err)
+	}
+
+	if uri.User != nil {
+		return nil, lazyerrors.Errorf("backend URI should not contain user: %q", params.URI)
 	}
 
 	if uri.Host != "" {
@@ -64,16 +85,7 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 	if !fi.IsDir() {
 		return nil, lazyerrors.Errorf("%q should be an existing directory", params.URI)
 	}
-
-	r, err := metadata.NewRegistry(uri.Path, params.L.Named("metadata"))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return backends.BackendContract(&backend{
-		r:   r,
-		uri: uri,
-	}), nil
+	return uri, nil
 }
 
 // Close implements backends.Backend interface.

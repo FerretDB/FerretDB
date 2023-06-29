@@ -16,16 +16,25 @@ package sqlite
 
 import (
 	"net/url"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-
-	"github.com/FerretDB/FerretDB/internal/backends"
 )
 
 func TestNewBackend(t *testing.T) {
 	t.Parallel()
+
+	err := os.MkdirAll("tmp/dir", os.ModePerm)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := os.Remove("tmp/dir")
+		require.NoError(t, err)
+		err = os.Remove("tmp")
+		require.NoError(t, err)
+	})
 
 	testCases := map[string]struct {
 		params *NewBackendParams
@@ -38,14 +47,20 @@ func TestNewBackend(t *testing.T) {
 				URI: "file:./",
 				L:   zap.NewNop(),
 			},
-			uri: &url.URL{},
+			uri: &url.URL{
+				Scheme: "file",
+				Opaque: "./",
+			},
 		},
 		"LocalSubDirectory": {
 			params: &NewBackendParams{
 				URI: "file:./tmp/",
 				L:   zap.NewNop(),
 			},
-			uri: &url.URL{},
+			uri: &url.URL{
+				Scheme: "file",
+				Opaque: "./tmp/",
+			},
 		},
 		"LocalSubDirectoryWithParameters": {
 			params: &NewBackendParams{
@@ -60,16 +75,16 @@ func TestNewBackend(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			contract, err := NewBackend(tc.params)
+			uri, err := validateParams(tc.params)
 			if err != nil {
+				t.Log(err)
+
 				require.Equal(t, err, tc.err)
 				return
 			}
 			require.NoError(t, err)
 
-			b := contract.(*)
-
-			require.Equal(t, b.uri, tc.uri)
+			require.Equal(t, uri, tc.uri)
 		})
 	}
 }
