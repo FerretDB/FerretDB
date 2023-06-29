@@ -118,10 +118,7 @@ func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator, c
 		panic("collStatsStage: Process: expected 1 document, got more")
 	}
 
-	iter = iterator.Values(iterator.ForSlice([]*types.Document{res}))
-	closer.Add(iter)
-
-	return iter, nil
+	return iterator.Values(iterator.ForSlice([]*types.Document{res}), closer), nil
 }
 
 // Type implements Stage interface.

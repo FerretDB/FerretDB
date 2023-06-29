@@ -133,7 +133,7 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 	for _, groupedDocument := range groupedDocuments {
 		doc := must.NotFail(types.NewDocument("_id", groupedDocument.groupID))
 
-		groupIter := iterator.Values(iterator.ForSlice(groupedDocument.documents))
+		groupIter := iterator.Values(iterator.ForSlice(groupedDocument.documents), closer)
 		defer groupIter.Close()
 
 		for _, accumulation := range g.groupBy {
@@ -157,10 +157,7 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 		res = append(res, doc)
 	}
 
-	iter = iterator.Values(iterator.ForSlice(res))
-	closer.Add(iter)
-
-	return iter, nil
+	return iterator.Values(iterator.ForSlice(res), closer), nil
 }
 
 // groupDocuments groups documents by group expression.

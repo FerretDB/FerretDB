@@ -154,10 +154,7 @@ func (u *unwind) Process(ctx context.Context, iter types.DocumentsIterator, clos
 		}
 	}
 
-	iter = iterator.Values(iterator.ForSlice(out))
-	closer.Add(iter)
-
-	return iter, nil
+	return iterator.Values(iterator.ForSlice(out), closer), nil
 }
 
 // Type implements Stage interface.

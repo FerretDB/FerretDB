@@ -27,7 +27,7 @@ func TestSliceValues(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, expected, actual)
 
-	actual, err = ConsumeValues(Values(ForSlice(expected)))
+	actual, err = ConsumeValues(Values(ForSlice(expected), NewMultiCloser()))
 	require.NoError(t, err)
 	assert.Equal(t, expected, actual)
 }
