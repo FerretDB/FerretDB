@@ -42,7 +42,7 @@ type NewBackendParams struct {
 
 // NewBackend creates a new SQLite backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	uri, err := validateParams(params)
+	uri, err := validateURI(params)
 	if err != nil {
 		return nil, err
 	}
@@ -58,22 +58,26 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 	}), nil
 }
 
-func validateParams(params *NewBackendParams) (*url.URL, error) {
-	uri, err := url.Parse(params.URI)
+// validateURI checks given URI value and returns parsed URI.
+// URI should contain 'file' scheme and point to an existing directory.
+// Path should end with '/'. Authority should be empty.
+// If URI contains local path it would be set to Path.
+func validateURI(value string) (*url.URL, error) {
+	uri, err := url.Parse(value)
 	if err != nil {
 		return nil, lazyerrors.Errorf("failed to parse backend URI: %w", err)
 	}
 
 	if uri.Scheme != "file" {
-		return nil, lazyerrors.Errorf("backend URI should have file scheme: %q", params.URI)
+		return nil, lazyerrors.Errorf("backend URI should have file scheme: %q", value)
 	}
 
 	if uri.User != nil {
-		return nil, lazyerrors.Errorf("backend URI should not contain user: %q", params.URI)
+		return nil, lazyerrors.Errorf("backend URI should not contain user: %q", value)
 	}
 
 	if uri.Host != "" {
-		return nil, lazyerrors.Errorf("backend URI should not contain host: %q", params.URI)
+		return nil, lazyerrors.Errorf("backend URI should not contain host: %q", value)
 	}
 
 	dir := uri.Path
@@ -83,16 +87,16 @@ func validateParams(params *NewBackendParams) (*url.URL, error) {
 	}
 
 	if !strings.HasSuffix(dir, "/") {
-		return nil, lazyerrors.Errorf("backend URI should be a directory: %q", params.URI)
+		return nil, lazyerrors.Errorf("backend URI should be a directory: %q", value)
 	}
 
 	fi, err := os.Stat(dir)
 	if err != nil {
-		return nil, lazyerrors.Errorf("%q should be an existing directory: %w", params.URI, err)
+		return nil, lazyerrors.Errorf("%q should be an existing directory: %w", value, err)
 	}
 
 	if !fi.IsDir() {
-		return nil, lazyerrors.Errorf("%q should be an existing directory", params.URI)
+		return nil, lazyerrors.Errorf("%q should be an existing directory", value)
 	}
 
 	uri.Path = dir

@@ -179,7 +179,7 @@ func TestNewBackend(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			uri, err := validateParams(tc.params)
+			uri, err := validateURI(tc.params)
 			if tc.errRegex != "" {
 				t.Log(err)
 
