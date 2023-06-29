@@ -155,7 +155,6 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]string,
 //
 // Returned boolean value indicates whether the collection was created.
 // If collection already exists, (false, nil) is returned.
-// If collection name doesn't pass backend level validation it returns ErrInvalidCollectionName.
 func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collectionName string) (bool, error) {
 	db, err := r.DatabaseGetOrCreate(ctx, dbName)
 	if err != nil {
