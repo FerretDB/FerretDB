@@ -56,6 +56,8 @@ func FuncCall(ctx context.Context) func() {
 	}
 	resource.Track(fc, fc.token)
 
+	// TODO add pprof labels
+
 	if trace.IsEnabled() {
 		pc := make([]uintptr, 1)
 		runtime.Callers(1, pc)
