@@ -14,7 +14,11 @@
 
 package connmetrics
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
 
 const (
 	namespace = "ferretdb"
@@ -23,22 +27,14 @@ const (
 
 // ListenerMetrics represents listener metrics.
 type ListenerMetrics struct {
-	ConnectedClients prometheus.Gauge
-	Accepts          *prometheus.CounterVec
-	ConnMetrics      *ConnMetrics
+	Accepts     *prometheus.CounterVec
+	Durations   *prometheus.HistogramVec
+	ConnMetrics *ConnMetrics
 }
 
 // NewListenerMetrics creates new listener metrics.
 func NewListenerMetrics() *ListenerMetrics {
 	return &ListenerMetrics{
-		ConnectedClients: prometheus.NewGauge(
-			prometheus.GaugeOpts{
-				Namespace: namespace,
-				Subsystem: subsystem,
-				Name:      "connected",
-				Help:      "The current number of connected clients.",
-			},
-		),
 		Accepts: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: namespace,
@@ -48,21 +44,41 @@ func NewListenerMetrics() *ListenerMetrics {
 			},
 			[]string{"error"},
 		),
+		Durations: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Namespace: namespace,
+				Subsystem: subsystem,
+				Name:      "duration_seconds",
+				Help:      "Client connection lifetime in seconds.",
+				Buckets: []float64{
+					1,
+					5,
+					10,
+					30,
+					(1 * time.Minute).Seconds(),
+					(5 * time.Minute).Seconds(),
+					(10 * time.Minute).Seconds(),
+					(30 * time.Minute).Seconds(),
+				},
+			},
+			[]string{"error"},
+		),
+
 		ConnMetrics: newConnMetrics(),
 	}
 }
 
 // Describe implements prometheus.Collector.
 func (lm *ListenerMetrics) Describe(ch chan<- *prometheus.Desc) {
-	lm.ConnectedClients.Describe(ch)
 	lm.Accepts.Describe(ch)
+	lm.Durations.Describe(ch)
 	lm.ConnMetrics.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (lm *ListenerMetrics) Collect(ch chan<- prometheus.Metric) {
-	lm.ConnectedClients.Collect(ch)
 	lm.Accepts.Collect(ch)
+	lm.Durations.Collect(ch)
 	lm.ConnMetrics.Collect(ch)
 }
 
