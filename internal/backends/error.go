@@ -32,7 +32,6 @@ const (
 	_ ErrorCode = iota
 
 	ErrorCodeDatabaseDoesNotExist
-	ErrorCodeDatabaseNameIsInvalid
 
 	ErrorCodeCollectionDoesNotExist
 	ErrorCodeCollectionAlreadyExists
