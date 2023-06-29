@@ -52,13 +52,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	username, _ := conninfo.Get(ctx).Auth()
 
-	cancel := func() {}
-	if params.MaxTimeMS != 0 {
-		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
-		// TODO https://github.com/FerretDB/FerretDB/issues/1808
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
-	}
-
 	qp := &pgdb.QueryParams{
 		DB:         params.DB,
 		Collection: params.Collection,
@@ -68,7 +61,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	// get comment from query, e.g. db.collection.find({$comment: "test"})
 	if params.Filter != nil {
 		if qp.Comment, err = common.GetOptionalParam(params.Filter, "$comment", qp.Comment); err != nil {
-			cancel()
 			return nil, err
 		}
 	}
@@ -81,18 +73,28 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		qp.Sort = params.Sort
 	}
 
-	var resDocs []*types.Document
-	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		var iter types.DocumentsIterator
-		var queryRes pgdb.QueryResults
+	cancel := func() {}
+	if params.MaxTimeMS != 0 {
+		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
+		// TODO https://github.com/FerretDB/FerretDB/issues/1808
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
+	}
 
+	// closer accumulates all things that should be closed / canceled.
+	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
+
+	var keepTx pgx.Tx
+	var iter types.DocumentsIterator
+	err = dbPool.InTransactionKeep(ctx, func(tx pgx.Tx) error {
+		keepTx = tx
+
+		var queryRes pgdb.QueryResults
 		iter, queryRes, err = pgdb.QueryDocuments(ctx, tx, qp)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		closer := iterator.NewMultiCloser(iter)
-		defer closer.Close()
+		closer.Add(iter)
 
 		iter = common.FilterIterator(iter, closer, params.Filter)
 
@@ -121,22 +123,23 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			return lazyerrors.Error(err)
 		}
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/1733
-		resDocs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
-
-		return err
+		return nil
 	})
 
 	if err != nil {
-		cancel()
+		closer.Close()
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter := iterator.Values(iterator.ForSlice(resDocs))
-	closer := iterator.NewMultiCloser(iter, iterator.CloserFunc(cancel))
+	closer.Add(iterator.CloserFunc(func() {
+		// It does not matter if we commit or rollback the read transaction,
+		// but we should close it.
+		// ctx could be cancelled already.
+		_ = keepTx.Rollback(context.Background())
+	}))
 
 	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
-		Iter:       iterator.WithClose(iter, closer.Close),
+		Iter:       iterator.WithClose(iterator.Interface[struct{}, *types.Document](iter), closer.Close),
 		DB:         params.DB,
 		Collection: params.Collection,
 		Username:   username,
