@@ -112,23 +112,6 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 			unique:         bson.D{},
 			resultType:     emptyResult,
 		},
-
-		// FIXME ! Separate cases, handle in a separate test, check fields
-		// The following test cases check that the response contains the response fields
-		// such as numIndexBefore, numIndexAfter, createdCollectionAutomatically
-		// contain the correct values.
-		"AdditionalFieldsNewCollection": {
-			collectionName: "new",
-			key:            bson.D{{"v", 1}},
-			indexName:      "v_1",
-			unique:         false,
-		},
-		"AdditionalFieldsExistingCollection": {
-			collectionName: "", // FIXME !
-			key:            bson.D{{"v", 1}},
-			indexName:      "v_1",
-			unique:         false,
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -214,6 +197,97 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 			assert.Equal(t, compatSpec, targetSpec)
 		})
 	}
+}
+
+// TestCreateIndexesCommandCompatCheckFields check that the response contains response's fields
+// such as numIndexBefore, numIndexAfter, createdCollectionAutomatically
+// contain the correct values.
+func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
+	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
+
+	t.Parallel()
+
+	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+	targetCollection := targetCollections[0]
+	compatCollection := compatCollections[0]
+
+	t.Run("createdCollectionAutomatically", func(t *testing.T) {
+		t.Helper()
+		t.Parallel()
+
+		// Create an index for a non-existent collection, expect createdCollectionAutomatically to be true
+		collectionName := "newCollection"
+		indexesDoc := bson.D{{"key", bson.D{{"v", 1}}}, {"name", "v_1"}}
+
+		var targetRes bson.D
+		targetErr := targetCollection.Database().RunCommand(
+			ctx, bson.D{
+				{"createIndexes", collectionName},
+				{"indexes", bson.A{indexesDoc}},
+			},
+		).Decode(&targetRes)
+
+		var compatRes bson.D
+		compatErr := compatCollection.Database().RunCommand(
+			ctx, bson.D{
+				{"createIndexes", collectionName},
+				{"indexes", bson.A{indexesDoc}},
+			},
+		).Decode(&compatRes)
+
+		require.NoError(t, compatErr)
+		require.NoError(t, targetErr, "target error; compat returned no error")
+
+		assert.Equal(t, true, compatRes.Map()["createdCollectionAutomatically"])
+		assert.Equal(t, compatRes, targetRes)
+
+		// Now this collection exist, so we create another index and expect createdCollectionAutomatically to be false
+		indexesDoc = bson.D{{"key", bson.D{{"foo", 1}}}, {"name", "foo_1"}}
+
+		targetErr = targetCollection.Database().RunCommand(
+			ctx, bson.D{
+				{"createIndexes", collectionName},
+				{"indexes", bson.A{indexesDoc}},
+			},
+		).Decode(&targetRes)
+
+		compatErr = compatCollection.Database().RunCommand(
+			ctx, bson.D{
+				{"createIndexes", collectionName},
+				{"indexes", bson.A{indexesDoc}},
+			},
+		).Decode(&compatRes)
+
+		require.NoError(t, compatErr)
+		require.NoError(t, targetErr, "target error; compat returned no error")
+
+		assert.Equal(t, false, compatRes.Map()["createdCollectionAutomatically"])
+		assert.Equal(t, compatRes, targetRes)
+
+		// Call index creation for the index that already exists, expect note to be set
+		indexesDoc = bson.D{{"key", bson.D{{"foo", 1}}}, {"name", "foo_1"}}
+
+		targetErr = targetCollection.Database().RunCommand(
+			ctx, bson.D{
+				{"createIndexes", collectionName},
+				{"indexes", bson.A{indexesDoc}},
+			},
+		).Decode(&targetRes)
+
+		compatErr = compatCollection.Database().RunCommand(
+			ctx, bson.D{
+				{"createIndexes", collectionName},
+				{"indexes", bson.A{indexesDoc}},
+			},
+		).Decode(&compatRes)
+
+		require.NoError(t, compatErr)
+		require.NoError(t, targetErr, "target error; compat returned no error")
+
+		assert.Equal(t, false, compatRes.Map()["createdCollectionAutomatically"])
+		assert.NotEmpty(t, compatRes.Map()["note"])
+		assert.Equal(t, compatRes, targetRes)
+	})
 }
 
 func TestDropIndexesCommandCompat(t *testing.T) {
