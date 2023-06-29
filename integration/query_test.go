@@ -16,6 +16,7 @@ package integration
 
 import (
 	"math"
+	"net/url"
 	"testing"
 	"time"
 
@@ -29,6 +30,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 func TestQueryBadFindType(t *testing.T) {
@@ -956,7 +958,17 @@ func TestQueryBatchSize(t *testing.T) {
 
 func TestQueryCommandGetMore(t *testing.T) {
 	t.Parallel()
-	ctx, collection := setup.Setup(t)
+
+	// options are applied to create a client that uses single connection pool
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		ExtraOptions: url.Values{
+			"minPoolSize":   []string{"1"},
+			"maxPoolSize":   []string{"1"},
+			"maxIdleTimeMS": []string{"0"},
+		},
+	})
+
+	ctx, collection := s.Ctx, s.Collection
 
 	// the number of documents is set above the default batchSize of 101
 	// for testing unset batchSize returning default batchSize
@@ -1179,6 +1191,34 @@ func TestQueryCommandGetMore(t *testing.T) {
 				Message: "BSON field 'getMore.collection' is missing but a required field",
 			},
 		},
+		"UnsetAllBatchSize": {
+			findBatchSize:    nil,
+			getMoreBatchSize: nil,
+			collection:       collection.Name(),
+			firstBatch:       docs[:101],
+			nextBatch:        docs[101:],
+		},
+		"UnsetFindBatchSize": {
+			findBatchSize:    nil,
+			getMoreBatchSize: 5,
+			collection:       collection.Name(),
+			firstBatch:       docs[:101],
+			nextBatch:        docs[101:106],
+		},
+		"UnsetGetMoreBatchSize": {
+			findBatchSize:    5,
+			getMoreBatchSize: nil,
+			collection:       collection.Name(),
+			firstBatch:       docs[:5],
+			nextBatch:        docs[5:],
+		},
+		"BatchSize": {
+			findBatchSize:    3,
+			getMoreBatchSize: 5,
+			collection:       collection.Name(),
+			firstBatch:       docs[:3],
+			nextBatch:        docs[3:8],
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -1186,8 +1226,11 @@ func TestQueryCommandGetMore(t *testing.T) {
 				t.Skip(tc.skip)
 			}
 
-			// TODO: https://github.com/FerretDB/FerretDB/issues/1807
-			// Do not run tests in parallel, MongoDB throws error that session and cursor do not match.
+			// Do not run subtests in t.Parallel() to eliminate the occurrence
+			// of session error.
+			// Supporting session would help us understand fix it
+			// https://github.com/FerretDB/FerretDB/issues/153.
+			//
 			// > Location50738
 			// > Cannot run getMore on cursor 2053655655200551971,
 			// > which was created in session 2926eea5-9775-41a3-a563-096969f1c7d5 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  - ,
@@ -1279,4 +1322,128 @@ func TestQueryCommandGetMore(t *testing.T) {
 			require.Equal(t, tc.nextBatch, nextBatch)
 		})
 	}
+}
+
+func TestQueryCommandGetMoreConnection(t *testing.T) {
+	t.Parallel()
+
+	// options are applied to create a client that uses single connection pool
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		ExtraOptions: url.Values{
+			"minPoolSize":   []string{"1"},
+			"maxPoolSize":   []string{"1"},
+			"maxIdleTimeMS": []string{"0"},
+		},
+	})
+
+	ctx := s.Ctx
+	collection1 := s.Collection
+	databaseName := s.Collection.Database().Name()
+	collectionName := s.Collection.Name()
+
+	docs := generateDocuments(0, 5)
+	_, err := collection1.InsertMany(ctx, docs)
+	require.NoError(t, err)
+
+	t.Run("SameClient", func(t *testing.T) {
+		// Do not run subtests in t.Parallel() to eliminate the occurrence
+		// of session error.
+		// Supporting session would help us understand fix it
+		// https://github.com/FerretDB/FerretDB/issues/153.
+		//
+		// > Location50738
+		// > Cannot run getMore on cursor 2053655655200551971,
+		// > which was created in session 2926eea5-9775-41a3-a563-096969f1c7d5 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  - ,
+		// > in session 774d9ac6-b24a-4fd8-9874-f92ab1c9c8f5 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  -
+
+		var res bson.D
+		err = collection1.Database().RunCommand(
+			ctx,
+			bson.D{
+				{"find", collection1.Name()},
+				{"batchSize", 2},
+			},
+		).Decode(&res)
+		require.NoError(t, err)
+
+		doc := ConvertDocument(t, res)
+
+		v, _ := doc.Get("cursor")
+		require.NotNil(t, v)
+
+		cursor, ok := v.(*types.Document)
+		require.True(t, ok)
+
+		cursorID, _ := cursor.Get("id")
+		assert.NotNil(t, cursorID)
+
+		err = collection1.Database().RunCommand(
+			ctx,
+			bson.D{
+				{"getMore", cursorID},
+				{"collection", collection1.Name()},
+			},
+		).Decode(&res)
+		require.NoError(t, err)
+	})
+
+	t.Run("DifferentClient", func(t *testing.T) {
+		// The error returned from MongoDB is a session error, FerretDB does not
+		// return an error because db, collection and username are the same.
+		setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/153")
+
+		// do not run subtest in parallel to avoid breaking another parallel subtest
+
+		u, err := url.Parse(s.MongoDBURI)
+		require.NoError(t, err)
+
+		client2, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
+		require.NoError(t, err)
+
+		defer client2.Disconnect(ctx)
+
+		collection2 := client2.Database(databaseName).Collection(collectionName)
+
+		var res bson.D
+		err = collection1.Database().RunCommand(
+			ctx,
+			bson.D{
+				{"find", collection1.Name()},
+				{"batchSize", 2},
+			},
+		).Decode(&res)
+		require.NoError(t, err)
+
+		doc := ConvertDocument(t, res)
+
+		v, _ := doc.Get("cursor")
+		require.NotNil(t, v)
+
+		cursor, ok := v.(*types.Document)
+		require.True(t, ok)
+
+		cursorID, _ := cursor.Get("id")
+		assert.NotNil(t, cursorID)
+
+		err = collection2.Database().RunCommand(
+			ctx,
+			bson.D{
+				{"getMore", cursorID},
+				{"collection", collection2.Name()},
+			},
+		).Decode(&res)
+
+		// use AssertMatchesCommandError because message cannot be compared as it contains session ID
+		AssertMatchesCommandError(
+			t,
+			mongo.CommandError{
+				Code: 50738,
+				Name: "Location50738",
+				Message: "Cannot run getMore on cursor 5720627396082469624, which was created in session " +
+					"95326129-ff9c-48a4-9060-464b4ea3ee06 - 47DEQpj8HBSa+/TImW+5JC\neuQeRkm5NMpJWZG3hSuFU= -  - , " +
+					"in session 9e8902e9-338c-4156-9fd8-50e5d62ac992 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  - ",
+			},
+			err,
+		)
+	})
 }
