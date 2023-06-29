@@ -132,7 +132,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	closer.Add(iterator.CloserFunc(func() {
-		// ctx could be cancelled already
+		// It does not matter if we commit or rollback the read transaction,
+		// but we should close it.
+		// ctx could be cancelled already.
 		_ = keepTx.Rollback(context.Background())
 	}))
 

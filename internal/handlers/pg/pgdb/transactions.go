@@ -101,12 +101,7 @@ func (pgPool *Pool) InTransactionKeep(ctx context.Context, f func(pgx.Tx) error)
 			err = lazyerrors.Errorf("transaction was not committed")
 		}
 
-		if e := tx.Rollback(ctx); e != nil {
-			pgPool.logger.Log(
-				ctx, tracelog.LogLevelError, "failed to perform rollback",
-				map[string]any{"err": e},
-			)
-		}
+		_ = tx.Rollback(ctx)
 	}()
 
 	if err = f(tx); err != nil {
