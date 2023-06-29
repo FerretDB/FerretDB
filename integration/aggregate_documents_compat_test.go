@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -216,8 +217,13 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 					t.Logf("Target error: %v", targetErr)
 					t.Logf("Compat error: %v", compatErr)
 
-					// error messages are intentionally not compared
-					AssertMatchesCommandError(t, compatErr, targetErr)
+					if _, ok := targetErr.(mongo.CommandError); ok { //nolint:errorlint // do not inspect error chain
+						// error messages are intentionally not compared
+						AssertMatchesCommandError(t, compatErr, targetErr)
+					} else {
+						// driver sent an error
+						require.Equal(t, compatErr, targetErr)
+					}
 
 					return
 				}
@@ -278,6 +284,17 @@ func TestAggregateCommandCompat(t *testing.T) {
 				{"pipeline", bson.A{"$invalid-stage"}},
 			},
 			resultType: emptyResult,
+		},
+		"MaxTimeMSNegative": {
+			command: bson.D{
+				{"aggregate", "collection-name"},
+				{"pipeline", bson.A{}},
+				{"maxTimeMS", int64(-1)},
+				{"cursor", bson.D{}},
+			},
+			resultType: emptyResult,
+			// compat and target return an error from the driver
+			// > cannot decode document into []primitive.D
 		},
 	}
 
