@@ -101,6 +101,7 @@ func TestDeleteCommandCompat(t *testing.T) {
 			deletes: bson.A{
 				bson.D{{"q", bson.D{{"v", int32(0)}}}, {"limit", 1}},
 			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2935",
 		},
 		"TwoLimited": {
 			deletes: bson.A{

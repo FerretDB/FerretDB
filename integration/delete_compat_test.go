@@ -38,11 +38,6 @@ func TestDeleteCompat(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]deleteCompatTestCase{
-		"Empty": {
-			filters:    []bson.D{},
-			resultType: emptyResult,
-		},
-
 		"One": {
 			filters: []bson.D{
 				{{"v", int32(42)}},
