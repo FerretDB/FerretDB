@@ -57,8 +57,8 @@ func NewPool(ctx context.Context, uri string, logger *zap.Logger, p *state.Provi
 	values := u.Query()
 
 	if !values.Has("pool_max_conns") {
-		// it default to 4 which is too low for us
-		values.Set("pool_max_conns", "20")
+		// the default is too low
+		values.Set("pool_max_conns", "50")
 	}
 
 	values.Set("application_name", "FerretDB")

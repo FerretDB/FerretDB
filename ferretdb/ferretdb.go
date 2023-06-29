@@ -184,9 +184,9 @@ func (f *FerretDB) MongoDBURI() string {
 
 	switch {
 	case f.config.Listener.TLS != "":
-		q := make(url.Values)
-
-		q.Set("tls", "true")
+		q := url.Values{
+			"tls": []string{"true"},
+		}
 
 		u = &url.URL{
 			Scheme:   "mongodb",
