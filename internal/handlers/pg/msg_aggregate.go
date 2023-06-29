@@ -177,6 +177,13 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
+	cancel := func() {}
+	if maxTimeMS != 0 {
+		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
+		// TODO https://github.com/FerretDB/FerretDB/issues/1808
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
+	}
+
 	var iter iterator.Interface[struct{}, *types.Document]
 
 	// At this point we have a list of stages to apply to the documents or stats.
@@ -211,14 +218,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	if err != nil {
+		cancel()
 		return nil, err
-	}
-
-	cancel := func() {}
-	if maxTimeMS != 0 {
-		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
-		// TODO https://github.com/FerretDB/FerretDB/issues/1808
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
 	}
 
 	closer := iterator.NewMultiCloser(iter, iterator.CloserFunc(cancel))
