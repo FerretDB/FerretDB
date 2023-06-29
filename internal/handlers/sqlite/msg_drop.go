@@ -59,11 +59,7 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
-	db, err := h.b.Database(dbName)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
+	db := h.b.Database(dbName)
 	defer db.Close()
 
 	err = db.DropCollection(ctx, &backends.DropCollectionParams{

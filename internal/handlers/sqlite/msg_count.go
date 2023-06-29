@@ -38,11 +38,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, err
 	}
 
-	db, err := h.b.Database(params.DB)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
+	db := h.b.Database(params.DB)
 	defer db.Close()
 
 	queryRes, err := db.Collection(params.Collection).Query(ctx, nil)

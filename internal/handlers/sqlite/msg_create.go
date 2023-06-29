@@ -87,11 +87,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
 	}
 
-	db, err := h.b.Database(dbName)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
+	db := h.b.Database(dbName)
 	defer db.Close()
 
 	err = db.CreateCollection(ctx, &backends.CreateCollectionParams{

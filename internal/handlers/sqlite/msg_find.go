@@ -44,11 +44,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	username, _ := conninfo.Get(ctx).Auth()
 
-	db, err := h.b.Database(params.DB)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
+	db := h.b.Database(params.DB)
 	defer db.Close()
 
 	cancel := func() {}

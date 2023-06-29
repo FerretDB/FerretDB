@@ -16,8 +16,6 @@ package backends
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
@@ -34,7 +32,7 @@ import (
 // See backendContract and its methods for additional details.
 type Backend interface {
 	Close()
-	Database(string) (Database, error)
+	Database(string) Database
 	ListDatabases(context.Context, *ListDatabasesParams) (*ListDatabasesResult, error)
 	DropDatabase(context.Context, *DropDatabaseParams) error
 
@@ -73,10 +71,7 @@ func (bc *backendContract) Close() {
 // Database returns a Database instance for the given name.
 //
 // The database does not need to exist; even parameters like name could be invalid.
-func (bc *backendContract) Database(name string) (Database, error) {
-	if strings.ContainsRune(name, '?') {
-		return nil, NewError(ErrorCodeDatabaseNameIsInvalid, fmt.Errorf("SQLite doesn't support database names with '?'"))
-	}
+func (bc *backendContract) Database(name string) Database {
 	return bc.b.Database(name)
 }
 

@@ -16,7 +16,6 @@ package sqlite
 
 import (
 	"context"
-	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
@@ -30,15 +29,11 @@ type database struct {
 }
 
 // newDatabase creates a new Database.
-func newDatabase(r *metadata.Registry, name string) (backends.Database, error) {
-	if strings.ContainsRune(name, '?') {
-		return nil, lazyerrors.Errorf("SQLite backend doesn't support database name with '?' character")
-	}
-
+func newDatabase(r *metadata.Registry, name string) backends.Database {
 	return backends.DatabaseContract(&database{
 		r:    r,
 		name: name,
-	}), nil
+	})
 }
 
 // Close implements backends.Database interface.
