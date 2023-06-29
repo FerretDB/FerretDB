@@ -50,7 +50,13 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 		return nil, lazyerrors.Errorf("backend URI should not contain host: %q", params.URI)
 	}
 
-	fi, err := os.Stat(uri.Path)
+	dir := uri.Path
+
+	if uri.Opaque != "" {
+		dir = uri.Opaque
+	}
+
+	fi, err := os.Stat(dir)
 	if err != nil {
 		return nil, lazyerrors.Errorf("%q should be an existing directory: %w", params.URI, err)
 	}
