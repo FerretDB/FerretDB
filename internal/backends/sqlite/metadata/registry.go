@@ -35,15 +35,12 @@ import (
 )
 
 const (
-	// Reserved prefix for database and collection names.
-	reservedPrefix = "_ferretdb_"
-
-	// Reserved prefix for SQLite table name.
-	// https://www.sqlite.org/lang_createtable.html
+	// This prefix is reserved by SQLite for internal use,
+	// see https://www.sqlite.org/lang_createtable.html.
 	reservedTablePrefix = "sqlite_"
 
 	// SQLite table name where FerretDB metadata is stored.
-	metadataTableName = reservedPrefix + "collections"
+	metadataTableName = "_ferretdb_collections"
 )
 
 // Registry provides access to SQLite databases and collections information.
@@ -75,11 +72,8 @@ func collectionToTable(collectionName string) string {
 	hash32 := fnv.New32a()
 	must.NotFail(hash32.Write([]byte(collectionName)))
 
-	collectionName = strings.ToLower(collectionName)
+	tableName := strings.ToLower(collectionName) + "_" + hex.EncodeToString(hash32.Sum(nil))
 
-	tableName := collectionName + "_" + hex.EncodeToString(hash32.Sum(nil))
-
-	// SQLite table cannot start with sqlite_ prefix
 	if strings.HasPrefix(tableName, reservedTablePrefix) {
 		tableName = "_" + tableName
 	}
@@ -212,7 +206,7 @@ func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionN
 	if !rows.Next() {
 		return "", backends.NewError(
 			backends.ErrorCodeCollectionDoesNotExist,
-			fmt.Errorf("Collection %q does not exist", collectionName),
+			fmt.Errorf("collection %q does not exist", collectionName),
 		)
 	}
 
