@@ -29,8 +29,13 @@ func TestNewBackend(t *testing.T) {
 	err := os.MkdirAll("tmp/dir", os.ModePerm)
 	require.NoError(t, err)
 
+	_, err = os.Create("tmp/file")
+	require.NoError(t, err)
+
 	t.Cleanup(func() {
-		err := os.Remove("tmp/dir")
+		err := os.Remove("tmp/file")
+		require.NoError(t, err)
+		err = os.Remove("tmp/dir")
 		require.NoError(t, err)
 		err = os.Remove("tmp")
 		require.NoError(t, err)
@@ -62,7 +67,17 @@ func TestNewBackend(t *testing.T) {
 				Opaque: "./tmp/",
 			},
 		},
-		"LocalSubDirectoryWithParameters": {
+		"LocalSubSubDirectory": {
+			params: &NewBackendParams{
+				URI: "file:./tmp/dir/",
+				L:   zap.NewNop(),
+			},
+			uri: &url.URL{
+				Scheme: "file",
+				Opaque: "./tmp/dir/",
+			},
+		},
+		"LocalDirectoryWithParameters": {
 			params: &NewBackendParams{
 				URI: "file:./tmp/?mode=ro",
 				L:   zap.NewNop(),
@@ -86,6 +101,20 @@ func TestNewBackend(t *testing.T) {
 				L:   zap.NewNop(),
 			},
 			errRegex: `.*backend URI should not contain user: "file://user:pass@./tmp/\?mode=ro"`,
+		},
+		"NoDirectory": {
+			params: &NewBackendParams{
+				URI: "file:./nodir/",
+				L:   zap.NewNop(),
+			},
+			errRegex: `.*"file:./nodir/" should be an existing directory: stat ./nodir/: no such file or directory`,
+		},
+		"FileInsteadOfDirectory": {
+			params: &NewBackendParams{
+				URI: "file:./tmp/file",
+				L:   zap.NewNop(),
+			},
+			errRegex: `.*"file:./tmp/file" should be an existing directory`,
 		},
 	}
 	for name, tc := range testCases {
