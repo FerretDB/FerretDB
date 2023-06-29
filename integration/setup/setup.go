@@ -19,6 +19,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"runtime/trace"
 	"strings"
@@ -86,6 +87,9 @@ type SetupOpts struct {
 
 	// Benchmark data provider. If empty, collection is not created.
 	BenchmarkProvider shareddata.BenchmarkProvider
+
+	// ExtraOptions sets the options in MongoDB URI, when the option exists it overwrites that option.
+	ExtraOptions url.Values
 }
 
 // SetupResult represents setup results.
@@ -132,15 +136,29 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	}
 	logger := testutil.LevelLogger(tb, level)
 
-	var client *mongo.Client
-	var uri string
-
-	if *targetURLF == "" {
-		client, uri = setupListener(tb, setupCtx, logger)
-	} else {
-		client = setupClient(tb, setupCtx, *targetURLF)
-		uri = *targetURLF
+	uri := *targetURLF
+	if uri == "" {
+		uri = setupListener(tb, setupCtx, logger)
 	}
+
+	if opts.ExtraOptions != nil {
+		u, err := url.Parse(uri)
+		require.NoError(tb, err)
+
+		q := u.Query()
+
+		for k, vs := range opts.ExtraOptions {
+			for _, v := range vs {
+				q.Set(k, v)
+			}
+		}
+
+		u.RawQuery = q.Encode()
+		uri = u.String()
+		tb.Logf("URI with extra options: %s", uri)
+	}
+
+	client := setupClient(tb, setupCtx, uri)
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
