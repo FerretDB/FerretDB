@@ -29,7 +29,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -157,11 +156,9 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 	p, err := state.NewProvider("")
 	require.NoError(tb, err)
 
-	metrics := connmetrics.NewListenerMetrics()
-
 	handlerOpts := &registry.NewHandlerOpts{
 		Logger:        logger,
-		Metrics:       metrics.ConnMetrics,
+		ConnMetrics:   listenerMetrics.ConnMetrics,
 		StateProvider: p,
 
 		PostgreSQLURL: *postgreSQLURLF,
@@ -183,7 +180,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 	listenerOpts := clientconn.NewListenerOpts{
 		ProxyAddr:      *targetProxyAddrF,
 		Mode:           clientconn.NormalMode,
-		Metrics:        metrics,
+		Metrics:        listenerMetrics,
 		Handler:        h,
 		Logger:         logger,
 		TestRecordsDir: filepath.Join("..", "tmp", "records"),

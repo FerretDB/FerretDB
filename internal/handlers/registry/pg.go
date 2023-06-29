@@ -26,7 +26,7 @@ func init() {
 			PostgreSQLURL: opts.PostgreSQLURL,
 
 			L:             opts.Logger,
-			Metrics:       opts.Metrics,
+			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 
 			DisableFilterPushdown: opts.DisableFilterPushdown,
