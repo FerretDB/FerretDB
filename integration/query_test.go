@@ -977,7 +977,7 @@ func TestQueryCommandGetMore(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
-		findBatchSize    any // optional, nil to leave findBatchSize unset
+		firstBatchSize   any // optional, nil to leave firstBatchSize unset
 		getMoreBatchSize any // optional, nil to leave getMoreBatchSize unset
 		collection       any // optional, nil to leave collection unset
 		cursorID         any // optional, defaults to cursorID from find()
@@ -989,14 +989,14 @@ func TestQueryCommandGetMore(t *testing.T) {
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"Int": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: int32(1),
 			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			nextBatch:        docs[1:2],
 		},
 		"IntNegative": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: int32(-1),
 			collection:       collection.Name(),
 			firstBatch:       docs[:1],
@@ -1007,21 +1007,21 @@ func TestQueryCommandGetMore(t *testing.T) {
 			},
 		},
 		"IntZero": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: int32(0),
 			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			nextBatch:        docs[1:],
 		},
 		"Long": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: int64(1),
 			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			nextBatch:        docs[1:2],
 		},
 		"LongNegative": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: int64(-1),
 			collection:       collection.Name(),
 			firstBatch:       docs[:1],
@@ -1032,21 +1032,21 @@ func TestQueryCommandGetMore(t *testing.T) {
 			},
 		},
 		"LongZero": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: int64(0),
 			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			nextBatch:        docs[1:],
 		},
 		"Double": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: float64(1),
 			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			nextBatch:        docs[1:2],
 		},
 		"DoubleNegative": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: float64(-1),
 			collection:       collection.Name(),
 			firstBatch:       docs[:1],
@@ -1057,21 +1057,21 @@ func TestQueryCommandGetMore(t *testing.T) {
 			},
 		},
 		"DoubleZero": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: float64(0),
 			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			nextBatch:        docs[1:],
 		},
 		"DoubleFloor": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: 1.9,
 			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			nextBatch:        docs[1:2],
 		},
 		"GetMoreCursorExhausted": {
-			findBatchSize:    200,
+			firstBatchSize:   200,
 			getMoreBatchSize: int32(1),
 			collection:       collection.Name(),
 			firstBatch:       docs[:110],
@@ -1082,7 +1082,7 @@ func TestQueryCommandGetMore(t *testing.T) {
 			},
 		},
 		"Bool": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: false,
 			collection:       collection.Name(),
 			firstBatch:       docs[:1],
@@ -1094,7 +1094,7 @@ func TestQueryCommandGetMore(t *testing.T) {
 			altMessage: "BSON field 'getMore.batchSize' is the wrong type 'bool', expected types '[long, int, decimal, double]'",
 		},
 		"Unset": {
-			findBatchSize: 1,
+			firstBatchSize: 1,
 			// unset getMore batchSize gets all remaining documents
 			getMoreBatchSize: nil,
 			collection:       collection.Name(),
@@ -1102,14 +1102,14 @@ func TestQueryCommandGetMore(t *testing.T) {
 			nextBatch:        docs[1:],
 		},
 		"LargeBatchSize": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: 105,
 			collection:       collection.Name(),
 			firstBatch:       docs[:1],
 			nextBatch:        docs[1:106],
 		},
 		"StringCursorID": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: 1,
 			collection:       collection.Name(),
 			cursorID:         "invalid",
@@ -1122,7 +1122,7 @@ func TestQueryCommandGetMore(t *testing.T) {
 			altMessage: "BSON field 'getMore.getMore' is the wrong type, expected type 'long'",
 		},
 		"Int32CursorID": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: 1,
 			collection:       collection.Name(),
 			cursorID:         int32(1111),
@@ -1135,7 +1135,7 @@ func TestQueryCommandGetMore(t *testing.T) {
 			altMessage: "BSON field 'getMore.getMore' is the wrong type, expected type 'long'",
 		},
 		"NotFoundCursorID": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: 1,
 			collection:       collection.Name(),
 			cursorID:         int64(1234),
@@ -1147,7 +1147,7 @@ func TestQueryCommandGetMore(t *testing.T) {
 			},
 		},
 		"WrongTypeNamespace": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: 1,
 			collection:       bson.D{},
 			firstBatch:       docs[:1],
@@ -1158,7 +1158,7 @@ func TestQueryCommandGetMore(t *testing.T) {
 			},
 		},
 		"InvalidNamespace": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: 1,
 			collection:       "invalid",
 			firstBatch:       docs[:1],
@@ -1170,7 +1170,7 @@ func TestQueryCommandGetMore(t *testing.T) {
 			},
 		},
 		"EmptyCollectionName": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: 1,
 			collection:       "",
 			firstBatch:       docs[:1],
@@ -1181,7 +1181,7 @@ func TestQueryCommandGetMore(t *testing.T) {
 			},
 		},
 		"MissingCollectionName": {
-			findBatchSize:    1,
+			firstBatchSize:   1,
 			getMoreBatchSize: 1,
 			collection:       nil,
 			firstBatch:       docs[:1],
@@ -1192,28 +1192,28 @@ func TestQueryCommandGetMore(t *testing.T) {
 			},
 		},
 		"UnsetAllBatchSize": {
-			findBatchSize:    nil,
+			firstBatchSize:   nil,
 			getMoreBatchSize: nil,
 			collection:       collection.Name(),
 			firstBatch:       docs[:101],
 			nextBatch:        docs[101:],
 		},
 		"UnsetFindBatchSize": {
-			findBatchSize:    nil,
+			firstBatchSize:   nil,
 			getMoreBatchSize: 5,
 			collection:       collection.Name(),
 			firstBatch:       docs[:101],
 			nextBatch:        docs[101:106],
 		},
 		"UnsetGetMoreBatchSize": {
-			findBatchSize:    5,
+			firstBatchSize:   5,
 			getMoreBatchSize: nil,
 			collection:       collection.Name(),
 			firstBatch:       docs[:5],
 			nextBatch:        docs[5:],
 		},
 		"BatchSize": {
-			findBatchSize:    3,
+			firstBatchSize:   3,
 			getMoreBatchSize: 5,
 			collection:       collection.Name(),
 			firstBatch:       docs[:3],
@@ -1239,8 +1239,8 @@ func TestQueryCommandGetMore(t *testing.T) {
 			require.NotNil(t, tc.firstBatch, "firstBatch must not be nil")
 
 			var findRest bson.D
-			if tc.findBatchSize != nil {
-				findRest = append(findRest, bson.E{Key: "batchSize", Value: tc.findBatchSize})
+			if tc.firstBatchSize != nil {
+				findRest = append(findRest, bson.E{Key: "batchSize", Value: tc.firstBatchSize})
 			}
 
 			findCommand := append(
@@ -1248,48 +1248,78 @@ func TestQueryCommandGetMore(t *testing.T) {
 				findRest...,
 			)
 
-			var res bson.D
-			err := collection.Database().RunCommand(ctx, findCommand).Decode(&res)
-			require.NoError(t, err)
-
-			v, ok := res.Map()["cursor"]
-			require.True(t, ok)
-
-			cursor, ok := v.(bson.D)
-			require.True(t, ok)
-
-			cursorID := cursor.Map()["id"]
-			assert.NotNil(t, cursorID)
-
-			firstBatch, ok := cursor.Map()["firstBatch"]
-			require.True(t, ok)
-			require.Equal(t, tc.firstBatch, firstBatch)
-
-			if tc.cursorID != nil {
-				cursorID = tc.cursorID
+			aggregateCursor := bson.D{}
+			if tc.firstBatchSize != nil {
+				aggregateCursor = bson.D{{"batchSize", tc.firstBatchSize}}
 			}
 
-			var getMoreRest bson.D
-			if tc.getMoreBatchSize != nil {
-				getMoreRest = append(getMoreRest, bson.E{Key: "batchSize", Value: tc.getMoreBatchSize})
+			aggregateCommand := bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", aggregateCursor},
 			}
 
-			if tc.collection != nil {
-				getMoreRest = append(getMoreRest, bson.E{Key: "collection", Value: tc.collection})
-			}
+			for _, command := range []bson.D{findCommand, aggregateCommand} {
+				var res bson.D
+				err := collection.Database().RunCommand(ctx, command).Decode(&res)
+				require.NoError(t, err)
 
-			getMoreCommand := append(
-				bson.D{
-					{"getMore", cursorID},
-				},
-				getMoreRest...,
-			)
+				v, ok := res.Map()["cursor"]
+				require.True(t, ok)
 
-			err = collection.Database().RunCommand(ctx, getMoreCommand).Decode(&res)
-			if tc.err != nil {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				cursor, ok := v.(bson.D)
+				require.True(t, ok)
 
-				// upon error response contains firstBatch field.
+				cursorID := cursor.Map()["id"]
+				assert.NotNil(t, cursorID)
+
+				firstBatch, ok := cursor.Map()["firstBatch"]
+				require.True(t, ok)
+				require.Equal(t, tc.firstBatch, firstBatch)
+
+				if tc.cursorID != nil {
+					cursorID = tc.cursorID
+				}
+
+				var getMoreRest bson.D
+				if tc.getMoreBatchSize != nil {
+					getMoreRest = append(getMoreRest, bson.E{Key: "batchSize", Value: tc.getMoreBatchSize})
+				}
+
+				if tc.collection != nil {
+					getMoreRest = append(getMoreRest, bson.E{Key: "collection", Value: tc.collection})
+				}
+
+				getMoreCommand := append(
+					bson.D{
+						{"getMore", cursorID},
+					},
+					getMoreRest...,
+				)
+
+				err = collection.Database().RunCommand(ctx, getMoreCommand).Decode(&res)
+				if tc.err != nil {
+					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
+					// upon error response contains firstBatch field.
+					v, ok = res.Map()["cursor"]
+					require.True(t, ok)
+
+					cursor, ok = v.(bson.D)
+					require.True(t, ok)
+
+					cursorID = cursor.Map()["id"]
+					assert.NotNil(t, cursorID)
+
+					firstBatch, ok = cursor.Map()["firstBatch"]
+					require.True(t, ok)
+					require.Equal(t, tc.firstBatch, firstBatch)
+
+					return
+				}
+
+				require.NoError(t, err)
+
 				v, ok = res.Map()["cursor"]
 				require.True(t, ok)
 
@@ -1299,27 +1329,10 @@ func TestQueryCommandGetMore(t *testing.T) {
 				cursorID = cursor.Map()["id"]
 				assert.NotNil(t, cursorID)
 
-				firstBatch, ok = cursor.Map()["firstBatch"]
+				nextBatch, ok := cursor.Map()["nextBatch"]
 				require.True(t, ok)
-				require.Equal(t, tc.firstBatch, firstBatch)
-
-				return
+				require.Equal(t, tc.nextBatch, nextBatch)
 			}
-
-			require.NoError(t, err)
-
-			v, ok = res.Map()["cursor"]
-			require.True(t, ok)
-
-			cursor, ok = v.(bson.D)
-			require.True(t, ok)
-
-			cursorID = cursor.Map()["id"]
-			assert.NotNil(t, cursorID)
-
-			nextBatch, ok := cursor.Map()["nextBatch"]
-			require.True(t, ok)
-			require.Equal(t, tc.nextBatch, nextBatch)
 		})
 	}
 }
