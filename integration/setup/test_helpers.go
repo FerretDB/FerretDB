@@ -79,6 +79,21 @@ func TigrisOnlyWithReason(tb testing.TB, reason string) {
 	}
 }
 
+// SkipForSQLiteWithReason skips the current test for FerretDB with `ferretdb-sqlite` backend.
+//
+// This function should not be used lightly.
+func SkipForSQLiteWithReason(tb testing.TB, reason string) {
+	tb.Helper()
+
+	if !(*targetBackendF == "ferretdb-sqlite") {
+		return
+	}
+
+	require.NotEmpty(tb, reason, "reason must not be empty")
+
+	tb.Skipf("Skipping for SQLite: %s.", reason)
+}
+
 // IsPushdownDisabled returns if FerretDB pushdowns are disabled.
 func IsPushdownDisabled() bool {
 	return *disableFilterPushdownF

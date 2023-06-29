@@ -452,9 +452,10 @@ func TestDatabaseName(t *testing.T) {
 		for name, tc := range map[string]struct {
 			db string // database name, defaults to empty string
 
-			err        *mongo.CommandError // required, expected error from MongoDB
-			altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-			skip       string              // optional, skip test with a specified reason
+			err           *mongo.CommandError // required, expected error from MongoDB
+			altMessage    string              // optional, alternative error message for FerretDB, ignored if empty
+			skip          string              // optional, skip test with a specified reason
+			skipForSQLite string              // optional, skip test for SQLite backend, with a specified reason
 		}{
 			"QuestionMark": {
 				db: "?",
@@ -477,11 +478,18 @@ func TestDatabaseName(t *testing.T) {
 			"All": {
 				db: "+-*<>=~!@#%^&|`?()[],;:",
 			},
+			"All2": {
+				db: "+-*<>=~!@#%^&|`()[],;:",
+			},
 		} {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
 				if tc.skip != "" {
 					t.Skip(tc.skip)
+				}
+
+				if tc.skipForSQLite != "" {
+					setup.SkipForSQLiteWithReason(t, tc.skipForSQLite)
 				}
 
 				// t.Parallel()
