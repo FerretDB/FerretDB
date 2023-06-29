@@ -23,6 +23,9 @@ import (
 	"testing"
 )
 
+// NumGoroutines is the total count of goroutines created in Stress function.
+var NumGoroutines = runtime.GOMAXPROCS(-1) * 10
+
 // Stress runs function f in multiple goroutines.
 //
 // Function f should do a needed setup, send a message to ready channel when it is ready to start,
@@ -30,15 +33,13 @@ import (
 func Stress(tb testing.TB, f func(ready chan<- struct{}, start <-chan struct{})) {
 	tb.Helper()
 
-	n := runtime.GOMAXPROCS(-1) * 10
-
 	// do a bit more work to reduce a chance that one goroutine would finish
 	// before the other one is still being created
 	var wg sync.WaitGroup
-	readyCh := make(chan struct{}, n)
+	readyCh := make(chan struct{}, NumGoroutines)
 	startCh := make(chan struct{})
 
-	for i := 0; i < n; i++ {
+	for i := 0; i < NumGoroutines; i++ {
 		wg.Add(1)
 
 		go func() {
@@ -48,7 +49,7 @@ func Stress(tb testing.TB, f func(ready chan<- struct{}, start <-chan struct{}))
 		}()
 	}
 
-	for i := 0; i < n; i++ {
+	for i := 0; i < NumGoroutines; i++ {
 		<-readyCh
 	}
 
