@@ -85,21 +85,17 @@ func ConsumeValuesN[K, V any](iter Interface[K, V], n int) ([]V, error) {
 }
 
 // Values returns an iterator over values of another iterator.
-// It will be added to the given closer.
 //
 // Close method closes the underlying iterator.
 // For that reason, there is no need to track both iterators.
-func Values[K, V any](iter Interface[K, V], closer *MultiCloser) Interface[struct{}, V] {
+func Values[K, V any](iter Interface[K, V]) Interface[struct{}, V] {
 	if iter == nil {
 		panic("iter is nil")
 	}
 
-	res := &valuesIterator[K, V]{
+	return &valuesIterator[K, V]{
 		iter: iter,
 	}
-	closer.Add(res)
-
-	return res
 }
 
 // valuesIterator implements iterator.Interface.

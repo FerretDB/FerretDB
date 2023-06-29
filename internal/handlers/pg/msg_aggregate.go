@@ -223,6 +223,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
+	closer.Add(iter)
+
 	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
 		Iter:       iterator.WithClose(iter, closer.Close),
 		DB:         db,
@@ -395,7 +397,8 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 	}
 
 	// Process the retrieved statistics through the stages.
-	iter := iterator.Values(iterator.ForSlice([]*types.Document{doc}), closer)
+	iter := iterator.Values(iterator.ForSlice([]*types.Document{doc}))
+	closer.Add(iter)
 
 	for _, s := range p.stages {
 		if iter, err = s.Process(ctx, iter, closer); err != nil {

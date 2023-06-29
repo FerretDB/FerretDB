@@ -293,7 +293,7 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 	}
 
 	// Process the retrieved statistics through the stages.
-	iter := iterator.Values(iterator.ForSlice([]*types.Document{doc}), iterator.NewMultiCloser())
+	iter := iterator.Values(iterator.ForSlice([]*types.Document{doc}))
 
 	closer := iterator.NewMultiCloser(iter)
 	defer closer.Close()

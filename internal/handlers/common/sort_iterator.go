@@ -40,5 +40,8 @@ func SortIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, so
 		return nil, lazyerrors.Error(err)
 	}
 
-	return iterator.Values(iterator.ForSlice(docs), closer), nil
+	res := iterator.Values(iterator.ForSlice(docs))
+	closer.Add(res)
+
+	return res, nil
 }
