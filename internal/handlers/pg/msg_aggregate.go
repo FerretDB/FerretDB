@@ -184,6 +184,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
 	}
 
+	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
+
 	var iter iterator.Interface[struct{}, *types.Document]
 
 	// At this point we have a list of stages to apply to the documents or stats.
@@ -206,23 +208,22 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			qp.Sort = sort
 		}
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/1733
-		iter, err = processStagesDocuments(ctx, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})
+		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})
 	} else {
 		// stats stages are provided - fetch stats from the DB and apply stages to them
 		statistics := stages.GetStatistics(stagesStats)
 
-		iter, err = processStagesStats(ctx, &stagesStatsParams{
+		iter, err = processStagesStats(ctx, closer, &stagesStatsParams{
 			dbPool, db, collection, statistics, stagesStats,
 		})
 	}
 
 	if err != nil {
-		cancel()
+		closer.Close()
 		return nil, err
 	}
 
-	closer := iterator.NewMultiCloser(iter, iterator.CloserFunc(cancel))
+	closer.Add(iter)
 
 	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
 		Iter:       iterator.WithClose(iter, closer.Close),
@@ -274,18 +275,20 @@ type stagesDocumentsParams struct {
 }
 
 // processStagesDocuments retrieves the documents from the database and then processes them through the stages.
-func processStagesDocuments(ctx context.Context, p *stagesDocumentsParams) (types.DocumentsIterator, error) { //nolint:lll // for readability
-	var docs []*types.Document
+func processStagesDocuments(ctx context.Context, closer *iterator.MultiCloser, p *stagesDocumentsParams) (types.DocumentsIterator, error) { //nolint:lll // for readability
+	var keepTx pgx.Tx
+	var iter types.DocumentsIterator
 
-	if err := p.dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	if err := p.dbPool.InTransactionKeep(ctx, func(tx pgx.Tx) error {
+		keepTx = tx
+
 		var err error
-		iter, _, err := pgdb.QueryDocuments(ctx, tx, p.qp)
+		iter, _, err = pgdb.QueryDocuments(ctx, tx, p.qp)
 		if err != nil {
 			return err
 		}
 
-		closer := iterator.NewMultiCloser(iter)
-		defer closer.Close()
+		closer.Add(iter)
 
 		for _, s := range p.stages {
 			if iter, err = s.Process(ctx, iter, closer); err != nil {
@@ -293,13 +296,19 @@ func processStagesDocuments(ctx context.Context, p *stagesDocumentsParams) (type
 			}
 		}
 
-		docs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
-		return err
+		return nil
 	}); err != nil {
 		return nil, err
 	}
 
-	return iterator.Values(iterator.ForSlice(docs)), nil
+	closer.Add(iterator.CloserFunc(func() {
+		// It does not matter if we commit or rollback the read transaction,
+		// but we should close it.
+		// ctx could be cancelled already.
+		_ = keepTx.Rollback(context.Background())
+	}))
+
+	return iter, nil
 }
 
 // stagesStatsParams contains the parameters for processStagesStats.
@@ -312,7 +321,7 @@ type stagesStatsParams struct {
 }
 
 // processStagesStats retrieves the statistics from the database and then processes them through the stages.
-func processStagesStats(ctx context.Context, p *stagesStatsParams) (types.DocumentsIterator, error) {
+func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *stagesStatsParams) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	// Clarify what needs to be retrieved from the database and retrieve it.
 	_, hasCount := p.statistics[stages.StatisticCount]
 	_, hasStorage := p.statistics[stages.StatisticStorage]
@@ -389,9 +398,7 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) (types.Docume
 
 	// Process the retrieved statistics through the stages.
 	iter := iterator.Values(iterator.ForSlice([]*types.Document{doc}))
-
-	closer := iterator.NewMultiCloser(iter)
-	defer closer.Close()
+	closer.Add(iter)
 
 	for _, s := range p.stages {
 		if iter, err = s.Process(ctx, iter, closer); err != nil {
