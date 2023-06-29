@@ -85,17 +85,16 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	username, _ := conninfo.Get(ctx).Auth()
-	cancel := func() {}
 
-	maxTimeMS, err := common.GetOptionalParam[int64](document, "maxTimeMS", 0)
-	if err != nil {
-		return nil, err
+	v, _ := document.Get("maxTimeMS")
+	if v == nil {
+		v = int64(0)
 	}
 
-	if maxTimeMS != 0 {
-		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
-		// TODO https://github.com/FerretDB/FerretDB/issues/1808
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
+	maxTimeMS, err := commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "maxTimeMS", v, 0)
+	if err != nil {
+		// unreachable because MongoDB driver validates maxTimeMS parameter
+		return nil, err
 	}
 
 	pipeline, err := common.GetRequiredParam[*types.Array](document, "pipeline")
@@ -147,7 +146,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	// validate cursor after validating pipeline stages to keep compatibility
-	v, _ := document.Get("cursor")
+	v, _ = document.Get("cursor")
 	if v == nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrFailedToParse,
@@ -213,6 +212,13 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	if err != nil {
 		return nil, err
+	}
+
+	cancel := func() {}
+	if maxTimeMS != 0 {
+		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
+		// TODO https://github.com/FerretDB/FerretDB/issues/1808
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
 	}
 
 	closer := iterator.NewMultiCloser(iter, iterator.CloserFunc(cancel))
