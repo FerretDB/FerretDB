@@ -47,12 +47,11 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	// This is mainly needed for SQLite and our cursor tests to avoid SQLITE_BUSY errors,
-	// but fine for other backends too.
+	// Most backends would block on `DropCollection` below otherwise.
 	//
 	// There is a race condition: another client could create a new cursor for that collection
 	// after we closed all of them, but before we drop the collection itself.
-	// In that case, we expect the client to retry the operation.
+	// In that case, we expect the client to wait or to retry the operation.
 	for _, c := range h.cursors.All() {
 		if c.DB == dbName && c.Collection == collectionName {
 			c.Close()
