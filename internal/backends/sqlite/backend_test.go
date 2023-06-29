@@ -39,8 +39,8 @@ func TestNewBackend(t *testing.T) {
 	testCases := map[string]struct {
 		params *NewBackendParams
 
-		uri *url.URL
-		err error
+		uri      *url.URL
+		errRegex string
 	}{
 		"LocalDirectory": {
 			params: &NewBackendParams{
@@ -73,6 +73,20 @@ func TestNewBackend(t *testing.T) {
 				RawQuery: "mode=ro",
 			},
 		},
+		"HostIsNotEmpty": {
+			params: &NewBackendParams{
+				URI: "file://localhost/./tmp/?mode=ro",
+				L:   zap.NewNop(),
+			},
+			errRegex: `.*backend URI should not contain host: "file://localhost/./tmp/\?mode=ro"`,
+		},
+		"UserIsNotEmpty": {
+			params: &NewBackendParams{
+				URI: "file://user:pass@./tmp/?mode=ro",
+				L:   zap.NewNop(),
+			},
+			errRegex: `.*backend URI should not contain user: "file://user:pass@./tmp/\?mode=ro"`,
+		},
 	}
 	for name, tc := range testCases {
 		name, tc := name, tc
@@ -83,7 +97,7 @@ func TestNewBackend(t *testing.T) {
 			if err != nil {
 				t.Log(err)
 
-				require.Equal(t, err, tc.err)
+				require.Regexp(t, tc.errRegex, err.Error())
 				return
 			}
 			require.NoError(t, err)
