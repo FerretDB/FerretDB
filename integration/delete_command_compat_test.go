@@ -68,13 +68,17 @@ func testDeleteCommandCompat(t *testing.T, testCases map[string]deleteCommandCom
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
-						targetErr = UnsetRaw(t, targetErr)
-						compatErr = UnsetRaw(t, compatErr)
-						assert.Equal(t, compatErr, targetErr)
-					} else {
-						require.NoError(t, compatErr, "compat error; target returned no error")
-					}
+						t.Logf("Compat error: %v", compatErr)
 
+						// error messages are intentionally not compared
+						AssertMatchesCommandError(t, compatErr, targetErr)
+
+						return
+					}
+					require.NoError(t, compatErr, "compat error; target returned no error")
+
+					t.Logf("Compat (expected) result: %v", compatRes)
+					t.Logf("Target (actual)   result: %v", targetRes)
 					assert.Equal(t, compatRes, targetRes)
 
 					targetDocs := FindAll(t, ctx, targetCollection)

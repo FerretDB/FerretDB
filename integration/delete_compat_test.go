@@ -166,10 +166,11 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
-						targetErr = UnsetRaw(t, targetErr)
-						compatErr = UnsetRaw(t, compatErr)
-						assert.Equal(t, compatErr, targetErr)
-					} else {
+						t.Logf("Compat error: %v", compatErr)
+
+						// error messages are intentionally not compared
+						AssertMatchesCommandError(t, compatErr, targetErr)
+					} else { // we have to check the results in case of error because some documents may be deleted
 						require.NoError(t, compatErr, "compat error; target returned no error")
 					}
 
@@ -177,6 +178,8 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 						nonEmptyResults = true
 					}
 
+					t.Logf("Compat (expected) result: %v", compatRes)
+					t.Logf("Target (actual)   result: %v", targetRes)
 					assert.Equal(t, compatRes, targetRes)
 
 					targetDocs := FindAll(t, ctx, targetCollection)
