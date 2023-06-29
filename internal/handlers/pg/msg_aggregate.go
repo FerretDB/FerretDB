@@ -94,7 +94,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	maxTimeMS, err := commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "maxTimeMS", v, 0)
 	if err != nil {
 		// unreachable for MongoDB GO driver, it validates maxTimeMS parameter
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	pipeline, err := common.GetRequiredParam[*types.Array](document, "pipeline")
@@ -179,7 +179,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	cancel := func() {}
 	if maxTimeMS != 0 {
-		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
+		// It is not clear if maxTimeMS affects only aggregate, or both aggregate and getMore (as the current code does).
 		// TODO https://github.com/FerretDB/FerretDB/issues/1808
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
 	}
@@ -285,7 +285,7 @@ func processStagesDocuments(ctx context.Context, closer *iterator.MultiCloser, p
 		var err error
 		iter, _, err = pgdb.QueryDocuments(ctx, tx, p.qp)
 		if err != nil {
-			return err
+			return lazyerrors.Error(err)
 		}
 
 		closer.Add(iter)

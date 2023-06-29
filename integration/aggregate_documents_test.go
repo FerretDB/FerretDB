@@ -17,7 +17,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -833,7 +832,7 @@ func TestAggregateBatchSize(t *testing.T) {
 	t.Run("SetBatchSize", func(t *testing.T) {
 		t.Parallel()
 
-		cursor, err := collection.Aggregate(ctx, bson.D{}, &options.AggregateOptions{BatchSize: pointer.ToInt32(2)})
+		cursor, err := collection.Aggregate(ctx, bson.D{}, options.Aggregate().SetBatchSize(2))
 		require.NoError(t, err)
 
 		defer cursor.Close(ctx)
@@ -873,7 +872,7 @@ func TestAggregateBatchSize(t *testing.T) {
 	t.Run("ZeroBatchSize", func(t *testing.T) {
 		t.Parallel()
 
-		cursor, err := collection.Aggregate(ctx, bson.D{}, &options.AggregateOptions{BatchSize: pointer.ToInt32(0)})
+		cursor, err := collection.Aggregate(ctx, bson.D{}, options.Aggregate().SetBatchSize(0))
 		require.NoError(t, err)
 
 		defer cursor.Close(ctx)

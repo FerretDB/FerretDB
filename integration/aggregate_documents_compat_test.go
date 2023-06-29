@@ -95,10 +95,10 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 				pipeline = append(pipeline, bson.D{{"$sort", bson.D{{"_id", 1}}}})
 			}
 
-			opts := new(options.AggregateOptions)
+			opts := options.Aggregate()
 
 			if tc.maxTime != nil {
-				opts.SetMaxTime(pointer.GetDuration(tc.maxTime))
+				opts.SetMaxTime(*tc.maxTime)
 			}
 
 			var nonEmptyResults bool
