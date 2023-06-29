@@ -516,6 +516,7 @@ func TestDatabaseName(t *testing.T) {
 					Code:    73,
 					Message: `Invalid namespace specified '/.TestDatabaseName-Err'`,
 				},
+				altMessage: `Invalid namespace: /.TestDatabaseName-Err`,
 			},
 
 			"WithABackslash": {
@@ -525,6 +526,7 @@ func TestDatabaseName(t *testing.T) {
 					Code:    73,
 					Message: `Invalid namespace specified '\.TestDatabaseName-Err'`,
 				},
+				altMessage: `Invalid namespace: \.TestDatabaseName-Err`,
 			},
 			"WithADollarSign": {
 				db: "name_with_a-$",
