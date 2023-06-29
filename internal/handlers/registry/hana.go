@@ -29,7 +29,7 @@ func init() {
 		handlerOpts := &hana.NewOpts{
 			HANAURL:       opts.HANAURL,
 			L:             opts.Logger,
-			Metrics:       opts.Metrics,
+			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 		}
 

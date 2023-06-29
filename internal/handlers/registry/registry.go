@@ -38,7 +38,7 @@ var registry = map[string]newHandlerFunc{}
 type NewHandlerOpts struct {
 	// for all handlers
 	Logger        *zap.Logger
-	Metrics       *connmetrics.ConnMetrics
+	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider
 
 	// for `pg` handler
