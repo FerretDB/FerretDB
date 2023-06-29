@@ -22,6 +22,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/url"
 
 	"go.uber.org/zap"
 	"modernc.org/sqlite"
@@ -41,8 +42,8 @@ type Registry struct {
 }
 
 // NewRegistry creates a registry for the given directory.
-func NewRegistry(dir string, l *zap.Logger) (*Registry, error) {
-	p, err := pool.New(dir, l.Named("pool"))
+func NewRegistry(uri *url.URL, l *zap.Logger) (*Registry, error) {
+	p, err := pool.New(uri, l.Named("pool"))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

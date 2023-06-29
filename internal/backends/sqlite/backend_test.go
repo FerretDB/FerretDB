@@ -55,6 +55,7 @@ func TestNewBackend(t *testing.T) {
 			uri: &url.URL{
 				Scheme: "file",
 				Opaque: "./",
+				Path:   "./",
 			},
 		},
 		"LocalSubDirectory": {
@@ -65,6 +66,7 @@ func TestNewBackend(t *testing.T) {
 			uri: &url.URL{
 				Scheme: "file",
 				Opaque: "./tmp/",
+				Path:   "./tmp/",
 			},
 		},
 		"LocalSubSubDirectory": {
@@ -75,6 +77,7 @@ func TestNewBackend(t *testing.T) {
 			uri: &url.URL{
 				Scheme: "file",
 				Opaque: "./tmp/dir/",
+				Path:   "./tmp/dir/",
 			},
 		},
 		"LocalDirectoryWithParameters": {
@@ -85,6 +88,39 @@ func TestNewBackend(t *testing.T) {
 			uri: &url.URL{
 				Scheme:   "file",
 				Opaque:   "./tmp/",
+				Path:     "./tmp/",
+				RawQuery: "mode=ro",
+			},
+		},
+		"AbsoluteDirectory": {
+			params: &NewBackendParams{
+				URI: "file:/tmp/",
+				L:   zap.NewNop(),
+			},
+			uri: &url.URL{
+				Scheme:   "file",
+				Path:     "/tmp/",
+				OmitHost: true,
+			},
+		},
+		"WithEmptyAuthority": {
+			params: &NewBackendParams{
+				URI: "file:///tmp/",
+				L:   zap.NewNop(),
+			},
+			uri: &url.URL{
+				Scheme: "file",
+				Path:   "/tmp/",
+			},
+		},
+		"WithEmptyAuthorityAndQuery": {
+			params: &NewBackendParams{
+				URI: "file:///tmp/?mode=ro",
+				L:   zap.NewNop(),
+			},
+			uri: &url.URL{
+				Scheme:   "file",
+				Path:     "/tmp/",
 				RawQuery: "mode=ro",
 			},
 		},

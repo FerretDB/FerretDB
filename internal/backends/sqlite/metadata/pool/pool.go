@@ -20,6 +20,7 @@ package pool
 import (
 	"context"
 	"database/sql"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -50,17 +51,17 @@ type Pool struct {
 }
 
 // New creates a pool for SQLite databases in the given directory.
-func New(dir string, l *zap.Logger) (*Pool, error) {
+func New(uri *url.URL, l *zap.Logger) (*Pool, error) {
 	// TODO accept URI with a directory name, not just directory name
 	// https://github.com/FerretDB/FerretDB/issues/2753
 
-	matches, err := filepath.Glob(filepath.Join(dir, "*"+filenameExtension))
+	matches, err := filepath.Glob(filepath.Join(uri.Path, "*"+filenameExtension))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	p := &Pool{
-		dir:   dir,
+		dir:   uri.Path,
 		l:     l,
 		dbs:   make(map[string]*db, len(matches)),
 		token: resource.NewToken(),

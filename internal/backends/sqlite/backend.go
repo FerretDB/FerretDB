@@ -47,7 +47,7 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 		return nil, err
 	}
 
-	r, err := metadata.NewRegistry(uri.Path, params.L.Named("metadata"))
+	r, err := metadata.NewRegistry(uri, params.L.Named("metadata"))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -94,6 +94,8 @@ func validateParams(params *NewBackendParams) (*url.URL, error) {
 	if !fi.IsDir() {
 		return nil, lazyerrors.Errorf("%q should be an existing directory", params.URI)
 	}
+
+	uri.Path = dir
 
 	return uri, nil
 }
