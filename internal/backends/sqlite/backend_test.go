@@ -67,7 +67,11 @@ func TestNewBackend(t *testing.T) {
 				URI: "file:./tmp/?mode=ro",
 				L:   zap.NewNop(),
 			},
-			uri: &url.URL{},
+			uri: &url.URL{
+				Scheme:   "file",
+				Opaque:   "./tmp/",
+				RawQuery: "mode=ro",
+			},
 		},
 	}
 	for name, tc := range testCases {
