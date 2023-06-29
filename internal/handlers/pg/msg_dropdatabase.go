@@ -47,6 +47,13 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, err
 	}
 
+	// PostgreSQL would block on `DropDatabase` below otherwise
+	for _, c := range h.cursors.All() {
+		if c.DB == db {
+			c.Close()
+		}
+	}
+
 	res := must.NotFail(types.NewDocument())
 
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {

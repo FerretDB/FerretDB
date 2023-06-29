@@ -54,6 +54,28 @@ func (e *transactionConflictError) Error() string {
 // so the caller needs to use errors.Is to check the error,
 // for example, errors.Is(err, ErrSchemaNotExist).
 func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (err error) {
+	var keepTx pgx.Tx
+
+	err = pgPool.InTransactionKeep(ctx, func(tx pgx.Tx) error {
+		keepTx = tx
+		return f(tx)
+	})
+	if err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
+
+	err = keepTx.Commit(ctx)
+	if err != nil {
+		err = lazyerrors.Error(err)
+		_ = keepTx.Rollback(ctx)
+	}
+
+	return
+}
+
+// InTransactionKeep is a variant of InTransaction that keeps transaction open if there is no error.
+func (pgPool *Pool) InTransactionKeep(ctx context.Context, f func(pgx.Tx) error) (err error) {
 	var tx pgx.Tx
 
 	if tx, err = pgPool.p.Begin(ctx); err != nil {
@@ -61,7 +83,7 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 		return
 	}
 
-	var committed bool
+	var done bool
 
 	defer func() {
 		// It is not enough to check `err == nil` there,
@@ -69,22 +91,17 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 		// that call `runtime.Goexit()`, leaving `err` unset in `err = f(tx)` below.
 		// This situation would hang a test.
 		//
-		// As a bonus, checking a separate variable also handles any panics in `f`.
-		if committed {
+		// As a bonus, checking a separate variable also handles any panics in `f`,
+		// including `panic(nil)` that is problematic for tests too.
+		if done {
 			return
 		}
 
-		if rerr := tx.Rollback(ctx); rerr != nil {
-			pgPool.logger.Log(
-				ctx, tracelog.LogLevelError, "failed to perform rollback",
-				map[string]any{"err": rerr},
-			)
-
-			// in case of `runtime.Goexit()` or `panic(nil)`; see above
-			if err == nil {
-				err = rerr
-			}
+		if err == nil {
+			err = lazyerrors.Errorf("transaction was not committed")
 		}
+
+		_ = tx.Rollback(ctx)
 	}()
 
 	if err = f(tx); err != nil {
@@ -92,12 +109,7 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 		return
 	}
 
-	if err = tx.Commit(ctx); err != nil {
-		err = lazyerrors.Error(err)
-		return
-	}
-
-	committed = true
+	done = true
 	return
 }
 
