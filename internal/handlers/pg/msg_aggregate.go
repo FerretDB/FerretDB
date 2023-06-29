@@ -177,15 +177,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	cancel := func() {}
-	if maxTimeMS != 0 {
-		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
-		// TODO https://github.com/FerretDB/FerretDB/issues/1808
-		ctx, cancel = context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
-	}
-
-	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
-
 	var iter iterator.Interface[struct{}, *types.Document]
 
 	// At this point we have a list of stages to apply to the documents or stats.
@@ -209,12 +200,12 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/1733
-		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})
+		iter, err = processStagesDocuments(ctx, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})
 	} else {
 		// stats stages are provided - fetch stats from the DB and apply stages to them
 		statistics := stages.GetStatistics(stagesStats)
 
-		iter, err = processStagesStats(ctx, closer, &stagesStatsParams{
+		iter, err = processStagesStats(ctx, &stagesStatsParams{
 			dbPool, db, collection, statistics, stagesStats,
 		})
 	}
@@ -223,7 +214,14 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	closer.Add(iter)
+	cancel := func() {}
+	if maxTimeMS != 0 {
+		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
+		// TODO https://github.com/FerretDB/FerretDB/issues/1808
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
+	}
+
+	closer := iterator.NewMultiCloser(iter, iterator.CloserFunc(cancel))
 
 	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
 		Iter:       iterator.WithClose(iter, closer.Close),
@@ -275,7 +273,7 @@ type stagesDocumentsParams struct {
 }
 
 // processStagesDocuments retrieves the documents from the database and then processes them through the stages.
-func processStagesDocuments(ctx context.Context, closer *iterator.MultiCloser, p *stagesDocumentsParams) (types.DocumentsIterator, error) { //nolint:lll // for readability
+func processStagesDocuments(ctx context.Context, p *stagesDocumentsParams) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	var docs []*types.Document
 
 	if err := p.dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
@@ -285,7 +283,8 @@ func processStagesDocuments(ctx context.Context, closer *iterator.MultiCloser, p
 			return err
 		}
 
-		closer.Add(iter)
+		closer := iterator.NewMultiCloser(iter)
+		defer closer.Close()
 
 		for _, s := range p.stages {
 			if iter, err = s.Process(ctx, iter, closer); err != nil {
@@ -312,7 +311,7 @@ type stagesStatsParams struct {
 }
 
 // processStagesStats retrieves the statistics from the database and then processes them through the stages.
-func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *stagesStatsParams) (types.DocumentsIterator, error) { //nolint:lll // for readability
+func processStagesStats(ctx context.Context, p *stagesStatsParams) (types.DocumentsIterator, error) {
 	// Clarify what needs to be retrieved from the database and retrieve it.
 	_, hasCount := p.statistics[stages.StatisticCount]
 	_, hasStorage := p.statistics[stages.StatisticStorage]
@@ -389,7 +388,9 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 
 	// Process the retrieved statistics through the stages.
 	iter := iterator.Values(iterator.ForSlice([]*types.Document{doc}))
-	closer.Add(iter)
+
+	closer := iterator.NewMultiCloser(iter)
+	defer closer.Close()
 
 	for _, s := range p.stages {
 		if iter, err = s.Process(ctx, iter, closer); err != nil {
