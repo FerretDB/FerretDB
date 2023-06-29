@@ -42,7 +42,7 @@ type NewBackendParams struct {
 
 // NewBackend creates a new SQLite backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	uri, err := validateURI(params)
+	uri, err := validateURI(params.URI)
 	if err != nil {
 		return nil, err
 	}

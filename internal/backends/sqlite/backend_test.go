@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 )
 
 func TestNewBackend(t *testing.T) {
@@ -42,16 +41,13 @@ func TestNewBackend(t *testing.T) {
 	})
 
 	testCases := map[string]struct {
-		params *NewBackendParams
+		value string
 
 		uri      *url.URL
 		errRegex string
 	}{
 		"LocalDirectory": {
-			params: &NewBackendParams{
-				URI: "file:./",
-				L:   zap.NewNop(),
-			},
+			value: "file:./",
 			uri: &url.URL{
 				Scheme: "file",
 				Opaque: "./",
@@ -59,10 +55,7 @@ func TestNewBackend(t *testing.T) {
 			},
 		},
 		"LocalSubDirectory": {
-			params: &NewBackendParams{
-				URI: "file:./tmp/",
-				L:   zap.NewNop(),
-			},
+			value: "file:./tmp/",
 			uri: &url.URL{
 				Scheme: "file",
 				Opaque: "./tmp/",
@@ -70,10 +63,7 @@ func TestNewBackend(t *testing.T) {
 			},
 		},
 		"LocalSubSubDirectory": {
-			params: &NewBackendParams{
-				URI: "file:./tmp/dir/",
-				L:   zap.NewNop(),
-			},
+			value: "file:./tmp/dir/",
 			uri: &url.URL{
 				Scheme: "file",
 				Opaque: "./tmp/dir/",
@@ -81,10 +71,7 @@ func TestNewBackend(t *testing.T) {
 			},
 		},
 		"LocalDirectoryWithParameters": {
-			params: &NewBackendParams{
-				URI: "file:./tmp/?mode=ro",
-				L:   zap.NewNop(),
-			},
+			value: "file:./tmp/?mode=ro",
 			uri: &url.URL{
 				Scheme:   "file",
 				Opaque:   "./tmp/",
@@ -93,10 +80,7 @@ func TestNewBackend(t *testing.T) {
 			},
 		},
 		"AbsoluteDirectory": {
-			params: &NewBackendParams{
-				URI: "file:/tmp/",
-				L:   zap.NewNop(),
-			},
+			value: "file:/tmp/",
 			uri: &url.URL{
 				Scheme:   "file",
 				Path:     "/tmp/",
@@ -104,20 +88,14 @@ func TestNewBackend(t *testing.T) {
 			},
 		},
 		"WithEmptyAuthority": {
-			params: &NewBackendParams{
-				URI: "file:///tmp/",
-				L:   zap.NewNop(),
-			},
+			value: "file:///tmp/",
 			uri: &url.URL{
 				Scheme: "file",
 				Path:   "/tmp/",
 			},
 		},
 		"WithEmptyAuthorityAndQuery": {
-			params: &NewBackendParams{
-				URI: "file:///tmp/?mode=ro",
-				L:   zap.NewNop(),
-			},
+			value: "file:///tmp/?mode=ro",
 			uri: &url.URL{
 				Scheme:   "file",
 				Path:     "/tmp/",
@@ -125,52 +103,31 @@ func TestNewBackend(t *testing.T) {
 			},
 		},
 		"HostIsNotEmpty": {
-			params: &NewBackendParams{
-				URI: "file://localhost/./tmp/?mode=ro",
-				L:   zap.NewNop(),
-			},
+			value:    "file://localhost/./tmp/?mode=ro",
 			errRegex: `.*backend URI should not contain host: "file://localhost/./tmp/\?mode=ro"`,
 		},
 		"UserIsNotEmpty": {
-			params: &NewBackendParams{
-				URI: "file://user:pass@./tmp/?mode=ro",
-				L:   zap.NewNop(),
-			},
+			value:    "file://user:pass@./tmp/?mode=ro",
 			errRegex: `.*backend URI should not contain user: "file://user:pass@./tmp/\?mode=ro"`,
 		},
 		"NoDirectory": {
-			params: &NewBackendParams{
-				URI: "file:./nodir/",
-				L:   zap.NewNop(),
-			},
+			value:    "file:./nodir/",
 			errRegex: `.*"file:./nodir/" should be an existing directory: stat ./nodir/: no such file or directory`,
 		},
 		"PathIsNotEndsWithSlash": {
-			params: &NewBackendParams{
-				URI: "file:./tmp/file",
-				L:   zap.NewNop(),
-			},
+			value:    "file:./tmp/file",
 			errRegex: `.*backend URI should be a directory: "file:./tmp/file"`,
 		},
 		"FileInsteadOfDirectory": {
-			params: &NewBackendParams{
-				URI: "file:./tmp/file/",
-				L:   zap.NewNop(),
-			},
+			value:    "file:./tmp/file/",
 			errRegex: `.*file:./tmp/file/" should be an existing directory: stat ./tmp/file/: not a directory`,
 		},
 		"MalformedURI": {
-			params: &NewBackendParams{
-				URI: ":./tmp/",
-				L:   zap.NewNop(),
-			},
+			value:    ":./tmp/",
 			errRegex: `.*failed to parse backend URI: parse ":./tmp/": missing protocol scheme`,
 		},
 		"NoScheme": {
-			params: &NewBackendParams{
-				URI: "./tmp/",
-				L:   zap.NewNop(),
-			},
+			value:    "./tmp/",
 			errRegex: `.*backend URI should have file scheme: "./tmp/"`,
 		},
 	}
@@ -179,7 +136,7 @@ func TestNewBackend(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			uri, err := validateURI(tc.params)
+			uri, err := validateURI(tc.value)
 			if tc.errRegex != "" {
 				t.Log(err)
 
