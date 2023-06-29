@@ -668,8 +668,8 @@ func TestAggregateCommandCursor(t *testing.T) {
 
 	// the number of documents is set above the default batchSize of 101
 	// for testing unset batchSize returning default batchSize
-	docs := generateDocuments(0, 110)
-	_, err := collection.InsertMany(ctx, docs)
+	arr, _ := generateDocuments(0, 110)
+	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
@@ -683,11 +683,11 @@ func TestAggregateCommandCursor(t *testing.T) {
 	}{
 		"Int": {
 			cursor:     bson.D{{"batchSize", 1}},
-			firstBatch: docs[:1],
+			firstBatch: arr[:1],
 		},
 		"Long": {
 			cursor:     bson.D{{"batchSize", int64(2)}},
-			firstBatch: docs[:2],
+			firstBatch: arr[:2],
 		},
 		"LongZero": {
 			cursor:     bson.D{{"batchSize", int64(0)}},
@@ -716,11 +716,11 @@ func TestAggregateCommandCursor(t *testing.T) {
 		},
 		"DoubleFloor": {
 			cursor:     bson.D{{"batchSize", 1.9}},
-			firstBatch: docs[:1],
+			firstBatch: arr[:1],
 		},
 		"Bool": {
 			cursor:     bson.D{{"batchSize", true}},
-			firstBatch: docs[:1],
+			firstBatch: arr[:1],
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
@@ -730,7 +730,7 @@ func TestAggregateCommandCursor(t *testing.T) {
 		},
 		"Unset": {
 			cursor:     nil,
-			firstBatch: docs[:101],
+			firstBatch: arr[:101],
 			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
@@ -739,11 +739,11 @@ func TestAggregateCommandCursor(t *testing.T) {
 		},
 		"Empty": {
 			cursor:     bson.D{},
-			firstBatch: docs[:101],
+			firstBatch: arr[:101],
 		},
 		"String": {
 			cursor:     "invalid",
-			firstBatch: docs[:101],
+			firstBatch: arr[:101],
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
@@ -753,14 +753,14 @@ func TestAggregateCommandCursor(t *testing.T) {
 		},
 		"LargeBatchSize": {
 			cursor:     bson.D{{"batchSize", 102}},
-			firstBatch: docs[:102],
+			firstBatch: arr[:102],
 		},
 		"LargeBatchSizeMatch": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"_id", bson.D{{"$in", bson.A{0, 1, 2, 3, 4, 5}}}}}}},
 			},
 			cursor:     bson.D{{"batchSize", 102}},
-			firstBatch: docs[:6],
+			firstBatch: arr[:6],
 		},
 	} {
 		name, tc := name, tc
@@ -825,8 +825,8 @@ func TestAggregateBatchSize(t *testing.T) {
 	// The batchSize set by `aggregate` is used also by `getMore` unless
 	// `aggregate` has default batchSize or 0 batchSize, then `getMore` has unlimited batchSize.
 	// To test that, the number of documents is set to more than the double of default batchSize 101.
-	docs := generateDocuments(0, 220)
-	_, err := collection.InsertMany(ctx, docs)
+	arr, _ := generateDocuments(0, 220)
+	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
 	t.Run("SetBatchSize", func(t *testing.T) {
