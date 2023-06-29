@@ -114,7 +114,7 @@ func TestNewBackend(t *testing.T) {
 				URI: "file:./tmp/file",
 				L:   zap.NewNop(),
 			},
-			errRegex: `.*"file:./tmp/file" should be an existing directory`,
+			errRegex: `.*backend URI should be a directory: "file:./tmp/file"`,
 		},
 		"MalformedURI": {
 			params: &NewBackendParams{

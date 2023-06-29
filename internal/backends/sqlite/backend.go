@@ -18,6 +18,7 @@ import (
 	"context"
 	"net/url"
 	"os"
+	"strings"
 
 	"go.uber.org/zap"
 	_ "modernc.org/sqlite"
@@ -79,6 +80,10 @@ func validateParams(params *NewBackendParams) (*url.URL, error) {
 
 	if uri.Opaque != "" {
 		dir = uri.Opaque
+	}
+
+	if !strings.HasSuffix(dir, "/") {
+		return nil, lazyerrors.Errorf("backend URI should be a directory: %q", params.URI)
 	}
 
 	fi, err := os.Stat(dir)
