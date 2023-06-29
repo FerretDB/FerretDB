@@ -34,7 +34,7 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	res, err := common.ServerStatus(h.StateProvider.Get(), h.Metrics)
+	res, err := common.ServerStatus(h.StateProvider.Get(), h.ConnMetrics)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

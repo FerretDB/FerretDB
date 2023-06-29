@@ -32,12 +32,16 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// jaegerExporter is a global Jaeger exporter for tests.
+// listenerMetrics are shared between tests.
+var listenerMetrics = connmetrics.NewListenerMetrics()
+
+// jaegerExporter is a shared Jaeger exporter for tests.
 var jaegerExporter *jaeger.Exporter
 
 // sqliteDir is a fixed directory for SQLite backend tests.
@@ -55,7 +59,9 @@ func Startup() {
 		*debugSetupF = true
 	}
 
-	// use any available port to allow running different configuration in parallel
+	prometheus.DefaultRegisterer.MustRegister(listenerMetrics)
+
+	// use any available port to allow running different configurations in parallel
 	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
