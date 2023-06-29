@@ -284,7 +284,6 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 		require.NoError(t, compatErr)
 		require.NoError(t, targetErr, "target error; compat returned no error")
 
-		assert.Equal(t, false, compatRes.Map()["createdCollectionAutomatically"])
 		assert.NotEmpty(t, compatRes.Map()["note"])
 		assert.Equal(t, compatRes, targetRes)
 	})

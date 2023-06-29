@@ -254,11 +254,14 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	res := new(types.Document)
 
-	// if isUniqueSpecified {
 	res.Set("numIndexesBefore", numIndexesBefore)
 	res.Set("numIndexesAfter", numIndexesAfter)
-	res.Set("createdCollectionAutomatically", collCreated)
-	//	}
+
+	if numIndexesBefore != numIndexesAfter {
+		res.Set("createdCollectionAutomatically", collCreated)
+	} else {
+		res.Set("note", "all indexes already exist")
+	}
 
 	res.Set("ok", float64(1))
 
