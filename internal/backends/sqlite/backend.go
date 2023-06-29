@@ -63,6 +63,10 @@ func validateParams(params *NewBackendParams) (*url.URL, error) {
 		return nil, lazyerrors.Errorf("failed to parse backend URI: %w", err)
 	}
 
+	if uri.Scheme != "file" {
+		return nil, lazyerrors.Errorf("backend URI should have file scheme: %q", params.URI)
+	}
+
 	if uri.User != nil {
 		return nil, lazyerrors.Errorf("backend URI should not contain user: %q", params.URI)
 	}

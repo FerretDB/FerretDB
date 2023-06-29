@@ -116,6 +116,20 @@ func TestNewBackend(t *testing.T) {
 			},
 			errRegex: `.*"file:./tmp/file" should be an existing directory`,
 		},
+		"MalformedURI": {
+			params: &NewBackendParams{
+				URI: ":./tmp/",
+				L:   zap.NewNop(),
+			},
+			errRegex: `.*failed to parse backend URI: parse ":./tmp/": missing protocol scheme`,
+		},
+		"NoScheme": {
+			params: &NewBackendParams{
+				URI: "./tmp/",
+				L:   zap.NewNop(),
+			},
+			errRegex: `.*backend URI should have file scheme: "./tmp/"`,
+		},
 	}
 	for name, tc := range testCases {
 		name, tc := name, tc
@@ -123,8 +137,10 @@ func TestNewBackend(t *testing.T) {
 			t.Parallel()
 
 			uri, err := validateParams(tc.params)
-			if err != nil {
+			if tc.errRegex != "" {
 				t.Log(err)
+
+				require.Error(t, err)
 
 				require.Regexp(t, tc.errRegex, err.Error())
 				return
