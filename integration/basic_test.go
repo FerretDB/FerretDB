@@ -452,34 +452,18 @@ func TestDatabaseName(t *testing.T) {
 		for name, tc := range map[string]struct {
 			db string // database name, defaults to empty string
 
-			err           *mongo.CommandError // required, expected error from MongoDB
-			altMessage    string              // optional, alternative error message for FerretDB, ignored if empty
-			skip          string              // optional, skip test with a specified reason
-			skipForSQLite string              // optional, skip test for SQLite backend, with a specified reason
+			err        *mongo.CommandError // required, expected error from MongoDB
+			altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+			skip       string              // optional, skip test with a specified reason
 		}{
-			"QuestionMark": {
-				db: "?",
+			"Dash": {
+				db: "--",
 			},
-			"Asterix": {
-				db: "*",
+			"Underscore": {
+				db: "__",
 			},
-			"Pipe": {
-				db: "|",
-			},
-			"Arrows": {
-				db: "<>><>",
-			},
-			"Colon": {
-				db: ":",
-			},
-			"Percentage": {
-				db: "%3F",
-			},
-			"All": {
-				db: "+-*<>=~!@#%^&|`?()[],;:",
-			},
-			"All2": {
-				db: "+-*<>=~!@#%^&|`()[],;:",
+			"Sqlite": {
+				db: "sqlite_",
 			},
 		} {
 			name, tc := name, tc
@@ -488,11 +472,7 @@ func TestDatabaseName(t *testing.T) {
 					t.Skip(tc.skip)
 				}
 
-				if tc.skipForSQLite != "" {
-					setup.SkipForSQLiteWithReason(t, tc.skipForSQLite)
-				}
-
-				// t.Parallel()
+				t.Parallel()
 
 				// there is no explicit command to create database, so create collection instead
 				err := collection.Database().Client().Database(tc.db).CreateCollection(ctx, collection.Name())

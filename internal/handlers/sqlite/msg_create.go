@@ -29,7 +29,7 @@ import (
 )
 
 // validateDatabaseNameRe validates FerretDB database name.
-var validateDatabaseNameRe = regexp.MustCompile("^[a-zA-Z?*|<>%:_-][a-zA-Z0-9?*|<>%:_-]{0,62}$")
+var validateDatabaseNameRe = regexp.MustCompile("^[a-zA-Z_-][a-zA-Z0-9_-]{0,62}$")
 
 // MsgCreate implements HandlerInterface.
 func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
