@@ -17,12 +17,12 @@ tasks:
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
         -target-backend=ferretdb-pg
-        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
+        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
         -target-backend=ferretdb-pg
-        -postgresql-url=postgres://username:password@127.0.0.1:5433/ferretdb?pool_min_conns=1
+        -postgresql-url=postgres://username:password@127.0.0.1:5433/ferretdb?pool_max_conns=50
       # no sqlite yet
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
@@ -61,7 +61,7 @@ tasks:
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-pg
-        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
         | tee new-pg.txt
       - ../bin/benchstat{{exeExt}} old-pg.txt new-pg.txt
 
@@ -74,7 +74,7 @@ tasks:
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-pg
-        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
         -- -disable-filter-pushdown
         | tee new-pg.txt
       - ../bin/benchstat{{exeExt}} old-pg.txt new-pg.txt
