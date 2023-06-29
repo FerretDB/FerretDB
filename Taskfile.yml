@@ -322,7 +322,7 @@ tasks:
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
         --handler=sqlite
-        --sqlite-uri=tmp/sqlite
+        --sqlite-uri=file:./tmp/sqlite/
         --test-records-dir=tmp/records
         --test-disable-filter-pushdown
 
