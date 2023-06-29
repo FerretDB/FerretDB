@@ -71,7 +71,7 @@ func testDeleteCommandCompat(t *testing.T, testCases map[string]deleteCommandCom
 						t.Logf("Compat error: %v", compatErr)
 
 						// error messages are intentionally not compared
-						AssertMatchesCommandError(t, compatErr, targetErr)
+						AssertMatchesWriteError(t, compatErr, targetErr)
 
 						return
 					}

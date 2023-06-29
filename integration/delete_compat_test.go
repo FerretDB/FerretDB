@@ -169,7 +169,7 @@ func testDeleteCompat(t *testing.T, testCases map[string]deleteCompatTestCase) {
 						t.Logf("Compat error: %v", compatErr)
 
 						// error messages are intentionally not compared
-						AssertMatchesCommandError(t, compatErr, targetErr)
+						AssertMatchesWriteError(t, compatErr, targetErr)
 					} else { // we have to check the results in case of error because some documents may be deleted
 						require.NoError(t, compatErr, "compat error; target returned no error")
 					}
