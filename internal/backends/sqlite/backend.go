@@ -66,7 +66,7 @@ func (b *backend) Close() {
 }
 
 // Database implements backends.Backend interface.
-func (b *backend) Database(name string) backends.Database {
+func (b *backend) Database(name string) (backends.Database, error) {
 	return newDatabase(b.r, name)
 }
 

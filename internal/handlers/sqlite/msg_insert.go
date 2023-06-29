@@ -37,7 +37,11 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	db := h.b.Database(params.DB)
+	db, err := h.b.Database(params.DB)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	defer db.Close()
 
 	iter := params.Docs.Iterator()

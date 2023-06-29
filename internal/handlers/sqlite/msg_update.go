@@ -68,10 +68,14 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 	var matched, modified int32
 	var upserted types.Array
 
-	db := h.b.Database(params.DB)
+	db, err := h.b.Database(params.DB)
+	if err != nil {
+		return 0, 0, nil, lazyerrors.Error(err)
+	}
+
 	defer db.Close()
 
-	err := db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: params.Collection})
+	err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: params.Collection})
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionAlreadyExists) {
 		err = nil
 	}
