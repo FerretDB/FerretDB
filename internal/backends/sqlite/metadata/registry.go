@@ -186,10 +186,10 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 	return true, nil
 }
 
-// CollectionGet returns table name associated with provided collection.
+// GetTableName returns table name associated with provided collection.
 //
 // If database does not exist, no error is returned.
-func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionName string) (string, error) {
+func (r *Registry) GetTableName(ctx context.Context, dbName string, collectionName string) (string, error) {
 	db := r.p.GetExisting(ctx, dbName)
 	if db == nil {
 		return "", nil
@@ -228,7 +228,7 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 		return false, nil
 	}
 
-	tableName, err := r.CollectionGet(ctx, dbName, collectionName)
+	tableName, err := r.GetTableName(ctx, dbName, collectionName)
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 		return false, nil
 	}

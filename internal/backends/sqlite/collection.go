@@ -53,7 +53,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	tableName, err := c.r.CollectionGet(ctx, c.dbName, c.name)
+	tableName, err := c.r.GetTableName(ctx, c.dbName, c.name)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -78,7 +78,7 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2750
 
-	tableName, err := c.r.CollectionGet(ctx, c.dbName, c.name)
+	tableName, err := c.r.GetTableName(ctx, c.dbName, c.name)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -125,7 +125,7 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		return nil, lazyerrors.Errorf("no database %q", c.dbName)
 	}
 
-	tableName, err := c.r.CollectionGet(ctx, c.dbName, c.name)
+	tableName, err := c.r.GetTableName(ctx, c.dbName, c.name)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
