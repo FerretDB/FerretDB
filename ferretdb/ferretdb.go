@@ -122,7 +122,7 @@ func New(config *Config) (*FerretDB, error) {
 
 	h, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
 		Logger:        logger,
-		Metrics:       metrics.ConnMetrics,
+		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: p,
 
 		PostgreSQLURL: config.PostgreSQLURL,
