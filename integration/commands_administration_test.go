@@ -1158,3 +1158,15 @@ func TestCommandsAdministrationCurrentOp(t *testing.T) {
 	_, ok := must.NotFail(doc.Get("inprog")).(*types.Array)
 	assert.True(t, ok)
 }
+
+func TestCommandsAdministrationKillCursors(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t, shareddata.Strings)
+
+	err := collection.Database().RunCommand(ctx, bson.D{
+		{"killCursors", collection.Name()},
+		{"cursors", bson.A{}},
+	}).Err()
+	require.NoError(t, err)
+}
