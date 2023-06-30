@@ -450,10 +450,8 @@ func TestDatabaseName(t *testing.T) {
 	t.Run("NoErr", func(t *testing.T) {
 		ctx, collection := setup.Setup(t)
 		for name, tc := range map[string]struct {
-			db string // database name, defaults to empty string
-
-			altMessage string // optional, alternative error message for FerretDB, ignored if empty
-			skip       string // optional, skip test with a specified reason
+			db   string // database name, defaults to empty string
+			skip string // optional, skip test with a specified reason
 		}{
 			"Dash": {
 				db: "--",
