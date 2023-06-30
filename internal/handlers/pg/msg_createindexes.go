@@ -166,6 +166,16 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 				return err
 			}
 
+			if index.Unique != nil {
+				// when non-nil value is specified for unique, command response contains index count
+				isUniqueSpecified = true
+
+				if !*index.Unique {
+					// unique can be true or nil, so false is stored as nil
+					index.Unique = nil
+				}
+			}
+
 			if index.Name == "" {
 				return commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrCannotCreateIndex,
@@ -221,8 +231,6 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 			if err != nil {
 				return err
 			}
-
-			isUniqueSpecified = index.Unique != nil
 		}
 	})
 
@@ -401,9 +409,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 				)
 			}
 
-			if unique {
-				index.Unique = pointer.ToBool(true)
-			}
+			index.Unique = pointer.ToBool(unique)
 
 		case "background":
 			// ignore deprecated options
