@@ -87,7 +87,7 @@ func validateURI(value string) (*url.URL, error) {
 	}
 
 	if !strings.HasSuffix(dir, "/") {
-		return nil, lazyerrors.Errorf("backend URI should be a directory: %q", value)
+		return nil, lazyerrors.Errorf("backend URI should be a directory ending with '/': %q", value)
 	}
 
 	fi, err := os.Stat(dir)
