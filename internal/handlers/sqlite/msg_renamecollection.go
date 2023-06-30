@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
@@ -43,7 +44,7 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 
 	command := document.Command()
 
-	dbName, err := common.GetRequiredParam[string](document, "$db")
+	_, err = common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
@@ -102,12 +103,19 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		)
 	}
 
-	db := h.b.Database(dbName)
+	db := h.b.Database(dbFrom)
 	defer db.Close()
 
 	//TODO validate collection name
 
-	// db.RenameCollection
+	err = db.RenameCollection(ctx, &backends.RenameCollectionParams{
+		CollectionFrom: collectionFrom,
+		CollectionTo:   collectionTo,
+	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{

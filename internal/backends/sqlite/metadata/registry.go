@@ -253,29 +253,42 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 }
 
 func (r *Registry) CollectionRename(ctx context.Context, dbName, collectionFrom, collectionTo string) (bool, error) {
-	db := r.p.GetExisting(ctx, dbName)
-	if db == nil {
-		return false, nil
+	db, err := r.DatabaseGetOrCreate(ctx, dbName)
+	if err != nil {
+		return false, lazyerrors.Error(err)
 	}
+	//if db == nil {
+	//	return false, nil
+	//}
 
-	if r.collectionExists(ctx, dbName, collectionFrom) {
+	var tableName string
+	var exists bool
+	if tableName, exists = r.collectionExists(ctx, dbName, collectionFrom); !exists {
 		return false, ErrDoesNotExist
 	}
 
-	if r.collectionExists(ctx, dbName, collectionTo) {
+	if _, exists = r.collectionExists(ctx, dbName, collectionTo); exists {
 		return false, ErrAlreadyExist
 	}
+
+	query := fmt.Sprintf("UPDATE %q SET name = ? WHERE table_name = ?", metadataTableName)
+	res, err := db.ExecContext(ctx, query, collectionTo, tableName)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	res.RowsAffected()
 
 	return true, nil
 }
 
-func (r *Registry) collectionExists(ctx context.Context, dbName, collection string) bool {
+func (r *Registry) collectionExists(ctx context.Context, dbName, collection string) (string, bool) {
 	db := r.p.GetExisting(ctx, dbName)
 	if db == nil {
-		return false
+		return "", false
 	}
 
-	_, exists, err := r.GetTableName(ctx, dbName, collection)
+	tableName, exists, err := r.GetTableName(ctx, dbName, collection)
 
-	return err == nil && exists
+	return tableName, err == nil && exists
 }

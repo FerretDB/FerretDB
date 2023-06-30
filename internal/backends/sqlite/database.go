@@ -97,10 +97,15 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
-	_, err := db.r.CollectionRename(ctx, db.name, params.CollectionFrom, params.CollectionTo)
+	updated, err := db.r.CollectionRename(ctx, db.name, params.CollectionFrom, params.CollectionTo)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
+
+	if !updated {
+		return lazyerrors.New("Not updated")
+	}
+
 	return nil
 }
 
