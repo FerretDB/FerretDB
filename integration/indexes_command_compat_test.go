@@ -215,7 +215,7 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 		t.Helper()
 		t.Parallel()
 
-		// Create an index for a non-existent collection, expect createdCollectionAutomatically to be true
+		// Create an index for a non-existent collection, expect createdCollectionAutomatically to be true.
 		collectionName := "newCollection"
 		indexesDoc := bson.D{{"key", bson.D{{"v", 1}}}, {"name", "v_1"}}
 
@@ -241,7 +241,7 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 		assert.Equal(t, true, compatRes.Map()["createdCollectionAutomatically"])
 		assert.Equal(t, compatRes, targetRes)
 
-		// Now this collection exist, so we create another index and expect createdCollectionAutomatically to be false
+		// Now this collection exists, so we create another index and expect createdCollectionAutomatically to be false.
 		indexesDoc = bson.D{{"key", bson.D{{"foo", 1}}}, {"name", "foo_1"}}
 
 		targetErr = targetCollection.Database().RunCommand(
@@ -264,7 +264,7 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 		assert.Equal(t, false, compatRes.Map()["createdCollectionAutomatically"])
 		assert.Equal(t, compatRes, targetRes)
 
-		// Call index creation for the index that already exists, expect note to be set
+		// Call index creation for the index that already exists, expect note to be set.
 		indexesDoc = bson.D{{"key", bson.D{{"foo", 1}}}, {"name", "foo_1"}}
 
 		targetErr = targetCollection.Database().RunCommand(
