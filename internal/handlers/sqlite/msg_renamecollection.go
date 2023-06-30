@@ -23,7 +23,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -68,6 +70,49 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 
 	db := h.b.Database(dbName)
 	defer db.Close()
+
+	dbFrom, collectionFrom, err := splitNamespace(namespaceFrom)
+	if err != nil {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidNamespace,
+			fmt.Sprintf("Invalid namespace specified '%s'", namespaceFrom),
+			command,
+		)
+	}
+
+	dbTo, collectionTo, err := splitNamespace(namespaceTo)
+	if err != nil {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidNamespace,
+			fmt.Sprintf("Invalid target namespace: '%s'", namespaceTo),
+			command,
+		)
+	}
+
+	if dbFrom != dbTo {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
+			"Command renameCollection does not support cross-database rename",
+			command,
+		)
+	}
+
+	if collectionFrom == collectionTo {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrIllegalOperation,
+			"Can't rename a collection to itself",
+			command,
+		)
+	}
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }
 
 // splitNamespace returns the database and collection name from a given namespace in format "database.collection".
