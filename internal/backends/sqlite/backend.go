@@ -58,7 +58,7 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 	}), nil
 }
 
-// validateURI checks given URI value and returns parsed URI.
+// validateURI checks given URI value and returns parsed URL.
 // URI should contain 'file' scheme and point to an existing directory.
 // Path should end with '/'. Authority should be empty.
 // If URI contains local path it would be set to Path.
@@ -87,7 +87,7 @@ func validateURI(value string) (*url.URL, error) {
 	}
 
 	if !strings.HasSuffix(dir, "/") {
-		return nil, lazyerrors.Errorf("backend URI should be a directory: %q", value)
+		return nil, lazyerrors.Errorf("backend URI should be a directory ending with '/': %q", value)
 	}
 
 	fi, err := os.Stat(dir)
