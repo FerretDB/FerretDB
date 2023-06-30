@@ -22,7 +22,7 @@ on:
 # Do not run this workflow in parallel for any PR change.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   contexts:
@@ -34,6 +34,10 @@ jobs:
     if: false
 
     steps:
+      - name: Setup permissions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+        if: false
+
       - name: Checkout code
         uses: actions/checkout@v3
         with:

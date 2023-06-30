@@ -55,6 +55,13 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
+	// PostgreSQL would block on `DropDatabase` below otherwise
+	for _, c := range h.cursors.All() {
+		if c.DB == db && c.Collection == collection {
+			c.Close()
+		}
+	}
+
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		return pgdb.DropCollection(ctx, tx, db, collection)
 	})
