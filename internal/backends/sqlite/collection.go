@@ -137,10 +137,7 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 	}
 
 	if !exists {
-		return nil, backends.NewError(
-			backends.ErrorCodeCollectionDoesNotExist,
-			fmt.Errorf("%s.%s does not exist", c.dbName, c.name),
-		)
+		return nil, fmt.Errorf("%s.%s does not exist", c.dbName, c.name)
 	}
 
 	query := fmt.Sprintf(`UPDATE %q SET _ferretdb_sjson = ? WHERE json_extract(_ferretdb_sjson, '$._id') = ?`, tableName)
