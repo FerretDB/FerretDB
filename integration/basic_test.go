@@ -465,6 +465,9 @@ func TestDatabaseName(t *testing.T) {
 			"Sqlite": {
 				db: "sqlite_",
 			},
+			"Number": {
+				db: "0prefix",
+			},
 		} {
 			name, tc := name, tc
 			t.Run(name, func(t *testing.T) {
