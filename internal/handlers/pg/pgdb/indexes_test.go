@@ -102,7 +102,7 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 			err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-				if err := CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &tc.index); err != nil {
+				if _, err := CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &tc.index); err != nil {
 					return err
 				}
 				return nil
@@ -144,7 +144,8 @@ func TestDropIndexes(t *testing.T) {
 	setupDatabase(ctx, t, pool, databaseName)
 
 	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-		return CreateCollectionIfNotExists(ctx, tx, databaseName, collectionName)
+		_, err := CreateCollectionIfNotExists(ctx, tx, databaseName, collectionName)
+		return err
 	})
 	require.NoError(t, err)
 
@@ -272,9 +273,13 @@ func TestDropIndexes(t *testing.T) {
 
 			err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
 				for _, idx := range tc.toCreate {
-					if err := CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx); err != nil {
+					var collCreated bool
+
+					if collCreated, err = CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx); err != nil {
 						return err
 					}
+
+					assert.False(t, collCreated)
 				}
 
 				return nil
@@ -371,7 +376,11 @@ func TestDropIndexesStress(t *testing.T) {
 			Key:  indexKeys,
 		}
 
-		return CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx)
+		var collCreated bool
+		collCreated, err = CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx)
+		assert.False(t, collCreated)
+
+		return err
 	})
 	require.NoError(t, err)
 
