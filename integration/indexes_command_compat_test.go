@@ -211,82 +211,91 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 	targetCollection := targetCollections[0]
 	compatCollection := compatCollections[0]
 
-	t.Run("createdCollectionAutomatically", func(t *testing.T) {
-		t.Helper()
-		t.Parallel()
+	// Create an index for a non-existent collection, expect createdCollectionAutomatically to be true.
+	collectionName := "newCollection"
+	indexesDoc := bson.D{{"key", bson.D{{"v", 1}}}, {"name", "v_1"}}
 
-		// Create an index for a non-existent collection, expect createdCollectionAutomatically to be true.
-		collectionName := "newCollection"
-		indexesDoc := bson.D{{"key", bson.D{{"v", 1}}}, {"name", "v_1"}}
+	var targetRes bson.D
+	targetErr := targetCollection.Database().RunCommand(
+		ctx, bson.D{
+			{"createIndexes", collectionName},
+			{"indexes", bson.A{indexesDoc}},
+		},
+	).Decode(&targetRes)
 
-		var targetRes bson.D
-		targetErr := targetCollection.Database().RunCommand(
-			ctx, bson.D{
-				{"createIndexes", collectionName},
-				{"indexes", bson.A{indexesDoc}},
-			},
-		).Decode(&targetRes)
+	var compatRes bson.D
+	compatErr := compatCollection.Database().RunCommand(
+		ctx, bson.D{
+			{"createIndexes", collectionName},
+			{"indexes", bson.A{indexesDoc}},
+		},
+	).Decode(&compatRes)
 
-		var compatRes bson.D
-		compatErr := compatCollection.Database().RunCommand(
-			ctx, bson.D{
-				{"createIndexes", collectionName},
-				{"indexes", bson.A{indexesDoc}},
-			},
-		).Decode(&compatRes)
+	require.NoError(t, compatErr)
+	require.NoError(t, targetErr, "target error; compat returned no error")
 
-		require.NoError(t, compatErr)
-		require.NoError(t, targetErr, "target error; compat returned no error")
+	compatDoc := ConvertDocument(t, compatRes)
+	createdCollectionAutomatically, err := compatDoc.Get("createdCollectionAutomatically")
+	require.NoError(t, err)
+	require.True(t, createdCollectionAutomatically.(bool)) // must be true because a new collection was created
 
-		assert.Equal(t, true, compatRes.Map()["createdCollectionAutomatically"])
-		assert.Equal(t, compatRes, targetRes)
+	AssertEqualDocuments(t, compatRes, targetRes)
 
-		// Now this collection exists, so we create another index and expect createdCollectionAutomatically to be false.
-		indexesDoc = bson.D{{"key", bson.D{{"foo", 1}}}, {"name", "foo_1"}}
+	// Now this collection exists, so we create another index and expect createdCollectionAutomatically to be false.
+	indexesDoc = bson.D{{"key", bson.D{{"foo", 1}}}, {"name", "foo_1"}}
 
-		targetErr = targetCollection.Database().RunCommand(
-			ctx, bson.D{
-				{"createIndexes", collectionName},
-				{"indexes", bson.A{indexesDoc}},
-			},
-		).Decode(&targetRes)
+	targetErr = targetCollection.Database().RunCommand(
+		ctx, bson.D{
+			{"createIndexes", collectionName},
+			{"indexes", bson.A{indexesDoc}},
+		},
+	).Decode(&targetRes)
 
-		compatErr = compatCollection.Database().RunCommand(
-			ctx, bson.D{
-				{"createIndexes", collectionName},
-				{"indexes", bson.A{indexesDoc}},
-			},
-		).Decode(&compatRes)
+	compatErr = compatCollection.Database().RunCommand(
+		ctx, bson.D{
+			{"createIndexes", collectionName},
+			{"indexes", bson.A{indexesDoc}},
+		},
+	).Decode(&compatRes)
 
-		require.NoError(t, compatErr)
-		require.NoError(t, targetErr, "target error; compat returned no error")
+	require.NoError(t, compatErr)
+	require.NoError(t, targetErr, "target error; compat returned no error")
 
-		assert.Equal(t, false, compatRes.Map()["createdCollectionAutomatically"])
-		assert.Equal(t, compatRes, targetRes)
+	compatDoc = ConvertDocument(t, compatRes)
+	createdCollectionAutomatically, err = compatDoc.Get("createdCollectionAutomatically")
+	require.NoError(t, err)
+	require.False(t, createdCollectionAutomatically.(bool)) // must be false because the collection already exists
 
-		// Call index creation for the index that already exists, expect note to be set.
-		indexesDoc = bson.D{{"key", bson.D{{"foo", 1}}}, {"name", "foo_1"}}
+	AssertEqualDocuments(t, compatRes, targetRes)
 
-		targetErr = targetCollection.Database().RunCommand(
-			ctx, bson.D{
-				{"createIndexes", collectionName},
-				{"indexes", bson.A{indexesDoc}},
-			},
-		).Decode(&targetRes)
+	// Call index creation for the index that already exists, expect note to be set.
+	indexesDoc = bson.D{{"key", bson.D{{"foo", 1}}}, {"name", "foo_1"}}
 
-		compatErr = compatCollection.Database().RunCommand(
-			ctx, bson.D{
-				{"createIndexes", collectionName},
-				{"indexes", bson.A{indexesDoc}},
-			},
-		).Decode(&compatRes)
+	targetErr = targetCollection.Database().RunCommand(
+		ctx, bson.D{
+			{"createIndexes", collectionName},
+			{"indexes", bson.A{indexesDoc}},
+		},
+	).Decode(&targetRes)
 
-		require.NoError(t, compatErr)
-		require.NoError(t, targetErr, "target error; compat returned no error")
+	compatErr = compatCollection.Database().RunCommand(
+		ctx, bson.D{
+			{"createIndexes", collectionName},
+			{"indexes", bson.A{indexesDoc}},
+		},
+	).Decode(&compatRes)
 
-		assert.NotEmpty(t, compatRes.Map()["note"])
-		assert.Equal(t, compatRes, targetRes)
-	})
+	require.NoError(t, compatErr)
+	require.NoError(t, targetErr, "target error; compat returned no error")
+
+	compatDoc = ConvertDocument(t, compatRes)
+	createdCollectionAutomatically, err = compatDoc.Get("note")
+	require.NoError(t, err)
+
+	// note must be set because no new indexes were created:
+	require.Equal(t, "all indexes already exist", createdCollectionAutomatically.(string))
+
+	AssertEqualDocuments(t, compatRes, targetRes)
 }
 
 func TestDropIndexesCommandCompat(t *testing.T) {
