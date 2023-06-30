@@ -436,7 +436,7 @@ jobs:
           git config user.name ferretdb-bot
           git config user.email ferretdb-bot@ferretdb.io
           git add --all .
-          git diff-index --patch
+          git diff-index -p
           git diff-index --quiet HEAD || git commit --message 'Update corpus'
           git fetch
           git rebase origin/main
