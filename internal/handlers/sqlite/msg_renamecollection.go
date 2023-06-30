@@ -68,9 +68,6 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		)
 	}
 
-	db := h.b.Database(dbName)
-	defer db.Close()
-
 	dbFrom, collectionFrom, err := splitNamespace(namespaceFrom)
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -104,6 +101,11 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 			command,
 		)
 	}
+
+	db := h.b.Database(dbName)
+	defer db.Close()
+
+	// db.RenameCollection
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
