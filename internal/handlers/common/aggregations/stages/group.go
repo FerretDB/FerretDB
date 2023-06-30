@@ -157,7 +157,10 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 		res = append(res, doc)
 	}
 
-	return iterator.Values(iterator.ForSlice(res)), nil
+	iter = iterator.Values(iterator.ForSlice(res))
+	closer.Add(iter)
+
+	return iter, nil
 }
 
 // groupDocuments groups documents by group expression.

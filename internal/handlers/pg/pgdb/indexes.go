@@ -64,16 +64,20 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, er
 
 // CreateIndexIfNotExists creates a new index for the given params if such an index doesn't exist.
 //
+// If index creation also caused the collection to be created, it returns true as the first return value.
+//
 // If the index exists, it doesn't return an error.
-// If the collection doesn't exist, it will be created and then the index will be created.
-func CreateIndexIfNotExists(ctx context.Context, tx pgx.Tx, db, collection string, i *Index) error {
-	if err := CreateCollectionIfNotExists(ctx, tx, db, collection); err != nil {
-		return err
+func CreateIndexIfNotExists(ctx context.Context, tx pgx.Tx, db, collection string, i *Index) (bool, error) {
+	var collCreated bool
+	var err error
+
+	if collCreated, err = CreateCollectionIfNotExists(ctx, tx, db, collection); err != nil {
+		return false, err
 	}
 
 	pgTable, pgIndex, err := newMetadataStorage(tx, db, collection).setIndex(ctx, i.Name, i.Key, i.Unique)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	var unique bool
@@ -82,10 +86,10 @@ func CreateIndexIfNotExists(ctx context.Context, tx pgx.Tx, db, collection strin
 	}
 
 	if err := createPgIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, i.Key, unique); err != nil {
-		return err
+		return false, err
 	}
 
-	return nil
+	return collCreated, nil
 }
 
 // Equal returns true if the given index key is equal to the current one.

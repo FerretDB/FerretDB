@@ -109,7 +109,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	indexes := map[*types.Document]*pgdb.Index{}
 
-	var isUniqueSpecified bool
+	var collCreated bool
 	var numIndexesBefore, numIndexesAfter int32
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		var indexesBefore []pgdb.Index
@@ -212,7 +212,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 			indexes[indexDoc] = index
 
-			err = pgdb.CreateIndexIfNotExists(ctx, tx, db, collection, index)
+			collCreated, err = pgdb.CreateIndexIfNotExists(ctx, tx, db, collection, index)
 			if errors.Is(err, pgdb.ErrIndexKeyAlreadyExist) && index.Name == "_id_1" {
 				// ascending _id index is created by default
 				return nil
@@ -221,8 +221,6 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 			if err != nil {
 				return err
 			}
-
-			isUniqueSpecified = index.Unique != nil
 		}
 	})
 
@@ -254,10 +252,13 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	res := new(types.Document)
 
-	if isUniqueSpecified {
-		res.Set("numIndexesBefore", numIndexesBefore)
-		res.Set("numIndexesAfter", numIndexesAfter)
-		res.Set("createdCollectionAutomatically", true)
+	res.Set("numIndexesBefore", numIndexesBefore)
+	res.Set("numIndexesAfter", numIndexesAfter)
+
+	if numIndexesBefore != numIndexesAfter {
+		res.Set("createdCollectionAutomatically", collCreated)
+	} else {
+		res.Set("note", "all indexes already exist")
 	}
 
 	res.Set("ok", float64(1))
@@ -375,7 +376,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 		case "unique":
 			v := must.NotFail(indexDoc.Get("unique"))
 
-			_, ok := v.(bool)
+			unique, ok := v.(bool)
 			if !ok {
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrTypeMismatch,
@@ -401,7 +402,9 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 				)
 			}
 
-			index.Unique = pointer.ToBool(true)
+			if unique {
+				index.Unique = pointer.ToBool(true)
+			}
 
 		case "background":
 			// ignore deprecated options
