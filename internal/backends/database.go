@@ -39,6 +39,7 @@ type Database interface {
 	ListCollections(context.Context, *ListCollectionsParams) (*ListCollectionsResult, error)
 	CreateCollection(context.Context, *CreateCollectionParams) error
 	DropCollection(context.Context, *DropCollectionParams) error
+	RenameCollection(context.Context, *RenameCollectionParams) error
 }
 
 // databaseContract implements Database interface.
@@ -132,6 +133,19 @@ func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCol
 	defer observability.FuncCall(ctx)()
 	defer checkError(err, ErrorCodeCollectionDoesNotExist) // TODO: ErrorCodeDatabaseDoesNotExist ?
 	err = dbc.db.DropCollection(ctx, params)
+
+	return
+}
+
+type RenameCollectionParams struct {
+	Database                     string
+	collectionFrom, collectionTo string
+}
+
+func (dbc *databaseContract) RenameCollection(ctx context.Context, params *RenameCollectionParams) (err error) {
+	defer observability.FuncCall(ctx)()
+	defer checkError(err)
+	err = dbc.db.RenameCollection(ctx, params)
 
 	return
 }
