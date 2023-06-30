@@ -447,14 +447,13 @@ func TestDatabaseName(t *testing.T) {
 
 	t.Parallel()
 
-	t.Run("SpecialCharacters", func(t *testing.T) {
+	t.Run("NoErr", func(t *testing.T) {
 		ctx, collection := setup.Setup(t)
 		for name, tc := range map[string]struct {
 			db string // database name, defaults to empty string
 
-			err        *mongo.CommandError // required, expected error from MongoDB
-			altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-			skip       string              // optional, skip test with a specified reason
+			altMessage string // optional, alternative error message for FerretDB, ignored if empty
+			skip       string // optional, skip test with a specified reason
 		}{
 			"Dash": {
 				db: "--",
@@ -467,6 +466,9 @@ func TestDatabaseName(t *testing.T) {
 			},
 			"Number": {
 				db: "0prefix",
+			},
+			"63ok": {
+				db: strings.Repeat("a", 63),
 			},
 		} {
 			name, tc := name, tc
@@ -585,15 +587,6 @@ func TestDatabaseName(t *testing.T) {
 		err := collection.Database().Client().Database("").CreateCollection(ctx, collection.Name())
 		expectedErr := driver.InvalidOperationError(driver.InvalidOperationError{MissingField: "Database"})
 		assert.Equal(t, expectedErr, err)
-	})
-
-	t.Run("63ok", func(t *testing.T) {
-		ctx, collection := setup.Setup(t)
-
-		dbName63 := strings.Repeat("a", 63)
-		err := collection.Database().Client().Database(dbName63).CreateCollection(ctx, collection.Name())
-		require.NoError(t, err)
-		collection.Database().Client().Database(dbName63).Drop(ctx)
 	})
 }
 
