@@ -405,7 +405,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 			}
 
 			// the unique option should only be set if the index is unique,
-			// non-unique indexes shouldn't have unique option set
+			// non-unique indexes don't need unique option being set
 			if unique {
 				index.Unique = pointer.ToBool(true)
 			}
