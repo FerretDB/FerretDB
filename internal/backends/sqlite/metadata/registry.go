@@ -42,6 +42,14 @@ const (
 	metadataTableName = "_ferretdb_collections"
 )
 
+var (
+	// ErrAlreadyExist indicates that collection/table already exists.
+	ErrAlreadyExist = fmt.Errorf("collection/table already exists")
+
+	// ErrDoesNotExist indicates that collection/table does not exist.
+	ErrDoesNotExist = fmt.Errorf("collection/table does not exist")
+)
+
 // Registry provides access to SQLite databases and collections information.
 type Registry struct {
 	p *pool.Pool
@@ -250,5 +258,24 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, collectionFrom,
 		return false, nil
 	}
 
+	if r.collectionExists(ctx, dbName, collectionFrom) {
+		return false, ErrDoesNotExist
+	}
+
+	if r.collectionExists(ctx, dbName, collectionTo) {
+		return false, ErrAlreadyExist
+	}
+
 	return true, nil
+}
+
+func (r *Registry) collectionExists(ctx context.Context, dbName, collection string) bool {
+	db := r.p.GetExisting(ctx, dbName)
+	if db == nil {
+		return false
+	}
+
+	_, exists, err := r.GetTableName(ctx, dbName, collection)
+
+	return err == nil && exists
 }
