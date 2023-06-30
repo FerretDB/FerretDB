@@ -116,7 +116,7 @@ func TestNewBackend(t *testing.T) {
 		},
 		"PathIsNotEndsWithSlash": {
 			value:    "file:./tmp/file",
-			errRegex: `.*backend URI should be a directory: "file:./tmp/file"`,
+			errRegex: `.*backend URI should be a directory ending with '/': "file:./tmp/file"`,
 		},
 		"FileInsteadOfDirectory": {
 			value:    "file:./tmp/file/",
