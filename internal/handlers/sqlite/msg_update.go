@@ -75,6 +75,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionAlreadyExists) {
 		err = nil
 	}
+
 	if err != nil {
 		return 0, 0, nil, lazyerrors.Error(err)
 	}

@@ -115,7 +115,7 @@ type UpdateResult struct {
 // Update updates documents in collection.
 func (cc *collectionContract) Update(ctx context.Context, params *UpdateParams) (res *UpdateResult, err error) {
 	defer observability.FuncCall(ctx)()
-	defer checkError(err)
+	defer checkError(err, ErrorCodeCollectionDoesNotExist)
 	res, err = cc.c.Update(ctx, params)
 
 	return

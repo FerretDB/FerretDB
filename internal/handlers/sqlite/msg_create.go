@@ -17,6 +17,9 @@ package sqlite
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -26,6 +29,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
+
+// Reserved prefix for database and collection names.
+const reservedPrefix = "_ferretdb_"
+
+// validateCollectionNameRe validates collection names.
+// Empty collection name, names with `$` and `\x00`,
+// or exceeding the 255 bytes limit are not allowed.
+// Collection names that start with `.` are also not allowed.
+var validateCollectionNameRe = regexp.MustCompile("^[^.$\x00][^$\x00]{0,234}$")
 
 // MsgCreate implements HandlerInterface.
 func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
@@ -78,6 +90,18 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
+	if strings.HasPrefix(collectionName, ".") {
+		msg := fmt.Sprintf("Collection names cannot start with '.': %s", collectionName)
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "create")
+	}
+
+	if !validateCollectionNameRe.MatchString(collectionName) ||
+		!utf8.ValidString(collectionName) ||
+		strings.HasPrefix(collectionName, reservedPrefix) {
+		msg := fmt.Sprintf("Invalid collection name: '%s.%s'", dbName, collectionName)
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "create")
+	}
+
 	db := h.b.Database(dbName)
 	defer db.Close()
 
@@ -98,11 +122,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionAlreadyExists):
 		msg := fmt.Sprintf("Collection %s.%s already exists.", dbName, collectionName)
-		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNamespaceExists, msg)
-
-	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
-		msg := fmt.Sprintf("Invalid namespace: %s.%s", dbName, collectionName)
-		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNamespaceExists, msg, "create")
 
 	default:
 		return nil, lazyerrors.Error(err)

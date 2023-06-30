@@ -17,11 +17,12 @@ package metadata
 
 import (
 	"context"
-	"crypto/sha1"
 	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"hash/fnv"
+	"strings"
 
 	"go.uber.org/zap"
 	"modernc.org/sqlite"
@@ -29,10 +30,17 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// metadataTableName is a SQLite table name where FerretDB metadata is stored.
-const metadataTableName = "_ferretdb_collections"
+const (
+	// This prefix is reserved by SQLite for internal use,
+	// see https://www.sqlite.org/lang_createtable.html.
+	reservedTablePrefix = "sqlite_"
+
+	// SQLite table name where FerretDB metadata is stored.
+	metadataTableName = "_ferretdb_collections"
+)
 
 // Registry provides access to SQLite databases and collections information.
 type Registry struct {
@@ -58,11 +66,18 @@ func (r *Registry) Close() {
 	r.p.Close()
 }
 
-// CollectionToTable converts FerretDB collection name to SQLite table name.
-func (r *Registry) CollectionToTable(collectionName string) string {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2749
-	h := sha1.Sum([]byte(collectionName))
-	return hex.EncodeToString(h[:])
+// collectionToTable converts FerretDB collection name to SQLite table name.
+func collectionToTable(collectionName string) string {
+	hash32 := fnv.New32a()
+	must.NotFail(hash32.Write([]byte(collectionName)))
+
+	tableName := strings.ToLower(collectionName) + "_" + hex.EncodeToString(hash32.Sum(nil))
+
+	if strings.HasPrefix(tableName, reservedTablePrefix) {
+		tableName = "_" + tableName
+	}
+
+	return tableName
 }
 
 // DatabaseList returns a sorted list of existing databases.
@@ -145,7 +160,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 		return false, lazyerrors.Error(err)
 	}
 
-	tableName := r.CollectionToTable(collectionName)
+	tableName := collectionToTable(collectionName)
 
 	// TODO use transactions
 	// https://github.com/FerretDB/FerretDB/issues/2747
@@ -169,6 +184,31 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 	return true, nil
 }
 
+// GetTableName returns table name associated with provided collection.
+//
+// If database or collection does not exist, no error and false value is returned.
+func (r *Registry) GetTableName(ctx context.Context, dbName string, collectionName string) (string, bool, error) {
+	db := r.p.GetExisting(ctx, dbName)
+	if db == nil {
+		return "", false, nil
+	}
+
+	query := fmt.Sprintf("SELECT table_name FROM %q WHERE name = ?", metadataTableName)
+
+	row := db.QueryRowContext(ctx, query, collectionName)
+
+	var name string
+	if err := row.Scan(&name); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", false, nil
+		}
+
+		return "", false, lazyerrors.Error(err)
+	}
+
+	return name, true, nil
+}
+
 // CollectionDrop drops a collection in the database.
 //
 // Returned boolean value indicates whether the collection was dropped.
@@ -179,7 +219,14 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 		return false, nil
 	}
 
-	tableName := r.CollectionToTable(collectionName)
+	tableName, exists, err := r.GetTableName(ctx, dbName, collectionName)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	if !exists {
+		return false, nil
+	}
 
 	// TODO use transactions
 	// https://github.com/FerretDB/FerretDB/issues/2747

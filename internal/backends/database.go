@@ -115,7 +115,7 @@ type CreateCollectionParams struct {
 // Database may or may not exist; it should be created automatically if needed.
 func (dbc *databaseContract) CreateCollection(ctx context.Context, params *CreateCollectionParams) (err error) {
 	defer observability.FuncCall(ctx)()
-	defer checkError(err, ErrorCodeCollectionAlreadyExists, ErrorCodeCollectionNameIsInvalid)
+	defer checkError(err, ErrorCodeCollectionAlreadyExists)
 	err = dbc.db.CreateCollection(ctx, params)
 
 	return

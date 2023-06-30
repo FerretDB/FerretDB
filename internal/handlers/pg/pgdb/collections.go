@@ -34,7 +34,8 @@ import (
 )
 
 // validateCollectionNameRe validates collection names.
-// Empty collection name, names with `$` and `\x00` are not allowed.
+// Empty collection name, names with `$` and `\x00`,
+// or exceeding the 255 bytes limit are not allowed.
 // Collection names that start with `.` are also not allowed.
 var validateCollectionNameRe = regexp.MustCompile("^[^.$\x00][^$\x00]{0,234}$")
 

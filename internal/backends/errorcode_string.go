@@ -11,12 +11,11 @@ func _() {
 	_ = x[ErrorCodeDatabaseDoesNotExist-1]
 	_ = x[ErrorCodeCollectionDoesNotExist-2]
 	_ = x[ErrorCodeCollectionAlreadyExists-3]
-	_ = x[ErrorCodeCollectionNameIsInvalid-4]
 }
 
-const _ErrorCode_name = "ErrorCodeDatabaseDoesNotExistErrorCodeCollectionDoesNotExistErrorCodeCollectionAlreadyExistsErrorCodeCollectionNameIsInvalid"
+const _ErrorCode_name = "ErrorCodeDatabaseDoesNotExistErrorCodeCollectionDoesNotExistErrorCodeCollectionAlreadyExists"
 
-var _ErrorCode_index = [...]uint8{0, 29, 60, 92, 124}
+var _ErrorCode_index = [...]uint8{0, 29, 60, 92}
 
 func (i ErrorCode) String() string {
 	i -= 1

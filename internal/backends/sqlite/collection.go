@@ -35,7 +35,7 @@ type collection struct {
 	name   string
 }
 
-// newDatabase creates a new Collection.
+// newCollection creates a new Collection.
 func newCollection(r *metadata.Registry, dbName, name string) backends.Collection {
 	return backends.CollectionContract(&collection{
 		r:      r,
@@ -53,7 +53,16 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	tableName := c.r.CollectionToTable(c.name)
+	tableName, exists, err := c.r.GetTableName(ctx, c.dbName, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if !exists {
+		return &backends.QueryResult{
+			Iter: newQueryIterator(ctx, nil),
+		}, nil
+	}
 
 	query := fmt.Sprintf(`SELECT _ferretdb_sjson FROM %q`, tableName)
 
@@ -75,8 +84,13 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2750
 
+	tableName, _, err := c.r.GetTableName(ctx, c.dbName, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
-	query := fmt.Sprintf(`INSERT INTO %q (_ferretdb_sjson) VALUES (?)`, c.r.CollectionToTable(c.name))
+	query := fmt.Sprintf(`INSERT INTO %q (_ferretdb_sjson) VALUES (?)`, tableName)
 
 	var res backends.InsertResult
 
@@ -117,7 +131,17 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		return nil, lazyerrors.Errorf("no database %q", c.dbName)
 	}
 
-	tableName := c.r.CollectionToTable(c.name)
+	tableName, exists, err := c.r.GetTableName(ctx, c.dbName, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if !exists {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			fmt.Errorf("%s.%s does not exist", c.dbName, c.name),
+		)
+	}
 
 	query := fmt.Sprintf(`UPDATE %q SET _ferretdb_sjson = ? WHERE json_extract(_ferretdb_sjson, '$._id') = ?`, tableName)
 
