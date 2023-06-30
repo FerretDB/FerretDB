@@ -58,7 +58,7 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 	}), nil
 }
 
-// validateURI checks given URI value and returns parsed URI.
+// validateURI checks given URI value and returns parsed URL.
 // URI should contain 'file' scheme and point to an existing directory.
 // Path should end with '/'. Authority should be empty.
 // If URI contains local path it would be set to Path.
