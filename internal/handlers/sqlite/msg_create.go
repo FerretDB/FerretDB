@@ -96,13 +96,9 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	if !validateCollectionNameRe.MatchString(collectionName) ||
-		!utf8.ValidString(collectionName) {
+		!utf8.ValidString(collectionName) ||
+		strings.HasPrefix(collectionName, reservedPrefix) {
 		msg := fmt.Sprintf("Invalid collection name: '%s.%s'", dbName, collectionName)
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "create")
-	}
-
-	if strings.HasPrefix(collectionName, reservedPrefix) {
-		msg := fmt.Sprintf("Invalid collection name (%q is a reserved prefix): '%s.%s'", reservedPrefix, dbName, collectionName)
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "create")
 	}
 
