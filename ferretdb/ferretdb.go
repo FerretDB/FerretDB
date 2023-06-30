@@ -122,7 +122,7 @@ func New(config *Config) (*FerretDB, error) {
 
 	h, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
 		Logger:        logger,
-		Metrics:       metrics.ConnMetrics,
+		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: p,
 
 		PostgreSQLURL: config.PostgreSQLURL,
@@ -184,9 +184,9 @@ func (f *FerretDB) MongoDBURI() string {
 
 	switch {
 	case f.config.Listener.TLS != "":
-		q := make(url.Values)
-
-		q.Set("tls", "true")
+		q := url.Values{
+			"tls": []string{"true"},
+		}
 
 		u = &url.URL{
 			Scheme:   "mongodb",

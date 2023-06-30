@@ -51,25 +51,31 @@ func BenchmarkQuerySmallDocuments(b *testing.B) {
 			},
 		} {
 			b.Run(name, func(b *testing.B) {
-				var firstDocs, docs []bson.D
+				var firstDocs, docs int
 
 				for i := 0; i < b.N; i++ {
 					cursor, err := s.Collection.Find(s.Ctx, bc.filter)
 					require.NoError(b, err)
 
-					docs = FetchAll(b, s.Ctx, cursor)
-					require.NotEmpty(b, docs)
+					docs = 0
+					for cursor.Next(s.Ctx) {
+						docs++
+					}
 
-					if firstDocs == nil {
+					require.NoError(b, cursor.Close(s.Ctx))
+					require.NoError(b, cursor.Err())
+					require.Positive(b, docs)
+
+					if firstDocs == 0 {
 						firstDocs = docs
 					}
 				}
 
 				b.StopTimer()
 
-				require.Len(b, docs, len(firstDocs))
+				require.Equal(b, firstDocs, docs)
 
-				b.ReportMetric(float64(len(docs)), "docs-returned")
+				b.ReportMetric(float64(docs), "docs-returned")
 			})
 		}
 	})
