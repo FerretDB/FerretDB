@@ -19,10 +19,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -30,12 +33,13 @@ import (
 
 // aggregateStagesCompatTestCase describes aggregation stages compatibility test case.
 type aggregateStagesCompatTestCase struct {
-	pipeline       bson.A                   // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
+	pipeline bson.A         // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
+	maxTime  *time.Duration // optional, leave nil for unset maxTime
+
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
-
-	skip          string // skip test for all handlers, must have issue number mentioned
-	skipForTigris string // skip test for Tigris handler, must have issue number mentioned
+	skip           string                   // skip test for all handlers, must have issue number mentioned
+	skipForTigris  string                   // skip test for Tigris handler, must have issue number mentioned
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -92,6 +96,12 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 				pipeline = append(pipeline, bson.D{{"$sort", bson.D{{"_id", 1}}}})
 			}
 
+			opts := options.Aggregate()
+
+			if tc.maxTime != nil {
+				opts.SetMaxTime(*tc.maxTime)
+			}
+
 			var nonEmptyResults bool
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
@@ -114,8 +124,8 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 
 					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"], msg)
 
-					targetCursor, targetErr := targetCollection.Aggregate(ctx, pipeline)
-					compatCursor, compatErr := compatCollection.Aggregate(ctx, pipeline)
+					targetCursor, targetErr := targetCollection.Aggregate(ctx, pipeline, opts)
+					compatCursor, compatErr := compatCollection.Aggregate(ctx, pipeline, opts)
 
 					if targetCursor != nil {
 						defer targetCursor.Close(ctx)
@@ -207,8 +217,13 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 					t.Logf("Target error: %v", targetErr)
 					t.Logf("Compat error: %v", compatErr)
 
-					// error messages are intentionally not compared
-					AssertMatchesCommandError(t, compatErr, targetErr)
+					if _, ok := targetErr.(mongo.CommandError); ok { //nolint:errorlint // do not inspect error chain
+						// error messages are intentionally not compared
+						AssertMatchesCommandError(t, compatErr, targetErr)
+					} else {
+						// driver sent an error
+						require.Equal(t, compatErr, targetErr)
+					}
 
 					return
 				}
@@ -270,9 +285,42 @@ func TestAggregateCommandCompat(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"MaxTimeMSNegative": {
+			command: bson.D{
+				{"aggregate", "collection-name"},
+				{"pipeline", bson.A{}},
+				{"maxTimeMS", int64(-1)},
+				{"cursor", bson.D{}},
+			},
+			resultType: emptyResult,
+			// compat and target return an error from the driver
+			// > cannot decode document into []primitive.D
+		},
 	}
 
 	testAggregateCommandCompat(t, testCases)
+}
+
+func TestAggregateCompatOptions(t *testing.T) {
+	t.Parallel()
+
+	providers := []shareddata.Provider{
+		// one provider is sufficient to test aggregate options
+		shareddata.Unsets,
+	}
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"MaxTimeZero": {
+			pipeline: bson.A{},
+			maxTime:  pointer.ToDuration(time.Duration(0)),
+		},
+		"MaxTime": {
+			pipeline: bson.A{},
+			maxTime:  pointer.ToDuration(time.Second),
+		},
+	}
+
+	testAggregateStagesCompatWithProviders(t, providers, testCases)
 }
 
 func TestAggregateCompatStages(t *testing.T) {
