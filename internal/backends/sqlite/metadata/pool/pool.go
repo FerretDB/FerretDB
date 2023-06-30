@@ -41,7 +41,7 @@ const filenameExtension = ".sqlite"
 //
 //nolint:vet // for readability
 type Pool struct {
-	dir string
+	uri *url.URL
 	l   *zap.Logger
 
 	rw  sync.RWMutex
@@ -61,7 +61,7 @@ func New(uri *url.URL, l *zap.Logger) (*Pool, error) {
 	}
 
 	p := &Pool{
-		dir:   uri.Path,
+		uri:   uri,
 		l:     l,
 		dbs:   make(map[string]*db, len(matches)),
 		token: resource.NewToken(),
@@ -89,7 +89,7 @@ func (p *Pool) databaseName(databasePath string) string {
 
 // databasePath returns database file path for the given database name.
 func (p *Pool) databasePath(databaseName string) string {
-	return filepath.Join(p.dir, databaseName+filenameExtension)
+	return filepath.Join(p.uri.Path, databaseName+filenameExtension)
 }
 
 // Close closes all databases in the pool and frees all resources.

@@ -25,18 +25,14 @@ import (
 func TestNewBackend(t *testing.T) {
 	t.Parallel()
 
-	err := os.MkdirAll("tmp/dir", os.ModePerm)
+	err := os.MkdirAll("tmp/dir", 0o777)
 	require.NoError(t, err)
 
 	_, err = os.Create("tmp/file")
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		err := os.Remove("tmp/file")
-		require.NoError(t, err)
-		err = os.Remove("tmp/dir")
-		require.NoError(t, err)
-		err = os.Remove("tmp")
+		err := os.RemoveAll("tmp")
 		require.NoError(t, err)
 	})
 
