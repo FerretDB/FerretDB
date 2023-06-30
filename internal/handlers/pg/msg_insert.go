@@ -125,12 +125,12 @@ func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, do
 }
 
 // insertDocument prepares and executes actual INSERT request to Postgres in provided transaction.
-func insertDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, toInsert *types.Document) error {
-	if !toInsert.Has("_id") {
-		toInsert.Set("_id", types.NewObjectID())
+func insertDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc *types.Document) error {
+	if !doc.Has("_id") {
+		doc.Set("_id", types.NewObjectID())
 	}
 
-	err := pgdb.InsertDocument(ctx, tx, qp.DB, qp.Collection, toInsert)
+	err := pgdb.InsertDocument(ctx, tx, qp.DB, qp.Collection, doc)
 
 	switch {
 	case err == nil:
