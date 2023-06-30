@@ -248,6 +248,13 @@ Writing separate tests might be much better than making a single test that check
 
 Also, we should use driver methods as much as possible instead of testing commands directly via `RunCommand`.
 
+We have a lot of existing helpers to convert the driver's `bson.D` values to our `*types.Document` values,
+to compare them, etc.
+In most cases, they should be used instead of (deprecated) `bson.D.Map()`,
+`bson.Unmarshal`, decoding into a struct with `bson` tags, comparing fields one-by-one, etc.
+The bar for adding new helpers is very high.
+Please check all existing ones.
+
 #### Integration tests naming guidelines
 
 1. Test names should include the name of the command being tested.

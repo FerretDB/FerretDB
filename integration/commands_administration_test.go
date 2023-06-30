@@ -1164,6 +1164,10 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 
 	ctx, collection := setup.Setup(t, shareddata.Strings)
 
+	cursor, err := collection.Find(ctx, bson.D{}, options.Find().SetBatchSize(1))
+	require.NoError(t, err)
+	defer cursor.Close(ctx)
+
 	type killCursorsResult struct {
 		CursorsKilled   []int
 		CursorsNotFound []int
@@ -1184,5 +1188,8 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 		assert.Empty(t, res.CursorsNotFound)
 		assert.Empty(t, res.CursorsAlive)
 		assert.Empty(t, res.CursorsUnknown)
+	})
+
+	t.Run("Unknown", func(t *testing.T) {
 	})
 }
