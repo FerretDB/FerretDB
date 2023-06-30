@@ -845,6 +845,15 @@ func TestCreateIndexesCompatUnique(t *testing.T) {
 			insertDoc: bson.D{{"v", "value"}},
 			new:       true,
 		},
+		"NotUniqueIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"v", 1}},
+					Options: options.Index().SetUnique(false),
+				},
+			},
+			insertDoc: bson.D{{"v", "value"}},
+		},
 		"NotExistingFieldIndex": {
 			models: []mongo.IndexModel{
 				{
