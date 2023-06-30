@@ -36,6 +36,12 @@ linters-settings:
       - name: package-comments
   staticcheck:
     checks: ["all"]
+  tagalign:
+    sort: true
+    order:
+      - name
+      - default
+      - help
   wsl:
     # https://github.com/bombsimon/wsl/blob/master/doc/configuration.md
     strict-append: false
