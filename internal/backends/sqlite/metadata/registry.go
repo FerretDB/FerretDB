@@ -28,7 +28,6 @@ import (
 	"modernc.org/sqlite"
 	sqlitelib "modernc.org/sqlite/lib"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -187,34 +186,31 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 
 // GetTableName returns table name associated with provided collection.
 //
-// If database does not exist, no error is returned.
-func (r *Registry) GetTableName(ctx context.Context, dbName string, collectionName string) (string, error) {
+// If database or collection does not exist, no error and false value is returned.
+func (r *Registry) GetTableName(ctx context.Context, dbName string, collectionName string) (string, bool, error) {
 	db := r.p.GetExisting(ctx, dbName)
 	if db == nil {
-		return "", nil
+		return "", false, nil
 	}
 
 	query := fmt.Sprintf("SELECT table_name FROM %q WHERE name = ?", metadataTableName)
 
 	rows, err := db.QueryContext(ctx, query, collectionName)
 	if err != nil {
-		return "", lazyerrors.Error(err)
+		return "", false, lazyerrors.Error(err)
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
-		return "", backends.NewError(
-			backends.ErrorCodeCollectionDoesNotExist,
-			fmt.Errorf("collection %q does not exist", collectionName),
-		)
+		return "", false, nil
 	}
 
 	var name string
 	if err = rows.Scan(&name); err != nil {
-		return "", lazyerrors.Error(err)
+		return "", false, lazyerrors.Error(err)
 	}
 
-	return name, nil
+	return name, true, nil
 }
 
 // CollectionDrop drops a collection in the database.
@@ -227,13 +223,13 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 		return false, nil
 	}
 
-	tableName, err := r.GetTableName(ctx, dbName, collectionName)
-	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
-		return false, nil
-	}
-
+	tableName, exists, err := r.GetTableName(ctx, dbName, collectionName)
 	if err != nil {
 		return false, lazyerrors.Error(err)
+	}
+
+	if !exists {
+		return false, nil
 	}
 
 	// TODO use transactions

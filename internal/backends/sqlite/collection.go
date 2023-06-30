@@ -53,9 +53,15 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	tableName, err := c.r.GetTableName(ctx, c.dbName, c.name)
+	tableName, exists, err := c.r.GetTableName(ctx, c.dbName, c.name)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if !exists {
+		return &backends.QueryResult{
+			Iter: newQueryIterator(ctx, nil),
+		}, nil
 	}
 
 	query := fmt.Sprintf(`SELECT _ferretdb_sjson FROM %q`, tableName)
@@ -78,7 +84,7 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2750
 
-	tableName, err := c.r.GetTableName(ctx, c.dbName, c.name)
+	tableName, _, err := c.r.GetTableName(ctx, c.dbName, c.name)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -125,9 +131,13 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		return nil, lazyerrors.Errorf("no database %q", c.dbName)
 	}
 
-	tableName, err := c.r.GetTableName(ctx, c.dbName, c.name)
+	tableName, exists, err := c.r.GetTableName(ctx, c.dbName, c.name)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if !exists {
+		return nil, backends.NewError(backends.ErrorCodeCollectionDoesNotExist, fmt.Errorf("%s.%s does not exist", c.dbName, c.name))
 	}
 
 	query := fmt.Sprintf(`UPDATE %q SET _ferretdb_sjson = ? WHERE json_extract(_ferretdb_sjson, '$._id') = ?`, tableName)
