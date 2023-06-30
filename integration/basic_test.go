@@ -446,6 +446,46 @@ func TestDatabaseName(t *testing.T) {
 
 	t.Parallel()
 
+	t.Run("NoErr", func(t *testing.T) {
+		ctx, collection := setup.Setup(t)
+		for name, tc := range map[string]struct {
+			db   string // database name, defaults to empty string
+			skip string // optional, skip test with a specified reason
+		}{
+			"Dash": {
+				db: "--",
+			},
+			"Underscore": {
+				db: "__",
+			},
+			"Sqlite": {
+				db: "sqlite_",
+			},
+			"Number": {
+				db: "0prefix",
+			},
+			"63ok": {
+				db: strings.Repeat("a", 63),
+			},
+		} {
+			name, tc := name, tc
+			t.Run(name, func(t *testing.T) {
+				if tc.skip != "" {
+					t.Skip(tc.skip)
+				}
+
+				t.Parallel()
+
+				// there is no explicit command to create database, so create collection instead
+				err := collection.Database().Client().Database(tc.db).CreateCollection(ctx, collection.Name())
+				require.NoError(t, err)
+
+				err = collection.Database().Client().Database(tc.db).Drop(ctx)
+				require.NoError(t, err)
+			})
+		}
+	})
+
 	t.Run("Err", func(t *testing.T) {
 		ctx, collection := setup.Setup(t)
 
@@ -470,6 +510,25 @@ func TestDatabaseName(t *testing.T) {
 					),
 				},
 				altMessage: fmt.Sprintf("Invalid namespace: %s.%s", dbName64, "TestDatabaseName-Err"),
+			},
+			"WithASlash": {
+				db: "/",
+				err: &mongo.CommandError{
+					Name:    "InvalidNamespace",
+					Code:    73,
+					Message: `Invalid namespace specified '/.TestDatabaseName-Err'`,
+				},
+				altMessage: `Invalid namespace: /.TestDatabaseName-Err`,
+			},
+
+			"WithABackslash": {
+				db: "\\",
+				err: &mongo.CommandError{
+					Name:    "InvalidNamespace",
+					Code:    73,
+					Message: `Invalid namespace specified '\.TestDatabaseName-Err'`,
+				},
+				altMessage: `Invalid namespace: \.TestDatabaseName-Err`,
 			},
 			"WithADollarSign": {
 				db: "name_with_a-$",
@@ -515,15 +574,6 @@ func TestDatabaseName(t *testing.T) {
 				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 			})
 		}
-	})
-
-	t.Run("63ok", func(t *testing.T) {
-		ctx, collection := setup.Setup(t)
-
-		dbName63 := strings.Repeat("a", 63)
-		err := collection.Database().Client().Database(dbName63).CreateCollection(ctx, collection.Name())
-		require.NoError(t, err)
-		collection.Database().Client().Database(dbName63).Drop(ctx)
 	})
 }
 
