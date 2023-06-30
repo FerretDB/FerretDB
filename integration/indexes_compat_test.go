@@ -141,7 +141,7 @@ func TestCreateIndexesCompat(t *testing.T) {
 			models: []mongo.IndexModel{
 				{
 					Keys:    bson.D{{"foo", 1}, {"bar", -1}},
-					Options: new(options.IndexOptions).SetName("custom-name"),
+					Options: options.Index().SetName("custom-name"),
 				},
 			},
 		},
@@ -200,11 +200,11 @@ func TestCreateIndexesCompat(t *testing.T) {
 			models: []mongo.IndexModel{
 				{
 					Keys:    bson.D{{"v", -1}},
-					Options: new(options.IndexOptions).SetName("foo"),
+					Options: options.Index().SetName("foo"),
 				},
 				{
 					Keys:    bson.D{{"v", -1}},
-					Options: new(options.IndexOptions).SetName("bar"),
+					Options: options.Index().SetName("bar"),
 				},
 			},
 			resultType: emptyResult,
@@ -213,11 +213,11 @@ func TestCreateIndexesCompat(t *testing.T) {
 			models: []mongo.IndexModel{
 				{
 					Keys:    bson.D{{"foo", -1}},
-					Options: new(options.IndexOptions).SetName("index-name"),
+					Options: options.Index().SetName("index-name"),
 				},
 				{
 					Keys:    bson.D{{"bar", -1}},
-					Options: new(options.IndexOptions).SetName("index-name"),
+					Options: options.Index().SetName("index-name"),
 				},
 			},
 			resultType: emptyResult,
@@ -830,7 +830,7 @@ func TestCreateIndexesCompatUnique(t *testing.T) {
 			models: []mongo.IndexModel{
 				{
 					Keys:    bson.D{{"_id", 1}},
-					Options: new(options.IndexOptions).SetUnique(true),
+					Options: options.Index().SetUnique(true),
 				},
 			},
 			insertDoc: bson.D{{"_id", "int322"}},
@@ -839,7 +839,7 @@ func TestCreateIndexesCompatUnique(t *testing.T) {
 			models: []mongo.IndexModel{
 				{
 					Keys:    bson.D{{"v", 1}},
-					Options: new(options.IndexOptions).SetUnique(true),
+					Options: options.Index().SetUnique(true),
 				},
 			},
 			insertDoc: bson.D{{"v", "value"}},
@@ -849,7 +849,7 @@ func TestCreateIndexesCompatUnique(t *testing.T) {
 			models: []mongo.IndexModel{
 				{
 					Keys:    bson.D{{"not-existing-field", 1}},
-					Options: new(options.IndexOptions).SetUnique(true),
+					Options: options.Index().SetUnique(true),
 				},
 			},
 			insertDoc: bson.D{{"not-existing-field", "value"}},
@@ -859,7 +859,7 @@ func TestCreateIndexesCompatUnique(t *testing.T) {
 			models: []mongo.IndexModel{
 				{
 					Keys:    bson.D{{"v", 1}, {"foo", 1}},
-					Options: new(options.IndexOptions).SetUnique(true),
+					Options: options.Index().SetUnique(true),
 				},
 			},
 			insertDoc: bson.D{{"v", "baz"}, {"foo", "bar"}},
@@ -868,7 +868,7 @@ func TestCreateIndexesCompatUnique(t *testing.T) {
 			models: []mongo.IndexModel{
 				{
 					Keys:    bson.D{{"v", 1}},
-					Options: new(options.IndexOptions).SetUnique(true),
+					Options: options.Index().SetUnique(true),
 				},
 			},
 			insertDoc: bson.D{{"v", int32(42)}},
