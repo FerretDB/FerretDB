@@ -136,13 +136,13 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		return nil, lazyerrors.Error(err)
 	}
 
+	var res backends.UpdateResult
+
 	if !exists {
-		return nil, fmt.Errorf("%s.%s does not exist", c.dbName, c.name)
+		return &res, nil
 	}
 
 	query := fmt.Sprintf(`UPDATE %q SET _ferretdb_sjson = ? WHERE json_extract(_ferretdb_sjson, '$._id') = ?`, tableName)
-
-	var res backends.UpdateResult
 
 	iter := params.Docs.Iterator()
 	defer iter.Close()
