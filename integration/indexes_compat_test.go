@@ -486,6 +486,15 @@ func TestCreateIndexesCompatUnique(t *testing.T) {
 			insertDoc: bson.D{{"not-existing-field", "value"}},
 			skip:      "https://github.com/FerretDB/FerretDB/issues/2830",
 		},
+		"NotUniqueIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"v", 1}},
+					Options: options.Index().SetUnique(false),
+				},
+			},
+			insertDoc: bson.D{{"v", "value"}},
+		},
 		"CompoundIndex": {
 			models: []mongo.IndexModel{
 				{

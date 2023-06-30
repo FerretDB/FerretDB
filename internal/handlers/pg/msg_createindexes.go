@@ -378,7 +378,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 		case "unique":
 			v := must.NotFail(indexDoc.Get("unique"))
 
-			_, ok := v.(bool)
+			unique, ok := v.(bool)
 			if !ok {
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrTypeMismatch,
@@ -404,7 +404,11 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 				)
 			}
 
-			index.Unique = pointer.ToBool(true)
+			// the unique option should only be set if the index is unique,
+			// non-unique indexes shouldn't have unique option set
+			if unique {
+				index.Unique = pointer.ToBool(true)
+			}
 
 		case "background":
 			// ignore deprecated options
