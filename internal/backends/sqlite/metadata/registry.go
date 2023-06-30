@@ -195,18 +195,14 @@ func (r *Registry) GetTableName(ctx context.Context, dbName string, collectionNa
 
 	query := fmt.Sprintf("SELECT table_name FROM %q WHERE name = ?", metadataTableName)
 
-	rows, err := db.QueryContext(ctx, query, collectionName)
-	if err != nil {
-		return "", false, lazyerrors.Error(err)
-	}
-	defer rows.Close()
-
-	if !rows.Next() {
-		return "", false, nil
-	}
+	row := db.QueryRowContext(ctx, query, collectionName)
 
 	var name string
-	if err = rows.Scan(&name); err != nil {
+	if err := row.Scan(&name); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", false, nil
+		}
+
 		return "", false, lazyerrors.Error(err)
 	}
 
