@@ -138,8 +138,7 @@ func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCol
 }
 
 type RenameCollectionParams struct {
-	Database                     string
-	collectionFrom, collectionTo string
+	CollectionFrom, CollectionTo string
 }
 
 func (dbc *databaseContract) RenameCollection(ctx context.Context, params *RenameCollectionParams) (err error) {

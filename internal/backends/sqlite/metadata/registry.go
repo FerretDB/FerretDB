@@ -196,3 +196,12 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 
 	return true, nil
 }
+
+func (r *Registry) CollectionRename(ctx context.Context, dbName, collectionFrom, collectionTo string) (bool, error) {
+	db := r.p.GetExisting(ctx, dbName)
+	if db == nil {
+		return false, nil
+	}
+
+	return true, nil
+}
