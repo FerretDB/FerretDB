@@ -105,6 +105,8 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	db := h.b.Database(dbName)
 	defer db.Close()
 
+	//TODO validate collection name
+
 	// db.RenameCollection
 
 	var reply wire.OpMsg
