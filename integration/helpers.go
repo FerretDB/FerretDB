@@ -154,13 +154,6 @@ func AssertEqualDocumentsSlice(t testing.TB, expected, actual []bson.D) bool {
 	return testutil.AssertEqualSlices(t, expectedDocs, actualDocs)
 }
 
-// AssertEqualError is a deprecated alias for AssertEqualCommandError.
-//
-// Deprecated: use AssertEqualCommandError instead.
-func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) bool {
-	return AssertEqualCommandError(t, expected, actual)
-}
-
 // AssertEqualCommandError asserts that the expected error is the same as the actual (ignoring the Raw part).
 func AssertEqualCommandError(t testing.TB, expected mongo.CommandError, actual error) bool {
 	t.Helper()
@@ -216,7 +209,7 @@ func AssertMatchesCommandError(t testing.TB, expected, actual error) {
 	actualMessage := a.Message
 	a.Message = e.Message
 
-	if !AssertEqualError(t, e, a) {
+	if !AssertEqualCommandError(t, e, a) {
 		t.Logf("actual message: %s", actualMessage)
 	}
 }
@@ -267,13 +260,6 @@ func AssertMatchesBulkException(t testing.TB, expected, actual error) {
 
 		assert.Equal(t, expectedWe, we)
 	}
-}
-
-// AssertEqualAltError is a deprecated alias for AssertEqualAltCommandError.
-//
-// Deprecated: use AssertEqualAltCommandError instead.
-func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
-	return AssertEqualAltCommandError(t, expected, altMessage, actual)
 }
 
 // AssertEqualAltCommandError asserts that the expected error is the same as the actual (ignoring the Raw part);
