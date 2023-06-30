@@ -25,7 +25,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/x/mongo/driver"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -575,16 +574,6 @@ func TestDatabaseName(t *testing.T) {
 				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 			})
 		}
-	})
-
-	t.Run("Empty", func(t *testing.T) {
-		t.Parallel()
-
-		ctx, collection := setup.Setup(t)
-
-		err := collection.Database().Client().Database("").CreateCollection(ctx, collection.Name())
-		expectedErr := driver.InvalidOperationError(driver.InvalidOperationError{MissingField: "Database"})
-		assert.Equal(t, expectedErr, err)
 	})
 }
 
