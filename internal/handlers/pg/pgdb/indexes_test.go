@@ -273,9 +273,13 @@ func TestDropIndexes(t *testing.T) {
 
 			err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
 				for _, idx := range tc.toCreate {
-					if _, err := CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx); err != nil {
+					var collCreated bool
+
+					if collCreated, err = CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx); err != nil {
 						return err
 					}
+
+					assert.False(t, collCreated)
 				}
 
 				return nil
@@ -372,7 +376,10 @@ func TestDropIndexesStress(t *testing.T) {
 			Key:  indexKeys,
 		}
 
-		_, err = CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx)
+		var collCreated bool
+		collCreated, err = CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx)
+		assert.False(t, collCreated)
+
 		return err
 	})
 	require.NoError(t, err)
