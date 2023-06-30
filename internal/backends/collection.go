@@ -68,6 +68,8 @@ type QueryResult struct {
 
 // Query executes a query against the collection.
 //
+// If the collection does not exist it returns empty iterator.
+//
 // The passed context should be used for canceling the initial query.
 // It also can be used to close the returned iterator and free underlying resources,
 // but doing so is not necessary - the handler will do that anyway.
@@ -132,6 +134,8 @@ type DeleteResult struct {
 }
 
 // Delete deletes documents in collection.
+//
+// If requested database or collection does not exist it returns 0 deleted documents.
 func (cc *collectionContract) Delete(ctx context.Context, params *DeleteParams) (res *DeleteResult, err error) {
 	defer observability.FuncCall(ctx)()
 	defer checkError(err)
