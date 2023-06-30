@@ -51,7 +51,7 @@ type NewOpts struct {
 	AuthParams
 
 	L             *zap.Logger
-	Metrics       *connmetrics.ConnMetrics
+	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider
 
 	// test options

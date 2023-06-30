@@ -47,7 +47,7 @@ type Handler struct {
 // NewOpts represents handler configuration.
 type NewOpts struct {
 	L             *zap.Logger
-	Metrics       *connmetrics.ConnMetrics
+	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider
 	HANAURL       string
 }

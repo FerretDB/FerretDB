@@ -26,6 +26,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime/pprof"
 	"sync/atomic"
 	"time"
 
@@ -554,6 +555,10 @@ func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string)
 		if cmd.Handler != nil {
 			// TODO move it to route, closer to Prometheus metrics
 			defer observability.FuncCall(ctx)()
+
+			defer pprof.SetGoroutineLabels(ctx)
+			ctx = pprof.WithLabels(ctx, pprof.Labels("command", command))
+			pprof.SetGoroutineLabels(ctx)
 
 			return cmd.Handler(c.h, ctx, msg)
 		}
