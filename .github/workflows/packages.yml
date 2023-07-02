@@ -128,13 +128,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Restore Go caches
+      - name: Restore Go build cache
         uses: actions/cache@v3
         with:
-          path: tmp/docker/gocaches
-          key: packages-gocaches-${{ steps.setup.outputs.cache_week }}-${{ hashFiles('**/go.mod') }}
+          path: tmp/docker/gocache
+          key: packages-gocache-${{ steps.setup.outputs.cache_week }}-${{ hashFiles('**/go.mod') }}
           restore-keys: |
-            packages-gocaches-${{ steps.setup.outputs.cache_week }}-
+            packages-gocache-${{ steps.setup.outputs.cache_week }}-
 
       - name: Build and push all-in-one Docker images ${{ steps.extract.outputs.all_in_one_images }}
         if: steps.extract.outputs.all_in_one_images != ''

@@ -19,6 +19,7 @@ ARG LABEL_COMMIT
 RUN test -n "$LABEL_VERSION"
 RUN test -n "$LABEL_COMMIT"
 
+ARG TARGETPLATFORM
 ARG TARGETARCH
 
 # see .dockerignore
@@ -27,7 +28,7 @@ COPY . .
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
 ENV GOPATH /gocaches/gopath
-ENV GOCACHE /gocaches/gocache-${TARGETARCH}
+ENV GOCACHE /gocaches/gocache-${TARGETPLATFORM}
 ENV GOMODCACHE /gocaches/gomodcache
 
 # to make caching easier
@@ -54,6 +55,8 @@ set -ex
 git status
 
 cp -R /gocaches-host/* /gocaches
+# tar xvf /gocaches-host/*.tar /gocaches
+# ls -al /gocaches
 
 go mod download
 go mod verify
@@ -67,9 +70,9 @@ then
 fi
 
 # build stdlib separately to check if it was cached
-go install -v -race=$RACE std
+go build -v -race=$RACE std
 
-# Do not use -trimpath to make debugging with delve easier.
+# do not use -trimpath to make debugging with delve easier
 go build -v                 -o=bin/ferretdb -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris ./cmd/ferretdb
 go test  -c -coverpkg=./... -o=bin/ferretdb -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris ./cmd/ferretdb
 
@@ -80,9 +83,8 @@ EOF
 
 
 # export cache stage
-# use busybox and tar to export less files faster
 
-FROM busybox AS export-cache
+FROM golang:1.20.3 AS export-cache
 
 RUN --mount=type=cache,target=/gocaches tar cf /gocaches.tar gocaches
 

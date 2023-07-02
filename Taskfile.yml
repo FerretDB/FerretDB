@@ -506,36 +506,35 @@ tasks:
   docker-build:
     deps: [gen-version, docker-init]
     cmds:
-      # disable BuildKit layer cache
-      - rm -fr tmp/docker/gocaches-export
-      - mkdir -p tmp/docker/gocaches
-      - echo '{{now | unixEpoch}}' > tmp/docker/gocaches/bust.txt
+      - rm -fr tmp/docker/gocache-export
+      - mkdir -p tmp/docker/gocache
 
-      # main build command with Go caches at tmp/docker/gocaches
-      - >
-        docker buildx build --builder=ferretdb
-        --file=build/docker/{{.FILE}}.Dockerfile
-        --build-arg=LABEL_VERSION={{.VERSION}}
-        --build-arg=LABEL_COMMIT={{.COMMIT}}
-        --platform={{default "linux" .PLATFORM}}
-        {{range splitList "," .DOCKER_IMAGES}}--tag={{trim .}} {{end -}}
-        --output={{.OUTPUT}}
-        .
-
-      # export Go caches tarballs to local directory
       - >
         docker buildx build --builder=ferretdb
         --file=build/docker/{{.FILE}}.Dockerfile
         --build-arg=LABEL_VERSION={{.VERSION}}
         --build-arg=LABEL_COMMIT={{.COMMIT}}
         --build-arg=BUILDKIT_MULTI_PLATFORM=true
-        --platform={{default "linux" .PLATFORM}}
+        --platform={{.PLATFORM}}
         --target=export-cache
-        --output=type=local,dest=tmp/docker/gocaches-export
+        --output=type=local,dest=tmp/docker/gocache-export
         .
 
-      # unpack tarballs back to tmp/docker/gocaches
-      - find tmp/docker/gocaches-export -name '*.tar' -print -exec tar xf {} -C tmp/docker \;
+      - mkdir tmp/docker/gocache-export/gocache
+      - find tmp/docker/gocache-export -name '*.tar' -print -exec tar xf {} -C tmp/docker/gocache-export \;
+      - tar cf tmp/docker/gocache/gocache.tar -C tmp/docker/gocache-export gocache
+      - rm -fr tmp/docker/gocache-export
+
+      - >
+        docker buildx build --builder=ferretdb
+        --file=build/docker/{{.FILE}}.Dockerfile
+        --build-arg=LABEL_VERSION={{.VERSION}}
+        --build-arg=LABEL_COMMIT={{.COMMIT}}
+        --build-arg=BUILDKIT_MULTI_PLATFORM=true
+        --platform={{.PLATFORM}}
+        {{range splitList "," .DOCKER_IMAGES}}--tag={{trim .}} {{end -}}
+        --output={{.OUTPUT}}
+        .
     vars:
       VERSION:
         sh: go run ./cmd/envtool shell read build/version/version.txt
@@ -556,12 +555,13 @@ tasks:
       - mv tmp/build/linux_{{ARCH}}/ferretdb bin/ferretdb
 
   docker-local:
-    desc: "Build `ferretdb-local` Docker image for the host platform"
+    desc: "Build `ferretdb-local` Docker image for the host architecture"
     cmds:
       - echo 'docker-local' > build/version/package.txt
       - task: docker-build
         vars:
           FILE: development
+          PLATFORM: linux
           DOCKER_IMAGES: ferretdb-local
           OUTPUT: type=docker
 

@@ -16,5 +16,5 @@
 # additional files for Docker images
 !build/docker
 
-# to pass Go caches
-!tmp/docker/gocaches
+# to pass Go build cache
+!tmp/docker/gocache

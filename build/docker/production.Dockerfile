@@ -1,5 +1,16 @@
 # syntax=docker/dockerfile:1
 
+# https://docs.docker.com/build/cache/backends/
+# https://github.com/docker/buildx/issues/244
+# https://github.com/moby/buildkit/issues/1474
+# https://github.com/moby/buildkit/issues/1512
+# https://github.com/docker/buildx/issues/156
+# https://github.com/moby/buildkit/blob/master/frontend/dockerfile/docs/reference.md
+# https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
+# https://github.com/moby/buildkit#export-cache
+# https://docs.docker.com/engine/reference/commandline/buildx_build/
+# https://github.com/FerretDB/FerretDB/issues/2170
+
 # for production releases (`ferret` image)
 
 # While we already know commit and version from commit.txt and version.txt inside image,
@@ -10,25 +21,30 @@ ARG LABEL_VERSION
 ARG LABEL_COMMIT
 
 
+# import cache stage
+
+FROM --platform=${BUILDPLATFORM} golang:1.20.3 AS import-cache
+
+RUN --mount=type=bind,target=/host --mount=type=cache,target=/gomodcache-docker /host/build/docker/import-cache.sh
+
+
 # build stage
 
 FROM golang:1.20.5 AS build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
-RUN test -n "$LABEL_VERSION"
-RUN test -n "$LABEL_COMMIT"
+RUN test -n "${LABEL_VERSION}"
+RUN test -n "${LABEL_COMMIT}"
 
-ARG TARGETARCH
+COPY --from=import-cache /gocache /gocache
+COPY --from=import-cache /gomodcache /gomodcache
 
-# see .dockerignore
 WORKDIR /src
 COPY . .
 
-# use a single directory for all Go caches to simpliy RUN --mount commands below
-ENV GOPATH /gocaches/gopath
-ENV GOCACHE /gocaches/gocache-${TARGETARCH}
-ENV GOMODCACHE /gocaches/gomodcache
+ENV GOCACHE /gocache
+ENV GOMODCACHE /gomodcache
 
 # to make caching easier
 ENV GOFLAGS -modcacherw
@@ -43,9 +59,7 @@ ENV GOARM=7
 # for some virtualization platforms and older hardware
 ENV GOAMD64=v1
 
-RUN --mount=type=bind,source=./tmp/docker/gocaches,target=/gocaches-host \
-    --mount=type=cache,target=/gocaches \
-<<EOF
+RUN <<EOF
 
 set -ex
 
@@ -57,9 +71,9 @@ go mod download
 go mod verify
 
 # build stdlib separately to check if it was cached
-go install -v -race=false std
+go build -v -race=false std
 
-# Do not use -trimpath for better caching and faster building.
+# do not use -trimpath for better caching and faster builds
 go build -v -o=bin/ferretdb -race=false -tags=ferretdb_tigris ./cmd/ferretdb
 
 go version -m bin/ferretdb
@@ -69,11 +83,16 @@ EOF
 
 
 # export cache stage
-# use busybox and tar to export less files faster
 
-FROM busybox AS export-cache
+FROM --platform=${BUILDPLATFORM} golang:1.20.3 AS export-cache
 
-RUN --mount=type=cache,target=/gocaches tar cf /gocaches.tar gocaches
+ARG TARGETOS
+ARG TARGETARCH
+
+COPY --from=build /gocache /gocache
+
+COPY build/docker/export-cache.sh /export-cache.sh
+RUN /export-cache.sh
 
 
 # final stage
