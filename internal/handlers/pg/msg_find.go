@@ -50,12 +50,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	if params.MaxTimeMS != 0 {
-		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
-		defer cancel()
-
-		ctx = ctxWithTimeout
-	}
+	username, _ := conninfo.Get(ctx).Auth()
 
 	qp := &pgdb.QueryParams{
 		DB:         params.DB,
@@ -74,79 +69,100 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		qp.Filter = params.Filter
 	}
 
-	var resDocs []*types.Document
-	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		if params.BatchSize == 0 {
-			return nil
-		}
+	if h.EnableSortPushdown && params.Projection == nil {
+		qp.Sort = params.Sort
+	}
 
-		var iter types.DocumentsIterator
+	cancel := func() {}
+	if params.MaxTimeMS != 0 {
+		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
+		// TODO https://github.com/FerretDB/FerretDB/issues/1808
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
+	}
 
-		iter, err = pgdb.QueryDocuments(ctx, tx, qp)
+	// closer accumulates all things that should be closed / canceled.
+	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
+
+	var keepTx pgx.Tx
+	var iter types.DocumentsIterator
+	err = dbPool.InTransactionKeep(ctx, func(tx pgx.Tx) error {
+		keepTx = tx
+
+		var queryRes pgdb.QueryResults
+		iter, queryRes, err = pgdb.QueryDocuments(ctx, tx, qp)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		closer := iterator.NewMultiCloser(iter)
-		defer closer.Close()
+		closer.Add(iter)
 
 		iter = common.FilterIterator(iter, closer, params.Filter)
 
-		iter, err = common.SortIterator(iter, closer, params.Sort)
-		if err != nil {
-			var pathErr *types.DocumentPathError
-			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
-				return commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrPathContainsEmptyElement,
-					"Empty field names in path are not allowed",
-					document.Command(),
-				)
-			}
+		if !queryRes.SortPushdown {
+			iter, err = common.SortIterator(iter, closer, params.Sort)
+			if err != nil {
+				var pathErr *types.DocumentPathError
+				if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+					return commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrPathContainsEmptyElement,
+						"Empty field names in path are not allowed",
+						document.Command(),
+					)
+				}
 
-			return lazyerrors.Error(err)
+				return lazyerrors.Error(err)
+			}
 		}
 
 		iter = common.SkipIterator(iter, closer, params.Skip)
 
 		iter = common.LimitIterator(iter, closer, params.Limit)
 
-		iter, err = common.ProjectionIterator(iter, closer, params.Projection)
+		iter, err = common.ProjectionIterator(iter, closer, params.Projection, params.Filter)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		resDocs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
-
-		return err
+		return nil
 	})
 
 	if err != nil {
+		closer.Close()
 		return nil, lazyerrors.Error(err)
 	}
 
-	var cursorID int64
+	closer.Add(iterator.CloserFunc(func() {
+		// It does not matter if we commit or rollback the read transaction,
+		// but we should close it.
+		// ctx could be cancelled already.
+		_ = keepTx.Rollback(context.Background())
+	}))
 
-	if h.EnableCursors {
-		iter := iterator.Values(iterator.ForSlice(resDocs))
-		c := cursor.New(&cursor.NewParams{
-			Iter:       iter,
-			DB:         params.DB,
-			Collection: params.Collection,
-			BatchSize:  params.BatchSize,
-		})
+	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
+		Iter:       iterator.WithClose(iterator.Interface[struct{}, *types.Document](iter), closer.Close),
+		DB:         params.DB,
+		Collection: params.Collection,
+		Username:   username,
+	})
 
-		username, _ := conninfo.Get(ctx).Auth()
-		cursorID = h.registry.StoreCursor(username, c)
+	cursorID := cursor.ID
 
-		resDocs, err = iterator.ConsumeValuesN(iter, int(params.BatchSize))
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	firstBatchDocs, err := iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor), int(params.BatchSize))
+	if err != nil {
+		cursor.Close()
+		return nil, lazyerrors.Error(err)
 	}
 
-	firstBatch := types.MakeArray(len(resDocs))
-	for _, doc := range resDocs {
+	firstBatch := types.MakeArray(len(firstBatchDocs))
+	for _, doc := range firstBatchDocs {
 		firstBatch.Append(doc)
+	}
+
+	if params.SingleBatch || firstBatch.Len() < int(params.BatchSize) {
+		// let the client know that there are no more results
+		cursorID = 0
+
+		cursor.Close()
 	}
 
 	var reply wire.OpMsg
@@ -181,7 +197,7 @@ func fetchAndFilterDocs(ctx context.Context, fp *fetchParams) ([]*types.Document
 		fp.qp.Filter = nil
 	}
 
-	iter, err := pgdb.QueryDocuments(ctx, fp.tx, fp.qp)
+	iter, _, err := pgdb.QueryDocuments(ctx, fp.tx, fp.qp)
 	if err != nil {
 		return nil, err
 	}

@@ -20,17 +20,18 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
 // queryIterator implements iterator.Interface to fetch documents from the database.
 type queryIterator struct {
 	ctx       context.Context
-	unmarshal func(b []byte) (*types.Document, error) // defaults to pjson.Unmarshal
+	unmarshal func(b []byte) (*types.Document, error) // defaults to sjson.Unmarshal
 
 	m    sync.Mutex
 	rows pgx.Rows
@@ -46,7 +47,7 @@ type queryIterator struct {
 func newIterator(ctx context.Context, rows pgx.Rows, p *iteratorParams) types.DocumentsIterator {
 	unmarshalFunc := p.unmarshal
 	if unmarshalFunc == nil {
-		unmarshalFunc = pjson.Unmarshal
+		unmarshalFunc = sjson.Unmarshal
 	}
 
 	iter := &queryIterator{
@@ -55,7 +56,6 @@ func newIterator(ctx context.Context, rows pgx.Rows, p *iteratorParams) types.Do
 		rows:      rows,
 		token:     resource.NewToken(),
 	}
-
 	resource.Track(iter, iter.token)
 
 	return iter
@@ -69,9 +69,10 @@ func newIterator(ctx context.Context, rows pgx.Rows, p *iteratorParams) types.Do
 //   - context.DeadlineExceeded;
 //   - something else.
 //
-// Otherwise, as the first value it returns the number of the current iteration (starting from 0),
-// as the second value it returns the document.
+// Otherwise, the next document is returned.
 func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
+	defer observability.FuncCall(iter.ctx)()
+
 	iter.m.Lock()
 	defer iter.m.Unlock()
 
@@ -113,6 +114,8 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 
 // Close implements iterator.Interface.
 func (iter *queryIterator) Close() {
+	defer observability.FuncCall(iter.ctx)()
+
 	iter.m.Lock()
 	defer iter.m.Unlock()
 
@@ -123,6 +126,8 @@ func (iter *queryIterator) Close() {
 //
 // This should be called only when the caller already holds the mutex.
 func (iter *queryIterator) close() {
+	defer observability.FuncCall(iter.ctx)()
+
 	if iter.rows != nil {
 		iter.rows.Close()
 		iter.rows = nil

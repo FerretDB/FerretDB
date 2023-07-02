@@ -67,12 +67,16 @@ jobs:
     timeout-minutes: 5
 
     # No `trust` label check because we don't checkout PR's code.
-    # No `no ci` label to prevent accidental auto-merges: jobs skipped with `if` conditional are considered successful.
+    # No `not ready` label to prevent accidental auto-merges: jobs skipped with `if` conditional are considered successful.
     if: github.event_name == 'pull_request_target'
 
     steps:
       # Do not add a source code checkout step because we don't check the `trust` label.
       # See the warning at the top of the file.
+
+      - name: Setup permissions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+        if: false
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main

@@ -3,7 +3,6 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/FerretDB/FerretDB/ferretdb.svg)](https://pkg.go.dev/github.com/FerretDB/FerretDB/ferretdb)
 
 [![Go](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/go.yml)
-[![Integration](https://github.com/FerretDB/FerretDB/actions/workflows/integration.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/integration.yml)
 [![codecov](https://codecov.io/gh/FerretDB/FerretDB/branch/main/graph/badge.svg?token=JZ56XFT3DM)](https://codecov.io/gh/FerretDB/FerretDB)
 
 [![Security](https://github.com/FerretDB/FerretDB/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/security.yml)
@@ -50,10 +49,10 @@ that don't have those problems.
 
 With that container running, you can:
 
-* Connect to it with any MongoDB client application using MongoDB URI `mongodb://127.0.0.1:27017/`.
-* Connect to it using MongoDB Shell by just running `mongosh`.
+- Connect to it with any MongoDB client application using MongoDB URI `mongodb://127.0.0.1:27017/`.
+- Connect to it using MongoDB Shell by just running `mongosh`.
   If you don't have it installed locally, you can run `docker exec -it ferretdb mongosh`.
-* Connect to PostgreSQL running inside the container by running `docker exec -it ferretdb psql -U username ferretdb`.
+- Connect to PostgreSQL running inside the container by running `docker exec -it ferretdb psql -U username ferretdb`.
   FerretDB uses PostgreSQL schemas for MongoDB databases.
   So, if you created some collections in the `test` database using any MongoDB client,
   you can switch to it by running `SET search_path = 'test';` query
@@ -78,23 +77,23 @@ See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version) for m
 
 ## Managed FerretDB at cloud providers
 
-* [Civo](https://www.civo.com) (see [here](https://www.civo.com/marketplace/FerretDB)).
-* [Scaleway](https://www.scaleway.com/) (request access [here](https://www.scaleway.com/en/betas/#managed-document-database)).
+- [Civo](https://www.civo.com) (see [here](https://www.civo.com/marketplace/FerretDB)).
+- [Scaleway](https://www.scaleway.com/) (request access [here](https://www.scaleway.com/en/betas/#managed-document-database)).
 
 ## Documentation
 
-* [Documentation for users](https://docs.ferretdb.io/).
-* [Documentation for Go developers about embeddable FerretDB](https://pkg.go.dev/github.com/FerretDB/FerretDB/ferretdb).
+- [Documentation for users](https://docs.ferretdb.io/).
+- [Documentation for Go developers about embeddable FerretDB](https://pkg.go.dev/github.com/FerretDB/FerretDB/ferretdb).
 
 ## Community
 
-* Website and blog: [https://ferretdb.io](https://ferretdb.io/).
-* Twitter: [@ferret_db](https://twitter.com/ferret_db).
-* Mastodon: [@ferretdb@techhub.social](https://techhub.social/@ferretdb).
-* [Slack chat](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A) for quick questions.
-* [GitHub Discussions](https://github.com/FerretDB/FerretDB/discussions) for longer topics.
-* [GitHub Issues](https://github.com/FerretDB/FerretDB/issues) for bugs and missing features.
-* [Open Office Hours meeting](https://calendar.google.com/event?action=TEMPLATE&tmeid=NjNkdTkyN3VoNW5zdHRiaHZybXFtb2l1OWtfMjAyMTEyMTNUMTgwMDAwWiBjX24zN3RxdW9yZWlsOWIwMm0wNzQwMDA3MjQ0QGc&tmsrc=c_n37tquoreil9b02m0740007244%40group.calendar.google.com&scp=ALL)
+- Website and blog: [https://ferretdb.io](https://ferretdb.io/).
+- Twitter: [@ferret_db](https://twitter.com/ferret_db).
+- Mastodon: [@ferretdb@techhub.social](https://techhub.social/@ferretdb).
+- [Slack chat](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A) for quick questions.
+- [GitHub Discussions](https://github.com/FerretDB/FerretDB/discussions) for longer topics.
+- [GitHub Issues](https://github.com/FerretDB/FerretDB/issues) for bugs and missing features.
+- [Open Office Hours meeting](https://calendar.google.com/event?action=TEMPLATE&tmeid=NjNkdTkyN3VoNW5zdHRiaHZybXFtb2l1OWtfMjAyMTEyMTNUMTgwMDAwWiBjX24zN3RxdW9yZWlsOWIwMm0wNzQwMDA3MjQ0QGc&tmsrc=c_n37tquoreil9b02m0740007244%40group.calendar.google.com&scp=ALL)
   every Monday at 18:00 UTC at [Google Meet](https://meet.google.com/mcb-arhw-qbq).
 
 If you want to contact FerretDB Inc., please use [this form](https://www.ferretdb.io/contact/).

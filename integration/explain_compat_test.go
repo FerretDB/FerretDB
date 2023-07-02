@@ -93,6 +93,8 @@ func testExplainCompatError(t *testing.T, testCases map[string]explainCompatTest
 				if targetErr != nil {
 					t.Logf("Target error: %v", targetErr)
 					t.Logf("Compat error: %v", compatErr)
+
+					// error messages are intentionally not compared
 					AssertMatchesCommandError(t, compatErr, targetErr)
 
 					return
@@ -146,6 +148,10 @@ func TestExplainCompatError(t *testing.T) {
 		"Find": {
 			command: "find",
 			filter:  bson.D{{"v", int32(42)}},
+		},
+		"InvalidCommandGetLog": {
+			command: "create",
+			skip:    "https://github.com/FerretDB/FerretDB/issues/2704",
 		},
 	}
 

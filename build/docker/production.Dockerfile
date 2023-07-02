@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM golang:1.20.3 AS build
+FROM golang:1.20.5 AS build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -39,7 +39,8 @@ ENV GOPROXY https://proxy.golang.org
 ENV CGO_ENABLED=0
 ENV GOARM=7
 
-# do not raise it without providing a v1 build because v2+ is problematic for some virtualization platforms
+# do not raise it without providing a v1 build because v2+ is problematic
+# for some virtualization platforms and older hardware
 ENV GOAMD64=v1
 
 RUN --mount=type=bind,source=./tmp/docker/gocaches,target=/gocaches-host \
@@ -47,6 +48,8 @@ RUN --mount=type=bind,source=./tmp/docker/gocaches,target=/gocaches-host \
 <<EOF
 
 set -ex
+
+git status
 
 cp -R /gocaches-host/* /gocaches
 

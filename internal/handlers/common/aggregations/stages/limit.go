@@ -18,7 +18,9 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -28,7 +30,7 @@ type limit struct {
 }
 
 // newLimit creates a new $limit stage.
-func newLimit(stage *types.Document) (Stage, error) {
+func newLimit(stage *types.Document) (aggregations.Stage, error) {
 	doc, err := stage.Get("$limit")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -45,21 +47,16 @@ func newLimit(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (l *limit) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	doc, err := common.LimitDocuments(in, l.limit)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return doc, nil
+func (l *limit) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
+	return common.LimitIterator(iter, closer, l.limit), nil
 }
 
 // Type implements Stage interface.
-func (l *limit) Type() StageType {
-	return StageTypeDocuments
+func (l *limit) Type() aggregations.StageType {
+	return aggregations.StageTypeDocuments
 }
 
 // check interfaces
 var (
-	_ Stage = (*limit)(nil)
+	_ aggregations.Stage = (*limit)(nil)
 )

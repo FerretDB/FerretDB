@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -49,11 +50,11 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	scale := int32(1)
+	scale := int64(1)
 
 	var s any
 	if s, err = document.Get("scale"); err == nil {
-		if scale, err = common.GetScaleParam(command, s); err != nil {
+		if scale, err = commonparams.GetValidatedNumberParamWithMinValue(command, "scale", s, 1); err != nil {
 			return nil, err
 		}
 	}
@@ -65,18 +66,29 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
+	pairs := []any{
+		"ns", db + "." + collection,
+		"size", stats.Size / scale,
+		"count", stats.NumObjects,
+	}
+
+	// If there are objects in the collection, calculate the average object size.
+	if stats.NumObjects > 0 {
+		pairs = append(pairs, "avgObjSize", int32(stats.Size)/stats.NumObjects)
+	}
+
+	pairs = append(pairs,
+		"storageSize", stats.Size/scale,
+		"nindexes", int32(0),
+		"totalIndexSize", int32(0),
+		"totalSize", stats.Size/scale,
+		"scaleFactor", int32(scale),
+		"ok", float64(1),
+	)
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"ns", db+"."+collection,
-			"count", stats.NumObjects,
-			"size", int32(stats.Size)/scale,
-			"storageSize", int32(stats.Size)/scale,
-			"totalIndexSize", int32(0),
-			"totalSize", int32(stats.Size)/scale,
-			"scaleFactor", scale,
-			"ok", float64(1),
-		))},
+		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
 	}))
 
 	return &reply, nil

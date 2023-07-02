@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/tigrisdata/tigris-client-go/config"
 	"go.uber.org/zap"
 
@@ -50,12 +51,11 @@ type NewOpts struct {
 	AuthParams
 
 	L             *zap.Logger
-	Metrics       *connmetrics.ConnMetrics
+	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider
 
 	// test options
 	DisableFilterPushdown bool
-	EnableCursors         bool
 }
 
 // AuthParams represents authentication parameters.
@@ -73,7 +73,7 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 
 	return &Handler{
 		NewOpts:  opts,
-		registry: cursor.NewRegistry(),
+		registry: cursor.NewRegistry(opts.L.Named("cursors")),
 		pools:    make(map[AuthParams]*tigrisdb.TigrisDB, 1),
 	}, nil
 }
@@ -87,6 +87,8 @@ func (h *Handler) Close() {
 		p.Driver.Close()
 		delete(h.pools, k)
 	}
+
+	h.registry.Close()
 }
 
 // DBPool returns database connection pool for the given client connection.
@@ -135,7 +137,7 @@ func (h *Handler) DBPool(ctx context.Context) (*tigrisdb.TigrisDB, error) {
 		ClientID:     ap.ClientID,
 		ClientSecret: ap.ClientSecret,
 	}
-	p, err := tigrisdb.New(ctx, cfg, h.L)
+	p, err := tigrisdb.New(ctx, cfg, h.L, h.StateProvider)
 	if err != nil {
 		h.L.Warn("DBPool: authentication failed", zap.String("username", username), zap.Error(err))
 		return nil, lazyerrors.Error(err)
@@ -145,6 +147,16 @@ func (h *Handler) DBPool(ctx context.Context) (*tigrisdb.TigrisDB, error) {
 	h.pools[ap] = p
 
 	return p, nil
+}
+
+// Describe implements handlers.Interface.
+func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
+	// TODO
+}
+
+// Collect implements handlers.Interface.
+func (h *Handler) Collect(ch chan<- prometheus.Metric) {
+	// TODO
 }
 
 // check interfaces

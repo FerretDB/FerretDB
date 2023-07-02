@@ -1,8 +1,38 @@
 {
     "rules": {
         "@0x6b/normalize-whitespaces": true,
-        "doubled-spaces": true,
         "no-zero-width-spaces": true,
-        "one-sentence-per-line": true
+        "one-sentence-per-line": true,
+        "@textlint-rule/pattern": {
+            "patterns": [
+                // mostly to keep JS/JSON snippets with correct
+                {
+                    "message": "Use straight ASCII double quotes instead of curly double quotes",
+                    "pattern": "/“|”/",
+                    "replace": "\"",
+                    "forceCode": true
+                },
+                {
+                    "message": "Use straight ASCII single quotes instead of curly single quotes",
+                    "pattern": "/‘|’/",
+                    "replace": "'",
+                    "forceCode": true
+                },
+
+                // to prevent --flags from being converted to en dashes or em dashes
+                {
+                    "message": "Use en dashes with spaces instead of em dashes",
+                    "pattern": "/—/",
+                    "replace": " – ",
+                    "forceCode": true
+                },
+                {
+                    "message": "Use en dashes with spaces",
+                    "pattern": "/(\\S)–([\\S])/",
+                    "replace": "$1 – $2",
+                    "forceCode": true
+                }
+            ]
+        }
     }
 }

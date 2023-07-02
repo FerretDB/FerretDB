@@ -58,17 +58,27 @@ func TestDeleteSimple(t *testing.T) {
 	}
 }
 
-func TestDeleteLimitErrors(t *testing.T) {
+func TestDelete(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		deletes     bson.A
-		expectedErr *mongo.CommandError
-		skip        string
+		deletes bson.A // required, set to deletes parameter
+
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
+		"QueryNotSet": {
+			deletes: bson.A{bson.D{}},
+			err: &mongo.CommandError{
+				Code:    int32(commonerrors.ErrMissingField),
+				Name:    commonerrors.ErrMissingField.String(),
+				Message: "BSON field 'delete.deletes.q' is missing but a required field",
+			},
+		},
 		"NotSet": {
 			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}}},
-			expectedErr: &mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    int32(commonerrors.ErrMissingField),
 				Name:    commonerrors.ErrMissingField.String(),
 				Message: "BSON field 'delete.deletes.limit' is missing but a required field",
@@ -83,19 +93,21 @@ func TestDeleteLimitErrors(t *testing.T) {
 		},
 		"InvalidFloat": {
 			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 42.13}}},
-			expectedErr: &mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    int32(commonerrors.ErrFailedToParse),
 				Name:    commonerrors.ErrFailedToParse.String(),
 				Message: "The limit field in delete objects must be 0 or 1. Got 42.13",
 			},
+			altMessage: "The 'delete.deletes.limit' field must be 0 or 1. Got 42.13",
 		},
 		"InvalidInt": {
 			deletes: bson.A{bson.D{{"q", bson.D{{"v", "foo"}}}, {"limit", 100}}},
-			expectedErr: &mongo.CommandError{
+			err: &mongo.CommandError{
 				Code:    int32(commonerrors.ErrFailedToParse),
 				Name:    commonerrors.ErrFailedToParse.String(),
 				Message: "The limit field in delete objects must be 0 or 1. Got 100",
 			},
+			altMessage: "The 'delete.deletes.limit' field must be 0 or 1. Got 100",
 		},
 	} {
 		name, tc := name, tc
@@ -105,18 +117,24 @@ func TestDeleteLimitErrors(t *testing.T) {
 			}
 
 			t.Parallel()
+
+			require.NotNil(t, tc.deletes, "deletes must not be nil")
+
 			ctx, collection := setup.Setup(t)
 
-			res := collection.Database().RunCommand(ctx, bson.D{
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, bson.D{
 				{"delete", collection.Name()},
 				{"deletes", tc.deletes},
-			})
+			}).Decode(&res)
+			if tc.err != nil {
+				assert.Nil(t, res)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 
-			if tc.expectedErr != nil {
-				AssertEqualError(t, *tc.expectedErr, res.Err())
 				return
 			}
-			assert.Equal(t, nil, res.Err())
+
+			require.NoError(t, err)
 		})
 	}
 }

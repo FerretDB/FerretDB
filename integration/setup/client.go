@@ -16,9 +16,6 @@ package setup
 
 import (
 	"context"
-	"net/url"
-	"path/filepath"
-	"runtime/trace"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -27,55 +24,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 	"go.opentelemetry.io/otel"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
-// mongoDBURIOpts represents mongoDBURI's options.
-type mongoDBURIOpts struct {
-	hostPort       string // for TCP and TLS
-	unixSocketPath string
-	tlsAndAuth     bool
-}
-
-// mongoDBURI builds MongoDB URI with given options.
-func mongoDBURI(tb testing.TB, opts *mongoDBURIOpts) string {
-	tb.Helper()
-
-	var host string
-
-	if opts.hostPort != "" {
-		require.Empty(tb, opts.unixSocketPath, "both hostPort and unixSocketPath are set")
-		host = opts.hostPort
-	} else {
-		host = opts.unixSocketPath
-	}
-
-	var user *url.Userinfo
-	q := make(url.Values)
-
-	if opts.tlsAndAuth {
-		require.Empty(tb, opts.unixSocketPath, "unixSocketPath cannot be used with TLS")
-
-		// we don't separate TLS and auth just for simplicity of our test configurations
-		q.Set("tls", "true")
-		q.Set("tlsCertificateKeyFile", filepath.Join(CertsRoot, "client.pem"))
-		q.Set("tlsCaFile", filepath.Join(CertsRoot, "rootCA-cert.pem"))
-		q.Set("authMechanism", "PLAIN")
-		user = url.UserPassword("username", "password")
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/1507
-	u := &url.URL{
-		Scheme:   "mongodb",
-		Host:     host,
-		Path:     "/",
-		User:     user,
-		RawQuery: q.Encode(),
-	}
-
-	return u.String()
-}
-
-// makeClient returns new client for the given MongoDB URI.
+// makeClient returns new client for the given working MongoDB URI.
 func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 	clientOpts := options.Client().ApplyURI(uri)
 
@@ -83,12 +37,13 @@ func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 
 	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
+	// make sure that FerretDB-backend connection works
 	_, err = client.ListDatabases(ctx, bson.D{})
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	return client, nil
@@ -97,16 +52,22 @@ func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 // setupClient returns test-specific client for the given MongoDB URI.
 //
 // It disconnects automatically when test ends.
+//
+// If the connection can't be established, it panics,
+// as it doesn't make sense to proceed with other tests if we couldn't connect in one of them.
 func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
 	defer span.End()
 
-	defer trace.StartRegion(ctx, "setupClient").End()
+	defer observability.FuncCall(ctx)()
 
 	client, err := makeClient(ctx, uri)
-	require.NoError(tb, err, "URI: %s", uri)
+	if err != nil {
+		tb.Error(err)
+		panic("setupClient: " + err.Error())
+	}
 
 	tb.Cleanup(func() {
 		err = client.Disconnect(ctx)

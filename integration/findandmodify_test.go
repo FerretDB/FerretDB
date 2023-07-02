@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -30,37 +31,50 @@ func TestFindAndModifyEmptyCollectionName(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		err        *mongo.CommandError
-		altMessage string
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"EmptyCollectionName": {
 			err: &mongo.CommandError{
 				Code:    73,
-				Message: "Invalid namespace specified 'testfindandmodifyemptycollectionname-emptycollectionname.'",
+				Message: "Invalid namespace specified 'TestFindAndModifyEmptyCollectionName-EmptyCollectionName.'",
 				Name:    "InvalidNamespace",
 			},
+			altMessage: "Invalid namespace specified 'TestFindAndModifyEmptyCollectionName-EmptyCollectionName.'",
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.err, "err must not be nil")
+
 			ctx, collection := setup.Setup(t, shareddata.Doubles)
 
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, bson.D{{"findAndModify", ""}}).Decode(&actual)
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, bson.D{{"findAndModify", ""}}).Decode(&res)
 
-			AssertEqualError(t, *tc.err, err)
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
 
-func TestFindAndModifyErrors(t *testing.T) {
+func TestFindAndModifyCommandErrors(t *testing.T) {
 	t.Parallel()
 
-	for name, tc := range map[string]struct {
-		command    bson.D
-		err        *mongo.CommandError
-		altMessage string
+	for name, tc := range map[string]struct { //nolint:vet // it is used for test only
+		command  bson.D              // required, command to run
+		provider shareddata.Provider // optional, default uses shareddata.ArrayDocuments
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"UpsertAndRemove": {
 			command: bson.D{
@@ -84,7 +98,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'findAndModify.sort' is the wrong type 'string', expected type 'object'",
 			},
-			altMessage: "BSON field 'sort' is the wrong type 'string', expected type 'object'",
+			altMessage: "BSON field 'findAndModify.sort' is the wrong type 'string', expected type 'object'",
 		},
 		"BadRemoveType": {
 			command: bson.D{
@@ -96,7 +110,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'findAndModify.remove' is the wrong type 'string', expected types '[bool, long, int, decimal, double']",
 			},
-			altMessage: "BSON field 'remove' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
+			altMessage: "BSON field 'findAndModify.remove' is the wrong type 'string', expected type 'bool'",
 		},
 		"BadNewType": {
 			command: bson.D{
@@ -120,13 +134,317 @@ func TestFindAndModifyErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'findAndModify.upsert' is the wrong type 'string', expected types '[bool, long, int, decimal, double']",
 			},
-			altMessage: "BSON field 'upsert' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
+			altMessage: "BSON field 'findAndModify.upsert' is the wrong type 'string', expected type 'bool'",
+		},
+		"SetUnsuitableValue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$set", bson.D{{"v.foo", "foo"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 28,
+				Name: "PathNotViable",
+				Message: "Plan executor error during findAndModify :: caused by :: Cannot create field 'foo' " +
+					"in element {v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			},
+			altMessage: "Cannot create field 'foo' in element " +
+				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+		},
+		"RenameEmptyFieldName": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$rename", bson.D{{"", "v"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    56,
+				Name:    "EmptyFieldName",
+				Message: "An empty update path is not valid.",
+			},
+		},
+		"RenameEmptyPath": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$rename", bson.D{{"v.", "v"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    56,
+				Name:    "EmptyFieldName",
+				Message: "The update path 'v.' contains an empty field name, which is not allowed.",
+			},
+		},
+		"RenameArrayInvalidIndex": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$rename", bson.D{{"v.-1", "f"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 28,
+				Name: "PathNotViable",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"cannot use the part (v of v.-1) to traverse the element " +
+					"({v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]})",
+			},
+			altMessage: "cannot use path 'v.-1' to traverse the document",
+		},
+		"RenameUnsuitableValue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$rename", bson.D{{"v.0.foo.0.bar.z", "f"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 28,
+				Name: "PathNotViable",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"cannot use the part (bar of v.0.foo.0.bar.z) to traverse the element ({bar: \"hello\"})",
+			},
+			altMessage: "types.getByPath: can't access string by path \"z\"",
+		},
+		"IncTypeMismatch": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$inc", bson.D{{"v", "string"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "Cannot increment with non-numeric argument: {v: \"string\"}",
+			},
+		},
+		"IncUnsuitableValue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$inc", bson.D{{"v.foo", 1}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 28,
+				Name: "PathNotViable",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"Cannot create field 'foo' in element " +
+					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			},
+			altMessage: "Cannot create field 'foo' in element " +
+				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+		},
+		"IncNonNumeric": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$inc", bson.D{{"v.0.foo.0.bar", 1}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 14,
+				Name: "TypeMismatch",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"Cannot apply $inc to a value of non-numeric type. " +
+					"{_id: \"array-documents-nested\"} has the field 'bar' of non-numeric type string",
+			},
+			altMessage: "Cannot apply $inc to a value of non-numeric type. " +
+				"{_id: \"array-documents-nested\"} has the field 'bar' of non-numeric type string",
+		},
+		"IncInt64BadValue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64-max"}}},
+				{"update", bson.D{{"$inc", bson.D{{"v", math.MaxInt64}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 2,
+				Name: "BadValue",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"Failed to apply $inc operations to current value " +
+					"((NumberLong)9223372036854775807) for document {_id: \"int64-max\"}",
+			},
+			provider: shareddata.Int64s,
+			altMessage: "Failed to apply $inc operations to current value " +
+				"((NumberLong)9223372036854775807) for document {_id: \"int64-max\"}",
+		},
+		"IncInt32BadValue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32"}}},
+				{"update", bson.D{{"$inc", bson.D{{"v", math.MaxInt64}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 2,
+				Name: "BadValue",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"Failed to apply $inc operations to current value " +
+					"((NumberInt)42) for document {_id: \"int32\"}",
+			},
+			provider: shareddata.Int32s,
+			altMessage: "Failed to apply $inc operations to current value " +
+				"((NumberInt)42) for document {_id: \"int32\"}",
+		},
+		"MaxUnsuitableValue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$max", bson.D{{"v.foo", 1}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 28,
+				Name: "PathNotViable",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"Cannot create field 'foo' in element " +
+					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			},
+			altMessage: "Cannot create field 'foo' in element " +
+				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+		},
+		"MinUnsuitableValue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$min", bson.D{{"v.foo", 1}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 28,
+				Name: "PathNotViable",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"Cannot create field 'foo' in element " +
+					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			},
+			altMessage: "Cannot create field 'foo' in element " +
+				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+		},
+		"MulTypeMismatch": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$mul", bson.D{{"v", "string"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "Cannot multiply with non-numeric argument: {v: \"string\"}",
+			},
+		},
+		"MulTypeMismatchNonExistent": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$mul", bson.D{{"non-existent", "string"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "Cannot multiply with non-numeric argument: {non-existent: \"string\"}",
+			},
+		},
+		"MulUnsuitableValue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$mul", bson.D{{"v.foo", 1}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 28,
+				Name: "PathNotViable",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"Cannot create field 'foo' in element " +
+					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			},
+			altMessage: "Cannot create field 'foo' in element " +
+				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+		},
+		"MulNonNumeric": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$mul", bson.D{{"v.0.foo.0.bar", 1}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 14,
+				Name: "TypeMismatch",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"Cannot apply $mul to a value of non-numeric type. " +
+					"{_id: \"array-documents-nested\"} has the field 'bar' of non-numeric type string",
+			},
+			altMessage: "Cannot apply $mul to a value of non-numeric type. " +
+				"{_id: \"array-documents-nested\"} has the field 'bar' of non-numeric type string",
+		},
+		"MulInt64BadValue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64-max"}}},
+				{"update", bson.D{{"$mul", bson.D{{"v", math.MaxInt64}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 2,
+				Name: "BadValue",
+				Message: "Failed to apply $mul operations to current value " +
+					"((NumberLong)9223372036854775807) for document {_id: \"int64-max\"}",
+			},
+			provider: shareddata.Int64s,
+			altMessage: "Plan executor error during findAndModify :: caused by :: " +
+				"Failed to apply $mul operations to current value " +
+				"((NumberLong)9223372036854775807) for document {_id: \"int64-max\"}",
+		},
+		"MulInt32BadValue": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32"}}},
+				{"update", bson.D{{"$mul", bson.D{{"v", math.MaxInt64}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 2,
+				Name: "BadValue",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"Failed to apply $mul operations to current value " +
+					"((NumberInt)42) for document {_id: \"int32\"}",
+			},
+			provider: shareddata.Int32s,
+			altMessage: "Failed to apply $mul operations to current value " +
+				"((NumberInt)42) for document {_id: \"int32\"}",
+		},
+		"MulEmptyPath": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-nested"}}},
+				{"update", bson.D{{"$mul", bson.D{{"v.", "v"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    56,
+				Name:    "EmptyFieldName",
+				Message: "The update path 'v.' contains an empty field name, which is not allowed.",
+			},
+		},
+		"ConflictCollision": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v", "val"}}},
+					{"$min", bson.D{{"v.foo", "val"}}},
+				}},
+			},
+			err: &mongo.CommandError{
+				Code:    40,
+				Name:    "ConflictingUpdateOperators",
+				Message: "Updating the path 'v.foo' would create a conflict at 'v'",
+			},
+			altMessage: "Updating the path 'v' would create a conflict at 'v'",
+		},
+		"ConflictOverwrite": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.foo", "val"}}},
+					{"$min", bson.D{{"v", "val"}}},
+				}},
+			},
+			err: &mongo.CommandError{
+				Code:    40,
+				Name:    "ConflictingUpdateOperators",
+				Message: "Updating the path 'v' would create a conflict at 'v'",
+			},
+			altMessage: "Updating the path 'v.foo' would create a conflict at 'v.foo'",
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
-			ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+
+			require.NotNil(t, tc.command, "command must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			provider := tc.provider
+			if provider == nil {
+				provider = shareddata.ArrayDocuments
+			}
+
+			ctx, collection := setup.Setup(t, provider)
 
 			command := bson.D{{"findAndModify", collection.Name()}}
 			command = append(command, tc.command...)
@@ -136,17 +454,21 @@ func TestFindAndModifyErrors(t *testing.T) {
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+			if tc.altMessage != "" {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				return
+			}
 
-			AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+			AssertEqualCommandError(t, *tc.err, err)
 		})
 	}
 }
 
-func TestFindAndModifyUpsertComplex(t *testing.T) {
+func TestFindAndModifyCommandUpsert(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		command         bson.D
+		command         bson.D // required, command to run
 		lastErrorObject bson.D
 		skipForTigris   string
 	}{
@@ -221,6 +543,9 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 			}
 
 			t.Parallel()
+
+			require.NotNil(t, tc.command, "command must not be nil")
+
 			ctx, collection := setup.Setup(t, shareddata.Doubles)
 
 			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)

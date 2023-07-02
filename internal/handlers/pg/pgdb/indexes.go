@@ -16,10 +16,13 @@ package pgdb
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -29,7 +32,7 @@ import (
 type Index struct {
 	Name   string
 	Key    IndexKey
-	Unique bool
+	Unique *bool // we have to use pointer to determine whether the field was set or not
 }
 
 // IndexKey is a list of field name + sort order pairs.
@@ -61,23 +64,32 @@ func Indexes(ctx context.Context, tx pgx.Tx, db, collection string) ([]Index, er
 
 // CreateIndexIfNotExists creates a new index for the given params if such an index doesn't exist.
 //
+// If index creation also caused the collection to be created, it returns true as the first return value.
+//
 // If the index exists, it doesn't return an error.
-// If the collection doesn't exist, it will be created and then the index will be created.
-func CreateIndexIfNotExists(ctx context.Context, tx pgx.Tx, db, collection string, i *Index) error {
-	if err := CreateCollectionIfNotExists(ctx, tx, db, collection); err != nil {
-		return err
+func CreateIndexIfNotExists(ctx context.Context, tx pgx.Tx, db, collection string, i *Index) (bool, error) {
+	var collCreated bool
+	var err error
+
+	if collCreated, err = CreateCollectionIfNotExists(ctx, tx, db, collection); err != nil {
+		return false, err
 	}
 
 	pgTable, pgIndex, err := newMetadataStorage(tx, db, collection).setIndex(ctx, i.Name, i.Key, i.Unique)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	if err := createPgIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, i.Key, i.Unique); err != nil {
-		return err
+	var unique bool
+	if i.Unique != nil {
+		unique = *i.Unique
 	}
 
-	return nil
+	if err := createPgIndexIfNotExists(ctx, tx, db, pgTable, pgIndex, i.Key, unique); err != nil {
+		return false, err
+	}
+
+	return collCreated, nil
 }
 
 // Equal returns true if the given index key is equal to the current one.
@@ -204,18 +216,36 @@ func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, ind
 			return lazyerrors.Errorf("unknown sort order: %d", field.Order)
 		}
 
-		// It's important to sanitize field.Field data here, as it's a user-provided value.
-		fieldsDef[i] = fmt.Sprintf(`((_jsonb->%s)) %s`, quoteString(field.Field), order)
+		// if the key is foo.bar, then need to modify it to foo -> bar
+		fs := strings.Split(field.Field, ".")
+		transformedParts := make([]string, len(fs))
+
+		for j, f := range fs {
+			// It's important to sanitize field.Field data here, as it's a user-provided value.
+			transformedParts[j] = quoteString(f)
+		}
+		fieldsDef[i] = fmt.Sprintf(`((_jsonb->%s)) %s`, strings.Join(transformedParts, " -> "), order)
 	}
 
 	sql := `CREATE` + unique + ` INDEX IF NOT EXISTS ` + pgx.Identifier{index}.Sanitize() +
 		` ON ` + pgx.Identifier{schema, table}.Sanitize() + ` (` + strings.Join(fieldsDef, `, `) + `)`
 
-	if _, err = tx.Exec(ctx, sql); err != nil {
+	_, err = tx.Exec(ctx, sql)
+	if err == nil {
+		return nil
+	}
+
+	var pgErr *pgconn.PgError
+	if !errors.As(err, &pgErr) {
 		return lazyerrors.Error(err)
 	}
 
-	return nil
+	switch pgErr.Code {
+	case pgerrcode.UniqueViolation:
+		return ErrUniqueViolation
+	default:
+		return lazyerrors.Error(err)
+	}
 }
 
 // dropPgIndex drops the given index.

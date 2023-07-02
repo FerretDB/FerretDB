@@ -16,7 +16,6 @@ package tigris
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -43,49 +42,26 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "writeConcern", "bypassDocumentValidation", "comment")
-
-	var qp tigrisdb.QueryParams
-
-	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, err
-	}
-
-	collectionParam, err := document.Get(document.Command())
+	params, err := common.GetInsertParams(document, h.L)
 	if err != nil {
 		return nil, err
 	}
 
-	var ok bool
-	if qp.Collection, ok = collectionParam.(string); !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
-			document.Command(),
-		)
+	qp := tigrisdb.QueryParams{
+		DB:         params.DB,
+		Collection: params.Collection,
 	}
 
-	var docs *types.Array
-	if docs, err = common.GetOptionalParam(document, "documents", docs); err != nil {
-		return nil, err
-	}
-
-	ordered := true
-	if ordered, err = common.GetOptionalParam(document, "ordered", ordered); err != nil {
-		return nil, err
-	}
-
-	inserted, insErrors := insertMany(ctx, dbPool, &qp, docs, ordered)
+	inserted, insErrors := insertMany(ctx, dbPool, &qp, params.Docs, params.Ordered)
 
 	replyDoc := must.NotFail(types.NewDocument(
+		"n", inserted,
 		"ok", float64(1),
 	))
 
 	if insErrors.Len() > 0 {
 		replyDoc = insErrors.Document()
 	}
-
-	replyDoc.Set("n", inserted)
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
@@ -138,6 +114,12 @@ func insertMany(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.Que
 
 // insertDocument checks if database and collection exist, create them if needed and attempts to insertDocument the given doc.
 func insertDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb.QueryParams, doc *types.Document) error {
+	toInsert := doc
+
+	if !toInsert.Has("_id") {
+		toInsert.Set("_id", types.NewObjectID())
+	}
+
 	err := dbPool.InsertDocument(ctx, qp.DB, qp.Collection, doc)
 
 	var driverErr *driver.Error
@@ -152,14 +134,11 @@ func insertDocument(ctx context.Context, dbPool *tigrisdb.TigrisDB, qp *tigrisdb
 			return commonerrors.NewCommandErrorMsg(commonerrors.ErrDocumentValidationFailure, err.Error())
 
 		case tigrisdb.IsAlreadyExists(err):
-			// TODO Extend message for non-_id unique indexes in https://github.com/FerretDB/FerretDB/issues/2045
-			idMasrshaled := must.NotFail(json.Marshal(must.NotFail(doc.Get("_id"))))
-
 			return commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrDuplicateKey,
+				commonerrors.ErrDuplicateKeyInsert,
 				fmt.Sprintf(
-					`E11000 duplicate key error collection: %s.%s index: _id_ dup key: { _id: %s }`,
-					qp.DB, qp.Collection, idMasrshaled,
+					`E11000 duplicate key error collection: %s.%s`,
+					qp.DB, qp.Collection,
 				),
 			)
 

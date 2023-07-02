@@ -21,6 +21,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/AlekSi/pointer"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -39,32 +40,98 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 	collectionName := testutil.CollectionName(t)
 	setupDatabase(ctx, t, pool, databaseName)
 
-	indexName := "test"
-	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-		idx := Index{
-			Name: indexName,
-			Key:  []IndexKeyPair{{Field: "foo", Order: types.Ascending}, {Field: "bar", Order: types.Descending}},
-		}
-		return CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx)
-	})
-	require.NoError(t, err)
+	for name, tc := range map[string]struct {
+		expectedDefinition string // the expected index definition in postgresql
+		index              Index  // the index to create
+		unique             bool   // whether the index is unique
+	}{
+		"keyWithoutNestedField": {
+			index: Index{
+				Name: "foo_and_bar",
+				Key: []IndexKeyPair{
+					{Field: "foo", Order: types.Ascending},
+					{Field: "bar", Order: types.Descending},
+				},
+			},
+			expectedDefinition: "((_jsonb -> 'foo'::text)), ((_jsonb -> 'bar'::text)) DESC",
+		},
+		"keyWithNestedField_level1": {
+			index: Index{
+				Name: "foo_dot_bar",
+				Key: []IndexKeyPair{
+					{Field: "foo.bar", Order: types.Ascending},
+				},
+			},
+			expectedDefinition: "(((_jsonb -> 'foo'::text) -> 'bar'::text))",
+		},
+		"keyWithNestedField_level2": {
+			index: Index{
+				Name: "foo_dot_bar_dot_c",
+				Key: []IndexKeyPair{
+					{Field: "foo.bar.c", Order: types.Ascending},
+				},
+			},
+			expectedDefinition: "((((_jsonb -> 'foo'::text) -> 'bar'::text) -> 'c'::text))",
+		},
+		"uniqueIndexOneField": {
+			index: Index{
+				Name:   "foo_unique",
+				Unique: pointer.To(true),
+				Key: []IndexKeyPair{
+					{Field: "foo", Order: types.Ascending},
+				},
+			},
+			expectedDefinition: "((_jsonb -> 'foo'::text))",
+			unique:             true,
+		},
+		"uniqueIndexTwoFields": {
+			index: Index{
+				Name:   "foo_and_baz_unique",
+				Unique: pointer.To(true),
+				Key: []IndexKeyPair{
+					{Field: "foo", Order: types.Ascending},
+					{Field: "baz", Order: types.Descending},
+				},
+			},
+			expectedDefinition: "((_jsonb -> 'foo'::text)), ((_jsonb -> 'baz'::text)) DESC",
+			unique:             true,
+		},
+	} {
+		tc := tc
 
-	tableName := collectionNameToTableName(collectionName)
-	pgIndexName := indexNameToPgIndexName(collectionName, indexName)
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
+			err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
+				if _, err := CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &tc.index); err != nil {
+					return err
+				}
+				return nil
+			})
+			require.NoError(t, err)
+			tableName := collectionNameToTableName(collectionName)
+			pgIndexName := indexNameToPgIndexName(collectionName, tc.index.Name)
 
-	var indexdef string
-	err = pool.p.QueryRow(
-		ctx,
-		"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
-		databaseName, tableName, pgIndexName,
-	).Scan(&indexdef)
-	require.NoError(t, err)
+			var indexDef string
+			err = pool.p.QueryRow(
+				ctx,
+				"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+				databaseName, tableName, pgIndexName,
+			).Scan(&indexDef)
+			require.NoError(t, err)
 
-	expectedIndexdef := fmt.Sprintf(
-		"CREATE INDEX %s ON %s.%s USING btree (((_jsonb -> 'foo'::text)), ((_jsonb -> 'bar'::text)) DESC)",
-		pgIndexName, databaseName, tableName,
-	)
-	assert.Equal(t, expectedIndexdef, indexdef)
+			expectedIndexDef := "CREATE"
+
+			if tc.unique {
+				expectedIndexDef += " UNIQUE"
+			}
+
+			expectedIndexDef += fmt.Sprintf(
+				" INDEX %s ON \"%s\".%s USING btree (%s)",
+				pgIndexName, databaseName, tableName, tc.expectedDefinition,
+			)
+			assert.Equal(t, expectedIndexDef, indexDef)
+		})
+	}
 }
 
 // TestDropIndexes checks that we correctly drop indexes for various combination of existing indexes.
@@ -77,7 +144,8 @@ func TestDropIndexes(t *testing.T) {
 	setupDatabase(ctx, t, pool, databaseName)
 
 	err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-		return CreateCollectionIfNotExists(ctx, tx, databaseName, collectionName)
+		_, err := CreateCollectionIfNotExists(ctx, tx, databaseName, collectionName)
+		return err
 	})
 	require.NoError(t, err)
 
@@ -91,7 +159,7 @@ func TestDropIndexes(t *testing.T) {
 			toCreate: []Index{},
 			toDrop:   []Index{{Name: "foo_1"}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
 			},
 			expectedErr: ErrIndexNotExist,
 		},
@@ -101,7 +169,7 @@ func TestDropIndexes(t *testing.T) {
 			},
 			toDrop: []Index{{Name: "foo_1"}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
 			},
 		},
 		"DropOneByKey": {
@@ -110,7 +178,16 @@ func TestDropIndexes(t *testing.T) {
 			},
 			toDrop: []Index{{Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
+			},
+		},
+		"DropNestedField": {
+			toCreate: []Index{
+				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo.bar", Order: types.Ascending}}},
+			},
+			toDrop: []Index{{Key: []IndexKeyPair{{Field: "foo.bar", Order: types.Ascending}}}},
+			expected: []Index{
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
 			},
 		},
 		"DropOneFromTheBeginning": {
@@ -121,9 +198,9 @@ func TestDropIndexes(t *testing.T) {
 			},
 			toDrop: []Index{{Name: "foo_1"}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
-				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
-				{Name: "car_1", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
+				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}, Unique: nil},
+				{Name: "car_1", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}, Unique: nil},
 			},
 		},
 		"DropOneFromTheMiddle": {
@@ -134,9 +211,9 @@ func TestDropIndexes(t *testing.T) {
 			},
 			toDrop: []Index{{Name: "bar_1"}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
-				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
-				{Name: "car_1", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
+				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}, Unique: nil},
+				{Name: "car_1", Key: []IndexKeyPair{{Field: "car", Order: types.Ascending}}, Unique: nil},
 			},
 		},
 		"DropOneFromTheEnd": {
@@ -147,9 +224,9 @@ func TestDropIndexes(t *testing.T) {
 			},
 			toDrop: []Index{{Name: "car_1"}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
-				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}},
-				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
+				{Name: "foo_1", Key: []IndexKeyPair{{Field: "foo", Order: types.Ascending}}, Unique: nil},
+				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}, Unique: nil},
 			},
 		},
 		"DropTwo": {
@@ -160,8 +237,8 @@ func TestDropIndexes(t *testing.T) {
 			},
 			toDrop: []Index{{Name: "car_1"}, {Name: "foo_1"}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
-				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
+				{Name: "bar_1", Key: []IndexKeyPair{{Field: "bar", Order: types.Ascending}}, Unique: nil},
 			},
 		},
 		"DropComplicated": {
@@ -172,8 +249,8 @@ func TestDropIndexes(t *testing.T) {
 			},
 			toDrop: []Index{{Name: "v_-1"}, {Name: "v_1_foo_1"}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
-				{Name: "v.foo_-1", Key: []IndexKeyPair{{Field: "v.foo", Order: types.Descending}}},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
+				{Name: "v.foo_-1", Key: []IndexKeyPair{{Field: "v.foo", Order: types.Descending}}, Unique: nil},
 			},
 		},
 		"DropAll": {
@@ -184,7 +261,7 @@ func TestDropIndexes(t *testing.T) {
 			},
 			toDrop: []Index{{Name: "bar_1"}, {Name: "car_1"}, {Name: "foo_1"}},
 			expected: []Index{
-				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: true},
+				{Name: "_id_", Key: []IndexKeyPair{{Field: "_id", Order: types.Ascending}}, Unique: pointer.To(true)},
 			},
 		},
 	} {
@@ -196,9 +273,13 @@ func TestDropIndexes(t *testing.T) {
 
 			err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
 				for _, idx := range tc.toCreate {
-					if err := CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx); err != nil {
+					var collCreated bool
+
+					if collCreated, err = CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx); err != nil {
 						return err
 					}
+
+					assert.False(t, collCreated)
 				}
 
 				return nil
@@ -264,6 +345,8 @@ func TestDropIndexes(t *testing.T) {
 }
 
 func TestDropIndexesStress(t *testing.T) {
+	// TODO rewrite using teststress.Stress
+
 	ctx := testutil.Ctx(t)
 	pool := getPool(ctx, t)
 
@@ -293,7 +376,11 @@ func TestDropIndexesStress(t *testing.T) {
 			Key:  indexKeys,
 		}
 
-		return CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx)
+		var collCreated bool
+		collCreated, err = CreateIndexIfNotExists(ctx, tx, databaseName, collectionName, &idx)
+		assert.False(t, collCreated)
+
+		return err
 	})
 	require.NoError(t, err)
 

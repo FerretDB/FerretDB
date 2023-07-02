@@ -16,30 +16,54 @@
 package cursor
 
 import (
+	"sync"
+	"time"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
+// The implementation of the cursor and registry is quite complicated and entangled.
+// That's because there are many cases when cursor / iterator / underlying database connection
+// must be closed to free resources, including when no handler and backend code is running;
+// for example, when the client disconnects between `getMore` commands.
+// At the same time, we want to shift complexity away from the handler and from backend implementations
+// because they are already quite complex.
+// The current design enables ease of use at the expense of the implementation complexity.
+
 // Cursor allows clients to iterate over a result set.
-type cursor struct {
-	*NewParams
+//
+// It implements types.DocumentsIterator interface by wrapping another iterator with documents
+// with additional metadata and registration in the registry.
+//
+// Closing the cursor removes it from the registry.
+type Cursor struct {
+	// the order of fields is weird to make the struct smaller due to alignment
 
-	token *resource.Token
-}
-
-// NewParams contains the parameters for creating a new cursor.
-type NewParams struct {
-	Iter       types.DocumentsIterator
+	created    time.Time
+	iter       types.DocumentsIterator
+	r          *Registry
+	token      *resource.Token
+	closed     chan struct{}
 	DB         string
 	Collection string
-	BatchSize  int32
+	Username   string
+	ID         int64
+	closeOnce  sync.Once
 }
 
-// New creates a new cursor.
-func New(params *NewParams) *cursor {
-	c := &cursor{
-		NewParams: params,
-		token:     resource.NewToken(),
+// newCursor creates a new cursor.
+func newCursor(id int64, db, collection, username string, iter types.DocumentsIterator, r *Registry) *Cursor {
+	c := &Cursor{
+		ID:         id,
+		DB:         db,
+		Collection: collection,
+		Username:   username,
+		iter:       iter,
+		r:          r,
+		created:    time.Now(),
+		closed:     make(chan struct{}),
+		token:      resource.NewToken(),
 	}
 
 	resource.Track(c, c.token)
@@ -47,8 +71,26 @@ func New(params *NewParams) *cursor {
 	return c
 }
 
-// Close closes the cursor.
-func (c *cursor) Close() {
-	c.Iter.Close()
-	resource.Untrack(c, c.token)
+// Next implements types.DocumentsIterator interface.
+func (c *Cursor) Next() (struct{}, *types.Document, error) {
+	return c.iter.Next()
 }
+
+// Close implements types.DocumentsIterator interface.
+func (c *Cursor) Close() {
+	c.closeOnce.Do(func() {
+		c.iter.Close()
+		c.iter = nil
+
+		c.r.delete(c)
+
+		close(c.closed)
+
+		resource.Untrack(c, c.token)
+	})
+}
+
+// check interfaces
+var (
+	_ types.DocumentsIterator = (*Cursor)(nil)
+)

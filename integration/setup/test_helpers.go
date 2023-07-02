@@ -20,6 +20,32 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// SkipForMongoDB skips the current test for MongoDB.
+//
+// This function should not be used lightly.
+func SkipForMongoDB(tb testing.TB, reason string) {
+	tb.Helper()
+
+	if *targetBackendF == "mongodb" {
+		require.NotEmpty(tb, reason, "reason must not be empty")
+
+		tb.Skipf("Skipping for MongoDB: %s.", reason)
+	}
+}
+
+// SkipExceptMongoDB skips the current test for backends except MongoDB.
+//
+// This function should not be used lightly.
+func SkipExceptMongoDB(tb testing.TB, reason string) {
+	tb.Helper()
+
+	if *targetBackendF != "mongodb" {
+		require.NotEmpty(tb, reason, "reason must not be empty")
+
+		tb.Skipf("Skipping for %s: %s.", *targetBackendF, reason)
+	}
+}
+
 // IsTigris returns true if tests are running against FerretDB with `ferretdb-tigris` backend.
 //
 // This function should not be used lightly.

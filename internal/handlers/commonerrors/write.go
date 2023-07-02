@@ -31,8 +31,8 @@ type WriteErrors struct {
 func NewWriteErrorMsg(code ErrorCode, msg string) error {
 	return &WriteErrors{
 		errs: []writeError{{
-			code: code,
-			err:  msg,
+			code:   code,
+			errmsg: msg,
 		}},
 	}
 }
@@ -46,7 +46,7 @@ func (we *WriteErrors) Error() string {
 			err += ", "
 		}
 
-		err += e.err
+		err += e.errmsg
 	}
 
 	return err
@@ -55,7 +55,7 @@ func (we *WriteErrors) Error() string {
 // Unwrap implements ProtoErr interface.
 func (we *WriteErrors) Unwrap() error {
 	for _, e := range we.errs {
-		return errors.New(e.err)
+		return errors.New(e.errmsg)
 	}
 
 	return nil
@@ -84,7 +84,7 @@ func (we *WriteErrors) Document() *types.Document {
 		// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message.
 		// Otherwise, the mongo client would parse it as a CommandError.
 		doc.Set("code", int32(e.code))
-		doc.Set("errmsg", e.err)
+		doc.Set("errmsg", e.errmsg)
 
 		errs.Append(doc)
 	}
@@ -113,15 +113,20 @@ func (we *WriteErrors) Append(err error, index int32) {
 		writeErr.index = &index
 		we.errs = append(we.errs, *writeErr)
 
-		return
-
 	case errors.As(err, &cmdErr):
-		we.errs = append(we.errs, writeError{err: cmdErr.Unwrap().Error(), code: cmdErr.code, index: &index})
+		we.errs = append(we.errs, writeError{
+			code:   cmdErr.code,
+			errmsg: cmdErr.Unwrap().Error(),
+			index:  &index,
+		})
 
-		return
+	default:
+		we.errs = append(we.errs, writeError{
+			code:   errInternalError,
+			errmsg: err.Error(),
+			index:  &index,
+		})
 	}
-
-	we.errs = append(we.errs, writeError{err: err.Error(), code: errInternalError, index: &index})
 }
 
 // Len returns the number of errors.
@@ -141,18 +146,18 @@ func (we *WriteErrors) Merge(we2 *WriteErrors, index int32) {
 // It required to build the correct write error result.
 // The index field is optional and won't be used if it's nil.
 type writeError struct {
-	code  ErrorCode
-	err   string
-	index *int32
+	code   ErrorCode
+	errmsg string
+	index  *int32
 }
 
-// Error returns the string that contains
-// an error message.
+// Error implements error interface.
 func (we *writeError) Error() string {
-	return we.err
+	return we.errmsg
 }
 
 // check interfaces
 var (
 	_ ProtoErr = (*WriteErrors)(nil)
+	_ error    = (*writeError)(nil)
 )

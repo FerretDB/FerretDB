@@ -23,8 +23,8 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -56,6 +56,14 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	collection, err := common.GetRequiredParam[string](document, command)
 	if err != nil {
 		return nil, err
+	}
+
+	if collection == "" {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidNamespace,
+			fmt.Sprintf("Invalid namespace specified '%s.'", db),
+			command,
+		)
 	}
 
 	var nIndexesWas int32
@@ -169,7 +177,7 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 					commonerrors.ErrTypeMismatch,
 					fmt.Sprintf(
 						"BSON field 'dropIndexes.index' is the wrong type '%s', expected types '[string, object]'",
-						pjson.GetTypeOfValue(v),
+						commonparams.AliasFromType(v),
 					),
 					command,
 				)
@@ -229,7 +237,7 @@ func processIndexDrop(ctx context.Context, tx pgx.Tx, db, collection string, doc
 		commonerrors.ErrTypeMismatch,
 		fmt.Sprintf(
 			"BSON field 'dropIndexes.index' is the wrong type '%s', expected types '[string, object]'",
-			pjson.GetTypeOfValue(v),
+			commonparams.AliasFromType(v),
 		),
 		command,
 	)

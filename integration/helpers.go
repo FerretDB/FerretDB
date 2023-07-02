@@ -17,7 +17,6 @@ package integration
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
@@ -155,8 +154,15 @@ func AssertEqualDocumentsSlice(t testing.TB, expected, actual []bson.D) bool {
 	return testutil.AssertEqualSlices(t, expectedDocs, actualDocs)
 }
 
-// AssertEqualError asserts that the expected error is the same as the actual (ignoring the Raw part).
+// AssertEqualError is a deprecated alias for AssertEqualCommandError.
+//
+// Deprecated: use AssertEqualCommandError instead.
 func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) bool {
+	return AssertEqualCommandError(t, expected, actual)
+}
+
+// AssertEqualCommandError asserts that the expected error is the same as the actual (ignoring the Raw part).
+func AssertEqualCommandError(t testing.TB, expected mongo.CommandError, actual error) bool {
 	t.Helper()
 
 	a, ok := actual.(mongo.CommandError)
@@ -171,44 +177,106 @@ func AssertEqualError(t testing.TB, expected mongo.CommandError, actual error) b
 	return assert.Equal(t, expected, a)
 }
 
-// AssertMatchesCommandError asserts error code, name and wrapped are the same.
-func AssertMatchesCommandError(t *testing.T, expected, actual error) {
-	t.Helper()
-	var aErr, eErr mongo.CommandError
-
-	if ok := errors.As(expected, &eErr); !ok {
-		assert.Equal(t, expected, actual)
-	}
-
-	if ok := errors.As(actual, &aErr); !ok {
-		assert.Equal(t, expected, actual)
-	}
-
-	assert.Equal(t, eErr.Name, aErr.Name)
-	assert.Equal(t, eErr.Wrapped, aErr.Wrapped)
-	assert.Equal(t, eErr.Code, aErr.Code)
-}
-
-// AssertMatchesWriteErrorCode asserts error codes are the same.
-func AssertMatchesWriteErrorCode(t *testing.T, expected, actual error) {
+// AssertEqualWriteError asserts that actual is a WriteException containing exactly one expected error (ignoring the Raw part).
+func AssertEqualWriteError(t testing.TB, expected mongo.WriteError, actual error) bool {
 	t.Helper()
 
-	var aErr, eErr mongo.WriteException
-
-	if ok := errors.As(actual, &aErr); !ok || len(aErr.WriteErrors) != 1 {
-		assert.Equal(t, expected, actual)
-		return
+	we, ok := actual.(mongo.WriteException) //nolint:errorlint // do not inspect error chain
+	if !ok {
+		return assert.Equal(t, expected, actual)
 	}
 
-	if ok := errors.As(expected, &eErr); !ok || len(eErr.WriteErrors) != 1 {
-		assert.Equal(t, expected, actual)
-		return
+	if len(we.WriteErrors) != 1 {
+		return assert.Equal(t, expected, actual)
 	}
 
-	assert.Equal(t, eErr.WriteErrors[0].Code, aErr.WriteErrors[0].Code)
+	a := we.WriteErrors[0]
+
+	// set expected fields that might be helpful in the test output
+	require.Nil(t, expected.Raw)
+	expected.Raw = a.Raw
+
+	return assert.Equal(t, expected, a)
 }
 
-// AssertEqualAltError asserts that the expected error is the same as the actual (ignoring the Raw part);
+// AssertMatchesCommandError asserts that both errors are equal CommandErrors,
+// except messages (and ignoring the Raw part).
+func AssertMatchesCommandError(t testing.TB, expected, actual error) {
+	t.Helper()
+
+	a, ok := actual.(mongo.CommandError) //nolint:errorlint // do not inspect error chain
+	require.Truef(t, ok, "actual is %T, not mongo.CommandError", actual)
+
+	e, ok := expected.(mongo.CommandError) //nolint:errorlint // do not inspect error chain
+	require.Truef(t, ok, "expected is %T, not mongo.CommandError", expected)
+
+	a.Raw = nil
+	e.Raw = nil
+
+	actualMessage := a.Message
+	a.Message = e.Message
+
+	if !AssertEqualError(t, e, a) {
+		t.Logf("actual message: %s", actualMessage)
+	}
+}
+
+// AssertMatchesWriteError asserts that both errors are WriteExceptions containing exactly one WriteError,
+// and those WriteErrors are equal, except messages (and ignoring the Raw part).
+func AssertMatchesWriteError(t testing.TB, expected, actual error) {
+	t.Helper()
+
+	a, ok := actual.(mongo.WriteException) //nolint:errorlint // do not inspect error chain
+	require.Truef(t, ok, "actual is %T, not mongo.WriteException", actual)
+	require.Lenf(t, a.WriteErrors, 1, "actual is %v, expected one mongo.WriteError", a.WriteErrors)
+
+	e, ok := expected.(mongo.WriteException) //nolint:errorlint // do not inspect error chain
+	require.Truef(t, ok, "expected is %T, not mongo.WriteException", expected)
+	require.Lenf(t, e.WriteErrors, 1, "expected is %v, expected one mongo.WriteError", e.WriteErrors)
+
+	aErr := a.WriteErrors[0]
+	eErr := e.WriteErrors[0]
+
+	aErr.Raw = nil
+	eErr.Raw = nil
+
+	actualMessage := aErr.Message
+	aErr.Message = eErr.Message
+
+	if !AssertEqualWriteError(t, eErr, aErr) {
+		t.Logf("actual message: %s", actualMessage)
+	}
+}
+
+// AssertMatchesBulkException asserts that both errors are BulkWriteExceptions containing the same number of WriteErrors,
+// and those WriteErrors are equal, except messages (and ignoring the Raw part).
+func AssertMatchesBulkException(t testing.TB, expected, actual error) {
+	t.Helper()
+
+	a, ok := actual.(mongo.BulkWriteException) //nolint:errorlint // do not inspect error chain
+	require.Truef(t, ok, "actual is %T, not mongo.BulkWriteException", actual)
+
+	e, ok := expected.(mongo.BulkWriteException) //nolint:errorlint // do not inspect error chain
+	require.Truef(t, ok, "expected is %T, not mongo.BulkWriteException", expected)
+
+	for i, we := range a.WriteErrors {
+		expectedWe := e.WriteErrors[i]
+
+		expectedWe.Message = we.Message
+		expectedWe.Raw = we.Raw
+
+		assert.Equal(t, expectedWe, we)
+	}
+}
+
+// AssertEqualAltError is a deprecated alias for AssertEqualAltCommandError.
+//
+// Deprecated: use AssertEqualAltCommandError instead.
+func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
+	return AssertEqualAltCommandError(t, expected, altMessage, actual)
+}
+
+// AssertEqualAltCommandError asserts that the expected error is the same as the actual (ignoring the Raw part);
 // the alternative error message may be provided if FerretDB is unable to produce exactly the same text as MongoDB.
 //
 // In general, error messages should be the same. Exceptions include:
@@ -218,7 +286,7 @@ func AssertMatchesWriteErrorCode(t *testing.T, expected, actual error) {
 //     `{ $slice: { a: { b: 3 }, b: "string" } }` exactly the same way).
 //
 // In any case, the alternative error message returned by FerretDB should not mislead users.
-func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
+func AssertEqualAltCommandError(t testing.TB, expected mongo.CommandError, altMessage string, actual error) bool {
 	t.Helper()
 
 	a, ok := actual.(mongo.CommandError)
@@ -234,28 +302,9 @@ func AssertEqualAltError(t testing.TB, expected mongo.CommandError, altMessage s
 		return true
 	}
 
-	expected.Message = altMessage
-	return assert.Equal(t, expected, a)
-}
-
-// AssertEqualWriteError asserts that the expected error is the same as the actual.
-func AssertEqualWriteError(t *testing.T, expected mongo.WriteError, actual error) bool {
-	t.Helper()
-
-	we, ok := actual.(mongo.WriteException)
-	if !ok {
-		return assert.Equal(t, expected, actual)
+	if altMessage != "" {
+		expected.Message = altMessage
 	}
-
-	if len(we.WriteErrors) != 1 {
-		return assert.Equal(t, expected, actual)
-	}
-
-	a := we.WriteErrors[0]
-
-	// set expected fields that might be helpful in the test output
-	require.Nil(t, expected.Raw)
-	expected.Raw = a.Raw
 
 	return assert.Equal(t, expected, a)
 }
@@ -284,7 +333,10 @@ func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessag
 		return true
 	}
 
-	expected.Message = altMessage
+	if altMessage != "" {
+		expected.Message = altMessage
+	}
+
 	return assert.Equal(t, expected, a)
 }
 
@@ -373,4 +425,18 @@ func FindAll(t testing.TB, ctx context.Context, collection *mongo.Collection) []
 	require.NoError(t, err)
 
 	return FetchAll(t, ctx, cursor)
+}
+
+// generateDocuments generates documents with _id ranging from startID to endID.
+// It returns bson.A and []bson.D both containing same bson.D documents.
+func generateDocuments(startID, endID int32) (bson.A, []bson.D) {
+	var arr bson.A
+	var docs []bson.D
+
+	for i := startID; i < endID; i++ {
+		arr = append(arr, bson.D{{"_id", i}})
+		docs = append(docs, bson.D{{"_id", i}})
+	}
+
+	return arr, docs
 }

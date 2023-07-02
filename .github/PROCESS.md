@@ -15,32 +15,32 @@ Tasks are estimated manually by engineers before or during Sprint planning.
 
 Task estimation depends on the following parameters:
 
-* Scope.
+- Scope.
   Are the changes required in one or multiple files, packages, components?
-* Difficulty.
+- Difficulty.
   How hard is the task?
   Does it require to cover a lot of test cases?
   edge cases?
-* Clarity.
+- Clarity.
   Are the description and definition of done clear?
   Or that's more of a research task?
 
 We use the following T-Shirt Sizes to estimate tasks:
 
-* **S**: Small simple clear task.
-* **M**: Only one parameter can be changed compared to **S** (e.g. a small but not completely clear task).
-* **L**: Two parameters can be changed compared to **S** (e.g. clear but big and somewhat complex task).
+- **S**: Small simple clear task.
+- **M**: Only one parameter can be changed compared to **S** (e.g. a small but not completely clear task).
+- **L**: Two parameters can be changed compared to **S** (e.g. clear but big and somewhat complex task).
 
 If the team thinks that the task is bigger than **L**, it should be decomposed into smaller tasks.
 
 Unless the issue explicitly states otherwise, the following things are always in the scope:
 
-* All handlers.
-* Tests.
+- All handlers.
+- Tests.
   See contributing documentation for general discussion about unit and integration tests.
-* Small spot refactorings.
+- Small spot refactorings.
   Larger refactorings should be in a separate issue with minimal behavior changes.
-* Minor updates to existing documentation.
+- Minor updates to existing documentation.
   Completely new documentation should be in a separate issue.
 
 Words "small", "spot", "larger", "minimal", "minor" and similar are defined to be not clearly defined.
@@ -59,17 +59,20 @@ Try to estimate on the planning as best as you can.
 
 ## Pull requests
 
-For FerretDB Inc. engineers and long-term contributors, besides the guides in [CONTRIBUTING.md](../CONTRIBUTING.md), please follow these notes below when you working with pull request:
+For FerretDB Inc. engineers and long-term contributors,
+besides the guides in [CONTRIBUTING.md](../CONTRIBUTING.md),
+please follow these notes below when you working with pull request:
 
 1. Send pull requests from forks; do not make personal branches in the main repository.
    This way, we are similar to community members and could notice similar problems that we could fix for everyone,
    not just for us.
 2. Pull request **title** should be accurate and descriptive as it is used in the generated changelog.
-   It should not mention the issue number but describe the fixed issue instead.
+   It generally should start with imperative verb ("Fix …", not "Fixing …", "Fixed …" or other forms).
+   It should not mention the issue number.
 3. We provide a pull requests template that includes suggestions and readiness checklist.
    Please use it.
 4. It is fine to send several sequential pull requests for one issue to make them easier to review.
-   In that case, please still use the `Closes` word as described above
+   In that case, please still use the `Closes` word as described in [CONTRIBUTING.md](../CONTRIBUTING.md)
    (because [words like "refs" do not link PR to the issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword)),
    but don't forget to reopen the issue once PR is merged,
    but the issue as a whole is not done.
@@ -90,3 +93,11 @@ To make them useful,
 talk with [@GitHub bot in direct messages](https://ferretdb.slack.com/archives/D02P4EJPFGV)
 to link your Slack and GitHub identities,
 and then configure notification only for your name.
+
+## Creating issues
+
+1. Please use `Chore` type instead of `Enhancement` or `Feature` (but not `Bug`)
+   because its template is much more useful
+   (but may be too daunting for regular users, that's why templates for enhancements and features are much simpler).
+   After creating an issue, please change its type (label) manually.
+2. Do not change automatically applied labels, assignees, or projects.

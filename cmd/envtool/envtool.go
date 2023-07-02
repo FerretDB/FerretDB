@@ -54,7 +54,10 @@ var (
 	errorTemplate = template.Must(template.New("error").Option("missingkey=error").Parse(string(errorTemplateB)))
 )
 
-// waitForPort waits for the given port to be available until ctx is done.
+// versionFile contains version information with leading v.
+const versionFile = "build/version/version.txt"
+
+// waitForPort waits for the given port to be available until ctx is canceled.
 func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) error {
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	logger.Infof("Waiting for %s to be up...", addr)
@@ -109,6 +112,10 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 
 		retry++
 		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	defer pgPool.Close()
@@ -166,11 +173,16 @@ func setupAnyTigris(ctx context.Context, logger *zap.SugaredLogger, port uint16)
 		URL: fmt.Sprintf("127.0.0.1:%d", port),
 	}
 
+	p, err := state.NewProvider("")
+	if err != nil {
+		return err
+	}
+
 	var db *tigrisdb.TigrisDB
 
 	var retry int64
 	for ctx.Err() == nil {
-		if db, err = tigrisdb.New(ctx, cfg, logger.Desugar()); err == nil {
+		if db, err = tigrisdb.New(ctx, cfg, logger.Desugar(), p); err == nil {
 			break
 		}
 
@@ -178,6 +190,10 @@ func setupAnyTigris(ctx context.Context, logger *zap.SugaredLogger, port uint16)
 
 		retry++
 		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	defer db.Driver.Close()
@@ -313,14 +329,88 @@ func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
 	})
 }
 
+// shellMkDir creates all directories from given paths.
+func shellMkDir(paths ...string) error {
+	var errs error
+
+	for _, path := range paths {
+		if err := os.MkdirAll(path, 0o777); err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
+
+	return errs
+}
+
+// shellRmDir removes all directories from given paths.
+func shellRmDir(paths ...string) error {
+	var errs error
+
+	for _, path := range paths {
+		if err := os.RemoveAll(path); err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
+
+	return errs
+}
+
+// shellRead will show the content of a file.
+func shellRead(w io.Writer, paths ...string) error {
+	for _, path := range paths {
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		fmt.Fprint(w, string(b))
+	}
+
+	return nil
+}
+
+// packageVersion will print out FerretDB's package version (omitting leading v).
+func packageVersion(w io.Writer, file string) error {
+	b, err := os.ReadFile(file)
+	if err != nil {
+		return err
+	}
+
+	v := string(b)
+	v = strings.TrimPrefix(v, "v")
+
+	_, err = fmt.Fprint(w, v)
+
+	return err
+}
+
 // cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
-	Debug bool `help:"Enable debug mode."`
+	Debug bool     `help:"Enable debug mode."`
+	Setup struct{} `cmd:"" help:"Setup development environment."`
+	Shell struct {
+		Mkdir struct {
+			Paths []string `arg:"" name:"path" help:"Paths to create." type:"path"`
+		} `cmd:"" help:"Create directories if they do not already exist."`
+		Rmdir struct {
+			Paths []string `arg:"" name:"path" help:"Paths to remove." type:"path"`
+		} `cmd:"" help:"Remove directories."`
+		Read struct {
+			Paths []string `arg:"" name:"path" help:"Paths to read." type:"path"`
+		} `cmd:"" help:"read files"`
+	} `cmd:""`
+	PackageVersion struct{} `cmd:"" help:"Print package version"`
+	Tests          struct {
+		Shard struct {
+			Index uint `help:"Shard index, starting from 1" required:""`
+			Total uint `help:"Total number of shards"       required:""`
+		} `cmd:"" help:"Print sharded integration tests"`
+	} `cmd:""`
 }
 
 func main() {
-	kong.Parse(&cli)
+	kongCtx := kong.Parse(&cli)
 
 	// always enable debug logging on CI
 	if t, _ := strconv.ParseBool(os.Getenv("CI")); t {
@@ -338,7 +428,26 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	if err := setup(ctx, logger); err != nil {
+	var err error
+
+	switch cmd := kongCtx.Command(); cmd {
+	case "setup":
+		err = setup(ctx, logger)
+	case "shell mkdir <path>":
+		err = shellMkDir(cli.Shell.Mkdir.Paths...)
+	case "shell rmdir <path>":
+		err = shellRmDir(cli.Shell.Rmdir.Paths...)
+	case "shell read <path>":
+		err = shellRead(os.Stdout, cli.Shell.Read.Paths...)
+	case "package-version":
+		err = packageVersion(os.Stdout, versionFile)
+	case "tests shard":
+		err = testsShard(os.Stdout, cli.Tests.Shard.Index, cli.Tests.Shard.Total)
+	default:
+		err = fmt.Errorf("unknown command: %s", cmd)
+	}
+
+	if err != nil {
 		printDiagnosticData(err, logger)
 		os.Exit(1)
 	}

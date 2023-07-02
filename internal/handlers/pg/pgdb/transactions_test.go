@@ -15,10 +15,12 @@
 package pgdb
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -37,5 +39,47 @@ func TestInTransaction(t *testing.T) {
 			//nolint:vet // we need it for testing
 			panic(nil)
 		})
+	})
+}
+
+func TestInTransactionKeep(t *testing.T) {
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+	pool := getPool(ctx, t)
+
+	t.Run("Commit", func(t *testing.T) {
+		t.Parallel()
+
+		var keepTx pgx.Tx
+		err := pool.InTransactionKeep(ctx, func(tx pgx.Tx) error {
+			keepTx = tx
+			return nil
+		})
+		require.NoError(t, err)
+
+		var res int
+		err = keepTx.QueryRow(ctx, "SELECT 1").Scan(&res)
+		require.NoError(t, keepTx.Commit(ctx))
+		require.NoError(t, err)
+		assert.Equal(t, 1, res)
+	})
+
+	t.Run("Rollback", func(t *testing.T) {
+		t.Parallel()
+
+		var keepTx pgx.Tx
+		err := pool.InTransactionKeep(ctx, func(tx pgx.Tx) error {
+			keepTx = tx
+			return errors.New("boom")
+		})
+		require.Error(t, err)
+
+		var res int
+		err = keepTx.QueryRow(ctx, "SELECT 1").Scan(&res)
+		require.Equal(t, pgx.ErrTxClosed, keepTx.Commit(ctx))
+		require.Equal(t, pgx.ErrTxClosed, keepTx.Rollback(ctx))
+		require.Equal(t, pgx.ErrTxClosed, err)
+		assert.Equal(t, 0, res)
 	})
 }

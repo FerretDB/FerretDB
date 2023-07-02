@@ -18,8 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/AlekSi/pointer"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -29,7 +27,7 @@ import (
 )
 
 // SetFreeMonitoring is a part of common implementation of the setFreeMonitoring command.
-func SetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.Provider) (*wire.OpMsg, error) {
+func SetFreeMonitoring(_ context.Context, msg *wire.OpMsg, provider *state.Provider) (*wire.OpMsg, error) {
 	if provider == nil {
 		panic("provider cannot be equal to nil")
 	}
@@ -71,7 +69,13 @@ func SetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.Pro
 		)
 	}
 
-	if err := provider.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(telemetryState) }); err != nil {
+	if err := provider.Update(func(s *state.State) {
+		if telemetryState {
+			s.EnableTelemetry()
+		} else {
+			s.DisableTelemetry()
+		}
+	}); err != nil {
 		return nil, err
 	}
 

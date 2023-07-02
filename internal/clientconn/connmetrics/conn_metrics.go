@@ -24,7 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// ConnMetrics represents conn metrics.
+// ConnMetrics represents metrics of an individual conn or a collection of conns.
 type ConnMetrics struct {
 	Requests  *prometheus.CounterVec
 	Responses *prometheus.CounterVec

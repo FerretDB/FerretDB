@@ -13,7 +13,7 @@ The FerretDB beta version (v.0.8.0) includes exciting new features, including au
 
 <!--truncate-->
 
-FerretDB - the open source alternative to MongoDB - is thrilled to announce release of our  Beta version (0.8.0), which includes various new features, bug fixes, improved documentation, and, most importantly, the implementation of authentication for PostgreSQL.
+FerretDB - the open source alternative to MongoDB - is thrilled to announce release of our Beta version (0.8.0), which includes various new features, bug fixes, improved documentation, and, most importantly, the implementation of authentication for PostgreSQL.
 This new and exciting release is no ordinary milestone; it's a culmination of FerretDB's journey as we work on bringing you the ultimate open-source alternative to MongoDB by converting MongoDB protocol queries to SQL, with PostgreSQL as the database engine.
 
 While we do not aim to cover all the features of MongoDB, our goal with the Beta is to provide a solid foundation on which to build targeted features that'll enable FerretDB to support more and more real-world use cases.
@@ -21,39 +21,40 @@ Be sure to [check our roadmap for further details](https://github.com/orgs/Ferre
 
 :::caution
 Please note that this particular change breaks backward compatibility.
-To dump and restore the data, you’ll need connection strings to connect to FerretDB and PostgreSQL.
+To dump and restore the data, you'll need connection strings to connect to FerretDB and PostgreSQL.
 There are numerous ways to dump and restore your data.
 For example, you can follow the following steps:
 
 1. Backup FerretDB databases with `mongodump`.
-Set your FerretDB connection string in `-—uri` and run:
+   Set your FerretDB connection string in `--uri` and run:
    `mongodump --uri="mongodb://127.0.0.1:27017"`
    This command will create a directory with dumps for each FerretDB database on the given server.
-Later, we will use this dump to restore the database.
-Instead of `mongodump`, you can also use `mongoexport` for this.
+   Later, we will use this dump to restore the database.
+   Instead of `mongodump`, you can also use `mongoexport` for this.
 
 2. Backup PostgreSQL `ferretdb` database.
-If the migration goes well, we will not use this backup.
-But we recommend to do this step in case you need to rollback.
-Specify your host and port.
-`pg_dump -h 127.0.0.1 -p 5432 -U username ferretdb > ferretdb.sql`
+   If the migration goes well, we will not use this backup.
+   But we recommend to do this step in case you need to rollback.
+   Specify your host and port.
+   `pg_dump -h 127.0.0.1 -p 5432 -U username ferretdb > ferretdb.sql`
 
 3. Stop FerretDB (This depends on your operating system and the way you run FerretDB)
 
 4. Connect to PostgreSQL and drop `ferretdb` database as it's not needed anymore:
-   * `psql -h 127.0.0.1 -p 5432 -U username postgres`
-   * `DROP DATABASE ferretdb`
+
+   - `psql -h 127.0.0.1 -p 5432 -U username postgres`
+   - `DROP DATABASE ferretdb`
 
 5. Upgrade FerretDB and run FerretDB 0.8 (Please refer to [our documentation](https://docs.ferretdb.io/category/quickstart/) where we describe how to update and start FerretDB)
 
 6. Restore database using `mongorestore --uri="mongodb://127.0.0.1:27017"`
 
 7. While you can rollback with `mongorestore`, in case something doesn't work and you need to rollback to FerretDB 0.7.1:
-   * Stop ferretdb
-   * Delete ferretdb database (repeat step 4)
-   * Restore `ferretdb` PostgreSQL db from the dump we created on the step 2:  `psql -h 127.0.0.1 -p 5432 -U username ferretdb -f ferretdb.sql`
-   * Start ferretdb 0.7.1
-:::
+   - Stop ferretdb
+   - Delete ferretdb database (repeat step 4)
+   - Restore `ferretdb` PostgreSQL db from the dump we created on the step 2: `psql -h 127.0.0.1 -p 5432 -U username ferretdb -f ferretdb.sql`
+   - Start ferretdb 0.7.1
+     :::
 
 In this blog post, we'll be sharing detailed information about the FerretDB beta release (0.8.0).
 
@@ -62,7 +63,7 @@ In this blog post, we'll be sharing detailed information about the FerretDB beta
 Since the last release (0.7.2), we've made great strides in adding new features to FerretDB, especially the introduction of authentication for PostgreSQL.
 With authentication, users can now connect securely using passwords, ensuring that only authorized connections are established.
 You can do this by specifying your username and password in the FerretDB connection string as `mongodb://username:password@ferretdb:27018/?tls=true&authMechanism=PLAIN`.
-See more details [in our documentation](https://docs.ferretdb.io/security/#authentication).
+See more details [in our documentation](https://docs.ferretdb.io/security/authentication/).
 
 But that's not all - in addition to the `$max` update operator, FerretDB beta now includes support for the `$min` update operator:
 
@@ -124,9 +125,9 @@ Once again, we want to take a moment to express our gratitude to everyone who ha
 Not to mention the growing number of partnerships, compatible applications, and all the contributions from our incredible community.
 In 2022, we had:
 
-* 👨🏻‍💻 Over 40 code contributors with more than 130 merged pull requests from our community of contributors
-* ⭐️ 5.1k Stars on GitHub(Have you given us a Star yet? Be sure to [Star us on GitHub](https://github.com/FerretDB/FerretDB)
-* ⏫ More than 100 Docker image downloads
+- 👨🏻‍💻 Over 40 code contributors with more than 130 merged pull requests from our community of contributors
+- ⭐️ 5.1k Stars on GitHub(Have you given us a Star yet? Be sure to [Star us on GitHub](https://github.com/FerretDB/FerretDB)
+- ⏫ More than 100 Docker image downloads
 
 We appreciate your continued and invaluable support and feedback, as we strive to make FerretDB even better.
 Stay tuned for more exciting developments and updates from us!

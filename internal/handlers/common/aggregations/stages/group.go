@@ -20,7 +20,8 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators/accumulators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -36,6 +37,10 @@ import (
 //		...
 //		<groupBy[N].outputField>: {accumulatorN: expressionN},
 //	}}
+//
+// $group uses group expression to group documents that have the same evaluated expression.
+// The evaluated expression becomes the _id for that group of documents.
+// For each group of documents, accumulators are applied.
 type group struct {
 	groupExpression any
 	groupBy         []groupBy
@@ -43,12 +48,12 @@ type group struct {
 
 // groupBy represents accumulation to apply on the group.
 type groupBy struct {
-	accumulate  func(ctx context.Context, groupID any, in []*types.Document) (any, error)
+	accumulate  func(iter types.DocumentsIterator) (any, error)
 	outputField string
 }
 
 // newGroup creates a new $group stage.
-func newGroup(stage *types.Document) (Stage, error) {
+func newGroup(stage *types.Document) (aggregations.Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$group")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -76,40 +81,16 @@ func newGroup(stage *types.Document) (Stage, error) {
 		}
 
 		if field == "_id" {
+			if doc, ok := v.(*types.Document); ok {
+				if err = validateExpression("$group", doc); err != nil {
+					return nil, err
+				}
+			}
 			groupKey = v
 			continue
 		}
 
-		accumulation, ok := v.(*types.Document)
-		if !ok || accumulation.Len() == 0 {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrStageGroupInvalidAccumulator,
-				fmt.Sprintf("The field '%s' must be an accumulator object", field),
-				"$group (stage)",
-			)
-		}
-
-		// accumulation document contains only one field.
-		if accumulation.Len() > 1 {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrStageGroupMultipleAccumulator,
-				fmt.Sprintf("The field '%s' must specify one accumulator", field),
-				"$group (stage)",
-			)
-		}
-
-		operator := accumulation.Command()
-
-		newAccumulator, ok := operators.GroupAccumulators[operator]
-		if !ok {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
-				fmt.Sprintf("$group accumulator %q is not implemented yet", operator),
-				operator+" (accumulator)",
-			)
-		}
-
-		accumulator, err := newAccumulator(accumulation)
+		accumulator, err := accumulators.NewAccumulator("$group", field, v)
 		if err != nil {
 			return nil, err
 		}
@@ -135,8 +116,14 @@ func newGroup(stage *types.Document) (Stage, error) {
 }
 
 // Process implements Stage interface.
-func (g *group) Process(ctx context.Context, in []*types.Document) ([]*types.Document, error) {
-	groupedDocuments, err := g.groupDocuments(ctx, in)
+func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
+	// TODO https://github.com/FerretDB/FerretDB/issues/2863
+	docs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	groupedDocuments, err := g.groupDocuments(ctx, docs)
 	if err != nil {
 		return nil, err
 	}
@@ -146,8 +133,11 @@ func (g *group) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 	for _, groupedDocument := range groupedDocuments {
 		doc := must.NotFail(types.NewDocument("_id", groupedDocument.groupID))
 
+		groupIter := iterator.Values(iterator.ForSlice(groupedDocument.documents))
+		defer groupIter.Close()
+
 		for _, accumulation := range g.groupBy {
-			out, err := accumulation.accumulate(ctx, groupedDocument.groupID, groupedDocument.documents)
+			out, err := accumulation.accumulate(groupIter)
 			if err != nil {
 				return nil, err
 			}
@@ -167,7 +157,10 @@ func (g *group) Process(ctx context.Context, in []*types.Document) ([]*types.Doc
 		res = append(res, doc)
 	}
 
-	return res, nil
+	iter = iterator.Values(iterator.ForSlice(res))
+	closer.Add(iter)
+
+	return iter, nil
 }
 
 // groupDocuments groups documents by group expression.
@@ -181,53 +174,60 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 		}}, nil
 	}
 
-	expression, err := types.NewExpression(groupKey)
+	expression, err := aggregations.NewExpression(groupKey)
 	if err != nil {
-		var fieldPathErr *types.FieldPathError
-		if !errors.As(err, &fieldPathErr) {
+		var exprErr *aggregations.ExpressionError
+		if !errors.As(err, &exprErr) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		switch fieldPathErr.Code() {
-		case types.ErrNotFieldPath:
+		switch exprErr.Code() {
+		case aggregations.ErrNotExpression:
 			// constant value aggregates values of all `in` documents into one aggregated document.
 			return []groupedDocuments{{
 				groupID:   groupKey,
 				documents: in,
 			}}, nil
-		case types.ErrEmptyFieldPath:
+		case aggregations.ErrEmptyFieldPath:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				// TODO
 				commonerrors.ErrGroupInvalidFieldPath,
-				"'$' by itself is not a valid FieldPath",
+				"'$' by itself is not a valid Expression",
 				"$group (stage)",
 			)
-		case types.ErrInvalidFieldPath:
+		case aggregations.ErrInvalidExpression:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
 				fmt.Sprintf("'%s' starts with an invalid character for a user variable name", types.FormatAnyValue(groupKey)),
 				"$group (stage)",
 			)
-		case types.ErrEmptyVariable:
+		case aggregations.ErrEmptyVariable:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
 				"empty variable names are not allowed",
 				"$group (stage)",
 			)
-		case types.ErrUndefinedVariable:
+		// TODO https://github.com/FerretDB/FerretDB/issues/2275
+		case aggregations.ErrUndefinedVariable:
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrGroupUndefinedVariable,
 				fmt.Sprintf("Use of undefined variable: %s", types.FormatAnyValue(groupKey)),
 				"$group (stage)",
 			)
 		default:
-			panic(fmt.Sprintf("unhandled field path error %s", fieldPathErr.Error()))
+			panic(fmt.Sprintf("unhandled field path error %s", exprErr.Error()))
 		}
 	}
 
 	var group groupMap
 
 	for _, doc := range in {
-		val := expression.Evaluate(doc)
+		val, err := expression.Evaluate(doc)
+		if err != nil {
+			// $group treats non-existent fields as nulls
+			val = types.Null
+		}
+
 		group.addOrAppend(val, doc)
 	}
 
@@ -266,11 +266,11 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 }
 
 // Type implements Stage interface.
-func (g *group) Type() StageType {
-	return StageTypeDocuments
+func (g *group) Type() aggregations.StageType {
+	return aggregations.StageTypeDocuments
 }
 
 // check interfaces
 var (
-	_ Stage = (*group)(nil)
+	_ aggregations.Stage = (*group)(nil)
 )

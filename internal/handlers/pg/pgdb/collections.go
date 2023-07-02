@@ -21,6 +21,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/AlekSi/pointer"
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -34,7 +35,8 @@ import (
 
 // validateCollectionNameRe validates collection names.
 // Empty collection name, names with `$` and `\x00` are not allowed.
-var validateCollectionNameRe = regexp.MustCompile("^[^$\x00]{1,235}$")
+// Collection names that start with `.` are also not allowed.
+var validateCollectionNameRe = regexp.MustCompile("^[^.$\x00][^$\x00]{0,234}$")
 
 // Collections returns a sorted list of FerretDB collection names.
 //
@@ -50,7 +52,7 @@ func Collections(ctx context.Context, tx pgx.Tx, db string) ([]string, error) {
 		return []string{}, nil
 	}
 
-	iter, err := buildIterator(ctx, tx, &iteratorParams{
+	iter, _, err := buildIterator(ctx, tx, &iteratorParams{
 		schema: db,
 		table:  dbMetadataTableName,
 	})
@@ -107,9 +109,14 @@ func CollectionExists(ctx context.Context, tx pgx.Tx, db, collection string) (bo
 // It returns possibly wrapped error:
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
 //   - ErrInvalidCollectionName - if the given collection name doesn't conform to restrictions.
+//   - ErrCollectionStartsWithDot - if the given collection name starts with dot.
 //   - ErrAlreadyExist - if a FerretDB collection with the given name already exists.
 //   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
 func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
+	if strings.HasPrefix(collection, ".") {
+		return ErrCollectionStartsWithDot
+	}
+
 	if !validateCollectionNameRe.MatchString(collection) ||
 		strings.HasPrefix(collection, reservedPrefix) ||
 		!utf8.ValidString(collection) {
@@ -133,10 +140,10 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 	indexParams := &Index{
 		Name:   "_id_",
 		Key:    IndexKey{{Field: "_id", Order: types.Ascending}},
-		Unique: true,
+		Unique: pointer.ToBool(true),
 	}
 
-	if err := CreateIndexIfNotExists(ctx, tx, db, collection, indexParams); err != nil {
+	if _, err := CreateIndexIfNotExists(ctx, tx, db, collection, indexParams); err != nil {
 		return lazyerrors.Error(err)
 	}
 
@@ -146,18 +153,22 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, db, collection string) err
 // CreateCollectionIfNotExists ensures that given FerretDB database and collection exist.
 // If the database does not exist, it will be created.
 //
+// It returns true if the collection was created, false if it already existed or an error occurred.
+//
 // It returns possibly wrapped error:
 //   - ErrInvalidDatabaseName - if the given database name doesn't conform to restrictions.
 //   - ErrInvalidCollectionName - if the given collection name doesn't conform to restrictions.
 //   - *transactionConflictError - if a PostgreSQL conflict occurs (the caller could retry the transaction).
-func CreateCollectionIfNotExists(ctx context.Context, tx pgx.Tx, db, collection string) error {
+func CreateCollectionIfNotExists(ctx context.Context, tx pgx.Tx, db, collection string) (bool, error) {
 	err := CreateCollection(ctx, tx, db, collection)
 
 	switch {
-	case err == nil, errors.Is(err, ErrAlreadyExist):
-		return nil
+	case err == nil:
+		return true, nil
+	case errors.Is(err, ErrAlreadyExist):
+		return false, nil
 	default:
-		return lazyerrors.Error(err)
+		return false, lazyerrors.Error(err)
 	}
 }
 
@@ -185,6 +196,22 @@ func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error
 	}
 
 	return nil
+}
+
+// RenameCollection changes the name of an existing collection.
+//
+// It returns ErrTableNotExist if either source database or collection does not exist.
+// It returns ErrAlreadyExist if the target database or collection already exists.
+// It returns ErrInvalidCollectionName if collection name is not valid.
+func RenameCollection(ctx context.Context, tx pgx.Tx, db, collectionFrom, collectionTo string) error {
+	if !validateCollectionNameRe.MatchString(collectionTo) ||
+		strings.HasPrefix(collectionTo, reservedPrefix) ||
+		!utf8.ValidString(collectionTo) ||
+		len(collectionTo) > maxTableNameLength {
+		return ErrInvalidCollectionName
+	}
+
+	return newMetadataStorage(tx, db, collectionFrom).renameCollection(ctx, collectionTo)
 }
 
 // createTableIfNotExists creates the given PostgreSQL table in the given schema if the table doesn't exist.

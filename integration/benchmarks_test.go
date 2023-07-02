@@ -23,35 +23,130 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
-func BenchmarkQuery(b *testing.B) {
-	provider := shareddata.MixedBenchmarkValues
+func BenchmarkQuerySmallDocuments(b *testing.B) {
+	provider := shareddata.BenchmarkSmallDocuments
 
-	s := setup.SetupWithOpts(b, &setup.SetupOpts{
-		BenchmarkProvider: &provider,
-	})
-
-	ctx, coll := s.Ctx, s.Collection
-
-	for name, bm := range map[string]struct {
-		filter bson.D
-	}{
-		"String": {
-			filter: bson.D{{"v", "foo"}},
-		},
-		"DotNotation": {
-			filter: bson.D{{"v.42", "hello"}},
-		},
-	} {
-		b.Run(fmt.Sprint(name, "_", provider.Hash()), func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
-				cur, err := coll.Find(ctx, bm.filter)
-				require.NoError(b, err)
-
-				var res []bson.D
-				require.NoError(b, cur.All(ctx, &res))
-			}
+	b.Run(provider.Name(), func(b *testing.B) {
+		s := setup.SetupWithOpts(b, &setup.SetupOpts{
+			BenchmarkProvider: provider,
 		})
+
+		for name, bc := range map[string]struct {
+			filter bson.D
+		}{
+			"Int32ID": {
+				filter: bson.D{{"_id", int32(42)}},
+			},
+			"Int32One": {
+				filter: bson.D{{"id", int32(42)}},
+			},
+			"Int32Many": {
+				filter: bson.D{{"v", int32(42)}},
+			},
+			"Int32ManyDotNotation": {
+				filter: bson.D{{"v.foo", int32(42)}},
+			},
+		} {
+			b.Run(name, func(b *testing.B) {
+				var firstDocs, docs int
+
+				for i := 0; i < b.N; i++ {
+					cursor, err := s.Collection.Find(s.Ctx, bc.filter)
+					require.NoError(b, err)
+
+					docs = 0
+					for cursor.Next(s.Ctx) {
+						docs++
+					}
+
+					require.NoError(b, cursor.Close(s.Ctx))
+					require.NoError(b, cursor.Err())
+					require.Positive(b, docs)
+
+					if firstDocs == 0 {
+						firstDocs = docs
+					}
+				}
+
+				b.StopTimer()
+
+				require.Equal(b, firstDocs, docs)
+
+				b.ReportMetric(float64(docs), "docs-returned")
+			})
+		}
+	})
+}
+
+func BenchmarkReplaceSettingsDocument(b *testing.B) {
+	ctx, collection := setup.Setup(b)
+
+	iter := shareddata.BenchmarkSettingsDocuments.NewIterator()
+	_, doc, err := iter.Next()
+	iter.Close()
+
+	require.NoError(b, err)
+	require.Equal(b, "_id", doc[0].Key)
+	require.NotEmpty(b, doc[0].Value)
+	require.NotZero(b, doc[1].Value)
+
+	_, err = collection.InsertOne(ctx, doc)
+	require.NoError(b, err)
+
+	b.Run("Replace", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			doc[1].Value = i + 1
+
+			res, err := collection.ReplaceOne(ctx, bson.D{}, doc)
+			require.NoError(b, err)
+			require.Equal(b, int64(1), res.MatchedCount)
+			require.Equal(b, int64(1), res.ModifiedCount)
+		}
+	})
+}
+
+func BenchmarkInsertMany(b *testing.B) {
+	ctx, collection := setup.Setup(b)
+
+	for _, provider := range shareddata.AllBenchmarkProviders() {
+		for _, batchSize := range []int{1, 10, 100, 1000} {
+			b.Run(fmt.Sprintf("%s/Batch%d", provider.Name(), batchSize), func(b *testing.B) {
+				b.StopTimer()
+
+				total, err := iterator.ConsumeCount(provider.NewIterator())
+				require.NoError(b, err)
+				require.GreaterOrEqual(b, total, batchSize)
+
+				for i := 0; i < b.N; i++ {
+					require.NoError(b, collection.Drop(ctx))
+
+					iter := provider.NewIterator()
+
+					for {
+						docs, err := iterator.ConsumeValuesN(iter, batchSize)
+						require.NoError(b, err)
+
+						if docs == nil {
+							break
+						}
+
+						insertDocs := make([]any, len(docs))
+						for i := range insertDocs {
+							insertDocs[i] = docs[i]
+						}
+
+						b.StartTimer()
+
+						_, err = collection.InsertMany(ctx, insertDocs)
+						require.NoError(b, err)
+
+						b.StopTimer()
+					}
+				}
+			})
+		}
 	}
 }

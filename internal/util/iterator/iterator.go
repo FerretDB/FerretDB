@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package iterator describes a generic Iterator interface.
+// Package iterator describes a generic Iterator interface and related utilities.
 package iterator
 
 import "errors"
@@ -30,6 +30,9 @@ type Interface[K, V any] interface {
 	// In any case, even if iterator was read to the end, and Next returned ErrIteratorDone,
 	// or Next returned fatal error,
 	// Close method still should be called.
+	//
+	// Next should return either key/value pair or error, not both and not neither.
+	// For example, single-value iterators should not return (key, value, ErrIteratorDone).
 	//
 	// Next should not be called concurrently with other Next calls,
 	// but it can be called concurrently with Close.

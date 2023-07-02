@@ -65,7 +65,8 @@ The following steps describe a quick local setup:
    mongodb://username:password@127.0.0.1/ferretdb?authMechanism=PLAIN
    ```
 
-   See [Authentication](../security.md#authentication) for more details.
+   See [Authentication](../security/authentication.md) and
+   [Securing connection with TLS](../security/tls-connections.md) for more details.
 
    If you don't have `mongosh`, run the following command to run it inside the temporary MongoDB container,
    attaching to the same Docker network:
@@ -77,16 +78,16 @@ The following steps describe a quick local setup:
 
 You can improve that setup by:
 
-* [securing connections with TLS](../security.md#securing-connections-with-tls);
-* adding backups.
+- [securing connections with TLS](../security/tls-connections.md);
+- adding backups.
 
 Find out more about:
 
-* [Getting logs](../configuration/logging.md#docker-logs)
+- [getting logs](../configuration/logging.md#docker-logs).
 
 ## Development image
 
-The [development image](https://ghcr.io/ferretdb/ferretdb-dev)
+The [development image](https://ghcr.io/ferretdb/ferretdb-dev) `ghcr.io/ferretdb/ferretdb-dev`
 contains the [debug build](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version#hdr-Debug_builds)
 of FerretDB with test coverage instrumentation, race detector,
 and other changes that make it more suitable for debugging problems.

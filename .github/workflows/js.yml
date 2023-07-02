@@ -3,7 +3,7 @@ name: JS
 on:
   pull_request:
     types:
-      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - unlabeled # if GitHub Actions stuck, add and remove "not ready" label to force rebuild
       - opened
       - reopened
       - synchronize
@@ -12,13 +12,14 @@ on:
   push:
     branches:
       - main
+      - releases/*
   schedule:
     - cron: "12 0 * * *"
 
 # Do not run this workflow in parallel for any PR change.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   GOPATH: /home/runner/go
@@ -33,9 +34,13 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
+      - name: Setup permissions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+        if: false
+
       - name: Checkout code
         uses: actions/checkout@v3
         with:
@@ -70,11 +75,11 @@ jobs:
           --proxy-addr=127.0.0.1:47017
           --mode=diff-normal
           --handler=pg
-          --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+          --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
           2> ferretdb.log &
 
       - name: Run testjs for MongoDB
-        run: bin/task testjs PORT=47017
+        run: bin/task testjs TESTJS_PORT=47017
 
       - name: Run testjs for FerretDB
         run: bin/task testjs

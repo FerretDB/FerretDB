@@ -19,7 +19,7 @@
 //  1. As they are used in "business logic" / handlers - `types` package.
 //  2. As they are used for logging - `fjson` package.
 //  3. As they are used in the wire protocol implementation - `bson` package.
-//  4. As they are used to store data in PostgreSQL - `pjson` package.
+//  4. As they are used to store data in SQL based databases - `sjson` package.
 //  5. As they are used to store data in Tigris - `tjson` package.
 //
 // The reason for that is a separation of concerns: to avoid method names clashes, to simplify type asserts,
