@@ -496,6 +496,7 @@ tasks:
           --name=ferretdb
           --bootstrap=true
           --use=false
+          --config=./build/docker/buildkitd.toml
           --driver=docker-container
           --driver-opt env.BUILDKIT_STEP_LOG_MAX_SIZE=-1
           --driver-opt env.BUILDKIT_STEP_LOG_MAX_SPEED=-1
