@@ -169,6 +169,10 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() sjsontype) {
 		var n int
 
 		for _, rec := range records {
+			if rec.Body == nil {
+				continue
+			}
+
 			var docs []*types.Document
 
 			switch b := rec.Body.(type) {
