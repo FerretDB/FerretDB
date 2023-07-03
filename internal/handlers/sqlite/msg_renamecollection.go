@@ -18,8 +18,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"strings"
+	"unicode/utf8"
+
+	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -107,7 +109,16 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	db := h.b.Database(dbFrom)
 	defer db.Close()
 
-	//TODO validate collection name
+	if !validateCollectionNameRe.MatchString(collectionTo) ||
+		strings.HasPrefix(collectionTo, reservedPrefix) ||
+		!utf8.ValidString(collectionTo) {
+		// TODO len(collectionTo) > maxTableNameLength
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrIllegalOperation,
+			fmt.Sprintf("error with target namespace: Invalid collection name: %s", collectionTo),
+			command,
+		)
+	}
 
 	err = db.RenameCollection(ctx, &backends.RenameCollectionParams{
 		CollectionFrom: collectionFrom,
@@ -128,12 +139,6 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 			fmt.Sprintf("Source collection %s does not exist", namespaceFrom),
 			command,
 		)
-		//case errors.Is(err, pgdb.ErrInvalidCollectionName):
-		//return nil, commonerrors.NewCommandErrorMsgWithArgument(
-		//commonerrors.ErrIllegalOperation,
-		//fmt.Sprintf("error with target namespace: Invalid collection name: %s", collectionTo),
-		//command,
-		//)
 	}
 	if err != nil {
 		return nil, err
