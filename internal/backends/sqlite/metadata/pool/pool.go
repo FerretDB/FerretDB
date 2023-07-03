@@ -20,7 +20,10 @@ package pool
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -40,7 +43,7 @@ const filenameExtension = ".sqlite"
 //
 //nolint:vet // for readability
 type Pool struct {
-	dir string
+	uri *url.URL
 	l   *zap.Logger
 
 	rw  sync.RWMutex
@@ -50,17 +53,19 @@ type Pool struct {
 }
 
 // New creates a pool for SQLite databases in the given directory.
-func New(dir string, l *zap.Logger) (*Pool, error) {
-	// TODO accept URI with a directory name, not just directory name
-	// https://github.com/FerretDB/FerretDB/issues/2753
+func New(u string, l *zap.Logger) (*Pool, error) {
+	uri, err := validateURI(u)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse SQLite URI %q: %s", u, err)
+	}
 
-	matches, err := filepath.Glob(filepath.Join(dir, "*"+filenameExtension))
+	matches, err := filepath.Glob(filepath.Join(uri.Path, "*"+filenameExtension))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	p := &Pool{
-		dir:   dir,
+		uri:   uri,
 		l:     l,
 		dbs:   make(map[string]*db, len(matches)),
 		token: resource.NewToken(),
@@ -68,27 +73,85 @@ func New(dir string, l *zap.Logger) (*Pool, error) {
 
 	resource.Track(p, p.token)
 
-	for _, m := range matches {
-		db, err := openDB(m)
+	for _, f := range matches {
+		name := p.databaseName(f)
+		uri := p.databaseURI(name)
+
+		p.l.Debug("Opening existing database.", zap.String("name", name), zap.String("uri", uri))
+
+		db, err := openDB(uri)
 		if err != nil {
 			p.Close()
 			return nil, lazyerrors.Error(err)
 		}
 
-		p.dbs[p.databaseName(m)] = db
+		p.dbs[name] = db
 	}
 
 	return p, nil
 }
 
-// databaseName returns database name for given database file path.
-func (p *Pool) databaseName(databasePath string) string {
-	return strings.TrimSuffix(filepath.Base(databasePath), filenameExtension)
+// validateURI checks given URI value and returns parsed URL.
+// URI should contain 'file' scheme and point to an existing directory.
+// Path should end with '/'. Authority should be empty or absent.
+//
+// Returned URL contains path in both Path and Opaque to make String() method work correctly.
+func validateURI(u string) (*url.URL, error) {
+	uri, err := url.Parse(u)
+	if err != nil {
+		return nil, err
+	}
+
+	if uri.Scheme != "file" {
+		return nil, fmt.Errorf(`expected "file:" schema, got %q`, uri.Scheme)
+	}
+
+	if uri.User != nil {
+		return nil, fmt.Errorf(`expected empty user info, got %q`, uri.User)
+	}
+
+	if uri.Host != "" {
+		return nil, fmt.Errorf(`expected empty host, got %q`, uri.Host)
+	}
+
+	if uri.Path == "" && uri.Opaque != "" {
+		uri.Path = uri.Opaque
+	}
+	uri.Opaque = uri.Path
+
+	if !strings.HasSuffix(uri.Path, "/") {
+		return nil, fmt.Errorf(`expected path ending with "/", got %q`, uri.Path)
+	}
+
+	fi, err := os.Stat(uri.Path)
+	if err != nil {
+		return nil, fmt.Errorf(`%q should be an existing directory, got %s`, uri.Path, err)
+	}
+
+	if !fi.IsDir() {
+		return nil, fmt.Errorf(`%q should be an existing directory`, uri.Path)
+	}
+
+	return uri, nil
 }
 
-// databasePath returns database file path for the given database name.
-func (p *Pool) databasePath(databaseName string) string {
-	return filepath.Join(p.dir, databaseName+filenameExtension)
+// databaseName returns database name for given database file path.
+func (p *Pool) databaseName(databaseFile string) string {
+	return strings.TrimSuffix(filepath.Base(databaseFile), filenameExtension)
+}
+
+// databaseURI returns SQLite URI for the given database name.
+func (p *Pool) databaseURI(databaseName string) string {
+	dbURI := *p.uri
+	dbURI.Path = path.Join(dbURI.Path, databaseName+filenameExtension)
+	dbURI.Opaque = dbURI.Path
+
+	return dbURI.String()
+}
+
+// databaseFile returns database file path for the given database name.
+func (p *Pool) databaseFile(databaseName string) string {
+	return filepath.Join(p.uri.Path, databaseName+filenameExtension)
 }
 
 // Close closes all databases in the pool and frees all resources.
@@ -146,12 +209,13 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*sql.DB, bool, err
 		return db.sqlDB, false, nil
 	}
 
-	db, err := openDB(p.databasePath(name))
+	uri := p.databaseURI(name)
+	db, err := openDB(uri)
 	if err != nil {
-		return nil, false, lazyerrors.Error(err)
+		return nil, false, lazyerrors.Errorf("%s: %w", uri, err)
 	}
 
-	p.l.Debug("Database created", zap.String("name", name))
+	p.l.Debug("Database created.", zap.String("name", name), zap.String("uri", uri))
 
 	p.dbs[name] = db
 
@@ -173,10 +237,10 @@ func (p *Pool) Drop(ctx context.Context, name string) bool {
 	}
 
 	_ = db.Close()
-	_ = os.Remove(p.databasePath(name))
+	_ = os.Remove(p.databaseFile(name))
 	delete(p.dbs, name)
 
-	p.l.Debug("Database dropped", zap.String("name", name))
+	p.l.Debug("Database dropped.", zap.String("name", name))
 
 	return true
 }

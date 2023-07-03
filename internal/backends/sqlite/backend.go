@@ -16,47 +16,34 @@ package sqlite
 
 import (
 	"context"
-	"os"
 
 	"go.uber.org/zap"
 	_ "modernc.org/sqlite"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // backend implements backends.Backend interface.
 type backend struct {
-	r   *metadata.Registry
-	dir string
+	r *metadata.Registry
 }
 
 // NewBackendParams represents the parameters of NewBackend function.
 type NewBackendParams struct {
-	Dir string
+	URI string
 	L   *zap.Logger
 }
 
 // NewBackend creates a new SQLite backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	fi, err := os.Stat(params.Dir)
+	r, err := metadata.NewRegistry(params.URI, params.L.Named("metadata"))
 	if err != nil {
-		return nil, lazyerrors.Errorf("%q should be an existing directory: %w", params.Dir, err)
-	}
-
-	if !fi.IsDir() {
-		return nil, lazyerrors.Errorf("%q should be an existing directory", params.Dir)
-	}
-
-	r, err := metadata.NewRegistry(params.Dir, params.L.Named("metadata"))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	return backends.BackendContract(&backend{
-		r:   r,
-		dir: params.Dir,
+		r: r,
 	}), nil
 }
 

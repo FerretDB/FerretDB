@@ -115,7 +115,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 
 	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
 
-	var handler, sqliteURI string
+	var handler string
 
 	switch *targetBackendF {
 	case "ferretdb-pg":
@@ -129,9 +129,6 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
 		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
 		handler = "sqlite"
-
-		// TODO https://github.com/FerretDB/FerretDB/issues/2753
-		sqliteURI = sqliteDir
 
 	case "ferretdb-tigris":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
@@ -163,7 +160,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 
 		PostgreSQLURL: *postgreSQLURLF,
 
-		SQLiteURI: sqliteURI,
+		SQLiteURL: sqliteURL.String(),
 
 		TigrisURL: nextTigrisUrl(),
 
