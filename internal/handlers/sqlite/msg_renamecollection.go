@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -113,6 +114,27 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		CollectionTo:   collectionTo,
 	})
 
+	switch {
+	// We could use backends.Error for that although we agreed to not use it for now in the past PRs
+	case errors.Is(err, metadata.ErrAlreadyExist):
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNamespaceExists,
+			"target namespace exists",
+			command,
+		)
+	case errors.Is(err, metadata.ErrDoesNotExist):
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNamespaceNotFound,
+			fmt.Sprintf("Source collection %s does not exist", namespaceFrom),
+			command,
+		)
+		//case errors.Is(err, pgdb.ErrInvalidCollectionName):
+		//return nil, commonerrors.NewCommandErrorMsgWithArgument(
+		//commonerrors.ErrIllegalOperation,
+		//fmt.Sprintf("error with target namespace: Invalid collection name: %s", collectionTo),
+		//command,
+		//)
+	}
 	if err != nil {
 		return nil, err
 	}
