@@ -240,8 +240,8 @@ func TestGetMoreCommand(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 13,
 				Name: "Unauthorized",
-				Message: "Requested getMore on namespace 'TestQueryCommandGetMore.invalid'," +
-					" but cursor belongs to a different namespace TestQueryCommandGetMore.TestQueryCommandGetMore",
+				Message: "Requested getMore on namespace 'TestGetMoreCommand.invalid'," +
+					" but cursor belongs to a different namespace TestGetMoreCommand.TestGetMoreCommand",
 			},
 		},
 		"EmptyCollectionName": {
