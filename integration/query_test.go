@@ -1502,17 +1502,15 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 
 	ctx, collection := s.Ctx, s.Collection
 
-	batchSize := 5
-
-	// the number of documents is set above the default batchSize of 101
-	// for testing unset batchSize returning default batchSize
-	arr, _ := generateDocuments(0, 110)
+	// generate enough documents and use batchSize which makes query slower than maxTimeMS
+	arr, _ := generateDocuments(0, 200)
+	batchSize := 50
 
 	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
-		cursorMaxTimeMS   any           // optional, nil to leave cursorMaxTimeMS unset
+		commandMaxTimeMS  any           // optional, nil to leave commandMaxTimeMS unset
 		getMoreMaxTimeMS  any           // optional, nil to leave getMoreMaxTimeMS unset
 		sleepAfterCursor  time.Duration // optional
 		sleepAfterGetMore time.Duration // optional
@@ -1521,7 +1519,14 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
-		"Unset": {},
+		"ExpireCommandMaxTimeMS": {
+			commandMaxTimeMS: 1,
+			err: &mongo.CommandError{
+				Code:    50,
+				Name:    "MaxTimeMSExpired",
+				Message: "operation exceeded time limit",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -1541,15 +1546,16 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 
 			var findRest, aggregateRest bson.D
 
-			if tc.cursorMaxTimeMS != nil {
-				findRest = append(findRest, bson.E{Key: "maxTimeMS", Value: tc.cursorMaxTimeMS})
-				aggregateRest = append(aggregateRest, bson.E{Key: "maxTimeMS", Value: tc.cursorMaxTimeMS})
+			if tc.commandMaxTimeMS != nil {
+				findRest = append(findRest, bson.E{Key: "maxTimeMS", Value: tc.commandMaxTimeMS})
+				aggregateRest = append(aggregateRest, bson.E{Key: "maxTimeMS", Value: tc.commandMaxTimeMS})
 			}
 
 			aggregateCommand := append(
 				bson.D{
 					{"aggregate", collection.Name()},
-					{"pipeline", bson.A{}},
+					// use pipeline which at least takes 1ms, so maxTimeMS with 1ms returns error
+					{"pipeline", bson.A{bson.D{{"$match", bson.D{{"v.foo", -1}}}}}},
 					{"cursor", bson.D{{"batchSize", 2}}},
 				},
 				aggregateRest...,
@@ -1558,6 +1564,8 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 			findCommand := append(
 				bson.D{
 					{"find", collection.Name()},
+					// use filter which at least takes 1ms, so maxTimeMS with 1ms returns error
+					{"filter", bson.D{{"v.foo", 1}}},
 					{"batchSize", batchSize},
 				},
 				findRest...,
@@ -1569,38 +1577,16 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 			case <-time.After(tc.sleepAfterCursor):
 			}
 
-			for _, command := range []bson.D{findCommand, aggregateCommand} {
-				var res bson.D
-				err := collection.Database().RunCommand(ctx, command).Decode(&res)
-				require.NoError(t, err)
+			commands := map[string]bson.D{
+				"Find":      findCommand,
+				"Aggregate": aggregateCommand,
+			}
 
-				doc := ConvertDocument(t, res)
-
-				v, _ := doc.Get("cursor")
-				require.NotNil(t, v)
-
-				cursor, ok := v.(*types.Document)
-				require.True(t, ok)
-
-				cursorID, _ := cursor.Get("id")
-				assert.NotNil(t, cursorID)
-
-				var getMoreRest bson.D
-				if tc.getMoreMaxTimeMS != nil {
-					getMoreRest = append(getMoreRest, bson.E{Key: "maxTimeMS", Value: tc.getMoreMaxTimeMS})
-				}
-
-				for i := 0; i < len(arr)/batchSize; i++ {
-					getMoreCommand := append(
-						bson.D{
-							{"getMore", cursorID},
-							{"collection", collection.Name()},
-							{"batchSize", batchSize},
-						},
-						getMoreRest...,
-					)
-
-					err = collection.Database().RunCommand(ctx, getMoreCommand).Decode(&res)
+			for name, command := range commands {
+				name, command := name, command
+				t.Run(name, func(t *testing.T) {
+					var res bson.D
+					err := collection.Database().RunCommand(ctx, command).Decode(&res)
 					if tc.err != nil {
 						AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 
@@ -1609,23 +1595,59 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 
 					require.NoError(t, err)
 
-					doc = ConvertDocument(t, res)
+					doc := ConvertDocument(t, res)
 
-					v, _ = doc.Get("cursor")
+					v, _ := doc.Get("cursor")
 					require.NotNil(t, v)
 
-					cursor, ok = v.(*types.Document)
+					cursor, ok := v.(*types.Document)
 					require.True(t, ok)
 
-					cursorID, _ = cursor.Get("id")
+					cursorID, _ := cursor.Get("id")
 					assert.NotNil(t, cursorID)
 
-					select {
-					case <-ctx.Done():
-						require.Error(t, ctx.Err())
-					case <-time.After(tc.sleepAfterCursor):
+					var getMoreRest bson.D
+					if tc.getMoreMaxTimeMS != nil {
+						getMoreRest = append(getMoreRest, bson.E{Key: "maxTimeMS", Value: tc.getMoreMaxTimeMS})
 					}
-				}
+
+					for i := 0; i < len(arr)/batchSize; i++ {
+						getMoreCommand := append(
+							bson.D{
+								{"getMore", cursorID},
+								{"collection", collection.Name()},
+								{"batchSize", batchSize},
+							},
+							getMoreRest...,
+						)
+
+						err = collection.Database().RunCommand(ctx, getMoreCommand).Decode(&res)
+						if tc.err != nil {
+							AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
+							return
+						}
+
+						require.NoError(t, err)
+
+						doc = ConvertDocument(t, res)
+
+						v, _ = doc.Get("cursor")
+						require.NotNil(t, v)
+
+						cursor, ok = v.(*types.Document)
+						require.True(t, ok)
+
+						cursorID, _ = cursor.Get("id")
+						assert.NotNil(t, cursorID)
+
+						select {
+						case <-ctx.Done():
+							require.Error(t, ctx.Err())
+						case <-time.After(tc.sleepAfterCursor):
+						}
+					}
+				})
 			}
 		})
 	}

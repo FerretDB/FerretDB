@@ -220,7 +220,16 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	if err != nil {
 		closer.Close()
-		return nil, err
+
+		if ctx.Err() != nil {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrMaxTimeMSExpired,
+				"operation exceeded time limit",
+				document.Command(),
+			)
+		}
+
+		return nil, lazyerrors.Error(err)
 	}
 
 	closer.Add(iter)

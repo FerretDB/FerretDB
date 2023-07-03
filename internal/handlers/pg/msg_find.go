@@ -128,6 +128,15 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	if err != nil {
 		closer.Close()
+
+		if ctx.Err() != nil {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrMaxTimeMSExpired,
+				"operation exceeded time limit",
+				document.Command(),
+			)
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 
