@@ -1487,3 +1487,146 @@ func TestQueryCommandGetMoreConnection(t *testing.T) {
 		)
 	})
 }
+
+func TestGetMoreCommandMaxTimeMS(t *testing.T) {
+	t.Parallel()
+
+	// options are applied to create a client that uses single connection pool
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		ExtraOptions: url.Values{
+			"minPoolSize":   []string{"1"},
+			"maxPoolSize":   []string{"1"},
+			"maxIdleTimeMS": []string{"0"},
+		},
+	})
+
+	ctx, collection := s.Ctx, s.Collection
+
+	batchSize := 5
+
+	// the number of documents is set above the default batchSize of 101
+	// for testing unset batchSize returning default batchSize
+	arr, _ := generateDocuments(0, 110)
+
+	_, err := collection.InsertMany(ctx, arr)
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		cursorMaxTimeMS   any           // optional, nil to leave cursorMaxTimeMS unset
+		getMoreMaxTimeMS  any           // optional, nil to leave getMoreMaxTimeMS unset
+		sleepAfterCursor  time.Duration // optional
+		sleepAfterGetMore time.Duration // optional
+
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"Unset": {},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			// Do not run subtests in t.Parallel() to eliminate the occurrence
+			// of session error.
+			// Supporting session would help us understand fix it
+			// https://github.com/FerretDB/FerretDB/issues/153.
+			//
+			// > Location50738
+			// > Cannot run getMore on cursor 2053655655200551971,
+			// > which was created in session 2926eea5-9775-41a3-a563-096969f1c7d5 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  - ,
+			// > in session 774d9ac6-b24a-4fd8-9874-f92ab1c9c8f5 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  -
+
+			var findRest, aggregateRest bson.D
+
+			if tc.cursorMaxTimeMS != nil {
+				findRest = append(findRest, bson.E{Key: "maxTimeMS", Value: tc.cursorMaxTimeMS})
+				aggregateRest = append(aggregateRest, bson.E{Key: "maxTimeMS", Value: tc.cursorMaxTimeMS})
+			}
+
+			aggregateCommand := append(
+				bson.D{
+					{"aggregate", collection.Name()},
+					{"pipeline", bson.A{}},
+					{"cursor", bson.D{{"batchSize", 2}}},
+				},
+				aggregateRest...,
+			)
+
+			findCommand := append(
+				bson.D{
+					{"find", collection.Name()},
+					{"batchSize", batchSize},
+				},
+				findRest...,
+			)
+
+			select {
+			case <-ctx.Done():
+				require.Error(t, ctx.Err())
+			case <-time.After(tc.sleepAfterCursor):
+			}
+
+			for _, command := range []bson.D{findCommand, aggregateCommand} {
+				var res bson.D
+				err := collection.Database().RunCommand(ctx, command).Decode(&res)
+				require.NoError(t, err)
+
+				doc := ConvertDocument(t, res)
+
+				v, _ := doc.Get("cursor")
+				require.NotNil(t, v)
+
+				cursor, ok := v.(*types.Document)
+				require.True(t, ok)
+
+				cursorID, _ := cursor.Get("id")
+				assert.NotNil(t, cursorID)
+
+				var getMoreRest bson.D
+				if tc.getMoreMaxTimeMS != nil {
+					getMoreRest = append(getMoreRest, bson.E{Key: "maxTimeMS", Value: tc.getMoreMaxTimeMS})
+				}
+
+				for i := 0; i < len(arr)/batchSize; i++ {
+					getMoreCommand := append(
+						bson.D{
+							{"getMore", cursorID},
+							{"collection", collection.Name()},
+							{"batchSize", batchSize},
+						},
+						getMoreRest...,
+					)
+
+					err = collection.Database().RunCommand(ctx, getMoreCommand).Decode(&res)
+					if tc.err != nil {
+						AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
+						return
+					}
+
+					require.NoError(t, err)
+
+					doc = ConvertDocument(t, res)
+
+					v, _ = doc.Get("cursor")
+					require.NotNil(t, v)
+
+					cursor, ok = v.(*types.Document)
+					require.True(t, ok)
+
+					cursorID, _ = cursor.Get("id")
+					assert.NotNil(t, cursorID)
+
+					select {
+					case <-ctx.Done():
+						require.Error(t, ctx.Err())
+					case <-time.After(tc.sleepAfterCursor):
+					}
+				}
+			}
+		})
+	}
+}
