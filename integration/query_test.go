@@ -1397,13 +1397,10 @@ func TestQueryCommandGetMoreConnection(t *testing.T) {
 		// > in session 774d9ac6-b24a-4fd8-9874-f92ab1c9c8f5 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  -
 
 		var res bson.D
-		err = collection1.Database().RunCommand(
-			ctx,
-			bson.D{
-				{"find", collection1.Name()},
-				{"batchSize", 2},
-			},
-		).Decode(&res)
+		err = collection1.Database().RunCommand(ctx, bson.D{
+			{"find", collection1.Name()},
+			{"batchSize", 2},
+		}).Decode(&res)
 		require.NoError(t, err)
 
 		doc := ConvertDocument(t, res)
@@ -1417,13 +1414,10 @@ func TestQueryCommandGetMoreConnection(t *testing.T) {
 		cursorID, _ := cursor.Get("id")
 		assert.NotNil(t, cursorID)
 
-		err = collection1.Database().RunCommand(
-			ctx,
-			bson.D{
-				{"getMore", cursorID},
-				{"collection", collection1.Name()},
-			},
-		).Decode(&res)
+		err = collection1.Database().RunCommand(ctx, bson.D{
+			{"getMore", cursorID},
+			{"collection", collection1.Name()},
+		}).Decode(&res)
 		require.NoError(t, err)
 	})
 
@@ -1445,13 +1439,10 @@ func TestQueryCommandGetMoreConnection(t *testing.T) {
 		collection2 := client2.Database(databaseName).Collection(collectionName)
 
 		var res bson.D
-		err = collection1.Database().RunCommand(
-			ctx,
-			bson.D{
-				{"find", collection1.Name()},
-				{"batchSize", 2},
-			},
-		).Decode(&res)
+		err = collection1.Database().RunCommand(ctx, bson.D{
+			{"find", collection1.Name()},
+			{"batchSize", 2},
+		}).Decode(&res)
 		require.NoError(t, err)
 
 		doc := ConvertDocument(t, res)
@@ -1465,13 +1456,10 @@ func TestQueryCommandGetMoreConnection(t *testing.T) {
 		cursorID, _ := cursor.Get("id")
 		assert.NotNil(t, cursorID)
 
-		err = collection2.Database().RunCommand(
-			ctx,
-			bson.D{
-				{"getMore", cursorID},
-				{"collection", collection2.Name()},
-			},
-		).Decode(&res)
+		err = collection2.Database().RunCommand(ctx, bson.D{
+			{"getMore", cursorID},
+			{"collection", collection2.Name()},
+		}).Decode(&res)
 
 		// use AssertMatchesCommandError because message cannot be compared as it contains session ID
 		AssertMatchesCommandError(

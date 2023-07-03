@@ -1148,7 +1148,8 @@ func TestCommandsAdministrationCurrentOp(t *testing.T) {
 	})
 
 	var res bson.D
-	err := s.Collection.Database().RunCommand(s.Ctx,
+	err := s.Collection.Database().RunCommand(
+		s.Ctx,
 		bson.D{{"currentOp", int32(1)}},
 	).Decode(&res)
 	require.NoError(t, err)
@@ -1168,28 +1169,41 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 	require.NoError(t, err)
 	defer cursor.Close(ctx)
 
-	type killCursorsResult struct {
-		CursorsKilled   []int
-		CursorsNotFound []int
-		CursorsAlive    []int
-		CursorsUnknown  []int
-	}
-
 	t.Run("Empty", func(t *testing.T) {
 		t.Parallel()
 
-		var res killCursorsResult
+		var actual bson.D
 		err := collection.Database().RunCommand(ctx, bson.D{
 			{"killCursors", collection.Name()},
 			{"cursors", bson.A{}},
-		}).Decode(&res)
+		}).Decode(&actual)
 		require.NoError(t, err)
-		assert.Empty(t, res.CursorsKilled)
-		assert.Empty(t, res.CursorsNotFound)
-		assert.Empty(t, res.CursorsAlive)
-		assert.Empty(t, res.CursorsUnknown)
+		expected := bson.D{
+			{"cursorsKilled", bson.A{}},
+			{"cursorsNotFound", bson.A{}},
+			{"cursorsAlive", bson.A{}},
+			{"cursorsUnknown", bson.A{}},
+			{"ok", float64(1)},
+		}
+		AssertEqualDocuments(t, expected, actual)
 	})
 
 	t.Run("Unknown", func(t *testing.T) {
+		t.Parallel()
+
+		var actual bson.D
+		err := collection.Database().RunCommand(ctx, bson.D{
+			{"killCursors", collection.Name()},
+			{"cursors", bson.A{int64(100500)}},
+		}).Decode(&actual)
+		require.NoError(t, err)
+		expected := bson.D{
+			{"cursorsKilled", bson.A{}},
+			{"cursorsNotFound", bson.A{int64(100500)}},
+			{"cursorsAlive", bson.A{}},
+			{"cursorsUnknown", bson.A{}},
+			{"ok", float64(1)},
+		}
+		AssertEqualDocuments(t, expected, actual)
 	})
 }
