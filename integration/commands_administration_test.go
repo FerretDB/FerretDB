@@ -1165,8 +1165,10 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 
 	ctx, collection := setup.Setup(t, shareddata.Strings)
 
+	// does not show up in cursorsAlive or anywhere else
 	cursor, err := collection.Find(ctx, bson.D{}, options.Find().SetBatchSize(1))
 	require.NoError(t, err)
+
 	defer cursor.Close(ctx)
 
 	t.Run("Empty", func(t *testing.T) {
@@ -1188,7 +1190,23 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 		AssertEqualDocuments(t, expected, actual)
 	})
 
-	t.Run("Unknown", func(t *testing.T) {
+	t.Run("WrongType", func(t *testing.T) {
+		t.Parallel()
+
+		var actual bson.D
+		err := collection.Database().RunCommand(ctx, bson.D{
+			{"killCursors", collection.Name()},
+			{"cursors", bson.A{"foo"}},
+		}).Decode(&actual)
+		expectedErr := mongo.CommandError{
+			Code:    14,
+			Name:    "TypeMismatch",
+			Message: "BSON field 'killCursors.cursors.0' is the wrong type 'string', expected type 'long'",
+		}
+		AssertEqualCommandError(t, expectedErr, err)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
 		t.Parallel()
 
 		var actual bson.D
@@ -1200,6 +1218,29 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 		expected := bson.D{
 			{"cursorsKilled", bson.A{}},
 			{"cursorsNotFound", bson.A{int64(100500)}},
+			{"cursorsAlive", bson.A{}},
+			{"cursorsUnknown", bson.A{}},
+			{"ok", float64(1)},
+		}
+		AssertEqualDocuments(t, expected, actual)
+	})
+
+	t.Run("Found", func(t *testing.T) {
+		t.Parallel()
+
+		c, err := collection.Find(ctx, bson.D{}, options.Find().SetBatchSize(1))
+		require.NoError(t, err)
+		defer c.Close(ctx)
+
+		var actual bson.D
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"killCursors", collection.Name()},
+			{"cursors", bson.A{c.ID()}},
+		}).Decode(&actual)
+		require.NoError(t, err)
+		expected := bson.D{
+			{"cursorsKilled", bson.A{c.ID()}},
+			{"cursorsNotFound", bson.A{}},
 			{"cursorsAlive", bson.A{}},
 			{"cursorsUnknown", bson.A{}},
 			{"ok", float64(1)},

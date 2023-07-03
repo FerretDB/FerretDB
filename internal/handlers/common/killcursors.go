@@ -17,9 +17,12 @@ package common
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -34,12 +37,14 @@ func KillCursors(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry
 		return nil, lazyerrors.Error(err)
 	}
 
+	command := document.Command()
+
 	db, err := GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
 
-	collection, err := GetRequiredParam[string](document, document.Command())
+	collection, err := GetRequiredParam[string](document, command)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +65,7 @@ func KillCursors(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry
 	cursorsUnknown := types.MakeArray(0)
 
 	for {
-		_, v, err := iter.Next()
+		i, v, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
@@ -71,7 +76,15 @@ func KillCursors(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry
 
 		id, ok := v.(int64)
 		if !ok {
-			return nil, lazyerrors.Errorf("expected cursor ID to be %T, got %#v", id, v)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrTypeMismatch,
+				fmt.Sprintf(
+					"BSON field 'killCursors.cursors.%d' is the wrong type '%s', expected type 'long'",
+					i,
+					commonparams.AliasFromType(v),
+				),
+				command,
+			)
 		}
 
 		cursor := registry.Get(id)
