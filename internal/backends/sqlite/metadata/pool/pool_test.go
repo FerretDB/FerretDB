@@ -179,7 +179,6 @@ func TestNewBackend(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.Equal(t, u, tc.uri)
-			// assert.Equal(t, tc.value, u.String())
 		})
 	}
 }
