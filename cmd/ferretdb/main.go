@@ -104,7 +104,7 @@ var pgFlags struct {
 //
 // See main_sqlite.go.
 var sqliteFlags struct {
-	SQLiteURL string `name:"sqlite-url" default:"file:./" help:"SQLite directory URI for 'sqlite' handler."`
+	SQLiteURL string `name:"sqlite-url" default:"file:data/" help:"SQLite URI (directory) for 'sqlite' handler."`
 }
 
 // The tigrisFlags struct represents flags that are used by the "tigris" handler.

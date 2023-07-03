@@ -322,7 +322,7 @@ tasks:
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
         --handler=sqlite
-        --sqlite-url=file:./tmp/sqlite/
+        --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
         --test-disable-filter-pushdown
 
@@ -411,7 +411,7 @@ tasks:
         --proxy-addr=127.0.0.1:47017
         --mode=diff-proxy
         --handler=sqlite
-        --sqlite-url=file:./tmp/sqlite/
+        --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
         --test-disable-filter-pushdown
 
@@ -462,7 +462,7 @@ tasks:
   sqlite3:
     desc: "Run sqlite3"
     cmds:
-      - sqlite3 *.sqlite
+      - sqlite3 tmp/sqlite/*.sqlite
 
   mongosh:
     desc: "Run MongoDB shell (`mongosh`)"

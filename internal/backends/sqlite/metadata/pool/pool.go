@@ -71,7 +71,7 @@ func New(uri *url.URL, l *zap.Logger) (*Pool, error) {
 		name := p.databaseName(f)
 		uri := p.databaseURI(name)
 
-		p.l.Debug("Opening existing database", zap.String("name", name), zap.String("uri", uri))
+		p.l.Debug("Opening existing database.", zap.String("name", name), zap.String("uri", uri))
 
 		db, err := openDB(uri)
 		if err != nil {
@@ -165,7 +165,7 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*sql.DB, bool, err
 		return nil, false, lazyerrors.Errorf("%s: %w", uri, err)
 	}
 
-	p.l.Debug("Database created", zap.String("name", name), zap.String("uri", uri))
+	p.l.Debug("Database created.", zap.String("name", name), zap.String("uri", uri))
 
 	p.dbs[name] = db
 
@@ -190,7 +190,7 @@ func (p *Pool) Drop(ctx context.Context, name string) bool {
 	_ = os.Remove(p.databaseFile(name))
 	delete(p.dbs, name)
 
-	p.l.Debug("Database dropped", zap.String("name", name))
+	p.l.Debug("Database dropped.", zap.String("name", name))
 
 	return true
 }
