@@ -62,6 +62,32 @@ func TestInsertCommandErrors(t *testing.T) {
 			},
 			altMessage: "E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKey.TestInsertCommandErrors-InsertDuplicateKey",
 		},
+		"InsertDuplicateKeyOrdered": {
+			toInsert: []any{
+				bson.D{{"foo", "bar"}},
+				bson.D{{"_id", "double"}},
+			},
+			ordered: true,
+			werr: &mongo.WriteError{
+				Code:  11000,
+				Index: 1,
+				Message: `E11000 duplicate key error collection: ` +
+					`TestInsertCommandErrors-InsertDuplicateKeyOrdered.TestInsertCommandErrors-InsertDuplicateKeyOrdered index: _id_ dup key: { _id: "double" }`,
+			},
+			altMessage: `E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKeyOrdered.TestInsertCommandErrors-InsertDuplicateKeyOrdered`,
+		},
+		"InsertArray": {
+			toInsert: []any{
+				bson.D{{"a", int32(1)}},
+				bson.A{},
+			},
+			ordered: true,
+			cerr: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'insert.documents.1' is the wrong type 'array', expected type 'object'",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -87,11 +113,15 @@ func TestInsertCommandErrors(t *testing.T) {
 
 			if tc.cerr != nil {
 				AssertEqualAltCommandError(t, *tc.cerr, tc.altMessage, err)
+				return
 			}
 
 			if tc.werr != nil {
 				AssertEqualAltWriteError(t, *tc.werr, tc.altMessage, err)
+				return
 			}
+
+			require.NoError(t, err)
 		})
 	}
 }

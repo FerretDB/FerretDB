@@ -45,7 +45,7 @@ type NewHandlerOpts struct {
 	PostgreSQLURL string
 
 	// for `sqlite` handler
-	SQLiteURI string
+	SQLiteURL string
 
 	// for `tigris` handler
 	TigrisURL          string

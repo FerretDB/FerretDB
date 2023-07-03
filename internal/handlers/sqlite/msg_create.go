@@ -39,6 +39,9 @@ const reservedPrefix = "_ferretdb_"
 // Collection names that start with `.` are also not allowed.
 var validateCollectionNameRe = regexp.MustCompile("^[^.$\x00][^$\x00]{0,234}$")
 
+// validateDatabaseNameRe validates FerretDB database name.
+var validateDatabaseNameRe = regexp.MustCompile("^[a-zA-Z0-9_-]{1,63}$")
+
 // MsgCreate implements HandlerInterface.
 func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
@@ -88,6 +91,11 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	collectionName, err := common.GetRequiredParam[string](document, command)
 	if err != nil {
 		return nil, err
+	}
+
+	if !validateDatabaseNameRe.MatchString(dbName) {
+		msg := fmt.Sprintf("Invalid namespace: %s.%s", dbName, collectionName)
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "create")
 	}
 
 	if strings.HasPrefix(collectionName, ".") {
