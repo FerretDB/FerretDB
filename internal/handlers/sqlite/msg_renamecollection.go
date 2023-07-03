@@ -140,6 +140,7 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 			command,
 		)
 	}
+
 	if err != nil {
 		return nil, err
 	}

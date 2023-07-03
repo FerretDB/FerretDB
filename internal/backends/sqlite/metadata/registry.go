@@ -161,6 +161,8 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]string,
 // CollectionCreate creates a collection in the database.
 //
 // Returned boolean value indicates whether the collection was created.
+// If the table translated for collection already exists, the function will
+// proceed to create table with a suffix.
 // If collection already exists, (false, nil) is returned.
 func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collectionName string) (bool, error) {
 	db, err := r.DatabaseGetOrCreate(ctx, dbName)
@@ -168,22 +170,31 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 		return false, lazyerrors.Error(err)
 	}
 
-	tableName := collectionToTable(collectionName)
+	defaultTableName := collectionToTable(collectionName)
+	tableName := defaultTableName
 
 	// TODO use transactions
 	// https://github.com/FerretDB/FerretDB/issues/2747
 
-	query := fmt.Sprintf("CREATE TABLE %q (_ferretdb_sjson TEXT)", tableName)
-	if _, err = db.ExecContext(ctx, query); err != nil {
-		var e *sqlite.Error
-		if errors.As(err, &e) && e.Code() == sqlitelib.SQLITE_ERROR {
-			return false, nil
+	for i := 1; ; i++ {
+		query := fmt.Sprintf("CREATE TABLE %q (_ferretdb_sjson TEXT)", tableName)
+		_, err = db.ExecContext(ctx, query)
+
+		if err != nil {
+			var e *sqlite.Error
+			if errors.As(err, &e) && e.Code() == sqlitelib.SQLITE_ERROR {
+				tableName = fmt.Sprintf("%s_%d", defaultTableName, i)
+				continue
+			}
+
+			return false, lazyerrors.Error(err)
 		}
 
-		return false, lazyerrors.Error(err)
+		break
 	}
 
-	query = fmt.Sprintf("INSERT INTO %q (name, table_name) VALUES (?, ?)", metadataTableName)
+	query := fmt.Sprintf("INSERT INTO %q (name, table_name) VALUES (?, ?)", metadataTableName)
+	//TODO return false,nil if collection is in metadata
 	if _, err = db.ExecContext(ctx, query, collectionName, tableName); err != nil {
 		_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
 		return false, lazyerrors.Error(err)
