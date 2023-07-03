@@ -1,36 +1,35 @@
 ---
 slug: ferretdb-v-1-5-0-beta-support-sqlite
-title: FerretDB v1.5.0 New Release with Beta-level Support for SQLite
+title: FerretDB v1.5.0 New Release with Beta-level Support for the SQLite Backend
 authors: [alex]
 description: >
-  We are delighted to announce the release of FerretDB v1.5.0 which includes beta-level support for SQLite backend.
+  We are delighted to announce the release of FerretDB v1.5.0 which includes beta-level support for the SQLite backend.
 image: /img/blog/ferretdb-v1.5.0.jpg
 tags: [release]
 ---
 
-![FerretDB v.1.5.0 includes beta-level support for SQLite](/img/blog/ferretdb-v1.5.0.jpg)
+![FerretDB v.1.5.0 includes beta-level support for the SQLite Backend](/img/blog/ferretdb-v1.5.0.jpg)
 
-After a great deal of work from the [FerretDB](https://www.ferretdb.io/) team and our open-source community, we are delighted to announce the release of FerretDB v1.5.0, which includes beta-level support for [SQLite](https://www.sqlite.org/) backend.
+After a great deal of work from the [FerretDB](https://www.ferretdb.io/) team and our open-source community, we are delighted to announce the release of FerretDB v1.5.0, which includes beta-level support for the [SQLite](https://www.sqlite.org/) backend.
 
 <!--truncate-->
 
-For [Tigris](https://www.tigrisdata.com/) backend users, please note that this will be the last release with FerretDB support for the Tigris backend.
-Starting from FerretDB v1.6.0, we will no longer provide support for Tigris.
-But if you wish to continue using the Tigris backend, please refrain from updating FerretDB beyond the current version, v1.5.0.
-Other earlier versions of FerretDB will still offer Tigris backend support, and they are all available on [GitHub](https://github.com/FerretDB/FerretDB/releases).
+Important note to [Tigris](https://www.tigrisdata.com/) users: FerretDB 1.5.0 is the last release of FerretDB which includes support for the Tigris backend.
+If you wish to use Tigris, please do not update FerretDB beyond v1.5.0.
+Earlier versions of FerretDB with Tigris support will still be available on [GitHub](https://github.com/FerretDB/FerretDB/releases).
 
-In the past couple of weeks, we've been working on providing support for SQLite backend.
-And while there are still some missing functionalities, we believe it is ready for early adopters who are interested in testing FerretDB with SQLite, and we can't wait to find out what everyone comes up with.
+In the past couple of weeks, we've been working on providing support for the SQLite backend.
+This is very much a work in progress and we'll be adding more functionalities in our next releases, but we are excited for FerretDB enthusiasts to try it out – we can't wait to see what you achieve with it!
 
 Let's check out the rest!
 
 ## New features and enhancements
 
-This release has several exciting updates, especially the provision of beta-like support for SQLite, which includes enabled support for cursors and the `count` command.
+This release has several exciting updates, especially the provision of beta support for the SQLite backend, which includes enabled support for cursors and the `count` command.
 
-With the improved support for cursors in SQLite (and PostgreSQL) in the latest version update, FerretDB users can now use commands like `find` and `aggregate` to return large data sets more efficiently.
+With improved support for cursors for SQLite (and PostgreSQL) backend in the latest version release, FerretDB users can now use commands like `find` and `aggregate` to return large data sets more efficiently.
 
-We've also implemented the `count` command in SQLite.
+We've also implemented the `count` command for the SQLite backend.
 
 For other important updates in this release, please see the [release notes](https://github.com/FerretDB/FerretDB/releases/tag/v1.5.0)
 
@@ -43,7 +42,7 @@ Thank you!
 Going forward, we will be adding more features to enable full support for the SQLite backend.
 This is very exciting!
 
-We can't wait for you to try out FerretDB with an SQLite backend.
+We can't wait for you to try out FerretDB with the SQLite backend.
 And when you do, please share with us all your discoveries, feedback, questions, bugs, anything.
 Every little bit counts!
 
