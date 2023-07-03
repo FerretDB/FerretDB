@@ -20,6 +20,7 @@ package pool
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/url"
 	"os"
 	"path"
@@ -52,7 +53,12 @@ type Pool struct {
 }
 
 // New creates a pool for SQLite databases in the given directory.
-func New(uri *url.URL, l *zap.Logger) (*Pool, error) {
+func New(u string, l *zap.Logger) (*Pool, error) {
+	uri, err := validateURI(u)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse SQLite URI %q: %s", u, err)
+	}
+
 	matches, err := filepath.Glob(filepath.Join(uri.Path, "*"+filenameExtension))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -83,6 +89,50 @@ func New(uri *url.URL, l *zap.Logger) (*Pool, error) {
 	}
 
 	return p, nil
+}
+
+// validateURI checks given URI value and returns parsed URL.
+// URI should contain 'file' scheme and point to an existing directory.
+// Path should end with '/'. Authority should be empty or absent.
+//
+// Returned URL contains path in both Path and Opaque to make String() method work correctly.
+func validateURI(u string) (*url.URL, error) {
+	uri, err := url.Parse(u)
+	if err != nil {
+		return nil, err
+	}
+
+	if uri.Scheme != "file" {
+		return nil, fmt.Errorf(`expected "file:" schema, got %q`, uri.Scheme)
+	}
+
+	if uri.User != nil {
+		return nil, fmt.Errorf(`expected empty user info, got %q`, uri.User)
+	}
+
+	if uri.Host != "" {
+		return nil, fmt.Errorf(`expected empty host, got %q`, uri.Host)
+	}
+
+	if uri.Path == "" && uri.Opaque != "" {
+		uri.Path = uri.Opaque
+	}
+	uri.Opaque = uri.Path
+
+	if !strings.HasSuffix(uri.Path, "/") {
+		return nil, fmt.Errorf(`expected path ending with "/", got %q`, uri.Path)
+	}
+
+	fi, err := os.Stat(uri.Path)
+	if err != nil {
+		return nil, fmt.Errorf(`%q should be an existing directory, got %s`, uri.Path, err)
+	}
+
+	if !fi.IsDir() {
+		return nil, fmt.Errorf(`%q should be an existing directory`, uri.Path)
+	}
+
+	return uri, nil
 }
 
 // databaseName returns database name for given database file path.
