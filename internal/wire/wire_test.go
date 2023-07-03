@@ -146,6 +146,10 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 		require.NoError(f, err)
 
 		for _, rec := range records {
+			if rec.HeaderB == nil || rec.BodyB == nil {
+				continue
+			}
+
 			b := make([]byte, 0, len(rec.HeaderB)+len(rec.BodyB))
 			b = append(b, rec.HeaderB...)
 			b = append(b, rec.BodyB...)
