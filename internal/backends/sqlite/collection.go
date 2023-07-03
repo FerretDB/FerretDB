@@ -202,7 +202,18 @@ func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) 
 		return &backends.DeleteResult{Deleted: 0}, nil
 	}
 
-	tableName := c.r.CollectionToTable(c.name)
+	tableName, exists, err := c.r.GetTableName(ctx, c.dbName, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if !exists {
+		// TODO test
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			fmt.Errorf("%s.%s does not exist", c.dbName, c.name),
+		)
+	}
 
 	query := fmt.Sprintf(`DELETE FROM %q WHERE _ferretdb_sjson -> '$._id' = ?`, tableName)
 
