@@ -24,7 +24,7 @@ import (
 // init registers "tigris" handler for Tigris when "ferretdb_tigris" build tag is provided.
 func init() {
 	registry["tigris"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		opts.Logger.Warn("Tigris handler is in beta.")
+		opts.Logger.Warn("This is the last release with Tigris support.")
 
 		handlerOpts := &tigris.NewOpts{
 			AuthParams: tigris.AuthParams{
