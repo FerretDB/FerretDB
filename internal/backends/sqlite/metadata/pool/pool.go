@@ -22,6 +22,7 @@ import (
 	"database/sql"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -66,26 +67,40 @@ func New(uri *url.URL, l *zap.Logger) (*Pool, error) {
 
 	resource.Track(p, p.token)
 
-	for _, m := range matches {
-		db, err := openDB(m)
+	for _, f := range matches {
+		name := p.databaseName(f)
+		uri := p.databaseURI(name)
+
+		p.l.Debug("Opening existing database", zap.String("name", name), zap.String("uri", uri))
+
+		db, err := openDB(uri)
 		if err != nil {
 			p.Close()
 			return nil, lazyerrors.Error(err)
 		}
 
-		p.dbs[p.databaseName(m)] = db
+		p.dbs[name] = db
 	}
 
 	return p, nil
 }
 
 // databaseName returns database name for given database file path.
-func (p *Pool) databaseName(databasePath string) string {
-	return strings.TrimSuffix(filepath.Base(databasePath), filenameExtension)
+func (p *Pool) databaseName(databaseFile string) string {
+	return strings.TrimSuffix(filepath.Base(databaseFile), filenameExtension)
 }
 
-// databasePath returns database file path for the given database name.
-func (p *Pool) databasePath(databaseName string) string {
+// databaseURI returns SQLite URI for the given database name.
+func (p *Pool) databaseURI(databaseName string) string {
+	dbURI := *p.uri
+	dbURI.Path = path.Join(dbURI.Path, databaseName+filenameExtension)
+	dbURI.Opaque = dbURI.Path
+
+	return dbURI.String()
+}
+
+// databaseFile returns database file path for the given database name.
+func (p *Pool) databaseFile(databaseName string) string {
 	return filepath.Join(p.uri.Path, databaseName+filenameExtension)
 }
 
@@ -144,12 +159,13 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*sql.DB, bool, err
 		return db.sqlDB, false, nil
 	}
 
-	db, err := openDB(p.databasePath(name))
+	uri := p.databaseURI(name)
+	db, err := openDB(uri)
 	if err != nil {
-		return nil, false, lazyerrors.Error(err)
+		return nil, false, lazyerrors.Errorf("%s: %w", uri, err)
 	}
 
-	p.l.Debug("Database created", zap.String("name", name))
+	p.l.Debug("Database created", zap.String("name", name), zap.String("uri", uri))
 
 	p.dbs[name] = db
 
@@ -171,7 +187,7 @@ func (p *Pool) Drop(ctx context.Context, name string) bool {
 	}
 
 	_ = db.Close()
-	_ = os.Remove(p.databasePath(name))
+	_ = os.Remove(p.databaseFile(name))
 	delete(p.dbs, name)
 
 	p.l.Debug("Database dropped", zap.String("name", name))

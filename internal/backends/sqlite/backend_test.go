@@ -19,6 +19,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -38,9 +39,8 @@ func TestNewBackend(t *testing.T) {
 
 	testCases := map[string]struct {
 		value string
-
-		uri      *url.URL
-		errRegex string
+		uri   *url.URL
+		err   string
 	}{
 		"LocalDirectory": {
 			value: "file:./",
@@ -79,6 +79,7 @@ func TestNewBackend(t *testing.T) {
 			value: "file:/tmp/",
 			uri: &url.URL{
 				Scheme:   "file",
+				Opaque:   "/tmp/",
 				Path:     "/tmp/",
 				OmitHost: true,
 			},
@@ -87,6 +88,7 @@ func TestNewBackend(t *testing.T) {
 			value: "file:///tmp/",
 			uri: &url.URL{
 				Scheme: "file",
+				Opaque: "/tmp/",
 				Path:   "/tmp/",
 			},
 		},
@@ -94,37 +96,38 @@ func TestNewBackend(t *testing.T) {
 			value: "file:///tmp/?mode=ro",
 			uri: &url.URL{
 				Scheme:   "file",
+				Opaque:   "/tmp/",
 				Path:     "/tmp/",
 				RawQuery: "mode=ro",
 			},
 		},
 		"HostIsNotEmpty": {
-			value:    "file://localhost/./tmp/?mode=ro",
-			errRegex: `.*backend URI should not contain host: "file://localhost/./tmp/\?mode=ro"`,
+			value: "file://localhost/./tmp/?mode=ro",
+			err:   `expected empty host, got "localhost"`,
 		},
 		"UserIsNotEmpty": {
-			value:    "file://user:pass@./tmp/?mode=ro",
-			errRegex: `.*backend URI should not contain user: "file://user:pass@./tmp/\?mode=ro"`,
+			value: "file://user:pass@./tmp/?mode=ro",
+			err:   `expected empty user info, got "user:pass"`,
 		},
 		"NoDirectory": {
-			value:    "file:./nodir/",
-			errRegex: `.*"file:./nodir/" should be an existing directory: stat ./nodir/: no such file or directory`,
+			value: "file:./nodir/",
+			err:   `"./nodir/" should be an existing directory, got stat ./nodir/: no such file or directory`,
 		},
 		"PathIsNotEndsWithSlash": {
-			value:    "file:./tmp/file",
-			errRegex: `.*backend URI should be a directory ending with '/': "file:./tmp/file"`,
+			value: "file:./tmp/file",
+			err:   `expected path ending with "/", got ""`,
 		},
 		"FileInsteadOfDirectory": {
-			value:    "file:./tmp/file/",
-			errRegex: `.*file:./tmp/file/" should be an existing directory: stat ./tmp/file/: not a directory`,
+			value: "file:./tmp/file/",
+			err:   `"./tmp/file/" should be an existing directory, got stat ./tmp/file/: not a directory`,
 		},
 		"MalformedURI": {
-			value:    ":./tmp/",
-			errRegex: `.*failed to parse backend URI: parse ":./tmp/": missing protocol scheme`,
+			value: ":./tmp/",
+			err:   `parse ":./tmp/": missing protocol scheme`,
 		},
 		"NoScheme": {
-			value:    "./tmp/",
-			errRegex: `.*backend URI should have file scheme: "./tmp/"`,
+			value: "./tmp/",
+			err:   `expected "file:" schema, got ""`,
 		},
 	}
 	for name, tc := range testCases {
@@ -132,18 +135,15 @@ func TestNewBackend(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			uri, err := validateURI(tc.value)
-			if tc.errRegex != "" {
-				t.Log(err)
-
-				require.Error(t, err)
-
-				require.Regexp(t, tc.errRegex, err.Error())
+			u, err := validateURI(tc.value)
+			if tc.err != "" {
+				assert.EqualError(t, err, tc.err)
 				return
 			}
-			require.NoError(t, err)
 
-			require.Equal(t, uri, tc.uri)
+			require.NoError(t, err)
+			assert.Equal(t, u, tc.uri)
+			// assert.Equal(t, tc.value, u.String())
 		})
 	}
 }

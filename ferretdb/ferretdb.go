@@ -49,11 +49,11 @@ type Config struct {
 	//   - https://pkg.go.dev/github.com/jackc/pgx/v5/pgconn#ParseConfig
 	PostgreSQLURL string // For example: `postgres://hostname:5432/ferretdb`.
 
-	// SQLite directory path or `file:` URI for `sqlite` handler.
+	// SQLite directory path or `file:` URI for `sqlite` handler. FIXME
 	// See:
 	//   - https://www.sqlite.org/c3ref/open.html
 	//   - https://www.sqlite.org/uri.html
-	SQLiteURI string
+	SQLiteURL string
 
 	// Tigris parameters for `tigris` handler.
 	// See https://www.tigrisdata.com/docs/sdkstools/golang/getting-started/
@@ -127,7 +127,7 @@ func New(config *Config) (*FerretDB, error) {
 
 		PostgreSQLURL: config.PostgreSQLURL,
 
-		SQLiteURI: config.SQLiteURI,
+		SQLiteURL: config.SQLiteURL,
 
 		TigrisURL:          config.TigrisURL,
 		TigrisClientID:     config.TigrisClientID,

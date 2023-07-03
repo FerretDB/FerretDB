@@ -51,7 +51,7 @@ type Handler struct {
 //
 //nolint:vet // for readability
 type NewOpts struct {
-	Dir string
+	URI string
 
 	L             *zap.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
@@ -64,7 +64,7 @@ type NewOpts struct {
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
 	b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
-		URI: opts.Dir,
+		URI: opts.URI,
 		L:   opts.L,
 	})
 	if err != nil {

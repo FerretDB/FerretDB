@@ -160,7 +160,7 @@ func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) strin
 
 		PostgreSQLURL: *postgreSQLURLF,
 
-		SQLiteURI: sqliteURI.String(),
+		SQLiteURL: sqliteURL.String(),
 
 		TigrisURL: nextTigrisUrl(),
 

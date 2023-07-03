@@ -25,7 +25,7 @@ func init() {
 		opts.Logger.Warn("SQLite handler is in alpha. It is not supported yet.")
 
 		handlerOpts := &sqlite.NewOpts{
-			Dir: opts.SQLiteURI,
+			URI: opts.SQLiteURL,
 
 			L:             opts.Logger.Named("sqlite"),
 			ConnMetrics:   opts.ConnMetrics,
