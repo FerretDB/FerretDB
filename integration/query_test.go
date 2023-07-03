@@ -389,6 +389,17 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 				Message: "-1123123 value for maxTimeMS is out of range",
 			},
 		},
+		"ExpireMaxTimeMS": {
+			command: bson.D{
+				{"find", collection.Name()},
+				{"maxTimeMS", 1},
+			},
+			err: &mongo.CommandError{
+				Code:    50,
+				Name:    "MaxTimeMSExpired",
+				Message: "operation exceeded time limit",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -1510,21 +1521,19 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
-		commandMaxTimeMS  any           // optional, nil to leave commandMaxTimeMS unset
-		getMoreMaxTimeMS  any           // optional, nil to leave getMoreMaxTimeMS unset
-		sleepAfterCursor  time.Duration // optional
-		sleepAfterGetMore time.Duration // optional
+		commandMaxTimeMS any // optional, nil to leave commandMaxTimeMS unset
+		getMoreMaxTimeMS any // optional, nil to leave getMoreMaxTimeMS unset
 
 		err        *mongo.CommandError // optional, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
-		"ExpireCommandMaxTimeMS": {
-			commandMaxTimeMS: 1,
+		"ExpireMaxTimeMS": {
+			getMoreMaxTimeMS: 1,
 			err: &mongo.CommandError{
-				Code:    50,
-				Name:    "MaxTimeMSExpired",
-				Message: "operation exceeded time limit",
+				Code:    43,
+				Name:    "CursorNotFound",
+				Message: "cursor id 0 not found",
 			},
 		},
 	} {
@@ -1571,12 +1580,6 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 				findRest...,
 			)
 
-			select {
-			case <-ctx.Done():
-				require.Error(t, ctx.Err())
-			case <-time.After(tc.sleepAfterCursor):
-			}
-
 			commands := map[string]bson.D{
 				"Find":      findCommand,
 				"Aggregate": aggregateCommand,
@@ -1587,12 +1590,6 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 				t.Run(name, func(t *testing.T) {
 					var res bson.D
 					err := collection.Database().RunCommand(ctx, command).Decode(&res)
-					if tc.err != nil {
-						AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-
-						return
-					}
-
 					require.NoError(t, err)
 
 					doc := ConvertDocument(t, res)
@@ -1640,12 +1637,6 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 
 						cursorID, _ = cursor.Get("id")
 						assert.NotNil(t, cursorID)
-
-						select {
-						case <-ctx.Done():
-							require.Error(t, ctx.Err())
-						case <-time.After(tc.sleepAfterCursor):
-						}
 					}
 				})
 			}

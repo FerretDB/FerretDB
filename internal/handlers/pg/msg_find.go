@@ -130,6 +130,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		closer.Close()
 
 		if ctx.Err() != nil {
+			// TODO: check for cancelled context error
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrMaxTimeMSExpired,
 				"operation exceeded time limit",

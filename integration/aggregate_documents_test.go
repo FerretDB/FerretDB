@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -658,6 +659,159 @@ func TestAggregateUnsetErrors(t *testing.T) {
 
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestAggregateCommandMaxTimeMS(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		command bson.D // required, command to run
+
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"Double": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", 4.5},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS has non-integral value",
+			},
+		},
+		"NegativeDouble": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", -14245345234123245.55},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-14245345234123246'",
+			},
+		},
+		"String": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", "string"},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'aggregate.maxTimeMS' is the wrong type 'string', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'aggregate.maxTimeMS' is the wrong type 'string', expected types '[long, int, decimal, double]'",
+		},
+		"MaxLong": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", math.MaxInt64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "9223372036854775807 value for maxTimeMS is out of range",
+			},
+		},
+		"Null": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", nil},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS must be a number",
+			},
+		},
+		"Array": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", bson.A{int32(42), "foo", nil}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'aggregate.maxTimeMS' is the wrong type 'array', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'aggregate.maxTimeMS' is the wrong type 'array', expected types '[long, int, decimal, double]'",
+		},
+		"Document": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", bson.D{{"foo", int32(42)}}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'aggregate.maxTimeMS' is the wrong type 'object', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'aggregate.maxTimeMS' is the wrong type 'object', expected types '[long, int, decimal, double]'",
+		},
+		"NegativeInt32": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", -1123123},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1123123'",
+			},
+		},
+		"Expired": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", 1},
+			},
+			err: &mongo.CommandError{
+				Code:    50,
+				Name:    "MaxTimeMSExpired",
+				Message: "operation exceeded time limit",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&res)
+			if tc.err != nil {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
+				return
+			}
+
+			require.NoError(t, err)
 		})
 	}
 }
