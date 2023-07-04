@@ -629,3 +629,37 @@ func TestDebugError(t *testing.T) {
 		require.NoError(t, db.Client().Ping(ctx, nil), "other errors should not close connection")
 	})
 }
+
+func TestPing(t *testing.T) {
+	// Shouldn't be ran in parallel, as NonExistentDB test requires
+	// the current state of database list, which can be changed by other tests.
+
+	ctx, collection := setup.Setup(t)
+	db := collection.Database()
+
+	t.Run("Multiple", func(t *testing.T) {
+		for i := 0; i < 5; i++ {
+			err := db.RunCommand(ctx, bson.D{{"ping", int32(1)}}).Err()
+			assert.NoError(t, err)
+		}
+	})
+
+	t.Run("NonExistentDB", func(t *testing.T) {
+		expectedDatabases, err := db.Client().ListDatabases(ctx, bson.D{})
+		require.NoError(t, err)
+
+		dbName := "NonExistentDatabase"
+		for _, database := range expectedDatabases.Databases {
+			require.NotEqual(t, dbName, database.Name)
+		}
+
+		err = db.Client().Database(dbName).RunCommand(ctx, bson.D{{"ping", int32(1)}}).Err()
+		require.NoError(t, err)
+
+		// Ensure that we don't create database on ping
+		actualDatabases, err := db.Client().ListDatabases(ctx, bson.D{})
+		require.NoError(t, err)
+
+		assert.EqualValues(t, expectedDatabases, actualDatabases)
+	})
+}
