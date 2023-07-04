@@ -17,6 +17,7 @@ package integration
 import (
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
@@ -840,6 +841,140 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 
 						cursorID, _ = cursor.Get("id")
 						assert.NotNil(t, cursorID)
+					}
+				})
+			}
+		})
+	}
+}
+
+func TestGetMoreMaxTimeMSCursor(t *testing.T) {
+	t.Parallel()
+
+	// options are applied to create a client that uses single connection pool
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		ExtraOptions: url.Values{
+			"minPoolSize":   []string{"1"},
+			"maxPoolSize":   []string{"1"},
+			"maxIdleTimeMS": []string{"0"},
+		},
+	})
+
+	ctx, collection := s.Ctx, s.Collection
+
+	// generate enough documents and use batchSize which makes query slower than maxTimeMS
+	arr, _ := generateDocuments(0, 200)
+	batchSize := int32(2)
+
+	_, err := collection.InsertMany(ctx, arr)
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		cursorMaxTimeMS  time.Duration // optional, defaults to zero
+		getMoreMaxTimeMS any           // optional, nil to leave getMoreMaxTimeMS unset
+		cursorSleep      time.Duration // optional, defaults to no sleep
+		getMoreSleep     time.Duration // optional, defaults to no sleep
+
+		cursorErr  *mongo.CommandError // optional, expected find()/aggregate() error from MongoDB
+		getMoreErr *mongo.CommandError // optional, expected getMore error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"CursorExpire": {
+			cursorMaxTimeMS: 1,
+			cursorSleep:     10 * time.Millisecond,
+			getMoreErr: &mongo.CommandError{
+				Code:    43,
+				Name:    "CursorNotFound",
+				Message: "cursor id 0 not found",
+			},
+		},
+		"GetMoreExpire": {
+			getMoreMaxTimeMS: 1,
+			getMoreSleep:     10 * time.Millisecond,
+			getMoreErr: &mongo.CommandError{
+				Code:    43,
+				Name:    "CursorNotFound",
+				Message: "cursor id 0 not found",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			// Do not run subtests in t.Parallel() to eliminate the occurrence
+			// of session error.
+			// Supporting session would help us understand fix it
+			// https://github.com/FerretDB/FerretDB/issues/153.
+			//
+			// > Location50738
+			// > Cannot run getMore on cursor 2053655655200551971,
+			// > which was created in session 2926eea5-9775-41a3-a563-096969f1c7d5 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  - ,
+			// > in session 774d9ac6-b24a-4fd8-9874-f92ab1c9c8f5 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  -
+
+			findFunc := func(maxTimeMS time.Duration) (*mongo.Cursor, error) {
+				return collection.Find(ctx, bson.D{}, options.Find().SetBatchSize(batchSize).SetMaxTime(maxTimeMS))
+			}
+
+			aggregateFunc := func(maxTimeMS time.Duration) (*mongo.Cursor, error) {
+				return collection.Aggregate(ctx, bson.D{}, options.Aggregate().SetBatchSize(batchSize).SetMaxTime(maxTimeMS))
+			}
+
+			cursorFuncs := map[string]func(maxTimeMS time.Duration) (*mongo.Cursor, error){
+				"Find":      findFunc,
+				"Aggregate": aggregateFunc,
+			}
+
+			for name, f := range cursorFuncs {
+				name, f := name, f
+				t.Run(name, func(t *testing.T) {
+					cursor, err := f(tc.cursorMaxTimeMS)
+					require.NoError(t, err)
+
+					defer cursor.Close(ctx)
+
+					require.EqualValues(t, batchSize, cursor.RemainingBatchLength())
+
+					for i := batchSize; i > 0; i-- {
+						select {
+						case <-time.After(tc.cursorSleep):
+						}
+
+						ok := cursor.Next(ctx)
+						if !ok {
+							break
+						}
+
+						require.EqualValues(t, i-1, cursor.RemainingBatchLength())
+					}
+
+					err = cursor.Err()
+					if tc.cursorErr != nil {
+						AssertEqualAltCommandError(t, *tc.cursorErr, tc.altMessage, err)
+						return
+					}
+
+					// implicitly calls getMore to fetch next batch
+					for i := batchSize; i > 0; i-- {
+						ok := cursor.Next(ctx)
+						if !ok {
+							break
+						}
+
+						select {
+						case <-time.After(tc.getMoreSleep):
+						}
+
+						require.EqualValues(t, i-1, cursor.RemainingBatchLength())
+					}
+
+					err = cursor.Err()
+					if tc.getMoreErr != nil {
+						AssertEqualAltCommandError(t, *tc.getMoreErr, tc.altMessage, err)
+						return
 					}
 				})
 			}

@@ -669,7 +669,7 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
 		command bson.D // required, command to run
 
-		err        *mongo.CommandError // optional, expected error from MongoDB
+		err        *mongo.CommandError // required, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
@@ -843,6 +843,8 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 			}
 
 			t.Parallel()
+
+			require.NotNil(t, tc.err, "err must not be nil")
 
 			var res bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&res)

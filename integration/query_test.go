@@ -388,7 +388,7 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 		"ExpireMaxTimeMS": {
 			command: bson.D{
 				{"find", collection.Name()},
-				{"maxTimeMS", 1},
+				{"maxTimeMS", 1}, // set to the smallest 1ms to expire the command
 			},
 			err: &mongo.CommandError{
 				Code:    50,
