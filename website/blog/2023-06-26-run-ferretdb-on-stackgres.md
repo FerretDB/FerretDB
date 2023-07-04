@@ -1,13 +1,22 @@
 ---
-slug: run-ferretdb-top-stackgres
-title: 'How to run FerretDB on top of StackGres'
-authors: [alex]
-image: /img/blog/document-databases.jpg
+slug: run-ferretdb-on-stackgres
+title: 'How to Run FerretDB on Top of StackGres'
+authors:
+  - alex
+  - name: Álvaro Hernández
+    title: Founder and CEO @ StackGres
+    url: https://www.linkedin.com/in/alvarohernandeztortosa/
+    image_url: https://stackgres.io/img/team/alvaro.jpg
+image: /img/blog/stackgres-ferretdb.png
 description: >
   Learn to set up and run FerretDB – MongoDB open-source alternative on your Kubernetes cluster – and easily deploy and manage PostgreSQL instances using StackgGres operator.
 ---
 
+![How to Run FerretDB on Top of StackGres](/img/blog/stackgres-ferretdb.png)
+
 In this how-to guide, we'll walk you through the whole process of setting up [FerretDB](https://www.ferretdb.io/) on a Kubernetes cluster using [StackGres](https://stackgres.io/).
+
+<!--truncate-->
 
 As an open-source MongoDB alternative, FerretDB translates MongoDB wire protocols to SQL using a [PostgreSQL](https://www.postgresql.org/) backend.
 And by using the StackGres operator, you can easily deploy and manage PostgreSQL instances, as well as access all the management features you need.
@@ -43,8 +52,10 @@ Another significant advantage of FerretDB is that you get to use the same syntax
 Besides, you can also query it with SQL in PostgreSQL (in some cases, you may also need intricate knowledge of JSONB for more advanced queries).
 
 At present, FerretDB is compatible with the most common MongoDB use cases and plans on improving and adding more features as needs arise.
-Plus, we've just recently released [FerretDB version 1.2.0](https://blog.ferretdb.io/ferretdb-v-1-2-0-minor-release/), which includes a couple of enhancements and bug fixes.
-Setting up FerretDB on top of StackGres
+Plus, we've just recently released [FerretDB version 1.5.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.5.0), which includes beta support for SQLite backend.
+
+## Setting up FerretDB on top of StackGres
+
 Before installing StackGres, you will need a running Kubernetes cluster and the usual command line tools [`kubectl`](https://kubernetes.io/docs/tasks/tools/) and
 
 [`Helm`](https://helm.sh/docs/intro/install/).
@@ -113,7 +124,7 @@ kubectl get pods -n stackgres -l group=stackgres.io
 
 As you run the first `kubectl` command, it should wait for the successful deployment, and the second command will list the pods running in the `stackgres` namespace.
 
-```sh
+```text
 NAME                                 READY   STATUS    RESTARTS   AGE
 stackgres-operator-c4c6b4bcd-trsgp   1/1     Running   0          4m50s
 stackgres-restapi-6986cc8997-lfwql   2/2     Running   0          4m49s
@@ -238,7 +249,7 @@ kubectl apply -f 05-sgcluster.yaml
 
 It should take a few seconds to a few minutes for the cluster to be up and running:
 
-```sh
+```text
 kubectl -n ferretdb get pods
 NAME                           READY   STATUS    RESTARTS   AGE
 postgres-0                     6/6     Running   0          16m
@@ -246,7 +257,7 @@ postgres-0                     6/6     Running   0          16m
 
 Likewise, a database named `ferretdb` must exist and be owned by the same user:
 
-```sh
+```text
 kubectl -n ferretdb exec -it postgres-0 -c postgres-util -- psql -l ferretdb
                                                  List of databases
    Name    |  Owner   | Encoding |   Collate   |    Ctype    | ICU Locale | Locale Provider |   Access privileges
@@ -333,7 +344,7 @@ kubectl -n ferretdb get secret createuser --template '{{ printf "%s\n" (.data.sq
 
 and `${FERRETDB_SVC}` is the address and port exposed by the FerretDB `Service` (`10.43.94.52:27017` in the example below):
 
-```sh
+```text
 kubectl -n ferretdb get svc ferretdb
 NAME       TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)     AGE
 ferretdb   ClusterIP   10.43.94.52   <none>        27017/TCP   10m
@@ -343,7 +354,7 @@ ferretdb   ClusterIP   10.43.94.52   <none>        27017/TCP   10m
 
 Once the mongosh command is executed, you can try inserting and querying data:
 
-```js
+```text
 ferretdb> db.test.insertOne({a:1})
 {
   acknowledged: true,
@@ -355,7 +366,7 @@ ferretdb> db.test.find()
 
 If you are curious, you can see how data was materialized on the Postgres database:
 
-```sh
+```text
 kubectl -n ferretdb exec -it postgres-0 -c postgres-util -- psql ferretdb
 psql (15.1 (OnGres 15.1-build-6.18))
 Type "help" for help.
@@ -385,8 +396,7 @@ To test and run our entire setup locally, we can use port forwarding with `kubec
 kubectl port-forward svc/ferretdb 27017:27017 -n ferretdb
 ```
 
-In a new terminal, run this command to be sure your connection is working.
-Note that this requires that you have mongosh installed.
+In a new terminal, run this command to be sure your connection is working (note that this requires that you have mongosh installed.)
 
 ```sh
 mongosh 'mongodb://ferretdb:${PASSWORD}@localhost:27017/ferretdb?authMechanism=PLAIN'
@@ -444,7 +454,7 @@ Meteor.startup(async () => {
 })
 ```
 
-Once installed, you can run it locally by connecting the MongoDB URL with Meteor, which then sets the environment variable for the MongoDB connection string.
+Once installed, you can run it locally by connecting our MongoDB URI with Meteor, which then sets the environment variable for the MongoDB connection string.
 This way, Meteor will use an external MongoDB database instead of starting its own.
 
 ```sh
@@ -453,7 +463,7 @@ MONGO_URL='mongodb://username:password@localhost:27017/mydatabase' meteor
 
 You can check out these documents in the Postgres database.
 
-```sh
+```text
 ferretdb-# \dt
                      List of relations
   Schema  |            Name             | Type  |  Owner
@@ -483,8 +493,7 @@ If you're eager to try FerretDB and experience its capabilities firsthand, we en
 
 Here's the [Stackgres runbook](https://stackgres.io/doc/latest/runbooks/ferretdb-stackgres/) and [FerretDB installation guide](https://docs.ferretdb.io/quickstart-guide/) to get you started.
 
-If you encounter any issue or just wish to say "Hi!
-" and tell us how FerretDB works on StackGres, you may drop a line at the:
+If you encounter any issue or just wish to say "Hi!" and tell us how FerretDB works on StackGres, you may drop a line at the:
 
 [FerretDB Community channels](https://docs.ferretdb.io/#community)
 [StackGres Community Slack](https://slack.stackgres.io)
