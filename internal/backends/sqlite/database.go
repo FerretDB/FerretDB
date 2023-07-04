@@ -95,7 +95,7 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 	return nil
 }
 
-// CreateCollection implements backends.Database interface.
+// Ping implements backends.Database interface.
 func (db *database) Ping(ctx context.Context) error {
 	sqlDB := db.r.DatabaseGetExisting(ctx, db.name)
 
