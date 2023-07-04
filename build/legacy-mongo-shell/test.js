@@ -1,4 +1,3 @@
-/* eslint-disable require-jsdoc */
 // Please do not merge changes in this file.
 
 (function() {
