@@ -446,13 +446,13 @@ func TestUpdateCompat(t *testing.T) {
 		"ReplaceNonExistentUpsert": {
 			filter:      bson.D{{"non-existent", "no-match"}},
 			replace:     bson.D{{"_id", "new"}},
-			replaceOpts: &options.ReplaceOptions{Upsert: pointer.ToBool(true)},
+			replaceOpts: options.Replace().SetUpsert(true),
 			resultType:  emptyResult,
 		},
 		"UpdateNonExistentUpsert": {
 			filter:     bson.D{{"_id", "non-existent"}},
 			update:     bson.D{{"$set", bson.D{{"v", int32(42)}}}},
-			updateOpts: &options.UpdateOptions{Upsert: pointer.ToBool(true)},
+			updateOpts: options.Update().SetUpsert(true),
 			resultType: emptyResult,
 		},
 	}
