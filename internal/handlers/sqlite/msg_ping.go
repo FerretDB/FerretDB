@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -28,6 +29,10 @@ func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	db := h.b.Database("")
 	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(

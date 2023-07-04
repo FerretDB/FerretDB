@@ -95,6 +95,14 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 	return nil
 }
 
+// CreateCollection implements backends.Database interface.
+func (db *database) Ping(ctx context.Context) error {
+	sqlDB := db.r.DatabaseGetExisting(ctx, db.name)
+	defer sqlDB.Close()
+
+	return sqlDB.Ping()
+}
+
 // check interfaces
 var (
 	_ backends.Database = (*database)(nil)

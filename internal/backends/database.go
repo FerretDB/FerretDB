@@ -36,7 +36,7 @@ type Database interface {
 	Close()
 
 	Collection(string) Collection
-	Ping() error
+	Ping(ctx context.Context) error
 	ListCollections(context.Context, *ListCollectionsParams) (*ListCollectionsResult, error)
 	CreateCollection(context.Context, *CreateCollectionParams) error
 	DropCollection(context.Context, *DropCollectionParams) error
@@ -133,6 +133,14 @@ func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCol
 	defer observability.FuncCall(ctx)()
 	defer checkError(err, ErrorCodeCollectionDoesNotExist) // TODO: ErrorCodeDatabaseDoesNotExist ?
 	err = dbc.db.DropCollection(ctx, params)
+
+	return
+}
+
+func (dbc *databaseContract) Ping(ctx context.Context) (err error) {
+	defer observability.FuncCall(ctx)()
+	defer checkError(err)
+	err = dbc.db.Ping(ctx)
 
 	return
 }
