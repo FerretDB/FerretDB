@@ -93,7 +93,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		v = int64(0)
 	}
 
-	// cannot use existing commonparams function that returns error,
+	// cannot use other existing commonparams function, they return different error codes
 	maxTimeMS, err := commonparams.GetWholeNumberParam(v)
 	if err != nil {
 		switch {

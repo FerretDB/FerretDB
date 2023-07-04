@@ -827,7 +827,7 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 				{"aggregate", collection.Name()},
 				{"pipeline", bson.A{}},
 				{"cursor", bson.D{}},
-				{"maxTimeMS", 1},
+				{"maxTimeMS", 1}, // set to the smallest 1ms to expire the command
 			},
 			err: &mongo.CommandError{
 				Code:    50,
