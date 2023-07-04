@@ -17,6 +17,7 @@ package sqlite
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -27,7 +28,23 @@ import (
 func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 
-	db := h.b.Database("")
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	dbName, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
+		return nil, err
+	}
+
+	for _, c := range h.cursors.All() {
+		if c.DB == dbName {
+			c.Close()
+		}
+	}
+
+	db := h.b.Database(dbName)
 	defer db.Close()
 
 	if err := db.Ping(ctx); err != nil {
