@@ -25,6 +25,10 @@ import (
 // MsgPing implements HandlerInterface.
 func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
+
+	db := h.b.Database("")
+	defer db.Close()
+
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"ok", float64(1),

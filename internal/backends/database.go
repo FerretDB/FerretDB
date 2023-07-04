@@ -36,6 +36,7 @@ type Database interface {
 	Close()
 
 	Collection(string) Collection
+	Ping() error
 	ListCollections(context.Context, *ListCollectionsParams) (*ListCollectionsResult, error)
 	CreateCollection(context.Context, *CreateCollectionParams) error
 	DropCollection(context.Context, *DropCollectionParams) error
