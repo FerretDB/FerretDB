@@ -662,7 +662,7 @@ func TestAggregateUnsetErrors(t *testing.T) {
 	}
 }
 
-func TestAggregateCommandMaxTimeMS(t *testing.T) {
+func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -678,7 +678,7 @@ func TestAggregateCommandMaxTimeMS(t *testing.T) {
 				{"aggregate", collection.Name()},
 				{"pipeline", bson.A{}},
 				{"cursor", bson.D{}},
-				{"maxTimeMS", 4.5},
+				{"maxTimeMS", 1000.5},
 			},
 			err: &mongo.CommandError{
 				Code:    2,
@@ -698,6 +698,35 @@ func TestAggregateCommandMaxTimeMS(t *testing.T) {
 				Name:    "Location51024",
 				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-14245345234123246'",
 			},
+			altMessage: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1.424534523412325e+16'",
+		},
+		"BigDouble": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", math.MaxFloat64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "9223372036854775807 value for maxTimeMS is out of range",
+			},
+			altMessage: "1.797693134862316e+308 value for maxTimeMS is out of range",
+		},
+		"BigNegativeDouble": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", -math.MaxFloat64},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-9223372036854775808'",
+			},
+			altMessage: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1.797693134862316e+308'",
 		},
 		"String": {
 			command: bson.D{
@@ -724,6 +753,19 @@ func TestAggregateCommandMaxTimeMS(t *testing.T) {
 				Code:    2,
 				Name:    "BadValue",
 				Message: "9223372036854775807 value for maxTimeMS is out of range",
+			},
+		},
+		"MaxInt": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", math.MaxInt32 + 1},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "2147483648 value for maxTimeMS is out of range",
 			},
 		},
 		"Null": {
@@ -780,7 +822,7 @@ func TestAggregateCommandMaxTimeMS(t *testing.T) {
 				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1123123'",
 			},
 		},
-		"Expired": {
+		"1MSExpired": {
 			command: bson.D{
 				{"aggregate", collection.Name()},
 				{"pipeline", bson.A{}},
@@ -804,13 +846,8 @@ func TestAggregateCommandMaxTimeMS(t *testing.T) {
 
 			var res bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&res)
-			if tc.err != nil {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-
-				return
-			}
-
-			require.NoError(t, err)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			require.Nil(t, res)
 		})
 	}
 }
