@@ -27,6 +27,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -704,7 +705,9 @@ func TestGetMoreCommandConnection(t *testing.T) {
 }
 
 func TestGetMoreCommandMaxTimeMS(t *testing.T) {
-	t.Parallel()
+	setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/1808")
+
+	// do not run tests in parallel to for server execution time to use maximum possible maxTimeMS
 
 	// options are applied to create a client that uses single connection pool
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
@@ -713,267 +716,157 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 			"maxPoolSize":   []string{"1"},
 			"maxIdleTimeMS": []string{"0"},
 		},
+		Providers: []shareddata.Provider{shareddata.Composites},
 	})
 
 	ctx, collection := s.Ctx, s.Collection
 
-	// generate enough documents and use batchSize which makes query slower than maxTimeMS
-	arr, _ := generateDocuments(0, 200)
-	batchSize := 50
+	arr, _ := generateDocuments(0, 2000)
 
 	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
-	for name, tc := range map[string]struct { //nolint:vet // used for testing only
-		commandMaxTimeMS any // optional, nil to leave commandMaxTimeMS unset
-		getMoreMaxTimeMS any // optional, nil to leave getMoreMaxTimeMS unset
+	t.Run("FindCursorExpire", func(t *testing.T) {
+		opts := options.Find().
+			// set batchSize big enough to hit maxTimeMS
+			SetBatchSize(2000).
+			// set maxTimeMS small enough for server to expire
+			SetMaxTime(1).
+			// set sort to slow down the query more than 1ms
+			SetSort(bson.D{{"v", 1}})
+		_, err := collection.Find(ctx, bson.D{}, opts)
 
-		err        *mongo.CommandError // optional, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
-	}{
-		"ExpireMaxTimeMS": {
-			getMoreMaxTimeMS: 1,
-			err: &mongo.CommandError{
-				Code:    43,
-				Name:    "CursorNotFound",
-				Message: "cursor id 0 not found",
-			},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
-			// Do not run subtests in t.Parallel() to eliminate the occurrence
-			// of session error.
-			// Supporting session would help us understand fix it
-			// https://github.com/FerretDB/FerretDB/issues/153.
-			//
-			// > Location50738
-			// > Cannot run getMore on cursor 2053655655200551971,
-			// > which was created in session 2926eea5-9775-41a3-a563-096969f1c7d5 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  - ,
-			// > in session 774d9ac6-b24a-4fd8-9874-f92ab1c9c8f5 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  -
-
-			var findRest, aggregateRest bson.D
-
-			if tc.commandMaxTimeMS != nil {
-				findRest = append(findRest, bson.E{Key: "maxTimeMS", Value: tc.commandMaxTimeMS})
-				aggregateRest = append(aggregateRest, bson.E{Key: "maxTimeMS", Value: tc.commandMaxTimeMS})
-			}
-
-			aggregateCommand := append(
-				bson.D{
-					{"aggregate", collection.Name()},
-					// use pipeline which at least takes 1ms, so maxTimeMS with 1ms returns error
-					{"pipeline", bson.A{bson.D{{"$match", bson.D{{"v.foo", -1}}}}}},
-					{"cursor", bson.D{{"batchSize", 2}}},
-				},
-				aggregateRest...,
-			)
-
-			findCommand := append(
-				bson.D{
-					{"find", collection.Name()},
-					// use filter which at least takes 1ms, so maxTimeMS with 1ms returns error
-					{"filter", bson.D{{"v.foo", 1}}},
-					{"batchSize", batchSize},
-				},
-				findRest...,
-			)
-
-			commands := map[string]bson.D{
-				"Find":      findCommand,
-				"Aggregate": aggregateCommand,
-			}
-
-			for name, command := range commands {
-				name, command := name, command
-				t.Run(name, func(t *testing.T) {
-					var res bson.D
-					err := collection.Database().RunCommand(ctx, command).Decode(&res)
-					require.NoError(t, err)
-
-					doc := ConvertDocument(t, res)
-
-					v, _ := doc.Get("cursor")
-					require.NotNil(t, v)
-
-					cursor, ok := v.(*types.Document)
-					require.True(t, ok)
-
-					cursorID, _ := cursor.Get("id")
-					assert.NotNil(t, cursorID)
-
-					var getMoreRest bson.D
-					if tc.getMoreMaxTimeMS != nil {
-						getMoreRest = append(getMoreRest, bson.E{Key: "maxTimeMS", Value: tc.getMoreMaxTimeMS})
-					}
-
-					for i := 0; i < len(arr)/batchSize; i++ {
-						getMoreCommand := append(
-							bson.D{
-								{"getMore", cursorID},
-								{"collection", collection.Name()},
-								{"batchSize", batchSize},
-							},
-							getMoreRest...,
-						)
-
-						err = collection.Database().RunCommand(ctx, getMoreCommand).Decode(&res)
-						if tc.err != nil {
-							AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-
-							return
-						}
-
-						require.NoError(t, err)
-
-						doc = ConvertDocument(t, res)
-
-						v, _ = doc.Get("cursor")
-						require.NotNil(t, v)
-
-						cursor, ok = v.(*types.Document)
-						require.True(t, ok)
-
-						cursorID, _ = cursor.Get("id")
-						assert.NotNil(t, cursorID)
-					}
-				})
-			}
-		})
-	}
-}
-
-func TestGetMoreMaxTimeMSCursor(t *testing.T) {
-	t.Parallel()
-
-	// options are applied to create a client that uses single connection pool
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		ExtraOptions: url.Values{
-			"minPoolSize":   []string{"1"},
-			"maxPoolSize":   []string{"1"},
-			"maxIdleTimeMS": []string{"0"},
-		},
-	})
-
-	ctx, collection := s.Ctx, s.Collection
-
-	// generate enough documents and use batchSize which makes query slower than maxTimeMS
-	arr, _ := generateDocuments(0, 200)
-	batchSize := int32(2)
-
-	_, err := collection.InsertMany(ctx, arr)
-	require.NoError(t, err)
-
-	for name, tc := range map[string]struct { //nolint:vet // used for testing only
-		cursorMaxTimeMS  time.Duration // optional, defaults to zero
-		getMoreMaxTimeMS any           // optional, nil to leave getMoreMaxTimeMS unset
-		cursorSleep      time.Duration // optional, defaults to no sleep
-		getMoreSleep     time.Duration // optional, defaults to no sleep
-
-		cursorErr  *mongo.CommandError // optional, expected find()/aggregate() error from MongoDB
-		getMoreErr *mongo.CommandError // optional, expected getMore error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
-	}{
-		"CursorExpire": {
-			cursorMaxTimeMS: 1,
-			cursorSleep:     1000 * time.Millisecond,
-			getMoreErr: &mongo.CommandError{
+		// MongoDB returns Message or altMessage
+		AssertEqualAltCommandError(
+			t,
+			mongo.CommandError{
 				Code:    50,
 				Name:    "MaxTimeMSExpired",
-				Message: "operation exceeded time limit",
+				Message: "Executor error during find command :: caused by :: operation exceeded time limit",
 			},
-		},
-		"GetMoreExpire": {
-			getMoreMaxTimeMS: 1,
-			getMoreSleep:     1000 * time.Millisecond,
-			getMoreErr: &mongo.CommandError{
-				Code:    43,
-				Name:    "CursorNotFound",
-				Message: "cursor id 0 not found",
+			"operation exceeded time limit",
+			err,
+		)
+	})
+
+	t.Run("FindDoesNotMaxTimeMSToPropagateGetMore", func(t *testing.T) {
+		opts := options.Find().
+			// set batchSize to 0 so server returns zero document in the firstBatch
+			SetBatchSize(0).
+			// maxTimeMS is 1 but it won't expire since zero document requested
+			SetMaxTime(1)
+		cursor, err := collection.Find(ctx, bson.D{}, opts)
+		require.NoError(t, err)
+
+		// getMore does not use maxTimeMS set on find
+		ok := cursor.Next(ctx)
+		assert.True(t, ok)
+
+		err = cursor.Err()
+		require.NoError(t, err)
+	})
+
+	t.Run("FindGetMoreExpire", func(t *testing.T) {
+		opts := options.Find().
+			// set batchSize to 0 so server returns zero document in the firstBatch
+			SetBatchSize(0).
+			// maxTimeMS is big enough that it won't expire
+			SetMaxTime(100 * time.Millisecond)
+		cursor, err := collection.Find(ctx, bson.D{}, opts)
+		require.NoError(t, err)
+
+		// getMore does not use maxTimeMS set on find
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"getMore", cursor.ID()},
+			{"collection", collection.Name()},
+			{"batchSize", 2000},
+			{"maxTimeMS", 1},
+		}).Decode(&res)
+
+		// MongoDB returns Message or altMessage
+		AssertEqualAltCommandError(
+			t,
+			mongo.CommandError{
+				Code:    50,
+				Name:    "MaxTimeMSExpired",
+				Message: "Executor error during find command :: caused by :: operation exceeded time limit",
 			},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
+			"operation exceeded time limit",
+			err,
+		)
+	})
 
-			// Do not run subtests in t.Parallel() to eliminate the occurrence
-			// of session error.
-			// Supporting session would help us understand fix it
-			// https://github.com/FerretDB/FerretDB/issues/153.
-			//
-			// > Location50738
-			// > Cannot run getMore on cursor 2053655655200551971,
-			// > which was created in session 2926eea5-9775-41a3-a563-096969f1c7d5 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  - ,
-			// > in session 774d9ac6-b24a-4fd8-9874-f92ab1c9c8f5 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  -
+	t.Run("AggregateCursorExpire", func(t *testing.T) {
+		opts := options.Aggregate().
+			// set batchSize big enough to hit maxTimeMS
+			SetBatchSize(2000).
+			// set maxTimeMS small enough for server to expire
+			SetMaxTime(1)
 
-			findFunc := func(maxTimeMS time.Duration) (*mongo.Cursor, error) {
-				return collection.Find(ctx, bson.D{}, options.Find().SetBatchSize(batchSize).SetMaxTime(maxTimeMS))
-			}
+		// use $sort stage to slow down the query more than 1ms
+		_, err := collection.Aggregate(ctx, bson.A{bson.D{{"$sort", bson.D{{"v", 1}}}}}, opts)
 
-			aggregateFunc := func(maxTimeMS time.Duration) (*mongo.Cursor, error) {
-				return collection.Aggregate(ctx, bson.D{}, options.Aggregate().SetBatchSize(batchSize).SetMaxTime(maxTimeMS))
-			}
+		// MongoDB returns Message or altMessage
+		AssertEqualAltCommandError(
+			t,
+			mongo.CommandError{
+				Code:    50,
+				Name:    "MaxTimeMSExpired",
+				Message: "Executor error during find command :: caused by :: operation exceeded time limit",
+			},
+			"operation exceeded time limit",
+			err,
+		)
+	})
 
-			cursorFuncs := map[string]func(maxTimeMS time.Duration) (*mongo.Cursor, error){
-				"Find":      findFunc,
-				"Aggregate": aggregateFunc,
-			}
+	t.Run("AggregateDoesNotMaxTimeMSToPropagateGetMore", func(t *testing.T) {
+		opts := options.Aggregate().
+			// set batchSize to 0 so server returns zero document in the firstBatch
+			SetBatchSize(0).
+			// maxTimeMS is 1 but it won't expire since zero document requested
+			SetMaxTime(1)
 
-			for name, f := range cursorFuncs {
-				name, f := name, f
-				t.Run(name, func(t *testing.T) {
-					cursor, err := f(tc.cursorMaxTimeMS)
-					require.NoError(t, err)
+		cursor, err := collection.Aggregate(ctx, bson.A{}, opts)
+		require.NoError(t, err)
 
-					defer cursor.Close(ctx)
+		// getMore does not use maxTimeMS set on aggregate
+		ok := cursor.Next(ctx)
+		assert.True(t, ok)
 
-					require.EqualValues(t, batchSize, cursor.RemainingBatchLength())
+		err = cursor.Err()
+		require.NoError(t, err)
+	})
 
-					for i := batchSize; i > 0; i-- {
-						time.Sleep(tc.cursorSleep)
+	t.Run("AggregateGetMoreExpire", func(t *testing.T) {
+		opts := options.Aggregate().
+			// set batchSize to 0 so server returns zero document in the firstBatch
+			SetBatchSize(0).
+			// maxTimeMS is big enough that it won't expire
+			SetMaxTime(100 * time.Millisecond)
 
-						ok := cursor.Next(ctx)
-						if !ok {
-							break
-						}
+		cursor, err := collection.Aggregate(ctx, bson.A{}, opts)
+		require.NoError(t, err)
 
-						require.EqualValues(t, i-1, cursor.RemainingBatchLength())
-					}
+		// getMore does not use maxTimeMS set on find
+		var res bson.D
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"getMore", cursor.ID()},
+			{"collection", collection.Name()},
+			{"batchSize", 2000},
+			{"maxTimeMS", 1},
+		}).Decode(&res)
 
-					err = cursor.Err()
-					if tc.cursorErr != nil {
-						AssertEqualAltCommandError(t, *tc.cursorErr, tc.altMessage, err)
-						return
-					}
-
-					// implicitly calls getMore to fetch next batch
-					for i := batchSize; i > 0; i-- {
-						ok := cursor.Next(ctx)
-						if !ok {
-							break
-						}
-
-						time.Sleep(tc.cursorSleep)
-
-						require.EqualValues(t, i-1, cursor.RemainingBatchLength())
-					}
-
-					err = cursor.Err()
-					if tc.getMoreErr != nil {
-						AssertEqualAltCommandError(t, *tc.getMoreErr, tc.altMessage, err)
-						return
-					}
-				})
-			}
-		})
-	}
+		// MongoDB returns Message or altMessage
+		AssertEqualAltCommandError(
+			t,
+			mongo.CommandError{
+				Code:    50,
+				Name:    "MaxTimeMSExpired",
+				Message: "Executor error during find command :: caused by :: operation exceeded time limit",
+			},
+			"operation exceeded time limit",
+			err,
+		)
+	})
 }
