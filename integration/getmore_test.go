@@ -882,16 +882,16 @@ func TestGetMoreMaxTimeMSCursor(t *testing.T) {
 	}{
 		"CursorExpire": {
 			cursorMaxTimeMS: 1,
-			cursorSleep:     10 * time.Millisecond,
+			cursorSleep:     1000 * time.Millisecond,
 			getMoreErr: &mongo.CommandError{
-				Code:    43,
-				Name:    "CursorNotFound",
-				Message: "cursor id 0 not found",
+				Code:    50,
+				Name:    "MaxTimeMSExpired",
+				Message: "operation exceeded time limit",
 			},
 		},
 		"GetMoreExpire": {
 			getMoreMaxTimeMS: 1,
-			getMoreSleep:     10 * time.Millisecond,
+			getMoreSleep:     1000 * time.Millisecond,
 			getMoreErr: &mongo.CommandError{
 				Code:    43,
 				Name:    "CursorNotFound",
@@ -939,9 +939,7 @@ func TestGetMoreMaxTimeMSCursor(t *testing.T) {
 					require.EqualValues(t, batchSize, cursor.RemainingBatchLength())
 
 					for i := batchSize; i > 0; i-- {
-						select {
-						case <-time.After(tc.cursorSleep):
-						}
+						time.Sleep(tc.cursorSleep)
 
 						ok := cursor.Next(ctx)
 						if !ok {
@@ -964,9 +962,7 @@ func TestGetMoreMaxTimeMSCursor(t *testing.T) {
 							break
 						}
 
-						select {
-						case <-time.After(tc.getMoreSleep):
-						}
+						time.Sleep(tc.cursorSleep)
 
 						require.EqualValues(t, i-1, cursor.RemainingBatchLength())
 					}
