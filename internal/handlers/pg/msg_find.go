@@ -128,7 +128,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	if err != nil {
 		closer.Close()
-
 		return nil, lazyerrors.Error(err)
 	}
 

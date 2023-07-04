@@ -276,8 +276,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	if err != nil {
 		closer.Close()
-
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	closer.Add(iter)
