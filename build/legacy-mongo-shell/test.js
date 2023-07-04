@@ -22,7 +22,7 @@
     assert.commandWorked(coll.insert({i: 'a'}));
     assert.commandWorked(coll.insert({i: 'b'}));
 
-    // double negatives are not handled
+    // double negatives are not allowed
     fail({i: {$not: {$not: 'a'}}});
 
     fail({i: {$not: 'a'}});
