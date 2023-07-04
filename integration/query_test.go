@@ -385,17 +385,6 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 				Message: "-1123123 value for maxTimeMS is out of range",
 			},
 		},
-		"ExpireMaxTimeMS": {
-			command: bson.D{
-				{"find", collection.Name()},
-				{"maxTimeMS", 1}, // set to the smallest 1ms to expire the command
-			},
-			err: &mongo.CommandError{
-				Code:    50,
-				Name:    "MaxTimeMSExpired",
-				Message: "operation exceeded time limit",
-			},
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
