@@ -35,8 +35,9 @@ type Database interface {
 	// TODO remove?
 	Close()
 
-	Collection(string) Collection
 	Ping(ctx context.Context) error
+
+	Collection(string) Collection
 	ListCollections(context.Context, *ListCollectionsParams) (*ListCollectionsResult, error)
 	CreateCollection(context.Context, *CreateCollectionParams) error
 	DropCollection(context.Context, *DropCollectionParams) error

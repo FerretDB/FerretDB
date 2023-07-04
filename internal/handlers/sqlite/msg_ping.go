@@ -38,12 +38,6 @@ func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	for _, c := range h.cursors.All() {
-		if c.DB == dbName {
-			c.Close()
-		}
-	}
-
 	db := h.b.Database(dbName)
 	defer db.Close()
 
