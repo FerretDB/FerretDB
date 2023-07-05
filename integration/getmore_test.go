@@ -17,7 +17,6 @@ package integration
 import (
 	"net/url"
 	"testing"
-	"time"
 
 	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
@@ -721,16 +720,17 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 
 	ctx, collection := s.Ctx, s.Collection
 
-	arr, _ := generateDocuments(0, 2000)
+	// need large amount of documents for time out to trigger
+	arr, _ := generateDocuments(0, 50000)
 
 	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
-	t.Run("FindCursorExpire", func(t *testing.T) {
+	t.Run("FindExpire", func(t *testing.T) {
 		opts := options.Find().
 			// set batchSize big enough to hit maxTimeMS
 			SetBatchSize(2000).
-			// set maxTimeMS small enough for server to expire
+			// set maxTimeMS small enough for find to expire
 			SetMaxTime(1).
 			// set sort to slow down the query more than 1ms
 			SetSort(bson.D{{"v", 1}})
@@ -749,40 +749,22 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 		)
 	})
 
-	t.Run("FindDoesNotMaxTimeMSToPropagateGetMore", func(t *testing.T) {
+	t.Run("FindGetMorePropagateMaxTimeMS", func(t *testing.T) {
 		opts := options.Find().
-			// set batchSize to 0 so server returns zero document in the firstBatch
+			// setting zero on find sets nextBatch on getMore to unlimited
 			SetBatchSize(0).
-			// maxTimeMS is 1 but it won't expire since zero document requested
-			SetMaxTime(1)
+			// maxTimeMS is 1 but it won't expire because of zero BatchSize
+			SetMaxTime(1).
+			// set sort to slow down the getMore more than 1ms
+			SetSort(bson.D{{"v", 1}})
 		cursor, err := collection.Find(ctx, bson.D{}, opts)
 		require.NoError(t, err)
 
-		// getMore does not use maxTimeMS set on find
+		cursor.SetBatchSize(2000)
+
+		// getMore uses maxTimeMS set on find
 		ok := cursor.Next(ctx)
-		assert.True(t, ok)
-
-		err = cursor.Err()
-		require.NoError(t, err)
-	})
-
-	t.Run("FindGetMoreExpire", func(t *testing.T) {
-		opts := options.Find().
-			// set batchSize to 0 so server returns zero document in the firstBatch
-			SetBatchSize(0).
-			// maxTimeMS is big enough that it won't expire
-			SetMaxTime(100 * time.Millisecond)
-		cursor, err := collection.Find(ctx, bson.D{}, opts)
-		require.NoError(t, err)
-
-		// getMore does not use maxTimeMS set on find
-		var res bson.D
-		err = collection.Database().RunCommand(ctx, bson.D{
-			{"getMore", cursor.ID()},
-			{"collection", collection.Name()},
-			{"batchSize", 2000},
-			{"maxTimeMS", 1},
-		}).Decode(&res)
+		assert.False(t, ok)
 
 		// MongoDB returns Message or altMessage
 		AssertEqualAltCommandError(
@@ -790,18 +772,56 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 			mongo.CommandError{
 				Code:    50,
 				Name:    "MaxTimeMSExpired",
-				Message: "Executor error during find command :: caused by :: operation exceeded time limit",
+				Message: "Executor error during getMore :: caused by :: operation exceeded time limit",
 			},
 			"operation exceeded time limit",
+			cursor.Err(),
+		)
+	})
+
+	t.Run("FindGetMoreMaxTimeMS", func(t *testing.T) {
+		var res bson.D
+		err := collection.Database().RunCommand(ctx, bson.D{
+			{"find", collection.Name()},
+			{"batchSize", 0},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		doc := ConvertDocument(t, res)
+
+		v, _ := doc.Get("cursor")
+		require.NotNil(t, v)
+
+		cursor, ok := v.(*types.Document)
+		require.True(t, ok)
+
+		cursorID, _ := cursor.Get("id")
+		assert.NotZero(t, cursorID)
+
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 2000},
+			{"maxTimeMS", 1},
+		}).Decode(&res)
+
+		AssertEqualAltCommandError(
+			t,
+			mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "cannot set maxTimeMS on getMore command for a non-awaitData cursor",
+			},
+			"",
 			err,
 		)
 	})
 
-	t.Run("AggregateCursorExpire", func(t *testing.T) {
+	t.Run("AggregateExpire", func(t *testing.T) {
 		opts := options.Aggregate().
 			// set batchSize big enough to hit maxTimeMS
 			SetBatchSize(2000).
-			// set maxTimeMS small enough for server to expire
+			// set maxTimeMS small enough for aggregate to expire
 			SetMaxTime(1)
 
 		// use $sort stage to slow down the query more than 1ms
@@ -813,49 +833,29 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 			mongo.CommandError{
 				Code:    50,
 				Name:    "MaxTimeMSExpired",
-				Message: "Executor error during find command :: caused by :: operation exceeded time limit",
+				Message: "PlanExecutor error during aggregation :: caused by :: operation exceeded time limit",
 			},
 			"operation exceeded time limit",
 			err,
 		)
 	})
 
-	t.Run("AggregateDoesNotMaxTimeMSToPropagateGetMore", func(t *testing.T) {
+	t.Run("AggregateGetMorePropagateMaxTimeMS", func(t *testing.T) {
 		opts := options.Aggregate().
-			// set batchSize to 0 so server returns zero document in the firstBatch
+			// setting zero on aggregate sets nextBatch on getMore to unlimited
 			SetBatchSize(0).
-			// maxTimeMS is 1 but it won't expire since zero document requested
+			// maxTimeMS is 1 but it won't expire on aggregate because of zero BatchSize
 			SetMaxTime(1)
 
-		cursor, err := collection.Aggregate(ctx, bson.A{}, opts)
+		// use $sort stage to slow down the query more than 1ms
+		cursor, err := collection.Aggregate(ctx, bson.A{bson.D{{"$sort", bson.D{{"v", 1}}}}}, opts)
 		require.NoError(t, err)
 
-		// getMore does not use maxTimeMS set on aggregate
+		cursor.SetBatchSize(2000)
+
+		// getMore uses maxTimeMS set on aggregate
 		ok := cursor.Next(ctx)
-		assert.True(t, ok)
-
-		err = cursor.Err()
-		require.NoError(t, err)
-	})
-
-	t.Run("AggregateGetMoreExpire", func(t *testing.T) {
-		opts := options.Aggregate().
-			// set batchSize to 0 so server returns zero document in the firstBatch
-			SetBatchSize(0).
-			// maxTimeMS is big enough that it won't expire
-			SetMaxTime(100 * time.Millisecond)
-
-		cursor, err := collection.Aggregate(ctx, bson.A{}, opts)
-		require.NoError(t, err)
-
-		// getMore does not use maxTimeMS set on find
-		var res bson.D
-		err = collection.Database().RunCommand(ctx, bson.D{
-			{"getMore", cursor.ID()},
-			{"collection", collection.Name()},
-			{"batchSize", 2000},
-			{"maxTimeMS", 1},
-		}).Decode(&res)
+		assert.False(t, ok)
 
 		// MongoDB returns Message or altMessage
 		AssertEqualAltCommandError(
@@ -863,9 +863,48 @@ func TestGetMoreCommandMaxTimeMS(t *testing.T) {
 			mongo.CommandError{
 				Code:    50,
 				Name:    "MaxTimeMSExpired",
-				Message: "Executor error during find command :: caused by :: operation exceeded time limit",
+				Message: "Executor error during getMore :: caused by :: operation exceeded time limit",
 			},
 			"operation exceeded time limit",
+			cursor.Err(),
+		)
+	})
+
+	t.Run("AggregateGetMoreMaxTimeMS", func(t *testing.T) {
+		var res bson.D
+		err := collection.Database().RunCommand(ctx, bson.D{
+			{"aggregate", collection.Name()},
+			{"pipeline", bson.A{}},
+			{"cursor", bson.D{{"batchSize", 0}}},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		doc := ConvertDocument(t, res)
+
+		v, _ := doc.Get("cursor")
+		require.NotNil(t, v)
+
+		cursor, ok := v.(*types.Document)
+		require.True(t, ok)
+
+		cursorID, _ := cursor.Get("id")
+		assert.NotZero(t, cursorID)
+
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 2000},
+			{"maxTimeMS", 1},
+		}).Decode(&res)
+
+		AssertEqualAltCommandError(
+			t,
+			mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "cannot set maxTimeMS on getMore command for a non-awaitData cursor",
+			},
+			"",
 			err,
 		)
 	})

@@ -822,19 +822,6 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1123123'",
 			},
 		},
-		"1MSExpired": {
-			command: bson.D{
-				{"aggregate", collection.Name()},
-				{"pipeline", bson.A{}},
-				{"cursor", bson.D{}},
-				{"maxTimeMS", 1}, // set to the smallest 1ms to expire the command
-			},
-			err: &mongo.CommandError{
-				Code:    50,
-				Name:    "MaxTimeMSExpired",
-				Message: "operation exceeded time limit",
-			},
-		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
