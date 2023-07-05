@@ -47,7 +47,7 @@ type TB interface {
 
 // XFail return a new TB instance that expects the test to fail.
 //
-// At the end of the test, if it was marked as failed, it will be skipped with a given reason.
+// At the end of the test, if it was marked as failed, it will pass instead.
 // If it passes, it will be failed, so that XFail call can be removed.
 func XFail(t TB, reason string) TB {
 	t.Helper()
@@ -60,10 +60,11 @@ func XFail(t TB, reason string) TB {
 
 	x.t.Cleanup(func() {
 		if x.failed.Load() {
-			x.t.Skipf("Test failed as expected: %s", reason)
+			x.t.Logf("Test failed as expected: %s", reason)
+			return
 		}
 
-		x.t.Fatalf("Test passed unexpectedly. See %s", reason)
+		x.t.Fatalf("Test passed unexpectedly: %s", reason)
 	})
 
 	return x
