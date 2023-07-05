@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync/atomic"
-	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
@@ -32,6 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/state"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // See docker-compose.yml.
@@ -46,7 +46,7 @@ func nextTigrisUrl() string {
 }
 
 // unixSocketPath returns temporary Unix domain socket path for that test.
-func unixSocketPath(tb testing.TB) string {
+func unixSocketPath(tb testutil.TB) string {
 	tb.Helper()
 
 	// do not use tb.TempDir() because generated path is too long on macOS
@@ -63,7 +63,7 @@ func unixSocketPath(tb testing.TB) string {
 }
 
 // listenerMongoDBURI builds MongoDB URI for in-process FerretDB.
-func listenerMongoDBURI(tb testing.TB, hostPort, unixSocketPath string, tlsAndAuth bool) string {
+func listenerMongoDBURI(tb testutil.TB, hostPort, unixSocketPath string, tlsAndAuth bool) string {
 	tb.Helper()
 
 	var host string
@@ -105,7 +105,7 @@ func listenerMongoDBURI(tb testing.TB, hostPort, unixSocketPath string, tlsAndAu
 
 // setupListener starts in-process FerretDB server that runs until ctx is canceled.
 // It returns basic MongoDB URI for that listener.
-func setupListener(tb testing.TB, ctx context.Context, logger *zap.Logger) string {
+func setupListener(tb testutil.TB, ctx context.Context, logger *zap.Logger) string {
 	tb.Helper()
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
