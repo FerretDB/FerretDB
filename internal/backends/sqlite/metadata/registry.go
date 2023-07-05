@@ -184,25 +184,19 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 	// TODO use transactions
 	// https://github.com/FerretDB/FerretDB/issues/2747
 
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
+	pool.InTransaction(ctx, db, func(tx *sql.Tx) error {
+		query := fmt.Sprintf("DELETE FROM %q WHERE name = ?", metadataTableName)
+		if _, err := tx.ExecContext(ctx, query, collectionName); err != nil {
+			return lazyerrors.Error(err)
+		}
 
-	query := fmt.Sprintf("DELETE FROM %q WHERE name = ?", metadataTableName)
-	if _, err := tx.ExecContext(ctx, query, collectionName); err != nil {
-		return false, lazyerrors.Error(err)
-	}
+		query = fmt.Sprintf("DROP TABLE %q", tableName)
+		if _, err := tx.ExecContext(ctx, query); err != nil {
+			return lazyerrors.Error(err)
+		}
 
-	query = fmt.Sprintf("DROP TABLE %q", tableName)
-	if _, err := tx.ExecContext(ctx, query); err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
-	}
+		return nil
+	})
 
 	return true, nil
 }
