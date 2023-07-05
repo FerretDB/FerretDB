@@ -41,10 +41,20 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	}
 
 	resDB := must.NotFail(types.NewDocument(
+		"authenticationMechanisms", must.NotFail(types.NewDocument(
+			"value", must.NotFail(types.NewArray("PLAIN")),
+			"settableAtRuntime", false,
+			"settableAtStartup", true,
+		)),
 		"authSchemaVersion", must.NotFail(types.NewDocument(
 			"value", int32(5),
 			"settableAtRuntime", true,
 			"settableAtStartup", true,
+		)),
+		"featureCompatibilityVersion", must.NotFail(types.NewDocument(
+			"value", must.NotFail(types.NewDocument("version", "6.0")),
+			"settableAtRuntime", false,
+			"settableAtStartup", false,
 		)),
 		"quiet", must.NotFail(types.NewDocument(
 			"value", false,
