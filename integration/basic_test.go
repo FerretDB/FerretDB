@@ -637,10 +637,17 @@ func TestPing(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 	db := collection.Database()
 
+	expectedRes := bson.D{{"ok", float64(1)}}
+
 	t.Run("Multiple", func(t *testing.T) {
 		for i := 0; i < 5; i++ {
-			err := db.RunCommand(ctx, bson.D{{"ping", int32(1)}}).Err()
-			assert.NoError(t, err)
+			res := db.RunCommand(ctx, bson.D{{"ping", int32(1)}})
+
+			var actualRes bson.D
+			err := res.Decode(&actualRes)
+			require.NoError(t, err)
+
+			assert.Equal(t, expectedRes, actualRes)
 		}
 	})
 
@@ -653,10 +660,14 @@ func TestPing(t *testing.T) {
 			require.NotEqual(t, dbName, database.Name)
 		}
 
-		err = db.Client().Database(dbName).RunCommand(ctx, bson.D{{"ping", int32(1)}}).Err()
+		res := db.Client().Database(dbName).RunCommand(ctx, bson.D{{"ping", int32(1)}})
+
+		var actualRes bson.D
+		err = res.Decode(&actualRes)
 		require.NoError(t, err)
 
 		// Ensure that we don't create database on ping
+		// This also means that no collection is created during ping.
 		actualDatabases, err := db.Client().ListDatabases(ctx, bson.D{})
 		require.NoError(t, err)
 
