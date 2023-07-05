@@ -44,7 +44,7 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 	}
 
 	// TODO: Use ExtractParam https://github.com/FerretDB/FerretDB/issues/2859
-	// TODO comment
+	// TODO comment https://github.com/FerretDB/FerretDB/issues/2986
 	v, _ := document.Get("collection")
 	if v == nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
