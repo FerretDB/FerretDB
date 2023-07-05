@@ -17,7 +17,6 @@ package testutil
 import (
 	"os"
 	"path/filepath"
-	"testing"
 
 	"github.com/stretchr/testify/require"
 
@@ -26,7 +25,7 @@ import (
 )
 
 // ParseDump parses string to bytes, in tests.
-func ParseDump(tb testing.TB, s string) []byte {
+func ParseDump(tb TB, s string) []byte {
 	tb.Helper()
 
 	b, err := hex.ParseDump(s)
@@ -35,7 +34,7 @@ func ParseDump(tb testing.TB, s string) []byte {
 }
 
 // ParseDumpFile parses file input to bytes, in tests.
-func ParseDumpFile(tb testing.TB, path ...string) []byte {
+func ParseDumpFile(tb TB, path ...string) []byte {
 	tb.Helper()
 
 	b, err := os.ReadFile(filepath.Join(path...))
