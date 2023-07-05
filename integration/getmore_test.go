@@ -904,6 +904,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 			SetMaxTime(1).
 			// set sort to slow down the query more than 1ms
 			SetSort(bson.D{{"v", 1}})
+
 		_, err := collection.Find(ctx, bson.D{}, opts)
 
 		// MongoDB returns Message or altMessage
@@ -924,13 +925,12 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 			// setting zero on find sets nextBatch on getMore to unlimited
 			SetBatchSize(0).
 			// maxTimeMS is 1 but it won't expire because of zero BatchSize
-			SetMaxTime(1).
-			// set sort to slow down the getMore more than 1ms
-			SetSort(bson.D{{"v", 1}})
+			SetMaxTime(1)
+
 		cursor, err := collection.Find(ctx, bson.D{}, opts)
 		require.NoError(t, err)
 
-		cursor.SetBatchSize(2000)
+		cursor.SetBatchSize(50000)
 
 		// getMore uses maxTimeMS set on find
 		ok := cursor.Next(ctx)
@@ -966,7 +966,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		require.True(t, ok)
 
 		cursorID, _ := cursor.Get("id")
-		assert.NotZero(t, cursorID)
+		require.NotZero(t, cursorID)
 
 		err = collection.Database().RunCommand(ctx, bson.D{
 			{"getMore", cursorID},
@@ -1017,11 +1017,10 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 			// maxTimeMS is 1 but it won't expire on aggregate because of zero BatchSize
 			SetMaxTime(1)
 
-		// use $sort stage to slow down the query more than 1ms
-		cursor, err := collection.Aggregate(ctx, bson.A{bson.D{{"$sort", bson.D{{"v", 1}}}}}, opts)
+		cursor, err := collection.Aggregate(ctx, bson.A{}, opts)
 		require.NoError(t, err)
 
-		cursor.SetBatchSize(2000)
+		cursor.SetBatchSize(50000)
 
 		// getMore uses maxTimeMS set on aggregate
 		ok := cursor.Next(ctx)
@@ -1058,7 +1057,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		require.True(t, ok)
 
 		cursorID, _ := cursor.Get("id")
-		assert.NotZero(t, cursorID)
+		require.NotZero(t, cursorID)
 
 		err = collection.Database().RunCommand(ctx, bson.D{
 			{"getMore", cursorID},
