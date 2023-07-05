@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"net/url"
 	"testing"
 
@@ -703,7 +704,176 @@ func TestGetMoreCommandConnection(t *testing.T) {
 	})
 }
 
-func TestGetMoreCommandMaxTimeMS(t *testing.T) {
+func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		command bson.D // required, command to run
+
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"Double": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", 1000.5},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS has non-integral value",
+			},
+			altMessage: "BSON field 'getMore.maxTimeMS' is the wrong type 'double', expected types '[long, int, decimal, double]'",
+		},
+		"NegativeDouble": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", -14245345234123245.55},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "-14245345234123246 value for maxTimeMS is out of range",
+			},
+			altMessage: "-1.4245345234123246e+16 value for maxTimeMS is out of range",
+		},
+		"BigDouble": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", math.MaxFloat64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "9223372036854775807 value for maxTimeMS is out of range",
+			},
+			altMessage: "1.797693134862316e+308 value for maxTimeMS is out of range",
+		},
+		"BigNegativeDouble": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", -math.MaxFloat64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "-9223372036854775808 value for maxTimeMS is out of range",
+			},
+			altMessage: "-1.797693134862316e+308 value for maxTimeMS is out of range",
+		},
+		"String": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", "string"},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'getMore.maxTimeMS' is the wrong type 'string', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'getMore.maxTimeMS' is the wrong type 'string', expected types '[long, int, decimal, double]'",
+		},
+		"MaxLong": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", math.MaxInt64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "9223372036854775807 value for maxTimeMS is out of range",
+			},
+		},
+		"MaxInt": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", math.MaxInt32 + 1},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "2147483648 value for maxTimeMS is out of range",
+			},
+		},
+		"Null": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", nil},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS must be a number",
+			},
+		},
+		"Array": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", bson.A{int32(42), "foo", nil}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'getMore.maxTimeMS' is the wrong type 'array', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'getMore.maxTimeMS' is the wrong type 'array', expected types '[long, int, decimal, double]'",
+		},
+		"Document": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", bson.D{{"foo", int32(42)}}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'getMore.maxTimeMS' is the wrong type 'object', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'getMore.maxTimeMS' is the wrong type 'object', expected types '[long, int, decimal, double]'",
+		},
+		"NegativeInt": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", -1123123},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "-1123123 value for maxTimeMS is out of range",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			require.Nil(t, res)
+		})
+	}
+}
+
+func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/1808")
 
 	// do not run tests in parallel to for server execution time to use maximum possible maxTimeMS
