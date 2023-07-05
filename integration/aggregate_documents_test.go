@@ -673,6 +673,32 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
+		"NegativeLong": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", int64(-1)},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1'",
+			},
+		},
+		"MaxLong": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", math.MaxInt64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "9223372036854775807 value for maxTimeMS is out of range",
+			},
+		},
 		"Double": {
 			command: bson.D{
 				{"aggregate", collection.Name()},
@@ -728,34 +754,20 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 			},
 			altMessage: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1.797693134862316e+308'",
 		},
-		"String": {
+		"NegativeInt32": {
 			command: bson.D{
 				{"aggregate", collection.Name()},
 				{"pipeline", bson.A{}},
 				{"cursor", bson.D{}},
-				{"maxTimeMS", "string"},
+				{"maxTimeMS", -1123123},
 			},
 			err: &mongo.CommandError{
-				Code:    14,
-				Name:    "TypeMismatch",
-				Message: "BSON field 'aggregate.maxTimeMS' is the wrong type 'string', expected types '[long, int, decimal, double']",
-			},
-			altMessage: "BSON field 'aggregate.maxTimeMS' is the wrong type 'string', expected types '[long, int, decimal, double]'",
-		},
-		"MaxLong": {
-			command: bson.D{
-				{"aggregate", collection.Name()},
-				{"pipeline", bson.A{}},
-				{"cursor", bson.D{}},
-				{"maxTimeMS", math.MaxInt64},
-			},
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "9223372036854775807 value for maxTimeMS is out of range",
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1123123'",
 			},
 		},
-		"MaxInt": {
+		"MaxIntPlus": {
 			command: bson.D{
 				{"aggregate", collection.Name()},
 				{"pipeline", bson.A{}},
@@ -780,6 +792,20 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 				Name:    "BadValue",
 				Message: "maxTimeMS must be a number",
 			},
+		},
+		"String": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", "string"},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'aggregate.maxTimeMS' is the wrong type 'string', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'aggregate.maxTimeMS' is the wrong type 'string', expected types '[long, int, decimal, double]'",
 		},
 		"Array": {
 			command: bson.D{
@@ -808,19 +834,6 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 				Message: "BSON field 'aggregate.maxTimeMS' is the wrong type 'object', expected types '[long, int, decimal, double']",
 			},
 			altMessage: "BSON field 'aggregate.maxTimeMS' is the wrong type 'object', expected types '[long, int, decimal, double]'",
-		},
-		"NegativeInt32": {
-			command: bson.D{
-				{"aggregate", collection.Name()},
-				{"pipeline", bson.A{}},
-				{"cursor", bson.D{}},
-				{"maxTimeMS", -1123123},
-			},
-			err: &mongo.CommandError{
-				Code:    51024,
-				Name:    "Location51024",
-				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1123123'",
-			},
 		},
 	} {
 		name, tc := name, tc
