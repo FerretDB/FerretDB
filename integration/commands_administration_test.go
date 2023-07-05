@@ -509,6 +509,16 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			},
 			altMessage: `BSON field 'allParameters' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'`,
 		},
+		"FeatureCompatibilityVersion": {
+			command: bson.D{
+				{"getParameter", bson.D{}},
+				{"featureCompatibilityVersion", 1},
+			},
+			expected: map[string]any{
+				"featureCompatibilityVersion": bson.D{{"version", "6.0"}},
+				"ok":                          float64(1),
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -548,6 +558,25 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetParameterCommandAuthenticationMechanisms(t *testing.T) {
+	setup.SkipForMongoDB(t, "PLAIN authentication mechanism is not support by MongoDB")
+
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		DatabaseName: "admin",
+	})
+
+	var res bson.D
+	err := s.Collection.Database().RunCommand(s.Ctx, bson.D{
+		{"getParameter", bson.D{}},
+		{"authenticationMechanisms", 1},
+	}).Decode(&res)
+	require.NoError(t, err)
+
+	require.Equal(t, bson.D{{"authenticationMechanisms", bson.A{"PLAIN"}}, {"ok", float64(1)}}, res)
 }
 
 func TestCommandsAdministrationBuildInfo(t *testing.T) {
