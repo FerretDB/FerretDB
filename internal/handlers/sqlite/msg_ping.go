@@ -41,9 +41,13 @@ func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	db := h.b.Database(dbName)
 	defer db.Close()
 
-	if err := db.Ping(ctx); err != nil {
-		return nil, lazyerrors.Error(err)
+	// Collection name cannot be empty, so this is safe to use.
+	res, err := db.Collection("").Query(ctx, nil)
+	if err != nil {
+		return nil, err
 	}
+
+	res.Iter.Close()
 
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(

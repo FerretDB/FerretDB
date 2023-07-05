@@ -35,8 +35,6 @@ type Database interface {
 	// TODO remove?
 	Close()
 
-	Ping(ctx context.Context) error
-
 	Collection(string) Collection
 	ListCollections(context.Context, *ListCollectionsParams) (*ListCollectionsResult, error)
 	CreateCollection(context.Context, *CreateCollectionParams) error
@@ -134,18 +132,6 @@ func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCol
 	defer observability.FuncCall(ctx)()
 	defer checkError(err, ErrorCodeCollectionDoesNotExist) // TODO: ErrorCodeDatabaseDoesNotExist ?
 	err = dbc.db.DropCollection(ctx, params)
-
-	return
-}
-
-// Ping uses native backend method to check if connection with database can be established.
-//
-// If database does not exist; it should be created automatically to check connection,
-// and dropped afterwards.
-func (dbc *databaseContract) Ping(ctx context.Context) (err error) {
-	defer observability.FuncCall(ctx)()
-	defer checkError(err)
-	err = dbc.db.Ping(ctx)
 
 	return
 }

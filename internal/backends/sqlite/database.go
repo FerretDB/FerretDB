@@ -95,26 +95,6 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 	return nil
 }
 
-// Ping implements backends.Database interface.
-func (db *database) Ping(ctx context.Context) error {
-	sqlDB := db.r.DatabaseGetExisting(ctx, db.name)
-
-	// create temporary non-existent database to make sure that it's possible for user to create one
-	// (there might be some fs permission errors)
-	if sqlDB == nil {
-		var err error
-
-		sqlDB, err = db.r.DatabaseGetOrCreate(ctx, db.name)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		defer db.r.DatabaseDrop(ctx, db.name)
-	}
-
-	return sqlDB.PingContext(ctx)
-}
-
 // check interfaces
 var (
 	_ backends.Database = (*database)(nil)
