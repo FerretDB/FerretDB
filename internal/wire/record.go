@@ -27,8 +27,11 @@ import (
 
 // Record represents a single recorded wire protocol message, loaded from a .bin file.
 type Record struct {
-	Header  *MsgHeader
-	Body    MsgBody
+	// those may be unset if message is invalid
+	Header *MsgHeader
+	Body   MsgBody
+
+	// those are always set
 	HeaderB []byte
 	BodyB   []byte
 }
@@ -96,8 +99,10 @@ func loadRecordFile(file string) ([]Record, error) {
 			break
 		}
 
+		// TODO we should still set HeaderB and BodyB
+		// https://github.com/FerretDB/FerretDB/issues/1636
 		if err != nil {
-			return nil, lazyerrors.Error(err)
+			break
 		}
 
 		headerB, err := header.MarshalBinary()

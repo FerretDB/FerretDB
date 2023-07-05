@@ -104,7 +104,7 @@ var pgFlags struct {
 //
 // See main_sqlite.go.
 var sqliteFlags struct {
-	SQLiteURI string `name:"sqlite-uri" default:"." help:"Directory path or 'file' URI for 'sqlite' handler."`
+	SQLiteURL string `name:"sqlite-url" default:"file:data/" help:"SQLite URI (directory) for 'sqlite' handler."`
 }
 
 // The tigrisFlags struct represents flags that are used by the "tigris" handler.
@@ -360,7 +360,7 @@ func run() {
 
 		PostgreSQLURL: pgFlags.PostgreSQLURL,
 
-		SQLiteURI: sqliteFlags.SQLiteURI,
+		SQLiteURL: sqliteFlags.SQLiteURL,
 
 		TigrisURL:          tigrisFlags.TigrisURL,
 		TigrisClientID:     tigrisFlags.TigrisClientID,
@@ -374,7 +374,7 @@ func run() {
 		},
 	})
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Sugar().Fatalf("Failed to construct handler: %s.", err)
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{

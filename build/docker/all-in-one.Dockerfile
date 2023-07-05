@@ -106,7 +106,7 @@ RUN <<EOF
 set -ex
 
 apt update
-apt install -y curl runit
+apt install -y curl runit sqlite3
 curl -L https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add -
 echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian bullseye/mongodb-org/6.0 main" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list
 apt update
