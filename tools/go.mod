@@ -13,7 +13,7 @@ require (
 	golang.org/x/oauth2 v0.9.0
 	golang.org/x/perf v0.0.0-20230427221525-d343f6398b76
 	golang.org/x/tools v0.10.0
-	golang.org/x/vuln v0.1.0
+	golang.org/x/vuln v0.2.0
 	mvdan.cc/gofumpt v0.5.0
 )
 
