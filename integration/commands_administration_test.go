@@ -1168,7 +1168,7 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 	// does not show up in cursorsAlive or anywhere else
 	cursor, err := collection.Find(ctx, bson.D{}, options.Find().SetBatchSize(1))
 	require.NoError(t, err)
-
+	require.True(t, cursor.Next(ctx))
 	defer cursor.Close(ctx)
 
 	t.Run("Empty", func(t *testing.T) {
@@ -1190,39 +1190,30 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 		AssertEqualDocuments(t, expected, actual)
 	})
 
-	t.Run("WrongType", func(t *testing.T) {
-		t.Parallel()
+	t.Run("WrongType", func(tt *testing.T) {
+		tt.Parallel()
+
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1514")
+
+		c, err := collection.Find(ctx, bson.D{}, options.Find().SetBatchSize(1))
+		require.NoError(t, err)
+		require.True(t, c.Next(ctx))
+		defer c.Close(ctx)
 
 		var actual bson.D
-		err := collection.Database().RunCommand(ctx, bson.D{
+		err = collection.Database().RunCommand(ctx, bson.D{
 			{"killCursors", collection.Name()},
-			{"cursors", bson.A{"foo"}},
+			{"cursors", bson.A{c.ID(), "foo"}},
 		}).Decode(&actual)
 		expectedErr := mongo.CommandError{
 			Code:    14,
 			Name:    "TypeMismatch",
-			Message: "BSON field 'killCursors.cursors.0' is the wrong type 'string', expected type 'long'",
+			Message: "BSON field 'killCursors.cursors.1' is the wrong type 'string', expected type 'long'",
 		}
 		AssertEqualCommandError(t, expectedErr, err)
-	})
 
-	t.Run("NotFound", func(t *testing.T) {
-		t.Parallel()
-
-		var actual bson.D
-		err := collection.Database().RunCommand(ctx, bson.D{
-			{"killCursors", collection.Name()},
-			{"cursors", bson.A{int64(100500)}},
-		}).Decode(&actual)
-		require.NoError(t, err)
-		expected := bson.D{
-			{"cursorsKilled", bson.A{}},
-			{"cursorsNotFound", bson.A{int64(100500)}},
-			{"cursorsAlive", bson.A{}},
-			{"cursorsUnknown", bson.A{}},
-			{"ok", float64(1)},
-		}
-		AssertEqualDocuments(t, expected, actual)
+		assert.True(t, c.Next(ctx))
+		assert.NoError(t, c.Err())
 	})
 
 	t.Run("Found", func(t *testing.T) {
@@ -1230,6 +1221,7 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 
 		c, err := collection.Find(ctx, bson.D{}, options.Find().SetBatchSize(1))
 		require.NoError(t, err)
+		require.True(t, c.Next(ctx))
 		defer c.Close(ctx)
 
 		var actual bson.D
@@ -1246,5 +1238,43 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 			{"ok", float64(1)},
 		}
 		AssertEqualDocuments(t, expected, actual)
+
+		assert.False(t, c.Next(ctx))
+		expectedErr := mongo.CommandError{
+			Code: 43,
+			Name: "CursorNotFound",
+		}
+		AssertMatchesCommandError(t, expectedErr, c.Err())
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		t.Parallel()
+
+		c, err := collection.Find(ctx, bson.D{}, options.Find().SetBatchSize(1))
+		require.NoError(t, err)
+		require.True(t, c.Next(ctx))
+		defer c.Close(ctx)
+
+		var actual bson.D
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"killCursors", collection.Name()},
+			{"cursors", bson.A{c.ID(), int64(100500)}},
+		}).Decode(&actual)
+		require.NoError(t, err)
+		expected := bson.D{
+			{"cursorsKilled", bson.A{c.ID()}},
+			{"cursorsNotFound", bson.A{int64(100500)}},
+			{"cursorsAlive", bson.A{}},
+			{"cursorsUnknown", bson.A{}},
+			{"ok", float64(1)},
+		}
+		AssertEqualDocuments(t, expected, actual)
+
+		assert.False(t, c.Next(ctx))
+		expectedErr := mongo.CommandError{
+			Code: 43,
+			Name: "CursorNotFound",
+		}
+		AssertMatchesCommandError(t, expectedErr, c.Err())
 	})
 }

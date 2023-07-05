@@ -20,7 +20,8 @@ package teststress
 import (
 	"runtime"
 	"sync"
-	"testing"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // NumGoroutines is the total count of goroutines created in Stress function.
@@ -30,7 +31,7 @@ var NumGoroutines = runtime.GOMAXPROCS(-1) * 10
 //
 // Function f should do a needed setup, send a message to ready channel when it is ready to start,
 // wait for start channel to be closed, and then do the actual work.
-func Stress(tb testing.TB, f func(ready chan<- struct{}, start <-chan struct{})) {
+func Stress(tb testutil.TB, f func(ready chan<- struct{}, start <-chan struct{})) {
 	tb.Helper()
 
 	// do a bit more work to reduce a chance that one goroutine would finish

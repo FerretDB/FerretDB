@@ -16,7 +16,6 @@ package setup
 
 import (
 	"context"
-	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -27,6 +26,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // makeClient returns new client for the given working MongoDB URI.
@@ -55,7 +55,7 @@ func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 //
 // If the connection can't be established, it panics,
 // as it doesn't make sense to proceed with other tests if we couldn't connect in one of them.
-func setupClient(tb testing.TB, ctx context.Context, uri string) *mongo.Client {
+func setupClient(tb testutil.TB, ctx context.Context, uri string) *mongo.Client {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")
