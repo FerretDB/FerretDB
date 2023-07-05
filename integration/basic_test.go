@@ -630,7 +630,7 @@ func TestDebugError(t *testing.T) {
 	})
 }
 
-func TestPing(t *testing.T) {
+func TestPingCommand(t *testing.T) {
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t)
