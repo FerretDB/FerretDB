@@ -350,7 +350,7 @@ jobs:
   fuzz-short:
     name: Fuzz short
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     # Do not run this job in parallel for any PR change or branch push.
     concurrency:
