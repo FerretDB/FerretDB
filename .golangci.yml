@@ -131,6 +131,7 @@ linters-settings:
   revive:
     ignore-generated-header: true
     severity: error
+    rules: []
   staticcheck:
     checks:
       - all

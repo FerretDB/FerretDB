@@ -22,6 +22,8 @@ import (
 )
 
 // TB is a copy of testing.TB without a private method.
+//
+//nolint:interfacebloat // that's a copy of existing interface
 type TB interface {
 	Cleanup(func())
 	Error(args ...any)
@@ -43,6 +45,10 @@ type TB interface {
 	TempDir() string
 }
 
+// XFail return a new TB instance that expects the test to fail.
+//
+// At the end of the test, if it was marked as failed, it will be skipped with a given reason.
+// If it passes, it will be failed, so that XFail call can be removed.
 func XFail(t TB, reason string) TB {
 	t.Helper()
 
@@ -63,57 +69,89 @@ func XFail(t TB, reason string) TB {
 	return x
 }
 
+// xfail wraps TB with expected failure logic.
 type xfail struct {
 	t      TB
 	failed atomic.Bool
 }
 
+// Failed reports whether the function has failed.
+func (x *xfail) Failed() bool {
+	return x.failed.Load()
+}
+
+// Fail marks the function as having failed but continues execution.
+func (x *xfail) Fail() {
+	// we overload this method because we can't set testing.common.failed/skipped/etc fields
+	x.failed.Store(true)
+}
+
+// Error is equivalent to Log followed by Fail.
 func (x *xfail) Error(args ...any) {
 	x.Log(args...)
 	x.Fail()
 }
 
+// Errorf is equivalent to Logf followed by Fail.
 func (x *xfail) Errorf(format string, args ...any) {
 	x.Logf(format, args...)
 	x.Fail()
 }
 
-func (x *xfail) Fail() {
-	x.failed.Store(true)
-}
-
+// FailNow marks the function as having failed and stops its execution.
 func (x *xfail) FailNow() {
 	x.Fail()
 
-	// TODO
+	// we can't use runtime.Goexit because we can't set testing.common.failed/skipped/etc fields
 	x.SkipNow()
 }
 
-func (x *xfail) Failed() bool {
-	return x.failed.Load()
-}
-
+// Fatal is equivalent to Log followed by FailNow.
 func (x *xfail) Fatal(args ...any) {
 	x.Log(args...)
 	x.FailNow()
 }
 
+// Fatalf is equivalent to Logf followed by FailNow.
 func (x *xfail) Fatalf(format string, args ...any) {
 	x.Logf(format, args...)
 	x.FailNow()
 }
 
-func (x *xfail) Cleanup(f func())                 { x.t.Cleanup(f) }
-func (x *xfail) Helper()                          { x.t.Helper() }
-func (x *xfail) Log(args ...any)                  { x.t.Log(args...) }
-func (x *xfail) Logf(format string, args ...any)  { x.t.Logf(format, args...) }
-func (x *xfail) Name() string                     { return x.t.Name() }
-func (x *xfail) Setenv(key, value string)         { x.t.Setenv(key, value) }
-func (x *xfail) Skip(args ...any)                 { x.t.Skip(args...) }
+// Below methods are delegated as-is.
+
+// Cleanup registers a function to be called when the test (or subtest) and all its subtests complete.
+func (x *xfail) Cleanup(f func()) { x.t.Cleanup(f) }
+
+// Helper marks the calling function as a test helper function.
+func (x *xfail) Helper() { x.t.Helper() }
+
+// Log formats its arguments using default formatting, analogous to Println, and records the text in the error log.
+func (x *xfail) Log(args ...any) { x.t.Log(args...) }
+
+// Logf formats its arguments according to the format, analogous to Printf, and records the text in the error log.
+func (x *xfail) Logf(format string, args ...any) { x.t.Logf(format, args...) }
+
+// Name returns the name of the running (sub-) test or benchmark.
+func (x *xfail) Name() string { return x.t.Name() }
+
+// Setenv calls os.Setenv(key, value) and uses Cleanup to restore the environment variable to its original value after the test.
+func (x *xfail) Setenv(key, value string) { x.t.Setenv(key, value) }
+
+// Skip is equivalent to Log followed by SkipNow.
+func (x *xfail) Skip(args ...any) { x.t.Skip(args...) }
+
+// Skipf is equivalent to Logf followed by SkipNow.
 func (x *xfail) Skipf(format string, args ...any) { x.t.Skipf(format, args...) }
-func (x *xfail) SkipNow()                         { x.t.SkipNow() }
-func (x *xfail) Skipped() bool                    { return x.t.Skipped() }
-func (x *xfail) TempDir() string                  { return x.t.TempDir() }
+
+// SkipNow marks the test as having been skipped and stops its execution.
+func (x *xfail) SkipNow() { x.t.SkipNow() }
+
+// Skipped reports whether the test was skipped.
+func (x *xfail) Skipped() bool { return x.t.Skipped() }
+
+// TempDir returns a temporary directory for the test to use.
+func (x *xfail) TempDir() string { return x.t.TempDir() }
 
 // check interfaces
 var (

@@ -1169,6 +1169,7 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 	cursor, err := collection.Find(ctx, bson.D{}, options.Find().SetBatchSize(1))
 	require.NoError(t, err)
 	require.True(t, cursor.Next(ctx))
+
 	defer cursor.Close(ctx)
 
 	t.Run("Empty", func(t *testing.T) {

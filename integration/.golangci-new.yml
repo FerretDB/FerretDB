@@ -26,7 +26,7 @@ linters-settings:
     rules:
       # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md
       - name: exported
-        arguments: [checkPrivateReceivers]
+        arguments: [checkPrivateReceivers, disableStutteringCheck]
       - name: package-comments
   staticcheck:
     checks: ["all"]
