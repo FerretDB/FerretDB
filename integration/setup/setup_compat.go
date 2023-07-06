@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"runtime/trace"
 	"strings"
-	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -57,7 +56,7 @@ type SetupCompatResult struct {
 }
 
 // SetupCompatWithOpts setups the compatibility test according to given options.
-func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResult {
+func SetupCompatWithOpts(tb testutil.TB, opts *SetupCompatOpts) *SetupCompatResult {
 	tb.Helper()
 
 	if *compatURLF == "" {
@@ -118,7 +117,7 @@ func SetupCompatWithOpts(tb testing.TB, opts *SetupCompatOpts) *SetupCompatResul
 }
 
 // SetupCompat setups compatibility test.
-func SetupCompat(tb testing.TB) (context.Context, []*mongo.Collection, []*mongo.Collection) {
+func SetupCompat(tb testutil.TB) (context.Context, []*mongo.Collection, []*mongo.Collection) {
 	tb.Helper()
 
 	s := SetupCompatWithOpts(tb, &SetupCompatOpts{
@@ -128,7 +127,7 @@ func SetupCompat(tb testing.TB) (context.Context, []*mongo.Collection, []*mongo.
 }
 
 // setupCompatCollections setups a single database with one collection per provider for compatibility tests.
-func setupCompatCollections(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, backend string) []*mongo.Collection {
+func setupCompatCollections(tb testutil.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, backend string) []*mongo.Collection {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupCompatCollections")
