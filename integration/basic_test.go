@@ -17,6 +17,8 @@ package integration
 import (
 	"fmt"
 	"math"
+	"os"
+	"path"
 	"strings"
 	"testing"
 
@@ -29,6 +31,24 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
+
+func TestNoPermDir(t *testing.T) {
+	t.Parallel()
+
+	d := t.TempDir()
+	url := path.Join(d, "foo")
+	err := os.Mkdir(url, 0x000)
+	require.NoError(t, err)
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{HandlerOptions: map[string]string{"sqlite-url": "file://" + url + "/"}})
+	ctx, collection := s.Ctx, s.Collection
+
+	var doc bson.D
+
+	err = collection.FindOne(ctx, bson.D{}).Decode(&doc)
+	require.Equal(t, mongo.ErrNoDocuments, err)
+	assert.Equal(t, bson.D(nil), doc)
+}
 
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	setup.SkipForTigris(t)

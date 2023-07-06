@@ -89,6 +89,9 @@ type SetupOpts struct {
 
 	// ExtraOptions sets the options in MongoDB URI, when the option exists it overwrites that option.
 	ExtraOptions url.Values
+
+	// HandlerOptions specifies options to overwrite for creating handler.
+	HandlerOptions map[string]string
 }
 
 // SetupResult represents setup results.
@@ -137,7 +140,7 @@ func SetupWithOpts(tb testutil.TB, opts *SetupOpts) *SetupResult {
 
 	uri := *targetURLF
 	if uri == "" {
-		uri = setupListener(tb, setupCtx, logger)
+		uri = setupListener(tb, setupCtx, logger, opts.HandlerOptions)
 	}
 
 	if opts.ExtraOptions != nil {

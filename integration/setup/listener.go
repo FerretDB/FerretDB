@@ -105,7 +105,7 @@ func listenerMongoDBURI(tb testutil.TB, hostPort, unixSocketPath string, tlsAndA
 
 // setupListener starts in-process FerretDB server that runs until ctx is canceled.
 // It returns basic MongoDB URI for that listener.
-func setupListener(tb testutil.TB, ctx context.Context, logger *zap.Logger) string {
+func setupListener(tb testutil.TB, ctx context.Context, logger *zap.Logger, opts map[string]string) string {
 	tb.Helper()
 
 	_, span := otel.Tracer("").Start(ctx, "setupListener")
@@ -171,6 +171,11 @@ func setupListener(tb testutil.TB, ctx context.Context, logger *zap.Logger) stri
 			EnableSortPushdown:    *enableSortPushdownF,
 		},
 	}
+
+	if v, ok := opts["sqlite-url"]; ok {
+		handlerOpts.SQLiteURL = v
+	}
+
 	h, err := registry.NewHandler(handler, handlerOpts)
 	require.NoError(tb, err)
 
