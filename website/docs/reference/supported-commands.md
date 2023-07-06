@@ -633,8 +633,8 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 | `getClusterParameter`             |                                |                           | ❌     |                                                                   |
 | `getParameter`                    |                                |                           | ❌     |                                                                   |
 |                                   | `comment`                      |                           | ⚠️     |                                                                   |
-| `killCursors`                     |                                |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1514)         |
-|                                   | `cursors`                      |                           | ⚠️     |                                                                   |
+| `killCursors`                     |                                |                           | ✅     |                                                                   |
+|                                   | `cursors`                      |                           | ✅     |                                                                   |
 |                                   | `comment`                      |                           | ⚠️     |                                                                   |
 | `killOp`                          |                                |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1515)         |
 |                                   | `op`                           |                           | ⚠️     |                                                                   |
