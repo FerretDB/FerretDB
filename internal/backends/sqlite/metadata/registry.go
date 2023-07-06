@@ -165,7 +165,6 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 
 		return nil
 	})
-
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -198,7 +197,6 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 
 		return nil
 	})
-
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}

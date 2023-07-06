@@ -251,8 +251,6 @@ func (p *Pool) Drop(ctx context.Context, name string) bool {
 //
 // Passed context will be used for transaction.
 // Context cancellation DOES rollback the transaction.
-//
-// In practice, f should use the same ctx for Query/QueryRow/Exec that would return an error if context is canceled.
 func InTransaction(ctx context.Context, db *sql.DB, f func(*sql.Tx) error) (err error) {
 	var tx *sql.Tx
 
@@ -263,14 +261,15 @@ func InTransaction(ctx context.Context, db *sql.DB, f func(*sql.Tx) error) (err 
 
 	if err = f(tx); err != nil {
 		err = lazyerrors.Error(err)
-		tx.Rollback()
+		_ = tx.Rollback()
+
 		return
 	}
 
-	err = tx.Commit()
-	if err != nil {
+	if err = tx.Commit(); err != nil {
 		err = lazyerrors.Error(err)
-		tx.Rollback()
+		_ = tx.Rollback()
+
 		return
 	}
 
