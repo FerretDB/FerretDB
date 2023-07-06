@@ -23,7 +23,10 @@ tasks:
         -tags=ferretdb_testenvdata .
         -target-backend=ferretdb-pg
         -postgresql-url=postgres://username:password@127.0.0.1:5433/ferretdb?pool_max_conns=50
-      # no sqlite yet
+      - >
+        go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
+        -tags=ferretdb_testenvdata .
+        -target-backend=ferretdb-sqlite
       # no hana yet
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData

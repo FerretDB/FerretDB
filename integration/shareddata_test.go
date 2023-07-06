@@ -23,7 +23,6 @@
 package integration
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
