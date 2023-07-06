@@ -45,6 +45,7 @@ type QueryParams struct {
 	// Query filter for possible pushdown; may be ignored in part or entirely.
 	Filter     *types.Document
 	Sort       *types.Document
+	Limit      int64 // 0 does not apply limit to the query
 	DB         string
 	Collection string
 	Comment    string
@@ -70,6 +71,7 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, 
 		explain:   qp.Explain,
 		filter:    qp.Filter,
 		sort:      qp.Sort,
+		limit:     qp.Limit,
 		unmarshal: unmarshalExplain,
 	})
 	if err != nil {
@@ -154,6 +156,7 @@ type iteratorParams struct {
 	explain   bool
 	filter    *types.Document
 	sort      *types.Document
+	limit     int64
 	forUpdate bool                                    // if SELECT FOR UPDATE is needed.
 	unmarshal func(b []byte) (*types.Document, error) // if set, iterator uses unmarshal to convert row to *types.Document.
 }
@@ -189,6 +192,12 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.Doc
 	res.FilterPushdown = where != ""
 
 	query += where
+
+	if p.limit != 0 {
+		query += fmt.Sprintf(` LIMIT $%d`, len(args)+1)
+		args = append(args, p.limit)
+		res.FilterPushdown = true
+	}
 
 	if p.forUpdate {
 		query += ` FOR UPDATE`

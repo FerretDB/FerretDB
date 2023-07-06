@@ -33,6 +33,7 @@ type ExplainParams struct {
 
 	Filter *types.Document `ferretdb:"filter,opt"`
 	Sort   *types.Document `ferretdb:"sort,opt"`
+	Limit  int64           `ferretdb:"limit,opt,positiveNumber"`
 
 	StagesDocs []any           `ferretdb:"-"`
 	Aggregate  bool            `ferretdb:"-"`
@@ -86,6 +87,13 @@ func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, 
 		return nil, lazyerrors.Error(err)
 	}
 
+	var limit int64
+
+	limit, err = GetOptionalParam(explain, "limit", limit)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	var stagesDocs []any
 
 	if cmd.Command() == "aggregate" {
@@ -117,6 +125,7 @@ func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, 
 		Collection: collection,
 		Filter:     filter,
 		Sort:       sort,
+		Limit:      limit,
 		StagesDocs: stagesDocs,
 		Aggregate:  cmd.Command() == "aggregate",
 		Command:    cmd,

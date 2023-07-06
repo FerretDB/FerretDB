@@ -118,11 +118,21 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 					require.NoError(t, compatErr)
 					require.Equal(t, compatIdx, targetIdx)
 
-					// don't add sort, limit, skip, and projection because we don't pushdown them yet
-					explainQuery := bson.D{{"explain", bson.D{
+					// don't add skip, and projection because we don't pushdown them yet
+					explain := bson.D{
 						{"find", targetCollection.Name()},
 						{"filter", filter},
-					}}}
+					}
+
+					if tc.sort != nil {
+						explain = append(explain, bson.E{Key: "sort", Value: tc.sort})
+					}
+
+					if tc.limit != nil {
+						explain = append(explain, bson.E{Key: "limit", Value: tc.limit})
+					}
+
+					explainQuery := bson.D{{"explain", explain}}
 
 					var explainRes bson.D
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
@@ -377,24 +387,29 @@ func TestQueryCompatLimit(t *testing.T) {
 
 	testCases := map[string]queryCompatTestCase{
 		"Simple": {
-			filter: bson.D{},
-			limit:  pointer.ToInt64(1),
+			filter:         bson.D{},
+			limit:          pointer.ToInt64(1),
+			resultPushdown: true,
 		},
 		"AlmostAll": {
-			filter: bson.D{},
-			limit:  pointer.ToInt64(int64(len(shareddata.Strings.Docs()) - 1)),
+			filter:         bson.D{},
+			limit:          pointer.ToInt64(int64(len(shareddata.Strings.Docs()) - 1)),
+			resultPushdown: true,
 		},
 		"All": {
-			filter: bson.D{},
-			limit:  pointer.ToInt64(int64(len(shareddata.Strings.Docs()))),
+			filter:         bson.D{},
+			limit:          pointer.ToInt64(int64(len(shareddata.Strings.Docs()))),
+			resultPushdown: true,
 		},
 		"More": {
-			filter: bson.D{},
-			limit:  pointer.ToInt64(int64(len(shareddata.Strings.Docs()) + 1)),
+			filter:         bson.D{},
+			limit:          pointer.ToInt64(int64(len(shareddata.Strings.Docs()) + 1)),
+			resultPushdown: true,
 		},
 		"Big": {
-			filter: bson.D{},
-			limit:  pointer.ToInt64(1000),
+			filter:         bson.D{},
+			limit:          pointer.ToInt64(1000),
+			resultPushdown: true,
 		},
 		"Zero": {
 			filter: bson.D{},
@@ -405,8 +420,14 @@ func TestQueryCompatLimit(t *testing.T) {
 			// > A negative limit specifies that the resulting documents should be returned in a single batch.
 			// On the wire, "limit" can't be negative.
 			// TODO https://github.com/FerretDB/FerretDB/issues/2255
+			filter:         bson.D{},
+			limit:          pointer.ToInt64(-1),
+			resultPushdown: true,
+		},
+		"Sort": {
 			filter: bson.D{},
-			limit:  pointer.ToInt64(-1),
+			limit:  pointer.ToInt64(1),
+			sort:   bson.D{{"_id", 1}},
 		},
 	}
 

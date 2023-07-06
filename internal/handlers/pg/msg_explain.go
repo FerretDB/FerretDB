@@ -67,6 +67,10 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Sort = nil
 	}
 
+	if params.Sort.Len() == 0 || h.EnableSortPushdown {
+		qp.Limit = params.Limit
+	}
+
 	var queryPlanner *types.Document
 	var results pgdb.QueryResults
 
