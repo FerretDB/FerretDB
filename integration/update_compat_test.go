@@ -42,8 +42,7 @@ type updateCompatTestCase struct {
 	resultType  compatTestCaseResultType // defaults to nonEmptyResult
 	providers   []shareddata.Provider    // defaults to shareddata.AllProviders()
 
-	skip          string // skips test if non-empty
-	skipForTigris string // skips test for Tigris if non-empty
+	skip string // skips test if non-empty
 }
 
 // testUpdateCompat tests update compatibility test cases.
@@ -418,8 +417,7 @@ func TestUpdateCompat(t *testing.T) {
 			replace: bson.D{{"v", "foo"}},
 		},
 		"ReplaceEmpty": {
-			replace:       bson.D{{"v", ""}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+			replace: bson.D{{"v", ""}},
 		},
 		"ReplaceNull": {
 			replace: bson.D{{"v", nil}},
@@ -453,9 +451,8 @@ func TestUpdateCompatArray(t *testing.T) {
 			replace: bson.D{{"foo", int32(1)}},
 		},
 		"ReplaceDotNotationFilter": {
-			filter:        bson.D{{"v.array.0", bson.D{{"$eq", int32(42)}}}, {"_id", "document-composite"}},
-			replace:       bson.D{{"replacement-value", int32(1)}},
-			skipForTigris: "Tigris does not support language keyword 'array' as field name",
+			filter:  bson.D{{"v.array.0", bson.D{{"$eq", int32(42)}}}, {"_id", "document-composite"}},
+			replace: bson.D{{"replacement-value", int32(1)}},
 		},
 	}
 

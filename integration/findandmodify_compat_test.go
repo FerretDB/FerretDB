@@ -178,7 +178,6 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"v", bson.D{}}}},
 			},
-			skipForTigris: "schema validation would fail",
 		},
 		"Conflict": {
 			command: bson.D{
@@ -736,8 +735,7 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 type findAndModifyCompatTestCase struct {
 	command bson.D
 
-	skip          string // skips test if non-empty
-	skipForTigris string // skips test for Tigris if non-empty
+	skip string // skips test if non-empty
 
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }

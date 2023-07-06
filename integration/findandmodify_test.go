@@ -470,7 +470,6 @@ func TestFindAndModifyCommandUpsert(t *testing.T) {
 	for name, tc := range map[string]struct {
 		command         bson.D // required, command to run
 		lastErrorObject bson.D
-		skipForTigris   string
 	}{
 		"UpsertNoSuchDocumentNoIdInQuery": {
 			command: bson.D{
@@ -499,7 +498,6 @@ func TestFindAndModifyCommandUpsert(t *testing.T) {
 				{"n", int32(1)},
 				{"updatedExisting", false},
 			},
-			skipForTigris: "schema validation would fail",
 		},
 		"UpsertDocumentKey": {
 			command: bson.D{
@@ -511,7 +509,6 @@ func TestFindAndModifyCommandUpsert(t *testing.T) {
 				{"n", int32(1)},
 				{"updatedExisting", false},
 			},
-			skipForTigris: "schema validation would fail",
 		},
 		"ExistsFalse": {
 			command: bson.D{

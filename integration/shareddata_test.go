@@ -33,36 +33,16 @@ import (
 func TestEnvData(t *testing.T) {
 	t.Parallel()
 
-	// Setups one collection for each data set for all backends.
-	t.Run("All", func(t *testing.T) {
-		for _, p := range shareddata.AllProviders() {
-			p := p
-			name := p.Name()
+	for _, p := range shareddata.AllProviders() {
+		p := p
+		name := p.Name()
 
-			t.Run(name, func(t *testing.T) {
-				if !p.IsCompatible("ferretdb-tigris") {
-					setup.SkipForTigrisWithReason(t, fmt.Sprintf("%q is not supported by Tigris", name))
-				}
-
-				setup.SetupWithOpts(t, &setup.SetupOpts{
-					DatabaseName:   "test",
-					CollectionName: p.Name(),
-					Providers:      []shareddata.Provider{p},
-				})
+		t.Run(name, func(t *testing.T) {
+			setup.SetupWithOpts(t, &setup.SetupOpts{
+				DatabaseName:   "test",
+				CollectionName: p.Name(),
+				Providers:      []shareddata.Provider{p},
 			})
-		}
-	})
-
-	// Setups old `values` collection with mixed types for all backends except `ferretdb-tigris`.
-	t.Run("Values", func(t *testing.T) {
-		setup.SkipForTigris(t)
-
-		t.Parallel()
-
-		setup.SetupWithOpts(t, &setup.SetupOpts{
-			DatabaseName:   "test",
-			CollectionName: "values",
-			Providers:      []shareddata.Provider{shareddata.Scalars, shareddata.Composites},
 		})
-	})
+	}
 }

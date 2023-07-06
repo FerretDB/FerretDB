@@ -39,8 +39,7 @@ type queryCommandCompatTestCase struct {
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
 
-	skip          string // skip test for all handlers, must have issue number mentioned
-	skipForTigris string // skip test for Tigris
+	skip string // skip test for all handlers, must have issue number mentioned
 }
 
 // testQueryCompat tests query compatibility test cases.
