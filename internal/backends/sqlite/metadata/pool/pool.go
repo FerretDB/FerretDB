@@ -192,30 +192,6 @@ func (p *Pool) GetExisting(ctx context.Context, name string) *sql.DB {
 	return db.sqlDB
 }
 
-func InTransaction(ctx context.Context, db *sql.DB, f func(*sql.Tx) error) (err error) {
-	var tx *sql.Tx
-
-	if tx, err = db.BeginTx(ctx, nil); err != nil {
-		err = lazyerrors.Error(err)
-		return
-	}
-
-	if err = f(tx); err != nil {
-		err = lazyerrors.Error(err)
-		tx.Rollback()
-		return
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		err = lazyerrors.Error(err)
-		tx.Rollback()
-		return
-	}
-
-	return
-}
-
 // GetOrCreate returns an existing database connection by name, or creates a new one.
 //
 // Returned boolean value indicates whether the connection was created.
@@ -267,4 +243,36 @@ func (p *Pool) Drop(ctx context.Context, name string) bool {
 	p.l.Debug("Database dropped.", zap.String("name", name))
 
 	return true
+}
+
+// InTransaction wraps the given function f in a SQLite transaction.
+//
+// If f returns an error, the transaction is rolled back.
+//
+// Passed context will be used for transaction.
+// Context cancellation DOES rollback the transaction.
+//
+// In practice, f should use the same ctx for Query/QueryRow/Exec that would return an error if context is canceled.
+func InTransaction(ctx context.Context, db *sql.DB, f func(*sql.Tx) error) (err error) {
+	var tx *sql.Tx
+
+	if tx, err = db.BeginTx(ctx, nil); err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
+
+	if err = f(tx); err != nil {
+		err = lazyerrors.Error(err)
+		tx.Rollback()
+		return
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		err = lazyerrors.Error(err)
+		tx.Rollback()
+		return
+	}
+
+	return
 }
