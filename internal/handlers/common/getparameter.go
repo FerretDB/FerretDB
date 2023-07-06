@@ -36,7 +36,9 @@ func MsgGetParameter(_ context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	showDetails, allParameters, err := extractGetParameter(document)
+	getParameter := must.NotFail(document.Get("getParameter"))
+
+	showDetails, allParameters, err := extractGetParameter(getParameter)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -127,27 +129,22 @@ func selectParameters(document, parameters *types.Document, showDetails, allPara
 	return resDoc, nil
 }
 
-// extractGetParameter retrieves showDetails & allParameters options set on the getParameter value of the document.
-func extractGetParameter(document *types.Document) (showDetails, allParameters bool, err error) {
-	v, _ := document.Get("getParameter")
-	if v == nil {
-		return false, false, lazyerrors.Error(err)
-	}
-
-	if v == "*" {
+// extractGetParameter retrieves showDetails & allParameters options set on the getParameter value.
+func extractGetParameter(getParameter any) (showDetails, allParameters bool, err error) {
+	if getParameter == "*" {
 		allParameters = true
 		return
 	}
 
-	if param, ok := v.(*types.Document); ok {
-		if v, _ = param.Get("showDetails"); v != nil {
+	if param, ok := getParameter.(*types.Document); ok {
+		if v, _ := param.Get("showDetails"); v != nil {
 			showDetails, err = commonparams.GetBoolOptionalParam("showDetails", v)
 			if err != nil {
 				return false, false, lazyerrors.Error(err)
 			}
 		}
 
-		if v, _ = param.Get("allParameters"); v != nil {
+		if v, _ := param.Get("allParameters"); v != nil {
 			allParameters, err = commonparams.GetBoolOptionalParam("allParameters", v)
 			if err != nil {
 				return false, false, lazyerrors.Error(err)
