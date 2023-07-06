@@ -15,15 +15,15 @@
 package setup
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // SkipForMongoDB skips the current test for MongoDB.
 //
 // This function should not be used lightly.
-func SkipForMongoDB(tb testing.TB, reason string) {
+func SkipForMongoDB(tb testutil.TB, reason string) {
 	tb.Helper()
 
 	if *targetBackendF == "mongodb" {
@@ -36,7 +36,7 @@ func SkipForMongoDB(tb testing.TB, reason string) {
 // SkipExceptMongoDB skips the current test for backends except MongoDB.
 //
 // This function should not be used lightly.
-func SkipExceptMongoDB(tb testing.TB, reason string) {
+func SkipExceptMongoDB(tb testutil.TB, reason string) {
 	tb.Helper()
 
 	if *targetBackendF != "mongodb" {
@@ -49,7 +49,7 @@ func SkipExceptMongoDB(tb testing.TB, reason string) {
 // IsTigris returns true if tests are running against FerretDB with `ferretdb-tigris` backend.
 //
 // This function should not be used lightly.
-func IsTigris(tb testing.TB) bool {
+func IsTigris(tb testutil.TB) bool {
 	tb.Helper()
 
 	return *targetBackendF == "ferretdb-tigris"
@@ -58,7 +58,7 @@ func IsTigris(tb testing.TB) bool {
 // SkipForTigris is deprecated.
 //
 // Deprecated: use SkipForTigrisWithReason instead if you must.
-func SkipForTigris(tb testing.TB) {
+func SkipForTigris(tb testutil.TB) {
 	tb.Helper()
 
 	SkipForTigrisWithReason(tb, "empty, please update this test")
@@ -67,7 +67,7 @@ func SkipForTigris(tb testing.TB) {
 // SkipForTigrisWithReason skips the current test for FerretDB with `ferretdb-tigris` backend.
 //
 // This function should not be used lightly.
-func SkipForTigrisWithReason(tb testing.TB, reason string) {
+func SkipForTigrisWithReason(tb testutil.TB, reason string) {
 	tb.Helper()
 
 	if !IsTigris(tb) {
@@ -82,7 +82,7 @@ func SkipForTigrisWithReason(tb testing.TB, reason string) {
 // TigrisOnlyWithReason skips the current test except for FerretDB with `ferretdb-tigris` backend.
 //
 // This function should not be used lightly.
-func TigrisOnlyWithReason(tb testing.TB, reason string) {
+func TigrisOnlyWithReason(tb testutil.TB, reason string) {
 	tb.Helper()
 
 	require.NotEmpty(tb, reason, "reason must not be empty")

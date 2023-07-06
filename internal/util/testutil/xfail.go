@@ -14,17 +14,26 @@
 
 package testutil
 
-import "testing"
-
-// TigrisURL returns Tigris URL for testing.
+// TB is a copy of testing.TB without a private method.
 //
-// TODO remove this function https://github.com/FerretDB/FerretDB/issues/1568
-func TigrisURL(tb TB) string {
-	tb.Helper()
-
-	if testing.Short() {
-		tb.Skip("skipping in -short mode")
-	}
-
-	return "127.0.0.1:8081"
+//nolint:interfacebloat // that's a copy of existing interface
+type TB interface {
+	Cleanup(func())
+	Error(args ...any)
+	Errorf(format string, args ...any)
+	Fail()
+	FailNow()
+	Failed() bool
+	Fatal(args ...any)
+	Fatalf(format string, args ...any)
+	Helper()
+	Log(args ...any)
+	Logf(format string, args ...any)
+	Name() string
+	Setenv(key, value string)
+	Skip(args ...any)
+	SkipNow()
+	Skipf(format string, args ...any)
+	Skipped() bool
+	TempDir() string
 }
