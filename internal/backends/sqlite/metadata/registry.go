@@ -147,22 +147,26 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 
 	tableName := r.CollectionToTable(collectionName)
 
-	// TODO use transactions
-	// https://github.com/FerretDB/FerretDB/issues/2747
+	err = pool.InTransaction(ctx, db, func(tx *sql.Tx) error {
+		query := fmt.Sprintf("CREATE TABLE %q (_ferretdb_sjson TEXT)", tableName)
+		if _, err = tx.ExecContext(ctx, query); err != nil {
+			var e *sqlite.Error
+			if errors.As(err, &e) && e.Code() == sqlitelib.SQLITE_ERROR {
+				return nil
+			}
 
-	query := fmt.Sprintf("CREATE TABLE %q (_ferretdb_sjson TEXT)", tableName)
-	if _, err = db.ExecContext(ctx, query); err != nil {
-		var e *sqlite.Error
-		if errors.As(err, &e) && e.Code() == sqlitelib.SQLITE_ERROR {
-			return false, nil
+			return lazyerrors.Error(err)
 		}
 
-		return false, lazyerrors.Error(err)
-	}
+		query = fmt.Sprintf("INSERT INTO %q (name, table_name) VALUES (?, ?)", metadataTableName)
+		if _, err = tx.ExecContext(ctx, query, collectionName, tableName); err != nil {
+			return lazyerrors.Error(err)
+		}
 
-	query = fmt.Sprintf("INSERT INTO %q (name, table_name) VALUES (?, ?)", metadataTableName)
-	if _, err = db.ExecContext(ctx, query, collectionName, tableName); err != nil {
-		_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
+		return nil
+	})
+
+	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
@@ -180,9 +184,6 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 	}
 
 	tableName := r.CollectionToTable(collectionName)
-
-	// TODO use transactions
-	// https://github.com/FerretDB/FerretDB/issues/2747
 
 	err := pool.InTransaction(ctx, db, func(tx *sql.Tx) error {
 		query := fmt.Sprintf("DELETE FROM %q WHERE name = ?", metadataTableName)
