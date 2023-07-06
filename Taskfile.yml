@@ -444,7 +444,7 @@ tasks:
 
   security-govulncheck:
     cmds:
-      - bin/govulncheck{{exeExt}} -v -test ./...
+      - bin/govulncheck{{exeExt}} -test ./...
       - bin/task{{exeExt}} -d integration integration-security
 
   godocs:
