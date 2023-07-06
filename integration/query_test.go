@@ -834,3 +834,126 @@ func TestQueryCommandSingleBatch(t *testing.T) {
 		})
 	}
 }
+
+func TestQueryCommandLimitPushDown(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{Providers: []shareddata.Provider{shareddata.Int32s}})
+	ctx, collection := s.Ctx, s.Collection
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		filter  bson.D // optional
+		limit   int64  // required
+		sort    bson.D // optional, nil to leave sort unset
+		optSkip *int64 // optional, nil to leave optSkip unset
+
+		len            int                 // expected length of results
+		resultPushdown bool                // optional, set true for expect pushdown
+		err            *mongo.CommandError // optional, expected error from MongoDB
+		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
+		skip           string              // optional, skip test with a specified reason
+	}{
+		"Simple": {
+			filter:         bson.D{},
+			limit:          1,
+			resultPushdown: true,
+		},
+		"AlmostAll": {
+			filter:         bson.D{},
+			limit:          int64(len(shareddata.Int32s.Docs()) - 1),
+			resultPushdown: true,
+		},
+		"All": {
+			filter:         bson.D{},
+			limit:          int64(len(shareddata.Int32s.Docs())),
+			resultPushdown: true,
+		},
+		"More": {
+			filter:         bson.D{},
+			limit:          int64(len(shareddata.Int32s.Docs()) + 1),
+			resultPushdown: true,
+		},
+		"Big": {
+			filter:         bson.D{},
+			limit:          1000,
+			resultPushdown: true,
+		},
+		"Zero": {
+			filter:         bson.D{},
+			limit:          0,
+			resultPushdown: false,
+		},
+		"SingleBatch": {
+			filter:         bson.D{},
+			limit:          -1,
+			resultPushdown: true,
+		},
+		"Filter": {
+			filter:         bson.D{{"_id", "int64"}},
+			limit:          1,
+			resultPushdown: true,
+		},
+		"Sort": {
+			filter:         bson.D{},
+			limit:          1,
+			sort:           bson.D{{"_id", 1}},
+			resultPushdown: false,
+		},
+		"FilterSort": {
+			filter:         bson.D{{"v", 42}},
+			limit:          1,
+			sort:           bson.D{{"_id", 1}},
+			resultPushdown: false,
+		},
+	} {
+		tc, name := tc, name
+		t.Run(name, func(t *testing.T) {
+			var rest bson.D
+			if tc.sort != nil {
+				rest = append(rest, bson.E{Key: "sort", Value: tc.sort})
+			}
+
+			if tc.optSkip != nil {
+				rest = append(rest, bson.E{Key: "skip", Value: tc.optSkip})
+			}
+
+			query := append(
+				bson.D{
+					{"find", collection.Name()},
+					{"filter", tc.filter},
+					{"limit", tc.limit},
+				},
+				rest...,
+			)
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, bson.D{{"explain", query}}).Decode(&res)
+			assert.NoError(t, err)
+
+			var msg string
+			if setup.IsPushdownDisabled() {
+				tc.resultPushdown = false
+				msg = "Query pushdown is disabled, but target resulted with pushdown"
+			}
+
+			pushdown, _ := ConvertDocument(t, res).Get("pushdown")
+			assert.Equal(t, tc.resultPushdown, pushdown, msg)
+
+			cursor, err := collection.Database().RunCommandCursor(ctx, query)
+			assert.NoError(t, err)
+
+			if tc.err != nil {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
+				return
+			}
+
+			defer cursor.Close(ctx)
+
+			require.NoError(t, err)
+
+			docs := FetchAll(t, ctx, cursor)
+			require.Len(t, docs, tc.len)
+		})
+	}
+}

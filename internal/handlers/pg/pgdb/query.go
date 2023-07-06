@@ -140,6 +140,7 @@ func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (types.Docu
 		explain: qp.Explain,
 		filter:  qp.Filter,
 		sort:    qp.Sort,
+		limit:   qp.Limit,
 	})
 	if err != nil {
 		return nil, res, lazyerrors.Error(err)
