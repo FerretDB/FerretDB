@@ -50,7 +50,7 @@ tasks:
 
   integration-security:
     cmds:
-      - ../bin/govulncheck{{exeExt}} -v -test ./...
+      - ../bin/govulncheck{{exeExt}} -test ./...
 
   bench-pg:
     desc: "Run benchmarks for `pg` handler"
