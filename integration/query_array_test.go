@@ -29,8 +29,6 @@ import (
 )
 
 func TestQueryArrayDotNotation(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 

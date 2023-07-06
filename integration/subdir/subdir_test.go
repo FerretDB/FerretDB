@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package shareddata
+package subdir
 
 import "testing"
 
-func TestInit(t *testing.T) {
-	// nothing, just test init()
+func TestSubDir(t *testing.T) {
+	// TODO https://github.com/FerretDB/engineering/issues/66
+	// Remove this directory once this issue is done.
 }

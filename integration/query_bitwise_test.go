@@ -35,8 +35,6 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
 	}
 
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -238,8 +236,6 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
 	}
 
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -377,8 +373,6 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 	if runtime.GOARCH == "arm64" {
 		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
 	}
-
-	setup.SkipForTigris(t)
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
@@ -557,8 +551,6 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 	if runtime.GOARCH == "arm64" {
 		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
 	}
-
-	setup.SkipForTigris(t)
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)

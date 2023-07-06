@@ -75,8 +75,6 @@ func TestListIndexesCompat(t *testing.T) {
 }
 
 func TestCreateIndexesCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
@@ -312,8 +310,6 @@ func TestCreateIndexesCompat(t *testing.T) {
 }
 
 func TestDropIndexesCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
@@ -446,8 +442,6 @@ func TestDropIndexesCompat(t *testing.T) {
 }
 
 func TestCreateIndexesCompatUnique(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
