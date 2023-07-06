@@ -73,7 +73,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		qp.Sort = params.Sort
 	}
 
-	if params.Sort == nil || h.EnableSortPushdown {
+	if params.Sort.Len() == 0 || h.EnableSortPushdown {
 		qp.Limit = params.Limit
 	}
 

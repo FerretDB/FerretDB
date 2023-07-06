@@ -118,7 +118,7 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 					require.NoError(t, compatErr)
 					require.Equal(t, compatIdx, targetIdx)
 
-					// don't add skip, and projection because we don't pushdown them yet
+					// don't add skip and projection because we don't pushdown them yet
 					explain := bson.D{
 						{"find", targetCollection.Name()},
 						{"filter", filter},

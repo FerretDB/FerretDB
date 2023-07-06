@@ -95,11 +95,21 @@ func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompa
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					// don't add sort, limit, skip, and projection because we don't pushdown them yet
-					explainQuery := bson.D{{"explain", bson.D{
+					// don't add skip and projection because we don't pushdown them yet
+					explain := bson.D{
 						{"find", targetCollection.Name()},
 						{"filter", filter},
-					}}}
+					}
+
+					if tc.sort != nil {
+						explain = append(explain, bson.E{Key: "sort", Value: tc.sort})
+					}
+
+					if tc.limit != nil {
+						explain = append(explain, bson.E{Key: "limit", Value: tc.limit})
+					}
+
+					explainQuery := bson.D{{"explain", explain}}
 
 					var explainRes bson.D
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
