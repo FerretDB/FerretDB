@@ -228,7 +228,7 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 					return
 				}
 				require.NoError(t, compatErr, "compat error; target returned no error")
-				require.Equal(t, compatRes, targetRes)
+				AssertEqualDocuments(t, compatRes, targetRes)
 
 				if len(targetRes) > 0 || len(compatRes) > 0 {
 					nonEmptyResults = true
