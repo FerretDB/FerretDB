@@ -184,7 +184,7 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 	// TODO use transactions
 	// https://github.com/FerretDB/FerretDB/issues/2747
 
-	pool.InTransaction(ctx, db, func(tx *sql.Tx) error {
+	err := pool.InTransaction(ctx, db, func(tx *sql.Tx) error {
 		query := fmt.Sprintf("DELETE FROM %q WHERE name = ?", metadataTableName)
 		if _, err := tx.ExecContext(ctx, query, collectionName); err != nil {
 			return lazyerrors.Error(err)
@@ -197,6 +197,10 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 
 		return nil
 	})
+
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
 
 	return true, nil
 }
