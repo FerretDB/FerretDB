@@ -95,7 +95,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 }
 
 // assertEqual is assert.Equal that also can compare NaNs and ±0.
-func assertEqual(tb testing.TB, expected, actual any, msgAndArgs ...any) bool {
+func assertEqual(tb testutil.TB, expected, actual any, msgAndArgs ...any) bool {
 	tb.Helper()
 
 	switch expected := expected.(type) {

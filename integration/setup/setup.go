@@ -23,7 +23,6 @@ import (
 	"path/filepath"
 	"runtime/trace"
 	"strings"
-	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -100,7 +99,7 @@ type SetupResult struct {
 }
 
 // IsUnixSocket returns true if MongoDB URI is a Unix socket.
-func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
+func (s *SetupResult) IsUnixSocket(tb testutil.TB) bool {
 	tb.Helper()
 
 	// we can't use a regular url.Parse because
@@ -116,7 +115,7 @@ func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
 }
 
 // SetupWithOpts setups the test according to given options.
-func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
+func SetupWithOpts(tb testutil.TB, opts *SetupOpts) *SetupResult {
 	tb.Helper()
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
@@ -175,7 +174,7 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 }
 
 // Setup setups a single collection for all compatible providers, if the are present.
-func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
+func Setup(tb testutil.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
 	tb.Helper()
 
 	s := SetupWithOpts(tb, &SetupOpts{
@@ -185,7 +184,7 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 }
 
 // setupCollection setups a single collection for all compatible providers, if they are present.
-func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
+func setupCollection(tb testutil.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupCollection")
@@ -254,7 +253,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 }
 
 // insertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
-func insertProviders(tb testing.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
+func insertProviders(tb testutil.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
 	tb.Helper()
 
 	collectionName := collection.Name()
@@ -304,7 +303,7 @@ func insertProviders(tb testing.TB, ctx context.Context, collection *mongo.Colle
 // It returns true if any document was inserted.
 //
 // The function calculates the checksum of all inserted documents and compare them with provider's hash.
-func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
+func insertBenchmarkProvider(tb testutil.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
 	tb.Helper()
 
 	collectionName := collection.Name()
