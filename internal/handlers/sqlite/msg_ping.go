@@ -41,7 +41,6 @@ func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	db := h.b.Database(dbName)
 	defer db.Close()
 
-	// Collection name cannot be empty, so this is safe to use.
 	res, err := db.Collection("").Query(ctx, nil)
 	if err != nil {
 		return nil, err
