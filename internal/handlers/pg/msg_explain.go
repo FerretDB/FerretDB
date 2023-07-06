@@ -67,7 +67,10 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Sort = nil
 	}
 
-	if params.Sort.Len() == 0 || h.EnableSortPushdown {
+	if (params.Sort.Len() == 0 || h.EnableSortPushdown) && params.Skip == 0 && params.Limit > 0 {
+		// sort has to fetch and sort documents unless sort pushdown is set,
+		// skip requires more than limit documents,
+		// negative limit are not pushed down
 		qp.Limit = params.Limit
 	}
 

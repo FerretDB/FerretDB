@@ -33,6 +33,7 @@ type ExplainParams struct {
 
 	Filter *types.Document `ferretdb:"filter,opt"`
 	Sort   *types.Document `ferretdb:"sort,opt"`
+	Skip   int64           `ferretdb:"skip,opt,positiveNumber"`
 	Limit  int64           `ferretdb:"limit,opt,positiveNumber"`
 
 	StagesDocs []any           `ferretdb:"-"`
@@ -87,9 +88,14 @@ func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	var limit int64
+	var limit, skip int64
 
 	limit, err = GetOptionalParam(explain, "limit", limit)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	skip, err = GetOptionalParam(explain, "skip", skip)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -125,6 +131,7 @@ func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, 
 		Collection: collection,
 		Filter:     filter,
 		Sort:       sort,
+		Skip:       skip,
 		Limit:      limit,
 		StagesDocs: stagesDocs,
 		Aggregate:  cmd.Command() == "aggregate",
