@@ -16,7 +16,7 @@ keywords:
     data modeling,
     schema design
   ]
-tags: [document database, mongodb alternative, mongodb compatible]
+tags: [document databases, open source, sspl, mongodb compatible, community]
 ---
 
 ![MongoDB vs PostgreSQL](/img/blog/mongodb-postgres.jpg)

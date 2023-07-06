@@ -5,6 +5,7 @@ author: Elena Grahovac
 description: Contributing to open source might seem daunting, but you can start your tech journey during Hacktoberfest 2022.
 image: /img/blog/hacktoberfest.jpg
 date: 2022-09-20
+tags: [open source, hacktoberfest, community]
 ---
 
 Contributing to open source might seem daunting, but you can start your tech journey during Hacktoberfest 2022.
