@@ -30,8 +30,6 @@ import (
 func TestRenameCollectionStress(t *testing.T) {
 	// TODO rewrite using teststress.Stress
 
-	setup.SkipForTigrisWithReason(t, "Command renameCollection is not supported for Tigris")
-
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections for this test
 	db := collection.Database()
 

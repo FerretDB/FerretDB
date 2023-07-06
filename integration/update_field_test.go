@@ -28,8 +28,6 @@ import (
 )
 
 func TestUpdateFieldSet(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct {

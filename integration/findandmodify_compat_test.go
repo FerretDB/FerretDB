@@ -520,11 +520,6 @@ func TestFindAndModifyCompatSort(t *testing.T) {
 }
 
 func TestFindAndModifyCompatUpsert(t *testing.T) {
-	setup.SkipForTigrisWithReason(
-		t,
-		"Tigris' schema doesn't fit for most of providers, upsert for Tigris is tested in TestFindAndModifyUpsert.",
-	)
-
 	t.Parallel()
 
 	testCases := map[string]findAndModifyCompatTestCase{
@@ -758,9 +753,6 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 
 			if tc.skip != "" {
 				t.Skip(tc.skip)
-			}
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
 			}
 
 			t.Parallel()

@@ -538,10 +538,6 @@ func TestFindAndModifyCommandUpsert(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
-			}
-
 			t.Parallel()
 
 			require.NotNil(t, tc.command, "command must not be nil")

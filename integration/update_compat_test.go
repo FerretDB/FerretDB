@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -58,9 +57,6 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 
 			if tc.skip != "" {
 				t.Skip(tc.skip)
-			}
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
 			}
 
 			t.Parallel()
@@ -125,12 +121,6 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 									require.Equal(t, compatErr, targetErr)
 
 									return
-								}
-
-								// Skip updates that could not be performed due to Tigris schema validation.
-								var e mongo.CommandError
-								if errors.As(targetErr, &e) && e.HasErrorCode(documentValidationFailureCode) {
-									setup.SkipForTigrisWithReason(t, targetErr.Error())
 								}
 
 								// AssertMatchesWriteError compares error types and codes, it does not compare messages.
@@ -248,12 +238,6 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 							if targetErr != nil {
 								t.Logf("Target error: %v", targetErr)
 								t.Logf("Compat error: %v", compatErr)
-
-								// Skip updates that could not be performed due to Tigris schema validation.
-								var e mongo.CommandError
-								if errors.As(targetErr, &e) && e.HasErrorCode(documentValidationFailureCode) {
-									setup.SkipForTigrisWithReason(t, targetErr.Error())
-								}
 
 								// error messages are intentionally not compared
 								AssertMatchesCommandError(t, compatErr, targetErr)

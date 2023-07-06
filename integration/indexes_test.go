@@ -27,8 +27,6 @@ import (
 )
 
 func TestDropIndexesCommandErrors(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
@@ -178,8 +176,6 @@ func TestDropIndexesCommandErrors(t *testing.T) {
 }
 
 func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -414,8 +410,6 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 }
 
 func TestCreateIndexesCommandInvalidCollection(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -496,8 +490,6 @@ func TestCreateIndexesCommandInvalidCollection(t *testing.T) {
 }
 
 func TestDropIndexesCommandInvalidCollection(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct {

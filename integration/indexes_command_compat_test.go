@@ -28,8 +28,6 @@ import (
 
 // TestCreateIndexesCommandCompat tests specific behavior for index creation that can be only provided through RunCommand.
 func TestCreateIndexesCommandCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
-
 	t.Parallel()
 
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
@@ -199,8 +197,6 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 // such as numIndexBefore, numIndexAfter, createdCollectionAutomatically
 // contain the correct values.
 func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
-
 	t.Parallel()
 
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
@@ -283,8 +279,6 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 }
 
 func TestDropIndexesCommandCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability

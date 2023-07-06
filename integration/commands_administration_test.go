@@ -39,8 +39,6 @@ import (
 )
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t) // no providers there
 
@@ -97,8 +95,6 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 }
 
 func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t) // no providers there
 
@@ -164,8 +160,6 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 
 	assert.Equal(t, expected, actual)
 
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1051")
-
 	assert.NotZero(t, actual.Databases[0].SizeOnDisk, "%s's SizeOnDisk should be non-zero", name)
 	assert.False(t, actual.Databases[0].Empty, "%s's Empty should be false", name)
 	assert.NotZero(t, actual.TotalSize, "TotalSize should be non-zero")
@@ -197,8 +191,6 @@ func TestCommandsAdministrationListCollections(t *testing.T) {
 }
 
 func TestCommandsAdministrationGetParameter(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
@@ -648,18 +640,6 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 
-	// For Tigris, we only check that the keys are present (they might be zeros as we don't have the data for them)
-	if setup.IsTigris(t) {
-		assert.True(t, doc.Has("size"))
-		assert.True(t, doc.Has("avgObjSize"))
-		assert.True(t, doc.Has("storageSize"))
-		assert.True(t, doc.Has("nindexes"))
-		assert.True(t, doc.Has("totalIndexSize"))
-		assert.True(t, doc.Has("totalSize"))
-
-		return
-	}
-
 	// Values are returned as "numbers" that could be int32 or int64.
 	// FerretDB always returns int64 for simplicity.
 	assert.InDelta(t, 40_000, must.NotFail(doc.Get("size")), 39_900)
@@ -685,18 +665,6 @@ func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 	assert.EqualValues(t, 6, must.NotFail(doc.Get("count"))) // Number of documents in DocumentsStrings
 	assert.Equal(t, int32(1000), must.NotFail(doc.Get("scaleFactor")))
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-
-	// For Tigris, we only check that the keys are present (they might be zeros as we don't have the data for them)
-	if setup.IsTigris(t) {
-		assert.True(t, doc.Has("size"))
-		assert.True(t, doc.Has("avgObjSize"))
-		assert.True(t, doc.Has("storageSize"))
-		assert.True(t, doc.Has("nindexes"))
-		assert.True(t, doc.Has("totalIndexSize"))
-		assert.True(t, doc.Has("totalSize"))
-
-		return
-	}
 
 	assert.InDelta(t, 16, must.NotFail(doc.Get("size")), 16)
 	assert.InDelta(t, 2_400, must.NotFail(doc.Get("avgObjSize")), 2_370)
@@ -812,16 +780,6 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
 	assert.Equal(t, float64(1), doc.Remove("ok"))
 
-	// For Tigris, we only check that the keys are present (they might be zeros as we don't have the data for them)
-	if setup.IsTigris(t) {
-		assert.True(t, doc.Has("avgObjSize"))
-		assert.True(t, doc.Has("storageSize"))
-		assert.True(t, doc.Has("dataSize"))
-		assert.True(t, doc.Has("totalSize"))
-
-		return
-	}
-
 	assert.InDelta(t, 37_500, doc.Remove("avgObjSize"), 37_460)
 	assert.InDelta(t, 37_500, doc.Remove("dataSize"), 37_450)
 	assert.InDelta(t, 37_500, doc.Remove("storageSize"), 37_450)
@@ -902,8 +860,6 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 
 //nolint:paralleltest // we test a global server status
 func TestCommandsAdministrationServerStatus(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
@@ -1073,8 +1029,6 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 	// TODO rewrite using teststress.Stress
 
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1507")
-
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	client := collection.Database().Client()
 
@@ -1100,24 +1054,7 @@ func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 
 			collName := fmt.Sprintf("stress_%d", i)
 
-			schema := fmt.Sprintf(`{
-				"title": "%s",
-				"description": "Create Collection Stress %d",
-				"primary_key": ["_id"],
-				"properties": {
-					"_id": {"type": "string"},
-					"v": {"type": "string"}
-				}
-			}`, collName, i,
-			)
-
-			// Set $tigrisSchemaString for tigris only.
-			opts := options.CreateCollection()
-			if setup.IsTigris(t) {
-				opts.SetValidator(bson.D{{"$tigrisSchemaString", schema}})
-			}
-
-			err := db.CreateCollection(ctx, collName, opts)
+			err := db.CreateCollection(ctx, collName)
 			assert.NoError(t, err)
 
 			err = db.Drop(ctx)

@@ -22,15 +22,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestUpdateFieldCompatCurrentDate(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1669")
-
 	t.Parallel()
 
 	testCases := map[string]updateCurrentDateCompatTestCase{
@@ -145,8 +142,6 @@ func TestUpdateFieldCompatInc(t *testing.T) {
 
 // TestUpdateFieldCompatIncComplex are test that do not work on tigris.
 func TestUpdateFieldCompatIncComplex(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1668")
-
 	t.Parallel()
 
 	testCases := map[string]updateCompatTestCase{
@@ -1032,8 +1027,6 @@ func TestUpdateFieldCompatMixed(t *testing.T) {
 }
 
 func TestUpdateFieldCompatMul(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1668")
-
 	t.Parallel()
 
 	providers := shareddata.AllProviders().

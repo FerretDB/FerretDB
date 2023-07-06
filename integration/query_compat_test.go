@@ -64,10 +64,6 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
-			}
-
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}

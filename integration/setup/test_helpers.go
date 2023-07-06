@@ -46,52 +46,6 @@ func SkipForMongoDB(tb testutil.TB, reason string) {
 	}
 }
 
-// IsTigris returns true if tests are running against FerretDB with `ferretdb-tigris` backend.
-//
-// This function should not be used lightly.
-func IsTigris(tb testutil.TB) bool {
-	tb.Helper()
-
-	return *targetBackendF == "ferretdb-tigris"
-}
-
-// SkipForTigris is deprecated.
-//
-// Deprecated: use SkipForTigrisWithReason instead if you must.
-func SkipForTigris(tb testutil.TB) {
-	tb.Helper()
-
-	SkipForTigrisWithReason(tb, "empty, please update this test")
-}
-
-// SkipForTigrisWithReason skips the current test for FerretDB with `ferretdb-tigris` backend.
-//
-// This function should not be used lightly.
-func SkipForTigrisWithReason(tb testutil.TB, reason string) {
-	tb.Helper()
-
-	if !IsTigris(tb) {
-		return
-	}
-
-	require.NotEmpty(tb, reason, "reason must not be empty")
-
-	tb.Skipf("Skipping for Tigris: %s.", reason)
-}
-
-// TigrisOnlyWithReason skips the current test except for FerretDB with `ferretdb-tigris` backend.
-//
-// This function should not be used lightly.
-func TigrisOnlyWithReason(tb testutil.TB, reason string) {
-	tb.Helper()
-
-	require.NotEmpty(tb, reason, "reason must not be empty")
-
-	if !IsTigris(tb) {
-		tb.Skipf("Skipping for non-tigris: %s", reason)
-	}
-}
-
 // IsPushdownDisabled returns if FerretDB pushdowns are disabled.
 func IsPushdownDisabled() bool {
 	return *disableFilterPushdownF
