@@ -86,8 +86,19 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*sql
 		return db, nil
 	}
 
-	// TODO create unique indexes for name and table_name https://github.com/FerretDB/FerretDB/issues/2747
-	_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE TABLE %q (name, table_name, settings TEXT)", metadataTableName))
+	err = pool.InTransaction(ctx, db, func(tx *sql.Tx) error {
+		_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE TABLE %q (name, table_name, settings TEXT)", metadataTableName))
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE UNIQUE INDEX IF NOT EXISTS %q.%q ON %q (name, table_name)", dbName, metadataTableName, metadataTableName))
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		return nil
+	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
