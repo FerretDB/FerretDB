@@ -36,15 +36,20 @@ func MsgGetParameter(_ context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	showDetails, allParameters, err := extractParam(document)
+	showDetails, allParameters, err := extractGetParameter(document)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	Ignored(document, l, "comment")
 
-	resDB := must.NotFail(types.NewDocument(
-		// parameters are alphabetical order
+	parameters := must.NotFail(types.NewDocument(
+		// to add a new parameter, fill template and place it in the alphabetical order position
+		//"<name>", must.NotFail(types.NewDocument(
+		//	"value", <value>,
+		//	"settableAtRuntime", <bool>,
+		//	"settableAtStartup", <bool>,
+		//)),
 		"authenticationMechanisms", must.NotFail(types.NewDocument(
 			"value", must.NotFail(types.NewArray("PLAIN")),
 			"settableAtRuntime", false,
@@ -65,20 +70,12 @@ func MsgGetParameter(_ context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.O
 			"settableAtRuntime", true,
 			"settableAtStartup", true,
 		)),
-		// to add a new parameter, fill template and place it in the alphabetical order position
-		//"<name>", must.NotFail(types.NewDocument(
-		//	"value", <value>,
-		//	"settableAtRuntime", <bool>,
-		//	"settableAtStartup", <bool>,
-		//)),
+		// parameters are alphabetically ordered
 	))
 
-	resDoc := resDB
-	if !showDetails || !allParameters {
-		resDoc, err = selectUnit(document, resDB, showDetails, allParameters)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	resDoc, err := selectParameters(document, parameters, showDetails, allParameters)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	if resDoc.Len() < 1 {
@@ -99,11 +96,11 @@ func MsgGetParameter(_ context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.O
 	return &reply, nil
 }
 
-// selectUnit is makes a selection of requested parameters.
-func selectUnit(document, resDB *types.Document, showDetails, allParameters bool) (resDoc *types.Document, err error) {
+// selectParameters makes a selection of requested parameters.
+func selectParameters(document, parameters *types.Document, showDetails, allParameters bool) (resDoc *types.Document, err error) {
 	resDoc = must.NotFail(types.NewDocument())
 
-	iter := resDB.Iterator()
+	iter := parameters.Iterator()
 	defer iter.Close()
 
 	for {
@@ -130,31 +127,32 @@ func selectUnit(document, resDB *types.Document, showDetails, allParameters bool
 	return resDoc, nil
 }
 
-// extractParam is getting parameters showDetails & allParameters from the request.
-func extractParam(document *types.Document) (showDetails, allParameters bool, err error) {
-	getPrm, err := document.Get("getParameter")
-	if err != nil {
+// extractGetParameter retrieves showDetails & allParameters options set on the getParameter value of the document.
+func extractGetParameter(document *types.Document) (showDetails, allParameters bool, err error) {
+	v, _ := document.Get("getParameter")
+	if v == nil {
 		return false, false, lazyerrors.Error(err)
 	}
 
-	if param, ok := getPrm.(*types.Document); ok {
-		if v, _ := param.Get("showDetails"); v != nil {
+	if v == "*" {
+		allParameters = true
+		return
+	}
+
+	if param, ok := v.(*types.Document); ok {
+		if v, _ = param.Get("showDetails"); v != nil {
 			showDetails, err = commonparams.GetBoolOptionalParam("showDetails", v)
 			if err != nil {
 				return false, false, lazyerrors.Error(err)
 			}
 		}
 
-		if v, _ := param.Get("allParameters"); v != nil {
+		if v, _ = param.Get("allParameters"); v != nil {
 			allParameters, err = commonparams.GetBoolOptionalParam("allParameters", v)
 			if err != nil {
 				return false, false, lazyerrors.Error(err)
 			}
 		}
-	}
-
-	if getPrm == "*" {
-		allParameters = true
 	}
 
 	return showDetails, allParameters, nil
