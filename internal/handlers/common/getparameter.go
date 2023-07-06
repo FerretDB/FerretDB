@@ -30,7 +30,7 @@ import (
 )
 
 // MsgGetParameter returns parameter details.
-func MsgGetParameter(ctx context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.OpMsg, error) {
+func MsgGetParameter(_ context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -41,7 +41,10 @@ func MsgGetParameter(ctx context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire
 		return nil, lazyerrors.Error(err)
 	}
 
+	Ignored(document, l, "comment")
+
 	resDB := must.NotFail(types.NewDocument(
+		// parameters are alphabetical order
 		"authenticationMechanisms", must.NotFail(types.NewDocument(
 			"value", must.NotFail(types.NewArray("PLAIN")),
 			"settableAtRuntime", false,
@@ -62,7 +65,12 @@ func MsgGetParameter(ctx context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire
 			"settableAtRuntime", true,
 			"settableAtStartup", true,
 		)),
-		"ok", float64(1),
+		// to add a new parameter, fill template and place it in the alphabetical order position
+		//"<name>", must.NotFail(types.NewDocument(
+		//	"value", <value>,
+		//	"settableAtRuntime", <bool>,
+		//	"settableAtStartup", <bool>,
+		//)),
 	))
 
 	resDoc := resDB
@@ -73,23 +81,27 @@ func MsgGetParameter(ctx context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire
 		}
 	}
 
+	if resDoc.Len() < 1 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrorCode(0),
+			"no option found to get",
+			document.Command(),
+		)
+	}
+
+	resDoc.Set("ok", float64(1))
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{resDoc},
 	}))
 
-	Ignored(document, l, "comment")
-
-	if resDoc.Len() < 2 {
-		return &reply, commonerrors.NewCommandErrorMsg(commonerrors.ErrorCode(0), "no option found to get")
-	}
-
 	return &reply, nil
 }
 
 // selectUnit is makes a selection of requested parameters.
-func selectUnit(document, resDB *types.Document, showDetails, allParameters bool) (doc *types.Document, err error) {
-	doc = must.NotFail(types.NewDocument())
+func selectUnit(document, resDB *types.Document, showDetails, allParameters bool) (resDoc *types.Document, err error) {
+	resDoc = must.NotFail(types.NewDocument())
 
 	iter := resDB.Iterator()
 	defer iter.Close()
@@ -101,11 +113,7 @@ func selectUnit(document, resDB *types.Document, showDetails, allParameters bool
 				break
 			}
 
-			return nil, err
-		}
-
-		if k == "getParameter" || k == "comment" || k == "$db" {
-			continue
+			return nil, lazyerrors.Error(err)
 		}
 
 		if !allParameters && !document.Has(k) {
@@ -113,26 +121,13 @@ func selectUnit(document, resDB *types.Document, showDetails, allParameters bool
 		}
 
 		if !showDetails {
-			if itm, ok := v.(*types.Document); ok {
-				val, err := itm.Get("value")
-				if err != nil {
-					continue
-				}
-				v = val
-			}
+			v = must.NotFail(v.(*types.Document).Get("value"))
 		}
 
-		doc.Set(k, v)
+		resDoc.Set(k, v)
 	}
 
-	if doc.Len() < 1 {
-		doc.Set("ok", float64(0))
-		return doc, nil
-	}
-
-	doc.Set("ok", float64(1))
-
-	return doc, nil
+	return resDoc, nil
 }
 
 // extractParam is getting parameters showDetails & allParameters from the request.
