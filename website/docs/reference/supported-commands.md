@@ -17,7 +17,7 @@ Use ❌ for commands and arguments that are not implemented at all.
 | --------------- | -------------------------- | ------ | --------------------------------------------------------- |
 | `delete`        |                            | ✅     | Basic command is fully supported                          |
 |                 | `deletes`                  | ✅     |                                                           |
-|                 | `comment`                  | ⚠️     | Ignored in Tigris                                         |
+|                 | `comment`                  | ⚠️     |                                                           |
 |                 | `let`                      | ⚠️     | Unimplemented                                             |
 |                 | `ordered`                  | ✅     |                                                           |
 |                 | `writeConcern`             | ⚠️     | Ignored                                                   |
@@ -34,7 +34,7 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `limit`                    | ✅     |                                                           |
 |                 | `batchSize`                | ✅     |                                                           |
 |                 | `singleBatch`              | ✅     |                                                           |
-|                 | `comment`                  | ⚠️     | Not implemented in Tigris                                 |
+|                 | `comment`                  | ⚠️     |                                                           |
 |                 | `maxTimeMS`                | ✅     |                                                           |
 |                 | `readConcern`              | ⚠️     | Ignored                                                   |
 |                 | `max`                      | ⚠️     | Ignored                                                   |
@@ -62,7 +62,7 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `collation`                | ❌     | Unimplemented                                             |
 |                 | `arrayFilters`             | ❌     | Unimplemented                                             |
 |                 | `hint`                     | ⚠️     | Ignored                                                   |
-|                 | `comment`                  | ⚠️     | Not implemented in Tigris                                 |
+|                 | `comment`                  | ⚠️     |                                                           |
 |                 | `let`                      | ⚠️     | Unimplemented                                             |
 | `getMore`       |                            | ✅     | Basic command is fully supported                          |
 |                 | `batchSize`                | ✅     |                                                           |
@@ -78,7 +78,7 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `ordered`                  | ⚠️     | Ignored                                                   |
 |                 | `writeConcern`             | ⚠️     | Ignored                                                   |
 |                 | `bypassDocumentValidation` | ⚠️     | Ignored                                                   |
-|                 | `comment`                  | ⚠️     | Ignored in Tigris                                         |
+|                 | `comment`                  | ⚠️     |                                                           |
 |                 | `let`                      | ⚠️     | Unimplemented                                             |
 |                 | `q`                        | ✅     |                                                           |
 |                 | `u`                        | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/2742) |
