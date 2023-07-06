@@ -667,6 +667,8 @@ func TestPingCommand(t *testing.T) {
 		err = res.Decode(&actualRes)
 		require.NoError(t, err)
 
+		assert.Equal(t, expectedRes, actualRes)
+
 		// Ensure that we don't create database on ping
 		// This also means that no collection is created during ping.
 		actualDatabases, err := db.Client().ListDatabases(ctx, bson.D{{"name", dbName}})
