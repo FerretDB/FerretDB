@@ -41,7 +41,8 @@ func TestInTransactionRollback(t *testing.T) {
 				_, err = tx.ExecContext(ctx, "CREATE TABLE test (foo TEXT)")
 				require.NoError(t, err)
 
-				rows, err := tx.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE type='table'")
+				var rows *sql.Rows
+				rows, err = tx.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE type='table'")
 				require.NoError(t, err)
 				defer rows.Close()
 
@@ -58,11 +59,13 @@ func TestInTransactionRollback(t *testing.T) {
 				// Check if table was actually created
 				require.Equal(t, []string{"_ferretdb_collections", "test"}, tables)
 
+				//nolint:vet // we need it for testing
 				panic(nil)
 			})
 		})
 
-		rows, err := db.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE type='table'")
+		var rows *sql.Rows
+		rows, err = db.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE type='table'")
 		require.NoError(t, err)
 		defer rows.Close()
 
@@ -93,7 +96,8 @@ func TestInTransactionRollback(t *testing.T) {
 			_, err = tx.ExecContext(txCtx, "CREATE TABLE test (foo TEXT)")
 			require.NoError(t, err)
 
-			rows, err := tx.QueryContext(txCtx, "SELECT name FROM sqlite_schema WHERE type='table'")
+			var rows *sql.Rows
+			rows, err = tx.QueryContext(txCtx, "SELECT name FROM sqlite_schema WHERE type='table'")
 			require.NoError(t, err)
 			defer rows.Close()
 
@@ -150,7 +154,8 @@ func TestInTransactionRollback(t *testing.T) {
 				_, err = tx.ExecContext(ctx, "CREATE TABLE test (foo TEXT)")
 				require.NoError(t, err)
 
-				rows, err := tx.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE type='table'")
+				var rows *sql.Rows
+				rows, err = tx.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE type='table'")
 				require.NoError(t, err)
 				defer rows.Close()
 

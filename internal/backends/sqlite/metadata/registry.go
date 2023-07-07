@@ -168,6 +168,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 		created = true
 		return nil
 	})
+
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
