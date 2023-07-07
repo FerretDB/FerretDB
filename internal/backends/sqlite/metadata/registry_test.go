@@ -37,7 +37,7 @@ func TestInTransactionRollback(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Panics(t, func() {
-			err = inTransaction(ctx, db, func(tx *sql.Tx) error {
+			_ = inTransaction(ctx, db, func(tx *sql.Tx) error {
 				_, err = tx.ExecContext(ctx, "CREATE TABLE test (foo TEXT)")
 				require.NoError(t, err)
 
@@ -89,7 +89,7 @@ func TestInTransactionRollback(t *testing.T) {
 		// database tables after context cancelation.
 		txCtx, cancel := context.WithCancel(ctx)
 
-		inTransaction(txCtx, db, func(tx *sql.Tx) error {
+		_ = inTransaction(txCtx, db, func(tx *sql.Tx) error {
 			_, err = tx.ExecContext(txCtx, "CREATE TABLE test (foo TEXT)")
 			require.NoError(t, err)
 
@@ -146,7 +146,7 @@ func TestInTransactionRollback(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
-			inTransaction(ctx, db, func(tx *sql.Tx) error {
+			_ = inTransaction(ctx, db, func(tx *sql.Tx) error {
 				_, err = tx.ExecContext(ctx, "CREATE TABLE test (foo TEXT)")
 				require.NoError(t, err)
 
