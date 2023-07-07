@@ -84,7 +84,7 @@ func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	sort, err = GetOptionalParam(explain, "sort", filter)
+	sort, err = GetOptionalParam(explain, "sort", sort)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

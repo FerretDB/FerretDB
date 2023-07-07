@@ -111,6 +111,7 @@ func unmarshalExplain(b []byte) (*types.Document, error) {
 type QueryResults struct {
 	FilterPushdown bool
 	SortPushdown   bool
+	LimitPushdown  bool
 }
 
 // QueryDocuments returns an queryIterator to fetch documents for given SQLParams.
@@ -197,7 +198,7 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.Doc
 	if p.limit != 0 {
 		query += fmt.Sprintf(` LIMIT $%d`, len(args)+1)
 		args = append(args, p.limit)
-		res.FilterPushdown = true
+		res.LimitPushdown = true
 	}
 
 	if p.forUpdate {

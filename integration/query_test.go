@@ -840,45 +840,45 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 		sort    bson.D // optional, nil to leave sort unset
 		optSkip *int64 // optional, nil to leave optSkip unset
 
-		len            int                 // expected length of results
-		resultPushdown bool                // optional, set true for expected pushdown
-		err            *mongo.CommandError // optional, expected error from MongoDB
-		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
-		skip           string              // optional, skip test with a specified reason
+		len           int                 // expected length of results
+		limitPushdown bool                // optional, set true for expected pushdown for limit
+		err           *mongo.CommandError // optional, expected error from MongoDB
+		altMessage    string              // optional, alternative error message for FerretDB, ignored if empty
+		skip          string              // optional, skip test with a specified reason
 	}{
 		"Simple": {
-			limit:          1,
-			len:            1,
-			resultPushdown: true,
+			limit:         1,
+			len:           1,
+			limitPushdown: true,
 		},
 		"AlmostAll": {
-			limit:          int64(len(shareddata.Int32s.Docs()) - 1),
-			len:            len(shareddata.Int32s.Docs()) - 1,
-			resultPushdown: true,
+			limit:         int64(len(shareddata.Int32s.Docs()) - 1),
+			len:           len(shareddata.Int32s.Docs()) - 1,
+			limitPushdown: true,
 		},
 		"All": {
-			limit:          int64(len(shareddata.Int32s.Docs())),
-			len:            len(shareddata.Int32s.Docs()),
-			resultPushdown: true,
+			limit:         int64(len(shareddata.Int32s.Docs())),
+			len:           len(shareddata.Int32s.Docs()),
+			limitPushdown: true,
 		},
 		"More": {
-			limit:          int64(len(shareddata.Int32s.Docs()) + 1),
-			len:            len(shareddata.Int32s.Docs()),
-			resultPushdown: true,
+			limit:         int64(len(shareddata.Int32s.Docs()) + 1),
+			len:           len(shareddata.Int32s.Docs()),
+			limitPushdown: true,
 		},
 		"Big": {
-			limit:          1000,
-			len:            len(shareddata.Int32s.Docs()),
-			resultPushdown: true,
+			limit:         1000,
+			len:           len(shareddata.Int32s.Docs()),
+			limitPushdown: true,
 		},
 		"Zero": {
-			limit:          0,
-			len:            len(shareddata.Int32s.Docs()),
-			resultPushdown: false,
+			limit:         0,
+			len:           len(shareddata.Int32s.Docs()),
+			limitPushdown: false,
 		},
 		"Negative": {
-			limit:          -1,
-			resultPushdown: true,
+			limit:         -1,
+			limitPushdown: true,
 			err: &mongo.CommandError{
 				Code:    51024,
 				Name:    "Location51024",
@@ -886,34 +886,34 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			},
 		},
 		"Filter": {
-			filter:         bson.D{{"_id", "int32"}},
-			limit:          3,
-			len:            1,
-			resultPushdown: true,
+			filter:        bson.D{{"_id", "int32"}},
+			limit:         3,
+			len:           1,
+			limitPushdown: true,
 		},
 		"Sort": {
-			sort:           bson.D{{"_id", 1}},
-			limit:          2,
-			len:            2,
-			resultPushdown: false,
+			sort:          bson.D{{"_id", 1}},
+			limit:         2,
+			len:           2,
+			limitPushdown: false,
 		},
 		"FilterSort": {
-			filter:         bson.D{{"v", 42}},
-			sort:           bson.D{{"_id", 1}},
-			limit:          2,
-			len:            1,
-			resultPushdown: false,
+			filter:        bson.D{{"v", 42}},
+			sort:          bson.D{{"_id", 1}},
+			limit:         2,
+			len:           1,
+			limitPushdown: false,
 		},
 		"Skip": {
-			optSkip:        pointer.ToInt64(1),
-			limit:          2,
-			len:            2,
-			resultPushdown: false,
+			optSkip:       pointer.ToInt64(1),
+			limit:         2,
+			len:           2,
+			limitPushdown: false,
 		},
 		"NegativeSkip": {
-			optSkip:        pointer.ToInt64(-1),
-			limit:          1,
-			resultPushdown: false,
+			optSkip:       pointer.ToInt64(-1),
+			limit:         1,
+			limitPushdown: false,
 			err: &mongo.CommandError{
 				Code:    51024,
 				Name:    "Location51024",
@@ -963,12 +963,12 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 
 				var msg string
 				if setup.IsPushdownDisabled() {
-					tc.resultPushdown = false
-					msg = "Query pushdown is disabled, but target resulted with pushdown"
+					tc.limitPushdown = false
+					msg = "Limit pushdown is disabled, but target resulted with limitPushdown"
 				}
 
-				pushdown, _ := ConvertDocument(t, res).Get("pushdown")
-				assert.Equal(t, tc.resultPushdown, pushdown, msg)
+				pushdown, _ := ConvertDocument(t, res).Get("limitPushdown")
+				assert.Equal(t, tc.limitPushdown, pushdown, msg)
 			})
 
 			t.Run("Find", func(t *testing.T) {
