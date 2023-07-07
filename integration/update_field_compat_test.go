@@ -791,6 +791,16 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"SameID": {
+			filter:     bson.D{{"_id", "int32"}},
+			update:     bson.D{{"$set", bson.D{{"_id", "int32"}}}},
+			resultType: emptyResult,
+		},
+		"DifferentID": {
+			filter:     bson.D{{"_id", "int32"}},
+			update:     bson.D{{"$set", bson.D{{"_id", "another-id"}}}},
+			resultType: emptyResult,
+		},
 	}
 
 	testUpdateCompat(t, testCases)
