@@ -966,6 +966,8 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				require.NoError(t, err)
 
 				docs := FetchAll(t, ctx, cursor)
+
+				// do not check the content, limit without sort returns randomly ordered documents
 				require.Len(t, docs, tc.len)
 			})
 		})
