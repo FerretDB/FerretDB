@@ -15,20 +15,22 @@
 package metadata
 
 import (
+	"context"
 	"database/sql"
 	"os"
 	"runtime"
 	"sync"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestInTransactionRollback(t *testing.T) {
 	os.Remove("./testdata")
-	require.NoError(t, os.Mkdir("./testdata", 0o655))
+	require.NoError(t, os.Mkdir("./testdata", 0o666))
 
 	r, err := NewRegistry("file:"+t.TempDir()+"/", testutil.Logger(t))
 	require.NoError(t, err)
@@ -81,6 +83,59 @@ func TestInTransactionRollback(t *testing.T) {
 		assert.Equal(t, []string{"_ferretdb_collections"}, tables)
 	})
 
+	t.Run("RollbackOnContextCancelled", func(t *testing.T) {
+		ctx := testutil.Ctx(t)
+
+		db, err := r.DatabaseGetOrCreate(ctx, "RollbackOnContextCancelled")
+		require.NoError(t, err)
+
+		// we need to have separate context for transaction, to access
+		// database tables after context cancelation.
+		txCtx, cancel := context.WithCancel(ctx)
+
+		inTransaction(txCtx, db, func(tx *sql.Tx) error {
+			_, err = tx.ExecContext(txCtx, "CREATE TABLE test (foo TEXT)")
+			require.NoError(t, err)
+
+			rows, err := tx.QueryContext(txCtx, "SELECT name FROM sqlite_schema WHERE type='table'")
+			require.NoError(t, err)
+			defer rows.Close()
+
+			var tables []string
+
+			for rows.Next() {
+				var name string
+				err = rows.Scan(&name)
+				require.NoError(t, err)
+
+				tables = append(tables, name)
+			}
+
+			// Check if table was actually created
+			require.Equal(t, []string{"_ferretdb_collections", "test"}, tables)
+
+			cancel()
+
+			return nil
+		})
+
+		rows, err := db.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE type='table'")
+		require.NoError(t, err)
+		defer rows.Close()
+
+		var tables []string
+
+		for rows.Next() {
+			var name string
+			err = rows.Scan(&name)
+			require.NoError(t, err)
+
+			tables = append(tables, name)
+		}
+
+		assert.Equal(t, []string{"_ferretdb_collections"}, tables)
+	})
+
 	t.Run("RollbackOnGoexit", func(t *testing.T) {
 		ctx := testutil.Ctx(t)
 
@@ -95,7 +150,7 @@ func TestInTransactionRollback(t *testing.T) {
 		go func() {
 			defer wg.Done()
 
-			err = inTransaction(ctx, db, func(tx *sql.Tx) error {
+			inTransaction(ctx, db, func(tx *sql.Tx) error {
 				_, err = tx.ExecContext(ctx, "CREATE TABLE test (foo TEXT)")
 				require.NoError(t, err)
 
