@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
+package hana
 
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commoncommands"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgHostInfo implements HandlerInterface.
-func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return commoncommands.MsgHostInfo(ctx, msg)
+// MsgKillCursors implements handlers.Interface.
+func (h *Handler) MsgKillCursors(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }

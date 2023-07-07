@@ -16,7 +16,6 @@ package shareddata
 
 import (
 	"math"
-	"strings"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -36,8 +35,7 @@ const (
 //
 // This shared data set is frozen. If you need more values, add them in the test itself.
 var Scalars = &Values[string]{
-	name:     "Scalars",
-	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-hana", "mongodb"},
+	name: "Scalars",
 	data: map[string]any{
 		"double":                    42.13,
 		"double-whole":              42.0,
@@ -121,11 +119,6 @@ var Scalars = &Values[string]{
 // Doubles contains double values for tests.
 var Doubles = &Values[string]{
 	name: "Doubles",
-	validators: map[string]map[string]any{
-		"ferretdb-tigris": {
-			"$tigrisSchemaString": tigrisSchema(`"type": "number"`),
-		},
-	},
 	data: map[string]any{
 		"double":          42.13,
 		"double-whole":    42.0,
@@ -175,11 +168,6 @@ var Doubles = &Values[string]{
 // in diff tests https://github.com/FerretDB/dance.
 var OverflowVergeDoubles = &Values[string]{
 	name: "OverflowVergeDoubles",
-	validators: map[string]map[string]any{
-		"ferretdb-tigris": {
-			"$tigrisSchemaString": tigrisSchema(`"type": "number"`),
-		},
-	},
 	data: map[string]any{
 		"double-max": math.MaxFloat64,
 		"double-7":   1.79769e+307,
@@ -190,11 +178,6 @@ var OverflowVergeDoubles = &Values[string]{
 // the maximum safe precision for tests.
 var SmallDoubles = &Values[string]{
 	name: "SmallDoubles",
-	validators: map[string]map[string]any{
-		"ferretdb-tigris": {
-			"$tigrisSchemaString": tigrisSchema(`"type": "number"`),
-		},
-	},
 	data: map[string]any{
 		"double":       42.13,
 		"double-whole": 42.0,
@@ -205,23 +188,8 @@ var SmallDoubles = &Values[string]{
 }
 
 // Strings contains string values for tests.
-// Tigris JSON schema validator contains extra properties to make it suitable for more tests.
 var Strings = &Values[string]{
 	name: "Strings",
-	validators: map[string]map[string]any{
-		"ferretdb-tigris": {
-			"$tigrisSchemaString": `{
-				"title": "%%collection%%",
-				"primary_key": ["_id"],
-				"properties": {
-					"foo": {"type": "integer", "format": "int32"},
-					"bar": {"type": "array", "items": {"type": "string"}},
-					"v": {"type": "string"},
-					"_id": {"type": "string"}
-				}
-			}`,
-		},
-	},
 	data: map[string]any{
 		"string":           "foo",
 		"string-double":    "42.13",
@@ -235,11 +203,6 @@ var Strings = &Values[string]{
 // Binaries contains binary values for tests.
 var Binaries = &Values[string]{
 	name: "Binaries",
-	validators: map[string]map[string]any{
-		"ferretdb-tigris": {
-			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"$b": {"type": "string", "format": "byte"}, "s": {"type": "integer", "format": "int32"}}`),
-		},
-	},
 	data: map[string]any{
 		"binary":       primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}},
 		"binary-empty": primitive.Binary{Data: []byte{}},
@@ -250,11 +213,6 @@ var Binaries = &Values[string]{
 // ObjectIDs contains ObjectID values for tests.
 var ObjectIDs = &Values[string]{
 	name: "ObjectIDs",
-	validators: map[string]map[string]any{
-		"ferretdb-tigris": {
-			"$tigrisSchemaString": tigrisSchema(`"type": "string", "format": "byte"`),
-		},
-	},
 	data: map[string]any{
 		"objectid":       primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
 		"objectid-empty": primitive.NilObjectID,
@@ -265,19 +223,6 @@ var ObjectIDs = &Values[string]{
 // Bools contains bool values for tests.
 var Bools = &Values[string]{
 	name: "Bools",
-	validators: map[string]map[string]any{
-		"ferretdb-tigris": {
-			"$tigrisSchemaString": `{
-				"title": "%%collection%%",
-				"primary_key": ["_id"],
-				"properties": {
-					"foo": {"type": "integer", "format": "int32"},
-					"v": {"type": "boolean"},
-					"_id": {"type": "string"}
-				}
-			}`,
-		},
-	},
 	data: map[string]any{
 		"bool-false": false,
 		"bool-true":  true,
@@ -288,11 +233,6 @@ var Bools = &Values[string]{
 // DateTimes contains datetime values for tests.
 var DateTimes = &Values[string]{
 	name: "DateTimes",
-	validators: map[string]map[string]any{
-		"ferretdb-tigris": {
-			"$tigrisSchemaString": tigrisSchema(`"type": "string", "format": "date-time"`),
-		},
-	},
 	data: map[string]any{
 		"datetime":          primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC)),
 		"datetime-epoch":    primitive.NewDateTimeFromTime(time.Unix(0, 0)),
@@ -304,8 +244,7 @@ var DateTimes = &Values[string]{
 
 // Nulls contains null value for tests.
 var Nulls = &Values[string]{
-	name:     "Nulls",
-	backends: []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-hana", "mongodb"}, // Not compatible with Tigris as it needs a data type to be set.
+	name: "Nulls",
 	data: map[string]any{
 		"null": nil,
 	},
@@ -314,11 +253,6 @@ var Nulls = &Values[string]{
 // Regexes contains regex values for tests.
 var Regexes = &Values[string]{
 	name: "Regexes",
-	validators: map[string]map[string]any{
-		"ferretdb-tigris": {
-			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"$r": {"type": "string"}, "o": {"type": "string"}}`),
-		},
-	},
 	data: map[string]any{
 		"regex":       primitive.Regex{Pattern: "foo", Options: "i"},
 		"regex-empty": primitive.Regex{},
@@ -329,11 +263,6 @@ var Regexes = &Values[string]{
 // Int32s contains int32 values for tests.
 var Int32s = &Values[string]{
 	name: "Int32s",
-	validators: map[string]map[string]any{
-		"ferretdb-tigris": {
-			"$tigrisSchemaString": tigrisSchema(`"type": "integer", "format": "int32"`),
-		},
-	},
 	data: map[string]any{
 		"int32":      int32(42),
 		"int32-zero": int32(0),
@@ -349,11 +278,6 @@ var Int32s = &Values[string]{
 // Timestamps contains timestamp values for tests.
 var Timestamps = &Values[string]{
 	name: "Timestamps",
-	validators: map[string]map[string]any{
-		"ferretdb-tigris": {
-			"$tigrisSchemaString": tigrisSchema(`"type": "object", "properties": {"$t": {"type": "string"}}`),
-		},
-	},
 	data: map[string]any{
 		"timestamp":      primitive.Timestamp{T: 42, I: 13},
 		"timestamp-i":    primitive.Timestamp{I: 1},
@@ -364,11 +288,6 @@ var Timestamps = &Values[string]{
 // Int64s contains int64 values for tests.
 var Int64s = &Values[string]{
 	name: "Int64s",
-	validators: map[string]map[string]any{
-		"ferretdb-tigris": {
-			"$tigrisSchemaString": tigrisSchema(`"type": "integer", "format": "int64"`),
-		},
-	},
 	data: map[string]any{
 		"int64":      int64(42),
 		"int64-zero": int64(0),
@@ -418,25 +337,6 @@ var ObjectIDKeys = &Values[primitive.ObjectID]{
 		{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11}: "objectid",
 		primitive.NilObjectID: "objectid-empty",
 	},
-}
-
-// tigrisSchema returns a tigris schema for the given type.
-// In addition to the "v" field, it also sets "foo" field with the same type, so it can be used
-// for test cases where multiple fields need to be supported (for example, $rename).
-func tigrisSchema(typeString string) string {
-	common := `{
-				"title": "%%collection%%",
-				"primary_key": ["_id"],
-				"properties": {
-					"v": {%%type%%},
-					"foo": {%%type%%},
-					"a": {%%type%%},
-					"b": {%%type%%},
-					"c": {%%type%%},
-					"_id": {"type": "string"}
-				}
-			}`
-	return strings.ReplaceAll(common, "%%type%%", typeString)
 }
 
 func init() {
