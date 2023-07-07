@@ -90,6 +90,8 @@ func CompareAndSetByPathNum[T types.CompositeTypeInterface](tb testtb.TB, expect
 
 // CompareAndSetByPathTime asserts that two values with the same path in two objects (documents or arrays)
 // are within a given time delta, then updates the expected object with the actual value.
+//
+//nolint:lll // for readability
 func CompareAndSetByPathTime[T types.CompositeTypeInterface](tb testtb.TB, expected, actual T, delta time.Duration, path types.Path) {
 	tb.Helper()
 

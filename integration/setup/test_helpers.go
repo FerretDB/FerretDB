@@ -34,6 +34,9 @@ func FailsForFerretDB(tb testtb.TB, reason string) testtb.TB {
 	return testfail.Expected(tb, reason)
 }
 
+// FailsForSQLite return testtb.TB that expects test to fail for FerretDB with SQLite backend and pass otherwise.
+//
+// This function should not be used lightly and always with an issue URL.
 func FailsForSQLite(tb testtb.TB, reason string) testtb.TB {
 	tb.Helper()
 
@@ -46,7 +49,7 @@ func FailsForSQLite(tb testtb.TB, reason string) testtb.TB {
 
 // SkipForMongoDB skips the current test for MongoDB.
 //
-// This function should not be used lightly.
+// This function should not be used lightly and always with an issue URL.
 func SkipForMongoDB(tb testtb.TB, reason string) {
 	tb.Helper()
 

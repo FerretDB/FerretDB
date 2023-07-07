@@ -177,7 +177,7 @@ func TestRenameCollectionCompat(t *testing.T) {
 
 			tt.Parallel()
 
-			t := setup.FailsForSQLite(tt, "TODO")
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2760")
 
 			var targetRes bson.D
 			targetCommand := bson.D{{"renameCollection", tc.targetNSFrom}, {"to", tc.targetNSTo}}

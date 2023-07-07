@@ -27,7 +27,7 @@ import (
 )
 
 func TestRenameCollectionStress(tt *testing.T) {
-	t := setup.FailsForSQLite(tt, "TODO")
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2760")
 
 	ctx, collection := setup.Setup(t)
 	db := collection.Database()

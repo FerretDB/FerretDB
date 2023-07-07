@@ -22,7 +22,6 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
@@ -42,7 +41,7 @@ func Stress(tb testtb.TB, f func(ready chan<- struct{}, start <-chan struct{})) 
 	readyCh := make(chan struct{}, NumGoroutines)
 	startCh := make(chan struct{})
 
-	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
+	ctx, cancel := context.WithCancel(context.Background())
 	tb.Cleanup(cancel)
 
 	for i := 0; i < NumGoroutines; i++ {
