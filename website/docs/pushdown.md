@@ -53,7 +53,7 @@ will prefetch all numbers larger/smaller than max/min value of the range.
 
 <!-- markdownlint-restore -->
 
-## Supported pushdown on find() cursor methods
+## Supported pushdown on `find()` cursor methods
 
 <!-- markdownlint-capture -->
 <!-- markdownlint-disable MD001 MD033 MD051 -->
@@ -71,4 +71,4 @@ only if experimental sort pushdown is enabled by `-enable-sort-pushdown` flag.
 
 ###### [3] {#3}
 
-Sort pushdown is an experimental configuration option by enabled by `-enable-sort-pushdown` flag.
+Sort pushdown is an experimental configuration option enabled by `-enable-sort-pushdown` flag.
