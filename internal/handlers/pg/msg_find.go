@@ -73,9 +73,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		qp.Sort = params.Sort
 	}
 
+	// Sort requires fetching all documents and sorting them in memory unless sort pushdown is enabled.
+	// Skip with limit requires skip + limit documents which may be more than maximum int64.
+	// Limit pushdown is not applied for those conditions.
 	if (params.Sort.Len() == 0 || h.EnableSortPushdown) && params.Skip == 0 {
-		// sort has to fetch and sort documents unless sort pushdown is set,
-		// skip requires more than limit documents
 		qp.Limit = params.Limit
 	}
 

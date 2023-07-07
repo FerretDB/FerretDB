@@ -34,8 +34,8 @@ type ExplainParams struct {
 
 	Filter *types.Document `ferretdb:"filter,opt"`
 	Sort   *types.Document `ferretdb:"sort,opt"`
-	Skip   int64           `ferretdb:"skip,opt,positiveNumber"`
-	Limit  int64           `ferretdb:"limit,opt,positiveNumber"`
+	Skip   int64           `ferretdb:"skip,opt"`
+	Limit  int64           `ferretdb:"limit,opt"`
 
 	StagesDocs []any           `ferretdb:"-"`
 	Aggregate  bool            `ferretdb:"-"`
