@@ -92,19 +92,19 @@ func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, 
 	var limit, skip int64
 
 	if limit, err = GetOptionalParam(explain, "limit", limit); err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	if limit, err = commonparams.GetValidatedNumberParamWithMinValue("explain", "limit", limit, 0); err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	if skip, err = GetOptionalParam(explain, "skip", skip); err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	if skip, err = commonparams.GetValidatedNumberParamWithMinValue("explain", "skip", skip, 0); err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	var stagesDocs []any
