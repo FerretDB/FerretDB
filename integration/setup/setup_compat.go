@@ -21,9 +21,7 @@ import (
 	"strings"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
@@ -74,7 +72,7 @@ func SetupCompatWithOpts(tb testutil.TB, opts *SetupCompatOpts) *SetupCompatResu
 		opts = new(SetupCompatOpts)
 	}
 
-	// When we use `task all` to run `pg` and `tigris` compat tests in parallel,
+	// When we use `task all` to run `pg` and `sqlite` compat tests in parallel,
 	// they both use the same MongoDB instance.
 	// Add the backend's name to prevent the usage of the same database.
 	opts.databaseName = testutil.DatabaseName(tb) + "_" + strings.TrimPrefix(*targetBackendF, "ferretdb-")
@@ -155,18 +153,6 @@ func setupCompatCollections(tb testutil.TB, ctx context.Context, client *mongo.C
 		collectionName := opts.baseCollectionName + "_" + provider.Name()
 		fullName := opts.databaseName + "." + collectionName
 
-		if *targetURLF == "" && !provider.IsCompatible(*targetBackendF) {
-			// Skip creating collection for both target and compat if
-			// target is not compatible. Target and compat must have same collection.
-			tb.Logf(
-				"Provider %q is not compatible with target backend %q, skipping creating %q.",
-				provider.Name(),
-				*targetBackendF,
-				fullName,
-			)
-			continue
-		}
-
 		spanName := fmt.Sprintf("setupCompatCollections/%s", collectionName)
 		collCtx, span := otel.Tracer("").Start(ctx, spanName)
 		region := trace.StartRegion(collCtx, spanName)
@@ -175,17 +161,6 @@ func setupCompatCollections(tb testutil.TB, ctx context.Context, client *mongo.C
 
 		// drop remnants of the previous failed run
 		_ = collection.Drop(collCtx)
-
-		// if validators are set, create collection with them (otherwise collection will be created on first insert)
-		if validators := provider.Validators(backend, collectionName); len(validators) > 0 {
-			opts := options.CreateCollection()
-			for key, value := range validators {
-				opts.SetValidator(bson.D{{key, value}})
-			}
-
-			err := database.CreateCollection(ctx, collectionName, opts)
-			require.NoError(tb, err)
-		}
 
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
@@ -219,6 +194,6 @@ func setupCompatCollections(tb testutil.TB, ctx context.Context, client *mongo.C
 		collections = append(collections, collection)
 	}
 
-	require.NotEmpty(tb, collections, "all providers were not compatible")
+	require.NotEmpty(tb, collections)
 	return collections
 }

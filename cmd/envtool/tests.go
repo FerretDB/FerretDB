@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"sort"
 	"strings"
@@ -57,6 +58,7 @@ func testsShard(w io.Writer, index, total uint) error {
 func getAllTestNames(dir string) ([]string, error) {
 	cmd := exec.Command("go", "test", "-list=.", "./...")
 	cmd.Dir = dir
+	cmd.Stderr = os.Stderr
 
 	b, err := cmd.Output()
 	if err != nil {

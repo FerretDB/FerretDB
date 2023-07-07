@@ -49,7 +49,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	))
 
 	if upserted.Len() != 0 {
-		res.Set("upserted", &upserted)
+		res.Set("upserted", upserted)
 	}
 
 	res.Set("nModified", modified)
@@ -139,8 +139,11 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 
 			// TODO https://github.com/FerretDB/FerretDB/issues/2612
 
+			iter := must.NotFail(types.NewArray(doc)).Iterator()
+			defer iter.Close()
+
 			_, err := db.Collection(params.Collection).Insert(ctx, &backends.InsertParams{
-				Iter: must.NotFail(types.NewArray(doc)).Iterator(),
+				Iter: iter,
 			})
 			if err != nil {
 				return 0, 0, nil, err

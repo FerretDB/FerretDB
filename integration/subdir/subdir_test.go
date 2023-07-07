@@ -12,16 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
+package subdir
 
-import (
-	"context"
+import "testing"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
-
-// MsgGetMore implements handlers.Interface.
-func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.GetMore(ctx, msg, h.registry)
+func TestSubDir(t *testing.T) {
+	// TODO https://github.com/FerretDB/engineering/issues/66
+	// Remove this directory once this issue is done.
 }
