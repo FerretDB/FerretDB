@@ -20,8 +20,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strings"
-	"sync/atomic"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
@@ -33,17 +31,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
-
-// See docker-compose.yml.
-var tigrisURLsIndex atomic.Uint32
-
-// nextTigrisUrl returns the next url for the `tigris` handler.
-func nextTigrisUrl() string {
-	i := int(tigrisURLsIndex.Add(1)) - 1
-	urls := strings.Split(*tigrisURLSF, ",")
-
-	return urls[i%len(urls)]
-}
 
 // unixSocketPath returns temporary Unix domain socket path for that test.
 func unixSocketPath(tb testutil.TB) string {
@@ -120,25 +107,16 @@ func setupListener(tb testutil.TB, ctx context.Context, logger *zap.Logger) stri
 	switch *targetBackendF {
 	case "ferretdb-pg":
 		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for %q", *targetBackendF)
-		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
 		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
 		handler = "pg"
 
 	case "ferretdb-sqlite":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
-		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
 		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
 		handler = "sqlite"
 
-	case "ferretdb-tigris":
-		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
-		require.NotEmpty(tb, *tigrisURLSF, "-tigris-urls must be set for %q", *targetBackendF)
-		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
-		handler = "tigris"
-
 	case "ferretdb-hana":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
-		require.Empty(tb, *tigrisURLSF, "-tigris-urls must be empty for %q", *targetBackendF)
 		require.NotEmpty(tb, *hanaURLF, "-hana-url must be set for %q", *targetBackendF)
 		handler = "hana"
 
@@ -161,8 +139,6 @@ func setupListener(tb testutil.TB, ctx context.Context, logger *zap.Logger) stri
 		PostgreSQLURL: *postgreSQLURLF,
 
 		SQLiteURL: sqliteURL.String(),
-
-		TigrisURL: nextTigrisUrl(),
 
 		HANAURL: *hanaURLF,
 

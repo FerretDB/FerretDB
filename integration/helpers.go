@@ -33,12 +33,6 @@ import (
 
 //go:generate ../bin/stringer  -type compatTestCaseResultType
 
-// documentValidationFailureCode is returned by Tigris schema validation code.
-// TODO tigris provider should only use collections that does not produce
-// validation error for each test case.
-// https://github.com/FerretDB/FerretDB/issues/2253
-const documentValidationFailureCode = 121
-
 // compatTestCaseResultType represents compatibility test case result type.
 //
 // It is used to avoid errors with invalid queries making tests pass.
@@ -154,13 +148,6 @@ func AssertEqualDocumentsSlice(t testutil.TB, expected, actual []bson.D) bool {
 	return testutil.AssertEqualSlices(t, expectedDocs, actualDocs)
 }
 
-// AssertEqualError is a deprecated alias for AssertEqualCommandError.
-//
-// Deprecated: use AssertEqualCommandError instead.
-func AssertEqualError(t testutil.TB, expected mongo.CommandError, actual error) bool {
-	return AssertEqualCommandError(t, expected, actual)
-}
-
 // AssertEqualCommandError asserts that the expected error is the same as the actual (ignoring the Raw part).
 func AssertEqualCommandError(t testutil.TB, expected mongo.CommandError, actual error) bool {
 	t.Helper()
@@ -216,7 +203,7 @@ func AssertMatchesCommandError(t testutil.TB, expected, actual error) {
 	actualMessage := a.Message
 	a.Message = e.Message
 
-	if !AssertEqualError(t, e, a) {
+	if !AssertEqualCommandError(t, e, a) {
 		t.Logf("actual message: %s", actualMessage)
 	}
 }
@@ -267,13 +254,6 @@ func AssertMatchesBulkException(t testutil.TB, expected, actual error) {
 
 		assert.Equal(t, expectedWe, we)
 	}
-}
-
-// AssertEqualAltError is a deprecated alias for AssertEqualAltCommandError.
-//
-// Deprecated: use AssertEqualAltCommandError instead.
-func AssertEqualAltError(t testutil.TB, expected mongo.CommandError, altMessage string, actual error) bool {
-	return AssertEqualAltCommandError(t, expected, altMessage, actual)
 }
 
 // AssertEqualAltCommandError asserts that the expected error is the same as the actual (ignoring the Raw part);

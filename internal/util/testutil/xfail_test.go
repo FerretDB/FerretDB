@@ -12,16 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
+package testutil
 
-import (
-	"context"
+import "testing"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commoncommands"
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
+func TestXFail(t *testing.T) {
+	t.Parallel()
 
-// MsgGetCmdLineOpts implements HandlerInterface.
-func (h *Handler) MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return commoncommands.MsgGetCmdLineOpts(ctx, msg)
+	t.Run("Fail", func(tt *testing.T) {
+		tt.Parallel()
+
+		t := XFail(tt, "expected failure")
+		t.FailNow()
+	})
+
+	t.Run("FailAndSkip", func(tt *testing.T) {
+		tt.Parallel()
+
+		t := XFail(tt, "expected failure")
+		t.Fail()
+		t.SkipNow()
+	})
 }

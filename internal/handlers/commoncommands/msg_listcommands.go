@@ -173,6 +173,10 @@ var Commands = map[string]command{
 	"ismaster": { // old lowercase variant
 		Handler: handlers.Interface.MsgIsMaster,
 	},
+	"killCursors": {
+		Help:    "Closes server cursors.",
+		Handler: handlers.Interface.MsgKillCursors,
+	},
 	"listCollections": {
 		Help:    "Returns the information of the collections and views in the database.",
 		Handler: handlers.Interface.MsgListCollections,
