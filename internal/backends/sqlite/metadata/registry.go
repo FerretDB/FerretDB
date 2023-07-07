@@ -147,7 +147,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 
 	tableName := r.CollectionToTable(collectionName)
 
-	err = pool.InTransaction(ctx, db, func(tx *sql.Tx) error {
+	err = inTransaction(ctx, db, func(tx *sql.Tx) error {
 		query := fmt.Sprintf("CREATE TABLE %q (_ferretdb_sjson TEXT)", tableName)
 		if _, err = tx.ExecContext(ctx, query); err != nil {
 			var e *sqlite.Error
@@ -184,7 +184,7 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 
 	tableName := r.CollectionToTable(collectionName)
 
-	err := pool.InTransaction(ctx, db, func(tx *sql.Tx) error {
+	err := inTransaction(ctx, db, func(tx *sql.Tx) error {
 		query := fmt.Sprintf("DELETE FROM %q WHERE name = ?", metadataTableName)
 		if _, err := tx.ExecContext(ctx, query, collectionName); err != nil {
 			return lazyerrors.Error(err)
@@ -202,4 +202,35 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 	}
 
 	return true, nil
+}
+
+// inTransaction wraps the given function f in a SQLite transaction.
+//
+// If f returns an error, the transaction is rolled back.
+//
+// Passed context will be used for transaction.
+// Context cancellation DOES rollback the transaction.
+func inTransaction(ctx context.Context, db *sql.DB, f func(*sql.Tx) error) (err error) {
+	var tx *sql.Tx
+
+	if tx, err = db.BeginTx(ctx, nil); err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
+
+	if err = f(tx); err != nil {
+		err = lazyerrors.Error(err)
+		_ = tx.Rollback()
+
+		return
+	}
+
+	if err = tx.Commit(); err != nil {
+		err = lazyerrors.Error(err)
+		_ = tx.Rollback()
+
+		return
+	}
+
+	return
 }

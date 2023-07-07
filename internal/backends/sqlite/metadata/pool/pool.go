@@ -244,34 +244,3 @@ func (p *Pool) Drop(ctx context.Context, name string) bool {
 
 	return true
 }
-
-// InTransaction wraps the given function f in a SQLite transaction.
-//
-// If f returns an error, the transaction is rolled back.
-//
-// Passed context will be used for transaction.
-// Context cancellation DOES rollback the transaction.
-func InTransaction(ctx context.Context, db *sql.DB, f func(*sql.Tx) error) (err error) {
-	var tx *sql.Tx
-
-	if tx, err = db.BeginTx(ctx, nil); err != nil {
-		err = lazyerrors.Error(err)
-		return
-	}
-
-	if err = f(tx); err != nil {
-		err = lazyerrors.Error(err)
-		_ = tx.Rollback()
-
-		return
-	}
-
-	if err = tx.Commit(); err != nil {
-		err = lazyerrors.Error(err)
-		_ = tx.Rollback()
-
-		return
-	}
-
-	return
-}
