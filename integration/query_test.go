@@ -984,10 +984,11 @@ func TestQueryCommandExplainErrors(t *testing.T) {
 		skip       string              // optional, skip test with a specified reason
 	}{
 		"LimitDocument": {
-			command: bson.D{{"explain", bson.D{
-				{"find", collection.Name()},
-				{"limit", bson.D{}},
-			}},
+			command: bson.D{
+				{"explain", bson.D{
+					{"find", collection.Name()},
+					{"limit", bson.D{}},
+				}},
 			},
 			err: &mongo.CommandError{
 				Code:    14,
@@ -997,10 +998,11 @@ func TestQueryCommandExplainErrors(t *testing.T) {
 			altMessage: "BSON field 'limit' is the wrong type 'object', expected type 'long'",
 		},
 		"LimitNegative": {
-			command: bson.D{{"explain", bson.D{
-				{"find", collection.Name()},
-				{"limit", int64(-1)},
-			}},
+			command: bson.D{
+				{"explain", bson.D{
+					{"find", collection.Name()},
+					{"limit", int64(-1)},
+				}},
 			},
 			err: &mongo.CommandError{
 				Code:    51024,
@@ -1009,10 +1011,11 @@ func TestQueryCommandExplainErrors(t *testing.T) {
 			},
 		},
 		"SkipDocument": {
-			command: bson.D{{"explain", bson.D{
-				{"find", collection.Name()},
-				{"skip", bson.D{}},
-			}},
+			command: bson.D{
+				{"explain", bson.D{
+					{"find", collection.Name()},
+					{"skip", bson.D{}},
+				}},
 			},
 			err: &mongo.CommandError{
 				Code:    14,
@@ -1022,10 +1025,11 @@ func TestQueryCommandExplainErrors(t *testing.T) {
 			altMessage: "BSON field 'skip' is the wrong type 'object', expected type 'long'",
 		},
 		"SkipNegative": {
-			command: bson.D{{"explain", bson.D{
-				{"find", collection.Name()},
-				{"skip", int64(-1)},
-			}},
+			command: bson.D{
+				{"explain", bson.D{
+					{"find", collection.Name()},
+					{"skip", int64(-1)},
+				}},
 			},
 			err: &mongo.CommandError{
 				Code:    51024,
