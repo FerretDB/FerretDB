@@ -29,8 +29,6 @@ import (
 
 // TestDeleteSimple checks simple cases of doc deletion.
 func TestDeleteSimple(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 

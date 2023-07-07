@@ -134,6 +134,9 @@ type Interface interface {
 	// MsgIsMaster returns the role of the FerretDB instance.
 	MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
+	// MsgKillCursors closes server cursors.
+	MsgKillCursors(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgListCollections returns the information of the collections and views in the database.
 	MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
