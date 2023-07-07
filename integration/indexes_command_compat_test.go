@@ -28,8 +28,6 @@ import (
 
 // TestCreateIndexesCommandCompat tests specific behavior for index creation that can be only provided through RunCommand.
 func TestCreateIndexesCommandCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
-
 	t.Parallel()
 
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
@@ -137,20 +135,16 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 			}
 
 			var targetRes bson.D
-			targetErr := targetCollection.Database().RunCommand(
-				ctx, bson.D{
-					{"createIndexes", tc.collectionName},
-					{"indexes", bson.A{indexesDoc}},
-				},
-			).Decode(&targetRes)
+			targetErr := targetCollection.Database().RunCommand(ctx, bson.D{
+				{"createIndexes", tc.collectionName},
+				{"indexes", bson.A{indexesDoc}},
+			}).Decode(&targetRes)
 
 			var compatRes bson.D
-			compatErr := compatCollection.Database().RunCommand(
-				ctx, bson.D{
-					{"createIndexes", tc.collectionName},
-					{"indexes", bson.A{indexesDoc}},
-				},
-			).Decode(&compatRes)
+			compatErr := compatCollection.Database().RunCommand(ctx, bson.D{
+				{"createIndexes", tc.collectionName},
+				{"indexes", bson.A{indexesDoc}},
+			}).Decode(&compatRes)
 
 			if targetErr != nil {
 				t.Logf("Target error: %v", targetErr)
@@ -203,8 +197,6 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 // such as numIndexBefore, numIndexAfter, createdCollectionAutomatically
 // contain the correct values.
 func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
-
 	t.Parallel()
 
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
@@ -216,20 +208,16 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 	indexesDoc := bson.D{{"key", bson.D{{"v", 1}}}, {"name", "v_1"}}
 
 	var targetRes bson.D
-	targetErr := targetCollection.Database().RunCommand(
-		ctx, bson.D{
-			{"createIndexes", collectionName},
-			{"indexes", bson.A{indexesDoc}},
-		},
-	).Decode(&targetRes)
+	targetErr := targetCollection.Database().RunCommand(ctx, bson.D{
+		{"createIndexes", collectionName},
+		{"indexes", bson.A{indexesDoc}},
+	}).Decode(&targetRes)
 
 	var compatRes bson.D
-	compatErr := compatCollection.Database().RunCommand(
-		ctx, bson.D{
-			{"createIndexes", collectionName},
-			{"indexes", bson.A{indexesDoc}},
-		},
-	).Decode(&compatRes)
+	compatErr := compatCollection.Database().RunCommand(ctx, bson.D{
+		{"createIndexes", collectionName},
+		{"indexes", bson.A{indexesDoc}},
+	}).Decode(&compatRes)
 
 	require.NoError(t, compatErr)
 	require.NoError(t, targetErr, "target error; compat returned no error")
@@ -244,19 +232,15 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 	// Now this collection exists, so we create another index and expect createdCollectionAutomatically to be false.
 	indexesDoc = bson.D{{"key", bson.D{{"foo", 1}}}, {"name", "foo_1"}}
 
-	targetErr = targetCollection.Database().RunCommand(
-		ctx, bson.D{
-			{"createIndexes", collectionName},
-			{"indexes", bson.A{indexesDoc}},
-		},
-	).Decode(&targetRes)
+	targetErr = targetCollection.Database().RunCommand(ctx, bson.D{
+		{"createIndexes", collectionName},
+		{"indexes", bson.A{indexesDoc}},
+	}).Decode(&targetRes)
 
-	compatErr = compatCollection.Database().RunCommand(
-		ctx, bson.D{
-			{"createIndexes", collectionName},
-			{"indexes", bson.A{indexesDoc}},
-		},
-	).Decode(&compatRes)
+	compatErr = compatCollection.Database().RunCommand(ctx, bson.D{
+		{"createIndexes", collectionName},
+		{"indexes", bson.A{indexesDoc}},
+	}).Decode(&compatRes)
 
 	require.NoError(t, compatErr)
 	require.NoError(t, targetErr, "target error; compat returned no error")
@@ -271,19 +255,15 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 	// Call index creation for the index that already exists, expect note to be set.
 	indexesDoc = bson.D{{"key", bson.D{{"foo", 1}}}, {"name", "foo_1"}}
 
-	targetErr = targetCollection.Database().RunCommand(
-		ctx, bson.D{
-			{"createIndexes", collectionName},
-			{"indexes", bson.A{indexesDoc}},
-		},
-	).Decode(&targetRes)
+	targetErr = targetCollection.Database().RunCommand(ctx, bson.D{
+		{"createIndexes", collectionName},
+		{"indexes", bson.A{indexesDoc}},
+	}).Decode(&targetRes)
 
-	compatErr = compatCollection.Database().RunCommand(
-		ctx, bson.D{
-			{"createIndexes", collectionName},
-			{"indexes", bson.A{indexesDoc}},
-		},
-	).Decode(&compatRes)
+	compatErr = compatCollection.Database().RunCommand(ctx, bson.D{
+		{"createIndexes", collectionName},
+		{"indexes", bson.A{indexesDoc}},
+	}).Decode(&compatRes)
 
 	require.NoError(t, compatErr)
 	require.NoError(t, targetErr, "target error; compat returned no error")
@@ -299,8 +279,6 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 }
 
 func TestDropIndexesCommandCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability

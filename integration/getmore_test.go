@@ -643,10 +643,10 @@ func TestGetMoreCommandConnection(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	t.Run("DifferentClient", func(t *testing.T) {
+	t.Run("DifferentClient", func(tt *testing.T) {
 		// The error returned from MongoDB is a session error, FerretDB does not
 		// return an error because db, collection and username are the same.
-		setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/153")
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/153")
 
 		// do not run subtest in parallel to avoid breaking another parallel subtest
 

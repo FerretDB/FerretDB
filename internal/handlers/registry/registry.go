@@ -47,11 +47,6 @@ type NewHandlerOpts struct {
 	// for `sqlite` handler
 	SQLiteURL string
 
-	// for `tigris` handler
-	TigrisURL          string
-	TigrisClientID     string
-	TigrisClientSecret string
-
 	// for `hana` handler
 	HANAURL string
 
@@ -83,7 +78,7 @@ func Handlers() []string {
 	res := make([]string, 0, len(registry))
 
 	// double check registered names and return them in the right order
-	for _, h := range []string{"pg", "sqlite", "tigris", "hana"} {
+	for _, h := range []string{"pg", "sqlite", "hana"} {
 		if _, ok := registry[h]; !ok {
 			continue
 		}
