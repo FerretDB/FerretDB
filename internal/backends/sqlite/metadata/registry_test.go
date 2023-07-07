@@ -62,7 +62,7 @@ func TestInTransactionRollback(t *testing.T) {
 				// Check if table was actually created
 				require.Equal(t, []string{"_ferretdb_collections", "test"}, tables)
 
-				panic("(un)expected panic in transaction")
+				panic(nil)
 			})
 		})
 
