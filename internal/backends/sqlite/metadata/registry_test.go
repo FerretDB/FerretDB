@@ -35,7 +35,7 @@ func TestInTransactionRollback(t *testing.T) {
 	r, err := NewRegistry("file:"+t.TempDir()+"/", testutil.Logger(t))
 	require.NoError(t, err)
 
-	t.Run("RollbackOnPanic", func(t *testing.T) {
+	t.Run("Panic", func(t *testing.T) {
 		ctx := testutil.Ctx(t)
 		db, err := r.DatabaseGetOrCreate(ctx, "RollbackOnPanic")
 		require.NoError(t, err)
@@ -83,7 +83,7 @@ func TestInTransactionRollback(t *testing.T) {
 		assert.Equal(t, []string{"_ferretdb_collections"}, tables)
 	})
 
-	t.Run("RollbackOnContextCancelled", func(t *testing.T) {
+	t.Run("ContextCancelled", func(t *testing.T) {
 		ctx := testutil.Ctx(t)
 
 		db, err := r.DatabaseGetOrCreate(ctx, "RollbackOnContextCancelled")
@@ -136,7 +136,7 @@ func TestInTransactionRollback(t *testing.T) {
 		assert.Equal(t, []string{"_ferretdb_collections"}, tables)
 	})
 
-	t.Run("RollbackOnGoexit", func(t *testing.T) {
+	t.Run("Goexit", func(t *testing.T) {
 		ctx := testutil.Ctx(t)
 
 		db, err := r.DatabaseGetOrCreate(ctx, "RollbackOnGoexit")
