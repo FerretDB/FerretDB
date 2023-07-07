@@ -886,8 +886,6 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 }
 
 func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
-	setup.SkipExceptMongoDB(t, "https://github.com/FerretDB/FerretDB/issues/1808")
-
 	// do not run tests in parallel to for server execution time to use maximum possible maxTimeMS
 
 	// options are applied to create a client that uses single connection pool
@@ -903,12 +901,14 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	ctx, collection := s.Ctx, s.Collection
 
 	// need large amount of documents for time out to trigger
-	arr, _ := generateDocuments(0, 50000)
+	arr, _ := generateDocuments(0, 5000)
 
 	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
-	t.Run("FindExpire", func(t *testing.T) {
+	t.Run("FindExpire", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1808")
+
 		opts := options.Find().
 			// set batchSize big enough to hit maxTimeMS
 			SetBatchSize(2000).
@@ -965,7 +965,9 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		)
 	})
 
-	t.Run("FindGetMoreMaxTimeMS", func(t *testing.T) {
+	t.Run("FindGetMoreMaxTimeMS", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1808")
+
 		var res bson.D
 		err := collection.Database().RunCommand(ctx, bson.D{
 			{"find", collection.Name()},
@@ -1003,7 +1005,9 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		)
 	})
 
-	t.Run("AggregateExpire", func(t *testing.T) {
+	t.Run("AggregateExpire", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1808")
+
 		opts := options.Aggregate().
 			// set batchSize big enough to hit maxTimeMS
 			SetBatchSize(2000).
@@ -1059,7 +1063,9 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		)
 	})
 
-	t.Run("AggregateGetMoreMaxTimeMS", func(t *testing.T) {
+	t.Run("AggregateGetMoreMaxTimeMS", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1808")
+
 		var res bson.D
 		err := collection.Database().RunCommand(ctx, bson.D{
 			{"aggregate", collection.Name()},
