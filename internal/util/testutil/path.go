@@ -23,10 +23,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // GetByPath returns a value by path - a sequence of indexes and keys.
-func GetByPath[T types.CompositeTypeInterface](tb TB, comp T, path types.Path) any {
+func GetByPath[T types.CompositeTypeInterface](tb testtb.TB, comp T, path types.Path) any {
 	tb.Helper()
 
 	res, err := comp.GetByPath(path)
@@ -37,7 +38,7 @@ func GetByPath[T types.CompositeTypeInterface](tb TB, comp T, path types.Path) a
 // SetByPath sets the value by path - a sequence of indexes and keys.
 //
 // The path must exist.
-func SetByPath[T types.CompositeTypeInterface](tb TB, comp T, value any, path types.Path) {
+func SetByPath[T types.CompositeTypeInterface](tb testtb.TB, comp T, value any, path types.Path) {
 	tb.Helper()
 
 	l := path.Len()
@@ -76,7 +77,7 @@ func SetByPath[T types.CompositeTypeInterface](tb TB, comp T, value any, path ty
 
 // CompareAndSetByPathNum asserts that two values with the same path in two objects (documents or arrays)
 // are within a given numerical delta, then updates the expected object with the actual value.
-func CompareAndSetByPathNum[T types.CompositeTypeInterface](tb TB, expected, actual T, delta float64, path types.Path) {
+func CompareAndSetByPathNum[T types.CompositeTypeInterface](tb testtb.TB, expected, actual T, delta float64, path types.Path) {
 	tb.Helper()
 
 	expectedV := GetByPath(tb, expected, path)
@@ -89,7 +90,7 @@ func CompareAndSetByPathNum[T types.CompositeTypeInterface](tb TB, expected, act
 
 // CompareAndSetByPathTime asserts that two values with the same path in two objects (documents or arrays)
 // are within a given time delta, then updates the expected object with the actual value.
-func CompareAndSetByPathTime[T types.CompositeTypeInterface](tb TB, expected, actual T, delta time.Duration, path types.Path) {
+func CompareAndSetByPathTime[T types.CompositeTypeInterface](tb testtb.TB, expected, actual T, delta time.Duration, path types.Path) {
 	tb.Helper()
 
 	expectedV := GetByPath(tb, expected, path)

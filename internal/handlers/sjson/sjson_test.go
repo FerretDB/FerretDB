@@ -28,7 +28,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -42,7 +42,7 @@ type testCase struct {
 }
 
 // assertEqual is assert.Equal that also can compare NaNs and ±0.
-func assertEqual(tb testutil.TB, expected, actual any, msgAndArgs ...any) bool {
+func assertEqual(tb testtb.TB, expected, actual any, msgAndArgs ...any) bool {
 	tb.Helper()
 
 	switch expected := expected.(type) {

@@ -16,8 +16,6 @@ package integration
 
 import (
 	"fmt"
-	"runtime"
-	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -25,72 +23,39 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
 )
 
-func TestRenameCollectionStress(t *testing.T) {
-	// TODO rewrite using teststress.Stress
+func TestRenameCollectionStress(tt *testing.T) {
+	t := setup.FailsForSQLite(tt, "TODO")
 
-	ctx, collection := setup.Setup(t) // no providers there, we will create collections for this test
+	ctx, collection := setup.Setup(t)
 	db := collection.Database()
 
-	// Collection rename should be performed while connecting to the admin database.
 	adminDB := db.Client().Database("admin")
 
-	collNum := runtime.GOMAXPROCS(-1) * 10
+	var i, oks, errs atomic.Int32
 
-	// create collections that we will attempt to rename later
-	for i := 0; i < collNum; i++ {
-		collName := fmt.Sprintf("rename_collection_stress_%d", i)
-		err := db.CreateCollection(ctx, collName)
+	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+		from := fmt.Sprintf("rename_collection_stress_%d", i.Add(1)-1)
+		to := fmt.Sprintf("%s.rename_collection_stress_renamed", db.Name())
+
+		err := db.CreateCollection(ctx, from)
 		require.NoError(t, err)
-	}
 
-	ready := make(chan struct{}, collNum)
-	start := make(chan struct{})
+		ready <- struct{}{}
+		<-start
 
-	var errNum atomic.Int32
-	var renamedCollectionsNum atomic.Int32
+		err = adminDB.RunCommand(ctx, bson.D{{"renameCollection", from}, {"to", to}}).Err()
+		if err == nil {
+			oks.Add(1)
+		} else {
+			errs.Add(1)
+		}
+	})
 
-	var wg sync.WaitGroup
-	for i := 0; i < collNum; i++ {
-		wg.Add(1)
-
-		go func(i int) {
-			defer wg.Done()
-
-			ready <- struct{}{}
-
-			<-start
-
-			renameFrom := fmt.Sprintf("%s.rename_collection_stress_%d", db.Name(), i)
-			renameTo := fmt.Sprintf("%s.rename_collection_stress_renamed", db.Name())
-
-			var res bson.D
-			err := adminDB.RunCommand(ctx, bson.D{
-				{"renameCollection", renameFrom},
-				{"to", renameTo},
-			}).Decode(&res)
-
-			if err != nil {
-				errNum.Add(1)
-			} else {
-				renamedCollectionsNum.Add(1)
-			}
-		}(i)
-	}
-
-	for i := 0; i < collNum; i++ {
-		<-ready
-	}
-
-	close(start)
-
-	wg.Wait()
-
-	val := atomic.Int32{}
-	val.Add(int32(collNum - 1))
-	require.Equal(t, val.Load(), errNum.Load())              // expected to have errors for all the rename attempts apart from the first one
-	require.Equal(t, int32(1), renamedCollectionsNum.Load()) // expected to have one collection renamed
+	require.Equal(t, int32(1), oks.Load())
+	require.Equal(t, i.Load()-1, errs.Load())
 
 	colls, err := db.ListCollectionNames(ctx, bson.D{})
 	require.NoError(t, err)
