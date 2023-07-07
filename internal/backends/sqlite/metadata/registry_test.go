@@ -17,7 +17,6 @@ package metadata
 import (
 	"context"
 	"database/sql"
-	"os"
 	"runtime"
 	"sync"
 	"testing"
@@ -29,9 +28,6 @@ import (
 )
 
 func TestInTransactionRollback(t *testing.T) {
-	os.Remove("./testdata")
-	require.NoError(t, os.Mkdir("./testdata", 0o666))
-
 	r, err := NewRegistry("file:"+t.TempDir()+"/", testutil.Logger(t))
 	require.NoError(t, err)
 
