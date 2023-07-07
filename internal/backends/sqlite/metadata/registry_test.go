@@ -26,7 +26,7 @@ import (
 
 func TestInTransactionRollbackOnPanic(t *testing.T) {
 	os.Remove("./testdata")
-	require.NoError(t, os.Mkdir("./testdata", 0x655))
+	require.NoError(t, os.Mkdir("./testdata", 0o655))
 
 	r, err := NewRegistry("file:"+t.TempDir()+"/", testutil.Logger(t))
 	require.NoError(t, err)
