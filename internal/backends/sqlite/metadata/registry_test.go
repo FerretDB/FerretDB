@@ -17,6 +17,8 @@ package metadata
 import (
 	"database/sql"
 	"os"
+	"runtime"
+	"sync"
 	"testing"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -31,13 +33,67 @@ func TestInTransactionRollbackOnPanic(t *testing.T) {
 	r, err := NewRegistry("file:"+t.TempDir()+"/", testutil.Logger(t))
 	require.NoError(t, err)
 
-	ctx := testutil.Ctx(t)
+	t.Run("RollbackOnPanic", func(t *testing.T) {
+		ctx := testutil.Ctx(t)
+		db, err := r.DatabaseGetOrCreate(ctx, "RollbackOnPanic")
+		require.NoError(t, err)
 
-	db, err := r.DatabaseGetOrCreate(ctx, t.Name())
-	require.NoError(t, err)
+		require.Panics(t,
+			func() {
+				err = inTransaction(ctx, db, func(tx *sql.Tx) error {
+					_, err = tx.ExecContext(ctx, "CREATE TABLE test (foo TEXT)")
+					require.NoError(t, err)
 
-	require.Panics(t,
-		func() {
+					rows, err := tx.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE type='table'")
+					require.NoError(t, err)
+					defer rows.Close()
+
+					var tables []string
+
+					for rows.Next() {
+						var name string
+						err = rows.Scan(&name)
+						require.NoError(t, err)
+
+						tables = append(tables, name)
+					}
+
+					// Check if table was actually created
+					require.Equal(t, []string{"_ferretdb_collections", "test"}, tables)
+
+					panic("Unexpected panic in transaction!")
+				})
+			})
+
+		rows, err := db.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE type='table'")
+		require.NoError(t, err)
+		defer rows.Close()
+
+		var tables []string
+
+		for rows.Next() {
+			var name string
+			err = rows.Scan(&name)
+			require.NoError(t, err)
+
+			tables = append(tables, name)
+		}
+
+		assert.Equal(t, []string{"_ferretdb_collections"}, tables)
+	})
+
+	t.Run("RollbackOnGoexit", func(t *testing.T) {
+		ctx := testutil.Ctx(t)
+
+		db, err := r.DatabaseGetOrCreate(ctx, "RollbackOnGoexit")
+		require.NoError(t, err)
+
+		var wg sync.WaitGroup
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
 			err = inTransaction(ctx, db, func(tx *sql.Tx) error {
 				_, err = tx.ExecContext(ctx, "CREATE TABLE test (foo TEXT)")
 				require.NoError(t, err)
@@ -59,23 +115,27 @@ func TestInTransactionRollbackOnPanic(t *testing.T) {
 				// Check if table was actually created
 				require.Equal(t, []string{"_ferretdb_collections", "test"}, tables)
 
-				panic("Unexpected panic in transaction!")
+				runtime.Goexit()
+				return nil
 			})
-		})
+		}()
 
-	rows, err := db.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE type='table'")
-	require.NoError(t, err)
-	defer rows.Close()
+		wg.Wait()
 
-	var tables []string
-
-	for rows.Next() {
-		var name string
-		err = rows.Scan(&name)
+		rows, err := db.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE type='table'")
 		require.NoError(t, err)
+		defer rows.Close()
 
-		tables = append(tables, name)
-	}
+		var tables []string
 
-	assert.Equal(t, []string{"_ferretdb_collections"}, tables)
+		for rows.Next() {
+			var name string
+			err = rows.Scan(&name)
+			require.NoError(t, err)
+
+			tables = append(tables, name)
+		}
+
+		assert.Equal(t, []string{"_ferretdb_collections"}, tables)
+	})
 }
