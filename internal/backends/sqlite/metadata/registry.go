@@ -147,9 +147,11 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 
 	tableName := r.CollectionToTable(collectionName)
 
+	var created bool
 	err = inTransaction(ctx, db, func(tx *sql.Tx) error {
 		query := fmt.Sprintf("CREATE TABLE %q (_ferretdb_sjson TEXT)", tableName)
 		if _, err = tx.ExecContext(ctx, query); err != nil {
+			// Table already exists, return empty result.
 			var e *sqlite.Error
 			if errors.As(err, &e) && e.Code() == sqlitelib.SQLITE_ERROR {
 				return nil
@@ -163,13 +165,14 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 			return lazyerrors.Error(err)
 		}
 
+		created = true
 		return nil
 	})
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	return true, nil
+	return created, nil
 }
 
 // CollectionDrop drops a collection in the database.
