@@ -166,8 +166,6 @@ func TestQueryBadFindType(t *testing.T) {
 }
 
 func TestQuerySortErrors(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -407,8 +405,6 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 }
 
 func TestQueryMaxTimeMSAvailableValues(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -464,8 +460,6 @@ func TestQueryMaxTimeMSAvailableValues(t *testing.T) {
 }
 
 func TestQueryExactMatches(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -524,8 +518,6 @@ func TestQueryExactMatches(t *testing.T) {
 }
 
 func TestDotNotation(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 

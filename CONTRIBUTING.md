@@ -135,10 +135,6 @@ The `internal` subpackages contain most of the FerretDB code:
 - `handlers/sqlite` contains the implementation of the SQLite handler.
   It is being converted into universal handler for all backends.
 - `handlers/pg` contains the implementation of the PostgreSQL handler.
-- `handlers/tigris` contains the implementation of the Tigris handler.
-- `handlers/tigris/tjson` provides converters from/to TJSON with JSON Schema for built-in and `types` types.
-  BSON type information is preserved either in the schema (where possible) or in the values themselves.
-  It is used by `tigris` handler.
 
 #### Running tests
 
@@ -160,7 +156,6 @@ send the same queries to both, and compare results.
 You can run them with:
 
 - `task test-integration-pg` for in-process FerretDB with `pg` handler and MongoDB;
-- `task test-integration-tigris` for in-process FerretDB with `tigris` handler and MongoDB;
 - `task test-integration-mongodb` for MongoDB only, skipping compat tests;
 - or `task test-integration` to run all in parallel.
 
@@ -180,9 +175,9 @@ For example:
 - to run a single test case for in-process FerretDB with `pg` handler
   with all subtests running sequentially,
   you may use `env GOFLAGS='-parallel=1' task test-integration-pg TEST_RUN=TestName/TestCaseName`;
-- to run all tests for in-process FerretDB with `tigris` handler
+- to run all tests for in-process FerretDB with `sqlite` handler
   with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
-  you may use `env GOFLAGS='-trace=trace.out' task test-integration-tigris`.
+  you may use `env GOFLAGS='-trace=trace.out' task test-integration-sqlite`.
 
 > **Note**
 >
@@ -242,11 +237,18 @@ branchless (with a few, if any, `if` and `switch` statements),
 and backend-independent.
 Ideally, the same test should work for both FerretDB with all handlers and MongoDB.
 If that's impossible without some branching, use helpers exported from the `setup` package,
-such us `IsTigris`, `SkipForTigrisWithReason`, `TigrisOnlyWithReason`.
+such us `FailsForFerretDB`, `SkipForMongoDB`, etc.
 The bar for using other ways of branching, such as checking error codes and messages, is very high.
 Writing separate tests might be much better than making a single test that checks error text.
 
 Also, we should use driver methods as much as possible instead of testing commands directly via `RunCommand`.
+
+We have a lot of existing helpers to convert the driver's `bson.D` values to our `*types.Document` values,
+to compare them, etc.
+In most cases, they should be used instead of (deprecated) `bson.D.Map()`,
+`bson.Unmarshal`, decoding into a struct with `bson` tags, comparing fields one-by-one, etc.
+The bar for adding new helpers is very high.
+Please check all existing ones.
 
 #### Integration tests naming guidelines
 

@@ -12,16 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package tigris
+package pg
 
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commoncommands"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgConnectionStatus implements HandlerInterface.
-func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return commoncommands.MsgConnectionStatus(ctx, msg)
+// MsgKillCursors implements handlers.Interface.
+func (h *Handler) MsgKillCursors(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	return common.KillCursors(ctx, msg, h.cursors)
 }
