@@ -17,6 +17,7 @@ package pg
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -28,10 +29,14 @@ import (
 
 // CmdQuery implements HandlerInterface.
 func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
-	if query.FullCollectionName == "admin.$cmd" {
-		switch cmd := query.Query.Command(); cmd {
-		case "ismaster", "isMaster": // both are valid
-			reply := &wire.OpReply{
+	cmd := query.Query.Command()
+	collection := query.FullCollectionName
+
+	if strings.Contains(collection, "$cmd") {
+		switch cmd {
+		// both are valid
+		case "ismaster", "isMaster":
+			return &wire.OpReply{
 				NumberReturned: 1,
 				Documents: []*types.Document{must.NotFail(types.NewDocument(
 					"ismaster", true, // only lowercase
@@ -47,8 +52,18 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 					"readOnly", false,
 					"ok", float64(1),
 				))},
-			}
-			return reply, nil
+			}, nil
+		case "saslStart":
+			var emptyPayload types.Binary
+			return &wire.OpReply{
+				NumberReturned: 1,
+				Documents: []*types.Document{must.NotFail(types.NewDocument(
+					"conversationId", int32(1),
+					"done", true,
+					"payload", emptyPayload,
+					"ok", float64(1),
+				))},
+			}, nil
 
 		default:
 			msg := fmt.Sprintf("CmdQuery: unhandled command %q", cmd)

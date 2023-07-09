@@ -17,6 +17,7 @@ package sqlite
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -31,23 +32,37 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	cmd := query.Query.Command()
 	collection := query.FullCollectionName
 
-	// both are valid
-	if (cmd == "ismaster" || cmd == "isMaster") && collection == "admin.$cmd" {
-		return &wire.OpReply{
-			NumberReturned: 1,
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"ismaster", true, // only lowercase
-				"maxBsonObjectSize", int32(types.MaxDocumentLen),
-				"maxMessageSizeBytes", int32(wire.MaxMsgLen),
-				"maxWriteBatchSize", int32(100000),
-				"localTime", time.Now(),
-				"connectionId", int32(42),
-				"minWireVersion", common.MinWireVersion,
-				"maxWireVersion", common.MaxWireVersion,
-				"readOnly", false,
-				"ok", float64(1),
-			))},
-		}, nil
+	if strings.Contains(collection, "$cmd") {
+		switch cmd {
+		// both are valid
+		case "ismaster", "isMaster":
+			return &wire.OpReply{
+				NumberReturned: 1,
+				Documents: []*types.Document{must.NotFail(types.NewDocument(
+					"ismaster", true, // only lowercase
+					"maxBsonObjectSize", int32(types.MaxDocumentLen),
+					"maxMessageSizeBytes", int32(wire.MaxMsgLen),
+					"maxWriteBatchSize", int32(100000),
+					"localTime", time.Now(),
+					"connectionId", int32(42),
+					"minWireVersion", common.MinWireVersion,
+					"maxWireVersion", common.MaxWireVersion,
+					"readOnly", false,
+					"ok", float64(1),
+				))},
+			}, nil
+		case "saslStart":
+			var emptyPayload types.Binary
+			return &wire.OpReply{
+				NumberReturned: 1,
+				Documents: []*types.Document{must.NotFail(types.NewDocument(
+					"conversationId", int32(1),
+					"done", true,
+					"payload", emptyPayload,
+					"ok", float64(1),
+				))},
+			}, nil
+		}
 	}
 
 	return nil, commonerrors.NewCommandErrorMsgWithArgument(
