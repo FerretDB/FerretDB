@@ -37,7 +37,7 @@ import (
 // To validate update document, must call ValidateUpdateOperators before calling UpdateDocument.
 // UpdateDocument returns CommandError for findAndModify case-insensitive command name,
 // WriteError for other commands.
-func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
+func UpdateDocument(command string, doc, update, filter *types.Document, ids []any) (bool, error) {
 	var changed bool
 	var err error
 
@@ -65,13 +65,13 @@ func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 			}
 
 		case "$set":
-			changed, err = processSetFieldExpression(command, doc, updateV.(*types.Document), false)
+			changed, err = processSetFieldExpression(command, doc, updateV.(*types.Document), filter, ids, false)
 			if err != nil {
 				return false, err
 			}
 
 		case "$setOnInsert":
-			changed, err = processSetFieldExpression(command, doc, updateV.(*types.Document), true)
+			changed, err = processSetFieldExpression(command, doc, updateV.(*types.Document), filter, ids, true)
 			if err != nil {
 				return false, err
 			}
@@ -187,16 +187,37 @@ func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 	return changed, nil
 }
 
+// GetIDs iterates each document and returns slices of IDs.
+func GetIDs(docs []*types.Document) []any {
+	ids := make([]any, len(docs))
+	for i := 0; i < len(docs); i++ {
+		ids[i] = must.NotFail(docs[i].Get("_id"))
+	}
+
+	return ids
+}
+
 // processSetFieldExpression changes document according to $set and $setOnInsert operators.
 // If the document was changed it returns true.
-func processSetFieldExpression(command string, doc, setDoc *types.Document, setOnInsert bool) (bool, error) {
+func processSetFieldExpression(command string, doc, setDoc, filter *types.Document, ids []any, setOnInsert bool) (bool, error) {
 	var changed bool
+
+	filterID, _ := filter.Get("_id")
 
 	setDocKeys := setDoc.Keys()
 	sort.Strings(setDocKeys)
 
 	for _, setKey := range setDocKeys {
 		setValue := must.NotFail(setDoc.Get(setKey))
+
+		collectionHasID := filter == nil && slices.Contains(ids, setValue)
+		if setKey == "_id" && setValue != filterID && !collectionHasID {
+			return false, newUpdateError(
+				commonerrors.ErrImmutableField,
+				"Performing an update on the path '_id' would modify the immutable field '_id'",
+				command,
+			)
+		}
 
 		if setOnInsert {
 			// $setOnInsert do not set null and empty array value.
