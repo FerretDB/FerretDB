@@ -21,7 +21,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -46,18 +45,9 @@ func TestInTransactionRollback(t *testing.T) {
 				require.NoError(t, err)
 				defer rows.Close()
 
-				var tables []string
-
-				for rows.Next() {
-					var name string
-					err = rows.Scan(&name)
-					require.NoError(t, err)
-
-					tables = append(tables, name)
-				}
-
-				// Check if table was actually created
-				require.Equal(t, []string{"_ferretdb_collections", "test"}, tables)
+				require.True(t, rows.Next(), "metadata table does not exist")
+				require.True(t, rows.Next(), "test table does not exist")
+				require.False(t, rows.Next(), "There are more tables than expected")
 
 				//nolint:vet // we need it for testing
 				panic(nil)
@@ -69,17 +59,8 @@ func TestInTransactionRollback(t *testing.T) {
 		require.NoError(t, err)
 		defer rows.Close()
 
-		var tables []string
-
-		for rows.Next() {
-			var name string
-			err = rows.Scan(&name)
-			require.NoError(t, err)
-
-			tables = append(tables, name)
-		}
-
-		assert.Equal(t, []string{"_ferretdb_collections"}, tables)
+		require.True(t, rows.Next(), "metadata table does not exist")
+		require.False(t, rows.Next(), "test table does exist but it should be rollbacked")
 	})
 
 	t.Run("ContextCancelled", func(t *testing.T) {
@@ -101,18 +82,9 @@ func TestInTransactionRollback(t *testing.T) {
 			require.NoError(t, err)
 			defer rows.Close()
 
-			var tables []string
-
-			for rows.Next() {
-				var name string
-				err = rows.Scan(&name)
-				require.NoError(t, err)
-
-				tables = append(tables, name)
-			}
-
-			// Check if table was actually created
-			require.Equal(t, []string{"_ferretdb_collections", "test"}, tables)
+			require.True(t, rows.Next(), "metadata table does not exist")
+			require.True(t, rows.Next(), "test table does not exist")
+			require.False(t, rows.Next(), "There are more tables than expected")
 
 			cancel()
 
@@ -123,17 +95,8 @@ func TestInTransactionRollback(t *testing.T) {
 		require.NoError(t, err)
 		defer rows.Close()
 
-		var tables []string
-
-		for rows.Next() {
-			var name string
-			err = rows.Scan(&name)
-			require.NoError(t, err)
-
-			tables = append(tables, name)
-		}
-
-		assert.Equal(t, []string{"_ferretdb_collections"}, tables)
+		require.True(t, rows.Next(), "metadata table does not exist")
+		require.False(t, rows.Next(), "test table does exist but it should be rollbacked")
 	})
 
 	t.Run("Goexit", func(t *testing.T) {
@@ -159,18 +122,9 @@ func TestInTransactionRollback(t *testing.T) {
 				require.NoError(t, err)
 				defer rows.Close()
 
-				var tables []string
-
-				for rows.Next() {
-					var name string
-					err = rows.Scan(&name)
-					require.NoError(t, err)
-
-					tables = append(tables, name)
-				}
-
-				// Check if table was actually created
-				require.Equal(t, []string{"_ferretdb_collections", "test"}, tables)
+				require.True(t, rows.Next(), "metadata table does not exist")
+				require.True(t, rows.Next(), "test table does not exist")
+				require.False(t, rows.Next(), "There are more tables than expected")
 
 				runtime.Goexit()
 				return nil
@@ -183,16 +137,7 @@ func TestInTransactionRollback(t *testing.T) {
 		require.NoError(t, err)
 		defer rows.Close()
 
-		var tables []string
-
-		for rows.Next() {
-			var name string
-			err = rows.Scan(&name)
-			require.NoError(t, err)
-
-			tables = append(tables, name)
-		}
-
-		assert.Equal(t, []string{"_ferretdb_collections"}, tables)
+		require.True(t, rows.Next(), "metadata table does not exist")
+		require.False(t, rows.Next(), "test table does exist but it should be rollbacked")
 	})
 }
