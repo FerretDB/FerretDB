@@ -53,6 +53,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 			}, nil
 		case "saslStart":
 			var emptyPayload types.Binary
+
 			return &wire.OpReply{
 				NumberReturned: 1,
 				Documents: []*types.Document{must.NotFail(types.NewDocument(
