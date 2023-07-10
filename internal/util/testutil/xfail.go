@@ -22,7 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-// XFail return a new TB instance that expects the test to fail.
+// XFail return a new testtb.TB instance that expects the test to fail.
 //
 // At the end of the test, if it was marked as failed, it will pass instead.
 // If it passes, it will be failed, so that XFail call can be removed.
@@ -47,7 +47,7 @@ func XFail(t testtb.TB, reason string) testtb.TB {
 	return x
 }
 
-// xfail wraps TB with expected failure logic.
+// xfail wraps testtb.TB with expected failure logic.
 type xfail struct {
 	t      testtb.TB
 	failed atomic.Bool
