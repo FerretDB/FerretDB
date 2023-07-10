@@ -331,7 +331,7 @@ func TestFindAndModifyCompatUpdateSet(t *testing.T) {
 				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
 			},
 		},
-		"UpdateID": {
+		"UpdateIDNoQuery": {
 			command: bson.D{
 				{"update", bson.D{{"$set", bson.D{{"_id", "int32"}}}}},
 			},
