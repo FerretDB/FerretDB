@@ -603,3 +603,50 @@ func TestDebugError(t *testing.T) {
 		require.NoError(t, db.Client().Ping(ctx, nil), "other errors should not close connection")
 	})
 }
+
+func TestPingCommand(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+	db := collection.Database()
+
+	expectedRes := bson.D{{"ok", float64(1)}}
+
+	t.Run("Multiple", func(t *testing.T) {
+		t.Parallel()
+
+		for i := 0; i < 5; i++ {
+			res := db.RunCommand(ctx, bson.D{{"ping", int32(1)}})
+
+			var actualRes bson.D
+			err := res.Decode(&actualRes)
+			require.NoError(t, err)
+
+			assert.Equal(t, expectedRes, actualRes)
+		}
+	})
+
+	t.Run("NonExistentDB", func(t *testing.T) {
+		t.Parallel()
+
+		dbName := "NonExistentDatabase"
+
+		expectedDatabases, err := db.Client().ListDatabases(ctx, bson.D{{"name", dbName}})
+		require.NoError(t, err)
+		require.Empty(t, expectedDatabases.Databases)
+
+		res := db.Client().Database(dbName).RunCommand(ctx, bson.D{{"ping", int32(1)}})
+
+		var actualRes bson.D
+		err = res.Decode(&actualRes)
+		require.NoError(t, err)
+
+		assert.Equal(t, expectedRes, actualRes)
+
+		// Ensure that we don't create database on ping
+		// This also means that no collection is created during ping.
+		actualDatabases, err := db.Client().ListDatabases(ctx, bson.D{{"name", dbName}})
+		require.NoError(t, err)
+		require.Empty(t, actualDatabases.Databases)
+	})
+}
