@@ -73,9 +73,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		qp.Sort = params.Sort
 	}
 
-	// Sort requires fetching all documents and sorting them in memory unless sort pushdown is enabled.
-	// TODO Skip pushdown is not supported yet https://github.com/Fer/failretDB/FerretDB/issues/3016.
-	// Limit pushdown is not applied for those conditions.
+	// Sort requires fetching all documents and sorting them in memory unless sort pushdown is enabled,
+	// limit pushdown is not applied when sort is set without sort pushdown.
+	// Skip pushdown is not support, limit pushdown is not applied when skip is set.
+	// TODO https://github.com/Fer/failretDB/FerretDB/issues/3016.
 	if (params.Sort.Len() == 0 || h.EnableSortPushdown) && params.Skip == 0 {
 		qp.Limit = params.Limit
 	}
