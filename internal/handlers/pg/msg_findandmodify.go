@@ -96,8 +96,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return err
 		}
 
-		ids := common.GetIDs(resDocs)
-
 		if params.Update != nil { // we have update part
 			var resValue any
 			var insertedID any
@@ -131,7 +129,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 				if params.HasUpdateOperators {
 					upsert = resDocs[0].DeepCopy()
-					_, err = common.UpdateDocument(document.Command(), upsert, params.Update, params.Query, ids)
+					_, err = common.UpdateDocument(document.Command(), upsert, params.Update)
 					if err != nil {
 						return err
 					}

@@ -168,7 +168,7 @@ func PrepareDocumentForUpsert(docs []*types.Document, params *FindAndModifyParam
 
 	if len(docs) == 0 {
 		res.Operation = UpsertOperationInsert
-		res.Upsert, err = prepareDocumentForInsert(docs, params)
+		res.Upsert, err = prepareDocumentForInsert(params)
 
 		// insert operation returns null since no document existed before upsert.
 		res.ReturnValue = types.Null
@@ -196,11 +196,11 @@ func PrepareDocumentForUpsert(docs []*types.Document, params *FindAndModifyParam
 // prepareDocumentForInsert creates an insert document from the parameter.
 // When inserting new document we must check that `_id` is present, so we must extract `_id`
 // from query or generate a new one.
-func prepareDocumentForInsert(docs []*types.Document, params *FindAndModifyParams) (*types.Document, error) {
+func prepareDocumentForInsert(params *FindAndModifyParams) (*types.Document, error) {
 	insert := must.NotFail(types.NewDocument())
 
 	if params.HasUpdateOperators {
-		if _, err := UpdateDocument("findAndModify", insert, params.Update, params.Query, GetIDs(docs)); err != nil {
+		if _, err := UpdateDocument("findAndModify", insert, params.Update); err != nil {
 			return nil, err
 		}
 	} else {
@@ -224,7 +224,7 @@ func prepareDocumentForUpdate(docs []*types.Document, params *FindAndModifyParam
 	update := docs[0].DeepCopy()
 
 	if params.HasUpdateOperators {
-		if _, err := UpdateDocument("findAndModify", update, params.Update, params.Query, GetIDs(docs)); err != nil {
+		if _, err := UpdateDocument("findAndModify", update, params.Update); err != nil {
 			return nil, err
 		}
 

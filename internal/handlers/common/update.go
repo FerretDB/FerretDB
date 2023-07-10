@@ -38,7 +38,7 @@ import (
 // UpdateDocument returns CommandError for findAndModify case-insensitive command name,
 // WriteError for other commands.
 // TODO https://github.com/FerretDB/FerretDB/issues/3013
-func UpdateDocument(command string, doc, update, filter *types.Document, ids []any) (bool, error) {
+func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 	var changed bool
 	var err error
 
@@ -66,13 +66,13 @@ func UpdateDocument(command string, doc, update, filter *types.Document, ids []a
 			}
 
 		case "$set":
-			changed, err = processSetFieldExpression(command, doc, updateV.(*types.Document), filter, ids, false)
+			changed, err = processSetFieldExpression(command, doc, updateV.(*types.Document), false)
 			if err != nil {
 				return false, err
 			}
 
 		case "$setOnInsert":
-			changed, err = processSetFieldExpression(command, doc, updateV.(*types.Document), filter, ids, true)
+			changed, err = processSetFieldExpression(command, doc, updateV.(*types.Document), true)
 			if err != nil {
 				return false, err
 			}
@@ -188,23 +188,10 @@ func UpdateDocument(command string, doc, update, filter *types.Document, ids []a
 	return changed, nil
 }
 
-// GetIDs iterates each document and returns slices of IDs.
-func GetIDs(docs []*types.Document) []any {
-	ids := make([]any, len(docs))
-	for i := 0; i < len(docs); i++ {
-		ids[i] = must.NotFail(docs[i].Get("_id"))
-	}
-
-	return ids
-}
-
 // processSetFieldExpression changes document according to $set and $setOnInsert operators.
-// It uses filter and existing IDs in collection to check error on immutable _id field.
 // If the document was changed it returns true.
-func processSetFieldExpression(command string, doc, setDoc, filter *types.Document, ids []any, setOnInsert bool) (bool, error) {
+func processSetFieldExpression(command string, doc, setDoc *types.Document, setOnInsert bool) (bool, error) {
 	var changed bool
-
-	filterID, _ := filter.Get("_id")
 
 	setDocKeys := setDoc.Keys()
 	sort.Strings(setDocKeys)
@@ -212,15 +199,7 @@ func processSetFieldExpression(command string, doc, setDoc, filter *types.Docume
 	for _, setKey := range setDocKeys {
 		setValue := must.NotFail(setDoc.Get(setKey))
 
-		// when filter is not set and if collection contains ID to set, it does not error
-		collectionHasID := filter == nil && slices.Contains(ids, setValue)
-		if setKey == "_id" && setValue != filterID && !collectionHasID {
-			return false, newUpdateError(
-				commonerrors.ErrImmutableField,
-				"Performing an update on the path '_id' would modify the immutable field '_id'",
-				command,
-			)
-		}
+		// TODO: validate immutable _id https://github.com/FerretDB/FerretDB/issues/3017
 
 		if setOnInsert {
 			// $setOnInsert do not set null and empty array value.

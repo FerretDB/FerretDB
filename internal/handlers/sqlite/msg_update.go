@@ -117,8 +117,6 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 
 		res.Iter.Close()
 
-		ids := common.GetIDs(resDocs)
-
 		if len(resDocs) == 0 {
 			if !u.Upsert {
 				// nothing to do, continue to the next update operation
@@ -126,7 +124,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 			}
 
 			doc := u.Filter.DeepCopy()
-			if _, err = common.UpdateDocument("update", doc, u.Update, u.Filter, ids); err != nil {
+			if _, err = common.UpdateDocument("update", doc, u.Update); err != nil {
 				return 0, 0, nil, lazyerrors.Error(err)
 			}
 
@@ -163,7 +161,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 		matched += int32(len(resDocs))
 
 		for _, doc := range resDocs {
-			changed, err := common.UpdateDocument("update", doc, u.Update, u.Filter, ids)
+			changed, err := common.UpdateDocument("update", doc, u.Update)
 			if err != nil {
 				return 0, 0, nil, lazyerrors.Error(err)
 			}

@@ -776,9 +776,11 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 		"ID": {
 			update:     bson.D{{"$set", bson.D{{"_id", "non-existent"}}}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/3017",
 		},
 		"SetID": {
 			update: bson.D{{"$set", bson.D{{"_id", "int32"}, {"v", int32(2)}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/3017",
 		},
 		"ConflictKey": {
 			update: bson.D{
@@ -798,6 +800,7 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			filter:     bson.D{{"_id", "int32"}},
 			update:     bson.D{{"$set", bson.D{{"_id", "int32-1"}, {"v", int32(2)}}}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/3017",
 		},
 		"SameID": {
 			filter: bson.D{{"_id", "int32"}},
@@ -807,6 +810,7 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			filter:     bson.D{{"_id", "int32"}},
 			update:     bson.D{{"$set", bson.D{{"_id", "another-id"}, {"v", int32(2)}}}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/3017",
 		},
 	}
 

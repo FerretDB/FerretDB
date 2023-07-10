@@ -79,8 +79,6 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return err
 			}
 
-			ids := common.GetIDs(resDocs)
-
 			if len(resDocs) == 0 {
 				if !u.Upsert {
 					// nothing to do, continue to the next update operation
@@ -88,8 +86,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				}
 
 				doc := u.Filter.DeepCopy()
-
-				if _, err = common.UpdateDocument(document.Command(), doc, u.Update, u.Filter, ids); err != nil {
+				if _, err = common.UpdateDocument(document.Command(), doc, u.Update); err != nil {
 					return err
 				}
 				if !doc.Has("_id") {
@@ -117,7 +114,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			matched += int32(len(resDocs))
 
 			for _, doc := range resDocs {
-				changed, err := common.UpdateDocument(document.Command(), doc, u.Update, u.Filter, ids)
+				changed, err := common.UpdateDocument(document.Command(), doc, u.Update)
 				if err != nil {
 					return err
 				}
