@@ -778,8 +778,7 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"SetID": {
-			update:     bson.D{{"$set", bson.D{{"_id", "int32"}, {"v", int32(2)}}}},
-			resultType: emptyResult,
+			update: bson.D{{"$set", bson.D{{"_id", "int32"}, {"v", int32(2)}}}},
 		},
 		"ConflictKey": {
 			update: bson.D{

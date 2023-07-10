@@ -37,6 +37,7 @@ import (
 // To validate update document, must call ValidateUpdateOperators before calling UpdateDocument.
 // UpdateDocument returns CommandError for findAndModify case-insensitive command name,
 // WriteError for other commands.
+// TODO https://github.com/FerretDB/FerretDB/issues/3013
 func UpdateDocument(command string, doc, update, filter *types.Document, ids []any) (bool, error) {
 	var changed bool
 	var err error
