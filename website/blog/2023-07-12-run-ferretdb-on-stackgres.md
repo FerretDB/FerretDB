@@ -5,7 +5,7 @@ authors:
   - alex
   - name: Álvaro Hernández
     title: Founder and CEO @ OnGres
-    url: https://www.linkedin.com/in/alvarohernandeztortosa/
+    url: https://www.linkedin.com/in/ahachete
     image_url: https://stackgres.io/img/team/alvaro.jpg
 image: /img/blog/stackgres-ferretdb.png
 description: >
@@ -67,12 +67,8 @@ As for Kubernetes, if you don't have one you can try easily with
 It can be installed with a single command line as in:
 
 ```sh
-curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION=v1.25.9+k3s1 sh -
+curl -sfL https://get.k3s.io | sh -
 ```
-
-(Note that we specify via an environment variable a `1.25` Kubernetes
-version as the latest StackGres stable version does not support `1.26`
-yet, will be supported on the next GA version)
 
 This should give you a running single-node cluster in seconds (depending
 on your Internet connection speed).
@@ -87,7 +83,7 @@ Fortunately, K3D is a tool that makes it easy to run K3s inside Docker, which wo
 You can install K3D using Homebrew and if successful, create a Kubernetes cluster:
 
 ```sh
-brew install k3d &&k3d cluster create <cluster-name> --image rancher/k3s:v1.25.9-k3s1
+brew install k3d && k3d cluster create <cluster-name> --image rancher/k3s:v1.25.9-k3s1
 ```
 
 Then you can get the configuration so that you can connect and operate with it via both `kubectl` and `Helm`:
@@ -104,7 +100,9 @@ k3d kubeconfig get <cluster-name> > ~/.kube/config
 
 Once you are done you can uninstall k3s if you wish with `sudo
 /usr/local/bin/k3s-uninstall.sh`.
-Installing StackGres
+
+### Installing StackGres
+
 The best way to install StackGres is through the official Helm chart.
 Here's the installation guide in the official docs.
 
@@ -130,7 +128,7 @@ stackgres-operator-c4c6b4bcd-trsgp   1/1     Running   0          4m50s
 stackgres-restapi-6986cc8997-lfwql   2/2     Running   0          4m49s
 ```
 
-## Creating a StackGres Cluster
+### Creating a StackGres Cluster
 
 Here, we'll create an SGCluster configured to fit FerretDB's requirements.
 Resources for the example are available in the [apps-on-stackgres GitHub repository](https://github.com/ongres/apps-on-stackgres/tree/main/examples/ferretdb).
@@ -266,7 +264,7 @@ kubectl -n ferretdb exec -it postgres-0 -c postgres-util -- psql -l ferretdb
   ...
 ```
 
-## Deploying FerretDB
+### Deploying FerretDB
 
 FerretDB itself is a stateless application, and as such, so we can just use the standard `Deployment` pattern (for easy scaling) with a `Service` to deploy it:
 
@@ -350,7 +348,7 @@ NAME       TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)     AGE
 ferretdb   ClusterIP   10.43.94.52   <none>        27017/TCP   10m
 ```
 
-## QuickStart Example
+### QuickStart Example
 
 Once the mongosh command is executed, you can try inserting and querying data:
 
