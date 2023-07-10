@@ -778,9 +778,8 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"SetID": {
-			update:      bson.D{{"$set", bson.D{{"_id", "int32"}, {"v", int32(2)}}}},
-			unsetFilter: true,
-			resultType:  emptyResult, // _id must be an immutable field
+			update:     bson.D{{"$set", bson.D{{"_id", "int32"}, {"v", int32(2)}}}},
+			resultType: emptyResult,
 		},
 		"ConflictKey": {
 			update: bson.D{

@@ -198,6 +198,7 @@ func GetIDs(docs []*types.Document) []any {
 }
 
 // processSetFieldExpression changes document according to $set and $setOnInsert operators.
+// It uses filter and existing IDs in collection to check error on immutable _id field.
 // If the document was changed it returns true.
 func processSetFieldExpression(command string, doc, setDoc, filter *types.Document, ids []any, setOnInsert bool) (bool, error) {
 	var changed bool
@@ -210,6 +211,7 @@ func processSetFieldExpression(command string, doc, setDoc, filter *types.Docume
 	for _, setKey := range setDocKeys {
 		setValue := must.NotFail(setDoc.Get(setKey))
 
+		// when filter is not set and if collection contains ID to set, it does not error
 		collectionHasID := filter == nil && slices.Contains(ids, setValue)
 		if setKey == "_id" && setValue != filterID && !collectionHasID {
 			return false, newUpdateError(
