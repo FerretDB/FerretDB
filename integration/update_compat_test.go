@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -43,8 +42,7 @@ type updateCompatTestCase struct {
 	resultType  compatTestCaseResultType // defaults to nonEmptyResult
 	providers   []shareddata.Provider    // defaults to shareddata.AllProviders()
 
-	skip          string // skips test if non-empty
-	skipForTigris string // skips test for Tigris if non-empty
+	skip string // skips test if non-empty
 }
 
 // testUpdateCompat tests update compatibility test cases.
@@ -58,9 +56,6 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 
 			if tc.skip != "" {
 				t.Skip(tc.skip)
-			}
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
 			}
 
 			t.Parallel()
@@ -125,12 +120,6 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 									require.Equal(t, compatErr, targetErr)
 
 									return
-								}
-
-								// Skip updates that could not be performed due to Tigris schema validation.
-								var e mongo.CommandError
-								if errors.As(targetErr, &e) && e.HasErrorCode(documentValidationFailureCode) {
-									setup.SkipForTigrisWithReason(t, targetErr.Error())
 								}
 
 								// AssertMatchesWriteError compares error types and codes, it does not compare messages.
@@ -248,12 +237,6 @@ func testUpdateCommandCompat(t *testing.T, testCases map[string]updateCommandCom
 							if targetErr != nil {
 								t.Logf("Target error: %v", targetErr)
 								t.Logf("Compat error: %v", compatErr)
-
-								// Skip updates that could not be performed due to Tigris schema validation.
-								var e mongo.CommandError
-								if errors.As(targetErr, &e) && e.HasErrorCode(documentValidationFailureCode) {
-									setup.SkipForTigrisWithReason(t, targetErr.Error())
-								}
 
 								// error messages are intentionally not compared
 								AssertMatchesCommandError(t, compatErr, targetErr)
@@ -434,8 +417,7 @@ func TestUpdateCompat(t *testing.T) {
 			replace: bson.D{{"v", "foo"}},
 		},
 		"ReplaceEmpty": {
-			replace:       bson.D{{"v", ""}},
-			skipForTigris: "https://github.com/FerretDB/FerretDB/issues/1061",
+			replace: bson.D{{"v", ""}},
 		},
 		"ReplaceNull": {
 			replace: bson.D{{"v", nil}},
@@ -469,9 +451,8 @@ func TestUpdateCompatArray(t *testing.T) {
 			replace: bson.D{{"foo", int32(1)}},
 		},
 		"ReplaceDotNotationFilter": {
-			filter:        bson.D{{"v.array.0", bson.D{{"$eq", int32(42)}}}, {"_id", "document-composite"}},
-			replace:       bson.D{{"replacement-value", int32(1)}},
-			skipForTigris: "Tigris does not support language keyword 'array' as field name",
+			filter:  bson.D{{"v.array.0", bson.D{{"$eq", int32(42)}}}, {"_id", "document-composite"}},
+			replace: bson.D{{"replacement-value", int32(1)}},
 		},
 	}
 

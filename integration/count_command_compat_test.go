@@ -26,7 +26,6 @@ import (
 )
 
 type countCommandCompatTestCase struct {
-	skipForTigris  string
 	skip           string
 	collectionName any
 	command        bson.D
@@ -44,10 +43,6 @@ func testCountCommandCompat(t *testing.T, testCases map[string]countCommandCompa
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
-
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
-			}
 
 			if tc.skip != "" {
 				t.Skip(tc.skip)

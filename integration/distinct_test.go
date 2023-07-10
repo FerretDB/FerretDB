@@ -29,7 +29,7 @@ import (
 func TestDistinctCommandErrors(t *testing.T) {
 	t.Parallel()
 
-	ctx, coll := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
 		command  any // required, command to run
@@ -109,7 +109,7 @@ func TestDistinctCommandErrors(t *testing.T) {
 			require.NotNil(t, tc.command, "command must not be nil")
 			require.NotNil(t, tc.filter, "filter must not be nil")
 
-			var collName any = coll.Name()
+			var collName any = collection.Name()
 			if tc.collName != nil {
 				collName = tc.collName
 			}
@@ -117,7 +117,7 @@ func TestDistinctCommandErrors(t *testing.T) {
 			command := bson.D{{"distinct", collName}, {"key", tc.command}, {"query", tc.filter}}
 
 			var res bson.D
-			err := coll.Database().RunCommand(ctx, command).Decode(res)
+			err := collection.Database().RunCommand(ctx, command).Decode(res)
 			if tc.err != nil {
 				assert.Nil(t, res)
 				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)

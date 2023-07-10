@@ -55,16 +55,14 @@ func testDeleteCommandCompat(t *testing.T, testCases map[string]deleteCommandCom
 					t.Helper()
 
 					var targetRes, compatRes bson.D
-					targetErr := targetCollection.Database().RunCommand(ctx,
-						bson.D{
-							{"delete", targetCollection.Name()},
-							{"deletes", tc.deletes},
-						}).Decode(&targetRes)
-					compatErr := compatCollection.Database().RunCommand(ctx,
-						bson.D{
-							{"delete", compatCollection.Name()},
-							{"deletes", tc.deletes},
-						}).Decode(&compatRes)
+					targetErr := targetCollection.Database().RunCommand(ctx, bson.D{
+						{"delete", targetCollection.Name()},
+						{"deletes", tc.deletes},
+					}).Decode(&targetRes)
+					compatErr := compatCollection.Database().RunCommand(ctx, bson.D{
+						{"delete", compatCollection.Name()},
+						{"deletes", tc.deletes},
+					}).Decode(&compatRes)
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
