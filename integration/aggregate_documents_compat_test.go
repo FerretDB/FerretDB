@@ -204,7 +204,7 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 			t.Run(targetCollection.Name(), func(t *testing.T) {
 				t.Helper()
 
-				var targetRes, compatRes []bson.D
+				var targetRes, compatRes bson.D
 				targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
 				compatErr := compatCollection.Database().RunCommand(ctx, command).Decode(&compatRes)
 
@@ -223,8 +223,7 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 					return
 				}
 				require.NoError(t, compatErr, "compat error; target returned no error")
-
-				AssertEqualDocumentsSlice(t, compatRes, targetRes)
+				AssertEqualDocuments(t, compatRes, targetRes)
 
 				if len(targetRes) > 0 || len(compatRes) > 0 {
 					nonEmptyResults = true
@@ -280,16 +279,13 @@ func TestAggregateCommandCompat(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
-		"MaxTimeMSNegative": {
+		"MaxTimeMSDoubleWholeNumber": {
 			command: bson.D{
 				{"aggregate", "collection-name"},
 				{"pipeline", bson.A{}},
-				{"maxTimeMS", int64(-1)},
 				{"cursor", bson.D{}},
+				{"maxTimeMS", float64(1000)},
 			},
-			resultType: emptyResult,
-			// compat and target return an error from the driver
-			// > cannot decode document into []primitive.D
 		},
 	}
 
