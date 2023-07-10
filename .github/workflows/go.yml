@@ -132,6 +132,7 @@ jobs:
       #
       # We also can't use ${{ vars.CODECOV_TOKEN }}: https://github.com/orgs/community/discussions/44322
       - name: Upload coverage information to codecov
+        if: always()
         uses: codecov/codecov-action@v3
         with:
           token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
@@ -225,6 +226,7 @@ jobs:
       #
       # We also can't use ${{ vars.CODECOV_TOKEN }}: https://github.com/orgs/community/discussions/44322
       - name: Upload coverage information to codecov
+        if: always()
         uses: codecov/codecov-action@v3
         with:
           token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
@@ -348,7 +350,7 @@ jobs:
   fuzz-short:
     name: Fuzz short
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     # Do not run this job in parallel for any PR change or branch push.
     concurrency:
@@ -436,7 +438,7 @@ jobs:
           git config user.name ferretdb-bot
           git config user.email ferretdb-bot@ferretdb.io
           git add --all .
-          git diff-index --patch
+          git diff-index -p
           git diff-index --quiet HEAD || git commit --message 'Update corpus'
           git fetch
           git rebase origin/main

@@ -23,10 +23,8 @@ import (
 	"path/filepath"
 	"runtime/trace"
 	"strings"
-	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
@@ -49,7 +47,6 @@ var (
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix socket")
 
 	postgreSQLURLF = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'pg' handler.")
-	tigrisURLSF    = flag.String("tigris-urls", "", "in-process FerretDB: Tigris URLs for 'tigris' handler (comma separated)")
 	hanaURLF       = flag.String("hana-url", "", "in-process FerretDB: Hana URL for 'hana' handler.")
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
@@ -66,7 +63,7 @@ var (
 
 // Other globals.
 var (
-	allBackends = []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-tigris", "ferretdb-hana", "mongodb"}
+	allBackends = []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-hana", "mongodb"}
 
 	CertsRoot = filepath.Join("..", "build", "certs") // relative to `integration` directory
 )
@@ -100,7 +97,7 @@ type SetupResult struct {
 }
 
 // IsUnixSocket returns true if MongoDB URI is a Unix socket.
-func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
+func (s *SetupResult) IsUnixSocket(tb testutil.TB) bool {
 	tb.Helper()
 
 	// we can't use a regular url.Parse because
@@ -116,7 +113,7 @@ func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
 }
 
 // SetupWithOpts setups the test according to given options.
-func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
+func SetupWithOpts(tb testutil.TB, opts *SetupOpts) *SetupResult {
 	tb.Helper()
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
@@ -174,8 +171,8 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	}
 }
 
-// Setup setups a single collection for all compatible providers, if the are present.
-func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
+// Setup setups a single collection for all providers, if the are present.
+func Setup(tb testutil.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
 	tb.Helper()
 
 	s := SetupWithOpts(tb, &SetupOpts{
@@ -184,8 +181,8 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 	return s.Ctx, s.Collection
 }
 
-// setupCollection setups a single collection for all compatible providers, if they are present.
-func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
+// setupCollection setups a single collection for all providers, if they are present.
+func setupCollection(tb testutil.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupCollection")
@@ -229,7 +226,7 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	if len(opts.Providers) == 0 && opts.BenchmarkProvider == nil {
 		tb.Logf("Collection %s.%s wasn't created because no providers were set.", databaseName, collectionName)
 	} else {
-		require.True(tb, inserted, "all providers were not compatible")
+		require.True(tb, inserted)
 	}
 
 	if ownCollection {
@@ -254,36 +251,15 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 }
 
 // insertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
-func insertProviders(tb testing.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
+func insertProviders(tb testutil.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
 	tb.Helper()
 
 	collectionName := collection.Name()
-	database := collection.Database()
 
 	for _, provider := range providers {
-		if *targetURLF == "" && !provider.IsCompatible(*targetBackendF) {
-			tb.Logf(
-				"Provider %q is not compatible with backend %q, skipping it.",
-				provider.Name(),
-				*targetBackendF,
-			)
-
-			continue
-		}
-
 		spanName := fmt.Sprintf("insertProviders/%s/%s", collectionName, provider.Name())
 		provCtx, span := otel.Tracer("").Start(ctx, spanName)
 		region := trace.StartRegion(provCtx, spanName)
-
-		// if validators are set, create collection with them (otherwise collection will be created on first insert)
-		if validators := provider.Validators(*targetBackendF, collectionName); len(validators) > 0 {
-			copts := options.CreateCollection()
-			for key, value := range validators {
-				copts.SetValidator(bson.D{{key, value}})
-			}
-
-			require.NoError(tb, database.CreateCollection(provCtx, collectionName, copts))
-		}
 
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
@@ -304,7 +280,7 @@ func insertProviders(tb testing.TB, ctx context.Context, collection *mongo.Colle
 // It returns true if any document was inserted.
 //
 // The function calculates the checksum of all inserted documents and compare them with provider's hash.
-func insertBenchmarkProvider(tb testing.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
+func insertBenchmarkProvider(tb testutil.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
 	tb.Helper()
 
 	collectionName := collection.Name()

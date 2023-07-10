@@ -110,6 +110,7 @@ jobs:
       #
       # We also can't use ${{ vars.CODECOV_TOKEN }}: https://github.com/orgs/community/discussions/44322
       - name: Upload coverage information to codecov
+        if: always()
         uses: codecov/codecov-action@v3
         with:
           token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514

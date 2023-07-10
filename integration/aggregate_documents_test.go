@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,7 +23,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
@@ -662,6 +662,198 @@ func TestAggregateUnsetErrors(t *testing.T) {
 	}
 }
 
+func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		command bson.D // required, command to run
+
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"NegativeLong": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", int64(-1)},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1'",
+			},
+		},
+		"MaxLong": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", math.MaxInt64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "9223372036854775807 value for maxTimeMS is out of range",
+			},
+		},
+		"Double": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", 1000.5},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS has non-integral value",
+			},
+		},
+		"NegativeDouble": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", -14245345234123245.55},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-14245345234123246'",
+			},
+			altMessage: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1.424534523412325e+16'",
+		},
+		"BigDouble": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", math.MaxFloat64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "9223372036854775807 value for maxTimeMS is out of range",
+			},
+			altMessage: "1.797693134862316e+308 value for maxTimeMS is out of range",
+		},
+		"BigNegativeDouble": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", -math.MaxFloat64},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-9223372036854775808'",
+			},
+			altMessage: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1.797693134862316e+308'",
+		},
+		"NegativeInt32": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", -1123123},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1123123'",
+			},
+		},
+		"MaxIntPlus": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", math.MaxInt32 + 1},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "2147483648 value for maxTimeMS is out of range",
+			},
+		},
+		"Null": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", nil},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS must be a number",
+			},
+		},
+		"String": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", "string"},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'aggregate.maxTimeMS' is the wrong type 'string', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'aggregate.maxTimeMS' is the wrong type 'string', expected types '[long, int, decimal, double]'",
+		},
+		"Array": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", bson.A{int32(42), "foo", nil}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'aggregate.maxTimeMS' is the wrong type 'array', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'aggregate.maxTimeMS' is the wrong type 'array', expected types '[long, int, decimal, double]'",
+		},
+		"Document": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", bson.D{{"foo", int32(42)}}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'aggregate.maxTimeMS' is the wrong type 'object', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'aggregate.maxTimeMS' is the wrong type 'object', expected types '[long, int, decimal, double]'",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			require.Nil(t, res)
+		})
+	}
+}
+
 func TestAggregateCommandCursor(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
@@ -815,98 +1007,4 @@ func TestAggregateCommandCursor(t *testing.T) {
 			require.Equal(t, tc.firstBatch, firstBatch)
 		})
 	}
-}
-
-func TestAggregateBatchSize(t *testing.T) {
-	t.Parallel()
-	ctx, collection := setup.Setup(t)
-
-	// The test cases call `aggregate`, then may implicitly call `getMore` upon `cursor.Next()`.
-	// The batchSize set by `aggregate` is used also by `getMore` unless
-	// `aggregate` has default batchSize or 0 batchSize, then `getMore` has unlimited batchSize.
-	// To test that, the number of documents is set to more than the double of default batchSize 101.
-	arr, _ := generateDocuments(0, 220)
-	_, err := collection.InsertMany(ctx, arr)
-	require.NoError(t, err)
-
-	t.Run("SetBatchSize", func(t *testing.T) {
-		t.Parallel()
-
-		cursor, err := collection.Aggregate(ctx, bson.D{}, options.Aggregate().SetBatchSize(2))
-		require.NoError(t, err)
-
-		defer cursor.Close(ctx)
-
-		require.Equal(t, 2, cursor.RemainingBatchLength(), "expected 2 documents in first batch")
-
-		for i := 2; i > 0; i-- {
-			ok := cursor.Next(ctx)
-			require.True(t, ok, "expected to have next document in first batch")
-			require.Equal(t, i-1, cursor.RemainingBatchLength())
-		}
-
-		// batchSize of 2 is applied to second batch which is obtained by implicit call to `getMore`
-		for i := 2; i > 0; i-- {
-			ok := cursor.Next(ctx)
-			require.True(t, ok, "expected to have next document in second batch")
-			require.Equal(t, i-1, cursor.RemainingBatchLength())
-		}
-
-		cursor.SetBatchSize(5)
-
-		for i := 5; i > 0; i-- {
-			ok := cursor.Next(ctx)
-			require.True(t, ok, "expected to have next document in third batch")
-			require.Equal(t, i-1, cursor.RemainingBatchLength())
-		}
-
-		// get rest of documents from the cursor to ensure cursor is exhausted
-		var res bson.D
-		err = cursor.All(ctx, &res)
-		require.NoError(t, err)
-
-		ok := cursor.Next(ctx)
-		require.False(t, ok, "cursor exhausted, not expecting next document")
-	})
-
-	t.Run("ZeroBatchSize", func(t *testing.T) {
-		t.Parallel()
-
-		cursor, err := collection.Aggregate(ctx, bson.D{}, options.Aggregate().SetBatchSize(0))
-		require.NoError(t, err)
-
-		defer cursor.Close(ctx)
-
-		require.Equal(t, 0, cursor.RemainingBatchLength())
-
-		// next batch obtain from implicit call to `getMore` has the rest of the documents, not 0 batchSize
-		// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
-		ok := cursor.Next(ctx)
-		require.True(t, ok, "expected to have next document")
-		require.Equal(t, 219, cursor.RemainingBatchLength())
-	})
-
-	t.Run("DefaultBatchSize", func(t *testing.T) {
-		t.Parallel()
-
-		// unset batchSize uses default batchSize 101 for the first batch
-		cursor, err := collection.Aggregate(ctx, bson.D{})
-		require.NoError(t, err)
-
-		defer cursor.Close(ctx)
-
-		require.Equal(t, 101, cursor.RemainingBatchLength())
-
-		for i := 101; i > 0; i-- {
-			ok := cursor.Next(ctx)
-			require.True(t, ok, "expected to have next document")
-			require.Equal(t, i-1, cursor.RemainingBatchLength())
-		}
-
-		// next batch obtain from implicit call to `getMore` has the rest of the documents, not default batchSize
-		// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
-		ok := cursor.Next(ctx)
-		require.True(t, ok, "expected to have next document")
-		require.Equal(t, 118, cursor.RemainingBatchLength())
-	})
 }

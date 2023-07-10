@@ -60,14 +60,6 @@ func tagPackages(t *testing.T, tag string) []string {
 func TestDeps(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Tigris", func(t *testing.T) {
-		t.Parallel()
-
-		diff := tagPackages(t, "ferretdb_tigris")
-		assert.Contains(t, diff, "github.com/tigrisdata/tigris-client-go/driver")
-		assert.Contains(t, diff, "google.golang.org/grpc")
-	})
-
 	t.Run("Hana", func(t *testing.T) {
 		t.Parallel()
 

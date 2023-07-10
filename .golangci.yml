@@ -107,8 +107,6 @@ linters-settings:
     no-unaliased: false
     no-extra-aliases: true
     alias:
-      - pkg: github.com/tigrisdata/tigris-client-go/api/server/v1
-        alias: api
       - pkg: github.com/prometheus/client_model/go
         alias: dto
       - pkg: github.com/jackc/pgx-zap
@@ -131,6 +129,7 @@ linters-settings:
   revive:
     ignore-generated-header: true
     severity: error
+    rules: []
   staticcheck:
     checks:
       - all

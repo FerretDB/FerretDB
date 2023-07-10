@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"fmt"
 	"math"
-	"testing"
 	"time"
 
 	"github.com/pmezard/go-difflib/difflib"
@@ -30,7 +29,7 @@ import (
 )
 
 // AssertEqual asserts that two BSON values are equal.
-func AssertEqual[T types.Type](tb testing.TB, expected, actual T) bool {
+func AssertEqual[T types.Type](tb TB, expected, actual T) bool {
 	tb.Helper()
 
 	if equal(tb, expected, actual) {
@@ -43,7 +42,7 @@ func AssertEqual[T types.Type](tb testing.TB, expected, actual T) bool {
 }
 
 // AssertEqualSlices asserts that two BSON slices are equal.
-func AssertEqualSlices[T types.Type](tb testing.TB, expected, actual []T) bool {
+func AssertEqualSlices[T types.Type](tb TB, expected, actual []T) bool {
 	tb.Helper()
 
 	allEqual := len(expected) == len(actual)
@@ -67,7 +66,7 @@ func AssertEqualSlices[T types.Type](tb testing.TB, expected, actual []T) bool {
 }
 
 // AssertNotEqual asserts that two BSON values are not equal.
-func AssertNotEqual[T types.Type](tb testing.TB, expected, actual T) bool {
+func AssertNotEqual[T types.Type](tb TB, expected, actual T) bool {
 	tb.Helper()
 
 	if !equal(tb, expected, actual) {
@@ -81,7 +80,7 @@ func AssertNotEqual[T types.Type](tb testing.TB, expected, actual T) bool {
 }
 
 // AssertNotEqualSlices asserts that two BSON slices are not equal.
-func AssertNotEqualSlices[T types.Type](tb testing.TB, expected, actual []T) bool {
+func AssertNotEqualSlices[T types.Type](tb TB, expected, actual []T) bool {
 	tb.Helper()
 
 	allEqual := len(expected) == len(actual)
@@ -105,7 +104,7 @@ func AssertNotEqualSlices[T types.Type](tb testing.TB, expected, actual []T) boo
 }
 
 // diffValues returns a readable form of given values and the difference between them.
-func diffValues[T types.Type](tb testing.TB, expected, actual T) (expectedS string, actualS string, diff string) {
+func diffValues[T types.Type](tb TB, expected, actual T) (expectedS string, actualS string, diff string) {
 	expectedS = Dump(tb, expected)
 	actualS = Dump(tb, actual)
 
@@ -123,7 +122,7 @@ func diffValues[T types.Type](tb testing.TB, expected, actual T) (expectedS stri
 }
 
 // diffSlices returns a readable form of given slices and the difference between them.
-func diffSlices[T types.Type](tb testing.TB, expected, actual []T) (expectedS string, actualS string, diff string) {
+func diffSlices[T types.Type](tb TB, expected, actual []T) (expectedS string, actualS string, diff string) {
 	expectedS = DumpSlice(tb, expected)
 	actualS = DumpSlice(tb, actual)
 
@@ -148,7 +147,7 @@ func diffSlices[T types.Type](tb testing.TB, expected, actual []T) (expectedS st
 // This function is for tests; it should not try to convert values to different types before comparing them.
 //
 // Compare and contrast with types.Compare function.
-func equal(tb testing.TB, v1, v2 any) bool {
+func equal(tb TB, v1, v2 any) bool {
 	tb.Helper()
 
 	switch v1 := v1.(type) {
@@ -172,7 +171,7 @@ func equal(tb testing.TB, v1, v2 any) bool {
 }
 
 // equalDocuments compares BSON documents.
-func equalDocuments(tb testing.TB, v1, v2 *types.Document) bool {
+func equalDocuments(tb TB, v1, v2 *types.Document) bool {
 	tb.Helper()
 
 	require.NotNil(tb, v1)
@@ -199,7 +198,7 @@ func equalDocuments(tb testing.TB, v1, v2 *types.Document) bool {
 }
 
 // equalArrays compares BSON arrays.
-func equalArrays(tb testing.TB, v1, v2 *types.Array) bool {
+func equalArrays(tb TB, v1, v2 *types.Array) bool {
 	tb.Helper()
 
 	require.NotNil(tb, v1)
@@ -226,7 +225,7 @@ func equalArrays(tb testing.TB, v1, v2 *types.Array) bool {
 }
 
 // equalScalars compares BSON scalar values.
-func equalScalars(tb testing.TB, v1, v2 any) bool {
+func equalScalars(tb TB, v1, v2 any) bool {
 	tb.Helper()
 
 	require.NotNil(tb, v1)

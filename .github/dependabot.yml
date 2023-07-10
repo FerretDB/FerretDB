@@ -9,6 +9,9 @@ updates:
     labels: ["deps", "not ready"]
     assignees: [AlekSi]
     open-pull-requests-limit: 20
+    groups:
+      github-actions:
+        patterns: ["*"]
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -19,6 +22,9 @@ updates:
     labels: ["deps", "not ready"]
     assignees: [AlekSi]
     open-pull-requests-limit: 20
+    groups:
+      build-docker:
+        patterns: ["*"]
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -27,6 +33,9 @@ updates:
     directory: "/build/deps"
     labels: ["deps", "not ready"]
     open-pull-requests-limit: 20
+    groups:
+      build-deps:
+        patterns: ["*"]
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -37,6 +46,9 @@ updates:
     labels: ["deps", "not ready"]
     assignees: [AlekSi]
     open-pull-requests-limit: 20
+    groups:
+      ferretdb:
+        patterns: ["*"]
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -46,6 +58,9 @@ updates:
     labels: ["deps", "not ready"]
     assignees: [AlekSi]
     open-pull-requests-limit: 20
+    groups:
+      integration:
+        patterns: ["*"]
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -55,6 +70,9 @@ updates:
     labels: ["deps", "not ready"]
     assignees: [AlekSi]
     open-pull-requests-limit: 20
+    groups:
+      tools:
+        patterns: ["*"]
     schedule:
       interval: "weekly"
       day: "wednesday"
@@ -64,6 +82,9 @@ updates:
     labels: ["deps", "not ready"]
     assignees: [AlekSi]
     open-pull-requests-limit: 20
+    groups:
+      golangci:
+        patterns: ["*"]
     schedule:
       interval: "weekly"
       day: "wednesday"
