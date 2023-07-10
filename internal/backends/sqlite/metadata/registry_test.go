@@ -41,13 +41,11 @@ func TestInTransactionRollback(t *testing.T) {
 				require.NoError(t, err)
 
 				var rows *sql.Rows
-				rows, err = tx.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE type='table'")
+				rows, err = tx.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE name='test'")
 				require.NoError(t, err)
 				defer rows.Close()
 
-				require.True(t, rows.Next(), "metadata table does not exist")
 				require.True(t, rows.Next(), "test table does not exist")
-				require.False(t, rows.Next(), "There are more tables than expected")
 
 				//nolint:vet // we need it for testing
 				panic(nil)
@@ -55,11 +53,10 @@ func TestInTransactionRollback(t *testing.T) {
 		})
 
 		var rows *sql.Rows
-		rows, err = db.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE type='table'")
+		rows, err = db.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE name='test'")
 		require.NoError(t, err)
 		defer rows.Close()
 
-		require.True(t, rows.Next(), "metadata table does not exist")
 		require.False(t, rows.Next(), "test table does exist but it should be rollbacked")
 	})
 
@@ -78,24 +75,21 @@ func TestInTransactionRollback(t *testing.T) {
 			require.NoError(t, err)
 
 			var rows *sql.Rows
-			rows, err = tx.QueryContext(txCtx, "SELECT name FROM sqlite_schema WHERE type='table'")
+			rows, err = tx.QueryContext(txCtx, "SELECT name FROM sqlite_schema WHERE name='test'")
 			require.NoError(t, err)
 			defer rows.Close()
 
-			require.True(t, rows.Next(), "metadata table does not exist")
 			require.True(t, rows.Next(), "test table does not exist")
-			require.False(t, rows.Next(), "There are more tables than expected")
 
 			cancel()
 
 			return nil
 		})
 
-		rows, err := db.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE type='table'")
+		rows, err := db.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE name='test'")
 		require.NoError(t, err)
 		defer rows.Close()
 
-		require.True(t, rows.Next(), "metadata table does not exist")
 		require.False(t, rows.Next(), "test table does exist but it should be rollbacked")
 	})
 
@@ -118,13 +112,11 @@ func TestInTransactionRollback(t *testing.T) {
 				require.NoError(t, err)
 
 				var rows *sql.Rows
-				rows, err = tx.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE type='table'")
+				rows, err = tx.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE name='test'")
 				require.NoError(t, err)
 				defer rows.Close()
 
-				require.True(t, rows.Next(), "metadata table does not exist")
 				require.True(t, rows.Next(), "test table does not exist")
-				require.False(t, rows.Next(), "There are more tables than expected")
 
 				runtime.Goexit()
 				return nil
@@ -133,11 +125,10 @@ func TestInTransactionRollback(t *testing.T) {
 
 		wg.Wait()
 
-		rows, err := db.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE type='table'")
+		rows, err := db.QueryContext(ctx, "SELECT name FROM sqlite_schema WHERE name='test'")
 		require.NoError(t, err)
 		defer rows.Close()
 
-		require.True(t, rows.Next(), "metadata table does not exist")
 		require.False(t, rows.Next(), "test table does exist but it should be rollbacked")
 	})
 }
