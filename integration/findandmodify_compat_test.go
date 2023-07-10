@@ -178,7 +178,6 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"v", bson.D{}}}},
 			},
-			skipForTigris: "schema validation would fail",
 		},
 		"Conflict": {
 			command: bson.D{
@@ -520,11 +519,6 @@ func TestFindAndModifyCompatSort(t *testing.T) {
 }
 
 func TestFindAndModifyCompatUpsert(t *testing.T) {
-	setup.SkipForTigrisWithReason(
-		t,
-		"Tigris' schema doesn't fit for most of providers, upsert for Tigris is tested in TestFindAndModifyUpsert.",
-	)
-
 	t.Parallel()
 
 	testCases := map[string]findAndModifyCompatTestCase{
@@ -741,8 +735,7 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 type findAndModifyCompatTestCase struct {
 	command bson.D
 
-	skip          string // skips test if non-empty
-	skipForTigris string // skips test for Tigris if non-empty
+	skip string // skips test if non-empty
 
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
@@ -758,9 +751,6 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 
 			if tc.skip != "" {
 				t.Skip(tc.skip)
-			}
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
 			}
 
 			t.Parallel()

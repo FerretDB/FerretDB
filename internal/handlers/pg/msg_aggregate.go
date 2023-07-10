@@ -16,7 +16,9 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"math"
 	"os"
 	"time"
 
@@ -91,10 +93,64 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		v = int64(0)
 	}
 
-	maxTimeMS, err := commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "maxTimeMS", v, 0)
+	// cannot use other existing commonparams function, they return different error codes
+	maxTimeMS, err := commonparams.GetWholeNumberParam(v)
 	if err != nil {
-		// unreachable for MongoDB GO driver, it validates maxTimeMS parameter
-		return nil, lazyerrors.Error(err)
+		switch {
+		case errors.Is(err, commonparams.ErrUnexpectedType):
+			if _, ok = v.(types.NullType); ok {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrBadValue,
+					"maxTimeMS must be a number",
+					document.Command(),
+				)
+			}
+
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrTypeMismatch,
+				fmt.Sprintf(
+					`BSON field 'aggregate.maxTimeMS' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
+					commonparams.AliasFromType(v),
+				),
+				document.Command(),
+			)
+		case errors.Is(err, commonparams.ErrNotWholeNumber):
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				"maxTimeMS has non-integral value",
+				document.Command(),
+			)
+		case errors.Is(err, commonparams.ErrLongExceededPositive):
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf("%s value for maxTimeMS is out of range", types.FormatAnyValue(v)),
+				document.Command(),
+			)
+		case errors.Is(err, commonparams.ErrLongExceededNegative):
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrValueNegative,
+				fmt.Sprintf("BSON field 'maxTimeMS' value must be >= 0, actual value '%s'", types.FormatAnyValue(v)),
+				document.Command(),
+			)
+		default:
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	if maxTimeMS < int64(0) {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrValueNegative,
+			fmt.Sprintf("BSON field 'maxTimeMS' value must be >= 0, actual value '%s'", types.FormatAnyValue(v)),
+			document.Command(),
+		)
+	}
+
+	if maxTimeMS > math.MaxInt32 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf("%v value for maxTimeMS is out of range", v),
+			document.Command(),
+		)
 	}
 
 	pipeline, err := common.GetRequiredParam[*types.Array](document, "pipeline")

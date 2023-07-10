@@ -27,8 +27,6 @@ import (
 )
 
 func TestRenameCollectionCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Command renameCollection is not supported for Tigris")
-
 	t.Parallel()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{

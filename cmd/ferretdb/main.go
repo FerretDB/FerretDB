@@ -107,15 +107,6 @@ var sqliteFlags struct {
 	SQLiteURL string `name:"sqlite-url" default:"file:data/" help:"SQLite URI (directory) for 'sqlite' handler."`
 }
 
-// The tigrisFlags struct represents flags that are used by the "tigris" handler.
-//
-// See main_tigris.go.
-var tigrisFlags struct {
-	TigrisURL          string `default:"127.0.0.1:8081" help:"Tigris URL for 'tigris' handler."`
-	TigrisClientID     string `default:""               help:"Tigris Client ID."`
-	TigrisClientSecret string `default:""               help:"Tigris Client secret."`
-}
-
 // The hanaFlags struct represents flags that are used by the "hana" handler.
 //
 // See main_hana.go.
@@ -361,10 +352,6 @@ func run() {
 		PostgreSQLURL: pgFlags.PostgreSQLURL,
 
 		SQLiteURL: sqliteFlags.SQLiteURL,
-
-		TigrisURL:          tigrisFlags.TigrisURL,
-		TigrisClientID:     tigrisFlags.TigrisClientID,
-		TigrisClientSecret: tigrisFlags.TigrisClientSecret,
 
 		HANAURL: hanaFlags.HANAURL,
 
