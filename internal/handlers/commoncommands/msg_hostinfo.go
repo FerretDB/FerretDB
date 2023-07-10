@@ -78,7 +78,7 @@ func MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 				"name", osName,
 				"version", osVersion,
 			)),
-			"extra", must.NotFail(types.NewDocument()),
+			"extra", types.NewEmptyDocument(),
 			"ok", float64(1),
 		))},
 	}))

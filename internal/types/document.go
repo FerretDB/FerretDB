@@ -89,6 +89,14 @@ func MakeDocument(capacity int) *Document {
 	}
 }
 
+// NewEmptyDocument creates an empty document with zero capacity.
+//
+// Prefer this to the must.NotFail(types.NewDocument()) alternative.
+// Prefer the MakeDocument function if you can specify a document size hint.
+func NewEmptyDocument() *Document {
+	return MakeDocument(0)
+}
+
 // NewDocument creates a document with the given key/value pairs.
 func NewDocument(pairs ...any) (*Document, error) {
 	l := len(pairs)

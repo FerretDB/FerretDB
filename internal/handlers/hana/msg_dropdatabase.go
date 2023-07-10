@@ -49,7 +49,7 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		DB: db,
 	}
 
-	res := must.NotFail(types.NewDocument())
+	res := types.NewEmptyDocument()
 
 	err = dbPool.DropSchema(ctx, &qp)
 

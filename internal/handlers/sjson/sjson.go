@@ -75,7 +75,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // sjsontype is a type that can be marshaled from/to sjson.
@@ -218,7 +217,8 @@ func Unmarshal(data []byte) (*types.Document, error) {
 		)
 	}
 
-	d := must.NotFail(types.NewDocument())
+	// TODO(quasilyte): MakeDocument(len(sch.Keys))?
+	d := types.NewEmptyDocument()
 
 	for _, key := range sch.Keys {
 		b, ok := v[key]

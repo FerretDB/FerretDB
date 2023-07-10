@@ -43,7 +43,7 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 	fields := must.NotFail(stage.Get("$unset"))
 
 	// exclusion contains keys with `false` values to specify projection exclusion later.
-	exclusion := must.NotFail(types.NewDocument())
+	exclusion := types.NewEmptyDocument()
 
 	switch fields := fields.(type) {
 	case *types.Array:

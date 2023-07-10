@@ -54,7 +54,7 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		Name: dbName,
 	})
 
-	res := must.NotFail(types.NewDocument())
+	res := types.NewEmptyDocument()
 
 	switch {
 	case err == nil:

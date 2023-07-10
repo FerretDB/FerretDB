@@ -88,7 +88,8 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	firstBatch := types.MakeArray(len(indexes))
 
 	for _, index := range indexes {
-		indexKey := must.NotFail(types.NewDocument())
+		// TODO(quasilyte): MakeDocument(len(index.Key))?
+		indexKey := types.NewEmptyDocument()
 
 		for _, key := range index.Key {
 			indexKey.Set(key.Field, int32(key.Order))

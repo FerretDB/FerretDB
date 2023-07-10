@@ -36,7 +36,7 @@ var (
 			types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
 			true,
 			time.Date(2021, 7, 27, 9, 35, 42, 123000000, time.UTC).Local(),
-			must.NotFail(types.NewDocument()),
+			types.NewEmptyDocument(),
 			42.13,
 			int32(42),
 			int64(42),

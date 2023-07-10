@@ -28,7 +28,7 @@ func MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"argv", must.NotFail(types.NewArray("ferretdb")),
-			"parsed", must.NotFail(types.NewDocument()),
+			"parsed", types.NewEmptyDocument(),
 			"ok", float64(1),
 		))},
 	}))

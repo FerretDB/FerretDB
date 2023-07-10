@@ -34,7 +34,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 	}{
 		"Empty": {
 			json: `{"$s":{}}`,
-			doc:  must.NotFail(types.NewDocument()),
+			doc:  types.NewEmptyDocument(),
 		},
 		"Filled": {
 			json: `{

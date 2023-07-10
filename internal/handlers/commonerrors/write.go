@@ -75,7 +75,7 @@ func (we *WriteErrors) Document() *types.Document {
 	errs := must.NotFail(types.NewArray())
 
 	for _, e := range we.errs {
-		doc := must.NotFail(types.NewDocument())
+		doc := types.NewEmptyDocument()
 
 		if e.index != nil {
 			doc.Set("index", *e.index)

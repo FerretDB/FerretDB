@@ -118,7 +118,7 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 			doc: must.NotFail(types.NewDocument(
 				"obj", must.NotFail(types.NewDocument(
 					"arr", must.NotFail(types.NewArray(
-						must.NotFail(types.NewDocument()),
+						types.NewEmptyDocument(),
 						must.NotFail(types.NewDocument("foo", must.NotFail(types.NewArray()))),
 					)),
 					"empty-arr", must.NotFail(types.NewArray()),

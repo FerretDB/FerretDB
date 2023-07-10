@@ -197,7 +197,7 @@ func PrepareDocumentForUpsert(docs []*types.Document, params *FindAndModifyParam
 // When inserting new document we must check that `_id` is present, so we must extract `_id`
 // from query or generate a new one.
 func prepareDocumentForInsert(params *FindAndModifyParams) (*types.Document, error) {
-	insert := must.NotFail(types.NewDocument())
+	insert := types.NewEmptyDocument()
 
 	if params.HasUpdateOperators {
 		if _, err := UpdateDocument("findAndModify", insert, params.Update); err != nil {

@@ -78,7 +78,7 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 // selectUnit is makes a selection of requested parameters.
 func selectUnit(document, resDB *types.Document, showDetails, allParameters bool) (doc *types.Document, err error) {
-	doc = must.NotFail(types.NewDocument())
+	doc = types.NewEmptyDocument()
 
 	iter := resDB.Iterator()
 	defer iter.Close()

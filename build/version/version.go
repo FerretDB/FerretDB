@@ -120,7 +120,7 @@ func init() {
 		Dirty:               false,
 		Package:             unknown,
 		DebugBuild:          debugbuild.Enabled,
-		BuildEnvironment:    must.NotFail(types.NewDocument()),
+		BuildEnvironment:    types.NewEmptyDocument(),
 		MongoDBVersion:      mongoDBVersion,
 		MongoDBVersionArray: mongoDBVersionArray,
 	}

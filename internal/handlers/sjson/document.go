@@ -20,7 +20,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // documentType represents BSON Document type.
@@ -62,7 +61,8 @@ func (doc *documentType) UnmarshalJSONWithSchema(data []byte, sch *schema) error
 		)
 	}
 
-	td := must.NotFail(types.NewDocument())
+	// TODO(quasilyte): MakeDocument(len(sch.Keys))?
+	td := types.NewEmptyDocument()
 
 	for _, key := range sch.Keys {
 		b, ok := rawMessages[key]

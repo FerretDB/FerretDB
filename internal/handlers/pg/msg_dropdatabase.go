@@ -54,7 +54,7 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		}
 	}
 
-	res := must.NotFail(types.NewDocument())
+	res := types.NewEmptyDocument()
 
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		return pgdb.DropDatabase(ctx, tx, db)
