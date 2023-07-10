@@ -16,40 +16,17 @@ package testutil
 
 import (
 	"sync/atomic"
-	"testing"
 
 	"github.com/stretchr/testify/require"
-)
 
-// TB is a copy of testing.TB without a private method.
-//
-//nolint:interfacebloat // that's a copy of existing interface
-type TB interface {
-	Cleanup(func())
-	Error(args ...any)
-	Errorf(format string, args ...any)
-	Fail()
-	FailNow()
-	Failed() bool
-	Fatal(args ...any)
-	Fatalf(format string, args ...any)
-	Helper()
-	Log(args ...any)
-	Logf(format string, args ...any)
-	Name() string
-	Setenv(key, value string)
-	Skip(args ...any)
-	SkipNow()
-	Skipf(format string, args ...any)
-	Skipped() bool
-	TempDir() string
-}
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+)
 
 // XFail return a new TB instance that expects the test to fail.
 //
 // At the end of the test, if it was marked as failed, it will pass instead.
 // If it passes, it will be failed, so that XFail call can be removed.
-func XFail(t TB, reason string) TB {
+func XFail(t testtb.TB, reason string) testtb.TB {
 	t.Helper()
 
 	require.NotEmpty(t, reason, "reason must not be empty")
@@ -72,7 +49,7 @@ func XFail(t TB, reason string) TB {
 
 // xfail wraps TB with expected failure logic.
 type xfail struct {
-	t      TB
+	t      testtb.TB
 	failed atomic.Bool
 }
 
@@ -153,11 +130,3 @@ func (x *xfail) Skipped() bool { return x.t.Skipped() }
 
 // TempDir returns a temporary directory for the test to use.
 func (x *xfail) TempDir() string { return x.t.TempDir() }
-
-// check interfaces
-var (
-	_ TB = (*testing.T)(nil)
-	_ TB = (*testing.B)(nil)
-	_ TB = (*testing.F)(nil)
-	_ TB = (testing.TB)(nil)
-)
