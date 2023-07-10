@@ -886,14 +886,14 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         2,
 			len:           2,
-			limitPushdown: false,
+			limitPushdown: true,
 		},
 		"FilterSort": {
 			filter:        bson.D{{"v", 42}},
 			sort:          bson.D{{"_id", 1}},
 			limit:         2,
 			len:           1,
-			limitPushdown: false,
+			limitPushdown: true,
 		},
 		"Skip": {
 			optSkip:       pointer.ToInt64(1),
@@ -944,9 +944,9 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				assert.NoError(t, err)
 
 				var msg string
-				if setup.IsPushdownDisabled() {
+				if !setup.IsSortPushdownEnabled() && tc.sort != nil {
 					tc.limitPushdown = false
-					msg = "Limit pushdown is disabled, but target resulted with limitPushdown"
+					msg = "Sort pushdown is disabled, but target resulted with limitPushdown"
 				}
 
 				pushdown, _ := ConvertDocument(t, res).Get("limitPushdown")

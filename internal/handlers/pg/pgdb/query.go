@@ -195,12 +195,6 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.Doc
 
 	query += where
 
-	if p.limit != 0 {
-		query += fmt.Sprintf(` LIMIT $%d`, len(args)+1)
-		args = append(args, p.limit)
-		res.LimitPushdown = true
-	}
-
 	if p.forUpdate {
 		query += ` FOR UPDATE`
 	}
@@ -218,6 +212,12 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.Doc
 		args = append(args, sortArgs...)
 
 		res.SortPushdown = sort != ""
+	}
+
+	if p.limit != 0 {
+		query += fmt.Sprintf(` LIMIT $%d`, len(args)+1)
+		args = append(args, p.limit)
+		res.LimitPushdown = true
 	}
 
 	rows, err := tx.Query(ctx, query, args...)
