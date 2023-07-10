@@ -150,6 +150,19 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 			altMessage: "Cannot create field 'foo' in element " +
 				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
 		},
+		"SetImmutableID": {
+			command: bson.D{
+				{"update", bson.D{{"$set", bson.D{{"_id", "non-existent"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 66,
+				Name: "ImmutableField",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"Performing an update on the path '_id' would modify the immutable field '_id'",
+			},
+			altMessage: "Performing an update on the path '_id' would modify the immutable field '_id'",
+			skip:       "https://github.com/FerretDB/FerretDB/issues/3017",
+		},
 		"RenameEmptyFieldName": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "array-documents-nested"}}},
