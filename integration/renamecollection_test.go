@@ -19,6 +19,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -37,7 +38,7 @@ func TestRenameCollectionStress(tt *testing.T) {
 	var i, oks, errs atomic.Int32
 
 	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
-		from := fmt.Sprintf("rename_collection_stress_%d", i.Add(1)-1)
+		from := fmt.Sprintf("%s.rename_collection_stress_%d", db.Name(), i.Add(1))
 		to := fmt.Sprintf("%s.rename_collection_stress_renamed", db.Name())
 
 		err := db.CreateCollection(ctx, from)
@@ -48,14 +49,16 @@ func TestRenameCollectionStress(tt *testing.T) {
 
 		err = adminDB.RunCommand(ctx, bson.D{{"renameCollection", from}, {"to", to}}).Err()
 		if err == nil {
+			t.Logf("Renamed %q to %q.", from, to)
 			oks.Add(1)
 		} else {
+			t.Log(err)
 			errs.Add(1)
 		}
 	})
 
-	require.Equal(t, int32(1), oks.Load())
-	require.Equal(t, i.Load()-1, errs.Load())
+	assert.Equal(t, int32(1), oks.Load())
+	assert.Equal(t, i.Load()-1, errs.Load())
 
 	colls, err := db.ListCollectionNames(ctx, bson.D{})
 	require.NoError(t, err)
