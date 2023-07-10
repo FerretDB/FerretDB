@@ -37,6 +37,7 @@ import (
 // To validate update document, must call ValidateUpdateOperators before calling UpdateDocument.
 // UpdateDocument returns CommandError for findAndModify case-insensitive command name,
 // WriteError for other commands.
+// TODO https://github.com/FerretDB/FerretDB/issues/3013
 func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 	var changed bool
 	var err error
@@ -197,6 +198,8 @@ func processSetFieldExpression(command string, doc, setDoc *types.Document, setO
 
 	for _, setKey := range setDocKeys {
 		setValue := must.NotFail(setDoc.Get(setKey))
+
+		// TODO: validate immutable _id https://github.com/FerretDB/FerretDB/issues/3017
 
 		if setOnInsert {
 			// $setOnInsert do not set null and empty array value.
@@ -848,10 +851,6 @@ func ValidateUpdateOperators(command string, update *types.Document) error {
 		return err
 	}
 
-	if err = validateSetExpression(command, update); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -992,28 +991,6 @@ func extractValueFromUpdateOperator(command, op string, update *types.Document) 
 	}
 
 	return doc, nil
-}
-
-// validateSetExpression validates $set expression input.
-func validateSetExpression(command string, update *types.Document) error {
-	if !update.Has("$set") {
-		return nil
-	}
-
-	updateExpression := must.NotFail(update.Get("$set"))
-
-	// updateExpression is document, checked in ValidateUpdateOperators.
-	doc := updateExpression.(*types.Document)
-
-	if doc.Has("_id") {
-		return newUpdateError(
-			commonerrors.ErrImmutableField,
-			"Performing an update on the path '_id' would modify the immutable field '_id'",
-			command,
-		)
-	}
-
-	return nil
 }
 
 // validateRenameExpression validates $rename input on correctness.
