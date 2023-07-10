@@ -16,7 +16,9 @@ package common
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"math"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
@@ -81,7 +83,58 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 	}
 
 	// TODO maxTimeMS https://github.com/FerretDB/FerretDB/issues/1808
-	// TODO comment
+	v, _ = document.Get("maxTimeMS")
+	if v == nil {
+		v = int64(0)
+	}
+
+	// cannot use other existing commonparams function, they return different error codes
+	maxTimeMS, err := commonparams.GetWholeNumberParam(v)
+	if err != nil {
+		switch {
+		case errors.Is(err, commonparams.ErrUnexpectedType):
+			if _, ok = v.(types.NullType); ok {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrBadValue,
+					"maxTimeMS must be a number",
+					document.Command(),
+				)
+			}
+
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrTypeMismatch,
+				fmt.Sprintf(
+					`BSON field 'getMore.maxTimeMS' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
+					commonparams.AliasFromType(v),
+				),
+				document.Command(),
+			)
+		case errors.Is(err, commonparams.ErrNotWholeNumber):
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				"maxTimeMS has non-integral value",
+				document.Command(),
+			)
+		case errors.Is(err, commonparams.ErrLongExceededPositive) || errors.Is(err, commonparams.ErrLongExceededNegative):
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf("%s value for maxTimeMS is out of range", types.FormatAnyValue(v)),
+				document.Command(),
+			)
+		default:
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	if maxTimeMS < int64(0) || maxTimeMS > math.MaxInt32 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf("%v value for maxTimeMS is out of range", v),
+			document.Command(),
+		)
+	}
+
+	// TODO comment https://github.com/FerretDB/FerretDB/issues/2986
 
 	username, _ := conninfo.Get(ctx).Auth()
 

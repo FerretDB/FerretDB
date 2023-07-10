@@ -159,6 +159,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	if params.SingleBatch || firstBatch.Len() < int(params.BatchSize) {
+		// TODO: support tailable cursor https://github.com/FerretDB/FerretDB/issues/2963
 		// let the client know that there are no more results
 		cursorID = 0
 
