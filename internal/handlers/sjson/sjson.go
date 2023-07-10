@@ -239,25 +239,13 @@ func Unmarshal(data []byte) (*types.Document, error) {
 }
 
 // unmarshalSingleValue decodes the given sjson-encoded data element by the given schema.
-func unmarshalSingleValue(data []byte, sch *elem) (any, error) {
+func unmarshalSingleValue(data json.RawMessage, sch *elem) (any, error) {
 	if bytes.Equal(data, []byte("null")) {
 		return fromSJSON(new(nullType)), nil
 	}
 
 	if sch == nil {
 		return nil, lazyerrors.Errorf("schema is not set")
-	}
-
-	var v json.RawMessage
-	r := bytes.NewReader(data)
-	dec := json.NewDecoder(r)
-
-	if err := dec.Decode(&v); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if err := checkConsumed(dec, r); err != nil {
-		return nil, lazyerrors.Error(err)
 	}
 
 	var res sjsontype
