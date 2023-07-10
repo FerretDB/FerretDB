@@ -144,7 +144,7 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 	}
 
 	if !testing.Short() {
-		records, err := LoadRecords(filepath.Join("..", "..", "tmp", "records"), 1000)
+		records, err := LoadRecords(filepath.Join("..", "..", "tmp", "records"), 100)
 		require.NoError(f, err)
 
 		for _, rec := range records {

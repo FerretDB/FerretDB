@@ -72,7 +72,7 @@ func SetupCompatWithOpts(tb testutil.TB, opts *SetupCompatOpts) *SetupCompatResu
 		opts = new(SetupCompatOpts)
 	}
 
-	// When we use `task all` to run `pg` and `sqlite` compat tests in parallel,
+	// When we use `task test-integration` to run `pg` and `sqlite` compat tests in parallel,
 	// they both use the same MongoDB instance.
 	// Add the backend's name to prevent the usage of the same database.
 	opts.databaseName = testutil.DatabaseName(tb) + "_" + strings.TrimPrefix(*targetBackendF, "ferretdb-")
