@@ -777,6 +777,11 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			update:     bson.D{{"$set", bson.D{{"_id", "non-existent"}}}},
 			resultType: emptyResult,
 		},
+		"SetID": {
+			update:      bson.D{{"$set", bson.D{{"_id", "int32"}, {"v", int32(2)}}}},
+			unsetFilter: true,
+			resultType:  emptyResult, // _id must be an immutable field
+		},
 		"ConflictKey": {
 			update: bson.D{
 				{"$set", bson.D{{"v", "val"}}},
@@ -791,14 +796,18 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
-		"SameID": {
+		"ExistingID": {
 			filter:     bson.D{{"_id", "int32"}},
-			update:     bson.D{{"$set", bson.D{{"_id", "int32"}}}},
+			update:     bson.D{{"$set", bson.D{{"_id", "int32-1"}, {"v", int32(2)}}}},
 			resultType: emptyResult,
+		},
+		"SameID": {
+			filter: bson.D{{"_id", "int32"}},
+			update: bson.D{{"$set", bson.D{{"_id", "int32"}, {"v", int32(2)}}}},
 		},
 		"DifferentID": {
 			filter:     bson.D{{"_id", "int32"}},
-			update:     bson.D{{"$set", bson.D{{"_id", "another-id"}}}},
+			update:     bson.D{{"$set", bson.D{{"_id", "another-id"}, {"v", int32(2)}}}},
 			resultType: emptyResult,
 		},
 	}

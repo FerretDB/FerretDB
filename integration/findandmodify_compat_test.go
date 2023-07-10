@@ -333,9 +333,20 @@ func TestFindAndModifyCompatUpdateSet(t *testing.T) {
 		},
 		"UpdateID": {
 			command: bson.D{
-				{"update", bson.D{{"$set", bson.D{{"_id", "non-existent"}}}}},
+				{"update", bson.D{{"$set", bson.D{{"_id", "int32"}}}}},
 			},
-			resultType: emptyResult, // _id must be an immutable field
+		},
+		"UpdateExistingID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32"}}},
+				{"update", bson.D{{"$set", bson.D{{"_id", "int32-1"}}}}},
+			},
+		},
+		"UpdateSameID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32"}}},
+				{"update", bson.D{{"$set", bson.D{{"_id", "int32"}}}}},
+			},
 		},
 	}
 
@@ -643,6 +654,27 @@ func TestFindAndModifyCompatUpsertSet(t *testing.T) {
 				{"update", bson.D{{"$set", bson.D{{"_id", "double"}}}}},
 			},
 			resultType: emptyResult, // _id must be an immutable field
+		},
+		"UpsertIDNoQuery": {
+			command: bson.D{
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"_id", "int32"}, {"v", int32(2)}}}}},
+			},
+		},
+		"UpsertExistingID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32"}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"_id", "int32-1"}, {"v", int32(2)}}}}},
+			},
+			resultType: emptyResult, // _id must be an immutable field
+		},
+		"UpsertSameID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32"}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"_id", "int32"}, {"v", int32(2)}}}}},
+			},
 		},
 	}
 
