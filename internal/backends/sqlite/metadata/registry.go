@@ -223,16 +223,20 @@ func inTransaction(ctx context.Context, db *sql.DB, f func(*sql.Tx) error) (err 
 	}
 
 	if err = f(tx); err != nil {
-		err = lazyerrors.Error(err)
-		_ = tx.Rollback()
+		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+			err = errors.Join(err, rollbackErr)
+		}
 
+		err = lazyerrors.Error(err)
 		return
 	}
 
 	if err = tx.Commit(); err != nil {
-		err = lazyerrors.Error(err)
-		_ = tx.Rollback()
+		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+			err = errors.Join(err, rollbackErr)
+		}
 
+		err = lazyerrors.Error(err)
 		return
 	}
 
