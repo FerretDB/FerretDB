@@ -19,9 +19,9 @@ You can learn more about query pushdown in our [blog post](https://blog.ferretdb
 
 ## Supported types and operators
 
-The following table shows all operators and types that FerretDB uses pushdown on PostgreSQL backend.
+The following table shows all operators and types that FerretDB supports for query pushdown on PostgreSQL backend.
 If filter uses type and operator, that's marked as pushdown-supported on this list,
-FerretDB will prefetch fewer results, resulting with more performant query.
+FerretDB will prefetch fewer results, resulting in more performant query.
 
 If your application requires better performance for specific operation,
 feel free to share this with us in our [community](/#community)!
@@ -53,22 +53,24 @@ will prefetch all numbers larger/smaller than max/min value of the range.
 
 <!-- markdownlint-restore -->
 
-## Supported pushdown on `find()` cursor methods
+## Supported pushdown on `find` command arguments
 
 <!-- markdownlint-capture -->
 <!-- markdownlint-disable MD001 MD033 MD051 -->
 
-|           | `limit()` | `skip()` | `sort()`                |
-| --------- | --------- | -------- | ----------------------- |
-| `limit()` | ✅        | ✖️       | ⚠️ <sub>[[2]](#2)</sub> |
-| `skip()`  | -         | ✖️       | ⚠️ <sub>[[3]](#3)</sub> |
-| `sort()`  | -         | -        | ⚠️ <sub>[[3]](#3)</sub> |
+| `find` command arguments | Supported               |
+| ------------------------ | ----------------------- |
+| `limit()`                | ✅                      |
+| `limit().skip()`         | ✖️                      |
+| `limit().sort()`         | ⚠️ <sub>[[2]](#2)</sub> |
+| `skip()`                 | ✖️                      |
+| `sort()`                 | ⚠️ <sub>[[3]](#3)</sub> |
 
 ###### [2] {#2}
 
 When cursor contains `limit()` and `sort()`, limit pushdown is applied
-only if experimental sort pushdown is enabled by `-enable-sort-pushdown` flag.
+only if experimental [sort pushdown configuration](configuration/flags.md#query-pushdown) is enabled by `--test-enable-sort-pushdown` flag.
 
 ###### [3] {#3}
 
-Sort pushdown is an experimental configuration option enabled by `-enable-sort-pushdown` flag.
+Sort pushdown is an experimental [configuration](configuration/flags.md#query-pushdown) enabled by `--test-enable-sort-pushdown` flag.
