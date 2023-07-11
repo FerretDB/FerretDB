@@ -66,12 +66,15 @@ Some default values are overridden in [our Docker image](quickstart-guide/docker
 
 ## Query pushdown
 
-See [query pushdown](../pushdown.md#query-pushdown).
-
 | Flag                             | Description                           | Environment Variable                    | Default Value |
 | -------------------------------- | ------------------------------------- | --------------------------------------- | ------------- |
 | `--test-disable-filter-pushdown` | Experimental: disable filter pushdown | `FERRETDB_TEST_DISABLE_FILTER_PUSHDOWN` | false         |
 | `--test-enable-sort-pushdown`    | Experimental: enable sort pushdown    | `FERRETDB_TEST_ENABLE_SORT_PUSHDOWN`    | false         |
+
+:::warning
+`--test-enable-sort-pushdown` is an experimental configuration, enabling it would sort the response in a different sort order.
+Read more about [query pushdown](../pushdown.md#query-pushdown).
+:::
 
 ## Miscellaneous
 
