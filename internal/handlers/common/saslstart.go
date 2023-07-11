@@ -21,14 +21,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // SASLStart is a common implementation of the saslStart command.
 func SASLStart(ctx context.Context, doc *types.Document) error {
 	mechanism, err := GetRequiredParam[string](doc, "mechanism")
 	if err != nil {
-		return lazyerrors.Error(err)
+		return err
 	}
 
 	var username, password string
@@ -45,8 +44,9 @@ func SASLStart(ctx context.Context, doc *types.Document) error {
 			"mechanism",
 		)
 	}
+
 	if err != nil {
-		return lazyerrors.Error(err)
+		return err
 	}
 
 	conninfo.Get(ctx).SetAuth(username, password)
