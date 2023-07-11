@@ -53,7 +53,9 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		}, nil
 	}
 
-	msg := fmt.Sprintf("CmdQuery: unhandled collection %q", query.FullCollectionName)
-
-	return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNotImplemented, msg)
+	return nil, commonerrors.NewCommandErrorMsgWithArgument(
+		commonerrors.ErrNotImplemented,
+		fmt.Sprintf("CmdQuery: unhandled command %q for collection %q", cmd, collection),
+		"OpQuery: "+cmd,
+	)
 }
