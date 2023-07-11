@@ -25,7 +25,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -34,10 +33,12 @@ import (
 func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	doc, err := msg.Document()
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
-	common.SASLStart(ctx, doc)
+	if err = common.SASLStart(ctx, doc); err != nil {
+		return nil, err
+	}
 
 	if _, err = h.DBPool(ctx); err != nil {
 		var pgErr *pgconn.PgError
@@ -53,7 +54,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			)
 		}
 
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	var emptyPayload types.Binary
