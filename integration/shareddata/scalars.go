@@ -29,8 +29,11 @@ const (
 	longBig       = int64(1 << 61)     // 2305843009213693952:   same as doubleBig but integer
 
 	// TODO https://github.com/FerretDB/FerretDB/commit/06289cacb4a1a119a5722155bb342a722b062e9f
-	longMaxOverflow      = 9.223372036854776833e+18 // 100001111100000000000000000000000000000000000000000000000000001
-	longMaxOverflowVerge = float64(math.MaxInt64)   // 100001111100000000000000000000000000000000000000000000000000000
+	// TODO scalars.go:167
+	longMaxOverflow      = 9.223372036854776833e+18  // 100001111100000000000000000000000000000000000000000000000000001
+	longMaxOverflowVerge = float64(math.MaxInt64)    // 100001111100000000000000000000000000000000000000000000000000000
+	longMinOverflow      = -9.223372036854776833e+18 // 1100001111100000000000000000000000000000000000000000000000000001
+	longMinOverflowVerge = float64(math.MinInt64)    // 1100001111100000000000000000000000000000000000000000000000000000
 )
 
 // Scalars contain scalar values for tests.
@@ -156,8 +159,8 @@ var Doubles = &Values[string]{
 		"double-4":                  float64(123456789),
 		"double-5":                  float64(math.MaxInt64),
 		"double-6":                  float64(math.MaxInt64 + 1),
-		"double-max-overflow":       9.223372036854776833e+18,
-		"double-max-overflow-verge": 9.223372036854776832e+18,
+		"double-max-overflow":       longMaxOverflow,
+		"double-max-overflow-verge": longMaxOverflowVerge,
 		"double-min-overflow":       -9.223372036854776833e+18,
 		"double-min-overflow-verge": -9.223372036854776832e+18,
 	},
