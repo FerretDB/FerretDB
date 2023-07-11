@@ -15,43 +15,66 @@
 package backends
 
 import (
+	"fmt"
 	"io"
 	"io/fs"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 )
 
 func TestErrorNormal(t *testing.T) {
 	t.Parallel()
 
-	pe := &fs.PathError{
-		Op:   "open",
-		Path: "database.db",
-		Err:  io.EOF,
-	}
-	err := NewError(ErrorCodeCollectionDoesNotExist, pe)
+	t.Run("Normal", func(t *testing.T) {
+		t.Parallel()
 
-	assert.NotErrorIs(t, err, pe, "internal error should be hidden")
-	assert.NotErrorIs(t, err, io.EOF, "internal error should be hidden")
+		pe := &fs.PathError{
+			Op:   "open",
+			Path: "database.db",
+			Err:  io.EOF,
+		}
+		err := NewError(ErrorCodeCollectionDoesNotExist, pe)
 
-	var e *Error
-	assert.ErrorAs(t, err, &e)
-	assert.Equal(t, ErrorCodeCollectionDoesNotExist, e.code)
-	assert.Equal(t, pe, e.err)
+		assert.NotErrorIs(t, err, pe, "internal error should be hidden")
+		assert.NotErrorIs(t, err, io.EOF, "internal error should be hidden")
 
-	assert.Equal(t, `ErrorCodeCollectionDoesNotExist: open database.db: EOF`, err.Error())
+		var e *Error
+		assert.ErrorAs(t, err, &e)
+		assert.Equal(t, ErrorCodeCollectionDoesNotExist, e.code)
+		assert.Equal(t, pe, e.err)
+
+		assert.Equal(t, `ErrorCodeCollectionDoesNotExist: open database.db: EOF`, err.Error())
+	})
+
+	t.Run("Nil", func(t *testing.T) {
+		t.Parallel()
+
+		err := NewError(ErrorCodeCollectionDoesNotExist, nil)
+
+		var e *Error
+		assert.ErrorAs(t, err, &e)
+		assert.Equal(t, ErrorCodeCollectionDoesNotExist, e.code)
+		assert.Nil(t, e.err)
+
+		assert.Equal(t, `ErrorCodeCollectionDoesNotExist: <nil>`, err.Error())
+	})
 }
 
-func TestErrorNil(t *testing.T) {
+func TestCheckError(t *testing.T) {
 	t.Parallel()
 
-	err := NewError(ErrorCodeCollectionDoesNotExist, nil)
+	require.True(t, debugbuild.Enabled)
 
-	var e *Error
-	assert.ErrorAs(t, err, &e)
-	assert.Equal(t, ErrorCodeCollectionDoesNotExist, e.code)
-	assert.Nil(t, e.err)
+	t.Run("Wrapped", func(t *testing.T) {
+		t.Parallel()
 
-	assert.Equal(t, `ErrorCodeCollectionDoesNotExist: <nil>`, err.Error())
+		err := fmt.Errorf("error: %w", NewError(ErrorCodeCollectionDoesNotExist, nil))
+		assert.PanicsWithValue(t, "error should not be wrapped: error: ErrorCodeCollectionDoesNotExist: <nil>", func() {
+			checkError(err)
+		})
+	})
 }
