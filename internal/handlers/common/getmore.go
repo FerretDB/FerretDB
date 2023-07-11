@@ -82,7 +82,7 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 		)
 	}
 
-	// TODO maxTimeMS https://github.com/FerretDB/FerretDB/issues/1808
+	// TODO maxTimeMS https://github.com/FerretDB/FerretDB/issues/2984
 	v, _ = document.Get("maxTimeMS")
 	if v == nil {
 		v = int64(0)
