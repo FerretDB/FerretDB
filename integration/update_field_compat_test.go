@@ -812,6 +812,11 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/3017",
 		},
+		"UpsertQuery": {
+			filter:     bson.D{{"v", bson.D{{"$gt", 3}}}},
+			update:     bson.D{{"$set", bson.D{{"found", true}}}},
+			updateOpts: options.Update().SetUpsert(true),
+		},
 	}
 
 	testUpdateCompat(t, testCases)
