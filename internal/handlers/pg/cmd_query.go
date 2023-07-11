@@ -18,12 +18,9 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -32,47 +29,20 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	cmd := query.Query.Command()
 	collection := query.FullCollectionName
 
-	if strings.Contains(collection, "$cmd") {
-		switch cmd {
-		// both are valid
-		case "ismaster", "isMaster":
-			return &wire.OpReply{
-				NumberReturned: 1,
-				Documents: []*types.Document{must.NotFail(types.NewDocument(
-					"ismaster", true, // only lowercase
-					// topologyVersion
-					"maxBsonObjectSize", int32(types.MaxDocumentLen),
-					"maxMessageSizeBytes", int32(wire.MaxMsgLen),
-					"maxWriteBatchSize", int32(100000),
-					"localTime", time.Now(),
-					// logicalSessionTimeoutMinutes
-					"connectionId", int32(42),
-					"minWireVersion", common.MinWireVersion,
-					"maxWireVersion", common.MaxWireVersion,
-					"readOnly", false,
-					"ok", float64(1),
-				))},
-			}, nil
-		case "saslStart":
-			var emptyPayload types.Binary
-
-			return &wire.OpReply{
-				NumberReturned: 1,
-				Documents: []*types.Document{must.NotFail(types.NewDocument(
-					"conversationId", int32(1),
-					"done", true,
-					"payload", emptyPayload,
-					"ok", float64(1),
-				))},
-			}, nil
-
-		default:
-			msg := fmt.Sprintf("CmdQuery: unhandled command %q", cmd)
-			return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNotImplemented, msg)
-		}
+	// both are valid
+	if (cmd == "ismaster" || cmd == "isMaster") && collection == "admin.$cmd" {
+		return common.IsMaster(ctx, query)
 	}
 
-	msg := fmt.Sprintf("CmdQuery: unhandled collection %q", query.FullCollectionName)
+	// defaults to the database name if supplied on the connection string or $external
+	if cmd == "saslStart" &&
+		(collection == "$external.$cmd" || strings.HasSuffix(collection, "$cmd")) {
+		// TODO.
+	}
 
-	return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNotImplemented, msg)
+	return nil, commonerrors.NewCommandErrorMsgWithArgument(
+		commonerrors.ErrNotImplemented,
+		fmt.Sprintf("CmdQuery: unhandled command %q for collection %q", cmd, collection),
+		"OpQuery: "+cmd,
+	)
 }
