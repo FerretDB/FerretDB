@@ -110,6 +110,12 @@ This is not an exhaustive list, and the direction of our blog posts can surely e
 If a blog post calls for a new tag or you would like to suggest more tags, please ensure to add it to this list.
 This helps to maintain consistency across all blog posts.
 
+## Keywords (optional)
+
+Keywords in the front matter are displayed as meta keywords tag in HTML. Meta keywords tag are not so important for SEO anymore, but they can help with focusing the content on specific keywords that should be used (appear at least once) in the blog content, meta description, title, and alt images.
+
+The use of meta keywords is not mandatory, but if you want to add them, please ensure that they are relevant to the blog post.
+
 ## Code blocks
 
 Always specify the language in Markdown code blocks.
