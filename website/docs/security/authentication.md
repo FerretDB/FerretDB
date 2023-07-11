@@ -92,3 +92,11 @@ A client that specify username and password in MongoDB URI as below is authentic
 docker run --rm -it --network=ferretdb --entrypoint=mongosh \
   mongo 'mongodb://user2:pass2@ferretdb/ferretdb?authMechanism=PLAIN'
 ```
+
+## Driver Compatibility Issues
+
+**NOTE** Some drivers may use legacy opcodes during their authentication handshake. 
+
+If you encounter any issues while authenticating with FerretDB using a driver, try setting the Stable API version to V1 on the client. Please refer to your specific driver documentation on how to set this field.
+
+If you encounter any other issues file a bug report [here](https://github.com/FerretDB/FerretDB/issues/new?assignees=ferretdb-bot&labels=code%2Fbug%2Cnot+ready&projects=&template=bug.yml).
