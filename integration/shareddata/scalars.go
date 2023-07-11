@@ -358,4 +358,9 @@ func init() {
 
 	must.BeTrue(-doubleMaxPrec != -doubleMaxPrec-1)
 	must.BeTrue(-doubleMaxPrec-1 == -doubleMaxPrec-2)
+
+	a := float64(9.223372036854776832e+18)
+	//b := int(a)
+	c := math.MaxInt64
+	must.BeTrue(a == float64(c))
 }
