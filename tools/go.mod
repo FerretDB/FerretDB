@@ -7,7 +7,7 @@ require (
 	github.com/go-task/task/v3 v3.27.1
 	github.com/google/go-github/v41 v41.0.0
 	github.com/goreleaser/nfpm/v2 v2.31.0
-	github.com/quasilyte/go-consistent v0.0.0-20220429160651-4e46040fbc82
+	github.com/quasilyte/go-consistent v0.0.0-20230711154354-98abf12e05aa
 	github.com/reviewdog/reviewdog v0.14.2
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/oauth2 v0.10.0
