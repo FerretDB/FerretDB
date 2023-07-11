@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package commoncommands
 
 import (
 	"context"
@@ -24,7 +24,7 @@ import (
 )
 
 // MsgLogout is a common implementation of the logout command.
-func MsgLogout(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func MsgLogout(ctx context.Context, _ *wire.OpMsg) (*wire.OpMsg, error) {
 	conninfo.Get(ctx).SetAuth("", "")
 
 	var reply wire.OpMsg

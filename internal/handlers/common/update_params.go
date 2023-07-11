@@ -34,6 +34,7 @@ type UpdatesParams struct {
 	Ordered                  bool            `ferretdb:"ordered,ignored"`
 	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
 	WriteConcern             *types.Document `ferretdb:"writeConcern,ignored"`
+	LSID                     any             `ferretdb:"lsid,ignored"`
 }
 
 // UpdateParams represents a single update operation parameters.

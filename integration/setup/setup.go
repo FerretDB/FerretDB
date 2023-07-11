@@ -35,6 +35,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // Flags.
@@ -97,7 +98,7 @@ type SetupResult struct {
 }
 
 // IsUnixSocket returns true if MongoDB URI is a Unix socket.
-func (s *SetupResult) IsUnixSocket(tb testutil.TB) bool {
+func (s *SetupResult) IsUnixSocket(tb testtb.TB) bool {
 	tb.Helper()
 
 	// we can't use a regular url.Parse because
@@ -113,7 +114,7 @@ func (s *SetupResult) IsUnixSocket(tb testutil.TB) bool {
 }
 
 // SetupWithOpts setups the test according to given options.
-func SetupWithOpts(tb testutil.TB, opts *SetupOpts) *SetupResult {
+func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	tb.Helper()
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
@@ -172,7 +173,7 @@ func SetupWithOpts(tb testutil.TB, opts *SetupOpts) *SetupResult {
 }
 
 // Setup setups a single collection for all providers, if the are present.
-func Setup(tb testutil.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
+func Setup(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
 	tb.Helper()
 
 	s := SetupWithOpts(tb, &SetupOpts{
@@ -182,7 +183,7 @@ func Setup(tb testutil.TB, providers ...shareddata.Provider) (context.Context, *
 }
 
 // setupCollection setups a single collection for all providers, if they are present.
-func setupCollection(tb testutil.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
+func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupCollection")
@@ -251,7 +252,7 @@ func setupCollection(tb testutil.TB, ctx context.Context, client *mongo.Client, 
 }
 
 // insertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
-func insertProviders(tb testutil.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
+func insertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
 	tb.Helper()
 
 	collectionName := collection.Name()
@@ -280,7 +281,7 @@ func insertProviders(tb testutil.TB, ctx context.Context, collection *mongo.Coll
 // It returns true if any document was inserted.
 //
 // The function calculates the checksum of all inserted documents and compare them with provider's hash.
-func insertBenchmarkProvider(tb testutil.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
+func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
 	tb.Helper()
 
 	collectionName := collection.Name()

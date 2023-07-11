@@ -31,7 +31,7 @@ import (
 )
 
 // MsgHostInfo is a common implementation of the hostInfo command.
-func MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func MsgHostInfo(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
 	now := time.Now().UTC()
 	hostname, err := os.Hostname()
 	if err != nil {
