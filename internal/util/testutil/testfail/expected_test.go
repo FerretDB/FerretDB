@@ -12,24 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package testutil
+package testfail
 
 import "testing"
 
-func TestXFail(t *testing.T) {
+func TestExpected(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Fail", func(tt *testing.T) {
 		tt.Parallel()
 
-		t := XFail(tt, "expected failure")
+		t := Expected(tt, "expected failure")
 		t.FailNow()
 	})
 
 	t.Run("FailAndSkip", func(tt *testing.T) {
 		tt.Parallel()
 
-		t := XFail(tt, "expected failure")
+		t := Expected(tt, "expected failure")
 		t.Fail()
 		t.SkipNow()
 	})
