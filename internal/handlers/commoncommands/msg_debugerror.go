@@ -29,7 +29,7 @@ import (
 )
 
 // MsgDebugError is a common implementation of the debugError command.
-func MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func MsgDebugError(_ context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

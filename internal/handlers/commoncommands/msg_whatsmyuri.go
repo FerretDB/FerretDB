@@ -24,7 +24,7 @@ import (
 )
 
 // MsgWhatsMyURI is a common implementation of the whatsMyURI command.
-func MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func MsgWhatsMyURI(ctx context.Context, _ *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(

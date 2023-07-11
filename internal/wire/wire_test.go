@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // lastErr returns the last error in error chain.
@@ -53,7 +53,7 @@ type testCase struct {
 }
 
 // setExpectedB checks and sets expectedB fields from headerB and bodyB.
-func (tc *testCase) setExpectedB(tb testutil.TB) {
+func (tc *testCase) setExpectedB(tb testtb.TB) {
 	tb.Helper()
 
 	if (len(tc.headerB) == 0) != (len(tc.bodyB) == 0) {

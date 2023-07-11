@@ -17,6 +17,8 @@ package testutil
 import (
 	"net/url"
 	"testing"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // PostgreSQLURLOpts represents PostgreSQLURL options.
@@ -34,7 +36,7 @@ type PostgreSQLURLOpts struct {
 // PostgreSQLURL returns PostgreSQL URL for testing.
 //
 // TODO remove this function https://github.com/FerretDB/FerretDB/issues/1568
-func PostgreSQLURL(tb TB, opts *PostgreSQLURLOpts) string {
+func PostgreSQLURL(tb testtb.TB, opts *PostgreSQLURLOpts) string {
 	tb.Helper()
 
 	if testing.Short() {
