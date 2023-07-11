@@ -64,6 +64,15 @@ Some default values are overridden in [our Docker image](quickstart-guide/docker
 | -------------- | ------------------------------------------- | --------------------- | ------------- |
 | `--sqlite-url` | SQLite URI (directory) for 'sqlite' handler | `FERRETDB_SQLITE_URL` | `file:data/`  |
 
+## Query pushdown
+
+See [query pushdown](../pushdown.md#query-pushdown).
+
+| Flag                             | Description                           | Environment Variable                    | Default Value |
+| -------------------------------- | ------------------------------------- | --------------------------------------- | ------------- |
+| `--test-disable-filter-pushdown` | Experimental: disable filter pushdown | `FERRETDB_TEST_DISABLE_FILTER_PUSHDOWN` | false         |
+| `--test-enable-sort-pushdown`    | Experimental: enable sort pushdown    | `FERRETDB_TEST_ENABLE_SORT_PUSHDOWN`    | false         |
+
 ## Miscellaneous
 
 | Flag                  | Description                                       | Environment Variable    | Default Value |
