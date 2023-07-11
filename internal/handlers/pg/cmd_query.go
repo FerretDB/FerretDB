@@ -45,7 +45,9 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		(collection == "$external.$cmd" || strings.HasSuffix(collection, "$cmd")) {
 		var emptyPayload types.Binary
 
-		common.SASLStart(ctx, query.Query)
+		if err := common.SASLStart(ctx, query.Query); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 
 		if _, err := h.DBPool(ctx); err != nil {
 			var pgErr *pgconn.PgError
