@@ -585,6 +585,9 @@ func TestGetParameterCommandAuthenticationMechanisms(t *testing.T) {
 		v, _ := doc.Get("authenticationMechanisms")
 		require.NotNil(t, v)
 
+		resOk, _ := doc.Get("ok")
+		require.Equal(t, float64(1), resOk)
+
 		authenticationMechanisms, ok := v.(*types.Document)
 		require.True(t, ok)
 
