@@ -150,7 +150,7 @@ They use the Go MongoDB driver like a regular user application.
 They could test any MongoDB-compatible database (such as FerretDB or MongoDB itself) via a regular TCP or TLS port or Unix socket.
 They also could test in-process FerretDB instances
 (meaning that integration tests start and stop them themselves) with a given handler.
-Finally, some tests (so-called compatibility or "compat" tests) connect to two systems
+Finally, some integration tests (so-called compatibility or "compat" tests) connect to two systems
 ("target" for FerretDB and "compat" for MongoDB) at the same time,
 send the same queries to both, and compare results.
 You can run them with:
@@ -164,17 +164,19 @@ If tests fail and the output is too confusing, try running them sequentially by 
 
 You can also run `task -C 1` to limit the number of concurrent tasks, which is useful for debugging.
 
-To run a single test case, you may use Task variable `TEST_RUN`.
-For example, to run a single test case for in-process FerretDB with `pg` handler you may use `task test-integration-pg TEST_RUN=TestName/TestCaseName`.
+To run a subset of integration tests and test cases, you may use Task variable `TEST_RUN`.
+For example, to run all tests related to the `getMore` command implementation for in-process FerretDB with `pg` handler
+you may use `task test-integration-pg TEST_RUN='(?i)GetMore'`.
 
-Finally, since all tests just run `go test` with various arguments and flags under the hood,
+Finally, since all tests just run `go test` with various arguments and flags under the hood
+(for example, `TEST_RUN` just provides the value for the [`-run` flag](https://pkg.go.dev/cmd/go#hdr-Testing_flags)),
 you may also use all standard `go` tool facilities,
 including [`GOFLAGS` environment variable](https://pkg.go.dev/cmd/go#hdr-Environment_variables).
 For example:
 
-- to run a single test case for in-process FerretDB with `pg` handler
+- to run all tests related to the `getMore` command implementation for in-process FerretDB with `pg` handler
   with all subtests running sequentially,
-  you may use `env GOFLAGS='-parallel=1' task test-integration-pg TEST_RUN=TestName/TestCaseName`;
+  you may use `env GOFLAGS='-parallel=1' task test-integration-pg TEST_RUN='(?i)GetMore'`;
 - to run all tests for in-process FerretDB with `sqlite` handler
   with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
   you may use `env GOFLAGS='-trace=trace.out' task test-integration-sqlite`.
@@ -216,7 +218,7 @@ Some of our idiosyncrasies:
    The order of `case`s follows this order: <https://pkg.go.dev/github.com/FerretDB/FerretDB/internal/types#hdr-Mapping>
    It may seem random, but it is only pseudo-random and follows BSON spec: <https://bsonspec.org/spec.html>
 2. We generally pass and return `struct`s by pointers.
-   There are some exceptions like `types.Path` that has value semantics, but when in doubt – use pointers.
+   There are some exceptions like `types.Path` that have value semantics, but when in doubt – use pointers.
 3. Code comments:
    - All top-level declarations, even unexported, should have documentation comments.
    - In documentation comments do not describe the name in terms of the name itself (`// Registry is a registry of …`).
@@ -279,7 +281,7 @@ Please check all existing ones.
 
 Before submitting a pull request, please make sure that:
 
-1. Tests are added for new functionality or fixed bugs.
+1. Tests are added or updated for new functionality or fixed bugs.
    Typical test cases include:
    - happy paths;
    - dot notation for existing and non-existent paths;
