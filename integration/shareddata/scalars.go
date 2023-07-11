@@ -57,8 +57,8 @@ var Scalars = &Values[string]{
 		"double-7":                  1.79769e+307,
 		"double-max-overflow":       longMaxOverflow,
 		"double-max-overflow-verge": longMaxOverflowVerge,
-		"double-min-overflow":       -9.223372036854776833e+18,
-		"double-min-overflow-verge": -9.223372036854776832e+18,
+		"double-min-overflow":       longMinOverflow,
+		"double-min-overflow-verge": longMinOverflowVerge,
 
 		"string":        "foo",
 		"string-double": "42.13",
@@ -161,8 +161,8 @@ var Doubles = &Values[string]{
 		"double-6":                  float64(math.MaxInt64 + 1),
 		"double-max-overflow":       longMaxOverflow,
 		"double-max-overflow-verge": longMaxOverflowVerge,
-		"double-min-overflow":       -9.223372036854776833e+18,
-		"double-min-overflow-verge": -9.223372036854776832e+18,
+		"double-min-overflow":       longMinOverflow,
+		"double-min-overflow-verge": longMinOverflowVerge,
 	},
 }
 
