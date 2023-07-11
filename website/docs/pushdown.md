@@ -56,7 +56,7 @@ will prefetch all numbers larger/smaller than max/min value of the range.
 ## Supported pushdown on `find` command arguments
 
 The following table shows supported command arguments for the PostgreSQL backend.
-`limit()` applies `LIMIT` clause and `sort()` applies `ORDER BY ASC/DESC` clause on SQL queries.
+It applies `LIMIT` clause for `limit()` and `ORDER BY` clause for `sort()` on SQL queries.
 
 <!-- markdownlint-capture -->
 <!-- markdownlint-disable MD001 MD033 MD051 -->
