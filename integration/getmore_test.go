@@ -907,7 +907,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("FindExpire", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1808")
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2983")
 
 		opts := options.Find().
 			// set batchSize big enough to hit maxTimeMS
@@ -966,7 +966,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	})
 
 	t.Run("FindGetMoreMaxTimeMS", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1808")
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2983")
 
 		var res bson.D
 		err := collection.Database().RunCommand(ctx, bson.D{
@@ -1006,7 +1006,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	})
 
 	t.Run("AggregateExpire", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1808")
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2983")
 
 		opts := options.Aggregate().
 			// set batchSize big enough to hit maxTimeMS
@@ -1064,7 +1064,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	})
 
 	t.Run("AggregateGetMoreMaxTimeMS", func(tt *testing.T) {
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1808")
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2983")
 
 		var res bson.D
 		err := collection.Database().RunCommand(ctx, bson.D{
