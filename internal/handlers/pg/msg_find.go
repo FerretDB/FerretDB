@@ -73,6 +73,13 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		qp.Sort = params.Sort
 	}
 
+	// Sorting requires fetching all documents and sorting them in memory unless `EnableSortPushdown` is set.
+	// Limit pushdown is not applied when `sort` is set but `EnableSortPushdown` is not set.
+	// Skip pushdown is not supported yet, limit pushdown is not applied when `skip` is non-zero value.
+	if (params.Sort.Len() == 0 || h.EnableSortPushdown) && params.Skip == 0 {
+		qp.Limit = params.Limit
+	}
+
 	cancel := func() {}
 	if params.MaxTimeMS != 0 {
 		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
