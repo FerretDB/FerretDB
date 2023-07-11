@@ -28,7 +28,9 @@ const (
 	doubleBig     = float64(1 << 61)   // 2305843009213693952.0: some number larger than safe integer (doubleBig+1 == doubleBig)
 	longBig       = int64(1 << 61)     // 2305843009213693952:   same as doubleBig but integer
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/2321
+	// TODO https://github.com/FerretDB/FerretDB/commit/06289cacb4a1a119a5722155bb342a722b062e9f
+	longMaxOverflow      = 9.223372036854776833e+18 // 100001111100000000000000000000000000000000000000000000000000001
+	longMaxOverflowVerge = float64(math.MaxInt64)   // 100001111100000000000000000000000000000000000000000000000000000
 )
 
 // Scalars contain scalar values for tests.
@@ -50,10 +52,10 @@ var Scalars = &Values[string]{
 		"double-5":                  float64(math.MaxInt64),
 		"double-6":                  float64(math.MaxInt64 + 1),
 		"double-7":                  1.79769e+307,
-		"double-max-overflow":       9.223372036854776833e+18,  // TODO https://github.com/FerretDB/FerretDB/commit/06289cacb4a1a119a5722155bb342a722b062e9f
-		"double-max-overflow-verge": 9.223372036854776832e+18,  //
-		"double-min-overflow":       -9.223372036854776833e+18, //
-		"double-min-overflow-verge": -9.223372036854776832e+18, //
+		"double-max-overflow":       longMaxOverflow,
+		"double-max-overflow-verge": longMaxOverflowVerge,
+		"double-min-overflow":       -9.223372036854776833e+18,
+		"double-min-overflow-verge": -9.223372036854776832e+18,
 
 		"string":        "foo",
 		"string-double": "42.13",
