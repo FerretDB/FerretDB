@@ -87,7 +87,12 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	err = dbPool.CreateSchema(ctx, db)
+	qp := hanadb.QueryParams{
+		DB:         db,
+		Collection: collection,
+	}
+
+	err = dbPool.CreateSchema(ctx, &qp)
 
 	switch {
 	case err == nil:
@@ -101,7 +106,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	err = dbPool.CreateCollection(ctx, db, collection)
+	err = dbPool.CreateCollection(ctx, &qp)
 
 	switch {
 	case err == nil:

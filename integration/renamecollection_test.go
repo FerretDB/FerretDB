@@ -28,7 +28,7 @@ import (
 )
 
 func TestRenameCollectionStress(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Command renameCollection is not supported for Tigris")
+	// TODO rewrite using teststress.Stress
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections for this test
 	db := collection.Database()
@@ -66,12 +66,10 @@ func TestRenameCollectionStress(t *testing.T) {
 			renameTo := fmt.Sprintf("%s.rename_collection_stress_renamed", db.Name())
 
 			var res bson.D
-			err := adminDB.RunCommand(ctx,
-				bson.D{
-					{"renameCollection", renameFrom},
-					{"to", renameTo},
-				},
-			).Decode(&res)
+			err := adminDB.RunCommand(ctx, bson.D{
+				{"renameCollection", renameFrom},
+				{"to", renameTo},
+			}).Decode(&res)
 
 			if err != nil {
 				errNum.Add(1)

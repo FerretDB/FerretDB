@@ -45,9 +45,13 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, err
 	}
 
+	qp := hanadb.QueryParams{
+		DB: db,
+	}
+
 	res := must.NotFail(types.NewDocument())
 
-	err = dbPool.DropSchema(ctx, db)
+	err = dbPool.DropSchema(ctx, &qp)
 
 	switch {
 	case err == nil:

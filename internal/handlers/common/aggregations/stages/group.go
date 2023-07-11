@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
@@ -83,7 +82,7 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 
 		if field == "_id" {
 			if doc, ok := v.(*types.Document); ok {
-				if err = validateDocumentExpression(doc); err != nil {
+				if err = validateExpression("$group", doc); err != nil {
 					return nil, err
 				}
 			}
@@ -118,6 +117,7 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 
 // Process implements Stage interface.
 func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
+	// TODO https://github.com/FerretDB/FerretDB/issues/2863
 	docs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -157,7 +157,10 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 		res = append(res, doc)
 	}
 
-	return iterator.Values(iterator.ForSlice(res)), nil
+	iter = iterator.Values(iterator.ForSlice(res))
+	closer.Add(iter)
+
+	return iter, nil
 }
 
 // groupDocuments groups documents by group expression.
@@ -219,7 +222,12 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 	var group groupMap
 
 	for _, doc := range in {
-		val := expression.Evaluate(doc)
+		val, err := expression.Evaluate(doc)
+		if err != nil {
+			// $group treats non-existent fields as nulls
+			val = types.Null
+		}
+
 		group.addOrAppend(val, doc)
 	}
 
@@ -255,38 +263,6 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 		groupID:   groupKey,
 		documents: docs,
 	})
-}
-
-// validateDocumentExpression returns error when there is unsupported expression present.
-func validateDocumentExpression(doc *types.Document) error {
-	iter := doc.Iterator()
-	defer iter.Close()
-
-	for {
-		k, v, err := iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			return nil
-		}
-
-		if err != nil {
-			return err
-		}
-
-		if strings.HasPrefix(k, "$") {
-			// TODO: https://github.com/FerretDB/FerretDB/issues/2165
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
-				fmt.Sprintf("%s operator is not implemented for $group key expression yet", k),
-				"$group (stage)",
-			)
-		}
-
-		if docVal, ok := v.(*types.Document); ok {
-			if err = validateDocumentExpression(docVal); err != nil {
-				return err
-			}
-		}
-	}
 }
 
 // Type implements Stage interface.

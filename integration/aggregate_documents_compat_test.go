@@ -19,10 +19,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -30,12 +33,12 @@ import (
 
 // aggregateStagesCompatTestCase describes aggregation stages compatibility test case.
 type aggregateStagesCompatTestCase struct {
-	pipeline       bson.A                   // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
+	pipeline bson.A         // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
+	maxTime  *time.Duration // optional, leave nil for unset maxTime
+
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
-
-	skip          string // skip test for all handlers, must have issue number mentioned
-	skipForTigris string // skip test for Tigris handler, must have issue number mentioned
+	skip           string                   // skip test for all handlers, must have issue number mentioned
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -65,10 +68,6 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 				t.Skip(tc.skip)
 			}
 
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
-			}
-
 			t.Parallel()
 
 			pipeline := tc.pipeline
@@ -90,6 +89,12 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 				// add sort stage to sort by _id because compat and target
 				// would be ordered differently otherwise.
 				pipeline = append(pipeline, bson.D{{"$sort", bson.D{{"_id", 1}}}})
+			}
+
+			opts := options.Aggregate()
+
+			if tc.maxTime != nil {
+				opts.SetMaxTime(*tc.maxTime)
 			}
 
 			var nonEmptyResults bool
@@ -114,8 +119,8 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 
 					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"], msg)
 
-					targetCursor, targetErr := targetCollection.Aggregate(ctx, pipeline)
-					compatCursor, compatErr := compatCollection.Aggregate(ctx, pipeline)
+					targetCursor, targetErr := targetCollection.Aggregate(ctx, pipeline, opts)
+					compatCursor, compatErr := compatCollection.Aggregate(ctx, pipeline, opts)
 
 					if targetCursor != nil {
 						defer targetCursor.Close(ctx)
@@ -199,7 +204,7 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 			t.Run(targetCollection.Name(), func(t *testing.T) {
 				t.Helper()
 
-				var targetRes, compatRes []bson.D
+				var targetRes, compatRes bson.D
 				targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
 				compatErr := compatCollection.Database().RunCommand(ctx, command).Decode(&compatRes)
 
@@ -207,14 +212,18 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 					t.Logf("Target error: %v", targetErr)
 					t.Logf("Compat error: %v", compatErr)
 
-					// error messages are intentionally not compared
-					AssertMatchesCommandError(t, compatErr, targetErr)
+					if _, ok := targetErr.(mongo.CommandError); ok { //nolint:errorlint // do not inspect error chain
+						// error messages are intentionally not compared
+						AssertMatchesCommandError(t, compatErr, targetErr)
+					} else {
+						// driver sent an error
+						require.Equal(t, compatErr, targetErr)
+					}
 
 					return
 				}
 				require.NoError(t, compatErr, "compat error; target returned no error")
-
-				AssertEqualDocumentsSlice(t, compatRes, targetRes)
+				AssertEqualDocuments(t, compatRes, targetRes)
 
 				if len(targetRes) > 0 || len(compatRes) > 0 {
 					nonEmptyResults = true
@@ -270,14 +279,42 @@ func TestAggregateCommandCompat(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"MaxTimeMSDoubleWholeNumber": {
+			command: bson.D{
+				{"aggregate", "collection-name"},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", float64(1000)},
+			},
+		},
 	}
 
 	testAggregateCommandCompat(t, testCases)
 }
 
-func TestAggregateCompatStages(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/2523")
+func TestAggregateCompatOptions(t *testing.T) {
+	t.Parallel()
 
+	providers := []shareddata.Provider{
+		// one provider is sufficient to test aggregate options
+		shareddata.Unsets,
+	}
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"MaxTimeZero": {
+			pipeline: bson.A{},
+			maxTime:  pointer.ToDuration(time.Duration(0)),
+		},
+		"MaxTime": {
+			pipeline: bson.A{},
+			maxTime:  pointer.ToDuration(time.Second),
+		},
+	}
+
+	testAggregateStagesCompatWithProviders(t, providers, testCases)
+}
+
+func TestAggregateCompatStages(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -604,7 +641,7 @@ func TestAggregateCompatGroup(t *testing.T) {
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2123",
 		},
-		"IDTypeOperator": {
+		"IDType": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", bson.D{{"$type", "_id"}}},
 			}}}},
@@ -843,7 +880,6 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$limit", 100}},
 			},
 			resultPushdown: true,
-			skipForTigris:  "TestAggregateCompatLimit",
 		},
 		"NoSortBeforeMatch": {
 			pipeline: bson.A{
@@ -1081,14 +1117,12 @@ func TestAggregateCompatMatch(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", 42}}}},
 			},
 			resultPushdown: true,
-			skipForTigris:  "https://github.com/FerretDB/FerretDB/issues/2523",
 		},
 		"String": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 			},
 			resultPushdown: true,
-			skipForTigris:  "https://github.com/FerretDB/FerretDB/issues/2523",
 		},
 		"Document": {
 			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"foo", int32(42)}}}}}}},
@@ -1597,14 +1631,560 @@ func TestAggregateCompatProject(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
-		"TypeOperator": {
+		"EmptyDocument": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"foo", bson.D{}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"Document": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"foo", bson.D{{"v", "foo"}}}}}},
+			},
+		},
+		"IDDocument": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", bson.D{{"v", "foo"}}}}}},
+			},
+		},
+		"IDType": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"_id", bson.D{{"$type", "$v"}}}}}},
+			},
+		},
+		"DocumentAndValue": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{
+					{"foo", bson.D{{"v", "foo"}}},
+					{"v", 1},
+				}}},
+			},
+		},
+		"Type": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", "$v"}}}}}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2679",
+		},
+		"TypeNonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", "$foo"}}}}}},
+			},
+		},
+		"TypeDotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", "$v.foo"}}}}}},
+			},
+		},
+		"TypeRecursive": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", "$v"}}}}}}}},
+			},
+		},
+		"TypeRecursiveNonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$non-existent", "$v"}}}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"TypeRecursiveInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"v", "$v"}}}}}}}},
+			},
+		},
+		"TypeRecursiveArrayInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", bson.A{"1", "2"}}}}}}}}},
+			},
+			resultType: emptyResult,
+		},
+
+		"TypeInt": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", int32(42)}}}}}},
+			},
+		},
+		"TypeLong": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", int64(42)}}}}}},
+			},
+		},
+		"TypeString": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", "42"}}}}}},
+			},
+		},
+		"TypeDocument": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"foo", "bar"}}}}}}}},
+			},
+		},
+		"TypeEmpty": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{}}}}}}},
+			},
+		},
+		"TypeArraySingleItem": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{int32(42)}}}}}}},
+			},
+		},
+		"TypeArray": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"TypeNestedArray": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.A{bson.A{"foo", "bar"}}}}}}}},
+			},
+		},
+		"TypeObjectID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", primitive.NewObjectID()}}}}}},
+			},
+		},
+		"TypeBool": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"type", bson.D{{"$type", true}}}}}},
+			},
+		},
+		"ProjectManyOperators": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$project", bson.D{{"$type", "foo"}, {"$op", "foo"}}}},
+			},
+			resultType: emptyResult,
 		},
 	}
 
+	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatAddFields(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"InvalidTypeString": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", "invalid"}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeBool": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", false}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeArray": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.A{}}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeInt32": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", int32(1)}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeInt64": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", int64(1)}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeFloat32": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", float32(1)}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeFloat64": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", float64(1)}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeNull": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", nil}},
+			},
+			resultType: emptyResult,
+		},
+		"Include1Field": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField", int32(1)}}}},
+			},
+		},
+		"Include2Fields": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField1", int32(1)}, {"newField2", int32(2)}}}},
+			},
+		},
+		"Include2Stages": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField1", int32(1)}}}},
+				bson.D{{"$addFields", bson.D{{"newField2", int32(2)}}}},
+			},
+		},
+		"IncludeDocument": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField", bson.D{{"doc", int32(1)}}}}}},
+			},
+		},
+		"IncludeNestedDocument": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField", bson.D{{"doc", bson.D{{"nested", int32(1)}}}}}}}},
+			},
+		},
+		"IncludeArray": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField", bson.A{bson.D{{"elem", int32(1)}}}}}}},
+			},
+		},
+		"UnsupportedExpressionObject": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField1", bson.D{{"$sum", 1}}}}}},
+			},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
+		},
+		"UnsupportedExpressionArray": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{{"newField1", bson.A{bson.D{{"$sum", 1}}}}}}},
+			},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
+		},
+
+		"InvalidOperator": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"value", bson.D{{"$invalid-operator", "foo"}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"Type": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "$v"}}}}}},
+			},
+		},
+		"TypeNonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "$foo"}}}}}},
+			},
+		},
+		"TypeDotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "$v.foo"}}}}}},
+			},
+		},
+		"TypeRecursive": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.D{{"$type", "$v"}}}}}}}},
+			},
+		},
+		"TypeRecursiveNonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.D{{"$non-existent", "$v"}}}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"TypeRecursiveInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.D{{"v", "$v"}}}}}}}},
+			},
+		},
+
+		"TypeInt": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", int32(42)}}}}}},
+			},
+		},
+		"TypeLong": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", int64(42)}}}}}},
+			},
+		},
+		"TypeString": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "42"}}}}}},
+			},
+		},
+		"TypeDocument": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.D{{"foo", "bar"}}}}}}}},
+			},
+		},
+		"TypeEmpty": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.D{}}}}}}},
+			},
+		},
+		"MultipleOperators": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "foo"}, {"$operator", "foo"}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"MultipleOperatorFirst": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", "foo"}, {"not-operator", "foo"}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"MultipleOperatorLast": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"not-operator", "foo"}, {"$type", "foo"}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"TypeArraySingleItem": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.A{int32(42)}}}}}}},
+			},
+		},
+		"TypeArray": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"TypeNestedArray": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", bson.A{bson.A{"foo", "bar"}}}}}}}},
+			},
+		},
+		"TypeObjectID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", primitive.NewObjectID()}}}}}},
+			},
+		},
+		"TypeBool": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", -1}}}},
+				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", true}}}}}},
+			},
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatSet(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"InvalidTypeString": {
+			pipeline: bson.A{
+				bson.D{{"$set", "invalid"}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeBool": {
+			pipeline: bson.A{
+				bson.D{{"$set", false}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeArray": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.A{}}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeInt32": {
+			pipeline: bson.A{
+				bson.D{{"$set", int32(1)}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeInt64": {
+			pipeline: bson.A{
+				bson.D{{"$set", int64(1)}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeFloat32": {
+			pipeline: bson.A{
+				bson.D{{"$set", float32(1)}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeFloat64": {
+			pipeline: bson.A{
+				bson.D{{"$set", float64(1)}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeNull": {
+			pipeline: bson.A{
+				bson.D{{"$set", nil}},
+			},
+			resultType: emptyResult,
+		},
+		"Include1Field": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField", int32(1)}}}},
+			},
+		},
+		"Include2Fields": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField1", int32(1)}, {"newField2", int32(2)}}}},
+			},
+		},
+		"Include2Stages": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField1", int32(1)}}}},
+				bson.D{{"$set", bson.D{{"newField2", int32(2)}}}},
+			},
+		},
+		"IncludeDocument": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField", bson.D{{"doc", int32(1)}}}}}},
+			},
+		},
+		"IncludeNestedDocument": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField", bson.D{{"doc", bson.D{{"nested", int32(1)}}}}}}}},
+			},
+		},
+		"IncludeArray": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField", bson.A{bson.D{{"elem", int32(1)}}}}}}},
+			},
+		},
+		"UnsupportedExpressionObject": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField1", bson.D{{"$sum", 1}}}}}},
+			},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
+		},
+		"UnsupportedExpressionArray": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{{"newField1", bson.A{bson.D{{"$sum", 1}}}}}}},
+			},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
+		},
+	}
+	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatUnset(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"InvalidTypeArray": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{1, 2, 3}}},
+			},
+			resultType: emptyResult,
+		},
+		"EmptyArray": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{}}},
+			},
+			resultType: emptyResult,
+		},
+		"EmptyString": {
+			pipeline: bson.A{
+				bson.D{{"$unset", ""}},
+			},
+			resultType: emptyResult,
+		},
+		"ArrayWithEmptyString": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{""}}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidTypeArrayWithDifferentTypes": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"v", 42, false}}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidType": {
+			pipeline: bson.A{
+				bson.D{{"$unset", false}},
+			},
+			resultType: emptyResult,
+		},
+		"Unset1Field": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "v"}},
+			},
+		},
+		"UnsetID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$unset", "_id"}},
+			},
+		},
+		"Unset2Fields": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"_id", "v"}}},
+			},
+		},
+		"DotNotationUnset": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "v.foo"}},
+			},
+		},
+		"DotNotationUnsetTwo": {
+			pipeline: bson.A{
+				bson.D{{"$unset", bson.A{"v.foo", "v.array"}}},
+			},
+		},
+		"DotNotationUnsetSecondLevel": {
+			pipeline: bson.A{
+				bson.D{{"$unset", "v.array.42"}},
+			},
+		},
+	}
 	testAggregateStagesCompat(t, testCases)
 }

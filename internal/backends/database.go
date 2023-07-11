@@ -32,7 +32,9 @@ import (
 //
 // See databaseContract and its methods for additional details.
 type Database interface {
+	// TODO remove?
 	Close()
+
 	Collection(string) Collection
 	ListCollections(context.Context, *ListCollectionsParams) (*ListCollectionsResult, error)
 	CreateCollection(context.Context, *CreateCollectionParams) error
@@ -124,9 +126,11 @@ type DropCollectionParams struct {
 }
 
 // DropCollection drops existing collection in the database.
+//
+// The errors for non-existing database and non-existing collection are the same (TODO?).
 func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCollectionParams) (err error) {
 	defer observability.FuncCall(ctx)()
-	defer checkError(err, ErrorCodeCollectionDoesNotExist)
+	defer checkError(err, ErrorCodeCollectionDoesNotExist) // TODO: ErrorCodeDatabaseDoesNotExist ?
 	err = dbc.db.DropCollection(ctx, params)
 
 	return

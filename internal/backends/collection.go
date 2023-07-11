@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
@@ -62,10 +63,16 @@ type QueryParams struct {
 
 // QueryResult represents the results of Collection.Query method.
 type QueryResult struct {
-	DocsIterator types.DocumentsIterator
+	Iter types.DocumentsIterator
 }
 
 // Query executes a query against the collection.
+//
+// If the collection does not exist it returns empty iterator.
+//
+// The passed context should be used for canceling the initial query.
+// It also can be used to close the returned iterator and free underlying resources,
+// but doing so is not necessary - the handler will do that anyway.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (res *QueryResult, err error) {
 	defer observability.FuncCall(ctx)()
 	defer checkError(err)
@@ -76,14 +83,14 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (r
 
 // InsertParams represents the parameters of Collection.Insert method.
 type InsertParams struct {
-	Docs    *types.Array
-	Ordered bool
+	// TODO that should be types.DocumentIterator
+	// https://github.com/FerretDB/FerretDB/issues/2750
+	Iter iterator.Interface[int, any]
 }
 
 // InsertResult represents the results of Collection.Insert method.
 type InsertResult struct {
-	Errors        []error
-	InsertedCount int64
+	Inserted int64
 }
 
 // Insert inserts documents into the collection.
@@ -118,8 +125,7 @@ func (cc *collectionContract) Update(ctx context.Context, params *UpdateParams) 
 
 // DeleteParams represents the parameters of Collection.Delete method.
 type DeleteParams struct {
-	Filter  *types.Document
-	Limited bool
+	IDs []any
 }
 
 // DeleteResult represents the results of Collection.Delete method.
@@ -128,6 +134,8 @@ type DeleteResult struct {
 }
 
 // Delete deletes documents in collection.
+//
+// If requested database or collection does not exist it returns 0 deleted documents.
 func (cc *collectionContract) Delete(ctx context.Context, params *DeleteParams) (res *DeleteResult, err error) {
 	defer observability.FuncCall(ctx)()
 	defer checkError(err)

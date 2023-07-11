@@ -44,12 +44,13 @@ Finally, you will also need [git-lfs](https://git-lfs.github.com) installed and 
 Fork the [FerretDB repository on GitHub](https://github.com/FerretDB/FerretDB/fork).
 To have all the tags in the repository and what they point to, copy all branches by removing checkmark for `copy the main branch only` before forking.
 
-After forking FerretDB on GitHub, you can clone the repository:
+After forking FerretDB on GitHub, you can clone the repository and add upstream repository as a remote:
 
 ```sh
 git clone git@github.com:<YOUR_GITHUB_USERNAME>/FerretDB.git
 cd FerretDB
 git remote add upstream https://github.com/FerretDB/FerretDB.git
+git fetch --all --tags
 ```
 
 To run development commands, you should first install the [`task`](https://taskfile.dev/) tool.
@@ -62,13 +63,14 @@ You can also [install `task` globally](https://taskfile.dev/#/installation),
 but that might lead to the version skew.
 
 With `task` installed,
-you should install development tools with `task init`
+you can see all available tasks by running `task -l` in the root of the repository
+(not in the `tools` directory).
+
+After that, you should install development tools with `task init`
 and download required Docker images with `task env-pull`.
 
 If something does not work correctly,
 you can reset the environment with `task env-reset`.
-
-You can see all available `task` tasks with `task -l`.
 
 ### Building a production release binary
 
@@ -114,29 +116,25 @@ They are installed into `bin/` by `cd tools; go generate -x`.
 
 The `internal` subpackages contain most of the FerretDB code:
 
-* `types` package provides Go types matching BSON types that don't have built-in Go equivalents:
+- `types` package provides Go types matching BSON types that don't have built-in Go equivalents:
   we use `int32` for BSON's int32, but `types.ObjectID` for BSON's ObjectId.
-* `types/fjson` provides converters from/to FJSON for built-in and `types` types.
+- `types/fjson` provides converters from/to FJSON for built-in and `types` types.
   It is used for logging of BSON values and wire protocol messages.
-* `bson` package provides converters from/to BSON for built-in and `types` types.
-* `wire` package provides wire protocol implementation.
-* `clientconn` package provides client connection implementation.
+- `bson` package provides converters from/to BSON for built-in and `types` types.
+- `wire` package provides wire protocol implementation.
+- `clientconn` package provides client connection implementation.
   It accepts client connections, reads `wire`/`bson` protocol messages, and passes them to `handlers`.
   Responses are then converted to `wire`/`bson` messages and sent back to the client.
-* `handlers` contains a common interface for backend handlers that they should implement.
+- `handlers` contains a common interface for backend handlers that they should implement.
   Handlers use `types` and `wire` packages, but `bson` package details are hidden.
-* `handlers/common` contains code shared by different handlers.
-* `handlers/sjson` provides converters from/to SJSON for built-in and `types` types.
+- `handlers/common` contains code shared by different handlers.
+- `handlers/sjson` provides converters from/to SJSON for built-in and `types` types.
   SJSON adds some extensions to JSON for keeping object keys in order,
   preserving BSON type information in the values themselves, etc.
   It is used by `sqlite` and `pg` handlers.
-* `handlers/sqlite` contains the implementation of the SQLite handler.
+- `handlers/sqlite` contains the implementation of the SQLite handler.
   It is being converted into universal handler for all backends.
-* `handlers/pg` contains the implementation of the PostgreSQL handler.
-* `handlers/tigris` contains the implementation of the Tigris handler.
-* `handlers/tigris/tjson` provides converters from/to TJSON with JSON Schema for built-in and `types` types.
-  BSON type information is preserved either in the schema (where possible) or in the values themselves.
-  It is used by `tigris` handler.
+- `handlers/pg` contains the implementation of the PostgreSQL handler.
 
 #### Running tests
 
@@ -157,27 +155,29 @@ Finally, some tests (so-called compatibility or "compat" tests) connect to two s
 send the same queries to both, and compare results.
 You can run them with:
 
-* `task test-integration-pg` for in-process FerretDB with `pg` handler and MongoDB;
-* `task test-integration-tigris` for in-process FerretDB with `tigris` handler and MongoDB;
-* `task test-integration-mongodb` for MongoDB only, skipping compat tests;
-* or `task test-integration` to run all in parallel.
+- `task test-integration-pg` for in-process FerretDB with `pg` handler and MongoDB;
+- `task test-integration-mongodb` for MongoDB only, skipping compat tests;
+- or `task test-integration` to run all in parallel.
 
 You may run all tests in parallel with `task test`.
 If tests fail and the output is too confusing, try running them sequentially by using the commands above.
 
 You can also run `task -C 1` to limit the number of concurrent tasks, which is useful for debugging.
 
+To run a single test case, you may use Task variable `TEST_RUN`.
+For example, to run a single test case for in-process FerretDB with `pg` handler you may use `task test-integration-pg TEST_RUN=TestName/TestCaseName`.
+
 Finally, since all tests just run `go test` with various arguments and flags under the hood,
 you may also use all standard `go` tool facilities,
 including [`GOFLAGS` environment variable](https://pkg.go.dev/cmd/go#hdr-Environment_variables).
 For example:
 
-* to run a single test case for in-process FerretDB with `pg` handler
+- to run a single test case for in-process FerretDB with `pg` handler
   with all subtests running sequentially,
-  you may use `env GOFLAGS='-run=TestName/TestCaseName -parallel=1' task test-integration-pg`;
-* to run all tests for in-process FerretDB with `tigris` handler
+  you may use `env GOFLAGS='-parallel=1' task test-integration-pg TEST_RUN=TestName/TestCaseName`;
+- to run all tests for in-process FerretDB with `sqlite` handler
   with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
-  you may use `env GOFLAGS='-trace=trace.out' task test-integration-tigris`.
+  you may use `env GOFLAGS='-trace=trace.out' task test-integration-sqlite`.
 
 > **Note**
 >
@@ -217,6 +217,18 @@ Some of our idiosyncrasies:
    It may seem random, but it is only pseudo-random and follows BSON spec: <https://bsonspec.org/spec.html>
 2. We generally pass and return `struct`s by pointers.
    There are some exceptions like `types.Path` that has value semantics, but when in doubt – use pointers.
+3. Code comments:
+   - All top-level declarations, even unexported, should have documentation comments.
+   - In documentation comments do not describe the name in terms of the name itself (`// Registry is a registry of …`).
+     Use other words instead; often, they could add additional information and make reading more pleasant (`// Registry stores …`).
+   - In code comments, in general, do not describe _what_ the code does: it should be clear from the code itself
+     (and when it doesn't and the code is tricky, simplify it instead).
+     Instead, describe _why_ the code does that if it is not clear from the surrounding context, names, etc.
+     There is no need to add comments just because there are no comments if everything is already clear without them.
+   - For code comments, write either
+     sentence fragments (do not start it with a capital letter, do not end it with a dot, use the simplified grammar) for short notes
+     or full sentences (do start them with capital letters, do end them with dots, do check their grammar) when a longer (2+ sentences)
+     explanation is needed (and the code could not be simplified).
 
 #### Integration tests conventions
 
@@ -225,11 +237,41 @@ branchless (with a few, if any, `if` and `switch` statements),
 and backend-independent.
 Ideally, the same test should work for both FerretDB with all handlers and MongoDB.
 If that's impossible without some branching, use helpers exported from the `setup` package,
-such us `IsTigris`, `SkipForTigrisWithReason`, `TigrisOnlyWithReason`.
+such us `FailsForFerretDB`, `SkipForMongoDB`, etc.
 The bar for using other ways of branching, such as checking error codes and messages, is very high.
 Writing separate tests might be much better than making a single test that checks error text.
 
 Also, we should use driver methods as much as possible instead of testing commands directly via `RunCommand`.
+
+We have a lot of existing helpers to convert the driver's `bson.D` values to our `*types.Document` values,
+to compare them, etc.
+In most cases, they should be used instead of (deprecated) `bson.D.Map()`,
+`bson.Unmarshal`, decoding into a struct with `bson` tags, comparing fields one-by-one, etc.
+The bar for adding new helpers is very high.
+Please check all existing ones.
+
+#### Integration tests naming guidelines
+
+1. Test names should include the name of the command being tested.
+   For instance, `TestDistinct` for testing the distinct command.
+2. Compatibility tests should have `Compat` in the name, following the command.
+   For example, `TestDistinctCompat`.
+3. If the test doesn't use driver method but runs a command directly via `RunCommand`,
+   the suffix `Command` should be added.
+   For example, `TestDistinctCommand`.
+4. If the test is both compat and runs a command, the suffix `CommandCompat` should be added.
+   For example, `TestInsertCommandCompat`.
+5. If the file consists of compatibility tests, add the `_compat` suffix.
+   For example, `distinct_compat_test.go`.
+6. Test names should be descriptive and provide information about the functionality or condition being tested.
+   If the test is checking for a specific error scenario, include the error scenario in the name.
+7. Keep test names concise, avoiding overly cryptic names.
+   Use abbreviations when appropriate.
+8. Avoid including test data in the name to maintain clarity and prevent excessively long names.
+9. Test case names should follow `TitleCase` capitalization style.
+   No spaces, dashes or underscores should be used neither for test names nor for test case names.
+10. Keep the concatenation of test name segments (test, subtests, and handler) within 64 characters
+    to satisfy the maximum limit for database names.
 
 ### Submitting code changes
 
@@ -239,9 +281,9 @@ Before submitting a pull request, please make sure that:
 
 1. Tests are added for new functionality or fixed bugs.
    Typical test cases include:
-     * happy paths;
-     * dot notation for existing and non-existent paths;
-     * edge cases for invalid or unexpected values or types.
+   - happy paths;
+   - dot notation for existing and non-existent paths;
+   - edge cases for invalid or unexpected values or types.
 2. Comments are added or updated for all new or changed code.
    Please add missing comments for all (both exported and unexported)
    new and changed top-level declarations (`package`, `var`, `const`, `func`, `type`).

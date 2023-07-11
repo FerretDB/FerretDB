@@ -34,6 +34,7 @@ type UpdatesParams struct {
 	Ordered                  bool            `ferretdb:"ordered,ignored"`
 	BypassDocumentValidation bool            `ferretdb:"bypassDocumentValidation,ignored"`
 	WriteConcern             *types.Document `ferretdb:"writeConcern,ignored"`
+	LSID                     any             `ferretdb:"lsid,ignored"`
 }
 
 // UpdateParams represents a single update operation parameters.
@@ -41,7 +42,7 @@ type UpdateParams struct {
 	// TODO: https://github.com/FerretDB/FerretDB/issues/2627
 	// get comment from query, e.g. db.collection.UpdateOne({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
 	Filter *types.Document `ferretdb:"q,opt"`
-	Update *types.Document `ferretdb:"u,opt"`
+	Update *types.Document `ferretdb:"u,opt"` // TODO https://github.com/FerretDB/FerretDB/issues/2742
 	Multi  bool            `ferretdb:"multi,opt"`
 	Upsert bool            `ferretdb:"upsert,opt,numericBool"`
 

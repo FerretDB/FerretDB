@@ -17,6 +17,7 @@ package sqlite
 import (
 	"context"
 	"fmt"
+	"regexp"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -26,6 +27,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
+
+// validateDatabaseNameRe validates FerretDB database name.
+var validateDatabaseNameRe = regexp.MustCompile("^[a-zA-Z0-9_-]{1,63}$")
 
 // MsgCreate implements HandlerInterface.
 func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
@@ -78,6 +82,11 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
+	if !validateDatabaseNameRe.MatchString(dbName) {
+		msg := fmt.Sprintf("Invalid namespace: %s.%s", dbName, collectionName)
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "create")
+	}
+
 	db := h.b.Database(dbName)
 	defer db.Close()
 
@@ -98,11 +107,11 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionAlreadyExists):
 		msg := fmt.Sprintf("Collection %s.%s already exists.", dbName, collectionName)
-		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNamespaceExists, msg)
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNamespaceExists, msg, "create")
 
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
 		msg := fmt.Sprintf("Invalid namespace: %s.%s", dbName, collectionName)
-		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "create")
 
 	default:
 		return nil, lazyerrors.Error(err)

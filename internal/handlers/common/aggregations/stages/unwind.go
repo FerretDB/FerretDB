@@ -121,7 +121,12 @@ func (u *unwind) Process(ctx context.Context, iter types.DocumentsIterator, clos
 	key := u.field.GetExpressionSuffix()
 
 	for _, doc := range docs {
-		d := u.field.Evaluate(doc)
+		d, err := u.field.Evaluate(doc)
+		if err != nil {
+			// Ignore non-existent values
+			continue
+		}
+
 		switch d := d.(type) {
 		case *types.Array:
 			iter := d.Iterator()
@@ -149,7 +154,10 @@ func (u *unwind) Process(ctx context.Context, iter types.DocumentsIterator, clos
 		}
 	}
 
-	return iterator.Values(iterator.ForSlice(out)), nil
+	iter = iterator.Values(iterator.ForSlice(out))
+	closer.Add(iter)
+
+	return iter, nil
 }
 
 // Type implements Stage interface.

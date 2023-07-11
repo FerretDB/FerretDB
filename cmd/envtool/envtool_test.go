@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -29,31 +28,29 @@ func TestPrintDiagnosticData(t *testing.T) {
 	t.Parallel()
 
 	assert.NotPanics(t, func() {
-		l := testutil.Logger(t, zap.NewAtomicLevelAt(zap.DebugLevel))
+		l := testutil.Logger(t)
 		printDiagnosticData(nil, l.Sugar())
 	})
 }
 
-func TestRmdirAbsentDir(t *testing.T) {
+func TestShellMkDirRmDir(t *testing.T) {
 	t.Parallel()
 
-	err := rmdir("absent")
-	assert.NoError(t, err)
-}
-
-func TestMkdirAndRmdir(t *testing.T) {
-	t.Parallel()
+	t.Run("Absent", func(t *testing.T) {
+		err := shellRmDir("absent")
+		assert.NoError(t, err)
+	})
 
 	paths := []string{"ab/c", "ab"}
 
-	err := mkdir(paths...)
+	err := shellMkDir(paths...)
 	assert.NoError(t, err)
 
 	for _, path := range paths {
 		assert.DirExists(t, path)
 	}
 
-	err = rmdir(paths...)
+	err = shellRmDir(paths...)
 	assert.NoError(t, err)
 
 	for _, path := range paths {
@@ -61,7 +58,7 @@ func TestMkdirAndRmdir(t *testing.T) {
 	}
 }
 
-func TestRead(t *testing.T) {
+func TestShellRead(t *testing.T) {
 	t.Parallel()
 
 	f, err := os.CreateTemp("", "test_read")
@@ -72,12 +69,12 @@ func TestRead(t *testing.T) {
 	assert.NoError(t, err)
 
 	var output bytes.Buffer
-	err = read(&output, f.Name())
+	err = shellRead(&output, f.Name())
 	assert.NoError(t, err)
 	assert.Equal(t, s, output.String())
 }
 
-func TestPrintVersion(t *testing.T) {
+func TestPackageVersion(t *testing.T) {
 	t.Parallel()
 
 	f, err := os.CreateTemp("", "test_print_version")

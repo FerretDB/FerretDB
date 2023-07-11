@@ -34,12 +34,10 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/tigrisdata/tigris-client-go/config"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -57,7 +55,7 @@ var (
 // versionFile contains version information with leading v.
 const versionFile = "build/version/version.txt"
 
-// waitForPort waits for the given port to be available until ctx is done.
+// waitForPort waits for the given port to be available until ctx is canceled.
 func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) error {
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	logger.Infof("Waiting for %s to be up...", addr)
@@ -162,67 +160,6 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 	return setupAnyPostgres(ctx, logger.Named("postgres_secured"), "postgres://username:password@127.0.0.1:5433/ferretdb")
 }
 
-// setupAnyTigris configures given Tigris.
-func setupAnyTigris(ctx context.Context, logger *zap.SugaredLogger, port uint16) error {
-	err := waitForPort(ctx, logger, port)
-	if err != nil {
-		return err
-	}
-
-	cfg := &config.Driver{
-		URL: fmt.Sprintf("127.0.0.1:%d", port),
-	}
-
-	p, err := state.NewProvider("")
-	if err != nil {
-		return err
-	}
-
-	var db *tigrisdb.TigrisDB
-
-	var retry int64
-	for ctx.Err() == nil {
-		if db, err = tigrisdb.New(ctx, cfg, logger.Desugar(), p); err == nil {
-			break
-		}
-
-		logger.Infof("%s: %s", cfg.URL, err)
-
-		retry++
-		ctxutil.SleepWithJitter(ctx, time.Second, retry)
-	}
-
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
-
-	defer db.Driver.Close()
-
-	logger.Info("Creating databases...")
-
-	for _, name := range []string{"admin", "test"} {
-		if _, err = db.Driver.CreateProject(ctx, name); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// setupTigris configures all Tigris containers.
-func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
-	logger = logger.Named("tigris")
-
-	// See docker-compose.yml.
-	for _, port := range []uint16{8081, 8091, 8092, 8093, 8094} {
-		if err := setupAnyTigris(ctx, logger.Named(strconv.Itoa(int(port))), port); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // setup runs all setup commands.
 func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 	go debug.RunHandler(ctx, "127.0.0.1:8089", prometheus.DefaultRegisterer, logger.Named("debug").Desugar())
@@ -232,10 +169,6 @@ func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 	}
 
 	if err := setupPostgresSecured(ctx, logger); err != nil {
-		return err
-	}
-
-	if err := setupTigris(ctx, logger); err != nil {
 		return err
 	}
 
@@ -329,8 +262,8 @@ func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
 	})
 }
 
-// mkdir creates all directories from given paths.
-func mkdir(paths ...string) error {
+// shellMkDir creates all directories from given paths.
+func shellMkDir(paths ...string) error {
 	var errs error
 
 	for _, path := range paths {
@@ -342,8 +275,8 @@ func mkdir(paths ...string) error {
 	return errs
 }
 
-// rmdir removes all directories from given paths.
-func rmdir(paths ...string) error {
+// shellRmDir removes all directories from given paths.
+func shellRmDir(paths ...string) error {
 	var errs error
 
 	for _, path := range paths {
@@ -355,8 +288,8 @@ func rmdir(paths ...string) error {
 	return errs
 }
 
-// read will show the content of a file.
-func read(w io.Writer, paths ...string) error {
+// shellRead will show the content of a file.
+func shellRead(w io.Writer, paths ...string) error {
 	for _, path := range paths {
 		b, err := os.ReadFile(path)
 		if err != nil {
@@ -401,6 +334,12 @@ var cli struct {
 		} `cmd:"" help:"read files"`
 	} `cmd:""`
 	PackageVersion struct{} `cmd:"" help:"Print package version"`
+	Tests          struct {
+		Shard struct {
+			Index uint `help:"Shard index, starting from 1" required:""`
+			Total uint `help:"Total number of shards"       required:""`
+		} `cmd:"" help:"Print sharded integration tests"`
+	} `cmd:""`
 }
 
 func main() {
@@ -428,13 +367,15 @@ func main() {
 	case "setup":
 		err = setup(ctx, logger)
 	case "shell mkdir <path>":
-		err = mkdir(cli.Shell.Mkdir.Paths...)
+		err = shellMkDir(cli.Shell.Mkdir.Paths...)
 	case "shell rmdir <path>":
-		err = rmdir(cli.Shell.Rmdir.Paths...)
+		err = shellRmDir(cli.Shell.Rmdir.Paths...)
 	case "shell read <path>":
-		err = read(os.Stdout, cli.Shell.Read.Paths...)
+		err = shellRead(os.Stdout, cli.Shell.Read.Paths...)
 	case "package-version":
 		err = packageVersion(os.Stdout, versionFile)
+	case "tests shard":
+		err = testsShard(os.Stdout, cli.Tests.Shard.Index, cli.Tests.Shard.Total)
 	default:
 		err = fmt.Errorf("unknown command: %s", cmd)
 	}

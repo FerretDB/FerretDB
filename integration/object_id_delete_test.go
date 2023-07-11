@@ -53,10 +53,6 @@ func TestStringAsID(t *testing.T) {
 }
 
 func TestSmokeObjectIDBinary(t *testing.T) {
-	// Fun fact: as Tigris has a schema, all the _id values in the collection can be either string or binary.
-	// It's not possible to insert a string value for the _id field into a collection and then expect the binary
-	// to work well with the same field. So that, we have separate tests for string and binary _id.
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 

@@ -37,95 +37,144 @@ func TestQueryBadFindType(t *testing.T) {
 	ctx, collection := s.Ctx, s.Collection
 
 	for name, tc := range map[string]struct {
-		value any
-		err   string
+		value any // optional, used for find value
+
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Document": {
 			value: bson.D{},
-			err:   "object",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type object",
+			},
+			altMessage: "collection name has invalid type object",
 		},
 		"Array": {
 			value: primitive.A{},
-			err:   "array",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type array",
+			},
 		},
 		"Double": {
 			value: 3.14,
-
-			err: "double",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type double",
+			},
 		},
 		"Binary": {
 			value: primitive.Binary{},
-			err:   "binData",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type binData",
+			},
 		},
 		"ObjectID": {
 			value: primitive.ObjectID{},
-
-			err: "objectId",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type objectId",
+			},
 		},
 		"Bool": {
 			value: true,
-			err:   "bool",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type bool",
+			},
 		},
 		"Date": {
 			value: time.Now(),
-
-			err: "date",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type date",
+			},
 		},
 		"Null": {
 			value: nil,
-
-			err: "null",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type null",
+			},
 		},
 		"Regex": {
 			value: primitive.Regex{Pattern: "/foo/"},
-
-			err: "regex",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type regex",
+			},
 		},
 		"Int": {
 			value: int32(42),
-			err:   "int",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type int",
+			},
 		},
 		"Timestamp": {
 			value: primitive.Timestamp{},
-			err:   "timestamp",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type timestamp",
+			},
 		},
 		"Long": {
 			value: int64(42),
-			err:   "long",
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type long",
+			},
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
 
-			var actual bson.D
+			require.NotNil(t, tc.err, "err must not be nil")
+
 			cmd := bson.D{
 				{"find", tc.value},
 				{"projection", bson.D{{"v", "some"}}},
 			}
-			err := collection.Database().RunCommand(ctx, cmd).Decode(&actual)
-			require.Error(t, err)
 
-			expected := mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "collection name has invalid type " + tc.err,
-			}
-			AssertEqualError(t, expected, err)
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, cmd).Decode(&res)
+
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
 
 func TestQuerySortErrors(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct {
-		command    bson.D
-		err        *mongo.CommandError
-		altMessage string
+		command bson.D // required, command to run
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"SortTypeDouble": {
 			command: bson.D{
@@ -205,12 +254,19 @@ func TestQuerySortErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
 
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			require.Error(t, err)
+			require.NotNil(t, tc.command, "command must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
 
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&res)
+
+			assert.Nil(t, res)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
@@ -221,9 +277,11 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct {
-		command    bson.D
-		err        *mongo.CommandError
-		altMessage string
+		command bson.D // required, command to run
+
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"BadMaxTimeMSTypeDouble": {
 			command: bson.D{
@@ -235,6 +293,7 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 				Name:    "BadValue",
 				Message: "maxTimeMS has non-integral value",
 			},
+			altMessage: "maxTimeMS has non-integral value",
 		},
 		"BadMaxTimeMSNegativeDouble": {
 			command: bson.D{
@@ -327,19 +386,25 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
 
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
-			require.Error(t, err)
-			AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+			require.NotNil(t, tc.command, "command must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&res)
+
+			assert.Nil(t, res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
 
 func TestQueryMaxTimeMSAvailableValues(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -395,8 +460,6 @@ func TestQueryMaxTimeMSAvailableValues(t *testing.T) {
 }
 
 func TestQueryExactMatches(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -455,8 +518,6 @@ func TestQueryExactMatches(t *testing.T) {
 }
 
 func TestDotNotation(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -543,4 +604,225 @@ func TestQueryNonExistingCollection(t *testing.T) {
 	err = cursor.All(ctx, &actual)
 	require.NoError(t, err)
 	require.Len(t, actual, 0)
+}
+
+func TestQueryCommandBatchSize(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	// the number of documents is set above the default batchSize of 101
+	// for testing unset batchSize returning default batchSize
+	arr, _ := generateDocuments(0, 110)
+	_, err := collection.InsertMany(ctx, arr)
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		filter    any // optional, nil to leave filter unset
+		batchSize any // optional, nil to leave batchSize unset
+
+		firstBatch primitive.A         // optional, expected firstBatch
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"Int": {
+			batchSize:  1,
+			firstBatch: arr[:1],
+		},
+		"Long": {
+			batchSize:  int64(2),
+			firstBatch: arr[:2],
+		},
+		"LongZero": {
+			batchSize:  int64(0),
+			firstBatch: bson.A{},
+		},
+		"LongNegative": {
+			batchSize: int64(-1),
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
+			},
+			altMessage: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
+		},
+		"DoubleZero": {
+			batchSize:  float64(0),
+			firstBatch: bson.A{},
+		},
+		"DoubleNegative": {
+			batchSize: -1.1,
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
+			},
+		},
+		"DoubleFloor": {
+			batchSize:  1.9,
+			firstBatch: arr[:1],
+		},
+		"Bool": {
+			batchSize:  true,
+			firstBatch: arr[:1],
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'FindCommandRequest.batchSize' is the wrong type 'bool', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'find.batchSize' is the wrong type 'bool', expected types '[long, int, decimal, double]'",
+		},
+		"Unset": {
+			// default batchSize is 101 when unset
+			batchSize:  nil,
+			firstBatch: arr[:101],
+		},
+		"LargeBatchSize": {
+			batchSize:  102,
+			firstBatch: arr[:102],
+		},
+		"LargeBatchSizeFilter": {
+			filter:     bson.D{{"_id", bson.D{{"$in", bson.A{0, 1, 2, 3, 4, 5}}}}},
+			batchSize:  102,
+			firstBatch: arr[:6],
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			var rest bson.D
+			if tc.filter != nil {
+				rest = append(rest, bson.E{Key: "filter", Value: tc.filter})
+			}
+
+			if tc.batchSize != nil {
+				rest = append(rest, bson.E{Key: "batchSize", Value: tc.batchSize})
+			}
+
+			command := append(
+				bson.D{{"find", collection.Name()}},
+				rest...,
+			)
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&res)
+			if tc.err != nil {
+				assert.Nil(t, res)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
+				return
+			}
+
+			require.NoError(t, err)
+
+			v, ok := res.Map()["cursor"]
+			require.True(t, ok)
+
+			cursor, ok := v.(bson.D)
+			require.True(t, ok)
+
+			// Do not check the value of cursor id, FerretDB has a different id.
+			cursorID := cursor.Map()["id"]
+			assert.NotNil(t, cursorID)
+
+			firstBatch, ok := cursor.Map()["firstBatch"]
+			require.True(t, ok)
+			require.Equal(t, tc.firstBatch, firstBatch)
+		})
+	}
+}
+
+func TestQueryCommandSingleBatch(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	arr, _ := generateDocuments(0, 5)
+	_, err := collection.InsertMany(ctx, arr)
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		batchSize   any // optional, nil to leave batchSize unset
+		singleBatch any // optional, nil to leave singleBatch unset
+
+		cursorClosed bool                // optional, set true for expecting cursor to be closed
+		err          *mongo.CommandError // optional, expected error from MongoDB
+		altMessage   string              // optional, alternative error message for FerretDB, ignored if empty
+		skip         string              // optional, skip test with a specified reason
+	}{
+		"True": {
+			singleBatch:  true,
+			batchSize:    3,
+			cursorClosed: true,
+		},
+		"False": {
+			singleBatch:  false,
+			batchSize:    3,
+			cursorClosed: false,
+		},
+		"Int": {
+			singleBatch: int32(1),
+			batchSize:   3,
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "Field 'singleBatch' should be a boolean value, but found: int",
+			},
+			altMessage: "BSON field 'find.singleBatch' is the wrong type 'int', expected type 'bool'",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			var rest bson.D
+			if tc.batchSize != nil {
+				rest = append(rest, bson.E{Key: "batchSize", Value: tc.batchSize})
+			}
+
+			if tc.singleBatch != nil {
+				rest = append(rest, bson.E{Key: "singleBatch", Value: tc.singleBatch})
+			}
+
+			command := append(
+				bson.D{{"find", collection.Name()}},
+				rest...,
+			)
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&res)
+			if tc.err != nil {
+				assert.Nil(t, res)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
+				return
+			}
+
+			require.NoError(t, err)
+
+			v, ok := res.Map()["cursor"]
+			require.True(t, ok)
+
+			cursor, ok := v.(bson.D)
+			require.True(t, ok)
+
+			cursorID := cursor.Map()["id"]
+			assert.NotNil(t, cursorID)
+
+			if !tc.cursorClosed {
+				assert.NotZero(t, cursorID)
+				return
+			}
+
+			assert.Equal(t, int64(0), cursorID)
+		})
+	}
 }

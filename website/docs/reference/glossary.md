@@ -6,7 +6,7 @@ sidebar_position: 2
 
 ## List of FerretDB terminologies
 
-*This section contains a list of common terminologies related to FerretDB*.
+_This section contains a list of common terminologies related to FerretDB_.
 
 ### A
 
@@ -135,14 +135,5 @@ See [Operation modes](../configuration/operation-modes.md) for more details.
 
 An open source relational database.
 FerretDB uses PostgreSQL as a database engine.
-
----
-
-### T
-
-#### Tigris
-
-A database platform used by FerretDB as a database engine.
-See <https://www.tigrisdata.com/> for more details.
 
 ---

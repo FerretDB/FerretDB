@@ -47,6 +47,17 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
+	// Most backends would block on `DropCollection` below otherwise.
+	//
+	// There is a race condition: another client could create a new cursor for that collection
+	// after we closed all of them, but before we drop the collection itself.
+	// In that case, we expect the client to wait or to retry the operation.
+	for _, c := range h.cursors.All() {
+		if c.DB == dbName && c.Collection == collectionName {
+			c.Close()
+		}
+	}
+
 	db := h.b.Database(dbName)
 	defer db.Close()
 

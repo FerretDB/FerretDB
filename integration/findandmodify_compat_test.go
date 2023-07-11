@@ -87,45 +87,35 @@ func TestFindAndModifyCompatErrors(t *testing.T) {
 
 	testCases := map[string]findAndModifyCompatTestCase{
 		"NotEnoughParameters": {
-			command: bson.D{},
+			command:    bson.D{},
+			resultType: emptyResult,
 		},
 		"UpdateAndRemove": {
 			command: bson.D{
 				{"update", bson.D{}},
 				{"remove", true},
 			},
+			resultType: emptyResult,
 		},
 		"NewAndRemove": {
 			command: bson.D{
 				{"new", true},
 				{"remove", true},
 			},
+			resultType: emptyResult,
 		},
-		"BadUpdateType": {
+		"InvalidUpdateType": {
 			command: bson.D{
 				{"query", bson.D{}},
 				{"update", "123"},
 			},
+			resultType: emptyResult,
 		},
-		"BadMaxTimeMSTypeString": {
+		"InvalidMaxTimeMSType": {
 			command: bson.D{
 				{"maxTimeMS", "string"},
 			},
-		},
-		"DollarPrefixedFieldName": {
-			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"$invalid", "val"}}}}}}},
-				{"upsert", true},
-				{"update", bson.D{{"v", "replaced"}}},
-			},
-		},
-		"DollarPrefixedNestedFieldName": {
-			command: bson.D{
-				{"query", bson.D{{"_id", bson.D{{"key", bson.D{{"nestedKey", bson.D{{"$invalid", "val"}}}}}}}}},
-				{"upsert", true},
-				{"update", bson.D{{"v", "replaced"}}},
-			},
-			skipForTigris: "schema validation would fail",
+			resultType: emptyResult,
 		},
 	}
 
@@ -188,13 +178,13 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"v", bson.D{}}}},
 			},
-			skipForTigris: "schema validation would fail",
 		},
-		"InvalidOperator": {
+		"Conflict": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
 				{"update", bson.D{{"$invalid", "non-existent-field"}}},
 			},
+			resultType: emptyResult,
 		},
 		"OperatorConflict": {
 			command: bson.D{
@@ -204,7 +194,90 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 					{"$inc", bson.D{{"v", 4}}},
 				}},
 			},
+			resultType: emptyResult,
 		},
+		"NoConflict": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v", 4}}},
+					{"$inc", bson.D{{"foo", 4}}},
+				}},
+			},
+		},
+		"EmptyKey": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"", 4}}},
+					{"$inc", bson.D{{"", 4}}},
+				}},
+			},
+			resultType: emptyResult,
+		},
+		"EmptyKeyAndKey": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int64"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"", 4}}},
+					{"$inc", bson.D{{"v", 4}}},
+				}},
+			},
+			resultType: emptyResult,
+		},
+		"InvalidOperator": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{{"$invalid", "non-existent-field"}}},
+			},
+			resultType: emptyResult,
+		},
+	}
+
+	testFindAndModifyCompat(t, testCases)
+}
+
+func TestFindAndModifyCompatUpdateDotNotation(t *testing.T) {
+	testCases := map[string]findAndModifyCompatTestCase{
+		"Conflict": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.0.field", 4}}},
+					{"$inc", bson.D{{"v.0.field", 4}}},
+				}},
+			},
+			resultType: emptyResult,
+		},
+		"NoConflict": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.0.field", 4}}},
+					{"$inc", bson.D{{"v.0.foo", 4}}},
+				}},
+			},
+		},
+		"NoIndex": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.0.field", 4}}},
+					{"$inc", bson.D{{"v.field", 4}}},
+				}},
+			},
+		},
+		"ParentConflict": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "array-documents-two-fields"}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.0.field", 4}}},
+					{"$inc", bson.D{{"v", 4}}},
+				}},
+			},
+			resultType: emptyResult,
+		},
+
 		"ConflictKey": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
@@ -213,6 +286,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 					{"$min", bson.D{{"v.foo", "val"}}},
 				}},
 			},
+			resultType: emptyResult,
 		},
 		"ConflictKeyPrefix": {
 			command: bson.D{
@@ -222,6 +296,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 					{"$min", bson.D{{"v", "val"}}},
 				}},
 			},
+			resultType: emptyResult,
 		},
 	}
 
@@ -256,9 +331,23 @@ func TestFindAndModifyCompatUpdateSet(t *testing.T) {
 				{"update", bson.D{{"$set", bson.D{{"v", "foo"}}}}},
 			},
 		},
-		"UpdateID": {
+		"UpdateIDNoQuery": {
 			command: bson.D{
-				{"update", bson.D{{"$set", bson.D{{"_id", "non-existent"}}}}},
+				{"update", bson.D{{"$set", bson.D{{"_id", "int32"}}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/3017",
+		},
+		"UpdateExistingID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32"}}},
+				{"update", bson.D{{"$set", bson.D{{"_id", "int32-1"}}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/3017",
+		},
+		"UpdateSameID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32"}}},
+				{"update", bson.D{{"$set", bson.D{{"_id", "int32"}}}}},
 			},
 		},
 	}
@@ -273,31 +362,31 @@ func TestFindAndModifyCompatUpdateUnset(t *testing.T) {
 		"NonExistentExistsTrue": {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", true}}}}},
-				{"update", bson.D{{"$unset", "v"}}},
+				{"update", bson.D{{"$unset", bson.D{{"v", ""}}}}},
 			},
 		},
 		"NonExistentExistsFalse": {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", false}}}}},
-				{"update", bson.D{{"$unset", "v"}}},
+				{"update", bson.D{{"$unset", bson.D{{"v", ""}}}}},
 			},
 		},
 		"ExistsTrue": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
-				{"update", bson.D{{"$unset", "v"}}},
+				{"update", bson.D{{"$unset", bson.D{{"v", ""}}}}},
 			},
 		},
 		"ExistsFalse": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
-				{"update", bson.D{{"$unset", "v"}}},
+				{"update", bson.D{{"$unset", bson.D{{"v", ""}}}}},
 			},
 		},
 		"UnsetNonExistentField": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "double"}}},
-				{"update", bson.D{{"$unset", "non-existent-field"}}},
+				{"update", bson.D{{"$unset", bson.D{{"non-existent-field", ""}}}}},
 			},
 		},
 	}
@@ -314,30 +403,35 @@ func TestFindAndModifyCompatUpdateCurrentDate(t *testing.T) {
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", 1}}},
 			},
+			resultType: emptyResult,
 		},
 		"UnknownOption": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{{"foo", int32(1)}}}}}}},
 			},
+			resultType: emptyResult,
 		},
-		"NotDate": {
+		"InvalidType": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", int32(1)}}}}}}},
 			},
+			resultType: emptyResult,
 		},
 		"UnknownType": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", bson.D{{"v", bson.D{{"$type", "unknown"}}}}}}},
 			},
+			resultType: emptyResult,
 		},
-		"InvalidType": {
+		"InvalidValue": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "datetime"}}},
 				{"update", bson.D{{"$currentDate", bson.D{{"v", 1}}}}},
 			},
+			resultType: emptyResult,
 		},
 	}
 
@@ -353,30 +447,35 @@ func TestFindAndModifyCompatUpdateRename(t *testing.T) {
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"$rename", 1}}},
 			},
+			resultType: emptyResult,
 		},
 		"NonStringTargetField": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"$rename", bson.D{{"v", 0}}}}},
 			},
+			resultType: emptyResult,
 		},
 		"SameTargetField": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"$rename", bson.D{{"v", "v"}}}}},
 			},
+			resultType: emptyResult,
 		},
 		"DuplicateSource": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"$rename", bson.D{{"v", "w"}, {"v", "x"}}}}},
 			},
+			resultType: emptyResult,
 		},
 		"DuplicateTarget": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "int64"}}},
 				{"update", bson.D{{"$rename", bson.D{{"v", "w"}, {"x", "w"}}}}},
 			},
+			resultType: emptyResult,
 		},
 	}
 
@@ -417,13 +516,15 @@ func TestFindAndModifyCompatSort(t *testing.T) {
 				{"update", bson.D{{"$set", bson.D{{"v.0.foo.0.bar", "baz"}}}}},
 				{"sort", bson.D{{"v..foo", 1}, {"_id", 1}}},
 			},
+			resultType: emptyResult,
 		},
-		"BadDollarStart": {
+		"DollarPrefixedFieldName": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$in", bson.A{"array-documents-nested", "array-documents-nested-duplicate"}}}}}},
 				{"update", bson.D{{"$set", bson.D{{"v.0.foo.0.bar", "baz"}}}}},
 				{"sort", bson.D{{"$v.foo", 1}, {"_id", 1}}},
 			},
+			resultType: emptyResult,
 		},
 	}
 
@@ -431,11 +532,6 @@ func TestFindAndModifyCompatSort(t *testing.T) {
 }
 
 func TestFindAndModifyCompatUpsert(t *testing.T) {
-	setup.SkipForTigrisWithReason(
-		t,
-		"Tigris' schema doesn't fit for most of providers, upsert for Tigris is tested in TestFindAndModifyUpsert.",
-	)
-
 	t.Parallel()
 
 	testCases := map[string]findAndModifyCompatTestCase{
@@ -485,12 +581,13 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
 			},
 		},
-		"ExistsTrueID": {
+		"UpdateID": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
 				{"upsert", true},
 				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
 			},
+			resultType: emptyResult, // _id must be an immutable field
 		},
 		"ExistsTrue": {
 			command: bson.D{
@@ -558,6 +655,31 @@ func TestFindAndModifyCompatUpsertSet(t *testing.T) {
 				{"upsert", true},
 				{"update", bson.D{{"$set", bson.D{{"_id", "double"}}}}},
 			},
+			resultType: emptyResult, // _id must be an immutable field
+			skip:       "https://github.com/FerretDB/FerretDB/issues/3017",
+		},
+		"UpsertIDNoQuery": {
+			command: bson.D{
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"_id", "int32"}, {"v", int32(2)}}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/3017",
+		},
+		"UpsertExistingID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32"}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"_id", "int32-1"}, {"v", int32(2)}}}}},
+			},
+			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/3017",
+		},
+		"UpsertSameID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", "int32"}}},
+				{"upsert", true},
+				{"update", bson.D{{"$set", bson.D{{"_id", "int32"}, {"v", int32(2)}}}}},
+			},
 		},
 	}
 
@@ -572,35 +694,43 @@ func TestFindAndModifyCompatUpsertUnset(t *testing.T) {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", true}}}}},
 				{"upsert", true},
-				{"update", bson.D{{"$unset", "v"}}},
+				{"update", bson.D{
+					{"$unset", bson.D{{"v", ""}}},
+					{"$set", bson.D{{"_id", "upserted"}}}, // to have the same _id for target and compat
+				}},
 			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2741",
 		},
 		"NonExistentExistsFalse": {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", false}}}}},
 				{"upsert", true},
-				{"update", bson.D{{"$unset", "v"}}},
+				{"update", bson.D{{"$unset", bson.D{{"v", ""}}}}},
 			},
 		},
 		"ExistsTrue": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
 				{"upsert", true},
-				{"update", bson.D{{"$unset", "v"}}},
+				{"update", bson.D{{"$unset", bson.D{{"v", ""}}}}},
 			},
 		},
 		"ExistsFalse": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
 				{"upsert", true},
-				{"update", bson.D{{"$unset", "v"}}},
+				{"update", bson.D{
+					{"$unset", bson.D{{"v", ""}}},
+					{"$set", bson.D{{"_id", "upserted"}}}, // to have the same _id for target and compat
+				}},
 			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2741",
 		},
 		"UnsetNonExistentField": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "double"}}},
 				{"upsert", true},
-				{"update", bson.D{{"$unset", "non-existent-field"}}},
+				{"update", bson.D{{"$unset", bson.D{{"non-existent-field", ""}}}}},
 			},
 		},
 	}
@@ -642,8 +772,9 @@ func TestFindAndModifyCompatRemove(t *testing.T) {
 type findAndModifyCompatTestCase struct {
 	command bson.D
 
-	skip          string // skips test if non-empty
-	skipForTigris string // skips test for Tigris if non-empty
+	skip string // skips test if non-empty
+
+	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
 // testFindAndModifyCompat tests findAndModify compatibility test cases.
@@ -658,16 +789,13 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
-			}
 
 			t.Parallel()
 
 			// Use per-test setup because findAndModify modifies data set.
 			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
-			//	var nonEmptyResults bool
+			var nonEmptyResults bool
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
@@ -732,7 +860,20 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 					t.Logf("Compat (expected) IDs: %v", CollectIDs(t, compatRes))
 					t.Logf("Target (actual)   IDs: %v", CollectIDs(t, targetRes))
 					AssertEqualDocumentsSlice(t, compatRes, targetRes)
+
+					if len(targetRes) > 0 || len(compatRes) > 0 {
+						nonEmptyResults = true
+					}
 				})
+			}
+
+			switch tc.resultType {
+			case nonEmptyResult:
+				assert.True(t, nonEmptyResults, "expected non-empty results")
+			case emptyResult:
+				assert.False(t, nonEmptyResults, "expected empty results")
+			default:
+				t.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
