@@ -24,8 +24,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// SASLStartPlain extracts username and password from PLAIN `saslStart` payload.
-func SASLStartPlain(doc *types.Document) (string, string, error) {
+// saslStartPlain extracts username and password from PLAIN `saslStart` payload.
+func saslStartPlain(doc *types.Document) (string, string, error) {
 	var payload []byte
 
 	// some drivers send payload as a string
