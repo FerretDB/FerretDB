@@ -215,7 +215,7 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.Doc
 	}
 
 	if p.limit != 0 {
-		query += fmt.Sprintf(` LIMIT $%d`, len(args)+1)
+		query += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
 		args = append(args, p.limit)
 		res.LimitPushdown = true
 	}
