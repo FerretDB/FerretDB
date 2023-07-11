@@ -435,18 +435,19 @@ jobs:
         env:
           KEY: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
         run: |
+          set -x
           git config user.name ferretdb-bot
           git config user.email ferretdb-bot@ferretdb.io
           git add --all .
-          git diff-index -p
+          git diff-index -p HEAD
           git diff-index --quiet HEAD || git commit --message 'Update corpus'
           git fetch
           git rebase origin/main
           git push
         working-directory: fuzz-corpus
 
-      - name: Upload corpus if push is not possible
-        if: failure() && env.KEY == ''
+      - name: Upload corpus on failure or if push is not possible
+        if: failure() || env.KEY == ''
         env:
           KEY: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
         uses: actions/upload-artifact@v3
