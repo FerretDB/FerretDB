@@ -24,11 +24,11 @@ tasks:
     deps: [all]
 
   all:
-    desc: "Generate, format, build, test and lint code and documentation"
+    desc: "Generate, format, build, unit test and lint code and documentation"
     cmds:
       - task: gen
       - task: build-host
-      - task: test
+      - task: test-unit
       - task: lint
       - task: security
       - task: fmt-yaml

@@ -76,7 +76,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	cancel := func() {}
 	if params.MaxTimeMS != 0 {
 		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
-		// TODO https://github.com/FerretDB/FerretDB/issues/1808
+		// TODO https://github.com/FerretDB/FerretDB/issues/2983
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
 	}
 
@@ -159,7 +159,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	if params.SingleBatch || firstBatch.Len() < int(params.BatchSize) {
-		// TODO: support tailable cursor https://github.com/FerretDB/FerretDB/issues/2963
+		// TODO: support tailable cursors https://github.com/FerretDB/FerretDB/issues/2283
+
 		// let the client know that there are no more results
 		cursorID = 0
 

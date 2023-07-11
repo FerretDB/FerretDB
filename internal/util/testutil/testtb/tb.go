@@ -20,6 +20,7 @@ package testtb
 import "testing"
 
 // TB is a copy of testing.TB without a private method.
+// It allows us to implement it.
 //
 //nolint:interfacebloat // that's a copy of existing interface
 type TB interface {
