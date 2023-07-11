@@ -16,12 +16,18 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // CmdQuery implements HandlerInterface.
@@ -37,7 +43,36 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	// defaults to the database name if supplied on the connection string or $external
 	if cmd == "saslStart" &&
 		(collection == "$external.$cmd" || strings.HasSuffix(collection, "$cmd")) {
-		// TODO.
+		var emptyPayload types.Binary
+
+		common.SASLStart(ctx, query.Query)
+
+		if _, err := h.DBPool(ctx); err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgerrcode.IsInvalidAuthorizationSpecification(pgErr.Code) {
+				msg := "FerretDB failed to authenticate you in PostgreSQL:\n" +
+					strings.TrimSpace(pgErr.Error()) + "\n" +
+					"See https://docs.ferretdb.io/security/authentication/ for more details."
+
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrAuthenticationFailed,
+					msg,
+					"payload",
+				)
+			}
+
+			return nil, lazyerrors.Error(err)
+		}
+
+		return &wire.OpReply{
+			NumberReturned: 1,
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"conversationId", int32(1),
+				"done", true,
+				"payload", emptyPayload,
+				"ok", float64(1),
+			))},
+		}, nil
 	}
 
 	return nil, commonerrors.NewCommandErrorMsgWithArgument(
