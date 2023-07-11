@@ -29,8 +29,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgGetParameter returns parameter details.
-func MsgGetParameter(_ context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.OpMsg, error) {
+// GetParameter returns parameter details.
+func GetParameter(_ context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)

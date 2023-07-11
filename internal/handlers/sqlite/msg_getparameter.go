@@ -23,5 +23,5 @@ import (
 
 // MsgGetParameter implements HandlerInterface.
 func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.MsgGetParameter(ctx, msg, h.L)
+	return common.GetParameter(ctx, msg, h.L)
 }
