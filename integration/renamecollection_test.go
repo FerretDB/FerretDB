@@ -15,7 +15,7 @@
 package integration
 
 import (
-	"fmt"
+	"strconv"
 	"sync/atomic"
 	"testing"
 
@@ -38,11 +38,12 @@ func TestRenameCollectionStress(tt *testing.T) {
 	var i, oks, errs atomic.Int32
 
 	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
-		from := fmt.Sprintf("%s.rename_collection_stress_%d", db.Name(), i.Add(1))
-		to := fmt.Sprintf("%s.rename_collection_stress_renamed", db.Name())
-
+		from := "rename_collection_stress_" + strconv.Itoa(int(i.Add(1)))
 		err := db.CreateCollection(ctx, from)
 		require.NoError(t, err)
+
+		from = db.Name() + "." + from
+		to := db.Name() + "." + "rename_collection_stress_renamed"
 
 		ready <- struct{}{}
 		<-start
