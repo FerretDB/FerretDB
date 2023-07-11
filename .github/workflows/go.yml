@@ -446,6 +446,12 @@ jobs:
           git push
         working-directory: fuzz-corpus
 
+      - name: Compress corpus before upload
+        if: failure() || env.KEY == ''
+        env:
+          KEY: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
+        run: zip -r -q -9 fuzz-corpus.zip fuzz-corpus
+
       - name: Upload corpus on failure or if push is not possible
         if: failure() || env.KEY == ''
         env:
