@@ -501,6 +501,30 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			},
 			altMessage: `BSON field 'allParameters' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'`,
 		},
+		"FeatureCompatibilityVersion": {
+			command: bson.D{
+				{"getParameter", bson.D{}},
+				{"featureCompatibilityVersion", 1},
+			},
+			expected: map[string]any{
+				"featureCompatibilityVersion": bson.D{{"version", "6.0"}},
+				"ok":                          float64(1),
+			},
+		},
+		"FeatureCompatibilityVersionShowDetails": {
+			command: bson.D{
+				{"getParameter", bson.D{{"showDetails", true}}},
+				{"featureCompatibilityVersion", 1},
+			},
+			expected: map[string]any{
+				"featureCompatibilityVersion": bson.D{
+					{"value", bson.D{{"version", "6.0"}}},
+					{"settableAtRuntime", false},
+					{"settableAtStartup", false},
+				},
+				"ok": float64(1),
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -540,6 +564,56 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetParameterCommandAuthenticationMechanisms(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		DatabaseName: "admin",
+	})
+
+	t.Run("ShowDetails", func(t *testing.T) {
+		var res bson.D
+		err := s.Collection.Database().RunCommand(s.Ctx, bson.D{
+			{"getParameter", bson.D{{"showDetails", true}}},
+			{"authenticationMechanisms", 1},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		doc := ConvertDocument(t, res)
+		v, _ := doc.Get("authenticationMechanisms")
+		require.NotNil(t, v)
+
+		resOk, _ := doc.Get("ok")
+		require.Equal(t, float64(1), resOk)
+
+		authenticationMechanisms, ok := v.(*types.Document)
+		require.True(t, ok)
+
+		settableAtRuntime, _ := authenticationMechanisms.Get("settableAtRuntime")
+		require.Equal(t, false, settableAtRuntime)
+
+		settableAtStartup, _ := authenticationMechanisms.Get("settableAtStartup")
+		require.Equal(t, true, settableAtStartup)
+	})
+
+	t.Run("Plain", func(t *testing.T) {
+		setup.SkipForMongoDB(t, "PLAIN authentication mechanism is not support by MongoDB")
+
+		var res bson.D
+		err := s.Collection.Database().RunCommand(s.Ctx, bson.D{
+			{"getParameter", bson.D{}},
+			{"authenticationMechanisms", 1},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		expected := bson.D{
+			{"authenticationMechanisms", bson.A{"PLAIN"}},
+			{"ok", float64(1)},
+		}
+		require.Equal(t, expected, res)
+	})
 }
 
 func TestCommandsAdministrationBuildInfo(t *testing.T) {
