@@ -22,10 +22,11 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/util/hex"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // ParseDump parses string to bytes, in tests.
-func ParseDump(tb TB, s string) []byte {
+func ParseDump(tb testtb.TB, s string) []byte {
 	tb.Helper()
 
 	b, err := hex.ParseDump(s)
@@ -34,7 +35,7 @@ func ParseDump(tb TB, s string) []byte {
 }
 
 // ParseDumpFile parses file input to bytes, in tests.
-func ParseDumpFile(tb TB, path ...string) []byte {
+func ParseDumpFile(tb testtb.TB, path ...string) []byte {
 	tb.Helper()
 
 	b, err := os.ReadFile(filepath.Join(path...))

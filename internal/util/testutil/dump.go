@@ -22,10 +22,11 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/types/fjson"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // Dump returns string representation for debugging.
-func Dump[T types.Type](tb TB, o T) string {
+func Dump[T types.Type](tb testtb.TB, o T) string {
 	tb.Helper()
 
 	// We might switch to go-spew or something else later.
@@ -36,7 +37,7 @@ func Dump[T types.Type](tb TB, o T) string {
 }
 
 // DumpSlice returns string representation for debugging.
-func DumpSlice[T types.Type](tb TB, s []T) string {
+func DumpSlice[T types.Type](tb testtb.TB, s []T) string {
 	tb.Helper()
 
 	// We might switch to go-spew or something else later.
@@ -59,7 +60,7 @@ func DumpSlice[T types.Type](tb TB, s []T) string {
 }
 
 // IndentJSON returns an indented form of the JSON input.
-func IndentJSON(tb TB, b []byte) []byte {
+func IndentJSON(tb testtb.TB, b []byte) []byte {
 	tb.Helper()
 
 	dst := bytes.NewBuffer(make([]byte, 0, len(b)))

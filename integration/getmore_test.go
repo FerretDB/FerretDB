@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"net/url"
 	"testing"
 
@@ -26,6 +27,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -697,6 +699,407 @@ func TestGetMoreCommandConnection(t *testing.T) {
 					"95326129-ff9c-48a4-9060-464b4ea3ee06 - 47DEQpj8HBSa+/TImW+5JC\neuQeRkm5NMpJWZG3hSuFU= -  - , " +
 					"in session 9e8902e9-338c-4156-9fd8-50e5d62ac992 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  - ",
 			},
+			err,
+		)
+	})
+}
+
+func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		command bson.D // required, command to run
+
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"NegativeLong": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", int64(-1)},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "-1 value for maxTimeMS is out of range",
+			},
+		},
+		"MaxLong": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", math.MaxInt64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "9223372036854775807 value for maxTimeMS is out of range",
+			},
+		},
+		"Double": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", 1000.5},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS has non-integral value",
+			},
+			altMessage: "BSON field 'getMore.maxTimeMS' is the wrong type 'double', expected types '[long, int, decimal, double]'",
+		},
+		"NegativeDouble": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", -14245345234123245.55},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "-14245345234123246 value for maxTimeMS is out of range",
+			},
+			altMessage: "-1.4245345234123246e+16 value for maxTimeMS is out of range",
+		},
+		"BigDouble": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", math.MaxFloat64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "9223372036854775807 value for maxTimeMS is out of range",
+			},
+			altMessage: "1.797693134862316e+308 value for maxTimeMS is out of range",
+		},
+		"BigNegativeDouble": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", -math.MaxFloat64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "-9223372036854775808 value for maxTimeMS is out of range",
+			},
+			altMessage: "-1.797693134862316e+308 value for maxTimeMS is out of range",
+		},
+		"NegativeInt": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", -1123123},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "-1123123 value for maxTimeMS is out of range",
+			},
+		},
+		"MaxInt": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", math.MaxInt32 + 1},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "2147483648 value for maxTimeMS is out of range",
+			},
+		},
+		"Null": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", nil},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS must be a number",
+			},
+		},
+		"String": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", "string"},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'getMore.maxTimeMS' is the wrong type 'string', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'getMore.maxTimeMS' is the wrong type 'string', expected types '[long, int, decimal, double]'",
+		},
+		"Array": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", bson.A{int32(42), "foo", nil}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'getMore.maxTimeMS' is the wrong type 'array', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'getMore.maxTimeMS' is the wrong type 'array', expected types '[long, int, decimal, double]'",
+		},
+		"Document": {
+			command: bson.D{
+				{"getMore", int64(112233)},
+				{"collection", collection.Name()},
+				{"maxTimeMS", bson.D{{"foo", int32(42)}}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'getMore.maxTimeMS' is the wrong type 'object', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'getMore.maxTimeMS' is the wrong type 'object', expected types '[long, int, decimal, double]'",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			require.Nil(t, res)
+		})
+	}
+}
+
+func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
+	// do not run tests in parallel to for server execution time to use maximum possible maxTimeMS
+
+	// options are applied to create a client that uses single connection pool
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		ExtraOptions: url.Values{
+			"minPoolSize":   []string{"1"},
+			"maxPoolSize":   []string{"1"},
+			"maxIdleTimeMS": []string{"0"},
+		},
+		Providers: []shareddata.Provider{shareddata.Composites},
+	})
+
+	ctx, collection := s.Ctx, s.Collection
+
+	// need large amount of documents for time out to trigger
+	arr, _ := generateDocuments(0, 5000)
+
+	_, err := collection.InsertMany(ctx, arr)
+	require.NoError(t, err)
+
+	t.Run("FindExpire", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1808")
+
+		opts := options.Find().
+			// set batchSize big enough to hit maxTimeMS
+			SetBatchSize(2000).
+			// set maxTimeMS small enough for find to expire
+			SetMaxTime(1).
+			// set sort to slow down the query more than 1ms
+			SetSort(bson.D{{"v", 1}})
+
+		_, err := collection.Find(ctx, bson.D{}, opts)
+
+		// MongoDB returns Message or altMessage
+		AssertEqualAltCommandError(
+			t,
+			mongo.CommandError{
+				Code:    50,
+				Name:    "MaxTimeMSExpired",
+				Message: "Executor error during find command :: caused by :: operation exceeded time limit",
+			},
+			"operation exceeded time limit",
+			err,
+		)
+	})
+
+	t.Run("FindGetMorePropagateMaxTimeMS", func(t *testing.T) {
+		// this test case is not stable and frequently fails because
+		// `Find` unexpectedly timeout or `cursor.Next()` does not timeout expectedly
+		t.Skip("https://github.com/FerretDB/FerretDB/issues/2983")
+
+		opts := options.Find().
+			// setting zero on find sets nextBatch on getMore to unlimited
+			SetBatchSize(0).
+			// maxTimeMS is 1 but it won't expire because of zero BatchSize
+			SetMaxTime(1)
+
+		cursor, err := collection.Find(ctx, bson.D{}, opts)
+		require.NoError(t, err)
+
+		cursor.SetBatchSize(50000)
+
+		// getMore uses maxTimeMS set on find
+		ok := cursor.Next(ctx)
+		assert.False(t, ok)
+
+		// MongoDB returns Message or altMessage
+		AssertEqualAltCommandError(
+			t,
+			mongo.CommandError{
+				Code:    50,
+				Name:    "MaxTimeMSExpired",
+				Message: "Executor error during getMore :: caused by :: operation exceeded time limit",
+			},
+			"operation exceeded time limit",
+			cursor.Err(),
+		)
+	})
+
+	t.Run("FindGetMoreMaxTimeMS", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1808")
+
+		var res bson.D
+		err := collection.Database().RunCommand(ctx, bson.D{
+			{"find", collection.Name()},
+			{"batchSize", 0},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		doc := ConvertDocument(t, res)
+
+		v, _ := doc.Get("cursor")
+		require.NotNil(t, v)
+
+		cursor, ok := v.(*types.Document)
+		require.True(t, ok)
+
+		cursorID, _ := cursor.Get("id")
+		require.NotZero(t, cursorID)
+
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 2000},
+			{"maxTimeMS", 1},
+		}).Decode(&res)
+
+		AssertEqualAltCommandError(
+			t,
+			mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "cannot set maxTimeMS on getMore command for a non-awaitData cursor",
+			},
+			"",
+			err,
+		)
+	})
+
+	t.Run("AggregateExpire", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1808")
+
+		opts := options.Aggregate().
+			// set batchSize big enough to hit maxTimeMS
+			SetBatchSize(2000).
+			// set maxTimeMS small enough for aggregate to expire
+			SetMaxTime(1)
+
+		// use $sort stage to slow down the query more than 1ms
+		_, err := collection.Aggregate(ctx, bson.A{bson.D{{"$sort", bson.D{{"v", 1}}}}}, opts)
+
+		// MongoDB returns Message or altMessage
+		AssertEqualAltCommandError(
+			t,
+			mongo.CommandError{
+				Code:    50,
+				Name:    "MaxTimeMSExpired",
+				Message: "PlanExecutor error during aggregation :: caused by :: operation exceeded time limit",
+			},
+			"operation exceeded time limit",
+			err,
+		)
+	})
+
+	t.Run("AggregateGetMorePropagateMaxTimeMS", func(t *testing.T) {
+		// this test case is not stable and frequently fails because
+		// `Aggregate` unexpectedly timeout or `cursor.Next()` does not timeout expectedly
+		t.Skip("https://github.com/FerretDB/FerretDB/issues/2983")
+
+		opts := options.Aggregate().
+			// setting zero on aggregate sets nextBatch on getMore to unlimited
+			SetBatchSize(0).
+			// maxTimeMS is 1 but it won't expire on aggregate because of zero BatchSize
+			SetMaxTime(1)
+
+		cursor, err := collection.Aggregate(ctx, bson.A{}, opts)
+		require.NoError(t, err)
+
+		cursor.SetBatchSize(50000)
+
+		// getMore uses maxTimeMS set on aggregate
+		ok := cursor.Next(ctx)
+		assert.False(t, ok)
+
+		// MongoDB returns Message or altMessage
+		AssertEqualAltCommandError(
+			t,
+			mongo.CommandError{
+				Code:    50,
+				Name:    "MaxTimeMSExpired",
+				Message: "Executor error during getMore :: caused by :: operation exceeded time limit",
+			},
+			"operation exceeded time limit",
+			cursor.Err(),
+		)
+	})
+
+	t.Run("AggregateGetMoreMaxTimeMS", func(tt *testing.T) {
+		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1808")
+
+		var res bson.D
+		err := collection.Database().RunCommand(ctx, bson.D{
+			{"aggregate", collection.Name()},
+			{"pipeline", bson.A{}},
+			{"cursor", bson.D{{"batchSize", 0}}},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		doc := ConvertDocument(t, res)
+
+		v, _ := doc.Get("cursor")
+		require.NotNil(t, v)
+
+		cursor, ok := v.(*types.Document)
+		require.True(t, ok)
+
+		cursorID, _ := cursor.Get("id")
+		require.NotZero(t, cursorID)
+
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"getMore", cursorID},
+			{"collection", collection.Name()},
+			{"batchSize", 2000},
+			{"maxTimeMS", 1},
+		}).Decode(&res)
+
+		AssertEqualAltCommandError(
+			t,
+			mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "cannot set maxTimeMS on getMore command for a non-awaitData cursor",
+			},
+			"",
 			err,
 		)
 	})
