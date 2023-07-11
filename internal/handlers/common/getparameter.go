@@ -29,7 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// GetParameter returns parameter details.
+// GetParameter is a part of common implementation of the getParameter command.
 func GetParameter(_ context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
