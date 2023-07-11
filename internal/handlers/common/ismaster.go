@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// IsMaster is a common implementation of the isMaster command for legacy opcodes.
+// IsMaster is a common implementation of the isMaster command used by deprecated OP_QUERY message.
 func IsMaster(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
 	return &wire.OpReply{
 		NumberReturned: 1,
