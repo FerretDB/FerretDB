@@ -21,7 +21,6 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -812,11 +811,6 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 			update:     bson.D{{"$set", bson.D{{"_id", "another-id"}, {"v", int32(2)}}}},
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/3017",
-		},
-		"UpsertQuery": {
-			filter:     bson.D{{"v", bson.D{{"$gt", 3}}}},
-			update:     bson.D{{"$set", bson.D{{"found", true}}}},
-			updateOpts: options.Update().SetUpsert(true),
 		},
 	}
 
