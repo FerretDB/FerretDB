@@ -45,6 +45,7 @@ type QueryParams struct {
 	// Query filter for possible pushdown; may be ignored in part or entirely.
 	Filter     *types.Document
 	Sort       *types.Document
+	Limit      int64 // 0 does not apply limit to the query
 	DB         string
 	Collection string
 	Comment    string
@@ -70,6 +71,7 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, 
 		explain:   qp.Explain,
 		filter:    qp.Filter,
 		sort:      qp.Sort,
+		limit:     qp.Limit,
 		unmarshal: unmarshalExplain,
 	})
 	if err != nil {
@@ -109,6 +111,7 @@ func unmarshalExplain(b []byte) (*types.Document, error) {
 type QueryResults struct {
 	FilterPushdown bool
 	SortPushdown   bool
+	LimitPushdown  bool
 }
 
 // QueryDocuments returns an queryIterator to fetch documents for given SQLParams.
@@ -138,6 +141,7 @@ func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (types.Docu
 		explain: qp.Explain,
 		filter:  qp.Filter,
 		sort:    qp.Sort,
+		limit:   qp.Limit,
 	})
 	if err != nil {
 		return nil, res, lazyerrors.Error(err)
@@ -154,6 +158,7 @@ type iteratorParams struct {
 	explain   bool
 	filter    *types.Document
 	sort      *types.Document
+	limit     int64
 	forUpdate bool                                    // if SELECT FOR UPDATE is needed.
 	unmarshal func(b []byte) (*types.Document, error) // if set, iterator uses unmarshal to convert row to *types.Document.
 }
@@ -207,6 +212,12 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.Doc
 		args = append(args, sortArgs...)
 
 		res.SortPushdown = sort != ""
+	}
+
+	if p.limit != 0 {
+		query += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
+		args = append(args, p.limit)
+		res.LimitPushdown = true
 	}
 
 	rows, err := tx.Query(ctx, query, args...)
