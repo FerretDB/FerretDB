@@ -95,7 +95,9 @@ docker run --rm -it --network=ferretdb --entrypoint=mongosh \
 
 ## Authentication Handshake
 
-**NOTE** Some drivers may still use the legacy `hello` command to complete a handshake.
+:::note
+Some drivers may still use the legacy `hello` command to complete a handshake.
+:::
 
 If you encounter any issues while authenticating with FerretDB, try setting the Stable API version to V1 on the client as this may prevent legacy commands from being used. Please refer to your specific driver documentation on how to set this field.
 
