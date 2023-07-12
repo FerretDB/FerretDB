@@ -1198,18 +1198,7 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 			)
 		}
 
-		d = math.Trunc(d) // > maxPrec <= maxInt
-
-		//if d > types.MaxSafeDouble || d < -types.MaxSafeDouble {
-		//	return false, commonerrors.NewCommandErrorMsgWithArgument(
-		//		commonerrors.ErrBadValue,
-		//		`malformed mod, divisor value is invalid :: caused by :: `+`Out of bounds coercing to integral value`,
-		//		"$mod",
-		//	)
-		//}
-		//if float64(int(d)) != d {
-		//}
-
+		d = math.Trunc(d)
 		if d >= float64(math.MaxInt64) || d < float64(math.MinInt64) {
 			return false, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
