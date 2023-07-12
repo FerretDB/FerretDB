@@ -28,8 +28,6 @@ import (
 )
 
 func TestUpdateFieldSet(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
@@ -107,6 +105,15 @@ func TestUpdateFieldErrors(t *testing.T) {
 					"({v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]})",
 			},
 			altMessage: "cannot use path 'v.foo' to traverse the document",
+		},
+		"SetImmutableID": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$set", bson.D{{"_id", "another-id"}}}},
+			err: &mongo.WriteError{
+				Code:    66,
+				Message: "Performing an update on the path '_id' would modify the immutable field '_id'",
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/3017",
 		},
 		"RenameEmptyFieldName": {
 			id:     "array-documents-nested",

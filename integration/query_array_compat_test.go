@@ -89,24 +89,20 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"Field": {
-			filter:        bson.D{{"v.array", int32(42)}},
-			skipForTigris: "Tigris does not support language keyword 'array' as field name",
+			filter: bson.D{{"v.array", int32(42)}},
 		},
 		"FieldPosition": {
-			filter:        bson.D{{"v.array.0", int32(42)}},
-			skipForTigris: "Tigris does not support language keyword 'array' as field name",
+			filter: bson.D{{"v.array.0", int32(42)}},
 		},
 		"FieldPositionQuery": {
-			filter:        bson.D{{"v.array.0", bson.D{{"$gte", int32(42)}}}},
-			skipForTigris: "Tigris does not support language keyword 'array' as field name",
+			filter: bson.D{{"v.array.0", bson.D{{"$gte", int32(42)}}}},
 		},
 		"FieldPositionQueryNonArray": {
 			filter:     bson.D{{"v.document.0", bson.D{{"$lt", int32(42)}}}},
 			resultType: emptyResult,
 		},
 		"DocumentDotNotationArrayDocument": {
-			filter:        bson.D{{"v.0.foo.0.bar", "hello"}},
-			skipForTigris: "No suitable Tigris-compatible provider to test this data",
+			filter: bson.D{{"v.0.foo.0.bar", "hello"}},
 		},
 		"DocumentDotNotationArrayDocumentNoIndexNin": {
 			filter: bson.D{
@@ -117,24 +113,19 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 			filter: bson.D{{"v.foo.bar", "hello"}},
 		},
 		"FieldArrayIndex": {
-			filter:        bson.D{{"v.foo[0]", int32(42)}},
-			skipForTigris: "Tigris does not support characters as field name",
+			filter: bson.D{{"v.foo[0]", int32(42)}},
 		},
 		"FieldArrayAsterix": {
-			filter:        bson.D{{"v.foo[*]", int32(42)}},
-			skipForTigris: "Tigris does not support characters as field name",
+			filter: bson.D{{"v.foo[*]", int32(42)}},
 		},
 		"FieldAsterix": {
-			filter:        bson.D{{"v.*", int32(42)}},
-			skipForTigris: "Tigris does not support characters as field name",
+			filter: bson.D{{"v.*", int32(42)}},
 		},
 		"FieldAt": {
-			filter:        bson.D{{"v.@", int32(42)}},
-			skipForTigris: "Tigris does not support characters as field name",
+			filter: bson.D{{"v.@", int32(42)}},
 		},
 		"FieldComma": {
-			filter:        bson.D{{"v.f,oo", int32(42)}},
-			skipForTigris: "Tigris does not support characters as field name",
+			filter: bson.D{{"v.f,oo", int32(42)}},
 		},
 	}
 
@@ -176,7 +167,6 @@ func TestQueryArrayCompatElemMatch(t *testing.T) {
 					{"$type", "string"},
 				}},
 			},
-			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"GtLt": {
 			filter: bson.D{
@@ -229,12 +219,10 @@ func TestQueryArrayCompatEquality(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"Three": {
-			filter:        bson.D{{"v", bson.A{int32(42), "foo", nil}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
+			filter: bson.D{{"v", bson.A{int32(42), "foo", nil}}},
 		},
 		"Three-reverse": {
-			filter:        bson.D{{"v", bson.A{nil, "foo", int32(42)}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
+			filter: bson.D{{"v", bson.A{nil, "foo", int32(42)}}},
 		},
 		"Empty": {
 			filter: bson.D{{"v", bson.A{}}},
@@ -280,8 +268,7 @@ func TestQueryArrayCompatAll(t *testing.T) {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{math.SmallestNonzeroFloat64}}}}},
 		},
 		"MultiAll": {
-			filter:        bson.D{{"v", bson.D{{"$all", bson.A{"foo", 42}}}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
+			filter: bson.D{{"v", bson.D{{"$all", bson.A{"foo", 42}}}}},
 		},
 		"MultiAllWithNil": {
 			filter: bson.D{{"v", bson.D{{"$all", bson.A{"foo", nil}}}}},

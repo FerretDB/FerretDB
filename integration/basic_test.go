@@ -31,8 +31,6 @@ import (
 )
 
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -41,7 +39,7 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	res := db.RunCommand(ctx, bson.D{{"listcollections", 1}})
 	err := res.Err()
 	require.Error(t, err)
-	AssertEqualError(t, mongo.CommandError{Code: 59, Name: "CommandNotFound", Message: `no such command: 'listcollections'`}, err)
+	AssertEqualCommandError(t, mongo.CommandError{Code: 59, Name: "CommandNotFound", Message: `no such command: 'listcollections'`}, err)
 
 	res = db.RunCommand(ctx, bson.D{{"listCollections", 1}})
 	assert.NoError(t, res.Err())
@@ -70,8 +68,6 @@ func TestFindNothing(t *testing.T) {
 }
 
 func TestInsertFind(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
 	ctx, collection := setup.Setup(t, providers...)
@@ -98,8 +94,6 @@ func TestInsertFind(t *testing.T) {
 
 //nolint:paralleltest // we test a global list of databases
 func TestFindCommentMethod(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
@@ -115,8 +109,6 @@ func TestFindCommentMethod(t *testing.T) {
 
 //nolint:paralleltest // we test a global list of databases
 func TestFindCommentQuery(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 	name := collection.Database().Name()
 	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
@@ -130,8 +122,6 @@ func TestFindCommentQuery(t *testing.T) {
 }
 
 func TestUpdateCommentMethod(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -157,8 +147,6 @@ func TestUpdateCommentMethod(t *testing.T) {
 }
 
 func TestUpdateCommentQuery(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -181,8 +169,6 @@ func TestUpdateCommentQuery(t *testing.T) {
 }
 
 func TestDeleteCommentMethod(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -206,8 +192,6 @@ func TestDeleteCommentMethod(t *testing.T) {
 }
 
 func TestDeleteCommentQuery(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -229,8 +213,6 @@ func TestDeleteCommentQuery(t *testing.T) {
 }
 
 func TestEmptyKey(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Tigris field name cannot be empty")
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -251,8 +233,6 @@ func TestEmptyKey(t *testing.T) {
 }
 
 func TestFindAndModifyCommentMethod(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -276,8 +256,6 @@ func TestFindAndModifyCommentMethod(t *testing.T) {
 }
 
 func TestFindAndModifyCommentQuery(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -311,8 +289,6 @@ func TestFindAndModifyCommentQuery(t *testing.T) {
 }
 
 func TestCollectionName(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t)
@@ -442,8 +418,6 @@ func TestCollectionName(t *testing.T) {
 }
 
 func TestDatabaseName(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 
 	t.Run("NoErr", func(t *testing.T) {
@@ -627,5 +601,52 @@ func TestDebugError(t *testing.T) {
 		assert.ErrorContains(t, err, "other error")
 
 		require.NoError(t, db.Client().Ping(ctx, nil), "other errors should not close connection")
+	})
+}
+
+func TestPingCommand(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+	db := collection.Database()
+
+	expectedRes := bson.D{{"ok", float64(1)}}
+
+	t.Run("Multiple", func(t *testing.T) {
+		t.Parallel()
+
+		for i := 0; i < 5; i++ {
+			res := db.RunCommand(ctx, bson.D{{"ping", int32(1)}})
+
+			var actualRes bson.D
+			err := res.Decode(&actualRes)
+			require.NoError(t, err)
+
+			assert.Equal(t, expectedRes, actualRes)
+		}
+	})
+
+	t.Run("NonExistentDB", func(t *testing.T) {
+		t.Parallel()
+
+		dbName := "NonExistentDatabase"
+
+		expectedDatabases, err := db.Client().ListDatabases(ctx, bson.D{{"name", dbName}})
+		require.NoError(t, err)
+		require.Empty(t, expectedDatabases.Databases)
+
+		res := db.Client().Database(dbName).RunCommand(ctx, bson.D{{"ping", int32(1)}})
+
+		var actualRes bson.D
+		err = res.Decode(&actualRes)
+		require.NoError(t, err)
+
+		assert.Equal(t, expectedRes, actualRes)
+
+		// Ensure that we don't create database on ping
+		// This also means that no collection is created during ping.
+		actualDatabases, err := db.Client().ListDatabases(ctx, bson.D{{"name", dbName}})
+		require.NoError(t, err)
+		require.Empty(t, actualDatabases.Databases)
 	})
 }

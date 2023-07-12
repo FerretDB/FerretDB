@@ -18,9 +18,10 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 var (
@@ -34,7 +35,7 @@ var (
 // DatabaseName returns a stable FerretDB database name for that test.
 //
 // It should be called only once per test.
-func DatabaseName(tb testing.TB) string {
+func DatabaseName(tb testtb.TB) string {
 	tb.Helper()
 
 	// database names may contain lowercase and uppercase characters
@@ -62,7 +63,7 @@ func DatabaseName(tb testing.TB) string {
 // CollectionName returns a stable FerretDB collection name for that test.
 //
 // It should be called only once per test.
-func CollectionName(tb testing.TB) string {
+func CollectionName(tb testtb.TB) string {
 	tb.Helper()
 
 	// do not use strings.ToLower because collection names can contain uppercase letters
