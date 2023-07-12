@@ -85,6 +85,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					continue
 				}
 
+				// TODO: https://github.com/FerretDB/FerretDB/issues/3040
 				hasQueryOperators, err := common.HasQueryOperator(u.Filter)
 				if err != nil {
 					return lazyerrors.Error(err)
