@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/teststress"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
 )
 
 // TestIterator checks that the iterator implementation is correct.
