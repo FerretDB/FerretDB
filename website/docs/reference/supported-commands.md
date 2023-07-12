@@ -66,7 +66,7 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `let`                      | ⚠️     | Unimplemented                                             |
 | `getMore`       |                            | ✅     | Basic command is fully supported                          |
 |                 | `batchSize`                | ✅     |                                                           |
-|                 | `maxTimeMS`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1808) |
+|                 | `maxTimeMS`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/2984) |
 |                 | `comment`                  | ⚠️     | Unimplemented                                             |
 | `insert`        |                            | ✅     | Basic command is fully supported                          |
 |                 | `documents`                | ✅     |                                                           |

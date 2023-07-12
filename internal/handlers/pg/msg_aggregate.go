@@ -236,7 +236,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	cancel := func() {}
 	if maxTimeMS != 0 {
 		// It is not clear if maxTimeMS affects only aggregate, or both aggregate and getMore (as the current code does).
-		// TODO https://github.com/FerretDB/FerretDB/issues/1808
+		// TODO https://github.com/FerretDB/FerretDB/issues/2983
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
 	}
 

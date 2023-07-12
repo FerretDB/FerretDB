@@ -699,7 +699,6 @@ func TestFindAndModifyCompatUpsertUnset(t *testing.T) {
 					{"$set", bson.D{{"_id", "upserted"}}}, // to have the same _id for target and compat
 				}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2741",
 		},
 		"NonExistentExistsFalse": {
 			command: bson.D{
@@ -724,7 +723,6 @@ func TestFindAndModifyCompatUpsertUnset(t *testing.T) {
 					{"$set", bson.D{{"_id", "upserted"}}}, // to have the same _id for target and compat
 				}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2741",
 		},
 		"UnsetNonExistentField": {
 			command: bson.D{
