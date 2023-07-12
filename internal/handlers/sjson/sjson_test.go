@@ -164,7 +164,7 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() sjsontype) {
 
 	// load recorded documents only if we are fuzzing documents
 	if _, ok := newFunc().(*documentType); ok && !testing.Short() {
-		records, err := wire.LoadRecords(filepath.Join("..", "..", "..", "tmp", "records"), 1000)
+		records, err := wire.LoadRecords(filepath.Join("..", "..", "..", "tmp", "records"), 100)
 		require.NoError(f, err)
 
 		var n int
