@@ -29,6 +29,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 //go:generate ../bin/stringer  -type compatTestCaseResultType
@@ -49,7 +50,7 @@ const (
 // convert converts given driver value (bson.D, bson.A, etc) to FerretDB types package value.
 //
 // It then can be used with all types helpers such as testutil.AssertEqual.
-func convert(t testutil.TB, v any) any {
+func convert(t testtb.TB, v any) any {
 	t.Helper()
 
 	switch v := v.(type) {
@@ -103,7 +104,7 @@ func convert(t testutil.TB, v any) any {
 }
 
 // ConvertDocument converts given driver's document to FerretDB's *types.Document.
-func ConvertDocument(t testutil.TB, doc bson.D) *types.Document {
+func ConvertDocument(t testtb.TB, doc bson.D) *types.Document {
 	t.Helper()
 
 	v := convert(t, doc)
@@ -114,7 +115,7 @@ func ConvertDocument(t testutil.TB, doc bson.D) *types.Document {
 }
 
 // ConvertDocuments converts given driver's documents slice to FerretDB's []*types.Document.
-func ConvertDocuments(t testutil.TB, docs []bson.D) []*types.Document {
+func ConvertDocuments(t testtb.TB, docs []bson.D) []*types.Document {
 	t.Helper()
 
 	res := make([]*types.Document, len(docs))
@@ -128,7 +129,7 @@ func ConvertDocuments(t testutil.TB, docs []bson.D) []*types.Document {
 // (NaNs are equal, etc).
 //
 // See testutil.AssertEqual for details.
-func AssertEqualDocuments(t testutil.TB, expected, actual bson.D) bool {
+func AssertEqualDocuments(t testtb.TB, expected, actual bson.D) bool {
 	t.Helper()
 
 	expectedDoc := ConvertDocument(t, expected)
@@ -140,7 +141,7 @@ func AssertEqualDocuments(t testutil.TB, expected, actual bson.D) bool {
 // (NaNs are equal, etc).
 //
 // See testutil.AssertEqual for details.
-func AssertEqualDocumentsSlice(t testutil.TB, expected, actual []bson.D) bool {
+func AssertEqualDocumentsSlice(t testtb.TB, expected, actual []bson.D) bool {
 	t.Helper()
 
 	expectedDocs := ConvertDocuments(t, expected)
@@ -149,7 +150,7 @@ func AssertEqualDocumentsSlice(t testutil.TB, expected, actual []bson.D) bool {
 }
 
 // AssertEqualCommandError asserts that the expected error is the same as the actual (ignoring the Raw part).
-func AssertEqualCommandError(t testutil.TB, expected mongo.CommandError, actual error) bool {
+func AssertEqualCommandError(t testtb.TB, expected mongo.CommandError, actual error) bool {
 	t.Helper()
 
 	a, ok := actual.(mongo.CommandError)
@@ -165,7 +166,7 @@ func AssertEqualCommandError(t testutil.TB, expected mongo.CommandError, actual 
 }
 
 // AssertEqualWriteError asserts that actual is a WriteException containing exactly one expected error (ignoring the Raw part).
-func AssertEqualWriteError(t testutil.TB, expected mongo.WriteError, actual error) bool {
+func AssertEqualWriteError(t testtb.TB, expected mongo.WriteError, actual error) bool {
 	t.Helper()
 
 	we, ok := actual.(mongo.WriteException) //nolint:errorlint // do not inspect error chain
@@ -188,7 +189,7 @@ func AssertEqualWriteError(t testutil.TB, expected mongo.WriteError, actual erro
 
 // AssertMatchesCommandError asserts that both errors are equal CommandErrors,
 // except messages (and ignoring the Raw part).
-func AssertMatchesCommandError(t testutil.TB, expected, actual error) {
+func AssertMatchesCommandError(t testtb.TB, expected, actual error) {
 	t.Helper()
 
 	a, ok := actual.(mongo.CommandError) //nolint:errorlint // do not inspect error chain
@@ -210,7 +211,7 @@ func AssertMatchesCommandError(t testutil.TB, expected, actual error) {
 
 // AssertMatchesWriteError asserts that both errors are WriteExceptions containing exactly one WriteError,
 // and those WriteErrors are equal, except messages (and ignoring the Raw part).
-func AssertMatchesWriteError(t testutil.TB, expected, actual error) {
+func AssertMatchesWriteError(t testtb.TB, expected, actual error) {
 	t.Helper()
 
 	a, ok := actual.(mongo.WriteException) //nolint:errorlint // do not inspect error chain
@@ -237,7 +238,7 @@ func AssertMatchesWriteError(t testutil.TB, expected, actual error) {
 
 // AssertMatchesBulkException asserts that both errors are BulkWriteExceptions containing the same number of WriteErrors,
 // and those WriteErrors are equal, except messages (and ignoring the Raw part).
-func AssertMatchesBulkException(t testutil.TB, expected, actual error) {
+func AssertMatchesBulkException(t testtb.TB, expected, actual error) {
 	t.Helper()
 
 	a, ok := actual.(mongo.BulkWriteException) //nolint:errorlint // do not inspect error chain
@@ -266,7 +267,7 @@ func AssertMatchesBulkException(t testutil.TB, expected, actual error) {
 //     `{ $slice: { a: { b: 3 }, b: "string" } }` exactly the same way).
 //
 // In any case, the alternative error message returned by FerretDB should not mislead users.
-func AssertEqualAltCommandError(t testutil.TB, expected mongo.CommandError, altMessage string, actual error) bool {
+func AssertEqualAltCommandError(t testtb.TB, expected mongo.CommandError, altMessage string, actual error) bool {
 	t.Helper()
 
 	a, ok := actual.(mongo.CommandError)
@@ -323,7 +324,7 @@ func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessag
 // UnsetRaw returns error with all Raw fields unset. It returns nil if err is nil.
 //
 // Error is checked using a regular type assertion; wrapped errors (errors.As) are not checked.
-func UnsetRaw(t testutil.TB, err error) error {
+func UnsetRaw(t testtb.TB, err error) error {
 	t.Helper()
 
 	switch err := err.(type) {
@@ -362,7 +363,7 @@ func UnsetRaw(t testutil.TB, err error) error {
 // CollectIDs returns all _id values from given documents.
 //
 // The order is preserved.
-func CollectIDs(t testutil.TB, docs []bson.D) []any {
+func CollectIDs(t testtb.TB, docs []bson.D) []any {
 	t.Helper()
 
 	ids := make([]any, len(docs))
@@ -378,7 +379,7 @@ func CollectIDs(t testutil.TB, docs []bson.D) []any {
 // CollectKeys returns document keys.
 //
 // The order is preserved.
-func CollectKeys(t testutil.TB, doc bson.D) []string {
+func CollectKeys(t testtb.TB, doc bson.D) []string {
 	t.Helper()
 
 	res := make([]string, len(doc))
@@ -390,7 +391,7 @@ func CollectKeys(t testutil.TB, doc bson.D) []string {
 }
 
 // FetchAll fetches all documents from the cursor, closing it.
-func FetchAll(t testutil.TB, ctx context.Context, cursor *mongo.Cursor) []bson.D {
+func FetchAll(t testtb.TB, ctx context.Context, cursor *mongo.Cursor) []bson.D {
 	var res []bson.D
 	err := cursor.All(ctx, &res)
 	require.NoError(t, cursor.Close(ctx))
@@ -399,7 +400,7 @@ func FetchAll(t testutil.TB, ctx context.Context, cursor *mongo.Cursor) []bson.D
 }
 
 // FindAll returns all documents from the given collection sorted by _id.
-func FindAll(t testutil.TB, ctx context.Context, collection *mongo.Collection) []bson.D {
+func FindAll(t testtb.TB, ctx context.Context, collection *mongo.Collection) []bson.D {
 	opts := options.Find().SetSort(bson.D{{"_id", 1}})
 	cursor, err := collection.Find(ctx, bson.D{}, opts)
 	require.NoError(t, err)

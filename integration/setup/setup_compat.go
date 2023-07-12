@@ -28,6 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // SetupCompatOpts represents setup options for compatibility test.
@@ -54,7 +55,7 @@ type SetupCompatResult struct {
 }
 
 // SetupCompatWithOpts setups the compatibility test according to given options.
-func SetupCompatWithOpts(tb testutil.TB, opts *SetupCompatOpts) *SetupCompatResult {
+func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult {
 	tb.Helper()
 
 	if *compatURLF == "" {
@@ -72,7 +73,7 @@ func SetupCompatWithOpts(tb testutil.TB, opts *SetupCompatOpts) *SetupCompatResu
 		opts = new(SetupCompatOpts)
 	}
 
-	// When we use `task all` to run `pg` and `sqlite` compat tests in parallel,
+	// When we use `task test-integration` to run `pg` and `sqlite` compat tests in parallel,
 	// they both use the same MongoDB instance.
 	// Add the backend's name to prevent the usage of the same database.
 	opts.databaseName = testutil.DatabaseName(tb) + "_" + strings.TrimPrefix(*targetBackendF, "ferretdb-")
@@ -115,7 +116,7 @@ func SetupCompatWithOpts(tb testutil.TB, opts *SetupCompatOpts) *SetupCompatResu
 }
 
 // SetupCompat setups compatibility test.
-func SetupCompat(tb testutil.TB) (context.Context, []*mongo.Collection, []*mongo.Collection) {
+func SetupCompat(tb testtb.TB) (context.Context, []*mongo.Collection, []*mongo.Collection) {
 	tb.Helper()
 
 	s := SetupCompatWithOpts(tb, &SetupCompatOpts{
@@ -125,7 +126,7 @@ func SetupCompat(tb testutil.TB) (context.Context, []*mongo.Collection, []*mongo
 }
 
 // setupCompatCollections setups a single database with one collection per provider for compatibility tests.
-func setupCompatCollections(tb testutil.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, backend string) []*mongo.Collection {
+func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, backend string) []*mongo.Collection {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupCompatCollections")

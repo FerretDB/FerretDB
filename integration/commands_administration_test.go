@@ -501,6 +501,30 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			},
 			altMessage: `BSON field 'allParameters' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'`,
 		},
+		"FeatureCompatibilityVersion": {
+			command: bson.D{
+				{"getParameter", bson.D{}},
+				{"featureCompatibilityVersion", 1},
+			},
+			expected: map[string]any{
+				"featureCompatibilityVersion": bson.D{{"version", "6.0"}},
+				"ok":                          float64(1),
+			},
+		},
+		"FeatureCompatibilityVersionShowDetails": {
+			command: bson.D{
+				{"getParameter", bson.D{{"showDetails", true}}},
+				{"featureCompatibilityVersion", 1},
+			},
+			expected: map[string]any{
+				"featureCompatibilityVersion": bson.D{
+					{"value", bson.D{{"version", "6.0"}}},
+					{"settableAtRuntime", false},
+					{"settableAtStartup", false},
+				},
+				"ok": float64(1),
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -540,6 +564,56 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetParameterCommandAuthenticationMechanisms(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		DatabaseName: "admin",
+	})
+
+	t.Run("ShowDetails", func(t *testing.T) {
+		var res bson.D
+		err := s.Collection.Database().RunCommand(s.Ctx, bson.D{
+			{"getParameter", bson.D{{"showDetails", true}}},
+			{"authenticationMechanisms", 1},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		doc := ConvertDocument(t, res)
+		v, _ := doc.Get("authenticationMechanisms")
+		require.NotNil(t, v)
+
+		resOk, _ := doc.Get("ok")
+		require.Equal(t, float64(1), resOk)
+
+		authenticationMechanisms, ok := v.(*types.Document)
+		require.True(t, ok)
+
+		settableAtRuntime, _ := authenticationMechanisms.Get("settableAtRuntime")
+		require.Equal(t, false, settableAtRuntime)
+
+		settableAtStartup, _ := authenticationMechanisms.Get("settableAtStartup")
+		require.Equal(t, true, settableAtStartup)
+	})
+
+	t.Run("Plain", func(t *testing.T) {
+		setup.SkipForMongoDB(t, "PLAIN authentication mechanism is not support by MongoDB")
+
+		var res bson.D
+		err := s.Collection.Database().RunCommand(s.Ctx, bson.D{
+			{"getParameter", bson.D{}},
+			{"authenticationMechanisms", 1},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		expected := bson.D{
+			{"authenticationMechanisms", bson.A{"PLAIN"}},
+			{"ok", float64(1)},
+		}
+		require.Equal(t, expected, res)
+	})
 }
 
 func TestCommandsAdministrationBuildInfo(t *testing.T) {
@@ -1128,10 +1202,8 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 		AssertEqualDocuments(t, expected, actual)
 	})
 
-	t.Run("WrongType", func(tt *testing.T) {
-		tt.Parallel()
-
-		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/1514")
+	t.Run("WrongType", func(t *testing.T) {
+		t.Parallel()
 
 		c, err := collection.Find(ctx, bson.D{}, options.Find().SetBatchSize(1))
 		require.NoError(t, err)
@@ -1141,12 +1213,12 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 		var actual bson.D
 		err = collection.Database().RunCommand(ctx, bson.D{
 			{"killCursors", collection.Name()},
-			{"cursors", bson.A{c.ID(), "foo"}},
+			{"cursors", bson.A{c.ID(), int32(100500)}},
 		}).Decode(&actual)
 		expectedErr := mongo.CommandError{
 			Code:    14,
 			Name:    "TypeMismatch",
-			Message: "BSON field 'killCursors.cursors.1' is the wrong type 'string', expected type 'long'",
+			Message: "BSON field 'killCursors.cursors.1' is the wrong type 'int', expected type 'long'",
 		}
 		AssertEqualCommandError(t, expectedErr, err)
 

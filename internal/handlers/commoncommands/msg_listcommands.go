@@ -233,7 +233,7 @@ var Commands = map[string]command{
 }
 
 // MsgListCommands is a common implementation of the listCommands command.
-func MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func MsgListCommands(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
 	cmdList := must.NotFail(types.NewDocument())
 	names := maps.Keys(Commands)
 	sort.Strings(names)
