@@ -28,8 +28,8 @@ const (
 	doubleBig     = float64(1 << 61)   // 2305843009213693952.0: some number larger than safe integer (doubleBig+1 == doubleBig)
 	longBig       = int64(1 << 61)     // 2305843009213693952:   same as doubleBig but integer
 
-	doubleMaxOverflow = 9.223372036854776833e+18  //  double value that is larger than MaxInt64
-	doubleMinOverflow = -9.223372036854776833e+18 //  double value that is smaller than MinInt64
+	doubleMaxOverflow = float64(9223372036854776833)  //  double value that is larger than MaxInt64
+	doubleMinOverflow = float64(-9223372036854776833) //  double value that is smaller than MinInt64
 )
 
 // Scalars contain scalar values for tests.
