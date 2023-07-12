@@ -95,6 +95,8 @@ docker run --rm -it --network=ferretdb --entrypoint=mongosh \
 
 ## Authentication Handshake
 
-An [authentication handshake](https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst#authentication-handshake) consists of an initial `hello` or legacy `hello` command possibly followed by one or more authentication conversations. Some drivers may still use the legacy `hello` command to complete a handshake. If you are not able to authenticate with FerretDB this could indicate that the driver is using legacy Wire Protocol messages. In certain drivers it may be possible to prevent legacy behavior this by setting the Stable API version to V1 on the client. Please refer to your specific driver documentation on how to set this field.
+**NOTE** Some drivers may still use the legacy `hello` command to complete a handshake.
+
+If you encounter any issues while authenticating with FerretDB, try setting the Stable API version to V1 on the client as this may prevent legacy commands from being used. Please refer to your specific driver documentation on how to set this field.
 
 If this does not resolve your issue please file a bug report [here](https://github.com/FerretDB/FerretDB/issues/new?assignees=ferretdb-bot&labels=code%2Fbug%2Cnot+ready&projects=&template=bug.yml).
