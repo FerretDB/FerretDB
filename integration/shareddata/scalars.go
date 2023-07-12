@@ -30,10 +30,8 @@ const (
 
 	// TODO https://github.com/FerretDB/FerretDB/commit/06289cacb4a1a119a5722155bb342a722b062e9f
 	// TODO scalars.go:167
-	longMaxOverflow      = 9.223372036854776833e+18  // 100001111100000000000000000000000000000000000000000000000000001
-	longMaxOverflowVerge = float64(math.MaxInt64)    // 100001111100000000000000000000000000000000000000000000000000000
-	longMinOverflow      = -9.223372036854776833e+18 // 1100001111100000000000000000000000000000000000000000000000000001
-	longMinOverflowVerge = float64(math.MinInt64)    // 1100001111100000000000000000000000000000000000000000000000000000
+	longMaxOverflow = 9.223372036854776833e+18  // 100001111100000000000000000000000000000000000000000000000000001
+	longMinOverflow = -9.223372036854776833e+18 // 1100001111100000000000000000000000000000000000000000000000000001
 )
 
 // Scalars contain scalar values for tests.
@@ -42,23 +40,21 @@ const (
 var Scalars = &Values[string]{
 	name: "Scalars",
 	data: map[string]any{
-		"double":                    42.13,
-		"double-whole":              42.0,
-		"double-zero":               0.0,
-		"double-max":                math.MaxFloat64,
-		"double-smallest":           math.SmallestNonzeroFloat64,
-		"double-big":                doubleBig,
-		"double-1":                  float64(math.MinInt64 - 1),
-		"double-2":                  float64(math.MinInt64),
-		"double-3":                  float64(-123456789),
-		"double-4":                  float64(123456789),
-		"double-5":                  float64(math.MaxInt64),
-		"double-6":                  float64(math.MaxInt64 + 1),
-		"double-7":                  1.79769e+307,
-		"double-max-overflow":       longMaxOverflow,
-		"double-max-overflow-verge": longMaxOverflowVerge,
-		"double-min-overflow":       longMinOverflow,
-		"double-min-overflow-verge": longMinOverflowVerge,
+		"double":              42.13,
+		"double-whole":        42.0,
+		"double-zero":         0.0,
+		"double-max":          math.MaxFloat64,
+		"double-smallest":     math.SmallestNonzeroFloat64,
+		"double-big":          doubleBig,
+		"double-1":            float64(math.MinInt64 - 1),
+		"double-2":            float64(math.MinInt64),
+		"double-3":            float64(-123456789),
+		"double-4":            float64(123456789),
+		"double-5":            float64(math.MaxInt64),
+		"double-6":            float64(math.MaxInt64 + 1),
+		"double-7":            1.79769e+307,
+		"double-max-overflow": longMaxOverflow,
+		"double-min-overflow": longMinOverflow,
 
 		"string":        "foo",
 		"string-double": "42.13",
@@ -152,17 +148,15 @@ var Doubles = &Values[string]{
 		"double-prec-min-minus":     -doubleMaxPrec - 1,
 		"double-prec-min-minus-two": -doubleMaxPrec - 2,
 
-		"double-null":               nil,
-		"double-1":                  float64(math.MinInt64 - 1),
-		"double-2":                  float64(math.MinInt64),
-		"double-3":                  float64(-123456789),
-		"double-4":                  float64(123456789),
-		"double-5":                  float64(math.MaxInt64),
-		"double-6":                  float64(math.MaxInt64 + 1),
-		"double-max-overflow":       longMaxOverflow,
-		"double-max-overflow-verge": longMaxOverflowVerge,
-		"double-min-overflow":       longMinOverflow,
-		"double-min-overflow-verge": longMinOverflowVerge,
+		"double-null":         nil,
+		"double-1":            float64(math.MinInt64 - 1),
+		"double-2":            float64(math.MinInt64),
+		"double-3":            float64(-123456789),
+		"double-4":            float64(123456789),
+		"double-5":            float64(math.MaxInt64),
+		"double-6":            float64(math.MaxInt64 + 1),
+		"double-max-overflow": longMaxOverflow,
+		"double-min-overflow": longMinOverflow,
 	},
 }
 
