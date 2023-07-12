@@ -378,7 +378,7 @@ ferretdb=# table test_afd071e5;
 (1 row)
 ```
 
-## Creating a Meteor application with FerretDB on top of Stackgres
+## Creating a Meteor App with FerretDB on top of Stackgres
 
 To test and run our entire setup locally, we can use port forwarding with `kubectl` command, which should forward all connections from our local machine port to the `ferretdb` service's port `27017` in the cluster.
 
