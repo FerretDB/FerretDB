@@ -131,7 +131,7 @@ func TestUpdateFieldSetUpdateManyUpsert(t *testing.T) {
 			filter:  bson.D{{"v", int32(4080)}},
 			update:  bson.D{{"$set", bson.D{{"new", "val"}}}},
 			opts:    options.Update().SetUpsert(true),
-			findRes: []bson.E{{"new", "val"}},
+			findRes: []bson.E{{"v", int32(4080)}, {"new", "val"}},
 		},
 	} {
 		name, tc := name, tc
