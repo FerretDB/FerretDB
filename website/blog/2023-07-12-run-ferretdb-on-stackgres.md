@@ -10,6 +10,7 @@ authors:
 image: /img/blog/stackgres-ferretdb.png
 description: >
   Learn to set up and run FerretDB – MongoDB open-source alternative on your Kubernetes cluster – and easily deploy and manage PostgreSQL instances using StackgGres operator.
+tags: [compatible applications, open source, tutorial]
 ---
 
 ![How to Run FerretDB on Top of StackGres](/img/blog/stackgres-ferretdb.png)
@@ -42,8 +43,7 @@ It also provides support for [Babelfish for Postgres](https://babelfishpg.org/) 
 ## FerretDB
 
 FerretDB is the defacto open-source replacement for MongoDB with the popular and reliable PostgreSQL as the database backend.
-What FerretDB does is convert MongoDB wire protocols in BSON format into JSONB in PostgreSQL.
-See [this article to learn more about how this works](https://blog.ferretdb.io/pjson-how-to-store-bson-in-jsonb/).
+What FerretDB does is to [convert MongoDB wire protocols in BSON format into JSONB in PostgreSQL](https://blog.ferretdb.io/pjson-how-to-store-bson-in-jsonb/).
 
 Despite MongoDB's popularity as an open-source database and its popularity among developers, after the switch from open source license to SSPL ([get the full story on that here!](https://blog.ferretdb.io/open-source-is-in-danger/)), it was important to restore MongoDB workloads back to open-source so users can have complete control of their data without vendor lock-in.
 
@@ -56,22 +56,16 @@ Plus, we've just recently released [FerretDB version 1.5.0](https://github.com/F
 
 ## Setting up FerretDB on top of StackGres
 
-Before installing StackGres, you will need a running Kubernetes cluster and the usual command line tools [`kubectl`](https://kubernetes.io/docs/tasks/tools/) and
-
-[`Helm`](https://helm.sh/docs/intro/install/).
+Before installing StackGres, you will need a running Kubernetes cluster and the usual command line tools [`kubectl`](https://kubernetes.io/docs/tasks/tools/) and [`Helm`](https://helm.sh/docs/intro/install/).
 Please refer to the respective installation pages if you don't have these tools.
-
-As for Kubernetes, if you don't have one you can try easily with
-
-[K3s](https://k3s.io/).
+As for Kubernetes, if you don't have one you can try easily with [K3s](https://k3s.io/).
 It can be installed with a single command line as in:
 
 ```sh
 curl -sfL https://get.k3s.io | sh -
 ```
 
-This should give you a running single-node cluster in seconds (depending
-on your Internet connection speed).
+This should give you a running single-node cluster in seconds (depending on your Internet connection speed).
 
 Keep in mind that K3s is not available natively on macOS.
 If you want to run it on macOS, you'll have to use a virtual machine or a Docker container running Linux.
@@ -151,9 +145,7 @@ kubectl apply -f 01-namespace.yaml
 ```
 
 During startup, FerretDB will try to configure the `search_path` parameter in PostgreSQL.
-
 However, PgBouncer, the Postgres sidecar deployed by StackGres by default, does not support this.
-
 You can either choose to disable PgBouncer's sidecar (not recommended) or customize PgBouncer's connection pooling configuration so it ignores this parameter:
 
 ```yaml
@@ -348,7 +340,7 @@ NAME       TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)     AGE
 ferretdb   ClusterIP   10.43.94.52   <none>        27017/TCP   10m
 ```
 
-### QuickStart Example
+### Quickstart Example
 
 Once the mongosh command is executed, you can try inserting and querying data:
 
@@ -386,7 +378,7 @@ ferretdb=# table test_afd071e5;
 (1 row)
 ```
 
-## Creating a Meteor example with FerretDB on top of Stackgres
+## Creating a Meteor application with FerretDB on top of Stackgres
 
 To test and run our entire setup locally, we can use port forwarding with `kubectl` command, which should forward all connections from our local machine port to the `ferretdb` service's port `27017` in the cluster.
 
@@ -401,9 +393,8 @@ mongosh 'mongodb://ferretdb:${PASSWORD}@localhost:27017/ferretdb?authMechanism=P
 ```
 
 To test our database locally, we'll be executing commands from a Meteor application.
-
 If you don't have Meteor installed, you can install it by following the steps in their documentation.
-Then create a project using
+Then create a project using:
 
 ```sh
 meteor create <app-name>
