@@ -93,10 +93,8 @@ docker run --rm -it --network=ferretdb --entrypoint=mongosh \
   mongo 'mongodb://user2:pass2@ferretdb/ferretdb?authMechanism=PLAIN'
 ```
 
-## Driver Compatibility Issues
+## Authentication Handshake
 
-**NOTE** Some drivers may use legacy opcodes during their authentication handshake. 
+An [authentication handshake](https://github.com/mongodb/specifications/blob/master/source/auth/auth.rst#authentication-handshake) consists of an initial `hello` or legacy `hello` command possibly followed by one or more authentication conversations. Some drivers may still use the legacy `hello` command to complete a handshake. If you encounter issues that indicate this behvavior, it may be possible to prevent the legacy `hello` command by setting the Stable API version to V1 on the client. Please refer to your specific driver documentation on how to set this field.
 
-If you encounter any issues while authenticating with FerretDB using a driver, try setting the Stable API version to V1 on the client. Please refer to your specific driver documentation on how to set this field.
-
-If you encounter any other issues file a bug report [here](https://github.com/FerretDB/FerretDB/issues/new?assignees=ferretdb-bot&labels=code%2Fbug%2Cnot+ready&projects=&template=bug.yml).
+If this does not resolve your issue please file a bug report [here](https://github.com/FerretDB/FerretDB/issues/new?assignees=ferretdb-bot&labels=code%2Fbug%2Cnot+ready&projects=&template=bug.yml).
