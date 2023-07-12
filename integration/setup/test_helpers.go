@@ -64,3 +64,8 @@ func SkipForMongoDB(tb testtb.TB, reason string) {
 func IsPushdownDisabled() bool {
 	return *disableFilterPushdownF
 }
+
+// IsSortPushdownEnabled returns true if sort pushdown is enabled.
+func IsSortPushdownEnabled() bool {
+	return *enableSortPushdownF
+}
