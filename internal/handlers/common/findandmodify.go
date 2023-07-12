@@ -209,7 +209,7 @@ func prepareDocumentForInsert(params *FindAndModifyParams) (*types.Document, err
 	}
 
 	if !insert.Has("_id") {
-		id, err := getUpsertID(params.Query)
+		id, err := GetUpsertID(params.Query)
 		if err != nil {
 			return nil, err
 		}
@@ -253,9 +253,9 @@ func prepareDocumentForUpdate(docs []*types.Document, params *FindAndModifyParam
 	return update, nil
 }
 
-// getUpsertID gets the _id to use for upsert document. If query contains _id,
+// GetUpsertID gets the _id to use for upsert document. If query contains _id,
 // that _id is assigned unless _id contains operator. Otherwise, it generates an ID.
-func getUpsertID(query *types.Document) (any, error) {
+func GetUpsertID(query *types.Document) (any, error) {
 	id, err := query.Get("_id")
 	if err != nil {
 		return types.NewObjectID(), nil

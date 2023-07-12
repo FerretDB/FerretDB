@@ -85,12 +85,39 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					continue
 				}
 
-				doc := u.Filter.DeepCopy()
-				if _, err = common.UpdateDocument(document.Command(), doc, u.Update); err != nil {
+				hasQueryOperators, err := common.HasQueryOperator(u.Filter)
+				if err != nil {
 					return err
 				}
+
+				var doc *types.Document
+				if hasQueryOperators {
+					doc = must.NotFail(types.NewDocument())
+				} else {
+					doc = u.Filter
+				}
+
+				hasUpdateOperators, err := common.HasSupportedUpdateModifiers(document.Command(), u.Update)
+				if err != nil {
+					return err
+				}
+
+				if hasUpdateOperators {
+					if _, err = common.UpdateDocument(document.Command(), doc, u.Update); err != nil {
+						return err
+					}
+				} else {
+					doc = u.Update
+				}
+
 				if !doc.Has("_id") {
-					doc.Set("_id", types.NewObjectID())
+					var id any
+					id, err = common.GetUpsertID(u.Filter)
+					if err != nil {
+						return err
+					}
+
+					doc.Set("_id", id)
 				}
 
 				upserted.Append(must.NotFail(types.NewDocument(
