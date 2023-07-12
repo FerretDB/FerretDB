@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -31,7 +32,7 @@ func TestUpdateFieldSet(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		id     string // optional, defaults to empty
+		filter bson.D // optional, defaults to bson.D{}
 		update bson.D // required, used for update parameter
 
 		res     *mongo.UpdateResult // optional, expected response from update
@@ -39,7 +40,7 @@ func TestUpdateFieldSet(t *testing.T) {
 		skip    string              // optional, skip test with a specified reason
 	}{
 		"ArrayNil": {
-			id:      "string",
+			filter:  bson.D{{"_id", "string"}},
 			update:  bson.D{{"$set", bson.D{{"v", bson.A{nil}}}}},
 			findRes: bson.D{{"_id", "string"}, {"v", bson.A{nil}}},
 			res: &mongo.UpdateResult{
@@ -49,7 +50,7 @@ func TestUpdateFieldSet(t *testing.T) {
 			},
 		},
 		"SetSameValueInt": {
-			id:      "int32",
+			filter:  bson.D{{"_id", "int32"}},
 			update:  bson.D{{"$set", bson.D{{"v", int32(42)}}}},
 			findRes: bson.D{{"_id", "int32"}, {"v", int32(42)}},
 			res: &mongo.UpdateResult{
@@ -57,6 +58,26 @@ func TestUpdateFieldSet(t *testing.T) {
 				ModifiedCount: 0,
 				UpsertedCount: 0,
 			},
+		},
+		"QueryOperatorExistingModified": {
+			filter: bson.D{{"v", bson.D{{"$eq", 4080}}}},
+			update: bson.D{{"$set", bson.D{{"new", "val"}}}},
+			res: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 1,
+				UpsertedCount: 0,
+			},
+			findRes: bson.D{{"_id", "int32-1"}, {"v", int32(4080)}, {"new", "val"}},
+		},
+		"QueryOperatorEmptySet": {
+			filter: bson.D{{"v", bson.D{{"$eq", 4080}}}},
+			update: bson.D{{"$set", bson.D{}}},
+			res: &mongo.UpdateResult{
+				MatchedCount:  1,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+			findRes: bson.D{{"_id", "int32-1"}, {"v", int32(4080)}},
 		},
 	} {
 		name, tc := name, tc
@@ -69,19 +90,76 @@ func TestUpdateFieldSet(t *testing.T) {
 
 			require.NotNil(t, tc.update, "update should be set")
 
+			filter := bson.D{}
+			if tc.filter != nil {
+				filter = tc.filter
+			}
+
 			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
+			res, err := collection.UpdateOne(ctx, filter, tc.update)
 
 			require.NoError(t, err)
 			require.Equal(t, tc.res, res)
 
 			var actual bson.D
-			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
+			err = collection.FindOne(ctx, filter).Decode(&actual)
 			require.NoError(t, err)
 			AssertEqualDocuments(t, tc.findRes, actual)
 		})
 	}
+}
+
+func TestUpdateFieldSetUpsert(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Upsert", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+
+		updateRes, err := collection.UpdateOne(
+			ctx,
+			bson.D{{"v", bson.D{{"$eq", "non-existent"}}}},
+			bson.D{{"$set", bson.D{{"new", "val"}}}},
+			options.Update().SetUpsert(true),
+		)
+
+		require.NoError(t, err)
+		assert.Equal(t, int64(0), updateRes.MatchedCount)
+		assert.Equal(t, int64(0), updateRes.ModifiedCount)
+		assert.Equal(t, int64(1), updateRes.UpsertedCount)
+		require.NotNil(t, updateRes.UpsertedID)
+
+		var res bson.D
+		err = collection.FindOne(ctx, bson.D{{"_id", updateRes.UpsertedID}}).Decode(&res)
+		require.NoError(t, err)
+		AssertEqualDocuments(t, bson.D{{"_id", updateRes.UpsertedID}, {"new", "val"}}, res)
+	})
+
+	t.Run("NoUpsert", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+
+		updateRes, err := collection.UpdateOne(
+			ctx,
+			bson.D{{"v", bson.D{{"$eq", "non-existent"}}}},
+			bson.D{{"$set", bson.D{{"new", "val"}}}},
+			options.Update().SetUpsert(false),
+		)
+
+		require.NoError(t, err)
+		assert.Equal(
+			t,
+			&mongo.UpdateResult{
+				MatchedCount:  0,
+				ModifiedCount: 0,
+				UpsertedCount: 0,
+			},
+			updateRes,
+		)
+	})
 }
 
 func TestUpdateFieldErrors(t *testing.T) {
