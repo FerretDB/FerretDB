@@ -30,7 +30,7 @@ import (
 func TestQueryProjectionErrors(t *testing.T) {
 	t.Parallel()
 
-	ctx, coll := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
 		filter     bson.D // required
@@ -245,7 +245,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 			require.NotNil(t, tc.projection, "projection should be set")
 			require.NotNil(t, tc.err, "err should be set")
 
-			res, err := coll.Find(ctx, tc.filter, options.Find().SetProjection(tc.projection))
+			res, err := collection.Find(ctx, tc.filter, options.Find().SetProjection(tc.projection))
 
 			assert.Nil(t, res)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)

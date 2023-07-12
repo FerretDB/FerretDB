@@ -20,7 +20,7 @@ The following data is collected:
 - [Autonomous system](<https://en.wikipedia.org/wiki/Autonomous_system_(Internet)>) number,
   cloud provider region, or country derived from IP address (but the IP address itself)
 - Uptime
-- Backend (PostgreSQL or Tigris) version
+- Backend (PostgreSQL or SQLite) version
 - Installation type (Docker, package, cloud provider marketplace, self-built)
 - Build configuration (Go version, build flags and tags)
 - Command statistics:

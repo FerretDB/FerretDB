@@ -21,15 +21,14 @@ import (
 	"strings"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // SetupCompatOpts represents setup options for compatibility test.
@@ -56,7 +55,7 @@ type SetupCompatResult struct {
 }
 
 // SetupCompatWithOpts setups the compatibility test according to given options.
-func SetupCompatWithOpts(tb testutil.TB, opts *SetupCompatOpts) *SetupCompatResult {
+func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult {
 	tb.Helper()
 
 	if *compatURLF == "" {
@@ -74,7 +73,7 @@ func SetupCompatWithOpts(tb testutil.TB, opts *SetupCompatOpts) *SetupCompatResu
 		opts = new(SetupCompatOpts)
 	}
 
-	// When we use `task all` to run `pg` and `tigris` compat tests in parallel,
+	// When we use `task test-integration` to run `pg` and `sqlite` compat tests in parallel,
 	// they both use the same MongoDB instance.
 	// Add the backend's name to prevent the usage of the same database.
 	opts.databaseName = testutil.DatabaseName(tb) + "_" + strings.TrimPrefix(*targetBackendF, "ferretdb-")
@@ -117,7 +116,7 @@ func SetupCompatWithOpts(tb testutil.TB, opts *SetupCompatOpts) *SetupCompatResu
 }
 
 // SetupCompat setups compatibility test.
-func SetupCompat(tb testutil.TB) (context.Context, []*mongo.Collection, []*mongo.Collection) {
+func SetupCompat(tb testtb.TB) (context.Context, []*mongo.Collection, []*mongo.Collection) {
 	tb.Helper()
 
 	s := SetupCompatWithOpts(tb, &SetupCompatOpts{
@@ -127,7 +126,7 @@ func SetupCompat(tb testutil.TB) (context.Context, []*mongo.Collection, []*mongo
 }
 
 // setupCompatCollections setups a single database with one collection per provider for compatibility tests.
-func setupCompatCollections(tb testutil.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, backend string) []*mongo.Collection {
+func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Client, opts *SetupCompatOpts, backend string) []*mongo.Collection {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupCompatCollections")
@@ -155,18 +154,6 @@ func setupCompatCollections(tb testutil.TB, ctx context.Context, client *mongo.C
 		collectionName := opts.baseCollectionName + "_" + provider.Name()
 		fullName := opts.databaseName + "." + collectionName
 
-		if *targetURLF == "" && !provider.IsCompatible(*targetBackendF) {
-			// Skip creating collection for both target and compat if
-			// target is not compatible. Target and compat must have same collection.
-			tb.Logf(
-				"Provider %q is not compatible with target backend %q, skipping creating %q.",
-				provider.Name(),
-				*targetBackendF,
-				fullName,
-			)
-			continue
-		}
-
 		spanName := fmt.Sprintf("setupCompatCollections/%s", collectionName)
 		collCtx, span := otel.Tracer("").Start(ctx, spanName)
 		region := trace.StartRegion(collCtx, spanName)
@@ -175,17 +162,6 @@ func setupCompatCollections(tb testutil.TB, ctx context.Context, client *mongo.C
 
 		// drop remnants of the previous failed run
 		_ = collection.Drop(collCtx)
-
-		// if validators are set, create collection with them (otherwise collection will be created on first insert)
-		if validators := provider.Validators(backend, collectionName); len(validators) > 0 {
-			opts := options.CreateCollection()
-			for key, value := range validators {
-				opts.SetValidator(bson.D{{key, value}})
-			}
-
-			err := database.CreateCollection(ctx, collectionName, opts)
-			require.NoError(tb, err)
-		}
 
 		docs := shareddata.Docs(provider)
 		require.NotEmpty(tb, docs)
@@ -219,6 +195,6 @@ func setupCompatCollections(tb testutil.TB, ctx context.Context, client *mongo.C
 		collections = append(collections, collection)
 	}
 
-	require.NotEmpty(tb, collections, "all providers were not compatible")
+	require.NotEmpty(tb, collections)
 	return collections
 }

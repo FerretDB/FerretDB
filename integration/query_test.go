@@ -19,6 +19,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -166,8 +167,6 @@ func TestQueryBadFindType(t *testing.T) {
 }
 
 func TestQuerySortErrors(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -407,8 +406,6 @@ func TestQueryMaxTimeMSErrors(t *testing.T) {
 }
 
 func TestQueryMaxTimeMSAvailableValues(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -464,8 +461,6 @@ func TestQueryMaxTimeMSAvailableValues(t *testing.T) {
 }
 
 func TestQueryExactMatches(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
@@ -524,8 +519,6 @@ func TestQueryExactMatches(t *testing.T) {
 }
 
 func TestDotNotation(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
@@ -831,6 +824,152 @@ func TestQueryCommandSingleBatch(t *testing.T) {
 			}
 
 			assert.Equal(t, int64(0), cursorID)
+		})
+	}
+}
+
+func TestQueryCommandLimitPushDown(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{Providers: []shareddata.Provider{shareddata.Int32s}})
+	ctx, collection := s.Ctx, s.Collection
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		filter  bson.D // optional, defaults to bson.D{}
+		limit   int64  // optional, defaults to zero which is unlimited
+		sort    bson.D // optional, nil to leave sort unset
+		optSkip *int64 // optional, nil to leave optSkip unset
+
+		len           int                 // expected length of results
+		limitPushdown bool                // optional, set true for expected pushdown for limit
+		err           *mongo.CommandError // optional, expected error from MongoDB
+		altMessage    string              // optional, alternative error message for FerretDB, ignored if empty
+		skip          string              // optional, skip test with a specified reason
+	}{
+		"Simple": {
+			limit:         1,
+			len:           1,
+			limitPushdown: true,
+		},
+		"AlmostAll": {
+			limit:         int64(len(shareddata.Int32s.Docs()) - 1),
+			len:           len(shareddata.Int32s.Docs()) - 1,
+			limitPushdown: true,
+		},
+		"All": {
+			limit:         int64(len(shareddata.Int32s.Docs())),
+			len:           len(shareddata.Int32s.Docs()),
+			limitPushdown: true,
+		},
+		"More": {
+			limit:         int64(len(shareddata.Int32s.Docs()) + 1),
+			len:           len(shareddata.Int32s.Docs()),
+			limitPushdown: true,
+		},
+		"Big": {
+			limit:         1000,
+			len:           len(shareddata.Int32s.Docs()),
+			limitPushdown: true,
+		},
+		"Zero": {
+			limit:         0,
+			len:           len(shareddata.Int32s.Docs()),
+			limitPushdown: false,
+		},
+		"Filter": {
+			filter:        bson.D{{"_id", "int32"}},
+			limit:         3,
+			len:           1,
+			limitPushdown: true,
+		},
+		"Sort": {
+			sort:          bson.D{{"_id", 1}},
+			limit:         2,
+			len:           2,
+			limitPushdown: true,
+		},
+		"FilterSort": {
+			filter:        bson.D{{"v", 42}},
+			sort:          bson.D{{"_id", 1}},
+			limit:         2,
+			len:           1,
+			limitPushdown: true,
+		},
+		"Skip": {
+			optSkip:       pointer.ToInt64(1),
+			limit:         2,
+			len:           2,
+			limitPushdown: false,
+		},
+	} {
+		tc, name := tc, name
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var rest bson.D
+			if tc.sort != nil {
+				rest = append(rest, bson.E{Key: "sort", Value: tc.sort})
+			}
+
+			if tc.optSkip != nil {
+				rest = append(rest, bson.E{Key: "skip", Value: tc.optSkip})
+			}
+
+			filter := tc.filter
+			if filter == nil {
+				filter = bson.D{}
+			}
+
+			query := append(
+				bson.D{
+					{"find", collection.Name()},
+					{"filter", filter},
+					{"limit", tc.limit},
+				},
+				rest...,
+			)
+
+			t.Run("Explain", func(t *testing.T) {
+				setup.SkipForMongoDB(t, "pushdown is FerretDB specific feature")
+
+				var res bson.D
+				err := collection.Database().RunCommand(ctx, bson.D{{"explain", query}}).Decode(&res)
+				if tc.err != nil {
+					assert.Nil(t, res)
+					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
+					return
+				}
+
+				assert.NoError(t, err)
+
+				var msg string
+				if !setup.IsSortPushdownEnabled() && tc.sort != nil {
+					tc.limitPushdown = false
+					msg = "Sort pushdown is disabled, but target resulted with limitPushdown"
+				}
+
+				pushdown, _ := ConvertDocument(t, res).Get("limitPushdown")
+				assert.Equal(t, tc.limitPushdown, pushdown, msg)
+			})
+
+			t.Run("Find", func(t *testing.T) {
+				cursor, err := collection.Database().RunCommandCursor(ctx, query)
+				if tc.err != nil {
+					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
+					return
+				}
+
+				defer cursor.Close(ctx)
+
+				require.NoError(t, err)
+
+				docs := FetchAll(t, ctx, cursor)
+
+				// do not check the content, limit without sort returns randomly ordered documents
+				require.Len(t, docs, tc.len)
+			})
 		})
 	}
 }

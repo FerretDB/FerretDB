@@ -173,6 +173,10 @@ var Commands = map[string]command{
 	"ismaster": { // old lowercase variant
 		Handler: handlers.Interface.MsgIsMaster,
 	},
+	"killCursors": {
+		Help:    "Closes server cursors.",
+		Handler: handlers.Interface.MsgKillCursors,
+	},
 	"listCollections": {
 		Help:    "Returns the information of the collections and views in the database.",
 		Handler: handlers.Interface.MsgListCollections,
@@ -229,7 +233,7 @@ var Commands = map[string]command{
 }
 
 // MsgListCommands is a common implementation of the listCommands command.
-func MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func MsgListCommands(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
 	cmdList := must.NotFail(types.NewDocument())
 	names := maps.Keys(Commands)
 	sort.Strings(names)
