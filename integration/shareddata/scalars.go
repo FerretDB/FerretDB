@@ -28,10 +28,8 @@ const (
 	doubleBig     = float64(1 << 61)   // 2305843009213693952.0: some number larger than safe integer (doubleBig+1 == doubleBig)
 	longBig       = int64(1 << 61)     // 2305843009213693952:   same as doubleBig but integer
 
-	// TODO https://github.com/FerretDB/FerretDB/commit/06289cacb4a1a119a5722155bb342a722b062e9f
-	// TODO scalars.go:167
-	longMaxOverflow = 9.223372036854776833e+18  // 100001111100000000000000000000000000000000000000000000000000001
-	longMinOverflow = -9.223372036854776833e+18 // 1100001111100000000000000000000000000000000000000000000000000001
+	doubleMaxOverflow = 9.223372036854776833e+18  //  double value that is larger than MaxInt64
+	doubleMinOverflow = -9.223372036854776833e+18 //  double value that is smaller than MinInt64
 )
 
 // Scalars contain scalar values for tests.
@@ -53,8 +51,8 @@ var Scalars = &Values[string]{
 		"double-5":            float64(math.MaxInt64),
 		"double-6":            float64(math.MaxInt64 + 1),
 		"double-7":            1.79769e+307,
-		"double-max-overflow": longMaxOverflow,
-		"double-min-overflow": longMinOverflow,
+		"double-max-overflow": doubleMaxOverflow,
+		"double-min-overflow": doubleMinOverflow,
 
 		"string":        "foo",
 		"string-double": "42.13",
@@ -155,8 +153,8 @@ var Doubles = &Values[string]{
 		"double-4":            float64(123456789),
 		"double-5":            float64(math.MaxInt64),
 		"double-6":            float64(math.MaxInt64 + 1),
-		"double-max-overflow": longMaxOverflow,
-		"double-min-overflow": longMinOverflow,
+		"double-max-overflow": doubleMaxOverflow,
+		"double-min-overflow": doubleMinOverflow,
 	},
 }
 
