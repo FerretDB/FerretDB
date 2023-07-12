@@ -64,6 +64,15 @@ Some default values are overridden in [our Docker image](quickstart-guide/docker
 | -------------- | ------------------------------------------- | --------------------- | ------------- |
 | `--sqlite-url` | SQLite URI (directory) for 'sqlite' handler | `FERRETDB_SQLITE_URL` | `file:data/`  |
 
+## Miscellaneous
+
+| Flag                  | Description                                       | Environment Variable    | Default Value |
+| --------------------- | ------------------------------------------------- | ----------------------- | ------------- |
+| `--log-level`         | Log level: 'debug', 'info', 'warn', 'error'       | `FERRETDB_LOG_LEVEL`    | `info`        |
+| `--[no-]log-uuid`     | Add instance UUID to all log messages             | `FERRETDB_LOG_UUID`     |               |
+| `--[no-]metrics-uuid` | Add instance UUID to all metrics                  | `FERRETDB_METRICS_UUID` |               |
+| `--telemetry`         | Enable or disable [basic telemetry](telemetry.md) | `FERRETDB_TELEMETRY`    | `undecided`   |
+
 ## Query pushdown
 
 | Flag                             | Description                           | Environment Variable                    | Default Value |
@@ -76,15 +85,6 @@ Some default values are overridden in [our Docker image](quickstart-guide/docker
 Read more about [query pushdown](../pushdown.md#query-pushdown).
 :::
 
-## Miscellaneous
-
-| Flag                  | Description                                       | Environment Variable    | Default Value |
-| --------------------- | ------------------------------------------------- | ----------------------- | ------------- |
-| `--log-level`         | Log level: 'debug', 'info', 'warn', 'error'       | `FERRETDB_LOG_LEVEL`    | `info`        |
-| `--[no-]log-uuid`     | Add instance UUID to all log messages             | `FERRETDB_LOG_UUID`     |               |
-| `--[no-]metrics-uuid` | Add instance UUID to all metrics                  | `FERRETDB_METRICS_UUID` |               |
-| `--telemetry`         | Enable or disable [basic telemetry](telemetry.md) | `FERRETDB_TELEMETRY`    | `undecided`   |
-
-<!-- Do not document `--test-XXX` flags here -->
+<!-- Do not document `--test-XXX` flags except pushdown flags here -->
 
 <!-- markdownlint-restore -->
