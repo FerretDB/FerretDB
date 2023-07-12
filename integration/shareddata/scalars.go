@@ -28,8 +28,10 @@ const (
 	doubleBig     = float64(1 << 61)   // 2305843009213693952.0: some number larger than safe integer (doubleBig+1 == doubleBig)
 	longBig       = int64(1 << 61)     // 2305843009213693952:   same as doubleBig but integer
 
-	doubleMaxOverflow = float64(9223372036854776833)  //  double value that is larger than MaxInt64
-	doubleMinOverflow = float64(-9223372036854776833) //  double value that is smaller than MinInt64
+	doubleMaxOverflow = float64(9223372036854776833)  // double value that is larger than MaxInt64
+	doubleMinOverflow = float64(-9223372036854776833) // double value that is smaller than MinInt64
+
+	doubleMaxVerge = 1.79769e+307 // double value that is close to the MaxFloat64 (1.79769e+308)
 )
 
 // Scalars contain scalar values for tests.
@@ -50,7 +52,7 @@ var Scalars = &Values[string]{
 		"double-4":            float64(123456789),
 		"double-5":            float64(math.MaxInt64),
 		"double-6":            float64(math.MaxInt64 + 1),
-		"double-7":            1.79769e+307,
+		"double-7":            doubleMaxVerge,
 		"double-max-overflow": doubleMaxOverflow,
 		"double-min-overflow": doubleMinOverflow,
 
@@ -167,7 +169,7 @@ var OverflowVergeDoubles = &Values[string]{
 	name: "OverflowVergeDoubles",
 	data: map[string]any{
 		"double-max": math.MaxFloat64,
-		"double-7":   1.79769e+307,
+		"double-7":   doubleMaxVerge,
 	},
 }
 
