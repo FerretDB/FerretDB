@@ -123,15 +123,40 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 				continue
 			}
 
-			doc := u.Filter.DeepCopy()
-			if _, err = common.UpdateDocument("update", doc, u.Update); err != nil {
+			hasQueryOperators, err := common.HasQueryOperator(u.Filter)
+			if err != nil {
 				return 0, 0, nil, lazyerrors.Error(err)
 			}
 
-			if !doc.Has("_id") {
-				doc.Set("_id", types.NewObjectID())
+			var doc *types.Document
+			if hasQueryOperators {
+				doc = must.NotFail(types.NewDocument())
+			} else {
+				doc = u.Filter
 			}
 
+			hasUpdateOperators, err := common.HasSupportedUpdateModifiers("update", u.Update)
+			if err != nil {
+				return 0, 0, nil, err
+			}
+
+			if hasUpdateOperators {
+				if _, err = common.UpdateDocument("update", doc, u.Update); err != nil {
+					return 0, 0, nil, err
+				}
+			} else {
+				doc = u.Update
+			}
+
+			if !doc.Has("_id") {
+				var id any
+
+				if id, err = common.GetUpsertID(u.Filter); err != nil {
+					return 0, 0, nil, err
+				}
+
+				doc.Set("_id", id)
+			}
 			upserted.Append(must.NotFail(types.NewDocument(
 				"index", int32(0), // TODO
 				"_id", must.NotFail(doc.Get("_id")),
@@ -142,7 +167,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 			iter := must.NotFail(types.NewArray(doc)).Iterator()
 			defer iter.Close()
 
-			_, err := db.Collection(params.Collection).Insert(ctx, &backends.InsertParams{
+			_, err = db.Collection(params.Collection).Insert(ctx, &backends.InsertParams{
 				Iter: iter,
 			})
 			if err != nil {

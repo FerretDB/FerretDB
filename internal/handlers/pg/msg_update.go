@@ -112,8 +112,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 				if !doc.Has("_id") {
 					var id any
-					id, err = common.GetUpsertID(u.Filter)
-					if err != nil {
+
+					if id, err = common.GetUpsertID(u.Filter); err != nil {
 						return err
 					}
 
