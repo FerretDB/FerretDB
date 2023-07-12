@@ -87,7 +87,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 				hasQueryOperators, err := common.HasQueryOperator(u.Filter)
 				if err != nil {
-					return err
+					return lazyerrors.Error(err)
 				}
 
 				var doc *types.Document

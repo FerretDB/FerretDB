@@ -26,6 +26,8 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestUpdateFieldSet(t *testing.T) {
@@ -127,7 +129,7 @@ func TestUpdateFieldSetUpdateManyUpsert(t *testing.T) {
 			opts:    options.Update().SetUpsert(true),
 			findRes: []bson.E{{"new", "val"}},
 		},
-		"NoOperator": {
+		"NoQueryOperator": {
 			filter:  bson.D{{"v", int32(4080)}},
 			update:  bson.D{{"$set", bson.D{{"new", "val"}}}},
 			opts:    options.Update().SetUpsert(true),
@@ -232,6 +234,109 @@ func TestUpdateFieldSetUpdateManyNoUpsert(t *testing.T) {
 			err = cursor.All(ctx, &res)
 			require.NoError(t, err)
 			AssertEqualDocumentsSlice(t, tc.findRes, res)
+		})
+	}
+}
+
+func TestUpdateCommandUpsertErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		filter  bson.D // optional, defaults to bson.D{}
+		updates bson.A // required, used for update parameter
+
+		nMatched  int32             // optional
+		nModified int32             // optional
+		nUpserted int               // optional
+		err       *mongo.WriteError // optional, expected error from MongoDB
+		skip      string            // optional, skip test with a specified reason
+	}{
+		"NoUpdateOperator": {
+			filter: bson.D{{"v", bson.D{{"$lt", 3}}}},
+			updates: bson.A{
+				bson.D{
+					{"q", bson.D{{"v", bson.D{{"$lt", 3}}}}},
+					{"u", bson.D{{"new", "val"}}},
+					{"upsert", true},
+				},
+			},
+			nMatched:  int32(1),
+			nModified: int32(0),
+			nUpserted: 1,
+		},
+		"NoUpdateEmptyQueryOperator": {
+			updates: bson.A{
+				bson.D{
+					{"q", bson.D{}},
+					{"u", bson.D{{"new", "val"}}},
+					{"upsert", true},
+				},
+			},
+			nMatched:  int32(1),
+			nModified: int32(0),
+			nUpserted: 0,
+		},
+		"UnknownUpdateOperator": {
+			updates: bson.A{
+				bson.D{
+					{"q", bson.D{{"v", bson.D{{"$lt", 3}}}}},
+					{"u", bson.D{{"$unknown", bson.D{{"new", "val"}}}}},
+					{"upsert", true},
+				},
+			},
+			err: &mongo.WriteError{
+				Code:    9,
+				Message: "Unknown modifier: $unknown. Expected a valid update modifier or pipeline-style update specified as an array",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			require.NotNil(t, tc.updates, "update should be set")
+
+			ctx, collection := setup.Setup(t, shareddata.Nulls)
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx,
+				bson.D{
+					{"update", collection.Name()},
+					{"updates", tc.updates},
+				}).Decode(&res)
+
+			if tc.err != nil {
+				assert.Nil(t, res)
+				AssertEqualWriteError(t, *tc.err, err)
+
+				return
+			}
+
+			doc := ConvertDocument(t, res)
+
+			nMatched, _ := doc.Get("n")
+			assert.Equal(t, tc.nMatched, nMatched, "unexpected nMatched")
+
+			v, _ := doc.Get("upserted")
+			upserted, _ := v.(*types.Array)
+			require.Equal(t, upserted.Len(), tc.nUpserted, "unexpected nUpserted")
+
+			for i := 0; i < upserted.Len(); i++ {
+				firstElem, _ := must.NotFail(upserted.Get(i)).(*types.Document)
+
+				index, _ := firstElem.Get("index")
+				assert.Equal(t, int32(0), index)
+
+				// _id is generated, cannot check for exact value so check it is not zero value
+				id, _ := firstElem.Get("_id")
+				assert.NotZero(t, id)
+			}
+
+			nModified, _ := doc.Get("nModified")
+			assert.Equal(t, nModified, nModified, "nModified")
+
+			resOk, _ := doc.Get("ok")
+			assert.Equal(t, float64(1), resOk)
 		})
 	}
 }
