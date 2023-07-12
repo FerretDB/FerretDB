@@ -61,17 +61,18 @@ It applies `LIMIT` clause for `limit` argument and `ORDER BY` clause for `sort` 
 <!-- markdownlint-capture -->
 <!-- markdownlint-disable MD001 MD033 MD051 -->
 
-| `find` command arguments | Supported               |
-| ------------------------ | ----------------------- |
-| `limit`                  | ✅                      |
-| ` limit``skip `          | ✖️                      |
-| ` limit``sort `          | ⚠️ <sub>[[2]](#2)</sub> |
-| `skip`                   | ✖️                      |
-| `sort`                   | ⚠️ <sub>[[3]](#3)</sub> |
+| `find` command arguments | Supported                                                            |
+| ------------------------ | -------------------------------------------------------------------- |
+| `filter`                 | See [supported types and operators](##supported-types-and-operators) |
+| `limit`                  | ✅                                                                   |
+| `limit`, `skip`          | ✖️                                                                   |
+| `limit`, `sort`          | ⚠️ <sub>[[2]](#2)</sub>                                              |
+| `skip`                   | ✖️                                                                   |
+| `sort`                   | ⚠️ <sub>[[3]](#3)</sub>                                              |
 
 ###### [2] {#2}
 
-When a command contains `limit()` and `sort()`, limit pushdown is applied
+When a command contains `limit` and `sort` arguments, limit pushdown is applied
 only if experimental [sort pushdown configuration](configuration/flags.md#query-pushdown) is enabled by `--test-enable-sort-pushdown` flag.
 
 ###### [3] {#3}
