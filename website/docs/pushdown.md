@@ -55,26 +55,30 @@ will prefetch all numbers larger/smaller than max/min value of the range.
 
 ## Supported pushdown on `find` command arguments
 
-The following table shows supported command arguments for the PostgreSQL backend.
+The following table shows supported pushdown on `find` command arguments for the PostgreSQL backend.
 It applies `LIMIT` clause for `limit` argument and `ORDER BY` clause for `sort` argument on SQL queries.
 
 <!-- markdownlint-capture -->
 <!-- markdownlint-disable MD001 MD033 MD051 -->
 
-| `find` command arguments | Supported                                                            |
-| ------------------------ | -------------------------------------------------------------------- |
-| `filter`                 | See [supported types and operators](##supported-types-and-operators) |
-| `limit`                  | ✅                                                                   |
-| `limit`, `skip`          | ✖️                                                                   |
-| `limit`, `sort`          | ⚠️ <sub>[[2]](#2)</sub>                                              |
-| `skip`                   | ✖️                                                                   |
-| `sort`                   | ⚠️ <sub>[[3]](#3)</sub>                                              |
+| `find` command arguments | Supported               |
+| ------------------------ | ----------------------- |
+| `filter`                 | ⚠️ <sub>[[2]](#2)</sub> |
+| `limit`                  | ✅                      |
+| `limit`, `skip`          | ✖️                      |
+| `limit`, `sort`          | ⚠️ <sub>[[3]](#3)</sub> |
+| `skip`                   | ✖️                      |
+| `sort`                   | ⚠️ <sub>[[4]](#4)</sub> |
 
 ###### [2] {#2}
+
+See [supported types and operators](#supported-types-and-operators).
+
+###### [3] {#3}
 
 When a command contains `limit` and `sort` arguments, limit pushdown is applied
 only if experimental [sort pushdown configuration](configuration/flags.md#query-pushdown) is enabled by `--test-enable-sort-pushdown` flag.
 
-###### [3] {#3}
+###### [4] {#4}
 
 Sort pushdown is an experimental [configuration](configuration/flags.md#query-pushdown) enabled by `--test-enable-sort-pushdown` flag.
