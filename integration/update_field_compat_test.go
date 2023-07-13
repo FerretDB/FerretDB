@@ -818,7 +818,7 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
-func TestUpdateManyFieldCompatSet(t *testing.T) {
+func TestUpdateFieldCompatSetMulti(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]testUpdateManyCompatTestCase{
@@ -835,7 +835,7 @@ func TestUpdateManyFieldCompatSet(t *testing.T) {
 			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
 			updateOpts: options.Update().SetUpsert(false),
 		},
-		"QueryOperatorExistingModified": {
+		"QueryOperatorModified": {
 			filter:     bson.D{{"v", bson.D{{"$eq", 4080}}}},
 			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
 			updateOpts: options.Update().SetUpsert(false),
