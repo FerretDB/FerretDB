@@ -254,7 +254,7 @@ If there's a need to use any large number to test corner cases,
 we create constants for them with explanation what do they represent, and refer to them.
 For example:
 
-```
+```go
 const doubleMaxPrec = float64(1<<53 - 1) // 9007199254740991.0:    largest double values that could be represented as integer exactly
 ```
 
