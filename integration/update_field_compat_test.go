@@ -21,6 +21,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -815,6 +816,37 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 	}
 
 	testUpdateCompat(t, testCases)
+}
+
+func TestUpdateManyFieldCompatSet(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]testUpdateManyCompatTestCase{
+		"QueryOperatorExists": {
+			filter:     bson.D{{"v", bson.D{{"$lt", 3}}}},
+			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
+			updateOpts: options.Update().SetUpsert(true),
+			// only use providers contain filter match, no match results in
+			// upsert with generated ID which is tested in integration test
+			providers: []shareddata.Provider{shareddata.Scalars, shareddata.Int32s, shareddata.Doubles},
+		},
+		"QueryOperatorUpsertFalse": {
+			filter:     bson.D{{"v", int32(4080)}},
+			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
+			updateOpts: options.Update().SetUpsert(false),
+		},
+		"QueryOperatorExistingModified": {
+			filter:     bson.D{{"v", bson.D{{"$eq", 4080}}}},
+			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
+			updateOpts: options.Update().SetUpsert(false),
+		},
+		"QueryOperatorEmptySet": {
+			filter:     bson.D{{"v", bson.D{{"$eq", 4080}}}},
+			update:     bson.D{{"$set", bson.D{}}},
+			updateOpts: options.Update().SetUpsert(false),
+		},
+	}
+	testUpdateManyCompat(t, testCases)
 }
 
 func TestUpdateFieldCompatSetArray(t *testing.T) {

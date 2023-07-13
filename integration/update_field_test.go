@@ -34,7 +34,7 @@ func TestUpdateFieldSet(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		filter bson.D // optional, defaults to bson.D{}
+		id     string // optional, defaults to empty
 		update bson.D // required, used for update parameter
 
 		res     *mongo.UpdateResult // optional, expected response from update
@@ -42,7 +42,7 @@ func TestUpdateFieldSet(t *testing.T) {
 		skip    string              // optional, skip test with a specified reason
 	}{
 		"ArrayNil": {
-			filter:  bson.D{{"_id", "string"}},
+			id:      "string",
 			update:  bson.D{{"$set", bson.D{{"v", bson.A{nil}}}}},
 			findRes: bson.D{{"_id", "string"}, {"v", bson.A{nil}}},
 			res: &mongo.UpdateResult{
@@ -52,7 +52,7 @@ func TestUpdateFieldSet(t *testing.T) {
 			},
 		},
 		"SetSameValueInt": {
-			filter:  bson.D{{"_id", "int32"}},
+			id:      "int32",
 			update:  bson.D{{"$set", bson.D{{"v", int32(42)}}}},
 			findRes: bson.D{{"_id", "int32"}, {"v", int32(42)}},
 			res: &mongo.UpdateResult{
@@ -60,26 +60,6 @@ func TestUpdateFieldSet(t *testing.T) {
 				ModifiedCount: 0,
 				UpsertedCount: 0,
 			},
-		},
-		"QueryOperatorExistingModified": {
-			filter: bson.D{{"v", bson.D{{"$eq", 4080}}}},
-			update: bson.D{{"$set", bson.D{{"new", "val"}}}},
-			res: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 1,
-				UpsertedCount: 0,
-			},
-			findRes: bson.D{{"_id", "int32-1"}, {"v", int32(4080)}, {"new", "val"}},
-		},
-		"QueryOperatorEmptySet": {
-			filter: bson.D{{"v", bson.D{{"$eq", 4080}}}},
-			update: bson.D{{"$set", bson.D{}}},
-			res: &mongo.UpdateResult{
-				MatchedCount:  1,
-				ModifiedCount: 0,
-				UpsertedCount: 0,
-			},
-			findRes: bson.D{{"_id", "int32-1"}, {"v", int32(4080)}},
 		},
 	} {
 		name, tc := name, tc
@@ -92,20 +72,15 @@ func TestUpdateFieldSet(t *testing.T) {
 
 			require.NotNil(t, tc.update, "update should be set")
 
-			filter := bson.D{}
-			if tc.filter != nil {
-				filter = tc.filter
-			}
-
 			ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
 
-			res, err := collection.UpdateOne(ctx, filter, tc.update)
+			res, err := collection.UpdateOne(ctx, bson.D{{"_id", tc.id}}, tc.update)
 
 			require.NoError(t, err)
 			require.Equal(t, tc.res, res)
 
 			var actual bson.D
-			err = collection.FindOne(ctx, filter).Decode(&actual)
+			err = collection.FindOne(ctx, bson.D{{"_id", tc.id}}).Decode(&actual)
 			require.NoError(t, err)
 			AssertEqualDocuments(t, tc.findRes, actual)
 		})
@@ -171,75 +146,6 @@ func TestUpdateFieldSetUpdateManyUpsert(t *testing.T) {
 			}
 
 			AssertEqualDocumentsSlice(t, []bson.D{expected}, res)
-		})
-	}
-}
-
-func TestUpdateFieldSetUpdateManyNoUpsert(t *testing.T) {
-	t.Parallel()
-
-	for name, tc := range map[string]struct { //nolint:vet // used for testing only
-		filter    bson.D                 // optional, defaults to bson.D{}
-		update    bson.D                 // required, used for update parameter
-		opts      *options.UpdateOptions // optional
-		providers shareddata.Providers   // optional, defaults to shareddata.Nulls
-
-		updateRes *mongo.UpdateResult // optional, expected response from update
-		findRes   []bson.D            // required, expected response from find
-		skip      string              // optional, skip test with a specified reason
-	}{
-		"QueryOperatorExists": {
-			filter:    bson.D{{"v", bson.D{{"$lt", 3}}}},
-			update:    bson.D{{"$set", bson.D{{"new", "val"}}}},
-			opts:      options.Update().SetUpsert(true),
-			providers: []shareddata.Provider{shareddata.Int32s},
-			updateRes: &mongo.UpdateResult{
-				MatchedCount:  2,
-				ModifiedCount: 2,
-				UpsertedCount: 0,
-			},
-			findRes: []bson.D{
-				{{"_id", "int32-min"}, {"v", int32(math.MinInt32)}, {"new", "val"}},
-				{{"_id", "int32-zero"}, {"v", int32(0)}, {"new", "val"}},
-			},
-		},
-		"QueryOperatorUpsertFalse": {
-			filter: bson.D{{"v", int32(4080)}},
-			update: bson.D{{"$set", bson.D{{"new", "val"}}}},
-			opts:   options.Update().SetUpsert(false),
-			updateRes: &mongo.UpdateResult{
-				MatchedCount:  0,
-				ModifiedCount: 0,
-				UpsertedCount: 0,
-			},
-			findRes: []bson.D{},
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			require.NotNil(t, tc.update, "update should be set")
-			require.NotNil(t, tc.findRes, "findRes should be set")
-
-			providers := tc.providers
-			if providers == nil {
-				providers = []shareddata.Provider{shareddata.Nulls}
-			}
-
-			ctx, collection := setup.Setup(t, providers...)
-
-			updateRes, err := collection.UpdateMany(ctx, tc.filter, tc.update, tc.opts)
-			require.NoError(t, err)
-			assert.Equal(t, tc.updateRes, updateRes)
-
-			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
-			require.NoError(t, err)
-
-			var res []bson.D
-			err = cursor.All(ctx, &res)
-			require.NoError(t, err)
-			AssertEqualDocumentsSlice(t, tc.findRes, res)
 		})
 	}
 }
@@ -327,7 +233,8 @@ func TestUpdateCommandUpsert(t *testing.T) {
 			findRes: []bson.D{
 				{{"v", nil}},
 				{{"updateV", "greater"}},
-				{{"updateV", "less"}}},
+				{{"updateV", "less"}},
+			},
 		},
 		"UnknownUpdateOperator": {
 			updates: bson.A{
