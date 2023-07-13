@@ -92,8 +92,10 @@ func TestCreateStress(t *testing.T) {
 	}
 }
 
-func TestCreateOnInsertStressSameCollection(t *testing.T) {
+func TestCreateOnInsertStressSameCollection(tt *testing.T) {
 	// TODO rewrite using teststress.Stress
+
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2747")
 
 	ctx, collection := setup.Setup(t)
 	// do not toLower() db name as it may contain uppercase letters
@@ -173,8 +175,10 @@ func TestCreateOnInsertStressDiffCollection(t *testing.T) {
 	wg.Wait()
 }
 
-func TestCreateStressSameCollection(t *testing.T) {
+func TestCreateStressSameCollection(tt *testing.T) {
 	// TODO rewrite using teststress.Stress
+
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2747")
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collection from the test
 	db := collection.Database()
@@ -234,14 +238,10 @@ func TestCreateStressSameCollection(t *testing.T) {
 	require.Len(t, colls, 1)
 
 	// check that the collection was created, and we can query it
-	t.Run("check_stress", func(t *testing.T) {
-		t.Parallel()
-
-		var doc bson.D
-		err := db.Collection(collName).FindOne(ctx, bson.D{{"_id", "foo_1"}}).Decode(&doc)
-		require.NoError(t, err)
-		require.Equal(t, bson.D{{"_id", "foo_1"}, {"v", "bar"}}, doc)
-	})
+	var doc bson.D
+	err = db.Collection(collName).FindOne(ctx, bson.D{{"_id", "foo_1"}}).Decode(&doc)
+	require.NoError(t, err)
+	require.Equal(t, bson.D{{"_id", "foo_1"}, {"v", "bar"}}, doc)
 
 	require.Equal(t, int32(1), created.Load(), "Only one attempt to create a collection should succeed")
 }
