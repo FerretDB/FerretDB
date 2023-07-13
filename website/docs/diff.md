@@ -25,7 +25,6 @@ slug: /diff/ # referenced in README.md and beacon
    - name cannot start with the reserved prefix `_ferretdb_`;
    - database name must not include non-latin letters;
    - collection name must be valid UTF-8 characters;
-   - database name must not start with a number;
 9. FerretDB offers the same validation rules for the `scale` parameter in both the `collStats` and `dbStats` commands.
    If an invalid `scale` value is provided in the `dbStats` command, the same error codes will be triggered as with the `collStats` command.
 
