@@ -44,6 +44,7 @@ func SASLStart(ctx context.Context, doc *types.Document) error {
 			msg,
 			"mechanism",
 		)
+		return err
 	}
 
 	if err != nil {
