@@ -402,13 +402,8 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 
 	if hasCount || hasStorage {
 		if err = p.dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			var exists bool
-
-			if exists, err = pgdb.CollectionExists(ctx, tx, p.db, p.collection); err != nil {
-				return err
-			}
-
-			if !exists {
+			collStats, err = pgdb.CalculateCollStats(ctx, tx, p.db, p.collection)
+			if errors.Is(err, pgdb.ErrTableNotExist) {
 				return commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrNamespaceNotFound,
 					fmt.Sprintf("ns not found: %s.%s", p.db, p.collection),
@@ -416,7 +411,6 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 				)
 			}
 
-			collStats, err = pgdb.CalculateCollStats(ctx, tx, p.db, p.collection)
 			return err
 		}); err != nil {
 			return nil, lazyerrors.Error(err)

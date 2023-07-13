@@ -16,7 +16,6 @@ package pgdb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -144,14 +143,8 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 	var res CollStats
 
 	metadata, err := newMetadataStorage(tx, db, collection).get(ctx, false)
-
-	switch {
-	case err == nil:
-		// do nothing
-	case errors.Is(err, ErrTableNotExist):
-		return &res, nil
-	default:
-		return nil, lazyerrors.Error(err)
+	if err != nil {
+		return nil, err
 	}
 
 	// Call ANALYZE to update statistics, the actual statistics are needed to estimate the number of rows in all tables,
