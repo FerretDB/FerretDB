@@ -929,8 +929,10 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				rest...,
 			)
 
-			t.Run("Explain", func(t *testing.T) {
-				setup.SkipForMongoDB(t, "pushdown is FerretDB specific feature")
+			t.Run("Explain", func(tt *testing.T) {
+				setup.SkipForMongoDB(tt, "pushdown is FerretDB specific feature")
+
+				t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3050")
 
 				var res bson.D
 				err := collection.Database().RunCommand(ctx, bson.D{{"explain", query}}).Decode(&res)

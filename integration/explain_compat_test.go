@@ -64,8 +64,10 @@ func testExplainCompatError(t *testing.T, testCases map[string]explainCompatTest
 
 			t.Parallel()
 
-			t.Run(targetCollection.Name(), func(t *testing.T) {
-				t.Helper()
+			t.Run(targetCollection.Name(), func(tt *testing.T) {
+				tt.Helper()
+
+				t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3050")
 
 				explainTarget := bson.D{{tc.command, targetCollection.Name()}}
 				explainCompat := bson.D{{tc.command, compatCollection.Name()}}
