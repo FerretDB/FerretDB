@@ -484,5 +484,5 @@ Here's the [Stackgres runbook](https://stackgres.io/doc/latest/runbooks/ferretdb
 
 If you encounter any issue or just wish to say "Hi!" and tell us how FerretDB works on StackGres, you may drop a line at the:
 
-[FerretDB Community channels](https://docs.ferretdb.io/#community)
-[StackGres Community Slack](https://slack.stackgres.io)
+- [FerretDB Community channels](https://docs.ferretdb.io/#community)
+- [StackGres Community Slack](https://slack.stackgres.io)
