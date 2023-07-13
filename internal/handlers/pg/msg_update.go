@@ -122,7 +122,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				}
 
 				upserted.Append(must.NotFail(types.NewDocument(
-					"index", int32(0), // TODO
+					"index", int32(upserted.Len()),
 					"_id", must.NotFail(doc.Get("_id")),
 				)))
 

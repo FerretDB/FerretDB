@@ -159,7 +159,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 				doc.Set("_id", id)
 			}
 			upserted.Append(must.NotFail(types.NewDocument(
-				"index", int32(0), // TODO
+				"index", int32(upserted.Len()),
 				"_id", must.NotFail(doc.Get("_id")),
 			)))
 

@@ -66,7 +66,7 @@ func HasQueryOperator(filter *types.Document) (bool, error) {
 	defer iter.Close()
 
 	for {
-		filterKey, filterValue, err := iter.Next()
+		k, v, err := iter.Next()
 		if err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				return false, nil
@@ -75,16 +75,16 @@ func HasQueryOperator(filter *types.Document) (bool, error) {
 			return false, lazyerrors.Error(err)
 		}
 
-		if strings.HasPrefix(filterKey, "$") {
+		if strings.HasPrefix(k, "$") {
 			return true, nil
 		}
 
-		filterDoc, ok := filterValue.(*types.Document)
+		doc, ok := v.(*types.Document)
 		if !ok {
 			continue
 		}
 
-		hasOperator, err := HasQueryOperator(filterDoc)
+		hasOperator, err := HasQueryOperator(doc)
 		if err != nil {
 			return false, lazyerrors.Error(err)
 		}
