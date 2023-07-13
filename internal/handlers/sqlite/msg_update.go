@@ -150,13 +150,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 			}
 
 			if !doc.Has("_id") {
-				var id any
-
-				if id, err = common.GetUpsertID(u.Filter); err != nil {
-					return 0, 0, nil, err
-				}
-
-				doc.Set("_id", id)
+				doc.Set("_id", types.NewObjectID())
 			}
 			upserted.Append(must.NotFail(types.NewDocument(
 				"index", int32(upserted.Len()),

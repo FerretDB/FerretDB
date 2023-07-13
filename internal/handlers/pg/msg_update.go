@@ -112,13 +112,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				}
 
 				if !doc.Has("_id") {
-					var id any
-
-					if id, err = common.GetUpsertID(u.Filter); err != nil {
-						return err
-					}
-
-					doc.Set("_id", id)
+					doc.Set("_id", types.NewObjectID())
 				}
 
 				upserted.Append(must.NotFail(types.NewDocument(
