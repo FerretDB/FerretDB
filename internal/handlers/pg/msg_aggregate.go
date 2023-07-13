@@ -164,7 +164,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	aggregationStages := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
 	stagesDocuments := make([]aggregations.Stage, 0, len(aggregationStages))
-	stagesStats := make([]aggregations.Stage, 0, len(aggregationStages))
+	collStatsDocuments := make([]aggregations.Stage, 0, len(aggregationStages))
 
 	for i, d := range aggregationStages {
 		d, ok := d.(*types.Document)
@@ -193,11 +193,10 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 				)
 			}
 
-			// It's possible to apply "documents" stages to $collStats
-			stagesStats = append(stagesStats, s)
+			collStatsDocuments = append(collStatsDocuments, s)
 		default:
 			stagesDocuments = append(stagesDocuments, s)
-			stagesStats = append(stagesStats, s)
+			collStatsDocuments = append(collStatsDocuments, s) // It's possible to apply any stage after $collStats stage
 		}
 	}
 
@@ -245,9 +244,9 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	var iter iterator.Interface[struct{}, *types.Document]
 
 	// At this point we have a list of stages to apply to the documents or stats.
-	// If stagesStats contains the same stages as stagesDocuments, we apply aggregation to documents fetched from the DB.
-	// If stagesStats contains more stages than stagesDocuments, we apply aggregation to statistics fetched from the DB.
-	if len(stagesStats) == len(stagesDocuments) {
+	// If collStatsDocuments contains the same stages as stagesDocuments, we apply aggregation to documents fetched from the DB.
+	// If collStatsDocuments contains more stages than stagesDocuments, we apply aggregation to statistics fetched from the DB.
+	if len(collStatsDocuments) == len(stagesDocuments) {
 		filter, sort := aggregations.GetPushdownQuery(aggregationStages)
 
 		// only documents stages or no stages - fetch documents from the DB and apply stages to them
@@ -267,11 +266,11 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})
 	} else {
 		// stats stages are provided - fetch stats from the DB and apply stages to them
-		// TODO move $collStats specific logic to its stage https://github.com/FerretDB/FerretDB/issues/2423
-		statistics := stages.GetStatistics(stagesStats)
+		// TODO move $collStatsDocuments specific logic to its stage https://github.com/FerretDB/FerretDB/issues/2423
+		statistics := stages.GetStatistics(collStatsDocuments)
 
 		iter, err = processStagesStats(ctx, closer, &stagesStatsParams{
-			dbPool, db, collection, statistics, stagesStats,
+			dbPool, db, collection, statistics, collStatsDocuments,
 		})
 	}
 
