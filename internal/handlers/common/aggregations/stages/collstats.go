@@ -124,11 +124,6 @@ func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator, c
 	return iter, nil
 }
 
-// Type implements Stage interface.
-func (c *collStats) Type() aggregations.StageType {
-	return aggregations.StageTypeStats
-}
-
 // check interfaces
 var (
 	_ aggregations.Stage = (*collStats)(nil)
