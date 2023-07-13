@@ -87,10 +87,8 @@ func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompa
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(tt *testing.T) {
+				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
-
-					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3050")
 
 					// don't add sort, limit, skip, and projection because we don't pushdown them yet
 					explainQuery := bson.D{{"explain", bson.D{

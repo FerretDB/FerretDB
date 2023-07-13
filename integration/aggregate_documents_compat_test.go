@@ -101,10 +101,8 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(tt *testing.T) {
-					tt.Helper()
-
-					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3050")
+				t.Run(targetCollection.Name(), func(t *testing.T) {
+					t.Helper()
 
 					explainCommand := bson.D{{"explain", bson.D{
 						{"aggregate", targetCollection.Name()},

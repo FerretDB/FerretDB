@@ -99,10 +99,8 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(tt *testing.T) {
+				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
-
-					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3050")
 
 					targetIdx, tagetErr := targetCollection.Indexes().CreateOne(ctx, mongo.IndexModel{
 						Keys: bson.D{{"v", 1}},

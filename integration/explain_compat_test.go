@@ -64,10 +64,8 @@ func testExplainCompatError(t *testing.T, testCases map[string]explainCompatTest
 
 			t.Parallel()
 
-			t.Run(targetCollection.Name(), func(tt *testing.T) {
-				tt.Helper()
-
-				t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3050")
+			t.Run(targetCollection.Name(), func(t *testing.T) {
+				t.Helper()
 
 				explainTarget := bson.D{{tc.command, targetCollection.Name()}}
 				explainCompat := bson.D{{tc.command, compatCollection.Name()}}
@@ -112,7 +110,6 @@ func testExplainCompatError(t *testing.T, testCases map[string]explainCompatTest
 				assert.Equal(t, compatMap["ok"], targetMap["ok"])
 				assert.Equal(t, compatMap["command"], targetMap["command"])
 
-				// check queryPlanner is set
 				assert.NotEmpty(t, targetMap["queryPlanner"])
 
 				var nonEmptyResults bool
