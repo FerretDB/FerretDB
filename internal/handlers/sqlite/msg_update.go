@@ -142,6 +142,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 			}
 
 			if hasUpdateOperators {
+				// TODO: https://github.com/FerretDB/FerretDB/issues/3044
 				if _, err = common.UpdateDocument("update", doc, u.Update); err != nil {
 					return 0, 0, nil, err
 				}

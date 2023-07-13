@@ -230,6 +230,22 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
+func TestUpdateFieldCompatIncMulti(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]testUpdateManyCompatTestCase{
+		"InvalidInc": {
+			filter:     bson.D{{"v", bson.D{{"$eq", "non-existent"}}}},
+			update:     bson.D{{"$inc", bson.D{{"v", 1}}}},
+			updateOpts: options.Update().SetUpsert(true),
+			providers:  []shareddata.Provider{shareddata.Scalars},
+			skip:       "https://github.com/FerretDB/FerretDB/issues/3044",
+		},
+	}
+
+	testUpdateManyCompat(t, testCases)
+}
+
 func TestUpdateFieldCompatMax(t *testing.T) {
 	t.Parallel()
 
@@ -846,6 +862,7 @@ func TestUpdateFieldCompatSetMulti(t *testing.T) {
 			updateOpts: options.Update().SetUpsert(false),
 		},
 	}
+
 	testUpdateManyCompat(t, testCases)
 }
 

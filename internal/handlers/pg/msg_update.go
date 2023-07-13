@@ -104,6 +104,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				}
 
 				if hasUpdateOperators {
+					// TODO: https://github.com/FerretDB/FerretDB/issues/3044
 					if _, err = common.UpdateDocument(document.Command(), doc, u.Update); err != nil {
 						return err
 					}
