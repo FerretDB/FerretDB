@@ -26,6 +26,9 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestFindAndModifyEmptyCollectionName(tt *testing.T) {
@@ -629,20 +632,20 @@ func TestFindAndModifyCommentQuery(tt *testing.T) {
 		{"update", bson.D{{"$set", bson.D{{"v", "bar"}}}}},
 	}
 
-	expectedLastErrObj := bson.D{
-		{"n", int32(1)},
-		{"updatedExisting", true},
-	}
-
 	var actual bson.D
 	err = collection.Database().RunCommand(ctx, request).Decode(&actual)
 	require.NoError(t, err)
 
-	lastErrObj, ok := actual.Map()["lastErrorObject"].(bson.D)
-	if !ok {
+	lastErrObj, _ := ConvertDocument(t, actual).Get("lastErrorObject")
+	if lastErrObj == nil {
 		t.Fatal(actual)
 	}
 
 	assert.Contains(t, databaseNames, name)
-	AssertEqualDocuments(t, expectedLastErrObj, lastErrObj)
+
+	expectedLastErrObj := must.NotFail(types.NewDocument(
+		"n", int32(1),
+		"updatedExisting", true,
+	))
+	testutil.AssertEqual(t, expectedLastErrObj, lastErrObj.(*types.Document))
 }
