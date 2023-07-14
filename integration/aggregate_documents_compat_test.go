@@ -396,12 +396,7 @@ func TestAggregateCompatCount(t *testing.T) {
 func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 	t.Parallel()
 
-	// Scalars collection is not included because aggregation groups
-	// numbers of different types for $group, and this causes output
-	// _id to be different number type between compat and target.
-	// https://github.com/FerretDB/FerretDB/issues/2184
-	//
-	// Composites, ArrayStrings, ArrayInt32s and ArrayAndDocuments are not included
+	// Composites, ArrayStrings, ArrayInt32s, ArrayAndDocuments and Mixed are not included
 	// because the order in compat and target can be not deterministic.
 	// Aggregation assigns BSON array to output _id, and an array with
 	// descending sort use the greatest element for comparison causing
@@ -409,42 +404,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 	// so compat and target results in different order.
 	// https://github.com/FerretDB/FerretDB/issues/2185
 
-	providers := []shareddata.Provider{
-		// shareddata.Scalars,
-
-		shareddata.Doubles,
-		shareddata.OverflowVergeDoubles,
-		shareddata.SmallDoubles,
-		shareddata.Strings,
-		shareddata.Binaries,
-		shareddata.ObjectIDs,
-		shareddata.Bools,
-		shareddata.DateTimes,
-		shareddata.Nulls,
-		shareddata.Regexes,
-		shareddata.Int32s,
-		shareddata.Timestamps,
-		shareddata.Int64s,
-		shareddata.Unsets,
-		shareddata.ObjectIDKeys,
-
-		// shareddata.Composites,
-		shareddata.PostgresEdgeCases,
-
-		shareddata.DocumentsDoubles,
-		shareddata.DocumentsStrings,
-		shareddata.DocumentsDocuments,
-
-		// shareddata.ArrayStrings,
-		shareddata.ArrayDoubles,
-		// shareddata.ArrayInt32s,
-		shareddata.ArrayRegexes,
-		shareddata.ArrayDocuments,
-
-		// shareddata.Mixed,
-		// shareddata.ArrayAndDocuments,
-	}
-
+	providers := shareddata.AllProviders().Remove("Composites", "ArrayStrings", "ArrayInt32s", "ArrayAndDocuments", "Mixed")
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"DistinctValue": {
 			pipeline: bson.A{
@@ -471,7 +431,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 				// because _id of group can be an array
 				bson.D{{"$sort", bson.D{{"unique", 1}}}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2184",
+			skip: "https://github.com/FerretDB/FerretDB/issues/2185",
 		},
 		"CountValue": {
 			pipeline: bson.A{
