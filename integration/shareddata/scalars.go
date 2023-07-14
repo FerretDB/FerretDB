@@ -28,8 +28,8 @@ const (
 	doubleBig     = float64(1 << 61)   // 2305843009213693952.0: some number larger than safe integer (doubleBig+1 == doubleBig)
 	longBig       = int64(1 << 61)     // 2305843009213693952:   same as doubleBig but integer
 
-	doubleMaxOverflow = float64(9223372036854776833)  // double value that is larger than MaxInt64
-	doubleMinOverflow = float64(-9223372036854776833) // double value that is smaller than MinInt64
+	doubleMaxOverflow = float64(math.MaxInt64) + 1100.0 // 9223372036854777856.0: double value that is larger than MaxInt64
+	doubleMinOverflow = float64(math.MinInt64) + 1100.0 // -9223372036854774784.0: double value that is smaller than MinInt64
 
 	doubleMaxVerge = 1.79769e+307 // double value that is close to the MaxFloat64 (1.79769e+308)
 )
