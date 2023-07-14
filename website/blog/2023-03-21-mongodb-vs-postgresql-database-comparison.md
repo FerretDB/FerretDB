@@ -5,17 +5,6 @@ authors: [alex]
 description: >
   Compare the features and benefits of MongoDB and PostgreSQL to determine which database management system is best for your application.
 image: /img/blog/mongodb-postgres.jpg
-keywords:
-  [
-    MongoDB,
-    PostgreSQL,
-    NoSQL,
-    relational databases,
-    scalability,
-    performance,
-    data modeling,
-    schema design
-  ]
 tags: [document databases, open source, sspl, mongodb compatible, community]
 ---
 

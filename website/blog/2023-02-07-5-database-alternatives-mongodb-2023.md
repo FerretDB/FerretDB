@@ -5,7 +5,6 @@ author: Alexander Fashakin
 description: 'The top 5 MongoDB-compatible alternatives to MongoDB include: FerretDB, DocumentDB, CosmosDB, GaussDB(for Mongo), and MariaDB MaxScale.'
 image: /img/blog/mongodb-alternatives.png
 tags: [mongodb compatible, document databases, open source]
-date: 2023-02-07
 ---
 
 The top 5 MongoDB-compatible alternatives to MongoDB include: FerretDB, DocumentDB, CosmosDB, GaussDB(for Mongo), and MariaDB MaxScale.

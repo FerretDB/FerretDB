@@ -84,7 +84,6 @@ They make it easy for readers to search and identify related blog posts based on
 You can view all [currently listed tags here](https://blog.ferretdb.io/tags/).
 
 Please note that tags are case-sensitive, such that `Release` and `release` are two separate tags.
-Unless distinctly written (as in the case with CI/CD, DevOps), all tags should be in small-case.
 
 A blog post can have as many tags as possible, as long as it is relevant to the post.
 Please only include the following tags:

@@ -5,7 +5,6 @@ author: Chi Fujii
 description: In this article, we show how FerretDB stores and translates MongoDB's BSON format into JSONB in PostgreSQL.
 image: /img/blog/six-ferrets-1024x917.jpg
 tags: [tutorial, community, product]
-date: 2022-11-08
 ---
 
 In this article, we show how FerretDB stores and translates MongoDB's BSON format into JSONB in PostgreSQL.

@@ -5,7 +5,6 @@ author: Alexander Fashakin
 description: Database vendor lock-in poses a technical, financial, and legal risk for all companies. This article provides you with the 5 tips you need to avoid these risks.
 image: /img/blog/markus-spiske-iar-afB0QQw-unsplash-1024x683.jpg
 tags: [open source, sspl, document databases]
-date: 2022-10-28
 ---
 
 Database vendor lock-in poses a technical, financial, and legal risk for all companies.

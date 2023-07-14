@@ -5,7 +5,6 @@ author: Alexander Fashakin
 description: Using MongoDB Atlas only leads to lock-in, learn to avoid this problem and keep total control of your data using FerretDB and Tigris Data.
 image: /img/blog/masaaki-komori--we0BQQewBo-unsplash-1024x684.jpg
 tags: [open source, sspl, document databases]
-date: 2022-09-21
 ---
 
 Using MongoDB Atlas only leads to lock-in, learn to avoid this problem and keep total control of your data using FerretDB and Tigris Data.
