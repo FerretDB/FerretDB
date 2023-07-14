@@ -404,7 +404,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 	// so compat and target results in different order.
 	// https://github.com/FerretDB/FerretDB/issues/2185
 
-	providers := shareddata.AllProviders().Remove("Composites", "ArrayStrings", "ArrayInt32s", "ArrayAndDocuments", "Mixed")
+	providers := shareddata.AllProviders().Remove(shareddata.Composites, shareddata.ArrayStrings, shareddata.ArrayInt32s, shareddata.ArrayAndDocuments, shareddata.Mixed)
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"DistinctValue": {
 			pipeline: bson.A{
@@ -637,7 +637,7 @@ func TestAggregateCompatGroupExpressionDottedFields(t *testing.T) {
 	// FerretDB always sorts empty array is less than null.
 	// In compat, for `.sort()` an empty array is less than null.
 	// In compat, for aggregation `$sort` null is less than an empty array.
-	providers := shareddata.AllProviders().Remove("Mixed", "Composites", "DocumentsDeeplyNested")
+	providers := shareddata.AllProviders().Remove(shareddata.Mixed, shareddata.Composites, shareddata.DocumentsDeeplyNested)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"NestedInDocument": {
@@ -872,16 +872,16 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 
 	providers := shareddata.AllProviders().
 		// skipped due to https://github.com/FerretDB/FerretDB/issues/2185.
-		Remove("Composites").
-		Remove("ArrayStrings").
-		Remove("ArrayInt32s").
-		Remove("Mixed").
-		Remove("ArrayAndDocuments").
+		Remove(shareddata.Composites).
+		Remove(shareddata.ArrayStrings).
+		Remove(shareddata.ArrayInt32s).
+		Remove(shareddata.Mixed).
+		Remove(shareddata.ArrayAndDocuments).
 		// TODO: handle $sum of doubles near max precision.
 		// https://github.com/FerretDB/FerretDB/issues/2300
-		Remove("Doubles").
+		Remove(shareddata.Doubles).
 		// TODO: https://github.com/FerretDB/FerretDB/issues/2616
-		Remove("ArrayDocuments")
+		Remove(shareddata.ArrayDocuments)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"GroupNullID": {
@@ -1212,7 +1212,7 @@ func TestAggregateCompatSortDotNotation(t *testing.T) {
 
 	providers := shareddata.AllProviders().
 		// TODO: https://github.com/FerretDB/FerretDB/issues/2617
-		Remove("ArrayDocuments")
+		Remove(shareddata.ArrayDocuments)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"DotNotation": {
