@@ -17,11 +17,52 @@ package hana
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/hana/hanadb"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgFind implements HandlerInterface.
 func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	dbPool, err := h.DBPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	params, err := common.GetFindParams(document, h.L)
+	if err != nil {
+		return nil, err
+	}
+
+	qp := hanadb.QueryParams{
+		DB:         params.DB,
+		Collection: params.Collection,
+	}
+
+	// Todo:
+	// - use params to collect (query) documents
+	// - ? filter documents? or use filters in query directly?
+	// - wire?
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"cursor", must.NotFail(types.NewDocument(
+				"firstBatch", firstBatch,
+				"id", 123, //cursorID,
+				"ns", qp.DB+"."+qp.Collection,
+			)),
+			"ok", float64(1),
+		))},
+	}))
+
 	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }

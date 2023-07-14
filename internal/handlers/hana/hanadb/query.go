@@ -14,8 +14,40 @@
 
 package hanadb
 
+import (
+	"context"
+	"fmt"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+)
+
 // QueryParams represents options/parameters used for SQL query/statement.
 type QueryParams struct {
 	DB         string
 	Collection string
+}
+
+func (hanaPool *Pool) QueryDocuments(ctx context.Context, qp *QueryParams) ([]*types.Document, error) {
+
+	sqlStmt := fmt.Sprintf("SELECT %q FROM %q", qp.Collection, qp.DB)
+
+	rows, err := hanaPool.QueryContext(ctx, sqlStmt)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var documents []*types.Document
+
+	// Todo: transform rows into documents
+	for rows.Next() {
+		var docStr string
+		if err = rows.Scan(&docStr); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		// Todo: create document from rowString
+		//documents = append(documents, types.NewDocument(docStr))
+	}
+
+	return documents, err
 }
