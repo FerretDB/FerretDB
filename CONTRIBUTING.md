@@ -252,7 +252,7 @@ In most cases, they should be used instead of (deprecated) `bson.D.Map()`,
 The bar for adding new helpers is very high.
 Please check all existing ones.
 
-If there's a need to use any large number to test corner cases, 
+If there's a need to use any large number to test corner cases,
 we create constants for them with explanation what do they represent, and refer to them.
 For example:
 
