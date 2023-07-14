@@ -1082,6 +1082,9 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 func TestAggregateCompatMatch(t *testing.T) {
 	t.Parallel()
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/2291
+	providers := shareddata.AllProviders().Remove(shareddata.ArrayAndDocuments)
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"ID": {
 			pipeline:       bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
@@ -1129,7 +1132,7 @@ func TestAggregateCompatMatch(t *testing.T) {
 		},
 	}
 
-	testAggregateStagesCompat(t, testCases)
+	testAggregateStagesCompatWithProviders(t, providers, testCases)
 }
 
 func TestAggregateCompatSort(t *testing.T) {
