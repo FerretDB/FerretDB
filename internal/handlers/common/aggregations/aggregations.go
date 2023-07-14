@@ -22,26 +22,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
-// StageType is a type for aggregation stage types.
-type StageType int
-
-const (
-	_ StageType = iota
-
-	// StageTypeDocuments is a type for stages that process documents.
-	StageTypeDocuments
-
-	// StageTypeStats is a type for stages that process statistics and doesn't need documents.
-	StageTypeStats
-)
-
 // Stage is a common interface for all aggregation stages.
 type Stage interface {
 	// Process applies an aggregate stage on documents from iterator.
 	Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
-
-	// Type returns the type of the stage.
-	//
-	// TODO Remove it? https://github.com/FerretDB/FerretDB/issues/2423
-	Type() StageType
 }
