@@ -3,6 +3,7 @@ version: 3
 
 env:
   GORACE: halt_on_error=1,history_size=2
+  GOCOVERDIR: covdatafiles
 
 vars:
   SHARD_INDEX: 1
@@ -143,7 +144,7 @@ tasks:
     run: once
     deps: [gen-version]
     cmds:
-      - go test -c -o=bin/ferretdb{{exeExt}} {{.RACE_FLAG}} -tags=ferretdb_testcover,{{.BUILD_TAGS}} -coverpkg=./... ./cmd/ferretdb
+      - go test -c -o=bin/ferretdb{{exeExt}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -coverpkg=./... ./cmd/ferretdb
 
   gen:
     desc: "Generate (and format) Go code"
@@ -182,6 +183,8 @@ tasks:
   test-integration:
     desc: "Run integration tests for several backends in parallel"
     deps:
+      - rm -rf covdatafiles
+      - mkdir covdatafiles
       - test-integration-pg
       - test-integration-mongodb
       # no test-integration-sqlite yet
@@ -192,7 +195,7 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
+        go test -cover -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-pg.txt .
         -target-backend=ferretdb-pg
         -target-tls
