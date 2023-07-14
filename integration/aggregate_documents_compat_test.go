@@ -458,6 +458,21 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
 		},
+		"Distinct": {
+			pipeline: bson.A{
+				// sort collection to ensure the order is consistent
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					// set first _id of the collection as group's unique value
+					{"unique", bson.D{{"$first", "$_id"}}},
+				}}},
+				// ensure output is ordered by the _id of the collection, not _id of the group
+				// because _id of group can be an array
+				bson.D{{"$sort", bson.D{{"unique", 1}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2184",
+		},
 		"CountValue": {
 			pipeline: bson.A{
 				// sort to assure the same type of values (while grouping 2 types with the same value,
