@@ -632,12 +632,12 @@ func TestAggregateCompatGroupExpressionDottedFields(t *testing.T) {
 
 	// TODO Use all providers after fixing $sort problem:  https://github.com/FerretDB/FerretDB/issues/2276.
 	//
-	// Currently, providers Composites, DocumentsDeeplyNested and Mixed
+	// Currently, providers Composites, DocumentsDeeplyNested, ArrayAndDocuments and Mixed
 	// cannot be used due to sorting difference.
 	// FerretDB always sorts empty array is less than null.
 	// In compat, for `.sort()` an empty array is less than null.
 	// In compat, for aggregation `$sort` null is less than an empty array.
-	providers := shareddata.AllProviders().Remove(shareddata.Mixed, shareddata.Composites, shareddata.DocumentsDeeplyNested)
+	providers := shareddata.AllProviders().Remove(shareddata.Mixed, shareddata.Composites, shareddata.DocumentsDeeplyNested, shareddata.ArrayAndDocuments)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"NestedInDocument": {
