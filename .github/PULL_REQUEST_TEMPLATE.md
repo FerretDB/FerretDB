@@ -16,8 +16,8 @@ Closes #{issue_number}.
     please follow CONTRIBUTING.md.
 -->
 
-- [ ] I added/updated unit tests.
-- [ ] I added/updated integration/compatibility tests.
+- [ ] I added/updated unit tests (and they pass).
+- [ ] I added/updated integration/compatibility tests (and they pass).
 - [ ] I added/updated comments and checked rendering.
 - [ ] I made spot refactorings.
 - [ ] I updated user documentation.

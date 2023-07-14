@@ -23,7 +23,7 @@ import (
 )
 
 // MsgCurrentOp is a common implementation of currentOp command.
-func MsgCurrentOp(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func MsgCurrentOp(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(

@@ -67,6 +67,14 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Sort = nil
 	}
 
+	// Sorting requires fetching all documents and sorting them in memory unless `EnableSortPushdown` is set.
+	// Limit pushdown is not applied when `sort` is set but `EnableSortPushdown` is not set.
+	// Skip pushdown is not supported yet, limit pushdown is not applied when `skip` is non-zero value.
+	// TODO https://github.com/FerretDB/FerretDB/issues/3016.
+	if (params.Sort.Len() == 0 || h.EnableSortPushdown) && params.Skip == 0 {
+		qp.Limit = params.Limit
+	}
+
 	var queryPlanner *types.Document
 	var results pgdb.QueryResults
 
@@ -104,6 +112,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"command", cmd,
 			"pushdown", results.FilterPushdown,
 			"sortingPushdown", results.SortPushdown,
+			"limitPushdown", results.LimitPushdown,
 			"serverInfo", serverInfo,
 			"ok", float64(1),
 		))},

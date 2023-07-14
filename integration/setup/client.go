@@ -26,7 +26,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // makeClient returns new client for the given working MongoDB URI.
@@ -55,7 +55,7 @@ func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 //
 // If the connection can't be established, it panics,
 // as it doesn't make sense to proceed with other tests if we couldn't connect in one of them.
-func setupClient(tb testutil.TB, ctx context.Context, uri string) *mongo.Client {
+func setupClient(tb testtb.TB, ctx context.Context, uri string) *mongo.Client {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")

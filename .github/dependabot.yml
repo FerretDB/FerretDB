@@ -32,6 +32,7 @@ updates:
   - package-ecosystem: "docker"
     directory: "/build/deps"
     labels: ["deps", "not ready"]
+    assignees: [AlekSi]
     open-pull-requests-limit: 20
     groups:
       build-deps:
