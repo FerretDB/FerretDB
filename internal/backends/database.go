@@ -94,14 +94,13 @@ type CollectionInfo struct {
 // ListCollections returns information about collections in the database.
 //
 // Database doesn't have to exist; that's not an error.
-//
-//nolint:lll // for readability
-func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCollectionsParams) (res *ListCollectionsResult, err error) {
+func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCollectionsParams) (*ListCollectionsResult, error) {
 	defer observability.FuncCall(ctx)()
-	defer checkError(err)
-	res, err = dbc.db.ListCollections(ctx, params)
 
-	return
+	res, err := dbc.db.ListCollections(ctx, params)
+	checkError(err)
+
+	return res, err
 }
 
 // CreateCollectionParams represents the parameters of Database.CreateCollection method.
@@ -112,12 +111,13 @@ type CreateCollectionParams struct {
 // CreateCollection creates a new collection in the database; it should not already exist.
 //
 // Database may or may not exist; it should be created automatically if needed.
-func (dbc *databaseContract) CreateCollection(ctx context.Context, params *CreateCollectionParams) (err error) {
+func (dbc *databaseContract) CreateCollection(ctx context.Context, params *CreateCollectionParams) error {
 	defer observability.FuncCall(ctx)()
-	defer checkError(err, ErrorCodeCollectionAlreadyExists)
-	err = dbc.db.CreateCollection(ctx, params)
 
-	return
+	err := dbc.db.CreateCollection(ctx, params)
+	checkError(err, ErrorCodeCollectionAlreadyExists)
+
+	return err
 }
 
 // DropCollectionParams represents the parameters of Database.DropCollection method.
@@ -128,12 +128,13 @@ type DropCollectionParams struct {
 // DropCollection drops existing collection in the database.
 //
 // The errors for non-existing database and non-existing collection are the same (TODO?).
-func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCollectionParams) (err error) {
+func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCollectionParams) error {
 	defer observability.FuncCall(ctx)()
-	defer checkError(err, ErrorCodeCollectionDoesNotExist) // TODO: ErrorCodeDatabaseDoesNotExist ?
-	err = dbc.db.DropCollection(ctx, params)
 
-	return
+	err := dbc.db.DropCollection(ctx, params)
+	checkError(err, ErrorCodeCollectionDoesNotExist) // TODO: ErrorCodeDatabaseDoesNotExist ?
+
+	return err
 }
 
 // check interfaces

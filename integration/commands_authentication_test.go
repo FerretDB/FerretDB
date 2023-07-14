@@ -45,7 +45,6 @@ func TestCommandsAuthenticationLogoutTLS(t *testing.T) {
 	t.Parallel()
 
 	setup.SkipForMongoDB(t, "tls is not enabled for mongodb backend")
-	setup.SkipForTigrisWithReason(t, "tls is not enabled for tigris backend")
 
 	ctx, collection := setup.Setup(t)
 	db := collection.Database()

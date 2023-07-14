@@ -51,11 +51,6 @@ func (l *limit) Process(ctx context.Context, iter types.DocumentsIterator, close
 	return common.LimitIterator(iter, closer, l.limit), nil
 }
 
-// Type implements Stage interface.
-func (l *limit) Type() aggregations.StageType {
-	return aggregations.StageTypeDocuments
-}
-
 // check interfaces
 var (
 	_ aggregations.Stage = (*limit)(nil)

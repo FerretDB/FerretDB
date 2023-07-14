@@ -135,10 +135,6 @@ The `internal` subpackages contain most of the FerretDB code:
 - `handlers/sqlite` contains the implementation of the SQLite handler.
   It is being converted into universal handler for all backends.
 - `handlers/pg` contains the implementation of the PostgreSQL handler.
-- `handlers/tigris` contains the implementation of the Tigris handler.
-- `handlers/tigris/tjson` provides converters from/to TJSON with JSON Schema for built-in and `types` types.
-  BSON type information is preserved either in the schema (where possible) or in the values themselves.
-  It is used by `tigris` handler.
 
 #### Running tests
 
@@ -154,13 +150,12 @@ They use the Go MongoDB driver like a regular user application.
 They could test any MongoDB-compatible database (such as FerretDB or MongoDB itself) via a regular TCP or TLS port or Unix socket.
 They also could test in-process FerretDB instances
 (meaning that integration tests start and stop them themselves) with a given handler.
-Finally, some tests (so-called compatibility or "compat" tests) connect to two systems
+Finally, some integration tests (so-called compatibility or "compat" tests) connect to two systems
 ("target" for FerretDB and "compat" for MongoDB) at the same time,
 send the same queries to both, and compare results.
 You can run them with:
 
 - `task test-integration-pg` for in-process FerretDB with `pg` handler and MongoDB;
-- `task test-integration-tigris` for in-process FerretDB with `tigris` handler and MongoDB;
 - `task test-integration-mongodb` for MongoDB only, skipping compat tests;
 - or `task test-integration` to run all in parallel.
 
@@ -169,20 +164,22 @@ If tests fail and the output is too confusing, try running them sequentially by 
 
 You can also run `task -C 1` to limit the number of concurrent tasks, which is useful for debugging.
 
-To run a single test case, you may use Task variable `TEST_RUN`.
-For example, to run a single test case for in-process FerretDB with `pg` handler you may use `task test-integration-pg TEST_RUN=TestName/TestCaseName`.
+To run a subset of integration tests and test cases, you may use Task variable `TEST_RUN`.
+For example, to run all tests related to the `getMore` command implementation for in-process FerretDB with `pg` handler
+you may use `task test-integration-pg TEST_RUN='(?i)GetMore'`.
 
-Finally, since all tests just run `go test` with various arguments and flags under the hood,
+Finally, since all tests just run `go test` with various arguments and flags under the hood
+(for example, `TEST_RUN` just provides the value for the [`-run` flag](https://pkg.go.dev/cmd/go#hdr-Testing_flags)),
 you may also use all standard `go` tool facilities,
 including [`GOFLAGS` environment variable](https://pkg.go.dev/cmd/go#hdr-Environment_variables).
 For example:
 
-- to run a single test case for in-process FerretDB with `pg` handler
+- to run all tests related to the `getMore` command implementation for in-process FerretDB with `pg` handler
   with all subtests running sequentially,
-  you may use `env GOFLAGS='-parallel=1' task test-integration-pg TEST_RUN=TestName/TestCaseName`;
-- to run all tests for in-process FerretDB with `tigris` handler
+  you may use `env GOFLAGS='-parallel=1' task test-integration-pg TEST_RUN='(?i)GetMore'`;
+- to run all tests for in-process FerretDB with `sqlite` handler
   with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
-  you may use `env GOFLAGS='-trace=trace.out' task test-integration-tigris`.
+  you may use `env GOFLAGS='-trace=trace.out' task test-integration-sqlite`.
 
 > **Note**
 >
@@ -221,7 +218,7 @@ Some of our idiosyncrasies:
    The order of `case`s follows this order: <https://pkg.go.dev/github.com/FerretDB/FerretDB/internal/types#hdr-Mapping>
    It may seem random, but it is only pseudo-random and follows BSON spec: <https://bsonspec.org/spec.html>
 2. We generally pass and return `struct`s by pointers.
-   There are some exceptions like `types.Path` that has value semantics, but when in doubt – use pointers.
+   There are some exceptions like `types.Path` that have value semantics, but when in doubt – use pointers.
 3. Code comments:
    - All top-level declarations, even unexported, should have documentation comments.
    - In documentation comments do not describe the name in terms of the name itself (`// Registry is a registry of …`).
@@ -242,11 +239,18 @@ branchless (with a few, if any, `if` and `switch` statements),
 and backend-independent.
 Ideally, the same test should work for both FerretDB with all handlers and MongoDB.
 If that's impossible without some branching, use helpers exported from the `setup` package,
-such us `IsTigris`, `SkipForTigrisWithReason`, `TigrisOnlyWithReason`.
+such us `FailsForFerretDB`, `SkipForMongoDB`, etc.
 The bar for using other ways of branching, such as checking error codes and messages, is very high.
 Writing separate tests might be much better than making a single test that checks error text.
 
 Also, we should use driver methods as much as possible instead of testing commands directly via `RunCommand`.
+
+We have a lot of existing helpers to convert the driver's `bson.D` values to our `*types.Document` values,
+to compare them, etc.
+In most cases, they should be used instead of (deprecated) `bson.D.Map()`,
+`bson.Unmarshal`, decoding into a struct with `bson` tags, comparing fields one-by-one, etc.
+The bar for adding new helpers is very high.
+Please check all existing ones.
 
 #### Integration tests naming guidelines
 
@@ -277,7 +281,7 @@ Also, we should use driver methods as much as possible instead of testing comman
 
 Before submitting a pull request, please make sure that:
 
-1. Tests are added for new functionality or fixed bugs.
+1. Tests are added or updated for new functionality or fixed bugs.
    Typical test cases include:
    - happy paths;
    - dot notation for existing and non-existent paths;

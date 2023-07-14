@@ -17,11 +17,11 @@ package sqlite
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commoncommands"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgLogout implements HandlerInterface.
 func (h *Handler) MsgLogout(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.MsgLogout(ctx, msg)
+	return commoncommands.MsgLogout(ctx, msg)
 }

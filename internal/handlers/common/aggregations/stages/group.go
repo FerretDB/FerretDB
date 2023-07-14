@@ -265,11 +265,6 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 	})
 }
 
-// Type implements Stage interface.
-func (g *group) Type() aggregations.StageType {
-	return aggregations.StageTypeDocuments
-}
-
 // check interfaces
 var (
 	_ aggregations.Stage = (*group)(nil)

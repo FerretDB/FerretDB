@@ -26,7 +26,7 @@ import (
 )
 
 // MsgBuildInfo is a common implementation of the buildInfo command.
-func MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func MsgBuildInfo(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
 	aggregationStages := types.MakeArray(len(stages.Stages))
 	for stage := range stages.Stages {
 		aggregationStages.Append(stage)

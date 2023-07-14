@@ -32,19 +32,6 @@ func TestQueryProjectionCompat(t *testing.T) {
 	topLevelFieldsIntegers := shareddata.NewTopLevelFieldsProvider(
 		"TopLevelFieldsIntegers",
 		nil,
-		map[string]map[string]any{
-			"ferretdb-tigris": {
-				"$tigrisSchemaString": `{
-				"title": "%%collection%%",
-				"primary_key": ["_id"],
-				"properties": {
-					"foo": {"type": "integer", "format": "int32"},
-					"bar": {"type": "integer", "format": "int32"},
-					"_id": {"type": "string"}
-				}
-			}`,
-			},
-		},
 		map[string]shareddata.Fields{
 			"int32-two": {
 				{Key: "foo", Value: int32(1)},

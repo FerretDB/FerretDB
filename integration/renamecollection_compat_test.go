@@ -27,8 +27,6 @@ import (
 )
 
 func TestRenameCollectionCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Command renameCollection is not supported for Tigris")
-
 	t.Parallel()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
@@ -174,10 +172,12 @@ func TestRenameCollectionCompat(t *testing.T) {
 	} {
 		name, tc := name, tc
 
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
+		t.Run(name, func(tt *testing.T) {
+			tt.Helper()
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2760")
 
 			var targetRes bson.D
 			targetCommand := bson.D{{"renameCollection", tc.targetNSFrom}, {"to", tc.targetNSTo}}

@@ -15,6 +15,7 @@
 package backends
 
 import (
+	"errors"
 	"fmt"
 
 	"golang.org/x/exp/slices"
@@ -85,6 +86,7 @@ func ErrorCodeIs(err error, code ErrorCode, codes ...ErrorCode) bool {
 // checkError enforces backend interfaces contracts.
 //
 // Err must be nil, *Error, or some other opaque error.
+// *Error values can't be wrapped or be present anywhere in the error chain.
 // If err is *Error, it must have one of the given error codes.
 // If that's not the case, checkError panics in debug builds.
 //
@@ -100,6 +102,10 @@ func checkError(err error, codes ...ErrorCode) {
 
 	e, ok := err.(*Error) //nolint:errorlint // do not inspect error chain
 	if !ok {
+		if errors.As(err, &e) {
+			panic(fmt.Sprintf("error should not be wrapped: %v", err))
+		}
+
 		return
 	}
 

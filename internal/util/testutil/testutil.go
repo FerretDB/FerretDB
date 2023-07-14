@@ -18,16 +18,17 @@ package testutil
 import (
 	"context"
 	"runtime/trace"
-	"testing"
 
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // Ctx returns test context.
 // It is canceled when test is finished or interrupted.
-func Ctx(tb testing.TB) context.Context {
+func Ctx(tb testtb.TB) context.Context {
 	tb.Helper()
 
 	signalsCtx, signalsCancel := notifyTestsTermination(context.Background())
@@ -67,12 +68,12 @@ func Ctx(tb testing.TB) context.Context {
 }
 
 // Logger returns zap test logger with valid configuration.
-func Logger(tb testing.TB) *zap.Logger {
+func Logger(tb testtb.TB) *zap.Logger {
 	return LevelLogger(tb, zap.NewAtomicLevelAt(zap.DebugLevel))
 }
 
 // LevelLogger returns zap test logger with given level and valid configuration.
-func LevelLogger(tb testing.TB, level zap.AtomicLevel) *zap.Logger {
+func LevelLogger(tb testtb.TB, level zap.AtomicLevel) *zap.Logger {
 	opts := []zaptest.LoggerOption{
 		zaptest.Level(level),
 		zaptest.WrapOptions(zap.AddCaller(), zap.Development()),

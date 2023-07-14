@@ -39,7 +39,6 @@ type aggregateStagesCompatTestCase struct {
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
 	skip           string                   // skip test for all handlers, must have issue number mentioned
-	skipForTigris  string                   // skip test for Tigris handler, must have issue number mentioned
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -67,10 +66,6 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 
 			if tc.skip != "" {
 				t.Skip(tc.skip)
-			}
-
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
 			}
 
 			t.Parallel()
@@ -209,7 +204,7 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 			t.Run(targetCollection.Name(), func(t *testing.T) {
 				t.Helper()
 
-				var targetRes, compatRes []bson.D
+				var targetRes, compatRes bson.D
 				targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
 				compatErr := compatCollection.Database().RunCommand(ctx, command).Decode(&compatRes)
 
@@ -228,8 +223,7 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 					return
 				}
 				require.NoError(t, compatErr, "compat error; target returned no error")
-
-				AssertEqualDocumentsSlice(t, compatRes, targetRes)
+				AssertEqualDocuments(t, compatRes, targetRes)
 
 				if len(targetRes) > 0 || len(compatRes) > 0 {
 					nonEmptyResults = true
@@ -285,16 +279,13 @@ func TestAggregateCommandCompat(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
-		"MaxTimeMSNegative": {
+		"MaxTimeMSDoubleWholeNumber": {
 			command: bson.D{
 				{"aggregate", "collection-name"},
 				{"pipeline", bson.A{}},
-				{"maxTimeMS", int64(-1)},
 				{"cursor", bson.D{}},
+				{"maxTimeMS", float64(1000)},
 			},
-			resultType: emptyResult,
-			// compat and target return an error from the driver
-			// > cannot decode document into []primitive.D
 		},
 	}
 
@@ -324,8 +315,6 @@ func TestAggregateCompatOptions(t *testing.T) {
 }
 
 func TestAggregateCompatStages(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/2523")
-
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -891,7 +880,6 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$limit", 100}},
 			},
 			resultPushdown: true,
-			skipForTigris:  "TestAggregateCompatLimit",
 		},
 		"NoSortBeforeMatch": {
 			pipeline: bson.A{
@@ -1129,14 +1117,12 @@ func TestAggregateCompatMatch(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", 42}}}},
 			},
 			resultPushdown: true,
-			skipForTigris:  "https://github.com/FerretDB/FerretDB/issues/2523",
 		},
 		"String": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 			},
 			resultPushdown: true,
-			skipForTigris:  "https://github.com/FerretDB/FerretDB/issues/2523",
 		},
 		"Document": {
 			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"foo", int32(42)}}}}}}},

@@ -16,7 +16,9 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"math"
 	"os"
 	"time"
 
@@ -91,10 +93,64 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		v = int64(0)
 	}
 
-	maxTimeMS, err := commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "maxTimeMS", v, 0)
+	// cannot use other existing commonparams function, they return different error codes
+	maxTimeMS, err := commonparams.GetWholeNumberParam(v)
 	if err != nil {
-		// unreachable for MongoDB GO driver, it validates maxTimeMS parameter
-		return nil, lazyerrors.Error(err)
+		switch {
+		case errors.Is(err, commonparams.ErrUnexpectedType):
+			if _, ok = v.(types.NullType); ok {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrBadValue,
+					"maxTimeMS must be a number",
+					document.Command(),
+				)
+			}
+
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrTypeMismatch,
+				fmt.Sprintf(
+					`BSON field 'aggregate.maxTimeMS' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
+					commonparams.AliasFromType(v),
+				),
+				document.Command(),
+			)
+		case errors.Is(err, commonparams.ErrNotWholeNumber):
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				"maxTimeMS has non-integral value",
+				document.Command(),
+			)
+		case errors.Is(err, commonparams.ErrLongExceededPositive):
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf("%s value for maxTimeMS is out of range", types.FormatAnyValue(v)),
+				document.Command(),
+			)
+		case errors.Is(err, commonparams.ErrLongExceededNegative):
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrValueNegative,
+				fmt.Sprintf("BSON field 'maxTimeMS' value must be >= 0, actual value '%s'", types.FormatAnyValue(v)),
+				document.Command(),
+			)
+		default:
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	if maxTimeMS < int64(0) {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrValueNegative,
+			fmt.Sprintf("BSON field 'maxTimeMS' value must be >= 0, actual value '%s'", types.FormatAnyValue(v)),
+			document.Command(),
+		)
+	}
+
+	if maxTimeMS > math.MaxInt32 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf("%v value for maxTimeMS is out of range", v),
+			document.Command(),
+		)
 	}
 
 	pipeline, err := common.GetRequiredParam[*types.Array](document, "pipeline")
@@ -108,7 +164,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	aggregationStages := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
 	stagesDocuments := make([]aggregations.Stage, 0, len(aggregationStages))
-	stagesStats := make([]aggregations.Stage, 0, len(aggregationStages))
+	collStatsDocuments := make([]aggregations.Stage, 0, len(aggregationStages))
 
 	for i, d := range aggregationStages {
 		d, ok := d.(*types.Document)
@@ -126,11 +182,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 
-		switch s.Type() {
-		case aggregations.StageTypeDocuments:
-			stagesDocuments = append(stagesDocuments, s)
-			stagesStats = append(stagesStats, s) // It's possible to apply "documents" stages to statistics
-		case aggregations.StageTypeStats:
+		switch d.Command() {
+		case "$collStats":
 			if i > 0 {
 				// TODO Add a test to cover this error: https://github.com/FerretDB/FerretDB/issues/2349
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -139,9 +192,11 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 					document.Command(),
 				)
 			}
-			stagesStats = append(stagesStats, s)
+
+			collStatsDocuments = append(collStatsDocuments, s)
 		default:
-			panic(fmt.Sprintf("unknown stage type: %v", s.Type()))
+			stagesDocuments = append(stagesDocuments, s)
+			collStatsDocuments = append(collStatsDocuments, s) // It's possible to apply any stage after $collStats stage
 		}
 	}
 
@@ -180,7 +235,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	cancel := func() {}
 	if maxTimeMS != 0 {
 		// It is not clear if maxTimeMS affects only aggregate, or both aggregate and getMore (as the current code does).
-		// TODO https://github.com/FerretDB/FerretDB/issues/1808
+		// TODO https://github.com/FerretDB/FerretDB/issues/2983
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
 	}
 
@@ -189,9 +244,9 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	var iter iterator.Interface[struct{}, *types.Document]
 
 	// At this point we have a list of stages to apply to the documents or stats.
-	// If stagesStats contains the same stages as stagesDocuments, we apply aggregation to documents fetched from the DB.
-	// If stagesStats contains more stages than stagesDocuments, we apply aggregation to statistics fetched from the DB.
-	if len(stagesStats) == len(stagesDocuments) {
+	// If collStatsDocuments contains the same stages as stagesDocuments, we apply aggregation to documents fetched from the DB.
+	// If collStatsDocuments contains more stages than stagesDocuments, we apply aggregation to statistics fetched from the DB.
+	if len(collStatsDocuments) == len(stagesDocuments) {
 		filter, sort := aggregations.GetPushdownQuery(aggregationStages)
 
 		// only documents stages or no stages - fetch documents from the DB and apply stages to them
@@ -211,10 +266,11 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})
 	} else {
 		// stats stages are provided - fetch stats from the DB and apply stages to them
-		statistics := stages.GetStatistics(stagesStats)
+		// TODO move $collStatsDocuments specific logic to its stage https://github.com/FerretDB/FerretDB/issues/2423
+		statistics := stages.GetStatistics(collStatsDocuments)
 
 		iter, err = processStagesStats(ctx, closer, &stagesStatsParams{
-			dbPool, db, collection, statistics, stagesStats,
+			dbPool, db, collection, statistics, collStatsDocuments,
 		})
 	}
 
@@ -321,6 +377,7 @@ type stagesStatsParams struct {
 }
 
 // processStagesStats retrieves the statistics from the database and then processes them through the stages.
+// TODO move $collStats specific logic to its stage https://github.com/FerretDB/FerretDB/issues/2423
 func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *stagesStatsParams) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	// Clarify what needs to be retrieved from the database and retrieve it.
 	_, hasCount := p.statistics[stages.StatisticCount]

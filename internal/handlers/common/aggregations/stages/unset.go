@@ -144,11 +144,6 @@ func (u *unset) Process(_ context.Context, iter types.DocumentsIterator, closer 
 	return projection.ProjectionIterator(iter, closer, u.exclusion)
 }
 
-// Type implements Stage interface.
-func (u *unset) Type() aggregations.StageType {
-	return aggregations.StageTypeDocuments
-}
-
 // validateUnsetField returns error on invalid field value.
 func validateUnsetField(field string) (*types.Path, error) {
 	if field == "" {
