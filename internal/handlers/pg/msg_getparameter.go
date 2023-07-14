@@ -120,6 +120,7 @@ func selectUnit(document, resDB *types.Document, showDetails, allParameters bool
 	}
 
 	doc.Set("ok", float64(1))
+
 	return doc, nil
 }
 
@@ -145,6 +146,7 @@ func extractParam(document *types.Document) (showDetails, allParameters bool, er
 			}
 		}
 	}
+
 	if getPrm == "*" {
 		allParameters = true
 	}

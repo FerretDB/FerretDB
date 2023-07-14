@@ -48,8 +48,8 @@ var Scalars = &Values[string]{
 		"double-big":          doubleBig,
 		"double-1":            float64(math.MinInt64 - 1),
 		"double-2":            float64(math.MinInt64),
-		"double-3":            float64(-123456789), //random
-		"double-4":            float64(123456789),  //random
+		"double-3":            float64(-123456789), // random
+		"double-4":            float64(123456789),  // random
 		"double-5":            float64(math.MaxInt64),
 		"double-6":            float64(math.MaxInt64 + 1),
 		"double-7":            doubleMaxVerge,
@@ -92,8 +92,8 @@ var Scalars = &Values[string]{
 		"int32-max":  int32(math.MaxInt32),
 		"int32-min":  int32(math.MinInt32),
 		"int32-1":    int32(4080),
-		"int32-2":    int32(1048560),   //random
-		"int32-3":    int32(268435440), //random
+		"int32-2":    int32(1048560),   // random
+		"int32-3":    int32(268435440), // random
 
 		"timestamp":   primitive.Timestamp{T: 42, I: 13},
 		"timestamp-i": primitive.Timestamp{I: 1},
@@ -104,9 +104,9 @@ var Scalars = &Values[string]{
 		"int64-min":        int64(math.MinInt64),
 		"int64-big":        longBig,
 		"int64-double-big": doubleBig,
-		"int64-1":          int64(1099511628000),     //random,
-		"int64-2":          int64(281474976700000),   //random
-		"int64-3":          int64(72057594040000000), //random
+		"int64-1":          int64(1099511628000),     // random,
+		"int64-2":          int64(281474976700000),   // random
+		"int64-3":          int64(72057594040000000), // random
 
 		// no 128-bit decimal floating point (yet)
 
@@ -151,8 +151,8 @@ var Doubles = &Values[string]{
 		"double-null":         nil,
 		"double-1":            float64(math.MinInt64 - 1),
 		"double-2":            float64(math.MinInt64),
-		"double-3":            float64(-123456789), //random
-		"double-4":            float64(123456789),  //random
+		"double-3":            float64(-123456789), // random
+		"double-4":            float64(123456789),  // random
 		"double-5":            float64(math.MaxInt64),
 		"double-6":            float64(math.MaxInt64 + 1),
 		"double-max-overflow": doubleMaxOverflow,
@@ -180,9 +180,9 @@ var SmallDoubles = &Values[string]{
 	data: map[string]any{
 		"double":       42.13,
 		"double-whole": 42.0,
-		"double-1":     4080.1234,    //random
-		"double-2":     1048560.0099, //random
-		"double-3":     268435440.2,  //random
+		"double-1":     4080.1234,    // random
+		"double-2":     1048560.0099, // random
+		"double-3":     268435440.2,  // random
 	},
 }
 
@@ -269,8 +269,8 @@ var Int32s = &Values[string]{
 		"int32-min":  int32(math.MinInt32),
 		// "int32-null": nil, TODO: https://github.com/FerretDB/FerretDB/issues/1821
 		"int32-1": int32(4080),
-		"int32-2": int32(1048560),   //random
-		"int32-3": int32(268435440), //random
+		"int32-2": int32(1048560),   // random
+		"int32-3": int32(268435440), // random
 	},
 }
 
@@ -293,9 +293,9 @@ var Int64s = &Values[string]{
 		"int64-max":  int64(math.MaxInt64),
 		"int64-min":  int64(math.MinInt64),
 		// "int64-null": nil, TODO: https://github.com/FerretDB/FerretDB/issues/1821
-		"int64-1": int64(1099511628000),     //random
-		"int64-2": int64(281474976700000),   //random
-		"int64-3": int64(72057594040000000), //random
+		"int64-1": int64(1099511628000),     // random
+		"int64-2": int64(281474976700000),   // random
+		"int64-3": int64(72057594040000000), // random
 
 		// long big values ~1<<61
 		"int64-big":       longBig,
