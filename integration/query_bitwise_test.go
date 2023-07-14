@@ -56,7 +56,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			value: primitive.A{1, 5},
 			expectedIDs: []any{
 				"double-1", "double-2", "double-4",
-				"double-big", "double-min-overflow-verge", "double-zero",
+				"double-big", "double-zero",
 				"int32-min", "int32-zero",
 				"int64-3", "int64-big", "int64-double-big",
 				"int64-min", "int64-zero",
@@ -74,7 +74,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			value: primitive.A{1.0},
 			expectedIDs: []any{
 				"double-1", "double-2", "double-4", "double-big",
-				"double-min-overflow-verge", "double-zero",
+				"double-zero",
 				"int32-1", "int32-2", "int32-3", "int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3", "int64-big",
 				"int64-double-big", "int64-min", "int64-zero",
@@ -109,7 +109,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			value: 2.0,
 			expectedIDs: []any{
 				"double-1", "double-2", "double-4",
-				"double-big", "double-min-overflow-verge", "double-zero",
+				"double-big", "double-zero",
 				"int32-1", "int32-2", "int32-3", "int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
 				"int64-big", "int64-double-big", "int64-min", "int64-zero",
@@ -138,7 +138,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			value: primitive.Binary{Data: []byte{2}},
 			expectedIDs: []any{
 				"double-1", "double-2", "double-4",
-				"double-big", "double-min-overflow-verge", "double-zero",
+				"double-big", "double-zero",
 				"int32-1", "int32-2", "int32-3", "int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
 				"int64-big", "int64-double-big", "int64-min", "int64-zero",
@@ -148,7 +148,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			value: primitive.Binary{Data: []byte{0, 0, 2}},
 			expectedIDs: []any{
 				"double-1", "double-2", "double-3", "double-big",
-				"double-min-overflow-verge", "double-whole", "double-zero",
+				"double-whole", "double-zero",
 				"int32", "int32-1", "int32-min", "int32-zero",
 				"int64", "int64-1", "int64-big", "int64-double-big",
 				"int64-min", "int64-zero",
@@ -167,7 +167,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			value: int32(2),
 			expectedIDs: []any{
 				"double-1", "double-2", "double-4", "double-big",
-				"double-min-overflow-verge", "double-zero",
+				"double-zero",
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3", "int64-big",
@@ -187,7 +187,7 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 			value: math.MaxInt64,
 			expectedIDs: []any{
 				"double-1", "double-2",
-				"double-min-overflow-verge", "double-zero",
+				"double-zero",
 				"int32-zero",
 				"int64-min",
 				"int64-zero",
@@ -395,7 +395,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			value: primitive.A{1, 5},
 			expectedIDs: []any{
 				"double-1", "double-2", "double-4",
-				"double-big", "double-min-overflow-verge", "double-zero",
+				"double-big", "double-zero",
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
@@ -431,7 +431,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			value: 2.0,
 			expectedIDs: []any{
 				"double-1", "double-2", "double-4",
-				"double-big", "double-min-overflow-verge", "double-zero",
+				"double-big", "double-zero",
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
@@ -461,7 +461,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			value: primitive.Binary{Data: []byte{2}},
 			expectedIDs: []any{
 				"double-1", "double-2", "double-4",
-				"double-big", "double-min-overflow-verge", "double-zero",
+				"double-big", "double-zero",
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
@@ -472,7 +472,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			value: primitive.Binary{Data: []byte{0, 0, 2}},
 			expectedIDs: []any{
 				"double-1", "double-2", "double-3",
-				"double-big", "double-min-overflow-verge", "double-whole", "double-zero",
+				"double-big", "double-whole", "double-zero",
 				"int32", "int32-1", "int32-min", "int32-zero",
 				"int64", "int64-1", "int64-big", "int64-double-big",
 				"int64-min", "int64-zero",
@@ -483,7 +483,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			value: int32(2),
 			expectedIDs: []any{
 				"double-1", "double-2", "double-4",
-				"double-big", "double-min-overflow-verge", "double-zero",
+				"double-big", "double-zero",
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
@@ -503,7 +503,7 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 			value: math.MaxInt64,
 			expectedIDs: []any{
 				"double-1", "double-2", "double-3", "double-4",
-				"double-big", "double-min-overflow-verge", "double-whole", "double-zero",
+				"double-big", "double-whole", "double-zero",
 				"int32", "int32-1", "int32-2", "int32-3", "int32-max", "int32-min", "int32-zero",
 				"int64", "int64-1", "int64-2", "int64-3", "int64-big", "int64-double-big",
 				"int64-min", "int64-zero",
