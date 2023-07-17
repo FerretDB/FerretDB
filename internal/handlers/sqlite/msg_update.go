@@ -123,17 +123,38 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 				continue
 			}
 
-			doc := u.Filter.DeepCopy()
-			if _, err = common.UpdateDocument("update", doc, u.Update); err != nil {
+			// TODO: https://github.com/FerretDB/FerretDB/issues/3040
+			hasQueryOperators, err := common.HasQueryOperator(u.Filter)
+			if err != nil {
 				return 0, 0, nil, lazyerrors.Error(err)
+			}
+
+			var doc *types.Document
+			if hasQueryOperators {
+				doc = must.NotFail(types.NewDocument())
+			} else {
+				doc = u.Filter
+			}
+
+			hasUpdateOperators, err := common.HasSupportedUpdateModifiers("update", u.Update)
+			if err != nil {
+				return 0, 0, nil, err
+			}
+
+			if hasUpdateOperators {
+				// TODO: https://github.com/FerretDB/FerretDB/issues/3044
+				if _, err = common.UpdateDocument("update", doc, u.Update); err != nil {
+					return 0, 0, nil, err
+				}
+			} else {
+				doc = u.Update
 			}
 
 			if !doc.Has("_id") {
 				doc.Set("_id", types.NewObjectID())
 			}
-
 			upserted.Append(must.NotFail(types.NewDocument(
-				"index", int32(0), // TODO
+				"index", int32(upserted.Len()),
 				"_id", must.NotFail(doc.Get("_id")),
 			)))
 
@@ -142,7 +163,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 			iter := must.NotFail(types.NewArray(doc)).Iterator()
 			defer iter.Close()
 
-			_, err := db.Collection(params.Collection).Insert(ctx, &backends.InsertParams{
+			_, err = db.Collection(params.Collection).Insert(ctx, &backends.InsertParams{
 				Iter: iter,
 			})
 			if err != nil {

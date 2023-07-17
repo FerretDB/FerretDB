@@ -155,6 +155,129 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 	}
 }
 
+// testUpdateManyCompatTestCase describes update compatibility test case.
+type testUpdateManyCompatTestCase struct { //nolint:vet // used for testing only
+	update     bson.D                   // required if replace is nil
+	filter     bson.D                   // defaults to bson.D{{"_id", id}}
+	updateOpts *options.UpdateOptions   // defaults to nil
+	resultType compatTestCaseResultType // defaults to nonEmptyResult
+	providers  []shareddata.Provider    // defaults to shareddata.AllProviders()
+
+	skip string // skips test if non-empty
+}
+
+// testUpdateManyCompat tests update compatibility test cases.
+func testUpdateManyCompat(t *testing.T, testCases map[string]testUpdateManyCompatTestCase) {
+	t.Helper()
+
+	for name, tc := range testCases {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
+
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			providers := shareddata.AllProviders()
+			if tc.providers != nil {
+				providers = tc.providers
+			}
+
+			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+				Providers:                providers,
+				AddNonExistentCollection: true,
+			})
+			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
+
+			update := tc.update
+			require.NotNil(t, update, "`update` must be set")
+
+			var nonEmptyResults bool
+			for i := range targetCollections {
+				targetCollection := targetCollections[i]
+				compatCollection := compatCollections[i]
+				t.Run(targetCollection.Name(), func(t *testing.T) {
+					t.Helper()
+
+					allDocs := FindAll(t, ctx, targetCollection)
+
+					for _, doc := range allDocs {
+						id, _ := ConvertDocument(t, doc).Get("_id")
+						require.NotNil(t, id)
+
+						t.Run(fmt.Sprint(id), func(t *testing.T) {
+							t.Helper()
+
+							filter := tc.filter
+							if tc.filter == nil {
+								filter = bson.D{{"_id", id}}
+							}
+
+							var targetUpdateRes, compatUpdateRes *mongo.UpdateResult
+							var targetErr, compatErr error
+
+							targetUpdateRes, targetErr = targetCollection.UpdateMany(ctx, filter, update, tc.updateOpts)
+							compatUpdateRes, compatErr = compatCollection.UpdateMany(ctx, filter, update, tc.updateOpts)
+
+							if targetErr != nil {
+								t.Logf("Target error: %v", targetErr)
+								t.Logf("Compat error: %v", compatErr)
+
+								// error messages are intentionally not compared
+								AssertMatchesWriteError(t, compatErr, targetErr)
+
+								return
+							}
+							require.NoError(t, compatErr, "compat error; target returned no error")
+
+							if pointer.Get(targetUpdateRes).ModifiedCount > 0 || pointer.Get(compatUpdateRes).ModifiedCount > 0 {
+								nonEmptyResults = true
+							}
+
+							assert.Equal(t, compatUpdateRes, targetUpdateRes)
+
+							opts := options.Find().SetSort(bson.D{{"_id", 1}})
+							targetCursor, targetErr := targetCollection.Find(ctx, bson.D{}, opts)
+							compatCursor, compatErr := compatCollection.Find(ctx, bson.D{}, opts)
+
+							if targetCursor != nil {
+								defer targetCursor.Close(ctx)
+							}
+							if compatCursor != nil {
+								defer compatCursor.Close(ctx)
+							}
+
+							require.NoError(t, targetErr)
+							require.NoError(t, compatErr)
+
+							targetRes := FetchAll(t, ctx, targetCursor)
+							compatRes := FetchAll(t, ctx, compatCursor)
+
+							AssertEqualDocumentsSlice(t, compatRes, targetRes)
+
+							if len(targetRes) > 0 || len(compatRes) > 0 {
+								nonEmptyResults = true
+							}
+						})
+					}
+				})
+			}
+
+			switch tc.resultType {
+			case nonEmptyResult:
+				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+			case emptyResult:
+				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
+			default:
+				t.Fatalf("unknown result type %v", tc.resultType)
+			}
+		})
+	}
+}
+
 // updateCommandCompatTestCase describes update command compatibility test case.
 type updateCommandCompatTestCase struct {
 	multi      any                      // defaults to false, if true updates multiple documents
