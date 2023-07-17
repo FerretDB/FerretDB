@@ -25,19 +25,19 @@ func TestCreateNestedDocument(t *testing.T) {
 	t.Parallel()
 
 	t.Run("0", func(t *testing.T) {
-		embdyDoc := bson.D{{"v", "foo"}}
+		embdyDoc := bson.D{{"v", nil}}
 		doc := CreateNestedDocument(0)
 		assert.Equal(t, embdyDoc, doc)
 	})
 
 	t.Run("1", func(t *testing.T) {
-		embdyDoc := bson.A{bson.D{{"v", "foo"}}}
+		embdyDoc := bson.D{{"v", bson.A{nil}}}
 		doc := CreateNestedDocument(1)
 		assert.Equal(t, embdyDoc, doc)
 	})
 
 	t.Run("2", func(t *testing.T) {
-		embdyDoc := bson.D{{"v", bson.A{bson.D{{"v", "foo"}}}}}
+		embdyDoc := bson.D{{"v", bson.A{bson.D{{"v", nil}}}}}
 		doc := CreateNestedDocument(2)
 		assert.Equal(t, embdyDoc, doc)
 	})
