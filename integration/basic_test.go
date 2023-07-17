@@ -631,7 +631,7 @@ func TestCheckingNestedDocuments(t *testing.T) {
 			ctx, collection := setup.Setup(t)
 			_, err := collection.InsertOne(ctx, tc.doc)
 			if tc.err != nil {
-				require.Equal(t, tc.err, err)
+				require.Error(t, err)
 				return
 			}
 

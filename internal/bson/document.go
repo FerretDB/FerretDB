@@ -203,7 +203,8 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 		case tagArray:
 			var v arrayType
 
-			doc.nesting = +1
+			doc.nesting++
+
 			if doc.nesting > maxNesting {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (over nested document. Max supported nesting: %d)", maxNesting)
 			}
