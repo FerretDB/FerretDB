@@ -19,10 +19,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -30,12 +33,12 @@ import (
 
 // aggregateStagesCompatTestCase describes aggregation stages compatibility test case.
 type aggregateStagesCompatTestCase struct {
-	pipeline       bson.A                   // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
+	pipeline bson.A         // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
+	maxTime  *time.Duration // optional, leave nil for unset maxTime
+
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
-
-	skip          string // skip test for all handlers, must have issue number mentioned
-	skipForTigris string // skip test for Tigris handler, must have issue number mentioned
+	skip           string                   // skip test for all handlers, must have issue number mentioned
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -65,10 +68,6 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 				t.Skip(tc.skip)
 			}
 
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
-			}
-
 			t.Parallel()
 
 			pipeline := tc.pipeline
@@ -90,6 +89,12 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 				// add sort stage to sort by _id because compat and target
 				// would be ordered differently otherwise.
 				pipeline = append(pipeline, bson.D{{"$sort", bson.D{{"_id", 1}}}})
+			}
+
+			opts := options.Aggregate()
+
+			if tc.maxTime != nil {
+				opts.SetMaxTime(*tc.maxTime)
 			}
 
 			var nonEmptyResults bool
@@ -114,8 +119,8 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 
 					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"], msg)
 
-					targetCursor, targetErr := targetCollection.Aggregate(ctx, pipeline)
-					compatCursor, compatErr := compatCollection.Aggregate(ctx, pipeline)
+					targetCursor, targetErr := targetCollection.Aggregate(ctx, pipeline, opts)
+					compatCursor, compatErr := compatCollection.Aggregate(ctx, pipeline, opts)
 
 					if targetCursor != nil {
 						defer targetCursor.Close(ctx)
@@ -199,7 +204,7 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 			t.Run(targetCollection.Name(), func(t *testing.T) {
 				t.Helper()
 
-				var targetRes, compatRes []bson.D
+				var targetRes, compatRes bson.D
 				targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
 				compatErr := compatCollection.Database().RunCommand(ctx, command).Decode(&compatRes)
 
@@ -207,14 +212,18 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 					t.Logf("Target error: %v", targetErr)
 					t.Logf("Compat error: %v", compatErr)
 
-					// error messages are intentionally not compared
-					AssertMatchesCommandError(t, compatErr, targetErr)
+					if _, ok := targetErr.(mongo.CommandError); ok { //nolint:errorlint // do not inspect error chain
+						// error messages are intentionally not compared
+						AssertMatchesCommandError(t, compatErr, targetErr)
+					} else {
+						// driver sent an error
+						require.Equal(t, compatErr, targetErr)
+					}
 
 					return
 				}
 				require.NoError(t, compatErr, "compat error; target returned no error")
-
-				AssertEqualDocumentsSlice(t, compatRes, targetRes)
+				AssertEqualDocuments(t, compatRes, targetRes)
 
 				if len(targetRes) > 0 || len(compatRes) > 0 {
 					nonEmptyResults = true
@@ -270,14 +279,42 @@ func TestAggregateCommandCompat(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"MaxTimeMSDoubleWholeNumber": {
+			command: bson.D{
+				{"aggregate", "collection-name"},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", float64(1000)},
+			},
+		},
 	}
 
 	testAggregateCommandCompat(t, testCases)
 }
 
-func TestAggregateCompatStages(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/2523")
+func TestAggregateCompatOptions(t *testing.T) {
+	t.Parallel()
 
+	providers := []shareddata.Provider{
+		// one provider is sufficient to test aggregate options
+		shareddata.Unsets,
+	}
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"MaxTimeZero": {
+			pipeline: bson.A{},
+			maxTime:  pointer.ToDuration(time.Duration(0)),
+		},
+		"MaxTime": {
+			pipeline: bson.A{},
+			maxTime:  pointer.ToDuration(time.Second),
+		},
+	}
+
+	testAggregateStagesCompatWithProviders(t, providers, testCases)
+}
+
+func TestAggregateCompatStages(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -359,12 +396,7 @@ func TestAggregateCompatCount(t *testing.T) {
 func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 	t.Parallel()
 
-	// Scalars collection is not included because aggregation groups
-	// numbers of different types for $group, and this causes output
-	// _id to be different number type between compat and target.
-	// https://github.com/FerretDB/FerretDB/issues/2184
-	//
-	// Composites, ArrayStrings, ArrayInt32s and ArrayAndDocuments are not included
+	// Composites, ArrayStrings, ArrayInt32s, ArrayAndDocuments and Mixed are not included
 	// because the order in compat and target can be not deterministic.
 	// Aggregation assigns BSON array to output _id, and an array with
 	// descending sort use the greatest element for comparison causing
@@ -372,42 +404,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 	// so compat and target results in different order.
 	// https://github.com/FerretDB/FerretDB/issues/2185
 
-	providers := []shareddata.Provider{
-		// shareddata.Scalars,
-
-		shareddata.Doubles,
-		shareddata.OverflowVergeDoubles,
-		shareddata.SmallDoubles,
-		shareddata.Strings,
-		shareddata.Binaries,
-		shareddata.ObjectIDs,
-		shareddata.Bools,
-		shareddata.DateTimes,
-		shareddata.Nulls,
-		shareddata.Regexes,
-		shareddata.Int32s,
-		shareddata.Timestamps,
-		shareddata.Int64s,
-		shareddata.Unsets,
-		shareddata.ObjectIDKeys,
-
-		// shareddata.Composites,
-		shareddata.PostgresEdgeCases,
-
-		shareddata.DocumentsDoubles,
-		shareddata.DocumentsStrings,
-		shareddata.DocumentsDocuments,
-
-		// shareddata.ArrayStrings,
-		shareddata.ArrayDoubles,
-		// shareddata.ArrayInt32s,
-		shareddata.ArrayRegexes,
-		shareddata.ArrayDocuments,
-
-		// shareddata.Mixed,
-		// shareddata.ArrayAndDocuments,
-	}
-
+	providers := shareddata.AllProviders().Remove(shareddata.Composites, shareddata.ArrayStrings, shareddata.ArrayInt32s, shareddata.ArrayAndDocuments, shareddata.Mixed)
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"DistinctValue": {
 			pipeline: bson.A{
@@ -420,6 +417,21 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 				// sort descending order, so ArrayDoubles has deterministic order.
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+		},
+		"Distinct": {
+			pipeline: bson.A{
+				// sort collection to ensure the order is consistent
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					// set first _id of the collection as group's unique value
+					{"unique", bson.D{{"$first", "$_id"}}},
+				}}},
+				// ensure output is ordered by the _id of the collection, not _id of the group
+				// because _id of group can be an array
+				bson.D{{"$sort", bson.D{{"unique", 1}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2185",
 		},
 		"CountValue": {
 			pipeline: bson.A{
@@ -620,12 +632,12 @@ func TestAggregateCompatGroupExpressionDottedFields(t *testing.T) {
 
 	// TODO Use all providers after fixing $sort problem:  https://github.com/FerretDB/FerretDB/issues/2276.
 	//
-	// Currently, providers Composites, DocumentsDeeplyNested and Mixed
+	// Currently, providers Composites, DocumentsDeeplyNested, ArrayAndDocuments and Mixed
 	// cannot be used due to sorting difference.
 	// FerretDB always sorts empty array is less than null.
 	// In compat, for `.sort()` an empty array is less than null.
 	// In compat, for aggregation `$sort` null is less than an empty array.
-	providers := shareddata.AllProviders().Remove("Mixed", "Composites", "DocumentsDeeplyNested")
+	providers := shareddata.AllProviders().Remove(shareddata.Mixed, shareddata.Composites, shareddata.DocumentsDeeplyNested, shareddata.ArrayAndDocuments)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"NestedInDocument": {
@@ -843,7 +855,6 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$limit", 100}},
 			},
 			resultPushdown: true,
-			skipForTigris:  "TestAggregateCompatLimit",
 		},
 		"NoSortBeforeMatch": {
 			pipeline: bson.A{
@@ -861,16 +872,16 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 
 	providers := shareddata.AllProviders().
 		// skipped due to https://github.com/FerretDB/FerretDB/issues/2185.
-		Remove("Composites").
-		Remove("ArrayStrings").
-		Remove("ArrayInt32s").
-		Remove("Mixed").
-		Remove("ArrayAndDocuments").
+		Remove(shareddata.Composites).
+		Remove(shareddata.ArrayStrings).
+		Remove(shareddata.ArrayInt32s).
+		Remove(shareddata.Mixed).
+		Remove(shareddata.ArrayAndDocuments).
 		// TODO: handle $sum of doubles near max precision.
 		// https://github.com/FerretDB/FerretDB/issues/2300
-		Remove("Doubles").
+		Remove(shareddata.Doubles).
 		// TODO: https://github.com/FerretDB/FerretDB/issues/2616
-		Remove("ArrayDocuments")
+		Remove(shareddata.ArrayDocuments)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"GroupNullID": {
@@ -1071,6 +1082,9 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 func TestAggregateCompatMatch(t *testing.T) {
 	t.Parallel()
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/2291
+	providers := shareddata.AllProviders().Remove(shareddata.ArrayAndDocuments)
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"ID": {
 			pipeline:       bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
@@ -1081,14 +1095,12 @@ func TestAggregateCompatMatch(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", 42}}}},
 			},
 			resultPushdown: true,
-			skipForTigris:  "https://github.com/FerretDB/FerretDB/issues/2523",
 		},
 		"String": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 			},
 			resultPushdown: true,
-			skipForTigris:  "https://github.com/FerretDB/FerretDB/issues/2523",
 		},
 		"Document": {
 			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"foo", int32(42)}}}}}}},
@@ -1120,7 +1132,7 @@ func TestAggregateCompatMatch(t *testing.T) {
 		},
 	}
 
-	testAggregateStagesCompat(t, testCases)
+	testAggregateStagesCompatWithProviders(t, providers, testCases)
 }
 
 func TestAggregateCompatSort(t *testing.T) {
@@ -1203,7 +1215,7 @@ func TestAggregateCompatSortDotNotation(t *testing.T) {
 
 	providers := shareddata.AllProviders().
 		// TODO: https://github.com/FerretDB/FerretDB/issues/2617
-		Remove("ArrayDocuments")
+		Remove(shareddata.ArrayDocuments)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"DotNotation": {

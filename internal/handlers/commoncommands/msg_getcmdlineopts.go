@@ -23,7 +23,7 @@ import (
 )
 
 // MsgGetCmdLineOpts is a common implementation of the getCmdLineOpts command.
-func MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+func MsgGetCmdLineOpts(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(

@@ -48,7 +48,8 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		return pgdb.CreateCollectionIfNotExists(ctx, tx, params.DB, params.Collection)
+		_, err = pgdb.CreateCollectionIfNotExists(ctx, tx, params.DB, params.Collection)
+		return err
 	})
 
 	switch {
@@ -84,16 +85,39 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					continue
 				}
 
-				doc := u.Filter.DeepCopy()
-				if _, err = common.UpdateDocument(document.Command(), doc, u.Update); err != nil {
+				// TODO: https://github.com/FerretDB/FerretDB/issues/3040
+				hasQueryOperators, err := common.HasQueryOperator(u.Filter)
+				if err != nil {
+					return lazyerrors.Error(err)
+				}
+
+				var doc *types.Document
+				if hasQueryOperators {
+					doc = must.NotFail(types.NewDocument())
+				} else {
+					doc = u.Filter
+				}
+
+				hasUpdateOperators, err := common.HasSupportedUpdateModifiers(document.Command(), u.Update)
+				if err != nil {
 					return err
 				}
+
+				if hasUpdateOperators {
+					// TODO: https://github.com/FerretDB/FerretDB/issues/3044
+					if _, err = common.UpdateDocument(document.Command(), doc, u.Update); err != nil {
+						return err
+					}
+				} else {
+					doc = u.Update
+				}
+
 				if !doc.Has("_id") {
 					doc.Set("_id", types.NewObjectID())
 				}
 
 				upserted.Append(must.NotFail(types.NewDocument(
-					"index", int32(0), // TODO
+					"index", int32(upserted.Len()),
 					"_id", must.NotFail(doc.Get("_id")),
 				)))
 

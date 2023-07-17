@@ -92,12 +92,10 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 			update: bson.D{{"$push", bson.D{{"v", "foo"}}}},
 		},
 		"Int32": {
-			update:        bson.D{{"$push", bson.D{{"v", int32(42)}}}},
-			skipForTigris: "Some tests would fail because Tigris might convert int32 to float/int64 based on the schema",
+			update: bson.D{{"$push", bson.D{{"v", int32(42)}}}},
 		},
 		"NonExistentField": {
-			update:        bson.D{{"$push", bson.D{{"non-existent-field", int32(42)}}}},
-			skipForTigris: "Tigris does not support adding new fields to documents",
+			update: bson.D{{"$push", bson.D{{"non-existent-field", int32(42)}}}},
 		},
 		"DotNotation": {
 			filter: bson.D{{"_id", "array-documents-nested"}},
@@ -109,12 +107,10 @@ func TestUpdateArrayCompatPush(t *testing.T) {
 			resultType: emptyResult, // attempt to push to non-array
 		},
 		"DotNotationNonExistentPath": {
-			update:        bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}}}},
-			skipForTigris: "Tigris does not support adding new fields to documents",
+			update: bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}}}},
 		},
 		"TwoElements": {
-			update:        bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}, {"v", int32(42)}}}},
-			skipForTigris: "Tigris does not support adding new fields to documents",
+			update: bson.D{{"$push", bson.D{{"non.existent.path", int32(42)}, {"v", int32(42)}}}},
 		},
 	}
 
@@ -135,24 +131,19 @@ func TestUpdateArrayCompatAddToSet(t *testing.T) {
 			update: bson.D{{"$addToSet", bson.D{{"v", "foo"}}}},
 		},
 		"Document": {
-			update:        bson.D{{"$addToSet", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
-			skipForTigris: "Tigris does not support adding new array elements with different types",
+			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"foo", "bar"}}}}}},
 		},
 		"Int32": {
-			update:        bson.D{{"$addToSet", bson.D{{"v", int32(42)}}}},
-			skipForTigris: "Some tests would fail because Tigris might convert int32 to float/int64 based on the schema",
+			update: bson.D{{"$addToSet", bson.D{{"v", int32(42)}}}},
 		},
 		"Int64": {
-			update:        bson.D{{"$addToSet", bson.D{{"v", int64(42)}}}},
-			skipForTigris: "Some tests would fail because Tigris might convert int64 to float/int64 based on the schema",
+			update: bson.D{{"$addToSet", bson.D{{"v", int64(42)}}}},
 		},
 		"Float64": {
-			update:        bson.D{{"$addToSet", bson.D{{"v", float64(42)}}}},
-			skipForTigris: "Some tests would fail because of schema mismatch.",
+			update: bson.D{{"$addToSet", bson.D{{"v", float64(42)}}}},
 		},
 		"NonExistentField": {
-			update:        bson.D{{"$addToSet", bson.D{{"non-existent-field", int32(42)}}}},
-			skipForTigris: "Tigris does not support adding new fields to documents",
+			update: bson.D{{"$addToSet", bson.D{{"non-existent-field", int32(42)}}}},
 		},
 		"DotNotation": {
 			filter: bson.D{{"_id", "array-documents-nested"}},
@@ -164,8 +155,7 @@ func TestUpdateArrayCompatAddToSet(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DotNotationNonExistentPath": {
-			update:        bson.D{{"$addToSet", bson.D{{"non.existent.path", int32(1)}}}},
-			skipForTigris: "Tigris does not support adding new fields to documents",
+			update: bson.D{{"$addToSet", bson.D{{"non.existent.path", int32(1)}}}},
 		},
 		"EmptyValue": {
 			update:     bson.D{{"$addToSet", bson.D{}}},
@@ -193,8 +183,7 @@ func TestUpdateArrayCompatPullAll(t *testing.T) {
 			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{"foo"}}}}},
 		},
 		"Document": {
-			update:        bson.D{{"$pullAll", bson.D{{"v", bson.A{bson.D{{"field", int32(42)}}}}}}},
-			skipForTigris: "We don't have such documents for Tigris.",
+			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{bson.D{{"field", int32(42)}}}}}}},
 		},
 		"Int32": {
 			update: bson.D{{"$pullAll", bson.D{{"v", bson.A{int32(42)}}}}},
@@ -247,7 +236,6 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{
 				{"$each", bson.A{bson.D{{"field", int32(42)}}}},
 			}}}}},
-			skipForTigris: "No suitable schema for Tigris.",
 		},
 		"String": {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{"foo"}}}}}}},
@@ -256,7 +244,6 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{
 				{"$each", bson.A{int32(1), int32(42), int32(2)}},
 			}}}}},
-			skipForTigris: "Tigris would implicitly convert the int32 to a float64.",
 		},
 		"NotArray": {
 			update:     bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", int32(1)}}}}}},
@@ -268,16 +255,13 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"ArrayMixedValuesExists": {
-			update:        bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), "foo"}}}}}}},
-			skipForTigris: "Tigris doesn't support mixed types.",
+			update: bson.D{{"$addToSet", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), "foo"}}}}}}},
 		},
 		"NonExistentField": {
-			update:        bson.D{{"$addToSet", bson.D{{"non-existent-field", bson.D{{"$each", bson.A{int32(42)}}}}}}},
-			skipForTigris: "Tigris does not support adding new fields to documents.",
+			update: bson.D{{"$addToSet", bson.D{{"non-existent-field", bson.D{{"$each", bson.A{int32(42)}}}}}}},
 		},
 		"DotNotation": {
-			update:        bson.D{{"$addToSet", bson.D{{"v.0.foo", bson.D{{"$each", bson.A{int32(42)}}}}}}},
-			skipForTigris: "Tigris schema validation would fail.",
+			update: bson.D{{"$addToSet", bson.D{{"v.0.foo", bson.D{{"$each", bson.A{int32(42)}}}}}}},
 		},
 		"DotNotationNonArray": {
 			filter:     bson.D{{"_id", "array-documents-nested"}},
@@ -285,8 +269,7 @@ func TestUpdateArrayCompatAddToSetEach(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DotNotationPathNotExist": {
-			update:        bson.D{{"$addToSet", bson.D{{"non.existent.path", bson.D{{"$each", bson.A{int32(42)}}}}}}},
-			skipForTigris: "Tigris does not support adding new fields to documents",
+			update: bson.D{{"$addToSet", bson.D{{"non.existent.path", bson.D{{"$each", bson.A{int32(42)}}}}}}},
 		},
 	}
 
@@ -301,7 +284,6 @@ func TestUpdateArrayCompatPushEach(t *testing.T) {
 			update: bson.D{{"$push", bson.D{{"v", bson.D{
 				{"$each", bson.A{bson.D{{"field", int32(42)}}}},
 			}}}}},
-			skipForTigris: "No suitable schema for Tigris.",
 		},
 		"String": {
 			update: bson.D{{"$push", bson.D{{"v", bson.D{{"$each", bson.A{"foo"}}}}}}},
@@ -310,7 +292,6 @@ func TestUpdateArrayCompatPushEach(t *testing.T) {
 			update: bson.D{{"$push", bson.D{{"v", bson.D{
 				{"$each", bson.A{int32(1), int32(42), int32(2)}},
 			}}}}},
-			skipForTigris: "Tigris would implicitly convert the int32 to a float64.",
 		},
 		"NotArray": {
 			update:     bson.D{{"$push", bson.D{{"v", bson.D{{"$each", int32(1)}}}}}},
@@ -322,16 +303,13 @@ func TestUpdateArrayCompatPushEach(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"MixedValuesExists": {
-			update:        bson.D{{"$push", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), "foo"}}}}}}},
-			skipForTigris: "Tigris doesn't support mixed types.",
+			update: bson.D{{"$push", bson.D{{"v", bson.D{{"$each", bson.A{int32(42), "foo"}}}}}}},
 		},
 		"NonExistentField": {
-			update:        bson.D{{"$push", bson.D{{"non-existent-field", bson.D{{"$each", bson.A{int32(42)}}}}}}},
-			skipForTigris: "Tigris does not support adding new fields to documents.",
+			update: bson.D{{"$push", bson.D{{"non-existent-field", bson.D{{"$each", bson.A{int32(42)}}}}}}},
 		},
 		"DotNotation": {
-			update:        bson.D{{"$push", bson.D{{"v.0.foo", bson.D{{"$each", bson.A{int32(42)}}}}}}},
-			skipForTigris: "Tigris schema validation would fail.",
+			update: bson.D{{"$push", bson.D{{"v.0.foo", bson.D{{"$each", bson.A{int32(42)}}}}}}},
 		},
 		"DotNotationNonArray": {
 			filter:     bson.D{{"_id", "array-documents-nested"}},
@@ -339,8 +317,7 @@ func TestUpdateArrayCompatPushEach(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"DotNotationPathNotExist": {
-			update:        bson.D{{"$push", bson.D{{"non.existent.path", bson.D{{"$each", bson.A{int32(42)}}}}}}},
-			skipForTigris: "Tigris does not support adding new fields to documents",
+			update: bson.D{{"$push", bson.D{{"non.existent.path", bson.D{{"$each", bson.A{int32(42)}}}}}}},
 		},
 	}
 

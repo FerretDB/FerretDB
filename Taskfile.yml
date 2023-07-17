@@ -15,8 +15,8 @@ vars:
   TESTJS_PORT: 27017
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   TEST_UNIX_SOCKET_FLAG: -target-unix-socket={{ne OS "windows"}}
-  BUILD_TAGS: ferretdb_debug,ferretdb_tigris,ferretdb_hana
-  SERVICES: postgres postgres_secured tigris tigris1 tigris2 tigris3 tigris4 mongodb mongodb_secured jaeger
+  BUILD_TAGS: ferretdb_debug,ferretdb_hana
+  SERVICES: postgres postgres_secured mongodb mongodb_secured jaeger
 
 tasks:
   # invoked when `task` is run without arguments
@@ -24,11 +24,11 @@ tasks:
     deps: [all]
 
   all:
-    desc: "Generate, format, build, test and lint code and documentation"
+    desc: "Generate, format, build, unit test and lint code and documentation"
     cmds:
       - task: gen
       - task: build-host
-      - task: test
+      - task: test-unit
       - task: lint
       - task: security
       - task: fmt-yaml
@@ -185,7 +185,6 @@ tasks:
       - test-integration-pg
       - test-integration-mongodb
       # no test-integration-sqlite yet
-      # disable for now - test-integration-tigris
       # no test-integration-hana
 
   test-integration-pg:
@@ -214,21 +213,6 @@ tasks:
         -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
         -disable-filter-pushdown
-    vars:
-      SHARD_RUN:
-        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
-
-  test-integration-tigris:
-    desc: "Run integration tests for `tigris` handler"
-    dir: integration
-    cmds:
-      - >
-        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-tigris.txt .
-        -target-backend=ferretdb-tigris
-        {{.TEST_UNIX_SOCKET_FLAG}}
-        -tigris-urls=127.0.0.1:8081,127.0.0.1:8091,127.0.0.1:8092,127.0.0.1:8093,127.0.0.1:8094
-        -compat-url=mongodb://127.0.0.1:47017/
     vars:
       SHARD_RUN:
         sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
@@ -286,7 +270,6 @@ tasks:
       - go test -run=XXX -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/bson/
       - go test -run=XXX -fuzz=FuzzArray    -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
       - go test -run=XXX -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      - go test -run=XXX -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/handlers/tigris/tjson/
       - go test -run=XXX -fuzz=FuzzMsg      -fuzztime={{.FUZZ_TIME}} ./internal/wire/
       - go test -run=XXX -fuzz=FuzzQuery    -fuzztime={{.FUZZ_TIME}} ./internal/wire/
       - go test -run=XXX -fuzz=FuzzReply    -fuzztime={{.FUZZ_TIME}} ./internal/wire/
@@ -322,22 +305,9 @@ tasks:
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
         --handler=sqlite
-        --sqlite-uri=tmp/sqlite
+        --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
         --test-disable-filter-pushdown
-
-  run-tigris:
-    desc: "Run FerretDB with `tigris` handler"
-    deps: [build-host]
-    cmds:
-      - >
-        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
-        --listen-addr=:27017
-        --proxy-addr=127.0.0.1:47017
-        --mode=diff-normal
-        --handler=tigris
-        --tigris-url=127.0.0.1:8081
-        --test-records-dir=tmp/records
 
   # set FERRETDB_HANA_URL environment variable to use it
   run-hana:
@@ -369,24 +339,6 @@ tasks:
         --postgresql-url=postgres://127.0.0.1:5433/ferretdb?pool_max_conns=50
         --test-records-dir=tmp/records
 
-  # set FERRETDB_TIGRIS_CLIENT_ID and FERRETDB_TIGRIS_CLIENT_SECRET environment variables to use it
-  run-tigris-secured:
-    desc: "Run FerretDB with `tigris` handler (TLS, auth required; SaaS)"
-    deps: [build-host]
-    cmds:
-      - >
-        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
-        --listen-addr=''
-        --listen-tls=:27018
-        --listen-tls-cert-file=./build/certs/server-cert.pem
-        --listen-tls-key-file=./build/certs/server-key.pem
-        --listen-tls-ca-file=./build/certs/rootCA-cert.pem
-        --proxy-addr=127.0.0.1:47017
-        --mode=diff-normal
-        --handler=tigris
-        --tigris-url=api.preview.tigrisdata.cloud
-        --test-records-dir=tmp/records
-
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
     deps: [build-host]
@@ -411,7 +363,7 @@ tasks:
         --proxy-addr=127.0.0.1:47017
         --mode=diff-proxy
         --handler=sqlite
-        --sqlite-uri=tmp/sqlite
+        --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
         --test-disable-filter-pushdown
 
@@ -444,7 +396,7 @@ tasks:
 
   security-govulncheck:
     cmds:
-      - bin/govulncheck{{exeExt}} -v -test ./...
+      - bin/govulncheck{{exeExt}} -test ./...
       - bin/task{{exeExt}} -d integration integration-security
 
   godocs:
@@ -462,7 +414,7 @@ tasks:
   sqlite3:
     desc: "Run sqlite3"
     cmds:
-      - sqlite3 *.sqlite
+      - sqlite3 tmp/sqlite/*.sqlite
 
   mongosh:
     desc: "Run MongoDB shell (`mongosh`)"

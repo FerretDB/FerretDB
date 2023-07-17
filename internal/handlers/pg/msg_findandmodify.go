@@ -125,6 +125,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					return nil
 				}
 
+				// TODO: https://github.com/FerretDB/FerretDB/issues/3040
 				var upsert *types.Document
 
 				if params.HasUpdateOperators {

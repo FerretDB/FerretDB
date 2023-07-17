@@ -15,7 +15,6 @@ Before inserting data into a document, you do not need to declare a schema.
 That makes it ideal for applications and workloads requiring flexible schemas, such as blogs, chat apps, and video games.
 
 :::note
-For Tigris, FerretDB requires you to declare a JSON schema in [Tigris format](https://docs.tigrisdata.com/overview/schema).
 Get more information on the key differences [here](diff.md).
 :::
 
@@ -168,15 +167,9 @@ MongoDB documents are mapped to rows with a single [JSONB](https://www.postgresq
 Those mappings might change as we work on improving compatibility and performance,
 but no breaking changes will be introduced without a major version bump.
 
-### SQLite (alpha)
+### SQLite (beta)
 
-We are [working on](https://github.com/FerretDB/FerretDB/issues/2387) SQLite backend.
-It is not officially supported yet.
-
-### Tigris (beta)
-
-We also support the [Tigris](https://www.tigrisdata.com) backend on a beta level.
-Read more [here](https://www.tigrisdata.com/docs/concepts/mongodb-compatibility/).
+We also support the [SQLite](https://www.sqlite.org/) backend on a beta level.
 
 ### SAP HANA (alpha)
 

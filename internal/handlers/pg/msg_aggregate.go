@@ -16,7 +16,9 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"math"
 	"os"
 	"time"
 
@@ -57,7 +59,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	common.Ignored(
 		document, h.L,
-		"allowDiskUse", "maxTimeMS", "bypassDocumentValidation", "readConcern", "hint", "comment", "writeConcern",
+		"allowDiskUse", "bypassDocumentValidation", "readConcern", "hint", "comment", "writeConcern",
 	)
 
 	var db string
@@ -86,6 +88,71 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	username, _ := conninfo.Get(ctx).Auth()
 
+	v, _ := document.Get("maxTimeMS")
+	if v == nil {
+		v = int64(0)
+	}
+
+	// cannot use other existing commonparams function, they return different error codes
+	maxTimeMS, err := commonparams.GetWholeNumberParam(v)
+	if err != nil {
+		switch {
+		case errors.Is(err, commonparams.ErrUnexpectedType):
+			if _, ok = v.(types.NullType); ok {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrBadValue,
+					"maxTimeMS must be a number",
+					document.Command(),
+				)
+			}
+
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrTypeMismatch,
+				fmt.Sprintf(
+					`BSON field 'aggregate.maxTimeMS' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
+					commonparams.AliasFromType(v),
+				),
+				document.Command(),
+			)
+		case errors.Is(err, commonparams.ErrNotWholeNumber):
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				"maxTimeMS has non-integral value",
+				document.Command(),
+			)
+		case errors.Is(err, commonparams.ErrLongExceededPositive):
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf("%s value for maxTimeMS is out of range", types.FormatAnyValue(v)),
+				document.Command(),
+			)
+		case errors.Is(err, commonparams.ErrLongExceededNegative):
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrValueNegative,
+				fmt.Sprintf("BSON field 'maxTimeMS' value must be >= 0, actual value '%s'", types.FormatAnyValue(v)),
+				document.Command(),
+			)
+		default:
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	if maxTimeMS < int64(0) {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrValueNegative,
+			fmt.Sprintf("BSON field 'maxTimeMS' value must be >= 0, actual value '%s'", types.FormatAnyValue(v)),
+			document.Command(),
+		)
+	}
+
+	if maxTimeMS > math.MaxInt32 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf("%v value for maxTimeMS is out of range", v),
+			document.Command(),
+		)
+	}
+
 	pipeline, err := common.GetRequiredParam[*types.Array](document, "pipeline")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -97,7 +164,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	aggregationStages := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
 	stagesDocuments := make([]aggregations.Stage, 0, len(aggregationStages))
-	stagesStats := make([]aggregations.Stage, 0, len(aggregationStages))
+	collStatsDocuments := make([]aggregations.Stage, 0, len(aggregationStages))
 
 	for i, d := range aggregationStages {
 		d, ok := d.(*types.Document)
@@ -115,11 +182,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 
-		switch s.Type() {
-		case aggregations.StageTypeDocuments:
-			stagesDocuments = append(stagesDocuments, s)
-			stagesStats = append(stagesStats, s) // It's possible to apply "documents" stages to statistics
-		case aggregations.StageTypeStats:
+		switch d.Command() {
+		case "$collStats":
 			if i > 0 {
 				// TODO Add a test to cover this error: https://github.com/FerretDB/FerretDB/issues/2349
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -128,14 +192,16 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 					document.Command(),
 				)
 			}
-			stagesStats = append(stagesStats, s)
+
+			collStatsDocuments = append(collStatsDocuments, s)
 		default:
-			panic(fmt.Sprintf("unknown stage type: %v", s.Type()))
+			stagesDocuments = append(stagesDocuments, s)
+			collStatsDocuments = append(collStatsDocuments, s) // It's possible to apply any stage after $collStats stage
 		}
 	}
 
 	// validate cursor after validating pipeline stages to keep compatibility
-	v, _ := document.Get("cursor")
+	v, _ = document.Get("cursor")
 	if v == nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrFailedToParse,
@@ -166,12 +232,21 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	var resDocs []*types.Document
+	cancel := func() {}
+	if maxTimeMS != 0 {
+		// It is not clear if maxTimeMS affects only aggregate, or both aggregate and getMore (as the current code does).
+		// TODO https://github.com/FerretDB/FerretDB/issues/2983
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(maxTimeMS)*time.Millisecond)
+	}
+
+	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
+
+	var iter iterator.Interface[struct{}, *types.Document]
 
 	// At this point we have a list of stages to apply to the documents or stats.
-	// If stagesStats contains the same stages as stagesDocuments, we apply aggregation to documents fetched from the DB.
-	// If stagesStats contains more stages than stagesDocuments, we apply aggregation to statistics fetched from the DB.
-	if len(stagesStats) == len(stagesDocuments) {
+	// If collStatsDocuments contains the same stages as stagesDocuments, we apply aggregation to documents fetched from the DB.
+	// If collStatsDocuments contains more stages than stagesDocuments, we apply aggregation to statistics fetched from the DB.
+	if len(collStatsDocuments) == len(stagesDocuments) {
 		filter, sort := aggregations.GetPushdownQuery(aggregationStages)
 
 		// only documents stages or no stages - fetch documents from the DB and apply stages to them
@@ -188,23 +263,26 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			qp.Sort = sort
 		}
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/1733
-		resDocs, err = processStagesDocuments(ctx, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})
+		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})
 	} else {
 		// stats stages are provided - fetch stats from the DB and apply stages to them
-		statistics := stages.GetStatistics(stagesStats)
+		// TODO move $collStatsDocuments specific logic to its stage https://github.com/FerretDB/FerretDB/issues/2423
+		statistics := stages.GetStatistics(collStatsDocuments)
 
-		resDocs, err = processStagesStats(ctx, &stagesStatsParams{
-			dbPool, db, collection, statistics, stagesStats,
+		iter, err = processStagesStats(ctx, closer, &stagesStatsParams{
+			dbPool, db, collection, statistics, collStatsDocuments,
 		})
 	}
 
 	if err != nil {
+		closer.Close()
 		return nil, err
 	}
 
+	closer.Add(iter)
+
 	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
-		Iter:       iterator.Values(iterator.ForSlice(resDocs)),
+		Iter:       iterator.WithClose(iter, closer.Close),
 		DB:         db,
 		Collection: collection,
 		Username:   username,
@@ -253,18 +331,20 @@ type stagesDocumentsParams struct {
 }
 
 // processStagesDocuments retrieves the documents from the database and then processes them through the stages.
-func processStagesDocuments(ctx context.Context, p *stagesDocumentsParams) ([]*types.Document, error) { //nolint:lll // for readability
-	var docs []*types.Document
+func processStagesDocuments(ctx context.Context, closer *iterator.MultiCloser, p *stagesDocumentsParams) (types.DocumentsIterator, error) { //nolint:lll // for readability
+	var keepTx pgx.Tx
+	var iter types.DocumentsIterator
 
-	if err := p.dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
+	if err := p.dbPool.InTransactionKeep(ctx, func(tx pgx.Tx) error {
+		keepTx = tx
+
 		var err error
-		iter, _, err := pgdb.QueryDocuments(ctx, tx, p.qp)
+		iter, _, err = pgdb.QueryDocuments(ctx, tx, p.qp)
 		if err != nil {
-			return err
+			return lazyerrors.Error(err)
 		}
 
-		closer := iterator.NewMultiCloser(iter)
-		defer closer.Close()
+		closer.Add(iter)
 
 		for _, s := range p.stages {
 			if iter, err = s.Process(ctx, iter, closer); err != nil {
@@ -272,13 +352,19 @@ func processStagesDocuments(ctx context.Context, p *stagesDocumentsParams) ([]*t
 			}
 		}
 
-		docs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
-		return err
+		return nil
 	}); err != nil {
 		return nil, err
 	}
 
-	return docs, nil
+	closer.Add(iterator.CloserFunc(func() {
+		// It does not matter if we commit or rollback the read transaction,
+		// but we should close it.
+		// ctx could be cancelled already.
+		_ = keepTx.Rollback(context.Background())
+	}))
+
+	return iter, nil
 }
 
 // stagesStatsParams contains the parameters for processStagesStats.
@@ -291,7 +377,8 @@ type stagesStatsParams struct {
 }
 
 // processStagesStats retrieves the statistics from the database and then processes them through the stages.
-func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Document, error) {
+// TODO move $collStats specific logic to its stage https://github.com/FerretDB/FerretDB/issues/2423
+func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *stagesStatsParams) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	// Clarify what needs to be retrieved from the database and retrieve it.
 	_, hasCount := p.statistics[stages.StatisticCount]
 	_, hasStorage := p.statistics[stages.StatisticStorage]
@@ -368,9 +455,7 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 
 	// Process the retrieved statistics through the stages.
 	iter := iterator.Values(iterator.ForSlice([]*types.Document{doc}))
-
-	closer := iterator.NewMultiCloser(iter)
-	defer closer.Close()
+	closer.Add(iter)
 
 	for _, s := range p.stages {
 		if iter, err = s.Process(ctx, iter, closer); err != nil {
@@ -378,5 +463,5 @@ func processStagesStats(ctx context.Context, p *stagesStatsParams) ([]*types.Doc
 		}
 	}
 
-	return iterator.ConsumeValues(iter)
+	return iter, nil
 }

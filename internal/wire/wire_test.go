@@ -24,6 +24,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // lastErr returns the last error in error chain.
@@ -51,7 +53,7 @@ type testCase struct {
 }
 
 // setExpectedB checks and sets expectedB fields from headerB and bodyB.
-func (tc *testCase) setExpectedB(tb testing.TB) {
+func (tc *testCase) setExpectedB(tb testtb.TB) {
 	tb.Helper()
 
 	if (len(tc.headerB) == 0) != (len(tc.bodyB) == 0) {
@@ -142,10 +144,14 @@ func fuzzMessages(f *testing.F, testCases []testCase) {
 	}
 
 	if !testing.Short() {
-		records, err := LoadRecords(filepath.Join("..", "..", "tmp", "records"), 1000)
+		records, err := LoadRecords(filepath.Join("..", "..", "tmp", "records"), 100)
 		require.NoError(f, err)
 
 		for _, rec := range records {
+			if rec.HeaderB == nil || rec.BodyB == nil {
+				continue
+			}
+
 			b := make([]byte, 0, len(rec.HeaderB)+len(rec.BodyB))
 			b = append(b, rec.HeaderB...)
 			b = append(b, rec.BodyB...)

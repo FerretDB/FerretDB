@@ -15,10 +15,14 @@
 package common
 
 import (
+	"fmt"
+
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // InsertParams represents the parameters for an insert command.
@@ -43,6 +47,21 @@ func GetInsertParams(document *types.Document, l *zap.Logger) (*InsertParams, er
 	err := commonparams.ExtractParams(document, "insert", &params, l)
 	if err != nil {
 		return nil, err
+	}
+
+	for i := 0; i < params.Docs.Len(); i++ {
+		doc := must.NotFail(params.Docs.Get(i))
+
+		if _, ok := doc.(*types.Document); !ok {
+			return nil, commonerrors.NewCommandErrorMsg(
+				commonerrors.ErrTypeMismatch,
+				fmt.Sprintf(
+					"BSON field 'insert.documents.%d' is the wrong type '%s', expected type 'object'",
+					i,
+					commonparams.AliasFromType(doc),
+				),
+			)
+		}
 	}
 
 	return &params, nil

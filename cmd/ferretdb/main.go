@@ -104,16 +104,7 @@ var pgFlags struct {
 //
 // See main_sqlite.go.
 var sqliteFlags struct {
-	SQLiteURI string `name:"sqlite-uri" default:"." help:"Directory path or 'file' URI for 'sqlite' handler."`
-}
-
-// The tigrisFlags struct represents flags that are used by the "tigris" handler.
-//
-// See main_tigris.go.
-var tigrisFlags struct {
-	TigrisURL          string `default:"127.0.0.1:8081" help:"Tigris URL for 'tigris' handler."`
-	TigrisClientID     string `default:""               help:"Tigris Client ID."`
-	TigrisClientSecret string `default:""               help:"Tigris Client secret."`
+	SQLiteURL string `name:"sqlite-url" default:"file:data/" help:"SQLite URI (directory) for 'sqlite' handler."`
 }
 
 // The hanaFlags struct represents flags that are used by the "hana" handler.
@@ -360,11 +351,7 @@ func run() {
 
 		PostgreSQLURL: pgFlags.PostgreSQLURL,
 
-		SQLiteURI: sqliteFlags.SQLiteURI,
-
-		TigrisURL:          tigrisFlags.TigrisURL,
-		TigrisClientID:     tigrisFlags.TigrisClientID,
-		TigrisClientSecret: tigrisFlags.TigrisClientSecret,
+		SQLiteURL: sqliteFlags.SQLiteURL,
 
 		HANAURL: hanaFlags.HANAURL,
 
@@ -374,7 +361,7 @@ func run() {
 		},
 	})
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Sugar().Fatalf("Failed to construct handler: %s.", err)
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{

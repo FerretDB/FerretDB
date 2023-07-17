@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.20.5-1 AS all-in-one-build
+FROM ghcr.io/ferretdb/golang:1.20.6-1 AS all-in-one-build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -70,8 +70,8 @@ fi
 # check that stdlib was cached
 go install -v -race=$RACE std
 
-go build -v                 -o=bin/ferretdb -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris ./cmd/ferretdb
-go test  -c -coverpkg=./... -o=bin/ferretdb -race=$RACE -tags=ferretdb_testcover,ferretdb_tigris ./cmd/ferretdb
+go build -v                 -o=bin/ferretdb -race=$RACE -tags=ferretdb_testcover ./cmd/ferretdb
+go test  -c -coverpkg=./... -o=bin/ferretdb -race=$RACE -tags=ferretdb_testcover ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version
@@ -97,7 +97,7 @@ RUN <<EOF
 set -ex
 
 apt update
-apt install -y curl runit
+apt install -y curl runit sqlite3
 curl -L https://www.mongodb.org/static/pgp/server-6.0.asc | apt-key add -
 echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/debian bullseye/mongodb-org/6.0 main" | tee /etc/apt/sources.list.d/mongodb-org-6.0.list
 apt update
