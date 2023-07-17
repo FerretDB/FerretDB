@@ -2,6 +2,67 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.6.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.6.0) (2023-07-17)
+
+### New Features 🎉
+
+- Implement `killCursors` command by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2939
+
+### Fixed Bugs 🐛
+
+- Ignore `lsid` field in all commands by @b1ron in https://github.com/FerretDB/FerretDB/pull/3010
+- Allow `$set` operator to update `_id` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3009
+- Unskip `findAndModify` `$set` integration test for `_id` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3025
+- Apply pushdown for `limit` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2993
+- Fix `update` with query operator for `upsert` option by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3028
+
+### Enhancements 🛠
+
+- Add integration tests for `maxTimeMS` in `find`, `aggregate` and `getMore` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2953
+
+### Documentation 📄
+
+- Add blog post on FerretDB release v1.5.0 by @Fashander in https://github.com/FerretDB/FerretDB/pull/2958
+- Mention SQLite in README.md by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2968
+- Add blog post about using NoSQLBooster with FerretDB by @Fashander in https://github.com/FerretDB/FerretDB/pull/2962
+- Update blog post image by @Fashander in https://github.com/FerretDB/FerretDB/pull/3029
+- Add a note about setting the stable API version by @b1ron in https://github.com/FerretDB/FerretDB/pull/3035
+- Add blog post on "How to run FerretDB on top of StackGres" by @Fashander in https://github.com/FerretDB/FerretDB/pull/2869
+- Fix blog post formatting by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3047
+- Update database naming restrictions by @b1ron in https://github.com/FerretDB/FerretDB/pull/3042
+
+### Other Changes 🤖
+
+- Move `find` and `aggregation` cursor integration tests to `getMore` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2952
+- Make a copy of the `testing.TB` interface by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2987
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2998
+- Remove Tigris from documentation and builds by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2999
+- Remove Tigris code by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3001
+- Remove Tigris from tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3002
+- Implement `ping` command for SQLite by @noisersup in https://github.com/FerretDB/FerretDB/pull/2965
+- Crush PNG files to make them smaller by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3020
+- Remove double decoding in unmarshalSingleValue by @quasilyte in https://github.com/FerretDB/FerretDB/pull/3018
+- Update issue URL by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3021
+- Move `testutil.TB` to `testtb.TB` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3022
+- Move `logout` to `commoncommands` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3019
+- Make `task all` run only unit tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3023
+- Support `getParameters` for `authenticationMechanisms` and `featureCompatibilityVersion` parameters by @chilagrow in https://github.com/FerretDB/FerretDB/pull/2985
+- Update closed issue links by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3027
+- Expect `renameCollection` tests failures by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3007
+- Fix `killCursors` edge case by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3030
+- Fix error checking in backend contracts by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3031
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3034
+- Remove `Type()` interface from aggregation stage by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3045
+- Ignore `count.fields` argument by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3048
+- Remove fixed issue link and clean up integration test provider setup by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3052
+
+### New Contributors
+
+- @quasilyte made their first contribution in https://github.com/FerretDB/FerretDB/pull/3018
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/46?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.5.0...v1.6.0).
+
 ## [v1.5.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.5.0) (2023-07-03)
 
 ### What's Changed
