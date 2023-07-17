@@ -21,6 +21,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -227,6 +228,22 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 	}
 
 	testUpdateCompat(t, testCases)
+}
+
+func TestUpdateFieldCompatIncMulti(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]testUpdateManyCompatTestCase{
+		"InvalidInc": {
+			filter:     bson.D{{"v", bson.D{{"$eq", "non-existent"}}}},
+			update:     bson.D{{"$inc", bson.D{{"v", 1}}}},
+			updateOpts: options.Update().SetUpsert(true),
+			providers:  []shareddata.Provider{shareddata.Scalars},
+			skip:       "https://github.com/FerretDB/FerretDB/issues/3044",
+		},
+	}
+
+	testUpdateManyCompat(t, testCases)
 }
 
 func TestUpdateFieldCompatMax(t *testing.T) {
@@ -815,6 +832,38 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 	}
 
 	testUpdateCompat(t, testCases)
+}
+
+func TestUpdateFieldCompatSetMulti(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]testUpdateManyCompatTestCase{
+		"QueryOperatorExists": {
+			filter:     bson.D{{"v", bson.D{{"$lt", 3}}}},
+			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
+			updateOpts: options.Update().SetUpsert(true),
+			// only use providers contain filter match, no match results in
+			// upsert with generated ID which is tested in integration test
+			providers: []shareddata.Provider{shareddata.Scalars, shareddata.Int32s, shareddata.Doubles},
+		},
+		"QueryOperatorUpsertFalse": {
+			filter:     bson.D{{"v", int32(4080)}},
+			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
+			updateOpts: options.Update().SetUpsert(false),
+		},
+		"QueryOperatorModified": {
+			filter:     bson.D{{"v", bson.D{{"$eq", 4080}}}},
+			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
+			updateOpts: options.Update().SetUpsert(false),
+		},
+		"QueryOperatorEmptySet": {
+			filter:     bson.D{{"v", bson.D{{"$eq", 4080}}}},
+			update:     bson.D{{"$set", bson.D{}}},
+			updateOpts: options.Update().SetUpsert(false),
+		},
+	}
+
+	testUpdateManyCompat(t, testCases)
 }
 
 func TestUpdateFieldCompatSetArray(t *testing.T) {
