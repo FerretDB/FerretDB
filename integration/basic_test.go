@@ -586,31 +586,35 @@ func TestDebugError(t *testing.T) {
 func TestCheckingNestedDocuments(t *testing.T) {
 	t.Parallel()
 
-	t.Run("1ok", func(t *testing.T) {
-		ctx, collection := setup.Setup(t)
-		nestedBson := CreateNestedDocument(1)
-		_, err := collection.InsertOne(ctx, nestedBson)
-		require.NoError(t, err)
-	})
+	for name, tc := range map[string]struct {
+		doc any
+		err error
+	}{
+		"1ok": {
+			doc: CreateNestedDocument(1),
+		},
+		"10ok": {
+			doc: CreateNestedDocument(10),
+		},
+		"100ok": {
+			doc: CreateNestedDocument(100),
+		},
+		"1000fail": {
+			doc: CreateNestedDocument(1000),
+			err: fmt.Errorf("bson.Document.ReadFrom (over nested document. Max supported nesting: 1000."),
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			ctx, collection := setup.Setup(t)
+			_, err := collection.InsertOne(ctx, tc.doc)
+			if tc.err != nil {
+				require.Error(t, tc.err, err)
+				return
+			}
 
-	t.Run("10ok", func(t *testing.T) {
-		ctx, collection := setup.Setup(t)
-		nestedBson := CreateNestedDocument(10)
-		_, err := collection.InsertOne(ctx, nestedBson)
-		require.NoError(t, err)
-	})
+			require.NoError(t, err)
 
-	t.Run("100ok", func(t *testing.T) {
-		ctx, collection := setup.Setup(t)
-		nestedBson := CreateNestedDocument(100)
-		_, err := collection.InsertOne(ctx, nestedBson)
-		require.NoError(t, err)
-	})
-
-	t.Run("1000Fail", func(t *testing.T) {
-		ctx, collection := setup.Setup(t)
-		nestedBson := CreateNestedDocument(1000)
-		_, err := collection.InsertOne(ctx, nestedBson)
-		require.Error(t, err, "bson.Document.ReadFrom (over nested document. Max supported nesting: 1000.")
-	})
+		})
+	}
 }
