@@ -117,7 +117,7 @@ func (r *Reporter) Run(ctx context.Context) {
 
 	r.firstReportDelay(ctx, ch)
 
-	for ctx.Err() == nil {
+	for context.Cause(ctx) == nil {
 		r.report(ctx)
 
 		ctxutil.Sleep(ctx, r.ReportInterval)

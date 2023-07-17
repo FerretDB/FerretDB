@@ -25,10 +25,11 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // getPool creates a new connection's connection pool for testing.
-func getPool(ctx context.Context, tb testing.TB) *Pool {
+func getPool(ctx context.Context, tb testtb.TB) *Pool {
 	tb.Helper()
 
 	logger := testutil.Logger(tb)
@@ -45,7 +46,7 @@ func getPool(ctx context.Context, tb testing.TB) *Pool {
 
 // setupDatabase ensures that test-specific FerretDB database / PostgreSQL schema does not exist
 // before and after the test.
-func setupDatabase(ctx context.Context, tb testing.TB, pool *Pool, db string) {
+func setupDatabase(ctx context.Context, tb testtb.TB, pool *Pool, db string) {
 	dropDatabase := func() {
 		pool.InTransaction(ctx, func(tx pgx.Tx) error {
 			return DropDatabase(ctx, tx, db)
@@ -260,7 +261,10 @@ func TestCreateCollectionIfNotExists(t *testing.T) {
 		setupDatabase(ctx, t, pool, databaseName)
 
 		err := pool.InTransaction(ctx, func(tx pgx.Tx) error {
-			return CreateCollectionIfNotExists(ctx, tx, databaseName, collectionName)
+			created, err := CreateCollectionIfNotExists(ctx, tx, databaseName, collectionName)
+			assert.True(t, created)
+
+			return err
 		})
 		require.NoError(t, err)
 	})
@@ -277,7 +281,10 @@ func TestCreateCollectionIfNotExists(t *testing.T) {
 				return err
 			}
 
-			return CreateCollectionIfNotExists(ctx, tx, databaseName, collectionName)
+			created, err := CreateCollectionIfNotExists(ctx, tx, databaseName, collectionName)
+			assert.True(t, created)
+
+			return err
 		})
 		require.NoError(t, err)
 	})
@@ -298,7 +305,10 @@ func TestCreateCollectionIfNotExists(t *testing.T) {
 				return err
 			}
 
-			return CreateCollectionIfNotExists(ctx, tx, databaseName, collectionName)
+			created, err := CreateCollectionIfNotExists(ctx, tx, databaseName, collectionName)
+			assert.False(t, created)
+
+			return err
 		})
 		require.NoError(t, err)
 	})

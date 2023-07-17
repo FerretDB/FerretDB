@@ -19,6 +19,9 @@ import (
 	"errors"
 	"fmt"
 
+	"modernc.org/sqlite"
+	sqlitelib "modernc.org/sqlite/lib"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
@@ -59,6 +62,12 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
+		// No such table, return empty result.
+		var e *sqlite.Error
+		if errors.As(err, &e) && e.Code() == sqlitelib.SQLITE_ERROR {
+			return &backends.QueryResult{Iter: newQueryIterator(ctx, nil)}, nil
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -119,7 +128,7 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 
 	tableName := c.r.CollectionToTable(c.name)
 
-	query := fmt.Sprintf(`UPDATE %q SET _ferretdb_sjson = ? WHERE json_extract(_ferretdb_sjson, '$._id') = ?`, tableName)
+	query := fmt.Sprintf(`UPDATE %q SET _ferretdb_sjson = ? WHERE _ferretdb_sjson -> '$._id' = ?`, tableName)
 
 	var res backends.UpdateResult
 
@@ -164,9 +173,35 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 
 // Delete implements backends.Collection interface.
 func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) (*backends.DeleteResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2751
+	db := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if db == nil {
+		return &backends.DeleteResult{Deleted: 0}, nil
+	}
+
+	tableName := c.r.CollectionToTable(c.name)
+
+	query := fmt.Sprintf(`DELETE FROM %q WHERE _ferretdb_sjson -> '$._id' = ?`, tableName)
+
+	var deleted int64
+
+	for _, id := range params.IDs {
+		idArg := string(must.NotFail(sjson.MarshalSingleValue(id)))
+
+		res, err := db.ExecContext(ctx, query, idArg)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		rowsAffected, err := res.RowsAffected()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		deleted += rowsAffected
+	}
+
 	return &backends.DeleteResult{
-		Deleted: 0,
+		Deleted: deleted,
 	}, nil
 }
 

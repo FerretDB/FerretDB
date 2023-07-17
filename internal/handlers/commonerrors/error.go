@@ -89,6 +89,9 @@ const (
 	// ErrCannotCreateIndex indicates that index creation process failed because some data are not valid.
 	ErrCannotCreateIndex = ErrorCode(67) // CannotCreateIndex
 
+	// ErrIndexAlreadyExists indicates that identical index already exists.
+	ErrIndexAlreadyExists = ErrorCode(68) // IndexAlreadyExists
+
 	// ErrInvalidOptions indicates that _id index cannot be deleted.
 	ErrInvalidOptions = ErrorCode(72) // InvalidOptions
 
@@ -115,6 +118,9 @@ const (
 
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
+
+	// ErrIndexesWrongType indicates that indexes parameter has wrong type.
+	ErrIndexesWrongType = ErrorCode(10065) // Location10065
 
 	// ErrDuplicateKeyInsert indicates duplicate key violation on inserting document.
 	ErrDuplicateKeyInsert = ErrorCode(11000) // Location11000
@@ -230,6 +236,10 @@ const (
 
 	// ErrStageCountBadValue indicates that $count stage contains invalid value.
 	ErrStageCountBadValue = ErrorCode(40160) // Location40160
+
+	// ErrAddFieldsExpressionWrongAmountOfArgs indicates that $addFields stage expression contain invalid
+	// amount of arguments.
+	ErrAddFieldsExpressionWrongAmountOfArgs = ErrorCode(40181) // Location40181
 
 	// ErrStageGroupUnaryOperator indicates that $sum is a unary operator.
 	ErrStageGroupUnaryOperator = ErrorCode(40237) // Location40237

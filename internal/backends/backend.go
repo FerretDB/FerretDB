@@ -90,12 +90,13 @@ type DatabaseInfo struct {
 }
 
 // ListDatabases returns a Database instance for given parameters.
-func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDatabasesParams) (res *ListDatabasesResult, err error) {
+func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDatabasesParams) (*ListDatabasesResult, error) {
 	defer observability.FuncCall(ctx)()
-	defer checkError(err)
-	res, err = bc.b.ListDatabases(ctx, params)
 
-	return
+	res, err := bc.b.ListDatabases(ctx, params)
+	checkError(err)
+
+	return res, err
 }
 
 // DropDatabaseParams represents the parameters of Backend.DropDatabase method.
@@ -104,12 +105,13 @@ type DropDatabaseParams struct {
 }
 
 // DropDatabase drops existing database for given parameters.
-func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabaseParams) (err error) {
+func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabaseParams) error {
 	defer observability.FuncCall(ctx)()
-	defer checkError(err, ErrorCodeDatabaseDoesNotExist)
-	err = bc.b.DropDatabase(ctx, params)
 
-	return
+	err := bc.b.DropDatabase(ctx, params)
+	checkError(err, ErrorCodeDatabaseDoesNotExist)
+
+	return err
 }
 
 // check interfaces

@@ -78,10 +78,12 @@ func NewListener(opts *NewListenerOpts) *Listener {
 	}
 }
 
-// Run runs the listener until ctx is done or some unrecoverable error occurs.
+// Run runs the listener until ctx is canceled or some unrecoverable error occurs.
 //
-// When this method returns, listener and all connections are closed.
+// When this method returns, listener and all connections, as well as handler are closed.
 func (l *Listener) Run(ctx context.Context) error {
+	defer l.Handler.Close()
+
 	logger := l.Logger.Named("listener")
 
 	if l.TCP != "" {
@@ -122,8 +124,12 @@ func (l *Listener) Run(ctx context.Context) error {
 		logger.Sugar().Infof("Listening on TLS %s ...", l.TLSAddr())
 	}
 
-	// close listeners on context cancellation to exit from listenLoop
+	var wg sync.WaitGroup
+
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
+
 		<-ctx.Done()
 
 		if l.tcpListener != nil {
@@ -138,8 +144,6 @@ func (l *Listener) Run(ctx context.Context) error {
 			l.tlsListener.Close()
 		}
 	}()
-
-	var wg sync.WaitGroup
 
 	if l.TCP != "" {
 		wg.Add(1)
@@ -241,15 +245,15 @@ func setupTLSListener(opts *setupTLSListenerOpts) (net.Listener, error) {
 	return listener, nil
 }
 
-// acceptLoop runs listener's connection accepting loop.
+// acceptLoop runs listener's connection accepting loop until context is canceled.
 func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, l *Listener, logger *zap.Logger) {
 	var retry int64
 	for {
 		netConn, err := listener.Accept()
 		if err != nil {
 			// Run closed listener on context cancellation
-			if ctx.Err() != nil {
-				break
+			if context.Cause(ctx) != nil {
+				return
 			}
 
 			l.Metrics.Accepts.WithLabelValues("1").Inc()
@@ -264,11 +268,18 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 
 		wg.Add(1)
 		l.Metrics.Accepts.WithLabelValues("0").Inc()
-		l.Metrics.ConnectedClients.Inc()
 
 		go func() {
+			var connErr error
+			start := time.Now()
+
 			defer func() {
-				l.Metrics.ConnectedClients.Dec()
+				lv := "0"
+				if connErr != nil {
+					lv = "1"
+				}
+
+				l.Metrics.Durations.WithLabelValues(lv).Observe(time.Since(start).Seconds())
 				netConn.Close()
 				wg.Done()
 			}()
@@ -294,23 +305,25 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 				mode:           l.Mode,
 				l:              l.Logger.Named("// " + connID + " "), // derive from the original unnamed logger
 				handler:        l.Handler,
-				connMetrics:    l.Metrics.ConnMetrics,
+				connMetrics:    l.Metrics.ConnMetrics, // share between all conns
 				proxyAddr:      l.ProxyAddr,
 				testRecordsDir: l.TestRecordsDir,
 			}
-			conn, e := newConn(opts)
-			if e != nil {
-				logger.Warn("Failed to create connection", zap.String("conn", connID), zap.Error(e))
+
+			conn, connErr := newConn(opts)
+			if connErr != nil {
+				logger.Warn("Failed to create connection", zap.String("conn", connID), zap.Error(connErr))
 				return
 			}
 
 			logger.Info("Connection started", zap.String("conn", connID))
 
-			e = conn.run(runCtx)
-			if errors.Is(e, wire.ErrZeroRead) {
+			connErr = conn.run(runCtx)
+			if errors.Is(connErr, wire.ErrZeroRead) {
+				connErr = nil
 				logger.Info("Connection stopped", zap.String("conn", connID))
 			} else {
-				logger.Warn("Connection stopped", zap.String("conn", connID), zap.Error(e))
+				logger.Warn("Connection stopped", zap.String("conn", connID), zap.Error(connErr))
 			}
 		}()
 	}
@@ -339,11 +352,13 @@ func (l *Listener) TLSAddr() net.Addr {
 // Describe implements prometheus.Collector.
 func (l *Listener) Describe(ch chan<- *prometheus.Desc) {
 	l.Metrics.Describe(ch)
+	l.Handler.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (l *Listener) Collect(ch chan<- prometheus.Metric) {
 	l.Metrics.Collect(ch)
+	l.Handler.Collect(ch)
 }
 
 // check interfaces

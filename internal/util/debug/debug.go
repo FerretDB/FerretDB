@@ -28,7 +28,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
-	_ "golang.org/x/net/trace" // for tracing (already used by Tigris' gRPC client)
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -50,11 +49,9 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	))
 
 	handlers := []string{
-		"/debug/metrics",  // from http.Handle above
-		"/debug/vars",     // from expvar
-		"/debug/pprof",    // from net/http/pprof
-		"/debug/events",   // from golang.org/x/net/trace
-		"/debug/requests", // from golang.org/x/net/trace
+		"/debug/metrics", // from http.Handle above
+		"/debug/vars",    // from expvar
+		"/debug/pprof",   // from net/http/pprof
 	}
 
 	var page bytes.Buffer

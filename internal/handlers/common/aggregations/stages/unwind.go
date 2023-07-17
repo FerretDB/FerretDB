@@ -154,12 +154,10 @@ func (u *unwind) Process(ctx context.Context, iter types.DocumentsIterator, clos
 		}
 	}
 
-	return iterator.Values(iterator.ForSlice(out)), nil
-}
+	iter = iterator.Values(iterator.ForSlice(out))
+	closer.Add(iter)
 
-// Type implements Stage interface.
-func (u *unwind) Type() aggregations.StageType {
-	return aggregations.StageTypeDocuments
+	return iter, nil
 }
 
 // check interfaces

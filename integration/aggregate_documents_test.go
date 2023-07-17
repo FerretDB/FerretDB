@@ -15,11 +15,13 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -656,6 +658,353 @@ func TestAggregateUnsetErrors(t *testing.T) {
 
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		command bson.D // required, command to run
+
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"NegativeLong": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", int64(-1)},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1'",
+			},
+		},
+		"MaxLong": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", math.MaxInt64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "9223372036854775807 value for maxTimeMS is out of range",
+			},
+		},
+		"Double": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", 1000.5},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS has non-integral value",
+			},
+		},
+		"NegativeDouble": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", -14245345234123245.55},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-14245345234123246'",
+			},
+			altMessage: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1.424534523412325e+16'",
+		},
+		"BigDouble": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", math.MaxFloat64},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "9223372036854775807 value for maxTimeMS is out of range",
+			},
+			altMessage: "1.797693134862316e+308 value for maxTimeMS is out of range",
+		},
+		"BigNegativeDouble": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", -math.MaxFloat64},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-9223372036854775808'",
+			},
+			altMessage: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1.797693134862316e+308'",
+		},
+		"NegativeInt32": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", -1123123},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'maxTimeMS' value must be >= 0, actual value '-1123123'",
+			},
+		},
+		"MaxIntPlus": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", math.MaxInt32 + 1},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "2147483648 value for maxTimeMS is out of range",
+			},
+		},
+		"Null": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", nil},
+			},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "maxTimeMS must be a number",
+			},
+		},
+		"String": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", "string"},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'aggregate.maxTimeMS' is the wrong type 'string', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'aggregate.maxTimeMS' is the wrong type 'string', expected types '[long, int, decimal, double]'",
+		},
+		"Array": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", bson.A{int32(42), "foo", nil}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'aggregate.maxTimeMS' is the wrong type 'array', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'aggregate.maxTimeMS' is the wrong type 'array', expected types '[long, int, decimal, double]'",
+		},
+		"Document": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{}},
+				{"cursor", bson.D{}},
+				{"maxTimeMS", bson.D{{"foo", int32(42)}}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'aggregate.maxTimeMS' is the wrong type 'object', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'aggregate.maxTimeMS' is the wrong type 'object', expected types '[long, int, decimal, double]'",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			require.Nil(t, res)
+		})
+	}
+}
+
+func TestAggregateCommandCursor(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	// the number of documents is set above the default batchSize of 101
+	// for testing unset batchSize returning default batchSize
+	arr, _ := generateDocuments(0, 110)
+	_, err := collection.InsertMany(ctx, arr)
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		pipeline any // optional, defaults to bson.A{}
+		cursor   any // optional, nil to leave cursor unset
+
+		firstBatch primitive.A         // optional, expected firstBatch
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"Int": {
+			cursor:     bson.D{{"batchSize", 1}},
+			firstBatch: arr[:1],
+		},
+		"Long": {
+			cursor:     bson.D{{"batchSize", int64(2)}},
+			firstBatch: arr[:2],
+		},
+		"LongZero": {
+			cursor:     bson.D{{"batchSize", int64(0)}},
+			firstBatch: bson.A{},
+		},
+		"LongNegative": {
+			cursor: bson.D{{"batchSize", int64(-1)}},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
+			},
+			altMessage: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
+		},
+		"DoubleZero": {
+			cursor:     bson.D{{"batchSize", float64(0)}},
+			firstBatch: bson.A{},
+		},
+		"DoubleNegative": {
+			cursor: bson.D{{"batchSize", -1.1}},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'batchSize' value must be >= 0, actual value '-1'",
+			},
+		},
+		"DoubleFloor": {
+			cursor:     bson.D{{"batchSize", 1.9}},
+			firstBatch: arr[:1],
+		},
+		"Bool": {
+			cursor:     bson.D{{"batchSize", true}},
+			firstBatch: arr[:1],
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'cursor.batchSize' is the wrong type 'bool', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'aggregate.batchSize' is the wrong type 'bool', expected types '[long, int, decimal, double]'",
+		},
+		"Unset": {
+			cursor:     nil,
+			firstBatch: arr[:101],
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "The 'cursor' option is required, except for aggregate with the explain argument",
+			},
+		},
+		"Empty": {
+			cursor:     bson.D{},
+			firstBatch: arr[:101],
+		},
+		"String": {
+			cursor:     "invalid",
+			firstBatch: arr[:101],
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "cursor field must be missing or an object",
+			},
+			altMessage: "BSON field 'cursor' is the wrong type 'string', expected type 'object'",
+		},
+		"LargeBatchSize": {
+			cursor:     bson.D{{"batchSize", 102}},
+			firstBatch: arr[:102],
+		},
+		"LargeBatchSizeMatch": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"_id", bson.D{{"$in", bson.A{0, 1, 2, 3, 4, 5}}}}}}},
+			},
+			cursor:     bson.D{{"batchSize", 102}},
+			firstBatch: arr[:6],
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			var pipeline any = bson.A{}
+			if tc.pipeline != nil {
+				pipeline = tc.pipeline
+			}
+
+			var rest bson.D
+			if tc.cursor != nil {
+				rest = append(rest, bson.E{Key: "cursor", Value: tc.cursor})
+			}
+
+			command := append(
+				bson.D{
+					{"aggregate", collection.Name()},
+					{"pipeline", pipeline},
+				},
+				rest...,
+			)
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&res)
+			if tc.err != nil {
+				assert.Nil(t, res)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
+				return
+			}
+
+			require.NoError(t, err)
+
+			v, ok := res.Map()["cursor"]
+			require.True(t, ok)
+
+			cursor, ok := v.(bson.D)
+			require.True(t, ok)
+
+			// do not check the value of cursor id, FerretDB has a different id
+			cursorID := cursor.Map()["id"]
+			assert.NotNil(t, cursorID)
+
+			firstBatch, ok := cursor.Map()["firstBatch"]
+			require.True(t, ok)
+			require.Equal(t, tc.firstBatch, firstBatch)
 		})
 	}
 }

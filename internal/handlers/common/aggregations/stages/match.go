@@ -50,11 +50,6 @@ func (m *match) Process(ctx context.Context, iter types.DocumentsIterator, close
 	return common.FilterIterator(iter, closer, m.filter), nil
 }
 
-// Type  implements Stage interface.
-func (m *match) Type() aggregations.StageType {
-	return aggregations.StageTypeDocuments
-}
-
 // check interfaces
 var (
 	_ aggregations.Stage = (*match)(nil)

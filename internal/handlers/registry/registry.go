@@ -38,19 +38,14 @@ var registry = map[string]newHandlerFunc{}
 type NewHandlerOpts struct {
 	// for all handlers
 	Logger        *zap.Logger
-	Metrics       *connmetrics.ConnMetrics
+	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider
 
 	// for `pg` handler
 	PostgreSQLURL string
 
 	// for `sqlite` handler
-	SQLiteURI string
-
-	// for `tigris` handler
-	TigrisURL          string
-	TigrisClientID     string
-	TigrisClientSecret string
+	SQLiteURL string
 
 	// for `hana` handler
 	HANAURL string
@@ -62,7 +57,6 @@ type NewHandlerOpts struct {
 type TestOpts struct {
 	DisableFilterPushdown bool
 	EnableSortPushdown    bool
-	EnableCursors         bool
 }
 
 // NewHandler constructs a new handler.
@@ -84,7 +78,7 @@ func Handlers() []string {
 	res := make([]string, 0, len(registry))
 
 	// double check registered names and return them in the right order
-	for _, h := range []string{"pg", "sqlite", "tigris", "hana"} {
+	for _, h := range []string{"pg", "sqlite", "hana"} {
 		if _, ok := registry[h]; !ok {
 			continue
 		}
