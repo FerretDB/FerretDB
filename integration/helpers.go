@@ -17,7 +17,6 @@ package integration
 
 import (
 	"context"
-	"strconv"
 	"testing"
 	"time"
 
@@ -439,33 +438,18 @@ func generateDocuments(startID, endID int32) bson.A {
 	return docs
 }
 
-// CreateNestedDocument creates a mock nested Bson document. The nesting level is based on integer parameter.
-func CreateNestedDocument(n int) bson.M {
-	root := bson.M{}
-	child := bson.M{}
-
-	for i := 0; i < n; i++ {
-		switch i {
-		case 0:
-			key := strconv.Itoa(i)
-			root[key] = nil
-		case 1:
-			child = createNestedChildDocument(root, i-1, i)
-		default:
-			child = createNestedChildDocument(child, i-1, i)
-		}
+// CreateNestedDocument creates a mock BSON object that consists of nested arrays and documents.
+// The nesting level is based on integer parameter.
+func CreateNestedDocument(n int) any {
+	if n <= 0 {
+		return bson.D{{"v", "foo"}}
 	}
 
-	return root
-}
+	child := CreateNestedDocument(n - 1)
 
-// createNestedChildDocument creates a child for provided parent and it assigns to it.
-func createNestedChildDocument(parent bson.M, parentKey, childKey int) bson.M {
-	parentKeyStr := strconv.Itoa(parentKey)
-	childKeyStr := strconv.Itoa(childKey)
+	if n%2 == 0 {
+		return bson.D{{"v", child}}
+	}
 
-	child := bson.M{childKeyStr: nil}
-	parent[parentKeyStr] = child
-
-	return child
+	return bson.A{child}
 }
