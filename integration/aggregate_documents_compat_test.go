@@ -396,12 +396,7 @@ func TestAggregateCompatCount(t *testing.T) {
 func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 	t.Parallel()
 
-	// Scalars collection is not included because aggregation groups
-	// numbers of different types for $group, and this causes output
-	// _id to be different number type between compat and target.
-	// https://github.com/FerretDB/FerretDB/issues/2184
-	//
-	// Composites, ArrayStrings, ArrayInt32s and ArrayAndDocuments are not included
+	// Composites, ArrayStrings, ArrayInt32s, ArrayAndDocuments and Mixed are not included
 	// because the order in compat and target can be not deterministic.
 	// Aggregation assigns BSON array to output _id, and an array with
 	// descending sort use the greatest element for comparison causing
@@ -409,42 +404,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 	// so compat and target results in different order.
 	// https://github.com/FerretDB/FerretDB/issues/2185
 
-	providers := []shareddata.Provider{
-		// shareddata.Scalars,
-
-		shareddata.Doubles,
-		shareddata.OverflowVergeDoubles,
-		shareddata.SmallDoubles,
-		shareddata.Strings,
-		shareddata.Binaries,
-		shareddata.ObjectIDs,
-		shareddata.Bools,
-		shareddata.DateTimes,
-		shareddata.Nulls,
-		shareddata.Regexes,
-		shareddata.Int32s,
-		shareddata.Timestamps,
-		shareddata.Int64s,
-		shareddata.Unsets,
-		shareddata.ObjectIDKeys,
-
-		// shareddata.Composites,
-		shareddata.PostgresEdgeCases,
-
-		shareddata.DocumentsDoubles,
-		shareddata.DocumentsStrings,
-		shareddata.DocumentsDocuments,
-
-		// shareddata.ArrayStrings,
-		shareddata.ArrayDoubles,
-		// shareddata.ArrayInt32s,
-		shareddata.ArrayRegexes,
-		shareddata.ArrayDocuments,
-
-		// shareddata.Mixed,
-		// shareddata.ArrayAndDocuments,
-	}
-
+	providers := shareddata.AllProviders().Remove(shareddata.Composites, shareddata.ArrayStrings, shareddata.ArrayInt32s, shareddata.ArrayAndDocuments, shareddata.Mixed)
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"DistinctValue": {
 			pipeline: bson.A{
@@ -457,6 +417,21 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 				// sort descending order, so ArrayDoubles has deterministic order.
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+		},
+		"Distinct": {
+			pipeline: bson.A{
+				// sort collection to ensure the order is consistent
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$v"},
+					// set first _id of the collection as group's unique value
+					{"unique", bson.D{{"$first", "$_id"}}},
+				}}},
+				// ensure output is ordered by the _id of the collection, not _id of the group
+				// because _id of group can be an array
+				bson.D{{"$sort", bson.D{{"unique", 1}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2185",
 		},
 		"CountValue": {
 			pipeline: bson.A{
@@ -657,12 +632,12 @@ func TestAggregateCompatGroupExpressionDottedFields(t *testing.T) {
 
 	// TODO Use all providers after fixing $sort problem:  https://github.com/FerretDB/FerretDB/issues/2276.
 	//
-	// Currently, providers Composites, DocumentsDeeplyNested and Mixed
+	// Currently, providers Composites, DocumentsDeeplyNested, ArrayAndDocuments and Mixed
 	// cannot be used due to sorting difference.
 	// FerretDB always sorts empty array is less than null.
 	// In compat, for `.sort()` an empty array is less than null.
 	// In compat, for aggregation `$sort` null is less than an empty array.
-	providers := shareddata.AllProviders().Remove("Mixed", "Composites", "DocumentsDeeplyNested")
+	providers := shareddata.AllProviders().Remove(shareddata.Mixed, shareddata.Composites, shareddata.DocumentsDeeplyNested, shareddata.ArrayAndDocuments)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"NestedInDocument": {
@@ -897,16 +872,16 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 
 	providers := shareddata.AllProviders().
 		// skipped due to https://github.com/FerretDB/FerretDB/issues/2185.
-		Remove("Composites").
-		Remove("ArrayStrings").
-		Remove("ArrayInt32s").
-		Remove("Mixed").
-		Remove("ArrayAndDocuments").
+		Remove(shareddata.Composites).
+		Remove(shareddata.ArrayStrings).
+		Remove(shareddata.ArrayInt32s).
+		Remove(shareddata.Mixed).
+		Remove(shareddata.ArrayAndDocuments).
 		// TODO: handle $sum of doubles near max precision.
 		// https://github.com/FerretDB/FerretDB/issues/2300
-		Remove("Doubles").
+		Remove(shareddata.Doubles).
 		// TODO: https://github.com/FerretDB/FerretDB/issues/2616
-		Remove("ArrayDocuments")
+		Remove(shareddata.ArrayDocuments)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"GroupNullID": {
@@ -1107,6 +1082,9 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 func TestAggregateCompatMatch(t *testing.T) {
 	t.Parallel()
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/2291
+	providers := shareddata.AllProviders().Remove(shareddata.ArrayAndDocuments)
+
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"ID": {
 			pipeline:       bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
@@ -1154,7 +1132,7 @@ func TestAggregateCompatMatch(t *testing.T) {
 		},
 	}
 
-	testAggregateStagesCompat(t, testCases)
+	testAggregateStagesCompatWithProviders(t, providers, testCases)
 }
 
 func TestAggregateCompatSort(t *testing.T) {
@@ -1237,7 +1215,7 @@ func TestAggregateCompatSortDotNotation(t *testing.T) {
 
 	providers := shareddata.AllProviders().
 		// TODO: https://github.com/FerretDB/FerretDB/issues/2617
-		Remove("ArrayDocuments")
+		Remove(shareddata.ArrayDocuments)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"DotNotation": {

@@ -225,6 +225,9 @@ func TestQueryProjectionCompat(t *testing.T) {
 func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 	t.Parallel()
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3053
+	providers := shareddata.AllProviders().Remove(shareddata.ArrayAndDocuments)
+
 	testCases := map[string]queryCompatTestCase{
 		"IDFilter": {
 			// it returns error only if collection contains a doc that matches the filter
@@ -341,5 +344,5 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	testQueryCompatWithProviders(t, providers, testCases)
 }
