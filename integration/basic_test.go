@@ -631,12 +631,11 @@ func TestCheckingNestedDocuments(t *testing.T) {
 			ctx, collection := setup.Setup(t)
 			_, err := collection.InsertOne(ctx, tc.doc)
 			if tc.err != nil {
-				require.Error(t, tc.err, err)
+				require.Equal(t, tc.err, err)
 				return
 			}
 
 			require.NoError(t, err)
-
 		})
 	}
 }
