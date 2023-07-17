@@ -23,19 +23,19 @@ import (
 
 func TestCreateNestedDocument(t *testing.T) {
 	t.Run("0", func(t *testing.T) {
-		embdyDoc := bson.M{}
+		embdyDoc := bson.D{{"v", "foo"}}
 		doc := CreateNestedDocument(0)
 		assert.Equal(t, embdyDoc, doc)
 	})
 
 	t.Run("1", func(t *testing.T) {
-		embdyDoc := bson.M{"0": nil}
+		embdyDoc := bson.A{bson.D{{"v", "foo"}}}
 		doc := CreateNestedDocument(1)
 		assert.Equal(t, embdyDoc, doc)
 	})
 
 	t.Run("2", func(t *testing.T) {
-		embdyDoc := bson.M{"0": bson.M{"1": nil}}
+		embdyDoc := bson.D{{"v", bson.A{bson.D{{"v", "foo"}}}}}
 		doc := CreateNestedDocument(2)
 		assert.Equal(t, embdyDoc, doc)
 	})
