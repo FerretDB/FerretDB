@@ -627,6 +627,7 @@ func TestCheckingNestedDocuments(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			ctx, collection := setup.Setup(t)
 			_, err := collection.InsertOne(ctx, tc.doc)
 			if tc.err != nil {

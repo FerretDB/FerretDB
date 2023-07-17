@@ -22,6 +22,8 @@ import (
 )
 
 func TestCreateNestedDocument(t *testing.T) {
+	t.Parallel()
+
 	t.Run("0", func(t *testing.T) {
 		embdyDoc := bson.D{{"v", "foo"}}
 		doc := CreateNestedDocument(0)
