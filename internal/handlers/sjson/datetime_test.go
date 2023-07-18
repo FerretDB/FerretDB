@@ -48,8 +48,12 @@ func TestDateTime(t *testing.T) {
 	testJSON(t, dateTimeTestCases, func() sjsontype { return new(dateTimeType) })
 }
 
-func FuzzDateTime(f *testing.F) {
-	fuzzJSON(f, dateTimeTestCases, func() sjsontype { return new(dateTimeType) })
+func FuzzDateTimeWithFixedSchemas(f *testing.F) {
+	fuzzJSONWithFixedSchemas(f, dateTimeTestCases, func() sjsontype { return new(dateTimeType) })
+}
+
+func FuzzDateTimeWithFixedDocuments(f *testing.F) {
+	fuzzJSONWithFixedDocuments(f, dateTimeTestCases, func() sjsontype { return new(dateTimeType) })
 }
 
 func BenchmarkDateTime(b *testing.B) {
