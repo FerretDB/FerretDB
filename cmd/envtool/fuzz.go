@@ -37,7 +37,7 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
-	defer srcF.Close()
+	defer srcF.Close() //nolint:errcheck // we are only reading it
 
 	dir := filepath.Dir(dst)
 
@@ -61,7 +61,7 @@ func copyFile(src, dst string) error {
 	}
 
 	if err != nil {
-		os.Remove(dst)
+		_ = os.Remove(dst)
 		return lazyerrors.Error(err)
 	}
 
@@ -156,6 +156,8 @@ func fuzzDiff(src, dst map[string]struct{}) []string {
 
 // fuzzCopyCorpus copies all new corpus files from srcRoot to dstRoot.
 func fuzzCopyCorpus(srcRoot, dstRoot string, logger *zap.SugaredLogger) error {
+	logger.Infof("Copying from %s to %s.", srcRoot, dstRoot)
+
 	srcFiles, err := fuzzCollectFiles(srcRoot, logger)
 	if err != nil {
 		return lazyerrors.Error(err)

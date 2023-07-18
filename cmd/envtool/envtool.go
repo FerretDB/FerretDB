@@ -390,13 +390,13 @@ func main() {
 		err = testsShard(os.Stdout, cli.Tests.Shard.Index, cli.Tests.Shard.Total)
 
 	case "fuzz corpus <src> <dst>":
-		seedCorpus, err := os.Getwd()
-		if err != nil {
+		var seedCorpus, generatedCorpus string
+
+		if seedCorpus, err = os.Getwd(); err != nil {
 			logger.Fatal(err)
 		}
 
-		generatedCorpus, err := fuzzGeneratedCorpus()
-		if err != nil {
+		if generatedCorpus, err = fuzzGeneratedCorpus(); err != nil {
 			logger.Fatal(err)
 		}
 
@@ -408,8 +408,7 @@ func main() {
 		case "generated":
 			src = generatedCorpus
 		default:
-			src, err = filepath.Abs(cli.Fuzz.Corpus.Src)
-			if err != nil {
+			if src, err = filepath.Abs(cli.Fuzz.Corpus.Src); err != nil {
 				logger.Fatal(err)
 			}
 		}
@@ -427,8 +426,7 @@ func main() {
 			}
 		}
 
-		logger.Infof("Copying from %s to %s.", src, dst)
-		fuzzCopyCorpus(src, dst, logger)
+		err = fuzzCopyCorpus(src, dst, logger)
 
 	default:
 		err = fmt.Errorf("unknown command: %s", cmd)
