@@ -7,7 +7,7 @@ replace github.com/FerretDB/FerretDB => ../
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/FerretDB/FerretDB v0.0.0-00010101000000-000000000000
-	github.com/jaswdr/faker v1.18.0
+	github.com/jaswdr/faker v1.18.1
 	github.com/prometheus/client_golang v1.16.0
 	github.com/stretchr/testify v1.8.4
 	go.mongodb.org/mongo-driver v1.12.0
@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/otel/exporters/jaeger v1.16.0
 	go.opentelemetry.io/otel/sdk v1.16.0
 	go.uber.org/zap v1.24.0
-	golang.org/x/exp v0.0.0-20230711153332-06a737ee72cb
+	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1
 )
 
 require (
