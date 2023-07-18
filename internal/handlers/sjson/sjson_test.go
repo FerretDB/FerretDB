@@ -186,6 +186,7 @@ func isValidDocumentData(v sjsontype) bool {
 		"_id", "dummy_id",
 		"value", fromSJSON(v),
 	))
+
 	return d.ValidateData() == nil
 }
 
@@ -230,11 +231,13 @@ func addRecordedFuzzDocs(f *testing.F, needDocument, needSchema bool) int {
 			}
 
 			args := make([]any, 0, 2)
+
 			if needDocument {
 				j, err := MarshalSingleValue(doc)
 				require.NoError(f, err)
 				args = append(args, j)
 			}
+
 			if needSchema {
 				sch, err := marshalSchemaForDoc(doc)
 				require.NoError(f, err)
@@ -255,6 +258,7 @@ func fuzzJSONWithFixedDocuments(f *testing.F, testCases []testCase, newFunc func
 		j     string
 	}
 	documents := make([]documentTest, 0, len(testCases))
+
 	for _, tc := range testCases {
 		if tc.jErr != "" || tc.v == nil {
 			continue
@@ -299,10 +303,13 @@ func fuzzJSONWithFixedDocuments(f *testing.F, testCases []testCase, newFunc func
 
 func fuzzJSONWithFixedSchemas(f *testing.F, testCases []testCase, newFunc func() sjsontype) {
 	schemas := make([]string, 0, len(testCases))
+
 	for _, tc := range testCases {
 		sch := must.NotFail(json.Marshal(tc.sch))
 		schemas = append(schemas, string(sch))
+
 		f.Add(tc.j)
+
 		if tc.canonJ != "" {
 			f.Add(tc.canonJ)
 		}
