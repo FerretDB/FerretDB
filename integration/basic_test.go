@@ -494,6 +494,7 @@ func TestDatabaseName(t *testing.T) {
 				},
 				altMessage: `Invalid namespace: /.TestDatabaseName-Err`,
 			},
+
 			"WithABackslash": {
 				db: "\\",
 				err: &mongo.CommandError{
