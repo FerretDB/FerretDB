@@ -173,7 +173,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader, nesting int) error {
 		}
 
 		var ename CString
-		if err := ename.ReadFrom(bufr); err != nil {
+		if err := ename.ReadFrom(bufr, nesting+1); err != nil {
 			return lazyerrors.Errorf("bson.Document.ReadFrom (ename.ReadFrom): %w", err)
 		}
 

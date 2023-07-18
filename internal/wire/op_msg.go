@@ -136,7 +136,7 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 		switch section.Kind {
 		case 0:
 			var doc bson.Document
-			if err := doc.ReadFrom(bufr); err != nil {
+			if err := doc.ReadFrom(bufr, 0); err != nil {
 				return lazyerrors.Error(err)
 			}
 
@@ -164,7 +164,7 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 			secr := bufio.NewReader(bytes.NewReader(sec))
 
 			var id bson.CString
-			if err := id.ReadFrom(secr); err != nil {
+			if err := id.ReadFrom(secr, 0); err != nil {
 				return lazyerrors.Error(err)
 			}
 			section.Identifier = string(id)
@@ -175,7 +175,7 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 				}
 
 				var doc bson.Document
-				if err := doc.ReadFrom(secr); err != nil {
+				if err := doc.ReadFrom(secr, 0); err != nil {
 					return lazyerrors.Error(err)
 				}
 

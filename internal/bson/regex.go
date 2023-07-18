@@ -30,10 +30,10 @@ func (regex *regexType) bsontype() {}
 // ReadFrom implements bsontype interface.
 func (regex *regexType) ReadFrom(r *bufio.Reader, _ int) error {
 	var pattern, options CString
-	if err := pattern.ReadFrom(r); err != nil {
+	if err := pattern.ReadFrom(r, 0); err != nil {
 		return lazyerrors.Errorf("bson.Regex.ReadFrom (regex pattern): %w", err)
 	}
-	if err := options.ReadFrom(r); err != nil {
+	if err := options.ReadFrom(r, 0); err != nil {
 		return lazyerrors.Errorf("bson.Regex.ReadFrom (regex options): %w", err)
 	}
 
