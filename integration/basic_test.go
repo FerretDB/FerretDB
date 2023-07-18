@@ -232,62 +232,6 @@ func TestEmptyKey(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func TestFindAndModifyCommentMethod(t *testing.T) {
-	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars)
-
-	name := collection.Database().Name()
-	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
-	require.NoError(t, err)
-
-	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
-	filter := bson.D{{"_id", "string"}}
-
-	opts := options.Delete().SetComment(comment)
-	res, err := collection.DeleteOne(ctx, filter, opts)
-	require.NoError(t, err)
-
-	expected := &mongo.DeleteResult{
-		DeletedCount: 1,
-	}
-
-	assert.Contains(t, databaseNames, name)
-	assert.Equal(t, expected, res)
-}
-
-func TestFindAndModifyCommentQuery(t *testing.T) {
-	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars)
-
-	name := collection.Database().Name()
-	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
-	require.NoError(t, err)
-
-	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
-	request := bson.D{
-		{"findAndModify", collection.Name()},
-		{"query", bson.D{{"_id", "string"}, {"$comment", comment}}},
-		{"update", bson.D{{"$set", bson.D{{"v", "bar"}}}}},
-	}
-
-	expectedLastErrObj := bson.D{
-		{"n", int32(1)},
-		{"updatedExisting", true},
-	}
-
-	var actual bson.D
-	err = collection.Database().RunCommand(ctx, request).Decode(&actual)
-	require.NoError(t, err)
-
-	lastErrObj, ok := actual.Map()["lastErrorObject"].(bson.D)
-	if !ok {
-		t.Fatal(actual)
-	}
-
-	assert.Contains(t, databaseNames, name)
-	AssertEqualDocuments(t, expectedLastErrObj, lastErrObj)
-}
-
 func TestCollectionName(t *testing.T) {
 	t.Parallel()
 

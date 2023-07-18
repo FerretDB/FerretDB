@@ -302,7 +302,7 @@ func TestQueryCompatSortDotNotation(t *testing.T) {
 
 	providers := shareddata.AllProviders().
 		// TODO: https://github.com/FerretDB/FerretDB/issues/2618
-		Remove("ArrayDocuments")
+		Remove(shareddata.ArrayDocuments)
 
 	testCases := map[string]queryCompatTestCase{
 		"DotNotation": {
