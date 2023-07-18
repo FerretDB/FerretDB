@@ -28,7 +28,7 @@ import (
 
 const (
 	minDocumentLen = 5
-	maxNesting     = 179 // TODO https://github.com/FerretDB/FerretDB/issues/1639
+	maxNesting     = 179
 )
 
 // Common interface with types.Document.
