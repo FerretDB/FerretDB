@@ -494,7 +494,6 @@ func TestDatabaseName(t *testing.T) {
 				},
 				altMessage: `Invalid namespace: /.TestDatabaseName-Err`,
 			},
-
 			"WithABackslash": {
 				db: "\\",
 				err: &mongo.CommandError{
@@ -625,11 +624,11 @@ func TestCheckingNestedDocuments(t *testing.T) {
 		},
 		"180fail": {
 			doc: CreateNestedDocument(180),
-			err: fmt.Errorf("bson.Document.ReadFrom (over nested document. Max supported nesting: 1000."),
+			err: fmt.Errorf("bson.Document.ReadFrom (over nested document. Max supported nesting: 179."),
 		},
 		"1000fail": {
 			doc: CreateNestedDocument(1000),
-			err: fmt.Errorf("bson.Document.ReadFrom (over nested document. Max supported nesting: 1000."),
+			err: fmt.Errorf("bson.Document.ReadFrom (over nested document. Max supported nesting: 179."),
 		},
 	} {
 		name, tc := name, tc
