@@ -136,6 +136,10 @@ func (doc *Document) Values() []any {
 
 // ReadFrom implements bsontype interface.
 func (doc *Document) ReadFrom(r *bufio.Reader, nesting int) error {
+	if nesting > maxNesting {
+		return lazyerrors.Errorf("bson.Document.ReadFrom (over nested document. Max supported nesting: %d)", maxNesting)
+	}
+
 	var l int32
 	if err := binary.Read(r, binary.LittleEndian, &l); err != nil {
 		return lazyerrors.Errorf("bson.Document.ReadFrom (binary.Read): %w", err)
@@ -182,10 +186,6 @@ func (doc *Document) ReadFrom(r *bufio.Reader, nesting int) error {
 		switch tag(t) {
 		case tagDocument:
 			var v Document
-			if nesting > maxNesting {
-				return lazyerrors.Errorf("bson.Document.ReadFrom (over nested document. Max supported nesting: %d)", maxNesting)
-			}
-
 			if err := v.ReadFrom(bufr, nesting+1); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (embedded document): %w", err)
 			}
@@ -199,13 +199,6 @@ func (doc *Document) ReadFrom(r *bufio.Reader, nesting int) error {
 
 		case tagArray:
 			var v arrayType
-
-			nesting = nesting + 1
-
-			if nesting > maxNesting {
-				return lazyerrors.Errorf("bson.Document.ReadFrom (over nested document. Max supported nesting: %d)", maxNesting)
-			}
-
 			if err := v.ReadFrom(bufr, nesting+1); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Array): %w", err)
 			}
