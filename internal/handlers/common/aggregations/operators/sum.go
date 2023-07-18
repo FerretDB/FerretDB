@@ -16,8 +16,12 @@
 package operators
 
 import (
+	"errors"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -60,8 +64,29 @@ func (s *sum) Process(doc *types.Document) (any, error) {
 
 	if s.expression != nil {
 		value, err := s.expression.Evaluate(doc)
+		if err != nil {
+			// $sum returns 0 on non-existent field.
+			return int32(0), nil
+		}
 
-		if err == nil {
+		switch v := value.(type) {
+		case *types.Array:
+			iter := v.Iterator()
+			defer iter.Close()
+
+			for {
+				_, v, err := iter.Next()
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
+
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+
+				numbers = append(numbers, v)
+			}
+		default:
 			numbers = append(numbers, value)
 		}
 	}
