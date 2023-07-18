@@ -1130,6 +1130,12 @@ func TestAggregateCompatMatch(t *testing.T) {
 			pipeline:   bson.A{bson.D{{"$match", 1}}},
 			resultType: emptyResult,
 		},
+		"SumValue": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", bson.D{{"$sum", "$v"}}}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/414",
+		},
 	}
 
 	testAggregateStagesCompatWithProviders(t, providers, testCases)
@@ -1756,6 +1762,13 @@ func TestAggregateCompatProject(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"SumValue": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", "$v"}}},
+				}}},
+			},
+		},
 	}
 
 	testAggregateStagesCompat(t, testCases)
@@ -1991,6 +2004,43 @@ func TestAggregateCompatAddFields(t *testing.T) {
 	testAggregateStagesCompat(t, testCases)
 }
 
+func TestAggregateCompatAddFieldsSum(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"SumValue": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{
+					{"sum", bson.D{{"$sum", "$v"}}},
+				}}},
+			},
+		},
+		"SumArray": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{
+					{"sum", bson.D{{"$sum", bson.A{"$v", "$v"}}}},
+				}}},
+			},
+		},
+		"SumInt": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{
+					{"sum", bson.D{{"$sum", 1}}},
+				}}},
+			},
+		},
+		"SumRecursive": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{
+					{"sum", bson.D{{"$sum", bson.D{{"$sum", "$v"}}}}},
+				}}},
+			},
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}
+
 func TestAggregateCompatSet(t *testing.T) {
 	t.Parallel()
 
@@ -2087,6 +2137,13 @@ func TestAggregateCompatSet(t *testing.T) {
 			},
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
+		},
+		"SumValue": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{
+					{"sum", bson.D{{"$sum", "$v"}}},
+				}}},
+			},
 		},
 	}
 	testAggregateStagesCompat(t, testCases)

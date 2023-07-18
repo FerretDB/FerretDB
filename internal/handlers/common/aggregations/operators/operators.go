@@ -114,7 +114,7 @@ func NewOperator(doc *types.Document) (Operator, error) {
 // Operators maps all standard aggregation operators.
 var Operators = map[string]newOperatorFunc{
 	// sorted alphabetically
-	// TODO https://github.com/FerretDB/FerretDB/issues/2680
+	"$sum":  newSum,
 	"$type": newType,
 	// please keep sorted alphabetically
 }
@@ -249,7 +249,6 @@ var unsupportedOperators = map[string]struct{}{
 	"$substrBytes":      {},
 	"$substrCP":         {},
 	"$subtract":         {},
-	"$sum":              {},
 	"$switch":           {},
 	"$tan":              {},
 	"$tanh":             {},
