@@ -104,7 +104,7 @@ var Scalars = &Values[string]{
 		"int64-min":        int64(math.MinInt64),
 		"int64-big":        longBig,
 		"int64-double-big": doubleBig,
-		"int64-1":          int64(1099511628000),     // random,
+		"int64-1":          int64(1099511628000),     // random
 		"int64-2":          int64(281474976700000),   // random
 		"int64-3":          int64(72057594040000000), // random
 
