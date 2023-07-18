@@ -28,6 +28,7 @@ import (
 // sum represents `$sum` operator.
 type sum struct {
 	expressions       []*aggregations.Expression
+	operatorExpr      *types.Document
 	numbers           []any
 	isArrayExpression bool
 }
@@ -39,6 +40,10 @@ func newSum(operation *types.Document) (Operator, error) {
 	operator := new(sum)
 
 	switch expr := expression.(type) {
+	case *types.Document:
+		if IsOperator(expr) {
+			operator.operatorExpr = expr
+		}
 	case *types.Array:
 		operator.isArrayExpression = true
 
@@ -125,6 +130,20 @@ func (s *sum) Process(doc *types.Document) (any, error) {
 		default:
 			numbers = append(numbers, value)
 		}
+	}
+
+	if s.operatorExpr != nil {
+		op, err := NewOperator(s.operatorExpr)
+		if err != nil {
+			return nil, err
+		}
+
+		v, err := op.Process(doc)
+		if err != nil {
+			return nil, err
+		}
+
+		numbers = append(numbers, v)
 	}
 
 	for _, number := range s.numbers {
