@@ -9,9 +9,11 @@ image: /img/blog/community-call-cockroachdb.jpg
 tags: [open source, community]
 ---
 
+![Community matters: fireside chat with Artem Ervits, CockroachDB](/img/blog/community-call-cockroachdb.jpg)
+
 When we talk about open-source, we think about collaboration and freedom of choice: anyone can choose the tools that perfectly fit their needs.
 
-![MongoDB GUI: Using FerretDB with NoSQLBooster](/img/blog/community-call-cockroachdb.jpg)
+<!--truncate-->
 
 Community is what makes open-source software powerful, as well as the ease of access to its source code, so anybody can try it.
 At [FerretDB](https://www.ferretdb.io/), we are constantly improving our software based on feedback from our active community.
