@@ -325,7 +325,7 @@ var cli struct {
 
 	Setup struct{} `cmd:"" help:"Setup development environment."`
 
-	PackageVersion struct{} `cmd:"" help:"Print package version"`
+	PackageVersion struct{} `cmd:"" help:"Print package version."`
 
 	Shell struct {
 		Mkdir struct {
@@ -336,22 +336,22 @@ var cli struct {
 		} `cmd:"" help:"Remove directories."`
 		Read struct {
 			Paths []string `arg:"" name:"path" help:"Paths to read." type:"path"`
-		} `cmd:"" help:"read files"`
+		} `cmd:"" help:"Read files."`
 	} `cmd:""`
 
 	Tests struct {
 		Shard struct {
 			Index uint `help:"Shard index, starting from 1" required:""`
 			Total uint `help:"Total number of shards"       required:""`
-		} `cmd:"" help:"Print sharded integration tests"`
+		} `cmd:"" help:"Print sharded integration tests."`
 	} `cmd:""`
 
 	Fuzz struct {
 		Corpus struct {
 			Src string `arg:"" help:"Source, one of: 'seed', 'generated', or collected corpus' directory."`
 			Dst string `arg:"" help:"Destination, one of: 'seed', 'generated', or collected corpus' directory."`
-		} `cmd:"" help:"Print sharded integration tests"`
-	} `cmd:"Sync fuzz corpora"`
+		} `cmd:"" help:"Sync fuzz corpora."`
+	} `cmd:""`
 }
 
 func main() {
