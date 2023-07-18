@@ -33,6 +33,7 @@ func (regex *regexType) ReadFrom(r *bufio.Reader, _ int) error {
 	if err := pattern.ReadFrom(r, 0); err != nil {
 		return lazyerrors.Errorf("bson.Regex.ReadFrom (regex pattern): %w", err)
 	}
+
 	if err := options.ReadFrom(r, 0); err != nil {
 		return lazyerrors.Errorf("bson.Regex.ReadFrom (regex options): %w", err)
 	}
