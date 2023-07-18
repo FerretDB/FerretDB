@@ -26,7 +26,7 @@ type nullType types.NullType
 func (*nullType) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (*nullType) ReadFrom(r *bufio.Reader) error {
+func (*nullType) ReadFrom(r *bufio.Reader, _ int) error {
 	return nil
 }
 

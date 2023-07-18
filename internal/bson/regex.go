@@ -28,7 +28,7 @@ type regexType types.Regex
 func (regex *regexType) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (regex *regexType) ReadFrom(r *bufio.Reader) error {
+func (regex *regexType) ReadFrom(r *bufio.Reader, _ int) error {
 	var pattern, options CString
 	if err := pattern.ReadFrom(r); err != nil {
 		return lazyerrors.Errorf("bson.Regex.ReadFrom (regex pattern): %w", err)

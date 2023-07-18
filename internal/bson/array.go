@@ -29,7 +29,7 @@ type arrayType types.Array
 func (a *arrayType) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (a *arrayType) ReadFrom(r *bufio.Reader) error {
+func (a *arrayType) ReadFrom(r *bufio.Reader, nesting int) error {
 	var doc Document
 	if err := doc.ReadFrom(r); err != nil {
 		return lazyerrors.Error(err)

@@ -28,7 +28,7 @@ type int64Type int64
 func (i *int64Type) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (i *int64Type) ReadFrom(r *bufio.Reader) error {
+func (i *int64Type) ReadFrom(r *bufio.Reader, _ int) error {
 	if err := binary.Read(r, binary.LittleEndian, i); err != nil {
 		return lazyerrors.Errorf("bson.Int64.ReadFrom (binary.Read): %w", err)
 	}

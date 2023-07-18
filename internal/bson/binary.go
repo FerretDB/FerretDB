@@ -30,7 +30,7 @@ type binaryType types.Binary
 func (bin *binaryType) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (bin *binaryType) ReadFrom(r *bufio.Reader) error {
+func (bin *binaryType) ReadFrom(r *bufio.Reader, _ int) error {
 	var l int32
 	if err := binary.Read(r, binary.LittleEndian, &l); err != nil {
 		return lazyerrors.Errorf("bson.Binary.ReadFrom (binary.Read): %w", err)

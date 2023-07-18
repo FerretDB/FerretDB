@@ -28,7 +28,7 @@ type int32Type int32
 func (i *int32Type) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (i *int32Type) ReadFrom(r *bufio.Reader) error {
+func (i *int32Type) ReadFrom(r *bufio.Reader, _ int) error {
 	if err := binary.Read(r, binary.LittleEndian, i); err != nil {
 		return lazyerrors.Errorf("bson.Int32.ReadFrom (binary.Read): %w", err)
 	}

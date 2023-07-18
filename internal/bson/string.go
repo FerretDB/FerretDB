@@ -29,7 +29,7 @@ type stringType string
 func (str *stringType) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (str *stringType) ReadFrom(r *bufio.Reader) error {
+func (str *stringType) ReadFrom(r *bufio.Reader, _ int) error {
 	var l int32
 	if err := binary.Read(r, binary.LittleEndian, &l); err != nil {
 		return lazyerrors.Error(err)

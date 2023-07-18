@@ -28,7 +28,7 @@ type CString string
 func (cstr *CString) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (cstr *CString) ReadFrom(r *bufio.Reader) error {
+func (cstr *CString) ReadFrom(r *bufio.Reader, _ int) error {
 	b, err := r.ReadBytes(0)
 	if err != nil {
 		return lazyerrors.Errorf("bson.CString.ReadFrom: %w", err)

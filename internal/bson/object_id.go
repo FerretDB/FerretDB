@@ -28,7 +28,7 @@ type objectIDType types.ObjectID
 func (obj *objectIDType) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (obj *objectIDType) ReadFrom(r *bufio.Reader) error {
+func (obj *objectIDType) ReadFrom(r *bufio.Reader, _ int) error {
 	if _, err := io.ReadFull(r, obj[:]); err != nil {
 		return lazyerrors.Errorf("bson.ObjectID.ReadFrom (io.ReadFull): %w", err)
 	}

@@ -33,7 +33,7 @@ func (dt dateTimeType) String() string {
 func (dt *dateTimeType) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (dt *dateTimeType) ReadFrom(r *bufio.Reader) error {
+func (dt *dateTimeType) ReadFrom(r *bufio.Reader, _ int) error {
 	var ts int64
 	if err := binary.Read(r, binary.LittleEndian, &ts); err != nil {
 		return lazyerrors.Errorf("bson.DateTime.ReadFrom (binary.Read): %w", err)
