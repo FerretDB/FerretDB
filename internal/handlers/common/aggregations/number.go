@@ -23,6 +23,7 @@ import (
 // The result has the same type as the input, except when the result
 // cannot be presented accurately. Then int32 is converted to int64,
 // and int64 is converted to float64. It ignores non-number values.
+// For empty `vs`, it returns int32(0).
 // This should only be used for aggregation, aggregation does not return
 // error on overflow.
 func SumNumbers(vs ...any) any {

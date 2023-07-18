@@ -27,8 +27,9 @@ import (
 
 // sum represents `$sum` operator.
 type sum struct {
-	expression *aggregations.Expression
-	numbers    []any
+	expressions       []*aggregations.Expression
+	numbers           []any
+	isArrayExpression bool
 }
 
 // newSum returns `$sum` operator.
@@ -39,20 +40,50 @@ func newSum(operation *types.Document) (Operator, error) {
 
 	switch expr := expression.(type) {
 	case *types.Array:
-		operator.numbers = []any{expr}
+		operator.isArrayExpression = true
+
+		iter := expr.Iterator()
+		defer iter.Close()
+
+		for {
+			_, v, err := iter.Next()
+
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			switch elemExpr := v.(type) {
+			case float64:
+				operator.numbers = append(operator.numbers, elemExpr)
+			case string:
+				ex, err := aggregations.NewExpression(elemExpr)
+				if err != nil {
+					return nil, err
+				}
+
+				operator.expressions = append(operator.expressions, ex)
+			case int32, int64:
+				operator.numbers = append(operator.numbers, elemExpr)
+			default:
+				continue
+			}
+		}
 	case float64:
 		operator.numbers = []any{expr}
 	case string:
-		var err error
-		if operator.expression, err = aggregations.NewExpression(expr); err != nil {
-			// $sum returns 0 on non-existent field.
-			operator.numbers = []any{int32(0)}
+		ex, err := aggregations.NewExpression(expr)
+		if err != nil {
+			return nil, err
 		}
+
+		operator.expressions = []*aggregations.Expression{ex}
 	case int32, int64:
 		operator.numbers = []any{expr}
 	default:
-		operator.numbers = []any{int32(0)}
-		// $sum returns 0 on non-numeric field
 	}
 
 	return operator, nil
@@ -62,15 +93,20 @@ func newSum(operation *types.Document) (Operator, error) {
 func (s *sum) Process(doc *types.Document) (any, error) {
 	var numbers []any
 
-	if s.expression != nil {
-		value, err := s.expression.Evaluate(doc)
+	for _, expression := range s.expressions {
+		value, err := expression.Evaluate(doc)
 		if err != nil {
-			// $sum returns 0 on non-existent field.
-			return int32(0), nil
+			// expression cannot evaluate doc, nothing to do
+			continue
 		}
 
 		switch v := value.(type) {
 		case *types.Array:
+			if s.isArrayExpression {
+				// when expression is an array, array document is not iterated
+				continue
+			}
+
 			iter := v.Iterator()
 			defer iter.Close()
 
@@ -96,8 +132,6 @@ func (s *sum) Process(doc *types.Document) (any, error) {
 		case float64, int32, int64:
 			numbers = append(numbers, number)
 		default:
-			// $sum returns 0 on non-existent and non-numeric field.
-			return int32(0), nil
 		}
 	}
 
