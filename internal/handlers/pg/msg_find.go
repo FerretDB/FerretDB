@@ -50,12 +50,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	if params.MaxTimeMS != 0 {
-		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
-		defer cancel()
-
-		ctx = ctxWithTimeout
-	}
+	username, _ := conninfo.Get(ctx).Auth()
 
 	qp := &pgdb.QueryParams{
 		DB:         params.DB,
@@ -78,22 +73,35 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		qp.Sort = params.Sort
 	}
 
-	var resDocs []*types.Document
-	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		if params.BatchSize == 0 {
-			return nil
-		}
+	// Sorting requires fetching all documents and sorting them in memory unless `EnableSortPushdown` is set.
+	// Limit pushdown is not applied when `sort` is set but `EnableSortPushdown` is not set.
+	// Skip pushdown is not supported yet, limit pushdown is not applied when `skip` is non-zero value.
+	if (params.Sort.Len() == 0 || h.EnableSortPushdown) && params.Skip == 0 {
+		qp.Limit = params.Limit
+	}
 
-		var iter types.DocumentsIterator
+	cancel := func() {}
+	if params.MaxTimeMS != 0 {
+		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
+		// TODO https://github.com/FerretDB/FerretDB/issues/2983
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
+	}
+
+	// closer accumulates all things that should be closed / canceled.
+	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
+
+	var keepTx pgx.Tx
+	var iter types.DocumentsIterator
+	err = dbPool.InTransactionKeep(ctx, func(tx pgx.Tx) error {
+		keepTx = tx
+
 		var queryRes pgdb.QueryResults
-
 		iter, queryRes, err = pgdb.QueryDocuments(ctx, tx, qp)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		closer := iterator.NewMultiCloser(iter)
-		defer closer.Close()
+		closer.Add(iter)
 
 		iter = common.FilterIterator(iter, closer, params.Filter)
 
@@ -122,40 +130,48 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			return lazyerrors.Error(err)
 		}
 
-		resDocs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
-
-		return err
+		return nil
 	})
 
 	if err != nil {
+		closer.Close()
 		return nil, lazyerrors.Error(err)
 	}
 
-	var cursorID int64
+	closer.Add(iterator.CloserFunc(func() {
+		// It does not matter if we commit or rollback the read transaction,
+		// but we should close it.
+		// ctx could be cancelled already.
+		_ = keepTx.Rollback(context.Background())
+	}))
 
-	if h.EnableCursors && !params.SingleBatch && int64(len(resDocs)) > params.BatchSize {
-		// Cursor is not created for singleBatch, and when resDocs is less than batchSize,
-		// all response fits in the firstBatch.
-		iter := iterator.Values(iterator.ForSlice(resDocs))
-		c := cursor.New(&cursor.NewParams{
-			Iter:       iter,
-			DB:         params.DB,
-			Collection: params.Collection,
-			BatchSize:  int32(params.BatchSize),
-		})
+	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
+		Iter:       iterator.WithClose(iterator.Interface[struct{}, *types.Document](iter), closer.Close),
+		DB:         params.DB,
+		Collection: params.Collection,
+		Username:   username,
+	})
 
-		username, _ := conninfo.Get(ctx).Auth()
-		cursorID = h.registry.StoreCursor(username, c)
+	cursorID := cursor.ID
 
-		resDocs, err = iterator.ConsumeValuesN(iter, int(params.BatchSize))
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	firstBatchDocs, err := iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor), int(params.BatchSize))
+	if err != nil {
+		cursor.Close()
+		return nil, lazyerrors.Error(err)
 	}
 
-	firstBatch := types.MakeArray(len(resDocs))
-	for _, doc := range resDocs {
+	firstBatch := types.MakeArray(len(firstBatchDocs))
+	for _, doc := range firstBatchDocs {
 		firstBatch.Append(doc)
+	}
+
+	if params.SingleBatch || firstBatch.Len() < int(params.BatchSize) {
+		// TODO: support tailable cursors https://github.com/FerretDB/FerretDB/issues/2283
+
+		// let the client know that there are no more results
+		cursorID = 0
+
+		cursor.Close()
 	}
 
 	var reply wire.OpMsg

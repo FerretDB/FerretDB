@@ -59,9 +59,41 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	idxArr, err := common.GetRequiredParam[*types.Array](document, "indexes")
-	if err != nil {
-		return nil, err
+	if collection == "" {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidNamespace,
+			fmt.Sprintf("Invalid namespace specified '%s.'", db),
+			command,
+		)
+	}
+
+	v, _ := document.Get("indexes")
+	if v == nil {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrMissingField,
+			"BSON field 'createIndexes.indexes' is missing but a required field",
+			document.Command(),
+		)
+	}
+
+	idxArr, ok := v.(*types.Array)
+	if !ok {
+		if _, ok = v.(types.NullType); ok {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrIndexesWrongType,
+				"invalid parameter: expected an object (indexes)",
+				document.Command(),
+			)
+		}
+
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrTypeMismatch,
+			fmt.Sprintf(
+				"BSON field 'createIndexes.indexes' is the wrong type '%s', expected type 'array'",
+				commonparams.AliasFromType(v),
+			),
+			document.Command(),
+		)
 	}
 
 	if idxArr.Len() == 0 {
@@ -75,16 +107,41 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	iter := idxArr.Iterator()
 	defer iter.Close()
 
+	indexes := map[*types.Document]*pgdb.Index{}
+
+	var collCreated bool
+	var numIndexesBefore, numIndexesAfter int32
 	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		var indexesBefore []pgdb.Index
+		indexesBefore, err = pgdb.Indexes(ctx, tx, db, collection)
+		if err == nil {
+			numIndexesBefore = int32(len(indexesBefore))
+		}
+		if errors.Is(err, pgdb.ErrTableNotExist) {
+			numIndexesBefore = 1
+			err = nil
+		}
+
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
 		for {
-			var val any
-			_, val, err = iter.Next()
+			var key, val any
+			key, val, err = iter.Next()
 
 			switch {
 			case err == nil:
 				// do nothing
 			case errors.Is(err, iterator.ErrIteratorDone):
-				// iterator is done, no more indexes to create
+				var indexesAfter []pgdb.Index
+				indexesAfter, err = pgdb.Indexes(ctx, tx, db, collection)
+				if err != nil {
+					return lazyerrors.Error(err)
+				}
+
+				numIndexesAfter = int32(len(indexesAfter))
+
 				return nil
 			default:
 				return lazyerrors.Error(err)
@@ -92,8 +149,15 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 			indexDoc, ok := val.(*types.Document)
 			if !ok {
-				// TODO Add better validation and return proper error: https://github.com/FerretDB/FerretDB/issues/2311
-				return lazyerrors.Errorf("expected index document, got %T", val)
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrTypeMismatch,
+					fmt.Sprintf(
+						"BSON field 'createIndexes.indexes.%d' is the wrong type '%s', expected type 'object'",
+						key,
+						commonparams.AliasFromType(val),
+					),
+					document.Command(),
+				)
 			}
 
 			var index *pgdb.Index
@@ -102,7 +166,59 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 				return err
 			}
 
-			if err = pgdb.CreateIndexIfNotExists(ctx, tx, db, collection, index); err != nil {
+			if index.Name == "" {
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrCannotCreateIndex,
+					fmt.Sprintf(
+						"Error in specification %s :: caused by :: index name cannot be empty",
+						types.FormatAnyValue(indexDoc),
+					),
+					document.Command(),
+				)
+			}
+
+			for doc, existing := range indexes {
+				if existing.Key.Equal(index.Key) && existing.Name == index.Name {
+					return commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrIndexAlreadyExists,
+						fmt.Sprintf("Identical index already exists: %s", existing.Name),
+						document.Command(),
+					)
+				}
+
+				if existing.Key.Equal(index.Key) {
+					return commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrIndexOptionsConflict,
+						fmt.Sprintf("Index already exists with a different name: %s", existing.Name),
+						document.Command(),
+					)
+				}
+
+				if existing.Name == index.Name {
+					return commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrIndexKeySpecsConflict,
+						fmt.Sprintf("An existing index has the same name as the requested index. "+
+							"When index names are not specified, they are auto generated and can "+
+							"cause conflicts. Please refer to our documentation. "+
+							"Requested index: %s, "+
+							"existing index: %s",
+							types.FormatAnyValue(indexDoc),
+							types.FormatAnyValue(doc),
+						),
+						document.Command(),
+					)
+				}
+			}
+
+			indexes[indexDoc] = index
+
+			collCreated, err = pgdb.CreateIndexIfNotExists(ctx, tx, db, collection, index)
+			if errors.Is(err, pgdb.ErrIndexKeyAlreadyExist) && index.Name == "_id_1" {
+				// ascending _id index is created by default
+				return nil
+			}
+
+			if err != nil {
 				return err
 			}
 		}
@@ -119,7 +235,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		)
 	case errors.Is(err, pgdb.ErrIndexNameAlreadyExist):
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrIndexKeySpecsConflict,
+			commonerrors.ErrBadValue,
 			"One of the specified indexes already exists with a different key",
 			document.Command(),
 		)
@@ -134,11 +250,22 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, lazyerrors.Error(err)
 	}
 
+	res := new(types.Document)
+
+	res.Set("numIndexesBefore", numIndexesBefore)
+	res.Set("numIndexesAfter", numIndexesAfter)
+
+	if numIndexesBefore != numIndexesAfter {
+		res.Set("createdCollectionAutomatically", collCreated)
+	} else {
+		res.Set("note", "all indexes already exist")
+	}
+
+	res.Set("ok", float64(1))
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		))},
+		Documents: []*types.Document{res},
 	}))
 
 	return &reply, nil
@@ -151,6 +278,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 	iter := indexDoc.Iterator()
 	defer iter.Close()
 
+	var hasValue bool
 	for {
 		opt, _, err := iter.Next()
 
@@ -158,10 +286,23 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 		case err == nil:
 			// do nothing
 		case errors.Is(err, iterator.ErrIteratorDone):
+			if !hasValue {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrFailedToParse,
+					fmt.Sprintf(
+						"Error in specification {} :: caused by :: "+
+							"The 'key' field is a required property of an index specification",
+					),
+					"createIndexes",
+				)
+			}
+
 			return &index, nil
 		default:
 			return nil, lazyerrors.Error(err)
 		}
+
+		hasValue = true
 
 		// Process required param "key"
 		var keyDoc *types.Document
@@ -204,9 +345,23 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 			return nil, err
 		}
 
-		// Process required param "name"
-		index.Name, err = common.GetRequiredParam[string](indexDoc, "name")
-		if err != nil {
+		v, _ := indexDoc.Get("name")
+		if v == nil {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf(
+					"Error in specification { key: %s } :: caused by :: "+
+						"The 'name' field is a required property of an index specification",
+					types.FormatAnyValue(keyDoc),
+				),
+				"createIndexes",
+			)
+		}
+
+		var ok bool
+		index.Name, ok = v.(string)
+
+		if !ok {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrTypeMismatch,
 				"'name' option must be specified as a string",
@@ -219,9 +374,9 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 			// already processed, do nothing
 
 		case "unique":
-			uniqueVal := must.NotFail(indexDoc.Get("unique"))
+			v := must.NotFail(indexDoc.Get("unique"))
 
-			_, ok := uniqueVal.(bool)
+			unique, ok := v.(bool)
 			if !ok {
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrTypeMismatch,
@@ -230,7 +385,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 							":: caused by :: "+
 							"The field 'unique' has value unique: %[3]s, which is not convertible to bool",
 						types.FormatAnyValue(must.NotFail(indexDoc.Get("key"))),
-						index.Name, types.FormatAnyValue(uniqueVal),
+						index.Name, types.FormatAnyValue(v),
 					),
 					"createIndexes",
 				)
@@ -247,7 +402,9 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 				)
 			}
 
-			index.Unique = pointer.ToBool(true)
+			if unique {
+				index.Unique = pointer.ToBool(true)
+			}
 
 		case "background":
 			// ignore deprecated options
@@ -309,8 +466,8 @@ func processIndexKey(keyDoc *types.Document) (pgdb.IndexKey, error) {
 
 		if orderParam, err = commonparams.GetWholeNumberParam(order); err != nil {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
-				fmt.Sprintf("Index key value %q is not implemented yet", order),
+				commonerrors.ErrIndexNotFound,
+				fmt.Sprintf("can't find index with key: { %s: \"%s\" }", field, order),
 				"createIndexes",
 			)
 		}

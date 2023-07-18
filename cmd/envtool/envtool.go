@@ -18,19 +18,16 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"html/template"
 	"io"
-	"io/fs"
 	"net"
 	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -38,15 +35,12 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/tigrisdata/tigris-client-go/config"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
@@ -62,162 +56,7 @@ var (
 // versionFile contains version information with leading v.
 const versionFile = "build/version/version.txt"
 
-// generatedCorpus returns $GOCACHE/fuzz/github.com/FerretDB/FerretDB,
-// ensuring that this directory exists.
-func generatedCorpus() (string, error) {
-	b, err := exec.Command("go", "env", "GOCACHE").Output()
-	if err != nil {
-		return "", lazyerrors.Error(err)
-	}
-
-	path := filepath.Join(string(bytes.TrimSpace(b)), "fuzz", "github.com", "FerretDB", "FerretDB")
-
-	if _, err = os.Stat(path); err != nil {
-		if os.IsNotExist(err) {
-			err = os.MkdirAll(path, 0o777)
-		}
-
-		if err != nil {
-			return "", lazyerrors.Error(err)
-		}
-	}
-
-	return path, err
-}
-
-// collectFiles returns a map of all fuzz files in the given directory.
-func collectFiles(root string, logger *zap.SugaredLogger) (map[string]struct{}, error) {
-	existingFiles := make(map[string]struct{}, 1000)
-	err := filepath.Walk(root, func(path string, info fs.FileInfo, err error) error {
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		if info.IsDir() {
-			// skip .git, etc
-			if strings.HasPrefix(info.Name(), ".") {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-
-		// skip other files
-		if _, err = hex.DecodeString(info.Name()); err != nil {
-			return nil
-		}
-
-		path, err = filepath.Rel(root, path)
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-		logger.Debug(path)
-		existingFiles[path] = struct{}{}
-		return nil
-	})
-
-	return existingFiles, err
-}
-
-// cutTestdata returns s with "/testdata/fuzz" removed.
-//
-// That converts seed corpus entry like `internal/bson/testdata/fuzz/FuzzArray/HEX`
-// to format used by generated and collected corpora `internal/bson/FuzzArray/HEX`.
-func cutTestdata(s string) string {
-	old := string(filepath.Separator) + filepath.Join("testdata", "fuzz")
-	return strings.Replace(s, old, "", 1)
-}
-
-// diff returns the set of files in src that are not in dst, with and without applying `cutTestdata`.
-func diff(src, dst map[string]struct{}) []string {
-	res := make([]string, 0, 50)
-
-	for p := range src {
-		if _, ok := dst[p]; ok {
-			continue
-		}
-
-		if _, ok := dst[cutTestdata(p)]; ok {
-			continue
-		}
-
-		res = append(res, p)
-	}
-
-	sort.Strings(res)
-
-	return res
-}
-
-// copyFile copies a file from src to dst, overwriting dst if it exists.
-func copyFile(src, dst string) error {
-	srcF, err := os.Open(src)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-	defer srcF.Close()
-
-	dir := filepath.Dir(dst)
-
-	_, err = os.Stat(dir)
-	if os.IsNotExist(err) {
-		err = os.MkdirAll(dir, 0o777)
-	}
-
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	dstF, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o666)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	_, err = io.Copy(dstF, srcF)
-	if closeErr := dstF.Close(); err == nil {
-		err = closeErr
-	}
-
-	if err != nil {
-		os.Remove(dst)
-		return lazyerrors.Error(err)
-	}
-
-	return nil
-}
-
-// copyCorpus copies all new corpus files from srcRoot to dstRoot.
-func copyCorpus(srcRoot, dstRoot string) {
-	logger := zap.S()
-
-	srcFiles, err := collectFiles(srcRoot, logger)
-	if err != nil {
-		logger.Fatal(err)
-	}
-
-	logger.Infof("Found %d files in src.", len(srcFiles))
-
-	dstFiles, err := collectFiles(dstRoot, logger)
-	if err != nil {
-		logger.Fatal(err)
-	}
-
-	logger.Infof("Found %d existing files in dst.", len(dstFiles))
-
-	files := diff(srcFiles, dstFiles)
-	logger.Infof("Copying new %d files to dst.", len(files))
-
-	for _, p := range files {
-		src := filepath.Join(srcRoot, p)
-		dst := cutTestdata(filepath.Join(dstRoot, p))
-		logger.Debugf("%s -> %s", src, dst)
-
-		if err := copyFile(src, dst); err != nil {
-			logger.Fatal(err)
-		}
-	}
-}
-
-// waitForPort waits for the given port to be available until ctx is done.
+// waitForPort waits for the given port to be available until ctx is canceled.
 func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) error {
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	logger.Infof("Waiting for %s to be up...", addr)
@@ -322,67 +161,6 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 	return setupAnyPostgres(ctx, logger.Named("postgres_secured"), "postgres://username:password@127.0.0.1:5433/ferretdb")
 }
 
-// setupAnyTigris configures given Tigris.
-func setupAnyTigris(ctx context.Context, logger *zap.SugaredLogger, port uint16) error {
-	err := waitForPort(ctx, logger, port)
-	if err != nil {
-		return err
-	}
-
-	cfg := &config.Driver{
-		URL: fmt.Sprintf("127.0.0.1:%d", port),
-	}
-
-	p, err := state.NewProvider("")
-	if err != nil {
-		return err
-	}
-
-	var db *tigrisdb.TigrisDB
-
-	var retry int64
-	for ctx.Err() == nil {
-		if db, err = tigrisdb.New(ctx, cfg, logger.Desugar(), p); err == nil {
-			break
-		}
-
-		logger.Infof("%s: %s", cfg.URL, err)
-
-		retry++
-		ctxutil.SleepWithJitter(ctx, time.Second, retry)
-	}
-
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
-
-	defer db.Driver.Close()
-
-	logger.Info("Creating databases...")
-
-	for _, name := range []string{"admin", "test"} {
-		if _, err = db.Driver.CreateProject(ctx, name); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// setupTigris configures all Tigris containers.
-func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
-	logger = logger.Named("tigris")
-
-	// See docker-compose.yml.
-	for _, port := range []uint16{8081, 8091, 8092, 8093, 8094} {
-		if err := setupAnyTigris(ctx, logger.Named(strconv.Itoa(int(port))), port); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // setup runs all setup commands.
 func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 	go debug.RunHandler(ctx, "127.0.0.1:8089", prometheus.DefaultRegisterer, logger.Named("debug").Desugar())
@@ -392,10 +170,6 @@ func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 	}
 
 	if err := setupPostgresSecured(ctx, logger); err != nil {
-		return err
-	}
-
-	if err := setupTigris(ctx, logger); err != nil {
 		return err
 	}
 
@@ -547,8 +321,12 @@ func packageVersion(w io.Writer, file string) error {
 // cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
-	Debug bool     `help:"Enable debug mode."`
+	Debug bool `help:"Enable debug mode."`
+
 	Setup struct{} `cmd:"" help:"Setup development environment."`
+
+	PackageVersion struct{} `cmd:"" help:"Print package version"`
+
 	Shell struct {
 		Mkdir struct {
 			Paths []string `arg:"" name:"path" help:"Paths to create." type:"path"`
@@ -560,25 +338,25 @@ var cli struct {
 			Paths []string `arg:"" name:"path" help:"Paths to read." type:"path"`
 		} `cmd:"" help:"read files"`
 	} `cmd:""`
-	PackageVersion struct{} `cmd:"" help:"Print package version"`
-	Tests          struct {
+
+	Tests struct {
 		Shard struct {
 			Index uint `help:"Shard index, starting from 1" required:""`
 			Total uint `help:"Total number of shards"       required:""`
 		} `cmd:"" help:"Print sharded integration tests"`
 	} `cmd:""`
+
 	Fuzz struct {
 		Corpus struct {
 			Src string `arg:"" help:"Source, one of: 'seed', 'generated', or collected corpus' directory."`
 			Dst string `arg:"" help:"Destination, one of: 'seed', 'generated', or collected corpus' directory."`
-		} `cmd:""`
-	} `cmd:""`
+		} `cmd:"" help:"Print sharded integration tests"`
+	} `cmd:"Sync fuzz corpora"`
 }
 
 func main() {
 	kongCtx := kong.Parse(&cli)
-	logger := zap.S()
-	var err error
+
 	// always enable debug logging on CI
 	if t, _ := strconv.ParseBool(os.Getenv("CI")); t {
 		cli.Debug = true
@@ -589,22 +367,13 @@ func main() {
 		level = zap.DebugLevel
 	}
 
-	seedCorpus, err := os.Getwd()
-	if err != nil {
-		logger.Fatal(err)
-	}
-
-	generatedCorpus, err := generatedCorpus()
-	if err != nil {
-		logger.Fatal(err)
-	}
-
 	logging.Setup(level, "")
+	logger := zap.S()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	var src, dst string
+	var err error
 
 	switch cmd := kongCtx.Command(); cmd {
 	case "setup":
@@ -619,7 +388,20 @@ func main() {
 		err = packageVersion(os.Stdout, versionFile)
 	case "tests shard":
 		err = testsShard(os.Stdout, cli.Tests.Shard.Index, cli.Tests.Shard.Total)
-	case "fuzz-corpus <src> <dst>":
+
+	case "fuzz corpus <src> <dst>":
+		seedCorpus, err := os.Getwd()
+		if err != nil {
+			logger.Fatal(err)
+		}
+
+		generatedCorpus, err := fuzzGeneratedCorpus()
+		if err != nil {
+			logger.Fatal(err)
+		}
+
+		var src, dst string
+
 		switch cli.Fuzz.Corpus.Src {
 		case "seed":
 			src = seedCorpus
@@ -644,11 +426,12 @@ func main() {
 				logger.Fatal(err)
 			}
 		}
-	default:
-		err = fmt.Errorf("unknown command: %s", cmd)
 
 		logger.Infof("Copying from %s to %s.", src, dst)
-		copyCorpus(src, dst)
+		fuzzCopyCorpus(src, dst, logger)
+
+	default:
+		err = fmt.Errorf("unknown command: %s", cmd)
 	}
 
 	if err != nil {

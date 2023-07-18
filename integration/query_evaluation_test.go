@@ -30,8 +30,6 @@ import (
 func TestQueryEvaluationRegex(t *testing.T) {
 	// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1576
 
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 

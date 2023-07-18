@@ -17,18 +17,16 @@ tasks:
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
         -target-backend=ferretdb-pg
-        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_min_conns=1
+        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
         -target-backend=ferretdb-pg
-        -postgresql-url=postgres://username:password@127.0.0.1:5433/ferretdb?pool_min_conns=1
-      # no sqlite yet
+        -postgresql-url=postgres://username:password@127.0.0.1:5433/ferretdb?pool_max_conns=50
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
-        -tags=ferretdb_testenvdata,ferretdb_tigris .
-        -target-backend=ferretdb-tigris
-        -tigris-urls=127.0.0.1:8081
+        -tags=ferretdb_testenvdata .
+        -target-backend=ferretdb-sqlite
       # no hana yet
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
@@ -50,7 +48,7 @@ tasks:
 
   integration-security:
     cmds:
-      - ../bin/govulncheck{{exeExt}} -v -test ./...
+      - ../bin/govulncheck{{exeExt}} -test ./...
 
   bench-pg:
     desc: "Run benchmarks for `pg` handler"
@@ -61,7 +59,7 @@ tasks:
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-pg
-        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
         | tee new-pg.txt
       - ../bin/benchstat{{exeExt}} old-pg.txt new-pg.txt
 
@@ -74,7 +72,7 @@ tasks:
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-pg
-        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
         -- -disable-filter-pushdown
         | tee new-pg.txt
       - ../bin/benchstat{{exeExt}} old-pg.txt new-pg.txt

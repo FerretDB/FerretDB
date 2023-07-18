@@ -31,6 +31,8 @@ import (
 // If input iterator contains no document, it returns ErrIteratorDone.
 //
 // Close method closes the underlying iterator.
+//
+// Deprecated: remove this function, use iterator.ConsumeCount instead.
 func CountIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, field string) types.DocumentsIterator {
 	res := &countIterator{
 		iter:  iter,

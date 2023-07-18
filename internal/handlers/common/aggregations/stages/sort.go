@@ -78,11 +78,6 @@ func (s *sort) Process(ctx context.Context, iter types.DocumentsIterator, closer
 	return iter, nil
 }
 
-// Type  implements Stage interface.
-func (s *sort) Type() aggregations.StageType {
-	return aggregations.StageTypeDocuments
-}
-
 // check interfaces
 var (
 	_ aggregations.Stage = (*sort)(nil)

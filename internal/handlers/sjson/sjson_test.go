@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,6 +28,8 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 type testCase struct {
@@ -39,7 +42,7 @@ type testCase struct {
 }
 
 // assertEqual is assert.Equal that also can compare NaNs and ±0.
-func assertEqual(tb testing.TB, expected, actual any, msgAndArgs ...any) bool {
+func assertEqual(tb testtb.TB, expected, actual any, msgAndArgs ...any) bool {
 	tb.Helper()
 
 	switch expected := expected.(type) {
@@ -157,6 +160,58 @@ func fuzzJSON(f *testing.F, testCases []testCase, newFunc func() sjsontype) {
 		if tc.canonJ != "" {
 			f.Add(tc.canonJ, string(sch))
 		}
+	}
+
+	// load recorded documents only if we are fuzzing documents
+	if _, ok := newFunc().(*documentType); ok && !testing.Short() {
+		records, err := wire.LoadRecords(filepath.Join("..", "..", "..", "tmp", "records"), 100)
+		require.NoError(f, err)
+
+		var n int
+
+		for _, rec := range records {
+			if rec.Body == nil {
+				continue
+			}
+
+			var docs []*types.Document
+
+			switch b := rec.Body.(type) {
+			case *wire.OpMsg:
+				doc, err := b.Document()
+				require.NoError(f, err)
+				docs = append(docs, doc)
+
+			case *wire.OpQuery:
+				if doc := b.Query; doc != nil {
+					docs = append(docs, doc)
+				}
+
+				if doc := b.ReturnFieldsSelector; doc != nil {
+					docs = append(docs, doc)
+				}
+
+			case *wire.OpReply:
+				docs = append(docs, b.Documents...)
+			}
+
+			for _, doc := range docs {
+				if doc.ValidateData() != nil {
+					continue
+				}
+
+				j, err := MarshalSingleValue(doc)
+				require.NoError(f, err)
+
+				sch, err := marshalSchemaForDoc(doc)
+				require.NoError(f, err)
+
+				f.Add(string(j), string(sch))
+				n++
+			}
+		}
+
+		f.Logf("%d recorded documents were added to the seed corpus", n)
 	}
 
 	f.Fuzz(func(t *testing.T, j, jsch string) {

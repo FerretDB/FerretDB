@@ -19,6 +19,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -40,46 +42,35 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	if params.MaxTimeMS != 0 {
-		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
-		defer cancel()
-
-		ctx = ctxWithTimeout
-	}
-
-	if params.BatchSize == 0 {
-		var reply wire.OpMsg
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"cursor", must.NotFail(types.NewDocument(
-					"firstBatch", types.MakeArray(0),
-					"id", int64(0),
-					"ns", params.DB+"."+params.Collection,
-				)),
-				"ok", float64(1),
-			))},
-		}))
-
-		return &reply, nil
-	}
+	username, _ := conninfo.Get(ctx).Auth()
 
 	db := h.b.Database(params.DB)
 	defer db.Close()
 
+	cancel := func() {}
+	if params.MaxTimeMS != 0 {
+		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
+		// TODO https://github.com/FerretDB/FerretDB/issues/2984
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
+	}
+
+	// closer accumulates all things that should be closed / canceled.
+	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
+
 	queryRes, err := db.Collection(params.Collection).Query(ctx, nil)
 	if err != nil {
+		closer.Close()
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter := queryRes.Iter
+	closer.Add(queryRes.Iter)
 
-	closer := iterator.NewMultiCloser(iter)
-	defer closer.Close()
-
-	iter = common.FilterIterator(iter, closer, params.Filter)
+	iter := common.FilterIterator(queryRes.Iter, closer, params.Filter)
 
 	iter, err = common.SortIterator(iter, closer, params.Sort)
 	if err != nil {
+		closer.Close()
+
 		var pathErr *types.DocumentPathError
 		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -98,19 +89,39 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	iter, err = common.ProjectionIterator(iter, closer, params.Projection, params.Filter)
 	if err != nil {
+		closer.Close()
 		return nil, lazyerrors.Error(err)
 	}
 
-	res, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+	// Combine iterators chain and closer into a cursor to pass around.
+	// The context will be canceled when client disconnects or after maxTimeMS.
+	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
+		Iter:       iterator.WithClose(iterator.Interface[struct{}, *types.Document](iter), closer.Close),
+		DB:         params.DB,
+		Collection: params.Collection,
+		Username:   username,
+	})
+
+	cursorID := cursor.ID
+
+	firstBatchDocs, err := iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor), int(params.BatchSize))
 	if err != nil {
+		cursor.Close()
 		return nil, lazyerrors.Error(err)
 	}
 
-	var cursorID int64
-
-	firstBatch := types.MakeArray(len(res))
-	for _, doc := range res {
+	firstBatch := types.MakeArray(len(firstBatchDocs))
+	for _, doc := range firstBatchDocs {
 		firstBatch.Append(doc)
+	}
+
+	if params.SingleBatch || firstBatch.Len() < int(params.BatchSize) {
+		// TODO: support tailable cursors https://github.com/FerretDB/FerretDB/issues/2283
+
+		// let the client know that there are no more results
+		cursorID = 0
+
+		cursor.Close()
 	}
 
 	var reply wire.OpMsg
