@@ -110,10 +110,13 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"queryPlanner", queryPlanner,
 			"explainVersion", "1",
 			"command", cmd,
+			"serverInfo", serverInfo,
+
+			// our extensions
 			"pushdown", results.FilterPushdown,
 			"sortingPushdown", results.SortPushdown,
 			"limitPushdown", results.LimitPushdown,
-			"serverInfo", serverInfo,
+
 			"ok", float64(1),
 		))},
 	}))
