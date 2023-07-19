@@ -22,47 +22,52 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestFindAndModifyEmptyCollectionName(t *testing.T) {
-	t.Parallel()
+func TestFindAndModifyEmptyCollectionName(tt *testing.T) {
+	tt.Parallel()
 
-	for name, tc := range map[string]struct {
-		err        *mongo.CommandError // optional, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
-	}{
-		"EmptyCollectionName": {
-			err: &mongo.CommandError{
-				Code:    73,
-				Message: "Invalid namespace specified 'TestFindAndModifyEmptyCollectionName-EmptyCollectionName.'",
-				Name:    "InvalidNamespace",
-			},
-			altMessage: "Invalid namespace specified 'TestFindAndModifyEmptyCollectionName-EmptyCollectionName.'",
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+
+	ctx, collection := setup.Setup(t, shareddata.Doubles)
+
+	var res bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"findAndModify", ""}}).Decode(&res)
+
+	assert.Nil(t, res)
+
+	AssertEqualCommandError(
+		t,
+		mongo.CommandError{
+			Code:    73,
+			Message: "Invalid namespace specified 'TestFindAndModifyEmptyCollectionName.'",
+			Name:    "InvalidNamespace",
 		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
+		err,
+	)
+}
 
-			t.Parallel()
+func TestFindAndModifyNonExistingCollection(tt *testing.T) {
+	tt.Parallel()
 
-			require.NotNil(t, tc.err, "err must not be nil")
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
 
-			ctx, collection := setup.Setup(t, shareddata.Doubles)
+	ctx, collection := setup.Setup(t)
 
-			var res bson.D
-			err := collection.Database().RunCommand(ctx, bson.D{{"findAndModify", ""}}).Decode(&res)
+	var actual bson.D
+	err := collection.FindOneAndUpdate(
+		ctx, bson.D{}, bson.D{{"$set", bson.E{"foo", "bar"}}},
+	).Decode(&actual)
 
-			assert.Nil(t, res)
-			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-		})
-	}
+	assert.Equal(t, mongo.ErrNoDocuments, err)
+	assert.Nil(t, actual)
 }
 
 func TestFindAndModifyCommandErrors(t *testing.T) {
@@ -442,12 +447,14 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
 
 			require.NotNil(t, tc.command, "command must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -547,8 +554,10 @@ func TestFindAndModifyCommandUpsert(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
 
 			require.NotNil(t, tc.command, "command must not be nil")
 
@@ -579,15 +588,64 @@ func TestFindAndModifyCommandUpsert(t *testing.T) {
 	}
 }
 
-func TestFindAndModifyNonExistingCollection(t *testing.T) {
-	t.Parallel()
-	ctx, collection := setup.Setup(t)
+func TestFindAndModifyCommentMethod(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
+	name := collection.Database().Name()
+	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+	require.NoError(t, err)
+
+	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
+	filter := bson.D{{"_id", "string"}}
+
+	opts := options.Delete().SetComment(comment)
+	res, err := collection.DeleteOne(ctx, filter, opts)
+	require.NoError(t, err)
+
+	expected := &mongo.DeleteResult{
+		DeletedCount: 1,
+	}
+
+	assert.Contains(t, databaseNames, name)
+	assert.Equal(t, expected, res)
+}
+
+func TestFindAndModifyCommentQuery(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
+	name := collection.Database().Name()
+	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+	require.NoError(t, err)
+
+	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
+	request := bson.D{
+		{"findAndModify", collection.Name()},
+		{"query", bson.D{{"_id", "string"}, {"$comment", comment}}},
+		{"update", bson.D{{"$set", bson.D{{"v", "bar"}}}}},
+	}
 
 	var actual bson.D
-	err := collection.FindOneAndUpdate(
-		ctx, bson.D{}, bson.D{{"$set", bson.E{"foo", "bar"}}},
-	).Decode(&actual)
+	err = collection.Database().RunCommand(ctx, request).Decode(&actual)
+	require.NoError(t, err)
 
-	assert.Equal(t, mongo.ErrNoDocuments, err)
-	assert.Nil(t, actual)
+	lastErrObj, _ := ConvertDocument(t, actual).Get("lastErrorObject")
+	if lastErrObj == nil {
+		t.Fatal(actual)
+	}
+
+	assert.Contains(t, databaseNames, name)
+
+	expectedLastErrObj := must.NotFail(types.NewDocument(
+		"n", int32(1),
+		"updatedExisting", true,
+	))
+	testutil.AssertEqual(t, expectedLastErrObj, lastErrObj.(*types.Document))
 }
