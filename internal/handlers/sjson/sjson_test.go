@@ -293,7 +293,7 @@ func fuzzJSONWithFixedDocuments(f *testing.F, testCases []testCase, newFunc func
 				j:   d.j,
 			}
 			if err := unmarshalJSON(actualV, &tc); err == nil {
-				// if there was no error (which is a rare occasion),
+				// if there was no error,
 				// check that the documents match each other
 				assertEqualForFuzz(t, d.value, actualV)
 			}
