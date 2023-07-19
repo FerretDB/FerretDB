@@ -53,7 +53,6 @@ func SumNumbers(vs ...any) any {
 		}
 	}
 
-	// handle float64 or intSum bigger than the maximum of int64.
 	if hasFloat64 || !intSum.IsInt64() {
 		// ignore accuracy because there is no rounding from int64.
 		intAsFloat, _ := new(big.Float).SetInt(intSum).Float64()
@@ -63,12 +62,10 @@ func SumNumbers(vs ...any) any {
 
 	integer := intSum.Int64()
 
-	// handle int32
 	if !hasInt64 && integer <= math.MaxInt32 && integer >= math.MinInt32 {
 		// convert to int32 if input has no int64 and can be represented in int32.
 		return int32(integer)
 	}
 
-	// return int64
 	return integer
 }

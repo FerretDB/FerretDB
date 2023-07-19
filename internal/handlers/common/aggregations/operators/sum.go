@@ -121,7 +121,7 @@ func (s *sum) Process(doc *types.Document) (any, error) {
 	for _, expression := range s.expressions {
 		value, err := expression.Evaluate(doc)
 		if err != nil {
-			// expression cannot evaluate doc, nothing to do
+			// $sum ignores failed expression evaluation
 			continue
 		}
 
