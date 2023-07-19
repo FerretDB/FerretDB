@@ -27,21 +27,26 @@ import (
 
 // sum represents `$sum` operator.
 type sum struct {
-	expressions   []*aggregations.Expression
-	operatorExprs []*types.Document
-	numbers       []any
-	arrayLen      int
+	// expressions are valid path expression requiring evaluation
+	expressions []*aggregations.Expression
+	// operators are documents containing operator expressions i.e. `[{$sum: 1}]`
+	operators []*types.Document
+	// numbers are int32, int64 or float64 values
+	numbers []any
+	// arrayLen is set when $sum operator contains array field such as `{$sum: [1, "$v"]}`
+	arrayLen int
 }
 
 // newSum returns `$sum` operator.
-func newSum(operation *types.Document) (Operator, error) {
-	expression := must.NotFail(operation.Get("$sum"))
+// It checks types and values to validate and populate operator struct.
+func newSum(doc *types.Document) (Operator, error) {
+	expr := must.NotFail(doc.Get("$sum"))
 	operator := new(sum)
 
-	switch expr := expression.(type) {
+	switch expr := expr.(type) {
 	case *types.Document:
 		if IsOperator(expr) {
-			operator.operatorExprs = []*types.Document{expr}
+			operator.operators = []*types.Document{expr}
 		}
 	case *types.Array:
 		operator.arrayLen = expr.Len()
@@ -63,7 +68,7 @@ func newSum(operation *types.Document) (Operator, error) {
 			switch elemExpr := v.(type) {
 			case *types.Document:
 				if IsOperator(elemExpr) {
-					operator.operatorExprs = append(operator.operatorExprs, elemExpr)
+					operator.operators = append(operator.operators, elemExpr)
 				}
 			case float64:
 				operator.numbers = append(operator.numbers, elemExpr)
@@ -107,6 +112,8 @@ func newSum(operation *types.Document) (Operator, error) {
 }
 
 // Process implements Operator interface.
+// It evaluates expressions if any to fetch a value, creates new operator and process them if any
+// and sums all int32, int64 and float64 numbers ignoring other types.
 func (s *sum) Process(doc *types.Document) (any, error) {
 	var numbers []any
 
@@ -150,7 +157,8 @@ func (s *sum) Process(doc *types.Document) (any, error) {
 		}
 	}
 
-	for _, operatorExpr := range s.operatorExprs {
+	for _, operatorExpr := range s.operators {
+		// NewOperator is created here, doing it in newSum() creates initialization cycle for operators
 		op, err := NewOperator(operatorExpr)
 		if err != nil {
 			return nil, err

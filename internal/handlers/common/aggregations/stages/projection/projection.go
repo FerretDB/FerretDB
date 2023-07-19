@@ -622,9 +622,11 @@ func setBySourceOrder(key string, val any, source, projected *types.Document) {
 // Command error codes:
 // - ErrEmptySubProject when operator value is empty.
 // - ErrFieldPathInvalidName when FieldPath is invalid.
-// - ErrNotImplemented when the operator is not implemented yet.
+// - ErrNotImplemented when the operator or expression is not implemented yet.
 // - ErrOperatorWrongLenOfArgs when the operator has an invalid number of arguments.
 // - ErrInvalidPipelineOperator when the operator does not exist.
+// - ErrFailedToParse when operator has invalid variable expression.
+// - ErrGroupInvalidFieldPath when operator has empty path expression.
 func processOperatorError(err error) error {
 	if err == nil {
 		return nil
@@ -667,41 +669,39 @@ func processOperatorError(err error) error {
 				"Invalid $project :: caused by :: "+opErr.Error(),
 				"$project (stage)",
 			)
-		default:
-			return lazyerrors.Error(err)
 		}
+
 	case errors.As(err, &exErr):
 		switch exErr.Code() {
 		case aggregations.ErrNotExpression:
+			// handled by upstream and this should not be reachable for existing expression implementation
 			fallthrough
 		case aggregations.ErrInvalidExpression:
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
 				"Invalid $project :: caused by :: '$' starts with an invalid character for a user variable name",
-				"$sum (operator)",
+				"$project (stage)",
 			)
 		case aggregations.ErrEmptyFieldPath:
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrGroupInvalidFieldPath,
 				"Invalid $project :: caused by :: '$' by itself is not a valid FieldPath",
-				"$sum (operator)",
+				"$project (stage)",
 			)
 		case aggregations.ErrUndefinedVariable:
-			// https://github.com/FerretDB/FerretDB/issues/2275
+			// TODO https://github.com/FerretDB/FerretDB/issues/2275
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,
-				"Aggregation variables are not implemented yet",
-				"$sum (operator)",
+				"Aggregation expression variables are not implemented yet",
+				"$project (stage)",
 			)
 		case aggregations.ErrEmptyVariable:
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
 				"Invalid $project :: caused by :: empty variable names are not allowed",
-				"$sum (operator)",
+				"$project (stage)",
 			)
 		}
-	default:
-		return lazyerrors.Error(err)
 	}
 
 	return lazyerrors.Error(err)
