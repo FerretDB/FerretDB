@@ -101,7 +101,8 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*sql
 		return db, nil
 	}
 
-	// TODO create unique indexes for name and table_name https://github.com/FerretDB/FerretDB/issues/2747
+	// create unique indexes for name and table_name
+	// TODO https://github.com/FerretDB/FerretDB/issues/2747
 	_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE TABLE %q (name, table_name, settings TEXT)", metadataTableName))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -162,9 +163,8 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 
 	tableName := collectionToTable(collectionName)
 
-	// TODO use transactions
-	// https://github.com/FerretDB/FerretDB/issues/2747
-
+	// use transactions
+	// TODO https://github.com/FerretDB/FerretDB/issues/2747
 	query := fmt.Sprintf("CREATE TABLE %q (_ferretdb_sjson TEXT)", tableName)
 	if _, err = db.ExecContext(ctx, query); err != nil {
 		var e *sqlite.Error
@@ -228,9 +228,8 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 		return false, nil
 	}
 
-	// TODO use transactions
-	// https://github.com/FerretDB/FerretDB/issues/2747
-
+	// use transactions
+	// TODO https://github.com/FerretDB/FerretDB/issues/2747
 	query := fmt.Sprintf("DELETE FROM %q WHERE name = ?", metadataTableName)
 	if _, err := db.ExecContext(ctx, query, collectionName); err != nil {
 		return false, lazyerrors.Error(err)

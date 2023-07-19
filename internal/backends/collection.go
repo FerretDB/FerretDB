@@ -84,8 +84,8 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 
 // InsertParams represents the parameters of Collection.Insert method.
 type InsertParams struct {
-	// TODO that should be types.DocumentIterator
-	// https://github.com/FerretDB/FerretDB/issues/2750
+	// TODO https://github.com/FerretDB/FerretDB/issues/2750
+	// that should be types.DocumentIterator
 	Iter iterator.Interface[int, any]
 }
 
