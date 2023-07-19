@@ -26,7 +26,7 @@ import (
 const (
 	doubleMaxPrec = float64(1<<53 - 1) // 9007199254740991.0:    largest double values that could be represented as integer exactly
 	doubleBig     = float64(1 << 61)   // 2305843009213693952.0: some number larger than safe integer (doubleBig+1 == doubleBig)
-	longBig       = int64(1 << 61)     // 2305843009213693952:   same as doubleBig but integer
+	longBig       = int64(doubleBig)   // 2305843009213693952:   same as doubleBig but integer
 
 	doubleMaxOverflow = float64(math.MaxInt64) + 1100.0 // 9223372036854777856.0: double value that is larger than MaxInt64
 	doubleMinOverflow = float64(math.MinInt64) - 1100.0 // -9223372036854777856.0: double value that is smaller than MinInt64
