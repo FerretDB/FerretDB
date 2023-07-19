@@ -132,6 +132,7 @@ func (cc *collectionContract) Update(ctx context.Context, params *UpdateParams) 
 
 // DeleteParams represents the parameters of Collection.Delete method.
 type DeleteParams struct {
+	// TODO https://github.com/FerretDB/FerretDB/issues/3085
 	IDs []any
 }
 
