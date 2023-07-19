@@ -74,6 +74,8 @@ func (err *Error) Error() string {
 }
 
 // ErrorCodeIs returns true if err is *Error with one of the given error codes.
+//
+// At least one error code must be given.
 func ErrorCodeIs(err error, code ErrorCode, codes ...ErrorCode) bool {
 	e, ok := err.(*Error) //nolint:errorlint // do not inspect error chain
 	if !ok {
