@@ -95,7 +95,7 @@ var arrayTestCases = []testCase{
 		},
 		j: `["",false,{"key":"value"},-32589.300000101,349,-21424182,null,"a string that is somewhat longer"]`,
 	}, {
-		name: "array_all",
+		name: "schema_null_error",
 		v:    convertArray(must.NotFail(types.NewArray("a"))),
 		sch: &elem{
 			Type:  elemTypeArray,

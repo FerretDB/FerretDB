@@ -193,7 +193,7 @@ func isValidDocumentData(v sjsontype) bool {
 func addRecordedFuzzDocs(f *testing.F, needDocument, needSchema bool) int {
 	// We're trying to use that corpus with our hopes set high,
 	// but chances are, it will still be 0 extra documents.
-	// See #3067 for more details.
+	// TODO https://github.com/ferretDB/ferretDB/issues/3067
 	records, err := wire.LoadRecords(filepath.Join("..", "..", "..", "tmp", "records"), 100)
 	require.NoError(f, err)
 
@@ -293,8 +293,6 @@ func fuzzJSONWithFixedDocuments(f *testing.F, testCases []testCase, newFunc func
 				j:   d.j,
 			}
 			if err := unmarshalJSON(actualV, &tc); err == nil {
-				// if there was no error (which is a rare occasion),
-				// check that the documents match each other
 				assertEqualForFuzz(t, d.value, actualV)
 			}
 		}
