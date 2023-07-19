@@ -48,7 +48,7 @@ type Registry struct {
 	l *zap.Logger
 }
 
-// NewRegistry creates a registry for the given directory.
+// NewRegistry creates a registry for SQLite databases in the directory specified by SQLite URI.
 func NewRegistry(u string, l *zap.Logger) (*Registry, error) {
 	p, err := pool.New(u, l.Named("pool"))
 	if err != nil {
@@ -64,20 +64,6 @@ func NewRegistry(u string, l *zap.Logger) (*Registry, error) {
 // Close closes the registry.
 func (r *Registry) Close() {
 	r.p.Close()
-}
-
-// collectionToTable converts FerretDB collection name to SQLite table name.
-func collectionToTable(collectionName string) string {
-	hash32 := fnv.New32a()
-	must.NotFail(hash32.Write([]byte(collectionName)))
-
-	tableName := strings.ToLower(collectionName) + "_" + hex.EncodeToString(hash32.Sum(nil))
-
-	if strings.HasPrefix(tableName, reservedTablePrefix) {
-		tableName = "_" + tableName
-	}
-
-	return tableName
 }
 
 // DatabaseList returns a sorted list of existing databases.
@@ -161,7 +147,14 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 		return false, lazyerrors.Error(err)
 	}
 
-	tableName := collectionToTable(collectionName)
+	hash32 := fnv.New32a()
+	must.NotFail(hash32.Write([]byte(collectionName)))
+
+	tableName := strings.ToLower(collectionName) + "_" + hex.EncodeToString(hash32.Sum(nil))
+
+	if strings.HasPrefix(tableName, reservedTablePrefix) {
+		tableName = "_" + tableName
+	}
 
 	// use transactions
 	// TODO https://github.com/FerretDB/FerretDB/issues/2747

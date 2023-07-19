@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pool provides access to SQLite database connections.
+// Package pool provides access to SQLite databases and their connections.
 //
 // It should be used only by the metadata package.
 package pool
@@ -39,7 +39,7 @@ import (
 // filenameExtension represents SQLite database filename extension.
 const filenameExtension = ".sqlite"
 
-// Pool provides access to SQLite database connections.
+// Pool provides access to SQLite databases and their connections.
 //
 //nolint:vet // for readability
 type Pool struct {
@@ -53,6 +53,8 @@ type Pool struct {
 }
 
 // New creates a pool for SQLite databases in the directory specified by SQLite URI.
+//
+// All databases are opened on creation.
 func New(u string, l *zap.Logger) (*Pool, error) {
 	uri, err := parseURI(u)
 	if err != nil {
@@ -135,7 +137,7 @@ func (p *Pool) List(ctx context.Context) []string {
 	return res
 }
 
-// GetExisting returns an existing database connection by name, or nil.
+// GetExisting returns an existing database by valid name, or nil.
 func (p *Pool) GetExisting(ctx context.Context, name string) *sql.DB {
 	p.rw.RLock()
 	defer p.rw.RUnlock()
@@ -148,9 +150,9 @@ func (p *Pool) GetExisting(ctx context.Context, name string) *sql.DB {
 	return db.sqlDB
 }
 
-// GetOrCreate returns an existing database connection by name, or creates a new one.
+// GetOrCreate returns an existing database by valid name, or creates a new one.
 //
-// Returned boolean value indicates whether the connection was created.
+// Returned boolean value indicates whether the database was created.
 func (p *Pool) GetOrCreate(ctx context.Context, name string) (*sql.DB, bool, error) {
 	sqlDB := p.GetExisting(ctx, name)
 	if sqlDB != nil {
