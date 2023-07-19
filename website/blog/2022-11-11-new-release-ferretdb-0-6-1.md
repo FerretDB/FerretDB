@@ -5,7 +5,6 @@ author: Alexander Fashakin
 description: We are happy to inform you that FerretDB is currently in Alpha, and we have a new release - FerretDB 0.6.1.
 image: /img/blog/six-ferrets-1024x917.jpg
 tags: [release]
-date: 2022-11-11
 ---
 
 We are happy to inform you that FerretDB is currently in Alpha, and we have a new release - FerretDB 0.6.1.
