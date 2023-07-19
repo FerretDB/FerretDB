@@ -18,9 +18,9 @@ New to FerretDB?
 
 Check out our:
 
-- [Installation guide](/quickstart-guide/)
-- [Key differences](/diff/)
-- [Basic CRUD operations](/basic-operations/)
+- [Installation guide](./quickstart-guide/docker.md)
+- [Key differences](./diff.md)
+- [Basic CRUD operations](./basic-operations/index.md)
 
 :::
 
