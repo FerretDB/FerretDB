@@ -1801,6 +1801,20 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 				}}},
 			},
 		},
+		"DotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", "$v.foo"}}},
+				}}},
+			},
+		},
+		"ArrayDotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", "$v.0.foo"}}},
+				}}},
+			},
+		},
 		"Int": {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{
