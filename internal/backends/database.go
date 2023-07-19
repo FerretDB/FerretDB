@@ -93,7 +93,7 @@ type CollectionInfo struct {
 
 // ListCollections returns information about collections in the database.
 //
-// Database doesn't have to exist; that's not an error.
+// Database may not exist; that's not an error.
 func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCollectionsParams) (*ListCollectionsResult, error) {
 	defer observability.FuncCall(ctx)()
 

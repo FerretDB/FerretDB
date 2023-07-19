@@ -40,8 +40,8 @@ const (
 
 // Error represents a backend error returned by all Backend, Database and Collection methods.
 type Error struct {
-	// this internal error can't be accessed by the caller;
-	// it may be nil
+	// This internal error can't be accessed by the caller; it exists only for debugging.
+	// It may be nil.
 	err error
 
 	code ErrorCode

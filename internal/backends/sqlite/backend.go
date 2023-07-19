@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.uber.org/zap"
-	_ "modernc.org/sqlite"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
