@@ -1813,14 +1813,6 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 				}}},
 			},
 		},
-		"EmptyVariable": {
-			pipeline: bson.A{
-				bson.D{{"$project", bson.D{
-					{"sum", bson.D{{"$sum", "$"}}},
-				}}},
-			},
-			resultType: emptyResult,
-		},
 		"ArrayEmptyVariable": {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{
@@ -1898,6 +1890,22 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sumtype", bson.D{{"$sum", bson.D{{"$type", "$v"}}}}},
 				}}},
 			},
+		},
+		"RecursiveEmptyVariable": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.D{{"$sum", "$$$"}}}}},
+				}}},
+			},
+			resultType: emptyResult,
+		},
+		"MultipleRecursiveEmptyVariable": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.D{{"$sum", bson.D{{"$sum", "$$$"}}}}}}},
+				}}},
+			},
+			resultType: emptyResult,
 		},
 	}
 
