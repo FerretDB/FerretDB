@@ -279,9 +279,9 @@ tasks:
   fuzz-corpus:
     desc: "Sync seed and generated fuzz corpora with FUZZ_CORPUS"
     cmds:
-      - go run {{.RACE_FLAG}} ./cmd/fuzztool corpus generated {{.FUZZ_CORPUS}}
-      - go run {{.RACE_FLAG}} ./cmd/fuzztool corpus seed {{.FUZZ_CORPUS}}
-      - go run {{.RACE_FLAG}} ./cmd/fuzztool corpus {{.FUZZ_CORPUS}} generated
+      - go run {{.RACE_FLAG}} ./cmd/envtool fuzz corpus generated {{.FUZZ_CORPUS}}
+      - go run {{.RACE_FLAG}} ./cmd/envtool fuzz corpus seed {{.FUZZ_CORPUS}}
+      - go run {{.RACE_FLAG}} ./cmd/envtool fuzz corpus {{.FUZZ_CORPUS}} generated
 
   run:
     desc: "Run FerretDB with `pg` handler"
