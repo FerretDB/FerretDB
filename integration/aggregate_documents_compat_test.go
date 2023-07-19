@@ -622,6 +622,22 @@ func TestAggregateCompatGroup(t *testing.T) {
 			}}}},
 			skip: "https://github.com/FerretDB/FerretDB/issues/2679",
 		},
+		"IDSum": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$sum", "$v"}}}}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2694",
+		},
+		"IDSumNonExistentField": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$sum", "$non-existent"}}}}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2694",
+		},
 	}
 
 	testAggregateStagesCompat(t, testCases)
