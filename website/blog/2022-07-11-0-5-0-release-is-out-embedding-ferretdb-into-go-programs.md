@@ -5,7 +5,6 @@ author: Alexey Palazhchenko
 description: FerretDB v0.5.0 includes a new exciting feature – the ability to use it as a regular Go library package.
 image: /img/blog/group-of-ferrets-on-white.jpg
 tags: [release]
-date: 2022-07-11
 ---
 
 [FerretDB v0.5.0, released today](https://github.com/FerretDB/FerretDB/releases/tag/v0.5.0), includes a new exciting feature – the ability to use it as a regular Go library package.

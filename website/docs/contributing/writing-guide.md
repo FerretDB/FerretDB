@@ -77,6 +77,45 @@ Rather than use relative paths, we strongly suggest the following approach, sinc
 
 `![FerretDB logo](/img/logo-dark.png)`.
 
+## Tags
+
+Tags are an important part of every blog post, and they appear at the top of the front matter.
+They make it easy for readers to search and identify related blog posts based on their categories or subject matter.
+You can view all [currently listed tags here](https://blog.ferretdb.io/tags/).
+
+Please note that tags are case-sensitive, such that `Release` and `release` are two separate tags.
+
+A blog post can have as many tags as possible, as long as it is relevant to the post.
+Please only include the following tags:
+
+- cloud
+- community
+- compatible applications
+- demo
+- document databases
+- events
+- hacktoberfest
+- javascript frameworks
+- mongodb compatible
+- mongodb gui
+- open source
+- postgresql tools
+- product
+- release
+- sspl
+- tutorial
+
+This is not an exhaustive list, and the direction of our blog posts can surely expand.
+If a blog post calls for a new tag or you would like to suggest more tags, please ensure to add it to this list.
+This helps to maintain consistency across all blog posts.
+
+## Keywords (optional)
+
+Keywords in the front matter are displayed as meta keywords tag in HTML.
+Meta keywords tag are not so important for SEO anymore, but they can help with focusing the content on specific keywords that should be used (appear at least once) in the blog content, meta description, title, or alt images.
+
+The use of meta keywords is not mandatory, but if you want to add them, please ensure that they are relevant to the blog post.
+
 ## Code blocks
 
 Always specify the language in Markdown code blocks.
