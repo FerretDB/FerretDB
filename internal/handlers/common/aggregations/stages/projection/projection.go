@@ -268,8 +268,36 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 			set = true
 			projected.Set("_id", value)
 
-		case *types.Array, string, types.Binary, types.ObjectID,
+		case string:
+
+			switch strings.HasPrefix(idValue, "$") {
+			case true:
+				// project a field from the document
+				path, err := types.NewPathFromString(strings.TrimPrefix(idValue, "$"))
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+
+				val, err := doc.GetByPath(path)
+
+				switch err {
+				case nil:
+					projected.Set("_id", val)
+					set = true
+
+				default:
+					// no field found, do not project
+				}
+
+			default:
+				// project a literal value
+				projected.Set("_id", idValue)
+				set = true
+			}
+
+		case *types.Array, types.Binary, types.ObjectID,
 			time.Time, types.NullType, types.Regex, types.Timestamp: // all this types are treated as new fields value
+
 			projected.Set("_id", idValue)
 
 			set = true
