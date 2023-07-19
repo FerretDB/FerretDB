@@ -32,6 +32,8 @@ type CountParams struct {
 
 	Collation *types.Document `ferretdb:"collation,unimplemented"`
 
+	Fields any `ferretdb:"fields,ignored"` // legacy MongoDB shell adds it, but it is never actually used
+
 	Hint        any             `ferretdb:"hint,ignored"`
 	ReadConcern *types.Document `ferretdb:"readConcern,ignored"`
 	Comment     string          `ferretdb:"comment,ignored"`
