@@ -34,6 +34,9 @@ func parseURI(u string) (*url.URL, error) {
 		return nil, err
 	}
 
+	// handle mode=memory query parameter
+	// TODO https://github.com/FerretDB/FerretDB/issues/3084
+
 	if uri.Scheme != "file" {
 		return nil, fmt.Errorf(`expected "file:" schema, got %q`, uri.Scheme)
 	}

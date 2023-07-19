@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package metadata provides access to SQLite databases and collections information.
 package metadata
 
 import (
@@ -55,6 +54,9 @@ func NewRegistry(u string, l *zap.Logger) (*Registry, error) {
 		return nil, err
 	}
 
+	// prefill cache
+	// TODO https://github.com/FerretDB/FerretDB/issues/2747
+
 	return &Registry{
 		p: p,
 		l: l,
@@ -88,6 +90,7 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*sql
 	}
 
 	// create unique indexes for name and table_name
+	// handle case when database and metadata table already exist
 	// TODO https://github.com/FerretDB/FerretDB/issues/2747
 	_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE TABLE %q (name, table_name, settings TEXT)", metadataTableName))
 	if err != nil {
@@ -112,6 +115,9 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]string,
 	if db == nil {
 		return nil, nil
 	}
+
+	// use cache instead
+	// TODO https://github.com/FerretDB/FerretDB/issues/2747
 
 	rows, err := db.QueryContext(ctx, fmt.Sprintf("SELECT name FROM %q ORDER BY name", metadataTableName))
 	if err != nil {
@@ -147,18 +153,20 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 		return false, lazyerrors.Error(err)
 	}
 
-	hash32 := fnv.New32a()
-	must.NotFail(hash32.Write([]byte(collectionName)))
+	// check cache first
+	// TODO https://github.com/FerretDB/FerretDB/issues/2747
 
-	tableName := strings.ToLower(collectionName) + "_" + hex.EncodeToString(hash32.Sum(nil))
+	h := fnv.New32a()
+	must.NotFail(h.Write([]byte(collectionName)))
 
+	tableName := strings.ToLower(collectionName) + "_" + hex.EncodeToString(h.Sum(nil))
 	if strings.HasPrefix(tableName, reservedTablePrefix) {
 		tableName = "_" + tableName
 	}
 
 	// use transactions
 	// TODO https://github.com/FerretDB/FerretDB/issues/2747
-	query := fmt.Sprintf("CREATE TABLE %q (_ferretdb_sjson TEXT)", tableName)
+	query := fmt.Sprintf("CREATE TABLE %q (%s TEXT)", tableName, DefaultColumn)
 	if _, err = db.ExecContext(ctx, query); err != nil {
 		var e *sqlite.Error
 		if errors.As(err, &e) && e.Code() == sqlitelib.SQLITE_ERROR {
@@ -168,7 +176,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 		return false, lazyerrors.Error(err)
 	}
 
-	query = fmt.Sprintf("INSERT INTO %q (name, table_name) VALUES (?, ?)", metadataTableName)
+	query = fmt.Sprintf("INSERT INTO %q (name, table_name, settings) VALUES (?, ?, '{}')", metadataTableName)
 	if _, err = db.ExecContext(ctx, query, collectionName, tableName); err != nil {
 		_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
 		return false, lazyerrors.Error(err)
@@ -177,29 +185,37 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 	return true, nil
 }
 
-// GetTableName returns table name associated with provided collection.
+// CollectionGet returns collection metadata.
 //
-// If database or collection does not exist, no error and false value is returned.
-func (r *Registry) GetTableName(ctx context.Context, dbName string, collectionName string) (string, bool, error) {
+// If database or collection does not exist, (nil, nil) is returned.
+func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionName string) (*Collection, error) {
 	db := r.p.GetExisting(ctx, dbName)
 	if db == nil {
-		return "", false, nil
+		return nil, nil
 	}
 
-	query := fmt.Sprintf("SELECT table_name FROM %q WHERE name = ?", metadataTableName)
+	// check cache first
+	// TODO https://github.com/FerretDB/FerretDB/issues/2747
+
+	query := fmt.Sprintf("SELECT table_name, settings FROM %q WHERE name = ?", metadataTableName)
 
 	row := db.QueryRowContext(ctx, query, collectionName)
 
-	var name string
-	if err := row.Scan(&name); err != nil {
+	var tableName string
+	var settings []byte
+	if err := row.Scan(&tableName, &settings); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return "", false, nil
+			return nil, nil
 		}
 
-		return "", false, lazyerrors.Error(err)
+		return nil, lazyerrors.Error(err)
 	}
 
-	return name, true, nil
+	return &Collection{
+		Name:      collectionName,
+		TableName: tableName,
+		Settings:  settings,
+	}, nil
 }
 
 // CollectionDrop drops a collection in the database.
@@ -212,12 +228,15 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 		return false, nil
 	}
 
-	tableName, exists, err := r.GetTableName(ctx, dbName, collectionName)
+	// check cache first
+	// TODO https://github.com/FerretDB/FerretDB/issues/2747
+
+	info, err := r.CollectionGet(ctx, dbName, collectionName)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	if !exists {
+	if info == nil {
 		return false, nil
 	}
 
@@ -228,7 +247,7 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 		return false, lazyerrors.Error(err)
 	}
 
-	query = fmt.Sprintf("DROP TABLE %q", tableName)
+	query = fmt.Sprintf("DROP TABLE %q", info.TableName)
 	if _, err := db.ExecContext(ctx, query); err != nil {
 		return false, lazyerrors.Error(err)
 	}

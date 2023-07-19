@@ -56,22 +56,21 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	tableName, exists, err := c.r.GetTableName(ctx, c.dbName, c.name)
+	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if !exists {
+	if meta == nil {
 		return &backends.QueryResult{
 			Iter: newQueryIterator(ctx, nil),
 		}, nil
 	}
 
-	query := fmt.Sprintf(`SELECT _ferretdb_sjson FROM %q`, tableName)
+	query := fmt.Sprintf(`SELECT %s FROM %q`, metadata.DefaultColumn, meta.TableName)
 
 	rows, err := db.QueryContext(ctx, query)
 	if err != nil {
-		// No such table, return empty result.
 		var e *sqlite.Error
 		if errors.As(err, &e) && e.Code() == sqlitelib.SQLITE_ERROR {
 			return &backends.QueryResult{Iter: newQueryIterator(ctx, nil)}, nil
@@ -93,13 +92,13 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2750
 
-	tableName, _, err := c.r.GetTableName(ctx, c.dbName, c.name)
+	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
-	query := fmt.Sprintf(`INSERT INTO %q (_ferretdb_sjson) VALUES (?)`, tableName)
+	query := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
 
 	var res backends.InsertResult
 
@@ -140,18 +139,18 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		return nil, lazyerrors.Errorf("no database %q", c.dbName)
 	}
 
-	tableName, exists, err := c.r.GetTableName(ctx, c.dbName, c.name)
+	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	var res backends.UpdateResult
 
-	if !exists {
+	if meta == nil {
 		return &res, nil
 	}
 
-	query := fmt.Sprintf(`UPDATE %q SET _ferretdb_sjson = ? WHERE _ferretdb_sjson -> '$._id' = ?`, tableName)
+	query := fmt.Sprintf(`UPDATE %[1]q SET %s = ? WHERE %s = ?`, meta.TableName, metadata.DefaultColumn, metadata.IDColumn)
 
 	iter := params.Docs.Iterator()
 	defer iter.Close()
@@ -199,16 +198,16 @@ func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) 
 		return &backends.DeleteResult{Deleted: 0}, nil
 	}
 
-	tableName, exists, err := c.r.GetTableName(ctx, c.dbName, c.name)
+	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if !exists {
+	if meta == nil {
 		return &backends.DeleteResult{Deleted: 0}, nil
 	}
 
-	query := fmt.Sprintf(`DELETE FROM %q WHERE _ferretdb_sjson -> '$._id' = ?`, tableName)
+	query := fmt.Sprintf(`DELETE FROM %q WHERE %s = ?`, meta.TableName, metadata.IDColumn)
 
 	var deleted int64
 
