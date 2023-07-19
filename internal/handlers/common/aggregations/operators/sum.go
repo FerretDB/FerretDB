@@ -27,25 +27,24 @@ import (
 
 // sum represents `$sum` operator.
 type sum struct {
-	expressions       []*aggregations.Expression
-	operatorExpr      *types.Document
-	numbers           []any
-	isArrayExpression bool
+	expressions   []*aggregations.Expression
+	operatorExprs []*types.Document
+	numbers       []any
+	arrayLen      int
 }
 
 // newSum returns `$sum` operator.
 func newSum(operation *types.Document) (Operator, error) {
 	expression := must.NotFail(operation.Get("$sum"))
-
 	operator := new(sum)
 
 	switch expr := expression.(type) {
 	case *types.Document:
 		if IsOperator(expr) {
-			operator.operatorExpr = expr
+			operator.operatorExprs = []*types.Document{expr}
 		}
 	case *types.Array:
-		operator.isArrayExpression = true
+		operator.arrayLen = expr.Len()
 
 		iter := expr.Iterator()
 		defer iter.Close()
@@ -62,6 +61,10 @@ func newSum(operation *types.Document) (Operator, error) {
 			}
 
 			switch elemExpr := v.(type) {
+			case *types.Document:
+				if IsOperator(elemExpr) {
+					operator.operatorExprs = append(operator.operatorExprs, elemExpr)
+				}
 			case float64:
 				operator.numbers = append(operator.numbers, elemExpr)
 			case string:
@@ -107,8 +110,14 @@ func (s *sum) Process(doc *types.Document) (any, error) {
 
 		switch v := value.(type) {
 		case *types.Array:
-			if s.isArrayExpression {
-				// when expression is an array, array document is not iterated
+			if s.arrayLen > 1 {
+				// This handles strange behaviour of MongoDB.
+				// When $sum has more than one argument,
+				// expression is ignored if evaluated path contains *array*.
+				// Below case, `$sum` has two arguments, so "$v" is ignored.
+				// `{$sum: ["$v", 1]}` and doc is `{v: [2, 3]}` => sum is `1`
+				// Below case, `$sum` has one argument, "$v" is evaluated.
+				// `{$sum: ["$v"]}` and doc is `{v: [2, 3]}` => sum is `5`
 				continue
 			}
 
@@ -132,8 +141,8 @@ func (s *sum) Process(doc *types.Document) (any, error) {
 		}
 	}
 
-	if s.operatorExpr != nil {
-		op, err := NewOperator(s.operatorExpr)
+	for _, operatorExpr := range s.operatorExprs {
+		op, err := NewOperator(operatorExpr)
 		if err != nil {
 			return nil, err
 		}

@@ -1774,6 +1774,113 @@ func TestAggregateCompatProject(t *testing.T) {
 	testAggregateStagesCompat(t, testCases)
 }
 
+func TestAggregateCompatProjectSum(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"Value": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", "$v"}}},
+				}}},
+			},
+		},
+		"Int": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", int32(2)}}},
+				}}},
+			},
+		},
+		"Long": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", int64(3)}}},
+				}}},
+			},
+		},
+		"Double": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", float64(4)}}},
+				}}},
+			},
+		},
+		"ArrayValue": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.A{"$v"}}}},
+				}}},
+			},
+		},
+		"ArrayTwoValues": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.A{"$v", "$v"}}}},
+				}}},
+			},
+		},
+		"ArrayValueInt": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.A{"$v", int32(1)}}}},
+				}}},
+			},
+		},
+		"ArrayIntLongDouble": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.A{int32(2), int64(3), float64(4)}}}},
+				}}},
+			},
+		},
+		"RecursiveValue": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sumsum", bson.D{{"$sum", bson.D{{"$sum", "$v"}}}}},
+				}}},
+			},
+		},
+		"RecursiveArrayValue": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sumsum", bson.D{{"$sum", bson.D{{"$sum", bson.A{"$v"}}}}}},
+				}}},
+			},
+		},
+		"ArrayValueRecursiveInt": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.A{"$v", bson.D{{"$sum", int32(2)}}}}}},
+				}}},
+			},
+		},
+		"ArrayValueAndRecursiveValue": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.A{"$v", bson.D{{"$sum", "$v"}}}}}},
+				}}},
+			},
+		},
+		"ArrayValueAndRecursiveArray": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.A{"$v", bson.D{{"$sum", bson.A{"$v"}}}}}}},
+				}}},
+			},
+		},
+		"Type": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sumtype", bson.D{{"$sum", bson.D{{"$type", "$v"}}}}},
+				}}},
+			},
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}
+
 func TestAggregateCompatAddFields(t *testing.T) {
 	t.Parallel()
 
@@ -1999,40 +2106,10 @@ func TestAggregateCompatAddFields(t *testing.T) {
 				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", true}}}}}},
 			},
 		},
-	}
-
-	testAggregateStagesCompat(t, testCases)
-}
-
-func TestAggregateCompatAddFieldsSum(t *testing.T) {
-	t.Parallel()
-
-	testCases := map[string]aggregateStagesCompatTestCase{
 		"SumValue": {
 			pipeline: bson.A{
 				bson.D{{"$addFields", bson.D{
 					{"sum", bson.D{{"$sum", "$v"}}},
-				}}},
-			},
-		},
-		"SumArray": {
-			pipeline: bson.A{
-				bson.D{{"$addFields", bson.D{
-					{"sum", bson.D{{"$sum", bson.A{"$v", "$v"}}}},
-				}}},
-			},
-		},
-		"SumInt": {
-			pipeline: bson.A{
-				bson.D{{"$addFields", bson.D{
-					{"sum", bson.D{{"$sum", 1}}},
-				}}},
-			},
-		},
-		"SumRecursive": {
-			pipeline: bson.A{
-				bson.D{{"$addFields", bson.D{
-					{"sum", bson.D{{"$sum", bson.D{{"$sum", "$v"}}}}},
 				}}},
 			},
 		},
