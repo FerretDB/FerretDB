@@ -37,8 +37,9 @@ type sum struct {
 	arrayLen int
 }
 
-// newSum returns `$sum` operator.
-// It checks types and values to validate and populate operator struct.
+// newSum collects values that can be summed in `numbers`,
+// finds nested operators if any, validates path expressions
+// to populate `$sum` operator. It ignores values that are not summable.
 func newSum(doc *types.Document) (Operator, error) {
 	expr := must.NotFail(doc.Get("$sum"))
 	operator := new(sum)
@@ -112,7 +113,7 @@ func newSum(doc *types.Document) (Operator, error) {
 }
 
 // Process implements Operator interface.
-// It evaluates expressions if any to fetch a value, creates new operator and process them if any
+// It evaluates expressions if any to fetch a value, creates new operator and processes them if any
 // and sums all int32, int64 and float64 numbers ignoring other types.
 func (s *sum) Process(doc *types.Document) (any, error) {
 	var numbers []any
