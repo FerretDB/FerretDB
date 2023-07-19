@@ -46,13 +46,11 @@ var Scalars = &Values[string]{
 		"double-max":          math.MaxFloat64,
 		"double-smallest":     math.SmallestNonzeroFloat64,
 		"double-big":          doubleBig,
-		"double-1":            float64(math.MinInt64 - 1),
-		"double-2":            float64(math.MinInt64),
-		"double-3":            float64(-123456789), // random
-		"double-4":            float64(123456789),  // random
-		"double-5":            float64(math.MaxInt64),
-		"double-6":            float64(math.MaxInt64 + 1),
-		"double-7":            doubleMaxVerge,
+		"double-1":            float64(math.MinInt64),
+		"double-2":            float64(-123456789), // random
+		"double-3":            float64(123456789),  // random
+		"double-4":            float64(math.MaxInt64),
+		"double-6":            doubleMaxVerge,
 		"double-max-overflow": doubleMaxOverflow,
 		"double-min-overflow": doubleMinOverflow,
 
@@ -149,12 +147,10 @@ var Doubles = &Values[string]{
 		"double-prec-min-minus-two": -doubleMaxPrec - 2,
 
 		"double-null":         nil,
-		"double-1":            float64(math.MinInt64 - 1),
-		"double-2":            float64(math.MinInt64),
-		"double-3":            float64(-123456789), // random
-		"double-4":            float64(123456789),  // random
-		"double-5":            float64(math.MaxInt64),
-		"double-6":            float64(math.MaxInt64 + 1),
+		"double-1":            float64(math.MinInt64),
+		"double-2":            float64(-123456789), // random
+		"double-3":            float64(123456789),  // random
+		"double-4":            float64(math.MaxInt64),
 		"double-max-overflow": doubleMaxOverflow,
 		"double-min-overflow": doubleMinOverflow,
 	},
