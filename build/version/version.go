@@ -28,8 +28,7 @@
 // The following Go build tags (also known as build constraints) affect all builds of FerretDB,
 // including embedded usage:
 //
-//	ferretdb_debug     - enables debug build (see below; implied by ferretdb_testcover tag and builds with race detector)
-//	ferretdb_testcover - enables test coverage instrumentation
+//	ferretdb_debug     - enables debug build
 //	ferretdb_hana      - enables Hana backend handler (alpha)
 //
 // # Debug builds

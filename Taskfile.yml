@@ -194,22 +194,20 @@ tasks:
     cmds:
       - rm -rf covdatafiles
       - mkdir covdatafiles
-      - go build -cover -v                 -o=bin/ferretdbmanual -race=true ./cmd/ferretdb
-      - ./bin/ferretdbmanual --log-level="warn" 
+      - go build -cover -v  -o=bin/ferretdb{{exeExt}} -race=true -coverpkg=./... ./cmd/ferretdb
+      - ./bin/ferretdb{{exeExt}} --log-level="warn"
 
   test-integration-pg:
     desc: "Run integration tests for `pg` handler"
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-pg.txt .
+        go test -cover -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
         -target-backend=ferretdb-pg
         -target-tls
-        -target-url=mongodb://127.0.0.1:27017/ 
         -log-level=warn
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem' > /tmp/testout.log
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
     vars:
       SHARD_RUN:
         sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
