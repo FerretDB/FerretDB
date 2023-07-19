@@ -69,6 +69,12 @@ func newSum(operation *types.Document) (Operator, error) {
 				operator.numbers = append(operator.numbers, elemExpr)
 			case string:
 				ex, err := aggregations.NewExpression(elemExpr)
+
+				var exErr *aggregations.ExpressionError
+				if errors.As(err, &exErr) && exErr.Code() == aggregations.ErrNotExpression {
+					break
+				}
+
 				if err != nil {
 					return nil, err
 				}
@@ -76,14 +82,18 @@ func newSum(operation *types.Document) (Operator, error) {
 				operator.expressions = append(operator.expressions, ex)
 			case int32, int64:
 				operator.numbers = append(operator.numbers, elemExpr)
-			default:
-				continue
 			}
 		}
 	case float64:
 		operator.numbers = []any{expr}
 	case string:
 		ex, err := aggregations.NewExpression(expr)
+
+		var exErr *aggregations.ExpressionError
+		if errors.As(err, &exErr) && exErr.Code() == aggregations.ErrNotExpression {
+			break
+		}
+
 		if err != nil {
 			return nil, err
 		}
@@ -91,7 +101,6 @@ func newSum(operation *types.Document) (Operator, error) {
 		operator.expressions = []*aggregations.Expression{ex}
 	case int32, int64:
 		operator.numbers = []any{expr}
-	default:
 	}
 
 	return operator, nil
@@ -159,7 +168,6 @@ func (s *sum) Process(doc *types.Document) (any, error) {
 		switch number := number.(type) {
 		case float64, int32, int64:
 			numbers = append(numbers, number)
-		default:
 		}
 	}
 

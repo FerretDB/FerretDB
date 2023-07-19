@@ -1806,6 +1806,29 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 				}}},
 			},
 		},
+		"EmptyString": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", ""}}},
+				}}},
+			},
+		},
+		"EmptyVariable": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", "$"}}},
+				}}},
+			},
+			resultType: emptyResult,
+		},
+		"ArrayEmptyVariable": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.A{"$"}}}},
+				}}},
+			},
+			resultType: emptyResult,
+		},
 		"ArrayValue": {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{
@@ -1827,10 +1850,10 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 				}}},
 			},
 		},
-		"ArrayIntLongDouble": {
+		"ArrayIntLongDoubleStringBool": {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{
-					{"sum", bson.D{{"$sum", bson.A{int32(2), int64(3), float64(4)}}}},
+					{"sum", bson.D{{"$sum", bson.A{int32(2), int64(3), float64(4), "not-expression", true}}}},
 				}}},
 			},
 		},
