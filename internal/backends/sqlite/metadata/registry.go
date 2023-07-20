@@ -176,8 +176,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 		return false, lazyerrors.Error(err)
 	}
 
-	indexName := tableName + "_id"
-	query = fmt.Sprintf("CREATE UNIQUE INDEX %q ON %q (%s)", indexName, tableName, IDColumn)
+	query = fmt.Sprintf("CREATE UNIQUE INDEX %q ON %q (%s)", tableName+"_id", tableName, IDColumn)
 	if _, err = db.ExecContext(ctx, query); err != nil {
 		_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
 		return false, lazyerrors.Error(err)
@@ -210,6 +209,7 @@ func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionN
 
 	var tableName string
 	var settings []byte
+
 	if err := row.Scan(&tableName, &settings); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil

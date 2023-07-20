@@ -73,13 +73,13 @@ func TestParseURI(t *testing.T) {
 			},
 		},
 		"LocalDirectoryWithParameters": {
-			in: "file:./tmp/?mode=ro",
+			in: "file:./tmp/?mode=memory",
 			uri: &url.URL{
 				Scheme:   "file",
 				Opaque:   "./tmp/",
 				Path:     "./tmp/",
 				OmitHost: true,
-				RawQuery: "mode=ro",
+				RawQuery: "mode=memory",
 			},
 		},
 		"AbsoluteDirectory": {
@@ -102,22 +102,22 @@ func TestParseURI(t *testing.T) {
 			out: "file:/tmp/",
 		},
 		"WithEmptyAuthorityAndQuery": {
-			in: "file:///tmp/?mode=ro",
+			in: "file:///tmp/?mode=memory",
 			uri: &url.URL{
 				Scheme:   "file",
 				Opaque:   "/tmp/",
 				Path:     "/tmp/",
 				OmitHost: true,
-				RawQuery: "mode=ro",
+				RawQuery: "mode=memory",
 			},
-			out: "file:/tmp/?mode=ro",
+			out: "file:/tmp/?mode=memory",
 		},
 		"HostIsNotEmpty": {
-			in:  "file://localhost/./tmp/?mode=ro",
+			in:  "file://localhost/./tmp/?mode=memory",
 			err: `expected empty host, got "localhost"`,
 		},
 		"UserIsNotEmpty": {
-			in:  "file://user:pass@./tmp/?mode=ro",
+			in:  "file://user:pass@./tmp/?mode=memory",
 			err: `expected empty user info, got "user:pass"`,
 		},
 		"NoDirectory": {

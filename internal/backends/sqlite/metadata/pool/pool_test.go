@@ -25,7 +25,8 @@ import (
 func TestCreateDrop(t *testing.T) {
 	ctx := testutil.Ctx(t)
 
-	p, err := New("file:"+t.TempDir()+"/", testutil.Logger(t))
+	// that also tests that query parameters are preserved
+	p, err := New("file:/?mode=memory", testutil.Logger(t))
 	require.NoError(t, err)
 
 	defer p.Close()
