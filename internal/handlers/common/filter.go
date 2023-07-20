@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"strconv"
 	"strings"
 	"time"
 
@@ -26,6 +25,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonpath"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -97,7 +97,7 @@ func HasQueryOperator(filter *types.Document) (bool, error) {
 
 // filterDocumentPair handles a single filter element key/value pair {filterKey: filterValue}.
 func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) (bool, error) {
-	docs := []*types.Document{doc}
+	var docs []*types.Document
 	filterSuffix := filterKey
 
 	if strings.ContainsRune(filterKey, '.') {
@@ -106,11 +106,20 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 			return false, lazyerrors.Error(err)
 		}
 
-		if filterSuffix, docs = getDocumentsAtSuffix(doc, path); len(docs) == 0 {
+		filterSuffix = path.Suffix()
+		vals := commonpath.FindValues(doc, path, commonpath.FindValuesOpts{})
+
+		for _, val := range vals {
+			docs = append(docs, must.NotFail(types.NewDocument(filterSuffix, val)))
+		}
+
+		if len(docs) == 0 {
 			// When no document is found at suffix, use an empty one.
 			// So operators such as $nin is applied to the empty document.
 			docs = append(docs, types.MakeDocument(0))
 		}
+	} else {
+		docs = append(docs, doc)
 	}
 
 	if strings.HasPrefix(filterKey, "$") {
@@ -181,141 +190,6 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 
 	// If we got here, it means that none of the documents matched the filter.
 	return false, nil
-}
-
-// getDocumentsAtSuffix go through each key of the path iteratively to
-// find all values that exist at suffix.
-// An array dot notation may return multiple documents.
-// At each key of the path, it checks:
-//
-//	if the document has the key,
-//	if the array contains an index that is equal to the key, and
-//	if the array contains documents which have the key.
-//
-// It returns:
-//
-//	the suffix key of path;
-//	a slice of documents at suffix with suffix value document pairs.
-//
-// Document path example:
-//
-//	docs:		{foo: {bar: 1}}
-//	path:		`foo.bar`
-//
-// returns
-//
-//	suffix:		`bar`
-//	docsAtSuffix:	[{bar: 1}]
-//
-// Array index path example:
-//
-//	docs:		{foo: [{bar: 1}]}
-//	path:		`foo.0.bar`
-//
-// returns
-//
-//	suffix:		`bar`
-//	docsAtSuffix:	[{bar: 1}]
-//
-// Array document example:
-//
-//	docs:		{foo: [{bar: 1}, {bar: 2}]}
-//	path:		`foo.bar`
-//
-// returns
-//
-//	suffix:		`bar`
-//	docsAtSuffix:	[{bar: 1}, {bar: 2}]
-func getDocumentsAtSuffix(doc *types.Document, path types.Path) (suffix string, docsAtSuffix []*types.Document) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2348
-	suffix = path.Suffix()
-
-	// docsAtSuffix are the document found at the suffix.
-	docsAtSuffix = []*types.Document{}
-
-	// keys are each part of the path.
-	keys := path.Slice()
-
-	// vals are the field values found at each key of the path.
-	vals := []any{doc}
-
-	for i, key := range keys {
-		// embeddedVals are the values found at current key.
-		var embeddedVals []any
-
-		for _, valAtKey := range vals {
-			switch val := valAtKey.(type) {
-			case *types.Document:
-				embeddedVal, err := val.Get(key)
-				if err != nil {
-					// document does not contain key, so no embedded value was found.
-					continue
-				}
-
-				if i == len(keys)-1 {
-					// a value was found at suffix.
-					docsAtSuffix = append(docsAtSuffix, val)
-					continue
-				}
-
-				// key exists in the document, add embedded value to next iteration.
-				embeddedVals = append(embeddedVals, embeddedVal)
-			case *types.Array:
-				if index, err := strconv.Atoi(key); err == nil {
-					// key is an integer, check if that integer is an index of the array.
-					embeddedVal, err := val.Get(index)
-					if err != nil {
-						// index does not exist.
-						continue
-					}
-
-					if i == len(keys)-1 {
-						// a value was found at suffix.
-						docsAtSuffix = append(docsAtSuffix, must.NotFail(types.NewDocument(suffix, embeddedVal)))
-						continue
-					}
-
-					// key is the index of the array, add embedded value to the next iteration.
-					embeddedVals = append(embeddedVals, embeddedVal)
-
-					continue
-				}
-
-				// key was not an index, iterate array to get all documents that contain the key.
-				for j := 0; j < val.Len(); j++ {
-					valAtIndex := must.NotFail(val.Get(j))
-
-					embeddedDoc, isDoc := valAtIndex.(*types.Document)
-					if !isDoc {
-						// the value is not a document, so it cannot contain the key.
-						continue
-					}
-
-					embeddedVal, err := embeddedDoc.Get(key)
-					if err != nil {
-						// the document does not contain key, so no embedded value was found.
-						continue
-					}
-
-					if i == len(keys)-1 {
-						// a value was found at suffix.
-						docsAtSuffix = append(docsAtSuffix, must.NotFail(types.NewDocument(suffix, embeddedVal)))
-						continue
-					}
-
-					// key exists in the document, add embedded value to next iteration.
-					embeddedVals = append(embeddedVals, embeddedVal)
-				}
-
-			default:
-				// not a document or array, do nothing
-			}
-		}
-
-		vals = embeddedVals
-	}
-
-	return suffix, docsAtSuffix
 }
 
 // filterOperator handles a top-level operator filter {$operator: filterValue}.
