@@ -40,7 +40,7 @@ func TestGetPathValue(t *testing.T) {
 		res  []any
 		doc  *types.Document
 		path types.Path
-		opts GetPathOpts
+		opts FindValuesOpts
 	}{
 		"EmptyDocument": {
 			doc:  emptyDoc,
@@ -62,17 +62,30 @@ func TestGetPathValue(t *testing.T) {
 			path: types.NewStaticPath("foo", "bar"),
 			res:  []any{1},
 		},
-		"ArrayDocuments": {
+		"ArrayDocumentTwo": {
 			doc:  docArrayTwo,
 			path: types.NewStaticPath("foo", "bar"),
+			opts: FindValuesOpts{IgnoreArrayIndex: true},
 			res:  []any{1, 2},
+		},
+		"IgnoreArrayIndex": {
+			doc:  docArrayOne,
+			path: types.NewStaticPath("foo", "0", "bar"),
+			opts: FindValuesOpts{IgnoreArrayIndex: true},
+			res:  []any{},
+		},
+		"IgnoreArrayElement": {
+			doc:  docArrayOne,
+			path: types.NewStaticPath("foo", "bar"),
+			opts: FindValuesOpts{IgnoreArrayElement: true},
+			res:  []any{},
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			res := GetPathValue(tc.doc, tc.path, tc.opts)
+			res := FindValues(tc.doc, tc.path, tc.opts)
 			require.Equal(t, tc.res, res)
 		})
 	}

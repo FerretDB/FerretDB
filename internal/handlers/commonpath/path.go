@@ -21,24 +21,25 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// GetPathOpts sets options for GetPathValue.
-type GetPathOpts struct {
-	// index dot notation such as `foo.0.bar` is ignored
+// FindValuesOpts sets options for FindValues.
+type FindValuesOpts struct {
+	// IgnoreArrayIndex ignores index dot notation for array
 	IgnoreArrayIndex bool
-	// array elements are not iterated {foo: [{bar: 1}]}
+	// IgnoreArrayElement does not iterate array elements
 	IgnoreArrayElement bool
 }
 
-// GetPathValue go through each key of the path iteratively to
+// FindValues go through each key of the path iteratively to
 // find values that exist at suffix.
 // An array may return multiple values.
 // At each key of the path, it checks:
-//   - if the document has the key
-//   - if the array has the index
-//   - if the array contains a document that has the key
+//   - if the document has the key;
+//   - if the array contains an index that is equal to the key, and;
+//   - if the array contains documents which has the key.
 //
-// It returns empty array [] if the path did not find any value.
-func GetPathValue(doc *types.Document, path types.Path, opts GetPathOpts) []any {
+// It returns a slice of values at suffix. An empty array is returned
+// if no value was found.
+func FindValues(doc *types.Document, path types.Path, opts FindValuesOpts) []any {
 	keys := path.Slice()
 	vals := []any{doc}
 
