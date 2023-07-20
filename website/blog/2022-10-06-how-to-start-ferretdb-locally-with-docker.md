@@ -4,7 +4,7 @@ title: How to start FerretDB locally with Docker
 author: Patryk Kwiatek
 description: Learn to set up FerretDB locally using Docker by installing the essential software prerequisites, configuring Docker containers, and running insert() and find() commands.
 image: /img/blog/3g0okbkcve391.jpg
-tags: [tutorial, product]
+date: 2022-10-06
 ---
 
 Learn to set up FerretDB locally using Docker by installing the essential software prerequisites, configuring Docker containers, and running insert() and find() commands.
@@ -138,7 +138,7 @@ To be sure, let's check FerretDB logs by using `docker logs` command with the co
 ```js
 > docker-compose logs ferretdb
 Attaching to ferretdb
-ferretdb    | 2022-10-05T23:45:35.989Z  INFO    ferretdb/main.go:111    Starting FerretDB v0.5.4...     {"version": "v0.5.4", "commit": "d2bdcb45ea319c657f44cc0a18783c145cb871c7", "branch": "main", "dirty": false, "-compiler": "gc", "-race": "true", "-tags": "ferretdb_tigris", "-trimpath": "true", "CGO_ENABLED": "1", "GOARCH": "amd64", "GOOS": "linux", "GOAMD64": "v1"}
+ferretdb    | 2022-10-05T23:45:35.989Z  INFO    ferretdb/main.go:111    Starting FerretDB v0.5.4...     {"version": "v0.5.4", "commit": "d2bdcb45ea319c657f44cc0a18783c145cb871c7", "branch": "main", "dirty": false, "-compiler": "gc", "-race": "true", "-tags": "ferretdb_testcover,ferretdb_tigris", "-trimpath": "true", "CGO_ENABLED": "1", "GOARCH": "amd64", "GOOS": "linux", "GOAMD64": "v1"}
 ferretdb    | 2022-10-05T23:45:35.993Z  INFO    listener        clientconn/listener.go:78       Listening on [::]:27017 ...
 ferretdb    | 2022-10-05T23:45:35.995Z  INFO    debug   debug/debug.go:60       Starting debug server on http://127.0.0.1:8088/
 
