@@ -15,7 +15,6 @@
 package common
 
 import (
-	"context"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -24,7 +23,7 @@ import (
 )
 
 // IsMaster is a common implementation of the isMaster command used by deprecated OP_QUERY message.
-func IsMaster(context.Context, *wire.OpQuery) (*wire.OpReply, error) {
+func IsMaster() (*wire.OpReply, error) {
 	return &wire.OpReply{
 		NumberReturned: 1,
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
