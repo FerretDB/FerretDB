@@ -15,10 +15,12 @@
 package commonpath
 
 import (
+	"errors"
 	"strconv"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // FindValuesOpts sets options for FindValues.
@@ -29,45 +31,40 @@ type FindValuesOpts struct {
 	IgnoreArrayElement bool
 }
 
-// FindValues go through each key of the path iteratively to
-// find values that exist at suffix.
-// An array may return multiple values.
-// At each key of the path, it checks:
+// FindValues goes through each key of the path iteratively to find values
+// at the suffix of the path. At each key of the path, it checks:
 //   - if the document has the key;
-//   - if the array contains an index that is equal to the key, and;
-//   - if the array contains documents which has the key.
+//   - if the array contains an element at an index where index equals to the key, and;
+//   - if the array contains one or more documents which has the key.
 //
-// It returns a slice of values at suffix. An empty array is returned
-// if no value was found.
-func FindValues(doc *types.Document, path types.Path, opts FindValuesOpts) []any {
+// It returns a slice of values and an empty array is returned if no value was found.
+func FindValues(doc *types.Document, path types.Path, opts FindValuesOpts) ([]any, error) {
 	keys := path.Slice()
-	vals := []any{doc}
+	inputs := []any{doc}
+	var values []any
 
 	for _, key := range keys {
-		// embeddedVals are the values found at current key.
-		embeddedVals := []any{}
+		values = []any{}
 
-		for _, valAtKey := range vals {
-			switch val := valAtKey.(type) {
+		for _, input := range inputs {
+			switch input := input.(type) {
 			case *types.Document:
-				embeddedVal, err := val.Get(key)
+				v, err := input.Get(key)
 				if err != nil {
 					continue
 				}
 
-				embeddedVals = append(embeddedVals, embeddedVal)
+				values = append(values, v)
 			case *types.Array:
 				if !opts.IgnoreArrayIndex {
 					if index, err := strconv.Atoi(key); err == nil {
-						// key is an integer, check if that integer is an index of the array.
-						embeddedVal, err := val.Get(index)
+						// key is an integer, check if that integer is an index of the array
+						v, err := input.Get(index)
 						if err != nil {
-							// index does not exist.
 							continue
 						}
 
-						// key is the index of the array, add embedded value to the next iteration.
-						embeddedVals = append(embeddedVals, embeddedVal)
+						values = append(values, v)
 
 						continue
 					}
@@ -77,30 +74,36 @@ func FindValues(doc *types.Document, path types.Path, opts FindValuesOpts) []any
 					continue
 				}
 
-				// iterate elements to get documents that contain the key.
-				for j := 0; j < val.Len(); j++ {
-					elem := must.NotFail(val.Get(j))
+				iter := input.Iterator()
+				defer iter.Close()
 
-					docElem, isDoc := elem.(*types.Document)
-					if !isDoc {
+				for {
+					_, v, err := iter.Next()
+					if errors.Is(err, iterator.ErrIteratorDone) {
+						break
+					}
+
+					if err != nil {
+						return nil, lazyerrors.Error(err)
+					}
+
+					doc, ok := v.(*types.Document)
+					if !ok {
 						continue
 					}
 
-					embeddedVal, err := docElem.Get(key)
+					v, err = doc.Get(key)
 					if err != nil {
 						continue
 					}
 
-					embeddedVals = append(embeddedVals, embeddedVal)
+					values = append(values, v)
 				}
-
-			default:
-				// not a document or array, do nothing
 			}
 		}
 
-		vals = embeddedVals
+		inputs = values
 	}
 
-	return vals
+	return values, nil
 }

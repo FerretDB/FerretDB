@@ -156,10 +156,13 @@ func (e *Expression) Evaluate(doc *types.Document) (any, error) {
 		}
 	}
 
-	vals := commonpath.FindValues(doc, path, commonpath.FindValuesOpts{
+	vals, err := commonpath.FindValues(doc, path, commonpath.FindValuesOpts{
 		IgnoreArrayIndex:   true,
 		IgnoreArrayElement: e.IgnoreArrays,
 	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	if len(vals) == 0 {
 		if isPrefixArray {

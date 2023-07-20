@@ -90,7 +90,8 @@ func TestGetPathValue(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			res := FindValues(tc.doc, tc.path, tc.opts)
+			res, err := FindValues(tc.doc, tc.path, tc.opts)
+			require.NoError(t, err)
 			require.Equal(t, tc.res, res)
 		})
 	}

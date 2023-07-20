@@ -107,7 +107,11 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		}
 
 		filterSuffix = path.Suffix()
-		vals := commonpath.FindValues(doc, path, commonpath.FindValuesOpts{})
+
+		vals, err := commonpath.FindValues(doc, path, commonpath.FindValuesOpts{})
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
 
 		for _, val := range vals {
 			docs = append(docs, must.NotFail(types.NewDocument(filterSuffix, val)))
