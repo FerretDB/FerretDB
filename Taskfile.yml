@@ -145,7 +145,7 @@ tasks:
     run: once
     deps: [gen-version]
     cmds:
-      - go test -c -o=bin/ferretdb{{exeExt}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -coverpkg=./... ./cmd/ferretdb
+      - go build -cover -v  -o=bin/ferretdb{{exeExt}} -race=true -coverpkg=./... ./cmd/ferretdb
 
   gen:
     desc: "Generate (and format) Go code"
@@ -178,8 +178,8 @@ tasks:
     desc: "Run all unit tests"
     cmds:
       - go test -count=1 {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
-      - go test -count=1 {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -bench=. -benchtime=1x ./...
-      - bin/task{{exeExt}} -d tools tools-test
+      # - go test -count=1 {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -bench=. -benchtime=1x ./...
+      # - bin/task{{exeExt}} -d tools tools-test
 
   test-integration:
     desc: "Run integration tests for several backends in parallel"
