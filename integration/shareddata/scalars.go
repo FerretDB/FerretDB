@@ -50,7 +50,7 @@ var Scalars = &Values[string]{
 		"double-2":            float64(-123456789), // random
 		"double-3":            float64(123456789),  // random
 		"double-4":            float64(math.MaxInt64),
-		"double-6":            doubleMaxVerge,
+		"double-5":            doubleMaxVerge,
 		"double-max-overflow": doubleMaxOverflow,
 		"double-min-overflow": doubleMinOverflow,
 
