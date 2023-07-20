@@ -4,7 +4,7 @@ title: Open Source is in Danger as a Result Of Complacency, Plain Stupidity and 
 author: Peter Farkas
 description: For those of us working in the IT industry, we should be well aware of the many benefits that open source software provides.
 image: /img/blog/Maintainer@5x-1-300x300.png
-date: 2022-08-23
+tags: [open source, sspl, community]
 ---
 
 For those of us working in the IT industry, we should be well aware of the many benefits that open source software provides.
