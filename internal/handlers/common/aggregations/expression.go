@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonpath"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -133,7 +134,7 @@ func NewExpression(expression string) (*Expression, error) {
 }
 
 // Evaluate gets the value at the path.
-// It returns error if the path does not exists.
+// It returns error if the path does not exist.
 func (e *Expression) Evaluate(doc *types.Document) (any, error) {
 	path := e.path
 
@@ -155,7 +156,10 @@ func (e *Expression) Evaluate(doc *types.Document) (any, error) {
 		}
 	}
 
-	vals := e.getPathValue(doc, path)
+	vals := commonpath.GetPathValue(doc, path, commonpath.GetPathOpts{
+		IgnoreArrayIndex:   true,
+		IgnoreArrayElement: e.IgnoreArrays,
+	})
 
 	if len(vals) == 0 {
 		if isPrefixArray {
@@ -183,65 +187,4 @@ func (e *Expression) Evaluate(doc *types.Document) (any, error) {
 // GetExpressionSuffix returns suffix of pathExpression.
 func (e *Expression) GetExpressionSuffix() string {
 	return e.path.Suffix()
-}
-
-// getPathValue go through each key of the path iteratively to
-// find values that exist at suffix.
-// An array may return multiple values.
-// At each key of the path, it checks:
-//   - if the document has the key.
-//   - if the array contains documents which have the key. (This check can
-//     be disabled by setting ExpressionOpts.IgnoreArrays field).
-//
-// It is different from `common.getDocumentsAtSuffix`, it does not find array item by
-// array dot notation `foo.0.bar`. It returns empty array [] because using index
-// such as `0` does not match using expression path.
-func (e *Expression) getPathValue(doc *types.Document, path types.Path) []any {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2348
-	keys := path.Slice()
-	vals := []any{doc}
-
-	for _, key := range keys {
-		// embeddedVals are the values found at current key.
-		var embeddedVals []any
-
-		for _, valAtKey := range vals {
-			switch val := valAtKey.(type) {
-			case *types.Document:
-				embeddedVal, err := val.Get(key)
-				if err != nil {
-					continue
-				}
-
-				embeddedVals = append(embeddedVals, embeddedVal)
-			case *types.Array:
-				if e.IgnoreArrays {
-					continue
-				}
-				// iterate elements to get documents that contain the key.
-				for j := 0; j < val.Len(); j++ {
-					elem := must.NotFail(val.Get(j))
-
-					docElem, isDoc := elem.(*types.Document)
-					if !isDoc {
-						continue
-					}
-
-					embeddedVal, err := docElem.Get(key)
-					if err != nil {
-						continue
-					}
-
-					embeddedVals = append(embeddedVals, embeddedVal)
-				}
-
-			default:
-				// not a document or array, do nothing
-			}
-		}
-
-		vals = embeddedVals
-	}
-
-	return vals
 }
