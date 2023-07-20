@@ -26,19 +26,24 @@ import (
 func IsMaster() (*wire.OpReply, error) {
 	return &wire.OpReply{
 		NumberReturned: 1,
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"ismaster", true, // only lowercase
-			// topologyVersion
-			"maxBsonObjectSize", int32(types.MaxDocumentLen),
-			"maxMessageSizeBytes", int32(wire.MaxMsgLen),
-			"maxWriteBatchSize", int32(100000),
-			"localTime", time.Now(),
-			// logicalSessionTimeoutMinutes
-			"connectionId", int32(42),
-			"minWireVersion", MinWireVersion,
-			"maxWireVersion", MaxWireVersion,
-			"readOnly", false,
-			"ok", float64(1),
-		))},
+		Documents:      IsMasterDocuments(),
 	}, nil
+}
+
+// IsMasterDocuments returns the Documents field (identical for both OP_MSG and OP_QUERY).
+func IsMasterDocuments() []*types.Document {
+	return []*types.Document{must.NotFail(types.NewDocument(
+		"ismaster", true, // only lowercase
+		// topologyVersion
+		"maxBsonObjectSize", int32(types.MaxDocumentLen),
+		"maxMessageSizeBytes", int32(wire.MaxMsgLen),
+		"maxWriteBatchSize", int32(100000),
+		"localTime", time.Now(),
+		// logicalSessionTimeoutMinutes
+		"connectionId", int32(42),
+		"minWireVersion", MinWireVersion,
+		"maxWireVersion", MaxWireVersion,
+		"readOnly", false,
+		"ok", float64(1),
+	))}
 }
