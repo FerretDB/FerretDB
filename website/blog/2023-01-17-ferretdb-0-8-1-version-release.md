@@ -5,7 +5,6 @@ author: Alexander Fashakin
 description: FerretDB 0.8.1 - the open-source MongoDB alternative - includes new features like version availability, `distinct` command & client TLS validation, and much more.
 image: /img/blog/FerretDB-v0.8.1.jpg
 tags: [release]
-date: 2023-01-19
 ---
 
 FerretDB 0.8.1 - the open-source MongoDB alternative - includes new features like version availability, `distinct` command & client TLS validation, and much more.

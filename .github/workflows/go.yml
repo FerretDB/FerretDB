@@ -421,9 +421,7 @@ jobs:
 
       - name: Collect corpus
         if: always()
-        run: |
-          bin/task fuzz-corpus
-          go run ./cmd/fuzztool corpus seed ../fuzz-corpus
+        run: bin/task fuzz-corpus
         working-directory: source
 
       # `secrets` are not supported in `if`, so we have to do this trick with environment variable:
