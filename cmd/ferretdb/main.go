@@ -48,10 +48,11 @@ import (
 //
 // Keep order in sync with documentation.
 var cli struct {
-	Version  bool   `default:"false" help:"Print version to stdout and exit." env:"-"`
-	Handler  string `default:"pg" help:"${help_handler}"`
-	Mode     string `default:"${default_mode}" help:"${help_mode}" enum:"${enum_mode}"`
-	StateDir string `default:"."               help:"Process state directory."`
+	Version            bool   `default:"false" help:"Print version to stdout and exit." env:"-"`
+	Handler            string `default:"pg" help:"${help_handler}"`
+	Mode               string `default:"${default_mode}" help:"${help_mode}" enum:"${enum_mode}"`
+	StateDir           string `default:"."               help:"Process state directory."`
+	AppendCoverageMeta bool   `default:"false" help:"Append integration test coverage meta to coverage directory meta files"`
 
 	Listen struct {
 		Addr        string `default:"127.0.0.1:27017" help:"Listen TCP address."`
@@ -294,6 +295,11 @@ func run() {
 		fmt.Fprintln(os.Stdout, "package:", info.Package)
 		fmt.Fprintln(os.Stdout, "debugBuild:", info.DebugBuild)
 
+		return
+	}
+
+	if cli.AppendCoverageMeta {
+		fmt.Println("Append coverage metadata")
 		return
 	}
 
