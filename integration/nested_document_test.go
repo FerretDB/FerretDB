@@ -25,20 +25,20 @@ func TestCreateNestedDocument(t *testing.T) {
 	t.Parallel()
 
 	t.Run("0", func(t *testing.T) {
-		embdyDoc := bson.D{{"v", nil}}
-		doc := CreateNestedDocument(0)
-		assert.Equal(t, embdyDoc, doc)
+		expected := bson.D{{"v", nil}}
+		actual := CreateNestedDocument(0)
+		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("1", func(t *testing.T) {
-		embdyDoc := bson.D{{"v", bson.A{nil}}}
-		doc := CreateNestedDocument(1)
-		assert.Equal(t, embdyDoc, doc)
+		expected := bson.D{{"v", bson.A{nil}}}
+		actual := CreateNestedDocument(1)
+		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("2", func(t *testing.T) {
-		embdyDoc := bson.D{{"v", bson.A{bson.D{{"v", nil}}}}}
-		doc := CreateNestedDocument(2)
-		assert.Equal(t, embdyDoc, doc)
+		expected := bson.D{{"v", bson.A{bson.D{{"v", nil}}}}}
+		actual := CreateNestedDocument(2)
+		assert.Equal(t, expected, actual)
 	})
 }
