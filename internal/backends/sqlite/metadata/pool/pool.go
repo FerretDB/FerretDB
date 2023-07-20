@@ -180,7 +180,7 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*sql.DB, bool, err
 	return db.sqlDB, true, nil
 }
 
-// Drop closes and removes a database by name.
+// Drop closes and removes a database by valid name.
 //
 // It does nothing if the database does not exist.
 //
