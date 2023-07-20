@@ -51,6 +51,13 @@ linters-settings:
           - "!**/cmd/envtool/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb
+      commonerrors:
+        files:
+          - $all
+          - "!**/internal/clientconn/*.go"
+          - "!**/internal/handlers/**/*.go"
+        deny:
+          - pkg: github.com/FerretDB/FerretDB/internal/handlers/commonerrors
   exhaustive:
     default-signifies-exhaustive: false
   gci:
