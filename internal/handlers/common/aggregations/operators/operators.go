@@ -94,11 +94,9 @@ func NewOperator(doc *types.Document) (Operator, error) {
 	_, unsupported := unsupportedOperators[operator]
 
 	switch {
-	case supported && unsupported:
-		panic(fmt.Sprintf("operator %q is in both `operators` and `unsupportedOperators`", operator))
-	case supported && !unsupported:
+	case supported:
 		return newOperator(doc)
-	case !supported && unsupported:
+	case unsupported:
 		return nil, newOperatorError(
 			ErrNotImplemented,
 			fmt.Sprintf("The operator %s is not implemented yet", operator),
@@ -114,7 +112,7 @@ func NewOperator(doc *types.Document) (Operator, error) {
 // Operators maps all standard aggregation operators.
 var Operators = map[string]newOperatorFunc{
 	// sorted alphabetically
-	// TODO https://github.com/FerretDB/FerretDB/issues/2680
+	"$sum":  newSum,
 	"$type": newType,
 	// please keep sorted alphabetically
 }
@@ -249,7 +247,6 @@ var unsupportedOperators = map[string]struct{}{
 	"$substrBytes":      {},
 	"$substrCP":         {},
 	"$subtract":         {},
-	"$sum":              {},
 	"$switch":           {},
 	"$tan":              {},
 	"$tanh":             {},

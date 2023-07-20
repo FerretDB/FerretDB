@@ -5,7 +5,6 @@ author: Alexander Fashakin
 description: The new FerretDB release 0.7.1 comes with the introduction of basic TLS support, addition of `filter` for `listCollections`, and much more.
 image: /img/blog/TLS.webp
 tags: [release]
-date: 2022-12-23
 ---
 
 The new FerretDB release 0.7.1 comes with the introduction of basic TLS support, addition of `filter` for `listCollection`s`, and much more.

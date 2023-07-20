@@ -63,8 +63,12 @@ func TestBinary(t *testing.T) {
 	testJSON(t, binaryTestCases, func() sjsontype { return new(binaryType) })
 }
 
-func FuzzBinary(f *testing.F) {
-	fuzzJSON(f, binaryTestCases, func() sjsontype { return new(binaryType) })
+func FuzzBinaryWithFixedSchemas(f *testing.F) {
+	fuzzJSONWithFixedSchemas(f, binaryTestCases, func() sjsontype { return new(binaryType) })
+}
+
+func FuzzBinaryWithFixedDocuments(f *testing.F) {
+	fuzzJSONWithFixedDocuments(f, binaryTestCases, func() sjsontype { return new(binaryType) })
 }
 
 func BenchmarkBinary(b *testing.B) {
