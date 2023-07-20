@@ -35,7 +35,7 @@ type Database interface {
 	// TODO remove?
 	Close()
 
-	Collection(string) Collection
+	Collection(string) (Collection, error)
 	ListCollections(context.Context, *ListCollectionsParams) (*ListCollectionsResult, error)
 	CreateCollection(context.Context, *CreateCollectionParams) error
 	DropCollection(context.Context, *DropCollectionParams) error
@@ -73,9 +73,17 @@ func (dbc *databaseContract) Close() {
 
 // Collection returns a Collection instance for the given name.
 //
-// The collection (or database) does not need to exist; even parameters like name could be invalid.
-func (dbc *databaseContract) Collection(name string) Collection {
-	return dbc.db.Collection(name)
+// The collection (or database) does not need to exist; even parameters like name could be invalid FIXME.
+func (dbc *databaseContract) Collection(name string) (Collection, error) {
+	var res Collection
+	err := validDatabaseName(name)
+	if err == nil {
+		res, err = dbc.db.Collection(name)
+	}
+
+	checkError(err, ErrorCodeCollectionNameIsInvalid)
+
+	return res, err
 }
 
 // ListCollectionsParams represents the parameters of Database.ListCollections method.
@@ -114,8 +122,12 @@ type CreateCollectionParams struct {
 func (dbc *databaseContract) CreateCollection(ctx context.Context, params *CreateCollectionParams) error {
 	defer observability.FuncCall(ctx)()
 
-	err := dbc.db.CreateCollection(ctx, params)
-	checkError(err, ErrorCodeCollectionAlreadyExists)
+	err := validDatabaseName(params.Name)
+	if err == nil {
+		err = dbc.db.CreateCollection(ctx, params)
+	}
+
+	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionAlreadyExists)
 
 	return err
 }
@@ -131,8 +143,12 @@ type DropCollectionParams struct {
 func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCollectionParams) error {
 	defer observability.FuncCall(ctx)()
 
-	err := dbc.db.DropCollection(ctx, params)
-	checkError(err, ErrorCodeCollectionDoesNotExist) // TODO: ErrorCodeDatabaseDoesNotExist ?
+	err := validDatabaseName(params.Name)
+	if err == nil {
+		err = dbc.db.DropCollection(ctx, params)
+	}
+
+	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist) // TODO: ErrorCodeDatabaseDoesNotExist ?
 
 	return err
 }

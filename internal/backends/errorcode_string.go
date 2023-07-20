@@ -8,14 +8,16 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[ErrorCodeDatabaseDoesNotExist-1]
-	_ = x[ErrorCodeCollectionDoesNotExist-2]
-	_ = x[ErrorCodeCollectionAlreadyExists-3]
+	_ = x[ErrorCodeDatabaseNameIsInvalid-1]
+	_ = x[ErrorCodeDatabaseDoesNotExist-2]
+	_ = x[ErrorCodeCollectionNameIsInvalid-3]
+	_ = x[ErrorCodeCollectionDoesNotExist-4]
+	_ = x[ErrorCodeCollectionAlreadyExists-5]
 }
 
-const _ErrorCode_name = "ErrorCodeDatabaseDoesNotExistErrorCodeCollectionDoesNotExistErrorCodeCollectionAlreadyExists"
+const _ErrorCode_name = "ErrorCodeDatabaseNameIsInvalidErrorCodeDatabaseDoesNotExistErrorCodeCollectionNameIsInvalidErrorCodeCollectionDoesNotExistErrorCodeCollectionAlreadyExists"
 
-var _ErrorCode_index = [...]uint8{0, 29, 60, 92}
+var _ErrorCode_index = [...]uint8{0, 30, 59, 91, 122, 154}
 
 func (i ErrorCode) String() string {
 	i -= 1

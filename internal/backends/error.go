@@ -32,8 +32,10 @@ type ErrorCode int
 const (
 	_ ErrorCode = iota
 
+	ErrorCodeDatabaseNameIsInvalid
 	ErrorCodeDatabaseDoesNotExist
 
+	ErrorCodeCollectionNameIsInvalid
 	ErrorCodeCollectionDoesNotExist
 	ErrorCodeCollectionAlreadyExists
 )

@@ -17,8 +17,10 @@ package sqlite
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -44,8 +46,26 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	username, _ := conninfo.Get(ctx).Auth()
 
-	db := h.b.Database(params.DB)
+	db, err := h.b.Database(params.DB)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid database name: %s", params.DB)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "find")
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
 	defer db.Close()
+
+	c, err := db.Collection(params.Collection)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid collection name: %s.%s", params.DB, params.Collection)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "find")
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
 
 	cancel := func() {}
 	if params.MaxTimeMS != 0 {
@@ -57,7 +77,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	// closer accumulates all things that should be closed / canceled.
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
 
-	queryRes, err := db.Collection(params.Collection).Query(ctx, nil)
+	queryRes, err := c.Query(ctx, nil)
 	if err != nil {
 		closer.Close()
 		return nil, lazyerrors.Error(err)

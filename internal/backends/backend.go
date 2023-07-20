@@ -32,7 +32,7 @@ import (
 // See backendContract and its methods for additional details.
 type Backend interface {
 	Close()
-	Database(string) Database
+	Database(string) (Database, error)
 	ListDatabases(context.Context, *ListDatabasesParams) (*ListDatabasesResult, error)
 	DropDatabase(context.Context, *DropDatabaseParams) error
 
@@ -70,9 +70,17 @@ func (bc *backendContract) Close() {
 
 // Database returns a Database instance for the given name.
 //
-// The database does not need to exist; even parameters like name could be invalid.
-func (bc *backendContract) Database(name string) Database {
-	return bc.b.Database(name)
+// The database does not need to exist; even parameters like name could be invalid FIXME.
+func (bc *backendContract) Database(name string) (Database, error) {
+	var res Database
+	err := validDatabaseName(name)
+	if err == nil {
+		res, err = bc.b.Database(name)
+	}
+
+	checkError(err, ErrorCodeDatabaseNameIsInvalid)
+
+	return res, err
 }
 
 // ListDatabasesParams represents the parameters of Backend.ListDatabases method.
@@ -108,8 +116,12 @@ type DropDatabaseParams struct {
 func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabaseParams) error {
 	defer observability.FuncCall(ctx)()
 
-	err := bc.b.DropDatabase(ctx, params)
-	checkError(err, ErrorCodeDatabaseDoesNotExist)
+	err := validDatabaseName(params.Name)
+	if err == nil {
+		err = bc.b.DropDatabase(ctx, params)
+	}
+
+	checkError(err, ErrorCodeDatabaseNameIsInvalid, ErrorCodeDatabaseDoesNotExist)
 
 	return err
 }
