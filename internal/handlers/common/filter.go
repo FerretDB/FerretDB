@@ -97,14 +97,21 @@ func HasQueryOperator(filter *types.Document) (bool, error) {
 
 // filterDocumentPair handles a single filter element key/value pair {filterKey: filterValue}.
 func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) (bool, error) {
+	var vals []any
+	filterSuffix := filterKey
+
 	path, err := types.NewPathFromString(filterKey)
 	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
-	vals, err := commonpath.FindValues(doc, path, commonpath.FindValuesOpts{})
-	if err != nil {
-		return false, lazyerrors.Error(err)
+		// empty keys are allowed for filter
+		if val, _ := doc.Get(filterKey); val != nil {
+			vals = []any{val}
+		}
+	} else {
+		filterSuffix = path.Suffix()
+		vals, err = commonpath.FindValues(doc, path, commonpath.FindValuesOpts{})
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
 	}
 
 	if strings.HasPrefix(filterKey, "$") {
@@ -116,7 +123,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 	case *types.Document:
 		var docs []*types.Document
 		for _, val := range vals {
-			docs = append(docs, must.NotFail(types.NewDocument(path.Suffix(), val)))
+			docs = append(docs, must.NotFail(types.NewDocument(filterSuffix, val)))
 		}
 
 		if len(docs) == 0 {
@@ -126,7 +133,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 
 		for _, doc := range docs {
 			// {field: {expr}} or {field: {document}}
-			ok, err := filterFieldExpr(doc, filterKey, path.Suffix(), filterValue)
+			ok, err := filterFieldExpr(doc, filterKey, filterSuffix, filterValue)
 			if err != nil {
 				return false, err
 			}
