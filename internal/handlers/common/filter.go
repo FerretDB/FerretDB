@@ -157,6 +157,11 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 			}
 
 			// doc did not match filter, continue next iteration.
+		case types.NullType:
+			if _, err := doc.Get(filterSuffix); err != nil {
+				// comparing not existent field with null returns true
+				return true, nil
+			}
 		case types.Regex:
 			// {field: /regex/}
 			docValue, err := doc.Get(filterSuffix)
@@ -178,11 +183,6 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 			// {field: value}
 			docValue, err := doc.Get(filterSuffix)
 			if err != nil {
-				// comparing not existent field with null should return true
-				if _, ok := filterValue.(types.NullType); ok {
-					return true, nil
-				}
-
 				continue // no error - the field is just not present
 			}
 

@@ -25,17 +25,17 @@ import (
 
 // FindValuesOpts sets options for FindValues.
 type FindValuesOpts struct {
-	// IgnoreArrayIndex ignores index dot notation for array
+	// IgnoreArrayIndex does not check if an array contains an element at the array index
 	IgnoreArrayIndex bool
-	// IgnoreArrayElement does not iterate array elements
+	// IgnoreArrayElement does not check if an array contains documents that have the key
 	IgnoreArrayElement bool
 }
 
-// FindValues goes through each key of the path iteratively to find values
+// FindValues goes through each key of the path iteratively on doc to find values
 // at the suffix of the path. At each key of the path, it checks:
 //   - if the document has the key;
 //   - if the array contains an element at an index where index equals to the key, and;
-//   - if the array contains one or more documents which has the key.
+//   - if the array contains one or more documents which have the key.
 //
 // It returns a slice of values and an empty array is returned if no value was found.
 func FindValues(doc *types.Document, path types.Path, opts FindValuesOpts) ([]any, error) {
