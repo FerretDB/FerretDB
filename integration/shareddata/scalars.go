@@ -350,7 +350,7 @@ func init() {
 	must.BeTrue(-doubleMaxPrec-1 == -doubleMaxPrec-2)
 
 	must.BeTrue(doubleMaxOverflow > float64(math.MaxInt64))
-	must.BeTrue(doubleMinOverflow <= float64(math.MinInt64))
+	must.BeTrue(doubleMinOverflow < float64(math.MinInt64))
 
 	must.BeTrue(doubleMaxVerge < math.MaxFloat64)
 }
