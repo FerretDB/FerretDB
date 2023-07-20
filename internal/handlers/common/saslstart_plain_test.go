@@ -31,13 +31,7 @@ import (
 // To ensure compatibility, the functionality must be tested by external drivers
 // of various programming languages (see the dance repo).
 func TestSaslStartPlain(t *testing.T) {
-	validPayload := []byte{
-		97, 117, 116, 104, 122, 105, 100, // "authzid"
-		0,                      // separator
-		97, 100, 109, 105, 110, // "admin"
-		0,                 // separator
-		112, 97, 115, 115, // "pass"
-	}
+	validPayload := []byte("authzid\x00admin\x00pass")
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		doc *types.Document

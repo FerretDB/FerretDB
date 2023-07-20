@@ -45,7 +45,7 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 		payload = binaryPayload.B
 	}
 
-	// if not string nor binary payload was sent, return a validation error
+	// as spec's payload should be binary, we return an error mentioned binary as expected type
 	if payload == nil {
 		return "", "", err
 	}

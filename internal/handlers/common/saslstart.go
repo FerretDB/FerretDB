@@ -24,7 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// SASLStart is a common implementation of the saslStart command.
+// SASLStart returns a common part of saslStart command response.
 func SASLStart(ctx context.Context, doc *types.Document) error {
 	mechanism, err := GetRequiredParam[string](doc, "mechanism")
 	if err != nil {
