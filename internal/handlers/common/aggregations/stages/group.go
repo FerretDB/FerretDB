@@ -21,6 +21,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators/accumulators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -82,8 +83,10 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 
 		if field == "_id" {
 			if doc, ok := v.(*types.Document); ok {
-				if err = validateExpression("$group", doc); err != nil {
-					return nil, err
+				if !operators.IsOperator(doc) {
+					if err = validateExpression("$group", doc); err != nil {
+						return nil, err
+					}
 				}
 			}
 			groupKey = v
@@ -165,73 +168,99 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 
 // groupDocuments groups documents by group expression.
 func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]groupedDocuments, error) {
-	groupKey, ok := g.groupExpression.(string)
-	if !ok {
-		// non-string key aggregates values of all `in` documents into one aggregated document.
-		return []groupedDocuments{{
-			groupID:   g.groupExpression,
-			documents: in,
-		}}, nil
-	}
-
-	expression, err := aggregations.NewExpression(groupKey)
-	if err != nil {
-		var exprErr *aggregations.ExpressionError
-		if !errors.As(err, &exprErr) {
-			return nil, lazyerrors.Error(err)
-		}
-
-		switch exprErr.Code() {
-		case aggregations.ErrNotExpression:
-			// constant value aggregates values of all `in` documents into one aggregated document.
-			return []groupedDocuments{{
-				groupID:   groupKey,
-				documents: in,
-			}}, nil
-		case aggregations.ErrEmptyFieldPath:
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				// TODO
-				commonerrors.ErrGroupInvalidFieldPath,
-				"'$' by itself is not a valid Expression",
-				"$group (stage)",
-			)
-		case aggregations.ErrInvalidExpression:
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
-				fmt.Sprintf("'%s' starts with an invalid character for a user variable name", types.FormatAnyValue(groupKey)),
-				"$group (stage)",
-			)
-		case aggregations.ErrEmptyVariable:
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
-				"empty variable names are not allowed",
-				"$group (stage)",
-			)
-		// TODO https://github.com/FerretDB/FerretDB/issues/2275
-		case aggregations.ErrUndefinedVariable:
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrGroupUndefinedVariable,
-				fmt.Sprintf("Use of undefined variable: %s", types.FormatAnyValue(groupKey)),
-				"$group (stage)",
-			)
-		default:
-			panic(fmt.Sprintf("unhandled field path error %s", exprErr.Error()))
-		}
-	}
-
-	var group groupMap
-
-	for _, doc := range in {
-		val, err := expression.Evaluate(doc)
+	switch groupKey := g.groupExpression.(type) {
+	case string:
+		expression, err := aggregations.NewExpression(groupKey)
 		if err != nil {
-			// $group treats non-existent fields as nulls
-			val = types.Null
+			var exprErr *aggregations.ExpressionError
+			if !errors.As(err, &exprErr) {
+				return nil, lazyerrors.Error(err)
+			}
+
+			switch exprErr.Code() {
+			case aggregations.ErrNotExpression:
+				// constant value aggregates values of all `in` documents into one aggregated document.
+				return []groupedDocuments{{
+					groupID:   groupKey,
+					documents: in,
+				}}, nil
+			case aggregations.ErrEmptyFieldPath:
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					// TODO
+					commonerrors.ErrGroupInvalidFieldPath,
+					"'$' by itself is not a valid Expression",
+					"$group (stage)",
+				)
+			case aggregations.ErrInvalidExpression:
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrFailedToParse,
+					fmt.Sprintf("'%s' starts with an invalid character for a user variable name", types.FormatAnyValue(groupKey)),
+					"$group (stage)",
+				)
+			case aggregations.ErrEmptyVariable:
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrFailedToParse,
+					"empty variable names are not allowed",
+					"$group (stage)",
+				)
+			// TODO https://github.com/FerretDB/FerretDB/issues/2275
+			case aggregations.ErrUndefinedVariable:
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrGroupUndefinedVariable,
+					fmt.Sprintf("Use of undefined variable: %s", types.FormatAnyValue(groupKey)),
+					"$group (stage)",
+				)
+			default:
+				panic(fmt.Sprintf("unhandled field path error %s", exprErr.Error()))
+			}
 		}
 
-		group.addOrAppend(val, doc)
+		var group groupMap
+
+		for _, doc := range in {
+			val, err := expression.Evaluate(doc)
+			if err != nil {
+				// $group treats non-existent fields as nulls
+				val = types.Null
+			}
+
+			group.addOrAppend(val, doc)
+		}
+		return group.docs, nil
+
+	case *types.Document:
+		if !operators.IsOperator(groupKey) {
+			break
+		}
+
+		op, err := operators.NewOperator(groupKey)
+		if err != nil {
+			return nil, err
+		}
+
+		var group groupMap
+
+		for _, doc := range in {
+			val, err := op.Process(doc)
+			if err != nil {
+				return nil, err
+			}
+
+			group.addOrAppend(val, doc)
+		}
+
+		return group.docs, nil
+
+	default:
 	}
 
-	return group.docs, nil
+	// non-string key aggregates values of all `in` documents into one aggregated document.
+	return []groupedDocuments{{
+		groupID:   g.groupExpression,
+		documents: in,
+	}}, nil
+
+	//return group.docs, nil
 }
 
 // groupedDocuments contains group key and the documents for that group.
