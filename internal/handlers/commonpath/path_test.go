@@ -49,6 +49,11 @@ func TestGetPathValue(t *testing.T) {
 		},
 		"Document": {
 			doc:  docDoc,
+			path: types.NewStaticPath("foo"),
+			res:  []any{must.NotFail(types.NewDocument("bar", 1))},
+		},
+		"DocumentDotNotation": {
+			doc:  docDoc,
 			path: types.NewStaticPath("foo", "bar"),
 			res:  []any{1},
 		},
