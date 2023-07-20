@@ -131,3 +131,8 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 
 	return commonparams.AliasFromType(res), nil
 }
+
+// check interfaces
+var (
+	_ Operator = (*typeOp)(nil)
+)

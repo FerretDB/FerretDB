@@ -6,6 +6,13 @@ run:
 
 linters-settings:
   # asciicheck
+  depguard:
+    rules:
+      commonerrors:
+        files:
+          - $all
+        deny:
+          - pkg: github.com/FerretDB/FerretDB/internal/handlers/commonerrors
   exhaustive:
     default-signifies-exhaustive: false
   gci:
@@ -96,6 +103,7 @@ linters:
   disable-all: true
   enable:
     - asciicheck
+    - depguard
     - exhaustive
     - gci
     - goconst

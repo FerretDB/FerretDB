@@ -56,8 +56,7 @@ func AllProviders() Providers {
 		ArrayDocuments,
 
 		Mixed,
-		// TODO https://github.com/FerretDB/FerretDB/issues/2291
-		// ArrayAndDocuments,
+		ArrayAndDocuments,
 	}
 
 	// check that names are unique and randomize order
@@ -78,14 +77,14 @@ func AllProviders() Providers {
 type Providers []Provider
 
 // Remove specified providers and return remaining providers.
-func (ps Providers) Remove(removeProviderNames ...string) Providers {
+func (ps Providers) Remove(removeProviders ...Provider) Providers {
 	res := make([]Provider, 0, len(ps))
 
 	for _, p := range ps {
 		keep := true
 
-		for _, name := range removeProviderNames {
-			if p.Name() == name {
+		for _, removeProvider := range removeProviders {
+			if p == removeProvider {
 				keep = false
 				break
 			}

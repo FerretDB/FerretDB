@@ -263,13 +263,15 @@ tasks:
       - go test -count=0 ./...
 
   fuzz:
-    desc: "Fuzz for about 2 minutes (with default FUZZ_TIME)"
+    desc: "Fuzz for about 3 minutes (with default FUZZ_TIME)"
     cmds:
       - go test -list='Fuzz.*' ./...
+      - go test -run=XXX -fuzz=FuzzArrayWithFixedSchemas      -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
+      - go test -run=XXX -fuzz=FuzzArrayWithFixedDocuments    -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
+      - go test -run=XXX -fuzz=FuzzDocumentWithFixedSchemas   -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
+      - go test -run=XXX -fuzz=FuzzDocumentWithFixedDocuments -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
       - go test -run=XXX -fuzz=FuzzArray    -fuzztime={{.FUZZ_TIME}} ./internal/bson/
       - go test -run=XXX -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/bson/
-      - go test -run=XXX -fuzz=FuzzArray    -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      - go test -run=XXX -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
       - go test -run=XXX -fuzz=FuzzMsg      -fuzztime={{.FUZZ_TIME}} ./internal/wire/
       - go test -run=XXX -fuzz=FuzzQuery    -fuzztime={{.FUZZ_TIME}} ./internal/wire/
       - go test -run=XXX -fuzz=FuzzReply    -fuzztime={{.FUZZ_TIME}} ./internal/wire/
@@ -277,9 +279,9 @@ tasks:
   fuzz-corpus:
     desc: "Sync seed and generated fuzz corpora with FUZZ_CORPUS"
     cmds:
-      - go run {{.RACE_FLAG}} ./cmd/fuzztool corpus generated {{.FUZZ_CORPUS}}
-      - go run {{.RACE_FLAG}} ./cmd/fuzztool corpus seed {{.FUZZ_CORPUS}}
-      - go run {{.RACE_FLAG}} ./cmd/fuzztool corpus {{.FUZZ_CORPUS}} generated
+      - go run {{.RACE_FLAG}} ./cmd/envtool fuzz corpus generated {{.FUZZ_CORPUS}}
+      - go run {{.RACE_FLAG}} ./cmd/envtool fuzz corpus seed {{.FUZZ_CORPUS}}
+      - go run {{.RACE_FLAG}} ./cmd/envtool fuzz corpus {{.FUZZ_CORPUS}} generated
 
   run:
     desc: "Run FerretDB with `pg` handler"

@@ -40,6 +40,8 @@ linters-settings:
     sort: true
     order:
       - name
+      - cmd
+      - arg
       - default
       - help
   wsl:

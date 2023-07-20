@@ -4,7 +4,7 @@ title: FerretDB at Percona University in Istanbul
 author: Peter Farkas
 description: We were really excited to join Percona University Istanbul last weekend, an event which was sponsored by FerretDB and HostedPMM.
 image: /img/blog/BSS-1319-1024x684.jpg
-date: 2022-11-18
+tags: [open source, events, community]
 ---
 
 We were really excited to join [Percona University Istanbul](https://www.percona.com/community/events/percona-university-istanbul-2022) last weekend, an event which was sponsored by FerretDB and HostedPMM.
