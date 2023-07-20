@@ -22,7 +22,7 @@ When we talk about open-source, we think about collaboration and freedom of choi
 
 <!--truncate-->
 
-Open-source projects are even great additions to proprietary software and a lot of the proprietary solutions take advantage of the open source communities.
+Open-source projects are even greater additions to proprietary software and a lot of the proprietary solutions take advantage of the open source communities.
 
 Community is what makes open-source software powerful, as well as the ease of access to its source code, so anybody can try it.
 At [FerretDB](https://www.ferretdb.io/), we are constantly improving our software based on feedback from our active community.
