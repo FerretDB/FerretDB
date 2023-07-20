@@ -29,9 +29,6 @@ type binaryType types.Binary
 
 func (bin *binaryType) bsontype() {}
 
-// readNested implements bsontype interface.
-func (bin *binaryType) readNested(_ *bufio.Reader, _ int) error { return nil }
-
 // ReadFrom implements bsontype interface.
 func (bin *binaryType) ReadFrom(r *bufio.Reader) error {
 	var l int32

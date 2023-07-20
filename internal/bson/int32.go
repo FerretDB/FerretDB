@@ -27,9 +27,6 @@ type int32Type int32
 
 func (i *int32Type) bsontype() {}
 
-// readNested implements bsontype interface.
-func (i *int32Type) readNested(r *bufio.Reader, _ int) error { return nil }
-
 // ReadFrom implements bsontype interface.
 func (i *int32Type) ReadFrom(r *bufio.Reader) error {
 	if err := binary.Read(r, binary.LittleEndian, i); err != nil {

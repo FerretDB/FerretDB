@@ -134,12 +134,12 @@ func (doc *Document) Values() []any {
 	return values
 }
 
+// ReadFrom implements bsontype interface.
 func (doc *Document) ReadFrom(r *bufio.Reader) error {
-	return doc.readNested(r, 0)
+	return doc.ReadNested(r, 0)
 }
 
-// readNested implements bsontype interface.
-func (doc *Document) readNested(r *bufio.Reader, nesting int) error {
+func (doc *Document) ReadNested(r *bufio.Reader, nesting int) error {
 	if nesting > maxNesting {
 		return lazyerrors.Errorf("bson.Document.ReadFrom (over nested document. Max supported nesting: %d)", maxNesting)
 	}
@@ -190,7 +190,7 @@ func (doc *Document) readNested(r *bufio.Reader, nesting int) error {
 		switch tag(t) {
 		case tagDocument:
 			var v Document
-			if err := v.readNested(bufr, nesting+1); err != nil {
+			if err := v.ReadNested(bufr, nesting+1); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (embedded document): %w", err)
 			}
 
@@ -203,7 +203,7 @@ func (doc *Document) readNested(r *bufio.Reader, nesting int) error {
 
 		case tagArray:
 			var v arrayType
-			if err := v.readNested(bufr, nesting+1); err != nil {
+			if err := v.ReadNested(bufr, nesting+1); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Array): %w", err)
 			}
 			a := types.Array(v)

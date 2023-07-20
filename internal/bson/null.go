@@ -25,9 +25,6 @@ type nullType types.NullType
 
 func (*nullType) bsontype() {}
 
-// readNested implements bsontype interface.
-func (*nullType) readNested(_ *bufio.Reader, _ int) error { return nil }
-
 // ReadFrom implements bsontype interface.
 func (*nullType) ReadFrom(r *bufio.Reader) error {
 	return nil

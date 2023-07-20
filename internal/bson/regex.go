@@ -27,9 +27,6 @@ type regexType types.Regex
 
 func (regex *regexType) bsontype() {}
 
-// readNested implements bsontype interface.
-func (regex *regexType) readNested(_ *bufio.Reader, _ int) error { return nil }
-
 // ReadFrom implements bsontype interface.
 func (regex *regexType) ReadFrom(r *bufio.Reader) error {
 	var pattern, options CString

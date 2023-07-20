@@ -27,9 +27,6 @@ type int64Type int64
 
 func (i *int64Type) bsontype() {}
 
-// readNested implements bsontype interface.
-func (i *int64Type) readNested(r *bufio.Reader, _ int) error { return nil }
-
 // ReadFrom implements bsontype interface.
 func (i *int64Type) ReadFrom(r *bufio.Reader) error {
 	if err := binary.Read(r, binary.LittleEndian, i); err != nil {

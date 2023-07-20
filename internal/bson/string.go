@@ -28,9 +28,6 @@ type stringType string
 
 func (str *stringType) bsontype() {}
 
-// readNested implements bsontype interface.
-func (str *stringType) readNested(_ *bufio.Reader, _ int) error { return nil }
-
 // ReadFrom implements bsontype interface.
 func (str *stringType) ReadFrom(r *bufio.Reader) error {
 	var l int32
