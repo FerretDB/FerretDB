@@ -178,8 +178,8 @@ tasks:
     desc: "Run all unit tests"
     cmds:
       - go test -count=1 {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
-      # - go test -count=1 {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -bench=. -benchtime=1x ./...
-      # - bin/task{{exeExt}} -d tools tools-test
+      - go test -count=1 {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -bench=. -benchtime=1x ./...
+      - bin/task{{exeExt}} -d tools tools-test
 
   test-integration:
     desc: "Run integration tests for several backends in parallel"
@@ -188,7 +188,7 @@ tasks:
       - test-integration-mongodb
       # no test-integration-sqlite yet
       # no test-integration-hana
-  
+
   env-ferretdb-build:
     desc: "Run ferretdb proxy"
     cmds:
