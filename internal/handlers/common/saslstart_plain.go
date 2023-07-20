@@ -45,8 +45,8 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 		payload = binaryPayload.B
 	}
 
+	// if not string nor binary payload was sent, return a validation error
 	if payload == nil {
-		// return ErrBadValue error about expected types.Binary, not string
 		return "", "", err
 	}
 
@@ -54,7 +54,7 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	if l := len(parts); l != 3 {
 		return "", "", commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrTypeMismatch,
-			fmt.Sprintf("Invalid payload (expected 3 parts, got %d)", l),
+			fmt.Sprintf("Invalid payload: expected 3 parts, got %d", l),
 			"payload",
 		)
 	}

@@ -55,6 +55,14 @@ func TestSaslStartPlain(t *testing.T) {
 				"payload",
 			),
 		},
+		"wrongTypePayload": {
+			doc: must.NotFail(types.NewDocument("payload", 42)),
+			err: commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				`required parameter "payload" has type int (expected types.Binary)`,
+				"payload",
+			),
+		},
 		"stringPayloadInvalid": {
 			doc: must.NotFail(types.NewDocument("payload", "ABC")),
 			err: commonerrors.NewCommandErrorMsgWithArgument(
@@ -67,7 +75,7 @@ func TestSaslStartPlain(t *testing.T) {
 			doc: must.NotFail(types.NewDocument("payload", types.Binary{B: []byte("ABC")})),
 			err: commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrTypeMismatch,
-				"Invalid payload (expected 3 parts, got 1)",
+				"Invalid payload: expected 3 parts, got 1",
 				"payload",
 			),
 		},
