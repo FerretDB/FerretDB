@@ -21,7 +21,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // saslStartPlain extracts username and password from PLAIN `saslStart` payload.
@@ -32,7 +31,11 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	stringPayload, err := GetRequiredParam[string](doc, "payload")
 	if err == nil {
 		if payload, err = base64.StdEncoding.DecodeString(stringPayload); err != nil {
-			return "", "", lazyerrors.Error(err)
+			return "", "", commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf("Invalid payload: %v", err),
+				"payload",
+			)
 		}
 	}
 
@@ -43,7 +46,7 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	}
 
 	if payload == nil {
-		// return error about expected types.Binary, not string
+		// return ErrBadValue error about expected types.Binary, not string
 		return "", "", err
 	}
 

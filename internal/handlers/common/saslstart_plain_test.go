@@ -1,0 +1,80 @@
+package common
+
+import (
+	"encoding/base64"
+	"testing"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+
+	"github.com/stretchr/testify/assert"
+)
+
+// TestSaslStartPlain tests saslStartPlain function.
+// Integration tests are not possible because the driver
+// used in integration tests doesn't support all possible scenarios.
+// To ensure compatibility, the functionality must be tested by external drivers
+// of various programming languages (see the dance repo).
+func TestSaslStartPlain(t *testing.T) {
+	validPayload := []byte{
+		97, 117, 116, 104, 122, 105, 100, // "authzid"
+		0,                      // separator
+		97, 100, 109, 105, 110, // "admin"
+		0,                 // separator
+		112, 97, 115, 115, // "pass"
+	}
+
+	for name, tc := range map[string]struct {
+		doc *types.Document
+
+		// expected results
+		username string
+		password string
+		err      error
+	}{
+		"emptyPayload": {
+			doc: types.MakeDocument(0),
+			err: commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				`required parameter "payload" is missing`,
+				"payload",
+			),
+		},
+		"stringPayloadInvalid": {
+			doc: must.NotFail(types.NewDocument("payload", "ABC")),
+			err: commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				"Invalid payload: illegal base64 data at input byte 0",
+				"payload",
+			),
+		},
+		"binaryPayloadInvalid": {
+			doc: must.NotFail(types.NewDocument("payload", types.Binary{B: []byte("ABC")})),
+			err: commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrTypeMismatch,
+				"Invalid payload (expected 3 parts, got 1)",
+				"payload",
+			),
+		},
+		"stringPayload": {
+			doc:      must.NotFail(types.NewDocument("payload", base64.StdEncoding.EncodeToString(validPayload))),
+			username: "admin",
+			password: "pass",
+			err:      nil,
+		},
+		"binaryPayload": {
+			doc:      must.NotFail(types.NewDocument("payload", types.Binary{B: validPayload})),
+			username: "admin",
+			password: "pass",
+			err:      nil,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			username, password, err := saslStartPlain(tc.doc)
+			assert.Equal(t, tc.err, err)
+			assert.Equal(t, tc.username, username)
+			assert.Equal(t, tc.password, password)
+		})
+	}
+}
