@@ -28,8 +28,11 @@ type stringType string
 
 func (str *stringType) bsontype() {}
 
+// readNested implements bsontype interface.
+func (str *stringType) readNested(_ *bufio.Reader, _ int) error { return nil }
+
 // ReadFrom implements bsontype interface.
-func (str *stringType) ReadFrom(r *bufio.Reader, _ int) error {
+func (str *stringType) ReadFrom(r *bufio.Reader) error {
 	var l int32
 	if err := binary.Read(r, binary.LittleEndian, &l); err != nil {
 		return lazyerrors.Error(err)

@@ -49,7 +49,7 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 	}
 
 	var coll bson.CString
-	if err := coll.ReadFrom(bufr, 0); err != nil {
+	if err := coll.ReadFrom(bufr); err != nil {
 		return err
 	}
 	query.FullCollectionName = string(coll)
@@ -63,7 +63,7 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 
 	var q bson.Document
 
-	if err := q.ReadFrom(bufr, 0); err != nil {
+	if err := q.ReadFrom(bufr); err != nil {
 		return err
 	}
 
@@ -77,7 +77,7 @@ func (query *OpQuery) readFrom(bufr *bufio.Reader) error {
 
 	if _, err := bufr.Peek(1); err == nil {
 		var r bson.Document
-		if err := r.ReadFrom(bufr, 0); err != nil {
+		if err := r.ReadFrom(bufr); err != nil {
 			return err
 		}
 

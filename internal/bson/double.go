@@ -28,8 +28,11 @@ type doubleType float64
 
 func (d *doubleType) bsontype() {}
 
+// readNested implements bsontype interface.
+func (d *doubleType) readNested(_ *bufio.Reader, _ int) error { return nil }
+
 // ReadFrom implements bsontype interface.
-func (d *doubleType) ReadFrom(r *bufio.Reader, _ int) error {
+func (d *doubleType) ReadFrom(r *bufio.Reader) error {
 	var bits uint64
 	if err := binary.Read(r, binary.LittleEndian, &bits); err != nil {
 		return lazyerrors.Errorf("bson.Double.ReadFrom (binary.Read): %w", err)

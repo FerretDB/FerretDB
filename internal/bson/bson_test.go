@@ -88,7 +88,7 @@ func testBinary(t *testing.T, testCases []testCase, newFunc func() bsontype) {
 				v := newFunc()
 				br := bytes.NewReader(tc.b)
 				bufr := bufio.NewReader(br)
-				err := v.ReadFrom(bufr, 0)
+				err := v.ReadFrom(bufr)
 				if tc.bErr == "" {
 					assert.NoError(t, err)
 					assertEqual(t, tc.v, v)
@@ -115,7 +115,7 @@ func testBinary(t *testing.T, testCases []testCase, newFunc func() bsontype) {
 					v := newFunc()
 					br := bytes.NewReader(actualB)
 					bufr := bufio.NewReader(br)
-					err := v.ReadFrom(bufr, 0)
+					err := v.ReadFrom(bufr)
 					assert.NoError(t, err)
 					if assertEqual(t, tc.v, v, "expected: %s\nactual  : %s", tc.v, v) {
 						t.Log("values are equal after unmarshalling")
@@ -160,7 +160,7 @@ func fuzzBinary(f *testing.F, testCases []testCase, newFunc func() bsontype) {
 			v = newFunc()
 			br := bytes.NewReader(b)
 			bufr := bufio.NewReader(br)
-			if err := v.ReadFrom(bufr, 0); err != nil {
+			if err := v.ReadFrom(bufr); err != nil {
 				t.Skip()
 			}
 
@@ -177,7 +177,7 @@ func fuzzBinary(f *testing.F, testCases []testCase, newFunc func() bsontype) {
 				v2 := newFunc()
 				br2 := bytes.NewReader(actualB)
 				bufr2 := bufio.NewReader(br2)
-				err = v2.ReadFrom(bufr2, 0)
+				err = v2.ReadFrom(bufr2)
 				assert.NoError(t, err)
 				if assertEqual(t, v, v2, "expected: %s\nactual  : %s", v, v2) {
 					t.Log("values are equal after unmarshalling")
@@ -232,7 +232,7 @@ func benchmark(b *testing.B, testCases []testCase, newFunc func() bsontype) {
 
 					v = newFunc()
 					bufr = bufio.NewReader(br)
-					readErr = v.ReadFrom(bufr, 0)
+					readErr = v.ReadFrom(bufr)
 				}
 
 				b.StopTimer()

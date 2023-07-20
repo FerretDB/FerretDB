@@ -59,7 +59,8 @@ import (
 type bsontype interface {
 	bsontype() // seal for go-sumtype
 
-	ReadFrom(*bufio.Reader, int) error
+	readNested(*bufio.Reader, int) error
+	ReadFrom(*bufio.Reader) error
 	WriteTo(*bufio.Writer) error
 	encoding.BinaryMarshaler
 }

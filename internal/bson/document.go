@@ -134,8 +134,12 @@ func (doc *Document) Values() []any {
 	return values
 }
 
-// ReadFrom implements bsontype interface.
-func (doc *Document) ReadFrom(r *bufio.Reader, nesting int) error {
+func (doc *Document) ReadFrom(r *bufio.Reader) error {
+	return doc.readNested(r, 0)
+}
+
+// readNested implements bsontype interface.
+func (doc *Document) readNested(r *bufio.Reader, nesting int) error {
 	if nesting > maxNesting {
 		return lazyerrors.Errorf("bson.Document.ReadFrom (over nested document. Max supported nesting: %d)", maxNesting)
 	}
@@ -177,7 +181,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader, nesting int) error {
 		}
 
 		var ename CString
-		if err := ename.ReadFrom(bufr, nesting+1); err != nil {
+		if err := ename.ReadFrom(bufr); err != nil {
 			return lazyerrors.Errorf("bson.Document.ReadFrom (ename.ReadFrom): %w", err)
 		}
 
@@ -186,7 +190,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader, nesting int) error {
 		switch tag(t) {
 		case tagDocument:
 			var v Document
-			if err := v.ReadFrom(bufr, nesting+1); err != nil {
+			if err := v.readNested(bufr, nesting+1); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (embedded document): %w", err)
 			}
 
@@ -199,7 +203,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader, nesting int) error {
 
 		case tagArray:
 			var v arrayType
-			if err := v.ReadFrom(bufr, nesting+1); err != nil {
+			if err := v.readNested(bufr, nesting+1); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Array): %w", err)
 			}
 			a := types.Array(v)
@@ -207,7 +211,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader, nesting int) error {
 
 		case tagDouble:
 			var v doubleType
-			if err := v.ReadFrom(bufr, nesting+1); err != nil {
+			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Double): %w", err)
 			}
 
@@ -215,7 +219,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader, nesting int) error {
 
 		case tagString:
 			var v stringType
-			if err := v.ReadFrom(bufr, nesting+1); err != nil {
+			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (String): %w", err)
 			}
 
@@ -223,7 +227,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader, nesting int) error {
 
 		case tagBinary:
 			var v binaryType
-			if err := v.ReadFrom(bufr, nesting+1); err != nil {
+			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Binary): %w", err)
 			}
 
@@ -234,7 +238,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader, nesting int) error {
 
 		case tagObjectID:
 			var v objectIDType
-			if err := v.ReadFrom(bufr, nesting+1); err != nil {
+			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (ObjectID): %w", err)
 			}
 
@@ -242,7 +246,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader, nesting int) error {
 
 		case tagBool:
 			var v boolType
-			if err := v.ReadFrom(bufr, nesting+1); err != nil {
+			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Bool): %w", err)
 			}
 
@@ -250,7 +254,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader, nesting int) error {
 
 		case tagDateTime:
 			var v dateTimeType
-			if err := v.ReadFrom(bufr, nesting+1); err != nil {
+			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (DateTime): %w", err)
 			}
 
@@ -262,7 +266,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader, nesting int) error {
 
 		case tagRegex:
 			var v regexType
-			if err := v.ReadFrom(bufr, nesting+1); err != nil {
+			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Regex): %w", err)
 			}
 
@@ -270,7 +274,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader, nesting int) error {
 
 		case tagInt32:
 			var v int32Type
-			if err := v.ReadFrom(bufr, nesting+1); err != nil {
+			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Int32): %w", err)
 			}
 
@@ -278,7 +282,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader, nesting int) error {
 
 		case tagTimestamp:
 			var v timestampType
-			if err := v.ReadFrom(bufr, nesting+1); err != nil {
+			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Timestamp): %w", err)
 			}
 
@@ -286,7 +290,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader, nesting int) error {
 
 		case tagInt64:
 			var v int64Type
-			if err := v.ReadFrom(bufr, nesting+1); err != nil {
+			if err := v.ReadFrom(bufr); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Int64): %w", err)
 			}
 

@@ -28,8 +28,11 @@ type timestampType types.Timestamp
 
 func (ts *timestampType) bsontype() {}
 
+// readNested implements bsontype interface.
+func (ts *timestampType) readNested(r *bufio.Reader, _ int) error { return nil }
+
 // ReadFrom implements bsontype interface.
-func (ts *timestampType) ReadFrom(r *bufio.Reader, _ int) error {
+func (ts *timestampType) ReadFrom(r *bufio.Reader) error {
 	if err := binary.Read(r, binary.LittleEndian, ts); err != nil {
 		return lazyerrors.Errorf("bson.Timestamp.ReadFrom (binary.Read): %w", err)
 	}

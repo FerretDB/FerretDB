@@ -25,8 +25,11 @@ type boolType bool
 
 func (b *boolType) bsontype() {}
 
+// readNested implements bsontype interface.
+func (b *boolType) readNested(_ *bufio.Reader, _ int) error { return nil }
+
 // ReadFrom implements bsontype interface.
-func (b *boolType) ReadFrom(r *bufio.Reader, _ int) error {
+func (b *boolType) ReadFrom(r *bufio.Reader) error {
 	v, err := r.ReadByte()
 	if err != nil {
 		return lazyerrors.Errorf("bson.Bool.ReadFrom: %w", err)

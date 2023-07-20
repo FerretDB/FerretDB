@@ -27,8 +27,11 @@ type CString string
 
 func (cstr *CString) bsontype() {}
 
+// readNested implements bsontype interface.
+func (cstr *CString) readNested(_ *bufio.Reader, _ int) error { return nil }
+
 // ReadFrom implements bsontype interface.
-func (cstr *CString) ReadFrom(r *bufio.Reader, _ int) error {
+func (cstr *CString) ReadFrom(r *bufio.Reader) error {
 	b, err := r.ReadBytes(0)
 	if err != nil {
 		return lazyerrors.Errorf("bson.CString.ReadFrom: %w", err)

@@ -62,7 +62,7 @@ func (reply *OpReply) readFrom(bufr *bufio.Reader) error {
 	reply.Documents = make([]*types.Document, reply.NumberReturned)
 	for i := int32(0); i < reply.NumberReturned; i++ {
 		var doc bson.Document
-		if err := doc.ReadFrom(bufr, 0); err != nil {
+		if err := doc.ReadFrom(bufr); err != nil {
 			return lazyerrors.Errorf("wire.OpReply.ReadFrom: %w", err)
 		}
 		reply.Documents[i] = must.NotFail(types.ConvertDocument(&doc))

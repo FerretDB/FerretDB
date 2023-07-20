@@ -29,13 +29,18 @@ type arrayType types.Array
 func (a *arrayType) bsontype() {}
 
 // ReadFrom implements bsontype interface.
-func (a *arrayType) ReadFrom(r *bufio.Reader, nesting int) error {
+func (a *arrayType) ReadFrom(r *bufio.Reader) error {
+	return a.readNested(r, 0)
+}
+
+// readNested implements bsontype interface.
+func (a *arrayType) readNested(r *bufio.Reader, nesting int) error {
 	if nesting > maxNesting {
 		return lazyerrors.Errorf("bson.Document.ReadFrom (over nested document. Max supported nesting: %d)", maxNesting)
 	}
 
 	var doc Document
-	if err := doc.ReadFrom(r, nesting); err != nil {
+	if err := doc.readNested(r, nesting); err != nil {
 		return lazyerrors.Error(err)
 	}
 
