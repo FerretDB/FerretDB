@@ -59,7 +59,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrAuthenticationFailed,
 					msg,
-					"payload",
+					"OpQuery: "+cmd,
 				)
 			}
 
