@@ -29,7 +29,12 @@ type db struct {
 	token *resource.Token
 }
 
-// openDB opens existing database.
+// openDB opens existing database or creates a new one.
+//
+// All valid FerretDB database names are valid SQLite database names / file names,
+// so no validation is needed.
+// One exception is very long full path names for the filesystem,
+// but we don't check it.
 func openDB(uri string) (*db, error) {
 	sqlDB, err := sql.Open("sqlite", uri)
 	if err != nil {
