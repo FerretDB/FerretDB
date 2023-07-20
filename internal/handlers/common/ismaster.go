@@ -30,7 +30,7 @@ func IsMaster() (*wire.OpReply, error) {
 	}, nil
 }
 
-// IsMasterDocuments returns the Documents field (identical for both OP_MSG and OP_QUERY).
+// IsMasterDocuments returns isMaster's Documents field (identical for both OP_MSG and OP_QUERY).
 func IsMasterDocuments() []*types.Document {
 	return []*types.Document{must.NotFail(types.NewDocument(
 		"ismaster", true, // only lowercase
