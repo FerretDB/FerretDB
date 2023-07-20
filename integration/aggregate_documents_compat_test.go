@@ -1756,6 +1756,27 @@ func TestAggregateCompatProject(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"ProjectPreviousStage": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", "$v"}, {"value", bson.D{{"$sum", 1}}}}}},
+				bson.D{{"$project", bson.D{{"_id", "$_id"}, {"value", "$value"}}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"ProjectNestedField": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", "$v"}}}},
+				bson.D{{"$project", bson.D{{"_id", 0}, {"value", "$v.foo"}}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"ProjectNonExistentField": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", "$v"}, {"value", bson.D{{"$sum", 1}}}}}},
+				bson.D{{"$project", bson.D{{"_id", "$non.existent"}, {"value", "$value"}}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
 	}
 
 	testAggregateStagesCompat(t, testCases)
