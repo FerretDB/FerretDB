@@ -70,8 +70,8 @@ fi
 # check that stdlib was cached
 go install -v -race=$RACE std
 
-go build -v                 -o=bin/ferretdb -race=$RACE ./cmd/ferretdb
-go test  -c -coverpkg=./... -o=bin/ferretdb -race=$RACE ./cmd/ferretdb
+go build -v                 -o=bin/ferretdb -tags=ferretdb_debug -race=$RACE ./cmd/ferretdb
+go test  -c -coverpkg=./... -o=bin/ferretdb -tags=ferretdb_debug -race=$RACE ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version
