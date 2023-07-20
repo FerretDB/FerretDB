@@ -97,33 +97,14 @@ func HasQueryOperator(filter *types.Document) (bool, error) {
 
 // filterDocumentPair handles a single filter element key/value pair {filterKey: filterValue}.
 func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) (bool, error) {
-	var docs []*types.Document
-	filterSuffix := filterKey
+	path, err := types.NewPathFromString(filterKey)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
 
-	if strings.ContainsRune(filterKey, '.') {
-		path, err := types.NewPathFromString(filterKey)
-		if err != nil {
-			return false, lazyerrors.Error(err)
-		}
-
-		filterSuffix = path.Suffix()
-
-		vals, err := commonpath.FindValues(doc, path, commonpath.FindValuesOpts{})
-		if err != nil {
-			return false, lazyerrors.Error(err)
-		}
-
-		for _, val := range vals {
-			docs = append(docs, must.NotFail(types.NewDocument(filterSuffix, val)))
-		}
-
-		if len(docs) == 0 {
-			// When no document is found at suffix, use an empty one.
-			// So operators such as $nin is applied to the empty document.
-			docs = append(docs, types.MakeDocument(0))
-		}
-	} else {
-		docs = append(docs, doc)
+	vals, err := commonpath.FindValues(doc, path, commonpath.FindValuesOpts{})
+	if err != nil {
+		return false, lazyerrors.Error(err)
 	}
 
 	if strings.HasPrefix(filterKey, "$") {
@@ -131,11 +112,21 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		return filterOperator(doc, filterKey, filterValue)
 	}
 
-	for _, doc := range docs {
-		switch filterValue := filterValue.(type) {
-		case *types.Document:
+	switch filterValue := filterValue.(type) {
+	case *types.Document:
+		var docs []*types.Document
+		for _, val := range vals {
+			docs = append(docs, must.NotFail(types.NewDocument(path.Suffix(), val)))
+		}
+
+		if len(docs) == 0 {
+			// operators like $nin is applied to the empty document upon no document match
+			docs = append(docs, types.MakeDocument(0))
+		}
+
+		for _, doc := range docs {
 			// {field: {expr}} or {field: {document}}
-			ok, err := filterFieldExpr(doc, filterKey, filterSuffix, filterValue)
+			ok, err := filterFieldExpr(doc, filterKey, path.Suffix(), filterValue)
 			if err != nil {
 				return false, err
 			}
@@ -143,33 +134,21 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 			if ok {
 				return true, nil
 			}
+		}
+	case types.NullType:
+		if len(vals) == 0 {
+			// comparing non-existent field with null returns true
+			return true, nil
+		}
 
-			// doc did not match filter, continue next iteration.
-		case *types.Array:
-			// {field: [array]}
-			docValue, err := doc.Get(filterSuffix)
-			if err != nil {
-				continue // no error - the field is just not present
-			}
-
-			if result := types.Compare(docValue, filterValue); result == types.Equal {
+		for _, val := range vals {
+			if result := types.Compare(val, filterValue); result == types.Equal {
 				return true, nil
 			}
-
-			// doc did not match filter, continue next iteration.
-		case types.NullType:
-			if _, err := doc.Get(filterSuffix); err != nil {
-				// comparing not existent field with null returns true
-				return true, nil
-			}
-		case types.Regex:
-			// {field: /regex/}
-			docValue, err := doc.Get(filterSuffix)
-			if err != nil {
-				continue // no error - the field is just not present
-			}
-
-			ok, err := filterFieldRegex(docValue, filterValue)
+		}
+	case types.Regex:
+		for _, val := range vals {
+			ok, err := filterFieldRegex(val, filterValue)
 			if err != nil {
 				return false, err
 			}
@@ -177,16 +156,10 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 			if ok {
 				return true, nil
 			}
-
-			// doc did not match filter, continue next iteration.
-		default:
-			// {field: value}
-			docValue, err := doc.Get(filterSuffix)
-			if err != nil {
-				continue // no error - the field is just not present
-			}
-
-			if result := types.Compare(docValue, filterValue); result == types.Equal {
+		}
+	default:
+		for _, val := range vals {
+			if result := types.Compare(val, filterValue); result == types.Equal {
 				return true, nil
 			}
 		}
