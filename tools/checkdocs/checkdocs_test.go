@@ -189,5 +189,4 @@ Caddy will listen on both HTTP and HTTPS ports,
 
 	err = verifyTags(f)
 	assert.Equal(t, err.Error(), "tag 'documentss' is not in the allowed list")
-
 }
