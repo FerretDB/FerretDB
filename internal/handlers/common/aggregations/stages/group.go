@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
@@ -83,10 +84,12 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 
 		if field == "_id" {
 			if doc, ok := v.(*types.Document); ok {
-				if !operators.IsOperator(doc) {
-					if err = validateExpression("$group", doc); err != nil {
-						return nil, err
-					}
+				if operators.IsOperator(doc) {
+					continue
+				}
+
+				if err = validateExpression("$group", doc); err != nil {
+					return nil, err
 				}
 			}
 			groupKey = v
@@ -169,6 +172,29 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 // groupDocuments groups documents by group expression.
 func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]groupedDocuments, error) {
 	switch groupKey := g.groupExpression.(type) {
+	case *types.Document:
+		if !operators.IsOperator(groupKey) {
+			break
+		}
+
+		op, err := operators.NewOperator(groupKey)
+		if err != nil {
+			return nil, err
+		}
+
+		var group groupMap
+
+		for _, doc := range in {
+			val, err := op.Process(doc)
+			if err != nil {
+				return nil, err
+			}
+
+			group.addOrAppend(val, doc)
+		}
+
+		return group.docs, nil
+
 	case string:
 		expression, err := aggregations.NewExpression(groupKey)
 		if err != nil {
@@ -228,39 +254,17 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 		}
 		return group.docs, nil
 
-	case *types.Document:
-		if !operators.IsOperator(groupKey) {
-			break
-		}
-
-		op, err := operators.NewOperator(groupKey)
-		if err != nil {
-			return nil, err
-		}
-
-		var group groupMap
-
-		for _, doc := range in {
-			val, err := op.Process(doc)
-			if err != nil {
-				return nil, err
-			}
-
-			group.addOrAppend(val, doc)
-		}
-
-		return group.docs, nil
+	case *types.Array, float64, types.Binary, types.ObjectID, bool, time.Time, types.NullType, types.Regex, int32, types.Timestamp, int64:
+		// non-string or document key aggregates values of all `in` documents into one aggregated document.
 
 	default:
+		panic(fmt.Sprintf("unexpected type %[1]T (%#[1]v)", groupKey))
 	}
 
-	// non-string key aggregates values of all `in` documents into one aggregated document.
 	return []groupedDocuments{{
 		groupID:   g.groupExpression,
 		documents: in,
 	}}, nil
-
-	//return group.docs, nil
 }
 
 // groupedDocuments contains group key and the documents for that group.
