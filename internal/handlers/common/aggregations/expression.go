@@ -70,23 +70,20 @@ func (e *ExpressionError) Code() ExpressionErrorCode {
 
 // Expression is an expression constructed from field value.
 type Expression struct {
-	*ExpressionOpts
+	opts commonpath.FindValuesOpts
 	path types.Path
 }
 
-// ExpressionOpts represents options used to modify behavior of Expression functions.
-type ExpressionOpts struct {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2348
+// NewExpression creates a new instance by checking expression string.
+// It can take additional opts that specify how path should be searched.
+func NewExpression(expression string, opts *commonpath.FindValuesOpts) (*Expression, error) {
+	if opts == nil {
+		opts = &commonpath.FindValuesOpts{
+			FindArrayIndex: false,
+			SearchArray:    true,
+		}
+	}
 
-	// IgnoreArrays disables checking arrays for provided key.
-	// So expression {"$v.foo"} won't match {"v":[{"foo":42}]}
-	IgnoreArrays bool // defaults to false
-}
-
-// NewExpressionWithOpts creates a new instance by checking expression string.
-// It can take additional opts that specify how expressions should be evaluated.
-func NewExpressionWithOpts(expression string, opts *ExpressionOpts) (*Expression, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2348
 	var val string
 
 	switch {
@@ -122,15 +119,9 @@ func NewExpressionWithOpts(expression string, opts *ExpressionOpts) (*Expression
 	}
 
 	return &Expression{
-		path:           path,
-		ExpressionOpts: opts,
+		path: path,
+		opts: *opts,
 	}, nil
-}
-
-// NewExpression creates a new instance by checking expression string.
-func NewExpression(expression string) (*Expression, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2348
-	return NewExpressionWithOpts(expression, new(ExpressionOpts))
 }
 
 // Evaluate gets the value at the path.
@@ -156,10 +147,7 @@ func (e *Expression) Evaluate(doc *types.Document) (any, error) {
 		}
 	}
 
-	vals, err := commonpath.FindValues(doc, path, &commonpath.FindValuesOpts{
-		IgnoreArrayIndex:   true,
-		IgnoreArrayElement: e.IgnoreArrays,
-	})
+	vals, err := commonpath.FindValues(doc, path, &e.opts)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

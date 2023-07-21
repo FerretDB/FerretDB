@@ -61,35 +61,38 @@ func TestGetPathValue(t *testing.T) {
 		"ArrayIndexDoc": {
 			doc:  arrayDocOne,
 			path: types.NewStaticPath("foo", "0", "bar"),
+			opts: &FindValuesOpts{FindArrayIndex: true},
 			res:  []any{1},
+		},
+		"ArrayIndexDocFindArrayIndexFalse": {
+			doc:  arrayDocOne,
+			path: types.NewStaticPath("foo", "0", "bar"),
+			opts: &FindValuesOpts{FindArrayIndex: false},
+			res:  []any{},
 		},
 		"ArrayIndexScalar": {
 			doc:  arrayScalarThree,
 			path: types.NewStaticPath("foo", "1"),
+			opts: &FindValuesOpts{FindArrayIndex: true},
 			res:  []any{1},
 		},
 		"ArrayDocument": {
 			doc:  arrayDocOne,
 			path: types.NewStaticPath("foo", "bar"),
+			opts: &FindValuesOpts{SearchArray: true},
 			res:  []any{1},
+		},
+		"ArrayDocumentSearchArrayFalse": {
+			doc:  arrayDocOne,
+			path: types.NewStaticPath("foo", "bar"),
+			opts: &FindValuesOpts{SearchArray: false},
+			res:  []any{},
 		},
 		"ArrayDocumentTwo": {
 			doc:  arrayDocTwo,
 			path: types.NewStaticPath("foo", "bar"),
-			opts: &FindValuesOpts{IgnoreArrayIndex: true},
+			opts: &FindValuesOpts{SearchArray: true},
 			res:  []any{1, 2},
-		},
-		"IgnoreArrayIndex": {
-			doc:  arrayDocOne,
-			path: types.NewStaticPath("foo", "0", "bar"),
-			opts: &FindValuesOpts{IgnoreArrayIndex: true},
-			res:  []any{},
-		},
-		"IgnoreArrayElement": {
-			doc:  arrayDocOne,
-			path: types.NewStaticPath("foo", "bar"),
-			opts: &FindValuesOpts{IgnoreArrayElement: true},
-			res:  []any{},
 		},
 	} {
 		name, tc := name, tc

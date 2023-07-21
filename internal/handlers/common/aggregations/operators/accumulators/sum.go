@@ -49,7 +49,7 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 		accumulator.number = expr
 	case string:
 		var err error
-		if accumulator.expression, err = aggregations.NewExpression(expr); err != nil {
+		if accumulator.expression, err = aggregations.NewExpression(expr, nil); err != nil {
 			// $sum returns 0 on non-existent field.
 			accumulator.number = int32(0)
 		}

@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonpath"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -54,10 +55,10 @@ func newUnwind(stage *types.Document) (aggregations.Stage, error) {
 			)
 		}
 
-		opts := aggregations.ExpressionOpts{
-			IgnoreArrays: true,
-		}
-		expr, err = aggregations.NewExpressionWithOpts(field, &opts)
+		expr, err = aggregations.NewExpression(field, &commonpath.FindValuesOpts{
+			FindArrayIndex: false,
+			SearchArray:    false,
+		})
 
 		if err != nil {
 			var exprErr *aggregations.ExpressionError

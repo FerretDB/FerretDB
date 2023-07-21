@@ -25,10 +25,14 @@ import (
 
 // FindValuesOpts sets options for FindValues.
 type FindValuesOpts struct {
-	// IgnoreArrayIndex does not check if an array contains an element at the array index
-	IgnoreArrayIndex bool
-	// IgnoreArrayElement does not check if an array contains documents that have the key
-	IgnoreArrayElement bool
+	// FindArrayIndex gets an element at the specified index of an array.
+	// Using path `v.0` and `v` is an array, it returns 0-th index element of the array.
+	// If `v` is not an array, FindArrayIndex has no impact.
+	FindArrayIndex bool
+	// SearchArray searches all document of an array to find documents that contains path key.
+	// Using path `v.foo` and `v` is an array, it returns all document which has key `foo`.
+	// If `v` is not an array, SearchArray has no impact.
+	SearchArray bool
 }
 
 // FindValues goes through each key of the path iteratively on doc to find values
@@ -60,7 +64,7 @@ func FindValues(doc *types.Document, path types.Path, opts *FindValuesOpts) ([]a
 
 				values = append(values, v)
 			case *types.Array:
-				if !opts.IgnoreArrayIndex {
+				if opts.FindArrayIndex {
 					if index, err := strconv.Atoi(key); err == nil {
 						// key is an integer, check if that integer is an index of the array
 						v, err := input.Get(index)
@@ -74,7 +78,7 @@ func FindValues(doc *types.Document, path types.Path, opts *FindValuesOpts) ([]a
 					}
 				}
 
-				if opts.IgnoreArrayElement {
+				if !opts.SearchArray {
 					continue
 				}
 

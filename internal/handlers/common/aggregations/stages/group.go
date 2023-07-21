@@ -174,7 +174,7 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 		}}, nil
 	}
 
-	expression, err := aggregations.NewExpression(groupKey)
+	expression, err := aggregations.NewExpression(groupKey, nil)
 	if err != nil {
 		var exprErr *aggregations.ExpressionError
 		if !errors.As(err, &exprErr) {
