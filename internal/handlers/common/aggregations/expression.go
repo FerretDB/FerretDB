@@ -80,7 +80,7 @@ func NewExpression(expression string, opts *commonpath.FindValuesOpts) (*Express
 	if opts == nil {
 		opts = &commonpath.FindValuesOpts{
 			FindArrayIndex: false,
-			SearchArray:    true,
+			SearchInArray:  true,
 		}
 	}
 

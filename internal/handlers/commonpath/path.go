@@ -25,14 +25,14 @@ import (
 
 // FindValuesOpts sets options for FindValues.
 type FindValuesOpts struct {
+	// SearchInArray searches by iterating through the whole array to find documents that contains path key.
+	// Using path `v.foo` and `v` is an array, it returns all document which has key `foo`.
+	// If `v` is not an array, SearchInArray has no impact.
+	SearchInArray bool
 	// FindArrayIndex gets an element at the specified index of an array.
 	// Using path `v.0` and `v` is an array, it returns 0-th index element of the array.
 	// If `v` is not an array, FindArrayIndex has no impact.
 	FindArrayIndex bool
-	// SearchArray searches all document of an array to find documents that contains path key.
-	// Using path `v.foo` and `v` is an array, it returns all document which has key `foo`.
-	// If `v` is not an array, SearchArray has no impact.
-	SearchArray bool
 }
 
 // FindValues goes through each key of the path iteratively on doc to find values
@@ -78,7 +78,7 @@ func FindValues(doc *types.Document, path types.Path, opts *FindValuesOpts) ([]a
 					}
 				}
 
-				if !opts.SearchArray {
+				if !opts.SearchInArray {
 					continue
 				}
 

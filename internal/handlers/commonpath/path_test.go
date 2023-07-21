@@ -64,6 +64,12 @@ func TestGetPathValue(t *testing.T) {
 			opts: &FindValuesOpts{FindArrayIndex: true},
 			res:  []any{1},
 		},
+		"Array": {
+			doc:  arrayScalarThree,
+			path: types.NewStaticPath("foo"),
+			opts: &FindValuesOpts{FindArrayIndex: false},
+			res:  []any{must.NotFail(types.NewArray(0, 1, 2))},
+		},
 		"ArrayIndexDocFindArrayIndexFalse": {
 			doc:  arrayDocOne,
 			path: types.NewStaticPath("foo", "0", "bar"),
@@ -76,22 +82,28 @@ func TestGetPathValue(t *testing.T) {
 			opts: &FindValuesOpts{FindArrayIndex: true},
 			res:  []any{1},
 		},
+		"ArrayIndexScalarFindArrayIndexFalse": {
+			doc:  arrayScalarThree,
+			path: types.NewStaticPath("foo", "1"),
+			opts: &FindValuesOpts{FindArrayIndex: false},
+			res:  []any{},
+		},
 		"ArrayDocument": {
 			doc:  arrayDocOne,
 			path: types.NewStaticPath("foo", "bar"),
-			opts: &FindValuesOpts{SearchArray: true},
+			opts: &FindValuesOpts{SearchInArray: true},
 			res:  []any{1},
 		},
 		"ArrayDocumentSearchArrayFalse": {
 			doc:  arrayDocOne,
 			path: types.NewStaticPath("foo", "bar"),
-			opts: &FindValuesOpts{SearchArray: false},
+			opts: &FindValuesOpts{SearchInArray: false},
 			res:  []any{},
 		},
 		"ArrayDocumentTwo": {
 			doc:  arrayDocTwo,
 			path: types.NewStaticPath("foo", "bar"),
-			opts: &FindValuesOpts{SearchArray: true},
+			opts: &FindValuesOpts{SearchInArray: true},
 			res:  []any{1, 2},
 		},
 	} {
