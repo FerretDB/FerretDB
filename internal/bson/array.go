@@ -35,8 +35,8 @@ func (a *arrayType) ReadFrom(r *bufio.Reader) error {
 
 // readNested, similarly to ReadFrom, takes raw bytes from reader
 // and unmarshal them to the arrayType.
-// It also takes the nesting value (if called from different bsontype),
-// and checks if the document doesn't exceed the max nesting allowed.
+// It also takes the nesting value, and checks if the
+// document doesn't exceed the max nesting allowed.
 func (a *arrayType) readNested(r *bufio.Reader, nesting int) error {
 	if nesting > maxNesting {
 		return lazyerrors.Errorf("bson.Array.ReadFrom (document has exceeded the max supported nesting: %d)", maxNesting)

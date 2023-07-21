@@ -141,8 +141,8 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 
 // readNested, similarly to ReadFrom, takes raw bytes from reader
 // and unmarshal them to the Document.
-// It also takes the nesting value (if called from different bsontype),
-// and checks if the document doesn't exceed the max nesting allowed.
+// It also takes the nesting value, and checks if the
+// document doesn't exceed the max nesting allowed.
 func (doc *Document) readNested(r *bufio.Reader, nesting int) error {
 	if nesting > maxNesting {
 		return fmt.Errorf("bson.Document.ReadFrom (document has exceeded the max supported nesting: %d)", maxNesting)
