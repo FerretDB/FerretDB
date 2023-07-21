@@ -74,7 +74,7 @@ func newSum(doc *types.Document) (Operator, error) {
 			case float64:
 				operator.numbers = append(operator.numbers, elemExpr)
 			case string:
-				ex, err := aggregations.NewExpression(elemExpr)
+				ex, err := aggregations.NewExpression(elemExpr, nil)
 
 				var exErr *aggregations.ExpressionError
 				if errors.As(err, &exErr) && exErr.Code() == aggregations.ErrNotExpression {
