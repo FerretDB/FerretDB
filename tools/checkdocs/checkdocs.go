@@ -151,7 +151,7 @@ func verifyDateNotPresent(f io.Reader) error {
 }
 
 func verifyTags(f io.Reader) error {
-	r := regexp.MustCompile("^tags:\\s*\\[([^\\]]+)\\]")
+	r := regexp.MustCompile(`^tags:\s*\[([^\]]+)\]`)
 
 	scanner := bufio.NewScanner(f)
 	var tags []string
