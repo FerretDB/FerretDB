@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pool provides access to SQLite database connections.
+// Package pool provides access to SQLite databases and their connections.
 //
 // It should be used only by the metadata package.
 package pool
@@ -39,7 +39,7 @@ import (
 // filenameExtension represents SQLite database filename extension.
 const filenameExtension = ".sqlite"
 
-// Pool provides access to SQLite database connections.
+// Pool provides access to SQLite databases and their connections.
 //
 //nolint:vet // for readability
 type Pool struct {
@@ -52,9 +52,11 @@ type Pool struct {
 	token *resource.Token
 }
 
-// New creates a pool for SQLite databases in the given directory.
+// New creates a pool for SQLite databases in the directory specified by SQLite URI.
+//
+// All databases are opened on creation.
 func New(u string, l *zap.Logger) (*Pool, error) {
-	uri, err := validateURI(u)
+	uri, err := parseURI(u)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse SQLite URI %q: %s", u, err)
 	}
@@ -89,50 +91,6 @@ func New(u string, l *zap.Logger) (*Pool, error) {
 	}
 
 	return p, nil
-}
-
-// validateURI checks given URI value and returns parsed URL.
-// URI should contain 'file' scheme and point to an existing directory.
-// Path should end with '/'. Authority should be empty or absent.
-//
-// Returned URL contains path in both Path and Opaque to make String() method work correctly.
-func validateURI(u string) (*url.URL, error) {
-	uri, err := url.Parse(u)
-	if err != nil {
-		return nil, err
-	}
-
-	if uri.Scheme != "file" {
-		return nil, fmt.Errorf(`expected "file:" schema, got %q`, uri.Scheme)
-	}
-
-	if uri.User != nil {
-		return nil, fmt.Errorf(`expected empty user info, got %q`, uri.User)
-	}
-
-	if uri.Host != "" {
-		return nil, fmt.Errorf(`expected empty host, got %q`, uri.Host)
-	}
-
-	if uri.Path == "" && uri.Opaque != "" {
-		uri.Path = uri.Opaque
-	}
-	uri.Opaque = uri.Path
-
-	if !strings.HasSuffix(uri.Path, "/") {
-		return nil, fmt.Errorf(`expected path ending with "/", got %q`, uri.Path)
-	}
-
-	fi, err := os.Stat(uri.Path)
-	if err != nil {
-		return nil, fmt.Errorf(`%q should be an existing directory, got %s`, uri.Path, err)
-	}
-
-	if !fi.IsDir() {
-		return nil, fmt.Errorf(`%q should be an existing directory`, uri.Path)
-	}
-
-	return uri, nil
 }
 
 // databaseName returns database name for given database file path.
@@ -179,7 +137,7 @@ func (p *Pool) List(ctx context.Context) []string {
 	return res
 }
 
-// GetExisting returns an existing database connection by name, or nil.
+// GetExisting returns an existing database by valid name, or nil.
 func (p *Pool) GetExisting(ctx context.Context, name string) *sql.DB {
 	p.rw.RLock()
 	defer p.rw.RUnlock()
@@ -192,9 +150,9 @@ func (p *Pool) GetExisting(ctx context.Context, name string) *sql.DB {
 	return db.sqlDB
 }
 
-// GetOrCreate returns an existing database connection by name, or creates a new one.
+// GetOrCreate returns an existing database by valid name, or creates a new one.
 //
-// Returned boolean value indicates whether the connection was created.
+// Returned boolean value indicates whether the database was created.
 func (p *Pool) GetOrCreate(ctx context.Context, name string) (*sql.DB, bool, error) {
 	sqlDB := p.GetExisting(ctx, name)
 	if sqlDB != nil {
@@ -222,7 +180,7 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*sql.DB, bool, err
 	return db.sqlDB, true, nil
 }
 
-// Drop closes and removes a database by name.
+// Drop closes and removes a database by valid name.
 //
 // It does nothing if the database does not exist.
 //
