@@ -36,6 +36,11 @@ func SASLStart(ctx context.Context, doc *types.Document) error {
 	switch mechanism {
 	case "PLAIN":
 		username, password, err = saslStartPlain(doc)
+
+		if err != nil {
+			return err
+		}
+
 	default:
 		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
 			"See https://docs.ferretdb.io/security/authentication/ for more details."
@@ -45,10 +50,6 @@ func SASLStart(ctx context.Context, doc *types.Document) error {
 			"mechanism",
 		)
 
-		return err
-	}
-
-	if err != nil {
 		return err
 	}
 
