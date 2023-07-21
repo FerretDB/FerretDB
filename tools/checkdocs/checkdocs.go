@@ -56,17 +56,33 @@ func main() {
 
 			defer fo.Close()
 
+			_, err = fo.Seek(0, 0)
+			if err != nil {
+				log.Fatalf("Error resetting file pointer: %v", err)
+			}
 			if err = verifySlug(slug, fo); err != nil {
 				log.Print(err)
 				pass = false
 			}
 
-			if err = verifyDateNotPresent(fo); err != nil {
+			_, err = fo.Seek(0, 0)
+			if err != nil {
+				log.Fatalf("Error resetting file pointer: %v", err)
+			}
+
+			err = verifyDateNotPresent(fo)
+			if err != nil {
 				log.Print(err)
 				pass = false
 			}
 
-			if err = verifyTags(fo); err != nil {
+			_, err = fo.Seek(0, 0)
+			if err != nil {
+				log.Fatalf("Error resetting file pointer: %v", err)
+			}
+
+			err = verifyTags(fo)
+			if err != nil {
 				log.Print(err)
 				pass = false
 			}
