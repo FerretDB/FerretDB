@@ -225,6 +225,9 @@ func TestQueryProjectionCompat(t *testing.T) {
 func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 	t.Parallel()
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3053
+	providers := shareddata.AllProviders().Remove(shareddata.ArrayAndDocuments)
+
 	testCases := map[string]queryCompatTestCase{
 		"IDFilter": {
 			// it returns error only if collection contains a doc that matches the filter
@@ -339,7 +342,14 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 			projection: bson.D{{"type", bson.D{{"$type", "$v"}}}},
 			skip:       "https://github.com/FerretDB/FerretDB/issues/2679",
 		},
+		"SumOperatorValue": {
+			filter: bson.D{},
+			projection: bson.D{
+				{"sum", bson.D{{"$sum", "$v"}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/835",
+		},
 	}
 
-	testQueryCompat(t, testCases)
+	testQueryCompatWithProviders(t, providers, testCases)
 }

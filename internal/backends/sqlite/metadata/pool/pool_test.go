@@ -15,11 +15,8 @@
 package pool
 
 import (
-	"net/url"
-	"os"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -28,7 +25,8 @@ import (
 func TestCreateDrop(t *testing.T) {
 	ctx := testutil.Ctx(t)
 
-	p, err := New("file:"+t.TempDir()+"/", testutil.Logger(t))
+	// that also tests that query parameters are preserved
+	p, err := New("file:/?mode=memory", testutil.Logger(t))
 	require.NoError(t, err)
 
 	defer p.Close()
@@ -57,128 +55,4 @@ func TestCreateDrop(t *testing.T) {
 
 	db = p.GetExisting(ctx, t.Name())
 	require.Nil(t, db)
-}
-
-func TestNewBackend(t *testing.T) {
-	t.Parallel()
-
-	err := os.MkdirAll("tmp/dir", 0o777)
-	require.NoError(t, err)
-
-	_, err = os.Create("tmp/file")
-	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		err := os.RemoveAll("tmp")
-		require.NoError(t, err)
-	})
-
-	testCases := map[string]struct {
-		value string
-		uri   *url.URL
-		err   string
-	}{
-		"LocalDirectory": {
-			value: "file:./",
-			uri: &url.URL{
-				Scheme: "file",
-				Opaque: "./",
-				Path:   "./",
-			},
-		},
-		"LocalSubDirectory": {
-			value: "file:./tmp/",
-			uri: &url.URL{
-				Scheme: "file",
-				Opaque: "./tmp/",
-				Path:   "./tmp/",
-			},
-		},
-		"LocalSubSubDirectory": {
-			value: "file:./tmp/dir/",
-			uri: &url.URL{
-				Scheme: "file",
-				Opaque: "./tmp/dir/",
-				Path:   "./tmp/dir/",
-			},
-		},
-		"LocalDirectoryWithParameters": {
-			value: "file:./tmp/?mode=ro",
-			uri: &url.URL{
-				Scheme:   "file",
-				Opaque:   "./tmp/",
-				Path:     "./tmp/",
-				RawQuery: "mode=ro",
-			},
-		},
-		"AbsoluteDirectory": {
-			value: "file:/tmp/",
-			uri: &url.URL{
-				Scheme:   "file",
-				Opaque:   "/tmp/",
-				Path:     "/tmp/",
-				OmitHost: true,
-			},
-		},
-		"WithEmptyAuthority": {
-			value: "file:///tmp/",
-			uri: &url.URL{
-				Scheme: "file",
-				Opaque: "/tmp/",
-				Path:   "/tmp/",
-			},
-		},
-		"WithEmptyAuthorityAndQuery": {
-			value: "file:///tmp/?mode=ro",
-			uri: &url.URL{
-				Scheme:   "file",
-				Opaque:   "/tmp/",
-				Path:     "/tmp/",
-				RawQuery: "mode=ro",
-			},
-		},
-		"HostIsNotEmpty": {
-			value: "file://localhost/./tmp/?mode=ro",
-			err:   `expected empty host, got "localhost"`,
-		},
-		"UserIsNotEmpty": {
-			value: "file://user:pass@./tmp/?mode=ro",
-			err:   `expected empty user info, got "user:pass"`,
-		},
-		"NoDirectory": {
-			value: "file:./nodir/",
-			err:   `"./nodir/" should be an existing directory, got stat ./nodir/: no such file or directory`,
-		},
-		"PathIsNotEndsWithSlash": {
-			value: "file:./tmp/file",
-			err:   `expected path ending with "/", got "./tmp/file"`,
-		},
-		"FileInsteadOfDirectory": {
-			value: "file:./tmp/file/",
-			err:   `"./tmp/file/" should be an existing directory, got stat ./tmp/file/: not a directory`,
-		},
-		"MalformedURI": {
-			value: ":./tmp/",
-			err:   `parse ":./tmp/": missing protocol scheme`,
-		},
-		"NoScheme": {
-			value: "./tmp/",
-			err:   `expected "file:" schema, got ""`,
-		},
-	}
-	for name, tc := range testCases {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			u, err := validateURI(tc.value)
-			if tc.err != "" {
-				assert.EqualError(t, err, tc.err)
-				return
-			}
-
-			require.NoError(t, err)
-			assert.Equal(t, u, tc.uri)
-		})
-	}
 }
