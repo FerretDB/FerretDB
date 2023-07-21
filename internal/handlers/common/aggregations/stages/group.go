@@ -252,9 +252,11 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 
 			group.addOrAppend(val, doc)
 		}
+
 		return group.docs, nil
 
-	case *types.Array, float64, types.Binary, types.ObjectID, bool, time.Time, types.NullType, types.Regex, int32, types.Timestamp, int64:
+	case *types.Array, float64, types.Binary, types.ObjectID, bool, time.Time, types.NullType,
+		types.Regex, int32, types.Timestamp, int64:
 		// non-string or document key aggregates values of all `in` documents into one aggregated document.
 
 	default:
