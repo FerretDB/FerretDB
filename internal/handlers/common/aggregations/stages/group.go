@@ -195,6 +195,10 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 
 		return group.docs, nil
 
+	case *types.Array, float64, types.Binary, types.ObjectID, bool, time.Time, types.NullType,
+		types.Regex, int32, types.Timestamp, int64:
+		// non-string or document key aggregates values of all `in` documents into one aggregated document.
+
 	case string:
 		expression, err := aggregations.NewExpression(groupKey)
 		if err != nil {
@@ -254,10 +258,6 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 		}
 
 		return group.docs, nil
-
-	case *types.Array, float64, types.Binary, types.ObjectID, bool, time.Time, types.NullType,
-		types.Regex, int32, types.Timestamp, int64:
-		// non-string or document key aggregates values of all `in` documents into one aggregated document.
 
 	default:
 		panic(fmt.Sprintf("unexpected type %[1]T (%#[1]v)", groupKey))
