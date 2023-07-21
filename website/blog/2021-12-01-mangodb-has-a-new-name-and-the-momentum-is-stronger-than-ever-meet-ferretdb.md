@@ -4,7 +4,7 @@ title: MangoDB has a new name, and the momentum is stronger than ever. Meet Ferr
 author: Peter Farkas
 description: Just over a month ago, the unveiling of our new project - MangoDB, a truly open source MongoDB replacement, was met with overwhelming interest from within the Open Source community.
 image: /img/blog/blog-img-v02.jpg
-tags: [Ferretdb]
+tags: [open source, document databases, mongodb compatible]
 ---
 
 Just over a month ago, the unveiling of our new project - MangoDB, a truly open source MongoDB replacement, was met with overwhelming interest from within the Open Source community.

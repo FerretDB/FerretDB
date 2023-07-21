@@ -622,6 +622,22 @@ func TestAggregateCompatGroup(t *testing.T) {
 			}}}},
 			skip: "https://github.com/FerretDB/FerretDB/issues/2679",
 		},
+		"IDSum": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$sum", "$v"}}}}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2694",
+		},
+		"IDSumNonExistentField": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$sum", "$non-existent"}}}}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2694",
+		},
 	}
 
 	testAggregateStagesCompat(t, testCases)
@@ -1129,6 +1145,12 @@ func TestAggregateCompatMatch(t *testing.T) {
 		"MatchBadValue": {
 			pipeline:   bson.A{bson.D{{"$match", 1}}},
 			resultType: emptyResult,
+		},
+		"SumValue": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", bson.D{{"$sum", "$v"}}}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/414",
 		},
 	}
 
@@ -1756,6 +1778,165 @@ func TestAggregateCompatProject(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"SumValue": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", "$v"}}},
+				}}},
+			},
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}
+
+func TestAggregateCompatProjectSum(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"Value": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", "$v"}}},
+				}}},
+			},
+		},
+		"DotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", "$v.foo"}}},
+				}}},
+			},
+		},
+		"ArrayDotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", "$v.0.foo"}}},
+				}}},
+			},
+		},
+		"Int": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", int32(2)}}},
+				}}},
+			},
+		},
+		"Long": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", int64(3)}}},
+				}}},
+			},
+		},
+		"Double": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", float64(4)}}},
+				}}},
+			},
+		},
+		"EmptyString": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", ""}}},
+				}}},
+			},
+		},
+		"ArrayEmptyVariable": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.A{"$"}}}},
+				}}},
+			},
+			resultType: emptyResult,
+		},
+		"ArrayValue": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.A{"$v"}}}},
+				}}},
+			},
+		},
+		"ArrayTwoValues": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.A{"$v", "$v"}}}},
+				}}},
+			},
+		},
+		"ArrayValueInt": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.A{"$v", int32(1)}}}},
+				}}},
+			},
+		},
+		"ArrayIntLongDoubleStringBool": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.A{int32(2), int64(3), float64(4), "not-expression", true}}}},
+				}}},
+			},
+		},
+		"RecursiveValue": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sumsum", bson.D{{"$sum", bson.D{{"$sum", "$v"}}}}},
+				}}},
+			},
+		},
+		"RecursiveArrayValue": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sumsum", bson.D{{"$sum", bson.D{{"$sum", bson.A{"$v"}}}}}},
+				}}},
+			},
+		},
+		"ArrayValueRecursiveInt": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.A{"$v", bson.D{{"$sum", int32(2)}}}}}},
+				}}},
+			},
+		},
+		"ArrayValueAndRecursiveValue": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.A{"$v", bson.D{{"$sum", "$v"}}}}}},
+				}}},
+			},
+		},
+		"ArrayValueAndRecursiveArray": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.A{"$v", bson.D{{"$sum", bson.A{"$v"}}}}}}},
+				}}},
+			},
+		},
+		"Type": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sumtype", bson.D{{"$sum", bson.D{{"$type", "$v"}}}}},
+				}}},
+			},
+		},
+		"RecursiveEmptyVariable": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.D{{"$sum", "$$$"}}}}},
+				}}},
+			},
+			resultType: emptyResult,
+		},
+		"MultipleRecursiveEmptyVariable": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", bson.D{{"$sum", bson.D{{"$sum", "$$$"}}}}}}},
+				}}},
+			},
+			resultType: emptyResult,
+		},
 	}
 
 	testAggregateStagesCompat(t, testCases)
@@ -1986,6 +2167,13 @@ func TestAggregateCompatAddFields(t *testing.T) {
 				bson.D{{"$addFields", bson.D{{"type", bson.D{{"$type", true}}}}}},
 			},
 		},
+		"SumValue": {
+			pipeline: bson.A{
+				bson.D{{"$addFields", bson.D{
+					{"sum", bson.D{{"$sum", "$v"}}},
+				}}},
+			},
+		},
 	}
 
 	testAggregateStagesCompat(t, testCases)
@@ -2087,6 +2275,13 @@ func TestAggregateCompatSet(t *testing.T) {
 			},
 			resultType: emptyResult,
 			skip:       "https://github.com/FerretDB/FerretDB/issues/1413",
+		},
+		"SumValue": {
+			pipeline: bson.A{
+				bson.D{{"$set", bson.D{
+					{"sum", bson.D{{"$sum", "$v"}}},
+				}}},
+			},
 		},
 	}
 	testAggregateStagesCompat(t, testCases)
