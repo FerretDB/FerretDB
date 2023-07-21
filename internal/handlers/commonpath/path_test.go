@@ -26,63 +26,69 @@ import (
 func TestGetPathValue(t *testing.T) {
 	t.Parallel()
 
-	emptyDoc := new(types.Document)
-	docDoc := must.NotFail(types.NewDocument("foo", must.NotFail(types.NewDocument("bar", 1))))
-	docArrayOne := must.NotFail(types.NewDocument("foo", must.NotFail(types.NewArray(
+	empty := new(types.Document)
+	doc := must.NotFail(types.NewDocument("foo", must.NotFail(types.NewDocument("bar", 1))))
+	arrayDocOne := must.NotFail(types.NewDocument("foo", must.NotFail(types.NewArray(
 		must.NotFail(types.NewDocument("bar", 1)),
 	))))
-	docArrayTwo := must.NotFail(types.NewDocument("foo", must.NotFail(types.NewArray(
+	arrayDocTwo := must.NotFail(types.NewDocument("foo", must.NotFail(types.NewArray(
 		must.NotFail(types.NewDocument("bar", 1)),
 		must.NotFail(types.NewDocument("bar", 2)),
 	))))
+	arrayScalarThree := must.NotFail(types.NewDocument("foo", must.NotFail(types.NewArray(0, 1, 2))))
 
 	for name, tc := range map[string]struct {
-		res  []any
 		doc  *types.Document
 		path types.Path
-		opts FindValuesOpts
+		opts *FindValuesOpts
+		res  []any
 	}{
-		"EmptyDocument": {
-			doc:  emptyDoc,
+		"Empty": {
+			doc:  empty,
 			path: types.NewStaticPath("foo", "bar"),
 			res:  []any{},
 		},
 		"Document": {
-			doc:  docDoc,
+			doc:  doc,
 			path: types.NewStaticPath("foo"),
 			res:  []any{must.NotFail(types.NewDocument("bar", 1))},
 		},
 		"DocumentDotNotation": {
-			doc:  docDoc,
+			doc:  doc,
 			path: types.NewStaticPath("foo", "bar"),
 			res:  []any{1},
 		},
-		"ArrayIndex": {
-			doc:  docArrayOne,
+		"ArrayIndexDoc": {
+			doc:  arrayDocOne,
 			path: types.NewStaticPath("foo", "0", "bar"),
 			res:  []any{1},
 		},
+		"ArrayIndexScalar": {
+			doc:  arrayScalarThree,
+			path: types.NewStaticPath("foo", "1"),
+			res:  []any{1},
+		},
 		"ArrayDocument": {
-			doc:  docArrayOne,
+			doc:  arrayDocOne,
 			path: types.NewStaticPath("foo", "bar"),
 			res:  []any{1},
 		},
 		"ArrayDocumentTwo": {
-			doc:  docArrayTwo,
+			doc:  arrayDocTwo,
 			path: types.NewStaticPath("foo", "bar"),
-			opts: FindValuesOpts{IgnoreArrayIndex: true},
+			opts: &FindValuesOpts{IgnoreArrayIndex: true},
 			res:  []any{1, 2},
 		},
 		"IgnoreArrayIndex": {
-			doc:  docArrayOne,
+			doc:  arrayDocOne,
 			path: types.NewStaticPath("foo", "0", "bar"),
-			opts: FindValuesOpts{IgnoreArrayIndex: true},
+			opts: &FindValuesOpts{IgnoreArrayIndex: true},
 			res:  []any{},
 		},
 		"IgnoreArrayElement": {
-			doc:  docArrayOne,
+			doc:  arrayDocOne,
 			path: types.NewStaticPath("foo", "bar"),
-			opts: FindValuesOpts{IgnoreArrayElement: true},
+			opts: &FindValuesOpts{IgnoreArrayElement: true},
 			res:  []any{},
 		},
 	} {

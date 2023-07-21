@@ -38,7 +38,11 @@ type FindValuesOpts struct {
 //   - if the array contains one or more documents which have the key.
 //
 // It returns a slice of values and an empty array is returned if no value was found.
-func FindValues(doc *types.Document, path types.Path, opts FindValuesOpts) ([]any, error) {
+func FindValues(doc *types.Document, path types.Path, opts *FindValuesOpts) ([]any, error) {
+	if opts == nil {
+		opts = new(FindValuesOpts)
+	}
+
 	keys := path.Slice()
 	inputs := []any{doc}
 	var values []any

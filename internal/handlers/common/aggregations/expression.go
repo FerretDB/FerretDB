@@ -156,7 +156,7 @@ func (e *Expression) Evaluate(doc *types.Document) (any, error) {
 		}
 	}
 
-	vals, err := commonpath.FindValues(doc, path, commonpath.FindValuesOpts{
+	vals, err := commonpath.FindValues(doc, path, &commonpath.FindValuesOpts{
 		IgnoreArrayIndex:   true,
 		IgnoreArrayElement: e.IgnoreArrays,
 	})
