@@ -145,7 +145,7 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 // document doesn't exceed the max nesting allowed.
 func (doc *Document) readNested(r *bufio.Reader, nesting int) error {
 	if nesting > maxNesting {
-		return fmt.Errorf("bson.Document.ReadFrom (document has exceeded the max supported nesting: %d)", maxNesting)
+		return fmt.Errorf("bson.Document.readNested: document has exceeded the max supported nesting: %d", maxNesting)
 	}
 
 	var l int32
