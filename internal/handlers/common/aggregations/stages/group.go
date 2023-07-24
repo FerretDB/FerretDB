@@ -176,7 +176,7 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 	case *types.Document:
 		op, err := operators.NewOperator(groupKey)
 		if err != nil {
-			return nil, err
+			return nil, processOperatorError(err)
 		}
 
 		var group groupMap
@@ -184,7 +184,7 @@ func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]gro
 		for _, doc := range in {
 			val, err := op.Process(doc)
 			if err != nil {
-				return nil, err
+				return nil, processOperatorError(err)
 			}
 
 			group.addOrAppend(val, doc)
@@ -295,6 +295,97 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 		groupID:   groupKey,
 		documents: docs,
 	})
+}
+
+// processOperatorError takes internal error related to operator evaluation and
+// returns proper CommandError that can be returned by $project aggregation stage.
+//
+// Command error codes:
+// - ErrEmptySubProject when operator value is empty.
+// - ErrFieldPathInvalidName when FieldPath is invalid.
+// - ErrNotImplemented when the operator or expression is not implemented yet.
+// - ErrOperatorWrongLenOfArgs when the operator has an invalid number of arguments.
+// - ErrInvalidPipelineOperator when the operator does not exist.
+// - ErrFailedToParse when operator has invalid variable expression.
+// - ErrGroupInvalidFieldPath when operator has empty path expression.
+func processOperatorError(err error) error {
+	if err == nil {
+		return nil
+	}
+
+	var opErr operators.OperatorError
+	var exErr *aggregations.ExpressionError
+
+	switch {
+	case errors.As(err, &opErr):
+		switch opErr.Code() {
+		case operators.ErrTooManyFields:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFieldPathInvalidName,
+				"Invalid $group :: caused by :: FieldPath field names may not start with '$'."+
+					" Consider using $getField or $setField.",
+				"$group (stage)",
+			)
+		case operators.ErrNotImplemented:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
+				"Invalid $group :: caused by :: "+opErr.Error(),
+				"$group (stage)",
+			)
+		case operators.ErrArgsInvalidLen:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrOperatorWrongLenOfArgs,
+				"Invalid $group :: caused by :: "+opErr.Error(),
+				"$group (stage)",
+			)
+		case operators.ErrInvalidExpression:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrAggregateInvalidExpression,
+				"Invalid $group :: caused by :: "+opErr.Error(),
+				"$group (stage)",
+			)
+		case operators.ErrInvalidNestedExpression:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrInvalidPipelineOperator,
+				"Invalid $group :: caused by :: "+opErr.Error(),
+				"$group (stage)",
+			)
+		}
+
+	case errors.As(err, &exErr):
+		switch exErr.Code() {
+		case aggregations.ErrNotExpression:
+			// handled by upstream and this should not be reachable for existing expression implementation
+			fallthrough
+		case aggregations.ErrInvalidExpression:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				"Invalid $group :: caused by :: '$' starts with an invalid character for a user variable name",
+				"$group (stage)",
+			)
+		case aggregations.ErrEmptyFieldPath:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrGroupInvalidFieldPath,
+				"Invalid $group :: caused by :: '$' by itself is not a valid FieldPath",
+				"$group (stage)",
+			)
+		case aggregations.ErrUndefinedVariable:
+			// TODO https://github.com/FerretDB/FerretDB/issues/2275
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
+				"Aggregation expression variables are not implemented yet",
+				"$group (stage)",
+			)
+		case aggregations.ErrEmptyVariable:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				"Invalid $group :: caused by :: empty variable names are not allowed",
+				"$group (stage)",
+			)
+		}
+	}
+
+	return lazyerrors.Error(err)
 }
 
 // check interfaces
