@@ -17,128 +17,142 @@ package types
 import (
 	"errors"
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
-	"time"
 
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-//go:generate ../../bin/stringer -linecomment -type DocumentPathErrorCode
+//go:generate ../../bin/stringer -linecomment -type PathErrorCode
 
-// DocumentPathErrorCode represents DocumentPathError error code.
-type DocumentPathErrorCode int
+// PathErrorCode represents PathError code.
+type PathErrorCode int
 
 const (
-	_ DocumentPathErrorCode = iota
+	_ PathErrorCode = iota
 
-	// ErrDocumentPathKeyNotFound indicates that key was not found in document.
-	ErrDocumentPathKeyNotFound
+	// ErrPathElementEmpty indicates that provided path contains an empty element.
+	ErrPathElementEmpty
 
-	// ErrDocumentPathCannotAccess indicates that path couldn't be accessed.
-	ErrDocumentPathCannotAccess
+	// ErrPathElementInvalid indicates that provided path contains an invalid element (other than empty).
+	ErrPathElementInvalid
 
-	// ErrDocumentPathArrayInvalidIndex indicates that provided array index is invalid.
-	ErrDocumentPathArrayInvalidIndex
+	// ErrPathKeyNotFound indicates that key was not found in document.
+	ErrPathKeyNotFound
 
-	// ErrDocumentPathIndexOutOfBound indicates that provided array index is out of bound.
-	ErrDocumentPathIndexOutOfBound
+	// ErrPathIndexInvalid indicates that provided array index is invalid.
+	ErrPathIndexInvalid
 
-	// ErrDocumentPathCannotCreateField indicates that it's impossible to create a specific field.
-	ErrDocumentPathCannotCreateField
+	// ErrPathIndexOutOfBound indicates that provided array index is out of bound.
+	ErrPathIndexOutOfBound
 
-	// ErrDocumentPathEmptyKey indicates that provided path contains empty key.
-	ErrDocumentPathEmptyKey
+	// ErrPathCannotAccess indicates that path couldn't be accessed.
+	ErrPathCannotAccess
 
-	// ErrDocumentPathConflictOverwrite indicates a path overwrites another path.
-	ErrDocumentPathConflictOverwrite
+	// ErrPathCannotCreateField indicates that it's impossible to create a specific field.
+	ErrPathCannotCreateField
 
-	// ErrDocumentPathConflictCollision indicates a path creates collision at another path.
-	ErrDocumentPathConflictCollision
+	// ErrPathConflictOverwrite indicates a path overwrites another path.
+	ErrPathConflictOverwrite
+
+	// ErrPathConflictCollision indicates a path creates collision at another path.
+	ErrPathConflictCollision
 )
 
-// DocumentPathError describes an error that could occur on document path related operations.
-type DocumentPathError struct {
-	reason error
-	code   DocumentPathErrorCode
+// PathError describes an error that could occur on path related operations.
+type PathError struct {
+	err  error
+	code PathErrorCode
 }
 
 // Error implements the error interface.
-func (e *DocumentPathError) Error() string {
-	return e.reason.Error()
+func (e *PathError) Error() string {
+	return e.err.Error()
 }
 
-// Code returns the DocumentPathError code.
-func (e *DocumentPathError) Code() DocumentPathErrorCode {
+// Code returns the PathError code.
+func (e *PathError) Code() PathErrorCode {
 	return e.code
 }
 
-// newDocumentPathError creates a new DocumentPathError.
-func newDocumentPathError(code DocumentPathErrorCode, reason error) error {
-	return &DocumentPathError{reason: reason, code: code}
+// newPathError creates a new PathError.
+func newPathError(code PathErrorCode, reason error) error {
+	return &PathError{err: reason, code: code}
 }
 
-// Path represents the field path type. It should be used wherever we work with paths or dot notation.
-// Path should be stored and passed as a value. Its methods return new values, not modifying the receiver's state.
+// Path represents a parsed dot notation - a sequence of elements (document keys and array indexes) separated by dots.
+//
+// Path's elements can't be empty, include dots, spaces, or start with $.
+//
+// Path should be stored and passed as a value.
+// Its methods return new values, not modifying the receiver's state.
 type Path struct {
-	s []string
+	e []string
+}
+
+func newPath(path ...string) (Path, error) {
+	var res Path
+
+	for _, e := range path {
+		switch {
+		case e == "":
+			return res, newPathError(ErrPathElementEmpty, errors.New("path element must not be empty"))
+		case strings.TrimSpace(e) != e:
+			return res, newPathError(ErrPathElementInvalid, errors.New("path element must not contain spaces"))
+		case strings.Contains(e, "."):
+			return res, newPathError(ErrPathElementInvalid, errors.New("path element must contain '.'"))
+		case strings.HasPrefix(e, "$"):
+			return res, newPathError(ErrPathElementInvalid, errors.New("path element must not start with '$'"))
+		}
+	}
+
+	res = Path{e: make([]string, len(path))}
+	copy(res.e, path)
+
+	return res, nil
 }
 
 // NewStaticPath returns Path from a strings slice.
 //
 // It panics on invalid paths. For that reason, it should not be used with user-provided paths.
 func NewStaticPath(path ...string) Path {
-	return must.NotFail(NewPathFromString(strings.Join(path, ".")))
+	return must.NotFail(newPath(path...))
 }
 
-// NewPathFromString returns Path from path string and error.
-// It returns an error if the path is empty or contains empty elements.
-// Path string should contain fields separated with '.'.
+// NewPathFromString returns Path from a given dot notation.
+//
+// It returns an error if the path is invalid.
 func NewPathFromString(s string) (Path, error) {
-	var res Path
-
-	path := strings.Split(s, ".")
-
-	for _, s := range path {
-		if s == "" {
-			return res, newDocumentPathError(ErrDocumentPathEmptyKey, errors.New("path element must not be empty"))
-		}
-	}
-
-	res = Path{s: make([]string, len(path))}
-	copy(res.s, path)
-
-	return res, nil
+	return newPath(strings.Split(s, ".")...)
 }
 
-// String returns dot-separated path value.
+// String returns a dot notation for that path.
 func (p Path) String() string {
-	return strings.Join(p.s, ".")
+	return strings.Join(p.e, ".")
 }
 
 // Len returns path length.
 func (p Path) Len() int {
-	return len(p.s)
+	return len(p.e)
 }
 
-// Slice returns path values array.
+// Slice returns path elements array.
 func (p Path) Slice() []string {
 	path := make([]string, p.Len())
-	copy(path, p.s)
+	copy(path, p.e)
 	return path
 }
 
 // Suffix returns the last path element.
 func (p Path) Suffix() string {
-	return p.s[p.Len()-1]
+	return p.e[p.Len()-1]
 }
 
 // Prefix returns the first path element.
 func (p Path) Prefix() string {
-	return p.s[0]
+	return p.e[0]
 }
 
 // TrimSuffix returns a path without the last element.
@@ -147,7 +161,7 @@ func (p Path) TrimSuffix() Path {
 		panic("path should have more than 1 element")
 	}
 
-	return NewStaticPath(p.s[:p.Len()-1]...)
+	return NewStaticPath(p.e[:p.Len()-1]...)
 }
 
 // TrimPrefix returns a copy of path without the first element.
@@ -156,7 +170,7 @@ func (p Path) TrimPrefix() Path {
 		panic("path should have more than 1 element")
 	}
 
-	return NewStaticPath(p.s[1:]...)
+	return NewStaticPath(p.e[1:]...)
 }
 
 // Append returns new Path constructed from the current path and given element.
@@ -173,11 +187,11 @@ func RemoveByPath[T CompositeTypeInterface](comp T, path Path) {
 	removeByPath(comp, path)
 }
 
-// IsConflictPath returns DocumentPathError error if adding a path creates conflict at any of paths.
-// Returned DocumentPathError error codes:
+// IsConflictPath returns PathError error if adding a path creates conflict at any of paths.
+// Returned PathError error codes:
 //
-//   - ErrDocumentPathConflictOverwrite when path overwrites any paths: paths = []{{"a","b"}} path = {"a"};
-//   - ErrDocumentPathConflictCollision when path creates collision:    paths = []{{"a"}}     path = {"a","b"};
+//   - ErrPathConflictOverwrite when path overwrites any paths: paths = []{{"a","b"}} path = {"a"};
+//   - ErrPathConflictCollision when path creates collision:    paths = []{{"a"}}     path = {"a","b"};
 func IsConflictPath(paths []Path, path Path) error {
 	for _, p := range paths {
 		target, prefix := p.Slice(), path.Slice()
@@ -204,14 +218,14 @@ func IsConflictPath(paths []Path, path Path) error {
 		}
 
 		if p.Len() >= path.Len() {
-			return newDocumentPathError(ErrDocumentPathConflictOverwrite, errors.New("path overwrites previous path"))
+			return newPathError(ErrPathConflictOverwrite, errors.New("path overwrites previous path"))
 		}
 
 		// collisionPart is part of the path which creates collision, used in command error message.
 		// If visitedPath is `a.b` and path is `a.b.c`, collisionPart is `b.c`.
 		collisionPart := strings.Join(target[len(prefix):], ".")
 
-		return newDocumentPathError(ErrDocumentPathConflictCollision, errors.New(collisionPart))
+		return newPathError(ErrPathConflictCollision, errors.New(collisionPart))
 	}
 
 	return nil
@@ -226,30 +240,30 @@ func getByPath[T CompositeTypeInterface](comp T, path Path) (any, error) {
 			var err error
 			next, err = s.Get(p)
 			if err != nil {
-				return nil, newDocumentPathError(ErrDocumentPathKeyNotFound, fmt.Errorf("types.getByPath: %w", err))
+				return nil, newPathError(ErrPathKeyNotFound, fmt.Errorf("types.getByPath: %w", err))
 			}
 
 		case *Array:
 			index, err := strconv.Atoi(p)
 			if err != nil {
-				return nil, newDocumentPathError(ErrDocumentPathArrayInvalidIndex, fmt.Errorf("types.getByPath: %w", err))
+				return nil, newPathError(ErrPathIndexInvalid, fmt.Errorf("types.getByPath: %w", err))
 			}
 
 			if index < 0 {
-				return nil, newDocumentPathError(
-					ErrDocumentPathArrayInvalidIndex,
+				return nil, newPathError(
+					ErrPathIndexInvalid,
 					fmt.Errorf("types.getByPath: array index below zero: %d", index),
 				)
 			}
 
 			next, err = s.Get(index)
 			if err != nil {
-				return nil, newDocumentPathError(ErrDocumentPathIndexOutOfBound, fmt.Errorf("types.getByPath: %w", err))
+				return nil, newPathError(ErrPathIndexOutOfBound, fmt.Errorf("types.getByPath: %w", err))
 			}
 
 		default:
-			return nil, newDocumentPathError(
-				ErrDocumentPathCannotAccess,
+			return nil, newPathError(
+				ErrPathCannotAccess,
 				fmt.Errorf("types.getByPath: can't access %T by path %q", next, p),
 			)
 		}
@@ -325,8 +339,8 @@ func insertByPath(doc *Document, path Path) error {
 			case *Array:
 				ind, err := strconv.Atoi(insertedPath.Slice()[suffix])
 				if err != nil {
-					return newDocumentPathError(
-						ErrDocumentPathCannotCreateField,
+					return newPathError(
+						ErrPathCannotCreateField,
 						fmt.Errorf(
 							"Cannot create field '%s' in element {%s: %s}",
 							pathElem,
@@ -337,8 +351,8 @@ func insertByPath(doc *Document, path Path) error {
 				}
 
 				if ind < 0 {
-					return newDocumentPathError(
-						ErrDocumentPathIndexOutOfBound,
+					return newPathError(
+						ErrPathIndexOutOfBound,
 						fmt.Errorf(
 							"Index out of bound: %d",
 							ind,
@@ -354,8 +368,8 @@ func insertByPath(doc *Document, path Path) error {
 				v.Append(must.NotFail(NewDocument()))
 
 			default:
-				return newDocumentPathError(
-					ErrDocumentPathCannotCreateField,
+				return newPathError(
+					ErrPathCannotCreateField,
 					fmt.Errorf(
 						"Cannot create field '%s' in element {%s: %s}",
 						pathElem,
@@ -374,91 +388,4 @@ func insertByPath(doc *Document, path Path) error {
 	}
 
 	return nil
-}
-
-// FormatAnyValue formats value for error message output.
-func FormatAnyValue(v any) string {
-	switch v := v.(type) {
-	case *Document:
-		return formatDocument(v)
-	case *Array:
-		return formatArray(v)
-	case float64:
-		switch {
-		case math.IsNaN(v):
-			return "nan.0"
-
-		case math.IsInf(v, -1):
-			return "-inf.0"
-		case math.IsInf(v, +1):
-			return "inf.0"
-		case v == 0 && math.Signbit(v):
-			return "-0.0"
-		case v == 0.0:
-			return "0.0"
-		case v > 1000 || v < -1000 || v == math.SmallestNonzeroFloat64:
-			return fmt.Sprintf("%.15e", v)
-		case math.Trunc(v) == v:
-			return fmt.Sprintf("%d.0", int64(v))
-		default:
-			res := fmt.Sprintf("%.2f", v)
-
-			return strings.TrimSuffix(res, "0")
-		}
-
-	case string:
-		return fmt.Sprintf(`"%v"`, v)
-	case Binary:
-		return fmt.Sprintf("BinData(%d, %X)", v.Subtype, v.B)
-	case ObjectID:
-		return fmt.Sprintf("ObjectId('%x')", v)
-	case bool:
-		return fmt.Sprintf("%v", v)
-	case time.Time:
-		return fmt.Sprintf("new Date(%d)", v.UnixMilli())
-	case NullType:
-		return "null"
-	case Regex:
-		return fmt.Sprintf("/%s/%s", v.Pattern, v.Options)
-	case int32:
-		return fmt.Sprintf("%d", v)
-	case Timestamp:
-		return fmt.Sprintf("Timestamp(%v, %v)", int64(v)>>32, int32(v))
-	case int64:
-		return fmt.Sprintf("%d", v)
-	default:
-		panic(fmt.Sprintf("unknown type %T", v))
-	}
-}
-
-// formatDocument formats Document for error output.
-func formatDocument(doc *Document) string {
-	result := "{ "
-
-	for i, f := range doc.fields {
-		if i > 0 {
-			result += ", "
-		}
-
-		result += fmt.Sprintf("%s: %s", f.key, FormatAnyValue(f.value))
-	}
-
-	return result + " }"
-}
-
-// formatArray formats Array for error output.
-func formatArray(array *Array) string {
-	if len(array.s) == 0 {
-		return "[]"
-	}
-
-	result := "[ "
-
-	for _, elem := range array.s {
-		result += fmt.Sprintf("%s, ", FormatAnyValue(elem))
-	}
-
-	result = strings.TrimSuffix(result, ", ")
-
-	return result + " ]"
 }

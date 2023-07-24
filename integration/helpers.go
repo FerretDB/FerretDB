@@ -32,7 +32,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-//go:generate ../bin/stringer  -type compatTestCaseResultType
+//go:generate ../bin/stringer -linecomment -type compatTestCaseResultType
 
 // compatTestCaseResultType represents compatibility test case result type.
 //

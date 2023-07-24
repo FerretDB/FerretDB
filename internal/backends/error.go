@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 )
 
-//go:generate ../../bin/stringer -type ErrorCode
+//go:generate ../../bin/stringer -linecomment -type ErrorCode
 
 // ErrorCode represent a backend error code.
 type ErrorCode int

@@ -24,6 +24,38 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+func TestNewPathFromString(t *testing.T) {
+	for _, tc := range []struct {
+		s   string
+		p   Path
+		err error
+	}{{
+		s:   "",
+		err: newPathError(ErrPathElementEmpty, fmt.Errorf("path element must not be empty")),
+	}, {
+		s:   " ",
+		err: newPathError(ErrPathElementInvalid, fmt.Errorf("path element must not contain spaces")),
+	}, {
+		s:   "$var",
+		err: newPathError(ErrPathElementInvalid, fmt.Errorf("path element must not start with '$'")),
+	}} {
+		tc := tc
+		t.Run(tc.s, func(t *testing.T) {
+			t.Parallel()
+
+			res, err := NewPathFromString(tc.s)
+			if tc.err == nil {
+				require.NoError(t, err)
+				assert.Equal(t, tc.p, res)
+				return
+			}
+
+			assert.Empty(t, res)
+			assert.Equal(t, tc.err, err)
+		})
+	}
+}
+
 func TestRemoveByPath(t *testing.T) {
 	t.Parallel()
 
@@ -233,13 +265,11 @@ func TestGetByPath(t *testing.T) {
 		"loadBalanced", false,
 	))
 
-	type testCase struct {
+	for _, tc := range []struct {
 		path Path
 		res  any
 		err  string
-	}
-
-	for _, tc := range []testCase{{ //nolint:paralleltest // false positive
+	}{{
 		path: NewStaticPath("compression", "0"),
 		res:  "none",
 	}, {
@@ -275,10 +305,11 @@ func TestGetByPath(t *testing.T) {
 			if tc.err == "" {
 				require.NoError(t, err)
 				assert.Equal(t, tc.res, res)
-			} else {
-				assert.Empty(t, res)
-				assert.EqualError(t, err, tc.err)
+				return
 			}
+
+			assert.Empty(t, res)
+			assert.EqualError(t, err, tc.err)
 		})
 	}
 }
@@ -287,14 +318,12 @@ func TestPathTrimSuffixPrefix(t *testing.T) {
 	t.Parallel()
 
 	pathOneElement := NewStaticPath("1")
-	pathZeroElement := Path{s: []string{}}
+	pathZeroElement := Path{e: []string{}}
 
-	type testCase struct {
+	for _, tc := range []struct {
 		name string
 		f    func() Path
-	}
-
-	for _, tc := range []testCase{{
+	}{{
 		name: "prefixOne",
 		f:    pathOneElement.TrimPrefix,
 	}, {
@@ -321,15 +350,13 @@ func TestPathTrimSuffixPrefix(t *testing.T) {
 func TestPathSuffixPrefix(t *testing.T) {
 	t.Parallel()
 
-	pathZeroElement := Path{s: []string{}}
-
-	type testCase struct {
-		name string
-		f    func() string
-	}
+	pathZeroElement := Path{e: []string{}}
 
 	// Obtaining prefix and suffix of single value path is harmless.
-	for _, tc := range []testCase{{
+	for _, tc := range []struct {
+		name string
+		f    func() string
+	}{{
 		name: "prefixZero",
 		f:    pathZeroElement.Prefix,
 	}, {

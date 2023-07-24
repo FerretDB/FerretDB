@@ -16,7 +16,6 @@ package stages
 
 import (
 	"context"
-	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
@@ -59,19 +58,10 @@ func newSort(stage *types.Document) (aggregations.Stage, error) {
 
 // Process implements Stage interface.
 //
-// If sort path is invalid, it returns a possibly wrapped types.DocumentPathError.
+// If sort path is invalid, it returns a possibly wrapped types.PathError.
 func (s *sort) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
-	var err error
-	if iter, err = common.SortIterator(iter, closer, s.fields); err != nil {
-		var pathErr *types.DocumentPathError
-		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrPathContainsEmptyElement,
-				"FieldPath field names may not be empty strings.",
-				"$sort (stage)",
-			)
-		}
-
+	iter, err := common.SortIterator(iter, closer, s.fields)
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
