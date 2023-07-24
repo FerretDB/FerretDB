@@ -85,6 +85,7 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 		if field == "_id" {
 			if doc, ok := v.(*types.Document); ok {
 				if operators.IsOperator(doc) {
+					groupKey = v
 					continue
 				}
 
