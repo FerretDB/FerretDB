@@ -1,12 +1,14 @@
 ---
-slug: using-ferretdb-mingo
-title: 'Using FerretDB with Mingo'
+slug: using-mingo-analyze-visualize-ferretdb-data
+title: 'Using Mingo to Analyze and Visualize FerretDB Data'
 description: >
   Explore how to use FerretDB with a MongoDB GUI tool like NoSQLBooster: setting it up, running queries, performing aggregation operations, and much more.
-image: /img/blog/nosqlbooster-ferretdb.png
+image: /img/blog/ferretdb-mingo.jpg
 keywords: [mongodb gui, mongodb gui tools, open source mongodb gui]
 tags: [mongodb gui, compatible applications, tutorial]
 ---
+
+![Using FerretDB with Mingo](/img/blog/ferretdb-mingo.jpg)
 
 No matter what type of database you have, you need the right tools to manage, query, and visualize the data effectively – and [FerretDB](https://www.ferretdb.io/) is no exception.
 
@@ -22,11 +24,11 @@ See the blog posts here:
 - [Using FerretDB with Studio3T](https://blog.ferretdb.io/using-ferretdb-with-studio-3t/)
 
 In this blog post, we'll be exploring FerretDB usage with Mingo – a modern, sleek, and fast MongoDB GUI tool.
-With Mingo, FerretDB users can easily query, visualize, and analyze their database using Mingo's many interesting UI features.
+With [Mingo](https://mingo.io/), FerretDB users can easily query, visualize, and analyze their database using Mingo's many interesting UI features.
 
 ## Prerequisites
 
-- Download and install Mingo from [here](https://mingo.io/)
+- Download and install Mingo from [here](https://mingo.io/download)
 - [Docker](https://www.docker.com/)to set up FerretDB docker installation (see documentation)
 - [mongosh](https://www.mongodb.com/docs/mongodb-shell/)
 
@@ -34,7 +36,7 @@ With Mingo, FerretDB users can easily query, visualize, and analyze their databa
 
 ### FerretDB
 
-To set up FerretDB, we'll be using the Docker installation.
+To set up FerretDB, we'll be using the [Docker installation](https://docs.ferretdb.io/quickstart-guide/docker/).
 Set up the docker-compose YAML file with the following configurations:
 
 ```yaml
@@ -88,8 +90,6 @@ To connect to FerretDB, we need to specify the connection URI string: `mongodb:/
 
 Ensure to update the authentication credentials for `username` and `password`.
 
-![Auth Credential](auth credential)
-
 Test the connection and if it's successful, save it.
 
 ### Add demo data
@@ -119,21 +119,35 @@ Refresh the database to see the data we just inserted and click on the collectio
 
 ![Collection dashboard](/img/blog/ferretdb-mingo/collection-data.png)
 
-Scenario 1: Query the database for all transactions with the products category "Books" and payment method as "Credit Card" and sort based on the `transaction_id`
+**Scenario 1:** Suppose you want to query the database for all transactions with the products category "Books" and payment method as "Credit Card" and sort based on the `transaction_id`.
 
-<!-- !(gif image of this)[jfd] -->
+You can do this through the query/sort section of the GUI.
+The query expression will take this format `{product_category: "Books", payment_method: "Credit Card"}`.
 
-Scenario 2: Query the database for all transactions with the products category "Books" and payment method as "Credit Card" and sort based on the `transaction_id`
+![Basic query operation on Mingo](/img/blog/ferretdb-mingo/basic-query.png)
+
+**Scenario 2:** Suppose you want to select the top 5 customers by the total quantity of books purchased.
+
+You can do this through aggregation operations and use Mingo's user-friendly interface to set it up.
+A typical syntax for this would look like this:
 
 ```js
 db.supply.aggregate([
-  { $match: { product_category: 'Books' } }, // Filter documents with product_category equal to "Books"
-  { $group: { _id: '$customer_name', totalQuantity: { $sum: '$quantity' } } }, // Group by customer_name and calculate the total quantity
-  { $sort: { totalQuantity: -1 } }, // Sort by totalQuantity in descending order
-  { $limit: 5 }, // Limit the output to 5 documents
-  { $project: { _id: 0, customer_name: '$_id', totalQuantity: 1 } } // Project the output to include only customer_name and totalQuantity fields
+  { $match: { product_category: 'Books' } },
+  { $group: { _id: '$customer_name', totalQuantity: { $sum: '$quantity' } } },
+  { $sort: { totalQuantity: -1 } },
+  { $limit: 5 }
 ])
 ```
+
+In Mingo, you can set this up by clicking on the "Aggregation" tab and setting up the pipeline as shown below:
+
+![Aggregation pipeline](/img/blog/ferretdb-mingo/aggregation-operations.gif)
+
+**Scenario 3:** In Mingo, you can easily query by time range and visualize the data on a chart.
+There are different options avaialble including `#last2weeks`, `#today`, `#lastWeek`, among others.
+
+![Time range query](/img/blog/ferretdb-mingo/timerange-query.gif)
 
 ## Get started with FerretDB and Mingo
 
