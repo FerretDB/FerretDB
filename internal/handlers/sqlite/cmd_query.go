@@ -17,7 +17,7 @@ package sqlite
 import (
 	"context"
 	"fmt"
-	"time"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -31,20 +31,22 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	cmd := query.Query.Command()
 	collection := query.FullCollectionName
 
-	// both are valid
-	if (cmd == "ismaster" || cmd == "isMaster") && collection == "admin.$cmd" {
+	// both are valid and are allowed to be run against any database as we don't support authorization yet
+	if (cmd == "ismaster" || cmd == "isMaster") && strings.HasSuffix(collection, ".$cmd") {
+		return common.IsMaster()
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3008
+	// defaults to the database name if supplied on the connection string or $external
+	if cmd == "saslStart" && strings.HasSuffix(collection, ".$cmd") {
+		var emptyPayload types.Binary
+
 		return &wire.OpReply{
 			NumberReturned: 1,
 			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"ismaster", true, // only lowercase
-				"maxBsonObjectSize", int32(types.MaxDocumentLen),
-				"maxMessageSizeBytes", int32(wire.MaxMsgLen),
-				"maxWriteBatchSize", int32(100000),
-				"localTime", time.Now(),
-				"connectionId", int32(42),
-				"minWireVersion", common.MinWireVersion,
-				"maxWireVersion", common.MaxWireVersion,
-				"readOnly", false,
+				"conversationId", int32(1),
+				"done", true,
+				"payload", emptyPayload,
 				"ok", float64(1),
 			))},
 		}, nil
