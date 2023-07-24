@@ -61,7 +61,7 @@ Try to estimate on the planning as best as you can.
 
 We want our work to be visible and transparent.
 This way we can help each other and make sure that we are on the right track.
-To uphold these principles, we agree to demonstrate our progress daily through various means such as
+To uphold these principles, we agree to make results of our daily work available for others through various means such as
 pull requests, code reviews, created issues, or any other relevant method.
 
 ## Pull requests
