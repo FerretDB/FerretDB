@@ -548,6 +548,53 @@ func TestDebugError(t *testing.T) {
 	})
 }
 
+func TestCheckingNestedDocuments(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		doc any
+		err error
+	}{
+		"1ok": {
+			doc: CreateNestedDocument(1),
+		},
+		"10ok": {
+			doc: CreateNestedDocument(10),
+		},
+		"100ok": {
+			doc: CreateNestedDocument(100),
+		},
+		"179ok": {
+			doc: CreateNestedDocument(179),
+		},
+		"180fail": {
+			doc: CreateNestedDocument(180),
+			err: fmt.Errorf("bson.Array.ReadFrom (document has exceeded the max supported nesting: 179."),
+		},
+		"180endedWithDocumentFail": {
+			doc: bson.D{{"v", CreateNestedDocument(179)}},
+			err: fmt.Errorf("bson.Document.ReadFrom (document has exceeded the max supported nesting: 179."),
+		},
+		"1000fail": {
+			doc: CreateNestedDocument(1000),
+			err: fmt.Errorf("bson.Document.ReadFrom (document has exceeded the max supported nesting: 179."),
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup.Setup(t)
+			_, err := collection.InsertOne(ctx, tc.doc)
+			if tc.err != nil {
+				require.Error(t, tc.err)
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestPingCommand(t *testing.T) {
 	t.Parallel()
 
