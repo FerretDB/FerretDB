@@ -24,6 +24,8 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
+	"unicode"
 )
 
 // fileSlug describes the file name and expected slug of blog posts.
@@ -54,7 +56,33 @@ func main() {
 
 			defer fo.Close()
 
+			_, err = fo.Seek(0, 0)
+			if err != nil {
+				log.Fatalf("Error resetting file pointer: %v", err)
+			}
 			if err = verifySlug(slug, fo); err != nil {
+				log.Print(err)
+				pass = false
+			}
+
+			_, err = fo.Seek(0, 0)
+			if err != nil {
+				log.Fatalf("Error resetting file pointer: %v", err)
+			}
+
+			err = verifyDateNotPresent(fo)
+			if err != nil {
+				log.Print(err)
+				pass = false
+			}
+
+			_, err = fo.Seek(0, 0)
+			if err != nil {
+				log.Fatalf("Error resetting file pointer: %v", err)
+			}
+
+			err = verifyTags(fo)
+			if err != nil {
 				log.Print(err)
 				pass = false
 			}
@@ -112,6 +140,74 @@ func verifySlug(fS fileSlug, f io.Reader) error {
 
 	if !pass {
 		return fmt.Errorf("slug is not correctly formated in file %s", fS.fileName)
+	}
+
+	return nil
+}
+
+func verifyDateNotPresent(f io.Reader) error {
+	r := regexp.MustCompile("^date:")
+
+	pass := true
+
+	scanner := bufio.NewScanner(f)
+
+	for scanner.Scan() {
+		if r.MatchString(scanner.Text()) {
+			pass = false
+			break
+		}
+	}
+
+	if !pass {
+		return fmt.Errorf("date field should not be present in the front matter")
+	}
+
+	return nil
+}
+
+func verifyTags(f io.Reader) error {
+	r := regexp.MustCompile(`^tags:\s*\[([^\]]+)\]`)
+
+	scanner := bufio.NewScanner(f)
+	var tags []string
+
+	for scanner.Scan() {
+		sm := r.FindStringSubmatch(scanner.Text())
+		if len(sm) > 1 {
+			tags = strings.FieldsFunc(sm[1], func(r rune) bool { return r == ',' || unicode.IsSpace(r) })
+			break
+		}
+	}
+
+	expectedTags := map[string]bool{
+		"cloud":         true,
+		"community":     true,
+		"compatible":    true,
+		"applications":  true,
+		"demo":          true,
+		"document":      true,
+		"databases":     true,
+		"events":        true,
+		"hacktoberfest": true,
+		"javascript":    true,
+		"frameworks":    true,
+		"mongodb":       true,
+		"gui":           true,
+		"open":          true,
+		"source":        true,
+		"postgresql":    true,
+		"tools":         true,
+		"product":       true,
+		"release":       true,
+		"sspl":          true,
+		"tutorial":      true,
+	}
+
+	for _, tag := range tags {
+		if _, ok := expectedTags[tag]; !ok {
+			return fmt.Errorf("tag '%s' is not in the allowed list", tag)
+		}
 	}
 
 	return nil
