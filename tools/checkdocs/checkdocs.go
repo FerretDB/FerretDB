@@ -35,6 +35,8 @@ func main() {
 	checkFiles(files, log.Printf, log.Fatalf)
 }
 
+// checkFiles verifies that blog posts are correctly formatted,
+// using logf for progress reporting and fatalf for errors.
 func checkFiles(files []string, logf, fatalf func(string, ...any)) {
 	if len(files) == 0 {
 		fatalf("No blog posts found")
