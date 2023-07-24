@@ -94,7 +94,7 @@ func TestAggregateGroupErrors(t *testing.T) {
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
-		"StageGroupUnaryOperatorSum": {
+		"GroupUnaryOperatorSum": {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{{"sum", bson.D{{"$sum", bson.A{}}}}}}},
 			},
@@ -104,6 +104,56 @@ func TestAggregateGroupErrors(t *testing.T) {
 				Message: "The $sum accumulator is a unary operator",
 			},
 			altMessage: "The $sum accumulator is a unary operator",
+		},
+		"GroupTypeEmpty": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"v", bson.D{}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    40234,
+				Name:    "Location40234",
+				Message: "The field 'v' must be an accumulator object",
+			},
+		},
+		"GroupTwoOperators": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$type", int32(42)}, {"$op", int32(42)}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    15983,
+				Name:    "Location15983",
+				Message: "An object representing an expression must have exactly one field: { $type: 42, $op: 42 }",
+			},
+		},
+		"GroupTypeInvalidLen": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16020,
+				Name:    "Location16020",
+				Message: "Expression $type takes exactly 1 arguments. 2 were passed in.",
+			},
+		},
+		"GroupNonExistentOperator": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$non-existent", "foo"}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    168,
+				Name:    "InvalidPipelineOperator",
+				Message: "Unrecognized expression '$non-existent'",
+			},
+		},
+		"GroupRecursiveNonExistentOperator": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$type", bson.D{{"$non-existent", "foo"}}}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    168,
+				Name:    "InvalidPipelineOperator",
+				Message: "Unrecognized expression '$non-existent'",
+			},
 		},
 	} {
 		name, tc := name, tc
