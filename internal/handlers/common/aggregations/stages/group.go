@@ -44,6 +44,7 @@ import (
 type group struct {
 	groupExpression any
 	groupBy         []groupBy
+	query           aggregations.AggregateQuery
 }
 
 // groupBy represents accumulation to apply on the group.
@@ -53,8 +54,8 @@ type groupBy struct {
 }
 
 // newGroup creates a new $group stage.
-func newGroup(stage *types.Document) (aggregations.Stage, error) {
-	fields, err := common.GetRequiredParam[*types.Document](stage, "$group")
+func newGroup(params newStageParams) (aggregations.Stage, error) {
+	fields, err := common.GetRequiredParam[*types.Document](params.stage, "$group")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupInvalidFields,
@@ -112,7 +113,13 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 	return &group{
 		groupExpression: groupKey,
 		groupBy:         groups,
+		query:           params.query,
 	}, nil
+}
+
+// FetchDocuments implements Stage interface.
+func (g *group) FetchDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	return g.query.QueryDocuments(ctx, closer)
 }
 
 // Process implements Stage interface.

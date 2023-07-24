@@ -27,11 +27,12 @@ import (
 // limit represents $limit stage.
 type limit struct {
 	limit int64
+	query aggregations.AggregateQuery
 }
 
 // newLimit creates a new $limit stage.
-func newLimit(stage *types.Document) (aggregations.Stage, error) {
-	doc, err := stage.Get("$limit")
+func newLimit(params newStageParams) (aggregations.Stage, error) {
+	doc, err := params.stage.Get("$limit")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -43,7 +44,13 @@ func newLimit(stage *types.Document) (aggregations.Stage, error) {
 
 	return &limit{
 		limit: l,
+		query: params.query,
 	}, nil
+}
+
+// FetchDocuments implements Stage interface.
+func (l *limit) FetchDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	return l.query.QueryDocuments(ctx, closer)
 }
 
 // Process implements Stage interface.

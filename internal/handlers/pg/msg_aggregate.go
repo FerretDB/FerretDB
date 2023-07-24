@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"os"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -164,9 +163,31 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	aggregationStages := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
 	stagesDocuments := make([]aggregations.Stage, 0, len(aggregationStages))
-	collStatsDocuments := make([]aggregations.Stage, 0, len(aggregationStages))
+	previousStages := make([]string, 0, len(aggregationStages))
 
-	for i, d := range aggregationStages {
+	filter, sort := aggregations.GetPushdownQuery(aggregationStages)
+	// only documents stages or no stages - fetch documents from the DB and apply stages to them
+	qp := &pgdb.QueryParams{
+		DB:         db,
+		Collection: collection,
+	}
+
+	if !h.DisableFilterPushdown {
+		qp.Filter = filter
+	}
+
+	if h.EnableSortPushdown {
+		qp.Sort = sort
+	}
+
+	q := &aggregationQuery{
+		dbPool:     dbPool,
+		qp:         qp,
+		db:         db,
+		collection: collection,
+	}
+
+	for _, d := range aggregationStages {
 		d, ok := d.(*types.Document)
 		if !ok {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -178,26 +199,12 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		var s aggregations.Stage
 
-		if s, err = stages.NewStage(d); err != nil {
+		if s, err = stages.NewStage(d, db, collection, previousStages, q); err != nil {
 			return nil, err
 		}
 
-		switch d.Command() {
-		case "$collStats":
-			if i > 0 {
-				// TODO Add a test to cover this error: https://github.com/FerretDB/FerretDB/issues/2349
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrCollStatsIsNotFirstStage,
-					"$collStats is only valid as the first stage in a pipeline",
-					document.Command(),
-				)
-			}
-
-			collStatsDocuments = append(collStatsDocuments, s)
-		default:
-			stagesDocuments = append(stagesDocuments, s)
-			collStatsDocuments = append(collStatsDocuments, s) // It's possible to apply any stage after $collStats stage
-		}
+		stagesDocuments = append(stagesDocuments, s)
+		previousStages = append(previousStages, d.Command())
 	}
 
 	// validate cursor after validating pipeline stages to keep compatibility
@@ -243,40 +250,16 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var iter iterator.Interface[struct{}, *types.Document]
 
-	// At this point we have a list of stages to apply to the documents or stats.
-	// If collStatsDocuments contains the same stages as stagesDocuments, we apply aggregation to documents fetched from the DB.
-	// If collStatsDocuments contains more stages than stagesDocuments, we apply aggregation to statistics fetched from the DB.
-	if len(collStatsDocuments) == len(stagesDocuments) {
-		filter, sort := aggregations.GetPushdownQuery(aggregationStages)
-
-		// only documents stages or no stages - fetch documents from the DB and apply stages to them
-		qp := pgdb.QueryParams{
-			DB:         db,
-			Collection: collection,
+	for i, s := range stagesDocuments {
+		if i == 0 {
+			if iter, err = s.FetchDocuments(ctx, closer); err != nil {
+				return nil, err
+			}
 		}
 
-		if !h.DisableFilterPushdown {
-			qp.Filter = filter
+		if iter, err = s.Process(ctx, iter, closer); err != nil {
+			return nil, err
 		}
-
-		if h.EnableSortPushdown {
-			qp.Sort = sort
-		}
-
-		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})
-	} else {
-		// stats stages are provided - fetch stats from the DB and apply stages to them
-		// TODO move $collStatsDocuments specific logic to its stage https://github.com/FerretDB/FerretDB/issues/2423
-		statistics := stages.GetStatistics(collStatsDocuments)
-
-		iter, err = processStagesStats(ctx, closer, &stagesStatsParams{
-			dbPool, db, collection, statistics, collStatsDocuments,
-		})
-	}
-
-	if err != nil {
-		closer.Close()
-		return nil, err
 	}
 
 	closer.Add(iter)
@@ -323,15 +306,16 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	return &reply, nil
 }
 
-// stagesDocumentsParams contains the parameters for processStagesDocuments.
-type stagesDocumentsParams struct {
-	dbPool *pgdb.Pool
-	qp     *pgdb.QueryParams
-	stages []aggregations.Stage
+// aggregationQuery queries database using set parameters.
+type aggregationQuery struct {
+	dbPool     *pgdb.Pool
+	qp         *pgdb.QueryParams
+	db         string
+	collection string
 }
 
-// processStagesDocuments retrieves the documents from the database and then processes them through the stages.
-func processStagesDocuments(ctx context.Context, closer *iterator.MultiCloser, p *stagesDocumentsParams) (types.DocumentsIterator, error) { //nolint:lll // for readability
+// QueryDocuments implements AggregateQuery interface.
+func (p *aggregationQuery) QueryDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
 	var keepTx pgx.Tx
 	var iter types.DocumentsIterator
 
@@ -345,12 +329,6 @@ func processStagesDocuments(ctx context.Context, closer *iterator.MultiCloser, p
 		}
 
 		closer.Add(iter)
-
-		for _, s := range p.stages {
-			if iter, err = s.Process(ctx, iter, closer); err != nil {
-				return err
-			}
-		}
 
 		return nil
 	}); err != nil {
@@ -367,101 +345,50 @@ func processStagesDocuments(ctx context.Context, closer *iterator.MultiCloser, p
 	return iter, nil
 }
 
-// stagesStatsParams contains the parameters for processStagesStats.
-type stagesStatsParams struct {
-	dbPool     *pgdb.Pool
-	db         string
-	collection string
-	statistics map[stages.Statistic]struct{}
-	stages     []aggregations.Stage
-}
+// QueryCollStats implements AggregateQuery interface.
+func (p *aggregationQuery) QueryCollStats(ctx context.Context, closer *iterator.MultiCloser) (*aggregations.CollStats, error) {
+	var collStats *pgdb.CollStats
 
-// processStagesStats retrieves the statistics from the database and then processes them through the stages.
-// TODO move $collStats specific logic to its stage https://github.com/FerretDB/FerretDB/issues/2423
-func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *stagesStatsParams) (types.DocumentsIterator, error) { //nolint:lll // for readability
-	// Clarify what needs to be retrieved from the database and retrieve it.
-	_, hasCount := p.statistics[stages.StatisticCount]
-	_, hasStorage := p.statistics[stages.StatisticStorage]
+	if err := p.dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		var err error
+		var exists bool
 
-	var host string
-	var err error
+		if exists, err = pgdb.CollectionExists(ctx, tx, p.db, p.collection); err != nil {
+			return err
+		}
 
-	host, err = os.Hostname()
-	if err != nil {
+		if !exists {
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNamespaceNotFound,
+				fmt.Sprintf("ns not found: %s.%s", p.db, p.collection),
+				"aggregate",
+			)
+		}
+
+		collStats, err = pgdb.CalculateCollStats(ctx, tx, p.db, p.collection)
+		if errors.Is(err, pgdb.ErrTableNotExist) {
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNamespaceNotFound,
+				fmt.Sprintf("ns not found: %s.%s", p.db, p.collection),
+				"aggregate",
+			)
+		}
+
+		return err
+	}); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	doc := must.NotFail(types.NewDocument(
-		"ns", p.db+"."+p.collection,
-		"host", host,
-		"localTime", time.Now().UTC().Format(time.RFC3339),
-	))
-
-	var collStats *pgdb.CollStats
-
-	if hasCount || hasStorage {
-		if err = p.dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-			var exists bool
-
-			if exists, err = pgdb.CollectionExists(ctx, tx, p.db, p.collection); err != nil {
-				return err
-			}
-
-			if !exists {
-				return commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrNamespaceNotFound,
-					fmt.Sprintf("ns not found: %s.%s", p.db, p.collection),
-					"aggregate",
-				)
-			}
-
-			collStats, err = pgdb.CalculateCollStats(ctx, tx, p.db, p.collection)
-			return err
-		}); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-	}
-
-	if hasStorage {
-		var avgObjSize int64
-		if collStats.CountObjects > 0 {
-			avgObjSize = collStats.SizeCollection / collStats.CountObjects
-		}
-
-		doc.Set(
-			"storageStats", must.NotFail(types.NewDocument(
-				"size", collStats.SizeTotal,
-				"count", collStats.CountObjects,
-				"avgObjSize", avgObjSize,
-				"storageSize", collStats.SizeCollection,
-				"freeStorageSize", int64(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"nindexes", collStats.CountIndexes,
-				"indexDetails", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"totalIndexSize", collStats.SizeIndexes,
-				"totalSize", collStats.SizeTotal,
-				"indexSizes", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-			)),
-		)
-	}
-
-	if hasCount {
-		doc.Set(
-			"count", collStats.CountObjects,
-		)
-	}
-
-	// Process the retrieved statistics through the stages.
-	iter := iterator.Values(iterator.ForSlice([]*types.Document{doc}))
-	closer.Add(iter)
-
-	for _, s := range p.stages {
-		if iter, err = s.Process(ctx, iter, closer); err != nil {
-			return nil, err
-		}
-	}
-
-	return iter, nil
+	return &aggregations.CollStats{
+		CountObjects:   collStats.CountObjects,
+		CountIndexes:   collStats.CountIndexes,
+		SizeTotal:      collStats.SizeTotal,
+		SizeIndexes:    collStats.SizeIndexes,
+		SizeCollection: collStats.SizeCollection,
+	}, nil
 }
+
+// check interfaces
+var (
+	_ aggregations.AggregateQuery = (*aggregationQuery)(nil)
+)

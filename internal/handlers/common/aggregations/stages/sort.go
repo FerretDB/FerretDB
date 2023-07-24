@@ -29,11 +29,12 @@ import (
 // sort represents $sort stage.
 type sort struct {
 	fields *types.Document
+	query  aggregations.AggregateQuery
 }
 
 // newSort creates a new $sort stage.
-func newSort(stage *types.Document) (aggregations.Stage, error) {
-	fields, err := common.GetRequiredParam[*types.Document](stage, "$sort")
+func newSort(params newStageParams) (aggregations.Stage, error) {
+	fields, err := common.GetRequiredParam[*types.Document](params.stage, "$sort")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrSortBadExpression,
@@ -54,7 +55,13 @@ func newSort(stage *types.Document) (aggregations.Stage, error) {
 
 	return &sort{
 		fields: fields,
+		query:  params.query,
 	}, nil
+}
+
+// FetchDocuments implements Stage interface.
+func (s *sort) FetchDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	return s.query.QueryDocuments(ctx, closer)
 }
 
 // Process implements Stage interface.

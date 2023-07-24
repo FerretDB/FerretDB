@@ -31,11 +31,12 @@ import (
 //	{ $addFields: { <newField>: <expression>, ... } }
 type addFields struct {
 	newField *types.Document
+	query    aggregations.AggregateQuery
 }
 
 // newAddFields validates stage document and creates a new $addFields stage.
-func newAddFields(stage *types.Document) (aggregations.Stage, error) {
-	fields, err := stage.Get("$addFields")
+func newAddFields(params newStageParams) (aggregations.Stage, error) {
+	fields, err := params.stage.Get("$addFields")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -59,7 +60,13 @@ func newAddFields(stage *types.Document) (aggregations.Stage, error) {
 
 	return &addFields{
 		newField: fieldsDoc,
+		query:    params.query,
 	}, nil
+}
+
+// FetchDocuments implements Stage interface.
+func (s *addFields) FetchDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	return s.query.QueryDocuments(ctx, closer)
 }
 
 // Process implements Stage interface.

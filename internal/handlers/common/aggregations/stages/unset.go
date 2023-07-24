@@ -36,11 +36,12 @@ import (
 //	or { $unset: [ "<field1>", "<field2>", ... ] }
 type unset struct {
 	exclusion *types.Document
+	query     aggregations.AggregateQuery
 }
 
 // newUnset validates unset document and creates a new $unset stage.
-func newUnset(stage *types.Document) (aggregations.Stage, error) {
-	fields := must.NotFail(stage.Get("$unset"))
+func newUnset(params newStageParams) (aggregations.Stage, error) {
+	fields := must.NotFail(params.stage.Get("$unset"))
 
 	// exclusion contains keys with `false` values to specify projection exclusion later.
 	exclusion := must.NotFail(types.NewDocument())
@@ -135,7 +136,13 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 
 	return &unset{
 		exclusion: exclusion,
+		query:     params.query,
 	}, nil
+}
+
+// FetchDocuments implements Stage interface.
+func (u *unset) FetchDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	return u.query.QueryDocuments(ctx, closer)
 }
 
 // Process implements Stage interface.

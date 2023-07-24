@@ -27,11 +27,12 @@ import (
 // match represents $match stage.
 type match struct {
 	filter *types.Document
+	query  aggregations.AggregateQuery
 }
 
 // newMatch creates a new $match stage.
-func newMatch(stage *types.Document) (aggregations.Stage, error) {
-	filter, err := common.GetRequiredParam[*types.Document](stage, "$match")
+func newMatch(params newStageParams) (aggregations.Stage, error) {
+	filter, err := common.GetRequiredParam[*types.Document](params.stage, "$match")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrMatchBadExpression,
@@ -42,7 +43,13 @@ func newMatch(stage *types.Document) (aggregations.Stage, error) {
 
 	return &match{
 		filter: filter,
+		query:  params.query,
 	}, nil
+}
+
+// FetchDocuments implements Stage interface.
+func (m *match) FetchDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	return m.query.QueryDocuments(ctx, closer)
 }
 
 // Process implements Stage interface.
