@@ -106,7 +106,7 @@ Please find the data here:
 The data contains a set of documents based on different transactions and supplies across the globe.
 This is a sample document from the collection:
 
-```json
+```js
 {"transaction_id": 10020, "customer_name": "María Pérez", "customer_location": "Buenos Aires, Argentina", "product_category": "Furniture", "transaction_time": new Date ("2023-07-16T02:00:00Z"), "product_name": "La-Z-Boy Recliner", "price": 450, "quantity": 1, "payment_method": "Credit Card"}
 ```
 
