@@ -636,6 +636,18 @@ func TestAggregateCompatGroup(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
 		},
+		"IDSumInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$sum", "$"}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"IDSumRecursiveInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$sum", bson.D{{"$sum", "$"}}}}}}}},
+			},
+			resultType: emptyResult,
+		},
 	}
 
 	testAggregateStagesCompat(t, testCases)

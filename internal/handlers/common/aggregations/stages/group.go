@@ -174,10 +174,6 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]groupedDocuments, error) {
 	switch groupKey := g.groupExpression.(type) {
 	case *types.Document:
-		if !operators.IsOperator(groupKey) {
-			break
-		}
-
 		op, err := operators.NewOperator(groupKey)
 		if err != nil {
 			return nil, err
