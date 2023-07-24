@@ -25,7 +25,7 @@ import (
 )
 
 func TestNewPathFromString(t *testing.T) {
-	for _, tc := range []struct {
+	for _, tc := range []struct { //nolint:vet // for readability
 		s   string
 		p   Path
 		err error
@@ -265,7 +265,7 @@ func TestGetByPath(t *testing.T) {
 		"loadBalanced", false,
 	))
 
-	for _, tc := range []struct {
+	for _, tc := range []struct { //nolint:vet // for readability
 		path Path
 		res  any
 		err  string
@@ -320,7 +320,7 @@ func TestPathTrimSuffixPrefix(t *testing.T) {
 	pathOneElement := NewStaticPath("1")
 	pathZeroElement := Path{e: []string{}}
 
-	for _, tc := range []struct {
+	for _, tc := range []struct { //nolint:vet // for readability
 		name string
 		f    func() Path
 	}{{
@@ -353,7 +353,7 @@ func TestPathSuffixPrefix(t *testing.T) {
 	pathZeroElement := Path{e: []string{}}
 
 	// Obtaining prefix and suffix of single value path is harmless.
-	for _, tc := range []struct {
+	for _, tc := range []struct { //nolint:vet // for readability
 		name string
 		f    func() string
 	}{{

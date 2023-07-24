@@ -92,6 +92,7 @@ type Path struct {
 	e []string
 }
 
+// newPath returns Path from a strings slice.
 func newPath(path ...string) (Path, error) {
 	var res Path
 
