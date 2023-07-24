@@ -166,7 +166,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	previousStages := make([]string, 0, len(aggregationStages))
 
 	filter, sort := aggregations.GetPushdownQuery(aggregationStages)
-	// only documents stages or no stages - fetch documents from the DB and apply stages to them
+
 	qp := &pgdb.QueryParams{
 		DB:         db,
 		Collection: collection,
