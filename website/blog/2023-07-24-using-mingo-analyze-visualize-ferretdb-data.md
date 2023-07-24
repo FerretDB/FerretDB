@@ -2,9 +2,8 @@
 slug: using-mingo-analyze-visualize-ferretdb-data
 title: 'Using Mingo to Analyze and Visualize FerretDB Data'
 description: >
-  Explore how to use FerretDB with a MongoDB GUI tool like NoSQLBooster: setting it up, running queries, performing aggregation operations, and much more.
+  Here, we'll be exploring ways to visualize and analyze FerretDB data with Mingo – a modern, sleek, and fast MongoDB GUI tool.
 image: /img/blog/ferretdb-mingo.jpg
-keywords: [mongodb gui, mongodb gui tools, open source mongodb gui]
 tags: [mongodb gui, compatible applications, tutorial]
 ---
 
