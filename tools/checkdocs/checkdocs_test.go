@@ -77,3 +77,116 @@ Caddy will listen on both HTTP and HTTPS ports,
 	err = verifySlug(slugs[0], f)
 	require.NoError(t, err)
 }
+
+func TestVerifyDateNotPresent(t *testing.T) {
+	m := fstest.MapFS{
+		"2022-05-16-using-cla-assistant-with-ferretdb.md": {
+			Data: []byte(`---
+slug: using-cla-assistant-with-ferretdb
+title: "Using CLA Assistant with FerretDB"
+author: Alexey Palazhchenko
+description: Like many other open-source projects
+image: /img/blog/cla3.jpg
+---
+Finally, we need a web server that would handle HTTPS for us.
+For that, we will use [Caddy](https://caddyserver.com):
+Caddy will listen on both HTTP and HTTPS ports, 
+`),
+		},
+	}
+
+	_, err := m.ReadDir(".")
+	require.NoError(t, err)
+
+	f, err := m.Open("2022-05-16-using-cla-assistant-with-ferretdb.md")
+	require.NoError(t, err)
+
+	err = verifyDateNotPresent(f)
+	require.NoError(t, err)
+}
+
+func TestVerifyDateNotPresentForError(t *testing.T) {
+	m := fstest.MapFS{
+		"2022-05-16-using-cla-assistant-with-ferretdb.md": {
+			Data: []byte(`---
+slug: using-cla-assistant-with-ferretdb
+title: "Using CLA Assistant with FerretDB"
+author: Alexey Palazhchenko
+description: Like many other open-source projects
+image: /img/blog/cla3.jpg
+date: 2022-05-16
+---
+Finally, we need a web server that would handle HTTPS for us.
+For that, we will use [Caddy](https://caddyserver.com):
+Caddy will listen on both HTTP and HTTPS ports, 
+`),
+		},
+	}
+
+	_, err := m.ReadDir(".")
+	require.NoError(t, err)
+
+	f, err := m.Open("2022-05-16-using-cla-assistant-with-ferretdb.md")
+	require.NoError(t, err)
+
+	err = verifyDateNotPresent(f)
+	assert.Equal(t, err.Error(), "date field should not be present in the front matter")
+}
+
+func TestVerifyTags(t *testing.T) {
+	m := fstest.MapFS{
+		"2022-05-16-using-cla-assistant-with-ferretdb.md": {
+			Data: []byte(`---
+slug: using-cla-assistant-with-ferretdb
+title: "Using CLA Assistant with FerretDB"
+author: Alexey Palazhchenko
+description: Like many other open-source projects
+image: /img/blog/cla3.jpg
+date: 2022-05-16
+tags: [events, document databases, hacktoberfest]
+---
+Finally, we need a web server that would handle HTTPS for us.
+For that, we will use [Caddy](https://caddyserver.com):
+Caddy will listen on both HTTP and HTTPS ports, 
+`),
+		},
+	}
+
+	_, err := m.ReadDir(".")
+	require.NoError(t, err)
+
+	f, err := m.Open("2022-05-16-using-cla-assistant-with-ferretdb.md")
+	require.NoError(t, err)
+
+	err = verifyTags(f)
+	require.NoError(t, err)
+}
+
+func TestVerifyTagsForError(t *testing.T) {
+	m := fstest.MapFS{
+		"2022-05-16-using-cla-assistant-with-ferretdb.md": {
+			Data: []byte(`---
+slug: using-cla-assistant-with-ferretdb
+title: "Using CLA Assistant with FerretDB"
+author: Alexey Palazhchenko
+description: Like many other open-source projects
+image: /img/blog/cla3.jpg
+date: 2022-05-16
+tags: [events, documentss databases, hacktoberfest]
+---
+Finally, we need a web server that would handle HTTPS for us.
+For that, we will use [Caddy](https://caddyserver.com):
+Caddy will listen on both HTTP and HTTPS ports, 
+`),
+		},
+	}
+
+	_, err := m.ReadDir(".")
+	require.NoError(t, err)
+
+	f, err := m.Open("2022-05-16-using-cla-assistant-with-ferretdb.md")
+	require.NoError(t, err)
+
+	err = verifyTags(f)
+	assert.Equal(t, err.Error(), "tag 'documentss' is not in the allowed list")
+}

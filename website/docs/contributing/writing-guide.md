@@ -83,7 +83,9 @@ Tags are an important part of every blog post, and they appear at the top of the
 They make it easy for readers to search and identify related blog posts based on their categories or subject matter.
 You can view all [currently listed tags here](https://blog.ferretdb.io/tags/).
 
-Please note that tags are case-sensitive, such that `Release` and `release` are two separate tags.
+Please note that all tags must be in small-case, such that `FerretDB` should be written as `ferretdb`.
+
+Hyphens should be disregarded when writing tags, e.g. `mongodb-compatible database` should be written as `mongodb compatible database`.
 
 A blog post can have as many tags as possible, as long as it is relevant to the post.
 Please only include the following tags:
@@ -115,6 +117,7 @@ Keywords in the front matter are displayed as meta keywords tag in HTML.
 Meta keywords tag are not so important for SEO anymore, but they can help with focusing the content on specific keywords that should be used (appear at least once) in the blog content, meta description, title, or alt images.
 
 The use of meta keywords is not mandatory, but if you want to add them, please ensure that they are relevant to the blog post.
+All keywords must be in small-case.
 
 ## Code blocks
 
