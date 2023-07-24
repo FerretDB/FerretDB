@@ -1131,7 +1131,7 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 
 		r = math.Trunc(r)
 
-		if r >= float64(math.MaxInt64) || r < float64(-9.223372036854776832e+18) {
+		if r >= float64(math.MaxInt64) || r < float64(math.MinInt64) {
 			return false, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
 				`malformed mod, remainder value is invalid :: caused by :: `+
