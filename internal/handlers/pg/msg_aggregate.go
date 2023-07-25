@@ -314,7 +314,7 @@ type aggregationQuery struct {
 	collection string
 }
 
-// QueryDocuments implements Aggregation interface.
+// Query implements Aggregation interface.
 func (p *aggregationQuery) Query(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
 	var keepTx pgx.Tx
 	var iter types.DocumentsIterator
@@ -345,7 +345,7 @@ func (p *aggregationQuery) Query(ctx context.Context, closer *iterator.MultiClos
 	return iter, nil
 }
 
-// QueryCollStats implements Aggregation interface.
+// CollStats implements Aggregation interface.
 func (p *aggregationQuery) CollStats(ctx context.Context, closer *iterator.MultiCloser) (*aggregations.CollStatsResult, error) {
 	var collStats *pgdb.CollStats
 
