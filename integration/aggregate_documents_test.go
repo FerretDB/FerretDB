@@ -146,6 +146,42 @@ func TestAggregateGroupErrors(t *testing.T) {
 				Message: "Unrecognized expression '$non-existent'",
 			},
 		},
+		"SumEmptyExpression": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"sum", bson.D{{"$sum", "$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16872,
+				Name:    "Location16872",
+				Message: "'$' by itself is not a valid FieldPath",
+			},
+		},
+		"SumEmptyVariable": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"$sum", "$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "Invalid $group :: caused by :: empty variable names are not allowed",
+			},
+		},
+		"SumDollarVariable": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"$sum", "$$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "Invalid $group :: caused by :: '$' starts with an invalid character for a user variable name",
+			},
+		},
 		"GroupRecursiveNonExistentOperator": {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{{"_id", bson.D{{"$type", bson.D{{"$non-existent", "foo"}}}}}}}},

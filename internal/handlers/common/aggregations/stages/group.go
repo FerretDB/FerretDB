@@ -308,7 +308,7 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 }
 
 // processOperatorError takes internal error related to operator evaluation and
-// returns proper CommandError that can be returned by $project aggregation stage.
+// returns proper CommandError that can be returned by $group aggregation stage.
 //
 // Command error codes:
 // - ErrEmptySubProject when operator value is empty.
