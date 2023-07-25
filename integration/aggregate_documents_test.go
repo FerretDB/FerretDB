@@ -124,6 +124,7 @@ func TestAggregateGroupErrors(t *testing.T) {
 				Name:    "Location15983",
 				Message: "An object representing an expression must have exactly one field: { $type: 42, $op: 42 }",
 			},
+			altMessage: "An object representing an expression must have exactly one field",
 		},
 		"GroupTypeInvalidLen": {
 			pipeline: bson.A{

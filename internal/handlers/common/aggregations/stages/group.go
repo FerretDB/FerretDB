@@ -331,9 +331,8 @@ func processOperatorError(err error) error {
 		switch opErr.Code() {
 		case operators.ErrTooManyFields:
 			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFieldPathInvalidName,
-				"Invalid $group :: caused by :: FieldPath field names may not start with '$'."+
-					" Consider using $getField or $setField.",
+				commonerrors.ErrExpressionWrongLenOfFields,
+				"An object representing an expression must have exactly one field",
 				"$group (stage)",
 			)
 		case operators.ErrNotImplemented:
@@ -345,7 +344,7 @@ func processOperatorError(err error) error {
 		case operators.ErrArgsInvalidLen:
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrOperatorWrongLenOfArgs,
-				"Invalid $group :: caused by :: "+opErr.Error(),
+				opErr.Error(),
 				"$group (stage)",
 			)
 		case operators.ErrInvalidExpression:
@@ -357,7 +356,7 @@ func processOperatorError(err error) error {
 		case operators.ErrInvalidNestedExpression:
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrInvalidPipelineOperator,
-				"Invalid $group :: caused by :: "+opErr.Error(),
+				opErr.Error(),
 				"$group (stage)",
 			)
 		}
