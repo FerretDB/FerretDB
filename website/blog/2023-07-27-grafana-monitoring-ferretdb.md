@@ -1,6 +1,7 @@
 ---
 slug: grafana-monitoring-ferretdb
 title: 'Grafana Monitoring for FerretDB'
+authors: [alex]
 description: >
   FerretDB is well suited to leverage the MongoDB data source plugin for Grafana to monitor and analyze your data.
 image: /img/blog/ferretdb-grafana.jpg
