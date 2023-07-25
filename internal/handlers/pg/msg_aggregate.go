@@ -167,24 +167,18 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	filter, sort := aggregations.GetPushdownQuery(aggregationStages)
 
-	qp := &pgdb.QueryParams{
-		DB:         db,
-		Collection: collection,
+	p := &pgAggregation{
+		dbPool:     dbPool,
+		db:         db,
+		collection: collection,
 	}
 
 	if !h.DisableFilterPushdown {
-		qp.Filter = filter
+		p.filter = filter
 	}
 
 	if h.EnableSortPushdown {
-		qp.Sort = sort
-	}
-
-	q := &aggregationQuery{
-		dbPool:     dbPool,
-		qp:         qp,
-		db:         db,
-		collection: collection,
+		p.sort = sort
 	}
 
 	for _, d := range aggregationStages {
@@ -199,7 +193,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		var s aggregations.Stage
 
-		if s, err = stages.NewStage(d, db, collection, previousStages, q); err != nil {
+		if s, err = stages.NewStage(d, db, collection, previousStages, p); err != nil {
 			return nil, err
 		}
 
@@ -306,16 +300,17 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	return &reply, nil
 }
 
-// aggregationQuery queries database using set parameters.
-type aggregationQuery struct {
+// pgAggregation queries database using set parameters.
+type pgAggregation struct {
 	dbPool     *pgdb.Pool
-	qp         *pgdb.QueryParams
 	db         string
 	collection string
+	sort       *types.Document
+	filter     *types.Document
 }
 
 // Query implements Aggregation interface.
-func (p *aggregationQuery) Query(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+func (p *pgAggregation) Query(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
 	var keepTx pgx.Tx
 	var iter types.DocumentsIterator
 
@@ -323,7 +318,12 @@ func (p *aggregationQuery) Query(ctx context.Context, closer *iterator.MultiClos
 		keepTx = tx
 
 		var err error
-		iter, _, err = pgdb.QueryDocuments(ctx, tx, p.qp)
+		iter, _, err = pgdb.QueryDocuments(ctx, tx, &pgdb.QueryParams{
+			Filter:     p.filter,
+			Sort:       p.sort,
+			DB:         p.db,
+			Collection: p.collection,
+		})
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -346,7 +346,7 @@ func (p *aggregationQuery) Query(ctx context.Context, closer *iterator.MultiClos
 }
 
 // CollStats implements Aggregation interface.
-func (p *aggregationQuery) CollStats(ctx context.Context, closer *iterator.MultiCloser) (*aggregations.CollStatsResult, error) {
+func (p *pgAggregation) CollStats(ctx context.Context, closer *iterator.MultiCloser) (*aggregations.CollStatsResult, error) {
 	var collStats *pgdb.CollStats
 
 	if err := p.dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
@@ -390,5 +390,5 @@ func (p *aggregationQuery) CollStats(ctx context.Context, closer *iterator.Multi
 
 // check interfaces
 var (
-	_ aggregations.Aggregation = (*aggregationQuery)(nil)
+	_ aggregations.Aggregation = (*pgAggregation)(nil)
 )
