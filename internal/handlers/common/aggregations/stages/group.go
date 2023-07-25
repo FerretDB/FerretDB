@@ -90,15 +90,18 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 					}
 
 					groupKey = v
+
 					continue
 				}
 
-				op, err := operators.NewOperator(doc)
+				var op operators.Operator
+				op, err = operators.NewOperator(doc)
+
 				if err != nil {
 					return nil, processOperatorError(err)
 				}
 
-				if _, err := op.Process(nil); err != nil {
+				if _, err = op.Process(nil); err != nil {
 					return nil, processOperatorError(err)
 				}
 			}
