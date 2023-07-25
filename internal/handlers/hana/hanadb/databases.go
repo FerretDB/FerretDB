@@ -47,6 +47,23 @@ func (hanaPool *Pool) CreateSchemaIfNotExists(ctx context.Context, qp *QueryPara
 	}
 }
 
+// DatabaseExists checks if the database exists.
+func (hanaPool *Pool) DatabaseExists(ctx context.Context, db string) (bool, error) {
+	sql := fmt.Sprintf("SELECT COUNT(*) FROM \"PUBLIC\".\"SCHEMAS\" WHERE SCHEMA_NAME = '%s'", db)
+
+	var count int
+
+	if err := hanaPool.QueryRowContext(ctx, sql).Scan(&count); err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	if count > 0 {
+		return true, nil
+	}
+
+	return false, nil
+}
+
 // DropSchema drops database.
 //
 // Returns ErrSchemaNotExist if schema does not exist.

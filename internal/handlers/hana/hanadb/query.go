@@ -16,10 +16,14 @@ package hanadb
 
 import (
 	"context"
-	"fmt"
+	"database/sql"
+	"sync"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
 // QueryParams represents options/parameters used for SQL query/statement.
@@ -28,26 +32,82 @@ type QueryParams struct {
 	Collection string
 }
 
-func (hanaPool *Pool) QueryDocuments(ctx context.Context, qp *QueryParams) ([]*types.Document, error) {
+// queryIterator implements iterator.Interface to fetch documents from the database.
+type queryIterator struct {
+	ctx       context.Context
+	unmarshal func(b []byte) (*types.Document, error) // defaults to sjson.Unmarshal
 
-	sqlStmt := fmt.Sprintf("SELECT %q FROM %q", qp.Collection, qp.DB)
+	m    sync.Mutex
+	rows *sql.Rows
 
-	rows, err := hanaPool.QueryContext(ctx, sqlStmt)
+	token *resource.Token
+}
+
+// QueryDocuments returns an queryIterator to fetch documents for given SQLParams.
+// If the collection doesn't exist, it returns an empty iterator and no error.
+// If an error occurs, it returns nil and that error, possibly wrapped.
+func (hanaPool *Pool) QueryDocuments(ctx context.Context, qp *QueryParams) (types.DocumentsIterator, error) {
+	// Todo: build correct SQL here
+	sqlStmt := "SELECT $1 FROM $1"
+
+	rows, err := hanaPool.QueryContext(ctx, sqlStmt, qp.Collection)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var documents []*types.Document
-
-	// Todo: transform rows into documents
-	for rows.Next() {
-		var docStr string
-		if err = rows.Scan(&docStr); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-		// Todo: create document from rowString
-		//documents = append(documents, types.NewDocument(docStr))
+	iter := &queryIterator{
+		ctx:       ctx,
+		unmarshal: sjson.Unmarshal,
+		rows:      rows,
 	}
 
-	return documents, err
+	return iter, nil
+}
+
+// Next implements iterator.Interface.
+//
+// Otherwise, the next document is returned.
+func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
+	defer observability.FuncCall(iter.ctx)()
+
+	iter.m.Lock()
+	defer iter.m.Unlock()
+
+	var unused struct{}
+
+	var b []byte
+	if err := iter.rows.Scan(&b); err != nil {
+		return unused, nil, lazyerrors.Error(err)
+	}
+
+	doc, err := iter.unmarshal(b)
+	if err != nil {
+		return unused, nil, lazyerrors.Error(err)
+	}
+
+	return unused, doc, nil
+}
+
+// Close implements iterator.Interface.
+func (iter *queryIterator) Close() {
+	defer observability.FuncCall(iter.ctx)()
+
+	iter.m.Lock()
+	defer iter.m.Unlock()
+
+	iter.close()
+}
+
+// close closes iterator without holding mutex.
+//
+// This should be called only when the caller already holds the mutex.
+func (iter *queryIterator) close() {
+	defer observability.FuncCall(iter.ctx)()
+
+	if iter.rows != nil {
+		iter.rows.Close()
+		iter.rows = nil
+	}
+
+	resource.Untrack(iter, iter.token)
 }

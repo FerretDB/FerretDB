@@ -20,6 +20,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/hana/hanadb"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -47,11 +48,21 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		Collection: params.Collection,
 	}
 
-	// Todo:
-	// - use params to collect (query) documents
-	// - ? filter documents? or use filters in query directly?
-	// - wire?
+	// Get iterator for documents
+	docIter, err := dbPool.QueryDocuments(ctx, &qp)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
+	firstBatchDocs, err := iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](docIter), int(params.BatchSize))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	firstBatch := types.MakeArray(len(firstBatchDocs))
+	for _, doc := range firstBatchDocs {
+		firstBatch.Append(doc)
+	}
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
