@@ -340,8 +340,8 @@ func processOperatorError(err error) error {
 			)
 		case operators.ErrInvalidExpression:
 			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrAggregateInvalidExpression,
-				"Invalid $group :: caused by :: "+opErr.Error(),
+				commonerrors.ErrInvalidPipelineOperator,
+				opErr.Error(),
 				"$group (stage)",
 			)
 		case operators.ErrInvalidNestedExpression:
