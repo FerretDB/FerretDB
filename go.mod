@@ -17,6 +17,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/otel v1.16.0
 	go.opentelemetry.io/otel/trace v1.16.0
+	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.11.0 // indirect; always use @latest
 	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1
