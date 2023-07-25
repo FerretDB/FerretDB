@@ -84,15 +84,25 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 
 		if field == "_id" {
 			if doc, ok := v.(*types.Document); ok {
-				if operators.IsOperator(doc) {
+				if !operators.IsOperator(doc) {
+					if err = validateExpression("$group", doc); err != nil {
+						return nil, err
+					}
+
 					groupKey = v
 					continue
 				}
 
-				if err = validateExpression("$group", doc); err != nil {
-					return nil, err
+				op, err := operators.NewOperator(doc)
+				if err != nil {
+					return nil, processOperatorError(err)
+				}
+
+				if _, err := op.Process(nil); err != nil {
+					return nil, processOperatorError(err)
 				}
 			}
+
 			groupKey = v
 			continue
 		}
