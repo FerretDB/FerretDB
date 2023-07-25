@@ -319,10 +319,6 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 // - ErrFailedToParse when operator has invalid variable expression.
 // - ErrGroupInvalidFieldPath when operator has empty path expression.
 func processOperatorError(err error) error {
-	if err == nil {
-		return nil
-	}
-
 	var opErr operators.OperatorError
 	var exErr *aggregations.ExpressionError
 
