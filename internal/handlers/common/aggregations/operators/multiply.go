@@ -3,6 +3,7 @@ package operators
 import (
 	"errors"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -12,11 +13,9 @@ import (
 type multiply struct {
 	// operators are documents containing operator expressions i.e. `[{$sum: 1}]`
 	operators []*types.Document
+	values    []any
 }
 
-// newSum collects values that can be summed in `numbers`,
-// finds nested operators if any, validates path expressions
-// to populate `$sum` operator. It ignores values that are not summable.
 func newMultiply(doc *types.Document) (Operator, error) {
 	expr := must.NotFail(doc.Get("$multiply"))
 	operator := new(multiply)
@@ -40,6 +39,30 @@ func newMultiply(doc *types.Document) (Operator, error) {
 
 			if err != nil {
 				return nil, lazyerrors.Error(err)
+			}
+
+			switch elemExpr := v.(type) {
+			case *types.Document:
+				if IsOperator(elemExpr) {
+					operator.operators = append(operator.operators, elemExpr)
+				}
+			case float64:
+				operator.values = append(operator.values, elemExpr)
+			case string:
+				ex, err := aggregations.NewExpression(elemExpr)
+
+				var exErr *aggregations.ExpressionError
+				if errors.As(err, &exErr) && exErr.Code() == aggregations.ErrNotExpression {
+					break
+				}
+
+				if err != nil {
+					return nil, err
+				}
+
+				operator.values = append(operator.values, ex)
+			case int32, int64:
+				operator.values = append(operator.values, elemExpr)
 			}
 
 		}
