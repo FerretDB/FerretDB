@@ -302,15 +302,6 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 
 // processOperatorError takes internal error related to operator evaluation and
 // returns proper CommandError that can be returned by $group aggregation stage.
-//
-// Command error codes:
-// - ErrEmptySubProject when operator value is empty.
-// - ErrFieldPathInvalidName when FieldPath is invalid.
-// - ErrNotImplemented when the operator or expression is not implemented yet.
-// - ErrOperatorWrongLenOfArgs when the operator has an invalid number of arguments.
-// - ErrInvalidPipelineOperator when the operator does not exist.
-// - ErrFailedToParse when operator has invalid variable expression.
-// - ErrGroupInvalidFieldPath when operator has empty path expression.
 func processOperatorError(err error) error {
 	var opErr operators.OperatorError
 	var exErr *aggregations.ExpressionError

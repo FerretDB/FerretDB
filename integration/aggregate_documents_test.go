@@ -94,7 +94,7 @@ func TestAggregateGroupErrors(t *testing.T) {
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
-		"GroupUnaryOperatorSum": {
+		"UnaryOperatorSum": {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{{"sum", bson.D{{"$sum", bson.A{}}}}}}},
 			},
@@ -105,7 +105,7 @@ func TestAggregateGroupErrors(t *testing.T) {
 			},
 			altMessage: "The $sum accumulator is a unary operator",
 		},
-		"GroupTypeEmpty": {
+		"TypeEmpty": {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{{"v", bson.D{}}}}},
 			},
@@ -115,7 +115,7 @@ func TestAggregateGroupErrors(t *testing.T) {
 				Message: "The field 'v' must be an accumulator object",
 			},
 		},
-		"GroupTwoOperators": {
+		"TwoOperators": {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{{"_id", bson.D{{"$type", int32(42)}, {"$op", int32(42)}}}}}},
 			},
@@ -126,7 +126,7 @@ func TestAggregateGroupErrors(t *testing.T) {
 			},
 			altMessage: "An object representing an expression must have exactly one field",
 		},
-		"GroupTypeInvalidLen": {
+		"TypeInvalidLen": {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{{"_id", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
 			},
@@ -136,7 +136,7 @@ func TestAggregateGroupErrors(t *testing.T) {
 				Message: "Expression $type takes exactly 1 arguments. 2 were passed in.",
 			},
 		},
-		"GroupNonExistentOperator": {
+		"NonExistentOperator": {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{{"_id", bson.D{{"$non-existent", "foo"}}}}}},
 			},
@@ -182,7 +182,7 @@ func TestAggregateGroupErrors(t *testing.T) {
 				Message: "'$' starts with an invalid character for a user variable name",
 			},
 		},
-		"GroupRecursiveNonExistentOperator": {
+		"RecursiveNonExistentOperator": {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{{"_id", bson.D{{"$type", bson.D{{"$non-existent", "foo"}}}}}}}},
 			},
