@@ -167,7 +167,7 @@ func TestAggregateGroupErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Invalid $group :: caused by :: empty variable names are not allowed",
+				Message: "empty variable names are not allowed",
 			},
 		},
 		"SumDollarVariable": {
@@ -179,7 +179,7 @@ func TestAggregateGroupErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    9,
 				Name:    "FailedToParse",
-				Message: "Invalid $group :: caused by :: '$' starts with an invalid character for a user variable name",
+				Message: "'$' starts with an invalid character for a user variable name",
 			},
 		},
 		"GroupRecursiveNonExistentOperator": {

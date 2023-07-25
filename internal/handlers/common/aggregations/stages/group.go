@@ -365,7 +365,7 @@ func processOperatorError(err error) error {
 		case aggregations.ErrInvalidExpression:
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
-				"Invalid $group :: caused by :: '$' starts with an invalid character for a user variable name",
+				"'$' starts with an invalid character for a user variable name",
 				"$group (stage)",
 			)
 		case aggregations.ErrEmptyFieldPath:
@@ -384,7 +384,7 @@ func processOperatorError(err error) error {
 		case aggregations.ErrEmptyVariable:
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
-				"Invalid $group :: caused by :: empty variable names are not allowed",
+				"empty variable names are not allowed",
 				"$group (stage)",
 			)
 		}
