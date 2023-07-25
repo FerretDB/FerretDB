@@ -149,7 +149,7 @@ func TestAggregateGroupErrors(t *testing.T) {
 		"SumEmptyExpression": {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{
-					{"sum", bson.D{{"$sum", "$"}}},
+					{"_id", bson.D{{"$sum", "$"}}},
 				}}},
 			},
 			err: &mongo.CommandError{

@@ -371,7 +371,7 @@ func processOperatorError(err error) error {
 		case aggregations.ErrEmptyFieldPath:
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrGroupInvalidFieldPath,
-				"Invalid $group :: caused by :: '$' by itself is not a valid FieldPath",
+				"'$' by itself is not a valid FieldPath",
 				"$group (stage)",
 			)
 		case aggregations.ErrUndefinedVariable:
