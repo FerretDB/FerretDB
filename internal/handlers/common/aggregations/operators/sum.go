@@ -37,10 +37,83 @@ type sum struct {
 	arrayLen int
 }
 
+func newSum(args ...any) (Operator, error) {
+	operator := new(sum)
+
+	for _, arg := range args {
+		switch arg := arg.(type) {
+		case *types.Document:
+			if IsOperator(arg) {
+				operator.operators = []*types.Document{arg}
+			}
+		case *types.Array:
+			operator.arrayLen = arg.Len()
+
+			iter := arg.Iterator()
+			defer iter.Close()
+
+			for {
+				_, v, err := iter.Next()
+
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
+
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+
+				switch elemExpr := v.(type) {
+				case *types.Document:
+					if IsOperator(elemExpr) {
+						operator.operators = append(operator.operators, elemExpr)
+					}
+				case float64:
+					operator.numbers = append(operator.numbers, elemExpr)
+				case string:
+					ex, err := aggregations.NewExpression(elemExpr)
+
+					var exErr *aggregations.ExpressionError
+					if errors.As(err, &exErr) && exErr.Code() == aggregations.ErrNotExpression {
+						break
+					}
+
+					if err != nil {
+						return nil, err
+					}
+
+					operator.expressions = append(operator.expressions, ex)
+				case int32, int64:
+					operator.numbers = append(operator.numbers, elemExpr)
+				}
+			}
+		case float64:
+			operator.numbers = []any{arg}
+		case string:
+			ex, err := aggregations.NewExpression(arg)
+
+			var exErr *aggregations.ExpressionError
+			if errors.As(err, &exErr) && exErr.Code() == aggregations.ErrNotExpression {
+				break
+			}
+
+			if err != nil {
+				return nil, err
+			}
+
+			operator.expressions = []*aggregations.Expression{ex}
+		case int32, int64:
+			operator.numbers = []any{arg}
+		}
+	}
+
+	return operator, nil
+}
+
 // newSum collects values that can be summed in `numbers`,
 // finds nested operators if any, validates path expressions
 // to populate `$sum` operator. It ignores values that are not summable.
-func newSum(doc *types.Document) (Operator, error) {
+func aewSum(doc *types.Document) (Operator, error) {
 	expr := must.NotFail(doc.Get("$sum"))
 	operator := new(sum)
 

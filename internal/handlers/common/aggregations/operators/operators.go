@@ -29,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // newOperatorFunc is a type for a function that creates a standard aggregation operator.
@@ -37,7 +38,7 @@ import (
 // While accumulators perform operations on multiple documents
 // (for example `$count` can count documents in each `$group` group),
 // standard operators perform operations on a single document.
-type newOperatorFunc func(expression *types.Document) (Operator, error)
+type newOperatorFunc func(args ...any) (Operator, error)
 
 // Operator is a common interface for standard aggregation operators.
 type Operator interface {
@@ -90,12 +91,39 @@ func NewOperator(doc *types.Document) (Operator, error) {
 
 	operator := doc.Command()
 
+	expr := must.NotFail(doc.Get(operator))
+
+	var args []any
+
+	if expr != nil {
+		if expr, ok := expr.(*types.Array); ok {
+			iter := expr.Iterator()
+			defer iter.Close()
+
+			for {
+				_, v, err := iter.Next()
+
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
+
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+
+				args = append(args, v)
+			}
+		} else {
+			args = append(args, expr)
+		}
+	}
+
 	newOperator, supported := Operators[operator]
 	_, unsupported := unsupportedOperators[operator]
 
 	switch {
 	case supported:
-		return newOperator(doc)
+		return newOperator(args)
 	case unsupported:
 		return nil, newOperatorError(
 			ErrNotImplemented,
