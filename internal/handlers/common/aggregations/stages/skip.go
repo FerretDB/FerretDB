@@ -26,8 +26,8 @@ import (
 
 // skip represents $skip stage.
 type skip struct {
-	value int64
-	query aggregations.AggregateQuery
+	value       int64
+	aggregation aggregations.Aggregation
 }
 
 // newSkip creates a new $skip stage.
@@ -43,14 +43,14 @@ func newSkip(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &skip{
-		value: skipValue,
-		query: params.query,
+		value:       skipValue,
+		aggregation: params.aggregation,
 	}, nil
 }
 
-// FetchDocuments implements Stage interface.
-func (s *skip) FetchDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return s.query.QueryDocuments(ctx, closer)
+// FirstStage implements Stage interface.
+func (s *skip) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	return s.aggregation.Query(ctx, closer)
 }
 
 // Process implements Stage interface.

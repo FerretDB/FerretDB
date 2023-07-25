@@ -39,7 +39,7 @@ type collStats struct {
 	queryExecStats bool
 	db             string
 	collection     string
-	query          aggregations.AggregateQuery
+	aggregation    aggregations.Aggregation
 }
 
 // storageStats represents $collStats.storageStats field.
@@ -68,9 +68,9 @@ func newCollStats(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	cs := collStats{
-		db:         params.db,
-		collection: params.collection,
-		query:      params.query,
+		db:          params.db,
+		collection:  params.collection,
+		aggregation: params.aggregation,
 	}
 
 	// TODO Return error on invalid type of count: https://github.com/FerretDB/FerretDB/issues/2336
@@ -101,8 +101,8 @@ func newCollStats(params newStageParams) (aggregations.Stage, error) {
 	return &cs, nil
 }
 
-// FetchDocuments implements Stage interface.
-func (c *collStats) FetchDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+// FirstStage implements Stage interface.
+func (c *collStats) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
 	var host string
 	var err error
 
@@ -117,10 +117,10 @@ func (c *collStats) FetchDocuments(ctx context.Context, closer *iterator.MultiCl
 		"localTime", time.Now().UTC().Format(time.RFC3339),
 	))
 
-	var stats *aggregations.CollStats
+	var stats *aggregations.CollStatsResult
 
 	if c.count || c.storageStats != nil {
-		stats, err = c.query.QueryCollStats(ctx, closer)
+		stats, err = c.aggregation.CollStats(ctx, closer)
 		if err != nil {
 			return nil, err
 		}

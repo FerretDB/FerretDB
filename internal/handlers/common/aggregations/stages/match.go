@@ -26,8 +26,8 @@ import (
 
 // match represents $match stage.
 type match struct {
-	filter *types.Document
-	query  aggregations.AggregateQuery
+	filter      *types.Document
+	aggregation aggregations.Aggregation
 }
 
 // newMatch creates a new $match stage.
@@ -42,14 +42,14 @@ func newMatch(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &match{
-		filter: filter,
-		query:  params.query,
+		filter:      filter,
+		aggregation: params.aggregation,
 	}, nil
 }
 
-// FetchDocuments implements Stage interface.
-func (m *match) FetchDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return m.query.QueryDocuments(ctx, closer)
+// FirstStage implements Stage interface.
+func (m *match) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	return m.aggregation.Query(ctx, closer)
 }
 
 // Process implements Stage interface.

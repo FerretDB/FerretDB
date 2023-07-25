@@ -27,8 +27,8 @@ import (
 
 // count represents $count stage.
 type count struct {
-	field string
-	query aggregations.AggregateQuery
+	field       string
+	aggregation aggregations.Aggregation
 }
 
 // newCount creates a new $count stage.
@@ -75,14 +75,14 @@ func newCount(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &count{
-		field: field,
-		query: params.query,
+		field:       field,
+		aggregation: params.aggregation,
 	}, nil
 }
 
-// FetchDocuments implements Stage interface.
-func (c *count) FetchDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return c.query.QueryDocuments(ctx, closer)
+// FirstStage implements Stage interface.
+func (c *count) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	return c.aggregation.Query(ctx, closer)
 }
 
 // Process implements Stage interface.

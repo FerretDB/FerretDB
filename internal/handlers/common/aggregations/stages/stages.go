@@ -28,7 +28,7 @@ type newStageParams struct {
 	db             string
 	collection     string
 	stage          *types.Document
-	query          aggregations.AggregateQuery
+	aggregation    aggregations.Aggregation
 	previousStages []string
 }
 
@@ -87,7 +87,7 @@ var unsupportedStages = map[string]struct{}{
 }
 
 // NewStage creates a new aggregation stage.
-func NewStage(stage *types.Document, db, collection string, previousStages []string, query aggregations.AggregateQuery) (aggregations.Stage, error) { //nolint:lll // for readability
+func NewStage(stage *types.Document, db, collection string, previousStages []string, aggregation aggregations.Aggregation) (aggregations.Stage, error) { //nolint:lll // for readability
 	if stage.Len() != 1 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageInvalid,
@@ -110,7 +110,7 @@ func NewStage(stage *types.Document, db, collection string, previousStages []str
 			stage:          stage,
 			db:             db,
 			collection:     collection,
-			query:          query,
+			aggregation:    aggregation,
 			previousStages: previousStages,
 		})
 

@@ -252,7 +252,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	for i, s := range stagesDocuments {
 		if i == 0 {
-			if iter, err = s.FetchDocuments(ctx, closer); err != nil {
+			if iter, err = s.FirstStage(ctx, closer); err != nil {
 				return nil, err
 			}
 		}
@@ -314,8 +314,8 @@ type aggregationQuery struct {
 	collection string
 }
 
-// QueryDocuments implements AggregateQuery interface.
-func (p *aggregationQuery) QueryDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+// QueryDocuments implements Aggregation interface.
+func (p *aggregationQuery) Query(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
 	var keepTx pgx.Tx
 	var iter types.DocumentsIterator
 
@@ -345,8 +345,8 @@ func (p *aggregationQuery) QueryDocuments(ctx context.Context, closer *iterator.
 	return iter, nil
 }
 
-// QueryCollStats implements AggregateQuery interface.
-func (p *aggregationQuery) QueryCollStats(ctx context.Context, closer *iterator.MultiCloser) (*aggregations.CollStats, error) {
+// QueryCollStats implements Aggregation interface.
+func (p *aggregationQuery) CollStats(ctx context.Context, closer *iterator.MultiCloser) (*aggregations.CollStatsResult, error) {
 	var collStats *pgdb.CollStats
 
 	if err := p.dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
@@ -379,7 +379,7 @@ func (p *aggregationQuery) QueryCollStats(ctx context.Context, closer *iterator.
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &aggregations.CollStats{
+	return &aggregations.CollStatsResult{
 		CountObjects:   collStats.CountObjects,
 		CountIndexes:   collStats.CountIndexes,
 		SizeTotal:      collStats.SizeTotal,
@@ -390,5 +390,5 @@ func (p *aggregationQuery) QueryCollStats(ctx context.Context, closer *iterator.
 
 // check interfaces
 var (
-	_ aggregations.AggregateQuery = (*aggregationQuery)(nil)
+	_ aggregations.Aggregation = (*aggregationQuery)(nil)
 )

@@ -35,8 +35,8 @@ import (
 //
 //	or { $unset: [ "<field1>", "<field2>", ... ] }
 type unset struct {
-	exclusion *types.Document
-	query     aggregations.AggregateQuery
+	exclusion   *types.Document
+	aggregation aggregations.Aggregation
 }
 
 // newUnset validates unset document and creates a new $unset stage.
@@ -135,14 +135,14 @@ func newUnset(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &unset{
-		exclusion: exclusion,
-		query:     params.query,
+		exclusion:   exclusion,
+		aggregation: params.aggregation,
 	}, nil
 }
 
-// FetchDocuments implements Stage interface.
-func (u *unset) FetchDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return u.query.QueryDocuments(ctx, closer)
+// FirstStage implements Stage interface.
+func (u *unset) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	return u.aggregation.Query(ctx, closer)
 }
 
 // Process implements Stage interface.

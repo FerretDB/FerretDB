@@ -32,8 +32,8 @@ import (
 //
 //	{ $set: { <newField>: <expression>, ... } }
 type set struct {
-	newField *types.Document
-	query    aggregations.AggregateQuery
+	newField    *types.Document
+	aggregation aggregations.Aggregation
 }
 
 // newSet validates stage document and creates a new $set stage.
@@ -61,14 +61,14 @@ func newSet(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &set{
-		newField: fieldsDoc,
-		query:    params.query,
+		newField:    fieldsDoc,
+		aggregation: params.aggregation,
 	}, nil
 }
 
-// FetchDocuments implements Stage interface.
-func (s *set) FetchDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return s.query.QueryDocuments(ctx, closer)
+// FirstStage implements Stage interface.
+func (s *set) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	return s.aggregation.Query(ctx, closer)
 }
 
 // Process implements Stage interface.

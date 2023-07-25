@@ -34,9 +34,9 @@ import (
 //	    <output fieldN>: <expressionN>
 //	  }
 type project struct {
-	projection *types.Document
-	inclusion  bool
-	query      aggregations.AggregateQuery
+	projection  *types.Document
+	inclusion   bool
+	aggregation aggregations.Aggregation
 }
 
 // newProject validates projection document and creates a new $project stage.
@@ -56,15 +56,15 @@ func newProject(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &project{
-		projection: validated,
-		inclusion:  inclusion,
-		query:      params.query,
+		projection:  validated,
+		inclusion:   inclusion,
+		aggregation: params.aggregation,
 	}, nil
 }
 
-// FetchDocuments implements Stage interface.
-func (p *project) FetchDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return p.query.QueryDocuments(ctx, closer)
+// FirstStage implements Stage interface.
+func (p *project) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	return p.aggregation.Query(ctx, closer)
 }
 
 // Process implements Stage interface.

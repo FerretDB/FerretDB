@@ -44,7 +44,7 @@ import (
 type group struct {
 	groupExpression any
 	groupBy         []groupBy
-	query           aggregations.AggregateQuery
+	aggregation     aggregations.Aggregation
 }
 
 // groupBy represents accumulation to apply on the group.
@@ -113,13 +113,13 @@ func newGroup(params newStageParams) (aggregations.Stage, error) {
 	return &group{
 		groupExpression: groupKey,
 		groupBy:         groups,
-		query:           params.query,
+		aggregation:     params.aggregation,
 	}, nil
 }
 
-// FetchDocuments implements Stage interface.
-func (g *group) FetchDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return g.query.QueryDocuments(ctx, closer)
+// FirstStage implements Stage interface.
+func (g *group) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	return g.aggregation.Query(ctx, closer)
 }
 
 // Process implements Stage interface.

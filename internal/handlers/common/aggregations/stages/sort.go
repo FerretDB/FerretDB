@@ -28,8 +28,8 @@ import (
 
 // sort represents $sort stage.
 type sort struct {
-	fields *types.Document
-	query  aggregations.AggregateQuery
+	fields      *types.Document
+	aggregation aggregations.Aggregation
 }
 
 // newSort creates a new $sort stage.
@@ -54,14 +54,14 @@ func newSort(params newStageParams) (aggregations.Stage, error) {
 	// TODO: https://github.com/FerretDB/FerretDB/issues/2090
 
 	return &sort{
-		fields: fields,
-		query:  params.query,
+		fields:      fields,
+		aggregation: params.aggregation,
 	}, nil
 }
 
-// FetchDocuments implements Stage interface.
-func (s *sort) FetchDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return s.query.QueryDocuments(ctx, closer)
+// FirstStage implements Stage interface.
+func (s *sort) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	return s.aggregation.Query(ctx, closer)
 }
 
 // Process implements Stage interface.

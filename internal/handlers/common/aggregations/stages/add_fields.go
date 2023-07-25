@@ -30,8 +30,8 @@ import (
 //
 //	{ $addFields: { <newField>: <expression>, ... } }
 type addFields struct {
-	newField *types.Document
-	query    aggregations.AggregateQuery
+	newField    *types.Document
+	aggregation aggregations.Aggregation
 }
 
 // newAddFields validates stage document and creates a new $addFields stage.
@@ -59,14 +59,14 @@ func newAddFields(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &addFields{
-		newField: fieldsDoc,
-		query:    params.query,
+		newField:    fieldsDoc,
+		aggregation: params.aggregation,
 	}, nil
 }
 
-// FetchDocuments implements Stage interface.
-func (s *addFields) FetchDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return s.query.QueryDocuments(ctx, closer)
+// FirstStage implements Stage interface.
+func (s *addFields) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	return s.aggregation.Query(ctx, closer)
 }
 
 // Process implements Stage interface.

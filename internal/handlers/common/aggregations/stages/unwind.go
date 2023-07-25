@@ -30,8 +30,8 @@ import (
 
 // unwind represents $unwind stage.
 type unwind struct {
-	field *aggregations.Expression
-	query aggregations.AggregateQuery
+	field       *aggregations.Expression
+	aggregation aggregations.Aggregation
 }
 
 // newUnwind creates a new $unwind stage.
@@ -101,14 +101,14 @@ func newUnwind(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &unwind{
-		field: expr,
-		query: params.query,
+		field:       expr,
+		aggregation: params.aggregation,
 	}, nil
 }
 
-// FetchDocuments implements Stage interface.
-func (u *unwind) FetchDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return u.query.QueryDocuments(ctx, closer)
+// FirstStage implements Stage interface.
+func (u *unwind) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+	return u.aggregation.Query(ctx, closer)
 }
 
 // Process implements Stage interface.
