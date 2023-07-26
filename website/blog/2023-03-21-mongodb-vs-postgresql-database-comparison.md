@@ -150,8 +150,11 @@ One of the significant differences between PostgreSQL and MongoDB is their respe
 PostgreSQL is released under the [PostgreSQL License](https://opensource.org/license/postgresql/), an open-source license for free use, modification, and distribution.
 In other words, anyone can use PostgreSQL for practically any purpose without paying.
 
-That's not the case with MongoDB, released under the [Server Side Public License (SSPL) – a restrictive license](https://blog.ferretdb.io/open-source-is-in-danger/). Compared to the Apache 2.0 license, SSPL comes with some resitrictions related to usage. In some use cases, it may require you to purchase an Enterprise license, or to release your application under an open-source license. This, in particular, restricts users to provide MongoDB as a service.
-A possible effect of this restriction is [vendor lock-in](https://blog.ferretdb.io/5-ways-to-avoid-database-vendor-lock-in/), since only select providers can provide MongoDB as a service, which naturally decreases competition on the market. 
+That's not the case with MongoDB, released under the [Server Side Public License (SSPL) – a restrictive license](https://blog.ferretdb.io/open-source-is-in-danger/).
+Compared to the Apache 2.0 license, SSPL comes with some resitrictions related to usage.
+In some use cases, it may require you to purchase an Enterprise license, or to release your application under an open-source license.
+This, in particular, restricts users to provide MongoDB as a service.
+A possible effect of this restriction is [vendor lock-in](https://blog.ferretdb.io/5-ways-to-avoid-database-vendor-lock-in/), since only select providers can provide MongoDB as a service, which naturally decreases competition on the market.
 For companies that prefer an open-source MongoDB-compatible alternative, [FerretDB](https://www.ferretdb.io) is an option you might want to consider.
 
 ### Community and Support
