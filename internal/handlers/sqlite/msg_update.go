@@ -73,7 +73,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 	db, err := h.b.Database(params.DB)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid database name: %s", params.DB)
+			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
 			return 0, 0, nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "update")
 		}
 
@@ -88,7 +88,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionAlreadyExists):
 		// nothing
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
-		msg := fmt.Sprintf("Invalid collection name: %s.%s", params.DB, params.Collection)
+		msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
 		return 0, 0, nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "insert")
 	default:
 		return 0, 0, nil, lazyerrors.Error(err)
@@ -98,7 +98,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 		c, err := db.Collection(params.Collection)
 		if err != nil {
 			if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
-				msg := fmt.Sprintf("Invalid collection name: %s.%s", params.DB, params.Collection)
+				msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
 				return 0, 0, nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "insert")
 			}
 

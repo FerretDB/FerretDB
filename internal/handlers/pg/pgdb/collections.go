@@ -37,7 +37,7 @@ import (
 // Empty collection name, names with `$` and `\x00`,
 // or exceeding the 235 bytes limit are not allowed.
 // Collection names that start with `.` are also not allowed.
-var validateCollectionNameRe = regexp.MustCompile("^[^.$\x00][^$\x00]{0,234}$")
+var validateCollectionNameRe = regexp.MustCompile("^[^\\.$\x00][^$\x00]{0,234}$")
 
 // Collections returns a sorted list of FerretDB collection names.
 //

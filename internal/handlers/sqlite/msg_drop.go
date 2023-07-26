@@ -62,7 +62,7 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	db, err := h.b.Database(dbName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid database name: %s", dbName)
+			msg := fmt.Sprintf("Invalid namespace specified '%s'", dbName)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "drop")
 		}
 
@@ -88,7 +88,7 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return &reply, nil
 
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
-		msg := fmt.Sprintf("Invalid collection name: %s.%s", dbName, collectionName)
+		msg := fmt.Sprintf("Invalid collection name: %s", collectionName)
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "drop")
 
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):

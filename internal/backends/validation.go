@@ -24,7 +24,7 @@ import (
 var databaseNameRe = regexp.MustCompile("^[a-zA-Z0-9_-]{1,63}$")
 
 // collectionNameRe validates collection names.
-var collectionNameRe = regexp.MustCompile("^[^$\x00]{1,235}$")
+var collectionNameRe = regexp.MustCompile("^[^\\.$\x00][^$\x00]{0,234}$")
 
 // validateDatabaseName checks that database name is valid for FerretDB.
 //
@@ -52,6 +52,7 @@ func validateDatabaseName(name string) error {
 //
 // It follows MongoDB restrictions plus:
 //   - allows only UTF-8 characters;
+//   - disallows '.' prefix (MongoDB fails to work with such collections correctly too);
 //   - disallows `_ferretdb_` prefix.
 //
 // That validation is quite lax because

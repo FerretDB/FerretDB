@@ -58,7 +58,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 	db, err := h.b.Database(dbName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid database name: %s", dbName)
+			msg := fmt.Sprintf("Invalid namespace specified '%s'", dbName)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "listCollections")
 		}
 

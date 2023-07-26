@@ -44,7 +44,7 @@ func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	db, err := h.b.Database(dbName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid database name: %s", dbName)
+			msg := fmt.Sprintf("Invalid namespace specified '%s'", dbName)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "ping")
 		}
 

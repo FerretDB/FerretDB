@@ -44,7 +44,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	db, err := h.b.Database(params.DB)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid database name: %s", params.DB)
+			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "count")
 		}
 
@@ -55,7 +55,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	c, err := db.Collection(params.Collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid collection name: %s.%s", params.DB, params.Collection)
+			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "count")
 		}
 
