@@ -71,6 +71,7 @@ func IsOperator(doc *types.Document) bool {
 
 // NewOperator returns operator from provided document.
 // The document should look like: `{<$operator>: <operator-value>}`.
+// It also validates the document.
 //
 // Before calling NewOperator on document it's recommended to validate
 // document before by using IsOperator on it.
@@ -95,7 +96,13 @@ func NewOperator(doc *types.Document) (Operator, error) {
 
 	switch {
 	case supported:
-		return newOperator(doc)
+		op, err := newOperator(doc)
+		if err == nil {
+			_, err = op.Process(nil)
+		}
+
+		return op, err
+
 	case unsupported:
 		return nil, newOperatorError(
 			ErrNotImplemented,

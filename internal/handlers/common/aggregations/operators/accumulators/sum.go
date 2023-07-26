@@ -18,6 +18,7 @@ import (
 	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -44,7 +45,21 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 			"$sum (accumulator)",
 		)
 	case *types.Document:
-		accumulator.number = int32(0)
+		if !operators.IsOperator(expr) {
+			//TODO
+			accumulator.number = int32(0)
+		}
+
+		_, err := operators.NewOperator(expr)
+
+		if err != nil {
+			var opErr operators.OperatorError
+			if !errors.As(err, &opErr) {
+				return nil, lazyerrors.Error(err)
+			}
+
+			return nil, opErr
+		}
 
 	case float64:
 		accumulator.number = expr
