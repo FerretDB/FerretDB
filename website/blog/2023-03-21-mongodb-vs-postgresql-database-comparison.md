@@ -152,8 +152,8 @@ In other words, anyone can use PostgreSQL for practically any purpose without pa
 
 That's not the case with MongoDB, released under the [Server Side Public License (SSPL) – a restrictive license](https://blog.ferretdb.io/open-source-is-in-danger/).
 Compared to the Apache 2.0 license, SSPL comes with some resitrictions related to usage.
-In some use cases, it may require you to purchase an Enterprise license, or to release your application under an open-source license.
-This, in particular, restricts users to provide MongoDB as a service.
+In some situations, particularly when providing MongoDB as a service, the license may require you to purchase an Enterprise license, or to release ["the Corresponding Source for the Program or the modified version, and the Corresponding Source for all programs that you use to make the Program or modified version available as a service, including, without limitation, […], all such that a user could run an instance of the service using the Service Source Code you make available."](https://www.mongodb.com/licensing/server-side-public-license#13-offering-the-program-as-a-service) This, in particular, restricts users to provide MongoDB as a service, and may also restrict users to use MongoDB as part of a cloud service.
+
 A possible effect of this restriction is [vendor lock-in](https://blog.ferretdb.io/5-ways-to-avoid-database-vendor-lock-in/), since only select providers can provide MongoDB as a service, which naturally decreases competition on the market.
 For companies that prefer an open-source MongoDB-compatible alternative, [FerretDB](https://www.ferretdb.io) is an option you might want to consider.
 
@@ -181,4 +181,4 @@ Unlike MongoDB, FerretDB's open source nature means you can freely use, modify, 
 
 For more information on FerretDB and how we plan to bring MongoDB workloads back to its open source roots, read [this article](https://blog.ferretdb.io/mangodb-overwhelming-enthusiasm-for-truly-open-source-mongodb-replacement/)
 
-**Edit 7/26/2023: In the section, "License and cost," we incorrectly stated that "the MongoDB license requires you to open-source any application using MongoDB." This should not have been generalized to all use cases, and we apologize for the oversight. In reality, the SSPL license may require you to open-source your application, but only in certain scenarios and use cases. We fixed the paragraph accordingly. Special thanks to Twitter user [@MakrOfAdventure](https://twitter.com/MakrOfAdventure) for bringing this into our attention.**
+**Edit 7/26/2023: In the section, "License and cost," we incorrectly stated that "the MongoDB license requires you to open-source any application using MongoDB." This should not have been generalized to all use cases, and we apologize for the oversight. Of course, the SSPL license may require you to release certain portions of your source code under SSPL, but only in certain scenarios and use cases. Special thanks to Twitter user [@MakrOfAdventure](https://twitter.com/MakrOfAdventure) for bringing this into our attention.**
