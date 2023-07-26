@@ -26,10 +26,10 @@ import (
 
 // FindValuesOpts sets options for FindValues.
 type FindValuesOpts struct {
-	// SearchInArray searches by iterating through the whole array to find documents that contains path key.
+	// FindArrayElements searches by iterating through the whole array to find documents that contains path key.
 	// Using path `v.foo` and `v` is an array, it returns all document which has key `foo`.
-	// If `v` is not an array, SearchInArray has no impact.
-	SearchInArray bool
+	// If `v` is not an array, FindArrayElements has no impact.
+	FindArrayElements bool
 	// FindArrayIndex gets an element at the specified index of an array.
 	// Using path `v.0` and `v` is an array, it returns 0-th index element of the array.
 	// If `v` is not an array, FindArrayIndex has no impact.
@@ -66,48 +66,24 @@ func FindValues(doc *types.Document, path types.Path, opts *FindValuesOpts) ([]a
 				values = append(values, v)
 			case *types.Array:
 				if opts.FindArrayIndex {
-					if index, err := strconv.Atoi(key); err == nil {
-						// key is an integer, check if that integer is an index of the array
-						v, err := input.Get(index)
-						if err != nil {
-							continue
-						}
-
-						values = append(values, v)
-
-						continue
-					}
-				}
-
-				if !opts.SearchInArray {
-					continue
-				}
-
-				iter := input.Iterator()
-				defer iter.Close()
-
-				for {
-					_, v, err := iter.Next()
-					if errors.Is(err, iterator.ErrIteratorDone) {
-						break
-					}
-
+					res, err := findArrayIndex(input, key)
 					if err != nil {
 						return nil, lazyerrors.Error(err)
 					}
 
-					doc, ok := v.(*types.Document)
-					if !ok {
-						continue
-					}
-
-					v, err = doc.Get(key)
-					if err != nil {
-						continue
-					}
-
-					values = append(values, v)
+					values = append(values, res...)
 				}
+
+				if opts.FindArrayElements {
+					res, err := findArrayElements(input, key)
+					if err != nil {
+						return nil, lazyerrors.Error(err)
+					}
+
+					values = append(values, res...)
+				}
+			default:
+				// key does not exist in scalar values
 			}
 		}
 
@@ -115,4 +91,55 @@ func FindValues(doc *types.Document, path types.Path, opts *FindValuesOpts) ([]a
 	}
 
 	return values, nil
+}
+
+// findArrayIndex checks if key can be used as an index of array and returns
+// the element found at that index.
+// Empty array is returned if the key cannot be used as an index
+// or key is not an existing index of array.
+func findArrayIndex(array *types.Array, key string) ([]any, error) {
+	index, err := strconv.Atoi(key)
+	if err != nil {
+		return []any{}, nil
+	}
+
+	// key is an integer, check if that integer is an index of the array
+	v, _ := array.Get(index)
+	if v != nil {
+		return []any{v}, nil
+	}
+
+	return []any{}, nil
+}
+
+// findArrayElements finds document elements containing the key and returns the values.
+// Empty array is returned if no document elements containing the key was found.
+func findArrayElements(array *types.Array, key string) ([]any, error) {
+	iter := array.Iterator()
+	defer iter.Close()
+
+	res := []any{}
+
+	for {
+		_, v, err := iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		doc, ok := v.(*types.Document)
+		if !ok {
+			continue
+		}
+
+		v, _ = doc.Get(key)
+		if v != nil {
+			res = append(res, v)
+		}
+	}
+
+	return res, nil
 }

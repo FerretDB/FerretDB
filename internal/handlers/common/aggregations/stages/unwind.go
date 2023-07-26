@@ -56,8 +56,8 @@ func newUnwind(stage *types.Document) (aggregations.Stage, error) {
 		}
 
 		expr, err = aggregations.NewExpression(field, &commonpath.FindValuesOpts{
-			FindArrayIndex: false,
-			SearchInArray:  false,
+			FindArrayIndex:    false,
+			FindArrayElements: false,
 		})
 
 		if err != nil {
