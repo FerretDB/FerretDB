@@ -56,15 +56,15 @@ func CreatePipeline(ctx context.Context, params CreatePipelineParams, aggregatio
 	case initialStage.Has("$collStats"):
 		fields := must.NotFail(initialStage.Get("$collStats")).(*types.Document)
 		return collStats(ctx, params, aggregation, closer, fields)
-		// case initialStage.Has("$match"):
-		//	// this is potentially pushdown query can be set
+	case initialStage.Has("$match"):
+		//	// potentially pushdown query can be set here
 		//	// only if we want to control query pushdown at handler level
 		//	match = must.NotFail(initialStage.Get("$match")).(*types.Document)
 		//	if secondStage.Has("$sort") {
 		//		sort = must.NotFail(initialStage.Get("$sort")).(*types.Document)
 		//	}
-		// case initialStage.Has("$sort"):
-		//	// this is potentially pushdown query can be set
+	case initialStage.Has("$sort"):
+		//	// potentially pushdown query can be set here
 		//	// only if we want to control query pushdown at handler level
 		//	sort = must.NotFail(initialStage.Get("$sort")).(*types.Document)
 		//	if secondStage.Has("$sort") {

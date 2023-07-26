@@ -163,23 +163,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	aggregationStages := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
 	stagesDocuments := make([]aggregations.Stage, 0, len(aggregationStages))
-	previousStages := make([]string, 0, len(aggregationStages))
-
-	filter, sort := aggregations.GetPushdownQuery(aggregationStages)
-
-	p := &pgAggregation{
-		dbPool:     dbPool,
-		db:         db,
-		collection: collection,
-	}
-
-	if !h.DisableFilterPushdown {
-		p.filter = filter
-	}
-
-	if h.EnableSortPushdown {
-		p.sort = sort
-	}
 
 	for _, d := range aggregationStages {
 		d, ok := d.(*types.Document)
@@ -198,7 +181,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 		stagesDocuments = append(stagesDocuments, s)
-		previousStages = append(previousStages, d.Command())
 	}
 
 	// validate cursor after validating pipeline stages to keep compatibility
@@ -241,6 +223,22 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
+
+	filter, sort := aggregations.GetPushdownQuery(aggregationStages)
+
+	p := &pgAggregation{
+		dbPool:     dbPool,
+		db:         db,
+		collection: collection,
+	}
+
+	if !h.DisableFilterPushdown {
+		p.filter = filter
+	}
+
+	if h.EnableSortPushdown {
+		p.sort = sort
+	}
 
 	var iter iterator.Interface[struct{}, *types.Document]
 
