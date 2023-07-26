@@ -28,6 +28,7 @@ import (
 	sqlitelib "modernc.org/sqlite/lib"
 
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata/pool"
+	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -74,12 +75,12 @@ func (r *Registry) DatabaseList(ctx context.Context) []string {
 }
 
 // DatabaseGetExisting returns a connection to existing database or nil if it doesn't exist.
-func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) *sql.DB {
+func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) *fsql.DB {
 	return r.p.GetExisting(ctx, dbName)
 }
 
 // DatabaseGetOrCreate returns a connection to existing database or newly created database.
-func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*sql.DB, error) {
+func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsql.DB, error) {
 	db, created, err := r.p.GetOrCreate(ctx, dbName)
 	if err != nil {
 		return nil, lazyerrors.Error(err)

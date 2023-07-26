@@ -15,6 +15,8 @@
 package fsql
 
 import (
+	"database/sql"
+
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -26,13 +28,13 @@ const (
 // metricsCollector exposes DB's state as Prometheus metrics.
 type metricsCollector struct {
 	labels prometheus.Labels
-	db     DB
+	statsF func() sql.DBStats
 }
 
-// NewMetricsCollector creates a new metricsCollector.
-func NewMetricsCollector(name string, db DB) *metricsCollector {
+// newMetricsCollector creates a new metricsCollector.
+func newMetricsCollector(name string, statsF func() sql.DBStats) *metricsCollector {
 	return &metricsCollector{
-		db: db,
+		statsF: statsF,
 		labels: prometheus.Labels{
 			"name": name,
 		},
@@ -46,7 +48,7 @@ func (c *metricsCollector) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements prometheus.Collector.
 func (c *metricsCollector) Collect(ch chan<- prometheus.Metric) {
-	stats := c.db.Stats()
+	stats := c.statsF()
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(

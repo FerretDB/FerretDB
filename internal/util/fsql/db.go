@@ -16,15 +16,110 @@
 package fsql
 
 import (
+	"context"
 	"database/sql"
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
-// DB is a subset of [*database/sql.DB] methods that we use.
-type DB interface {
+// sqlDB is a subset of [*database/sql.DB] methods that we use.
+//
+// It mainly exist to check interfaces.
+type sqlDB interface {
+	Close() error
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+	ExecContext(context.Context, string, ...any) (sql.Result, error)
 	Stats() sql.DBStats
+}
+
+type DB struct {
+	*metricsCollector
+
+	sqlDB sqlDB
+	l     *zap.Logger
+	token *resource.Token
+}
+
+// TODO do not pass both name and l?
+func WrapDB(name string, db *sql.DB, l *zap.Logger) *DB {
+	res := &DB{
+		metricsCollector: newMetricsCollector(name, db.Stats),
+		sqlDB:            db,
+		l:                l,
+		token:            resource.NewToken(),
+	}
+
+	resource.Track(res, res.token)
+
+	return res
+}
+
+func (db *DB) Close() error {
+	resource.Untrack(db, db.token)
+	return db.sqlDB.Close()
+}
+
+func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+	defer observability.FuncCall(ctx)()
+
+	start := time.Now()
+
+	fields := []zap.Field{zap.Any("args", args)}
+	db.l.Sugar().With(fields).Debugf(">>> %s", query)
+
+	rows, err := db.sqlDB.QueryContext(ctx, query, args...)
+
+	fields = append(fields, zap.Duration("duration", time.Since(start)), zap.Error(err))
+	db.l.Sugar().With(fields).Debugf("<<< %s", query)
+
+	return rows, err
+}
+
+func (db *DB) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
+	defer observability.FuncCall(ctx)()
+
+	start := time.Now()
+
+	fields := []zap.Field{zap.Any("args", args)}
+	db.l.Sugar().With(fields).Debugf(">>> %s", query)
+
+	row := db.sqlDB.QueryRowContext(ctx, query, args...)
+
+	fields = append(fields, zap.Duration("duration", time.Since(start)), zap.Error(row.Err()))
+	db.l.Sugar().With(fields).Debugf("<<< %s", query)
+
+	return row
+}
+
+func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
+	defer observability.FuncCall(ctx)()
+
+	start := time.Now()
+
+	fields := []zap.Field{zap.Any("args", args)}
+	db.l.Sugar().With(fields).Debugf(">>> %s", query)
+
+	res, err := db.sqlDB.ExecContext(ctx, query, args...)
+
+	fields = append(fields, zap.Duration("duration", time.Since(start)), zap.Error(err))
+	db.l.Sugar().With(fields).Debugf("<<< %s", query)
+
+	return res, err
+}
+
+func (db *DB) Stats() sql.DBStats {
+	return db.sqlDB.Stats()
 }
 
 // check interfaces
 var (
-	_ DB = (*sql.DB)(nil)
+	_ sqlDB                = (*sql.DB)(nil)
+	_ sqlDB                = (*DB)(nil)
+	_ prometheus.Collector = (*DB)(nil)
 )

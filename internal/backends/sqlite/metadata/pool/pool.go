@@ -31,9 +31,12 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
+	_ "modernc.org/sqlite" // register database/sql driver
 
+	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // filenameExtension represents SQLite database filename extension.
@@ -47,9 +50,37 @@ type Pool struct {
 	l   *zap.Logger
 
 	rw  sync.RWMutex
-	dbs map[string]*db
+	dbs map[string]*fsql.DB
 
 	token *resource.Token
+}
+
+// openDB opens existing database or creates a new one.
+//
+// All valid FerretDB database names are valid SQLite database names / file names,
+// so no validation is needed.
+// One exception is very long full path names for the filesystem,
+// but we don't check it.
+func openDB(uri string, l *zap.Logger) (*fsql.DB, error) {
+	db, err := sql.Open("sqlite", uri)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/2909
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/2755
+	db.SetConnMaxIdleTime(0)
+	db.SetConnMaxLifetime(0)
+	// db.SetMaxIdleConns(5)
+	// db.SetMaxOpenConns(5)
+
+	if err = db.Ping(); err != nil {
+		_ = db.Close()
+		return nil, lazyerrors.Error(err)
+	}
+
+	return fsql.WrapDB(uri, db, l), nil
 }
 
 // New creates a pool for SQLite databases in the directory specified by SQLite URI.
@@ -69,7 +100,7 @@ func New(u string, l *zap.Logger) (*Pool, error) {
 	p := &Pool{
 		uri:   uri,
 		l:     l,
-		dbs:   make(map[string]*db, len(matches)),
+		dbs:   make(map[string]*fsql.DB, len(matches)),
 		token: resource.NewToken(),
 	}
 
@@ -81,7 +112,7 @@ func New(u string, l *zap.Logger) (*Pool, error) {
 
 		p.l.Debug("Opening existing database.", zap.String("name", name), zap.String("uri", uri))
 
-		db, err := openDB(uri)
+		db, err := openDB(uri, l)
 		if err != nil {
 			p.Close()
 			return nil, lazyerrors.Error(err)
@@ -138,7 +169,7 @@ func (p *Pool) List(ctx context.Context) []string {
 }
 
 // GetExisting returns an existing database by valid name, or nil.
-func (p *Pool) GetExisting(ctx context.Context, name string) *sql.DB {
+func (p *Pool) GetExisting(ctx context.Context, name string) *fsql.DB {
 	p.rw.RLock()
 	defer p.rw.RUnlock()
 
@@ -147,16 +178,16 @@ func (p *Pool) GetExisting(ctx context.Context, name string) *sql.DB {
 		return nil
 	}
 
-	return db.sqlDB
+	return db
 }
 
 // GetOrCreate returns an existing database by valid name, or creates a new one.
 //
 // Returned boolean value indicates whether the database was created.
-func (p *Pool) GetOrCreate(ctx context.Context, name string) (*sql.DB, bool, error) {
-	sqlDB := p.GetExisting(ctx, name)
-	if sqlDB != nil {
-		return sqlDB, false, nil
+func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, error) {
+	db := p.GetExisting(ctx, name)
+	if db != nil {
+		return db, false, nil
 	}
 
 	p.rw.Lock()
@@ -164,11 +195,11 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*sql.DB, bool, err
 
 	// it might have been created by a concurrent call
 	if db := p.dbs[name]; db != nil {
-		return db.sqlDB, false, nil
+		return db, false, nil
 	}
 
 	uri := p.databaseURI(name)
-	db, err := openDB(uri)
+	db, err := openDB(uri, p.l)
 	if err != nil {
 		return nil, false, lazyerrors.Errorf("%s: %w", uri, err)
 	}
@@ -177,7 +208,7 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*sql.DB, bool, err
 
 	p.dbs[name] = db
 
-	return db.sqlDB, true, nil
+	return db, true, nil
 }
 
 // Drop closes and removes a database by valid name.
@@ -202,3 +233,24 @@ func (p *Pool) Drop(ctx context.Context, name string) bool {
 
 	return true
 }
+
+// Describe implements prometheus.Collector.
+func (p *Pool) Describe(ch chan<- *prometheus.Desc) {
+	// FIXME that's not correct if there no databases
+	prometheus.DescribeByCollect(p, ch)
+}
+
+// Collect implements prometheus.Collector.
+func (p *Pool) Collect(ch chan<- prometheus.Metric) {
+	p.rw.RLock()
+	defer p.rw.RUnlock()
+
+	for _, db := range p.dbs {
+		db.Collect(ch)
+	}
+}
+
+// check interfaces
+var (
+	_ prometheus.Collector = (*Pool)(nil)
+)
