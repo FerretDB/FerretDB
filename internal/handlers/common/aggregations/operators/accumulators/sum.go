@@ -43,6 +43,9 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 			"The $sum accumulator is a unary operator",
 			"$sum (accumulator)",
 		)
+	case *types.Document:
+		accumulator.number = int32(0)
+
 	case float64:
 		accumulator.number = expr
 	case string:
@@ -54,7 +57,6 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 	case int32, int64:
 		accumulator.number = expr
 	default:
-		// TODO https://github.com/FerretDB/FerretDB/issues/2694
 		accumulator.number = int32(0)
 		// $sum returns 0 on non-numeric field
 	}

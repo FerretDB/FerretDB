@@ -1098,7 +1098,6 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2694",
 		},
 	}
 
