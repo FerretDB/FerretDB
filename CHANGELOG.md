@@ -2,6 +2,15 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.6.1](https://github.com/FerretDB/FerretDB/releases/tag/v1.6.1) (2023-07-26)
+
+### Fixed Bugs 🐛
+
+- Fix pushdown for `find` with `filter` and `limit` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3114
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/48?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.6.0...v1.6.1).
+
 ## [v1.6.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.6.0) (2023-07-17)
 
 ### New Features 🎉
