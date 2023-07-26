@@ -244,13 +244,14 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var iter iterator.Interface[struct{}, *types.Document]
 
-	for i, s := range stagesDocuments {
-		if i == 0 {
-			if iter, err = s.FirstStage(ctx, closer); err != nil {
-				return nil, err
-			}
-		}
+	if iter, err = aggregations.CreatePipeline(ctx, aggregations.CreatePipelineParams{
+		DB:         db,
+		Collection: collection,
+	}, p, closer, aggregationStages); err != nil {
+		return nil, err
+	}
 
+	for _, s := range stagesDocuments {
 		if iter, err = s.Process(ctx, iter, closer); err != nil {
 			return nil, err
 		}
@@ -303,14 +304,16 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 // pgAggregation queries database using set parameters.
 type pgAggregation struct {
 	dbPool     *pgdb.Pool
-	db         string
-	collection string
 	sort       *types.Document
 	filter     *types.Document
+	db         string
+	collection string
 }
 
 // Query implements Aggregation interface.
-func (p *pgAggregation) Query(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+//
+//nolint:lll // demonstration purpose only
+func (p *pgAggregation) Query(ctx context.Context, params aggregations.QueryParams, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
 	var keepTx pgx.Tx
 	var iter types.DocumentsIterator
 

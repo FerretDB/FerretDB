@@ -62,11 +62,6 @@ func newProject(params newStageParams) (aggregations.Stage, error) {
 	}, nil
 }
 
-// FirstStage implements Stage interface.
-func (p *project) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return p.aggregation.Query(ctx, closer)
-}
-
 // Process implements Stage interface.
 //
 //nolint:lll // for readability

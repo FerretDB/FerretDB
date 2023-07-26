@@ -24,13 +24,6 @@ import (
 
 // Stage is a common interface for all aggregation stages.
 type Stage interface {
-	// FirstStage fetches document iterator, it is only used if this is
-	// the first stage of the pipeline.
-	// The returned document iterator may be originated from querying database or
-	// from in-memory value iterator.
-	// This allows first stage of the pipeline to decide how to create initial document iterator.
-	FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
-
 	// Process applies an aggregate stage on documents from iterator.
 	Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
 }
@@ -38,10 +31,17 @@ type Stage interface {
 // Aggregation is a common interface for fetching from database.
 type Aggregation interface {
 	// Query fetches documents from the database.
-	Query(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
+	Query(ctx context.Context, params QueryParams, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
 
 	// CollStats fetches collection statistics from the database.
 	CollStats(ctx context.Context, closer *iterator.MultiCloser) (*CollStatsResult, error)
+}
+
+// QueryParams describes query parameter to fetch from the database.
+type QueryParams struct {
+	Filter *types.Document
+	Sort   *types.Document
+	Limit  int64
 }
 
 // CollStatsResult describes collection statistics retrieved from the database.

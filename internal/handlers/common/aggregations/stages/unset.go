@@ -140,11 +140,6 @@ func newUnset(params newStageParams) (aggregations.Stage, error) {
 	}, nil
 }
 
-// FirstStage implements Stage interface.
-func (u *unset) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return u.aggregation.Query(ctx, closer)
-}
-
 // Process implements Stage interface.
 func (u *unset) Process(_ context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	// Use $project to unset fields, $unset is alias for $project exclusion.

@@ -59,11 +59,6 @@ func newSort(params newStageParams) (aggregations.Stage, error) {
 	}, nil
 }
 
-// FirstStage implements Stage interface.
-func (s *sort) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return s.aggregation.Query(ctx, closer)
-}
-
 // Process implements Stage interface.
 //
 // If sort path is invalid, it returns a possibly wrapped types.DocumentPathError.

@@ -106,11 +106,6 @@ func newUnwind(params newStageParams) (aggregations.Stage, error) {
 	}, nil
 }
 
-// FirstStage implements Stage interface.
-func (u *unwind) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return u.aggregation.Query(ctx, closer)
-}
-
 // Process implements Stage interface.
 func (u *unwind) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	// TODO https://github.com/FerretDB/FerretDB/issues/2490

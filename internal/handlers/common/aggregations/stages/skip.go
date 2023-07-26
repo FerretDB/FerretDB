@@ -48,11 +48,6 @@ func newSkip(params newStageParams) (aggregations.Stage, error) {
 	}, nil
 }
 
-// FirstStage implements Stage interface.
-func (s *skip) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return s.aggregation.Query(ctx, closer)
-}
-
 // Process implements Stage interface.
 func (s *skip) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	return common.SkipIterator(iter, closer, s.value), nil

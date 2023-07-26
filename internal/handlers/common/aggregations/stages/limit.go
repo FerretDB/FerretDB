@@ -48,11 +48,6 @@ func newLimit(params newStageParams) (aggregations.Stage, error) {
 	}, nil
 }
 
-// FirstStage implements Stage interface.
-func (l *limit) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return l.aggregation.Query(ctx, closer)
-}
-
 // Process implements Stage interface.
 func (l *limit) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	return common.LimitIterator(iter, closer, l.limit), nil

@@ -47,11 +47,6 @@ func newMatch(params newStageParams) (aggregations.Stage, error) {
 	}, nil
 }
 
-// FirstStage implements Stage interface.
-func (m *match) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return m.aggregation.Query(ctx, closer)
-}
-
 // Process implements Stage interface.
 func (m *match) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	return common.FilterIterator(iter, closer, m.filter), nil

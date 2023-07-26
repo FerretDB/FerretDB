@@ -64,11 +64,6 @@ func newAddFields(params newStageParams) (aggregations.Stage, error) {
 	}, nil
 }
 
-// FirstStage implements Stage interface.
-func (s *addFields) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return s.aggregation.Query(ctx, closer)
-}
-
 // Process implements Stage interface.
 func (s *addFields) Process(_ context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	return common.AddFieldsIterator(iter, closer, s.newField), nil

@@ -80,11 +80,6 @@ func newCount(params newStageParams) (aggregations.Stage, error) {
 	}, nil
 }
 
-// FirstStage implements Stage interface.
-func (c *count) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return c.aggregation.Query(ctx, closer)
-}
-
 // Process implements Stage interface.
 func (c *count) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	return common.CountIterator(iter, closer, c.field), nil
