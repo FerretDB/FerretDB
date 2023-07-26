@@ -71,12 +71,12 @@ func (dbc *databaseContract) Close() {
 	resource.Untrack(dbc, dbc.token)
 }
 
-// Collection returns a Collection instance for the given name.
+// Collection returns a Collection instance for the given valid name.
 //
 // The collection (or database) does not need to exist.
 func (dbc *databaseContract) Collection(name string) (Collection, error) {
 	var res Collection
-	err := validDatabaseName(name)
+	err := validateCollectionName(name)
 	if err == nil {
 		res, err = dbc.db.Collection(name)
 	}
@@ -116,13 +116,13 @@ type CreateCollectionParams struct {
 	Name string
 }
 
-// CreateCollection creates a new collection in the database; it should not already exist.
+// CreateCollection creates a new collection with valid name in the database; it should not already exist.
 //
 // Database may or may not exist; it should be created automatically if needed.
 func (dbc *databaseContract) CreateCollection(ctx context.Context, params *CreateCollectionParams) error {
 	defer observability.FuncCall(ctx)()
 
-	err := validDatabaseName(params.Name)
+	err := validateCollectionName(params.Name)
 	if err == nil {
 		err = dbc.db.CreateCollection(ctx, params)
 	}
@@ -137,13 +137,13 @@ type DropCollectionParams struct {
 	Name string
 }
 
-// DropCollection drops existing collection in the database.
+// DropCollection drops existing collection with valid name in the database.
 //
 // The errors for non-existing database and non-existing collection are the same (TODO?).
 func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCollectionParams) error {
 	defer observability.FuncCall(ctx)()
 
-	err := validDatabaseName(params.Name)
+	err := validateCollectionName(params.Name)
 	if err == nil {
 		err = dbc.db.DropCollection(ctx, params)
 	}

@@ -68,12 +68,12 @@ func (bc *backendContract) Close() {
 	resource.Untrack(bc, bc.token)
 }
 
-// Database returns a Database instance for the given name.
+// Database returns a Database instance for the given valid name.
 //
 // The database does not need to exist.
 func (bc *backendContract) Database(name string) (Database, error) {
 	var res Database
-	err := validDatabaseName(name)
+	err := validateDatabaseName(name)
 	if err == nil {
 		res, err = bc.b.Database(name)
 	}
@@ -112,11 +112,11 @@ type DropDatabaseParams struct {
 	Name string
 }
 
-// DropDatabase drops existing database for given parameters.
+// DropDatabase drops existing database for given parameters (including valid name).
 func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabaseParams) error {
 	defer observability.FuncCall(ctx)()
 
-	err := validDatabaseName(params.Name)
+	err := validateDatabaseName(params.Name)
 	if err == nil {
 		err = bc.b.DropDatabase(ctx, params)
 	}

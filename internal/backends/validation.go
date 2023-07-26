@@ -20,34 +20,54 @@ import (
 	"unicode/utf8"
 )
 
-// Reserved prefix for database and collection names.
-const reservedPrefix = "_ferretdb_"
-
-// databaseNameRe validates FerretDB database name.
+// databaseNameRe validates database name.
 var databaseNameRe = regexp.MustCompile("^[a-zA-Z0-9_-]{1,63}$")
 
 // collectionNameRe validates collection names.
-// Empty collection name, names with `$` and `\x00`,
-// or exceeding the 255 bytes limit are not allowed.
-// Collection names that start with `.` are also not allowed.
-var collectionNameRe = regexp.MustCompile("^[^.$\x00][^$\x00]{0,234}$")
+var collectionNameRe = regexp.MustCompile("^[^$\x00]{1,235}$")
 
-func validDatabaseName(name string) error {
-	if databaseNameRe.MatchString(name) {
-		return nil
+// validateDatabaseName checks that database name is valid for FerretDB.
+//
+// It follows MongoDB restrictions plus
+//   - allows only basic latin letters, digits, and basic punctuation;
+//   - disallows `_ferretdb_` prefix.
+//
+// That validation is quite restrictive because
+// we expect it to be easy for users to change database names in their software/configuration if needed.
+//
+// Backends can do their own additional validation.
+func validateDatabaseName(name string) error {
+	if !databaseNameRe.MatchString(name) {
+		return NewError(ErrorCodeDatabaseNameIsInvalid, nil)
 	}
 
-	return NewError(ErrorCodeDatabaseNameIsInvalid, nil)
+	if strings.HasPrefix(name, "_ferretdb_") {
+		return NewError(ErrorCodeDatabaseNameIsInvalid, nil)
+	}
+
+	return nil
 }
 
-func validCollectionName(name string) error {
+// validateCollectionName checks that collection name is valid for FerretDB.
+//
+// It follows MongoDB restrictions plus:
+//   - allows only UTF-8 characters;
+//   - disallows `_ferretdb_` prefix.
+//
+// That validation is quite lax because
+// we expect it to be hard for users to change collection names in their software.
+//
+// Backends can do their own additional validation.
+func validateCollectionName(name string) error {
 	if !collectionNameRe.MatchString(name) {
 		return NewError(ErrorCodeCollectionNameIsInvalid, nil)
 	}
-	if !utf8.ValidString(name) {
+
+	if strings.HasPrefix(name, "_ferretdb_") || strings.HasPrefix(name, "system.") {
 		return NewError(ErrorCodeCollectionNameIsInvalid, nil)
 	}
-	if strings.HasPrefix(name, reservedPrefix) {
+
+	if !utf8.ValidString(name) {
 		return NewError(ErrorCodeCollectionNameIsInvalid, nil)
 	}
 
