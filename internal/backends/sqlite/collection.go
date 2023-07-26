@@ -150,7 +150,7 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		return &res, nil
 	}
 
-	query := fmt.Sprintf(`UPDATE %[1]q SET %s = ? WHERE %s = ?`, meta.TableName, metadata.DefaultColumn, metadata.IDColumn)
+	query := fmt.Sprintf(`UPDATE %q SET %s = ? WHERE %s = ?`, meta.TableName, metadata.DefaultColumn, metadata.IDColumn)
 
 	iter := params.Docs.Iterator()
 	defer iter.Close()
