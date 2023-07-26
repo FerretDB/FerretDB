@@ -19,7 +19,7 @@
 //  1. Interfaces are relatively high-level and "fat" (or not).
 //     We are generally doing one backend interface call per handler call.
 //     For example, `insert` command handler calls only
-//     `db.Database("database").Collection("collection").Insert(ctx, params)` FIXME method that would
+//     `db.Database("database").Collection("collection").Insert(ctx, params)` method that would
 //     create a database if needed, create a collection if needed, and insert all documents with correct parameters.
 //     There is no method to insert one document into an existing collection.
 //     That shifts some complexity from a single handler into multiple backend implementations;

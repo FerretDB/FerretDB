@@ -37,6 +37,7 @@ type Backend interface {
 	DropDatabase(context.Context, *DropDatabaseParams) error
 
 	// There is no interface method to create a database; see package documentation.
+	// TODO https://github.com/FerretDB/FerretDB/issues/3069
 }
 
 // backendContract implements Backend interface.

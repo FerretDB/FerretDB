@@ -97,6 +97,7 @@ type InsertResult struct {
 // Insert inserts documents into the collection.
 //
 // Both database and collection may or may not exist; they should be created automatically if needed.
+// TODO https://github.com/FerretDB/FerretDB/issues/3069
 func (cc *collectionContract) Insert(ctx context.Context, params *InsertParams) (*InsertResult, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -108,8 +109,8 @@ func (cc *collectionContract) Insert(ctx context.Context, params *InsertParams) 
 
 // UpdateParams represents the parameters of Collection.Update method.
 type UpdateParams struct {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3079
 	// that should be types.DocumentIterator
+	// TODO https://github.com/FerretDB/FerretDB/issues/3079
 	Docs *types.Array
 }
 
