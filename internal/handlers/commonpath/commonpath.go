@@ -26,47 +26,51 @@ import (
 
 // FindValuesOpts sets options for FindValues.
 type FindValuesOpts struct {
-	// FindArrayElements searches by iterating through the whole array to find documents that contains path key.
-	// Using path `v.foo` and `v` is an array, it returns all document which has key `foo`.
+	// If FindArrayElements is true, it iterates the array to find document elements containing the key.
+	// If FindArrayElements is false, it does not find any element from the array.
+	// Using path `v.foo` and `v` is an array:
+	// 	- with FindArrayElements true, it returns documents' values of key `foo`;
+	//  - with FindArrayElements false, it returns an empty array.
 	// If `v` is not an array, FindArrayElements has no impact.
 	FindArrayElements bool
-	// FindArrayIndex gets an element at the specified index of an array.
-	// Using path `v.0` and `v` is an array, it returns 0-th index element of the array.
+	// If FindArrayIndex is true, it uses indexes to find an element of the array.
+	// If FindArrayIndex is false, it does use indexes on the path.
+	// Using path `v.0` and `v` is an array:
+	//  - with FindArrayIndex true, it returns 0-th index element of the array;
+	//  - with FindArrayIndex false, it returns empty array.
 	// If `v` is not an array, FindArrayIndex has no impact.
 	FindArrayIndex bool
 }
 
-// FindValues goes through each key of the path iteratively on doc to find values
-// at the suffix of the path. At each key of the path, it checks:
-//   - if the document has the key;
-//   - if the array contains an element at an index where index equals to the key, and;
-//   - if the array contains one or more documents which have the key.
+// FindValues iterates path elements, at each path element it checks:
+//   - if it is document and has the key, add it to next values to iterate;
+//   - if it is array and FindArrayIndex is true, it finds element by index and add it to next values to iterate;
+//   - if it is array and FindArrayElements is true, it finds elements and add it to next values to iterate;
 //
-// It returns a slice of values and an empty array is returned if no value was found.
+// It returns a slice of values or an empty array is returned if no value was found.
 func FindValues(doc *types.Document, path types.Path, opts *FindValuesOpts) ([]any, error) {
 	if opts == nil {
 		opts = new(FindValuesOpts)
 	}
 
-	keys := path.Slice()
-	inputs := []any{doc}
-	var values []any
+	var nextValues = []any{doc}
 
-	for _, key := range keys {
-		values = []any{}
+	for _, p := range path.Slice() {
+		values := []any{}
 
-		for _, input := range inputs {
-			switch input := input.(type) {
+		for _, next := range nextValues {
+			switch next := next.(type) {
 			case *types.Document:
-				v, err := input.Get(key)
+				v, err := next.Get(p)
 				if err != nil {
 					continue
 				}
 
 				values = append(values, v)
+
 			case *types.Array:
 				if opts.FindArrayIndex {
-					res, err := findArrayIndex(input, key)
+					res, err := findArrayIndex(next, p)
 					if err != nil {
 						return nil, lazyerrors.Error(err)
 					}
@@ -75,22 +79,23 @@ func FindValues(doc *types.Document, path types.Path, opts *FindValuesOpts) ([]a
 				}
 
 				if opts.FindArrayElements {
-					res, err := findArrayElements(input, key)
+					res, err := findArrayElements(next, p)
 					if err != nil {
 						return nil, lazyerrors.Error(err)
 					}
 
 					values = append(values, res...)
 				}
+
 			default:
-				// key does not exist in scalar values
+				// path does not exist in scalar values, nothing to do
 			}
 		}
 
-		inputs = values
+		nextValues = values
 	}
 
-	return values, nil
+	return nextValues, nil
 }
 
 // findArrayIndex checks if key can be used as an index of array and returns
@@ -112,7 +117,7 @@ func findArrayIndex(array *types.Array, key string) ([]any, error) {
 	return []any{}, nil
 }
 
-// findArrayElements finds document elements containing the key and returns the values.
+// findArrayElements finds document elements containing the key and returns the values of the key.
 // Empty array is returned if no document elements containing the key was found.
 func findArrayElements(array *types.Array, key string) ([]any, error) {
 	iter := array.Iterator()
