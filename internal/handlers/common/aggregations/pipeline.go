@@ -52,7 +52,10 @@ func CreatePipeline(ctx context.Context, params CreatePipelineParams, aggregatio
 
 	switch {
 	case initialStage == nil:
-		return nil, nil
+		iter := iterator.Values(iterator.ForSlice([]*types.Document{}))
+		closer.Add(iter)
+
+		return iter, nil
 	case initialStage.Has("$collStats"):
 		fields := must.NotFail(initialStage.Get("$collStats")).(*types.Document)
 		return collStats(ctx, params, aggregation, closer, fields)
@@ -72,10 +75,14 @@ func CreatePipeline(ctx context.Context, params CreatePipelineParams, aggregatio
 		//	}
 	}
 
-	return aggregation.Query(ctx, QueryParams{
-		Filter: match,
-		Sort:   sort,
-	}, closer)
+	return aggregation.Query(
+		ctx,
+		QueryParams{
+			Filter: match,
+			Sort:   sort,
+		},
+		closer,
+	)
 }
 
 //nolint:lll // demonstration purpose only

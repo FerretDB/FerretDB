@@ -242,10 +242,16 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var iter iterator.Interface[struct{}, *types.Document]
 
-	if iter, err = aggregations.CreatePipeline(ctx, aggregations.CreatePipelineParams{
-		DB:         db,
-		Collection: collection,
-	}, p, closer, aggregationStages); err != nil {
+	if iter, err = aggregations.CreatePipeline(
+		ctx,
+		aggregations.CreatePipelineParams{
+			DB:         db,
+			Collection: collection,
+		},
+		p,
+		closer,
+		aggregationStages,
+	); err != nil {
 		return nil, err
 	}
 
