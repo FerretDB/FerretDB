@@ -34,6 +34,10 @@ type typeOp struct {
 
 // newType returns `$type` operator.
 func newType(args ...any) (Operator, error) {
+	if len(args) != 1 {
+		// error
+	}
+
 	return &typeOp{
 		param: args[0],
 	}, nil
