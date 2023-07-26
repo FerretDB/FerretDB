@@ -97,6 +97,10 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 		return nil, lazyerrors.Error(err)
 	}
 
+	if meta == nil {
+		panic(fmt.Sprintf("just created collection %q does not exist", c.name))
+	}
+
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	query := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
 
