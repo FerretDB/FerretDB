@@ -70,7 +70,7 @@ func (bc *backendContract) Close() {
 
 // Database returns a Database instance for the given name.
 //
-// The database does not need to exist; even parameters like name could be invalid FIXME.
+// The database does not need to exist.
 func (bc *backendContract) Database(name string) (Database, error) {
 	var res Database
 	err := validDatabaseName(name)

@@ -73,7 +73,7 @@ func (dbc *databaseContract) Close() {
 
 // Collection returns a Collection instance for the given name.
 //
-// The collection (or database) does not need to exist; even parameters like name could be invalid FIXME.
+// The collection (or database) does not need to exist.
 func (dbc *databaseContract) Collection(name string) (Collection, error) {
 	var res Collection
 	err := validDatabaseName(name)
