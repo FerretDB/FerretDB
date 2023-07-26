@@ -109,8 +109,8 @@ func FilterDistinctValues(iter types.DocumentsIterator, key string) (*types.Arra
 
 		// vals contains all values exist at the suffix of the path
 		vals, err := commonpath.FindValues(doc, path, &commonpath.FindValuesOpts{
-			FindArrayIndex:    true,
-			FindArrayElements: true,
+			FindArrayIndex:  true,
+			FindArrayValues: true,
 		})
 		if err != nil {
 			return nil, lazyerrors.Error(err)

@@ -109,8 +109,8 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 	} else {
 		filterSuffix = path.Suffix()
 		vals, err = commonpath.FindValues(doc, path, &commonpath.FindValuesOpts{
-			FindArrayIndex:    true,
-			FindArrayElements: true,
+			FindArrayIndex:  true,
+			FindArrayValues: true,
 		})
 		if err != nil {
 			return false, lazyerrors.Error(err)

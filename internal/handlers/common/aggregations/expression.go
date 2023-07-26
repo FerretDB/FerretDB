@@ -79,8 +79,8 @@ type Expression struct {
 func NewExpression(expression string, opts *commonpath.FindValuesOpts) (*Expression, error) {
 	if opts == nil {
 		opts = &commonpath.FindValuesOpts{
-			FindArrayIndex:    false,
-			FindArrayElements: true,
+			FindArrayIndex:  false,
+			FindArrayValues: true,
 		}
 	}
 
