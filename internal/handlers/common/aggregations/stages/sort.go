@@ -28,13 +28,12 @@ import (
 
 // sort represents $sort stage.
 type sort struct {
-	fields      *types.Document
-	aggregation aggregations.Aggregation
+	fields *types.Document
 }
 
 // newSort creates a new $sort stage.
-func newSort(params newStageParams) (aggregations.Stage, error) {
-	fields, err := common.GetRequiredParam[*types.Document](params.stage, "$sort")
+func newSort(stage *types.Document) (aggregations.Stage, error) {
+	fields, err := common.GetRequiredParam[*types.Document](stage, "$sort")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrSortBadExpression,
@@ -54,8 +53,7 @@ func newSort(params newStageParams) (aggregations.Stage, error) {
 	// TODO: https://github.com/FerretDB/FerretDB/issues/2090
 
 	return &sort{
-		fields:      fields,
-		aggregation: params.aggregation,
+		fields: fields,
 	}, nil
 }
 

@@ -26,13 +26,12 @@ import (
 
 // limit represents $limit stage.
 type limit struct {
-	limit       int64
-	aggregation aggregations.Aggregation
+	limit int64
 }
 
 // newLimit creates a new $limit stage.
-func newLimit(params newStageParams) (aggregations.Stage, error) {
-	doc, err := params.stage.Get("$limit")
+func newLimit(stage *types.Document) (aggregations.Stage, error) {
+	doc, err := stage.Get("$limit")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -43,8 +42,7 @@ func newLimit(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &limit{
-		limit:       l,
-		aggregation: params.aggregation,
+		limit: l,
 	}, nil
 }
 

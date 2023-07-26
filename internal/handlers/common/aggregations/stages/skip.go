@@ -26,13 +26,12 @@ import (
 
 // skip represents $skip stage.
 type skip struct {
-	value       int64
-	aggregation aggregations.Aggregation
+	value int64
 }
 
 // newSkip creates a new $skip stage.
-func newSkip(params newStageParams) (aggregations.Stage, error) {
-	value, err := params.stage.Get("$skip")
+func newSkip(stage *types.Document) (aggregations.Stage, error) {
+	value, err := stage.Get("$skip")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -43,8 +42,7 @@ func newSkip(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &skip{
-		value:       skipValue,
-		aggregation: params.aggregation,
+		value: skipValue,
 	}, nil
 }
 

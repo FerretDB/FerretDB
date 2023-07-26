@@ -35,13 +35,12 @@ import (
 //
 //	or { $unset: [ "<field1>", "<field2>", ... ] }
 type unset struct {
-	exclusion   *types.Document
-	aggregation aggregations.Aggregation
+	exclusion *types.Document
 }
 
 // newUnset validates unset document and creates a new $unset stage.
-func newUnset(params newStageParams) (aggregations.Stage, error) {
-	fields := must.NotFail(params.stage.Get("$unset"))
+func newUnset(stage *types.Document) (aggregations.Stage, error) {
+	fields := must.NotFail(stage.Get("$unset"))
 
 	// exclusion contains keys with `false` values to specify projection exclusion later.
 	exclusion := must.NotFail(types.NewDocument())
@@ -135,8 +134,7 @@ func newUnset(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &unset{
-		exclusion:   exclusion,
-		aggregation: params.aggregation,
+		exclusion: exclusion,
 	}, nil
 }
 

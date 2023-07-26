@@ -26,13 +26,12 @@ import (
 
 // match represents $match stage.
 type match struct {
-	filter      *types.Document
-	aggregation aggregations.Aggregation
+	filter *types.Document
 }
 
 // newMatch creates a new $match stage.
-func newMatch(params newStageParams) (aggregations.Stage, error) {
-	filter, err := common.GetRequiredParam[*types.Document](params.stage, "$match")
+func newMatch(stage *types.Document) (aggregations.Stage, error) {
+	filter, err := common.GetRequiredParam[*types.Document](stage, "$match")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrMatchBadExpression,
@@ -42,8 +41,7 @@ func newMatch(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &match{
-		filter:      filter,
-		aggregation: params.aggregation,
+		filter: filter,
 	}, nil
 }
 

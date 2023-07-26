@@ -30,13 +30,12 @@ import (
 //
 //	{ $addFields: { <newField>: <expression>, ... } }
 type addFields struct {
-	newField    *types.Document
-	aggregation aggregations.Aggregation
+	newField *types.Document
 }
 
 // newAddFields validates stage document and creates a new $addFields stage.
-func newAddFields(params newStageParams) (aggregations.Stage, error) {
-	fields, err := params.stage.Get("$addFields")
+func newAddFields(stage *types.Document) (aggregations.Stage, error) {
+	fields, err := stage.Get("$addFields")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -59,8 +58,7 @@ func newAddFields(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &addFields{
-		newField:    fieldsDoc,
-		aggregation: params.aggregation,
+		newField: fieldsDoc,
 	}, nil
 }
 

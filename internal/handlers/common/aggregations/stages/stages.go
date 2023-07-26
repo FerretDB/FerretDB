@@ -23,17 +23,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// newStageParams contains parameter used for creating new stage.
-type newStageParams struct {
-	db             string
-	collection     string
-	stage          *types.Document
-	aggregation    aggregations.Aggregation
-	previousStages []string
-}
-
 // newStageFunc is a type for a function that creates a new aggregation stage.
-type newStageFunc func(params newStageParams) (aggregations.Stage, error)
+type newStageFunc func(stage *types.Document) (aggregations.Stage, error)
 
 // Stages maps all supported aggregation Stages.
 var Stages = map[string]newStageFunc{
@@ -87,7 +78,7 @@ var unsupportedStages = map[string]struct{}{
 }
 
 // NewStage creates a new aggregation stage.
-func NewStage(stage *types.Document, db, collection string, previousStages []string, aggregation aggregations.Aggregation) (aggregations.Stage, error) { //nolint:lll // for readability
+func NewStage(stage *types.Document) (aggregations.Stage, error) {
 	if stage.Len() != 1 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageInvalid,
@@ -106,13 +97,7 @@ func NewStage(stage *types.Document, db, collection string, previousStages []str
 		panic(fmt.Sprintf("stage %q is in both `stages` and `unsupportedStages`", name))
 
 	case supported && !unsupported:
-		return f(newStageParams{
-			stage:          stage,
-			db:             db,
-			collection:     collection,
-			aggregation:    aggregation,
-			previousStages: previousStages,
-		})
+		return f(stage)
 
 	case !supported && unsupported:
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(

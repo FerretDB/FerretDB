@@ -46,7 +46,6 @@ import (
 type group struct {
 	groupExpression any
 	groupBy         []groupBy
-	aggregation     aggregations.Aggregation
 }
 
 // groupBy represents accumulation to apply on the group.
@@ -56,8 +55,8 @@ type groupBy struct {
 }
 
 // newGroup creates a new $group stage.
-func newGroup(params newStageParams) (aggregations.Stage, error) {
-	fields, err := common.GetRequiredParam[*types.Document](params.stage, "$group")
+func newGroup(stage *types.Document) (aggregations.Stage, error) {
+	fields, err := common.GetRequiredParam[*types.Document](stage, "$group")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupInvalidFields,
@@ -123,7 +122,6 @@ func newGroup(params newStageParams) (aggregations.Stage, error) {
 	return &group{
 		groupExpression: groupKey,
 		groupBy:         groups,
-		aggregation:     params.aggregation,
 	}, nil
 }
 

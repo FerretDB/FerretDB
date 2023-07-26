@@ -30,13 +30,12 @@ import (
 
 // unwind represents $unwind stage.
 type unwind struct {
-	field       *aggregations.Expression
-	aggregation aggregations.Aggregation
+	field *aggregations.Expression
 }
 
 // newUnwind creates a new $unwind stage.
-func newUnwind(params newStageParams) (aggregations.Stage, error) {
-	field, err := params.stage.Get("$unwind")
+func newUnwind(stage *types.Document) (aggregations.Stage, error) {
+	field, err := stage.Get("$unwind")
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +44,7 @@ func newUnwind(params newStageParams) (aggregations.Stage, error) {
 
 	switch field := field.(type) {
 	case *types.Document:
-		return nil, common.Unimplemented(params.stage, "$unwind")
+		return nil, common.Unimplemented(stage, "$unwind")
 	case string:
 		if field == "" {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -101,8 +100,7 @@ func newUnwind(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &unwind{
-		field:       expr,
-		aggregation: params.aggregation,
+		field: expr,
 	}, nil
 }
 

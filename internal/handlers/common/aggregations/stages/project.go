@@ -34,14 +34,13 @@ import (
 //	    <output fieldN>: <expressionN>
 //	  }
 type project struct {
-	projection  *types.Document
-	inclusion   bool
-	aggregation aggregations.Aggregation
+	projection *types.Document
+	inclusion  bool
 }
 
 // newProject validates projection document and creates a new $project stage.
-func newProject(params newStageParams) (aggregations.Stage, error) {
-	fields, err := common.GetRequiredParam[*types.Document](params.stage, "$project")
+func newProject(stage *types.Document) (aggregations.Stage, error) {
+	fields, err := common.GetRequiredParam[*types.Document](stage, "$project")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrProjectBadExpression,
@@ -56,9 +55,8 @@ func newProject(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &project{
-		projection:  validated,
-		inclusion:   inclusion,
-		aggregation: params.aggregation,
+		projection: validated,
+		inclusion:  inclusion,
 	}, nil
 }
 

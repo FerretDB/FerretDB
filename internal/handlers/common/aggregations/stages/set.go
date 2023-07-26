@@ -32,13 +32,12 @@ import (
 //
 //	{ $set: { <newField>: <expression>, ... } }
 type set struct {
-	newField    *types.Document
-	aggregation aggregations.Aggregation
+	newField *types.Document
 }
 
 // newSet validates stage document and creates a new $set stage.
-func newSet(params newStageParams) (aggregations.Stage, error) {
-	fields, err := params.stage.Get("$set")
+func newSet(stage *types.Document) (aggregations.Stage, error) {
+	fields, err := stage.Get("$set")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -61,8 +60,7 @@ func newSet(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &set{
-		newField:    fieldsDoc,
-		aggregation: params.aggregation,
+		newField: fieldsDoc,
 	}, nil
 }
 

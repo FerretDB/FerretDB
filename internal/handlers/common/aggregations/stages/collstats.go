@@ -18,8 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
@@ -37,9 +35,6 @@ type collStats struct {
 	count          bool
 	latencyStats   bool
 	queryExecStats bool
-	db             string
-	collection     string
-	aggregation    aggregations.Aggregation
 }
 
 // storageStats represents $collStats.storageStats field.
@@ -48,30 +43,17 @@ type storageStats struct {
 }
 
 // newCollStats creates a new $collStats stage.
-func newCollStats(params newStageParams) (aggregations.Stage, error) {
-	if len(params.previousStages) > 0 {
-		// TODO Add a test to cover this error: https://github.com/FerretDB/FerretDB/issues/2349
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrCollStatsIsNotFirstStage,
-			"$collStats is only valid as the first stage in a pipeline",
-			"$collStats (stage)",
-		)
-	}
-
-	fields, err := common.GetRequiredParam[*types.Document](params.stage, "$collStats")
+func newCollStats(stage *types.Document) (aggregations.Stage, error) {
+	fields, err := common.GetRequiredParam[*types.Document](stage, "$collStats")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageCollStatsInvalidArg,
-			fmt.Sprintf("$collStats must take a nested object but found: %s", types.FormatAnyValue(params.stage)),
+			fmt.Sprintf("$collStats must take a nested object but found: %s", types.FormatAnyValue(stage)),
 			"$collStats (stage)",
 		)
 	}
 
-	cs := collStats{
-		db:          params.db,
-		collection:  params.collection,
-		aggregation: params.aggregation,
-	}
+	var cs collStats
 
 	// TODO Return error on invalid type of count: https://github.com/FerretDB/FerretDB/issues/2336
 	cs.count = fields.Has("count")
@@ -99,69 +81,6 @@ func newCollStats(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &cs, nil
-}
-
-// FirstStage implements Stage interface.
-func (c *collStats) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	var host string
-	var err error
-
-	host, err = os.Hostname()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	doc := must.NotFail(types.NewDocument(
-		"ns", c.db+"."+c.collection,
-		"host", host,
-		"localTime", time.Now().UTC().Format(time.RFC3339),
-	))
-
-	var stats *aggregations.CollStatsResult
-
-	if c.count || c.storageStats != nil {
-		stats, err = c.aggregation.CollStats(ctx, closer)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if c.storageStats != nil {
-		var avgObjSize int64
-		if stats.CountObjects > 0 {
-			avgObjSize = stats.SizeCollection / stats.CountObjects
-		}
-
-		doc.Set(
-			"storageStats", must.NotFail(types.NewDocument(
-				"size", stats.SizeTotal,
-				"count", stats.CountObjects,
-				"avgObjSize", avgObjSize,
-				"storageSize", stats.SizeCollection,
-				"freeStorageSize", int64(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"nindexes", stats.CountIndexes,
-				"indexDetails", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"totalIndexSize", stats.SizeIndexes,
-				"totalSize", stats.SizeTotal,
-				"indexSizes", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-			)),
-		)
-	}
-
-	if c.count {
-		doc.Set(
-			"count", stats.CountObjects,
-		)
-	}
-
-	// Process the retrieved statistics through the stages.
-	iter := iterator.Values(iterator.ForSlice([]*types.Document{doc}))
-	closer.Add(iter)
-
-	return iter, nil
 }
 
 // Process implements Stage interface.

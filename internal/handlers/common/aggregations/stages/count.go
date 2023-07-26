@@ -27,13 +27,12 @@ import (
 
 // count represents $count stage.
 type count struct {
-	field       string
-	aggregation aggregations.Aggregation
+	field string
 }
 
 // newCount creates a new $count stage.
-func newCount(params newStageParams) (aggregations.Stage, error) {
-	field, err := common.GetRequiredParam[string](params.stage, "$count")
+func newCount(stage *types.Document) (aggregations.Stage, error) {
+	field, err := common.GetRequiredParam[string](stage, "$count")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageCountNonString,
@@ -75,8 +74,7 @@ func newCount(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &count{
-		field:       field,
-		aggregation: params.aggregation,
+		field: field,
 	}, nil
 }
 
