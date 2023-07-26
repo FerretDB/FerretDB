@@ -17,6 +17,8 @@ package backends
 import (
 	"context"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
@@ -35,6 +37,8 @@ type Backend interface {
 	Database(string) (Database, error)
 	ListDatabases(context.Context, *ListDatabasesParams) (*ListDatabasesResult, error)
 	DropDatabase(context.Context, *DropDatabaseParams) error
+
+	prometheus.Collector
 
 	// There is no interface method to create a database; see package documentation.
 	// TODO https://github.com/FerretDB/FerretDB/issues/3069
@@ -126,6 +130,16 @@ func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabas
 	checkError(err, ErrorCodeDatabaseNameIsInvalid, ErrorCodeDatabaseDoesNotExist)
 
 	return err
+}
+
+// Describe implements prometheus.Collector.
+func (bc *backendContract) Describe(ch chan<- *prometheus.Desc) {
+	bc.b.Describe(ch)
+}
+
+// Collect implements prometheus.Collector.
+func (bc *backendContract) Collect(ch chan<- prometheus.Metric) {
+	bc.b.Collect(ch)
 }
 
 // check interfaces

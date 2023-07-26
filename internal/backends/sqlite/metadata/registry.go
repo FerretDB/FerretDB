@@ -23,6 +23,7 @@ import (
 	"hash/fnv"
 	"strings"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"modernc.org/sqlite"
 	sqlitelib "modernc.org/sqlite/lib"
@@ -262,3 +263,18 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 
 	return true, nil
 }
+
+// Describe implements prometheus.Collector.
+func (r *Registry) Describe(ch chan<- *prometheus.Desc) {
+	r.p.Describe(ch)
+}
+
+// Collect implements prometheus.Collector.
+func (r *Registry) Collect(ch chan<- prometheus.Metric) {
+	r.p.Collect(ch)
+}
+
+// check interfaces
+var (
+	_ prometheus.Collector = (*Registry)(nil)
+)

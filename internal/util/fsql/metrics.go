@@ -59,6 +59,9 @@ func (c *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 		prometheus.GaugeValue,
 		float64(stats.OpenConnections),
 	)
+
+	// Add other metrics from stats here.
+	// TODO https://github.com/FerretDB/FerretDB/issues/2909
 }
 
 // check interfaces

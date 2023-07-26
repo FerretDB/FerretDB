@@ -28,6 +28,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
@@ -36,7 +37,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 // filenameExtension represents SQLite database filename extension.
@@ -66,8 +66,6 @@ func openDB(uri string, l *zap.Logger) (*fsql.DB, error) {
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/2909
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2755
 	db.SetConnMaxIdleTime(0)

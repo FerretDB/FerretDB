@@ -17,6 +17,7 @@ package sqlite
 import (
 	"context"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -79,6 +80,16 @@ func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabas
 	}
 
 	return nil
+}
+
+// Describe implements prometheus.Collector.
+func (b *backend) Describe(ch chan<- *prometheus.Desc) {
+	b.r.Describe(ch)
+}
+
+// Collect implements prometheus.Collector.
+func (b *backend) Collect(ch chan<- prometheus.Metric) {
+	b.r.Collect(ch)
 }
 
 // check interfaces

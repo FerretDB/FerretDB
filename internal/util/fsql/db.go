@@ -35,7 +35,6 @@ type sqlDB interface {
 	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
 	QueryRowContext(context.Context, string, ...any) *sql.Row
 	ExecContext(context.Context, string, ...any) (sql.Result, error)
-	Stats() sql.DBStats
 }
 
 type DB struct {
@@ -111,10 +110,6 @@ func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 	db.l.Sugar().With(fields).Debugf("<<< %s", query)
 
 	return res, err
-}
-
-func (db *DB) Stats() sql.DBStats {
-	return db.sqlDB.Stats()
 }
 
 // check interfaces
