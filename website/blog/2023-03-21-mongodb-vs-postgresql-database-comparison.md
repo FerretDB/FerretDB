@@ -179,6 +179,10 @@ In that case, using FerretDB gives you both perks – open source database and M
 This allows you to use the existing MongoDB syntax and commands with your database stored in PostgreSQL.
 Unlike MongoDB, FerretDB's open source nature means you can freely use, modify, and contribute to the codebase.
 
-For more information on FerretDB and how we plan to bring MongoDB workloads back to its open source roots, read [this article](https://blog.ferretdb.io/mangodb-overwhelming-enthusiasm-for-truly-open-source-mongodb-replacement/)
+For more information on FerretDB and how we plan to bring MongoDB workloads back to its open source roots, read [this article](https://blog.ferretdb.io/mangodb-overwhelming-enthusiasm-for-truly-open-source-mongodb-replacement/).
 
-**Edit 7/26/2023: In the section, "License and cost," we incorrectly stated that "the MongoDB license requires you to open-source any application using MongoDB." This should not have been generalized to all use cases, and we apologize for the oversight. Of course, the SSPL license may require you to release certain portions of your source code under SSPL, but only in certain scenarios and use cases. Special thanks to Twitter user [@MakrOfAdventure](https://twitter.com/MakrOfAdventure) for bringing this into our attention.**
+:::note
+**Edit 7/26/2023**: In the section, "License and cost," we incorrectly stated that "the MongoDB license requires you to open-source any application using MongoDB." This should not have been generalized to all use cases, and we apologize for the oversight.
+Of course, the SSPL license may require you to release certain portions of your source code under SSPL, but only in certain scenarios and use cases.
+Special thanks to Twitter user [@MakrOfAdventure](https://twitter.com/MakrOfAdventure) for bringing this into our attention.
+:::
