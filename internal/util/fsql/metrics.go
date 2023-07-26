@@ -52,6 +52,16 @@ func (c *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "open_max"),
+			"Maximum number of open connections to the database.",
+			nil, c.labels,
+		),
+		prometheus.GaugeValue,
+		float64(stats.MaxOpenConnections),
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "open"),
 			"The number of established connections both in use and idle.",
 			nil, c.labels,
@@ -62,6 +72,16 @@ func (c *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 
 	// Add other metrics from stats here.
 	// TODO https://github.com/FerretDB/FerretDB/issues/2909
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "max_lifetime_closed_total"),
+			"The total number of connections closed due to SetConnMaxLifetime.",
+			nil, c.labels,
+		),
+		prometheus.CounterValue,
+		float64(stats.MaxLifetimeClosed),
+	)
 }
 
 // check interfaces

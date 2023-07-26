@@ -51,7 +51,7 @@ type Registry struct {
 
 // NewRegistry creates a registry for SQLite databases in the directory specified by SQLite URI.
 func NewRegistry(u string, l *zap.Logger) (*Registry, error) {
-	p, err := pool.New(u, l.Named("pool"))
+	p, err := pool.New(u, l)
 	if err != nil {
 		return nil, err
 	}

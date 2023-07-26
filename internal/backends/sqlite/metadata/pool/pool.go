@@ -61,7 +61,7 @@ type Pool struct {
 // so no validation is needed.
 // One exception is very long full path names for the filesystem,
 // but we don't check it.
-func openDB(uri string, l *zap.Logger) (*fsql.DB, error) {
+func openDB(name, uri string, l *zap.Logger) (*fsql.DB, error) {
 	db, err := sql.Open("sqlite", uri)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -78,7 +78,7 @@ func openDB(uri string, l *zap.Logger) (*fsql.DB, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return fsql.WrapDB(uri, db, l), nil
+	return fsql.WrapDB(db, name, l), nil
 }
 
 // New creates a pool for SQLite databases in the directory specified by SQLite URI.
@@ -110,7 +110,7 @@ func New(u string, l *zap.Logger) (*Pool, error) {
 
 		p.l.Debug("Opening existing database.", zap.String("name", name), zap.String("uri", uri))
 
-		db, err := openDB(uri, l)
+		db, err := openDB(name, uri, l)
 		if err != nil {
 			p.Close()
 			return nil, lazyerrors.Error(err)
@@ -197,7 +197,7 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, er
 	}
 
 	uri := p.databaseURI(name)
-	db, err := openDB(uri, p.l)
+	db, err := openDB(name, uri, p.l)
 	if err != nil {
 		return nil, false, lazyerrors.Errorf("%s: %w", uri, err)
 	}
@@ -234,7 +234,8 @@ func (p *Pool) Drop(ctx context.Context, name string) bool {
 
 // Describe implements prometheus.Collector.
 func (p *Pool) Describe(ch chan<- *prometheus.Desc) {
-	// FIXME that's not correct if there no databases
+	// If there are no databases, the collector will be unchecked,
+	// but that's the best we could do.
 	prometheus.DescribeByCollect(p, ch)
 }
 

@@ -37,6 +37,7 @@ type sqlDB interface {
 	ExecContext(context.Context, string, ...any) (sql.Result, error)
 }
 
+// DB wraps [*database/sql.DB] with tracing, metrics, logging, and resource tracking.
 type DB struct {
 	*metricsCollector
 
@@ -45,12 +46,15 @@ type DB struct {
 	token *resource.Token
 }
 
-// TODO do not pass both name and l?
-func WrapDB(name string, db *sql.DB, l *zap.Logger) *DB {
+// WrapDB creates a new DB.
+//
+// Name is used for metric label values, etc.
+// Logger (that will be named) is used for query logging.
+func WrapDB(db *sql.DB, name string, l *zap.Logger) *DB {
 	res := &DB{
 		metricsCollector: newMetricsCollector(name, db.Stats),
 		sqlDB:            db,
-		l:                l,
+		l:                l.Named(name),
 		token:            resource.NewToken(),
 	}
 
@@ -59,55 +63,59 @@ func WrapDB(name string, db *sql.DB, l *zap.Logger) *DB {
 	return res
 }
 
+// Close implements sqlDB.
 func (db *DB) Close() error {
 	resource.Untrack(db, db.token)
 	return db.sqlDB.Close()
 }
 
+// QueryContext implements sqlDB.
 func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
 	defer observability.FuncCall(ctx)()
 
 	start := time.Now()
 
-	fields := []zap.Field{zap.Any("args", args)}
-	db.l.Sugar().With(fields).Debugf(">>> %s", query)
+	fields := []any{zap.Any("args", args)}
+	db.l.Sugar().With(fields...).Debugf(">>> %s", query)
 
 	rows, err := db.sqlDB.QueryContext(ctx, query, args...)
 
 	fields = append(fields, zap.Duration("duration", time.Since(start)), zap.Error(err))
-	db.l.Sugar().With(fields).Debugf("<<< %s", query)
+	db.l.Sugar().With(fields...).Debugf("<<< %s", query)
 
 	return rows, err
 }
 
+// QueryRowContext implements sqlDB.
 func (db *DB) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
 	defer observability.FuncCall(ctx)()
 
 	start := time.Now()
 
-	fields := []zap.Field{zap.Any("args", args)}
-	db.l.Sugar().With(fields).Debugf(">>> %s", query)
+	fields := []any{zap.Any("args", args)}
+	db.l.Sugar().With(fields...).Debugf(">>> %s", query)
 
 	row := db.sqlDB.QueryRowContext(ctx, query, args...)
 
 	fields = append(fields, zap.Duration("duration", time.Since(start)), zap.Error(row.Err()))
-	db.l.Sugar().With(fields).Debugf("<<< %s", query)
+	db.l.Sugar().With(fields...).Debugf("<<< %s", query)
 
 	return row
 }
 
+// ExecContext implements sqlDB.
 func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	defer observability.FuncCall(ctx)()
 
 	start := time.Now()
 
-	fields := []zap.Field{zap.Any("args", args)}
-	db.l.Sugar().With(fields).Debugf(">>> %s", query)
+	fields := []any{zap.Any("args", args)}
+	db.l.Sugar().With(fields...).Debugf(">>> %s", query)
 
 	res, err := db.sqlDB.ExecContext(ctx, query, args...)
 
 	fields = append(fields, zap.Duration("duration", time.Since(start)), zap.Error(err))
-	db.l.Sugar().With(fields).Debugf("<<< %s", query)
+	db.l.Sugar().With(fields...).Debugf("<<< %s", query)
 
 	return res, err
 }

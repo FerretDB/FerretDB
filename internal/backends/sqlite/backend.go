@@ -37,7 +37,7 @@ type NewBackendParams struct {
 
 // NewBackend creates a new SQLite backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	r, err := metadata.NewRegistry(params.URI, params.L.Named("metadata"))
+	r, err := metadata.NewRegistry(params.URI, params.L)
 	if err != nil {
 		return nil, err
 	}
