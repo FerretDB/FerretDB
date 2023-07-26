@@ -74,6 +74,7 @@ func (bc *backendContract) Close() {
 // The database does not need to exist.
 func (bc *backendContract) Database(name string) (Database, error) {
 	var res Database
+
 	err := validateDatabaseName(name)
 	if err == nil {
 		res, err = bc.b.Database(name)

@@ -82,6 +82,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 	defer db.Close()
 
 	err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: params.Collection})
+
 	switch {
 	case err == nil:
 		// nothing

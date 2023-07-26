@@ -76,6 +76,7 @@ func (dbc *databaseContract) Close() {
 // The collection (or database) does not need to exist.
 func (dbc *databaseContract) Collection(name string) (Collection, error) {
 	var res Collection
+
 	err := validateCollectionName(name)
 	if err == nil {
 		res, err = dbc.db.Collection(name)
