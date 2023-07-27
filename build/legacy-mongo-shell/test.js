@@ -37,7 +37,7 @@
 
   // works
   assert.commandWorked(t.runCommand({create: "bar", apiVersion: '1', apiStrict: true, apiDeprecationErrors: true}));
-  jsTestLog("collMod with Stable API parameters passed");
+  jsTestLog("create with Stable API parameters passed");
 
   // works
   assert.commandWorked(t.runCommand({createIndexes: "bar", indexes: [{key: {a: 1}, name: "a"}], apiVersion: '1', apiStrict: true, apiDeprecationErrors: true}));
