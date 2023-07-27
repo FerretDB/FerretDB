@@ -1118,7 +1118,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", bson.D{{"$non-existent", "$v"}}}}},
 				}}},
 			},
-			//pipeline: bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$non-existent", "$v"}}}}}}}},
+			resultType: emptyResult,
 		},
 	}
 
