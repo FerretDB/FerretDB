@@ -26,28 +26,31 @@ import (
 
 // FindValuesOpts sets options for FindValues.
 type FindValuesOpts struct {
-	// If FindArrayValues is true, it iterates the array to find documents containing the key.
-	// If FindArrayValues is false, it does not find any value from the array.
+	// If FindArrayDocuments is true, it iterates the array to find documents that have path.
+	// If FindArrayDocuments is false, it does not find documents from the array.
 	// Using path `v.foo` and `v` is an array:
-	// 	- with FindArrayValues true, it returns documents' values of key `foo`;
-	//  - with FindArrayValues false, it returns an empty array.
-	// If `v` is not an array, FindArrayValues has no impact.
-	FindArrayValues bool
-	// If FindArrayIndex is true, it uses indexes to find a value of the array.
-	// If FindArrayIndex is false, it does use indexes on the path.
+	// 	- with FindArrayDocuments true, it finds values of `foo` of found documents;
+	//  - with FindArrayDocuments false, it returns an empty array.
+	// If `v` is not an array, FindArrayDocuments has no impact.
+	FindArrayDocuments bool
+	// If FindArrayIndex is true, it finds value at index of an array.
+	// If FindArrayIndex is false, it does not find value at index of an array.
 	// Using path `v.0` and `v` is an array:
-	//  - with FindArrayIndex true, it returns 0-th index value of the array;
+	//  - with FindArrayIndex true, it finds 0-th index value of the array;
 	//  - with FindArrayIndex false, it returns empty array.
 	// If `v` is not an array, FindArrayIndex has no impact.
 	FindArrayIndex bool
 }
 
-// FindValues iterates path elements, at each path element it adds to next values to iterate:
-//   - if it is a document and has the key;
-//   - if it is an array, FindArrayIndex is true and finds value at index;
-//   - if it is an array, FindArrayValues is true and finds values.
+// FindValues returns values found at path. Unlike document.GetByPath it may find multiple values.
 //
-// It returns values or an empty array.
+// It iterates path elements, at each path element it adds to next values to iterate:
+//   - if it is a document and has path, it adds the document field value to next values;
+//   - if it is an array, FindArrayIndex is true and finds value at index, it adds value to next values;
+//   - if it is an array, FindArrayDocuments is true and documents in the array have path,
+//     it adds field value of all documents that have path to next values.
+//
+// It returns next values after iterating path elements.
 func FindValues(doc *types.Document, path types.Path, opts *FindValuesOpts) ([]any, error) {
 	if opts == nil {
 		opts = new(FindValuesOpts)
@@ -71,15 +74,14 @@ func FindValues(doc *types.Document, path types.Path, opts *FindValuesOpts) ([]a
 			case *types.Array:
 				if opts.FindArrayIndex {
 					res, err := findArrayIndex(next, p)
-					if err != nil {
-						return nil, lazyerrors.Error(err)
+					if err == nil {
+						values = append(values, res)
+						continue
 					}
-
-					values = append(values, res...)
 				}
 
-				if opts.FindArrayValues {
-					res, err := findArrayValues(next, p)
+				if opts.FindArrayDocuments {
+					res, err := findArrayDocuments(next, p)
 					if err != nil {
 						return nil, lazyerrors.Error(err)
 					}
@@ -98,28 +100,27 @@ func FindValues(doc *types.Document, path types.Path, opts *FindValuesOpts) ([]a
 	return nextValues, nil
 }
 
-// findArrayIndex checks if key can be used as an index of array and returns
-// the value found at that index.
-// Empty array is returned if the key cannot be used as an index
-// or key is not an existing index of array.
-func findArrayIndex(array *types.Array, key string) ([]any, error) {
-	index, err := strconv.Atoi(key)
+// findArrayIndex returns the value found at array index.
+// Error is returned if index is not a number or index does not exist in array.
+func findArrayIndex(array *types.Array, index string) (any, error) {
+	i, err := strconv.Atoi(index)
 	if err != nil {
-		return []any{}, nil
+		return nil, lazyerrors.Error(err)
 	}
 
-	// key is an integer, check if that integer is an index of the array
-	v, _ := array.Get(index)
-	if v != nil {
-		return []any{v}, nil
+	v, err := array.Get(i)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	return []any{}, nil
+	return v, nil
 }
 
-// findArrayValues finds document fields containing the key and returns the document field value.
-// Empty array is returned if no document containing the key was found.
-func findArrayValues(array *types.Array, key string) ([]any, error) {
+// findArrayDocuments iterates array to find documents that have documentKey.
+// It returns field values of found documents at documentKey.
+// Multiple documents with documentKey may exist in array, hence an array is returned.
+// Empty array is returned if no document was found.
+func findArrayDocuments(array *types.Array, documentKey string) ([]any, error) {
 	iter := array.Iterator()
 	defer iter.Close()
 
@@ -140,8 +141,7 @@ func findArrayValues(array *types.Array, key string) ([]any, error) {
 			continue
 		}
 
-		v, _ = doc.Get(key)
-		if v != nil {
+		if v, _ = doc.Get(documentKey); v != nil {
 			res = append(res, v)
 		}
 	}
