@@ -199,7 +199,7 @@ db.issues.aggregate([
 ])
 ```
 
-On Grafana, we will the pie chart visualization to showcase the labels
+On Grafana, we will use the pie chart visualization to showcase the labels
 
 ![Grouping of issues by label](/img/blog/ferretdb-grafana/issues-per-label.png)
 
