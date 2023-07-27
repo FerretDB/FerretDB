@@ -29,7 +29,7 @@ import (
 // sum represents $sum aggregation operator.
 type sum struct {
 	expression *aggregations.Expression
-	operator   *operators.Operator
+	operator   operators.Operator
 	number     any
 }
 
@@ -62,7 +62,7 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 			return nil, opErr
 		}
 
-		accumulator.operator = &op
+		accumulator.operator = op
 
 	case float64:
 		accumulator.number = expr
@@ -106,6 +106,20 @@ func (s *sum) Accumulate(iter types.DocumentsIterator) (any, error) {
 			}
 
 			continue
+		}
+
+		if s.operator != nil {
+			v, err := s.operator.Process(doc)
+			if err != nil {
+				// TODO
+				return nil, err
+			}
+
+			switch v.(type) {
+			case float64, int32, int64:
+				numbers = append(numbers, v)
+			}
+
 		}
 
 		switch number := s.number.(type) {
