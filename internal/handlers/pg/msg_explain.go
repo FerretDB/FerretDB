@@ -67,11 +67,11 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Sort = nil
 	}
 
-	// Limit pushdown is not applied:
-	//  - if `filter` is set, it must fetch all documents to filter them in memory;
-	//  - if `sort` is set but `EnableSortPushdown` is not set, it must fetch all documents
-	//  and sorting them in memory unless `EnableSortPushdown` is set;
-	//  - if `skip` is non-zero value, skip pushdown is not supported yet.
+	// Limit pushdown is not applied if:
+	//  - `filter` is set, it must fetch all documents to filter them in memory;
+	//  - `sort` is set but `EnableSortPushdown` is not set, it must fetch all documents
+	//  and sort them in memory;
+	//  - `skip` is non-zero value, skip pushdown is not supported yet.
 	// TODO https://github.com/FerretDB/FerretDB/issues/3016.
 	if params.Filter.Len() == 0 && (params.Sort.Len() == 0 || h.EnableSortPushdown) && params.Skip == 0 {
 		qp.Limit = params.Limit

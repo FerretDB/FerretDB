@@ -914,6 +914,14 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			queryPushdown: false,
 			limitPushdown: true,
 		},
+		"IDFilterSort": {
+			filter:        bson.D{{"_id", "array"}},
+			sort:          bson.D{{"_id", 1}},
+			limit:         3,
+			len:           1,
+			queryPushdown: true,
+			limitPushdown: false,
+		},
 		"ValueFilterSort": {
 			filter:        bson.D{{"v", 42}},
 			sort:          bson.D{{"_id", 1}},
