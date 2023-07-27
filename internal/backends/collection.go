@@ -68,7 +68,7 @@ type QueryResult struct {
 
 // Query executes a query against the collection.
 //
-// If the collection does not exist it returns empty iterator.
+// If database or collection does not exist it returns empty iterator.
 //
 // The passed context should be used for canceling the initial query.
 // It also can be used to close the returned iterator and free underlying resources,
@@ -84,8 +84,8 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 
 // InsertParams represents the parameters of Collection.Insert method.
 type InsertParams struct {
-	// TODO that should be types.DocumentIterator
-	// https://github.com/FerretDB/FerretDB/issues/2750
+	// TODO https://github.com/FerretDB/FerretDB/issues/2750
+	// that should be types.DocumentIterator
 	Iter iterator.Interface[int, any]
 }
 
@@ -97,6 +97,7 @@ type InsertResult struct {
 // Insert inserts documents into the collection.
 //
 // Both database and collection may or may not exist; they should be created automatically if needed.
+// TODO https://github.com/FerretDB/FerretDB/issues/3069
 func (cc *collectionContract) Insert(ctx context.Context, params *InsertParams) (*InsertResult, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -108,6 +109,8 @@ func (cc *collectionContract) Insert(ctx context.Context, params *InsertParams) 
 
 // UpdateParams represents the parameters of Collection.Update method.
 type UpdateParams struct {
+	// that should be types.DocumentIterator
+	// TODO https://github.com/FerretDB/FerretDB/issues/3079
 	Docs *types.Array
 }
 
@@ -117,6 +120,8 @@ type UpdateResult struct {
 }
 
 // Update updates documents in collection.
+//
+// Database or collection may not exist; that's not an error.
 func (cc *collectionContract) Update(ctx context.Context, params *UpdateParams) (*UpdateResult, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -128,6 +133,7 @@ func (cc *collectionContract) Update(ctx context.Context, params *UpdateParams) 
 
 // DeleteParams represents the parameters of Collection.Delete method.
 type DeleteParams struct {
+	// TODO https://github.com/FerretDB/FerretDB/issues/3085
 	IDs []any
 }
 
@@ -138,7 +144,7 @@ type DeleteResult struct {
 
 // Delete deletes documents in collection.
 //
-// If requested database or collection does not exist it returns 0 deleted documents.
+// Database or collection may not exist; that's not an error.
 func (cc *collectionContract) Delete(ctx context.Context, params *DeleteParams) (*DeleteResult, error) {
 	defer observability.FuncCall(ctx)()
 

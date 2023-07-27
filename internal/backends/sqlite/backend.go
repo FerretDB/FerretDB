@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"go.uber.org/zap"
-	_ "modernc.org/sqlite"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
@@ -53,8 +52,8 @@ func (b *backend) Close() {
 }
 
 // Database implements backends.Backend interface.
-func (b *backend) Database(name string) backends.Database {
-	return newDatabase(b.r, name)
+func (b *backend) Database(name string) (backends.Database, error) {
+	return newDatabase(b.r, name), nil
 }
 
 // ListDatabases implements backends.Backend interface.
