@@ -56,7 +56,7 @@ func FindValues(doc *types.Document, path types.Path, opts *FindValuesOpts) ([]a
 		opts = new(FindValuesOpts)
 	}
 
-	var nextValues = []any{doc}
+	nextValues := []any{doc}
 
 	for _, p := range path.Slice() {
 		values := []any{}
