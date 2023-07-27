@@ -126,7 +126,7 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 			return nil, lazyerrors.Error(err)
 		}
 
-		if _, err = db.ExecContext(ctx, query, b); err != nil {
+		if _, err = db.ExecContext(ctx, query, string(b)); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
@@ -176,7 +176,7 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 
 		id, _ := doc.Get("_id")
 		must.NotBeZero(id)
-		docArg := must.NotFail(sjson.Marshal(doc))
+		docArg := string(must.NotFail(sjson.Marshal(doc)))
 		idArg := string(must.NotFail(sjson.MarshalSingleValue(id)))
 
 		r, err := db.ExecContext(ctx, query, docArg, idArg)
