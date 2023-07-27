@@ -1110,6 +1110,18 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 		//		bson.D{{"$sort", bson.D{{"_id", -1}}}},
 		//	},
 		//},
+		"RecursiveInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"sum", bson.D{{"$sum", bson.D{{"v", "$v"}}}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"RecursiveArrayInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"sum", bson.D{{"$sum", bson.D{{"$type", bson.A{"1", "2"}}}}}}}}},
+			},
+			resultType: emptyResult,
+		},
 		"RecursiveOperatorNonExistent": {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{
