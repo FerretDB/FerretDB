@@ -51,7 +51,7 @@ This is a typical document in this collection:
     state: 'OPEN',
     stateReason: '',
     createdAt: ISODate("2021-12-14T18:13:01.000Z"),
-    closedAt: ISODate("0001-01-01T00:00:00.000Z"),
+    closedAt: null,
     labels: [ 'code/feature', 'not ready' ],
     milestone: '',
     author: 'AlekSi',
