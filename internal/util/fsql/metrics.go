@@ -32,11 +32,11 @@ type metricsCollector struct {
 }
 
 // newMetricsCollector creates a new metricsCollector.
-func newMetricsCollector(name string, statsF func() sql.DBStats) *metricsCollector {
+func newMetricsCollector(db string, statsF func() sql.DBStats) *metricsCollector {
 	return &metricsCollector{
 		statsF: statsF,
 		labels: prometheus.Labels{
-			"name": name,
+			"db": db,
 		},
 	}
 }

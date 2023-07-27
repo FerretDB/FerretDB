@@ -20,11 +20,11 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 // DB wraps [*database/sql.DB] with tracing, metrics, logging, and resource tracking.

@@ -42,6 +42,11 @@ import (
 // filenameExtension represents SQLite database filename extension.
 const filenameExtension = ".sqlite"
 
+const (
+	namespace = "ferretdb"
+	subsystem = "sqlite_pool"
+)
+
 // Pool provides access to SQLite databases and their connections.
 //
 //nolint:vet // for readability
@@ -155,6 +160,10 @@ func (p *Pool) Close() {
 	resource.Untrack(p, p.token)
 }
 
+func (p *Pool) DBS() map[string]*fsql.DB {
+	return p.dbs
+}
+
 // List returns a sorted list of database names in the pool.
 func (p *Pool) List(ctx context.Context) []string {
 	p.rw.RLock()
@@ -234,8 +243,6 @@ func (p *Pool) Drop(ctx context.Context, name string) bool {
 
 // Describe implements prometheus.Collector.
 func (p *Pool) Describe(ch chan<- *prometheus.Desc) {
-	// If there are no databases, the collector will be unchecked,
-	// but that's the best we could do.
 	prometheus.DescribeByCollect(p, ch)
 }
 
@@ -243,6 +250,16 @@ func (p *Pool) Describe(ch chan<- *prometheus.Desc) {
 func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	p.rw.RLock()
 	defer p.rw.RUnlock()
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "databases"),
+			"The current number of database in the pool.",
+			nil, nil,
+		),
+		prometheus.GaugeValue,
+		float64(len(p.dbs)),
+	)
 
 	for _, db := range p.dbs {
 		db.Collect(ch)
