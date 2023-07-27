@@ -106,7 +106,7 @@ func newPath(path ...string) (Path, error) {
 			return res, newPathError(ErrPathElementInvalid, errors.New("path element must contain '.'"))
 			// TODO https://github.com/FerretDB/FerretDB/issues/3127
 			// enable validation of `$` prefix
-			//case strings.HasPrefix(e, "$"):
+			// case strings.HasPrefix(e, "$"):
 			//	return res, newPathError(ErrPathElementInvalid, errors.New("path element must not start with '$'"))
 		}
 	}
