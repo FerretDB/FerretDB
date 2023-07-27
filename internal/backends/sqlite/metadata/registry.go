@@ -23,11 +23,13 @@ import (
 	"hash/fnv"
 	"strings"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"modernc.org/sqlite"
 	sqlitelib "modernc.org/sqlite/lib"
 
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata/pool"
+	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -49,7 +51,7 @@ type Registry struct {
 
 // NewRegistry creates a registry for SQLite databases in the directory specified by SQLite URI.
 func NewRegistry(u string, l *zap.Logger) (*Registry, error) {
-	p, err := pool.New(u, l.Named("pool"))
+	p, err := pool.New(u, l)
 	if err != nil {
 		return nil, err
 	}
@@ -74,12 +76,12 @@ func (r *Registry) DatabaseList(ctx context.Context) []string {
 }
 
 // DatabaseGetExisting returns a connection to existing database or nil if it doesn't exist.
-func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) *sql.DB {
+func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) *fsql.DB {
 	return r.p.GetExisting(ctx, dbName)
 }
 
 // DatabaseGetOrCreate returns a connection to existing database or newly created database.
-func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*sql.DB, error) {
+func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsql.DB, error) {
 	db, created, err := r.p.GetOrCreate(ctx, dbName)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -261,3 +263,18 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 
 	return true, nil
 }
+
+// Describe implements prometheus.Collector.
+func (r *Registry) Describe(ch chan<- *prometheus.Desc) {
+	r.p.Describe(ch)
+}
+
+// Collect implements prometheus.Collector.
+func (r *Registry) Collect(ch chan<- prometheus.Metric) {
+	r.p.Collect(ch)
+}
+
+// check interfaces
+var (
+	_ prometheus.Collector = (*Registry)(nil)
+)
