@@ -1110,6 +1110,16 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 		//		bson.D{{"$sort", bson.D{{"_id", -1}}}},
 		//	},
 		//},
+		"RecursiveOperatorNonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", "$_id"},
+					// first $sum is accumulator operator, second $sum is operator
+					{"sum", bson.D{{"$sum", bson.D{{"$non-existent", "$v"}}}}},
+				}}},
+			},
+			//pipeline: bson.D{{"$project", bson.D{{"type", bson.D{{"$type", bson.D{{"$non-existent", "$v"}}}}}}}},
+		},
 	}
 
 	testAggregateStagesCompatWithProviders(t, providers, testCases)
