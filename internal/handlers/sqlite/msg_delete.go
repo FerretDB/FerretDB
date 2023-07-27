@@ -17,6 +17,7 @@ package sqlite
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -43,14 +44,30 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	var deleted int32
 	var delErrors commonerrors.WriteErrors
 
-	db := h.b.Database(params.DB)
+	db, err := h.b.Database(params.DB)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "delete")
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
 	defer db.Close()
 
-	coll := db.Collection(params.Collection)
+	c, err := db.Collection(params.Collection)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "delete")
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
 
 	// process every delete filter
 	for i, deleteParams := range params.Deletes {
-		del, err := execDelete(ctx, coll, deleteParams.Filter, deleteParams.Limited)
+		del, err := execDelete(ctx, c, deleteParams.Filter, deleteParams.Limited)
 		if err == nil {
 			deleted += del
 			continue

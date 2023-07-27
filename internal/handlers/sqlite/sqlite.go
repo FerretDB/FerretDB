@@ -86,11 +86,13 @@ func (h *Handler) Close() {
 
 // Describe implements handlers.Interface.
 func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
+	h.b.Describe(ch)
 	h.cursors.Describe(ch)
 }
 
 // Collect implements handlers.Interface.
 func (h *Handler) Collect(ch chan<- prometheus.Metric) {
+	h.b.Collect(ch)
 	h.cursors.Collect(ch)
 }
 
