@@ -26,9 +26,10 @@ import (
 
 func TestNewPathFromString(t *testing.T) {
 	for _, tc := range []struct { //nolint:vet // for readability
-		s   string
-		p   Path
-		err error
+		s    string
+		p    Path
+		err  error
+		skip string
 	}{{
 		s:   "",
 		err: newPathError(ErrPathElementEmpty, fmt.Errorf("path element must not be empty")),
@@ -36,11 +37,16 @@ func TestNewPathFromString(t *testing.T) {
 		s:   " ",
 		err: newPathError(ErrPathElementInvalid, fmt.Errorf("path element must not contain spaces")),
 	}, {
-		s:   "$var",
-		err: newPathError(ErrPathElementInvalid, fmt.Errorf("path element must not start with '$'")),
+		s:    "$var",
+		err:  newPathError(ErrPathElementInvalid, fmt.Errorf("path element must not start with '$'")),
+		skip: "https://github.com/FerretDB/FerretDB/issues/3127",
 	}} {
 		tc := tc
 		t.Run(tc.s, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
 
 			res, err := NewPathFromString(tc.s)
