@@ -77,23 +77,6 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 			)
 		}
 
-		path, err := types.NewPathFromString(key)
-		if err != nil {
-			if strings.HasSuffix(key, "$") {
-				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrAggregatePositionalProject,
-					"Invalid $project :: caused by :: Cannot use positional projection in aggregation projection",
-					"$project (stage)",
-				)
-			}
-
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrPathContainsEmptyElement,
-				"Invalid $project :: caused by :: FieldPath field names may not be empty strings.",
-				"projection",
-			)
-		}
-
 		if key == "$" {
 			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFieldPathInvalidName,
@@ -125,7 +108,7 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 			)
 		}
 
-		for _, k := range path.Slice() {
+		for _, k := range strings.Split(key, ".") {
 			if strings.HasPrefix(k, "$") {
 				// arbitrary `$` cannot exist in the path
 				// `v.$foo` is invalid, `v.$` and `v.foo$` are fine.
@@ -134,6 +117,14 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 					"Invalid $project :: caused by :: FieldPath field names may not start with '$'. "+
 						"Consider using $getField or $setField.",
 					"$project (stage)",
+				)
+			}
+
+			if k == "" {
+				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrPathContainsEmptyElement,
+					"Invalid $project :: caused by :: FieldPath field names may not be empty strings.",
+					"projection",
 				)
 			}
 		}
