@@ -102,7 +102,7 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 
 		accumulator, err := accumulators.NewAccumulator("$group", field, v)
 		if err != nil {
-			return nil, err
+			return nil, processOperatorError(err)
 		}
 
 		groups = append(groups, groupBy{
