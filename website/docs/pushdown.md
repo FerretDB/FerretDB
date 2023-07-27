@@ -55,7 +55,7 @@ will prefetch all numbers larger/smaller than max/min value of the range.
 
 ## Supported pushdown on `find` command arguments
 
-The following table shows supported pushdown on `find` command arguments for the PostgreSQL backend.
+The following table shows supported pushdown and combinations of pushdown on `find` command arguments for the PostgreSQL backend.
 It applies `WHERE` clause for `filter` argument, `LIMIT` clause for `limit` argument and `ORDER BY` clause for `sort` argument on SQL queries.
 
 <!-- markdownlint-capture -->
@@ -64,6 +64,7 @@ It applies `WHERE` clause for `filter` argument, `LIMIT` clause for `limit` argu
 | `find` command arguments | Supported               |
 | ------------------------ | ----------------------- |
 | `filter`                 | ⚠️ <sub>[[2]](#2)</sub> |
+| `filter`,`limit`         | ✖️                      |
 | `limit`                  | ✅                      |
 | `limit`, `skip`          | ✖️                      |
 | `limit`, `sort`          | ⚠️ <sub>[[3]](#3)</sub> |
