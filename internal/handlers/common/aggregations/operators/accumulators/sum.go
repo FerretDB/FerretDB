@@ -47,7 +47,6 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 		)
 	case *types.Document:
 		if !operators.IsOperator(expr) {
-			//TODO
 			accumulator.number = int32(0)
 			break
 		}
