@@ -36,7 +36,7 @@ And since there's a MongoDB plugin for Grafana, you can also set up Grafana to w
 
 ### Prerequisites
 
-- Grafana Enterprise (note that the MongoDB plugin for Grafana is only available for Grafana Enterprise and Grafana Cloud users)
+- Grafana Enterprise or Grafana Cloud (note that the MongoDB plugin for Grafana is only available for Grafana Enterprise and Grafana Cloud users)
 - FerretDB connection URI
 
 In this tutorial, we'll be making use of the FerretDB `issues` collection.
