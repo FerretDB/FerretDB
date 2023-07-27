@@ -39,12 +39,6 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 	accumulator := new(sum)
 
 	switch expr := expression.(type) {
-	case *types.Array:
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageGroupUnaryOperator,
-			"The $sum accumulator is a unary operator",
-			"$sum (accumulator)",
-		)
 	case *types.Document:
 		if !operators.IsOperator(expr) {
 			accumulator.number = int32(0)
@@ -62,7 +56,12 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 		}
 
 		accumulator.operator = op
-
+	case *types.Array:
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageGroupUnaryOperator,
+			"The $sum accumulator is a unary operator",
+			"$sum (accumulator)",
+		)
 	case float64:
 		accumulator.number = expr
 	case string:
