@@ -96,12 +96,7 @@ func NewOperator(doc *types.Document) (Operator, error) {
 
 	switch {
 	case supported:
-		op, err := newOperator(doc)
-		if err == nil {
-			_, err = op.Process(nil)
-		}
-
-		return op, err
+		return newOperator(doc)
 
 	case unsupported:
 		return nil, newOperatorError(

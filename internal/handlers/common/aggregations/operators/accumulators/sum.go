@@ -99,7 +99,6 @@ func (s *sum) Accumulate(iter types.DocumentsIterator) (any, error) {
 		case s.operator != nil:
 			v, err := s.operator.Process(doc)
 			if err != nil {
-				// TODO
 				return nil, err
 			}
 
