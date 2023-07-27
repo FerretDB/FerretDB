@@ -137,7 +137,7 @@ func insertDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc *t
 		return nil
 
 	case errors.Is(err, pgdb.ErrInvalidCollectionName), errors.Is(err, pgdb.ErrInvalidDatabaseName):
-		msg := fmt.Sprintf("Invalid namespace: %s.%s", qp.DB, qp.Collection)
+		msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", qp.DB, qp.Collection)
 		return commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
 
 	case errors.Is(err, pgdb.ErrUniqueViolation):

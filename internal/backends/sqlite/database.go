@@ -42,8 +42,8 @@ func (db *database) Close() {
 }
 
 // Collection implements backends.Database interface.
-func (db *database) Collection(name string) backends.Collection {
-	return newCollection(db.r, db.name, name)
+func (db *database) Collection(name string) (backends.Collection, error) {
+	return newCollection(db.r, db.name, name), nil
 }
 
 // ListCollections implements backends.Database interface.
