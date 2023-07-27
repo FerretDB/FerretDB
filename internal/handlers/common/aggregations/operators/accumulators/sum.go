@@ -97,21 +97,19 @@ func (s *sum) Accumulate(iter types.DocumentsIterator) (any, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		if s.operator != nil {
+		switch {
+		case s.operator != nil:
 			v, err := s.operator.Process(doc)
 			if err != nil {
 				// TODO
 				return nil, err
 			}
 
-			switch v.(type) {
-			case float64, int32, int64:
-				numbers = append(numbers, v)
-			}
-			continue
-		}
+			numbers = append(numbers, v)
 
-		if s.expression != nil {
+			continue
+
+		case s.expression != nil:
 			value, err := s.expression.Evaluate(doc)
 
 			// sum fields that exist
