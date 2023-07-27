@@ -785,6 +785,46 @@ func TestAggregateUnsetErrors(t *testing.T) {
 	}
 }
 
+func TestAggregateSortErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		pipeline bson.A // required, aggregation pipeline stages
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"DotNotationMissingField": {
+			pipeline: bson.A{bson.D{{"$sort", bson.D{
+				{"v..foo", 1},
+			}}}},
+			err: &mongo.CommandError{
+				Code:    15998,
+				Name:    "Location15998",
+				Message: "FieldPath field names may not be empty strings.",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			ctx, collection := setup.Setup(t)
+
+			_, err := collection.Aggregate(ctx, tc.pipeline)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
 func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
