@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20221020234012-480526a59796
-	github.com/go-task/task/v3 v3.27.1
+	github.com/go-task/task/v3 v3.28.0
 	github.com/google/go-github/v41 v41.0.0
 	github.com/goreleaser/nfpm/v2 v2.32.0
 	github.com/quasilyte/go-consistent v0.6.0

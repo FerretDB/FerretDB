@@ -16,6 +16,7 @@ package sqlite
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -58,7 +59,15 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
-	db := h.b.Database(dbName)
+	db, err := h.b.Database(dbName)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid namespace specified '%s'", dbName)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "drop")
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
 	defer db.Close()
 
 	err = db.DropCollection(ctx, &backends.DropCollectionParams{
@@ -78,8 +87,12 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 		return &reply, nil
 
+	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
+		msg := fmt.Sprintf("Invalid collection name: %s", collectionName)
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "drop")
+
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
-		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNamespaceNotFound, "ns not found")
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNamespaceNotFound, "ns not found", "drop")
 
 	default:
 		return nil, lazyerrors.Error(err)
