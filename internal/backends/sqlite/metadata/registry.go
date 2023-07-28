@@ -116,10 +116,9 @@ func (r *Registry) prefillCache(ctx context.Context, dbName string, db *fsql.DB)
 
 func (r *Registry) getCollections(ctx context.Context, dbName string, db *fsql.DB) map[string]*Collection {
 	r.rw.RLock()
-	colls := r.colls[dbName]
+	colls := maps.Clone(r.colls[dbName])
 	r.rw.RUnlock()
 
-	// FIXME
 	if colls == nil {
 		colls = make(map[string]*Collection)
 	}

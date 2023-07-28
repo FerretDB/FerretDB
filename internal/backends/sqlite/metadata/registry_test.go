@@ -93,6 +93,7 @@ func TestCreateDropStress(t *testing.T) {
 			t.Cleanup(r.Close)
 
 			dbName := "db"
+			r.DatabaseDrop(ctx, dbName)
 
 			db, err := r.DatabaseGetOrCreate(ctx, dbName)
 			require.NoError(t, err)

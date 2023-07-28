@@ -54,6 +54,13 @@ func parseURI(u string) (*url.URL, error) {
 	uri.OmitHost = true
 
 	values := uri.Query()
+
+	// https://www.sqlite.org/inmemorydb.html
+	// TODO https://github.com/FerretDB/FerretDB/issues/2755
+	if values.Get("cache") == "shared" {
+		return nil, fmt.Errorf(`shared cache is not supported`)
+	}
+
 	setDefaultValues(values)
 	uri.RawQuery = values.Encode()
 

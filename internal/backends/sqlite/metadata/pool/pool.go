@@ -66,7 +66,7 @@ type Pool struct {
 // so no validation is needed.
 // One exception is very long full path names for the filesystem,
 // but we don't check it.
-func openDB(name, uri string, memory bool, l *zap.Logger) (*fsql.DB, error) {
+func openDB(name, uri string, singleConn bool, l *zap.Logger) (*fsql.DB, error) {
 	db, err := sql.Open("sqlite", uri)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -75,7 +75,7 @@ func openDB(name, uri string, memory bool, l *zap.Logger) (*fsql.DB, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/2755
 	db.SetConnMaxIdleTime(0)
 	db.SetConnMaxLifetime(0)
-	if memory {
+	if singleConn {
 		db.SetMaxIdleConns(1)
 		db.SetMaxOpenConns(1)
 	}
@@ -117,7 +117,7 @@ func New(u string, l *zap.Logger) (*Pool, error) {
 
 		p.l.Debug("Opening existing database.", zap.String("name", name), zap.String("uri", uri))
 
-		db, err := openDB(name, uri, p.isMemory(), l)
+		db, err := openDB(name, uri, p.singleConn(), l)
 		if err != nil {
 			p.Close()
 			return nil, lazyerrors.Error(err)
@@ -129,8 +129,13 @@ func New(u string, l *zap.Logger) (*Pool, error) {
 	return p, nil
 }
 
-func (p *Pool) isMemory() bool {
+func (p *Pool) memory() bool {
 	return p.uri.Query().Get("mode") == "memory"
+}
+
+func (p *Pool) singleConn() bool {
+	// see https://www.sqlite.org/inmemorydb.html
+	return p.memory() && p.uri.Query().Get("cache") != "shared"
 }
 
 // databaseName returns database name for given database file path.
@@ -150,7 +155,7 @@ func (p *Pool) databaseURI(databaseName string) string {
 // databaseFile returns database file path for the given database name,
 // or empty string for in-memory database.
 func (p *Pool) databaseFile(databaseName string) string {
-	if p.isMemory() {
+	if p.memory() {
 		return ""
 	}
 
@@ -222,7 +227,7 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, er
 	}
 
 	uri := p.databaseURI(name)
-	db, err := openDB(name, uri, p.isMemory(), p.l)
+	db, err := openDB(name, uri, p.singleConn(), p.l)
 	if err != nil {
 		return nil, false, lazyerrors.Errorf("%s: %w", uri, err)
 	}

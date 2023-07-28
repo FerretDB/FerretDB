@@ -150,6 +150,14 @@ func TestParseURI(t *testing.T) {
 			in:  "./tmp/",
 			err: `expected "file:" schema, got ""`,
 		},
+		"Shared": {
+			in:  "file:./?cache=shared",
+			err: `shared cache is not supported`,
+		},
+		"SharedMemory": {
+			in:  "file:./?mode=memory&cache=shared",
+			err: `shared cache is not supported`,
+		},
 	}
 	for name, tc := range testCases {
 		name, tc := name, tc

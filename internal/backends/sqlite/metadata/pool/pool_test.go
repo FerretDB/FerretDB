@@ -128,7 +128,7 @@ func TestCreateDropStress(t *testing.T) {
 	}
 }
 
-func TestPragmas(t *testing.T) {
+func TestDefaults(t *testing.T) {
 	t.Parallel()
 	ctx := testutil.Ctx(t)
 
@@ -142,18 +142,36 @@ func TestPragmas(t *testing.T) {
 	db, _, err := p.GetOrCreate(ctx, t.Name())
 	require.NoError(t, err)
 
-	for pragma, expected := range map[string]string{
-		"busy_timeout": "5000",
-		"journal_mode": "wal",
+	rows, err := db.QueryContext(ctx, "PRAGMA compile_options")
+	require.NoError(t, err)
+
+	var options []string
+	for rows.Next() {
+		var o string
+		require.NoError(t, rows.Scan(&o))
+		t.Logf("option: %s", o)
+		options = append(options, o)
+	}
+	require.NoError(t, rows.Err())
+	require.NoError(t, rows.Close())
+
+	require.Contains(t, options, "THREADSAFE=1")
+
+	for q, expected := range map[string]string{
+		"SELECT sqlite_version()":   "3.41.2",
+		"SELECT sqlite_source_id()": "2023-03-22 11:56:21 0d1fc92f94cb6b76bffe3ec34d69cffde2924203304e8ffc4155597af0c191da",
+		"PRAGMA busy_timeout":       "5000",
+		"PRAGMA encoding":           "UTF-8",
+		"PRAGMA journal_mode":       "wal",
 	} {
-		pragma, expected := pragma, expected
-		t.Run(pragma, func(t *testing.T) {
+		q, expected := q, expected
+		t.Run(q, func(t *testing.T) {
 			t.Parallel()
 
 			var actual string
-			err = db.QueryRowContext(ctx, "PRAGMA "+pragma).Scan(&actual)
+			err := db.QueryRowContext(ctx, q).Scan(&actual)
 			require.NoError(t, err)
-			require.Equal(t, expected, actual, pragma)
+			require.Equal(t, expected, actual, q)
 		})
 	}
 }
