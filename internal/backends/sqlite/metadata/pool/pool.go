@@ -141,8 +141,13 @@ func (p *Pool) databaseURI(databaseName string) string {
 	return dbURI.String()
 }
 
-// databaseFile returns database file path for the given database name.
+// databaseFile returns database file path for the given database name,
+// or empty string for in-memory database.
 func (p *Pool) databaseFile(databaseName string) string {
+	if p.uri.Query().Get("mode") == "memory" {
+		return ""
+	}
+
 	return filepath.Join(p.uri.Path, databaseName+filenameExtension)
 }
 
@@ -232,9 +237,17 @@ func (p *Pool) Drop(ctx context.Context, name string) bool {
 		return false
 	}
 
-	_ = db.Close()
-	_ = os.Remove(p.databaseFile(name))
+	if err := db.Close(); err != nil {
+		p.l.Warn("Failed to close database connection.", zap.String("name", name), zap.Error(err))
+	}
+
 	delete(p.dbs, name)
+
+	if f := p.databaseFile(name); f != "" {
+		if err := os.Remove(f); err != nil {
+			p.l.Warn("Failed to remove database file.", zap.String("file", f), zap.String("name", name), zap.Error(err))
+		}
+	}
 
 	p.l.Debug("Database dropped.", zap.String("name", name))
 

@@ -32,8 +32,6 @@ func TestCreateDrop(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(p.Close)
 
-	p.Drop(ctx, t.Name())
-
 	db := p.GetExisting(ctx, t.Name())
 	require.Nil(t, db)
 
@@ -72,9 +70,10 @@ func TestPragmas(t *testing.T) {
 
 	p, err := New("file:./", testutil.Logger(t))
 	require.NoError(t, err)
-	t.Cleanup(p.Close)
-
-	p.Drop(ctx, t.Name())
+	t.Cleanup(func() {
+		p.Drop(ctx, t.Name())
+		p.Close()
+	})
 
 	db, _, err := p.GetOrCreate(ctx, t.Name())
 	require.NoError(t, err)
