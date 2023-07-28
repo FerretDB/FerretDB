@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-func TestGetPathValue(t *testing.T) {
+func TestFindValues(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Array", func(t *testing.T) {
