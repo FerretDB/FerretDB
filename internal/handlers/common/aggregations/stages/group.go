@@ -105,13 +105,6 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 			return nil, processOperatorError(err)
 		}
 
-		newIter := iterator.Values(iterator.ForSlice([]*types.Document{nil}))
-		defer newIter.Close()
-
-		if _, err = accumulator.Accumulate(newIter); err != nil {
-			return nil, processOperatorError(err)
-		}
-
 		groups = append(groups, groupBy{
 			outputField: field,
 			accumulate:  accumulator.Accumulate,
