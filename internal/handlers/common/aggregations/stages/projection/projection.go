@@ -77,17 +77,8 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 			)
 		}
 
-		_, err = types.NewPathFromString(key)
+		path, err := types.NewPathFromString(key)
 		if err != nil {
-			if key == "$" {
-				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrFieldPathInvalidName,
-					"Invalid $project :: caused by :: FieldPath field names may not start with '$'. "+
-						"Consider using $getField or $setField.",
-					"$project (stage)",
-				)
-			}
-
 			if strings.HasSuffix(key, "$") {
 				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrAggregatePositionalProject,
@@ -96,40 +87,55 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 				)
 			}
 
-			// if `$` is at prefix, it returns ErrFieldPathInvalidName error code instead.
-			prefixTrimmed := strings.TrimPrefix(key, "$")
-			if slices.Contains(strings.Split(prefixTrimmed, "."), "$") {
+			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrPathContainsEmptyElement,
+				"Invalid $project :: caused by :: FieldPath field names may not be empty strings.",
+				"projection",
+			)
+		}
+
+		if key == "$" {
+			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFieldPathInvalidName,
+				"Invalid $project :: caused by :: FieldPath field names may not start with '$'. "+
+					"Consider using $getField or $setField.",
+				"$project (stage)",
+			)
+		}
+
+		if strings.HasSuffix(key, "$") {
+			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrAggregatePositionalProject,
+				"Invalid $project :: caused by :: Cannot use positional projection in aggregation projection",
+				"$project (stage)",
+			)
+		}
+
+		// if `$` is at prefix, it returns ErrFieldPathInvalidName error code instead.
+		prefixTrimmed := strings.TrimPrefix(key, "$")
+		if slices.Contains(strings.Split(prefixTrimmed, "."), "$") {
+			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrWrongPositionalOperatorLocation,
+				"Invalid $project :: caused by :: "+
+					"Positional projection may only be used at the end, "+
+					"for example: a.b.$. If the query previously used a form "+
+					"like a.b.$.d, remove the parts following the '$' and "+
+					"the results will be equivalent.",
+				"$project (stage)",
+			)
+		}
+
+		for _, k := range path.Slice() {
+			if strings.HasPrefix(k, "$") {
+				// arbitrary `$` cannot exist in the path
+				// `v.$foo` is invalid, `v.$` and `v.foo$` are fine.
 				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrWrongPositionalOperatorLocation,
-					"Invalid $project :: caused by :: "+
-						"Positional projection may only be used at the end, "+
-						"for example: a.b.$. If the query previously used a form "+
-						"like a.b.$.d, remove the parts following the '$' and "+
-						"the results will be equivalent.",
+					commonerrors.ErrFieldPathInvalidName,
+					"Invalid $project :: caused by :: FieldPath field names may not start with '$'. "+
+						"Consider using $getField or $setField.",
 					"$project (stage)",
 				)
 			}
-
-			for _, k := range strings.Split(key, ".") {
-				if strings.HasPrefix(k, "$") {
-					return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrFieldPathInvalidName,
-						"Invalid $project :: caused by :: FieldPath field names may not start with '$'. "+
-							"Consider using $getField or $setField.",
-						"$project (stage)",
-					)
-				}
-
-				if k == "" {
-					return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrPathContainsEmptyElement,
-						"Invalid $project :: caused by :: FieldPath field names may not be empty strings.",
-						"projection",
-					)
-				}
-			}
-
-			return nil, false, lazyerrors.Error(err)
 		}
 
 		var result bool
