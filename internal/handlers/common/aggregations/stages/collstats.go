@@ -31,6 +31,20 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// CollStatsDataSource fetches collection statistics from the database.
+type CollStatsDataSource interface {
+	CollStats(ctx context.Context, closer *iterator.MultiCloser) (*CollStatsResult, error)
+}
+
+// CollStatsResult describes collection statistics retrieved from the database.
+type CollStatsResult struct {
+	CountObjects   int64
+	CountIndexes   int64
+	SizeTotal      int64
+	SizeIndexes    int64
+	SizeCollection int64
+}
+
 // collStats represents $collStats stage.
 type collStats struct {
 	storageStats   *storageStats
@@ -39,7 +53,7 @@ type collStats struct {
 	queryExecStats bool
 	db             string
 	collection     string
-	aggregation    aggregations.DataSource
+	datasource     CollStatsDataSource
 }
 
 // storageStats represents $collStats.storageStats field.
@@ -68,9 +82,9 @@ func newCollStats(params newProducerStageParams) (aggregations.ProducerStage, er
 	}
 
 	cs := collStats{
-		db:          params.db,
-		collection:  params.collection,
-		aggregation: params.aggregation,
+		db:         params.db,
+		collection: params.collection,
+		datasource: params.collStatsDatasource,
 	}
 
 	// TODO Return error on invalid type of count: https://github.com/FerretDB/FerretDB/issues/2336
@@ -120,10 +134,10 @@ func (c *collStats) Produce(ctx context.Context, closer *iterator.MultiCloser) (
 		"localTime", time.Now().UTC().Format(time.RFC3339),
 	))
 
-	var stats *aggregations.CollStatsResult
+	var stats *CollStatsResult
 
 	if c.count || c.storageStats != nil {
-		stats, err = c.aggregation.CollStats(ctx, closer)
+		stats, err = c.datasource.CollStats(ctx, closer)
 		if err != nil {
 			return nil, err
 		}

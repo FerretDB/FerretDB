@@ -259,7 +259,14 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	var iter iterator.Interface[struct{}, *types.Document]
 
 	if len(producerStages) == 0 {
-		if iter, err = p.queryDocuments(ctx, closer); err != nil {
+		var s aggregations.ProducerStage
+
+		s, err = stages.NewDocumentProducer(p)
+		if err != nil {
+			return nil, err
+		}
+
+		if iter, err = s.Produce(ctx, closer); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	} else {
@@ -328,8 +335,8 @@ type pgAggregation struct {
 	filter     *types.Document
 }
 
-// queryDocuments fetches document from the database.
-func (p *pgAggregation) queryDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+// Query implements DocumentsDataSource interface.
+func (p *pgAggregation) Query(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
 	var keepTx pgx.Tx
 	var iter types.DocumentsIterator
 
@@ -364,8 +371,8 @@ func (p *pgAggregation) queryDocuments(ctx context.Context, closer *iterator.Mul
 	return iter, nil
 }
 
-// CollStats implements DataSource interface.
-func (p *pgAggregation) CollStats(ctx context.Context, closer *iterator.MultiCloser) (*aggregations.CollStatsResult, error) {
+// CollStats implements CollStatsDataSource interface.
+func (p *pgAggregation) CollStats(ctx context.Context, closer *iterator.MultiCloser) (*stages.CollStatsResult, error) {
 	var collStats *pgdb.CollStats
 
 	if err := p.dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
@@ -398,7 +405,7 @@ func (p *pgAggregation) CollStats(ctx context.Context, closer *iterator.MultiClo
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &aggregations.CollStatsResult{
+	return &stages.CollStatsResult{
 		CountObjects:   collStats.CountObjects,
 		CountIndexes:   collStats.CountIndexes,
 		SizeTotal:      collStats.SizeTotal,
@@ -409,5 +416,10 @@ func (p *pgAggregation) CollStats(ctx context.Context, closer *iterator.MultiClo
 
 // check interfaces
 var (
-	_ aggregations.DataSource = (*pgAggregation)(nil)
+	_ stages.CollStatsDataSource = (*pgAggregation)(nil)
+)
+
+// check interfaces
+var (
+	_ stages.DocumentsDataSource = (*pgAggregation)(nil)
 )

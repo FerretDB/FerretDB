@@ -25,11 +25,11 @@ import (
 
 // newProducerStageParams contains parameter used for creating new stage.
 type newProducerStageParams struct {
-	db             string
-	collection     string
-	stage          *types.Document
-	aggregation    aggregations.DataSource
-	previousStages []string
+	db                  string
+	collection          string
+	stage               *types.Document
+	collStatsDatasource CollStatsDataSource
+	previousStages      []string
 }
 
 // newProcessorStageFunc is a type for a function that creates a new aggregation stage.
@@ -136,7 +136,7 @@ func NewProcessorStage(stage *types.Document) (aggregations.ProcessorStage, erro
 }
 
 // NewProducerStage creates a new aggregation producer stage.
-func NewProducerStage(stage *types.Document, db, collection string, previousStages []string, aggregation aggregations.DataSource) (aggregations.ProducerStage, error) { //nolint:lll // for readability
+func NewProducerStage(stage *types.Document, db, collection string, previousStages []string, collStatsDatasource CollStatsDataSource) (aggregations.ProducerStage, error) { //nolint:lll // for readability
 	if stage.Len() != 1 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageInvalid,
@@ -152,11 +152,11 @@ func NewProducerStage(stage *types.Document, db, collection string, previousStag
 
 	if supported {
 		return f(newProducerStageParams{
-			stage:          stage,
-			db:             db,
-			collection:     collection,
-			aggregation:    aggregation,
-			previousStages: previousStages,
+			stage:               stage,
+			db:                  db,
+			collection:          collection,
+			collStatsDatasource: collStatsDatasource,
+			previousStages:      previousStages,
 		})
 	}
 

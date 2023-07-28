@@ -33,18 +33,3 @@ type ProducerStage interface {
 	// Produce returns an iterator.
 	Produce(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
 }
-
-// DataSource is a common interface for fetching from database.
-type DataSource interface {
-	// CollStats fetches collection statistics from the database.
-	CollStats(ctx context.Context, closer *iterator.MultiCloser) (*CollStatsResult, error)
-}
-
-// CollStatsResult describes collection statistics retrieved from the database.
-type CollStatsResult struct {
-	CountObjects   int64
-	CountIndexes   int64
-	SizeTotal      int64
-	SizeIndexes    int64
-	SizeCollection int64
-}
