@@ -95,7 +95,7 @@ func newUnwind(stage *types.Document) (aggregations.ProcessorStage, error) {
 				"expected either a string or an object as specification for $unwind stage, got %s",
 				types.FormatAnyValue(field),
 			),
-			"$unwind (ProcessorStage)",
+			"$unwind (Stage)",
 		)
 	}
 

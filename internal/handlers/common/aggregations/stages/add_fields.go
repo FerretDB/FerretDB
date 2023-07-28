@@ -30,8 +30,7 @@ import (
 //
 //	{ $addFields: { <newField>: <expression>, ... } }
 type addFields struct {
-	newField    *types.Document
-	aggregation aggregations.AggregationDataSource
+	newField *types.Document
 }
 
 // newAddFields validates stage document and creates a new $addFields stage.

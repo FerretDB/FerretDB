@@ -328,7 +328,7 @@ type pgAggregation struct {
 	filter     *types.Document
 }
 
-// Query implements AggregationDataSource interface.
+// Query implements ProducerStageDataSource interface.
 func (p *pgAggregation) Query(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
 	var keepTx pgx.Tx
 	var iter types.DocumentsIterator
@@ -364,7 +364,7 @@ func (p *pgAggregation) Query(ctx context.Context, closer *iterator.MultiCloser)
 	return iter, nil
 }
 
-// CollStats implements AggregationDataSource interface.
+// CollStats implements ProducerStageDataSource interface.
 func (p *pgAggregation) CollStats(ctx context.Context, closer *iterator.MultiCloser) (*aggregations.CollStatsResult, error) {
 	var collStats *pgdb.CollStats
 
@@ -409,5 +409,5 @@ func (p *pgAggregation) CollStats(ctx context.Context, closer *iterator.MultiClo
 
 // check interfaces
 var (
-	_ aggregations.AggregationDataSource = (*pgAggregation)(nil)
+	_ aggregations.ProducerStageDataSource = (*pgAggregation)(nil)
 )

@@ -16,6 +16,7 @@ package commoncommands
 
 import (
 	"context"
+	"sort"
 	"strconv"
 
 	"github.com/FerretDB/FerretDB/build/version"
@@ -27,8 +28,19 @@ import (
 
 // MsgBuildInfo is a common implementation of the buildInfo command.
 func MsgBuildInfo(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
-	aggregationStages := types.MakeArray(len(stages.ProcessorStages))
+	supportedStages := make([]string, len(stages.ProcessorStages)+len(stages.ProducerStages))
 	for stage := range stages.ProcessorStages {
+		supportedStages = append(supportedStages, stage)
+	}
+
+	for stage := range stages.ProducerStages {
+		supportedStages = append(supportedStages, stage)
+	}
+
+	sort.Slice(supportedStages, func(i, j int) bool { return supportedStages[i] > supportedStages[j] })
+
+	aggregationStages := types.MakeArray(len(stages.ProcessorStages) + len(stages.ProducerStages))
+	for stage := range supportedStages {
 		aggregationStages.Append(stage)
 	}
 

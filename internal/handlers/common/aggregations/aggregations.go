@@ -34,11 +34,8 @@ type ProducerStage interface {
 	Produce(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
 }
 
-// AggregationDataSource is a common interface for fetching from database.
-type AggregationDataSource interface {
-	// Query fetches documents from the database.
-	Query(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
-
+// ProducerStageDataSource is a common interface for fetching from database.
+type ProducerStageDataSource interface {
 	// CollStats fetches collection statistics from the database.
 	CollStats(ctx context.Context, closer *iterator.MultiCloser) (*CollStatsResult, error)
 }
