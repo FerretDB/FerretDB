@@ -166,6 +166,72 @@ func TestQueryBadFindType(t *testing.T) {
 	}
 }
 
+func TestQueryFilterPath(t *testing.T) {
+	t.Parallel()
+	s := setup.SetupWithOpts(t, nil)
+
+	ctx, collection := s.Ctx, s.Collection
+
+	_, err := collection.InsertMany(ctx, []any{
+		bson.D{{"_id", "document-key-empty"}, {"a", bson.D{{"", "v"}}}},
+		bson.D{{"_id", "document-key-space"}, {"a", bson.D{{" ", "v"}}}},
+		bson.D{{"_id", "key-empty"}, {"", "v"}},
+		bson.D{{"_id", "key-space"}, {" ", "v"}},
+	})
+	require.NoError(t, err)
+
+	for name, tc := range map[string]struct {
+		filter any // optional, used for find value
+
+		res  []bson.D // optional, expected error from MongoDB
+		skip string   // optional, skip test with a specified reason
+	}{
+		"All": {
+			filter: bson.D{},
+			res: []bson.D{
+				{{"_id", "document-key-empty"}, {"a", bson.D{{"", "v"}}}},
+				{{"_id", "document-key-space"}, {"a", bson.D{{" ", "v"}}}},
+				{{"_id", "key-empty"}, {"", "v"}},
+				{{"_id", "key-space"}, {" ", "v"}},
+			},
+		},
+		"Empty": {
+			filter: bson.D{{"", 1}},
+			res:    nil,
+		},
+		"Space": {
+			filter: bson.D{{"", 1}},
+			res:    nil,
+		},
+		"EmptyDotNotation": {
+			filter: bson.D{{"a.", 1}},
+			res:    nil,
+		},
+		"SpaceDotNotation": {
+			filter: bson.D{{"a. ", 1}},
+			res:    nil,
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			require.NoError(t, err)
+
+			var res []bson.D
+			err = cursor.All(ctx, &res)
+
+			require.NoError(t, err)
+			require.Equal(t, tc.res, res)
+		})
+	}
+}
+
 func TestQuerySortErrors(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)

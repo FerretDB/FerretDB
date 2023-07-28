@@ -263,10 +263,12 @@ func prepareWhereClause(p *Placeholder, sqlFilters *types.Document) (string, []a
 				continue
 			}
 		case errors.As(err, &pe):
-			// ignore empty key error, otherwise return error
-			if pe.Code() != types.ErrPathElementEmpty {
-				return "", nil, lazyerrors.Error(err)
+			// ignore empty key and invalid key error, otherwise return error
+			if pe.Code() != types.ErrPathElementEmpty || pe.Code() != types.ErrPathElementInvalid {
+				continue
 			}
+
+			return "", nil, lazyerrors.Error(err)
 		default:
 			panic("Invalid error type: PathError expected")
 		}
