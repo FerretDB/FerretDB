@@ -374,7 +374,7 @@ func processOperatorError(err error) error {
 		}
 	}
 
-	return lazyerrors.Error(err)
+	return err
 }
 
 // check interfaces
