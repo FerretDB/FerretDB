@@ -30,8 +30,7 @@ func TestCreateDrop(t *testing.T) {
 	// that also tests that query parameters are preserved by using non-writable directory
 	p, err := New("file:./?mode=memory&_pragma=journal_mode(wal)", testutil.Logger(t))
 	require.NoError(t, err)
-
-	defer p.Close()
+	t.Cleanup(p.Close)
 
 	p.Drop(ctx, t.Name())
 
@@ -73,6 +72,7 @@ func TestPragmas(t *testing.T) {
 
 	p, err := New("file:./", testutil.Logger(t))
 	require.NoError(t, err)
+	t.Cleanup(p.Close)
 
 	p.Drop(ctx, t.Name())
 
