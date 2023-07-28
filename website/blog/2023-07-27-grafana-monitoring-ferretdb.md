@@ -23,7 +23,7 @@ This blog post will cover Grafana and how you can use it to analyze and monitor 
 
 ## What is Grafana?
 
-Grafana is a comprehensive visualization and monitoring tool for managing and tracking data from multiple data sources such as MongoDB, ElasticSearch, PostgreSQL, MySQL, and Graphite, among others.
+Grafana is a comprehensive visualization and monitoring tool for managing and tracking data from multiple data sources such as MongoDB, PostgreSQL, and Prometheus, among others.
 
 With insight into large data sets with complex infrastructures, Grafana provides you with configurable dashboards that you can use to tailor the different visualizations (or panels) for your data.
 Dashboards in Grafana consists of panels containing several views such as graph, table, and heatmap.
@@ -42,6 +42,7 @@ By using FerretDB instead of MongoDB, you get the following benefits:
 - **Open source:** FerretDB is completely open source, released under the Apache 2.0 license – anyone can use it, modify it, and contribute to it.
   On the other hand, MongoDB is no longer open source after changing their license to Server side Public License (SSPL), which leaves room for different interpretation.
   For example, you may need to make your source code available if you provide MongoDB as a service.
+  Also, the license does not allow you to embed MongoDB into your application.
   This is quite a huge concern for many open source users or early stage commercial companies; it was the motivation behind FerretDB – to ensure that MongoDB workloads can remain in the open source ecosystem.
 
 - **No vendor lock-in:** This is an added benefit of open source software.
