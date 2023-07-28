@@ -17,10 +17,12 @@ package hanadb
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"sync"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
@@ -48,9 +50,10 @@ type queryIterator struct {
 // If an error occurs, it returns nil and that error, possibly wrapped.
 func (hanaPool *Pool) QueryDocuments(ctx context.Context, qp *QueryParams) (types.DocumentsIterator, error) {
 	// Todo: build correct SQL here
-	sqlStmt := "SELECT $1 FROM $1"
 
-	rows, err := hanaPool.QueryContext(ctx, sqlStmt, qp.Collection)
+	sqlStmt := fmt.Sprintf("SELECT * FROM %q.%q", qp.DB, qp.Collection)
+
+	rows, err := hanaPool.QueryContext(ctx, sqlStmt)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -59,7 +62,9 @@ func (hanaPool *Pool) QueryDocuments(ctx context.Context, qp *QueryParams) (type
 		ctx:       ctx,
 		unmarshal: sjson.Unmarshal,
 		rows:      rows,
+		token:     resource.NewToken(),
 	}
+	resource.Track(iter, iter.token)
 
 	return iter, nil
 }
@@ -74,6 +79,22 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 	defer iter.m.Unlock()
 
 	var unused struct{}
+
+	if err := context.Cause(iter.ctx); err != nil {
+		return unused, nil, lazyerrors.Error(err)
+	}
+
+	if !iter.rows.Next() {
+		if err := iter.rows.Err(); err != nil {
+			return unused, nil, lazyerrors.Error(err)
+		}
+
+		// to avoid context cancellation changing the next `Next()` error
+		// from `iterator.ErrIteratorDone` to `context.Canceled`
+		iter.close()
+
+		return unused, nil, iterator.ErrIteratorDone
+	}
 
 	var b []byte
 	if err := iter.rows.Scan(&b); err != nil {
