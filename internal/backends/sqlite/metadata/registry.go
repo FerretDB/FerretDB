@@ -150,18 +150,17 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsq
 	// use transaction
 	// TODO https://github.com/FerretDB/FerretDB/issues/2747
 
-	q := fmt.Sprintf("CREATE TABLE %q (name, table_name, settings TEXT)", metadataTableName)
+	q := fmt.Sprintf(
+		"CREATE TABLE %q ("+
+			"name TEXT NOT NULL UNIQUE CHECK(name != ''), "+
+			"table_name TEXT NOT NULL UNIQUE CHECK(table_name != ''), "+
+			"settings TEXT NOT NULL CHECK(settings != '')"+
+			") STRICT",
+		metadataTableName,
+	)
 	if _, err = db.ExecContext(ctx, q); err != nil {
 		r.DatabaseDrop(ctx, dbName)
 		return nil, lazyerrors.Error(err)
-	}
-
-	for _, column := range []string{"name", "table_name"} {
-		q = fmt.Sprintf("CREATE UNIQUE INDEX %q ON %q (%s)", metadataTableName+"_"+column, metadataTableName, column)
-		if _, err = db.ExecContext(ctx, q); err != nil {
-			r.DatabaseDrop(ctx, dbName)
-			return nil, lazyerrors.Error(err)
-		}
 	}
 
 	r.refreshCollections(ctx, dbName, db)
@@ -221,7 +220,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 	// use transaction
 	// TODO https://github.com/FerretDB/FerretDB/issues/2747
 
-	q := fmt.Sprintf("CREATE TABLE %q (%s TEXT)", tableName, DefaultColumn)
+	q := fmt.Sprintf("CREATE TABLE %q (%s TEXT) STRICT", tableName, DefaultColumn)
 	if _, err = db.ExecContext(ctx, q); err != nil {
 		var e *sqlite.Error
 		if errors.As(err, &e) && e.Code() == sqlitelib.SQLITE_ERROR {
@@ -288,13 +287,13 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 	// use transaction
 	// TODO https://github.com/FerretDB/FerretDB/issues/2747
 
-	query := fmt.Sprintf("DELETE FROM %q WHERE name = ?", metadataTableName)
-	if _, err := db.ExecContext(ctx, query, collectionName); err != nil {
+	q := fmt.Sprintf("DELETE FROM %q WHERE name = ?", metadataTableName)
+	if _, err := db.ExecContext(ctx, q, collectionName); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	query = fmt.Sprintf("DROP TABLE %q", info.TableName)
-	if _, err := db.ExecContext(ctx, query); err != nil {
+	q = fmt.Sprintf("DROP TABLE %q", info.TableName)
+	if _, err := db.ExecContext(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 

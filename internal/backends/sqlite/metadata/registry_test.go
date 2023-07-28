@@ -14,8 +14,29 @@
 
 package metadata
 
-import "testing"
+import (
+	"testing"
 
-func TestDummy(t *testing.T) {
-	// we need at least one test per package to correctly calculate coverage
+	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+)
+
+func TestCreateDrop(t *testing.T) {
+	t.Parallel()
+	ctx := testutil.Ctx(t)
+
+	r, err := NewRegistry("file:./?mode=memory", testutil.Logger(t))
+	require.NoError(t, err)
+	t.Cleanup(r.Close)
+
+	_, err = r.DatabaseGetOrCreate(ctx, t.Name())
+	require.NoError(t, err)
+
+	created, err := r.CollectionCreate(ctx, t.Name(), t.Name())
+	require.NoError(t, err)
+	require.True(t, created)
+
+	dropped := r.DatabaseDrop(ctx, t.Name())
+	require.True(t, dropped)
 }
