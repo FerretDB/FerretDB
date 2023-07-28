@@ -30,8 +30,20 @@ func (a *arrayType) bsontype() {}
 
 // ReadFrom implements bsontype interface.
 func (a *arrayType) ReadFrom(r *bufio.Reader) error {
+	return a.readNested(r, 0)
+}
+
+// readNested, similarly to ReadFrom, takes raw bytes from reader
+// and unmarshal them to the arrayType.
+// It also takes the nesting value, and checks if the
+// document doesn't exceed the max nesting allowed.
+func (a *arrayType) readNested(r *bufio.Reader, nesting int) error {
+	if nesting > maxNesting {
+		return lazyerrors.Errorf("bson.Array.readNested: document has exceeded the max supported nesting: %d", maxNesting)
+	}
+
 	var doc Document
-	if err := doc.ReadFrom(r); err != nil {
+	if err := doc.readNested(r, nesting); err != nil {
 		return lazyerrors.Error(err)
 	}
 

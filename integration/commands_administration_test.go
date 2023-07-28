@@ -803,7 +803,6 @@ func TestCommandsAdministrationDataSizeErrors(t *testing.T) {
 				Name:    "InvalidNamespace",
 				Message: "Invalid namespace specified 'invalid'",
 			},
-			altMessage: "Invalid namespace specified 'invalid'",
 		},
 		"InvalidNamespaceTypeDocument": {
 			command: bson.D{{"dataSize", bson.D{}}},

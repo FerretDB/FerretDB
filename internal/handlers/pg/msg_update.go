@@ -56,7 +56,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	case err == nil:
 		// do nothing
 	case errors.Is(err, pgdb.ErrInvalidCollectionName), errors.Is(err, pgdb.ErrInvalidDatabaseName):
-		msg := fmt.Sprintf("Invalid namespace: %s.%s", params.DB, params.Collection)
+		msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
 	default:
 		return nil, lazyerrors.Error(err)

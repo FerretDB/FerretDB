@@ -4,6 +4,7 @@ title: 'Introducing FerretDB Beacon: Help Us Increase Compatibility'
 author: Peter Farkas
 description: Introducing FerretDB Beacon – a service to help us effectively identify compatibility issues and prioritize solutions based on user interaction with FerretDB.
 image: /img/blog/allen-cai-Y4RxCIaYaSk-unsplash-1024x683.jpg
+tags: [product]
 ---
 
 Introducing FerretDB Beacon – a service to help us effectively identify compatibility issues and prioritize solutions based on user interaction with FerretDB.
