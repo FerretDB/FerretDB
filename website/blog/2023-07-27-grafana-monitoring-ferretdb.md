@@ -93,7 +93,7 @@ Here's a sample view of a document in the `issues` collection:
 
 ### How to connect Grafana with FerretDB
 
-This section of the tutorial assumes that you have Grafana Enterprise and have your FerretDB Connection URI.
+This section of the tutorial assumes that you have Grafana Enterprise or Grafana Cloud and have your FerretDB Connection URI.
 
 Once you're signed in, go to the navigation section; under "Administration", select "Plugins" to download the MongoDB plugin for Grafana.
 
