@@ -44,7 +44,6 @@ import (
 type group struct {
 	groupExpression any
 	groupBy         []groupBy
-	aggregation     aggregations.Aggregation
 }
 
 // groupBy represents accumulation to apply on the group.
@@ -54,8 +53,8 @@ type groupBy struct {
 }
 
 // newGroup creates a new $group stage.
-func newGroup(params newStageParams) (aggregations.Stage, error) {
-	fields, err := common.GetRequiredParam[*types.Document](params.stage, "$group")
+func newGroup(stage *types.Document) (aggregations.ProcessorStage, error) {
+	fields, err := common.GetRequiredParam[*types.Document](stage, "$group")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupInvalidFields,
@@ -113,16 +112,10 @@ func newGroup(params newStageParams) (aggregations.Stage, error) {
 	return &group{
 		groupExpression: groupKey,
 		groupBy:         groups,
-		aggregation:     params.aggregation,
 	}, nil
 }
 
-// FirstStage implements Stage interface.
-func (g *group) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return g.aggregation.Query(ctx, closer)
-}
-
-// Process implements Stage interface.
+// Process implements ProcessorStage interface.
 func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	// TODO https://github.com/FerretDB/FerretDB/issues/2863
 	docs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
@@ -274,5 +267,5 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 
 // check interfaces
 var (
-	_ aggregations.Stage = (*group)(nil)
+	_ aggregations.ProcessorStage = (*group)(nil)
 )

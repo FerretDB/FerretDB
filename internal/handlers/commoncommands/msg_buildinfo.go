@@ -27,8 +27,8 @@ import (
 
 // MsgBuildInfo is a common implementation of the buildInfo command.
 func MsgBuildInfo(context.Context, *wire.OpMsg) (*wire.OpMsg, error) {
-	aggregationStages := types.MakeArray(len(stages.Stages))
-	for stage := range stages.Stages {
+	aggregationStages := types.MakeArray(len(stages.ProcessorStages))
+	for stage := range stages.ProcessorStages {
 		aggregationStages.Append(stage)
 	}
 

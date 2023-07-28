@@ -692,7 +692,7 @@ func processOperatorError(err error) error {
 			// TODO https://github.com/FerretDB/FerretDB/issues/2275
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,
-				"Aggregation expression variables are not implemented yet",
+				"AggregationDataSource expression variables are not implemented yet",
 				"$project (stage)",
 			)
 		case aggregations.ErrEmptyVariable:

@@ -23,23 +23,25 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// newStageParams contains parameter used for creating new stage.
-type newStageParams struct {
+// newProducerStageParams contains parameter used for creating new stage.
+type newProducerStageParams struct {
 	db             string
 	collection     string
 	stage          *types.Document
-	aggregation    aggregations.Aggregation
+	aggregation    aggregations.AggregationDataSource
 	previousStages []string
 }
 
-// newStageFunc is a type for a function that creates a new aggregation stage.
-type newStageFunc func(params newStageParams) (aggregations.Stage, error)
+// newProcessorStageFunc is a type for a function that creates a new aggregation stage.
+type newProcessorStageFunc func(stage *types.Document) (aggregations.ProcessorStage, error)
 
-// Stages maps all supported aggregation Stages.
-var Stages = map[string]newStageFunc{
+// newProducerStageFunc is a type for a function that creates a new aggregation producer stage.
+type newProducerStageFunc func(params newProducerStageParams) (aggregations.ProducerStage, error)
+
+// ProcessorStages maps supported aggregation processor stages.
+var ProcessorStages = map[string]newProcessorStageFunc{
 	// sorted alphabetically
 	"$addFields": newAddFields,
-	"$collStats": newCollStats,
 	"$count":     newCount,
 	"$group":     newGroup,
 	"$limit":     newLimit,
@@ -50,6 +52,13 @@ var Stages = map[string]newStageFunc{
 	"$sort":      newSort,
 	"$unset":     newUnset,
 	"$unwind":    newUnwind,
+	// please keep sorted alphabetically
+}
+
+// ProducerStages maps supported aggregation producer stages.
+var ProducerStages = map[string]newProducerStageFunc{
+	// sorted alphabetically
+	"$collStats": newCollStats,
 	// please keep sorted alphabetically
 }
 
@@ -86,8 +95,8 @@ var unsupportedStages = map[string]struct{}{
 	// please keep sorted alphabetically
 }
 
-// NewStage creates a new aggregation stage.
-func NewStage(stage *types.Document, db, collection string, previousStages []string, aggregation aggregations.Aggregation) (aggregations.Stage, error) { //nolint:lll // for readability
+// NewProcessorStage creates a new aggregation stage.
+func NewProcessorStage(stage *types.Document) (aggregations.ProcessorStage, error) {
 	if stage.Len() != 1 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageInvalid,
@@ -98,7 +107,7 @@ func NewStage(stage *types.Document, db, collection string, previousStages []str
 
 	name := stage.Command()
 
-	f, supported := Stages[name]
+	f, supported := ProcessorStages[name]
 	_, unsupported := unsupportedStages[name]
 
 	switch {
@@ -106,13 +115,7 @@ func NewStage(stage *types.Document, db, collection string, previousStages []str
 		panic(fmt.Sprintf("stage %q is in both `stages` and `unsupportedStages`", name))
 
 	case supported && !unsupported:
-		return f(newStageParams{
-			stage:          stage,
-			db:             db,
-			collection:     collection,
-			aggregation:    aggregation,
-			previousStages: previousStages,
-		})
+		return f(stage)
 
 	case !supported && unsupported:
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -130,4 +133,43 @@ func NewStage(stage *types.Document, db, collection string, previousStages []str
 	}
 
 	panic("not reached")
+}
+
+// NewProducerStage creates a new aggregation producer stage.
+func NewProducerStage(stage *types.Document, db, collection string, previousStages []string, aggregation aggregations.AggregationDataSource) (aggregations.ProducerStage, error) { //nolint:lll // for readability
+	if stage.Len() != 1 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageInvalid,
+			"A pipeline stage specification object must contain exactly one field.",
+			"aggregate",
+		)
+	}
+
+	name := stage.Command()
+
+	f, supported := ProducerStages[name]
+	_, unsupported := unsupportedStages[name]
+	if supported {
+		return f(newProducerStageParams{
+			stage:          stage,
+			db:             db,
+			collection:     collection,
+			aggregation:    aggregation,
+			previousStages: previousStages,
+		})
+	}
+
+	if unsupported {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
+			fmt.Sprintf("`aggregate` stage %q is not implemented yet", name),
+			name+" (stage)", // to differentiate update operator $set from aggregation stage $set, etc
+		)
+	}
+
+	return nil, commonerrors.NewCommandErrorMsgWithArgument(
+		commonerrors.ErrStageGroupInvalidAccumulator,
+		fmt.Sprintf("Unrecognized pipeline stage name: %q", name),
+		name+" (stage)", // to differentiate update operator $set from aggregation stage $set, etc
+	)
 }

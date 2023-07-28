@@ -26,13 +26,12 @@ import (
 
 // skip represents $skip stage.
 type skip struct {
-	value       int64
-	aggregation aggregations.Aggregation
+	value int64
 }
 
 // newSkip creates a new $skip stage.
-func newSkip(params newStageParams) (aggregations.Stage, error) {
-	value, err := params.stage.Get("$skip")
+func newSkip(stage *types.Document) (aggregations.ProcessorStage, error) {
+	value, err := stage.Get("$skip")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -43,22 +42,16 @@ func newSkip(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &skip{
-		value:       skipValue,
-		aggregation: params.aggregation,
+		value: skipValue,
 	}, nil
 }
 
-// FirstStage implements Stage interface.
-func (s *skip) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return s.aggregation.Query(ctx, closer)
-}
-
-// Process implements Stage interface.
+// Process implements ProcessorStage interface.
 func (s *skip) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	return common.SkipIterator(iter, closer, s.value), nil
 }
 
 // check interfaces
 var (
-	_ aggregations.Stage = (*skip)(nil)
+	_ aggregations.ProcessorStage = (*skip)(nil)
 )

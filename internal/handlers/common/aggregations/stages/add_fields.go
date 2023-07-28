@@ -31,12 +31,12 @@ import (
 //	{ $addFields: { <newField>: <expression>, ... } }
 type addFields struct {
 	newField    *types.Document
-	aggregation aggregations.Aggregation
+	aggregation aggregations.AggregationDataSource
 }
 
 // newAddFields validates stage document and creates a new $addFields stage.
-func newAddFields(params newStageParams) (aggregations.Stage, error) {
-	fields, err := params.stage.Get("$addFields")
+func newAddFields(stage *types.Document) (aggregations.ProcessorStage, error) {
+	fields, err := stage.Get("$addFields")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -59,22 +59,16 @@ func newAddFields(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &addFields{
-		newField:    fieldsDoc,
-		aggregation: params.aggregation,
+		newField: fieldsDoc,
 	}, nil
 }
 
-// FirstStage implements Stage interface.
-func (s *addFields) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return s.aggregation.Query(ctx, closer)
-}
-
-// Process implements Stage interface.
+// Process implements ProcessorStage interface.
 func (s *addFields) Process(_ context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	return common.AddFieldsIterator(iter, closer, s.newField), nil
 }
 
 // check interfaces
 var (
-	_ aggregations.Stage = (*addFields)(nil)
+	_ aggregations.ProcessorStage = (*addFields)(nil)
 )

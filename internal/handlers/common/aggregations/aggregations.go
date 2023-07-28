@@ -22,21 +22,20 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
-// Stage is a common interface for all aggregation stages.
-type Stage interface {
-	// FirstStage fetches document iterator, it is only used if this is
-	// the first stage of the pipeline.
-	// The returned document iterator may be originated from querying database or
-	// from in-memory value iterator.
-	// This allows first stage of the pipeline to decide how to create initial document iterator.
-	FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
-
+// ProcessorStage is a common interface for aggregation stages that process document iterator.
+type ProcessorStage interface {
 	// Process applies an aggregate stage on documents from iterator.
 	Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
 }
 
-// Aggregation is a common interface for fetching from database.
-type Aggregation interface {
+// ProducerStage is a common interface aggregation stages produce documentiterator.
+type ProducerStage interface {
+	// Produce applies an aggregate stage on documents from iterator.
+	Produce(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
+}
+
+// AggregationDataSource is a common interface for fetching from database.
+type AggregationDataSource interface {
 	// Query fetches documents from the database.
 	Query(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
 

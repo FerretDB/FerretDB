@@ -28,13 +28,12 @@ import (
 
 // sort represents $sort stage.
 type sort struct {
-	fields      *types.Document
-	aggregation aggregations.Aggregation
+	fields *types.Document
 }
 
 // newSort creates a new $sort stage.
-func newSort(params newStageParams) (aggregations.Stage, error) {
-	fields, err := common.GetRequiredParam[*types.Document](params.stage, "$sort")
+func newSort(stage *types.Document) (aggregations.ProcessorStage, error) {
+	fields, err := common.GetRequiredParam[*types.Document](stage, "$sort")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrSortBadExpression,
@@ -54,17 +53,11 @@ func newSort(params newStageParams) (aggregations.Stage, error) {
 	// TODO: https://github.com/FerretDB/FerretDB/issues/2090
 
 	return &sort{
-		fields:      fields,
-		aggregation: params.aggregation,
+		fields: fields,
 	}, nil
 }
 
-// FirstStage implements Stage interface.
-func (s *sort) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return s.aggregation.Query(ctx, closer)
-}
-
-// Process implements Stage interface.
+// Process implements ProcessorStage interface.
 //
 // If sort path is invalid, it returns a possibly wrapped types.DocumentPathError.
 func (s *sort) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
@@ -87,5 +80,5 @@ func (s *sort) Process(ctx context.Context, iter types.DocumentsIterator, closer
 
 // check interfaces
 var (
-	_ aggregations.Stage = (*sort)(nil)
+	_ aggregations.ProcessorStage = (*sort)(nil)
 )

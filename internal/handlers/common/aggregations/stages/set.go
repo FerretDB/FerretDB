@@ -32,13 +32,12 @@ import (
 //
 //	{ $set: { <newField>: <expression>, ... } }
 type set struct {
-	newField    *types.Document
-	aggregation aggregations.Aggregation
+	newField *types.Document
 }
 
 // newSet validates stage document and creates a new $set stage.
-func newSet(params newStageParams) (aggregations.Stage, error) {
-	fields, err := params.stage.Get("$set")
+func newSet(stage *types.Document) (aggregations.ProcessorStage, error) {
+	fields, err := stage.Get("$set")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -61,22 +60,16 @@ func newSet(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &set{
-		newField:    fieldsDoc,
-		aggregation: params.aggregation,
+		newField: fieldsDoc,
 	}, nil
 }
 
-// FirstStage implements Stage interface.
-func (s *set) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return s.aggregation.Query(ctx, closer)
-}
-
-// Process implements Stage interface.
+// Process implements ProcessorStage interface.
 func (s *set) Process(_ context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	return common.AddFieldsIterator(iter, closer, s.newField), nil
 }
 
 // check interfaces
 var (
-	_ aggregations.Stage = (*set)(nil)
+	_ aggregations.ProcessorStage = (*set)(nil)
 )

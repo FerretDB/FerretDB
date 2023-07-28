@@ -39,7 +39,7 @@ type collStats struct {
 	queryExecStats bool
 	db             string
 	collection     string
-	aggregation    aggregations.Aggregation
+	aggregation    aggregations.AggregationDataSource
 }
 
 // storageStats represents $collStats.storageStats field.
@@ -48,7 +48,7 @@ type storageStats struct {
 }
 
 // newCollStats creates a new $collStats stage.
-func newCollStats(params newStageParams) (aggregations.Stage, error) {
+func newCollStats(params newProducerStageParams) (aggregations.ProducerStage, error) {
 	if len(params.previousStages) > 0 {
 		// TODO Add a test to cover this error: https://github.com/FerretDB/FerretDB/issues/2349
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -101,8 +101,11 @@ func newCollStats(params newStageParams) (aggregations.Stage, error) {
 	return &cs, nil
 }
 
-// FirstStage implements Stage interface.
-func (c *collStats) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+// Produce implements ProducerStage interface.
+//
+// Producing consists of modification of the input document, so it contains all the necessary fields
+// and the data is modified according to the given request.
+func (c *collStats) Produce(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	var host string
 	var err error
 
@@ -161,14 +164,6 @@ func (c *collStats) FirstStage(ctx context.Context, closer *iterator.MultiCloser
 	iter := iterator.Values(iterator.ForSlice([]*types.Document{doc}))
 	closer.Add(iter)
 
-	return iter, nil
-}
-
-// Process implements Stage interface.
-//
-// Processing consists of modification of the input document, so it contains all the necessary fields
-// and the data is modified according to the given request.
-func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	_, res, err := iter.Next()
 	if errors.Is(err, iterator.ErrIteratorDone) {
 		// For non-shared collections, it must contain a single document.
@@ -207,5 +202,5 @@ func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator, c
 
 // check interfaces
 var (
-	_ aggregations.Stage = (*collStats)(nil)
+	_ aggregations.ProducerStage = (*collStats)(nil)
 )

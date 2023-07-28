@@ -26,13 +26,12 @@ import (
 
 // limit represents $limit stage.
 type limit struct {
-	limit       int64
-	aggregation aggregations.Aggregation
+	limit int64
 }
 
 // newLimit creates a new $limit stage.
-func newLimit(params newStageParams) (aggregations.Stage, error) {
-	doc, err := params.stage.Get("$limit")
+func newLimit(stage *types.Document) (aggregations.ProcessorStage, error) {
+	doc, err := stage.Get("$limit")
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -43,22 +42,16 @@ func newLimit(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &limit{
-		limit:       l,
-		aggregation: params.aggregation,
+		limit: l,
 	}, nil
 }
 
-// FirstStage implements Stage interface.
-func (l *limit) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return l.aggregation.Query(ctx, closer)
-}
-
-// Process implements Stage interface.
+// Process implements ProcessorStage interface.
 func (l *limit) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	return common.LimitIterator(iter, closer, l.limit), nil
 }
 
 // check interfaces
 var (
-	_ aggregations.Stage = (*limit)(nil)
+	_ aggregations.ProcessorStage = (*limit)(nil)
 )

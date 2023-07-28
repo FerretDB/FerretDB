@@ -30,13 +30,12 @@ import (
 
 // unwind represents $unwind stage.
 type unwind struct {
-	field       *aggregations.Expression
-	aggregation aggregations.Aggregation
+	field *aggregations.Expression
 }
 
 // newUnwind creates a new $unwind stage.
-func newUnwind(params newStageParams) (aggregations.Stage, error) {
-	field, err := params.stage.Get("$unwind")
+func newUnwind(stage *types.Document) (aggregations.ProcessorStage, error) {
+	field, err := stage.Get("$unwind")
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +44,7 @@ func newUnwind(params newStageParams) (aggregations.Stage, error) {
 
 	switch field := field.(type) {
 	case *types.Document:
-		return nil, common.Unimplemented(params.stage, "$unwind")
+		return nil, common.Unimplemented(stage, "$unwind")
 	case string:
 		if field == "" {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -96,22 +95,16 @@ func newUnwind(params newStageParams) (aggregations.Stage, error) {
 				"expected either a string or an object as specification for $unwind stage, got %s",
 				types.FormatAnyValue(field),
 			),
-			"$unwind (Stage)",
+			"$unwind (ProcessorStage)",
 		)
 	}
 
 	return &unwind{
-		field:       expr,
-		aggregation: params.aggregation,
+		field: expr,
 	}, nil
 }
 
-// FirstStage implements Stage interface.
-func (u *unwind) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return u.aggregation.Query(ctx, closer)
-}
-
-// Process implements Stage interface.
+// Process implements ProcessorStage interface.
 func (u *unwind) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	// TODO https://github.com/FerretDB/FerretDB/issues/2490
 	docs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
@@ -169,5 +162,5 @@ func (u *unwind) Process(ctx context.Context, iter types.DocumentsIterator, clos
 
 // check interfaces
 var (
-	_ aggregations.Stage = (*unwind)(nil)
+	_ aggregations.ProcessorStage = (*unwind)(nil)
 )

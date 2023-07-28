@@ -34,14 +34,13 @@ import (
 //	    <output fieldN>: <expressionN>
 //	  }
 type project struct {
-	projection  *types.Document
-	inclusion   bool
-	aggregation aggregations.Aggregation
+	projection *types.Document
+	inclusion  bool
 }
 
 // newProject validates projection document and creates a new $project stage.
-func newProject(params newStageParams) (aggregations.Stage, error) {
-	fields, err := common.GetRequiredParam[*types.Document](params.stage, "$project")
+func newProject(stage *types.Document) (aggregations.ProcessorStage, error) {
+	fields, err := common.GetRequiredParam[*types.Document](stage, "$project")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrProjectBadExpression,
@@ -56,18 +55,12 @@ func newProject(params newStageParams) (aggregations.Stage, error) {
 	}
 
 	return &project{
-		projection:  validated,
-		inclusion:   inclusion,
-		aggregation: params.aggregation,
+		projection: validated,
+		inclusion:  inclusion,
 	}, nil
 }
 
-// FirstStage implements Stage interface.
-func (p *project) FirstStage(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
-	return p.aggregation.Query(ctx, closer)
-}
-
-// Process implements Stage interface.
+// Process implements ProcessorStage interface.
 //
 //nolint:lll // for readability
 func (p *project) Process(_ context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
@@ -76,5 +69,5 @@ func (p *project) Process(_ context.Context, iter types.DocumentsIterator, close
 
 // check interfaces
 var (
-	_ aggregations.Stage = (*project)(nil)
+	_ aggregations.ProcessorStage = (*project)(nil)
 )

@@ -162,7 +162,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	aggregationStages := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
-	stagesDocuments := make([]aggregations.Stage, 0, len(aggregationStages))
+	producerStages := make([]aggregations.ProducerStage, 0, len(aggregationStages))
+	stagesDocuments := make([]aggregations.ProcessorStage, 0, len(aggregationStages))
 	previousStages := make([]string, 0, len(aggregationStages))
 
 	filter, sort := aggregations.GetPushdownQuery(aggregationStages)
@@ -191,13 +192,26 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			)
 		}
 
-		var s aggregations.Stage
+		if _, ok := stages.ProducerStages[d.Command()]; ok {
+			var s aggregations.ProducerStage
 
-		if s, err = stages.NewStage(d, db, collection, previousStages, p); err != nil {
-			return nil, err
+			if s, err = stages.NewProducerStage(d, db, collection, previousStages, p); err != nil {
+				return nil, err
+			}
+
+			producerStages = append(producerStages, s)
 		}
 
-		stagesDocuments = append(stagesDocuments, s)
+		if _, ok := stages.ProcessorStages[d.Command()]; ok {
+			var s aggregations.ProcessorStage
+
+			if s, err = stages.NewProcessorStage(d); err != nil {
+				return nil, err
+			}
+
+			stagesDocuments = append(stagesDocuments, s)
+		}
+
 		previousStages = append(previousStages, d.Command())
 	}
 
@@ -244,13 +258,18 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var iter iterator.Interface[struct{}, *types.Document]
 
-	for i, s := range stagesDocuments {
-		if i == 0 {
-			if iter, err = s.FirstStage(ctx, closer); err != nil {
-				return nil, err
-			}
+	if len(producerStages) == 0 {
+		if iter, err = p.Query(ctx, closer); err != nil {
+			return nil, lazyerrors.Error(err)
 		}
+	} else {
+		// handle case where there are multiple producer stages
+		if iter, err = producerStages[0].Produce(ctx, closer); err != nil {
+			return nil, err
+		}
+	}
 
+	for _, s := range stagesDocuments {
 		if iter, err = s.Process(ctx, iter, closer); err != nil {
 			return nil, err
 		}
@@ -309,7 +328,7 @@ type pgAggregation struct {
 	filter     *types.Document
 }
 
-// Query implements Aggregation interface.
+// Query implements AggregationDataSource interface.
 func (p *pgAggregation) Query(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
 	var keepTx pgx.Tx
 	var iter types.DocumentsIterator
@@ -345,7 +364,7 @@ func (p *pgAggregation) Query(ctx context.Context, closer *iterator.MultiCloser)
 	return iter, nil
 }
 
-// CollStats implements Aggregation interface.
+// CollStats implements AggregationDataSource interface.
 func (p *pgAggregation) CollStats(ctx context.Context, closer *iterator.MultiCloser) (*aggregations.CollStatsResult, error) {
 	var collStats *pgdb.CollStats
 
@@ -390,5 +409,5 @@ func (p *pgAggregation) CollStats(ctx context.Context, closer *iterator.MultiClo
 
 // check interfaces
 var (
-	_ aggregations.Aggregation = (*pgAggregation)(nil)
+	_ aggregations.AggregationDataSource = (*pgAggregation)(nil)
 )
