@@ -15,12 +15,15 @@
 package pool
 
 import (
+	"fmt"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
 )
 
 func TestCreateDrop(t *testing.T) {
@@ -32,21 +35,25 @@ func TestCreateDrop(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(p.Close)
 
-	db := p.GetExisting(ctx, t.Name())
+	dbName := t.Name()
+
+	db := p.GetExisting(ctx, dbName)
 	require.Nil(t, db)
 
-	db, created, err := p.GetOrCreate(ctx, t.Name())
+	db, created, err := p.GetOrCreate(ctx, dbName)
 	require.NoError(t, err)
 	require.NotNil(t, db)
 	require.True(t, created)
 
-	db2, created, err := p.GetOrCreate(ctx, t.Name())
+	db2, created, err := p.GetOrCreate(ctx, dbName)
 	require.NoError(t, err)
 	require.Same(t, db, db2)
 	require.False(t, created)
 
-	db2 = p.GetExisting(ctx, t.Name())
+	db2 = p.GetExisting(ctx, dbName)
 	require.Same(t, db, db2)
+
+	assert.Contains(t, p.List(ctx), dbName)
 
 	// journal_mode is silently ignored for mode=memory
 	var res string
@@ -54,14 +61,72 @@ func TestCreateDrop(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "memory", res)
 
-	dropped := p.Drop(ctx, t.Name())
+	dropped := p.Drop(ctx, dbName)
 	require.True(t, dropped)
 
-	dropped = p.Drop(ctx, t.Name())
+	dropped = p.Drop(ctx, dbName)
 	require.False(t, dropped)
 
-	db = p.GetExisting(ctx, t.Name())
+	db = p.GetExisting(ctx, dbName)
 	require.Nil(t, db)
+}
+
+func TestCreateDropStress(t *testing.T) {
+	ctx := testutil.Ctx(t)
+
+	for testName, uri := range map[string]string{
+		"file":   "file:./",
+		"memory": "file:./?mode=memory",
+	} {
+		t.Run(testName, func(t *testing.T) {
+			p, err := New(uri, testutil.Logger(t))
+			require.NoError(t, err)
+			t.Cleanup(p.Close)
+
+			var i atomic.Int32
+
+			teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+				dbName := fmt.Sprintf("db%03d", i.Add(1))
+
+				t.Cleanup(func() {
+					p.Drop(ctx, dbName)
+				})
+
+				ready <- struct{}{}
+				<-start
+
+				db := p.GetExisting(ctx, dbName)
+				require.Nil(t, db)
+
+				db, created, err := p.GetOrCreate(ctx, dbName)
+				require.NoError(t, err)
+				require.NotNil(t, db)
+				require.True(t, created)
+
+				db2, created, err := p.GetOrCreate(ctx, dbName)
+				require.NoError(t, err)
+				require.Same(t, db, db2)
+				require.False(t, created)
+
+				db2 = p.GetExisting(ctx, dbName)
+				require.Same(t, db, db2)
+
+				assert.Contains(t, p.List(ctx), dbName)
+
+				err = db.QueryRowContext(ctx, "SELECT 1").Err()
+				require.NoError(t, err)
+
+				dropped := p.Drop(ctx, dbName)
+				require.True(t, dropped)
+
+				dropped = p.Drop(ctx, dbName)
+				require.False(t, dropped)
+
+				db = p.GetExisting(ctx, dbName)
+				require.Nil(t, db)
+			})
+		})
+	}
 }
 
 func TestPragmas(t *testing.T) {

@@ -165,6 +165,11 @@ func (p *Pool) Close() {
 	resource.Untrack(p, p.token)
 }
 
+// DBS returns all databases.
+//
+// It is used in a single place during registry initialization.
+//
+// Deprecated: do not use anywhere else.
 func (p *Pool) DBS() map[string]*fsql.DB {
 	return p.dbs
 }
