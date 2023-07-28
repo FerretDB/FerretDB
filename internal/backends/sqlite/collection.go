@@ -67,9 +67,9 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	query := fmt.Sprintf(`SELECT %s FROM %q`, metadata.DefaultColumn, meta.TableName)
+	q := fmt.Sprintf(`SELECT %s FROM %q`, metadata.DefaultColumn, meta.TableName)
 
-	rows, err := db.QueryContext(ctx, query)
+	rows, err := db.QueryContext(ctx, q)
 	if err != nil {
 		var e *sqlite.Error
 		if errors.As(err, &e) && e.Code() == sqlitelib.SQLITE_ERROR {
@@ -102,7 +102,7 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 	}
 
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
-	query := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
+	q := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
 
 	var res backends.InsertResult
 
@@ -126,7 +126,7 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 			return nil, lazyerrors.Error(err)
 		}
 
-		if _, err = db.ExecContext(ctx, query, string(b)); err != nil {
+		if _, err = db.ExecContext(ctx, q, string(b)); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
@@ -154,7 +154,7 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		return &res, nil
 	}
 
-	query := fmt.Sprintf(`UPDATE %q SET %s = ? WHERE %s = ?`, meta.TableName, metadata.DefaultColumn, metadata.IDColumn)
+	q := fmt.Sprintf(`UPDATE %q SET %s = ? WHERE %s = ?`, meta.TableName, metadata.DefaultColumn, metadata.IDColumn)
 
 	iter := params.Docs.Iterator()
 	defer iter.Close()
@@ -179,7 +179,7 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		docArg := string(must.NotFail(sjson.Marshal(doc)))
 		idArg := string(must.NotFail(sjson.MarshalSingleValue(id)))
 
-		r, err := db.ExecContext(ctx, query, docArg, idArg)
+		r, err := db.ExecContext(ctx, q, docArg, idArg)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -211,14 +211,14 @@ func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) 
 		return &backends.DeleteResult{Deleted: 0}, nil
 	}
 
-	query := fmt.Sprintf(`DELETE FROM %q WHERE %s = ?`, meta.TableName, metadata.IDColumn)
+	q := fmt.Sprintf(`DELETE FROM %q WHERE %s = ?`, meta.TableName, metadata.IDColumn)
 
 	var deleted int64
 
 	for _, id := range params.IDs {
 		idArg := string(must.NotFail(sjson.MarshalSingleValue(id)))
 
-		res, err := db.ExecContext(ctx, query, idArg)
+		res, err := db.ExecContext(ctx, q, idArg)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
