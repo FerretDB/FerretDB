@@ -55,7 +55,7 @@ Some default values are overridden in [our Docker image](quickstart-guide/docker
 | ------------------ | ------------------------------- | ------------------------- | ------------------------------------ |
 | `--postgresql-url` | PostgreSQL URL for 'pg' handler | `FERRETDB_POSTGRESQL_URL` | `postgres://127.0.0.1:5432/ferretdb` |
 
-FerretDB uses [pgx v5](github.com/jackc/pgx) library for connecting to PostgreSQL.
+FerretDB uses [pgx v5](https://github.com/jackc/pgx) library for connecting to PostgreSQL.
 Supported URL parameters are documented there:
 
 - <https://pkg.go.dev/github.com/jackc/pgx/v5/pgconn#ParseConfig>

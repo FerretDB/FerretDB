@@ -78,10 +78,12 @@ func parseURI(u string) (*url.URL, error) {
 // Keep it in sync with docs.
 func setDefaultValues(values url.Values) {
 	var busyTimeout, journalMode bool
+
 	for _, v := range values["_pragma"] {
 		if strings.HasPrefix(v, "busy_timeout") {
 			busyTimeout = true
 		}
+
 		if strings.HasPrefix(v, "journal_mode") {
 			journalMode = true
 		}
@@ -90,6 +92,7 @@ func setDefaultValues(values url.Values) {
 	if !busyTimeout {
 		values.Add("_pragma", "busy_timeout(5000)")
 	}
+
 	if !journalMode {
 		values.Add("_pragma", "journal_mode(wal)")
 	}
