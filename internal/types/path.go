@@ -84,7 +84,7 @@ func newPathError(code PathErrorCode, reason error) error {
 
 // Path represents a parsed dot notation - a sequence of elements (document keys and array indexes) separated by dots.
 //
-// Path's elements can't be empty, include dots, spaces, or start with $.
+// Path's elements can't be empty, include dots or spaces.
 //
 // Path should be stored and passed as a value.
 // Its methods return new values, not modifying the receiver's state.
@@ -105,7 +105,7 @@ func newPath(path ...string) (Path, error) {
 		case strings.Contains(e, "."):
 			return res, newPathError(ErrPathElementInvalid, errors.New("path element must contain '.'"))
 			// TODO https://github.com/FerretDB/FerretDB/issues/3127
-			// enable validation of `$` prefix
+			// enable validation of `$` prefix and update Path struct comment
 			// case strings.HasPrefix(e, "$"):
 			//	return res, newPathError(ErrPathElementInvalid, errors.New("path element must not start with '$'"))
 		}

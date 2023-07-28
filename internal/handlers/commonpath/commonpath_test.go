@@ -38,7 +38,7 @@ func TestFindValues(t *testing.T) {
 			opts *FindValuesOpts
 			res  []any
 		}{
-			"PathNested1": {
+			"PathNestedFindIndexAndDocuments": {
 				doc:  array,
 				path: types.NewStaticPath("foo", "1", "bar"),
 				opts: &FindValuesOpts{
@@ -47,7 +47,7 @@ func TestFindValues(t *testing.T) {
 				},
 				res: []any{1},
 			},
-			"PathNested2": {
+			"PathNestedFindIndex": {
 				doc:  array,
 				path: types.NewStaticPath("foo", "1", "bar"),
 				opts: &FindValuesOpts{
@@ -56,7 +56,7 @@ func TestFindValues(t *testing.T) {
 				},
 				res: []any{1},
 			},
-			"PathNested3": {
+			"PathNestedFindDocuments": {
 				doc:  array,
 				path: types.NewStaticPath("foo", "1", "bar"),
 				opts: &FindValuesOpts{
@@ -65,7 +65,7 @@ func TestFindValues(t *testing.T) {
 				},
 				res: []any{},
 			},
-			"PathNested4": {
+			"PathNested": {
 				doc:  array,
 				path: types.NewStaticPath("foo", "1", "bar"),
 				opts: &FindValuesOpts{
@@ -74,7 +74,7 @@ func TestFindValues(t *testing.T) {
 				},
 				res: []any{},
 			},
-			"PathIndexDotNotation1": {
+			"PathIndexDotNotationFindIndexAndDocuments": {
 				doc:  array,
 				path: types.NewStaticPath("foo", "1"),
 				opts: &FindValuesOpts{
@@ -83,7 +83,7 @@ func TestFindValues(t *testing.T) {
 				},
 				res: []any{must.NotFail(types.NewDocument("bar", 1))},
 			},
-			"PathIndexDotNotation2": {
+			"PathIndexDotNotationFindIndex": {
 				doc:  array,
 				path: types.NewStaticPath("foo", "1"),
 				opts: &FindValuesOpts{
@@ -92,7 +92,7 @@ func TestFindValues(t *testing.T) {
 				},
 				res: []any{must.NotFail(types.NewDocument("bar", 1))},
 			},
-			"PathIndexDotNotation3": {
+			"PathIndexDotNotationFindDocuments": {
 				doc:  array,
 				path: types.NewStaticPath("foo", "1"),
 				opts: &FindValuesOpts{
@@ -101,7 +101,7 @@ func TestFindValues(t *testing.T) {
 				},
 				res: []any{},
 			},
-			"PathIndexDotNotation4": {
+			"PathIndexDotNotation": {
 				doc:  array,
 				path: types.NewStaticPath("foo", "1"),
 				opts: &FindValuesOpts{
@@ -110,7 +110,7 @@ func TestFindValues(t *testing.T) {
 				},
 				res: []any{},
 			},
-			"PathDotNotation1": {
+			"PathDotNotationFindIndexAndDocuments": {
 				doc:  array,
 				path: types.NewStaticPath("foo", "bar"),
 				opts: &FindValuesOpts{
@@ -119,7 +119,7 @@ func TestFindValues(t *testing.T) {
 				},
 				res: []any{0, 1},
 			},
-			"PathDotNotation2": {
+			"PathDotNotationFindIndex": {
 				doc:  array,
 				path: types.NewStaticPath("foo", "bar"),
 				opts: &FindValuesOpts{
@@ -128,7 +128,7 @@ func TestFindValues(t *testing.T) {
 				},
 				res: []any{},
 			},
-			"PathDotNotation3": {
+			"PathDotNotationFindDocuments": {
 				doc:  array,
 				path: types.NewStaticPath("foo", "bar"),
 				opts: &FindValuesOpts{
@@ -137,7 +137,7 @@ func TestFindValues(t *testing.T) {
 				},
 				res: []any{0, 1},
 			},
-			"PathDotNotation4": {
+			"PathDotNotation": {
 				doc:  array,
 				path: types.NewStaticPath("foo", "bar"),
 				opts: &FindValuesOpts{
@@ -172,7 +172,7 @@ func TestFindValues(t *testing.T) {
 				path: types.NewStaticPath("foo", "bar"),
 				res:  []any{},
 			},
-			"PathDotNotation1": {
+			"PathDotNotationFindIndexAndDocuments": {
 				doc:  doc,
 				path: types.NewStaticPath("foo", "bar"),
 				opts: &FindValuesOpts{
@@ -181,7 +181,7 @@ func TestFindValues(t *testing.T) {
 				},
 				res: []any{0},
 			},
-			"PathDotNotation2": {
+			"PathDotNotationFindIndex": {
 				doc:  doc,
 				path: types.NewStaticPath("foo", "bar"),
 				opts: &FindValuesOpts{
@@ -190,7 +190,7 @@ func TestFindValues(t *testing.T) {
 				},
 				res: []any{0},
 			},
-			"PathDotNotation3": {
+			"PathDotNotationFindDocuments": {
 				doc:  doc,
 				path: types.NewStaticPath("foo", "bar"),
 				opts: &FindValuesOpts{
@@ -199,7 +199,7 @@ func TestFindValues(t *testing.T) {
 				},
 				res: []any{0},
 			},
-			"PathDotNotation4": {
+			"PathDotNotation": {
 				doc:  doc,
 				path: types.NewStaticPath("foo", "bar"),
 				opts: &FindValuesOpts{

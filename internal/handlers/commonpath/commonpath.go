@@ -29,7 +29,7 @@ type FindValuesOpts struct {
 	// If FindArrayDocuments is true, it iterates the array to find documents that have path.
 	// If FindArrayDocuments is false, it does not find documents from the array.
 	// Using path `v.foo` and `v` is an array:
-	// 	- with FindArrayDocuments true, it finds values of `foo` of found documents;
+	//  - with FindArrayDocuments true, it finds values of `foo` of found documents;
 	//  - with FindArrayDocuments false, it returns an empty array.
 	// If `v` is not an array, FindArrayDocuments has no impact.
 	FindArrayDocuments bool
@@ -119,7 +119,7 @@ func findArrayIndex(array *types.Array, index string) (any, error) {
 // findArrayDocuments iterates array to find documents that have documentKey.
 // It returns field values of found documents at documentKey.
 // Multiple documents with documentKey may exist in array, hence an array is returned.
-// Empty array is returned if no document was found.
+// Empty array is returned if no document having documentKey was found.
 func findArrayDocuments(array *types.Array, documentKey string) ([]any, error) {
 	iter := array.Iterator()
 	defer iter.Close()
