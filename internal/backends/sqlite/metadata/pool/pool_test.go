@@ -19,7 +19,6 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -53,13 +52,13 @@ func TestCreateDrop(t *testing.T) {
 	db2 = p.GetExisting(ctx, dbName)
 	require.Same(t, db, db2)
 
-	assert.Contains(t, p.List(ctx), dbName)
+	require.Contains(t, p.List(ctx), dbName)
 
 	// journal_mode is silently ignored for mode=memory
 	var res string
 	err = db.QueryRowContext(ctx, "PRAGMA journal_mode").Scan(&res)
 	require.NoError(t, err)
-	assert.Equal(t, "memory", res)
+	require.Equal(t, "memory", res)
 
 	dropped := p.Drop(ctx, dbName)
 	require.True(t, dropped)
@@ -86,7 +85,7 @@ func TestCreateDropStress(t *testing.T) {
 			var i atomic.Int32
 
 			teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
-				dbName := fmt.Sprintf("db%03d", i.Add(1))
+				dbName := fmt.Sprintf("db_%03d", i.Add(1))
 
 				t.Cleanup(func() {
 					p.Drop(ctx, dbName)
@@ -111,7 +110,7 @@ func TestCreateDropStress(t *testing.T) {
 				db2 = p.GetExisting(ctx, dbName)
 				require.Same(t, db, db2)
 
-				assert.Contains(t, p.List(ctx), dbName)
+				require.Contains(t, p.List(ctx), dbName)
 
 				err = db.QueryRowContext(ctx, "SELECT 1").Err()
 				require.NoError(t, err)
@@ -154,7 +153,7 @@ func TestPragmas(t *testing.T) {
 			var actual string
 			err = db.QueryRowContext(ctx, "PRAGMA "+pragma).Scan(&actual)
 			require.NoError(t, err)
-			assert.Equal(t, expected, actual, pragma)
+			require.Equal(t, expected, actual, pragma)
 		})
 	}
 }

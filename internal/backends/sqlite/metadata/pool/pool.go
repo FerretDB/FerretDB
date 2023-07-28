@@ -66,7 +66,7 @@ type Pool struct {
 // so no validation is needed.
 // One exception is very long full path names for the filesystem,
 // but we don't check it.
-func openDB(name, uri string, l *zap.Logger) (*fsql.DB, error) {
+func openDB(name, uri string, memory bool, l *zap.Logger) (*fsql.DB, error) {
 	db, err := sql.Open("sqlite", uri)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -75,8 +75,10 @@ func openDB(name, uri string, l *zap.Logger) (*fsql.DB, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/2755
 	db.SetConnMaxIdleTime(0)
 	db.SetConnMaxLifetime(0)
-	// db.SetMaxIdleConns(5)
-	// db.SetMaxOpenConns(5)
+	if memory {
+		db.SetMaxIdleConns(1)
+		db.SetMaxOpenConns(1)
+	}
 
 	if err = db.Ping(); err != nil {
 		_ = db.Close()
@@ -115,7 +117,7 @@ func New(u string, l *zap.Logger) (*Pool, error) {
 
 		p.l.Debug("Opening existing database.", zap.String("name", name), zap.String("uri", uri))
 
-		db, err := openDB(name, uri, l)
+		db, err := openDB(name, uri, p.isMemory(), l)
 		if err != nil {
 			p.Close()
 			return nil, lazyerrors.Error(err)
@@ -125,6 +127,10 @@ func New(u string, l *zap.Logger) (*Pool, error) {
 	}
 
 	return p, nil
+}
+
+func (p *Pool) isMemory() bool {
+	return p.uri.Query().Get("mode") == "memory"
 }
 
 // databaseName returns database name for given database file path.
@@ -144,7 +150,7 @@ func (p *Pool) databaseURI(databaseName string) string {
 // databaseFile returns database file path for the given database name,
 // or empty string for in-memory database.
 func (p *Pool) databaseFile(databaseName string) string {
-	if p.uri.Query().Get("mode") == "memory" {
+	if p.isMemory() {
 		return ""
 	}
 
@@ -216,7 +222,7 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, er
 	}
 
 	uri := p.databaseURI(name)
-	db, err := openDB(name, uri, p.l)
+	db, err := openDB(name, uri, p.isMemory(), p.l)
 	if err != nil {
 		return nil, false, lazyerrors.Errorf("%s: %w", uri, err)
 	}

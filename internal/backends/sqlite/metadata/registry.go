@@ -73,7 +73,10 @@ func NewRegistry(u string, l *zap.Logger) (*Registry, error) {
 	}
 
 	for name, db := range p.DBS() {
-		r.refreshCollections(context.Background(), name, db)
+		if err = r.prefillCache(context.Background(), name, db); err != nil {
+			p.Close()
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	return r, nil
@@ -84,11 +87,10 @@ func (r *Registry) Close() {
 	r.p.Close()
 }
 
-func (r *Registry) refreshCollections(ctx context.Context, dbName string, db *fsql.DB) {
+func (r *Registry) prefillCache(ctx context.Context, dbName string, db *fsql.DB) error {
 	rows, err := db.QueryContext(ctx, fmt.Sprintf("SELECT name, table_name, settings FROM %q", metadataTableName))
 	if err != nil {
-		r.l.DPanic("Failed to query metadata table", zap.String("db", dbName), zap.Error(err))
-		return
+		return lazyerrors.Error(err)
 	}
 	defer rows.Close()
 
@@ -97,20 +99,19 @@ func (r *Registry) refreshCollections(ctx context.Context, dbName string, db *fs
 	for rows.Next() {
 		var c Collection
 		if err = rows.Scan(&c.Name, &c.TableName, &c.Settings); err != nil {
-			r.l.DPanic("Failed to scan metadata table", zap.String("db", dbName), zap.Error(err))
-			return
+			return lazyerrors.Error(err)
 		}
 
 		colls[c.Name] = &c
 	}
 
 	if err = rows.Err(); err != nil {
-		r.l.DPanic("Failed to read metadata table", zap.String("db", dbName), zap.Error(err))
+		return lazyerrors.Error(err)
 	}
 
-	r.rw.Lock()
 	r.colls[dbName] = colls
-	r.rw.Unlock()
+
+	return nil
 }
 
 func (r *Registry) getCollections(ctx context.Context, dbName string, db *fsql.DB) map[string]*Collection {
@@ -147,9 +148,6 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsq
 		return db, nil
 	}
 
-	// use transaction
-	// TODO https://github.com/FerretDB/FerretDB/issues/2747
-
 	q := fmt.Sprintf(
 		"CREATE TABLE %q ("+
 			"name TEXT NOT NULL UNIQUE CHECK(name != ''), "+
@@ -162,8 +160,6 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsq
 		r.DatabaseDrop(ctx, dbName)
 		return nil, lazyerrors.Error(err)
 	}
-
-	r.refreshCollections(ctx, dbName, db)
 
 	return db, nil
 }
@@ -236,28 +232,40 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 		return false, lazyerrors.Error(err)
 	}
 
-	q = fmt.Sprintf("INSERT INTO %q (name, table_name, settings) VALUES (?, ?, '{}')", metadataTableName)
-	if _, err = db.ExecContext(ctx, q, collectionName, tableName); err != nil {
+	c := &Collection{
+		Name:      collectionName,
+		TableName: tableName,
+		Settings:  "{}",
+	}
+	q = fmt.Sprintf("INSERT INTO %q (name, table_name, settings) VALUES (?, ?, ?)", metadataTableName)
+	if _, err = db.ExecContext(ctx, q, c.Name, c.TableName, c.Settings); err != nil {
 		_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
 		return false, lazyerrors.Error(err)
 	}
 
-	r.refreshCollections(ctx, dbName, db)
+	r.rw.Lock()
+
+	if r.colls[dbName] == nil {
+		r.colls[dbName] = make(map[string]*Collection)
+	}
+	r.colls[dbName][collectionName] = c
+
+	r.rw.Unlock()
 
 	return true, nil
 }
 
 // CollectionGet returns collection metadata.
 //
-// If database or collection does not exist, (nil, nil) is returned.
-func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionName string) (*Collection, error) {
+// If database or collection does not exist, nil is returned.
+func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionName string) *Collection {
 	db := r.p.GetExisting(ctx, dbName)
 	if db == nil {
-		return nil, nil
+		return nil
 	}
 
 	colls := r.getCollections(ctx, dbName, db)
-	return colls[collectionName], nil
+	return colls[collectionName]
 }
 
 // CollectionDrop drops a collection in the database.
@@ -270,17 +278,8 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 		return false, nil
 	}
 
-	colls := r.getCollections(ctx, dbName, db)
-	if colls[collectionName] == nil {
-		return false, nil
-	}
-
-	info, err := r.CollectionGet(ctx, dbName, collectionName)
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
-	if info == nil {
+	meta := r.CollectionGet(ctx, dbName, collectionName)
+	if meta == nil {
 		return false, nil
 	}
 
@@ -292,12 +291,16 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 		return false, lazyerrors.Error(err)
 	}
 
-	q = fmt.Sprintf("DROP TABLE %q", info.TableName)
+	q = fmt.Sprintf("DROP TABLE %q", meta.TableName)
 	if _, err := db.ExecContext(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	r.refreshCollections(ctx, dbName, db)
+	r.rw.Lock()
+
+	delete(r.colls[dbName], collectionName)
+
+	r.rw.Unlock()
 
 	return true, nil
 }

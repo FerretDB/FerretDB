@@ -56,11 +56,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
+	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
 		return &backends.QueryResult{
 			Iter: newQueryIterator(ctx, nil),
@@ -92,11 +88,7 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2750
 
-	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
+	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
 		panic(fmt.Sprintf("just created collection %q does not exist", c.name))
 	}
@@ -143,13 +135,8 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 		return nil, lazyerrors.Errorf("no database %q", c.dbName)
 	}
 
-	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
 	var res backends.UpdateResult
-
+	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
 		return &res, nil
 	}
@@ -202,11 +189,7 @@ func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) 
 		return &backends.DeleteResult{Deleted: 0}, nil
 	}
 
-	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
+	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
 		return &backends.DeleteResult{Deleted: 0}, nil
 	}
