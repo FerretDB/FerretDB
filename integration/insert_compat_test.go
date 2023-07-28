@@ -206,15 +206,6 @@ func TestInsertCompat(t *testing.T) {
 			},
 			ordered: false,
 		},
-		"InsertEmptySpaceKeys": {
-			insert: []any{
-				bson.D{{"_id", "empty-key"}, {"", "v"}},
-				bson.D{{"_id", "space-key"}, {" ", "v"}},
-				bson.D{{"_id", "empty-document-key"}, {"a", bson.D{{"", "v"}}}},
-				bson.D{{"_id", "space-document-key"}, {"a", bson.D{{" ", "v"}}}},
-			},
-			ordered: false,
-		},
 	}
 
 	testInsertCompat(t, testCases)

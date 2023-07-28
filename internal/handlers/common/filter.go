@@ -100,23 +100,20 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 	var vals []any
 	filterSuffix := filterKey
 
-	if strings.ContainsRune(filterKey, '.') {
-		path, err := types.NewPathFromString(filterKey)
-		if err != nil {
-			return false, nil
-		}
-
-		filterSuffix = path.Suffix()
-
-		if vals, err = commonpath.FindValues(doc, path, &commonpath.FindValuesOpts{
-			FindArrayIndex:     true,
-			FindArrayDocuments: true,
-		}); err != nil {
-			return false, lazyerrors.Error(err)
-		}
-	} else {
+	path, err := types.NewPathFromString(filterKey)
+	if err != nil {
+		// empty keys are allowed for filter
 		if val, _ := doc.Get(filterKey); val != nil {
 			vals = []any{val}
+		}
+	} else {
+		filterSuffix = path.Suffix()
+		vals, err = commonpath.FindValues(doc, path, &commonpath.FindValuesOpts{
+			FindArrayIndex:     true,
+			FindArrayDocuments: true,
+		})
+		if err != nil {
+			return false, lazyerrors.Error(err)
 		}
 	}
 
