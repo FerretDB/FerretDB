@@ -28,7 +28,7 @@ type newProducerStageParams struct {
 	db             string
 	collection     string
 	stage          *types.Document
-	aggregation    aggregations.ProducerStageDataSource
+	aggregation    aggregations.DataSource
 	previousStages []string
 }
 
@@ -136,7 +136,7 @@ func NewProcessorStage(stage *types.Document) (aggregations.ProcessorStage, erro
 }
 
 // NewProducerStage creates a new aggregation producer stage.
-func NewProducerStage(stage *types.Document, db, collection string, previousStages []string, aggregation aggregations.ProducerStageDataSource) (aggregations.ProducerStage, error) { //nolint:lll // for readability
+func NewProducerStage(stage *types.Document, db, collection string, previousStages []string, aggregation aggregations.DataSource) (aggregations.ProducerStage, error) { //nolint:lll // for readability
 	if stage.Len() != 1 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageInvalid,

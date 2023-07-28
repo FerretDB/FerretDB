@@ -259,7 +259,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	var iter iterator.Interface[struct{}, *types.Document]
 
 	if len(producerStages) == 0 {
-		if iter, err = p.Query(ctx, closer); err != nil {
+		if iter, err = p.queryDocuments(ctx, closer); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	} else {
@@ -328,8 +328,8 @@ type pgAggregation struct {
 	filter     *types.Document
 }
 
-// Query implements ProducerStageDataSource interface.
-func (p *pgAggregation) Query(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+// queryDocuments fetches document from the database.
+func (p *pgAggregation) queryDocuments(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
 	var keepTx pgx.Tx
 	var iter types.DocumentsIterator
 
@@ -364,7 +364,7 @@ func (p *pgAggregation) Query(ctx context.Context, closer *iterator.MultiCloser)
 	return iter, nil
 }
 
-// CollStats implements ProducerStageDataSource interface.
+// CollStats implements DataSource interface.
 func (p *pgAggregation) CollStats(ctx context.Context, closer *iterator.MultiCloser) (*aggregations.CollStatsResult, error) {
 	var collStats *pgdb.CollStats
 
@@ -409,5 +409,5 @@ func (p *pgAggregation) CollStats(ctx context.Context, closer *iterator.MultiClo
 
 // check interfaces
 var (
-	_ aggregations.ProducerStageDataSource = (*pgAggregation)(nil)
+	_ aggregations.DataSource = (*pgAggregation)(nil)
 )

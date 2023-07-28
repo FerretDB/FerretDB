@@ -28,14 +28,14 @@ type ProcessorStage interface {
 	Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
 }
 
-// ProducerStage is a common interface aggregation stages produce documentiterator.
+// ProducerStage is a common interface for aggregation stages that produce document iterator.
 type ProducerStage interface {
-	// Produce applies an aggregate stage on documents from iterator.
+	// Produce returns an iterator.
 	Produce(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
 }
 
-// ProducerStageDataSource is a common interface for fetching from database.
-type ProducerStageDataSource interface {
+// DataSource is a common interface for fetching from database.
+type DataSource interface {
 	// CollStats fetches collection statistics from the database.
 	CollStats(ctx context.Context, closer *iterator.MultiCloser) (*CollStatsResult, error)
 }

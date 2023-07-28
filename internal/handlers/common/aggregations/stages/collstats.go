@@ -39,7 +39,7 @@ type collStats struct {
 	queryExecStats bool
 	db             string
 	collection     string
-	aggregation    aggregations.ProducerStageDataSource
+	aggregation    aggregations.DataSource
 }
 
 // storageStats represents $collStats.storageStats field.
