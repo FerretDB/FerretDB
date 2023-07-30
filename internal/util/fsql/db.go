@@ -112,9 +112,10 @@ func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 
 	// to differentiate between 0 and nil
 	var ra *int64
+
 	if res != nil {
-		i, _ := res.RowsAffected()
-		ra = &i
+		rav, _ := res.RowsAffected()
+		ra = &rav
 	}
 
 	fields = append(fields, zap.Int64p("rows", ra), zap.Duration("time", time.Since(start)), zap.Error(err))

@@ -42,6 +42,7 @@ import (
 // filenameExtension represents SQLite database filename extension.
 const filenameExtension = ".sqlite"
 
+// Parts of Prometheus metric names.
 const (
 	namespace = "ferretdb"
 	subsystem = "sqlite_pool"
@@ -72,9 +73,10 @@ func openDB(name, uri string, singleConn bool, l *zap.Logger) (*fsql.DB, error) 
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/2755
 	db.SetConnMaxIdleTime(0)
 	db.SetConnMaxLifetime(0)
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/2755
 	if singleConn {
 		db.SetMaxIdleConns(1)
 		db.SetMaxOpenConns(1)
@@ -129,13 +131,16 @@ func New(u string, l *zap.Logger) (*Pool, error) {
 	return p, nil
 }
 
+// memory returns true if the pool is for the in-memory database.
 func (p *Pool) memory() bool {
 	return p.uri.Query().Get("mode") == "memory"
 }
 
+// singleConn returns true if pool size must be limited to a single connection.
 func (p *Pool) singleConn() bool {
-	// see https://www.sqlite.org/inmemorydb.html
-	return p.memory() && p.uri.Query().Get("cache") != "shared"
+	// https://www.sqlite.org/inmemorydb.html
+	// TODO https://github.com/FerretDB/FerretDB/issues/2755
+	return p.memory()
 }
 
 // databaseName returns database name for given database file path.
@@ -179,8 +184,6 @@ func (p *Pool) Close() {
 // DBS returns all databases.
 //
 // It is used in a single place during registry initialization.
-//
-// Deprecated: do not use anywhere else.
 func (p *Pool) DBS() map[string]*fsql.DB {
 	return p.dbs
 }

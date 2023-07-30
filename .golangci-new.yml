@@ -17,6 +17,7 @@ linters-settings:
     disable-default-exclusions: false
     exclude-functions:
       - (*database/sql.Rows).Close
+      - (*github.com/FerretDB/FerretDB/internal/util/fsql.Rows).Close
   errorlint:
     # see caveats at https://github.com/polyfloyd/go-errorlint#fmterrorf-wrapping-verb
     errorf: false

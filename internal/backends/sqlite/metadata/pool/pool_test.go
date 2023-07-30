@@ -30,7 +30,7 @@ func TestCreateDrop(t *testing.T) {
 	ctx := testutil.Ctx(t)
 
 	// that also tests that query parameters are preserved by using non-writable directory
-	p, err := New("file:./?mode=memory&_pragma=journal_mode(wal)", testutil.Logger(t))
+	p, err := New("file:/?mode=memory&_pragma=journal_mode(wal)", testutil.Logger(t))
 	require.NoError(t, err)
 	t.Cleanup(p.Close)
 
@@ -53,6 +53,9 @@ func TestCreateDrop(t *testing.T) {
 	require.Same(t, db, db2)
 
 	require.Contains(t, p.List(ctx), dbName)
+
+	_, err = db.ExecContext(ctx, "CREATE TABLE test (id INT) STRICT")
+	require.NoError(t, err)
 
 	// journal_mode is silently ignored for mode=memory
 	var res string
@@ -112,7 +115,7 @@ func TestCreateDropStress(t *testing.T) {
 
 				require.Contains(t, p.List(ctx), dbName)
 
-				err = db.QueryRowContext(ctx, "SELECT 1").Err()
+				_, err = db.ExecContext(ctx, "CREATE TABLE test (id INT) STRICT")
 				require.NoError(t, err)
 
 				dropped := p.Drop(ctx, dbName)
@@ -146,6 +149,7 @@ func TestDefaults(t *testing.T) {
 	require.NoError(t, err)
 
 	var options []string
+
 	for rows.Next() {
 		var o string
 		require.NoError(t, rows.Scan(&o))
@@ -154,7 +158,6 @@ func TestDefaults(t *testing.T) {
 	}
 	require.NoError(t, rows.Err())
 	require.NoError(t, rows.Close())
-
 	require.Contains(t, options, "THREADSAFE=1")
 
 	for q, expected := range map[string]string{

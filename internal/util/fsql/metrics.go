@@ -20,6 +20,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// Parts of Prometheus metric names.
 const (
 	namespace = "ferretdb"
 	subsystem = "sqldb"

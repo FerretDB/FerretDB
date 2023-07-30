@@ -45,6 +45,7 @@ const (
 	metadataTableName = "_ferretdb_collections"
 )
 
+// Parts of Prometheus metric names.
 const (
 	namespace = "ferretdb"
 	subsystem = "sqlite_metadata"
@@ -69,11 +70,11 @@ func NewRegistry(u string, l *zap.Logger) (*Registry, error) {
 	r := &Registry{
 		p:     p,
 		l:     l,
-		colls: make(map[string]map[string]*Collection),
+		colls: map[string]map[string]*Collection{},
 	}
 
 	for name, db := range p.DBS() {
-		if err = r.prefillCache(context.Background(), name, db); err != nil {
+		if err = r.loadCollections(context.Background(), name, db); err != nil {
 			p.Close()
 			return nil, lazyerrors.Error(err)
 		}
@@ -87,14 +88,15 @@ func (r *Registry) Close() {
 	r.p.Close()
 }
 
-func (r *Registry) prefillCache(ctx context.Context, dbName string, db *fsql.DB) error {
+// loadCollections gets collections metadata from the database during initialization.
+func (r *Registry) loadCollections(ctx context.Context, dbName string, db *fsql.DB) error {
 	rows, err := db.QueryContext(ctx, fmt.Sprintf("SELECT name, table_name, settings FROM %q", metadataTableName))
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 	defer rows.Close()
 
-	colls := make(map[string]*Collection)
+	colls := map[string]*Collection{}
 
 	for rows.Next() {
 		var c Collection
@@ -114,13 +116,14 @@ func (r *Registry) prefillCache(ctx context.Context, dbName string, db *fsql.DB)
 	return nil
 }
 
+// getCollections returns collections metadata for the given database.
 func (r *Registry) getCollections(ctx context.Context, dbName string, db *fsql.DB) map[string]*Collection {
 	r.rw.RLock()
 	colls := maps.Clone(r.colls[dbName])
 	r.rw.RUnlock()
 
 	if colls == nil {
-		colls = make(map[string]*Collection)
+		colls = map[string]*Collection{}
 	}
 
 	return colls
@@ -236,6 +239,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 		TableName: tableName,
 		Settings:  "{}",
 	}
+
 	q = fmt.Sprintf("INSERT INTO %q (name, table_name, settings) VALUES (?, ?, ?)", metadataTableName)
 	if _, err = db.ExecContext(ctx, q, c.Name, c.TableName, c.Settings); err != nil {
 		_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
@@ -245,7 +249,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 	r.rw.Lock()
 
 	if r.colls[dbName] == nil {
-		r.colls[dbName] = make(map[string]*Collection)
+		r.colls[dbName] = map[string]*Collection{}
 	}
 	r.colls[dbName][collectionName] = c
 
@@ -264,6 +268,7 @@ func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionN
 	}
 
 	colls := r.getCollections(ctx, dbName, db)
+
 	return colls[collectionName]
 }
 
