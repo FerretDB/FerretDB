@@ -17,7 +17,6 @@ package metadata
 import (
 	"context"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"hash/fnv"
 	"sort"
@@ -27,8 +26,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
-	"modernc.org/sqlite"
-	sqlitelib "modernc.org/sqlite/lib"
 
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
@@ -220,11 +217,6 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 
 	q := fmt.Sprintf("CREATE TABLE %q (%s TEXT) STRICT", tableName, DefaultColumn)
 	if _, err = db.ExecContext(ctx, q); err != nil {
-		var e *sqlite.Error
-		if errors.As(err, &e) && e.Code() == sqlitelib.SQLITE_ERROR {
-			return false, nil
-		}
-
 		return false, lazyerrors.Error(err)
 	}
 
