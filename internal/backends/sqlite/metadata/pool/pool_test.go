@@ -160,7 +160,7 @@ func TestDefaults(t *testing.T) {
 	for q, expected := range map[string]string{
 		"SELECT sqlite_version()":   "3.41.2",
 		"SELECT sqlite_source_id()": "2023-03-22 11:56:21 0d1fc92f94cb6b76bffe3ec34d69cffde2924203304e8ffc4155597af0c191da",
-		"PRAGMA busy_timeout":       "5000",
+		"PRAGMA busy_timeout":       "10000",
 		"PRAGMA encoding":           "UTF-8",
 		"PRAGMA journal_mode":       "wal",
 	} {

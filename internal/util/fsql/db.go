@@ -43,6 +43,10 @@ type DB struct {
 // Name is used for metric label values, etc.
 // Logger (that will be named) is used for query logging.
 func WrapDB(db *sql.DB, name string, l *zap.Logger) *DB {
+	if db == nil {
+		return nil
+	}
+
 	res := &DB{
 		metricsCollector: newMetricsCollector(name, db.Stats),
 		sqlDB:            db,

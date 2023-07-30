@@ -87,7 +87,7 @@ Supported URL parameters are documented there:
 
 Additionally:
 
-- `_pragma=busy_timeout(5000)` parameter is set if that PRAGMA is not present;
+- `_pragma=busy_timeout(10000)` parameter is set if that PRAGMA is not present;
 - `_pragma=journal_mode(wal)` parameter is set if that PRAGMA is not present.
 
 One difference is that URI should point to the existing directory (with absolute or relative path), not to a single database file.

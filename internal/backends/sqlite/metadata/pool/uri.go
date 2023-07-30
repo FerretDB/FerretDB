@@ -97,7 +97,7 @@ func setDefaultValues(values url.Values) {
 	}
 
 	if !busyTimeout {
-		values.Add("_pragma", "busy_timeout(5000)")
+		values.Add("_pragma", "busy_timeout(10000)")
 	}
 
 	if !journalMode {

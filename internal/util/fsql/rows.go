@@ -30,6 +30,10 @@ type Rows struct {
 
 // WrapRows creates new Rows.
 func WrapRows(rows *sql.Rows) *Rows {
+	if rows == nil {
+		return nil
+	}
+
 	res := &Rows{
 		sqlRows: rows,
 		token:   resource.NewToken(),
