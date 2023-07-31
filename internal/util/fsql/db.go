@@ -30,6 +30,7 @@ import (
 // DB wraps [*database/sql.DB] with tracing, metrics, logging, and resource tracking.
 //
 // It exposes the subset of *sql.DB methods we use except that it returns *Rows instead of *sql.Rows.
+// It also exposes additional methods.
 type DB struct {
 	*metricsCollector
 
