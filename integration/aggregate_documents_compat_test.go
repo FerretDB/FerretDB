@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 	"math"
 	"testing"
 	"time"
@@ -168,15 +169,16 @@ type aggregateCommandCompatTestCase struct {
 	command    bson.D                   // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 
-	skip string // skip test for all handlers, must have issue number mentioned
+	skip           string // skip test for all handlers, must have issue number mentioned
+	failsForSQLite string // failsForSQLite expects test to fail for SQLite backend, must have issue number mentioned
 }
 
 // testAggregateCommandCompat tests aggregate pipeline compatibility test cases using one collection.
 // Use testAggregateStagesCompat for testing stages of aggregation.
-func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateCommandCompatTestCase) {
-	t.Helper()
+func testAggregateCommandCompat(tt *testing.T, testCases map[string]aggregateCommandCompatTestCase) {
+	tt.Helper()
 
-	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+	s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
 		// Use a provider that works for all handlers.
 		Providers: []shareddata.Provider{shareddata.Int32s},
 	})
@@ -187,22 +189,32 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
+		tt.Run(name, func(tt *testing.T) {
+			tt.Helper()
 
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
 
 			command := tc.command
-			require.NotNil(t, command, "command should be set")
+			require.NotNil(tt, command, "command should be set")
 
 			var nonEmptyResults bool
 
-			t.Run(targetCollection.Name(), func(t *testing.T) {
-				t.Helper()
+			var t testtb.TB = tt
+			if tc.failsForSQLite != "" {
+				t = setup.FailsForSQLite(t, tc.failsForSQLite)
+			}
+
+			tt.Run(targetCollection.Name(), func(tt *testing.T) {
+				tt.Helper()
+
+				var t testtb.TB = tt
+				if tc.failsForSQLite != "" {
+					t = setup.FailsForSQLite(t, tc.failsForSQLite)
+				}
 
 				var targetRes, compatRes bson.D
 				targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
@@ -250,34 +262,39 @@ func TestAggregateCommandCompat(t *testing.T) {
 			command: bson.D{
 				{"aggregate", 1},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/1890",
+			skip:           "https://github.com/FerretDB/FerretDB/issues/1890",
+			failsForSQLite: "TODO",
 		},
 		"FailedToParse": {
 			command: bson.D{
 				{"aggregate", 2},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "TODO",
 		},
 		"PipelineTypeMismatch": {
 			command: bson.D{
 				{"aggregate", "collection-name"},
 				{"pipeline", 1},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "TODO",
 		},
 		"StageTypeMismatch": {
 			command: bson.D{
 				{"aggregate", "collection-name"},
 				{"pipeline", bson.A{1}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "TODO",
 		},
 		"InvalidStage": {
 			command: bson.D{
 				{"aggregate", "collection-name"},
 				{"pipeline", bson.A{"$invalid-stage"}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "TODO",
 		},
 		"MaxTimeMSDoubleWholeNumber": {
 			command: bson.D{
@@ -286,6 +303,7 @@ func TestAggregateCommandCompat(t *testing.T) {
 				{"cursor", bson.D{}},
 				{"maxTimeMS", float64(1000)},
 			},
+			failsForSQLite: "TODO",
 		},
 	}
 
