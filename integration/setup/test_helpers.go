@@ -47,6 +47,36 @@ func FailsForSQLite(tb testtb.TB, reason string) testtb.TB {
 	return tb
 }
 
+// FailsForSQLite return testtb.TB that expects test to fail for FerretDB with SQLite backend and pass otherwise.
+//
+// This function should not be used lightly and always with an issue URL.
+func FailsForSQLiteNew(t testtb.T, reason string) testtb.T {
+	t.Helper()
+
+	if *targetBackendF == "ferretdb-sqlite" {
+		return testfail.ExpectedTestingT(t, reason)
+	}
+
+	return t
+}
+
+// - we MUST wrap the error and return it, it's not possible to just set a pointer to existing testing.T
+// and setup Cleanup for it, as we need to override Fail(). This solution is nonsufficient:
+//func FailsForSQLiteNew(t *testing.T, reason string) {
+//	t.Helper()
+//
+//	require.NotEmpty(t, reason, "reason must not be empty")
+//
+//	t.Cleanup(func() {
+//		if t.Failed() {
+//			t.Logf("Test failed as expected: %s", reason)
+//			return
+//		}
+//
+//		t.Fatalf("Test passed unexpectedly: %s", reason)
+//	})
+//}
+
 // SkipForMongoDB skips the current test for MongoDB.
 //
 // This function should not be used lightly and always with an issue URL.

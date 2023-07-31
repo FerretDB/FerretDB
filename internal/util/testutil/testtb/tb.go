@@ -17,7 +17,10 @@
 // It is a separate package to avoid dependency cycles.
 package testtb
 
-import "testing"
+import (
+	"testing"
+	"time"
+)
 
 // TB is a copy of testing.TB without a private method.
 // It allows us to implement it.
@@ -44,10 +47,20 @@ type TB interface {
 	TempDir() string
 }
 
+type T interface {
+	TB
+
+	Run(string, func(t *testing.T)) bool
+	Parallel()
+	Deadline() (time.Time, bool)
+}
+
 // check interfaces
 var (
 	_ TB = (*testing.T)(nil)
 	_ TB = (*testing.B)(nil)
 	_ TB = (*testing.F)(nil)
 	_ TB = (testing.TB)(nil)
+
+	_ T = (*testing.T)(nil)
 )

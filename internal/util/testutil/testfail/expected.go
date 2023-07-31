@@ -17,6 +17,8 @@ package testfail
 
 import (
 	"sync/atomic"
+	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -33,16 +35,42 @@ func Expected(t testtb.TB, reason string) testtb.TB {
 	require.NotEmpty(t, reason, "reason must not be empty")
 
 	x := &expected{
-		t: t,
+		tb: t,
 	}
 
-	x.t.Cleanup(func() {
-		if x.failed.Load() {
-			x.t.Logf("Test failed as expected: %s", reason)
+	x.tb.Cleanup(func() {
+		if x.Failed() {
+			x.tb.Logf("Test failed as expected: %s", reason)
 			return
 		}
 
-		x.t.Fatalf("Test passed unexpectedly: %s", reason)
+		x.tb.Fatalf("Test passed unexpectedly: %s", reason)
+	})
+
+	return x
+}
+
+// Expected return a new TB instance that expects the test to fail.
+//
+// At the end of the test, if it was marked as failed, it will pass instead.
+// If it passes, it will be failed, so that Expected call can be removed.
+func ExpectedTestingT(t testtb.T, reason string) testtb.T {
+	t.Helper()
+
+	require.NotEmpty(t, reason, "reason must not be empty")
+
+	x := &expected{
+		t:  t,
+		tb: t,
+	}
+
+	x.tb.Cleanup(func() {
+		if x.Failed() {
+			x.tb.Logf("Test failed as expected: %s", reason)
+			return
+		}
+
+		x.tb.Fatalf("Test passed unexpectedly: %s", reason)
 	})
 
 	return x
@@ -50,8 +78,24 @@ func Expected(t testtb.TB, reason string) testtb.TB {
 
 // expected wraps TB with expected failure logic.
 type expected struct {
-	t      testtb.TB
+	tb     testtb.TB
+	t      testtb.T
 	failed atomic.Bool
+}
+
+// Failed reports whether the function has failed.
+func (x *expected) Parallel() {
+	x.t.Parallel()
+}
+
+// Failed reports whether the function has failed.
+func (x *expected) Deadline() (time.Time, bool) {
+	return x.t.Deadline()
+}
+
+// Failed reports whether the function has failed.
+func (x *expected) Run(s string, f func(*testing.T)) bool {
+	return x.t.Run(s, f)
 }
 
 // Failed reports whether the function has failed.
@@ -100,34 +144,34 @@ func (x *expected) Fatalf(format string, args ...any) {
 // Below methods are delegated as-is.
 
 // Cleanup registers a function to be called when the test (or subtest) and all its subtests complete.
-func (x *expected) Cleanup(f func()) { x.t.Cleanup(f) }
+func (x *expected) Cleanup(f func()) { x.tb.Cleanup(f) }
 
 // Helper marks the calling function as a test helper function.
-func (x *expected) Helper() { x.t.Helper() }
+func (x *expected) Helper() { x.tb.Helper() }
 
 // Log formats its arguments using default formatting, analogous to Println, and records the text in the error log.
-func (x *expected) Log(args ...any) { x.t.Log(args...) }
+func (x *expected) Log(args ...any) { x.tb.Log(args...) }
 
 // Logf formats its arguments according to the format, analogous to Printf, and records the text in the error log.
-func (x *expected) Logf(format string, args ...any) { x.t.Logf(format, args...) }
+func (x *expected) Logf(format string, args ...any) { x.tb.Logf(format, args...) }
 
 // Name returns the name of the running (sub-) test or benchmark.
-func (x *expected) Name() string { return x.t.Name() }
+func (x *expected) Name() string { return x.tb.Name() }
 
 // Setenv calls os.Setenv(key, value) and uses Cleanup to restore the environment variable to its original value after the test.
-func (x *expected) Setenv(key, value string) { x.t.Setenv(key, value) }
+func (x *expected) Setenv(key, value string) { x.tb.Setenv(key, value) }
 
 // Skip is equivalent to Log followed by SkipNow.
-func (x *expected) Skip(args ...any) { x.t.Skip(args...) }
+func (x *expected) Skip(args ...any) { x.tb.Skip(args...) }
 
 // Skipf is equivalent to Logf followed by SkipNow.
-func (x *expected) Skipf(format string, args ...any) { x.t.Skipf(format, args...) }
+func (x *expected) Skipf(format string, args ...any) { x.tb.Skipf(format, args...) }
 
 // SkipNow marks the test as having been skipped and stops its execution.
-func (x *expected) SkipNow() { x.t.SkipNow() }
+func (x *expected) SkipNow() { x.tb.SkipNow() }
 
 // Skipped reports whether the test was skipped.
-func (x *expected) Skipped() bool { return x.t.Skipped() }
+func (x *expected) Skipped() bool { return x.tb.Skipped() }
 
 // TempDir returns a temporary directory for the test to use.
-func (x *expected) TempDir() string { return x.t.TempDir() }
+func (x *expected) TempDir() string { return x.tb.TempDir() }
