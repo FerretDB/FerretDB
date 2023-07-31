@@ -59,6 +59,8 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	switch {
 	case err == nil:
 		res.Set("dropped", dbName)
+	case backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid):
+		// nothing?
 	case backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist):
 		// nothing
 	default:

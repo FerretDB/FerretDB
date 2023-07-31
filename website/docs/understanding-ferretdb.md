@@ -41,12 +41,18 @@ PostgreSQL should be configured with `UTF8` encoding and one of the following lo
 MongoDB databases are mapped to PostgreSQL schemas in a single PostgreSQL database that should be created in advance.
 MongoDB collections are mapped to PostgreSQL tables.
 MongoDB documents are mapped to rows with a single [JSONB](https://www.postgresql.org/docs/current/datatype-json.html) column.
-Those mappings might change as we work on improving compatibility and performance,
+Those mappings will change as we work on improving compatibility and performance,
 but no breaking changes will be introduced without a major version bump.
 
 ### SQLite (beta)
 
 We also support the [SQLite](https://www.sqlite.org/) backend on a beta level.
+
+MongoDB databases are mapped to SQLite database files.
+MongoDB collections are mapped to SQLite tables.
+MongoDB documents are mapped to rows with a single [JSON1](https://www.sqlite.org/json1.html) column.
+Those mappings will change as we work on improving compatibility and performance,
+but no breaking changes will be introduced without a major version bump.
 
 ### SAP HANA (alpha)
 

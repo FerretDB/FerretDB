@@ -17,6 +17,8 @@ package backends
 import (
 	"context"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
@@ -32,11 +34,14 @@ import (
 // See backendContract and its methods for additional details.
 type Backend interface {
 	Close()
-	Database(string) Database
+	Database(string) (Database, error)
 	ListDatabases(context.Context, *ListDatabasesParams) (*ListDatabasesResult, error)
 	DropDatabase(context.Context, *DropDatabaseParams) error
 
+	prometheus.Collector
+
 	// There is no interface method to create a database; see package documentation.
+	// TODO https://github.com/FerretDB/FerretDB/issues/3069
 }
 
 // backendContract implements Backend interface.
@@ -68,11 +73,20 @@ func (bc *backendContract) Close() {
 	resource.Untrack(bc, bc.token)
 }
 
-// Database returns a Database instance for the given name.
+// Database returns a Database instance for the given valid name.
 //
-// The database does not need to exist; even parameters like name could be invalid.
-func (bc *backendContract) Database(name string) Database {
-	return bc.b.Database(name)
+// The database does not need to exist.
+func (bc *backendContract) Database(name string) (Database, error) {
+	var res Database
+
+	err := validateDatabaseName(name)
+	if err == nil {
+		res, err = bc.b.Database(name)
+	}
+
+	checkError(err, ErrorCodeDatabaseNameIsInvalid)
+
+	return res, err
 }
 
 // ListDatabasesParams represents the parameters of Backend.ListDatabases method.
@@ -104,14 +118,28 @@ type DropDatabaseParams struct {
 	Name string
 }
 
-// DropDatabase drops existing database for given parameters.
+// DropDatabase drops existing database for given parameters (including valid name).
 func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabaseParams) error {
 	defer observability.FuncCall(ctx)()
 
-	err := bc.b.DropDatabase(ctx, params)
-	checkError(err, ErrorCodeDatabaseDoesNotExist)
+	err := validateDatabaseName(params.Name)
+	if err == nil {
+		err = bc.b.DropDatabase(ctx, params)
+	}
+
+	checkError(err, ErrorCodeDatabaseNameIsInvalid, ErrorCodeDatabaseDoesNotExist)
 
 	return err
+}
+
+// Describe implements prometheus.Collector.
+func (bc *backendContract) Describe(ch chan<- *prometheus.Desc) {
+	bc.b.Describe(ch)
+}
+
+// Collect implements prometheus.Collector.
+func (bc *backendContract) Collect(ch chan<- prometheus.Metric) {
+	bc.b.Collect(ch)
 }
 
 // check interfaces
