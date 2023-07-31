@@ -650,18 +650,26 @@ func TestDemonstrateIssue(tt *testing.T) {
 		doc any
 		err error
 	}{
-		"Foo": {
-			doc: CreateNestedDocument(1),
+		"ImATestCase": {
+			doc: bson.D{{"v", "foo"}},
 		},
 	} {
 		name, tc := name, tc
-		tt.Run(name, func(t *testing.T) {
-			t.Parallel()
-			t.Helper()
+		// As usual we call subtest per test case
+		tt.Run(name, func(tt *testing.T) {
+			tt.Parallel()
+			tt.Helper()
 
+			t := setup.FailsForSQLite(tt, "issue URL here")
+
+			// As in every compat test we call multiple subtests for single test case
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
+
+				// We cannot use t.Run, as testing.TB doesn't implement Run
+				//
+				// We cannot use tt.Run, as we omit FailsForSQLite
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
