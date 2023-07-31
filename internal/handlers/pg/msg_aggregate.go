@@ -371,7 +371,7 @@ func (p *pgAggregation) Query(ctx context.Context, closer *iterator.MultiCloser)
 	return iter, nil
 }
 
-// CollStats implements CollStatsDataSource interface.
+// CollStats implements DataSource interface.
 func (p *pgAggregation) CollStats(ctx context.Context, closer *iterator.MultiCloser) (*stages.CollStatsResult, error) {
 	var collStats *pgdb.CollStats
 
@@ -416,7 +416,7 @@ func (p *pgAggregation) CollStats(ctx context.Context, closer *iterator.MultiClo
 
 // check interfaces
 var (
-	_ stages.CollStatsDataSource = (*pgAggregation)(nil)
+	_ stages.DataSource = (*pgAggregation)(nil)
 )
 
 // check interfaces

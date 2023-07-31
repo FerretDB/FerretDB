@@ -31,8 +31,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// CollStatsDataSource fetches collection statistics from the database.
-type CollStatsDataSource interface {
+// DataSource fetches collection statistics from the database.
+type DataSource interface {
 	CollStats(ctx context.Context, closer *iterator.MultiCloser) (*CollStatsResult, error)
 }
 
@@ -53,7 +53,7 @@ type collStats struct {
 	queryExecStats bool
 	db             string
 	collection     string
-	datasource     CollStatsDataSource
+	datasource     DataSource
 }
 
 // storageStats represents $collStats.storageStats field.
@@ -84,7 +84,7 @@ func newCollStats(params newProducerStageParams) (aggregations.ProducerStage, er
 	cs := collStats{
 		db:         params.db,
 		collection: params.collection,
-		datasource: params.collStatsDatasource,
+		datasource: params.datasource,
 	}
 
 	// TODO Return error on invalid type of count: https://github.com/FerretDB/FerretDB/issues/2336
@@ -116,9 +116,8 @@ func newCollStats(params newProducerStageParams) (aggregations.ProducerStage, er
 }
 
 // Produce implements ProducerStage interface.
-//
-// Producing consists of modification of the input document, so it contains all the necessary fields
-// and the data is modified according to the given request.
+// It returns a document iterator containing a single document with requested statistics.
+// It queries database to fetch statistics if `count` or `storageStats` is requested.
 func (c *collStats) Produce(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	var host string
 	var err error
