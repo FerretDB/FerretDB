@@ -636,3 +636,42 @@ func TestPingCommand(t *testing.T) {
 		require.Empty(t, actualDatabases.Databases)
 	})
 }
+
+func TestDemonstrateIssue(tt *testing.T) {
+	tt.Parallel()
+
+	s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
+		Providers: shareddata.AllProviders(),
+	})
+
+	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
+
+	for name, tc := range map[string]struct {
+		doc any
+		err error
+	}{
+		"Foo": {
+			doc: CreateNestedDocument(1),
+		},
+	} {
+		name, tc := name, tc
+		tt.Run(name, func(t *testing.T) {
+			t.Parallel()
+			t.Helper()
+
+			for i := range targetCollections {
+				targetCollection := targetCollections[i]
+				compatCollection := compatCollections[i]
+				t.Run(targetCollection.Name(), func(t *testing.T) {
+					t.Helper()
+
+					_, err := targetCollection.Find(ctx, tc.doc)
+					require.NoError(t, err)
+
+					_, err = compatCollection.Find(ctx, tc.doc)
+					require.NoError(t, err)
+				})
+			}
+		})
+	}
+}
