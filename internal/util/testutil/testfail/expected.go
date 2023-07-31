@@ -60,17 +60,17 @@ func ExpectedTestingT(t testtb.T, reason string) testtb.T {
 	require.NotEmpty(t, reason, "reason must not be empty")
 
 	x := &expected{
-		t:  t,
-		tb: t,
+		t: t,
+		//tb: t,
 	}
 
-	x.tb.Cleanup(func() {
+	x.t.Cleanup(func() {
 		if x.failed.Load() {
-			x.tb.Logf("Test failed as expected: %s", reason)
+			x.t.Logf("Test failed as expected: %s", reason)
 			return
 		}
 
-		x.tb.Fatalf("Test passed unexpectedly: %s", reason)
+		x.t.Fatalf("Test passed unexpectedly: %s", reason)
 	})
 
 	return x
@@ -95,13 +95,13 @@ func (x *expected) Deadline() (time.Time, bool) {
 
 // Failed reports whether the function has failed.
 func (x *expected) Run(s string, f func(*testing.T)) bool {
-	failed := x.t.Run(s, f)
+	passed := x.t.Run(s, f)
 
-	if failed {
-		x.Fail()
+	if !passed {
+		x.failed.Store(true)
 	}
 
-	return failed
+	return passed
 }
 
 // Failed reports whether the function has failed.

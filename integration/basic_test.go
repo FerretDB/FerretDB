@@ -641,7 +641,7 @@ func TestDemonstrateIssue(tt *testing.T) {
 	tt.Parallel()
 
 	s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
-		Providers: shareddata.AllProviders(),
+		Providers: []shareddata.Provider{shareddata.Scalars},
 	})
 
 	_, targetCollections, _ := s.Ctx, s.TargetCollections, s.CompatCollections
@@ -662,7 +662,7 @@ func TestDemonstrateIssue(tt *testing.T) {
 			tt.Parallel()
 			tt.Helper()
 
-			t := setup.FailsForSQLiteNew(tt, "issue URL here")
+			ts := setup.FailsForSQLiteNew(tt, "issue URL here")
 
 			// As in every compat test we call multiple subtests for single test case
 			for i := range targetCollections {
@@ -671,7 +671,7 @@ func TestDemonstrateIssue(tt *testing.T) {
 				// We cannot use t.Run, as testing.TB doesn't implement Run
 				//
 				// We cannot use tt.Run, as we omit FailsForSQLite
-				t.Run(targetCollection.Name(), func(t *testing.T) {
+				ts.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
 					if tc.fail {
