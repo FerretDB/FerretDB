@@ -5,7 +5,7 @@
 
     const coll = db.test;
 
-    const expected = { _id: 1, a: 1 };
+    const expected = { _id: 1, a: 2 };
 
     coll.drop();
 
