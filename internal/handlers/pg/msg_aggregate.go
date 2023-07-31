@@ -163,12 +163,12 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	aggregationStages := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
 	producerStages := make([]aggregations.ProducerStage, 0, len(aggregationStages))
-	stagesDocuments := make([]aggregations.ProcessorStage, 0, len(aggregationStages))
+	processorStages := make([]aggregations.ProcessorStage, 0, len(aggregationStages))
 	previousStages := make([]string, 0, len(aggregationStages))
 
 	filter, sort := aggregations.GetPushdownQuery(aggregationStages)
 
-	p := &pgAggregation{
+	p := &pgDatasource{
 		dbPool:     dbPool,
 		db:         db,
 		collection: collection,
@@ -209,7 +209,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 				return nil, err
 			}
 
-			stagesDocuments = append(stagesDocuments, s)
+			processorStages = append(processorStages, s)
 		}
 
 		previousStages = append(previousStages, d.Command())
@@ -276,7 +276,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 	}
 
-	for _, s := range stagesDocuments {
+	for _, s := range processorStages {
 		if iter, err = s.Process(ctx, iter, closer); err != nil {
 			return nil, err
 		}
@@ -326,17 +326,17 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	return &reply, nil
 }
 
-// pgAggregation queries database using set parameters.
-type pgAggregation struct {
+// pgDatasource contains parameters needed to query database.
+type pgDatasource struct {
 	dbPool     *pgdb.Pool
-	db         string
-	collection string
 	sort       *types.Document
 	filter     *types.Document
+	db         string
+	collection string
 }
 
 // Query implements DocumentsDataSource interface.
-func (p *pgAggregation) Query(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
+func (p *pgDatasource) Query(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error) {
 	var keepTx pgx.Tx
 	var iter types.DocumentsIterator
 
@@ -372,7 +372,7 @@ func (p *pgAggregation) Query(ctx context.Context, closer *iterator.MultiCloser)
 }
 
 // CollStats implements DataSource interface.
-func (p *pgAggregation) CollStats(ctx context.Context, closer *iterator.MultiCloser) (*stages.CollStatsResult, error) {
+func (p *pgDatasource) CollStats(ctx context.Context, closer *iterator.MultiCloser) (*stages.CollStatsResult, error) {
 	var collStats *pgdb.CollStats
 
 	if err := p.dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
@@ -416,10 +416,10 @@ func (p *pgAggregation) CollStats(ctx context.Context, closer *iterator.MultiClo
 
 // check interfaces
 var (
-	_ stages.DataSource = (*pgAggregation)(nil)
+	_ stages.DataSource = (*pgDatasource)(nil)
 )
 
 // check interfaces
 var (
-	_ stages.DocumentsDataSource = (*pgAggregation)(nil)
+	_ stages.DocumentsDataSource = (*pgDatasource)(nil)
 )
