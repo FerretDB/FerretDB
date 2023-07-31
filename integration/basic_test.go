@@ -336,8 +336,7 @@ func TestCollectionName(t *testing.T) {
 				t.Skip(tc.skip)
 			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/2747
-			// t.Parallel()
+			t.Parallel()
 
 			err := collection.Database().CreateCollection(ctx, tc.collection)
 			if tc.err != nil {

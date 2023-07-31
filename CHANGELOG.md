@@ -51,7 +51,7 @@
 - Backport v1.6.1 fixes by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3107
 - Support recursive operator calls for `$sum` aggregation accumulator by @noisersup in https://github.com/FerretDB/FerretDB/pull/3116
 
-## New Contributors
+### New Contributors
 
 - @Aditya1404Sal made their first contribution in https://github.com/FerretDB/FerretDB/pull/2645
 - @KrishnaSindhur made their first contribution in https://github.com/FerretDB/FerretDB/pull/3095
