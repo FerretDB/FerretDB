@@ -48,6 +48,16 @@ func Expected(t testtb.TB, reason string) testtb.TB {
 	return x
 }
 
+func New(t testtb.TB) testtb.TB {
+	t.Helper()
+
+	x := &expected{
+		t: t,
+	}
+
+	return x
+}
+
 // expected wraps TB with expected failure logic.
 type expected struct {
 	t      testtb.TB

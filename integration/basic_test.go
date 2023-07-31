@@ -28,6 +28,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testfail"
 )
 
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
@@ -635,4 +636,59 @@ func TestPingCommand(t *testing.T) {
 		require.NoError(t, err)
 		require.Empty(t, actualDatabases.Databases)
 	})
+}
+
+type expect struct{}
+
+func (e *expect) NewChecker(t testing.TB) {
+}
+
+func TestDemonstrateIssue(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers: shareddata.AllProviders(),
+	})
+
+	_, targetCollections, _ := s.Ctx, s.TargetCollections, s.CompatCollections
+
+	for name, tc := range map[string]struct {
+		fail bool
+	}{
+		"ImATestCase": {
+			fail: false,
+		},
+		"ImFailingTestCase": {
+			fail: true,
+		},
+	} {
+		name, tc := name, tc
+
+		e := expect{}
+
+		// As usual we call subtest per test case
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			t.Helper()
+
+			// As in every compat test we call multiple subtests for single test case
+			for i := range targetCollections {
+				targetCollection := targetCollections[i]
+
+				// We cannot use t.Run, as testing.TB doesn't implement Run
+				//
+				// We cannot use tt.Run, as we omit FailsForSQLite
+				t.Run(targetCollection.Name(), func(tt *testing.T) {
+					tt.Helper()
+
+					t := testfail.New(tt)
+					e.NewChecker(t)
+
+					if tc.fail {
+						t.Fail()
+					}
+				})
+			}
+		})
+	}
 }
