@@ -65,7 +65,7 @@ func ExpectedTestingT(t testtb.T, reason string) testtb.T {
 	}
 
 	x.tb.Cleanup(func() {
-		if x.Failed() {
+		if x.failed.Load() {
 			x.tb.Logf("Test failed as expected: %s", reason)
 			return
 		}
@@ -95,7 +95,13 @@ func (x *expected) Deadline() (time.Time, bool) {
 
 // Failed reports whether the function has failed.
 func (x *expected) Run(s string, f func(*testing.T)) bool {
-	return x.t.Run(s, f)
+	failed := x.t.Run(s, f)
+
+	if failed {
+		x.Fail()
+	}
+
+	return failed
 }
 
 // Failed reports whether the function has failed.

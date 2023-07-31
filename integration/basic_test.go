@@ -644,14 +644,16 @@ func TestDemonstrateIssue(tt *testing.T) {
 		Providers: shareddata.AllProviders(),
 	})
 
-	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
+	_, targetCollections, _ := s.Ctx, s.TargetCollections, s.CompatCollections
 
 	for name, tc := range map[string]struct {
-		doc any
-		err error
+		fail bool
 	}{
 		"ImATestCase": {
-			doc: bson.D{{"v", "foo"}},
+			fail: false,
+		},
+		"ImFailingTestCase": {
+			fail: true,
 		},
 	} {
 		name, tc := name, tc
@@ -660,12 +662,11 @@ func TestDemonstrateIssue(tt *testing.T) {
 			tt.Parallel()
 			tt.Helper()
 
-			t := setup.FailsForSQLite(tt, "issue URL here")
+			t := setup.FailsForSQLiteNew(tt, "issue URL here")
 
 			// As in every compat test we call multiple subtests for single test case
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
-				compatCollection := compatCollections[i]
 
 				// We cannot use t.Run, as testing.TB doesn't implement Run
 				//
@@ -673,11 +674,9 @@ func TestDemonstrateIssue(tt *testing.T) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
-					_, err := targetCollection.Find(ctx, tc.doc)
-					require.NoError(t, err)
-
-					_, err = compatCollection.Find(ctx, tc.doc)
-					require.NoError(t, err)
+					if tc.fail {
+						t.Fail()
+					}
 				})
 			}
 		})
