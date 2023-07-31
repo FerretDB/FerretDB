@@ -31,8 +31,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// DataSource fetches collection statistics from the database.
+// DataSource is a common interface for querying data from the database.
 type DataSource interface {
+	// CollStats fetches collection statistics from the database.
 	CollStats(ctx context.Context, closer *iterator.MultiCloser) (*CollStatsResult, error)
 }
 
