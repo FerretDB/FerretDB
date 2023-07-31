@@ -15,10 +15,11 @@
 package integration
 
 import (
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 	"math"
 	"testing"
 	"time"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 
 	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
@@ -203,18 +204,16 @@ func testAggregateCommandCompat(tt *testing.T, testCases map[string]aggregateCom
 
 			var nonEmptyResults bool
 
+			// we want to run FailsForSQLite for each test case, not each data provider, as there might be
+			// some test cases which fails for one provider but don't for another.
 			var t testtb.TB = tt
 			if tc.failsForSQLite != "" {
 				t = setup.FailsForSQLite(t, tc.failsForSQLite)
 			}
 
-			tt.Run(targetCollection.Name(), func(tt *testing.T) {
-				tt.Helper()
-
-				var t testtb.TB = tt
-				if tc.failsForSQLite != "" {
-					t = setup.FailsForSQLite(t, tc.failsForSQLite)
-				}
+			// we cannot use t.Run(), which is not part of testing.TB interface
+			t.Run(targetCollection.Name(), func(t *testing.T) {
+				t.Helper()
 
 				var targetRes, compatRes bson.D
 				targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
