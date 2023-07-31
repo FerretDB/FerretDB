@@ -17,19 +17,22 @@ package pool
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestCreateDrop(t *testing.T) {
+	t.Parallel()
 	ctx := testutil.Ctx(t)
 
-	// that also tests that query parameters are preserved
-	p, err := New("file:/?mode=memory", testutil.Logger(t))
+	// that also tests that query parameters are preserved by using non-writable directory
+	p, err := New("file:./?mode=memory&_pragma=journal_mode(wal)", testutil.Logger(t))
 	require.NoError(t, err)
+	t.Cleanup(p.Close)
 
-	defer p.Close()
+	p.Drop(ctx, t.Name())
 
 	db := p.GetExisting(ctx, t.Name())
 	require.Nil(t, db)
@@ -47,6 +50,12 @@ func TestCreateDrop(t *testing.T) {
 	db2 = p.GetExisting(ctx, t.Name())
 	require.Same(t, db, db2)
 
+	// journal_mode is silently ignored for mode=memory
+	var res string
+	err = db.QueryRowContext(ctx, "PRAGMA journal_mode").Scan(&res)
+	require.NoError(t, err)
+	assert.Equal(t, "memory", res)
+
 	dropped := p.Drop(ctx, t.Name())
 	require.True(t, dropped)
 
@@ -55,4 +64,33 @@ func TestCreateDrop(t *testing.T) {
 
 	db = p.GetExisting(ctx, t.Name())
 	require.Nil(t, db)
+}
+
+func TestPragmas(t *testing.T) {
+	t.Parallel()
+	ctx := testutil.Ctx(t)
+
+	p, err := New("file:./", testutil.Logger(t))
+	require.NoError(t, err)
+	t.Cleanup(p.Close)
+
+	p.Drop(ctx, t.Name())
+
+	db, _, err := p.GetOrCreate(ctx, t.Name())
+	require.NoError(t, err)
+
+	for pragma, expected := range map[string]string{
+		"busy_timeout": "5000",
+		"journal_mode": "wal",
+	} {
+		pragma, expected := pragma, expected
+		t.Run(pragma, func(t *testing.T) {
+			t.Parallel()
+
+			var actual string
+			err = db.QueryRowContext(ctx, "PRAGMA "+pragma).Scan(&actual)
+			require.NoError(t, err)
+			assert.Equal(t, expected, actual, pragma)
+		})
+	}
 }
