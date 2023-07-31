@@ -15,5 +15,5 @@
 
     assert.eq(expected, actual);
 
-    print('test issue 2830.js passed!');
+    print('test for issue 2803 passed!');
   })();
