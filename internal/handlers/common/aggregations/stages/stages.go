@@ -16,12 +16,23 @@
 package stages
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
+
+// DataSource is a common interface for querying data from the database.
+type DataSource interface {
+	// CollStats fetches collection statistics from the database.
+	CollStats(ctx context.Context, closer *iterator.MultiCloser) (*CollStatsResult, error)
+
+	// Query fetches documents from the database.
+	Query(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
+}
 
 // newProducerStageParams contains parameter used for creating new stage.
 type newProducerStageParams struct {

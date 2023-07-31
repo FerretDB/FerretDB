@@ -418,8 +418,3 @@ func (p *pgDatasource) CollStats(ctx context.Context, closer *iterator.MultiClos
 var (
 	_ stages.DataSource = (*pgDatasource)(nil)
 )
-
-// check interfaces
-var (
-	_ stages.DocumentsDataSource = (*pgDatasource)(nil)
-)

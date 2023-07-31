@@ -31,12 +31,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// DataSource is a common interface for querying data from the database.
-type DataSource interface {
-	// CollStats fetches collection statistics from the database.
-	CollStats(ctx context.Context, closer *iterator.MultiCloser) (*CollStatsResult, error)
-}
-
 // CollStatsResult describes collection statistics retrieved from the database.
 type CollStatsResult struct {
 	CountObjects   int64

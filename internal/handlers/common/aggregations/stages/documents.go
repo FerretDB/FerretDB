@@ -22,18 +22,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
-// DocumentsDataSource queries and fetches all documents.
-type DocumentsDataSource interface {
-	Query(ctx context.Context, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
-}
-
 // documents contains datasource to fetch document from.
 type documents struct {
-	datasource DocumentsDataSource
+	datasource DataSource
 }
 
 // NewDocumentProducer creates a new document producer stage.
-func NewDocumentProducer(datasource DocumentsDataSource) (aggregations.ProducerStage, error) {
+func NewDocumentProducer(datasource DataSource) (aggregations.ProducerStage, error) {
 	return &documents{
 		datasource: datasource,
 	}, nil
