@@ -663,7 +663,7 @@ func TestDemonstrateIssue(t *testing.T) {
 			t.Parallel()
 			t.Helper()
 
-			e := setup.NewFailCatcher(t)
+			e := setup.NewFailCatcher(t, "ferretdb-sqlite", "TODO")
 			defer e.Catch()
 
 			// As in every compat test we call multiple subtests for single test case

@@ -76,14 +76,16 @@ type failCatcher struct {
 	parent        testtb.TB
 	tcs           []testtb.TB
 	targetBackend string
+	reason        string
 }
 
-func NewFailCatcher(t testing.TB, backend string) *failCatcher {
+func NewFailCatcher(t testing.TB, backend, reason string) *failCatcher {
 	require.Contains(t, allBackends, backend)
 
 	return &failCatcher{
 		parent:        t,
 		targetBackend: backend,
+		reason:        reason,
 	}
 }
 
@@ -106,9 +108,10 @@ func (e *failCatcher) Catch() {
 
 	for _, tc := range e.tcs {
 		if tc.Failed() {
+			e.parent.Logf("Test failed as expected: %s", e.reason)
 			return
 		}
 	}
 
-	e.parent.Fail()
+	e.parent.Fatalf("Test passed unexpectedly: %s", e.reason)
 }
