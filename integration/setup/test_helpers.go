@@ -21,13 +21,17 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
+func IsMongoDB(tb testtb.TB) bool {
+	return *targetBackendF == "mongodb"
+}
+
 // FailsForFerretDB return testtb.TB that expects test to fail for FerretDB and pass for MongoDB.
 //
 // This function should not be used lightly and always with an issue URL.
 func FailsForFerretDB(tb testtb.TB, reason string) testtb.TB {
 	tb.Helper()
 
-	if *targetBackendF == "mongodb" {
+	if IsMongoDB(tb) {
 		return tb
 	}
 
@@ -53,7 +57,7 @@ func FailsForSQLite(tb testtb.TB, reason string) testtb.TB {
 func SkipForMongoDB(tb testtb.TB, reason string) {
 	tb.Helper()
 
-	if *targetBackendF == "mongodb" {
+	if IsMongoDB(tb) {
 		require.NotEmpty(tb, reason, "reason must not be empty")
 
 		tb.Skipf("Skipping for MongoDB: %s.", reason)

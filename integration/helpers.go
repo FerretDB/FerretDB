@@ -27,6 +27,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
@@ -279,6 +280,10 @@ func AssertEqualAltCommandError(t testtb.TB, expected mongo.CommandError, altMes
 	require.Nil(t, expected.Raw)
 	expected.Raw = a.Raw
 
+	if setup.IsMongoDB(t) {
+		return assert.Equal(t, expected, a)
+	}
+
 	if assert.ObjectsAreEqual(expected, a) {
 		return true
 	}
@@ -309,6 +314,10 @@ func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessag
 	// set expected fields that might be helpful in the test output
 	require.Nil(t, expected.Raw)
 	expected.Raw = a.Raw
+
+	if setup.IsMongoDB(t) {
+		return assert.Equal(t, expected, a)
+	}
 
 	if assert.ObjectsAreEqual(expected, a) {
 		return true
