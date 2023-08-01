@@ -52,9 +52,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "./",
 				Path:     "./",
 				OmitHost: true,
-				RawQuery: "_pragma=busy_timeout%285000%29&_pragma=journal_mode%28wal%29",
+				RawQuery: "_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 			},
-			out: "file:./?_pragma=busy_timeout%285000%29&_pragma=journal_mode%28wal%29",
+			out: "file:./?_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 		},
 		"LocalSubDirectory": {
 			in: "file:./tmp/",
@@ -63,9 +63,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "./tmp/",
 				Path:     "./tmp/",
 				OmitHost: true,
-				RawQuery: "_pragma=busy_timeout%285000%29&_pragma=journal_mode%28wal%29",
+				RawQuery: "_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 			},
-			out: "file:./tmp/?_pragma=busy_timeout%285000%29&_pragma=journal_mode%28wal%29",
+			out: "file:./tmp/?_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 		},
 		"LocalSubSubDirectory": {
 			in: "file:./tmp/dir/",
@@ -74,9 +74,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "./tmp/dir/",
 				Path:     "./tmp/dir/",
 				OmitHost: true,
-				RawQuery: "_pragma=busy_timeout%285000%29&_pragma=journal_mode%28wal%29",
+				RawQuery: "_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 			},
-			out: "file:./tmp/dir/?_pragma=busy_timeout%285000%29&_pragma=journal_mode%28wal%29",
+			out: "file:./tmp/dir/?_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 		},
 		"LocalDirectoryWithParameters": {
 			in: "file:./tmp/?mode=memory",
@@ -85,9 +85,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "./tmp/",
 				Path:     "./tmp/",
 				OmitHost: true,
-				RawQuery: "_pragma=busy_timeout%285000%29&_pragma=journal_mode%28wal%29&mode=memory",
+				RawQuery: "_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29&mode=memory",
 			},
-			out: "file:./tmp/?_pragma=busy_timeout%285000%29&_pragma=journal_mode%28wal%29&mode=memory",
+			out: "file:./tmp/?_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29&mode=memory",
 		},
 		"AbsoluteDirectory": {
 			in: "file:/tmp/",
@@ -96,9 +96,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "/tmp/",
 				Path:     "/tmp/",
 				OmitHost: true,
-				RawQuery: "_pragma=busy_timeout%285000%29&_pragma=journal_mode%28wal%29",
+				RawQuery: "_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 			},
-			out: "file:/tmp/?_pragma=busy_timeout%285000%29&_pragma=journal_mode%28wal%29",
+			out: "file:/tmp/?_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 		},
 		"WithEmptyAuthority": {
 			in: "file:///tmp/",
@@ -107,9 +107,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "/tmp/",
 				Path:     "/tmp/",
 				OmitHost: true,
-				RawQuery: "_pragma=busy_timeout%285000%29&_pragma=journal_mode%28wal%29",
+				RawQuery: "_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 			},
-			out: "file:/tmp/?_pragma=busy_timeout%285000%29&_pragma=journal_mode%28wal%29",
+			out: "file:/tmp/?_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 		},
 		"WithEmptyAuthorityAndQuery": {
 			in: "file:///tmp/?mode=memory",
@@ -118,9 +118,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "/tmp/",
 				Path:     "/tmp/",
 				OmitHost: true,
-				RawQuery: "_pragma=busy_timeout%285000%29&_pragma=journal_mode%28wal%29&mode=memory",
+				RawQuery: "_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29&mode=memory",
 			},
-			out: "file:/tmp/?_pragma=busy_timeout%285000%29&_pragma=journal_mode%28wal%29&mode=memory",
+			out: "file:/tmp/?_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29&mode=memory",
 		},
 		"HostIsNotEmpty": {
 			in:  "file://localhost/./tmp/?mode=memory",
@@ -149,6 +149,14 @@ func TestParseURI(t *testing.T) {
 		"NoScheme": {
 			in:  "./tmp/",
 			err: `expected "file:" schema, got ""`,
+		},
+		"Shared": {
+			in:  "file:./?cache=shared",
+			err: `shared cache is not supported`,
+		},
+		"SharedMemory": {
+			in:  "file:./?mode=memory&cache=shared",
+			err: `shared cache is not supported`,
 		},
 	}
 	for name, tc := range testCases {
