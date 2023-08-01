@@ -16,6 +16,7 @@ package integration
 
 import (
 	"fmt"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 	"math"
 	"strings"
 	"testing"
@@ -639,21 +640,28 @@ func TestPingCommand(t *testing.T) {
 }
 
 type expect struct {
-	tcs []testing.TB
+	parent testtb.TB
+	tcs    []testtb.TB
 }
 
-func (e *expect) NewChecker(t testing.TB) {
+func NewExpect(t testing.TB) *expect {
+	return &expect{
+		parent: t,
+	}
+}
+
+func (e *expect) NewChecker(t testtb.TB) {
 	e.tcs = append(e.tcs, t)
 }
 
-func (e *expect) Check(t testing.TB) {
+func (e *expect) Check() {
 	for _, tc := range e.tcs {
 		if tc.Failed() {
 			return
 		}
 	}
 
-	return
+	e.parent.Fail()
 }
 
 func TestDemonstrateIssue(t *testing.T) {
@@ -677,13 +685,13 @@ func TestDemonstrateIssue(t *testing.T) {
 	} {
 		name, tc := name, tc
 
-		e := expect{}
-		defer e.Check()
-
 		// As usual we call subtest per test case
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			t.Helper()
+
+			e := NewExpect(t)
+			defer e.Check()
 
 			// As in every compat test we call multiple subtests for single test case
 			for i := range targetCollections {
