@@ -117,17 +117,18 @@ func (e *failCatcher) Wrap(tb testtb.TB) testtb.TB {
 //
 // If it's called for different backend than provided in failCatcher, it won't
 // do anything.
-func (e *failCatcher) Catch() {
+func (e *failCatcher) Catch() bool {
 	if *targetBackendF != e.targetBackend {
-		return
+		return false
 	}
 
 	for _, tc := range e.tcs {
 		if tc.Failed() {
 			e.parent.Logf("Test failed as expected: %s", e.reason)
-			return
+			return true
 		}
 	}
 
 	e.parent.Fatalf("Test passed unexpectedly: %s", e.reason)
+	return true
 }

@@ -99,7 +99,6 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 			}
 
 			e := setup.NewFailCatcher(t, "ferretdb-sqlite", tc.failsForSQLite)
-			defer e.Catch()
 
 			var nonEmptyResults bool
 			for i := range targetCollections {
@@ -155,6 +154,10 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 						nonEmptyResults = true
 					}
 				})
+			}
+
+			if e.Catch() {
+				return
 			}
 
 			switch tc.resultType {
