@@ -280,7 +280,7 @@ func AssertEqualAltCommandError(t testtb.TB, expected mongo.CommandError, altMes
 	require.Nil(t, expected.Raw)
 	expected.Raw = a.Raw
 
-	if setup.IsMongoDB(t) {
+	if setup.IsMongoDB(t) || altMessage == "" {
 		return assert.Equal(t, expected, a)
 	}
 
@@ -288,10 +288,7 @@ func AssertEqualAltCommandError(t testtb.TB, expected mongo.CommandError, altMes
 		return true
 	}
 
-	if altMessage != "" {
-		expected.Message = altMessage
-	}
-
+	expected.Message = altMessage
 	return assert.Equal(t, expected, a)
 }
 
@@ -315,7 +312,7 @@ func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessag
 	require.Nil(t, expected.Raw)
 	expected.Raw = a.Raw
 
-	if setup.IsMongoDB(t) {
+	if setup.IsMongoDB(t) || altMessage == "" {
 		return assert.Equal(t, expected, a)
 	}
 
@@ -323,10 +320,7 @@ func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessag
 		return true
 	}
 
-	if altMessage != "" {
-		expected.Message = altMessage
-	}
-
+	expected.Message = altMessage
 	return assert.Equal(t, expected, a)
 }
 
