@@ -11,7 +11,7 @@
 
     coll.insertOne({_id:1});
 
-    const actual = coll.findOneAndReplace({_id:1},{_id:1,a:2},{upsert:true,returnDocument:'after'})
+    const actual = coll.findOneAndReplace({_id:1},{_id:1,a:2},{upsert:true, returnDocument:'after', returnNewDocument:true})
 
     assert.eq(expected, actual);
 
