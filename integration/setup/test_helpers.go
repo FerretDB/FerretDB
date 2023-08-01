@@ -78,10 +78,12 @@ type failCatcher struct {
 	targetBackend string
 }
 
-func NewFailCatcher(t testing.TB) *failCatcher {
+func NewFailCatcher(t testing.TB, backend string) *failCatcher {
+	require.Contains(t, allBackends, backend)
+
 	return &failCatcher{
 		parent:        t,
-		targetBackend: "ferretdb-sqlite",
+		targetBackend: backend,
 	}
 }
 
@@ -98,7 +100,7 @@ func (e *failCatcher) Wrap(tb testtb.TB) testtb.TB {
 }
 
 func (e *failCatcher) Catch() {
-	if len(e.tcs) == 0 {
+	if *targetBackendF != e.targetBackend {
 		return
 	}
 
