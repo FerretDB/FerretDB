@@ -72,20 +72,20 @@ func IsSortPushdownEnabled() bool {
 	return *enableSortPushdownF
 }
 
-type expect struct {
+type failCatcher struct {
 	parent        testtb.TB
 	tcs           []testtb.TB
 	targetBackend string
 }
 
-func NewExpect(t testing.TB) *expect {
-	return &expect{
+func NewFailCatcher(t testing.TB) *failCatcher {
+	return &failCatcher{
 		parent:        t,
 		targetBackend: "ferretdb-sqlite",
 	}
 }
 
-func (e *expect) NewChecker(tb testtb.TB) testtb.TB {
+func (e *failCatcher) Wrap(tb testtb.TB) testtb.TB {
 	if *targetBackendF != e.targetBackend {
 		return tb
 	}
@@ -97,7 +97,7 @@ func (e *expect) NewChecker(tb testtb.TB) testtb.TB {
 	return t
 }
 
-func (e *expect) Check() {
+func (e *failCatcher) Catch() {
 	if len(e.tcs) == 0 {
 		return
 	}

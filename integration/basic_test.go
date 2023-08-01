@@ -658,13 +658,13 @@ func TestDemonstrateIssue(t *testing.T) {
 	} {
 		name, tc := name, tc
 
-		// As usual we call subtest per test case
+		// As usual, we call subtest per test case
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 			t.Helper()
 
-			e := setup.NewExpect(t)
-			defer e.Check()
+			e := setup.NewFailCatcher(t)
+			defer e.Catch()
 
 			// As in every compat test we call multiple subtests for single test case
 			for i := range targetCollections {
@@ -676,7 +676,7 @@ func TestDemonstrateIssue(t *testing.T) {
 				t.Run(targetCollection.Name(), func(tt *testing.T) {
 					tt.Helper()
 
-					t := e.NewChecker(tt)
+					t := e.Wrap(tt)
 
 					if tc.fail {
 						t.Fail()
