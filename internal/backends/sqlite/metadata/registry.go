@@ -16,17 +16,16 @@ package metadata
 
 import (
 	"context"
-	"database/sql"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"hash/fnv"
+	"sort"
 	"strings"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
-	"modernc.org/sqlite"
-	sqlitelib "modernc.org/sqlite/lib"
+	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
@@ -43,10 +42,19 @@ const (
 	metadataTableName = "_ferretdb_collections"
 )
 
+// Parts of Prometheus metric names.
+const (
+	namespace = "ferretdb"
+	subsystem = "sqlite_metadata"
+)
+
 // Registry provides access to SQLite databases and collections information.
 type Registry struct {
 	p *pool.Pool
 	l *zap.Logger
+
+	rw    sync.RWMutex
+	colls map[string]map[string]*Collection // database name -> collection name -> collection
 }
 
 // NewRegistry creates a registry for SQLite databases in the directory specified by SQLite URI.
@@ -56,18 +64,66 @@ func NewRegistry(u string, l *zap.Logger) (*Registry, error) {
 		return nil, err
 	}
 
-	// prefill cache
-	// TODO https://github.com/FerretDB/FerretDB/issues/2747
+	r := &Registry{
+		p:     p,
+		l:     l,
+		colls: map[string]map[string]*Collection{},
+	}
 
-	return &Registry{
-		p: p,
-		l: l,
-	}, nil
+	for name, db := range p.DBS() {
+		if err = r.loadCollections(context.Background(), name, db); err != nil {
+			p.Close()
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	return r, nil
 }
 
 // Close closes the registry.
 func (r *Registry) Close() {
 	r.p.Close()
+}
+
+// loadCollections gets collections metadata from the database during initialization.
+func (r *Registry) loadCollections(ctx context.Context, dbName string, db *fsql.DB) error {
+	rows, err := db.QueryContext(ctx, fmt.Sprintf("SELECT name, table_name, settings FROM %q", metadataTableName))
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+	defer rows.Close()
+
+	colls := map[string]*Collection{}
+
+	for rows.Next() {
+		var c Collection
+		if err = rows.Scan(&c.Name, &c.TableName, &c.Settings); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		colls[c.Name] = &c
+	}
+
+	if err = rows.Err(); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	r.colls[dbName] = colls
+
+	return nil
+}
+
+// getCollections returns collections metadata for the given database.
+func (r *Registry) getCollections(ctx context.Context, dbName string, db *fsql.DB) map[string]*Collection {
+	r.rw.RLock()
+	colls := maps.Clone(r.colls[dbName])
+	r.rw.RUnlock()
+
+	if colls == nil {
+		colls = map[string]*Collection{}
+	}
+
+	return colls
 }
 
 // DatabaseList returns a sorted list of existing databases.
@@ -91,11 +147,16 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsq
 		return db, nil
 	}
 
-	// create unique indexes for name and table_name
-	// handle case when database and metadata table already exist
-	// TODO https://github.com/FerretDB/FerretDB/issues/2747
-	_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE TABLE %q (name, table_name, settings TEXT)", metadataTableName))
-	if err != nil {
+	q := fmt.Sprintf(
+		"CREATE TABLE %q ("+
+			"name TEXT NOT NULL UNIQUE CHECK(name != ''), "+
+			"table_name TEXT NOT NULL UNIQUE CHECK(table_name != ''), "+
+			"settings TEXT NOT NULL CHECK(settings != '')"+
+			") STRICT",
+		metadataTableName,
+	)
+	if _, err = db.ExecContext(ctx, q); err != nil {
+		r.DatabaseDrop(ctx, dbName)
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -106,6 +167,10 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsq
 //
 // Returned boolean value indicates whether the database was dropped.
 func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
+	r.rw.Lock()
+	delete(r.colls, dbName)
+	r.rw.Unlock()
+
 	return r.p.Drop(ctx, dbName)
 }
 
@@ -118,30 +183,9 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]string,
 		return nil, nil
 	}
 
-	// use cache instead
-	// TODO https://github.com/FerretDB/FerretDB/issues/2747
-
-	rows, err := db.QueryContext(ctx, fmt.Sprintf("SELECT name FROM %q ORDER BY name", metadataTableName))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	defer rows.Close()
-
-	var res []string
-
-	for rows.Next() {
-		var name string
-		if err = rows.Scan(&name); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		res = append(res, name)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
+	colls := r.getCollections(ctx, dbName, db)
+	res := maps.Keys(colls)
+	sort.Strings(res)
 	return res, nil
 }
 
@@ -155,8 +199,10 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 		return false, lazyerrors.Error(err)
 	}
 
-	// check cache first
-	// TODO https://github.com/FerretDB/FerretDB/issues/2747
+	colls := r.getCollections(ctx, dbName, db)
+	if colls[collectionName] != nil {
+		return false, nil
+	}
 
 	h := fnv.New32a()
 	must.NotFail(h.Write([]byte(collectionName)))
@@ -166,65 +212,56 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 		tableName = "_" + tableName
 	}
 
-	// use transactions
+	// use transaction
 	// TODO https://github.com/FerretDB/FerretDB/issues/2747
-	query := fmt.Sprintf("CREATE TABLE %q (%s TEXT)", tableName, DefaultColumn)
-	if _, err = db.ExecContext(ctx, query); err != nil {
-		var e *sqlite.Error
-		if errors.As(err, &e) && e.Code() == sqlitelib.SQLITE_ERROR {
-			return false, nil
-		}
 
+	q := fmt.Sprintf("CREATE TABLE %q (%s TEXT) STRICT", tableName, DefaultColumn)
+	if _, err = db.ExecContext(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	query = fmt.Sprintf("CREATE UNIQUE INDEX %q ON %q (%s)", tableName+"_id", tableName, IDColumn)
-	if _, err = db.ExecContext(ctx, query); err != nil {
+	q = fmt.Sprintf("CREATE UNIQUE INDEX %q ON %q (%s)", tableName+"_id", tableName, IDColumn)
+	if _, err = db.ExecContext(ctx, q); err != nil {
 		_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
 		return false, lazyerrors.Error(err)
 	}
 
-	query = fmt.Sprintf("INSERT INTO %q (name, table_name, settings) VALUES (?, ?, '{}')", metadataTableName)
-	if _, err = db.ExecContext(ctx, query, collectionName, tableName); err != nil {
+	c := &Collection{
+		Name:      collectionName,
+		TableName: tableName,
+		Settings:  "{}",
+	}
+
+	q = fmt.Sprintf("INSERT INTO %q (name, table_name, settings) VALUES (?, ?, ?)", metadataTableName)
+	if _, err = db.ExecContext(ctx, q, c.Name, c.TableName, c.Settings); err != nil {
 		_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
 		return false, lazyerrors.Error(err)
 	}
+
+	r.rw.Lock()
+
+	if r.colls[dbName] == nil {
+		r.colls[dbName] = map[string]*Collection{}
+	}
+	r.colls[dbName][collectionName] = c
+
+	r.rw.Unlock()
 
 	return true, nil
 }
 
 // CollectionGet returns collection metadata.
 //
-// If database or collection does not exist, (nil, nil) is returned.
-func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionName string) (*Collection, error) {
+// If database or collection does not exist, nil is returned.
+func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionName string) *Collection {
 	db := r.p.GetExisting(ctx, dbName)
 	if db == nil {
-		return nil, nil
+		return nil
 	}
 
-	// check cache first
-	// TODO https://github.com/FerretDB/FerretDB/issues/2747
+	colls := r.getCollections(ctx, dbName, db)
 
-	query := fmt.Sprintf("SELECT table_name, settings FROM %q WHERE name = ?", metadataTableName)
-
-	row := db.QueryRowContext(ctx, query, collectionName)
-
-	var tableName string
-	var settings []byte
-
-	if err := row.Scan(&tableName, &settings); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, nil
-		}
-
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &Collection{
-		Name:      collectionName,
-		TableName: tableName,
-		Settings:  settings,
-	}, nil
+	return colls[collectionName]
 }
 
 // CollectionDrop drops a collection in the database.
@@ -237,41 +274,67 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 		return false, nil
 	}
 
-	// check cache first
-	// TODO https://github.com/FerretDB/FerretDB/issues/2747
-
-	info, err := r.CollectionGet(ctx, dbName, collectionName)
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
-	if info == nil {
+	meta := r.CollectionGet(ctx, dbName, collectionName)
+	if meta == nil {
 		return false, nil
 	}
 
-	// use transactions
+	// use transaction
 	// TODO https://github.com/FerretDB/FerretDB/issues/2747
-	query := fmt.Sprintf("DELETE FROM %q WHERE name = ?", metadataTableName)
-	if _, err := db.ExecContext(ctx, query, collectionName); err != nil {
+
+	q := fmt.Sprintf("DELETE FROM %q WHERE name = ?", metadataTableName)
+	if _, err := db.ExecContext(ctx, q, collectionName); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	query = fmt.Sprintf("DROP TABLE %q", info.TableName)
-	if _, err := db.ExecContext(ctx, query); err != nil {
+	q = fmt.Sprintf("DROP TABLE %q", meta.TableName)
+	if _, err := db.ExecContext(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}
+
+	r.rw.Lock()
+
+	delete(r.colls[dbName], collectionName)
+
+	r.rw.Unlock()
 
 	return true, nil
 }
 
 // Describe implements prometheus.Collector.
 func (r *Registry) Describe(ch chan<- *prometheus.Desc) {
-	r.p.Describe(ch)
+	prometheus.DescribeByCollect(r, ch)
 }
 
 // Collect implements prometheus.Collector.
 func (r *Registry) Collect(ch chan<- prometheus.Metric) {
 	r.p.Collect(ch)
+
+	r.rw.RLock()
+	defer r.rw.RLock()
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "databases"),
+			"The current number of database in the registry.",
+			nil, nil,
+		),
+		prometheus.GaugeValue,
+		float64(len(r.colls)),
+	)
+
+	for db, colls := range r.colls {
+		ch <- prometheus.MustNewConstMetric(
+			prometheus.NewDesc(
+				prometheus.BuildFQName(namespace, subsystem, "collections"),
+				"The current number of collections in the registry.",
+				[]string{"db"}, nil,
+			),
+			prometheus.GaugeValue,
+			float64(len(colls)),
+			db,
+		)
+	}
 }
 
 // check interfaces

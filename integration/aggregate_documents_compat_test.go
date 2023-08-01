@@ -1098,7 +1098,28 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2694",
+		},
+		"RecursiveInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"sum", bson.D{{"$sum", bson.D{{"v", "$v"}}}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"RecursiveArrayInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"sum", bson.D{{"$sum", bson.D{{"$type", bson.A{"1", "2"}}}}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"RecursiveOperatorNonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", "$_id"},
+					// first $sum is accumulator operator, second $sum is operator
+					{"sum", bson.D{{"$sum", bson.D{{"$non-existent", "$v"}}}}},
+				}}},
+			},
+			resultType: emptyResult,
 		},
 	}
 
