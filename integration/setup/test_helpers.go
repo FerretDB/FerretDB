@@ -82,6 +82,10 @@ type failCatcher struct {
 // NewFailCatcher returns failCatcher that should be used to handle expected failures
 // for subtests of t TB.
 func NewFailCatcher(t testing.TB, backend, reason string) *failCatcher {
+	if backend == "" {
+		return &failCatcher{}
+	}
+
 	require.Contains(t, allBackends, backend)
 
 	return &failCatcher{

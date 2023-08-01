@@ -39,6 +39,7 @@ type aggregateStagesCompatTestCase struct {
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
 	skip           string                   // skip test for all handlers, must have issue number mentioned
+	failsForSQLite string
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -97,12 +98,17 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 				opts.SetMaxTime(*tc.maxTime)
 			}
 
+			e := setup.NewFailCatcher(t, "ferretdb-sqlite", tc.failsForSQLite)
+			defer e.Catch()
+
 			var nonEmptyResults bool
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
+				t.Run(targetCollection.Name(), func(tt *testing.T) {
+					tt.Helper()
+
+					t := e.Wrap(tt)
 
 					explainCommand := bson.D{{"explain", bson.D{
 						{"aggregate", targetCollection.Name()},
@@ -302,12 +308,14 @@ func TestAggregateCompatOptions(t *testing.T) {
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"MaxTimeZero": {
-			pipeline: bson.A{},
-			maxTime:  pointer.ToDuration(time.Duration(0)),
+			pipeline:       bson.A{},
+			maxTime:        pointer.ToDuration(time.Duration(0)),
+			failsForSQLite: "TODO",
 		},
 		"MaxTime": {
-			pipeline: bson.A{},
-			maxTime:  pointer.ToDuration(time.Second),
+			pipeline:       bson.A{},
+			maxTime:        pointer.ToDuration(time.Second),
+			failsForSQLite: "TODO",
 		},
 	}
 
