@@ -20,9 +20,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testfail"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -640,34 +637,6 @@ func TestPingCommand(t *testing.T) {
 	})
 }
 
-type expect struct {
-	parent testtb.TB
-	tcs    []testtb.TB
-}
-
-func NewExpect(t testing.TB) *expect {
-	return &expect{
-		parent: t,
-	}
-}
-
-func (e *expect) NewChecker(t testtb.TB) testtb.TB {
-	t = testfail.New(t)
-	e.tcs = append(e.tcs, t)
-
-	return t
-}
-
-func (e *expect) Check() {
-	for _, tc := range e.tcs {
-		if tc.Failed() {
-			return
-		}
-	}
-
-	e.parent.Fail()
-}
-
 func TestDemonstrateIssue(t *testing.T) {
 	t.Parallel()
 
@@ -694,7 +663,7 @@ func TestDemonstrateIssue(t *testing.T) {
 			t.Parallel()
 			t.Helper()
 
-			e := NewExpect(t)
+			e := setup.NewExpect(t)
 			defer e.Check()
 
 			// As in every compat test we call multiple subtests for single test case

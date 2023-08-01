@@ -15,6 +15,8 @@
 package setup
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testfail"
@@ -68,4 +70,43 @@ func IsPushdownDisabled() bool {
 // IsSortPushdownEnabled returns true if sort pushdown is enabled.
 func IsSortPushdownEnabled() bool {
 	return *enableSortPushdownF
+}
+
+type expect struct {
+	parent        testtb.TB
+	tcs           []testtb.TB
+	targetBackend string
+}
+
+func NewExpect(t testing.TB) *expect {
+	return &expect{
+		parent:        t,
+		targetBackend: "ferretdb-sqlite",
+	}
+}
+
+func (e *expect) NewChecker(tb testtb.TB) testtb.TB {
+	if *targetBackendF != e.targetBackend {
+		return tb
+	}
+
+	t := testfail.New(tb)
+
+	e.tcs = append(e.tcs, t)
+
+	return t
+}
+
+func (e *expect) Check() {
+	if len(e.tcs) == 0 {
+		return
+	}
+
+	for _, tc := range e.tcs {
+		if tc.Failed() {
+			return
+		}
+	}
+
+	e.parent.Fail()
 }
