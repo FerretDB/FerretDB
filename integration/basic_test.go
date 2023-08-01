@@ -16,10 +16,12 @@ package integration
 
 import (
 	"fmt"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 	"math"
 	"strings"
 	"testing"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testfail"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -29,7 +31,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testfail"
 )
 
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
@@ -650,8 +651,11 @@ func NewExpect(t testing.TB) *expect {
 	}
 }
 
-func (e *expect) NewChecker(t testtb.TB) {
+func (e *expect) NewChecker(t testtb.TB) testtb.TB {
+	t = testfail.New(t)
 	e.tcs = append(e.tcs, t)
+
+	return t
 }
 
 func (e *expect) Check() {
@@ -703,8 +707,7 @@ func TestDemonstrateIssue(t *testing.T) {
 				t.Run(targetCollection.Name(), func(tt *testing.T) {
 					tt.Helper()
 
-					t := testfail.New(tt)
-					e.NewChecker(t)
+					t := e.NewChecker(tt)
 
 					if tc.fail {
 						t.Fail()
