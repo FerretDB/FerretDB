@@ -133,7 +133,7 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 		}
 
 		if len(docs) == 0 {
-			// operators like $nin is applied to the empty document upon no document match
+			// operators like $nin uses empty document to filter non-existent field
 			docs = append(docs, types.MakeDocument(0))
 		}
 
