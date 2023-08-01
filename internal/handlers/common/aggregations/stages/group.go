@@ -102,7 +102,7 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 
 		accumulator, err := accumulators.NewAccumulator("$group", field, v)
 		if err != nil {
-			return nil, err
+			return nil, processOperatorError(err)
 		}
 
 		groups = append(groups, groupBy{
@@ -149,7 +149,7 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 		for _, accumulation := range g.groupBy {
 			out, err := accumulation.accumulate(groupIter)
 			if err != nil {
-				return nil, err
+				return nil, processOperatorError(err)
 			}
 
 			if doc.Has(accumulation.outputField) {
@@ -374,7 +374,7 @@ func processOperatorError(err error) error {
 		}
 	}
 
-	return lazyerrors.Error(err)
+	return err
 }
 
 // check interfaces

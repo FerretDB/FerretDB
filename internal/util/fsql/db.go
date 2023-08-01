@@ -27,21 +27,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
-// sqlDB is a subset of [*database/sql.DB] methods that we use.
-//
-// It mainly exist to check interfaces.
-type sqlDB interface {
-	Close() error
-	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
-	QueryRowContext(context.Context, string, ...any) *sql.Row
-	ExecContext(context.Context, string, ...any) (sql.Result, error)
-}
-
 // DB wraps [*database/sql.DB] with tracing, metrics, logging, and resource tracking.
+//
+// It exposes the subset of *sql.DB methods we use except that it returns *Rows instead of *sql.Rows.
+// It also exposes additional methods.
 type DB struct {
 	*metricsCollector
 
-	sqlDB sqlDB
+	sqlDB *sql.DB
 	l     *zap.Logger
 	token *resource.Token
 }
@@ -51,6 +44,10 @@ type DB struct {
 // Name is used for metric label values, etc.
 // Logger (that will be named) is used for query logging.
 func WrapDB(db *sql.DB, name string, l *zap.Logger) *DB {
+	if db == nil {
+		return nil
+	}
+
 	res := &DB{
 		metricsCollector: newMetricsCollector(name, db.Stats),
 		sqlDB:            db,
@@ -63,14 +60,14 @@ func WrapDB(db *sql.DB, name string, l *zap.Logger) *DB {
 	return res
 }
 
-// Close implements sqlDB.
+// Close calls [*sql.DB.Close].
 func (db *DB) Close() error {
 	resource.Untrack(db, db.token)
 	return db.sqlDB.Close()
 }
 
-// QueryContext implements sqlDB.
-func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error) {
+// QueryContext calls [*sql.DB.QueryContext].
+func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*Rows, error) {
 	defer observability.FuncCall(ctx)()
 
 	start := time.Now()
@@ -80,13 +77,13 @@ func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*sql
 
 	rows, err := db.sqlDB.QueryContext(ctx, query, args...)
 
-	fields = append(fields, zap.Duration("duration", time.Since(start)), zap.Error(err))
+	fields = append(fields, zap.Duration("time", time.Since(start)), zap.Error(err))
 	db.l.Sugar().With(fields...).Debugf("<<< %s", query)
 
-	return rows, err
+	return WrapRows(rows), err
 }
 
-// QueryRowContext implements sqlDB.
+// QueryRowContext calls [*sql.DB.QueryRowContext].
 func (db *DB) QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row {
 	defer observability.FuncCall(ctx)()
 
@@ -97,13 +94,13 @@ func (db *DB) QueryRowContext(ctx context.Context, query string, args ...any) *s
 
 	row := db.sqlDB.QueryRowContext(ctx, query, args...)
 
-	fields = append(fields, zap.Duration("duration", time.Since(start)), zap.Error(row.Err()))
+	fields = append(fields, zap.Duration("time", time.Since(start)), zap.Error(row.Err()))
 	db.l.Sugar().With(fields...).Debugf("<<< %s", query)
 
 	return row
 }
 
-// ExecContext implements sqlDB.
+// ExecContext calls [*sql.DB.ExecContext].
 func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -114,7 +111,15 @@ func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 
 	res, err := db.sqlDB.ExecContext(ctx, query, args...)
 
-	fields = append(fields, zap.Duration("duration", time.Since(start)), zap.Error(err))
+	// to differentiate between 0 and nil
+	var ra *int64
+
+	if res != nil {
+		rav, _ := res.RowsAffected()
+		ra = &rav
+	}
+
+	fields = append(fields, zap.Int64p("rows", ra), zap.Duration("time", time.Since(start)), zap.Error(err))
 	db.l.Sugar().With(fields...).Debugf("<<< %s", query)
 
 	return res, err
@@ -122,7 +127,5 @@ func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 
 // check interfaces
 var (
-	_ sqlDB                = (*sql.DB)(nil)
-	_ sqlDB                = (*DB)(nil)
 	_ prometheus.Collector = (*DB)(nil)
 )

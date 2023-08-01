@@ -32,5 +32,5 @@ const (
 type Collection struct {
 	Name      string
 	TableName string
-	Settings  []byte
+	Settings  string
 }

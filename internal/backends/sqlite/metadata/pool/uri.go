@@ -34,9 +34,6 @@ func parseURI(u string) (*url.URL, error) {
 		return nil, err
 	}
 
-	// handle mode=memory query parameter
-	// TODO https://github.com/FerretDB/FerretDB/issues/3084
-
 	if uri.Scheme != "file" {
 		return nil, fmt.Errorf(`expected "file:" schema, got %q`, uri.Scheme)
 	}
@@ -56,6 +53,17 @@ func parseURI(u string) (*url.URL, error) {
 	uri.RawPath = ""
 	uri.OmitHost = true
 
+	values := uri.Query()
+
+	// https://www.sqlite.org/inmemorydb.html
+	// TODO https://github.com/FerretDB/FerretDB/issues/2755
+	if values.Get("cache") == "shared" {
+		return nil, fmt.Errorf(`shared cache is not supported`)
+	}
+
+	setDefaultValues(values)
+	uri.RawQuery = values.Encode()
+
 	if !strings.HasSuffix(uri.Path, "/") {
 		return nil, fmt.Errorf(`expected path ending with "/", got %q`, uri.Path)
 	}
@@ -70,4 +78,29 @@ func parseURI(u string) (*url.URL, error) {
 	}
 
 	return uri, nil
+}
+
+// setDefaultValue sets default query parameters.
+//
+// Keep it in sync with docs.
+func setDefaultValues(values url.Values) {
+	var busyTimeout, journalMode bool
+
+	for _, v := range values["_pragma"] {
+		if strings.HasPrefix(v, "busy_timeout") {
+			busyTimeout = true
+		}
+
+		if strings.HasPrefix(v, "journal_mode") {
+			journalMode = true
+		}
+	}
+
+	if !busyTimeout {
+		values.Add("_pragma", "busy_timeout(10000)")
+	}
+
+	if !journalMode {
+		values.Add("_pragma", "journal_mode(wal)")
+	}
 }
