@@ -73,12 +73,14 @@ func IsSortPushdownEnabled() bool {
 }
 
 type failCatcher struct {
-	parent        testtb.TB
-	tcs           []testtb.TB
-	targetBackend string
-	reason        string
+	parent        testtb.TB   // the parent test
+	tcs           []testtb.TB // subtests which we expect to have some failures
+	targetBackend string      // target backend that we expect failure for
+	reason        string      // reason of expected failure
 }
 
+// NewFailCatcher returns failCatcher that should be used to handle expected failures
+// for subtests of t TB.
 func NewFailCatcher(t testing.TB, backend, reason string) *failCatcher {
 	require.Contains(t, allBackends, backend)
 
@@ -89,6 +91,11 @@ func NewFailCatcher(t testing.TB, backend, reason string) *failCatcher {
 	}
 }
 
+// Wrap wraps provided tb test into another test, that handles Fail() without reporting failure.
+// It adds the test to the FailCatcher to catch any failures, and returns the test to be used in a subtest.
+//
+// If the targetBackend is not equal to the one set in failCatcher it returns nonwrapped test, so the
+// Fail() calls are treated in the standard fashion.
 func (e *failCatcher) Wrap(tb testtb.TB) testtb.TB {
 	if *targetBackendF != e.targetBackend {
 		return tb
@@ -101,6 +108,11 @@ func (e *failCatcher) Wrap(tb testtb.TB) testtb.TB {
 	return t
 }
 
+// Catch goes through all of the subtests and checks if at least one failed.
+// If not, it fails the parent test.
+//
+// If it's called for different backend than provided in failCatcher, it won't
+// do anything.
 func (e *failCatcher) Catch() {
 	if *targetBackendF != e.targetBackend {
 		return
