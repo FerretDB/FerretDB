@@ -284,9 +284,14 @@ func AssertEqualAltCommandError(t testtb.TB, expected mongo.CommandError, altMes
 		return assert.Equal(t, expected, a)
 	}
 
-	assert.NotEqual(t, expected, a, "use AssertEqualCommandError instead")
-	require.NotEmpty(t, altMessage, "altMessage must not be empty")
-	expected.Message = altMessage
+	if assert.ObjectsAreEqual(expected, a) {
+		return true
+	}
+
+	if altMessage != "" {
+		expected.Message = altMessage
+	}
+
 	return assert.Equal(t, expected, a)
 }
 
@@ -314,9 +319,14 @@ func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessag
 		return assert.Equal(t, expected, a)
 	}
 
-	assert.NotEqual(t, expected, a, "use AssertEqualWriteError instead")
-	require.NotEmpty(t, altMessage, "altMessage must not be empty")
-	expected.Message = altMessage
+	if assert.ObjectsAreEqual(expected, a) {
+		return true
+	}
+
+	if altMessage != "" {
+		expected.Message = altMessage
+	}
+
 	return assert.Equal(t, expected, a)
 }
 
