@@ -511,10 +511,13 @@ func TestAggregateCompatGroup(t *testing.T) {
 			}}}},
 		},
 		"IDExpression": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", bson.D{{"v", "$v"}}},
-			}}}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2165",
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$v"}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
 		},
 		"NonExistentID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
