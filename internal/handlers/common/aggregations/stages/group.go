@@ -371,8 +371,11 @@ func groupByKey(groupkey *types.Document, docs []*types.Document) ([]groupedDocu
 
 			val, err := expression.Evaluate(doc)
 			if err != nil {
-				// non-existent path has null value
-				evaluatedGroupKey.Set(k, types.Null)
+				if groupkey.Len() == 1 {
+					// non-existent path is set to null only if _id contains one field
+					evaluatedGroupKey.Set(k, types.Null)
+				}
+
 				continue
 			}
 

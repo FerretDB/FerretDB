@@ -519,6 +519,48 @@ func TestAggregateCompatGroup(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
 		},
+		"IDExpressionDotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$v.foo"}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"IDExpressionNonExistentField": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"missing", "$non-existent"}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"IDExpressionFields": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{
+						{"v", "$v"},
+						{"foo", "$v.foo"},
+					}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"IDExpressionNonExistentFields": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{
+						{"missing1", "$non-existent1"},
+						{"missing2", "$non-existent2"},
+					}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
 		"NonExistentID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$invalid"},
