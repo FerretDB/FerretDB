@@ -165,8 +165,8 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 }
 
 // validateGroupID returns error on invalid group ID.
-func validateGroupID(v any) error {
-	doc, ok := v.(*types.Document)
+func validateGroupID(groupID any) error {
+	doc, ok := groupID.(*types.Document)
 	if !ok {
 		return nil
 	}
@@ -187,8 +187,10 @@ func validateGroupID(v any) error {
 	iter := doc.Iterator()
 	defer iter.Close()
 
+	fields := make(map[string]struct{}, doc.Len())
+
 	for {
-		_, v, err := iter.Next()
+		k, v, err := iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
 		}
@@ -196,6 +198,15 @@ func validateGroupID(v any) error {
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
+
+		if _, ok := fields[k]; ok {
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrGroupDuplicateFieldName,
+				fmt.Sprintf("duplicate field name specified in object literal: %s", types.FormatAnyValue(doc)),
+				"$group (stage)",
+			)
+		}
+		fields[k] = struct{}{}
 
 		if expr, ok := v.(string); ok {
 			_, err := aggregations.NewExpression(expr)
@@ -454,7 +465,7 @@ func processOperatorError(err error) error {
 		case aggregations.ErrInvalidExpression:
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
-				"'$' starts with an invalid character for a user variable name",
+				fmt.Sprintf("'%s' starts with an invalid character for a user variable name", exErr.Expression()),
 				"$group (stage)",
 			)
 		case aggregations.ErrEmptyFieldPath:
