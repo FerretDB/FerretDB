@@ -68,14 +68,22 @@ func (e *ExpressionError) Code() ExpressionErrorCode {
 	return e.code
 }
 
-// Expression is an expression constructed from field value.
+// Expression represents a value that needs evaluation, the output varies depending on the evaluation.
+//
+// Expression used to access fields in document should be prefixed with a dollar sign `$` followed by field key.
+// For accessing embedded document or array, dollar sign `$` should be followed by dot notation.
+// Options can be provided to specify how to access fields in embedded array.
+//
+// Expression for variables should be prefixed with double dollar sign `$$` followed by variable name.
 type Expression struct {
 	opts commonpath.FindValuesOpts
 	path types.Path
 }
 
-// NewExpression creates a new instance by checking expression string.
-// It can take additional opts that specify how path should be searched.
+// NewExpression returns Expression from dollar sign `$` prefixed string.
+// It can take additional options to specify how to access fields in embedded array.
+//
+// It returns error if invalid Expression is provided.
 func NewExpression(expression string, opts *commonpath.FindValuesOpts) (*Expression, error) {
 	if opts == nil {
 		opts = &commonpath.FindValuesOpts{
@@ -124,8 +132,8 @@ func NewExpression(expression string, opts *commonpath.FindValuesOpts) (*Express
 	}, nil
 }
 
-// Evaluate gets the value at the path.
-// It returns error if the path does not exist.
+// Evaluate returns evaluated expression of document.
+// It returns error if evaluation found no value, null and empty array are valid values.
 func (e *Expression) Evaluate(doc *types.Document) (any, error) {
 	path := e.path
 
