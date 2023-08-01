@@ -21,6 +21,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
+// IsMongoDB returns true if the current test is running for MongoDB.
+//
+// This function should not be used lightly.
 func IsMongoDB(tb testtb.TB) bool {
 	return *targetBackendF == "mongodb"
 }
@@ -64,7 +67,7 @@ func SkipForMongoDB(tb testtb.TB, reason string) {
 	}
 }
 
-// IsPushdownDisabled returns if FerretDB pushdowns are disabled.
+// IsPushdownDisabled returns true if FerretDB pushdowns are disabled.
 func IsPushdownDisabled() bool {
 	return *disableFilterPushdownF
 }

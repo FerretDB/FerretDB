@@ -258,7 +258,7 @@ func AssertMatchesBulkException(t testtb.TB, expected, actual error) {
 	}
 }
 
-// AssertEqualAltCommandError asserts that the expected error is the same as the actual (ignoring the Raw part);
+// AssertEqualAltCommandError asserts that the expected MongoDB error is the same as the actual (ignoring the Raw part);
 // the alternative error message may be provided if FerretDB is unable to produce exactly the same text as MongoDB.
 //
 // In general, error messages should be the same. Exceptions include:
@@ -295,7 +295,7 @@ func AssertEqualAltCommandError(t testtb.TB, expected mongo.CommandError, altMes
 	return assert.Equal(t, expected, a)
 }
 
-// AssertEqualAltWriteError asserts that the expected error is the same as the actual;
+// AssertEqualAltWriteError asserts that the expected MongoDB error is the same as the actual;
 // the alternative error message may be provided if FerretDB is unable to produce exactly the same text as MongoDB.
 func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessage string, actual error) bool {
 	t.Helper()
