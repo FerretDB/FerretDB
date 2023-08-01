@@ -638,9 +638,22 @@ func TestPingCommand(t *testing.T) {
 	})
 }
 
-type expect struct{}
+type expect struct {
+	tcs []testing.TB
+}
 
 func (e *expect) NewChecker(t testing.TB) {
+	e.tcs = append(e.tcs, t)
+}
+
+func (e *expect) Check(t testing.TB) {
+	for _, tc := range e.tcs {
+		if tc.Failed() {
+			return
+		}
+	}
+
+	return
 }
 
 func TestDemonstrateIssue(t *testing.T) {
@@ -665,6 +678,7 @@ func TestDemonstrateIssue(t *testing.T) {
 		name, tc := name, tc
 
 		e := expect{}
+		defer e.Check()
 
 		// As usual we call subtest per test case
 		t.Run(name, func(t *testing.T) {
