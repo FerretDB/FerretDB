@@ -180,7 +180,7 @@ type aggregateCommandCompatTestCase struct {
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 
 	skip           string // skip test for all handlers, must have issue number mentioned
-	failsForSQLite string
+	failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue
 }
 
 // testAggregateCommandCompat tests aggregate pipeline compatibility test cases using one collection.
