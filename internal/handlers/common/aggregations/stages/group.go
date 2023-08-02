@@ -83,7 +83,7 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 		}
 
 		if field == "_id" {
-			if err = validateGroupID(v); err != nil {
+			if err = validateGroupKey(v); err != nil {
 				return nil, err
 			}
 
@@ -164,9 +164,10 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 	return iter, nil
 }
 
-// validateGroupID returns error on invalid group ID.
-func validateGroupID(groupID any) error {
-	doc, ok := groupID.(*types.Document)
+// validateGroupKey returns error on invalid group key.
+// If group key is a document, it validates operator and expression.
+func validateGroupKey(groupKey any) error {
+	doc, ok := groupKey.(*types.Document)
 	if !ok {
 		return nil
 	}
@@ -308,9 +309,9 @@ func (g *group) groupDocuments(in []*types.Document) ([]groupedDocuments, error)
 	}}, nil
 }
 
-// groupByOperator groups documents using operator in `expr`.
-func groupByOperator(expr *types.Document, docs []*types.Document) ([]groupedDocuments, error) {
-	op, err := operators.NewOperator(expr)
+// groupByOperator groups documents using operator found in group key.
+func groupByOperator(groupKey *types.Document, docs []*types.Document) ([]groupedDocuments, error) {
+	op, err := operators.NewOperator(groupKey)
 	if err != nil {
 		// operator error was validated in newGroup.
 		return nil, lazyerrors.Error(err)
