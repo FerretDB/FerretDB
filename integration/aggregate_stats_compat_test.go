@@ -134,6 +134,7 @@ func TestAggregateCompatCollStats(tt *testing.T) {
 				})
 			}
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3148
 			if setup.IsSQLite(tt) {
 				return
 			}
