@@ -71,7 +71,7 @@ func (e *ExpressionError) Code() ExpressionErrorCode {
 // Expression represents a value that needs evaluation.
 //
 // Expression for access field in document should be prefixed with a dollar sign $ followed by field key.
-// For accessing embedded document or array, dollar sign $ should be followed by dot notation.
+// For accessing embedded document or array, a dollar sign $ should be followed by dot notation.
 // Options can be provided to specify how to access fields in embedded array.
 type Expression struct {
 	opts commonpath.FindValuesOpts
@@ -185,7 +185,7 @@ func (e *Expression) Evaluate(doc *types.Document) (any, error) {
 	return arr, nil
 }
 
-// GetExpressionSuffix returns suffix of pathExpression.
+// GetExpressionSuffix returns field key of Expression, or for dot notation it returns suffix.
 func (e *Expression) GetExpressionSuffix() string {
 	return e.path.Suffix()
 }
