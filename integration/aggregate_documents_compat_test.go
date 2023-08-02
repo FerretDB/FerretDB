@@ -851,80 +851,92 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", 0}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"One": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", 1}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Five": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", 5}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"StringInt": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", "5"}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Double": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", 4.5}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"DoubleInt": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", 5.0}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"MaxInt64": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", math.MaxInt64}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"MinInt64": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", math.MinInt64}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Negative": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", -1}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"NegativeDouble": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", -2.1}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Document": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", bson.D{}}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Int64Overflow": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", float64(1 << 86)}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"AfterMatch": {
 			pipeline: bson.A{
@@ -933,6 +945,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$limit", 1}},
 			},
 			resultPushdown: true, // $sort and $match are first two stages
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"BeforeMatch": {
 			pipeline: bson.A{
@@ -940,7 +953,8 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$limit", 1}},
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"NoSortAfterMatch": {
 			pipeline: bson.A{
@@ -948,12 +962,14 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$limit", 100}},
 			},
 			resultPushdown: true,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"NoSortBeforeMatch": {
 			pipeline: bson.A{
 				bson.D{{"$limit", 100}},
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 	}
 
@@ -1291,34 +1307,40 @@ func TestAggregateCompatSort(t *testing.T) {
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"AscendingID": {
-			pipeline: bson.A{bson.D{{"$sort", bson.D{{"_id", 1}}}}},
+			pipeline:       bson.A{bson.D{{"$sort", bson.D{{"_id", 1}}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"DescendingID": {
-			pipeline: bson.A{bson.D{{"$sort", bson.D{{"_id", -1}}}}},
+			pipeline:       bson.A{bson.D{{"$sort", bson.D{{"_id", -1}}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"AscendingValue": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"v", 1},
 				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"DescendingValue": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"v", -1},
 				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"AscendingValueDescendingID": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"v", 1},
 				{"_id", -1},
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"DescendingValueDescendingID": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"v", -1},
 				{"_id", -1},
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 
 		"DotNotationIndex": {
@@ -1326,35 +1348,42 @@ func TestAggregateCompatSort(t *testing.T) {
 				{"v.0", 1},
 				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"DotNotationNonExistent": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"invalid.foo", 1},
 				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"DotNotationMissingField": {
 			pipeline: bson.A{bson.D{{"$sort", bson.D{
 				{"v..foo", 1},
 			}}}},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 
 		"SortBadExpression": {
-			pipeline:   bson.A{bson.D{{"$sort", 1}}},
-			resultType: emptyResult,
+			pipeline:       bson.A{bson.D{{"$sort", 1}}},
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"SortBadOrder": {
-			pipeline:   bson.A{bson.D{{"$sort", bson.D{{"_id", 0}}}}},
-			resultType: emptyResult,
+			pipeline:       bson.A{bson.D{{"$sort", bson.D{{"_id", 0}}}}},
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"SortMissingKey": {
-			pipeline:   bson.A{bson.D{{"$sort", bson.D{}}}},
-			resultType: emptyResult,
+			pipeline:       bson.A{bson.D{{"$sort", bson.D{}}}},
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"BadDollarStart": {
-			pipeline:   bson.A{bson.D{{"$sort", bson.D{{"$v.foo", 1}}}}},
-			resultType: emptyResult,
+			pipeline:       bson.A{bson.D{{"$sort", bson.D{{"$v.foo", 1}}}}},
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 	}
 
@@ -1511,63 +1540,73 @@ func TestAggregateCompatSkip(t *testing.T) {
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"Document": {
-			pipeline:   bson.A{bson.D{{"$skip", bson.D{}}}},
-			resultType: emptyResult,
+			pipeline:       bson.A{bson.D{{"$skip", bson.D{}}}},
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Zero": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", int32(0)}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"One": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", int32(1)}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"SkipAll": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", int32(1000)}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"StringInt": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", "1"}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"NegativeValue": {
-			pipeline:   bson.A{bson.D{{"$skip", int32(-1)}}},
-			resultType: emptyResult,
+			pipeline:       bson.A{bson.D{{"$skip", int32(-1)}}},
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"NegativeDouble": {
-			pipeline:   bson.A{bson.D{{"$skip", -3.2}}},
-			resultType: emptyResult,
+			pipeline:       bson.A{bson.D{{"$skip", -3.2}}},
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"MaxInt64": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", math.MaxInt64}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"MinInt64": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", math.MinInt64}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Int64Overflow": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", float64(1 << 86)}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"AfterMatch": {
 			pipeline: bson.A{
@@ -1576,6 +1615,7 @@ func TestAggregateCompatSkip(t *testing.T) {
 				bson.D{{"$skip", int32(1)}},
 			},
 			resultPushdown: true, // $match after $sort can be pushed down
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"BeforeMatch": {
 			pipeline: bson.A{
@@ -1583,6 +1623,7 @@ func TestAggregateCompatSkip(t *testing.T) {
 				bson.D{{"$skip", int32(1)}},
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 	}
 
@@ -2387,37 +2428,43 @@ func TestAggregateCompatSet(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$set", "invalid"}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"InvalidTypeBool": {
 			pipeline: bson.A{
 				bson.D{{"$set", false}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"InvalidTypeArray": {
 			pipeline: bson.A{
 				bson.D{{"$set", bson.A{}}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"InvalidTypeInt32": {
 			pipeline: bson.A{
 				bson.D{{"$set", int32(1)}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"InvalidTypeInt64": {
 			pipeline: bson.A{
 				bson.D{{"$set", int64(1)}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"InvalidTypeFloat32": {
 			pipeline: bson.A{
 				bson.D{{"$set", float32(1)}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"InvalidTypeFloat64": {
 			pipeline: bson.A{
