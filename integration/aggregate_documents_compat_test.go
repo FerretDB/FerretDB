@@ -31,6 +31,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // aggregateStagesCompatTestCase describes aggregation stages compatibility test case.
@@ -41,6 +42,7 @@ type aggregateStagesCompatTestCase struct {
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
 	skip           string                   // skip test for all handlers, must have issue number mentioned
+	failsForSQLite string                   // optional, if set, the case is expected to fail for SQLite due to given issue
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -51,29 +53,29 @@ func testAggregateStagesCompat(t *testing.T, testCases map[string]aggregateStage
 }
 
 // testAggregateStagesCompatWithProviders tests aggregation stages compatibility test cases with given providers.
-func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.Providers, testCases map[string]aggregateStagesCompatTestCase) {
-	t.Helper()
+func testAggregateStagesCompatWithProviders(tt *testing.T, providers shareddata.Providers, testCases map[string]aggregateStagesCompatTestCase) {
+	tt.Helper()
 
-	require.NotEmpty(t, providers)
+	require.NotEmpty(tt, providers)
 
-	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+	s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
 		Providers: providers,
 	})
 	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
+		tt.Run(name, func(tt *testing.T) {
+			tt.Helper()
 
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
 
 			pipeline := tc.pipeline
-			require.NotNil(t, pipeline, "pipeline should be set")
+			require.NotNil(tt, pipeline, "pipeline should be set")
 
 			var hasSortStage bool
 			for _, stage := range pipeline {
@@ -103,8 +105,13 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
+				tt.Run(targetCollection.Name(), func(tt *testing.T) {
+					tt.Helper()
+
+					var t testtb.TB = tt //nolint:vet // that's intentional
+					if tc.failsForSQLite != "" {
+						t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+					}
 
 					explainCommand := bson.D{{"explain", bson.D{
 						{"aggregate", targetCollection.Name()},
@@ -151,6 +158,11 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 						nonEmptyResults = true
 					}
 				})
+			}
+
+			var t testtb.TB = tt
+			if tc.failsForSQLite != "" {
+				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
 			}
 
 			switch tc.resultType {
@@ -319,12 +331,14 @@ func TestAggregateCompatOptions(t *testing.T) {
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"MaxTimeZero": {
-			pipeline: bson.A{},
-			maxTime:  pointer.ToDuration(time.Duration(0)),
+			pipeline:       bson.A{},
+			maxTime:        pointer.ToDuration(time.Duration(0)),
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"MaxTime": {
-			pipeline: bson.A{},
-			maxTime:  pointer.ToDuration(time.Second),
+			pipeline:       bson.A{},
+			maxTime:        pointer.ToDuration(time.Second),
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 	}
 

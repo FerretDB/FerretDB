@@ -20,6 +20,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// Parts of Prometheus metric names.
 const (
 	namespace = "ferretdb"
 	subsystem = "sqldb"
@@ -32,11 +33,11 @@ type metricsCollector struct {
 }
 
 // newMetricsCollector creates a new metricsCollector.
-func newMetricsCollector(name string, statsF func() sql.DBStats) *metricsCollector {
+func newMetricsCollector(db string, statsF func() sql.DBStats) *metricsCollector {
 	return &metricsCollector{
 		statsF: statsF,
 		labels: prometheus.Labels{
-			"name": name,
+			"db": db,
 		},
 	}
 }

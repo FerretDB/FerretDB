@@ -42,6 +42,12 @@ import (
 // filenameExtension represents SQLite database filename extension.
 const filenameExtension = ".sqlite"
 
+// Parts of Prometheus metric names.
+const (
+	namespace = "ferretdb"
+	subsystem = "sqlite_pool"
+)
+
 // Pool provides access to SQLite databases and their connections.
 //
 //nolint:vet // for readability
@@ -61,17 +67,20 @@ type Pool struct {
 // so no validation is needed.
 // One exception is very long full path names for the filesystem,
 // but we don't check it.
-func openDB(name, uri string, l *zap.Logger) (*fsql.DB, error) {
+func openDB(name, uri string, singleConn bool, l *zap.Logger) (*fsql.DB, error) {
 	db, err := sql.Open("sqlite", uri)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/2755
 	db.SetConnMaxIdleTime(0)
 	db.SetConnMaxLifetime(0)
-	// db.SetMaxIdleConns(5)
-	// db.SetMaxOpenConns(5)
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/2755
+	if singleConn {
+		db.SetMaxIdleConns(1)
+		db.SetMaxOpenConns(1)
+	}
 
 	if err = db.Ping(); err != nil {
 		_ = db.Close()
@@ -110,7 +119,7 @@ func New(u string, l *zap.Logger) (*Pool, error) {
 
 		p.l.Debug("Opening existing database.", zap.String("name", name), zap.String("uri", uri))
 
-		db, err := openDB(name, uri, l)
+		db, err := openDB(name, uri, p.singleConn(), l)
 		if err != nil {
 			p.Close()
 			return nil, lazyerrors.Error(err)
@@ -120,6 +129,18 @@ func New(u string, l *zap.Logger) (*Pool, error) {
 	}
 
 	return p, nil
+}
+
+// memory returns true if the pool is for the in-memory database.
+func (p *Pool) memory() bool {
+	return p.uri.Query().Get("mode") == "memory"
+}
+
+// singleConn returns true if pool size must be limited to a single connection.
+func (p *Pool) singleConn() bool {
+	// https://www.sqlite.org/inmemorydb.html
+	// TODO https://github.com/FerretDB/FerretDB/issues/2755
+	return p.memory()
 }
 
 // databaseName returns database name for given database file path.
@@ -136,8 +157,13 @@ func (p *Pool) databaseURI(databaseName string) string {
 	return dbURI.String()
 }
 
-// databaseFile returns database file path for the given database name.
+// databaseFile returns database file path for the given database name,
+// or empty string for in-memory database.
 func (p *Pool) databaseFile(databaseName string) string {
+	if p.memory() {
+		return ""
+	}
+
 	return filepath.Join(p.uri.Path, databaseName+filenameExtension)
 }
 
@@ -153,6 +179,13 @@ func (p *Pool) Close() {
 	p.dbs = nil
 
 	resource.Untrack(p, p.token)
+}
+
+// DBS returns all databases.
+//
+// It is used in a single place during registry initialization.
+func (p *Pool) DBS() map[string]*fsql.DB {
+	return p.dbs
 }
 
 // List returns a sorted list of database names in the pool.
@@ -197,7 +230,7 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, er
 	}
 
 	uri := p.databaseURI(name)
-	db, err := openDB(name, uri, p.l)
+	db, err := openDB(name, uri, p.singleConn(), p.l)
 	if err != nil {
 		return nil, false, lazyerrors.Errorf("%s: %w", uri, err)
 	}
@@ -223,9 +256,17 @@ func (p *Pool) Drop(ctx context.Context, name string) bool {
 		return false
 	}
 
-	_ = db.Close()
-	_ = os.Remove(p.databaseFile(name))
+	if err := db.Close(); err != nil {
+		p.l.Warn("Failed to close database connection.", zap.String("name", name), zap.Error(err))
+	}
+
 	delete(p.dbs, name)
+
+	if f := p.databaseFile(name); f != "" {
+		if err := os.Remove(f); err != nil {
+			p.l.Warn("Failed to remove database file.", zap.String("file", f), zap.String("name", name), zap.Error(err))
+		}
+	}
 
 	p.l.Debug("Database dropped.", zap.String("name", name))
 
@@ -234,8 +275,6 @@ func (p *Pool) Drop(ctx context.Context, name string) bool {
 
 // Describe implements prometheus.Collector.
 func (p *Pool) Describe(ch chan<- *prometheus.Desc) {
-	// If there are no databases, the collector will be unchecked,
-	// but that's the best we could do.
 	prometheus.DescribeByCollect(p, ch)
 }
 
@@ -243,6 +282,16 @@ func (p *Pool) Describe(ch chan<- *prometheus.Desc) {
 func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	p.rw.RLock()
 	defer p.rw.RUnlock()
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "databases"),
+			"The current number of database in the pool.",
+			nil, nil,
+		),
+		prometheus.GaugeValue,
+		float64(len(p.dbs)),
+	)
 
 	for _, db := range p.dbs {
 		db.Collect(ch)
