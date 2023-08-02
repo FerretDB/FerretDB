@@ -106,7 +106,7 @@ func testAggregateStagesCompatWithProviders(tt *testing.T, providers shareddata.
 				tt.Run(targetCollection.Name(), func(tt *testing.T) {
 					tt.Helper()
 
-					var t testtb.TB = tt //nolint:vet // that's intentional
+					var t testtb.TB = tt
 					if tc.failsForSQLite != "" {
 						t = setup.FailsForSQLite(tt, tc.failsForSQLite)
 					}
@@ -216,7 +216,7 @@ func testAggregateCommandCompat(tt *testing.T, testCases map[string]aggregateCom
 			tt.Run(targetCollection.Name(), func(tt *testing.T) {
 				tt.Helper()
 
-				var t testtb.TB = tt //nolint:vet // that's intentional
+				var t testtb.TB = tt
 				if tc.failsForSQLite != "" {
 					t = setup.FailsForSQLite(tt, tc.failsForSQLite)
 				}
