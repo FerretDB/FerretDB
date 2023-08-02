@@ -51,6 +51,8 @@ type FindValuesOpts struct {
 //     it adds field value of all documents that have path to next values.
 //
 // It returns next values after iterating path elements.
+//
+// FindValues returns values by path, looking up into arrays.
 func FindValues(doc *types.Document, path types.Path, opts *FindValuesOpts) ([]any, error) {
 	if opts == nil {
 		opts = new(FindValuesOpts)
@@ -58,14 +60,14 @@ func FindValues(doc *types.Document, path types.Path, opts *FindValuesOpts) ([]a
 
 	nextValues := []any{doc}
 
-	for _, p := range path.Slice() {
+	for _, e := range path.Slice() {
 		values := []any{}
 
 		for _, next := range nextValues {
 			switch next := next.(type) {
 			case *types.Document:
-				v, err := next.Get(p)
-				if err != nil {
+				v, _ := next.Get(e)
+				if v == nil {
 					continue
 				}
 
@@ -73,7 +75,7 @@ func FindValues(doc *types.Document, path types.Path, opts *FindValuesOpts) ([]a
 
 			case *types.Array:
 				if opts.FindArrayIndex {
-					res, err := findArrayIndex(next, p)
+					res, err := findArrayIndex(next, e)
 					if err == nil {
 						values = append(values, res)
 						continue
@@ -81,7 +83,7 @@ func FindValues(doc *types.Document, path types.Path, opts *FindValuesOpts) ([]a
 				}
 
 				if opts.FindArrayDocuments {
-					res, err := findArrayDocuments(next, p)
+					res, err := lookupArrayDocuments(next, e)
 					if err != nil {
 						return nil, lazyerrors.Error(err)
 					}
@@ -100,7 +102,8 @@ func FindValues(doc *types.Document, path types.Path, opts *FindValuesOpts) ([]a
 	return nextValues, nil
 }
 
-// findArrayIndex returns the value found at array index.
+// findArrayIndex returns the value by valid array index.
+//
 // Error is returned if index is not a number or index does not exist in array.
 func findArrayIndex(array *types.Array, index string) (any, error) {
 	i, err := strconv.Atoi(index)
@@ -116,11 +119,10 @@ func findArrayIndex(array *types.Array, index string) (any, error) {
 	return v, nil
 }
 
-// findArrayDocuments iterates array to find documents that have documentKey.
-// It returns field values of found documents at documentKey.
-// Multiple documents with documentKey may exist in array, hence an array is returned.
-// Empty array is returned if no document having documentKey was found.
-func findArrayDocuments(array *types.Array, documentKey string) ([]any, error) {
+// lookupArrayDocuments returns values for the given key in array's document.
+//
+// Non-document array values, documents without that key, etc. are skipped.
+func lookupArrayDocuments(array *types.Array, documentKey string) ([]any, error) {
 	iter := array.Iterator()
 	defer iter.Close()
 
