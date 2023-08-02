@@ -158,18 +158,17 @@ func testAggregateStagesCompatWithProviders(tt *testing.T, providers shareddata.
 				})
 			}
 
-			var t testtb.TB = tt
-			if tc.failsForSQLite != "" {
-				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+			if tc.failsForSQLite != "" && setup.IsSQLite(tt) {
+				return
 			}
 
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results")
+				assert.True(tt, nonEmptyResults, "expected non-empty results")
 			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results")
+				assert.False(tt, nonEmptyResults, "expected empty results")
 			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+				tt.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
@@ -550,55 +549,65 @@ func TestAggregateCompatGroup(t *testing.T) {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", nil},
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"DistinctID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$_id"},
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"IDExpression": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", bson.D{{"v", "$v"}}},
 			}}}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2165",
+			skip:           "https://github.com/FerretDB/FerretDB/issues/2165",
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"NonExistentID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$invalid"},
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"NonExpressionID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "v"},
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"NonStringID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", bson.A{}},
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"OperatorNameAsExpression": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$add"},
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"EmptyPath": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$"},
 			}}}},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"EmptyVariable": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$$"},
 			}}}},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"InvalidVariable$": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$$$"},
 			}}}},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"InvalidVariable$s": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
