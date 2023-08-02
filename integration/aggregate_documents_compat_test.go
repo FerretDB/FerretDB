@@ -365,7 +365,8 @@ func TestAggregateCompatEmptyPipeline(t *testing.T) {
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"Empty": {
-			pipeline: bson.A{},
+			pipeline:       bson.A{},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 	}
 
@@ -431,6 +432,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 				// sort descending order, so ArrayDoubles has deterministic order.
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Distinct": {
 			pipeline: bson.A{
@@ -459,6 +461,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 				// sort descending order, so ArrayDoubles has deterministic order.
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 
 		"LimitAfter": {
@@ -471,6 +474,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$limit", 5}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"LimitBefore": {
 			pipeline: bson.A{
@@ -482,6 +486,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 				// sort descending order, so ArrayDoubles has deterministic order.
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"SkipAfter": {
 			pipeline: bson.A{
@@ -493,6 +498,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 				bson.D{{"$skip", 2}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"SkipBefore": {
 			pipeline: bson.A{
@@ -504,6 +510,7 @@ func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 				// sort descending order, so ArrayDoubles has deterministic order.
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 	}
 
@@ -684,31 +691,37 @@ func TestAggregateCompatGroupExpressionDottedFields(t *testing.T) {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.foo"},
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"DeeplyNested": { // Expect non-empty results for DocumentsDeeplyNested provider
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.a.b.c"},
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"ArrayIndex": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.0"},
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"NestedInArray": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.0.foo"},
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"NonExistentParent": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$non.existent"},
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"NonExistentChild": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.non.existent"},
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 	}
 
@@ -937,6 +950,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				// ascending sort for shareddata collections.
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"GroupByID": {
 			pipeline: bson.A{
@@ -947,6 +961,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"GroupByValue": {
 			pipeline: bson.A{
@@ -957,6 +972,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"EmptyString": {
 			pipeline: bson.A{
@@ -967,6 +983,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"NonExpression": {
 			pipeline: bson.A{
@@ -977,6 +994,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"NonExistent": {
 			pipeline: bson.A{
@@ -987,6 +1005,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Document": {
 			pipeline: bson.A{
@@ -998,6 +1017,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Array": {
 			pipeline: bson.A{
@@ -1008,7 +1028,8 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Int32": {
 			pipeline: bson.A{
@@ -1019,6 +1040,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"MaxInt32": {
 			pipeline: bson.A{
@@ -1029,6 +1051,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"NegativeInt32": {
 			pipeline: bson.A{
@@ -1039,6 +1062,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Int64": {
 			pipeline: bson.A{
@@ -1049,6 +1073,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"MaxInt64": {
 			pipeline: bson.A{
@@ -1059,6 +1084,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Double": {
 			pipeline: bson.A{
@@ -1069,6 +1095,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"MaxDouble": {
 			pipeline: bson.A{
@@ -1079,6 +1106,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Bool": {
 			pipeline: bson.A{
@@ -1089,6 +1117,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Duplicate": {
 			pipeline: bson.A{
@@ -1100,7 +1129,8 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"RecursiveOperator": {
 			pipeline: bson.A{
@@ -1112,18 +1142,21 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"RecursiveInvalid": {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{{"sum", bson.D{{"$sum", bson.D{{"v", "$v"}}}}}}}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"RecursiveArrayInvalid": {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{{"sum", bson.D{{"$sum", bson.D{{"$type", bson.A{"1", "2"}}}}}}}}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"RecursiveOperatorNonExistent": {
 			pipeline: bson.A{
@@ -1133,7 +1166,8 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", bson.D{{"$non-existent", "$v"}}}}},
 				}}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 	}
 
@@ -1150,46 +1184,56 @@ func TestAggregateCompatMatch(t *testing.T) {
 		"ID": {
 			pipeline:       bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
 			resultPushdown: true,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Int": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", 42}}}},
 			},
 			resultPushdown: true,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"String": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 			},
 			resultPushdown: true,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Document": {
-			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"foo", int32(42)}}}}}}},
+			pipeline:       bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"foo", int32(42)}}}}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Array": {
-			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.A{int32(42)}}}}}},
+			pipeline:       bson.A{bson.D{{"$match", bson.D{{"v", bson.A{int32(42)}}}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Regex": {
-			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"$eq", primitive.Regex{Pattern: "foo", Options: "i"}}}}}}}},
+			pipeline:       bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"$eq", primitive.Regex{Pattern: "foo", Options: "i"}}}}}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Empty": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"DotNotationDocument": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v.foo", int32(42)}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"DotNotationArray": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v.0", int32(42)}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"MatchBadValue": {
-			pipeline:   bson.A{bson.D{{"$match", 1}}},
-			resultType: emptyResult,
+			pipeline:       bson.A{bson.D{{"$match", 1}}},
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"SumValue": {
 			pipeline: bson.A{
@@ -1290,6 +1334,7 @@ func TestAggregateCompatSortDotNotation(t *testing.T) {
 				{"v.foo", 1},
 				{"_id", 1}, // sort by _id when v is the same.
 			}}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 	}
 
