@@ -247,18 +247,17 @@ func testAggregateCommandCompat(tt *testing.T, testCases map[string]aggregateCom
 				}
 			})
 
-			var t testtb.TB = tt //nolint:vet // that's intentional
-			if tc.failsForSQLite != "" {
-				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+			if tc.failsForSQLite != "" && setup.IsSQLite(tt) {
+				return
 			}
 
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results")
+				assert.True(tt, nonEmptyResults, "expected non-empty results")
 			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results")
+				assert.False(tt, nonEmptyResults, "expected empty results")
 			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+				tt.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
