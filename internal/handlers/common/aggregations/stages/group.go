@@ -181,8 +181,6 @@ func validateGroupKey(groupKey any) error {
 		if _, err = op.Process(nil); err != nil {
 			return processOperatorError(err)
 		}
-
-		return nil
 	}
 
 	iter := doc.Iterator()
@@ -209,8 +207,20 @@ func validateGroupKey(groupKey any) error {
 		}
 		fields[k] = struct{}{}
 
-		if expr, ok := v.(string); ok {
-			_, err := aggregations.NewExpression(expr)
+		switch v := v.(type) {
+		case *types.Document:
+			if operators.IsOperator(v) {
+				op, err := operators.NewOperator(v)
+				if err != nil {
+					return processOperatorError(err)
+				}
+
+				if _, err = op.Process(nil); err != nil {
+					return processOperatorError(err)
+				}
+			}
+		case string:
+			_, err := aggregations.NewExpression(v)
 			var exprErr *aggregations.ExpressionError
 
 			if errors.As(err, &exprErr) && exprErr.Code() == aggregations.ErrNotExpression {
@@ -333,11 +343,11 @@ func groupByOperator(groupKey *types.Document, docs []*types.Document) ([]groupe
 
 // groupByKey groups documents by given group key. A group key could be an expression,
 // that case it evaluates the expression and uses that as the group key.
-func groupByKey(groupkey *types.Document, docs []*types.Document) ([]groupedDocuments, error) {
+func groupByKey(groupKey *types.Document, docs []*types.Document) ([]groupedDocuments, error) {
 	var m groupMap
 
 	for _, doc := range docs {
-		iter := groupkey.Iterator()
+		iter := groupKey.Iterator()
 		defer iter.Close()
 
 		evaluatedGroupKey := new(types.Document)
@@ -352,35 +362,47 @@ func groupByKey(groupkey *types.Document, docs []*types.Document) ([]groupedDocu
 				return nil, lazyerrors.Error(err)
 			}
 
-			expr, ok := v.(string)
-			if !ok {
-				evaluatedGroupKey.Set(k, v)
-				continue
-			}
-
-			expression, err := aggregations.NewExpression(expr)
-
-			var exprErr *aggregations.ExpressionError
-			if errors.As(err, &exprErr) && exprErr.Code() == aggregations.ErrNotExpression {
-				evaluatedGroupKey.Set(k, v)
-				continue
-			}
-
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			val, err := expression.Evaluate(doc)
-			if err != nil {
-				if groupkey.Len() == 1 {
-					// non-existent path is set to null only if _id contains one field
-					evaluatedGroupKey.Set(k, types.Null)
+			switch v := v.(type) {
+			case *types.Document:
+				op, err := operators.NewOperator(v)
+				if err != nil {
+					// operator error was validated in newGroup.
+					return nil, lazyerrors.Error(err)
 				}
 
-				continue
-			}
+				val, err := op.Process(doc)
+				if err != nil {
+					return nil, processOperatorError(err)
+				}
 
-			evaluatedGroupKey.Set(k, val)
+				evaluatedGroupKey.Set(k, val)
+			case string:
+				expression, err := aggregations.NewExpression(v)
+
+				var exprErr *aggregations.ExpressionError
+				if errors.As(err, &exprErr) && exprErr.Code() == aggregations.ErrNotExpression {
+					evaluatedGroupKey.Set(k, v)
+					continue
+				}
+
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+
+				val, err := expression.Evaluate(doc)
+				if err != nil {
+					if groupKey.Len() == 1 {
+						// non-existent path is set to null only if _id contains one field
+						evaluatedGroupKey.Set(k, types.Null)
+					}
+
+					continue
+				}
+
+				evaluatedGroupKey.Set(k, val)
+			default:
+				evaluatedGroupKey.Set(k, v)
+			}
 		}
 
 		m.addOrAppend(evaluatedGroupKey, doc)
