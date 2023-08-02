@@ -180,15 +180,16 @@ type aggregateCommandCompatTestCase struct {
 	command    bson.D                   // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 
-	skip string // skip test for all handlers, must have issue number mentioned
+	skip           string // skip test for all handlers, must have issue number mentioned
+	failsForSQLite string
 }
 
 // testAggregateCommandCompat tests aggregate pipeline compatibility test cases using one collection.
 // Use testAggregateStagesCompat for testing stages of aggregation.
-func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateCommandCompatTestCase) {
-	t.Helper()
+func testAggregateCommandCompat(tt *testing.T, testCases map[string]aggregateCommandCompatTestCase) {
+	tt.Helper()
 
-	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+	s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
 		// Use a provider that works for all handlers.
 		Providers: []shareddata.Provider{shareddata.Int32s},
 	})
@@ -199,22 +200,27 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
+		tt.Run(name, func(tt *testing.T) {
+			tt.Helper()
 
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
 
 			command := tc.command
-			require.NotNil(t, command, "command should be set")
+			require.NotNil(tt, command, "command should be set")
 
 			var nonEmptyResults bool
 
-			t.Run(targetCollection.Name(), func(t *testing.T) {
-				t.Helper()
+			tt.Run(targetCollection.Name(), func(tt *testing.T) {
+				tt.Helper()
+
+				var t testtb.TB = tt //nolint:vet // that's intentional
+				if tc.failsForSQLite != "" {
+					t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+				}
 
 				var targetRes, compatRes bson.D
 				targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
@@ -241,6 +247,11 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 					nonEmptyResults = true
 				}
 			})
+
+			var t testtb.TB = tt //nolint:vet // that's intentional
+			if tc.failsForSQLite != "" {
+				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+			}
 
 			switch tc.resultType {
 			case nonEmptyResult:
