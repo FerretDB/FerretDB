@@ -68,19 +68,17 @@ func (e *ExpressionError) Code() ExpressionErrorCode {
 	return e.code
 }
 
-// Expression represents a value that needs evaluation, the output varies depending on the evaluation.
+// Expression represents a value that needs evaluation.
 //
-// Expression used to access fields in document should be prefixed with a dollar sign `$` followed by field key.
-// For accessing embedded document or array, dollar sign `$` should be followed by dot notation.
+// Expression for access field in document should be prefixed with a dollar sign $ followed by field key.
+// For accessing embedded document or array, dollar sign $ should be followed by dot notation.
 // Options can be provided to specify how to access fields in embedded array.
-//
-// Expression for variables should be prefixed with double dollar sign `$$` followed by variable name.
 type Expression struct {
 	opts commonpath.FindValuesOpts
 	path types.Path
 }
 
-// NewExpression returns Expression from dollar sign `$` prefixed string.
+// NewExpression returns Expression from dollar sign $ prefixed string.
 // It can take additional options to specify how to access fields in embedded array.
 //
 // It returns error if invalid Expression is provided.
@@ -96,7 +94,7 @@ func NewExpression(expression string, opts *commonpath.FindValuesOpts) (*Express
 
 	switch {
 	case strings.HasPrefix(expression, "$$"):
-		// `$$` indicates field is a variable.
+		// double dollar sign $$ prefixed string indicates Expression is a variable name
 		v := strings.TrimPrefix(expression, "$$")
 		if v == "" {
 			return nil, newExpressionError(ErrEmptyVariable)
@@ -109,7 +107,7 @@ func NewExpression(expression string, opts *commonpath.FindValuesOpts) (*Express
 		// TODO https://github.com/FerretDB/FerretDB/issues/2275
 		return nil, newExpressionError(ErrUndefinedVariable)
 	case strings.HasPrefix(expression, "$"):
-		// `$` indicates field is a path.
+		// dollar sign $ prefixed string indicates Expression accesses field or embedded fields
 		val = strings.TrimPrefix(expression, "$")
 
 		if val == "" {
@@ -132,8 +130,12 @@ func NewExpression(expression string, opts *commonpath.FindValuesOpts) (*Express
 	}, nil
 }
 
-// Evaluate returns evaluated expression of document.
-// It returns error if evaluation found no value, null and empty array are valid values.
+// Evaluate uses Expression to find a field value or an embedded field value of the document and
+// returns found value. If values were found from embedded array, it returns *types.Array
+// containing values.
+//
+// It returns error if field value was not found. With embedded array field being exception,
+// that case it returns empty array instead of error.
 func (e *Expression) Evaluate(doc *types.Document) (any, error) {
 	path := e.path
 
@@ -146,12 +148,12 @@ func (e *Expression) Evaluate(doc *types.Document) (any, error) {
 		return val, nil
 	}
 
-	var isPrefixArray bool
+	var isArrayField bool
 	prefix := path.Prefix()
 
 	if v, err := doc.Get(prefix); err == nil {
 		if _, isArray := v.(*types.Array); isArray {
-			isPrefixArray = true
+			isArrayField = true
 		}
 	}
 
@@ -161,20 +163,20 @@ func (e *Expression) Evaluate(doc *types.Document) (any, error) {
 	}
 
 	if len(vals) == 0 {
-		if isPrefixArray {
-			// when the prefix is array, return empty array.
+		if isArrayField {
+			// embedded array field returns empty array
 			return must.NotFail(types.NewArray()), nil
 		}
 
 		return nil, fmt.Errorf("no document found under %s path", path)
 	}
 
-	if len(vals) == 1 && !isPrefixArray {
-		// when the prefix is not array, return the value
+	if len(vals) == 1 && !isArrayField {
+		// when it is not an embedded array field, return the value
 		return vals[0], nil
 	}
 
-	// when the prefix is array, return an array of value.
+	// embedded array field returns an array of found values
 	arr := types.MakeArray(len(vals))
 	for _, v := range vals {
 		arr.Append(v)
