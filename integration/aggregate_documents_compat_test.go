@@ -279,28 +279,32 @@ func TestAggregateCommandCompat(t *testing.T) {
 			command: bson.D{
 				{"aggregate", 2},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"PipelineTypeMismatch": {
 			command: bson.D{
 				{"aggregate", "collection-name"},
 				{"pipeline", 1},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"StageTypeMismatch": {
 			command: bson.D{
 				{"aggregate", "collection-name"},
 				{"pipeline", bson.A{1}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"InvalidStage": {
 			command: bson.D{
 				{"aggregate", "collection-name"},
 				{"pipeline", bson.A{"$invalid-stage"}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"MaxTimeMSDoubleWholeNumber": {
 			command: bson.D{
@@ -309,6 +313,7 @@ func TestAggregateCommandCompat(t *testing.T) {
 				{"cursor", bson.D{}},
 				{"maxTimeMS", float64(1000)},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 	}
 
@@ -351,6 +356,7 @@ func TestAggregateCompatStages(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
 			resultPushdown: true,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"CountAndMatch": {
 			pipeline: bson.A{
@@ -359,6 +365,7 @@ func TestAggregateCompatStages(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", 1}}}},
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 	}
 
@@ -389,30 +396,37 @@ func TestAggregateCompatCount(t *testing.T) {
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"Value": {
-			pipeline: bson.A{bson.D{{"$count", "v"}}},
+			pipeline:       bson.A{bson.D{{"$count", "v"}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"NonExistent": {
-			pipeline: bson.A{bson.D{{"$count", "nonexistent"}}},
+			pipeline:       bson.A{bson.D{{"$count", "nonexistent"}}},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"CountGroupID": {
-			pipeline:   bson.A{bson.D{{"$count", "_id"}}},
-			resultType: emptyResult,
+			pipeline:       bson.A{bson.D{{"$count", "_id"}}},
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"CountNonString": {
-			pipeline:   bson.A{bson.D{{"$count", 1}}},
-			resultType: emptyResult,
+			pipeline:       bson.A{bson.D{{"$count", 1}}},
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"CountEmpty": {
-			pipeline:   bson.A{bson.D{{"$count", ""}}},
-			resultType: emptyResult,
+			pipeline:       bson.A{bson.D{{"$count", ""}}},
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"CountBadValue": {
-			pipeline:   bson.A{bson.D{{"$count", "v.foo"}}},
-			resultType: emptyResult,
+			pipeline:       bson.A{bson.D{{"$count", "v.foo"}}},
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"CountBadPrefix": {
-			pipeline:   bson.A{bson.D{{"$count", "$foo"}}},
-			resultType: emptyResult,
+			pipeline:       bson.A{bson.D{{"$count", "$foo"}}},
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 	}
 
@@ -1901,6 +1915,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", "$v"}}},
 				}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"DotNotation": {
 			pipeline: bson.A{
@@ -1908,6 +1923,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", "$v.foo"}}},
 				}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"ArrayDotNotation": {
 			pipeline: bson.A{
@@ -1915,6 +1931,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", "$v.0.foo"}}},
 				}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Int": {
 			pipeline: bson.A{
@@ -1922,6 +1939,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", int32(2)}}},
 				}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Long": {
 			pipeline: bson.A{
@@ -1929,6 +1947,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", int64(3)}}},
 				}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Double": {
 			pipeline: bson.A{
@@ -1936,6 +1955,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", float64(4)}}},
 				}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"EmptyString": {
 			pipeline: bson.A{
@@ -1943,6 +1963,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", ""}}},
 				}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"ArrayEmptyVariable": {
 			pipeline: bson.A{
@@ -1950,7 +1971,8 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", bson.A{"$"}}}},
 				}}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"ArrayValue": {
 			pipeline: bson.A{
@@ -1958,6 +1980,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", bson.A{"$v"}}}},
 				}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"ArrayTwoValues": {
 			pipeline: bson.A{
@@ -1965,6 +1988,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", bson.A{"$v", "$v"}}}},
 				}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"ArrayValueInt": {
 			pipeline: bson.A{
@@ -1972,6 +1996,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", bson.A{"$v", int32(1)}}}},
 				}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"ArrayIntLongDoubleStringBool": {
 			pipeline: bson.A{
@@ -1979,6 +2004,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", bson.A{int32(2), int64(3), float64(4), "not-expression", true}}}},
 				}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"RecursiveValue": {
 			pipeline: bson.A{
@@ -1986,6 +2012,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sumsum", bson.D{{"$sum", bson.D{{"$sum", "$v"}}}}},
 				}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"RecursiveArrayValue": {
 			pipeline: bson.A{
@@ -1993,6 +2020,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sumsum", bson.D{{"$sum", bson.D{{"$sum", bson.A{"$v"}}}}}},
 				}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"ArrayValueRecursiveInt": {
 			pipeline: bson.A{
@@ -2000,6 +2028,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", bson.A{"$v", bson.D{{"$sum", int32(2)}}}}}},
 				}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"ArrayValueAndRecursiveValue": {
 			pipeline: bson.A{
@@ -2007,6 +2036,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", bson.A{"$v", bson.D{{"$sum", "$v"}}}}}},
 				}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"ArrayValueAndRecursiveArray": {
 			pipeline: bson.A{
@@ -2014,6 +2044,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", bson.A{"$v", bson.D{{"$sum", bson.A{"$v"}}}}}}},
 				}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Type": {
 			pipeline: bson.A{
@@ -2021,6 +2052,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sumtype", bson.D{{"$sum", bson.D{{"$type", "$v"}}}}},
 				}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"RecursiveEmptyVariable": {
 			pipeline: bson.A{
@@ -2028,7 +2060,8 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", bson.D{{"$sum", "$$$"}}}}},
 				}}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"MultipleRecursiveEmptyVariable": {
 			pipeline: bson.A{
@@ -2036,7 +2069,8 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", bson.D{{"$sum", bson.D{{"$sum", "$$$"}}}}}}},
 				}}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 	}
 
@@ -2396,68 +2430,80 @@ func TestAggregateCompatUnset(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{1, 2, 3}}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"EmptyArray": {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{}}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"EmptyString": {
 			pipeline: bson.A{
 				bson.D{{"$unset", ""}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"ArrayWithEmptyString": {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{""}}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"InvalidTypeArrayWithDifferentTypes": {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{"v", 42, false}}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"InvalidType": {
 			pipeline: bson.A{
 				bson.D{{"$unset", false}},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Unset1Field": {
 			pipeline: bson.A{
 				bson.D{{"$unset", "v"}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"UnsetID": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 				bson.D{{"$unset", "_id"}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Unset2Fields": {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{"_id", "v"}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"DotNotationUnset": {
 			pipeline: bson.A{
 				bson.D{{"$unset", "v.foo"}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"DotNotationUnsetTwo": {
 			pipeline: bson.A{
 				bson.D{{"$unset", bson.A{"v.foo", "v.array"}}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"DotNotationUnsetSecondLevel": {
 			pipeline: bson.A{
 				bson.D{{"$unset", "v.array.42"}},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 	}
 	testAggregateStagesCompat(t, testCases)
