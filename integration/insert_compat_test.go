@@ -120,7 +120,7 @@ func testInsertCompat(tt *testing.T, testCases map[string]insertCompatTestCase) 
 					tt.Run(targetCollection.Name(), func(tt *testing.T) {
 						tt.Helper()
 
-						var t testtb.TB = tt
+						var t testtb.TB = tt //nolint:vet // that's intentional
 						if tc.failsForSQLite != "" {
 							t = setup.FailsForSQLite(tt, tc.failsForSQLite)
 						}
