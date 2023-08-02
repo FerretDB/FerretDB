@@ -93,15 +93,18 @@ func openDB(name, uri string, singleConn bool, l *zap.Logger) (*fsql.DB, error) 
 // New creates a pool for SQLite databases in the directory specified by SQLite URI.
 //
 // All databases are opened on creation.
-func New(u string, l *zap.Logger) (*Pool, error) {
+//
+// The returned map is the initial set of existing databases.
+// It should not be modified.
+func New(u string, l *zap.Logger) (*Pool, map[string]*fsql.DB, error) {
 	uri, err := parseURI(u)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse SQLite URI %q: %s", u, err)
+		return nil, nil, fmt.Errorf("failed to parse SQLite URI %q: %s", u, err)
 	}
 
 	matches, err := filepath.Glob(filepath.Join(uri.Path, "*"+filenameExtension))
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, nil, lazyerrors.Error(err)
 	}
 
 	p := &Pool{
@@ -122,13 +125,13 @@ func New(u string, l *zap.Logger) (*Pool, error) {
 		db, err := openDB(name, uri, p.singleConn(), l)
 		if err != nil {
 			p.Close()
-			return nil, lazyerrors.Error(err)
+			return nil, nil, lazyerrors.Error(err)
 		}
 
 		p.dbs[name] = db
 	}
 
-	return p, nil
+	return p, p.dbs, nil
 }
 
 // memory returns true if the pool is for the in-memory database.
@@ -179,13 +182,6 @@ func (p *Pool) Close() {
 	p.dbs = nil
 
 	resource.Untrack(p, p.token)
-}
-
-// DBS returns all databases.
-//
-// It is used in a single place during registry initialization.
-func (p *Pool) DBS() map[string]*fsql.DB {
-	return p.dbs
 }
 
 // List returns a sorted list of database names in the pool.

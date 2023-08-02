@@ -59,7 +59,7 @@ type Registry struct {
 
 // NewRegistry creates a registry for SQLite databases in the directory specified by SQLite URI.
 func NewRegistry(u string, l *zap.Logger) (*Registry, error) {
-	p, err := pool.New(u, l)
+	p, initDBs, err := pool.New(u, l)
 	if err != nil {
 		return nil, err
 	}
@@ -70,9 +70,9 @@ func NewRegistry(u string, l *zap.Logger) (*Registry, error) {
 		colls: map[string]map[string]*Collection{},
 	}
 
-	for name, db := range p.DBS() {
-		if err = r.loadCollections(context.Background(), name, db); err != nil {
-			p.Close()
+	for name, db := range initDBs {
+		if err = r.initCollections(context.Background(), name, db); err != nil {
+			r.Close()
 			return nil, lazyerrors.Error(err)
 		}
 	}
@@ -85,8 +85,8 @@ func (r *Registry) Close() {
 	r.p.Close()
 }
 
-// loadCollections gets collections metadata from the database during initialization.
-func (r *Registry) loadCollections(ctx context.Context, dbName string, db *fsql.DB) error {
+// initCollections loads collections metadata from the database during initialization.
+func (r *Registry) initCollections(ctx context.Context, dbName string, db *fsql.DB) error {
 	rows, err := db.QueryContext(ctx, fmt.Sprintf("SELECT name, table_name, settings FROM %q", metadataTableName))
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -212,15 +212,13 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 		tableName = "_" + tableName
 	}
 
-	// use transaction
-	// TODO https://github.com/FerretDB/FerretDB/issues/2747
-
-	q := fmt.Sprintf("CREATE TABLE %q (%s TEXT) STRICT", tableName, DefaultColumn)
+	q := fmt.Sprintf("CREATE TABLE %[1]q (%[2]s TEXT NOT NULL CHECK(%[2]s != '')) STRICT", tableName, DefaultColumn)
 	if _, err = db.ExecContext(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	q = fmt.Sprintf("CREATE UNIQUE INDEX %q ON %q (%s)", tableName+"_id", tableName, IDColumn)
+	pkName := tableName + "_id"
+	q = fmt.Sprintf("CREATE UNIQUE INDEX %q ON %q (%s)", pkName, tableName, IDColumn)
 	if _, err = db.ExecContext(ctx, q); err != nil {
 		_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
 		return false, lazyerrors.Error(err)
