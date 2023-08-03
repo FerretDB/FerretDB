@@ -235,11 +235,18 @@ func validateGroupKey(groupKey any) error {
 func (g *group) groupDocuments(in []*types.Document) ([]groupedDocuments, error) {
 	switch groupKey := g.groupExpression.(type) {
 	case *types.Document:
-		if operators.IsOperator(groupKey) {
-			return groupByOperator(groupKey, in)
+		var m groupMap
+
+		for _, doc := range in {
+			val, err := evaluateDocument(groupKey, doc, false)
+			if err != nil {
+				return nil, err
+			}
+
+			m.addOrAppend(val, doc)
 		}
 
-		return groupByDocumentKey(groupKey, in)
+		return m.docs, nil
 	case *types.Array, float64, types.Binary, types.ObjectID, bool, time.Time, types.NullType,
 		types.Regex, int32, types.Timestamp, int64:
 		// non-string or document key aggregates values of all `in` documents into one aggregated document.
@@ -314,85 +321,8 @@ func (g *group) groupDocuments(in []*types.Document) ([]groupedDocuments, error)
 	}}, nil
 }
 
-// groupByOperator groups documents using operator found in group key.
-func groupByOperator(groupKey *types.Document, docs []*types.Document) ([]groupedDocuments, error) {
-	op, err := operators.NewOperator(groupKey)
-	if err != nil {
-		// operator error was validated in newGroup.
-		return nil, lazyerrors.Error(err)
-	}
-
-	var m groupMap
-
-	for _, doc := range docs {
-		val, err := op.Process(doc)
-		if err != nil {
-			// existing operator errors are validated in newGroup
-			return nil, processOperatorError(err)
-		}
-
-		m.addOrAppend(val, doc)
-	}
-
-	return m.docs, nil
-}
-
-// groupByDocumentKey groups documents by given group key. A group key could be an expression,
-// that case it evaluates the expression and uses that as the group key.
-func groupByDocumentKey(groupKey *types.Document, docs []*types.Document) ([]groupedDocuments, error) {
-	var m groupMap
-
-	for _, doc := range docs {
-		iter := groupKey.Iterator()
-		defer iter.Close()
-
-		evaluatedGroupKey := new(types.Document)
-
-		for {
-			k, v, err := iter.Next()
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			switch v := v.(type) {
-			case *types.Document:
-				val, err := evaluateDocument(v, doc)
-				if err != nil {
-					evaluatedGroupKey.Set(k, new(types.Document))
-					continue
-				}
-
-				evaluatedGroupKey.Set(k, val)
-
-			case string:
-				val, err := evaluateExpression(v, doc)
-				if err != nil {
-					if groupKey.Len() == 1 {
-						// non-existent path is set to null only if _id contains one field
-						evaluatedGroupKey.Set(k, types.Null)
-					}
-
-					continue
-				}
-
-				evaluatedGroupKey.Set(k, val)
-			default:
-				evaluatedGroupKey.Set(k, v)
-			}
-		}
-
-		m.addOrAppend(evaluatedGroupKey, doc)
-	}
-
-	return m.docs, nil
-}
-
 // evaluateDocument recursively evaluates document's field expression and operator.
-func evaluateDocument(expr, doc *types.Document) (any, error) {
+func evaluateDocument(expr, doc *types.Document, nestedField bool) (any, error) {
 	if operators.IsOperator(expr) {
 		op, err := operators.NewOperator(expr)
 		if err != nil {
@@ -412,10 +342,10 @@ func evaluateDocument(expr, doc *types.Document) (any, error) {
 	iter := expr.Iterator()
 	defer iter.Close()
 
-	eval := new(types.Document)
+	evaluatedDocument := new(types.Document)
 
 	for {
-		exprKey, exprVal, err := iter.Next()
+		k, exprVal, err := iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
 		}
@@ -426,47 +356,43 @@ func evaluateDocument(expr, doc *types.Document) (any, error) {
 
 		switch exprVal := exprVal.(type) {
 		case *types.Document:
-			val, err := evaluateDocument(exprVal, doc)
+			v, err := evaluateDocument(exprVal, doc, true)
 			if err != nil {
+				continue
+			}
+
+			evaluatedDocument.Set(k, v)
+		case string:
+			expression, err := aggregations.NewExpression(exprVal)
+
+			var exprErr *aggregations.ExpressionError
+			if errors.As(err, &exprErr) && exprErr.Code() == aggregations.ErrNotExpression {
+				evaluatedDocument.Set(k, exprVal)
+				continue
+			}
+
+			if err != nil {
+				// expression error was validated in newGroup.
 				return nil, lazyerrors.Error(err)
 			}
 
-			eval.Set(exprKey, val)
-		case string:
-			val, err := evaluateExpression(exprVal, doc)
+			v, err := expression.Evaluate(doc)
 			if err != nil {
-				if doc.Len() == 1 {
-					// non-existent path is set to null if doc contains single field
-					eval.Set(exprKey, types.Null)
+				if expr.Len() == 1 && !nestedField {
+					// non-existent path is set to null if expression contains single field and not a nested document
+					evaluatedDocument.Set(k, types.Null)
 				}
 
-				return nil, err
+				continue
 			}
 
-			eval.Set(exprKey, val)
+			evaluatedDocument.Set(k, v)
 		default:
-			eval.Set(exprKey, exprVal)
+			evaluatedDocument.Set(k, exprVal)
 		}
 	}
 
-	return eval, nil
-}
-
-// evaluateExpression evaluates string expression for the given document.
-func evaluateExpression(expr string, doc *types.Document) (any, error) {
-	expression, err := aggregations.NewExpression(expr)
-
-	var exprErr *aggregations.ExpressionError
-	if errors.As(err, &exprErr) && exprErr.Code() == aggregations.ErrNotExpression {
-		return expr, nil
-	}
-
-	if err != nil {
-		// expression error was validated in newGroup.
-		return nil, lazyerrors.Error(err)
-	}
-
-	return expression.Evaluate(doc)
+	return evaluatedDocument, nil
 }
 
 // groupedDocuments contains group key and the documents for that group.
