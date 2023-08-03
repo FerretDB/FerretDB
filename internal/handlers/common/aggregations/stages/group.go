@@ -165,7 +165,7 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 }
 
 // validateGroupKey returns error on invalid group key.
-// If group key is a document, it validates operator and expression.
+// If group key is a document, it recursively validates operator and expression.
 func validateGroupKey(groupKey any) error {
 	doc, ok := groupKey.(*types.Document)
 	if !ok {
@@ -327,6 +327,7 @@ func groupByOperator(groupKey *types.Document, docs []*types.Document) ([]groupe
 	for _, doc := range docs {
 		val, err := op.Process(doc)
 		if err != nil {
+			// existing operator errors are validated in newGroup
 			return nil, processOperatorError(err)
 		}
 
@@ -368,7 +369,7 @@ func groupByDocumentKey(groupKey *types.Document, docs []*types.Document) ([]gro
 				evaluatedGroupKey.Set(k, val)
 
 			case string:
-				val, err := evaluateExpression(v, doc, groupKey.Len() == 1)
+				val, err := evaluateExpression(v, doc)
 				if err != nil {
 					if groupKey.Len() == 1 {
 						// non-existent path is set to null only if _id contains one field
@@ -401,6 +402,7 @@ func evaluateDocument(expr, doc *types.Document) (any, error) {
 
 		v, err := op.Process(doc)
 		if err != nil {
+			// existing operator errors are validated in newGroup
 			return nil, processOperatorError(err)
 		}
 
@@ -426,12 +428,12 @@ func evaluateDocument(expr, doc *types.Document) (any, error) {
 		case *types.Document:
 			val, err := evaluateDocument(exprVal, doc)
 			if err != nil {
-				return nil, err
+				return nil, lazyerrors.Error(err)
 			}
 
 			eval.Set(exprKey, val)
 		case string:
-			val, err := evaluateExpression(exprVal, doc, doc.Len() == 1)
+			val, err := evaluateExpression(exprVal, doc)
 
 			if err != nil {
 				if doc.Len() == 1 {
@@ -452,7 +454,7 @@ func evaluateDocument(expr, doc *types.Document) (any, error) {
 }
 
 // evaluateExpression evaluates string expression for the given document.
-func evaluateExpression(expr string, doc *types.Document, setNull bool) (any, error) {
+func evaluateExpression(expr string, doc *types.Document) (any, error) {
 	expression, err := aggregations.NewExpression(expr)
 
 	var exprErr *aggregations.ExpressionError
@@ -548,7 +550,7 @@ func processOperatorError(err error) error {
 		case aggregations.ErrInvalidExpression:
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
-				fmt.Sprintf("'%s' starts with an invalid character for a user variable name", exErr.Expression()),
+				"'$' starts with an invalid character for a user variable name",
 				"$group (stage)",
 			)
 		case aggregations.ErrEmptyFieldPath:

@@ -254,6 +254,7 @@ func TestAggregateGroupErrors(t *testing.T) {
 				Name:    "FailedToParse",
 				Message: "'$s' starts with an invalid character for a user variable name",
 			},
+			altMessage: "'$' starts with an invalid character for a user variable name",
 		},
 		"IDExpressionNonExistingVariable": {
 			pipeline: bson.A{

@@ -608,6 +608,24 @@ func TestAggregateCompatGroup(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
+		"IDDocument": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "v"}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"IDNestedDocument": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", bson.D{{"nested", 1}}}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
 		"NonExistentID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$invalid"},

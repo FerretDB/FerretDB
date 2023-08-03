@@ -49,16 +49,12 @@ const (
 
 // ExpressionError describes an error that occurs while evaluating expression.
 type ExpressionError struct {
-	code       ExpressionErrorCode
-	expression string
+	code ExpressionErrorCode
 }
 
 // newExpressionError creates a new ExpressionError.
-func newExpressionError(code ExpressionErrorCode, expression string) error {
-	return &ExpressionError{
-		code:       code,
-		expression: expression,
-	}
+func newExpressionError(code ExpressionErrorCode) error {
+	return &ExpressionError{code: code}
 }
 
 // Error implements the error interface.
@@ -69,11 +65,6 @@ func (e *ExpressionError) Error() string {
 // Code returns the ExpressionError code.
 func (e *ExpressionError) Code() ExpressionErrorCode {
 	return e.code
-}
-
-// Expression returns the expression that caused ExpressionError.
-func (e *ExpressionError) Expression() string {
-	return e.expression
 }
 
 // Expression is an expression constructed from field value.
@@ -102,24 +93,24 @@ func NewExpressionWithOpts(expression string, opts *ExpressionOpts) (*Expression
 		// `$$` indicates field is a variable.
 		v := strings.TrimPrefix(expression, "$$")
 		if v == "" {
-			return nil, newExpressionError(ErrEmptyVariable, v)
+			return nil, newExpressionError(ErrEmptyVariable)
 		}
 
 		if strings.HasPrefix(v, "$") {
-			return nil, newExpressionError(ErrInvalidExpression, v)
+			return nil, newExpressionError(ErrInvalidExpression)
 		}
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/2275
-		return nil, newExpressionError(ErrUndefinedVariable, v)
+		return nil, newExpressionError(ErrUndefinedVariable)
 	case strings.HasPrefix(expression, "$"):
 		// `$` indicates field is a path.
 		val = strings.TrimPrefix(expression, "$")
 
 		if val == "" {
-			return nil, newExpressionError(ErrEmptyFieldPath, val)
+			return nil, newExpressionError(ErrEmptyFieldPath)
 		}
 	default:
-		return nil, newExpressionError(ErrNotExpression, "")
+		return nil, newExpressionError(ErrNotExpression)
 	}
 
 	var err error
