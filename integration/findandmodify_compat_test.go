@@ -776,29 +776,31 @@ type findAndModifyCompatTestCase struct {
 }
 
 // testFindAndModifyCompat tests findAndModify compatibility test cases.
-func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCompatTestCase) {
-	t.Helper()
+func testFindAndModifyCompat(tt *testing.T, testCases map[string]findAndModifyCompatTestCase) {
+	tt.Helper()
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
+		tt.Run(name, func(tt *testing.T) {
+			tt.Helper()
 
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
 
 			// Use per-test setup because findAndModify modifies data set.
-			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+			ctx, targetCollections, compatCollections := setup.SetupCompat(tt)
 
 			var nonEmptyResults bool
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
+				tt.Run(targetCollection.Name(), func(tt *testing.T) {
+					tt.Helper()
+
+					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
 
 					targetCommand := bson.D{{"findAndModify", targetCollection.Name()}}
 					targetCommand = append(targetCommand, tc.command...)
@@ -865,13 +867,18 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 				})
 			}
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3049
+			if setup.IsSQLite(tt) {
+				return
+			}
+
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results")
+				assert.True(tt, nonEmptyResults, "expected non-empty results")
 			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results")
+				assert.False(tt, nonEmptyResults, "expected empty results")
 			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+				tt.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
