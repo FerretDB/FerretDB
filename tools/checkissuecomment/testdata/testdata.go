@@ -26,5 +26,5 @@ func testIncorrect() {
 
 // TODO https://github.com/FerretDB/FerretDB/issues/123
 func testIncorrectOnlycomment(v any) {
-	fmt.Println("checking the lint which has only issue linbk as comment")
+	fmt.Println("checking the lint which has only issue link as comment")
 }

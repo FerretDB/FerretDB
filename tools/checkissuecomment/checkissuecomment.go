@@ -36,21 +36,17 @@ func main() {
 	singlechecker.Main(analyzer)
 }
 
-// It analyses the presence of todo issue in code.
-func run(pass *analysis.Pass) (interface{}, error) {
+// It analyses the presence of TODO issue in code.
+func run(pass *analysis.Pass) (any, error) {
 	for _, file := range pass.Files {
 		fileName := pass.Fset.File(file.Pos()).Name()
 		f, err := os.Open(fileName)
+
 		if err != nil {
 			return nil, err
 		}
 
-		defer func() {
-			err := f.Close()
-			if err != nil {
-				return
-			}
-		}()
+		defer f.Close()
 
 		scanner := bufio.NewScanner(f)
 		lineNumber := 1
