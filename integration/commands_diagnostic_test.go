@@ -74,8 +74,10 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3050")
 
 			var actual bson.D
 
@@ -184,12 +186,14 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
 
 			require.NotNil(t, tc.command, "command must not be nil")
 
