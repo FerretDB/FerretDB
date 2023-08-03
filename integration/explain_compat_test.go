@@ -15,7 +15,6 @@
 package integration
 
 import (
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -24,6 +23,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // explainCompatTestCase describes explain compatibility test case.
