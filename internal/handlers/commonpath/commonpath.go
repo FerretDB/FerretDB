@@ -42,7 +42,7 @@ type FindValuesOpts struct {
 	FindArrayIndex bool
 }
 
-// FindValues returns values found at path. Unlike document.GetByPath it may find multiple values.
+// FindValues returns values by path, looking up into arrays.
 //
 // It iterates path elements, at each path element it adds to next values to iterate:
 //   - if it is a document and has path, it adds the document field value to next values;
@@ -51,8 +51,6 @@ type FindValuesOpts struct {
 //     it adds field value of all documents that have path to next values.
 //
 // It returns next values after iterating path elements.
-//
-// FindValues returns values by path, looking up into arrays.
 func FindValues(doc *types.Document, path types.Path, opts *FindValuesOpts) ([]any, error) {
 	if opts == nil {
 		opts = new(FindValuesOpts)
