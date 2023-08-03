@@ -12,9 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package main contains linter for todo issue comments.
 package main
 
 import (
+	"fmt"
 	"go/ast"
 	"strings"
 
@@ -22,7 +24,7 @@ import (
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
-var todoURLPrefix = "https://github.com/FerretDB/FerretDB/issues/"
+var todoURLPrefix = "// TODO https://github.com/FerretDB/FerretDB/issues/"
 
 var analyzer = &analysis.Analyzer{
 	Name: "checkissuecomment",
@@ -34,29 +36,36 @@ func main() {
 	singlechecker.Main(analyzer)
 }
 
+// It analyses the presence of todo issue in code.
 func run(pass *analysis.Pass) (interface{}, error) {
 	for _, file := range pass.Files {
 		ast.Inspect(file, func(n ast.Node) bool {
 			if comment, ok := n.(*ast.CommentGroup); ok {
 				for _, c := range comment.List {
 					if isMatchingTODOComment(c.Text) {
+						fmt.Printf("TODO comment on issue found: %s", c.Text)
 						pass.Reportf(c.Pos(), "TODO comment on issue found: %s", c.Text)
 					}
 				}
 			}
+
 			return true
 		})
 	}
+
 	return nil, nil
 }
 
+// Check the comment and todo issue link present.
 func isMatchingTODOComment(comment string) bool {
 	lines := strings.Split(comment, "\n")
 	if len(lines) != 2 {
 		return false
 	}
-	if strings.HasPrefix(lines[1], "// TODO "+todoURLPrefix) {
+
+	if strings.HasPrefix(lines[1], todoURLPrefix) {
 		return true
 	}
+
 	return false
 }
