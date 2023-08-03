@@ -234,11 +234,11 @@ func validateGroupKey(groupKey any) error {
 // groupDocuments groups documents into groups using group key. If group key contains expressions
 // or operators, they are evaluated before using it as the group key of documents.
 func (g *group) groupDocuments(in []*types.Document) ([]groupedDocuments, error) {
-	switch groupKey := g.groupExpression.(type) {
-	case *types.Document:
-		var m groupMap
+	var m groupMap
 
-		for _, doc := range in {
+	for _, doc := range in {
+		switch groupKey := g.groupExpression.(type) {
+		case *types.Document:
 			val, err := evaluateDocument(groupKey, doc, false)
 			if err != nil {
 				// operator and expression errors are validated in newGroup
@@ -246,81 +246,38 @@ func (g *group) groupDocuments(in []*types.Document) ([]groupedDocuments, error)
 			}
 
 			m.addOrAppend(val, doc)
-		}
+		case *types.Array, float64, types.Binary, types.ObjectID, bool, time.Time, types.NullType,
+			types.Regex, int32, types.Timestamp, int64:
+			m.addOrAppend(groupKey, doc)
+		case string:
+			expression, err := aggregations.NewExpression(groupKey)
+			if err != nil {
+				var exprErr *aggregations.ExpressionError
+				if errors.As(err, &exprErr) {
+					if exprErr.Code() == aggregations.ErrNotExpression {
+						m.addOrAppend(groupKey, doc)
+						continue
+					}
 
-		return m.docs, nil
-	case *types.Array, float64, types.Binary, types.ObjectID, bool, time.Time, types.NullType,
-		types.Regex, int32, types.Timestamp, int64:
-		// non-string or document key aggregates values of all `in` documents into one aggregated document.
+					return nil, processGroupStageError(err)
+				}
 
-	case string:
-		expression, err := aggregations.NewExpression(groupKey)
-		if err != nil {
-			var exprErr *aggregations.ExpressionError
-			if !errors.As(err, &exprErr) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			switch exprErr.Code() {
-			case aggregations.ErrNotExpression:
-				// constant value aggregates values of all `in` documents into one aggregated document.
-				return []groupedDocuments{{
-					groupID:   groupKey,
-					documents: in,
-				}}, nil
-			case aggregations.ErrEmptyFieldPath:
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					// TODO
-					commonerrors.ErrGroupInvalidFieldPath,
-					"'$' by itself is not a valid Expression",
-					"$group (stage)",
-				)
-			case aggregations.ErrInvalidExpression:
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrFailedToParse,
-					fmt.Sprintf("'%s' starts with an invalid character for a user variable name", types.FormatAnyValue(groupKey)),
-					"$group (stage)",
-				)
-			case aggregations.ErrEmptyVariable:
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrFailedToParse,
-					"empty variable names are not allowed",
-					"$group (stage)",
-				)
-			// TODO https://github.com/FerretDB/FerretDB/issues/2275
-			case aggregations.ErrUndefinedVariable:
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrGroupUndefinedVariable,
-					fmt.Sprintf("Use of undefined variable: %s", types.FormatAnyValue(groupKey)),
-					"$group (stage)",
-				)
-			default:
-				panic(fmt.Sprintf("unhandled field path error %s", exprErr.Error()))
-			}
-		}
-
-		var group groupMap
-
-		for _, doc := range in {
 			val, err := expression.Evaluate(doc)
 			if err != nil {
 				// $group treats non-existent fields as nulls
 				val = types.Null
 			}
 
-			group.addOrAppend(val, doc)
+			m.addOrAppend(val, doc)
+		default:
+			panic(fmt.Sprintf("unexpected type %[1]T (%#[1]v)", groupKey))
 		}
-
-		return group.docs, nil
-
-	default:
-		panic(fmt.Sprintf("unexpected type %[1]T (%#[1]v)", groupKey))
 	}
 
-	return []groupedDocuments{{
-		groupID:   g.groupExpression,
-		documents: in,
-	}}, nil
+	return m.docs, nil
 }
 
 // evaluateDocument recursively evaluates document's field expressions and operators.

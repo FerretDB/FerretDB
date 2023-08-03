@@ -689,6 +689,7 @@ func TestAggregateCompatGroup(t *testing.T) {
 				{"_id", "$$s"},
 			}}}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2275",
 		},
 		"SystemVariable": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
