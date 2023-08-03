@@ -50,7 +50,7 @@ type group struct {
 
 // groupBy represents accumulation to apply on the group.
 type groupBy struct {
-	accumulate  func(iter types.DocumentsIterator) (any, error)
+	accumulator accumulators.Accumulator
 	outputField string
 }
 
@@ -98,7 +98,7 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 
 		groups = append(groups, groupBy{
 			outputField: field,
-			accumulate:  accumulator.Accumulate,
+			accumulator: accumulator,
 		})
 	}
 
@@ -138,7 +138,7 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 		defer groupIter.Close()
 
 		for _, accumulation := range g.groupBy {
-			out, err := accumulation.accumulate(groupIter)
+			out, err := accumulation.accumulator.Accumulate(groupIter)
 			if err != nil {
 				// existing accumulators do not return error
 				return nil, processGroupStageError(err)
