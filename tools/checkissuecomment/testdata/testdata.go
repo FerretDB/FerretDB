@@ -20,12 +20,6 @@ import (
 )
 
 // testing for issue lint
-// TODO https://github.com/FerretDB/FerretDB/issues/123
-func testCorrect() {
-	fmt.Println("checking the lint that should be found which is valid one")
-}
-
-// testing for issue lint
 func testIncorrect() {
 	fmt.Println("checking the lint which has only comment")
 }

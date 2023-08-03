@@ -16,8 +16,8 @@
 package main
 
 import (
-	"fmt"
-	"go/ast"
+	"bufio"
+	"os"
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
@@ -39,33 +39,39 @@ func main() {
 // It analyses the presence of todo issue in code.
 func run(pass *analysis.Pass) (interface{}, error) {
 	for _, file := range pass.Files {
-		ast.Inspect(file, func(n ast.Node) bool {
-			if comment, ok := n.(*ast.CommentGroup); ok {
-				for _, c := range comment.List {
-					if isMatchingTODOComment(c.Text) {
-						fmt.Printf("TODO comment on issue found: %s", c.Text)
-						pass.Reportf(c.Pos(), "TODO comment on issue found: %s", c.Text)
-					}
-				}
+		fileName := pass.Fset.File(file.Pos()).Name()
+		f, err := os.Open(fileName)
+
+		if err != nil {
+			return nil, err
+		}
+
+		defer func() {
+			err := f.Close()
+			if err != nil {
+				return
+			}
+		}()
+
+		scanner := bufio.NewScanner(f)
+		lineNumber := 1
+		var previousLine string
+
+		for scanner.Scan() {
+			line := scanner.Text()
+
+			if strings.Contains(line, todoURLPrefix) && strings.HasPrefix(previousLine, "//") {
+				pass.Reportf(file.Pos(), "TODO issue %s with comment %s found", line, previousLine)
 			}
 
-			return true
-		})
+			previousLine = line
+			lineNumber++
+		}
+
+		if err := scanner.Err(); err != nil {
+			return nil, err
+		}
 	}
 
 	return nil, nil
-}
-
-// Check the comment and todo issue link present.
-func isMatchingTODOComment(comment string) bool {
-	lines := strings.Split(comment, "\n")
-	if len(lines) != 2 {
-		return false
-	}
-
-	if strings.HasPrefix(lines[1], todoURLPrefix) {
-		return true
-	}
-
-	return false
 }
