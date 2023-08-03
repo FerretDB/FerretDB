@@ -22,15 +22,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
 )
 
-// testCollection creates, tests, and drops a collection in existing database.
+// testCollection creates, tests, and drops an unique collection in existing database.
 func testCollection(t *testing.T, ctx context.Context, r *Registry, db *fsql.DB, dbName, collectionName string) {
 	t.Helper()
 
@@ -54,9 +51,8 @@ func testCollection(t *testing.T, ctx context.Context, r *Registry, db *fsql.DB,
 	require.Contains(t, list, collectionName)
 
 	q := fmt.Sprintf("INSERT INTO %q (%s) VALUES(?)", c.TableName, DefaultColumn)
-	d := must.NotFail(types.NewDocument("_id", int32(42)))
-	b := must.NotFail(sjson.Marshal(d))
-	_, err = db.ExecContext(ctx, q, string(b))
+	doc := `{"$s": {"p": {"_id": {"t": "int"}}, "$k": ["_id"]}, "_id": 42}`
+	_, err = db.ExecContext(ctx, q, doc)
 	require.NoError(t, err)
 
 	dropped, err := r.CollectionDrop(ctx, dbName, collectionName)
@@ -94,42 +90,7 @@ func TestCreateDrop(t *testing.T) {
 	testCollection(t, ctx, r, db, dbName, collectionName)
 }
 
-func TestCreateDropSameStress(t *testing.T) {
-	ctx := testutil.Ctx(t)
-
-	for testName, uri := range map[string]string{
-		"file":   "file:./",
-		"memory": "file:./?mode=memory",
-	} {
-		t.Run(testName, func(t *testing.T) {
-			r, err := NewRegistry(uri, testutil.Logger(t))
-			require.NoError(t, err)
-			t.Cleanup(r.Close)
-
-			dbName := "db"
-			r.DatabaseDrop(ctx, dbName)
-
-			db, err := r.DatabaseGetOrCreate(ctx, dbName)
-			require.NoError(t, err)
-			require.NotNil(t, db)
-
-			t.Cleanup(func() {
-				r.DatabaseDrop(ctx, dbName)
-			})
-
-			collectionName := "collection"
-
-			teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
-				ready <- struct{}{}
-				<-start
-
-				testCollection(t, ctx, r, db, dbName, collectionName)
-			})
-		})
-	}
-}
-
-func TestCreateDropDifferentStress(t *testing.T) {
+func TestCreateDropStress(t *testing.T) {
 	ctx := testutil.Ctx(t)
 
 	for testName, uri := range map[string]string{
@@ -162,6 +123,115 @@ func TestCreateDropDifferentStress(t *testing.T) {
 
 				testCollection(t, ctx, r, db, dbName, collectionName)
 			})
+		})
+	}
+}
+
+func TestCreateSameStress(t *testing.T) {
+	ctx := testutil.Ctx(t)
+
+	for testName, uri := range map[string]string{
+		"file":   "file:./",
+		"memory": "file:./?mode=memory",
+	} {
+		t.Run(testName, func(t *testing.T) {
+			r, err := NewRegistry(uri, testutil.Logger(t))
+			require.NoError(t, err)
+			t.Cleanup(r.Close)
+
+			dbName := "db"
+			r.DatabaseDrop(ctx, dbName)
+
+			db, err := r.DatabaseGetOrCreate(ctx, dbName)
+			require.NoError(t, err)
+			require.NotNil(t, db)
+
+			t.Cleanup(func() {
+				r.DatabaseDrop(ctx, dbName)
+			})
+
+			collectionName := "collection"
+
+			var i, createdTotal atomic.Int32
+
+			teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+				id := i.Add(1)
+
+				ready <- struct{}{}
+				<-start
+
+				created, err := r.CollectionCreate(ctx, dbName, collectionName)
+				require.NoError(t, err)
+				if created {
+					createdTotal.Add(1)
+				}
+
+				created, err = r.CollectionCreate(ctx, dbName, collectionName)
+				require.NoError(t, err)
+				require.False(t, created)
+
+				c := r.CollectionGet(ctx, dbName, collectionName)
+				require.NotNil(t, c)
+				require.Equal(t, collectionName, c.Name)
+
+				list, err := r.CollectionList(ctx, dbName)
+				require.NoError(t, err)
+				require.Contains(t, list, collectionName)
+
+				q := fmt.Sprintf("INSERT INTO %q (%s) VALUES(?)", c.TableName, DefaultColumn)
+				doc := fmt.Sprintf(`{"$s": {"p": {"_id": {"t": "int"}}, "$k": ["_id"]}, "_id": %d}`, id)
+				_, err = db.ExecContext(ctx, q, doc)
+				require.NoError(t, err)
+			})
+
+			require.Equal(t, int32(1), createdTotal.Load())
+		})
+	}
+}
+
+func TestDropSameStress(t *testing.T) {
+	ctx := testutil.Ctx(t)
+
+	for testName, uri := range map[string]string{
+		"file":   "file:./",
+		"memory": "file:./?mode=memory",
+	} {
+		t.Run(testName, func(t *testing.T) {
+			r, err := NewRegistry(uri, testutil.Logger(t))
+			require.NoError(t, err)
+			t.Cleanup(r.Close)
+
+			dbName := "db"
+			r.DatabaseDrop(ctx, dbName)
+
+			db, err := r.DatabaseGetOrCreate(ctx, dbName)
+			require.NoError(t, err)
+			require.NotNil(t, db)
+
+			t.Cleanup(func() {
+				r.DatabaseDrop(ctx, dbName)
+			})
+
+			collectionName := "collection"
+
+			created, err := r.CollectionCreate(ctx, dbName, collectionName)
+			require.NoError(t, err)
+			require.True(t, created)
+
+			var droppedTotal atomic.Int32
+
+			teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+				ready <- struct{}{}
+				<-start
+
+				dropped, err := r.CollectionDrop(ctx, dbName, collectionName)
+				require.NoError(t, err)
+				if dropped {
+					droppedTotal.Add(1)
+				}
+			})
+
+			require.Equal(t, int32(1), droppedTotal.Load())
 		})
 	}
 }

@@ -31,6 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
 const (
@@ -49,10 +50,13 @@ const (
 )
 
 // Registry provides access to SQLite databases and collections information.
+//
+// Exported methods are safe for concurrent use. Unexported methods are not.
 type Registry struct {
 	p *pool.Pool
 	l *zap.Logger
 
+	// FIXME
 	rw    sync.RWMutex
 	colls map[string]map[string]*Collection // database name -> collection name -> collection
 }
@@ -113,31 +117,26 @@ func (r *Registry) initCollections(ctx context.Context, dbName string, db *fsql.
 	return nil
 }
 
-// getCollections returns collections metadata for the given database.
-func (r *Registry) getCollections(ctx context.Context, dbName string, db *fsql.DB) map[string]*Collection {
-	r.rw.RLock()
-	colls := maps.Clone(r.colls[dbName])
-	r.rw.RUnlock()
-
-	if colls == nil {
-		colls = map[string]*Collection{}
-	}
-
-	return colls
-}
-
 // DatabaseList returns a sorted list of existing databases.
 func (r *Registry) DatabaseList(ctx context.Context) []string {
+	defer observability.FuncCall(ctx)()
+
 	return r.p.List(ctx)
 }
 
 // DatabaseGetExisting returns a connection to existing database or nil if it doesn't exist.
 func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) *fsql.DB {
+	defer observability.FuncCall(ctx)()
+
 	return r.p.GetExisting(ctx, dbName)
 }
 
-// DatabaseGetOrCreate returns a connection to existing database or newly created database.
-func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsql.DB, error) {
+// databaseGetOrCreate returns a connection to existing database or newly created database.
+//
+// It does not hold the lock.
+func (r *Registry) databaseGetOrCreate(ctx context.Context, dbName string) (*fsql.DB, error) {
+	defer observability.FuncCall(ctx)()
+
 	db, created, err := r.p.GetOrCreate(ctx, dbName)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -156,20 +155,46 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsq
 		metadataTableName,
 	)
 	if _, err = db.ExecContext(ctx, q); err != nil {
-		r.DatabaseDrop(ctx, dbName)
+		r.databaseDrop(ctx, dbName)
 		return nil, lazyerrors.Error(err)
 	}
 
 	return db, nil
 }
 
+// DatabaseGetOrCreate returns a connection to existing database or newly created database.
+func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsql.DB, error) {
+	defer observability.FuncCall(ctx)()
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	return r.databaseGetOrCreate(ctx, dbName)
+}
+
+// databaseDrop drops the database.
+//
+// Returned boolean value indicates whether the database was dropped.
+//
+// It does not hold the lock.
+func (r *Registry) databaseDrop(ctx context.Context, dbName string) bool {
+	defer observability.FuncCall(ctx)()
+
+	delete(r.colls, dbName)
+
+	return r.p.Drop(ctx, dbName)
+}
+
 // DatabaseDrop drops the database.
 //
 // Returned boolean value indicates whether the database was dropped.
 func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
+	defer observability.FuncCall(ctx)()
+
 	r.rw.Lock()
+	defer r.rw.Unlock()
+
 	delete(r.colls, dbName)
-	r.rw.Unlock()
 
 	return r.p.Drop(ctx, dbName)
 }
@@ -178,13 +203,19 @@ func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
 //
 // If database does not exist, no error is returned.
 func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]string, error) {
+	defer observability.FuncCall(ctx)()
+
 	db := r.p.GetExisting(ctx, dbName)
 	if db == nil {
 		return nil, nil
 	}
 
-	colls := r.getCollections(ctx, dbName, db)
-	res := maps.Keys(colls)
+	r.rw.RLock()
+
+	res := maps.Keys(r.colls[dbName])
+
+	r.rw.RUnlock()
+
 	sort.Strings(res)
 	return res, nil
 }
@@ -194,13 +225,18 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]string,
 // Returned boolean value indicates whether the collection was created.
 // If collection already exists, (false, nil) is returned.
 func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collectionName string) (bool, error) {
-	db, err := r.DatabaseGetOrCreate(ctx, dbName)
+	defer observability.FuncCall(ctx)()
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	db, err := r.databaseGetOrCreate(ctx, dbName)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	colls := r.getCollections(ctx, dbName, db)
-	if colls[collectionName] != nil {
+	colls := r.colls[dbName]
+	if colls != nil && colls[collectionName] != nil {
 		return false, nil
 	}
 
@@ -236,14 +272,10 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 		return false, lazyerrors.Error(err)
 	}
 
-	r.rw.Lock()
-
 	if r.colls[dbName] == nil {
 		r.colls[dbName] = map[string]*Collection{}
 	}
 	r.colls[dbName][collectionName] = c
-
-	r.rw.Unlock()
 
 	return true, nil
 }
@@ -252,12 +284,15 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 //
 // If database or collection does not exist, nil is returned.
 func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionName string) *Collection {
-	db := r.p.GetExisting(ctx, dbName)
-	if db == nil {
+	defer observability.FuncCall(ctx)()
+
+	r.rw.RLock()
+	defer r.rw.RUnlock()
+
+	colls := r.colls[dbName]
+	if colls == nil {
 		return nil
 	}
-
-	colls := r.getCollections(ctx, dbName, db)
 
 	return colls[collectionName]
 }
@@ -267,34 +302,37 @@ func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionN
 // Returned boolean value indicates whether the collection was dropped.
 // If database or collection did not exist, (false, nil) is returned.
 func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collectionName string) (bool, error) {
+	defer observability.FuncCall(ctx)()
+
 	db := r.p.GetExisting(ctx, dbName)
 	if db == nil {
 		return false, nil
 	}
 
-	meta := r.CollectionGet(ctx, dbName, collectionName)
-	if meta == nil {
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	colls := r.colls[dbName]
+	if colls == nil {
 		return false, nil
 	}
 
-	// use transaction
-	// TODO https://github.com/FerretDB/FerretDB/issues/2747
+	c := colls[collectionName]
+	if c == nil {
+		return false, nil
+	}
 
 	q := fmt.Sprintf("DELETE FROM %q WHERE name = ?", metadataTableName)
 	if _, err := db.ExecContext(ctx, q, collectionName); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	q = fmt.Sprintf("DROP TABLE %q", meta.TableName)
+	q = fmt.Sprintf("DROP TABLE %q", c.TableName)
 	if _, err := db.ExecContext(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	r.rw.Lock()
-
 	delete(r.colls[dbName], collectionName)
-
-	r.rw.Unlock()
 
 	return true, nil
 }
