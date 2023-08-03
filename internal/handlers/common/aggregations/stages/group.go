@@ -231,7 +231,8 @@ func validateGroupKey(groupKey any) error {
 	return nil
 }
 
-// groupDocuments groups documents by group expression.
+// groupDocuments groups documents into groups using group key. If group key contains expressions
+// or operators, they are evaluated before using it as the group key of documents.
 func (g *group) groupDocuments(in []*types.Document) ([]groupedDocuments, error) {
 	switch groupKey := g.groupExpression.(type) {
 	case *types.Document:
