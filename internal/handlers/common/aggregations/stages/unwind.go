@@ -55,6 +55,8 @@ func newUnwind(stage *types.Document) (aggregations.Stage, error) {
 			)
 		}
 
+		// For $unwind to deconstruct an array from dot notation, array must be at the suffix.
+		// It returns empty result if array is found at other parts of dot notation.
 		expr, err = aggregations.NewExpression(field, &commonpath.FindValuesOpts{
 			FindArrayIndex:     false,
 			FindArrayDocuments: false,

@@ -83,6 +83,7 @@ type Expression struct {
 //
 // It returns error if invalid Expression is provided.
 func NewExpression(expression string, opts *commonpath.FindValuesOpts) (*Expression, error) {
+	// for aggregation expression using dot notation, array index along dot notation is ignored
 	if opts == nil {
 		opts = &commonpath.FindValuesOpts{
 			FindArrayIndex:     false,
