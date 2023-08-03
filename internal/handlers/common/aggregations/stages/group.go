@@ -434,7 +434,6 @@ func evaluateDocument(expr, doc *types.Document) (any, error) {
 			eval.Set(exprKey, val)
 		case string:
 			val, err := evaluateExpression(exprVal, doc)
-
 			if err != nil {
 				if doc.Len() == 1 {
 					// non-existent path is set to null if doc contains single field
