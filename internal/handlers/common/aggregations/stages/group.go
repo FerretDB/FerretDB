@@ -241,7 +241,8 @@ func (g *group) groupDocuments(in []*types.Document) ([]groupedDocuments, error)
 		for _, doc := range in {
 			val, err := evaluateDocument(groupKey, doc, false)
 			if err != nil {
-				return nil, err
+				// operator and expression errors are validated in newGroup
+				return nil, lazyerrors.Error(err)
 			}
 
 			m.addOrAppend(val, doc)
@@ -322,7 +323,7 @@ func (g *group) groupDocuments(in []*types.Document) ([]groupedDocuments, error)
 	}}, nil
 }
 
-// evaluateDocument recursively evaluates document's field expression and operator.
+// evaluateDocument recursively evaluates document's field expressions and operators.
 func evaluateDocument(expr, doc *types.Document, nestedField bool) (any, error) {
 	if operators.IsOperator(expr) {
 		op, err := operators.NewOperator(expr)
@@ -333,7 +334,7 @@ func evaluateDocument(expr, doc *types.Document, nestedField bool) (any, error) 
 
 		v, err := op.Process(doc)
 		if err != nil {
-			// existing operator errors are validated in newGroup
+			// operator and expression errors are validated in newGroup
 			return nil, processGroupStageError(err)
 		}
 
@@ -359,7 +360,7 @@ func evaluateDocument(expr, doc *types.Document, nestedField bool) (any, error) 
 		case *types.Document:
 			v, err := evaluateDocument(exprVal, doc, true)
 			if err != nil {
-				continue
+				return nil, lazyerrors.Error(err)
 			}
 
 			evaluatedDocument.Set(k, v)
