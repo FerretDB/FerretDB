@@ -194,6 +194,83 @@ func TestAggregateGroupErrors(t *testing.T) {
 				Message: "Unrecognized expression '$non-existent'",
 			},
 		},
+		"IDExpressionDuplicateFields": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{
+						{"v", "$v"},
+						{"v", "$non-existent"},
+					}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16406,
+				Name:    "Location16406",
+				Message: "duplicate field name specified in object literal: { v: \"$v\", v: \"$non-existent\" }",
+			},
+		},
+		"IDExpressionEmptyPath": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16872,
+				Name:    "Location16872",
+				Message: "'$' by itself is not a valid FieldPath",
+			},
+		},
+		"IDExpressionEmptyVariable": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "empty variable names are not allowed",
+			},
+		},
+		"IDExpressionInvalidVariable$": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "'$' starts with an invalid character for a user variable name",
+			},
+		},
+		"IDExpressionInvalidVariable$s": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$$$s"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "'$s' starts with an invalid character for a user variable name",
+			},
+			altMessage: "'$' starts with an invalid character for a user variable name",
+		},
+		"IDExpressionNonExistingVariable": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$$s"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    17276,
+				Name:    "Location17276",
+				Message: "Use of undefined variable: s",
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2275",
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(tt *testing.T) {
