@@ -12,6 +12,8 @@ tags: [compatible applications, tutorial, cloud]
 
 In this how-to guide, we'll be showing you how to configure, deploy, and run FerretDB on [Leafcloud](https://www.leaf.cloud/), using the power of Kubernetes and the PostgreSQL Operator.
 
+<!--truncate-->
+
 Building resilient, scalable, and performant applications today can be quite a complex process.
 As such, [FerretDB](https://www.ferretdb.io), an open-source database alternative to MongoDB that leverages PostgreSQL as the backend, can be a strategic choice for users looking to avoid vendor lock-in and build a totally flexible and reliable backend for many applications.
 
@@ -30,7 +32,7 @@ We're going to set up FerretDB on a Kubernetes cluster and deploy it to Leafclou
 - Kubectl
 - Leafcloud account (ensure you have enough volumes to run the cluster)
 
-## Creating a Kubernetes Cluster in Leafcloud
+### Creating a Kubernetes Cluster in Leafcloud
 
 We will start by creating a Kubernetes cluster, using the OpenStack CLI.
 Leafcloud manages and deploys container clusters using the OpenStack Magnum project.
@@ -49,8 +51,6 @@ pip install python-magnumclient
 ```
 
 Once it's installed, you need to log in to your Leafcloud account to download the OpenStack RC file that contains the environment variables for your command-line client.
-
-[image of Leafcloud download](.../)
 
 After downloading the file, copy and paste the file's contents into a new document as:
 
@@ -144,11 +144,11 @@ You can apply it by running:
 kubectl apply -f storageclass.yaml
 ```
 
-## Creating the Postgres Cluster
+### Creating the Postgres Cluster
 
 Use kustomize postgres-operator 5.4.0 to install the postgres operator.
 
-## Installing the Postgres Operator
+#### Installing the Postgres Operator
 
 In this section, we'll be creating the PostgreSQL cluster.
 We'll start by installing the latest version of the PostgreSQL operator, which is essential when setting up extremely reliable PostgreSQL clusters on Kubernetes.
@@ -185,7 +185,7 @@ NAME                   READY   STATUS    RESTARTS   AGE
 pgo-6f664c9f44-mmptx   1/1     Running   0          10s
 ```
 
-Before creating the PostgreSQL cluster, we need to modify the ~/kustomize/postgres/postgres.yaml file from the cloned folder, and enable the cluster to use a data volume claim that specifies the 'cinder-csi' storage class and a capacity request of 1Gi.
+Before creating the PostgreSQL cluster, we need to modify the `~/kustomize/postgres/postgres.yaml` file from the cloned folder, and enable the cluster to use a data volume claim that specifies the 'cinder-csi' storage class and a capacity request of 1Gi.
 It should look like this:
 
 ```yaml
@@ -254,32 +254,32 @@ We're going to create a new user and password credential, and then create a data
 CREATE USER <username> WITH PASSWORD <password>;
 ```
 
-Then create a database named `ferretdb`
+Then create a database named `ferretdb`:
 
 ```sql
 postgres=# CREATE DATABASE ferretdb OWNER ferretdb;
 ```
 
-Next, grant all privileges to on the new database to the user:
+Next, grant all privileges on the new database to the user:
 
 ```sql
 GRANT ALL PRIVILEGES ON DATABASE ferretdb TO ferretdb;
 ```
 
-Let's use the postgres database context:
+Let's use the new Postgres database context:
 
 ```text
 postgres=# \c ferretdb
 You are now connected to database "ferretdb" as user "postgres".
 ```
 
-Finally we're going to set the search_path to ferretdb:
+Finally we're going to set the `search_path` to ferretdb:
 
 ```sql
 set search_path to ferretdb;
 ```
 
-## Deploying FerretDB
+### Deploying FerretDB
 
 Now that we have verified that PostgreSQL is working properly, it's time to set up and install FerretDB to communicate with our PostgreSQL cluster.
 To do this, we'll need to create and apply a deployment and service manifest.
@@ -435,9 +435,9 @@ ferretdb=# table testing_eb5f499b;
 
 ```
 
-Conclusion
+## Conclusion
 
 FerretDB offers you the chance to leverage the truly open-source replacement for MongoDB.
 And with Leafcloud, you can deploy and run your FerretDB applications using Postgres clusters suitable for production, including persistent storage volumes, automated backups, autoscaling, connection pooling, monitoring, and more.
 
-To learn more about FerretDB, please visit our [GitHub page](ferretdb.io).
+To learn more about FerretDB, please visit our [GitHub page](https://www.ferretdb.io).
