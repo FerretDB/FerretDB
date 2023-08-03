@@ -94,8 +94,10 @@ func TestCreateDropStress(t *testing.T) {
 	ctx := testutil.Ctx(t)
 
 	for testName, uri := range map[string]string{
-		"file":   "file:./",
-		"memory": "file:./?mode=memory",
+		"file":             "file:./",
+		"file-immediate":   "file:./?_txlock=immediate",
+		"memory":           "file:./?mode=memory",
+		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
 	} {
 		t.Run(testName, func(t *testing.T) {
 			r, err := NewRegistry(uri, testutil.Logger(t))
@@ -131,8 +133,10 @@ func TestCreateSameStress(t *testing.T) {
 	ctx := testutil.Ctx(t)
 
 	for testName, uri := range map[string]string{
-		"file":   "file:./",
-		"memory": "file:./?mode=memory",
+		"file":             "file:./",
+		"file-immediate":   "file:./?_txlock=immediate",
+		"memory":           "file:./?mode=memory",
+		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
 	} {
 		t.Run(testName, func(t *testing.T) {
 			r, err := NewRegistry(uri, testutil.Logger(t))
@@ -193,8 +197,10 @@ func TestDropSameStress(t *testing.T) {
 	ctx := testutil.Ctx(t)
 
 	for testName, uri := range map[string]string{
-		"file":   "file:./",
-		"memory": "file:./?mode=memory",
+		"file":             "file:./",
+		"file-immediate":   "file:./?_txlock=immediate",
+		"memory":           "file:./?mode=memory",
+		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
 	} {
 		t.Run(testName, func(t *testing.T) {
 			r, err := NewRegistry(uri, testutil.Logger(t))

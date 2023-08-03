@@ -56,7 +56,11 @@ type Registry struct {
 	p *pool.Pool
 	l *zap.Logger
 
-	// FIXME
+	// rw protects colls but also acts like a global lock for the whole registry.
+	// The latter effectively replaces transactions (see the sqlite backend description for more info).
+	// One global lock should be replaced by more granular locks – one per database or even one per collection.
+	// But that requires some redesign.
+	// TODO https://github.com/FerretDB/FerretDB/issues/2755
 	rw    sync.RWMutex
 	colls map[string]map[string]*Collection // database name -> collection name -> collection
 }

@@ -77,8 +77,10 @@ func TestCreateDropStress(t *testing.T) {
 	ctx := testutil.Ctx(t)
 
 	for testName, uri := range map[string]string{
-		"file":   "file:./",
-		"memory": "file:./?mode=memory",
+		"file":             "file:./",
+		"file-immediate":   "file:./?_txlock=immediate",
+		"memory":           "file:./?mode=memory",
+		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
 	} {
 		t.Run(testName, func(t *testing.T) {
 			p, _, err := New(uri, testutil.Logger(t))
