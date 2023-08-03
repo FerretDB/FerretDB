@@ -1,0 +1,58 @@
+repository:
+  name: FerretDB
+
+  description: A truly Open Source MongoDB alternative
+
+  homepage: www.ferretdb.io
+
+  topics: go, golang, postgres, mongo, database, mongodb, postgresql, document, mongodb-database, mongo-db, ferretdb
+  
+  private: false
+
+  has_issues: true
+
+  has_projects: true
+
+  # ?
+  has_wiki: false
+
+  # ?
+  has_downloads: false
+
+  default_branch: main
+
+  allow_squash_merge: true
+
+  # ?
+  allow_merge_commit: true
+
+  # ?
+  allow_rebase_merge: false
+
+  # ?
+  delete_branch_on_merge: false
+
+  # ???
+  enable_automated_security_fixes: false
+  
+  # ?
+  enable_vulnerability_alerts: false
+
+labels:
+  #TODO
+
+milestones:
+  #TODO
+
+collaborators:
+  #TODO
+  # Not sure you even have those
+
+environments:
+  #TODO
+
+teams:
+  #TODO
+
+branches:
+  #TODO
