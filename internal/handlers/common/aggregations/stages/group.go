@@ -140,6 +140,7 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 		for _, accumulation := range g.groupBy {
 			out, err := accumulation.accumulate(groupIter)
 			if err != nil {
+				// existing accumulators do not return error
 				return nil, processGroupStageError(err)
 			}
 
