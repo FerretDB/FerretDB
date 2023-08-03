@@ -93,7 +93,7 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 
 		accumulator, err := accumulators.NewAccumulator("$group", field, v)
 		if err != nil {
-			return nil, processOperatorError(err)
+			return nil, processGroupStageError(err)
 		}
 
 		groups = append(groups, groupBy{
@@ -140,7 +140,7 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 		for _, accumulation := range g.groupBy {
 			out, err := accumulation.accumulate(groupIter)
 			if err != nil {
-				return nil, processOperatorError(err)
+				return nil, processGroupStageError(err)
 			}
 
 			if doc.Has(accumulation.outputField) {
@@ -175,13 +175,13 @@ func validateGroupKey(groupKey any) error {
 	if operators.IsOperator(doc) {
 		op, err := operators.NewOperator(doc)
 		if err != nil {
-			return processOperatorError(err)
+			return processGroupStageError(err)
 		}
 
 		_, err = op.Process(nil)
 		if err != nil {
 			// TODO https://github.com/FerretDB/FerretDB/issues/3129
-			return processOperatorError(err)
+			return processGroupStageError(err)
 		}
 
 		return nil
@@ -223,7 +223,7 @@ func validateGroupKey(groupKey any) error {
 			}
 
 			if err != nil {
-				return processOperatorError(err)
+				return processGroupStageError(err)
 			}
 		}
 	}
@@ -328,13 +328,13 @@ func evaluateDocument(expr, doc *types.Document, nestedField bool) (any, error) 
 		op, err := operators.NewOperator(expr)
 		if err != nil {
 			// operator error was validated in newGroup
-			return nil, processOperatorError(err)
+			return nil, processGroupStageError(err)
 		}
 
 		v, err := op.Process(doc)
 		if err != nil {
 			// existing operator errors are validated in newGroup
-			return nil, processOperatorError(err)
+			return nil, processGroupStageError(err)
 		}
 
 		return v, nil
@@ -427,9 +427,10 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 	})
 }
 
-// processOperatorError takes internal error related to operator evaluation and
-// returns proper CommandError that can be returned by $group aggregation stage.
-func processOperatorError(err error) error {
+// processGroupError takes internal error related to operator evaluation and
+// expression evaluation and returns CommandError that can be returned by $group
+// aggregation stage.
+func processGroupStageError(err error) error {
 	var opErr operators.OperatorError
 	var exErr *aggregations.ExpressionError
 
