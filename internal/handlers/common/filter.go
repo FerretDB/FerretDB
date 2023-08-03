@@ -108,6 +108,8 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 
 		filterSuffix = path.Suffix()
 
+		// filter using dot notation returns the value by valid array index
+		// or values for the given key in array's document
 		if vals, err = commonpath.FindValues(doc, path, &commonpath.FindValuesOpts{
 			FindArrayIndex:     true,
 			FindArrayDocuments: true,

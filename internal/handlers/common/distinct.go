@@ -107,6 +107,8 @@ func FilterDistinctValues(iter types.DocumentsIterator, key string) (*types.Arra
 			return nil, lazyerrors.Error(err)
 		}
 
+		// distinct using dot notation returns the value by valid array index
+		// or values for the given key in array's document
 		vals, err := commonpath.FindValues(doc, path, &commonpath.FindValuesOpts{
 			FindArrayIndex:     true,
 			FindArrayDocuments: true,
