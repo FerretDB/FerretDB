@@ -41,7 +41,6 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	for _, file := range pass.Files {
 		fileName := pass.Fset.File(file.Pos()).Name()
 		f, err := os.Open(fileName)
-
 		if err != nil {
 			return nil, err
 		}
