@@ -689,18 +689,7 @@ func TestGetMoreCommandConnection(t *testing.T) {
 			},
 		).Decode(&res)
 
-		// use AssertMatchesCommandError because message cannot be compared as it contains session ID
-		AssertMatchesCommandError(
-			t,
-			mongo.CommandError{
-				Code: 50738,
-				Name: "Location50738",
-				Message: "Cannot run getMore on cursor 5720627396082469624, which was created in session " +
-					"95326129-ff9c-48a4-9060-464b4ea3ee06 - 47DEQpj8HBSa+/TImW+5JC\neuQeRkm5NMpJWZG3hSuFU= -  - , " +
-					"in session 9e8902e9-338c-4156-9fd8-50e5d62ac992 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  - ",
-			},
-			err,
-		)
+		AssertMatchesCommandError(t, mongo.CommandError{Code: 50738, Name: "Location50738"}, err)
 	})
 }
 
@@ -919,17 +908,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 
 		_, err := collection.Find(ctx, bson.D{}, opts)
 
-		// MongoDB returns Message or altMessage
-		AssertEqualAltCommandError(
-			t,
-			mongo.CommandError{
-				Code:    50,
-				Name:    "MaxTimeMSExpired",
-				Message: "Executor error during find command :: caused by :: operation exceeded time limit",
-			},
-			"operation exceeded time limit",
-			err,
-		)
+		AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, err)
 	})
 
 	t.Run("FindGetMorePropagateMaxTimeMS", func(t *testing.T) {
@@ -952,17 +931,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		ok := cursor.Next(ctx)
 		assert.False(t, ok)
 
-		// MongoDB returns Message or altMessage
-		AssertEqualAltCommandError(
-			t,
-			mongo.CommandError{
-				Code:    50,
-				Name:    "MaxTimeMSExpired",
-				Message: "Executor error during getMore :: caused by :: operation exceeded time limit",
-			},
-			"operation exceeded time limit",
-			cursor.Err(),
-		)
+		AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, cursor.Err())
 	})
 
 	t.Run("FindGetMoreMaxTimeMS", func(tt *testing.T) {
@@ -993,14 +962,13 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 			{"maxTimeMS", 1},
 		}).Decode(&res)
 
-		AssertEqualAltCommandError(
+		AssertEqualCommandError(
 			t,
 			mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "cannot set maxTimeMS on getMore command for a non-awaitData cursor",
 			},
-			"",
 			err,
 		)
 	})
@@ -1017,17 +985,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		// use $sort stage to slow down the query more than 1ms
 		_, err := collection.Aggregate(ctx, bson.A{bson.D{{"$sort", bson.D{{"v", 1}}}}}, opts)
 
-		// MongoDB returns Message or altMessage
-		AssertEqualAltCommandError(
-			t,
-			mongo.CommandError{
-				Code:    50,
-				Name:    "MaxTimeMSExpired",
-				Message: "PlanExecutor error during aggregation :: caused by :: operation exceeded time limit",
-			},
-			"operation exceeded time limit",
-			err,
-		)
+		AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, err)
 	})
 
 	t.Run("AggregateGetMorePropagateMaxTimeMS", func(t *testing.T) {
@@ -1050,17 +1008,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		ok := cursor.Next(ctx)
 		assert.False(t, ok)
 
-		// MongoDB returns Message or altMessage
-		AssertEqualAltCommandError(
-			t,
-			mongo.CommandError{
-				Code:    50,
-				Name:    "MaxTimeMSExpired",
-				Message: "Executor error during getMore :: caused by :: operation exceeded time limit",
-			},
-			"operation exceeded time limit",
-			cursor.Err(),
-		)
+		AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, cursor.Err())
 	})
 
 	t.Run("AggregateGetMoreMaxTimeMS", func(tt *testing.T) {

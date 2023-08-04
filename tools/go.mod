@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20221020234012-480526a59796
-	github.com/go-task/task/v3 v3.27.1
+	github.com/go-task/task/v3 v3.28.0
 	github.com/google/go-github/v41 v41.0.0
 	github.com/goreleaser/nfpm/v2 v2.32.0
 	github.com/quasilyte/go-consistent v0.6.0
@@ -12,7 +12,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/oauth2 v0.10.0
 	golang.org/x/perf v0.0.0-20230717203022-1ba3a21238c9
-	golang.org/x/tools v0.11.0
+	golang.org/x/tools v0.11.1
 	golang.org/x/vuln v1.0.0
 	mvdan.cc/gofumpt v0.5.0
 )

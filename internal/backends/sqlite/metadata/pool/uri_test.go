@@ -42,7 +42,7 @@ func TestParseURI(t *testing.T) {
 	testCases := map[string]struct {
 		in  string
 		uri *url.URL
-		out string // defaults to in
+		out string
 		err string
 	}{
 		"LocalDirectory": {
@@ -52,7 +52,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "./",
 				Path:     "./",
 				OmitHost: true,
+				RawQuery: "_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 			},
+			out: "file:./?_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 		},
 		"LocalSubDirectory": {
 			in: "file:./tmp/",
@@ -61,7 +63,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "./tmp/",
 				Path:     "./tmp/",
 				OmitHost: true,
+				RawQuery: "_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 			},
+			out: "file:./tmp/?_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 		},
 		"LocalSubSubDirectory": {
 			in: "file:./tmp/dir/",
@@ -70,7 +74,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "./tmp/dir/",
 				Path:     "./tmp/dir/",
 				OmitHost: true,
+				RawQuery: "_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 			},
+			out: "file:./tmp/dir/?_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 		},
 		"LocalDirectoryWithParameters": {
 			in: "file:./tmp/?mode=memory",
@@ -79,8 +85,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "./tmp/",
 				Path:     "./tmp/",
 				OmitHost: true,
-				RawQuery: "mode=memory",
+				RawQuery: "_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29&mode=memory",
 			},
+			out: "file:./tmp/?_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29&mode=memory",
 		},
 		"AbsoluteDirectory": {
 			in: "file:/tmp/",
@@ -89,7 +96,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "/tmp/",
 				Path:     "/tmp/",
 				OmitHost: true,
+				RawQuery: "_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 			},
+			out: "file:/tmp/?_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 		},
 		"WithEmptyAuthority": {
 			in: "file:///tmp/",
@@ -98,8 +107,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "/tmp/",
 				Path:     "/tmp/",
 				OmitHost: true,
+				RawQuery: "_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 			},
-			out: "file:/tmp/",
+			out: "file:/tmp/?_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
 		},
 		"WithEmptyAuthorityAndQuery": {
 			in: "file:///tmp/?mode=memory",
@@ -108,9 +118,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "/tmp/",
 				Path:     "/tmp/",
 				OmitHost: true,
-				RawQuery: "mode=memory",
+				RawQuery: "_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29&mode=memory",
 			},
-			out: "file:/tmp/?mode=memory",
+			out: "file:/tmp/?_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29&mode=memory",
 		},
 		"HostIsNotEmpty": {
 			in:  "file://localhost/./tmp/?mode=memory",
@@ -140,6 +150,14 @@ func TestParseURI(t *testing.T) {
 			in:  "./tmp/",
 			err: `expected "file:" schema, got ""`,
 		},
+		"Shared": {
+			in:  "file:./?cache=shared",
+			err: `shared cache is not supported`,
+		},
+		"SharedMemory": {
+			in:  "file:./?mode=memory&cache=shared",
+			err: `shared cache is not supported`,
+		},
 	}
 	for name, tc := range testCases {
 		name, tc := name, tc
@@ -153,13 +171,8 @@ func TestParseURI(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, u, tc.uri)
-
-			out := tc.out
-			if out == "" {
-				out = tc.in
-			}
-			assert.Equal(t, out, u.String())
+			assert.Equal(t, tc.uri, u)
+			assert.Equal(t, tc.out, u.String())
 		})
 	}
 }

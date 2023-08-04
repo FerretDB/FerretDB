@@ -18,6 +18,7 @@ import (
 	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -28,6 +29,7 @@ import (
 // sum represents $sum aggregation operator.
 type sum struct {
 	expression *aggregations.Expression
+	operator   operators.Operator
 	number     any
 }
 
@@ -37,6 +39,28 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 	accumulator := new(sum)
 
 	switch expr := expression.(type) {
+	case *types.Document:
+		if !operators.IsOperator(expr) {
+			accumulator.number = int32(0)
+			break
+		}
+
+		op, err := operators.NewOperator(expr)
+		if err == nil {
+			// TODO https://github.com/FerretDB/FerretDB/issues/3129
+			_, err = op.Process(nil)
+		}
+
+		if err != nil {
+			var opErr operators.OperatorError
+			if !errors.As(err, &opErr) {
+				return nil, lazyerrors.Error(err)
+			}
+
+			return nil, opErr
+		}
+
+		accumulator.operator = op
 	case *types.Array:
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupUnaryOperator,
@@ -54,7 +78,6 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 	case int32, int64:
 		accumulator.number = expr
 	default:
-		// TODO https://github.com/FerretDB/FerretDB/issues/2694
 		accumulator.number = int32(0)
 		// $sum returns 0 on non-numeric field
 	}
@@ -77,7 +100,18 @@ func (s *sum) Accumulate(iter types.DocumentsIterator) (any, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		if s.expression != nil {
+		switch {
+		case s.operator != nil:
+			v, err := s.operator.Process(doc)
+			if err != nil {
+				return nil, err
+			}
+
+			numbers = append(numbers, v)
+
+			continue
+
+		case s.expression != nil:
 			value, err := s.expression.Evaluate(doc)
 
 			// sum fields that exist
