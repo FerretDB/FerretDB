@@ -110,8 +110,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		if !queryRes.SortPushdown {
 			iter, err = common.SortIterator(iter, closer, params.Sort)
 			if err != nil {
-				var pathErr *types.DocumentPathError
-				if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+				var pathErr *types.PathError
+				if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
 					return commonerrors.NewCommandErrorMsgWithArgument(
 						commonerrors.ErrPathContainsEmptyElement,
 						"Empty field names in path are not allowed",
