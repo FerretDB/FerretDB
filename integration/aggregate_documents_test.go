@@ -60,12 +60,14 @@ func TestAggregateAddFieldsErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -192,14 +194,93 @@ func TestAggregateGroupErrors(t *testing.T) {
 				Message: "Unrecognized expression '$non-existent'",
 			},
 		},
+		"IDExpressionDuplicateFields": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{
+						{"v", "$v"},
+						{"v", "$non-existent"},
+					}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16406,
+				Name:    "Location16406",
+				Message: "duplicate field name specified in object literal: { v: \"$v\", v: \"$non-existent\" }",
+			},
+		},
+		"IDExpressionEmptyPath": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16872,
+				Name:    "Location16872",
+				Message: "'$' by itself is not a valid FieldPath",
+			},
+		},
+		"IDExpressionEmptyVariable": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "empty variable names are not allowed",
+			},
+		},
+		"IDExpressionInvalidVariable$": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "'$' starts with an invalid character for a user variable name",
+			},
+		},
+		"IDExpressionInvalidVariable$s": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$$$s"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "'$s' starts with an invalid character for a user variable name",
+			},
+			altMessage: "'$' starts with an invalid character for a user variable name",
+		},
+		"IDExpressionNonExistingVariable": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$$s"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    17276,
+				Name:    "Location17276",
+				Message: "Use of undefined variable: s",
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2275",
+		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -515,12 +596,14 @@ func TestAggregateProjectErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -566,12 +649,14 @@ func TestAggregateSetErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -763,6 +848,48 @@ func TestAggregateUnsetErrors(t *testing.T) {
 				Code:    16410,
 				Name:    "Location16410",
 				Message: "Invalid $unset :: caused by :: FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(tt *testing.T) {
+			if tc.skip != "" {
+				tt.Skip(tc.skip)
+			}
+
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
+
+			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			ctx, collection := setup.Setup(t)
+
+			_, err := collection.Aggregate(ctx, tc.pipeline)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestAggregateSortErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		pipeline bson.A // required, aggregation pipeline stages
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"DotNotationMissingField": {
+			pipeline: bson.A{bson.D{{"$sort", bson.D{
+				{"v..foo", 1},
+			}}}},
+			err: &mongo.CommandError{
+				Code:    15998,
+				Name:    "Location15998",
+				Message: "FieldPath field names may not be empty strings.",
 			},
 		},
 	} {
@@ -960,12 +1087,14 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			require.NotNil(t, tc.err, "err must not be nil")
 
@@ -1079,12 +1208,14 @@ func TestAggregateCommandCursor(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			var pipeline any = bson.A{}
 			if tc.pipeline != nil {

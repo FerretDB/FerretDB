@@ -103,15 +103,10 @@ func testInsertCompat(tt *testing.T, testCases map[string]insertCompatTestCase) 
 				tt.Helper()
 				tt.Parallel()
 
-				var t testtb.TB = tt
-				if tc.failsForSQLite != "" {
-					t = setup.FailsForSQLite(tt, tc.failsForSQLite)
-				}
-
-				ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+				ctx, targetCollections, compatCollections := setup.SetupCompat(tt)
 
 				insert := tc.insert
-				require.NotEmpty(t, insert, "insert should be set")
+				require.NotEmpty(tt, insert, "insert should be set")
 
 				var nonEmptyResults bool
 				for i := range targetCollections {
@@ -120,7 +115,7 @@ func testInsertCompat(tt *testing.T, testCases map[string]insertCompatTestCase) 
 					tt.Run(targetCollection.Name(), func(tt *testing.T) {
 						tt.Helper()
 
-						var t testtb.TB = tt //nolint:vet // that's intentional
+						var t testtb.TB = tt
 						if tc.failsForSQLite != "" {
 							t = setup.FailsForSQLite(tt, tc.failsForSQLite)
 						}
@@ -160,6 +155,11 @@ func testInsertCompat(tt *testing.T, testCases map[string]insertCompatTestCase) 
 							AssertEqualDocuments(t, compatFindRes[i], targetFindRes[i])
 						}
 					})
+				}
+
+				var t testtb.TB = tt
+				if tc.failsForSQLite != "" {
+					t = setup.FailsForSQLite(tt, tc.failsForSQLite)
 				}
 
 				switch tc.resultType {
