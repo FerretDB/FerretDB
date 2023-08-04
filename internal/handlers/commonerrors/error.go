@@ -158,8 +158,14 @@ const (
 	// ErrSortMissingKey indicates sort stage is missing sort key.
 	ErrSortMissingKey = ErrorCode(15976) // Location15976
 
+	// ErrGroupDuplicateFieldName indicates that duplicate field name is specified.
+	ErrGroupDuplicateFieldName = ErrorCode(16406) // Location16406
+
 	// ErrStageUnwindWrongType indicates $unwind stage argument has unexpected type.
 	ErrStageUnwindWrongType = ErrorCode(15981) // Location15981
+
+	// ErrExpressionWrongLenOfFields indicates that aggregation expression has too much fields.
+	ErrExpressionWrongLenOfFields = ErrorCode(15983) // Location15983
 
 	// ErrPathContainsEmptyElement indicates that the path contains an empty element.
 	ErrPathContainsEmptyElement = ErrorCode(15998) // Location15998

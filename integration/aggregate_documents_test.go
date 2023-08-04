@@ -60,12 +60,14 @@ func TestAggregateAddFieldsErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -94,7 +96,7 @@ func TestAggregateGroupErrors(t *testing.T) {
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
 	}{
-		"StageGroupUnaryOperatorSum": {
+		"UnaryOperatorSum": {
 			pipeline: bson.A{
 				bson.D{{"$group", bson.D{{"sum", bson.D{{"$sum", bson.A{}}}}}}},
 			},
@@ -105,14 +107,180 @@ func TestAggregateGroupErrors(t *testing.T) {
 			},
 			altMessage: "The $sum accumulator is a unary operator",
 		},
+		"TypeEmpty": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"v", bson.D{}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    40234,
+				Name:    "Location40234",
+				Message: "The field 'v' must be an accumulator object",
+			},
+		},
+		"TwoOperators": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$type", int32(42)}, {"$op", int32(42)}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    15983,
+				Name:    "Location15983",
+				Message: "An object representing an expression must have exactly one field: { $type: 42, $op: 42 }",
+			},
+			altMessage: "An object representing an expression must have exactly one field",
+		},
+		"TypeInvalidLen": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16020,
+				Name:    "Location16020",
+				Message: "Expression $type takes exactly 1 arguments. 2 were passed in.",
+			},
+		},
+		"NonExistentOperator": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$non-existent", "foo"}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    168,
+				Name:    "InvalidPipelineOperator",
+				Message: "Unrecognized expression '$non-existent'",
+			},
+		},
+		"SumEmptyExpression": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"$sum", "$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16872,
+				Name:    "Location16872",
+				Message: "'$' by itself is not a valid FieldPath",
+			},
+		},
+		"SumEmptyVariable": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"$sum", "$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "empty variable names are not allowed",
+			},
+		},
+		"SumDollarVariable": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"$sum", "$$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "'$' starts with an invalid character for a user variable name",
+			},
+		},
+		"RecursiveNonExistentOperator": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"$type", bson.D{{"$non-existent", "foo"}}}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    168,
+				Name:    "InvalidPipelineOperator",
+				Message: "Unrecognized expression '$non-existent'",
+			},
+		},
+		"IDExpressionDuplicateFields": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{
+						{"v", "$v"},
+						{"v", "$non-existent"},
+					}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16406,
+				Name:    "Location16406",
+				Message: "duplicate field name specified in object literal: { v: \"$v\", v: \"$non-existent\" }",
+			},
+		},
+		"IDExpressionEmptyPath": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16872,
+				Name:    "Location16872",
+				Message: "'$' by itself is not a valid FieldPath",
+			},
+		},
+		"IDExpressionEmptyVariable": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "empty variable names are not allowed",
+			},
+		},
+		"IDExpressionInvalidVariable$": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "'$' starts with an invalid character for a user variable name",
+			},
+		},
+		"IDExpressionInvalidVariable$s": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$$$s"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "'$s' starts with an invalid character for a user variable name",
+			},
+			altMessage: "'$' starts with an invalid character for a user variable name",
+		},
+		"IDExpressionNonExistingVariable": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$$s"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    17276,
+				Name:    "Location17276",
+				Message: "Use of undefined variable: s",
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2275",
+		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -390,14 +558,52 @@ func TestAggregateProjectErrors(t *testing.T) {
 				Message: "Invalid $project :: caused by :: Unrecognized expression '$non-existent'",
 			},
 		},
+		"SumEmptyExpression": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", "$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16872,
+				Name:    "Location16872",
+				Message: "Invalid $project :: caused by :: '$' by itself is not a valid FieldPath",
+			},
+		},
+		"SumEmptyVariable": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", "$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "Invalid $project :: caused by :: empty variable names are not allowed",
+			},
+		},
+		"SumDollarVariable": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sum", bson.D{{"$sum", "$$$"}}},
+				}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "Invalid $project :: caused by :: '$' starts with an invalid character for a user variable name",
+			},
+		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -443,12 +649,14 @@ func TestAggregateSetErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -644,12 +852,14 @@ func TestAggregateUnsetErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -837,12 +1047,14 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			require.NotNil(t, tc.err, "err must not be nil")
 
@@ -956,12 +1168,14 @@ func TestAggregateCommandCursor(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			var pipeline any = bson.A{}
 			if tc.pipeline != nil {
