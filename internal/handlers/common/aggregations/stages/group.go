@@ -50,7 +50,7 @@ type group struct {
 
 // groupBy represents accumulation to apply on the group.
 type groupBy struct {
-	accumulate  func(iter types.DocumentsIterator) (any, error)
+	accumulator accumulators.Accumulator
 	outputField string
 }
 
@@ -83,17 +83,8 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 		}
 
 		if field == "_id" {
-			if doc, ok := v.(*types.Document); ok {
-				var op operators.Operator
-				op, err = operators.NewOperator(doc)
-
-				if err != nil {
-					return nil, processOperatorError(err)
-				}
-
-				if _, err = op.Process(nil); err != nil {
-					return nil, processOperatorError(err)
-				}
+			if err = validateGroupKey(v); err != nil {
+				return nil, err
 			}
 
 			groupKey = v
@@ -102,12 +93,12 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 
 		accumulator, err := accumulators.NewAccumulator("$group", field, v)
 		if err != nil {
-			return nil, processOperatorError(err)
+			return nil, processGroupStageError(err)
 		}
 
 		groups = append(groups, groupBy{
 			outputField: field,
-			accumulate:  accumulator.Accumulate,
+			accumulator: accumulator,
 		})
 	}
 
@@ -133,7 +124,7 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 		return nil, lazyerrors.Error(err)
 	}
 
-	groupedDocuments, err := g.groupDocuments(ctx, docs)
+	groupedDocuments, err := g.groupDocuments(docs)
 	if err != nil {
 		return nil, err
 	}
@@ -147,9 +138,10 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 		defer groupIter.Close()
 
 		for _, accumulation := range g.groupBy {
-			out, err := accumulation.accumulate(groupIter)
+			out, err := accumulation.accumulator.Accumulate(groupIter)
 			if err != nil {
-				return nil, processOperatorError(err)
+				// existing accumulators do not return error
+				return nil, processGroupStageError(err)
 			}
 
 			if doc.Has(accumulation.outputField) {
@@ -173,100 +165,194 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 	return iter, nil
 }
 
-// groupDocuments groups documents by group expression.
-func (g *group) groupDocuments(ctx context.Context, in []*types.Document) ([]groupedDocuments, error) {
-	switch groupKey := g.groupExpression.(type) {
-	case *types.Document:
-		op, err := operators.NewOperator(groupKey)
+// validateGroupKey returns error on invalid group key.
+// If group key is a document, it recursively validates operator and expression.
+func validateGroupKey(groupKey any) error {
+	doc, ok := groupKey.(*types.Document)
+	if !ok {
+		return nil
+	}
+
+	if operators.IsOperator(doc) {
+		op, err := operators.NewOperator(doc)
 		if err != nil {
-			return nil, processOperatorError(err)
+			return processGroupStageError(err)
 		}
 
-		var group groupMap
+		_, err = op.Process(nil)
+		if err != nil {
+			// TODO https://github.com/FerretDB/FerretDB/issues/3129
+			return processGroupStageError(err)
+		}
 
-		for _, doc := range in {
-			val, err := op.Process(doc)
-			if err != nil {
-				return nil, processOperatorError(err)
+		return nil
+	}
+
+	iter := doc.Iterator()
+	defer iter.Close()
+
+	fields := make(map[string]struct{}, doc.Len())
+
+	for {
+		k, v, err := iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		if _, ok := fields[k]; ok {
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrGroupDuplicateFieldName,
+				fmt.Sprintf("duplicate field name specified in object literal: %s", types.FormatAnyValue(doc)),
+				"$group (stage)",
+			)
+		}
+		fields[k] = struct{}{}
+
+		switch v := v.(type) {
+		case *types.Document:
+			return validateGroupKey(v)
+		case string:
+			_, err := aggregations.NewExpression(v, nil)
+			var exprErr *aggregations.ExpressionError
+
+			if errors.As(err, &exprErr) && exprErr.Code() == aggregations.ErrNotExpression {
+				err = nil
 			}
 
-			group.addOrAppend(val, doc)
+			if err != nil {
+				return processGroupStageError(err)
+			}
 		}
+	}
 
-		return group.docs, nil
+	return nil
+}
 
-	case *types.Array, float64, types.Binary, types.ObjectID, bool, time.Time, types.NullType,
-		types.Regex, int32, types.Timestamp, int64:
-		// non-string or document key aggregates values of all `in` documents into one aggregated document.
+// groupDocuments groups documents into groups using group key. If group key contains expressions
+// or operators, they are evaluated before using it as the group key of documents.
+func (g *group) groupDocuments(in []*types.Document) ([]groupedDocuments, error) {
+	var m groupMap
 
-	case string:
-		expression, err := aggregations.NewExpression(groupKey, nil)
-		if err != nil {
-			var exprErr *aggregations.ExpressionError
-			if !errors.As(err, &exprErr) {
+	for _, doc := range in {
+		switch groupKey := g.groupExpression.(type) {
+		case *types.Document:
+			val, err := evaluateDocument(groupKey, doc, false)
+			if err != nil {
+				// operator and expression errors are validated in newGroup
 				return nil, lazyerrors.Error(err)
 			}
 
-			switch exprErr.Code() {
-			case aggregations.ErrNotExpression:
-				// constant value aggregates values of all `in` documents into one aggregated document.
-				return []groupedDocuments{{
-					groupID:   groupKey,
-					documents: in,
-				}}, nil
-			case aggregations.ErrEmptyFieldPath:
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					// TODO
-					commonerrors.ErrGroupInvalidFieldPath,
-					"'$' by itself is not a valid Expression",
-					"$group (stage)",
-				)
-			case aggregations.ErrInvalidExpression:
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrFailedToParse,
-					fmt.Sprintf("'%s' starts with an invalid character for a user variable name", types.FormatAnyValue(groupKey)),
-					"$group (stage)",
-				)
-			case aggregations.ErrEmptyVariable:
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrFailedToParse,
-					"empty variable names are not allowed",
-					"$group (stage)",
-				)
-			// TODO https://github.com/FerretDB/FerretDB/issues/2275
-			case aggregations.ErrUndefinedVariable:
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrGroupUndefinedVariable,
-					fmt.Sprintf("Use of undefined variable: %s", types.FormatAnyValue(groupKey)),
-					"$group (stage)",
-				)
-			default:
-				panic(fmt.Sprintf("unhandled field path error %s", exprErr.Error()))
+			m.addOrAppend(val, doc)
+		case *types.Array, float64, types.Binary, types.ObjectID, bool, time.Time, types.NullType,
+			types.Regex, int32, types.Timestamp, int64:
+			m.addOrAppend(groupKey, doc)
+		case string:
+			expression, err := aggregations.NewExpression(groupKey, nil)
+			if err != nil {
+				var exprErr *aggregations.ExpressionError
+				if errors.As(err, &exprErr) {
+					if exprErr.Code() == aggregations.ErrNotExpression {
+						m.addOrAppend(groupKey, doc)
+						continue
+					}
+
+					return nil, processGroupStageError(err)
+				}
+
+				return nil, lazyerrors.Error(err)
 			}
-		}
 
-		var group groupMap
-
-		for _, doc := range in {
 			val, err := expression.Evaluate(doc)
 			if err != nil {
 				// $group treats non-existent fields as nulls
 				val = types.Null
 			}
 
-			group.addOrAppend(val, doc)
+			m.addOrAppend(val, doc)
+		default:
+			panic(fmt.Sprintf("unexpected type %[1]T (%#[1]v)", groupKey))
 		}
-
-		return group.docs, nil
-
-	default:
-		panic(fmt.Sprintf("unexpected type %[1]T (%#[1]v)", groupKey))
 	}
 
-	return []groupedDocuments{{
-		groupID:   g.groupExpression,
-		documents: in,
-	}}, nil
+	return m.docs, nil
+}
+
+// evaluateDocument recursively evaluates document's field expressions and operators.
+func evaluateDocument(expr, doc *types.Document, nestedField bool) (any, error) {
+	if operators.IsOperator(expr) {
+		op, err := operators.NewOperator(expr)
+		if err != nil {
+			// operator error was validated in newGroup
+			return nil, processGroupStageError(err)
+		}
+
+		v, err := op.Process(doc)
+		if err != nil {
+			// operator and expression errors are validated in newGroup
+			return nil, processGroupStageError(err)
+		}
+
+		return v, nil
+	}
+
+	iter := expr.Iterator()
+	defer iter.Close()
+
+	evaluatedDocument := new(types.Document)
+
+	for {
+		k, exprVal, err := iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		switch exprVal := exprVal.(type) {
+		case *types.Document:
+			v, err := evaluateDocument(exprVal, doc, true)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			evaluatedDocument.Set(k, v)
+		case string:
+			expression, err := aggregations.NewExpression(exprVal, nil)
+
+			var exprErr *aggregations.ExpressionError
+			if errors.As(err, &exprErr) && exprErr.Code() == aggregations.ErrNotExpression {
+				evaluatedDocument.Set(k, exprVal)
+				continue
+			}
+
+			if err != nil {
+				// expression error was validated in newGroup.
+				return nil, lazyerrors.Error(err)
+			}
+
+			v, err := expression.Evaluate(doc)
+			if err != nil {
+				if expr.Len() == 1 && !nestedField {
+					// non-existent path is set to null if expression contains single field and not a nested document
+					evaluatedDocument.Set(k, types.Null)
+				}
+
+				continue
+			}
+
+			evaluatedDocument.Set(k, v)
+		default:
+			evaluatedDocument.Set(k, exprVal)
+		}
+	}
+
+	return evaluatedDocument, nil
 }
 
 // groupedDocuments contains group key and the documents for that group.
@@ -300,9 +386,10 @@ func (m *groupMap) addOrAppend(groupKey any, docs ...*types.Document) {
 	})
 }
 
-// processOperatorError takes internal error related to operator evaluation and
-// returns proper CommandError that can be returned by $group aggregation stage.
-func processOperatorError(err error) error {
+// processGroupError takes internal error related to operator evaluation and
+// expression evaluation and returns CommandError that can be returned by $group
+// aggregation stage.
+func processGroupStageError(err error) error {
 	var opErr operators.OperatorError
 	var exErr *aggregations.ExpressionError
 
