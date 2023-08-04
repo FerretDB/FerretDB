@@ -45,7 +45,7 @@ func NewExpr(doc *types.Document) (Operator, error) {
 // Process implements Operator interface.
 func (e *expr) Process(doc *types.Document) (any, error) {
 	v, ok := e.value.(*types.Document)
-	if !ok {
+	if !ok || v.Len() == 0 {
 		return e.value, nil
 	}
 
@@ -131,16 +131,16 @@ func evaluateExpr(exprValue any, doc *types.Document) (any, error) {
 	case *types.Document:
 		if IsOperator(exprValue) {
 			op, err := NewOperator(exprValue)
-			if err != nil {
-				return nil, err
+			if err == nil {
+				v, err := op.Process(doc)
+				if err != nil {
+					return nil, err
+				}
+
+				return v, nil
 			}
 
-			v, err := op.Process(doc)
-			if err != nil {
-				return nil, err
-			}
-
-			return v, nil
+			// not an aggregation operator, may be filter operator
 		}
 
 		iter := exprValue.Iterator()
@@ -168,7 +168,7 @@ func evaluateExpr(exprValue any, doc *types.Document) (any, error) {
 
 		return res, nil
 	case *types.Array:
-		iter := doc.Iterator()
+		iter := exprValue.Iterator()
 		defer iter.Close()
 
 		res := types.MakeArray(exprValue.Len())

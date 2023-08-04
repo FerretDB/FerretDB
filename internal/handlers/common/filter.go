@@ -469,12 +469,12 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 		}
 
 		expr, ok := v.(*types.Document)
-		if !ok {
-			// $expr containing non-document value is a match
+		if !ok || expr.Len() == 0 {
+			// $expr containing non-document value or empty document matches filter
 			return true, nil
 		}
 
-		return FilterDocument(doc, expr)
+		return filterFieldExpr(doc, "", "", expr)
 	default:
 		msg := fmt.Sprintf(
 			`unknown top level operator: %s. `+
