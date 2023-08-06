@@ -40,117 +40,117 @@ repository:
 
 labels:
   - name: not ready
-  color: 000000
-  description: Issues that are not ready to be worked on; PRs that should skip CI
+    color: 000000
+    description: Issues that are not ready to be worked on; PRs that should skip CI
 
   - name: packages
-  color: 9B022C
-  description: PRs that should build packages
+    color: 9B022C
+    description: PRs that should build packages
 
   - name: use-git-lfs
-  color: FF0000
-  description: PRs that add large files without Git LFS
+    color: FF0000
+    description: PRs that add large files without Git LFS
 
   - name: help wanted
-  color: 006B75
-  description: Issues that require extra attention
+    color: 006B75
+    description: Issues that require extra attention
 
   - name: project
-  color: E99695
-  description: Project maintenance
+    color: E99695
+    description: Project maintenance
 
   - name: spam
-  color: C5DEF5
-  description: Spam issues and PRs
+    color: C5DEF5
+    description: Spam issues and PRs
   
   - name: trust
-  color: 00FF00
-  description: PRs that can access Actions secrets
+    color: 00FF00
+    description: PRs that can access Actions secrets
 
   - name: good first issue
-  color: 5319E7  
-  description: Good issues for new external contributors
+    color: 5319E7  
+    description: Good issues for new external contributors
 
   - name: documentation
-  color: 0052CC
-  description: Something user-visible is badly or not documented
+    color: 0052CC
+    description: Something user-visible is badly or not documented
 
   - name: do not merge
-  color: 0052CC
-  description: PRs that should not be merged
+    color: 0052CC
+    description: PRs that should not be merged
 
   - name: deps
-  color: D4C5F9
-  description: PRs that update dependencies
+    color: D4C5F9
+    description: PRs that update dependencies
 
   - name: conflict
-  color: FF0000
-  description: PRs that have merge conflicts
+    color: FF0000
+    description: PRs that have merge conflicts
 
   - name: code/feature
-  color: 0E8A16
-  description: Some user-visible feature is not implemented yet
+    color: 0E8A16
+    description: Some user-visible feature is not implemented yet
 
   - name: code/enhancement
-  color: FBCA04
-  description: Some user-visible feature could work better
+    color: FBCA04
+    description: Some user-visible feature could work better
 
   - name: code/chore
-  color: E99695
-  description: Code maintenance improvements
+    color: E99695
+    description: Code maintenance improvements
 
   - name: code/bug-regression
-  color: FF0000
-  description: Some user-visible feature works incorrectly, but worked before
+    color: FF0000
+    description: Some user-visible feature works incorrectly, but worked before
 
   - name: code/bug
-  color: CC0000
-  description: Some user-visible feature works incorrectly
+    color: CC0000
+    description: Some user-visible feature works incorrectly
 
   - name: blog/marketing
-  color: 80D0C9
-  description: Marketing (and releases) blog posts
+    color: 80D0C9
+    description: Marketing (and releases) blog posts
 
   - name: blog/engineering
-  color: FEF2C0
-  description: Engineering blog posts
+    color: FEF2C0
+    description: Engineering blog posts
 
   - name: badly estimated
-  color: FF3333
-  description: Scope, difficulty and/or clarify were different
+    color: FF3333
+    description: Scope, difficulty and/or clarify were different
 
   - name: backend/sqlite
-  color: 2C8FCA
-  description: Issues about SQLite backend
+    color: 2C8FCA
+    description: Issues about SQLite backend
 
   - name: backend/pg
-  color: 305C83
-  description: Issues about PostgreSQL backend
+    color: 305C83
+    description: Issues about PostgreSQL backend
 
   - name: area/params
-  color: FBCA04
-  description: Issues about parameters extraction
+    color: FBCA04
+    description: Issues about parameters extraction
 
   - name: area/indexes
-  color: 006B75
-  description: Issues about indexes
+    color: 006B75
+    description: Issues about indexes
 
   - name: area/fuzz
-  color: D4C5F9
-  description: Issues about fuzzing
+    color: D4C5F9
+    description: Issues about fuzzing
 
   - name: area/cursors
-  color: D93F0B
-  description: Issues about cursors
+    color: D93F0B
+    description: Issues about cursors
 
   - name: area/aggregations
-  color: 5319E7
-  description: Issues about aggregation pipelines
+    color: 5319E7
+    description: Issues about aggregation pipelines
 
 milestones:
   - title: next
-  description: next
-  state: open
+    description: next
+    state: open
 
 
 collaborators:
@@ -165,3 +165,35 @@ teams:
 
 branches:
   #TODO
+  - name: main
+    prottection:
+
+      required_pull_request_reviews: 
+
+        required_approving_review_count: 3
+
+        dismiss_stale_review: true
+
+        require_code_owner_review: true
+
+        # ?
+        dismissal_restricitions:
+          users: []
+          teams: []
+
+      required_status_checks:
+        strict: true
+        contexts: []
+
+      enforce_admins: true
+
+      required_linear_history: true
+
+      restrictions:
+        apps: []
+        users: []
+        teams: []
+
+
+
+
