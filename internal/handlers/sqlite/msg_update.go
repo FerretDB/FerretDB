@@ -17,9 +17,11 @@ package sqlite
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -49,7 +51,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	))
 
 	if upserted.Len() != 0 {
-		res.Set("upserted", &upserted)
+		res.Set("upserted", upserted)
 	}
 
 	res.Set("nModified", modified)
@@ -66,21 +68,45 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // updateDocument iterate through all documents in collection and update them.
 func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesParams) (int32, int32, *types.Array, error) {
 	var matched, modified int32
-	var upserted *types.Array
+	var upserted types.Array
 
-	db := h.b.Database(params.DB)
+	db, err := h.b.Database(params.DB)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
+			return 0, 0, nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "update")
+		}
+
+		return 0, 0, nil, lazyerrors.Error(err)
+	}
 	defer db.Close()
 
-	err := db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: params.Collection})
-	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionAlreadyExists) {
-		err = nil
-	}
-	if err != nil {
+	err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: params.Collection})
+
+	switch {
+	case err == nil:
+		// nothing
+	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionAlreadyExists):
+		// nothing
+	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
+		msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
+		return 0, 0, nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "insert")
+	default:
 		return 0, 0, nil, lazyerrors.Error(err)
 	}
 
 	for _, u := range params.Updates {
-		res, err := db.Collection(params.Collection).Query(ctx, nil)
+		c, err := db.Collection(params.Collection)
+		if err != nil {
+			if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
+				msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
+				return 0, 0, nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "insert")
+			}
+
+			return 0, 0, nil, lazyerrors.Error(err)
+		}
+
+		res, err := c.Query(ctx, nil)
 		if err != nil {
 			return 0, 0, nil, lazyerrors.Error(err)
 		}
@@ -123,24 +149,48 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 				continue
 			}
 
-			doc := u.Filter.DeepCopy()
-			if _, err = common.UpdateDocument("update", doc, u.Update); err != nil {
+			// TODO: https://github.com/FerretDB/FerretDB/issues/3040
+			hasQueryOperators, err := common.HasQueryOperator(u.Filter)
+			if err != nil {
 				return 0, 0, nil, lazyerrors.Error(err)
+			}
+
+			var doc *types.Document
+			if hasQueryOperators {
+				doc = must.NotFail(types.NewDocument())
+			} else {
+				doc = u.Filter
+			}
+
+			hasUpdateOperators, err := common.HasSupportedUpdateModifiers("update", u.Update)
+			if err != nil {
+				return 0, 0, nil, err
+			}
+
+			if hasUpdateOperators {
+				// TODO: https://github.com/FerretDB/FerretDB/issues/3044
+				if _, err = common.UpdateDocument("update", doc, u.Update); err != nil {
+					return 0, 0, nil, err
+				}
+			} else {
+				doc = u.Update
 			}
 
 			if !doc.Has("_id") {
 				doc.Set("_id", types.NewObjectID())
 			}
-
 			upserted.Append(must.NotFail(types.NewDocument(
-				"index", int32(0), // TODO
+				"index", int32(upserted.Len()),
 				"_id", must.NotFail(doc.Get("_id")),
 			)))
 
 			// TODO https://github.com/FerretDB/FerretDB/issues/2612
 
-			_, err := db.Collection(params.Collection).Insert(ctx, &backends.InsertParams{
-				Iter: must.NotFail(types.NewArray(doc)).Iterator(),
+			iter := must.NotFail(types.NewArray(doc)).Iterator()
+			defer iter.Close()
+
+			_, err = c.Insert(ctx, &backends.InsertParams{
+				Iter: iter,
 			})
 			if err != nil {
 				return 0, 0, nil, err
@@ -167,9 +217,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 				continue
 			}
 
-			updateRes, err := db.
-				Collection(params.Collection).
-				Update(ctx, &backends.UpdateParams{Docs: must.NotFail(types.NewArray(doc))})
+			updateRes, err := c.Update(ctx, &backends.UpdateParams{Docs: must.NotFail(types.NewArray(doc))})
 			if err != nil {
 				return 0, 0, nil, lazyerrors.Error(err)
 			}
@@ -178,5 +226,5 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 		}
 	}
 
-	return matched, modified, upserted, nil
+	return matched, modified, &upserted, nil
 }

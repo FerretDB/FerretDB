@@ -16,7 +16,6 @@ package pg
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -24,7 +23,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -88,7 +86,7 @@ func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, do
 		for i := 0; i < docs.Len(); i++ {
 			doc := must.NotFail(docs.Get(i))
 
-			err := insertDocument(ctx, tx, qp, doc)
+			err := insertDocument(ctx, tx, qp, doc.(*types.Document))
 			if err != nil {
 				return err
 			}
@@ -99,7 +97,7 @@ func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, do
 	// try inserting one document at a time
 	if err != nil {
 		for i := 0; i < docs.Len(); i++ {
-			doc := must.NotFail(docs.Get(i))
+			doc := must.NotFail(docs.Get(i)).(*types.Document)
 
 			err := insertDocumentSeparately(ctx, dbPool, qp, doc)
 
@@ -127,40 +125,27 @@ func insertMany(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, do
 }
 
 // insertDocument prepares and executes actual INSERT request to Postgres in provided transaction.
-func insertDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc any) error {
-	d, ok := doc.(*types.Document)
-	if !ok {
-		return commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrBadValue,
-			fmt.Sprintf("document has invalid type %s", commonparams.AliasFromType(doc)),
-		)
+func insertDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc *types.Document) error {
+	if !doc.Has("_id") {
+		doc.Set("_id", types.NewObjectID())
 	}
 
-	toInsert := d
-
-	if !toInsert.Has("_id") {
-		toInsert.Set("_id", types.NewObjectID())
-	}
-
-	err := pgdb.InsertDocument(ctx, tx, qp.DB, qp.Collection, toInsert)
+	err := pgdb.InsertDocument(ctx, tx, qp.DB, qp.Collection, doc)
 
 	switch {
 	case err == nil:
 		return nil
 
 	case errors.Is(err, pgdb.ErrInvalidCollectionName), errors.Is(err, pgdb.ErrInvalidDatabaseName):
-		msg := fmt.Sprintf("Invalid namespace: %s.%s", qp.DB, qp.Collection)
+		msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", qp.DB, qp.Collection)
 		return commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
 
 	case errors.Is(err, pgdb.ErrUniqueViolation):
-		// TODO Extend message for non-_id unique indexes in https://github.com/FerretDB/FerretDB/issues/2045
-		idMasrshaled := must.NotFail(json.Marshal(must.NotFail(d.Get("_id"))))
-
 		return commonerrors.NewWriteErrorMsg(
-			commonerrors.ErrDuplicateKey,
+			commonerrors.ErrDuplicateKeyInsert,
 			fmt.Sprintf(
-				`E11000 duplicate key error collection: %s.%s index: _id_ dup key: { _id: %s }`,
-				qp.DB, qp.Collection, idMasrshaled,
+				`E11000 duplicate key error collection: %s.%s`,
+				qp.DB, qp.Collection,
 			),
 		)
 
@@ -172,7 +157,7 @@ func insertDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc an
 // insertDocumentSeparately prepares and executes actual INSERT request to Postgres in separate transaction.
 //
 // It should be used in places where we don't want to rollback previous inserted documents on error.
-func insertDocumentSeparately(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, doc any) error {
+func insertDocumentSeparately(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParams, doc *types.Document) error {
 	return dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
 		return insertDocument(ctx, tx, qp, doc)
 	})

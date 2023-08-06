@@ -37,6 +37,7 @@ import (
 // To validate update document, must call ValidateUpdateOperators before calling UpdateDocument.
 // UpdateDocument returns CommandError for findAndModify case-insensitive command name,
 // WriteError for other commands.
+// TODO https://github.com/FerretDB/FerretDB/issues/3013
 func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 	var changed bool
 	var err error
@@ -198,6 +199,8 @@ func processSetFieldExpression(command string, doc, setDoc *types.Document, setO
 	for _, setKey := range setDocKeys {
 		setValue := must.NotFail(setDoc.Get(setKey))
 
+		// TODO: validate immutable _id https://github.com/FerretDB/FerretDB/issues/3017
+
 		if setOnInsert {
 			// $setOnInsert do not set null and empty array value.
 			if _, ok := setValue.(types.NullType); ok {
@@ -257,8 +260,8 @@ func processRenameFieldExpression(command string, doc *types.Document, update *t
 
 		sourcePath, err := types.NewPathFromString(key)
 		if err != nil {
-			var pathErr *types.DocumentPathError
-			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+			var pathErr *types.PathError
+			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
 				return false, newUpdateError(
 					commonerrors.ErrEmptyName,
 					fmt.Sprintf(
@@ -278,16 +281,16 @@ func processRenameFieldExpression(command string, doc *types.Document, update *t
 		// Get value to move
 		val, err := doc.GetByPath(sourcePath)
 		if err != nil {
-			var dpe *types.DocumentPathError
+			var dpe *types.PathError
 			if !errors.As(err, &dpe) {
 				panic("getByPath returned error with invalid type")
 			}
 
-			if dpe.Code() == types.ErrDocumentPathKeyNotFound || dpe.Code() == types.ErrDocumentPathIndexOutOfBound {
+			if dpe.Code() == types.ErrPathKeyNotFound || dpe.Code() == types.ErrPathIndexOutOfBound {
 				continue
 			}
 
-			if dpe.Code() == types.ErrDocumentPathArrayInvalidIndex {
+			if dpe.Code() == types.ErrPathIndexInvalid {
 				return false, newUpdateError(
 					commonerrors.ErrUnsuitableValueType,
 					fmt.Sprintf("cannot use path '%s' to traverse the document", sourcePath),
@@ -848,10 +851,6 @@ func ValidateUpdateOperators(command string, update *types.Document) error {
 		return err
 	}
 
-	if err = validateSetExpression(command, update); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -902,7 +901,7 @@ func newUpdateError(code commonerrors.ErrorCode, msg, command string) error {
 // validateOperatorKeys returns error if any key contains empty path or
 // the same path prefix exists in other key or other document.
 func validateOperatorKeys(command string, docs ...*types.Document) error {
-	visitedPaths := []*types.Path{}
+	var visitedPaths []types.Path
 
 	for _, doc := range docs {
 		for _, key := range doc.Keys() {
@@ -918,8 +917,12 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 				)
 			}
 
-			for _, oldPath := range visitedPaths {
-				if checkSlicePrefix(oldPath.Slice(), nextPath.Slice()) {
+			err = types.IsConflictPath(visitedPaths, nextPath)
+			var pathErr *types.PathError
+
+			if errors.As(err, &pathErr) {
+				if pathErr.Code() == types.ErrPathConflictOverwrite ||
+					pathErr.Code() == types.ErrPathConflictCollision {
 					return newUpdateError(
 						commonerrors.ErrConflictingUpdateOperators,
 						fmt.Sprintf(
@@ -929,34 +932,16 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 					)
 				}
 			}
-			visitedPaths = append(visitedPaths, &nextPath)
+
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			visitedPaths = append(visitedPaths, nextPath)
 		}
 	}
 
 	return nil
-}
-
-// checkSlicePrefix returns true if one slice is the beginning of another slice.
-// The example of slice prefix: arr1 = ["a","b","c"] arr2 = ["a","b"];
-// If both slices are empty, it returns true. If one slice is empty and another slice is not, it returns false.
-func checkSlicePrefix(arr1, arr2 []string) bool {
-	target, prefix := arr1, arr2
-
-	if len(target) < len(prefix) {
-		target, prefix = prefix, target
-	}
-
-	if len(prefix) == 0 {
-		return len(target) == 0
-	}
-
-	for i := range prefix {
-		if prefix[i] != target[i] {
-			return false
-		}
-	}
-
-	return true
 }
 
 // extractValueFromUpdateOperator gets operator "op" value and returns CommandError for `findAndModify`
@@ -1006,28 +991,6 @@ func extractValueFromUpdateOperator(command, op string, update *types.Document) 
 	}
 
 	return doc, nil
-}
-
-// validateSetExpression validates $set expression input.
-func validateSetExpression(command string, update *types.Document) error {
-	if !update.Has("$set") {
-		return nil
-	}
-
-	updateExpression := must.NotFail(update.Get("$set"))
-
-	// updateExpression is document, checked in ValidateUpdateOperators.
-	doc := updateExpression.(*types.Document)
-
-	if doc.Has("_id") {
-		return newUpdateError(
-			commonerrors.ErrImmutableField,
-			"Performing an update on the path '_id' would modify the immutable field '_id'",
-			command,
-		)
-	}
-
-	return nil
 }
 
 // validateRenameExpression validates $rename input on correctness.

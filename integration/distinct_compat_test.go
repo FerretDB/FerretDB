@@ -32,33 +32,35 @@ type distinctCompatTestCase struct {
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
-func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCase) {
-	t.Helper()
+func testDistinctCompat(tt *testing.T, testCases map[string]distinctCompatTestCase) {
+	tt.Helper()
 
 	// Use shared setup because distinct queries can't modify data.
 	// TODO Use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
-	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		Providers:                shareddata.AllProviders().Remove("Scalars"), // Remove provider with the same values with different types
+	s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
+		Providers:                shareddata.AllProviders().Remove(shareddata.Scalars), // Remove provider with the same values with different types
 		AddNonExistentCollection: true,
 	})
 	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
+		tt.Run(name, func(tt *testing.T) {
+			tt.Helper()
 
-			t.Parallel()
+			tt.Parallel()
 
 			filter := tc.filter
-			require.NotNil(t, filter, "filter should be set")
+			require.NotNil(tt, filter, "filter should be set")
 
 			var nonEmptyResults bool
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
+				tt.Run(targetCollection.Name(), func(tt *testing.T) {
+					tt.Helper()
+
+					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3157")
 
 					targetRes, targetErr := targetCollection.Distinct(ctx, tc.field, tc.filter)
 					compatRes, compatErr := compatCollection.Distinct(ctx, tc.field, tc.filter)
@@ -91,13 +93,18 @@ func testDistinctCompat(t *testing.T, testCases map[string]distinctCompatTestCas
 				})
 			}
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3157
+			if setup.IsSQLite(tt) {
+				return
+			}
+
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results")
+				assert.True(tt, nonEmptyResults, "expected non-empty results")
 			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results")
+				assert.False(tt, nonEmptyResults, "expected empty results")
 			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+				tt.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}

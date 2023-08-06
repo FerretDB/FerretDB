@@ -87,7 +87,7 @@ func simulateCompetingClients(clients int) int64 {
 		}
 	}()
 
-	totalCalls := atomic.Int64{}
+	var totalCalls atomic.Int64
 
 	call := func() bool {
 		totalCalls.Add(1)

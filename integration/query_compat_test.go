@@ -41,9 +41,8 @@ type queryCompatTestCase struct {
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
 
-	skipIDCheck   bool   // skip check collected IDs, use it when no ids returned from query
-	skip          string // skip test for all handlers, must have issue number mentioned
-	skipForTigris string // skip test for Tigris
+	skipIDCheck bool   // skip check collected IDs, use it when no ids returned from query
+	skip        string // skip test for all handlers, must have issue number mentioned
 }
 
 func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, testCases map[string]queryCompatTestCase) {
@@ -63,10 +62,6 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
-
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
-			}
 
 			if tc.skip != "" {
 				t.Skip(tc.skip)
@@ -307,7 +302,7 @@ func TestQueryCompatSortDotNotation(t *testing.T) {
 
 	providers := shareddata.AllProviders().
 		// TODO: https://github.com/FerretDB/FerretDB/issues/2618
-		Remove("ArrayDocuments")
+		Remove(shareddata.ArrayDocuments)
 
 	testCases := map[string]queryCompatTestCase{
 		"DotNotation": {

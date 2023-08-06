@@ -44,14 +44,21 @@ func TestListIndexesCompat(t *testing.T) {
 			t.Helper()
 			t.Parallel()
 
-			targetCur, targetErr := targetCollection.Indexes().List(ctx)
-			compatCur, compatErr := compatCollection.Indexes().List(ctx)
+			targetCursor, targetErr := targetCollection.Indexes().List(ctx)
+			compatCursor, compatErr := compatCollection.Indexes().List(ctx)
 
-			require.NoError(t, compatErr)
+			if targetCursor != nil {
+				defer targetCursor.Close(ctx)
+			}
+			if compatCursor != nil {
+				defer compatCursor.Close(ctx)
+			}
+
 			require.NoError(t, targetErr)
+			require.NoError(t, compatErr)
 
-			targetRes := FetchAll(t, ctx, targetCur)
-			compatRes := FetchAll(t, ctx, compatCur)
+			targetRes := FetchAll(t, ctx, targetCursor)
+			compatRes := FetchAll(t, ctx, compatCursor)
 
 			assert.Equal(t, compatRes, targetRes)
 
@@ -68,8 +75,6 @@ func TestListIndexesCompat(t *testing.T) {
 }
 
 func TestCreateIndexesCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
@@ -97,7 +102,6 @@ func TestCreateIndexesCompat(t *testing.T) {
 					Keys: bson.D{{"_id", 1}}, // this index is already created by default
 				},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2311",
 		},
 		"DescendingID": {
 			models: []mongo.IndexModel{
@@ -135,7 +139,7 @@ func TestCreateIndexesCompat(t *testing.T) {
 			models: []mongo.IndexModel{
 				{
 					Keys:    bson.D{{"foo", 1}, {"bar", -1}},
-					Options: new(options.IndexOptions).SetName("custom-name"),
+					Options: options.Index().SetName("custom-name"),
 				},
 			},
 		},
@@ -166,7 +170,18 @@ func TestCreateIndexesCompat(t *testing.T) {
 				{Keys: bson.D{{"v", 1}}},
 			},
 			resultType: emptyResult,
-			skip:       "https://github.com/FerretDB/FerretDB/issues/2311",
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2910",
+			// the error for existing and non-existing collection are different,
+			// below is the error for existing collection.
+			//
+			// &mongo.CommandError{
+			//	Code: 96,
+			//	Name: "OperationFailed",
+			//	Message: `Index build failed: 7a1c4cc3-8ac6-44d3-92e0-57853e6bc837: Collection ` +
+			//		`TestCreateIndexesCommandInvalidSpec-SameIndex.TestCreateIndexesCommandInvalidSpec-SameIndex ` +
+			//		`( 020f17e0-7847-45f2-8397-c631c5e9bdaf ) :: caused by :: Cannot build two identical indexes. ` +
+			//		`Try again without duplicate indexes.`,
+			// },
 		},
 		"MultiWithInvalid": {
 			models: []mongo.IndexModel{
@@ -183,11 +198,11 @@ func TestCreateIndexesCompat(t *testing.T) {
 			models: []mongo.IndexModel{
 				{
 					Keys:    bson.D{{"v", -1}},
-					Options: new(options.IndexOptions).SetName("foo"),
+					Options: options.Index().SetName("foo"),
 				},
 				{
 					Keys:    bson.D{{"v", -1}},
-					Options: new(options.IndexOptions).SetName("bar"),
+					Options: options.Index().SetName("bar"),
 				},
 			},
 			resultType: emptyResult,
@@ -196,11 +211,11 @@ func TestCreateIndexesCompat(t *testing.T) {
 			models: []mongo.IndexModel{
 				{
 					Keys:    bson.D{{"foo", -1}},
-					Options: new(options.IndexOptions).SetName("index-name"),
+					Options: options.Index().SetName("index-name"),
 				},
 				{
 					Keys:    bson.D{{"bar", -1}},
-					Options: new(options.IndexOptions).SetName("index-name"),
+					Options: options.Index().SetName("index-name"),
 				},
 			},
 			resultType: emptyResult,
@@ -252,14 +267,21 @@ func TestCreateIndexesCompat(t *testing.T) {
 					}
 
 					// List indexes to check they are identical after creation.
-					targetCur, targetErr := targetCollection.Indexes().List(ctx)
-					compatCur, compatErr := compatCollection.Indexes().List(ctx)
+					targetCursor, targetErr := targetCollection.Indexes().List(ctx)
+					compatCursor, compatErr := compatCollection.Indexes().List(ctx)
 
+					if targetCursor != nil {
+						defer targetCursor.Close(ctx)
+					}
+					if compatCursor != nil {
+						defer compatCursor.Close(ctx)
+					}
+
+					require.NoError(t, targetErr)
 					require.NoError(t, compatErr)
-					assert.Equal(t, compatErr, targetErr)
 
-					targetIndexes := FetchAll(t, ctx, targetCur)
-					compatIndexes := FetchAll(t, ctx, compatCur)
+					targetIndexes := FetchAll(t, ctx, targetCursor)
+					compatIndexes := FetchAll(t, ctx, compatCursor)
 
 					assert.Equal(t, compatIndexes, targetIndexes)
 
@@ -287,165 +309,7 @@ func TestCreateIndexesCompat(t *testing.T) {
 	}
 }
 
-// TestCreateIndexesCommandCompat tests specific behavior for index creation that can be only provided through RunCommand.
-func TestCreateIndexesCommandCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes creation is not supported for Tigris")
-
-	t.Parallel()
-
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
-	targetCollection := targetCollections[0]
-	compatCollection := compatCollections[0]
-
-	for name, tc := range map[string]struct { //nolint:vet // for readability
-		collectionName any
-		indexName      any
-		key            any
-		resultType     compatTestCaseResultType // defaults to nonEmptyResult
-		skip           string                   // optional, skip test with a specified reason
-	}{
-		"InvalidCollectionName": {
-			collectionName: 42,
-			key:            bson.D{{"v", -1}},
-			indexName:      "custom-name",
-			resultType:     emptyResult,
-		},
-		"NilCollectionName": {
-			collectionName: nil,
-			key:            bson.D{{"v", -1}},
-			indexName:      "custom-name",
-			resultType:     emptyResult,
-		},
-		"EmptyCollectionName": {
-			collectionName: "",
-			key:            bson.D{{"v", -1}},
-			indexName:      "custom-name",
-			resultType:     emptyResult,
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
-		},
-		"IndexNameNotSet": {
-			collectionName: "test",
-			key:            bson.D{{"v", -1}},
-			indexName:      nil,
-			resultType:     emptyResult,
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
-		},
-		"EmptyIndexName": {
-			collectionName: "test",
-			key:            bson.D{{"v", -1}},
-			indexName:      "",
-			resultType:     emptyResult,
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
-		},
-		"NonStringIndexName": {
-			collectionName: "test",
-			key:            bson.D{{"v", -1}},
-			indexName:      42,
-			resultType:     emptyResult,
-		},
-		"ExistingNameDifferentKeyLength": {
-			collectionName: "test",
-			key:            bson.D{{"_id", 1}, {"v", 1}},
-			indexName:      "_id_", // the same name as the default index
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
-		},
-		"InvalidKey": {
-			collectionName: "test",
-			key:            42,
-			resultType:     emptyResult,
-		},
-		"EmptyKey": {
-			collectionName: "test",
-			key:            bson.D{},
-			resultType:     emptyResult,
-		},
-		"KeyNotSet": {
-			collectionName: "test",
-			resultType:     emptyResult,
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2311",
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
-			t.Helper()
-			t.Parallel()
-
-			indexesDoc := bson.D{}
-
-			if tc.key != nil {
-				indexesDoc = append(indexesDoc, bson.E{Key: "key", Value: tc.key})
-			}
-
-			if tc.indexName != nil {
-				indexesDoc = append(indexesDoc, bson.E{"name", tc.indexName})
-			}
-
-			var targetRes bson.D
-			targetErr := targetCollection.Database().RunCommand(
-				ctx, bson.D{
-					{"createIndexes", tc.collectionName},
-					{"indexes", bson.A{indexesDoc}},
-				},
-			).Decode(&targetRes)
-
-			var compatRes bson.D
-			compatErr := compatCollection.Database().RunCommand(
-				ctx, bson.D{
-					{"createIndexes", tc.collectionName},
-					{"indexes", bson.A{indexesDoc}},
-				},
-			).Decode(&compatRes)
-
-			if targetErr != nil {
-				t.Logf("Target error: %v", targetErr)
-				t.Logf("Compat error: %v", compatErr)
-
-				// error messages are intentionally not compared
-				AssertMatchesCommandError(t, compatErr, targetErr)
-
-				return
-			}
-			require.NoError(t, compatErr, "compat error; target returned no error")
-
-			if tc.resultType == emptyResult {
-				require.Nil(t, targetRes)
-				require.Nil(t, compatRes)
-			}
-
-			assert.Equal(t, compatRes, targetRes)
-
-			targetErr = targetCollection.Database().RunCommand(
-				ctx, bson.D{{"listIndexes", tc.collectionName}},
-			).Decode(&targetRes)
-
-			compatErr = compatCollection.Database().RunCommand(
-				ctx, bson.D{{"listIndexes", tc.collectionName}},
-			).Decode(&targetRes)
-
-			require.Nil(t, targetRes)
-			require.Nil(t, compatRes)
-
-			if targetErr != nil {
-				t.Logf("Target error: %v", targetErr)
-				t.Logf("Compat error: %v", compatErr)
-
-				// error messages are intentionally not compared
-				AssertMatchesCommandError(t, compatErr, targetErr)
-
-				return
-			}
-			require.NoError(t, compatErr, "compat error; target returned no error")
-		})
-	}
-}
-
 func TestDropIndexesCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
-
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
@@ -545,14 +409,21 @@ func TestDropIndexesCompat(t *testing.T) {
 					}
 
 					// List indexes to see they are identical after drop.
-					targetCur, targetErr := targetCollection.Indexes().List(ctx)
-					compatCur, compatErr := compatCollection.Indexes().List(ctx)
+					targetCursor, targetErr := targetCollection.Indexes().List(ctx)
+					compatCursor, compatErr := compatCollection.Indexes().List(ctx)
 
+					if targetCursor != nil {
+						defer targetCursor.Close(ctx)
+					}
+					if compatCursor != nil {
+						defer compatCursor.Close(ctx)
+					}
+
+					require.NoError(t, targetErr)
 					require.NoError(t, compatErr)
-					require.Equal(t, compatErr, targetErr)
 
-					targetIndexes := FetchAll(t, ctx, targetCur)
-					compatIndexes := FetchAll(t, ctx, compatCur)
+					targetIndexes := FetchAll(t, ctx, targetCursor)
+					compatIndexes := FetchAll(t, ctx, compatCursor)
 
 					require.Equal(t, compatIndexes, targetIndexes)
 				})
@@ -570,77 +441,71 @@ func TestDropIndexesCompat(t *testing.T) {
 	}
 }
 
-func TestDropIndexesCommandCompat(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "Indexes are not supported for Tigris")
-
+func TestCreateIndexesCompatUnique(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		toCreate []mongo.IndexModel // optional, if set, create the given indexes before drop is called
-		toDrop   any                // required, index to drop
+		models    []mongo.IndexModel // required, index to create
+		insertDoc bson.D             // required, document to insert for uniqueness check
+		new       bool               // optional, insert new document before check uniqueness
 
-		resultType compatTestCaseResultType // optional, defaults to nonEmptyResult
-		skip       string                   // optional, skip test with a specified reason
+		skip string // optional, skip test with a specified reason
 	}{
-		"MultipleIndexesByName": {
-			toCreate: []mongo.IndexModel{
-				{Keys: bson.D{{"v", -1}}},
-				{Keys: bson.D{{"v", 1}, {"foo", 1}}},
-				{Keys: bson.D{{"v.foo", -1}}},
+		"IDIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"_id", 1}},
+					Options: options.Index().SetUnique(true),
+				},
 			},
-			toDrop: bson.A{"v_-1", "v_1_foo_1"},
+			insertDoc: bson.D{{"_id", "int322"}},
 		},
-		"MultipleIndexesByKey": {
-			toCreate: []mongo.IndexModel{
-				{Keys: bson.D{{"v", -1}}},
-				{Keys: bson.D{{"v.foo", -1}}},
+		"ExistingFieldIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"v", 1}},
+					Options: options.Index().SetUnique(true),
+				},
 			},
-			toDrop:     bson.A{bson.D{{"v", -1}}, bson.D{{"v.foo", -1}}},
-			resultType: emptyResult,
+			insertDoc: bson.D{{"v", "value"}},
+			new:       true,
 		},
-		"NonExistentMultipleIndexes": {
-			toDrop:     bson.A{"non-existent", "invalid"},
-			resultType: emptyResult,
-		},
-		"InvalidMultipleIndexType": {
-			toDrop:     bson.A{1},
-			resultType: emptyResult,
-		},
-		"DocumentIndex": {
-			toCreate: []mongo.IndexModel{
-				{Keys: bson.D{{"v", -1}}},
+		"NotExistingFieldIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"not-existing-field", 1}},
+					Options: options.Index().SetUnique(true),
+				},
 			},
-			toDrop: bson.D{{"v", -1}},
+			insertDoc: bson.D{{"not-existing-field", "value"}},
+			skip:      "https://github.com/FerretDB/FerretDB/issues/2830",
 		},
-		"DropAllExpression": {
-			toCreate: []mongo.IndexModel{
-				{Keys: bson.D{{"v", -1}}},
-				{Keys: bson.D{{"foo.bar", 1}}},
-				{Keys: bson.D{{"foo", 1}, {"bar", 1}}},
+		"NotUniqueIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"v", 1}},
+					Options: options.Index().SetUnique(false),
+				},
 			},
-			toDrop: "*",
+			insertDoc: bson.D{{"v", "value"}},
 		},
-		"WrongExpression": {
-			toCreate: []mongo.IndexModel{
-				{Keys: bson.D{{"v", -1}}},
-				{Keys: bson.D{{"foo.bar", 1}}},
-				{Keys: bson.D{{"foo", 1}, {"bar", 1}}},
+		"CompoundIndex": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"v", 1}, {"foo", 1}},
+					Options: options.Index().SetUnique(true),
+				},
 			},
-			toDrop:     "***",
-			resultType: emptyResult,
+			insertDoc: bson.D{{"v", "baz"}, {"foo", "bar"}},
 		},
-		"NonExistentDescendingID": {
-			toDrop:     bson.D{{"_id", -1}},
-			resultType: emptyResult,
-		},
-		"MultipleKeyIndex": {
-			toCreate: []mongo.IndexModel{
-				{Keys: bson.D{{"_id", -1}, {"v", 1}}},
+		"ExistingFieldInsertDuplicate": {
+			models: []mongo.IndexModel{
+				{
+					Keys:    bson.D{{"v", 1}},
+					Options: options.Index().SetUnique(true),
+				},
 			},
-			toDrop: bson.D{
-				{"_id", -1},
-				{"v", 1},
-			},
+			insertDoc: bson.D{{"v", int32(42)}},
 		},
 	} {
 		name, tc := name, tc
@@ -652,102 +517,63 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 			t.Helper()
 			t.Parallel()
 
-			require.NotNil(t, tc.toDrop, "toDrop must not be nil")
-
-			// It's enough to use a single provider for drop indexes test as indexes work the same for different collections.
-			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-				Providers:                []shareddata.Provider{shareddata.Composites},
-				AddNonExistentCollection: true,
-			})
-			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
-
-			var nonEmptyResults bool
-			for i := range targetCollections {
-				targetCollection := targetCollections[i]
-				compatCollection := compatCollections[i]
-
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
-
-					if tc.toCreate != nil {
-						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.toCreate)
-						_, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.toCreate)
-						require.NoError(t, compatErr)
-						require.NoError(t, targetErr)
-
-						// List indexes to see they are identical after creation.
-						targetCur, targetListErr := targetCollection.Indexes().List(ctx)
-						compatCur, compatListErr := compatCollection.Indexes().List(ctx)
-
-						require.NoError(t, compatListErr)
-						require.NoError(t, targetListErr)
-
-						targetList := FetchAll(t, ctx, targetCur)
-						compatList := FetchAll(t, ctx, compatCur)
-
-						require.Equal(t, compatList, targetList)
-					}
-
-					targetCommand := bson.D{
-						{"dropIndexes", targetCollection.Name()},
-						{"index", tc.toDrop},
-					}
-
-					compatCommand := bson.D{
-						{"dropIndexes", compatCollection.Name()},
-						{"index", tc.toDrop},
-					}
-
-					var targetRes bson.D
-					targetErr := targetCollection.Database().RunCommand(ctx, targetCommand).Decode(&targetRes)
-
-					var compatRes bson.D
-					compatErr := compatCollection.Database().RunCommand(ctx, compatCommand).Decode(&compatRes)
-
-					if targetErr != nil {
-						t.Logf("Target error: %v", targetErr)
-						t.Logf("Compat error: %v", compatErr)
-
-						// error messages are intentionally not compared
-						AssertMatchesCommandError(t, compatErr, targetErr)
-
-						return
-					}
-					require.NoError(t, compatErr, "compat error; target returned no error")
-
-					if tc.resultType == emptyResult {
-						require.Nil(t, targetRes)
-						require.Nil(t, compatRes)
-					}
-
-					require.Equal(t, compatRes, targetRes)
-
-					if compatErr == nil {
-						nonEmptyResults = true
-					}
-
-					// List indexes to see they are identical after deletion.
-					targetCur, targetListErr := targetCollection.Indexes().List(ctx)
-					compatCur, compatListErr := compatCollection.Indexes().List(ctx)
-
-					require.NoError(t, compatListErr)
-					assert.Equal(t, compatListErr, targetListErr)
-
-					targetList := FetchAll(t, ctx, targetCur)
-					compatList := FetchAll(t, ctx, compatCur)
-
-					assert.Equal(t, compatList, targetList)
+			res := setup.SetupCompatWithOpts(t,
+				&setup.SetupCompatOpts{
+					Providers: []shareddata.Provider{shareddata.Int32s},
 				})
+
+			ctx, targetCollections, compatCollections := res.Ctx, res.TargetCollections, res.CompatCollections
+
+			targetCollection := targetCollections[0]
+			compatCollection := compatCollections[0]
+
+			targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
+			compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
+
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
+
+				return
+			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
+
+			assert.Equal(t, compatRes, targetRes)
+
+			// List specifications to check they are identical after creation.
+			targetSpec, targetErr := targetCollection.Indexes().ListSpecifications(ctx)
+			compatSpec, compatErr := compatCollection.Indexes().ListSpecifications(ctx)
+
+			require.NoError(t, compatErr)
+			require.NoError(t, targetErr)
+
+			assert.Equal(t, compatSpec, targetSpec)
+
+			if tc.new {
+				_, targetErr = targetCollection.InsertOne(ctx, tc.insertDoc)
+				_, compatErr = compatCollection.InsertOne(ctx, tc.insertDoc)
+
+				require.NoError(t, compatErr)
+				require.NoError(t, targetErr)
 			}
 
-			switch tc.resultType {
-			case nonEmptyResult:
-				require.True(t, nonEmptyResults, "expected non-empty results (some indexes should be deleted)")
-			case emptyResult:
-				require.False(t, nonEmptyResults, "expected empty results (no indexes should be deleted)")
-			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+			_, targetErr = targetCollection.InsertOne(ctx, tc.insertDoc)
+			_, compatErr = compatCollection.InsertOne(ctx, tc.insertDoc)
+
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				AssertMatchesWriteError(t, compatErr, targetErr)
+
+				return
 			}
+
+			require.NoError(t, compatErr, "compat error; target returned no error")
 		})
 	}
 }

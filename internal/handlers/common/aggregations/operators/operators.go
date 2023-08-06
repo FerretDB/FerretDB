@@ -31,23 +31,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-var (
-	// ErrWrongType indicates that operator field is not a document.
-	ErrWrongType = fmt.Errorf("Invalid type of operator field (expected document)")
-
-	// ErrEmptyField indicates that operator field does not specify any operator.
-	ErrEmptyField = fmt.Errorf("The operator field is empty (expected document)")
-
-	// ErrTooManyFields indicates that operator field specifes more than one operators.
-	ErrTooManyFields = fmt.Errorf("The operator field specifies more than one operator")
-
-	// ErrNotImplemented indicates that given operator is not implemented yet.
-	ErrNotImplemented = fmt.Errorf("The operator is not implemented yet")
-
-	// ErrNoOperator indicates that given document does not contain any operator.
-	ErrNoOperator = fmt.Errorf("No operator in document")
-)
-
 // newOperatorFunc is a type for a function that creates a standard aggregation operator.
 //
 // By standard aggregation operator we mean any operator that is not accumulator.
@@ -62,61 +45,228 @@ type Operator interface {
 	Process(in *types.Document) (any, error)
 }
 
-// NewOperator returns operator from provided document.
-// The document should look like: `{<$operator>: <operator-value>}`.
-func NewOperator(doc any) (Operator, error) {
-	operatorDoc, ok := doc.(*types.Document)
-	if !ok {
-		// TODO: https://github.com/FerretDB/FerretDB/pull/2789
-		return nil, ErrWrongType
-	}
-
-	if operatorDoc.Len() == 0 {
-		return nil, ErrEmptyField
-	}
-
-	iter := operatorDoc.Iterator()
+// IsOperator returns true if provided document should be
+// treated as operator document.
+func IsOperator(doc *types.Document) bool {
+	iter := doc.Iterator()
 	defer iter.Close()
 
-	var operatorExists bool
-
 	for {
-		k, _, err := iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
-		}
-
+		key, _, err := iter.Next()
 		if err != nil {
-			return nil, lazyerrors.Error(err)
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return false
 		}
 
-		if strings.HasPrefix(k, "$") {
-			operatorExists = true
-			break
+		if strings.HasPrefix(key, "$") {
+			return true
 		}
 	}
+
+	return false
+}
+
+// NewOperator returns operator from provided document.
+// The document should look like: `{<$operator>: <operator-value>}`.
+//
+// Before calling NewOperator on document it's recommended to validate
+// document before by using IsOperator on it.
+func NewOperator(doc *types.Document) (Operator, error) {
+	if doc.Len() == 0 {
+		return nil, lazyerrors.New(
+			"The operator field is empty",
+		)
+	}
+
+	if doc.Len() > 1 {
+		return nil, newOperatorError(
+			ErrTooManyFields,
+			"The operator field specifies more than one operator",
+		)
+	}
+
+	operator := doc.Command()
+
+	newOperator, supported := Operators[operator]
+	_, unsupported := unsupportedOperators[operator]
 
 	switch {
-	case !operatorExists:
-		return nil, ErrNoOperator
-	case operatorDoc.Len() > 1:
-		return nil, ErrTooManyFields
+	case supported:
+		return newOperator(doc)
+	case unsupported:
+		return nil, newOperatorError(
+			ErrNotImplemented,
+			fmt.Sprintf("The operator %s is not implemented yet", operator),
+		)
+	default:
+		return nil, newOperatorError(
+			ErrInvalidExpression,
+			fmt.Sprintf("Unrecognized expression '%s'", operator),
+		)
 	}
-
-	operator := operatorDoc.Command()
-
-	newOperator, ok := Operators[operator]
-	if !ok {
-		return nil, ErrNotImplemented
-	}
-
-	return newOperator(operatorDoc)
 }
 
 // Operators maps all standard aggregation operators.
 var Operators = map[string]newOperatorFunc{
 	// sorted alphabetically
-	// TODO https://github.com/FerretDB/FerretDB/issues/2680
+	"$sum":  newSum,
 	"$type": newType,
+	// please keep sorted alphabetically
+}
+
+// unsupportedOperators maps all unsupported yet operators.
+var unsupportedOperators = map[string]struct{}{
+	// sorted alphabetically
+	"$abs":              {},
+	"$acos":             {},
+	"$acosh":            {},
+	"$add":              {},
+	"$allElementsTrue":  {},
+	"$and":              {},
+	"$anyElementTrue":   {},
+	"$arrayElemAt":      {},
+	"$arrayToObject":    {},
+	"$asin":             {},
+	"$asinh":            {},
+	"$atan":             {},
+	"$atan2":            {},
+	"$atanh":            {},
+	"$avg":              {},
+	"$binarySize":       {},
+	"$bsonSize":         {},
+	"$ceil":             {},
+	"$cmp":              {},
+	"$concat":           {},
+	"$concatArrays":     {},
+	"$cond":             {},
+	"$convert":          {},
+	"$cos":              {},
+	"$cosh":             {},
+	"$covariancePop":    {},
+	"$covarianceSamp":   {},
+	"$dateAdd":          {},
+	"$dateDiff":         {},
+	"$dateFromParts":    {},
+	"$dateSubtract":     {},
+	"$dateTrunc":        {},
+	"$dateToParts":      {},
+	"$dateFromString":   {},
+	"$dateToString":     {},
+	"$dayOfMonth":       {},
+	"$dayOfWeek":        {},
+	"$dayOfYear":        {},
+	"$degreesToRadians": {},
+	"$denseRank":        {},
+	"$derivative":       {},
+	"$divide":           {},
+	"$documentNumber":   {},
+	"$eq":               {},
+	"$exp":              {},
+	"$expMovingAvg":     {},
+	"$filter":           {},
+	"$floor":            {},
+	"$function":         {},
+	"$getField":         {},
+	"$gt":               {},
+	"$gte":              {},
+	"$hour":             {},
+	"$ifNull":           {},
+	"$in":               {},
+	"$indexOfArray":     {},
+	"$indexOfBytes":     {},
+	"$indexOfCP":        {},
+	"$integral":         {},
+	"$isArray":          {},
+	"$isNumber":         {},
+	"$isoDayOfWeek":     {},
+	"$isoWeek":          {},
+	"$isoWeekYear":      {},
+	"$let":              {},
+	"$linearFill":       {},
+	"$literal":          {},
+	"$ln":               {},
+	"$locf":             {},
+	"$log":              {},
+	"$log10":            {},
+	"$lt":               {},
+	"$lte":              {},
+	"$ltrim":            {},
+	"$map":              {},
+	"$max":              {},
+	"$meta":             {},
+	"$min":              {},
+	"$minN":             {},
+	"$millisecond":      {},
+	"$minute":           {},
+	"$mod":              {},
+	"$month":            {},
+	"$multiply":         {},
+	"$ne":               {},
+	"$not":              {},
+	"$objectToArray":    {},
+	"$or":               {},
+	"$pow":              {},
+	"$radiansToDegrees": {},
+	"$rand":             {},
+	"$range":            {},
+	"$rank":             {},
+	"$reduce":           {},
+	"$regexFind":        {},
+	"$regexFindAll":     {},
+	"$regexMatch":       {},
+	"$replaceOne":       {},
+	"$replaceAll":       {},
+	"$reverseArray":     {},
+	"$round":            {},
+	"$rtrim":            {},
+	"$sampleRate":       {},
+	"$second":           {},
+	"$setDifference":    {},
+	"$setEquals":        {},
+	"$setField":         {},
+	"$setIntersection":  {},
+	"$setIsSubset":      {},
+	"$setUnion":         {},
+	"$shift":            {},
+	"$size":             {},
+	"$sin":              {},
+	"$sinh":             {},
+	"$slice":            {},
+	"$sortArray":        {},
+	"$split":            {},
+	"$sqrt":             {},
+	"$stdDevPop":        {},
+	"$stdDevSamp":       {},
+	"$strcasecmp":       {},
+	"$strLenBytes":      {},
+	"$strLenCP":         {},
+	"$substr":           {},
+	"$substrBytes":      {},
+	"$substrCP":         {},
+	"$subtract":         {},
+	"$switch":           {},
+	"$tan":              {},
+	"$tanh":             {},
+	"$toBool":           {},
+	"$toDate":           {},
+	"$toDecimal":        {},
+	"$toDouble":         {},
+	"$toInt":            {},
+	"$toLong":           {},
+	"$toObjectId":       {},
+	"$toString":         {},
+	"$toLower":          {},
+	"$toUpper":          {},
+	"$trim":             {},
+	"$trunc":            {},
+	"$tsIncrement":      {},
+	"$tsSecond":         {},
+	"$unsetField":       {},
+	"$week":             {},
+	"$year":             {},
+	"$zip":              {},
 	// please keep sorted alphabetically
 }

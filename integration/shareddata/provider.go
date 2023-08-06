@@ -15,11 +15,8 @@
 package shareddata
 
 import (
-	"strings"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 // Provider is implemented by shared data sets that provide documents.
@@ -27,45 +24,20 @@ type Provider interface {
 	// Name returns provider name.
 	Name() string
 
-	// Validators returns validators for the given backend and collection.
-	// For example, for ferretdb-tigris it should return a map with the key $tigrisSchemaString
-	// and the value containing Tigris' JSON schema string.
-	Validators(backend, collection string) map[string]any
-
 	// Docs returns shared data documents.
 	// All calls should return the same set of documents, but may do so in different order.
 	Docs() []bson.D
-
-	// IsCompatible returns true if the given backend is compatible with this provider.
-	IsCompatible(backend string) bool
 }
 
 // Values stores shared data documents as {"_id": key, "v": value} documents.
 type Values[idType comparable] struct {
-	name       string
-	backends   []string                  // empty values means all backends
-	validators map[string]map[string]any // backend -> validator name -> validator
-	data       map[idType]any
+	name string
+	data map[idType]any
 }
 
 // Name implement Provider interface.
 func (values *Values[idType]) Name() string {
 	return values.name
-}
-
-// Validators implement Provider interface.
-func (values *Values[idType]) Validators(backend, collection string) map[string]any {
-	switch backend {
-	case "ferretdb-tigris":
-		validators := make(map[string]any, len(values.validators[backend]))
-		for key, value := range values.validators[backend] {
-			validators[key] = strings.ReplaceAll(value.(string), "%%collection%%", collection)
-		}
-
-		return validators
-	default:
-		return values.validators[backend]
-	}
 }
 
 // Docs implement Provider interface.
@@ -87,15 +59,6 @@ func (values *Values[idType]) Docs() []bson.D {
 	return res
 }
 
-// IsCompatible returns true if the given backend is compatible with this provider.
-func (values *Values[idType]) IsCompatible(backend string) bool {
-	if len(values.backends) == 0 {
-		return true
-	}
-
-	return slices.Contains(values.backends, backend)
-}
-
 // field represents a field in a document.
 type field struct {
 	Value any
@@ -107,12 +70,11 @@ type field struct {
 type Fields []field
 
 // NewTopLevelFieldsProvider creates a new TopLevelValues provider.
-func NewTopLevelFieldsProvider[id comparable](name string, backends []string, validators map[string]map[string]any, data map[id]Fields) Provider {
+func NewTopLevelFieldsProvider[id comparable](name string, backends []string, data map[id]Fields) Provider {
 	return &topLevelValues[id]{
-		name:       name,
-		backends:   backends,
-		validators: validators,
-		data:       data,
+		name:     name,
+		backends: backends,
+		data:     data,
 	}
 }
 
@@ -120,31 +82,14 @@ func NewTopLevelFieldsProvider[id comparable](name string, backends []string, va
 //
 //nolint:vet // for readability
 type topLevelValues[id comparable] struct {
-	name       string
-	backends   []string                  // empty values means all backends
-	validators map[string]map[string]any // backend -> validator name -> validator
-	data       map[id]Fields
+	name     string
+	backends []string // empty values means all backends
+	data     map[id]Fields
 }
 
 // Name implements Provider interface.
 func (t *topLevelValues[id]) Name() string {
 	return t.name
-}
-
-// Validators implements Provider interface.
-func (t *topLevelValues[id]) Validators(backend, collection string) map[string]any {
-	switch backend {
-	case "ferretdb-tigris":
-		validators := make(map[string]any, len(t.validators[backend]))
-
-		for key, value := range t.validators[backend] {
-			validators[key] = strings.ReplaceAll(value.(string), "%%collection%%", collection)
-		}
-
-		return validators
-	default:
-		return t.validators[backend]
-	}
 }
 
 // Docs implements Provider interface.
@@ -166,15 +111,6 @@ func (t *topLevelValues[id]) Docs() []bson.D {
 	}
 
 	return res
-}
-
-// IsCompatible implements Provider interface.
-func (t *topLevelValues[id]) IsCompatible(backend string) bool {
-	if len(t.backends) == 0 {
-		return true
-	}
-
-	return slices.Contains(t.backends, backend)
 }
 
 // check interfaces

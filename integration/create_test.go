@@ -25,12 +25,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestCreateStress(t *testing.T) {
+	// TODO rewrite using teststress.Stress
+
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	db := collection.Database()
 
@@ -52,24 +53,7 @@ func TestCreateStress(t *testing.T) {
 
 			collName := fmt.Sprintf("stress_%d", i)
 
-			schema := fmt.Sprintf(`{
-				"title": "%s",
-				"description": "Create Collection Stress %d",
-				"primary_key": ["_id"],
-				"properties": {
-					"_id": {"type": "string"},
-					"v": {"type": "string"}
-				}
-			}`, collName, i,
-			)
-
-			// Set $tigrisSchemaString for tigris only.
-			opts := options.CreateCollection()
-			if setup.IsTigris(t) {
-				opts.SetValidator(bson.D{{"$tigrisSchemaString", schema}})
-			}
-
-			err := db.CreateCollection(ctx, collName, opts)
+			err := db.CreateCollection(ctx, collName)
 			assert.NoError(t, err)
 
 			_, err = db.Collection(collName).InsertOne(ctx, bson.D{{"_id", "foo"}, {"v", "bar"}})
@@ -109,7 +93,8 @@ func TestCreateStress(t *testing.T) {
 }
 
 func TestCreateOnInsertStressSameCollection(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1341")
+	// TODO rewrite using teststress.Stress
+
 	ctx, collection := setup.Setup(t)
 	// do not toLower() db name as it may contain uppercase letters
 	db := collection.Database().Client().Database(t.Name())
@@ -148,6 +133,8 @@ func TestCreateOnInsertStressSameCollection(t *testing.T) {
 }
 
 func TestCreateOnInsertStressDiffCollection(t *testing.T) {
+	// TODO rewrite using teststress.Stress
+
 	ctx, collection := setup.Setup(t)
 	// do not toLower() db name as it may contain uppercase letters
 	db := collection.Database().Client().Database(t.Name())
@@ -187,6 +174,8 @@ func TestCreateOnInsertStressDiffCollection(t *testing.T) {
 }
 
 func TestCreateStressSameCollection(t *testing.T) {
+	// TODO rewrite using teststress.Stress
+
 	ctx, collection := setup.Setup(t) // no providers there, we will create collection from the test
 	db := collection.Database()
 
@@ -209,28 +198,11 @@ func TestCreateStressSameCollection(t *testing.T) {
 
 			<-start
 
-			schema := fmt.Sprintf(`{
-				"title": "%s",
-				"description": "Create Collection Stress %d",
-				"primary_key": ["_id"],
-				"properties": {
-					"_id": {"type": "string"},
-					"v": {"type": "string"}
-				}
-			}`, collName, i,
-			)
-
-			// Set $tigrisSchemaString for tigris only.
-			opts := options.CreateCollection()
-			if setup.IsTigris(t) {
-				opts.SetValidator(bson.D{{"$tigrisSchemaString", schema}})
-			}
-
-			err := db.CreateCollection(ctx, collName, opts)
+			err := db.CreateCollection(ctx, collName)
 			if err == nil {
 				created.Add(1)
 			} else {
-				AssertEqualError(
+				AssertEqualCommandError(
 					t,
 					mongo.CommandError{
 						Code:    48,
@@ -262,149 +234,10 @@ func TestCreateStressSameCollection(t *testing.T) {
 	require.Len(t, colls, 1)
 
 	// check that the collection was created, and we can query it
-	t.Run("check_stress", func(t *testing.T) {
-		t.Parallel()
+	var doc bson.D
+	err = db.Collection(collName).FindOne(ctx, bson.D{{"_id", "foo_1"}}).Decode(&doc)
+	require.NoError(t, err)
+	require.Equal(t, bson.D{{"_id", "foo_1"}, {"v", "bar"}}, doc)
 
-		var doc bson.D
-		err := db.Collection(collName).FindOne(ctx, bson.D{{"_id", "foo_1"}}).Decode(&doc)
-		require.NoError(t, err)
-		require.Equal(t, bson.D{{"_id", "foo_1"}, {"v", "bar"}}, doc)
-	})
-
-	setup.SkipForTigrisWithReason(t, "In case of Tigris, CreateOrUpdate is called, "+
-		"and it's not possible to check the number of creation attempts as some of them might be updates.")
 	require.Equal(t, int32(1), created.Load(), "Only one attempt to create a collection should succeed")
-}
-
-func TestCreateTigris(t *testing.T) {
-	setup.TigrisOnlyWithReason(t, "Tigris-specific schema is used")
-
-	t.Parallel()
-	ctx, collection := setup.Setup(t) // no providers there
-
-	db := collection.Database()
-	dbName := db.Name()
-
-	for name, tc := range map[string]struct {
-		validator  string
-		schema     string
-		collection string
-		doc        bson.D
-
-		err        *mongo.CommandError // optional, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
-	}{
-		"BadValidator": {
-			validator:  "$bad",
-			schema:     "{}",
-			collection: collection.Name() + "wrong",
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: `required parameter "$tigrisSchemaString" is missing`,
-			},
-			altMessage: `required parameter "$tigrisSchemaString" is missing`,
-		},
-		"EmptySchema": {
-			validator:  "$tigrisSchemaString",
-			schema:     "",
-			collection: collection.Name() + "_empty",
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "empty schema is not allowed",
-			},
-		},
-		"BadSchema": {
-			validator:  "$tigrisSchemaString",
-			schema:     "bad",
-			collection: collection.Name() + "_bad",
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "invalid character 'b' looking for beginning of value",
-			},
-		},
-		"Valid": {
-			validator: "$tigrisSchemaString",
-			schema: fmt.Sprintf(`{
-				"title": "%s_good",
-				"description": "Foo Bar",
-				"primary_key": ["_id"],
-				"properties": {
-					"balance": {"type": "number"},
-					"age": {"type": "integer", "format": "int32"},
-					"_id": {"type": "string"},
-					"obj": {"type": "object", "properties": {"foo": {"type": "string"}}}
-				}
-			}`, collection.Name(),
-			),
-			collection: collection.Name() + "_good",
-			doc: bson.D{
-				{"_id", "foo"},
-				{"balance", 1.0},
-				{"age", 1},
-				{"obj", bson.D{{"foo", "bar"}}},
-			},
-		},
-		"WrongPKey": {
-			validator: "$tigrisSchemaString",
-			schema: fmt.Sprintf(`{
-				"title": "%s_pkey",
-				"description": "Foo Bar",
-				"primary_key": [1, 2, 3],
-				"properties": {
-					"balance": {"type": "number"},
-					"age": {"type": "integer", "format": "int32"},
-					"_id": {"type": "string", "format": "byte"},
-					"arr": {"type": "array", "items": {"type": "string"}}
-				}
-			}`, collection.Name(),
-			),
-			collection: collection.Name() + "_pkey",
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "json: cannot unmarshal number into Go struct field Schema.primary_key of type string",
-			},
-		},
-		"WrongProperties": {
-			validator: "$tigrisSchemaString",
-			schema: fmt.Sprintf(`{
-				"title": "%s_wp",
-				"description": "Foo Bar",
-				"primary_key": ["_id"],
-				"properties": "hello"
-			}`, collection.Name(),
-			),
-			collection: collection.Name() + "_wp",
-			err: &mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: "json: cannot unmarshal string into Go struct field Schema.properties of type map[string]*tjson.Schema",
-			},
-		},
-	} {
-		name, tc := name, tc
-
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			opts := options.CreateCollection().SetValidator(bson.D{{tc.validator, tc.schema}})
-			err := db.Client().Database(dbName).CreateCollection(ctx, tc.collection, opts)
-			if tc.err != nil {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-				return
-			}
-
-			require.NoError(t, err)
-
-			// to make sure that schema is correct, we try to insert a document
-			if tc.doc != nil {
-				_, err = db.Collection(tc.collection).InsertOne(ctx, tc.doc)
-				require.NoError(t, err)
-			}
-		})
-	}
 }

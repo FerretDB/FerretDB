@@ -55,20 +55,32 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 
 		switch param := typeParam.(type) {
 		case *types.Document:
-			operator, err := NewOperator(param)
-			if errors.Is(err, ErrNoOperator) {
+			if !IsOperator(param) {
 				res = param
-				continue
+				break
 			}
 
+			operator, err := NewOperator(param)
 			if err != nil {
-				// TODO https://github.com/FerretDB/FerretDB/issues/2678
-				return nil, err
+				var opErr OperatorError
+				if !errors.As(err, &opErr) {
+					return nil, lazyerrors.Error(err)
+				}
+
+				if opErr.Code() == ErrInvalidExpression {
+					opErr.code = ErrInvalidNestedExpression
+				}
+
+				return nil, opErr
 			}
 
 			if typeParam, err = operator.Process(doc); err != nil {
-				// TODO https://github.com/FerretDB/FerretDB/issues/2678
-				return nil, lazyerrors.Error(err)
+				var opErr OperatorError
+				if !errors.As(err, &opErr) {
+					return nil, lazyerrors.Error(err)
+				}
+
+				return nil, err
 			}
 
 			// the result of nested operator needs to be evaluated
@@ -76,8 +88,10 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 
 		case *types.Array:
 			if param.Len() != 1 {
-				// TODO https://github.com/FerretDB/FerretDB/issues/2678
-				return nil, fmt.Errorf("Expression $type takes exactly 1 arguments. %d were passed in.", param.Len())
+				return nil, newOperatorError(
+					ErrArgsInvalidLen,
+					fmt.Sprintf("Expression $type takes exactly 1 arguments. %d were passed in.", param.Len()),
+				)
 			}
 
 			value, err := param.Get(0)
@@ -93,9 +107,8 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 
 		case string:
 			if strings.HasPrefix(param, "$") {
-				expression, err := aggregations.NewExpression(param)
+				expression, err := aggregations.NewExpression(param, nil)
 				if err != nil {
-					// TODO https://github.com/FerretDB/FerretDB/issues/2678
 					return nil, err
 				}
 
@@ -118,3 +131,8 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 
 	return commonparams.AliasFromType(res), nil
 }
+
+// check interfaces
+var (
+	_ Operator = (*typeOp)(nil)
+)

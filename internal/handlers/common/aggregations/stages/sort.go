@@ -59,12 +59,13 @@ func newSort(stage *types.Document) (aggregations.Stage, error) {
 
 // Process implements Stage interface.
 //
-// If sort path is invalid, it returns a possibly wrapped types.DocumentPathError.
+// If sort path is invalid, it returns a possibly wrapped types.PathError.
 func (s *sort) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
-	var err error
-	if iter, err = common.SortIterator(iter, closer, s.fields); err != nil {
-		var pathErr *types.DocumentPathError
-		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+	iter, err := common.SortIterator(iter, closer, s.fields)
+	if err != nil {
+		// TODO https://github.com/FerretDB/FerretDB/issues/3125
+		var pathErr *types.PathError
+		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrPathContainsEmptyElement,
 				"FieldPath field names may not be empty strings.",
@@ -76,11 +77,6 @@ func (s *sort) Process(ctx context.Context, iter types.DocumentsIterator, closer
 	}
 
 	return iter, nil
-}
-
-// Type  implements Stage interface.
-func (s *sort) Type() aggregations.StageType {
-	return aggregations.StageTypeDocuments
 }
 
 // check interfaces

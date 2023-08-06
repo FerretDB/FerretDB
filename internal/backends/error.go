@@ -15,6 +15,7 @@
 package backends
 
 import (
+	"errors"
 	"fmt"
 
 	"golang.org/x/exp/slices"
@@ -22,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 )
 
-//go:generate ../../bin/stringer -type ErrorCode
+//go:generate ../../bin/stringer -linecomment -type ErrorCode
 
 // ErrorCode represent a backend error code.
 type ErrorCode int
@@ -31,17 +32,18 @@ type ErrorCode int
 const (
 	_ ErrorCode = iota
 
+	ErrorCodeDatabaseNameIsInvalid
 	ErrorCodeDatabaseDoesNotExist
 
+	ErrorCodeCollectionNameIsInvalid
 	ErrorCodeCollectionDoesNotExist
 	ErrorCodeCollectionAlreadyExists
-	ErrorCodeCollectionNameIsInvalid
 )
 
 // Error represents a backend error returned by all Backend, Database and Collection methods.
 type Error struct {
-	// this internal error can't be accessed by the caller;
-	// it may be nil
+	// This internal error can't be accessed by the caller; it exists only for debugging.
+	// It may be nil.
 	err error
 
 	code ErrorCode
@@ -74,6 +76,8 @@ func (err *Error) Error() string {
 }
 
 // ErrorCodeIs returns true if err is *Error with one of the given error codes.
+//
+// At least one error code must be given.
 func ErrorCodeIs(err error, code ErrorCode, codes ...ErrorCode) bool {
 	e, ok := err.(*Error) //nolint:errorlint // do not inspect error chain
 	if !ok {
@@ -86,6 +90,7 @@ func ErrorCodeIs(err error, code ErrorCode, codes ...ErrorCode) bool {
 // checkError enforces backend interfaces contracts.
 //
 // Err must be nil, *Error, or some other opaque error.
+// *Error values can't be wrapped or be present anywhere in the error chain.
 // If err is *Error, it must have one of the given error codes.
 // If that's not the case, checkError panics in debug builds.
 //
@@ -101,6 +106,10 @@ func checkError(err error, codes ...ErrorCode) {
 
 	e, ok := err.(*Error) //nolint:errorlint // do not inspect error chain
 	if !ok {
+		if errors.As(err, &e) {
+			panic(fmt.Sprintf("error should not be wrapped: %v", err))
+		}
+
 		return
 	}
 

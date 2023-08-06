@@ -205,7 +205,7 @@ func tagOptionsFromList(optionsList []string) *tagOptions {
 		switch tt {
 		case "opt":
 			to.optional = true
-		case "non-default":
+		case "unimplemented-non-default":
 			to.nonDefault = true
 		case "unimplemented":
 			to.unimplemented = true
@@ -244,7 +244,7 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 	switch fv.Kind() { //nolint: exhaustive // all other types are not supported
 	case reflect.Int32, reflect.Int64, reflect.Float64:
 		if o.positiveNumber {
-			settable, err = getWholeParamStrict(command, key, val)
+			settable, err = GetValidatedNumberParamWithMinValue(command, key, val, 0)
 			if err != nil {
 				return err
 			}

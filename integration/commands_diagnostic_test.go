@@ -16,6 +16,7 @@ package integration
 
 import (
 	"net"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,6 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
 )
 
 func TestCommandsDiagnosticConnectionStatus(t *testing.T) {
@@ -72,8 +74,10 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3050")
 
 			var actual bson.D
 
@@ -125,9 +129,9 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 	ctx, collection := res.Ctx, res.Collection
 
 	for name, tc := range map[string]struct {
-		command  bson.D         // required, command to run
-		expected map[string]any // optional, expected keys of response
+		command bson.D // required, command to run
 
+		expected   map[string]any      // optional, expected keys of response
 		err        *mongo.CommandError // optional, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 		skip       string              // optional, skip test with a specified reason
@@ -182,12 +186,14 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
 
 			require.NotNil(t, tc.command, "command must not be nil")
 
@@ -346,8 +352,6 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 }
 
 func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/1759")
-
 	t.Parallel()
 
 	s := setup.SetupWithOpts(t, nil)
@@ -405,4 +409,102 @@ func TestCommandsDiagnosticWhatsMyURI(t *testing.T) {
 		require.Equal(t, 2, len(ports))
 		assert.NotEqual(t, ports[0], ports[1])
 	}
+}
+
+// TestCommandWhatsMyURIConnection tests that integration test setup applies
+// minPoolSize, maxPoolSize and maxIdleTimeMS correctly to the driver.
+// It also tests that the driver behaves like we think it should.
+func TestCommandWhatsMyURIConnection(t *testing.T) {
+	t.Parallel()
+
+	// options are applied to create a client that uses single connection pool
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		ExtraOptions: url.Values{
+			"minPoolSize":   []string{"1"},
+			"maxPoolSize":   []string{"1"},
+			"maxIdleTimeMS": []string{"0"},
+		},
+	})
+
+	collection1 := s.Collection
+	databaseName := s.Collection.Database().Name()
+	collectionName := s.Collection.Name()
+
+	t.Run("SameClientStress", func(t *testing.T) {
+		t.Parallel()
+
+		ports := make(chan string, teststress.NumGoroutines)
+
+		teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+			ready <- struct{}{}
+			<-start
+
+			var res bson.D
+			err := collection1.Database().RunCommand(s.Ctx, bson.D{{"whatsmyuri", int32(1)}}).Decode(&res)
+			require.NoError(t, err)
+
+			doc := ConvertDocument(t, res)
+			v, _ := doc.Get("ok")
+			resOk, ok := v.(float64)
+			require.True(t, ok)
+			assert.Equal(t, float64(1), resOk)
+
+			v, _ = doc.Get("you")
+			you, ok := v.(string)
+			require.True(t, ok)
+
+			_, port, err := net.SplitHostPort(you)
+			require.NoError(t, err)
+			assert.NotEmpty(t, port)
+			ports <- port
+		})
+
+		close(ports)
+
+		firstPort := <-ports
+		for port := range ports {
+			require.Equal(t, firstPort, port, "expected same client to use the same port")
+		}
+	})
+
+	t.Run("DifferentClient", func(t *testing.T) {
+		t.Parallel()
+
+		u, err := url.Parse(s.MongoDBURI)
+		require.NoError(t, err)
+
+		client2, err := mongo.Connect(s.Ctx, options.Client().ApplyURI(u.String()))
+		require.NoError(t, err)
+
+		defer client2.Disconnect(s.Ctx)
+
+		collection2 := client2.Database(databaseName).Collection(collectionName)
+
+		var ports []string
+
+		for _, collection := range []*mongo.Collection{collection1, collection2} {
+			var res bson.D
+			err := collection.Database().RunCommand(s.Ctx, bson.D{{"whatsmyuri", int32(1)}}).Decode(&res)
+			require.NoError(t, err)
+
+			doc := ConvertDocument(t, res)
+			v, _ := doc.Get("ok")
+			resOk, ok := v.(float64)
+			require.True(t, ok)
+			assert.Equal(t, float64(1), resOk)
+
+			v, _ = doc.Get("you")
+			you, ok := v.(string)
+			require.True(t, ok)
+
+			_, port, err := net.SplitHostPort(you)
+			require.NoError(t, err)
+			assert.NotEmpty(t, port)
+
+			ports = append(ports, port)
+		}
+
+		require.Equal(t, 2, len(ports))
+		assert.NotEqual(t, ports[0], ports[1])
+	})
 }

@@ -16,8 +16,11 @@ package sqlite
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -52,7 +55,15 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		}
 	}
 
-	db := h.b.Database(dbName)
+	db, err := h.b.Database(dbName)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid namespace specified '%s'", dbName)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "listCollections")
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
 	defer db.Close()
 
 	res, err := db.ListCollections(ctx, nil)

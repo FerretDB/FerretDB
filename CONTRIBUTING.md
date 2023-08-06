@@ -44,12 +44,13 @@ Finally, you will also need [git-lfs](https://git-lfs.github.com) installed and 
 Fork the [FerretDB repository on GitHub](https://github.com/FerretDB/FerretDB/fork).
 To have all the tags in the repository and what they point to, copy all branches by removing checkmark for `copy the main branch only` before forking.
 
-After forking FerretDB on GitHub, you can clone the repository:
+After forking FerretDB on GitHub, you can clone the repository and add upstream repository as a remote:
 
 ```sh
 git clone git@github.com:<YOUR_GITHUB_USERNAME>/FerretDB.git
 cd FerretDB
 git remote add upstream https://github.com/FerretDB/FerretDB.git
+git fetch --all --tags
 ```
 
 To run development commands, you should first install the [`task`](https://taskfile.dev/) tool.
@@ -62,13 +63,14 @@ You can also [install `task` globally](https://taskfile.dev/#/installation),
 but that might lead to the version skew.
 
 With `task` installed,
-you should install development tools with `task init`
+you can see all available tasks by running `task -l` in the root of the repository
+(not in the `tools` directory).
+
+After that, you should install development tools with `task init`
 and download required Docker images with `task env-pull`.
 
 If something does not work correctly,
 you can reset the environment with `task env-reset`.
-
-You can see all available `task` tasks with `task -l`.
 
 ### Building a production release binary
 
@@ -133,10 +135,6 @@ The `internal` subpackages contain most of the FerretDB code:
 - `handlers/sqlite` contains the implementation of the SQLite handler.
   It is being converted into universal handler for all backends.
 - `handlers/pg` contains the implementation of the PostgreSQL handler.
-- `handlers/tigris` contains the implementation of the Tigris handler.
-- `handlers/tigris/tjson` provides converters from/to TJSON with JSON Schema for built-in and `types` types.
-  BSON type information is preserved either in the schema (where possible) or in the values themselves.
-  It is used by `tigris` handler.
 
 #### Running tests
 
@@ -152,13 +150,12 @@ They use the Go MongoDB driver like a regular user application.
 They could test any MongoDB-compatible database (such as FerretDB or MongoDB itself) via a regular TCP or TLS port or Unix socket.
 They also could test in-process FerretDB instances
 (meaning that integration tests start and stop them themselves) with a given handler.
-Finally, some tests (so-called compatibility or "compat" tests) connect to two systems
+Finally, some integration tests (so-called compatibility or "compat" tests) connect to two systems
 ("target" for FerretDB and "compat" for MongoDB) at the same time,
 send the same queries to both, and compare results.
 You can run them with:
 
 - `task test-integration-pg` for in-process FerretDB with `pg` handler and MongoDB;
-- `task test-integration-tigris` for in-process FerretDB with `tigris` handler and MongoDB;
 - `task test-integration-mongodb` for MongoDB only, skipping compat tests;
 - or `task test-integration` to run all in parallel.
 
@@ -167,20 +164,22 @@ If tests fail and the output is too confusing, try running them sequentially by 
 
 You can also run `task -C 1` to limit the number of concurrent tasks, which is useful for debugging.
 
-To run a single test case, you may want to use the predefined variable `TEST_RUN`.
-For example, to run a single test case for in-process FerretDB with `pg` handler you may use `task test-integration-pg TEST_RUN='TestName/TestCaseName'`.
+To run a subset of integration tests and test cases, you may use Task variable `TEST_RUN`.
+For example, to run all tests related to the `getMore` command implementation for in-process FerretDB with `pg` handler
+you may use `task test-integration-pg TEST_RUN='(?i)GetMore'`.
 
-Finally, since all tests just run `go test` with various arguments and flags under the hood,
+Finally, since all tests just run `go test` with various arguments and flags under the hood
+(for example, `TEST_RUN` just provides the value for the [`-run` flag](https://pkg.go.dev/cmd/go#hdr-Testing_flags)),
 you may also use all standard `go` tool facilities,
 including [`GOFLAGS` environment variable](https://pkg.go.dev/cmd/go#hdr-Environment_variables).
 For example:
 
-- to run a single test case for in-process FerretDB with `pg` handler
+- to run all tests related to the `getMore` command implementation for in-process FerretDB with `pg` handler
   with all subtests running sequentially,
-  you may use `env GOFLAGS='-parallel=1' task test-integration-pg TEST_RUN='TestName/TestCaseName'`;
-- to run all tests for in-process FerretDB with `tigris` handler
+  you may use `env GOFLAGS='-parallel=1' task test-integration-pg TEST_RUN='(?i)GetMore'`;
+- to run all tests for in-process FerretDB with `sqlite` handler
   with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
-  you may use `env GOFLAGS='-trace=trace.out' task test-integration-tigris`.
+  you may use `env GOFLAGS='-trace=trace.out' task test-integration-sqlite`.
 
 > **Note**
 >
@@ -219,7 +218,19 @@ Some of our idiosyncrasies:
    The order of `case`s follows this order: <https://pkg.go.dev/github.com/FerretDB/FerretDB/internal/types#hdr-Mapping>
    It may seem random, but it is only pseudo-random and follows BSON spec: <https://bsonspec.org/spec.html>
 2. We generally pass and return `struct`s by pointers.
-   There are some exceptions like `types.Path` that has value semantics, but when in doubt – use pointers.
+   There are some exceptions like `types.Path` that have value semantics, but when in doubt – use pointers.
+3. Code comments:
+   - All top-level declarations, even unexported, should have documentation comments.
+   - In documentation comments do not describe the name in terms of the name itself (`// Registry is a registry of …`).
+     Use other words instead; often, they could add additional information and make reading more pleasant (`// Registry stores …`).
+   - In code comments, in general, do not describe _what_ the code does: it should be clear from the code itself
+     (and when it doesn't and the code is tricky, simplify it instead).
+     Instead, describe _why_ the code does that if it is not clear from the surrounding context, names, etc.
+     There is no need to add comments just because there are no comments if everything is already clear without them.
+   - For code comments, write either
+     sentence fragments (do not start it with a capital letter, do not end it with a dot, use the simplified grammar) for short notes
+     or full sentences (do start them with capital letters, do end them with dots, do check their grammar) when a longer (2+ sentences)
+     explanation is needed (and the code could not be simplified).
 
 #### Integration tests conventions
 
@@ -228,11 +239,26 @@ branchless (with a few, if any, `if` and `switch` statements),
 and backend-independent.
 Ideally, the same test should work for both FerretDB with all handlers and MongoDB.
 If that's impossible without some branching, use helpers exported from the `setup` package,
-such us `IsTigris`, `SkipForTigrisWithReason`, `TigrisOnlyWithReason`.
+such us `FailsForFerretDB`, `SkipForMongoDB`, etc.
 The bar for using other ways of branching, such as checking error codes and messages, is very high.
 Writing separate tests might be much better than making a single test that checks error text.
 
 Also, we should use driver methods as much as possible instead of testing commands directly via `RunCommand`.
+
+We have a lot of existing helpers to convert the driver's `bson.D` values to our `*types.Document` values,
+to compare them, etc.
+In most cases, they should be used instead of (deprecated) `bson.D.Map()`,
+`bson.Unmarshal`, decoding into a struct with `bson` tags, comparing fields one-by-one, etc.
+The bar for adding new helpers is very high.
+Please check all existing ones.
+
+If there's a need to use any large number to test corner cases,
+we create constants for them with explanation what do they represent, and refer to them.
+For example:
+
+```go
+const doubleMaxPrec = float64(1<<53 - 1) // 9007199254740991.0:    largest double values that could be represented as integer exactly
+```
 
 #### Integration tests naming guidelines
 
@@ -263,7 +289,7 @@ Also, we should use driver methods as much as possible instead of testing comman
 
 Before submitting a pull request, please make sure that:
 
-1. Tests are added for new functionality or fixed bugs.
+1. Tests are added or updated for new functionality or fixed bugs.
    Typical test cases include:
    - happy paths;
    - dot notation for existing and non-existent paths;

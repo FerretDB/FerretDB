@@ -24,12 +24,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/FerretDB/FerretDB/internal/util/contract"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // validateDatabaseNameRe validates FerretDB database / PostgreSQL schema names.
-var validateDatabaseNameRe = regexp.MustCompile("^[a-zA-Z_-][a-zA-Z0-9_-]{0,62}$")
+var validateDatabaseNameRe = regexp.MustCompile("^[a-zA-Z0-9_-]{1,63}$")
 
 // Databases returns a sorted list of FerretDB databases / PostgreSQL schemas.
 func Databases(ctx context.Context, tx pgx.Tx) ([]string, error) {
@@ -91,8 +90,6 @@ func CreateDatabaseIfNotExists(ctx context.Context, tx pgx.Tx, db string) error 
 
 // DropDatabase drops FerretDB database.
 func DropDatabase(ctx context.Context, tx pgx.Tx, db string) (err error) {
-	defer contract.EnsureError(err, ErrSchemaNotExist) // if schema does not exist
-
 	if _, err = tx.Exec(ctx, `DROP SCHEMA `+pgx.Identifier{db}.Sanitize()+` CASCADE`); err == nil {
 		return
 	}

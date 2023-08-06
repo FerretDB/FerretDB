@@ -78,7 +78,15 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	db := h.b.Database(dbName)
+	db, err := h.b.Database(dbName)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collectionName)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "create")
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
 	defer db.Close()
 
 	err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
@@ -96,13 +104,13 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		return &reply, nil
 
+	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
+		msg := fmt.Sprintf("Invalid collection name: %s", collectionName)
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "create")
+
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionAlreadyExists):
 		msg := fmt.Sprintf("Collection %s.%s already exists.", dbName, collectionName)
-		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNamespaceExists, msg)
-
-	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
-		msg := fmt.Sprintf("Invalid namespace: %s.%s", dbName, collectionName)
-		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNamespaceExists, msg, "create")
 
 	default:
 		return nil, lazyerrors.Error(err)

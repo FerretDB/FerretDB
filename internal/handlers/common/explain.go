@@ -18,6 +18,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -33,6 +34,8 @@ type ExplainParams struct {
 
 	Filter *types.Document `ferretdb:"filter,opt"`
 	Sort   *types.Document `ferretdb:"sort,opt"`
+	Skip   int64           `ferretdb:"skip,opt"`
+	Limit  int64           `ferretdb:"limit,opt"`
 
 	StagesDocs []any           `ferretdb:"-"`
 	Aggregate  bool            `ferretdb:"-"`
@@ -81,9 +84,27 @@ func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	sort, err = GetOptionalParam(explain, "sort", filter)
+	sort, err = GetOptionalParam(explain, "sort", sort)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	var limit, skip int64
+
+	if limit, err = GetOptionalParam(explain, "limit", limit); err != nil {
+		return nil, err
+	}
+
+	if limit, err = commonparams.GetValidatedNumberParamWithMinValue("explain", "limit", limit, 0); err != nil {
+		return nil, err
+	}
+
+	if skip, err = GetOptionalParam(explain, "skip", skip); err != nil {
+		return nil, err
+	}
+
+	if skip, err = commonparams.GetValidatedNumberParamWithMinValue("explain", "skip", skip, 0); err != nil {
+		return nil, err
 	}
 
 	var stagesDocs []any
@@ -117,6 +138,8 @@ func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, 
 		Collection: collection,
 		Filter:     filter,
 		Sort:       sort,
+		Skip:       skip,
+		Limit:      limit,
 		StagesDocs: stagesDocs,
 		Aggregate:  cmd.Command() == "aggregate",
 		Command:    cmd,

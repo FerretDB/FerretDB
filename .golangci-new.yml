@@ -17,6 +17,7 @@ linters-settings:
     disable-default-exclusions: false
     exclude-functions:
       - (*database/sql.Rows).Close
+      - (*github.com/FerretDB/FerretDB/internal/util/fsql.Rows).Close
   errorlint:
     # see caveats at https://github.com/polyfloyd/go-errorlint#fmterrorf-wrapping-verb
     errorf: false
@@ -32,10 +33,18 @@ linters-settings:
     rules:
       # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md
       - name: exported
-        arguments: [checkPrivateReceivers]
+        arguments: [checkPrivateReceivers, disableStutteringCheck]
       - name: package-comments
   staticcheck:
     checks: ["all"]
+  tagalign:
+    sort: true
+    order:
+      - name
+      - cmd
+      - arg
+      - default
+      - help
   wsl:
     # https://github.com/bombsimon/wsl/blob/master/doc/configuration.md
     strict-append: false

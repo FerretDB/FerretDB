@@ -17,6 +17,7 @@ package setup
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -31,30 +32,44 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// jaegerExporter is a global Jaeger exporter for tests.
-var jaegerExporter *jaeger.Exporter
+// listenerMetrics are shared between tests.
+var listenerMetrics = connmetrics.NewListenerMetrics()
 
-// sqliteDir is a fixed directory for SQLite backend tests.
-//
-// We don't use testing.T.TempDir() or something to make debugging of failed tests easier.
-var sqliteDir = filepath.Join("..", "tmp", "sqlite-tests")
+// jaegerExporter is a shared Jaeger exporter for tests.
+var jaegerExporter *jaeger.Exporter
 
 // Startup initializes things that should be initialized only once.
 func Startup() {
 	logging.Setup(zap.DebugLevel, "")
 
-	// use any available port to allow running different configuration in parallel
+	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
+	if os.Getenv("RUNNER_DEBUG") == "1" {
+		zap.S().Info("Enabling setup debug logging on GitHub Actions.")
+		*debugSetupF = true
+	}
+
+	prometheus.DefaultRegisterer.MustRegister(listenerMetrics)
+
+	// use any available port to allow running different configurations in parallel
 	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	// do basic flags validation earlier, before all tests
+
+	for _, p := range shareddata.AllBenchmarkProviders() {
+		if g, ok := p.(shareddata.BenchmarkGenerator); ok {
+			g.Init(*benchDocsF)
+		}
+	}
 
 	if *targetBackendF == "" {
 		zap.S().Fatal("-target-backend must be set.")
@@ -64,8 +79,20 @@ func Startup() {
 		zap.S().Fatalf("Unknown target backend %q.", *targetBackendF)
 	}
 
-	_ = os.Remove(sqliteDir)
-	must.NoError(os.MkdirAll(sqliteDir, 0o777))
+	if *sqliteURLF != "" {
+		u, err := url.Parse(*sqliteURLF)
+		if err != nil {
+			zap.S().Fatalf("Failed to parse -sqlite-url %s: %s", u, err)
+		}
+
+		must.BeTrue(u.Path == "")
+		must.BeTrue(u.Opaque != "")
+
+		dir := must.NotFail(filepath.Abs(u.Opaque))
+		zap.S().Infof("Recreating %s", dir)
+		_ = os.Remove(dir)
+		must.NoError(os.MkdirAll(dir, 0o777))
+	}
 
 	if u := *targetURLF; u != "" {
 		client, err := makeClient(ctx, u)

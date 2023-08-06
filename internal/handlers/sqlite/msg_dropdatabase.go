@@ -39,6 +39,17 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, err
 	}
 
+	// Most backends would block on `DropDatabase` below otherwise.
+	//
+	// There is a race condition: another client could create a new cursor for that database
+	// after we closed all of them, but before we drop the database itself.
+	// In that case, we expect the client to wait or to retry the operation.
+	for _, c := range h.cursors.All() {
+		if c.DB == dbName {
+			c.Close()
+		}
+	}
+
 	err = h.b.DropDatabase(ctx, &backends.DropDatabaseParams{
 		Name: dbName,
 	})
@@ -48,6 +59,8 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	switch {
 	case err == nil:
 		res.Set("dropped", dbName)
+	case backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid):
+		// nothing?
 	case backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist):
 		// nothing
 	default:

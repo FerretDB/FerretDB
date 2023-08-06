@@ -41,6 +41,9 @@ const (
 	// ErrFailedToParse indicates user input parsing failure.
 	ErrFailedToParse = ErrorCode(9) // FailedToParse
 
+	// ErrUnauthorized indicates that cursor is not authorized to access another namespace.
+	ErrUnauthorized = ErrorCode(13) // Unauthorized
+
 	// ErrTypeMismatch for $sort indicates that the expression in the $sort is not an object.
 	ErrTypeMismatch = ErrorCode(14) // TypeMismatch
 
@@ -86,6 +89,9 @@ const (
 	// ErrCannotCreateIndex indicates that index creation process failed because some data are not valid.
 	ErrCannotCreateIndex = ErrorCode(67) // CannotCreateIndex
 
+	// ErrIndexAlreadyExists indicates that identical index already exists.
+	ErrIndexAlreadyExists = ErrorCode(68) // IndexAlreadyExists
+
 	// ErrInvalidOptions indicates that _id index cannot be deleted.
 	ErrInvalidOptions = ErrorCode(72) // InvalidOptions
 
@@ -104,11 +110,23 @@ const (
 	// ErrDocumentValidationFailure indicates that document validation failed.
 	ErrDocumentValidationFailure = ErrorCode(121) // DocumentValidationFailure
 
+	// ErrInvalidIndexSpecificationOption indicates that the index option is invalid.
+	ErrInvalidIndexSpecificationOption = ErrorCode(197) // InvalidIndexSpecificationOption
+
+	// ErrInvalidPipelineOperator indicates that provided aggregation operator is invalid.
+	ErrInvalidPipelineOperator = ErrorCode(168) // InvalidPipelineOperator
+
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 
-	// ErrDuplicateKey indicates duplicate key violation.
-	ErrDuplicateKey = ErrorCode(11000) // Location11000
+	// ErrIndexesWrongType indicates that indexes parameter has wrong type.
+	ErrIndexesWrongType = ErrorCode(10065) // Location10065
+
+	// ErrDuplicateKeyInsert indicates duplicate key violation on inserting document.
+	ErrDuplicateKeyInsert = ErrorCode(11000) // Location11000
+
+	// ErrSetBadExpression indicates set expression is not object.
+	ErrSetBadExpression = ErrorCode(40272) // Location40272
 
 	// ErrStageGroupInvalidFields indicates group's fields must be an object.
 	ErrStageGroupInvalidFields = ErrorCode(15947) // Location15947
@@ -140,11 +158,21 @@ const (
 	// ErrSortMissingKey indicates sort stage is missing sort key.
 	ErrSortMissingKey = ErrorCode(15976) // Location15976
 
+	// ErrGroupDuplicateFieldName indicates that duplicate field name is specified.
+	ErrGroupDuplicateFieldName = ErrorCode(16406) // Location16406
+
 	// ErrStageUnwindWrongType indicates $unwind stage argument has unexpected type.
 	ErrStageUnwindWrongType = ErrorCode(15981) // Location15981
 
+	// ErrExpressionWrongLenOfFields indicates that aggregation expression has too much fields.
+	ErrExpressionWrongLenOfFields = ErrorCode(15983) // Location15983
+
 	// ErrPathContainsEmptyElement indicates that the path contains an empty element.
 	ErrPathContainsEmptyElement = ErrorCode(15998) // Location15998
+
+	// ErrOperatorWrongLenOfArgs indicates that aggregation operator contains
+	// wrong amount of arguments.
+	ErrOperatorWrongLenOfArgs = ErrorCode(16020) // Location16020
 
 	// ErrFieldPathInvalidName indicates that FieldPath is invalid.
 	ErrFieldPathInvalidName = ErrorCode(16410) // Location16410
@@ -161,11 +189,26 @@ const (
 	// ErrSliceFirstArg for $slice indicates that the first argument is not an array.
 	ErrSliceFirstArg = ErrorCode(28724) // Location28724
 
+	// ErrStageUnsetNoPath indicates that $unwind aggregation stage is empty.
+	ErrStageUnsetNoPath = ErrorCode(31119) // Location31119
+
+	// ErrStageUnsetArrElementInvalidType indicates that $unset stage arguments has array with unexpected type.
+	ErrStageUnsetArrElementInvalidType = ErrorCode(31120) // Location31120
+
+	// ErrStageUnsetInvalidType indicates that $unset stage arguments has unexpected type.
+	ErrStageUnsetInvalidType = ErrorCode(31002) // Location31002
+
 	// ErrStageUnwindNoPath indicates that $unwind aggregation stage is empty.
 	ErrStageUnwindNoPath = ErrorCode(28812) // Location28812
 
 	// ErrStageUnwindNoPrefix indicates that $unwind aggregation stage doesn't include '$' prefix.
 	ErrStageUnwindNoPrefix = ErrorCode(28818) // Location28818
+
+	// ErrUnsetPathCollision indicates that an $unset path creates collision at another path in arguments.
+	ErrUnsetPathCollision = ErrorCode(31249) // Location31249
+
+	// ErrUnsetPathOverwrite indicates that an $unset path have overwrites another path in arguments.
+	ErrUnsetPathOverwrite = ErrorCode(31250) // Location31250
 
 	// ErrProjectionInEx for $elemMatch indicates that inclusion statement found
 	// while projection document already marked as exclusion.
@@ -177,6 +220,9 @@ const (
 
 	// ErrAggregatePositionalProject indicates that positional projection cannot be used in aggregation.
 	ErrAggregatePositionalProject = ErrorCode(31324) // Location31324
+
+	// ErrAggregateInvalidExpression indicates that projection expression does not exist.
+	ErrAggregateInvalidExpression = ErrorCode(31325) // Location31325
 
 	// ErrWrongPositionalOperatorLocation indicates that there can only be one positional
 	// operator at the end.
@@ -196,6 +242,10 @@ const (
 
 	// ErrStageCountBadValue indicates that $count stage contains invalid value.
 	ErrStageCountBadValue = ErrorCode(40160) // Location40160
+
+	// ErrAddFieldsExpressionWrongAmountOfArgs indicates that $addFields stage expression contain invalid
+	// amount of arguments.
+	ErrAddFieldsExpressionWrongAmountOfArgs = ErrorCode(40181) // Location40181
 
 	// ErrStageGroupUnaryOperator indicates that $sum is a unary operator.
 	ErrStageGroupUnaryOperator = ErrorCode(40237) // Location40237
