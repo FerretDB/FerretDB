@@ -14,7 +14,7 @@
 
 // Package backends provides common interfaces and code for all backend implementations.
 //
-// # Design principles.
+// # Design principles
 //
 //  1. Interfaces are relatively high-level and "fat" (or not).
 //     We are generally doing one backend interface call per handler call.

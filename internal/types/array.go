@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// Array represents BSON array.
+// Array represents BSON array: an ordered collection of BSON values, accessed by 0-based indexes.
 //
 // Zero value is a valid empty array.
 type Array struct {
@@ -52,7 +52,7 @@ func (a *Array) DeepCopy() *Array {
 	return deepCopy(a).(*Array)
 }
 
-// Len returns the number of elements in the array.
+// Len returns the number of values in the array.
 //
 // It returns 0 for nil Array.
 func (a *Array) Len() int {
@@ -76,7 +76,7 @@ func (a *Array) Get(index int) (any, error) {
 	return a.s[index], nil
 }
 
-// GetByPath returns a value by path - a sequence of indexes and keys.
+// GetByPath returns a value by path.
 func (a *Array) GetByPath(path Path) (any, error) {
 	return getByPath(a, path)
 }
@@ -105,7 +105,7 @@ func (a *Array) Append(values ...any) {
 	a.s = append(a.s, values...)
 }
 
-// RemoveByPath removes document by path, doing nothing if the key does not exist.
+// RemoveByPath removes (cuts) value by path, doing nothing if path points to nothing.
 func (a *Array) RemoveByPath(path Path) {
 	removeByPath(a, path)
 }
@@ -145,7 +145,7 @@ func (a *Array) Max() any {
 }
 
 // FilterArrayByType returns a new array which contains
-// only elements of the same BSON type as ref.
+// only values of the same BSON type as ref.
 // All numbers are treated as the same type.
 func (a *Array) FilterArrayByType(ref any) *Array {
 	refType := detectDataType(ref)
