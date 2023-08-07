@@ -38,9 +38,10 @@ const (
 )
 
 // newOperatorError returns new OperatorError.
-func newOperatorError(code operatorErrorCode, msg string) error {
+func newOperatorError(code operatorErrorCode, name, msg string) error {
 	return OperatorError{
 		code: code,
+		name: name,
 		msg:  msg,
 	}
 }
@@ -48,6 +49,7 @@ func newOperatorError(code operatorErrorCode, msg string) error {
 // OperatorError is used for reporting operator errors.
 type OperatorError struct {
 	msg  string
+	name string
 	code operatorErrorCode
 }
 
@@ -59,4 +61,9 @@ func (opErr OperatorError) Error() string {
 // Code returns operatorError code.
 func (opErr OperatorError) Code() operatorErrorCode {
 	return opErr.code
+}
+
+// Name returns the name of the operator that produced an error.
+func (opErr OperatorError) Name() string {
+	return opErr.name
 }

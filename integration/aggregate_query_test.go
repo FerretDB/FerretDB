@@ -34,6 +34,16 @@ func TestAggregateMatchExprErrors(t *testing.T) {
 		altMessage string              // optional, alternative error message
 		skip       string              // optional, skip test with a specified reason
 	}{
+		"Recursive": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", bson.D{{"$expr", int32(1)}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    168,
+				Name:    "InvalidPipelineOperator",
+				Message: "Unrecognized expression '$expr'",
+			},
+		},
 		"GtNotArray": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"$expr", bson.D{{"$gt", 1}}}}}},

@@ -27,7 +27,7 @@ import (
 
 // expr represents `$expr` operator.
 type expr struct {
-	value any
+	exprValue any
 }
 
 // NewExpr validates and creates $expr operator.
@@ -38,27 +38,20 @@ func NewExpr(doc *types.Document) (Operator, error) {
 	}
 
 	return &expr{
-		value: v,
+		exprValue: v,
 	}, nil
 }
 
 // Process implements Operator interface.
 func (e *expr) Process(doc *types.Document) (any, error) {
-	v, ok := e.value.(*types.Document)
-	if !ok || v.Len() == 0 {
-		return e.value, nil
-	}
-
-	return evaluateExpr(v, doc)
+	return evaluateExpr(e.exprValue, doc)
 }
 
 // validateExpr recursively validates operators and expressions.
 func validateExpr(exprValue any) error {
 	switch exprValue := exprValue.(type) {
 	case *types.Document:
-		_, isAggregationOperator := Operators[exprValue.Command()]
-
-		if IsOperator(exprValue) && isAggregationOperator {
+		if IsOperator(exprValue) {
 			op, err := NewOperator(exprValue)
 			if err != nil {
 				return err
@@ -131,15 +124,16 @@ func evaluateExpr(exprValue any, doc *types.Document) (any, error) {
 	case *types.Document:
 		if IsOperator(exprValue) {
 			op, err := NewOperator(exprValue)
-			if err == nil {
-				v, err := op.Process(doc)
-				if err != nil {
-					return nil, err
-				}
-
-				return v, nil
+			if err != nil {
+				return nil, err
 			}
-			// not an aggregation operator, may be filter operator
+
+			v, err := op.Process(doc)
+			if err != nil {
+				return nil, err
+			}
+
+			return v, nil
 		}
 
 		iter := exprValue.Iterator()

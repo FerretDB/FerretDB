@@ -39,15 +39,10 @@ func TestAggregateCompatMatchExpr(t *testing.T) {
 				bson.D{{"$match", bson.D{{"$expr", int32(1)}}}},
 			},
 		},
-		"Recursive": {
+		"Expression": {
 			pipeline: bson.A{
-				bson.D{{"$match", bson.D{{"$expr", bson.D{{"$expr", int32(1)}}}}}},
+				bson.D{{"$match", bson.D{{"$expr", "$v"}}}},
 			},
-		},
-		"RecursiveExpr": {
-			pipeline: bson.A{bson.D{{"$match", bson.D{
-				{"$expr", bson.D{{"$sum", bson.D{{"$expr", bson.D{{"$sum", "$v"}}}}}}},
-			}}}},
 		},
 		"Type": {
 			pipeline: bson.A{bson.D{{"$match", bson.D{

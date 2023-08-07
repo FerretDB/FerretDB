@@ -331,16 +331,35 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 
 		v, err := op.Process(doc)
 		if err != nil {
-			return false, err
+			return false, nil
 		}
 
-		expr, ok := v.(*types.Document)
-		if !ok || expr.Len() == 0 {
-			// $expr containing non-document value or empty document matches filter
+		switch v.(type) {
+		case *types.Document:
 			return true, nil
+		case *types.Array:
+			return true, nil
+		case float64:
+			if res := types.Compare(v, float64(0)); res == types.Equal {
+				return false, nil
+			}
+		case bool:
+			if res := types.Compare(v, false); res == types.Equal {
+				return false, nil
+			}
+		case types.NullType:
+			return false, nil
+		case int32:
+			if res := types.Compare(v, int32(0)); res == types.Equal {
+				return false, nil
+			}
+		case int64:
+			if res := types.Compare(v, int64(0)); res == types.Equal {
+				return false, nil
+			}
 		}
 
-		return filterFieldExpr(doc, "", "", expr)
+		return true, nil
 	default:
 		msg := fmt.Sprintf(
 			`unknown top level operator: %s. `+

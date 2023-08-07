@@ -16,12 +16,16 @@ package stages
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // match represents $match stage.
@@ -40,6 +44,10 @@ func newMatch(stage *types.Document) (aggregations.Stage, error) {
 		)
 	}
 
+	if err := validateMatch(filter); err != nil {
+		return nil, err
+	}
+
 	return &match{
 		filter: filter,
 	}, nil
@@ -48,6 +56,29 @@ func newMatch(stage *types.Document) (aggregations.Stage, error) {
 // Process implements Stage interface.
 func (m *match) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	return common.FilterIterator(iter, closer, m.filter), nil
+}
+
+// validateMatch validates $match filter.
+func validateMatch(filter *types.Document) error {
+	if filter.Has("$expr") {
+		if _, err := operators.NewExpr(filter); err != nil {
+			var opErr operators.OperatorError
+			if errors.As(err, &opErr) {
+				switch opErr.Code() {
+				case operators.ErrInvalidExpression:
+					return commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrInvalidPipelineOperator,
+						fmt.Sprintf("Unrecognized expression '%s'", opErr.Name()),
+						"$match (stage)",
+					)
+				}
+			}
+
+			return lazyerrors.Error(err)
+		}
+	}
+
+	return nil
 }
 
 // check interfaces
