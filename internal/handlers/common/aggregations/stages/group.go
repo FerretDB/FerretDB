@@ -441,7 +441,7 @@ func processGroupStageError(err error) error {
 			)
 		case aggregations.ErrEmptyFieldPath:
 			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrStageInvalidFieldPath,
+				commonerrors.ErrGroupInvalidFieldPath,
 				"'$' by itself is not a valid FieldPath",
 				"$group (stage)",
 			)

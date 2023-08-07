@@ -628,7 +628,7 @@ func setBySourceOrder(key string, val any, source, projected *types.Document) {
 // - ErrOperatorWrongLenOfArgs when the operator has an invalid number of arguments.
 // - ErrInvalidPipelineOperator when the operator does not exist.
 // - ErrFailedToParse when operator has invalid variable expression.
-// - ErrStageInvalidFieldPath when operator has empty path expression.
+// - ErrGroupInvalidFieldPath when operator has empty path expression.
 func processOperatorError(err error) error {
 	if err == nil {
 		return nil
@@ -686,7 +686,7 @@ func processOperatorError(err error) error {
 			)
 		case aggregations.ErrEmptyFieldPath:
 			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrStageInvalidFieldPath,
+				commonerrors.ErrGroupInvalidFieldPath,
 				"Invalid $project :: caused by :: '$' by itself is not a valid FieldPath",
 				"$project (stage)",
 			)
