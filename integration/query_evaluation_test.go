@@ -165,14 +165,6 @@ func TestQueryEvaluationExprErrors(t *testing.T) {
 				Message: "Unrecognized expression '$expr'",
 			},
 		},
-		//"Nested": {
-		//		filter: bson.D{{"v", bson.D{{"$expr", int32(1)}}}},
-		//	err: &mongo.CommandError{
-		//		Code:    2,
-		//		Name:    "BadValue",
-		//		Message: "unknown operator: $expr",
-		//	},
-		//},
 		"GtNotArray": {
 			filter: bson.D{{"$expr", bson.D{{"$gt", 1}}}},
 			err: &mongo.CommandError{
