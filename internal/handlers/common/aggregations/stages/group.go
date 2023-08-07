@@ -216,7 +216,7 @@ func validateGroupKey(groupKey any) error {
 		case *types.Document:
 			return validateGroupKey(v)
 		case string:
-			_, err := aggregations.NewExpression(v)
+			_, err := aggregations.NewExpression(v, nil)
 			var exprErr *aggregations.ExpressionError
 
 			if errors.As(err, &exprErr) && exprErr.Code() == aggregations.ErrNotExpression {
@@ -251,7 +251,7 @@ func (g *group) groupDocuments(in []*types.Document) ([]groupedDocuments, error)
 			types.Regex, int32, types.Timestamp, int64:
 			m.addOrAppend(groupKey, doc)
 		case string:
-			expression, err := aggregations.NewExpression(groupKey)
+			expression, err := aggregations.NewExpression(groupKey, nil)
 			if err != nil {
 				var exprErr *aggregations.ExpressionError
 				if errors.As(err, &exprErr) {
@@ -323,7 +323,7 @@ func evaluateDocument(expr, doc *types.Document, nestedField bool) (any, error) 
 
 			evaluatedDocument.Set(k, v)
 		case string:
-			expression, err := aggregations.NewExpression(exprVal)
+			expression, err := aggregations.NewExpression(exprVal, nil)
 
 			var exprErr *aggregations.ExpressionError
 			if errors.As(err, &exprErr) && exprErr.Code() == aggregations.ErrNotExpression {

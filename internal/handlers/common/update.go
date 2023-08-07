@@ -260,8 +260,8 @@ func processRenameFieldExpression(command string, doc *types.Document, update *t
 
 		sourcePath, err := types.NewPathFromString(key)
 		if err != nil {
-			var pathErr *types.DocumentPathError
-			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+			var pathErr *types.PathError
+			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
 				return false, newUpdateError(
 					commonerrors.ErrEmptyName,
 					fmt.Sprintf(
@@ -281,16 +281,16 @@ func processRenameFieldExpression(command string, doc *types.Document, update *t
 		// Get value to move
 		val, err := doc.GetByPath(sourcePath)
 		if err != nil {
-			var dpe *types.DocumentPathError
+			var dpe *types.PathError
 			if !errors.As(err, &dpe) {
 				panic("getByPath returned error with invalid type")
 			}
 
-			if dpe.Code() == types.ErrDocumentPathKeyNotFound || dpe.Code() == types.ErrDocumentPathIndexOutOfBound {
+			if dpe.Code() == types.ErrPathKeyNotFound || dpe.Code() == types.ErrPathIndexOutOfBound {
 				continue
 			}
 
-			if dpe.Code() == types.ErrDocumentPathArrayInvalidIndex {
+			if dpe.Code() == types.ErrPathIndexInvalid {
 				return false, newUpdateError(
 					commonerrors.ErrUnsuitableValueType,
 					fmt.Sprintf("cannot use path '%s' to traverse the document", sourcePath),
@@ -918,11 +918,11 @@ func validateOperatorKeys(command string, docs ...*types.Document) error {
 			}
 
 			err = types.IsConflictPath(visitedPaths, nextPath)
-			var pathErr *types.DocumentPathError
+			var pathErr *types.PathError
 
 			if errors.As(err, &pathErr) {
-				if pathErr.Code() == types.ErrDocumentPathConflictOverwrite ||
-					pathErr.Code() == types.ErrDocumentPathConflictCollision {
+				if pathErr.Code() == types.ErrPathConflictOverwrite ||
+					pathErr.Code() == types.ErrPathConflictCollision {
 					return newUpdateError(
 						commonerrors.ErrConflictingUpdateOperators,
 						fmt.Sprintf(

@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonpath"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -67,30 +68,34 @@ func (e *ExpressionError) Code() ExpressionErrorCode {
 	return e.code
 }
 
-// Expression is an expression constructed from field value.
+// Expression represents a value that needs evaluation.
+//
+// Expression for access field in document should be prefixed with a dollar sign $ followed by field key.
+// For accessing embedded document or array, a dollar sign $ should be followed by dot notation.
+// Options can be provided to specify how to access fields in embedded array.
 type Expression struct {
-	*ExpressionOpts
+	opts commonpath.FindValuesOpts
 	path types.Path
 }
 
-// ExpressionOpts represents options used to modify behavior of Expression functions.
-type ExpressionOpts struct {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2348
+// NewExpression returns Expression from dollar sign $ prefixed string.
+// It can take additional options to specify how to access fields in embedded array.
+//
+// It returns error if invalid Expression is provided.
+func NewExpression(expression string, opts *commonpath.FindValuesOpts) (*Expression, error) {
+	// for aggregation expression, it does not return value by index of array
+	if opts == nil {
+		opts = &commonpath.FindValuesOpts{
+			FindArrayIndex:     false,
+			FindArrayDocuments: true,
+		}
+	}
 
-	// IgnoreArrays disables checking arrays for provided key.
-	// So expression {"$v.foo"} won't match {"v":[{"foo":42}]}
-	IgnoreArrays bool // defaults to false
-}
-
-// NewExpressionWithOpts creates a new instance by checking expression string.
-// It can take additional opts that specify how expressions should be evaluated.
-func NewExpressionWithOpts(expression string, opts *ExpressionOpts) (*Expression, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2348
 	var val string
 
 	switch {
 	case strings.HasPrefix(expression, "$$"):
-		// `$$` indicates field is a variable.
+		// double dollar sign $$ prefixed string indicates Expression is a variable name
 		v := strings.TrimPrefix(expression, "$$")
 		if v == "" {
 			return nil, newExpressionError(ErrEmptyVariable)
@@ -103,7 +108,7 @@ func NewExpressionWithOpts(expression string, opts *ExpressionOpts) (*Expression
 		// TODO https://github.com/FerretDB/FerretDB/issues/2275
 		return nil, newExpressionError(ErrUndefinedVariable)
 	case strings.HasPrefix(expression, "$"):
-		// `$` indicates field is a path.
+		// dollar sign $ prefixed string indicates Expression accesses field or embedded fields
 		val = strings.TrimPrefix(expression, "$")
 
 		if val == "" {
@@ -121,19 +126,17 @@ func NewExpressionWithOpts(expression string, opts *ExpressionOpts) (*Expression
 	}
 
 	return &Expression{
-		path:           path,
-		ExpressionOpts: opts,
+		path: path,
+		opts: *opts,
 	}, nil
 }
 
-// NewExpression creates a new instance by checking expression string.
-func NewExpression(expression string) (*Expression, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2348
-	return NewExpressionWithOpts(expression, new(ExpressionOpts))
-}
-
-// Evaluate gets the value at the path.
-// It returns error if the path does not exists.
+// Evaluate uses Expression to find a field value or an embedded field value of the document and
+// returns found value. If values were found from embedded array, it returns *types.Array
+// containing values.
+//
+// It returns error if field value was not found. With embedded array field being exception,
+// that case it returns empty array instead of error.
 func (e *Expression) Evaluate(doc *types.Document) (any, error) {
 	path := e.path
 
@@ -146,32 +149,35 @@ func (e *Expression) Evaluate(doc *types.Document) (any, error) {
 		return val, nil
 	}
 
-	var isPrefixArray bool
+	var isArrayField bool
 	prefix := path.Prefix()
 
 	if v, err := doc.Get(prefix); err == nil {
 		if _, isArray := v.(*types.Array); isArray {
-			isPrefixArray = true
+			isArrayField = true
 		}
 	}
 
-	vals := e.getPathValue(doc, path)
+	vals, err := commonpath.FindValues(doc, path, &e.opts)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	if len(vals) == 0 {
-		if isPrefixArray {
-			// when the prefix is array, return empty array.
+		if isArrayField {
+			// embedded array field returns empty array
 			return must.NotFail(types.NewArray()), nil
 		}
 
 		return nil, fmt.Errorf("no document found under %s path", path)
 	}
 
-	if len(vals) == 1 && !isPrefixArray {
-		// when the prefix is not array, return the value
+	if len(vals) == 1 && !isArrayField {
+		// when it is not an embedded array field, return the value
 		return vals[0], nil
 	}
 
-	// when the prefix is array, return an array of value.
+	// embedded array field returns an array of found values
 	arr := types.MakeArray(len(vals))
 	for _, v := range vals {
 		arr.Append(v)
@@ -180,68 +186,7 @@ func (e *Expression) Evaluate(doc *types.Document) (any, error) {
 	return arr, nil
 }
 
-// GetExpressionSuffix returns suffix of pathExpression.
+// GetExpressionSuffix returns field key of Expression, or for dot notation it returns suffix.
 func (e *Expression) GetExpressionSuffix() string {
 	return e.path.Suffix()
-}
-
-// getPathValue go through each key of the path iteratively to
-// find values that exist at suffix.
-// An array may return multiple values.
-// At each key of the path, it checks:
-//   - if the document has the key.
-//   - if the array contains documents which have the key. (This check can
-//     be disabled by setting ExpressionOpts.IgnoreArrays field).
-//
-// It is different from `common.getDocumentsAtSuffix`, it does not find array item by
-// array dot notation `foo.0.bar`. It returns empty array [] because using index
-// such as `0` does not match using expression path.
-func (e *Expression) getPathValue(doc *types.Document, path types.Path) []any {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2348
-	keys := path.Slice()
-	vals := []any{doc}
-
-	for _, key := range keys {
-		// embeddedVals are the values found at current key.
-		var embeddedVals []any
-
-		for _, valAtKey := range vals {
-			switch val := valAtKey.(type) {
-			case *types.Document:
-				embeddedVal, err := val.Get(key)
-				if err != nil {
-					continue
-				}
-
-				embeddedVals = append(embeddedVals, embeddedVal)
-			case *types.Array:
-				if e.IgnoreArrays {
-					continue
-				}
-				// iterate elements to get documents that contain the key.
-				for j := 0; j < val.Len(); j++ {
-					elem := must.NotFail(val.Get(j))
-
-					docElem, isDoc := elem.(*types.Document)
-					if !isDoc {
-						continue
-					}
-
-					embeddedVal, err := docElem.Get(key)
-					if err != nil {
-						continue
-					}
-
-					embeddedVals = append(embeddedVals, embeddedVal)
-				}
-
-			default:
-				// not a document or array, do nothing
-			}
-		}
-
-		vals = embeddedVals
-	}
-
-	return vals
 }
