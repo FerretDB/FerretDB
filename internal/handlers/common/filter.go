@@ -23,7 +23,6 @@ import (
 
 	"golang.org/x/exp/slices"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonpath"
@@ -323,43 +322,6 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 	case "$comment":
 		return true, nil
 
-	case "$expr":
-		op, err := operators.NewExpr(must.NotFail(types.NewDocument(operator, filterValue)))
-		if err != nil {
-			return false, err
-		}
-
-		v, err := op.Process(doc)
-		if err != nil {
-			return false, nil
-		}
-
-		switch v.(type) {
-		case *types.Document:
-			return true, nil
-		case *types.Array:
-			return true, nil
-		case float64:
-			if res := types.Compare(v, float64(0)); res == types.Equal {
-				return false, nil
-			}
-		case bool:
-			if res := types.Compare(v, false); res == types.Equal {
-				return false, nil
-			}
-		case types.NullType:
-			return false, nil
-		case int32:
-			if res := types.Compare(v, int32(0)); res == types.Equal {
-				return false, nil
-			}
-		case int64:
-			if res := types.Compare(v, int64(0)); res == types.Equal {
-				return false, nil
-			}
-		}
-
-		return true, nil
 	default:
 		msg := fmt.Sprintf(
 			`unknown top level operator: %s. `+

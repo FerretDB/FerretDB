@@ -15,6 +15,10 @@
 package common
 
 import (
+	"fmt"
+	"time"
+
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -52,7 +56,21 @@ func (iter *filterIterator) Next() (struct{}, *types.Document, error) {
 			return unused, nil, lazyerrors.Error(err)
 		}
 
-		matches, err := FilterDocument(doc, iter.filter)
+		var matches bool
+		if iter.filter.Has("$expr") {
+			matches, err = evaluateExpr(doc, iter.filter)
+			if err != nil {
+				return unused, nil, lazyerrors.Error(err)
+			}
+
+			if matches {
+				return unused, doc, nil
+			}
+
+			continue
+		}
+
+		matches, err = FilterDocument(doc, iter.filter)
 		if err != nil {
 			return unused, nil, lazyerrors.Error(err)
 		}
@@ -66,6 +84,60 @@ func (iter *filterIterator) Next() (struct{}, *types.Document, error) {
 // Close implements iterator.Interface. See FilterIterator for details.
 func (iter *filterIterator) Close() {
 	iter.iter.Close()
+}
+
+// evaluateExpr evaluates `$expr` operator and returns boolean indicating filter match.
+func evaluateExpr(doc, filter *types.Document) (bool, error) {
+	op, err := operators.NewExpr(filter)
+	if err != nil {
+		return false, err
+	}
+
+	v, err := op.Process(doc)
+	if err != nil {
+		return false, nil
+	}
+
+	switch v := v.(type) {
+	case *types.Document:
+		return true, nil
+	case *types.Array:
+		return true, nil
+	case float64:
+		if res := types.Compare(v, float64(0)); res == types.Equal {
+			return false, nil
+		}
+	case string:
+		return true, nil
+	case types.Binary:
+		return true, nil
+	case types.ObjectID:
+		return true, nil
+	case bool:
+		if res := types.Compare(v, false); res == types.Equal {
+			return false, nil
+		}
+	case time.Time:
+		return true, nil
+	case types.NullType:
+		return false, nil
+	case types.Regex:
+		return true, nil
+	case int32:
+		if res := types.Compare(v, int32(0)); res == types.Equal {
+			return false, nil
+		}
+	case types.Timestamp:
+		return true, nil
+	case int64:
+		if res := types.Compare(v, int64(0)); res == types.Equal {
+			return false, nil
+		}
+	default:
+		panic(fmt.Sprintf("common.evaluateExpr: unexpected type %[1]T (%#[1]v)", v))
+	}
+
+	return true, nil
 }
 
 // check interfaces
