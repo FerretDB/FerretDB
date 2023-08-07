@@ -45,7 +45,7 @@ func newMatch(stage *types.Document) (aggregations.Stage, error) {
 	}
 
 	if err := validateMatch(filter); err != nil {
-		return nil, err
+		return nil, processMatchStageError(err)
 	}
 
 	return &match{
@@ -61,7 +61,14 @@ func (m *match) Process(ctx context.Context, iter types.DocumentsIterator, close
 // validateMatch validates $match filter.
 func validateMatch(filter *types.Document) error {
 	if filter.Has("$expr") {
-		if _, err := operators.NewExpr(filter); err != nil {
+		op, err := operators.NewExpr(filter)
+		if err != nil {
+			return processMatchStageError(err)
+		}
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/3129
+		_, err = op.Process(nil)
+		if err != nil {
 			return processMatchStageError(err)
 		}
 	}
@@ -69,7 +76,7 @@ func validateMatch(filter *types.Document) error {
 	return nil
 }
 
-// processMatchStageError takes internal error related to operator evaluation and
+// processExprError takes internal error related to operator evaluation and
 // expression evaluation and returns CommandError that can be returned by $match
 // aggregation stage.
 func processMatchStageError(err error) error {

@@ -21,6 +21,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -84,6 +85,134 @@ func TestQueryEvaluationRegex(t *testing.T) {
 			err = cursor.All(ctx, &actual)
 			require.NoError(t, err)
 			assert.Equal(t, tc.expectedIDs, CollectIDs(t, actual))
+		})
+	}
+}
+
+func TestQueryEvaluationExprErrors(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.Composites)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		filter bson.D // required, aggregation pipeline stages
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"TooManyFields": {
+			filter: bson.D{{"$expr", bson.D{{"$type", "v"}, {"$op", "v"}}}},
+			err: &mongo.CommandError{
+				Code:    15983,
+				Name:    "Location15983",
+				Message: `An object representing an expression must have exactly one field: { $type: "v", $op: "v" }`,
+			},
+			altMessage: "An object representing an expression must have exactly one field",
+		},
+		"TypeWrongLen": {
+			filter: bson.D{{"$expr", bson.D{{"$type", bson.A{"foo", "bar"}}}}},
+			err: &mongo.CommandError{
+				Code:    16020,
+				Name:    "Location16020",
+				Message: "Expression $type takes exactly 1 arguments. 2 were passed in.",
+			},
+		},
+		"InvalidNestedExpression": {
+			filter: bson.D{{"$expr", bson.D{{"$type", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
+			err: &mongo.CommandError{
+				Code:    16020,
+				Name:    "Location16020",
+				Message: "Expression $type takes exactly 1 arguments. 2 were passed in.",
+			},
+		},
+		"EmptyPath": {
+			filter: bson.D{{"$expr", "$"}},
+			err: &mongo.CommandError{
+				Code:    16872,
+				Name:    "Location16872",
+				Message: "'$' by itself is not a valid FieldPath",
+			},
+		},
+		"EmptyVariable": {
+			filter: bson.D{{"$expr", "$$"}},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "empty variable names are not allowed",
+			},
+		},
+		"InvalidVariable$": {
+			filter: bson.D{{"$expr", "$$$"}},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "'$' starts with an invalid character for a user variable name",
+			},
+		},
+		"InvalidVariable$s": {
+			filter: bson.D{{"$expr", "$$$s"}},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "'$s' starts with an invalid character for a user variable name",
+			},
+		},
+		"Recursive": {
+			filter: bson.D{{"$expr", bson.D{{"$expr", int32(1)}}}},
+			err: &mongo.CommandError{
+				Code:    168,
+				Name:    "InvalidPipelineOperator",
+				Message: "Unrecognized expression '$expr'",
+			},
+		},
+		//"Nested": {
+		//		filter: bson.D{{"v", bson.D{{"$expr", int32(1)}}}},
+		//	err: &mongo.CommandError{
+		//		Code:    2,
+		//		Name:    "BadValue",
+		//		Message: "unknown operator: $expr",
+		//	},
+		//},
+		"GtNotArray": {
+			filter: bson.D{{"$expr", bson.D{{"$gt", 1}}}},
+			err: &mongo.CommandError{
+				Code:    16020,
+				Name:    "Location16020",
+				Message: "Expression $gt takes exactly 2 arguments. 1 were passed in.",
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/1456",
+		},
+		"GtOneParameter": {
+			filter: bson.D{{"$expr", bson.D{{"$gt", bson.A{1}}}}},
+			err: &mongo.CommandError{
+				Code:    16020,
+				Name:    "Location16020",
+				Message: "Expression $gt takes exactly 2 arguments. 1 were passed in.",
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/1456",
+		},
+		"GtThreeParameters": {
+			filter: bson.D{{"$expr", bson.D{{"$gt", bson.A{1, 2, 3}}}}},
+			err: &mongo.CommandError{
+				Code:    16020,
+				Name:    "Location16020",
+				Message: "Expression $gt takes exactly 2 arguments. 3 were passed in.",
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/1456",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.filter, "filter must not be nil")
+
+			_, err := collection.Find(ctx, tc.filter, options.Find().SetSort(bson.D{{"_id", 1}}))
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
 	}
 }
