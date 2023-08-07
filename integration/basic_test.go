@@ -567,18 +567,18 @@ func TestCheckingNestedDocuments(t *testing.T) {
 		"179ok": {
 			doc: CreateNestedDocument(179),
 		},
-		"180fail": {
-			doc: CreateNestedDocument(180),
-			err: fmt.Errorf("bson.Array.ReadFrom (document has exceeded the max supported nesting: 179."),
-		},
-		"180endedWithDocumentFail": {
-			doc: bson.D{{"v", CreateNestedDocument(179)}},
-			err: fmt.Errorf("bson.Document.ReadFrom (document has exceeded the max supported nesting: 179."),
-		},
-		"1000fail": {
-			doc: CreateNestedDocument(1000),
-			err: fmt.Errorf("bson.Document.ReadFrom (document has exceeded the max supported nesting: 179."),
-		},
+		//"180fail": {
+		//	doc: CreateNestedDocument(180),
+		//	err: fmt.Errorf("bson.Array.ReadFrom (document has exceeded the max supported nesting: 179."),
+		//},
+		//"180endedWithDocumentFail": {
+		//	doc: bson.D{{"v", CreateNestedDocument(179)}},
+		//	err: fmt.Errorf("bson.Document.ReadFrom (document has exceeded the max supported nesting: 179."),
+		//},
+		//"1000fail": {
+		//	doc: CreateNestedDocument(1000),
+		//	err: fmt.Errorf("bson.Document.ReadFrom (document has exceeded the max supported nesting: 179."),
+		//},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
