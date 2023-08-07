@@ -156,31 +156,31 @@ func processExprError(err error) error {
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrExpressionWrongLenOfFields,
 				"An object representing an expression must have exactly one field",
-				"$match (stage)",
+				"$expr",
 			)
 		case operators.ErrNotImplemented:
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,
 				"Invalid $match :: caused by :: "+opErr.Error(),
-				"$match (stage)",
+				"$expr",
 			)
 		case operators.ErrArgsInvalidLen:
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrOperatorWrongLenOfArgs,
 				opErr.Error(),
-				"$match (stage)",
+				"$expr",
 			)
 		case operators.ErrInvalidExpression:
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrInvalidPipelineOperator,
 				fmt.Sprintf("Unrecognized expression '%s'", opErr.Name()),
-				"$match (stage)",
+				"$expr",
 			)
 		case operators.ErrInvalidNestedExpression:
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrInvalidPipelineOperator,
 				opErr.Error(),
-				"$match (stage)",
+				"$expr",
 			)
 		}
 
@@ -190,26 +190,26 @@ func processExprError(err error) error {
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
 				fmt.Sprintf("'%s' starts with an invalid character for a user variable name", exErr.Name()),
-				"$match (stage)",
+				"$expr",
 			)
 		case aggregations.ErrEmptyFieldPath:
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrStageInvalidFieldPath,
 				"'$' by itself is not a valid FieldPath",
-				"$match (stage)",
+				"$expr",
 			)
 		case aggregations.ErrUndefinedVariable:
 			// TODO https://github.com/FerretDB/FerretDB/issues/2275
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,
 				"Aggregation expression variables are not implemented yet",
-				"$match (stage)",
+				"$expr",
 			)
 		case aggregations.ErrEmptyVariable:
 			return commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrFailedToParse,
 				"empty variable names are not allowed",
-				"$match (stage)",
+				"$expr",
 			)
 		case aggregations.ErrNotExpression:
 			// handled by upstream and this should not be reachable for existing expression implementation
