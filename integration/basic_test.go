@@ -15,9 +15,7 @@
 package integration
 
 import (
-	"fmt"
 	"math"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -121,30 +119,30 @@ func TestFindCommentQuery(t *testing.T) {
 	assert.Contains(t, databaseNames, name)
 }
 
-//func TestUpdateCommentMethod(t *testing.T) {
-//	t.Parallel()
-//	ctx, collection := setup.Setup(t, shareddata.Scalars)
-//
-//	name := collection.Database().Name()
-//	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
-//	require.NoError(t, err)
-//
-//	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
-//	filter := bson.D{{"_id", "string"}}
-//	update := bson.D{{"$set", bson.D{{"v", "bar"}}}}
-//
-//	opts := options.Update().SetComment(comment)
-//	res, err := collection.UpdateOne(ctx, filter, update, opts)
-//	require.NoError(t, err)
-//
-//	expected := &mongo.UpdateResult{
-//		MatchedCount:  1,
-//		ModifiedCount: 1,
-//	}
-//
-//	assert.Contains(t, databaseNames, name)
-//	assert.Equal(t, expected, res)
-//}
+func TestUpdateCommentMethod(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
+	name := collection.Database().Name()
+	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+	require.NoError(t, err)
+
+	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
+	filter := bson.D{{"_id", "string"}}
+	update := bson.D{{"$set", bson.D{{"v", "bar"}}}}
+
+	opts := options.Update().SetComment(comment)
+	res, err := collection.UpdateOne(ctx, filter, update, opts)
+	require.NoError(t, err)
+
+	expected := &mongo.UpdateResult{
+		MatchedCount:  1,
+		ModifiedCount: 1,
+	}
+
+	assert.Contains(t, databaseNames, name)
+	assert.Equal(t, expected, res)
+}
 
 //func TestUpdateCommentQuery(t *testing.T) {
 //	t.Parallel()
@@ -232,135 +230,135 @@ func TestEmptyKey(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func TestCollectionName(t *testing.T) {
-	t.Parallel()
-
-	ctx, collection := setup.Setup(t)
-
-	collectionName300 := strings.Repeat("aB", 150)
-	collectionName235 := strings.Repeat("a", 235)
-
-	cases := map[string]struct {
-		collection string // collection name, defaults to empty string
-
-		err        *mongo.CommandError // optional, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
-	}{
-		"TooLongForBothDBs": {
-			collection: collectionName300,
-			err: &mongo.CommandError{
-				Name: "InvalidNamespace",
-				Code: 73,
-				Message: fmt.Sprintf(
-					"Fully qualified namespace is too long. Namespace: TestCollectionName.%s Max: 255",
-					collectionName300,
-				),
-			},
-			altMessage: fmt.Sprintf("Invalid collection name: %s", collectionName300),
-		},
-		"LongEnough": {
-			collection: collectionName235,
-		},
-		"Short": {
-			collection: "a",
-		},
-		"WithADollarSign": {
-			collection: "collection_name_with_a-$",
-			err: &mongo.CommandError{
-				Name:    "InvalidNamespace",
-				Code:    73,
-				Message: `Invalid collection name: collection_name_with_a-$`,
-			},
-		},
-		"WithADash": {
-			collection: "collection_name_with_a-",
-		},
-		"WithADashAtBeginning": {
-			collection: "-collection_name",
-		},
-		"Empty": {
-			collection: "",
-			err: &mongo.CommandError{
-				Name:    "InvalidNamespace",
-				Code:    73,
-				Message: "Invalid namespace specified 'TestCollectionName.'",
-			},
-			altMessage: "Invalid collection name: ",
-		},
-		"Null": {
-			collection: "\x00",
-			err: &mongo.CommandError{
-				Name:    "InvalidNamespace",
-				Code:    73,
-				Message: "namespaces cannot have embedded null characters",
-			},
-			altMessage: "Invalid collection name: \x00",
-		},
-		"DotSurround": {
-			collection: ".collection..",
-			err: &mongo.CommandError{
-				Name:    "InvalidNamespace",
-				Code:    73,
-				Message: "Collection names cannot start with '.': .collection..",
-			},
-			altMessage: "Invalid collection name: .collection..",
-		},
-		"Dot": {
-			collection: "collection.name",
-		},
-		"Space": {
-			collection: " ",
-		},
-		"NonLatin": {
-			collection: "コレクション",
-		},
-		"Number": {
-			collection: "1",
-		},
-		"SpecialCharacters": {
-			collection: "+-/*<>=~!@#%^&|`?()[],;:. ",
-		},
-		"Capital": {
-			collection: "A",
-		},
-		"Sqlite": {
-			collection: "sqlite_",
-		},
-	}
-
-	for name, tc := range cases {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
-			t.Parallel()
-
-			err := collection.Database().CreateCollection(ctx, tc.collection)
-			if tc.err != nil {
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-				return
-			}
-
-			assert.NoError(t, err)
-
-			names, err := collection.Database().ListCollectionNames(ctx, bson.D{})
-			require.NoError(t, err)
-			assert.Contains(t, names, tc.collection)
-
-			newCollection := collection.Database().Collection(tc.collection)
-
-			doc := bson.D{{"_id", "item"}}
-			_, err = newCollection.InsertOne(ctx, doc)
-			require.NoError(t, err)
-
-			res := newCollection.FindOne(ctx, doc)
-			require.NoError(t, res.Err())
-		})
-	}
-}
+//func TestCollectionName(t *testing.T) {
+//	t.Parallel()
+//
+//	ctx, collection := setup.Setup(t)
+//
+//	collectionName300 := strings.Repeat("aB", 150)
+//	collectionName235 := strings.Repeat("a", 235)
+//
+//	cases := map[string]struct {
+//		collection string // collection name, defaults to empty string
+//
+//		err        *mongo.CommandError // optional, expected error from MongoDB
+//		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+//		skip       string              // optional, skip test with a specified reason
+//	}{
+//		"TooLongForBothDBs": {
+//			collection: collectionName300,
+//			err: &mongo.CommandError{
+//				Name: "InvalidNamespace",
+//				Code: 73,
+//				Message: fmt.Sprintf(
+//					"Fully qualified namespace is too long. Namespace: TestCollectionName.%s Max: 255",
+//					collectionName300,
+//				),
+//			},
+//			altMessage: fmt.Sprintf("Invalid collection name: %s", collectionName300),
+//		},
+//		"LongEnough": {
+//			collection: collectionName235,
+//		},
+//		"Short": {
+//			collection: "a",
+//		},
+//		"WithADollarSign": {
+//			collection: "collection_name_with_a-$",
+//			err: &mongo.CommandError{
+//				Name:    "InvalidNamespace",
+//				Code:    73,
+//				Message: `Invalid collection name: collection_name_with_a-$`,
+//			},
+//		},
+//		"WithADash": {
+//			collection: "collection_name_with_a-",
+//		},
+//		"WithADashAtBeginning": {
+//			collection: "-collection_name",
+//		},
+//		"Empty": {
+//			collection: "",
+//			err: &mongo.CommandError{
+//				Name:    "InvalidNamespace",
+//				Code:    73,
+//				Message: "Invalid namespace specified 'TestCollectionName.'",
+//			},
+//			altMessage: "Invalid collection name: ",
+//		},
+//		"Null": {
+//			collection: "\x00",
+//			err: &mongo.CommandError{
+//				Name:    "InvalidNamespace",
+//				Code:    73,
+//				Message: "namespaces cannot have embedded null characters",
+//			},
+//			altMessage: "Invalid collection name: \x00",
+//		},
+//		"DotSurround": {
+//			collection: ".collection..",
+//			err: &mongo.CommandError{
+//				Name:    "InvalidNamespace",
+//				Code:    73,
+//				Message: "Collection names cannot start with '.': .collection..",
+//			},
+//			altMessage: "Invalid collection name: .collection..",
+//		},
+//		"Dot": {
+//			collection: "collection.name",
+//		},
+//		"Space": {
+//			collection: " ",
+//		},
+//		"NonLatin": {
+//			collection: "コレクション",
+//		},
+//		"Number": {
+//			collection: "1",
+//		},
+//		"SpecialCharacters": {
+//			collection: "+-/*<>=~!@#%^&|`?()[],;:. ",
+//		},
+//		"Capital": {
+//			collection: "A",
+//		},
+//		"Sqlite": {
+//			collection: "sqlite_",
+//		},
+//	}
+//
+//	for name, tc := range cases {
+//		name, tc := name, tc
+//		t.Run(name, func(t *testing.T) {
+//			if tc.skip != "" {
+//				t.Skip(tc.skip)
+//			}
+//
+//			t.Parallel()
+//
+//			err := collection.Database().CreateCollection(ctx, tc.collection)
+//			if tc.err != nil {
+//				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+//				return
+//			}
+//
+//			assert.NoError(t, err)
+//
+//			names, err := collection.Database().ListCollectionNames(ctx, bson.D{})
+//			require.NoError(t, err)
+//			assert.Contains(t, names, tc.collection)
+//
+//			newCollection := collection.Database().Collection(tc.collection)
+//
+//			doc := bson.D{{"_id", "item"}}
+//			_, err = newCollection.InsertOne(ctx, doc)
+//			require.NoError(t, err)
+//
+//			res := newCollection.FindOne(ctx, doc)
+//			require.NoError(t, res.Err())
+//		})
+//	}
+//}
 
 //func TestDatabaseName(t *testing.T) {
 //	t.Parallel()
