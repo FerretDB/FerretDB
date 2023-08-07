@@ -98,7 +98,7 @@ func evaluateExpr(doc, filter *types.Document) (bool, error) {
 
 	v, err := op.Process(doc)
 	if err != nil {
-		return false, nil
+		return false, lazyerrors.Error(err)
 	}
 
 	switch v := v.(type) {

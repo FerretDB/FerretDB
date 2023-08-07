@@ -61,13 +61,7 @@ func (m *match) Process(ctx context.Context, iter types.DocumentsIterator, close
 // validateMatch validates $match filter.
 func validateMatch(filter *types.Document) error {
 	if filter.Has("$expr") {
-		op, err := operators.NewExpr(filter)
-		if err != nil {
-			return processMatchStageError(err)
-		}
-
-		// TODO https://github.com/FerretDB/FerretDB/issues/3129
-		_, err = op.Process(nil)
+		_, err := operators.NewExpr(filter)
 		if err != nil {
 			return processMatchStageError(err)
 		}

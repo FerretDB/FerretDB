@@ -29,6 +29,43 @@ func TestAggregateCompatMatchExpr(t *testing.T) {
 				bson.D{{"$match", bson.D{{"$expr", "$v"}}}},
 			},
 		},
+		"ExpressionDotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", "$v.foo"}}}},
+			},
+		},
+		"Document": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", bson.D{{"v", "$v"}}}}}},
+			},
+		},
+		"DocumentInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", bson.D{{"v", "$"}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"Array": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", bson.A{"$v"}}}}},
+			},
+		},
+		"ArrayInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", bson.A{"$"}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"String": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", "v"}}}},
+			},
+		},
+		"Int": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", int32(1)}}}},
+			},
+		},
 		"NonExistent": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"$expr", "$non-existent"}}}},

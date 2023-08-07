@@ -112,7 +112,6 @@ func validateExpr(exprValue any) error {
 		if err != nil {
 			return err
 		}
-	default:
 	}
 
 	return nil
@@ -125,11 +124,13 @@ func evaluateExpr(exprValue any, doc *types.Document) (any, error) {
 		if IsOperator(exprValue) {
 			op, err := NewOperator(exprValue)
 			if err != nil {
+				// $expr was validated in NewExpr.
 				return nil, err
 			}
 
 			v, err := op.Process(doc)
 			if err != nil {
+				// Process does not return error for existing operators
 				return nil, err
 			}
 
@@ -178,7 +179,6 @@ func evaluateExpr(exprValue any, doc *types.Document) (any, error) {
 
 			eval, err := evaluateExpr(v, doc)
 			if err != nil {
-				// skip failed evaluation result
 				continue
 			}
 
@@ -199,7 +199,12 @@ func evaluateExpr(exprValue any, doc *types.Document) (any, error) {
 			return nil, lazyerrors.Error(err)
 		}
 
-		return expression.Evaluate(doc)
+		v, err := expression.Evaluate(doc)
+		if err != nil {
+			return types.Null, nil
+		}
+
+		return v, nil
 	default:
 		return exprValue, nil
 	}
