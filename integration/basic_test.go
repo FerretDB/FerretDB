@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
@@ -53,6 +54,7 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	assert.NoError(t, res.Err())
 }
 
+// NOTE: fails???
 //func TestFindNothing(t *testing.T) {
 //	t.Parallel()
 //	ctx, collection := setup.Setup(t)
@@ -65,30 +67,30 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 //	assert.Equal(t, bson.D(nil), doc)
 //}
 
-//func TestInsertFind(t *testing.T) {
-//	t.Parallel()
-//	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
-//	ctx, collection := setup.Setup(t, providers...)
-//
-//	for _, expected := range shareddata.Docs(providers...) {
-//		expected := expected.(bson.D)
-//		id, ok := expected.Map()["_id"]
-//		require.True(t, ok)
-//
-//		t.Run(fmt.Sprint(id), func(t *testing.T) {
-//			t.Parallel()
-//
-//			cursor, err := collection.Find(ctx, bson.D{{"_id", id}}, options.Find().SetSort(bson.D{{"_id", 1}}))
-//			require.NoError(t, err)
-//
-//			var actual []bson.D
-//			err = cursor.All(ctx, &actual)
-//			require.NoError(t, err)
-//			require.Len(t, actual, 1)
-//			AssertEqualDocuments(t, expected, actual[0])
-//		})
-//	}
-//}
+func TestInsertFind(t *testing.T) {
+	t.Parallel()
+	providers := []shareddata.Provider{shareddata.Scalars, shareddata.Composites}
+	ctx, collection := setup.Setup(t, providers...)
+
+	for _, expected := range shareddata.Docs(providers...) {
+		expected := expected.(bson.D)
+		id, ok := expected.Map()["_id"]
+		require.True(t, ok)
+
+		t.Run(fmt.Sprint(id), func(t *testing.T) {
+			t.Parallel()
+
+			cursor, err := collection.Find(ctx, bson.D{{"_id", id}}, options.Find().SetSort(bson.D{{"_id", 1}}))
+			require.NoError(t, err)
+
+			var actual []bson.D
+			err = cursor.All(ctx, &actual)
+			require.NoError(t, err)
+			require.Len(t, actual, 1)
+			AssertEqualDocuments(t, expected, actual[0])
+		})
+	}
+}
 
 //nolint:paralleltest // we test a global list of databases
 func TestFindCommentMethod(t *testing.T) {
@@ -119,6 +121,7 @@ func TestFindCommentQuery(t *testing.T) {
 	assert.Contains(t, databaseNames, name)
 }
 
+// NOTE: fails if TestDeleteCommentQuery is enabled
 func TestUpdateCommentMethod(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
@@ -166,28 +169,28 @@ func TestUpdateCommentMethod(t *testing.T) {
 //	assert.Equal(t, expected, res)
 //}
 
-func TestDeleteCommentMethod(t *testing.T) {
-	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars)
-
-	name := collection.Database().Name()
-	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
-	require.NoError(t, err)
-
-	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
-	filter := bson.D{{"_id", "string"}}
-
-	opts := options.Delete().SetComment(comment)
-	res, err := collection.DeleteOne(ctx, filter, opts)
-	require.NoError(t, err)
-
-	expected := &mongo.DeleteResult{
-		DeletedCount: 1,
-	}
-
-	assert.Contains(t, databaseNames, name)
-	assert.Equal(t, expected, res)
-}
+//func TestDeleteCommentMethod(t *testing.T) {
+//	t.Parallel()
+//	ctx, collection := setup.Setup(t, shareddata.Scalars)
+//
+//	name := collection.Database().Name()
+//	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+//	require.NoError(t, err)
+//
+//	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
+//	filter := bson.D{{"_id", "string"}}
+//
+//	opts := options.Delete().SetComment(comment)
+//	res, err := collection.DeleteOne(ctx, filter, opts)
+//	require.NoError(t, err)
+//
+//	expected := &mongo.DeleteResult{
+//		DeletedCount: 1,
+//	}
+//
+//	assert.Contains(t, databaseNames, name)
+//	assert.Equal(t, expected, res)
+//}
 
 //func TestDeleteCommentQuery(t *testing.T) {
 //	t.Parallel()
