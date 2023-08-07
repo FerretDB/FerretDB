@@ -16,6 +16,7 @@ package sqlite
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -38,31 +39,53 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	db := h.b.Database(params.DB)
+	db, err := h.b.Database(params.DB)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "insert")
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
 	defer db.Close()
 
-	res, err := db.Collection(params.Collection).Insert(ctx, &backends.InsertParams{
-		Ordered: params.Ordered,
-		Docs:    params.Docs,
+	c, err := db.Collection(params.Collection)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "insert")
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
+
+	iter := params.Docs.Iterator()
+	defer iter.Close()
+
+	res, err := c.Insert(ctx, &backends.InsertParams{
+		Iter: iter,
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	replyDoc := must.NotFail(types.NewDocument(
-		"n", int32(res.InsertedCount),
+		"n", int32(res.Inserted),
 		"ok", float64(1),
 	))
 
-	if len(res.Errors) > 0 {
-		var errs *commonerrors.WriteErrors
-
-		for i := 0; i < len(res.Errors); i++ {
-			errs.Append(err, int32(i))
-		}
-
-		replyDoc = errs.Document()
-	}
+	// TODO https://github.com/FerretDB/FerretDB/issues/2750
+	//
+	// if len(res.Errors) > 0 {
+	// 	var errs *commonerrors.WriteErrors
+	//
+	// 	for i := 0; i < len(res.Errors); i++ {
+	// 		errs.Append(err, int32(i))
+	// 	}
+	//
+	// 	replyDoc = errs.Document()
+	// }
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{

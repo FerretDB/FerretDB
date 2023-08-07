@@ -22,48 +22,64 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestFindAndModifyEmptyCollectionName(t *testing.T) {
-	t.Parallel()
+func TestFindAndModifyEmptyCollectionName(tt *testing.T) {
+	tt.Parallel()
 
-	for name, tc := range map[string]struct {
-		err        *mongo.CommandError
-		altMessage string
-	}{
-		"EmptyCollectionName": {
-			err: &mongo.CommandError{
-				Code:    73,
-				Message: "Invalid namespace specified 'TestFindAndModifyEmptyCollectionName-EmptyCollectionName.'",
-				Name:    "InvalidNamespace",
-			},
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+
+	ctx, collection := setup.Setup(t, shareddata.Doubles)
+
+	var res bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"findAndModify", ""}}).Decode(&res)
+
+	assert.Nil(t, res)
+
+	AssertEqualCommandError(
+		t,
+		mongo.CommandError{
+			Code:    73,
+			Message: "Invalid namespace specified 'TestFindAndModifyEmptyCollectionName.'",
+			Name:    "InvalidNamespace",
 		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			ctx, collection := setup.Setup(t, shareddata.Doubles)
-
-			var actual bson.D
-			err := collection.Database().RunCommand(ctx, bson.D{{"findAndModify", ""}}).Decode(&actual)
-
-			AssertEqualError(t, *tc.err, err)
-		})
-	}
+		err,
+	)
 }
 
-func TestFindAndModifyErrors(t *testing.T) {
+func TestFindAndModifyNonExistingCollection(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+
+	ctx, collection := setup.Setup(t)
+
+	var actual bson.D
+	err := collection.FindOneAndUpdate(
+		ctx, bson.D{}, bson.D{{"$set", bson.E{"foo", "bar"}}},
+	).Decode(&actual)
+
+	assert.Equal(t, mongo.ErrNoDocuments, err)
+	assert.Nil(t, actual)
+}
+
+func TestFindAndModifyCommandErrors(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // it is used for test only
-		command  bson.D
+		command  bson.D              // required, command to run
 		provider shareddata.Provider // optional, default uses shareddata.ArrayDocuments
 
-		err        *mongo.CommandError
-		altMessage string
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"UpsertAndRemove": {
 			command: bson.D{
@@ -133,11 +149,24 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 28,
 				Name: "PathNotViable",
-				Message: "Plan executor error during findAndModify :: caused by :: Cannot create field 'foo' " +
-					"in element {v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+				Message: `Plan executor error during findAndModify :: caused by :: Cannot create field 'foo' ` +
+					`in element {v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 			},
-			altMessage: "Cannot create field 'foo' in element " +
-				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			altMessage: `Cannot create field 'foo' in element ` +
+				`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
+		},
+		"SetImmutableID": {
+			command: bson.D{
+				{"update", bson.D{{"$set", bson.D{{"_id", "non-existent"}}}}},
+			},
+			err: &mongo.CommandError{
+				Code: 66,
+				Name: "ImmutableField",
+				Message: "Plan executor error during findAndModify :: caused by :: " +
+					"Performing an update on the path '_id' would modify the immutable field '_id'",
+			},
+			altMessage: "Performing an update on the path '_id' would modify the immutable field '_id'",
+			skip:       "https://github.com/FerretDB/FerretDB/issues/3017",
 		},
 		"RenameEmptyFieldName": {
 			command: bson.D{
@@ -169,9 +198,9 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 28,
 				Name: "PathNotViable",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"cannot use the part (v of v.-1) to traverse the element " +
-					"({v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]})",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`cannot use the part (v of v.-1) to traverse the element ` +
+					`({v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]})`,
 			},
 			altMessage: "cannot use path 'v.-1' to traverse the document",
 		},
@@ -183,10 +212,10 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 28,
 				Name: "PathNotViable",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"cannot use the part (bar of v.0.foo.0.bar.z) to traverse the element ({bar: \"hello\"})",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`cannot use the part (bar of v.0.foo.0.bar.z) to traverse the element ({bar: "hello"})`,
 			},
-			altMessage: "types.getByPath: can't access string by path \"z\"",
+			altMessage: `types.getByPath: can't access string by path "z"`,
 		},
 		"IncTypeMismatch": {
 			command: bson.D{
@@ -196,7 +225,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
-				Message: "Cannot increment with non-numeric argument: {v: \"string\"}",
+				Message: `Cannot increment with non-numeric argument: {v: "string"}`,
 			},
 		},
 		"IncUnsuitableValue": {
@@ -207,12 +236,12 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 28,
 				Name: "PathNotViable",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"Cannot create field 'foo' in element " +
-					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Cannot create field 'foo' in element ` +
+					`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 			},
-			altMessage: "Cannot create field 'foo' in element " +
-				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			altMessage: `Cannot create field 'foo' in element ` +
+				`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 		},
 		"IncNonNumeric": {
 			command: bson.D{
@@ -222,12 +251,12 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 14,
 				Name: "TypeMismatch",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"Cannot apply $inc to a value of non-numeric type. " +
-					"{_id: \"array-documents-nested\"} has the field 'bar' of non-numeric type string",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Cannot apply $inc to a value of non-numeric type. ` +
+					`{_id: "array-documents-nested"} has the field 'bar' of non-numeric type string`,
 			},
-			altMessage: "Cannot apply $inc to a value of non-numeric type. " +
-				"{_id: \"array-documents-nested\"} has the field 'bar' of non-numeric type string",
+			altMessage: `Cannot apply $inc to a value of non-numeric type. ` +
+				`{_id: "array-documents-nested"} has the field 'bar' of non-numeric type string`,
 		},
 		"IncInt64BadValue": {
 			command: bson.D{
@@ -237,13 +266,13 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"Failed to apply $inc operations to current value " +
-					"((NumberLong)9223372036854775807) for document {_id: \"int64-max\"}",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Failed to apply $inc operations to current value ` +
+					`((NumberLong)9223372036854775807) for document {_id: "int64-max"}`,
 			},
 			provider: shareddata.Int64s,
-			altMessage: "Failed to apply $inc operations to current value " +
-				"((NumberLong)9223372036854775807) for document {_id: \"int64-max\"}",
+			altMessage: `Failed to apply $inc operations to current value ` +
+				`((NumberLong)9223372036854775807) for document {_id: "int64-max"}`,
 		},
 		"IncInt32BadValue": {
 			command: bson.D{
@@ -253,13 +282,13 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"Failed to apply $inc operations to current value " +
-					"((NumberInt)42) for document {_id: \"int32\"}",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Failed to apply $inc operations to current value ` +
+					`((NumberInt)42) for document {_id: "int32"}`,
 			},
 			provider: shareddata.Int32s,
-			altMessage: "Failed to apply $inc operations to current value " +
-				"((NumberInt)42) for document {_id: \"int32\"}",
+			altMessage: `Failed to apply $inc operations to current value ` +
+				`((NumberInt)42) for document {_id: "int32"}`,
 		},
 		"MaxUnsuitableValue": {
 			command: bson.D{
@@ -269,12 +298,12 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 28,
 				Name: "PathNotViable",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"Cannot create field 'foo' in element " +
-					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Cannot create field 'foo' in element ` +
+					`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 			},
-			altMessage: "Cannot create field 'foo' in element " +
-				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			altMessage: `Cannot create field 'foo' in element ` +
+				`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 		},
 		"MinUnsuitableValue": {
 			command: bson.D{
@@ -284,12 +313,12 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 28,
 				Name: "PathNotViable",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"Cannot create field 'foo' in element " +
-					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Cannot create field 'foo' in element ` +
+					`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 			},
-			altMessage: "Cannot create field 'foo' in element " +
-				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			altMessage: `Cannot create field 'foo' in element ` +
+				`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 		},
 		"MulTypeMismatch": {
 			command: bson.D{
@@ -299,7 +328,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
-				Message: "Cannot multiply with non-numeric argument: {v: \"string\"}",
+				Message: `Cannot multiply with non-numeric argument: {v: "string"}`,
 			},
 		},
 		"MulTypeMismatchNonExistent": {
@@ -310,7 +339,7 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
-				Message: "Cannot multiply with non-numeric argument: {non-existent: \"string\"}",
+				Message: `Cannot multiply with non-numeric argument: {non-existent: "string"}`,
 			},
 		},
 		"MulUnsuitableValue": {
@@ -321,12 +350,12 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 28,
 				Name: "PathNotViable",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"Cannot create field 'foo' in element " +
-					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Cannot create field 'foo' in element ` +
+					`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 			},
-			altMessage: "Cannot create field 'foo' in element " +
-				"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			altMessage: `Cannot create field 'foo' in element ` +
+				`{v: [ { foo: [ { bar: "hello" }, { bar: "world" } ] } ]}`,
 		},
 		"MulNonNumeric": {
 			command: bson.D{
@@ -336,12 +365,12 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 14,
 				Name: "TypeMismatch",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"Cannot apply $mul to a value of non-numeric type. " +
-					"{_id: \"array-documents-nested\"} has the field 'bar' of non-numeric type string",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Cannot apply $mul to a value of non-numeric type. ` +
+					`{_id: "array-documents-nested"} has the field 'bar' of non-numeric type string`,
 			},
-			altMessage: "Cannot apply $mul to a value of non-numeric type. " +
-				"{_id: \"array-documents-nested\"} has the field 'bar' of non-numeric type string",
+			altMessage: `Cannot apply $mul to a value of non-numeric type. ` +
+				`{_id: "array-documents-nested"} has the field 'bar' of non-numeric type string`,
 		},
 		"MulInt64BadValue": {
 			command: bson.D{
@@ -351,13 +380,13 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
-				Message: "Failed to apply $mul operations to current value " +
-					"((NumberLong)9223372036854775807) for document {_id: \"int64-max\"}",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Failed to apply $mul operations to current value ` +
+					`((NumberLong)9223372036854775807) for document {_id: "int64-max"}`,
 			},
 			provider: shareddata.Int64s,
-			altMessage: "Plan executor error during findAndModify :: caused by :: " +
-				"Failed to apply $mul operations to current value " +
-				"((NumberLong)9223372036854775807) for document {_id: \"int64-max\"}",
+			altMessage: `Failed to apply $mul operations to current value ` +
+				`((NumberLong)9223372036854775807) for document {_id: "int64-max"}`,
 		},
 		"MulInt32BadValue": {
 			command: bson.D{
@@ -367,13 +396,13 @@ func TestFindAndModifyErrors(t *testing.T) {
 			err: &mongo.CommandError{
 				Code: 2,
 				Name: "BadValue",
-				Message: "Plan executor error during findAndModify :: caused by :: " +
-					"Failed to apply $mul operations to current value " +
-					"((NumberInt)42) for document {_id: \"int32\"}",
+				Message: `Plan executor error during findAndModify :: caused by :: ` +
+					`Failed to apply $mul operations to current value ` +
+					`((NumberInt)42) for document {_id: "int32"}`,
 			},
 			provider: shareddata.Int32s,
-			altMessage: "Failed to apply $mul operations to current value " +
-				"((NumberInt)42) for document {_id: \"int32\"}",
+			altMessage: `Failed to apply $mul operations to current value ` +
+				`((NumberInt)42) for document {_id: "int32"}`,
 		},
 		"MulEmptyPath": {
 			command: bson.D{
@@ -386,10 +415,49 @@ func TestFindAndModifyErrors(t *testing.T) {
 				Message: "The update path 'v.' contains an empty field name, which is not allowed.",
 			},
 		},
+		"ConflictCollision": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v", "val"}}},
+					{"$min", bson.D{{"v.foo", "val"}}},
+				}},
+			},
+			err: &mongo.CommandError{
+				Code:    40,
+				Name:    "ConflictingUpdateOperators",
+				Message: "Updating the path 'v.foo' would create a conflict at 'v'",
+			},
+			altMessage: "Updating the path 'v' would create a conflict at 'v'",
+		},
+		"ConflictOverwrite": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", false}}}}},
+				{"update", bson.D{
+					{"$set", bson.D{{"v.foo", "val"}}},
+					{"$min", bson.D{{"v", "val"}}},
+				}},
+			},
+			err: &mongo.CommandError{
+				Code:    40,
+				Name:    "ConflictingUpdateOperators",
+				Message: "Updating the path 'v' would create a conflict at 'v'",
+			},
+			altMessage: "Updating the path 'v.foo' would create a conflict at 'v.foo'",
+		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(name, func(tt *testing.T) {
+			if tc.skip != "" {
+				tt.Skip(tc.skip)
+			}
+
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+
+			require.NotNil(t, tc.command, "command must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
 
 			provider := tc.provider
 			if provider == nil {
@@ -406,19 +474,22 @@ func TestFindAndModifyErrors(t *testing.T) {
 
 			var actual bson.D
 			err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+			if tc.altMessage != "" {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				return
+			}
 
-			AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+			AssertEqualCommandError(t, *tc.err, err)
 		})
 	}
 }
 
-func TestFindAndModifyUpsertComplex(t *testing.T) {
+func TestFindAndModifyCommandUpsert(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct {
-		command         bson.D
+		command         bson.D // required, command to run
 		lastErrorObject bson.D
-		skipForTigris   string
 	}{
 		"UpsertNoSuchDocumentNoIdInQuery": {
 			command: bson.D{
@@ -447,7 +518,6 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 				{"n", int32(1)},
 				{"updatedExisting", false},
 			},
-			skipForTigris: "schema validation would fail",
 		},
 		"UpsertDocumentKey": {
 			command: bson.D{
@@ -459,7 +529,6 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 				{"n", int32(1)},
 				{"updatedExisting", false},
 			},
-			skipForTigris: "schema validation would fail",
 		},
 		"ExistsFalse": {
 			command: bson.D{
@@ -485,12 +554,13 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			if tc.skipForTigris != "" {
-				setup.SkipForTigrisWithReason(t, tc.skipForTigris)
-			}
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
 
-			t.Parallel()
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+
+			require.NotNil(t, tc.command, "command must not be nil")
+
 			ctx, collection := setup.Setup(t, shareddata.Doubles)
 
 			command := append(bson.D{{"findAndModify", collection.Name()}}, tc.command...)
@@ -518,15 +588,64 @@ func TestFindAndModifyUpsertComplex(t *testing.T) {
 	}
 }
 
-func TestFindAndModifyNonExistingCollection(t *testing.T) {
-	t.Parallel()
-	ctx, collection := setup.Setup(t)
+func TestFindAndModifyCommentMethod(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
+	name := collection.Database().Name()
+	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+	require.NoError(t, err)
+
+	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
+	filter := bson.D{{"_id", "string"}}
+
+	opts := options.Delete().SetComment(comment)
+	res, err := collection.DeleteOne(ctx, filter, opts)
+	require.NoError(t, err)
+
+	expected := &mongo.DeleteResult{
+		DeletedCount: 1,
+	}
+
+	assert.Contains(t, databaseNames, name)
+	assert.Equal(t, expected, res)
+}
+
+func TestFindAndModifyCommentQuery(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
+	name := collection.Database().Name()
+	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+	require.NoError(t, err)
+
+	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
+	request := bson.D{
+		{"findAndModify", collection.Name()},
+		{"query", bson.D{{"_id", "string"}, {"$comment", comment}}},
+		{"update", bson.D{{"$set", bson.D{{"v", "bar"}}}}},
+	}
 
 	var actual bson.D
-	err := collection.FindOneAndUpdate(
-		ctx, bson.D{}, bson.D{{"$set", bson.E{"foo", "bar"}}},
-	).Decode(&actual)
+	err = collection.Database().RunCommand(ctx, request).Decode(&actual)
+	require.NoError(t, err)
 
-	assert.Equal(t, mongo.ErrNoDocuments, err)
-	assert.Nil(t, actual)
+	lastErrObj, _ := ConvertDocument(t, actual).Get("lastErrorObject")
+	if lastErrObj == nil {
+		t.Fatal(actual)
+	}
+
+	assert.Contains(t, databaseNames, name)
+
+	expectedLastErrObj := must.NotFail(types.NewDocument(
+		"n", int32(1),
+		"updatedExisting", true,
+	))
+	testutil.AssertEqual(t, expectedLastErrObj, lastErrObj.(*types.Document))
 }

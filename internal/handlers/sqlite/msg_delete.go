@@ -16,11 +16,14 @@ package sqlite
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -38,23 +41,35 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	var deleted int64
+	var deleted int32
 	var delErrors commonerrors.WriteErrors
 
-	db := h.b.Database(params.DB)
+	db, err := h.b.Database(params.DB)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "delete")
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
 	defer db.Close()
 
-	coll := db.Collection(params.Collection)
+	c, err := db.Collection(params.Collection)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "delete")
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
 
 	// process every delete filter
 	for i, deleteParams := range params.Deletes {
-		res, err := coll.Delete(ctx, &backends.DeleteParams{
-			Filter:  deleteParams.Filter,
-			Limited: deleteParams.Limited,
-		})
-
+		del, err := execDelete(ctx, c, deleteParams.Filter, deleteParams.Limited)
 		if err == nil {
-			deleted += res.Deleted
+			deleted += del
 			continue
 		}
 
@@ -66,14 +81,15 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	replyDoc := must.NotFail(types.NewDocument(
-		"ok", float64(1),
+		"n", deleted,
 	))
 
 	if delErrors.Len() > 0 {
-		replyDoc = delErrors.Document()
+		// "writeErrors" should be after "n" field
+		replyDoc.Set("writeErrors", must.NotFail(delErrors.Document().Get("writeErrors")))
 	}
 
-	replyDoc.Set("n", deleted)
+	replyDoc.Set("ok", float64(1))
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
@@ -81,4 +97,60 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}))
 
 	return &reply, nil
+}
+
+// execDelete fetches documents, filters them out, limits them (if needed) and deletes them.
+// If limited is true, only the first matched document is chosen for deletion, otherwise all matched documents are chosen.
+// It returns the number of deleted documents or an error.
+func execDelete(ctx context.Context, coll backends.Collection, filter *types.Document, limited bool) (int32, error) {
+	// query documents here
+	res, err := coll.Query(ctx, nil)
+	if err != nil {
+		return 0, lazyerrors.Error(err)
+	}
+
+	defer res.Iter.Close()
+
+	var ids []any
+	var doc *types.Document
+	var matches bool
+
+	for {
+		if _, doc, err = res.Iter.Next(); err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return 0, lazyerrors.Error(err)
+		}
+
+		if matches, err = common.FilterDocument(doc, filter); err != nil {
+			return 0, lazyerrors.Error(err)
+		}
+
+		if !matches {
+			continue
+		}
+
+		ids = append(ids, must.NotFail(doc.Get("_id")))
+
+		// if limit is set, no need to fetch all the documents
+		if limited {
+			res.Iter.Close() // call Close() to release the underlying connection early
+
+			break
+		}
+	}
+
+	// if no documents matched, there is nothing to delete
+	if len(ids) == 0 {
+		return 0, nil
+	}
+
+	deleteRes, err := coll.Delete(ctx, &backends.DeleteParams{IDs: ids})
+	if err != nil {
+		return 0, err
+	}
+
+	return int32(deleteRes.Deleted), nil
 }

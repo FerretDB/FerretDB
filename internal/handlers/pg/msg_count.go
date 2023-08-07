@@ -16,12 +16,14 @@ package pg
 
 import (
 	"context"
+	"errors"
 
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -50,30 +52,55 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		Collection: params.Collection,
 	}
 
-	qp.Filter = params.Filter
+	if !h.DisableFilterPushdown {
+		qp.Filter = params.Filter
+	}
 
-	var resDocs []*types.Document
+	var n int32
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
-		resDocs, err = fetchAndFilterDocs(ctx, &fetchParams{tx, &qp, h.DisableFilterPushdown})
-		return err
+		var iter types.DocumentsIterator
+
+		iter, _, err = pgdb.QueryDocuments(ctx, tx, &qp)
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		closer := iterator.NewMultiCloser(iter)
+		defer closer.Close()
+
+		iter = common.FilterIterator(iter, closer, qp.Filter)
+
+		iter = common.SkipIterator(iter, closer, params.Skip)
+
+		iter = common.LimitIterator(iter, closer, params.Limit)
+
+		iter = common.CountIterator(iter, closer, "count")
+
+		var res *types.Document
+
+		_, res, err = iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			err = nil
+		}
+
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		count, _ := res.Get("count")
+		n, _ = count.(int32)
+
+		return nil
 	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	if resDocs, err = common.SkipDocuments(resDocs, params.Skip); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if resDocs, err = common.LimitDocuments(resDocs, params.Limit); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"n", int32(len(resDocs)),
+			"n", n,
 			"ok", float64(1),
 		))},
 	}))

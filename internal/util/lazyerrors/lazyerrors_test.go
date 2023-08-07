@@ -126,3 +126,25 @@ func TestPC(t *testing.T) {
 	err := <-ch
 	assert.Equal(t, "[lazyerrors_test.go:123 lazyerrors.TestPC.func1] err", err.Error())
 }
+
+var drain any
+
+func BenchmarkNew(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		drain = New("err")
+	}
+
+	b.StopTimer()
+
+	assert.NotNil(b, drain)
+}
+
+func BenchmarkStatic(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		drain = errors.New("[lazyerrors_test.go:144 lazyerrors.BenchmarkStatic] err")
+	}
+
+	b.StopTimer()
+
+	assert.NotNil(b, drain)
+}

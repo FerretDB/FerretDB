@@ -17,7 +17,7 @@ Use ❌ for commands and arguments that are not implemented at all.
 | --------------- | -------------------------- | ------ | --------------------------------------------------------- |
 | `delete`        |                            | ✅     | Basic command is fully supported                          |
 |                 | `deletes`                  | ✅     |                                                           |
-|                 | `comment`                  | ⚠️     | Ignored in Tigris                                         |
+|                 | `comment`                  | ⚠️     |                                                           |
 |                 | `let`                      | ⚠️     | Unimplemented                                             |
 |                 | `ordered`                  | ✅     |                                                           |
 |                 | `writeConcern`             | ⚠️     | Ignored                                                   |
@@ -32,9 +32,9 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `hint`                     | ⚠️     | Ignored                                                   |
 |                 | `skip`                     | ⚠️     |                                                           |
 |                 | `limit`                    | ✅     |                                                           |
-|                 | `batchSize`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/2005) |
-|                 | `singleBatch`              | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/2005) |
-|                 | `comment`                  | ⚠️     | Not implemented in Tigris                                 |
+|                 | `batchSize`                | ✅     |                                                           |
+|                 | `singleBatch`              | ✅     |                                                           |
+|                 | `comment`                  | ⚠️     |                                                           |
 |                 | `maxTimeMS`                | ✅     |                                                           |
 |                 | `readConcern`              | ⚠️     | Ignored                                                   |
 |                 | `max`                      | ⚠️     | Ignored                                                   |
@@ -62,11 +62,11 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `collation`                | ❌     | Unimplemented                                             |
 |                 | `arrayFilters`             | ❌     | Unimplemented                                             |
 |                 | `hint`                     | ⚠️     | Ignored                                                   |
-|                 | `comment`                  | ⚠️     | Not implemented in Tigris                                 |
+|                 | `comment`                  | ⚠️     |                                                           |
 |                 | `let`                      | ⚠️     | Unimplemented                                             |
 | `getMore`       |                            | ✅     | Basic command is fully supported                          |
 |                 | `batchSize`                | ✅     |                                                           |
-|                 | `maxTimeMS`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1808) |
+|                 | `maxTimeMS`                | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/2984) |
 |                 | `comment`                  | ⚠️     | Unimplemented                                             |
 | `insert`        |                            | ✅     | Basic command is fully supported                          |
 |                 | `documents`                | ✅     |                                                           |
@@ -78,7 +78,7 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `ordered`                  | ⚠️     | Ignored                                                   |
 |                 | `writeConcern`             | ⚠️     | Ignored                                                   |
 |                 | `bypassDocumentValidation` | ⚠️     | Ignored                                                   |
-|                 | `comment`                  | ⚠️     | Ignored in Tigris                                         |
+|                 | `comment`                  | ⚠️     |                                                           |
 |                 | `let`                      | ⚠️     | Unimplemented                                             |
 |                 | `q`                        | ✅     |                                                           |
 |                 | `u`                        | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/2742) |
@@ -304,7 +304,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 
 | Stage                | Status | Comments                                                  |
 | -------------------- | ------ | --------------------------------------------------------- |
-| `$addFields`         | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1413) |
+| `$addFields`         | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1413) |
 | `$bucket`            | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1414) |
 | `$bucketAuto`        | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1414) |
 | `$changeStream`      | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1415) |
@@ -336,13 +336,13 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 | `$sample`            | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1435) |
 | `$search`            | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1436) |
 | `$searchMeta`        | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1436) |
-| `$set`               | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1413) |
+| `$set`               | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1413) |
 | `$setWindowFields`   | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1437) |
 | `$skip`              | ✅️    |                                                           |
 | `$sort`              | ✅️    |                                                           |
 | `$sortByCount`       | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1440) |
 | `$unionWith`         | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1441) |
-| `$unset`             | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1432) |
+| `$unset`             | ✅️    |                                                           |
 | `$unwind`            | ✅️    |                                                           |
 
 ### Aggregation pipeline operators
@@ -492,7 +492,8 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 | `$substrCP`               | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1463) |
 | `$subtract` (arithmetic)  | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1453) |
 | `$subtract` (date)        | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1460) |
-| `$sum`                    | ✅️    |                                                           |
+| `$sum` (accumulator)      | ✅️    |                                                           |
+| `$sum` (operator)         | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/2680) |
 | `$switch`                 | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1457) |
 | `$tan`                    | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1465) |
 | `$tanh`                   | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1465) |
@@ -584,7 +585,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 |                                   | `indexes`                      |                           | ✅     |                                                                   |
 |                                   |                                | `key`                     | ✅     |                                                                   |
 |                                   |                                | `name`                    | ✅️    |                                                                   |
-|                                   |                                | `unique`                  | ❌     | [Unimplemented](https://github.com/FerretDB/FerretDB/issues/2045) |
+|                                   |                                | `unique`                  | ✅     |                                                                   |
 |                                   |                                | `partialFilterExpression` | ❌     | [Unimplemented](https://github.com/FerretDB/FerretDB/issues/2448) |
 |                                   |                                | `sparse`                  | ❌     | [Unimplemented](https://github.com/FerretDB/FerretDB/issues/2448) |
 |                                   |                                | `expireAfterSeconds`      | ❌     | [Unimplemented](https://github.com/FerretDB/FerretDB/issues/2415) |
@@ -632,8 +633,8 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 | `getClusterParameter`             |                                |                           | ❌     |                                                                   |
 | `getParameter`                    |                                |                           | ❌     |                                                                   |
 |                                   | `comment`                      |                           | ⚠️     |                                                                   |
-| `killCursors`                     |                                |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1514)         |
-|                                   | `cursors`                      |                           | ⚠️     |                                                                   |
+| `killCursors`                     |                                |                           | ✅     |                                                                   |
+|                                   | `cursors`                      |                           | ✅     |                                                                   |
 |                                   | `comment`                      |                           | ⚠️     |                                                                   |
 | `killOp`                          |                                |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/1515)         |
 |                                   | `op`                           |                           | ⚠️     |                                                                   |

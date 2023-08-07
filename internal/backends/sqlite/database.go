@@ -16,95 +16,66 @@ package sqlite
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // database implements backends.Database interface.
 type database struct {
-	b    *backend
+	r    *metadata.Registry
 	name string
 }
 
 // newDatabase creates a new Database.
-func newDatabase(b *backend, name string) backends.Database {
+func newDatabase(r *metadata.Registry, name string) backends.Database {
 	return backends.DatabaseContract(&database{
-		b:    b,
+		r:    r,
 		name: name,
 	})
 }
 
 // Close implements backends.Database interface.
 func (db *database) Close() {
-	db.b.pool.CloseDB(db.name) // TODO: Implement
+	// nothing
 }
 
 // Collection implements backends.Database interface.
-func (db *database) Collection(name string) backends.Collection {
-	return newCollection(db, name)
+func (db *database) Collection(name string) (backends.Collection, error) {
+	return newCollection(db.r, db.name, name), nil
 }
 
 // ListCollections implements backends.Database interface.
 //
 //nolint:lll // for readability
 func (db *database) ListCollections(ctx context.Context, params *backends.ListCollectionsParams) (*backends.ListCollectionsResult, error) {
-	var result backends.ListCollectionsResult
-
-	exists, err := db.b.metadataStorage.dbExists(db.name)
+	list, err := db.r.CollectionList(ctx, db.name)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if !exists {
-		return &result, nil
-	}
-
-	list, err := db.b.metadataStorage.listCollections(ctx, db.name)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, name := range list {
-		result.Collections = append(result.Collections, backends.CollectionInfo{
+	res := make([]backends.CollectionInfo, len(list))
+	for i, name := range list {
+		res[i] = backends.CollectionInfo{
 			Name: name,
-		})
+		}
 	}
 
-	return &result, nil
+	return &backends.ListCollectionsResult{
+		Collections: res,
+	}, nil
 }
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	exists, err := db.b.metadataStorage.dbExists(db.name)
+	created, err := db.r.CollectionCreate(ctx, db.name, params.Name)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
-	if !exists {
-		if err = db.create(ctx); err != nil {
-			return lazyerrors.Error(err)
-		}
-	}
-
-	tableName, err := db.b.metadataStorage.createCollection(ctx, db.name, params.Name)
-	if err != nil {
-		return err
-	}
-
-	conn, err := db.b.pool.DB(db.name)
-	if err != nil {
-		return err
-	}
-
-	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (sjson string)`, tableName)
-
-	_, err = conn.ExecContext(ctx, query)
-	if err != nil {
-		return err
+	if !created {
+		return backends.NewError(backends.ErrorCodeCollectionAlreadyExists, err)
 	}
 
 	return nil
@@ -112,44 +83,13 @@ func (db *database) CreateCollection(ctx context.Context, params *backends.Creat
 
 // DropCollection implements backends.Database interface.
 func (db *database) DropCollection(ctx context.Context, params *backends.DropCollectionParams) error {
-	table, err := db.b.metadataStorage.tableName(ctx, db.name, params.Name)
+	dropped, err := db.r.CollectionDrop(ctx, db.name, params.Name)
 	if err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 
-	err = db.b.metadataStorage.removeCollection(ctx, db.name, params.Name)
-	if err != nil {
-		return err
-	}
-
-	conn, err := db.b.pool.DB(db.name)
-	if err != nil {
-		return err
-	}
-
-	query := fmt.Sprintf("DROP TABLE %s", table)
-
-	_, err = conn.ExecContext(ctx, query)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (db *database) create(ctx context.Context) error {
-	f, err := os.Create(filepath.Join(db.b.dir, db.name+dbExtension))
-	if err != nil {
-		return err
-	}
-
-	if err = f.Close(); err != nil {
-		return err
-	}
-
-	err = db.b.metadataStorage.createDatabase(ctx, db.name)
-	if err != nil {
-		return err
+	if !dropped {
+		return backends.NewError(backends.ErrorCodeCollectionDoesNotExist, err)
 	}
 
 	return nil

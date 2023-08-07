@@ -17,17 +17,17 @@ package testutil
 import (
 	"fmt"
 	"strconv"
-	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // GetByPath returns a value by path - a sequence of indexes and keys.
-func GetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, path types.Path) any {
+func GetByPath[T types.CompositeTypeInterface](tb testtb.TB, comp T, path types.Path) any {
 	tb.Helper()
 
 	res, err := comp.GetByPath(path)
@@ -38,7 +38,7 @@ func GetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, path types
 // SetByPath sets the value by path - a sequence of indexes and keys.
 //
 // The path must exist.
-func SetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, value any, path types.Path) {
+func SetByPath[T types.CompositeTypeInterface](tb testtb.TB, comp T, value any, path types.Path) {
 	tb.Helper()
 
 	l := path.Len()
@@ -77,7 +77,7 @@ func SetByPath[T types.CompositeTypeInterface](tb testing.TB, comp T, value any,
 
 // CompareAndSetByPathNum asserts that two values with the same path in two objects (documents or arrays)
 // are within a given numerical delta, then updates the expected object with the actual value.
-func CompareAndSetByPathNum[T types.CompositeTypeInterface](tb testing.TB, expected, actual T, delta float64, path types.Path) {
+func CompareAndSetByPathNum[T types.CompositeTypeInterface](tb testtb.TB, expected, actual T, delta float64, path types.Path) {
 	tb.Helper()
 
 	expectedV := GetByPath(tb, expected, path)
@@ -91,13 +91,13 @@ func CompareAndSetByPathNum[T types.CompositeTypeInterface](tb testing.TB, expec
 // CompareAndSetByPathTime asserts that two values with the same path in two objects (documents or arrays)
 // are within a given time delta, then updates the expected object with the actual value.
 //
-//nolint:lll // will be fixed when CompositeTypeInterface is removed
-func CompareAndSetByPathTime[T types.CompositeTypeInterface](tb testing.TB, expected, actual T, delta time.Duration, path types.Path) {
+//nolint:lll // for readability
+func CompareAndSetByPathTime[T types.CompositeTypeInterface](tb testtb.TB, expected, actual T, delta time.Duration, path types.Path) {
 	tb.Helper()
 
 	expectedV := GetByPath(tb, expected, path)
 	actualV := GetByPath(tb, actual, path)
-	assert.IsType(tb, expectedV, actualV)
+	require.IsType(tb, expectedV, actualV)
 
 	switch actualV := actualV.(type) {
 	case time.Time:

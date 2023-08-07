@@ -67,6 +67,16 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Sort = nil
 	}
 
+	// Limit pushdown is not applied if:
+	//  - `filter` is set, it must fetch all documents to filter them in memory;
+	//  - `sort` is set but `EnableSortPushdown` is not set, it must fetch all documents
+	//  and sort them in memory;
+	//  - `skip` is non-zero value, skip pushdown is not supported yet.
+	// TODO https://github.com/FerretDB/FerretDB/issues/3016.
+	if params.Filter.Len() == 0 && (params.Sort.Len() == 0 || h.EnableSortPushdown) && params.Skip == 0 {
+		qp.Limit = params.Limit
+	}
+
 	var queryPlanner *types.Document
 	var results pgdb.QueryResults
 
@@ -93,7 +103,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		"ferretdbVersion", version.Get().Version,
 	))
 
-	cmd := params.Command.DeepCopy()
+	cmd := params.Command
 	cmd.Set("$db", qp.DB)
 
 	var reply wire.OpMsg
@@ -102,9 +112,13 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"queryPlanner", queryPlanner,
 			"explainVersion", "1",
 			"command", cmd,
+			"serverInfo", serverInfo,
+
+			// our extensions
 			"pushdown", results.FilterPushdown,
 			"sortingPushdown", results.SortPushdown,
-			"serverInfo", serverInfo,
+			"limitPushdown", results.LimitPushdown,
+
 			"ok", float64(1),
 		))},
 	}))

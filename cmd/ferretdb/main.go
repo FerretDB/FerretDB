@@ -21,6 +21,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -36,6 +37,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/telemetry"
@@ -79,7 +81,6 @@ var cli struct {
 		RecordsDir            string `default:"" help:"Experimental: directory for record files."`
 		DisableFilterPushdown bool   `default:"false" help:"Experimental: disable filter pushdown."`
 		EnableSortPushdown    bool   `default:"false" help:"Experimental: enable sort pushdown."`
-		EnableCursors         bool   `default:"false" help:"Experimental: enable cursors."`
 
 		//nolint:lll // for readability
 		Telemetry struct {
@@ -103,16 +104,7 @@ var pgFlags struct {
 //
 // See main_sqlite.go.
 var sqliteFlags struct {
-	SQLiteURI string `name:"sqlite-uri" default:"." help:"Directory path or 'file' URI for 'sqlite' handler."`
-}
-
-// The tigrisFlags struct represents flags that are used by the "tigris" handler.
-//
-// See main_tigris.go.
-var tigrisFlags struct {
-	TigrisURL          string `default:"127.0.0.1:8081" help:"Tigris URL for 'tigris' handler."`
-	TigrisClientID     string `default:""               help:"Tigris Client ID."`
-	TigrisClientSecret string `default:""               help:"Tigris Client secret."`
+	SQLiteURL string `name:"sqlite-url" default:"file:data/" help:"SQLite URI (directory) for 'sqlite' handler."`
 }
 
 // The hanaFlags struct represents flags that are used by the "hana" handler.
@@ -202,17 +194,17 @@ func setupState() *state.Provider {
 
 // setupMetrics setups Prometheus metrics registerer with some metrics.
 func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
-	r := prometheus.WrapRegistererWith(
-		prometheus.Labels{"uuid": stateProvider.Get().UUID},
-		prometheus.DefaultRegisterer,
-	)
-	m := stateProvider.MetricsCollector(false)
+	r := prometheus.DefaultRegisterer
+	m := stateProvider.MetricsCollector(true)
 
-	// Unless requested, don't add UUID to all metrics, but add it to one.
-	// See https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels-not-static-scraped-labels
-	if !cli.MetricsUUID {
-		r = prometheus.DefaultRegisterer
-		m = stateProvider.MetricsCollector(true)
+	// we don't do it by default due to
+	// https://prometheus.io/docs/instrumenting/writing_exporters/#target-labels-not-static-scraped-labels
+	if cli.MetricsUUID {
+		r = prometheus.WrapRegistererWith(
+			prometheus.Labels{"uuid": stateProvider.Get().UUID},
+			prometheus.DefaultRegisterer,
+		)
+		m = stateProvider.MetricsCollector(false)
 	}
 
 	r.MustRegister(m)
@@ -280,6 +272,14 @@ func dumpMetrics() {
 
 // run sets up environment based on provided flags and runs FerretDB.
 func run() {
+	// to increase a chance of resource finalizers to spot problems
+	if debugbuild.Enabled {
+		defer func() {
+			runtime.GC()
+			runtime.GC()
+		}()
+	}
+
 	info := version.Get()
 
 	if p := cli.Test.Telemetry.Package; p != "" {
@@ -346,29 +346,23 @@ func run() {
 
 	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
 		Logger:        logger,
-		Metrics:       metrics.ConnMetrics,
+		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: stateProvider,
 
 		PostgreSQLURL: pgFlags.PostgreSQLURL,
 
-		SQLiteURI: sqliteFlags.SQLiteURI,
-
-		TigrisURL:          tigrisFlags.TigrisURL,
-		TigrisClientID:     tigrisFlags.TigrisClientID,
-		TigrisClientSecret: tigrisFlags.TigrisClientSecret,
+		SQLiteURL: sqliteFlags.SQLiteURL,
 
 		HANAURL: hanaFlags.HANAURL,
 
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
 			EnableSortPushdown:    cli.Test.EnableSortPushdown,
-			EnableCursors:         cli.Test.EnableCursors,
 		},
 	})
 	if err != nil {
-		logger.Fatal(err.Error())
+		logger.Sugar().Fatalf("Failed to construct handler: %s.", err)
 	}
-	defer h.Close()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		TCP:         cli.Listen.Addr,

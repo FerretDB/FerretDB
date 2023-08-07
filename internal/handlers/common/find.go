@@ -48,14 +48,15 @@ type FindParams struct {
 	Max          *types.Document `ferretdb:"max,ignored"`
 	Min          *types.Document `ferretdb:"min,ignored"`
 	Hint         any             `ferretdb:"hint,ignored"`
+	LSID         any             `ferretdb:"lsid,ignored"`
 
-	ReturnKey           bool `ferretdb:"returnKey,non-default"`
-	ShowRecordId        bool `ferretdb:"showRecordId,non-default"`
-	Tailable            bool `ferretdb:"tailable,non-default"`
-	OplogReplay         bool `ferretdb:"oplogReplay,non-default"`
-	NoCursorTimeout     bool `ferretdb:"noCursorTimeout,non-default"`
-	AwaitData           bool `ferretdb:"awaitData,non-default"`
-	AllowPartialResults bool `ferretdb:"allowPartialResults,non-default"`
+	ReturnKey           bool `ferretdb:"returnKey,unimplemented-non-default"`
+	ShowRecordId        bool `ferretdb:"showRecordId,unimplemented-non-default"`
+	Tailable            bool `ferretdb:"tailable,unimplemented-non-default"`
+	OplogReplay         bool `ferretdb:"oplogReplay,unimplemented-non-default"`
+	NoCursorTimeout     bool `ferretdb:"noCursorTimeout,unimplemented-non-default"`
+	AwaitData           bool `ferretdb:"awaitData,unimplemented-non-default"`
+	AllowPartialResults bool `ferretdb:"allowPartialResults,unimplemented-non-default"`
 }
 
 // GetFindParams returns `find` command parameters.

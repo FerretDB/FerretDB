@@ -35,8 +35,6 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
 	}
 
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -47,16 +45,18 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		value       any
-		expectedIDs []any
-		err         *mongo.CommandError
-		altMessage  string
+		value       any   // required, used for $bitsAllClear filter value
+		expectedIDs []any // optional
+
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Array": {
 			value: primitive.A{1, 5},
 			expectedIDs: []any{
-				"double-1", "double-2", "double-4",
-				"double-big", "double-min-overflow-verge", "double-zero",
+				"double-1", "double-3",
+				"double-big", "double-zero",
 				"int32-min", "int32-zero",
 				"int64-3", "int64-big", "int64-double-big",
 				"int64-min", "int64-zero",
@@ -73,8 +73,8 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"ArrayFloatWholeBitPositionValue": {
 			value: primitive.A{1.0},
 			expectedIDs: []any{
-				"double-1", "double-2", "double-4", "double-big",
-				"double-min-overflow-verge", "double-zero",
+				"double-1", "double-3", "double-big",
+				"double-zero",
 				"int32-1", "int32-2", "int32-3", "int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3", "int64-big",
 				"int64-double-big", "int64-min", "int64-zero",
@@ -108,8 +108,8 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"DoubleWhole": {
 			value: 2.0,
 			expectedIDs: []any{
-				"double-1", "double-2", "double-4",
-				"double-big", "double-min-overflow-verge", "double-zero",
+				"double-1", "double-3",
+				"double-big", "double-zero",
 				"int32-1", "int32-2", "int32-3", "int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
 				"int64-big", "int64-double-big", "int64-min", "int64-zero",
@@ -137,8 +137,8 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"Binary": {
 			value: primitive.Binary{Data: []byte{2}},
 			expectedIDs: []any{
-				"double-1", "double-2", "double-4",
-				"double-big", "double-min-overflow-verge", "double-zero",
+				"double-1", "double-3",
+				"double-big", "double-zero",
 				"int32-1", "int32-2", "int32-3", "int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
 				"int64-big", "int64-double-big", "int64-min", "int64-zero",
@@ -147,8 +147,8 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"BinaryWithZeroBytes": {
 			value: primitive.Binary{Data: []byte{0, 0, 2}},
 			expectedIDs: []any{
-				"double-1", "double-2", "double-3", "double-big",
-				"double-min-overflow-verge", "double-whole", "double-zero",
+				"double-1", "double-2", "double-big",
+				"double-whole", "double-zero",
 				"int32", "int32-1", "int32-min", "int32-zero",
 				"int64", "int64-1", "int64-big", "int64-double-big",
 				"int64-min", "int64-zero",
@@ -166,8 +166,8 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"Int32": {
 			value: int32(2),
 			expectedIDs: []any{
-				"double-1", "double-2", "double-4", "double-big",
-				"double-min-overflow-verge", "double-zero",
+				"double-1", "double-3", "double-big",
+				"double-zero",
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3", "int64-big",
@@ -186,8 +186,8 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 		"Int64Max": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
-				"double-1", "double-2",
-				"double-min-overflow-verge", "double-zero",
+				"double-1",
+				"double-zero",
 				"int32-zero",
 				"int64-min",
 				"int64-zero",
@@ -204,19 +204,23 @@ func TestQueryBitwiseAllClear(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.value, "value must not be nil")
 
 			filter := bson.D{{"v", bson.D{{"$bitsAllClear", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				if tc.altMessage != "" {
-					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-					return
-				}
-				AssertEqualCommandError(t, *tc.err, err)
+				assert.Nil(t, cursor)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
 				return
 			}
+
 			require.NoError(t, err)
 
 			var actual []bson.D
@@ -232,8 +236,6 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
 	}
 
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -244,14 +246,16 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		value       any
-		expectedIDs []any
-		err         *mongo.CommandError
-		altMessage  string
+		value       any   // required, used for $bitsAllSet filter value
+		expectedIDs []any // optional
+
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Array": {
 			value:       primitive.A{1, 5},
-			expectedIDs: []any{"double-3", "double-whole", "int32", "int32-max", "int64", "int64-max"},
+			expectedIDs: []any{"double-2", "double-whole", "int32", "int32-max", "int64", "int64-max"},
 		},
 		"ArrayNegativeBitPositionValue": {
 			value: primitive.A{-1},
@@ -280,7 +284,7 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 		},
 		"DoubleWhole": {
 			value:       2.0,
-			expectedIDs: []any{"double-3", "double-whole", "int32", "int32-max", "int64", "int64-max"},
+			expectedIDs: []any{"double-2", "double-whole", "int32", "int32-max", "int64", "int64-max"},
 		},
 		"DoubleNegativeValue": {
 			value: -1.0,
@@ -303,16 +307,16 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 
 		"Binary": {
 			value:       primitive.Binary{Data: []byte{2}},
-			expectedIDs: []any{"double-3", "double-whole", "int32", "int32-max", "int64", "int64-max"},
+			expectedIDs: []any{"double-2", "double-whole", "int32", "int32-max", "int64", "int64-max"},
 		},
 		"BinaryWithZeroBytes": {
 			value:       primitive.Binary{Data: []byte{0, 0, 2}},
-			expectedIDs: []any{"double-4", "int32-2", "int32-3", "int32-max", "int64-2", "int64-3", "int64-max"},
+			expectedIDs: []any{"double-3", "int32-2", "int32-3", "int32-max", "int64-2", "int64-3", "int64-max"},
 		},
 
 		"Int32": {
 			value:       int32(2),
-			expectedIDs: []any{"double-3", "double-whole", "int32", "int32-max", "int64", "int64-max"},
+			expectedIDs: []any{"double-2", "double-whole", "int32", "int32-max", "int64", "int64-max"},
 		},
 		"Int32NegativeValue": {
 			value: int32(-1),
@@ -338,15 +342,23 @@ func TestQueryBitwiseAllSet(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.value, "value must not be nil")
 
 			filter := bson.D{{"v", bson.D{{"$bitsAllSet", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+				assert.Nil(t, cursor)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
 				return
 			}
+
 			require.NoError(t, err)
 
 			var actual []bson.D
@@ -362,8 +374,6 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
 	}
 
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -374,16 +384,18 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		value       any
-		expectedIDs []any
-		err         *mongo.CommandError
-		altMessage  string
+		value       any   // required, used for $bitsAnyClear filter value
+		expectedIDs []any // optional
+
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Array": {
 			value: primitive.A{1, 5},
 			expectedIDs: []any{
-				"double-1", "double-2", "double-4",
-				"double-big", "double-min-overflow-verge", "double-zero",
+				"double-1", "double-3",
+				"double-big", "double-zero",
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
@@ -418,8 +430,8 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"DoubleWhole": {
 			value: 2.0,
 			expectedIDs: []any{
-				"double-1", "double-2", "double-4",
-				"double-big", "double-min-overflow-verge", "double-zero",
+				"double-1", "double-3",
+				"double-big", "double-zero",
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
@@ -448,8 +460,8 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"Binary": {
 			value: primitive.Binary{Data: []byte{2}},
 			expectedIDs: []any{
-				"double-1", "double-2", "double-4",
-				"double-big", "double-min-overflow-verge", "double-zero",
+				"double-1", "double-3",
+				"double-big", "double-zero",
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
@@ -459,8 +471,8 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"BinaryWithZeroBytes": {
 			value: primitive.Binary{Data: []byte{0, 0, 2}},
 			expectedIDs: []any{
-				"double-1", "double-2", "double-3",
-				"double-big", "double-min-overflow-verge", "double-whole", "double-zero",
+				"double-1", "double-2",
+				"double-big", "double-whole", "double-zero",
 				"int32", "int32-1", "int32-min", "int32-zero",
 				"int64", "int64-1", "int64-big", "int64-double-big",
 				"int64-min", "int64-zero",
@@ -470,8 +482,8 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"Int32": {
 			value: int32(2),
 			expectedIDs: []any{
-				"double-1", "double-2", "double-4",
-				"double-big", "double-min-overflow-verge", "double-zero",
+				"double-1", "double-3",
+				"double-big", "double-zero",
 				"int32-1", "int32-2", "int32-3",
 				"int32-min", "int32-zero",
 				"int64-1", "int64-2", "int64-3",
@@ -490,8 +502,8 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 		"Int64Max": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
-				"double-1", "double-2", "double-3", "double-4",
-				"double-big", "double-min-overflow-verge", "double-whole", "double-zero",
+				"double-1", "double-2", "double-3",
+				"double-big", "double-whole", "double-zero",
 				"int32", "int32-1", "int32-2", "int32-3", "int32-max", "int32-min", "int32-zero",
 				"int64", "int64-1", "int64-2", "int64-3", "int64-big", "int64-double-big",
 				"int64-min", "int64-zero",
@@ -508,15 +520,23 @@ func TestQueryBitwiseAnyClear(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.value, "value must not be nil")
 
 			filter := bson.D{{"v", bson.D{{"$bitsAnyClear", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+				assert.Nil(t, cursor)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
 				return
 			}
+
 			require.NoError(t, err)
 
 			var actual []bson.D
@@ -532,8 +552,6 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		t.Skip("TODO https://github.com/FerretDB/FerretDB/issues/491")
 	}
 
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -544,15 +562,17 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, tc := range map[string]struct {
-		value       any
-		expectedIDs []any
-		err         *mongo.CommandError
-		altMessage  string
+		value       any   // required, used for $bitsAnySet filter value
+		expectedIDs []any // optional
+
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Array": {
 			value: primitive.A{1, 5},
 			expectedIDs: []any{
-				"double-3", "double-whole",
+				"double-2", "double-whole",
 				"int32", "int32-1", "int32-2", "int32-3", "int32-max",
 				"int64", "int64-1", "int64-2", "int64-max",
 			},
@@ -585,7 +605,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		"DoubleWhole": {
 			value: 2.0,
 			expectedIDs: []any{
-				"double-3", "double-whole",
+				"double-2", "double-whole",
 				"int32", "int32-max",
 				"int64", "int64-max",
 			},
@@ -611,17 +631,17 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 
 		"Binary": {
 			value:       primitive.Binary{Data: []byte{2}},
-			expectedIDs: []any{"double-3", "double-whole", "int32", "int32-max", "int64", "int64-max"},
+			expectedIDs: []any{"double-2", "double-whole", "int32", "int32-max", "int64", "int64-max"},
 		},
 		"BinaryWithZeroBytes": {
 			value:       primitive.Binary{Data: []byte{0, 0, 2}},
-			expectedIDs: []any{"double-4", "int32-2", "int32-3", "int32-max", "int64-2", "int64-3", "int64-max"},
+			expectedIDs: []any{"double-3", "int32-2", "int32-3", "int32-max", "int64-2", "int64-3", "int64-max"},
 		},
 
 		"Int32": {
 			value: int32(2),
 			expectedIDs: []any{
-				"double-3", "double-whole",
+				"double-2", "double-whole",
 				"int32", "int32-max",
 				"int64", "int64-max",
 			},
@@ -638,7 +658,7 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 		"Int64Max": {
 			value: math.MaxInt64,
 			expectedIDs: []any{
-				"double-3", "double-4",
+				"double-2", "double-3",
 				"double-big", "double-whole",
 				"int32", "int32-1", "int32-2", "int32-3", "int32-max", "int32-min",
 				"int64", "int64-1", "int64-2", "int64-3", "int64-big",
@@ -656,15 +676,23 @@ func TestQueryBitwiseAnySet(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.value, "value must not be nil")
 
 			filter := bson.D{{"v", bson.D{{"$bitsAnySet", tc.value}}}}
 			cursor, err := collection.Find(ctx, filter, options.Find().SetSort(bson.D{{"_id", 1}}))
 			if tc.err != nil {
-				require.Nil(t, tc.expectedIDs)
-				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+				assert.Nil(t, cursor)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
 				return
 			}
+
 			require.NoError(t, err)
 
 			var actual []bson.D

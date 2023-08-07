@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
@@ -62,43 +63,54 @@ type QueryParams struct {
 
 // QueryResult represents the results of Collection.Query method.
 type QueryResult struct {
-	DocsIterator types.DocumentsIterator
+	Iter types.DocumentsIterator
 }
 
 // Query executes a query against the collection.
-func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (res *QueryResult, err error) {
+//
+// If database or collection does not exist it returns empty iterator.
+//
+// The passed context should be used for canceling the initial query.
+// It also can be used to close the returned iterator and free underlying resources,
+// but doing so is not necessary - the handler will do that anyway.
+func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
 	defer observability.FuncCall(ctx)()
-	defer checkError(err)
-	res, err = cc.c.Query(ctx, params)
 
-	return
+	res, err := cc.c.Query(ctx, params)
+	checkError(err)
+
+	return res, err
 }
 
 // InsertParams represents the parameters of Collection.Insert method.
 type InsertParams struct {
-	Docs    *types.Array
-	Ordered bool
+	// TODO https://github.com/FerretDB/FerretDB/issues/2750
+	// that should be types.DocumentIterator
+	Iter iterator.Interface[int, any]
 }
 
 // InsertResult represents the results of Collection.Insert method.
 type InsertResult struct {
-	Errors        []error
-	InsertedCount int64
+	Inserted int64
 }
 
 // Insert inserts documents into the collection.
 //
 // Both database and collection may or may not exist; they should be created automatically if needed.
-func (cc *collectionContract) Insert(ctx context.Context, params *InsertParams) (res *InsertResult, err error) {
+// TODO https://github.com/FerretDB/FerretDB/issues/3069
+func (cc *collectionContract) Insert(ctx context.Context, params *InsertParams) (*InsertResult, error) {
 	defer observability.FuncCall(ctx)()
-	defer checkError(err)
-	res, err = cc.c.Insert(ctx, params)
 
-	return
+	res, err := cc.c.Insert(ctx, params)
+	checkError(err)
+
+	return res, err
 }
 
 // UpdateParams represents the parameters of Collection.Update method.
 type UpdateParams struct {
+	// that should be types.DocumentIterator
+	// TODO https://github.com/FerretDB/FerretDB/issues/3079
 	Docs *types.Array
 }
 
@@ -108,18 +120,21 @@ type UpdateResult struct {
 }
 
 // Update updates documents in collection.
-func (cc *collectionContract) Update(ctx context.Context, params *UpdateParams) (res *UpdateResult, err error) {
+//
+// Database or collection may not exist; that's not an error.
+func (cc *collectionContract) Update(ctx context.Context, params *UpdateParams) (*UpdateResult, error) {
 	defer observability.FuncCall(ctx)()
-	defer checkError(err)
-	res, err = cc.c.Update(ctx, params)
 
-	return
+	res, err := cc.c.Update(ctx, params)
+	checkError(err)
+
+	return res, err
 }
 
 // DeleteParams represents the parameters of Collection.Delete method.
 type DeleteParams struct {
-	Filter  *types.Document
-	Limited bool
+	// TODO https://github.com/FerretDB/FerretDB/issues/3085
+	IDs []any
 }
 
 // DeleteResult represents the results of Collection.Delete method.
@@ -128,12 +143,15 @@ type DeleteResult struct {
 }
 
 // Delete deletes documents in collection.
-func (cc *collectionContract) Delete(ctx context.Context, params *DeleteParams) (res *DeleteResult, err error) {
+//
+// Database or collection may not exist; that's not an error.
+func (cc *collectionContract) Delete(ctx context.Context, params *DeleteParams) (*DeleteResult, error) {
 	defer observability.FuncCall(ctx)()
-	defer checkError(err)
-	res, err = cc.c.Delete(ctx, params)
 
-	return
+	res, err := cc.c.Delete(ctx, params)
+	checkError(err)
+
+	return res, err
 }
 
 // check interfaces

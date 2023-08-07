@@ -16,7 +16,6 @@ package pgdb
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 	"strings"
 
@@ -27,6 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -51,44 +51,22 @@ type Pool struct {
 func NewPool(ctx context.Context, uri string, logger *zap.Logger, p *state.Provider) (*Pool, error) {
 	u, err := url.Parse(uri)
 	if err != nil {
-		return nil, fmt.Errorf("pgdb.NewPool: %w", err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	values := u.Query()
-
-	if !values.Has("pool_max_conns") {
-		// it default to 4 which is too low for us
-		values.Set("pool_max_conns", "20")
-	}
-
-	values.Set("application_name", "FerretDB")
-
-	// That only affects text protocol; pgx mostly uses a binary one.
-	// See:
-	//   - https://github.com/jackc/pgx/issues/520
-	//   - https://github.com/jackc/pgx/issues/789
-	//   - https://github.com/jackc/pgx/issues/863
-	//
-	// TODO https://github.com/FerretDB/FerretDB/issues/43
-	values.Set("timezone", "UTC")
-
-	// Set (and overwrite) it in debug builds to ensure that all identifiers in code are fully-qualified.
-	// Don't do it in non-debug builds because it makes using tools like PgBouncer harder.
-	if debugbuild.Enabled {
-		values.Set("search_path", "")
-	}
-
+	setDefaultValues(values)
 	u.RawQuery = values.Encode()
 
 	config, err := pgxpool.ParseConfig(u.String())
 	if err != nil {
-		return nil, fmt.Errorf("pgdb.NewPool: %w", err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
 		var v string
 		if err := conn.QueryRow(ctx, `SHOW server_version`).Scan(&v); err != nil {
-			return err
+			return lazyerrors.Error(err)
 		}
 
 		if err := p.Update(func(s *state.State) { s.HandlerVersion = v }); err != nil {
@@ -118,7 +96,7 @@ func NewPool(ctx context.Context, uri string, logger *zap.Logger, p *state.Provi
 
 	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
-		return nil, fmt.Errorf("pgdb.NewPool: %w", err)
+		return nil, lazyerrors.Error(err)
 	}
 
 	res := &Pool{
@@ -128,7 +106,7 @@ func NewPool(ctx context.Context, uri string, logger *zap.Logger, p *state.Provi
 
 	if err = res.checkConnection(ctx); err != nil {
 		res.Close()
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	return res, nil
@@ -139,6 +117,33 @@ func NewPool(ctx context.Context, uri string, logger *zap.Logger, p *state.Provi
 // It blocks until all connections are closed.
 func (pgPool *Pool) Close() {
 	pgPool.p.Close()
+}
+
+// setDefaultValue sets default query parameters.
+//
+// Keep it in sync with docs.
+func setDefaultValues(values url.Values) {
+	if !values.Has("pool_max_conns") {
+		// the default is too low
+		values.Set("pool_max_conns", "50")
+	}
+
+	values.Set("application_name", "FerretDB")
+
+	// That only affects text protocol; pgx mostly uses a binary one.
+	// See:
+	//   - https://github.com/jackc/pgx/issues/520
+	//   - https://github.com/jackc/pgx/issues/789
+	//   - https://github.com/jackc/pgx/issues/863
+	//
+	// TODO https://github.com/FerretDB/FerretDB/issues/43
+	values.Set("timezone", "UTC")
+
+	// Set (and overwrite) it in debug builds to ensure that all identifiers in code are fully-qualified.
+	// Don't do it in non-debug builds because it makes using tools like PgBouncer harder.
+	if debugbuild.Enabled {
+		values.Set("search_path", "")
+	}
 }
 
 // simplifySetting simplifies PostgreSQL setting value for comparison.
@@ -168,7 +173,7 @@ func isSupportedLocale(v string) bool {
 func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	rows, err := pgPool.p.Query(ctx, "SHOW ALL")
 	if err != nil {
-		return fmt.Errorf("pgdb.checkConnection: %w", err)
+		return lazyerrors.Error(err)
 	}
 	defer rows.Close()
 
@@ -176,11 +181,11 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 		// handle variable number of columns as a workaround for https://github.com/cockroachdb/cockroach/issues/101715
 		values, err := rows.Values()
 		if err != nil {
-			return fmt.Errorf("pgdb.checkConnection: %w", err)
+			return lazyerrors.Error(err)
 		}
 
 		if len(values) < 2 {
-			return fmt.Errorf("pgdb.checkConnection: invalid row: %#v", values)
+			return lazyerrors.Errorf("invalid row: %#v", values)
 		}
 		name := values[0].(string)
 		setting := values[1].(string)
@@ -188,15 +193,15 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 		switch name {
 		case "server_encoding", "client_encoding":
 			if !isSupportedEncoding(setting) {
-				return fmt.Errorf("pgdb.checkConnection: %q is %q; supported value is %q", name, setting, supportedEncoding)
+				return lazyerrors.Errorf("%q is %q; supported value is %q", name, setting, supportedEncoding)
 			}
 		case "lc_collate", "lc_ctype":
 			if !isSupportedLocale(setting) {
-				return fmt.Errorf("pgdb.checkConnection: %q is %q; supported values are %v", name, setting, supportedLocales)
+				return lazyerrors.Errorf("%q is %q; supported values are %v", name, setting, supportedLocales)
 			}
 		case "standard_conforming_strings": // To sanitize safely: https://github.com/jackc/pgx/issues/868#issuecomment-725544647
 			if setting != "on" {
-				return fmt.Errorf("pgdb.checkConnection: %q is %q, want %q", name, setting, "on")
+				return lazyerrors.Errorf("%q is %q, want %q", name, setting, "on")
 			}
 		default:
 			continue
@@ -211,7 +216,7 @@ func (pgPool *Pool) checkConnection(ctx context.Context) error {
 	}
 
 	if err := rows.Err(); err != nil {
-		return fmt.Errorf("pgdb.checkConnection: %w", err)
+		return lazyerrors.Error(err)
 	}
 
 	return nil

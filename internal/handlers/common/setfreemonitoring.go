@@ -27,7 +27,7 @@ import (
 )
 
 // SetFreeMonitoring is a part of common implementation of the setFreeMonitoring command.
-func SetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.Provider) (*wire.OpMsg, error) {
+func SetFreeMonitoring(_ context.Context, msg *wire.OpMsg, provider *state.Provider) (*wire.OpMsg, error) {
 	if provider == nil {
 		panic("provider cannot be equal to nil")
 	}

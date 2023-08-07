@@ -6,6 +6,18 @@ run:
   timeout: 3m
 
 linters-settings:
+  asasalint:
+    exclude:
+      - ^lazyerrors\.Errorf$
+    use-builtin-exclusions: true
+    ignore-test: false
+  errcheck:
+    check-type-assertions: false
+    check-blank: false
+    disable-default-exclusions: false
+    exclude-functions:
+      - (*database/sql.Rows).Close
+      - (*github.com/FerretDB/FerretDB/internal/util/fsql.Rows).Close
   errorlint:
     # see caveats at https://github.com/polyfloyd/go-errorlint#fmterrorf-wrapping-verb
     errorf: false
@@ -17,14 +29,22 @@ linters-settings:
   revive:
     ignore-generated-header: true
     severity: warning
-    # TODO enable-all-rules: true
+    # TODO enable-all-rules: true https://github.com/FerretDB/FerretDB/issues/2748
     rules:
       # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md
       - name: exported
-        arguments: [checkPrivateReceivers]
+        arguments: [checkPrivateReceivers, disableStutteringCheck]
       - name: package-comments
   staticcheck:
     checks: ["all"]
+  tagalign:
+    sort: true
+    order:
+      - name
+      - cmd
+      - arg
+      - default
+      - help
   wsl:
     # https://github.com/bombsimon/wsl/blob/master/doc/configuration.md
     strict-append: false
@@ -62,8 +82,9 @@ linters:
     - unused
     - whitespace
 
-    # TODO configure and enable one by one
+    # TODO https://github.com/FerretDB/FerretDB/issues/2748
     - bidichk
+    - bodyclose
     - containedctx
     - contextcheck
     - cyclop
@@ -72,7 +93,6 @@ linters:
     - dogsled
     - dupl
     - durationcheck
-    - errcheck
     - errchkjson
     - errname
     - execinquery
@@ -110,6 +130,8 @@ linters:
     - prealloc
     - predeclared
     - promlinter
+    - rowserrcheck
+    - sqlclosecheck
     - stylecheck
     - tagliatelle
     - tenv
@@ -120,13 +142,8 @@ linters:
     - unparam
     - varcheck
     - varnamelen
-    - wrapcheck
-
-    # TODO https://github.com/golangci/golangci-lint/issues/2649
-    - bodyclose
-    - rowserrcheck
-    - sqlclosecheck
     - wastedassign
+    - wrapcheck
 
     # deprecated
     - golint

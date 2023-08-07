@@ -12,7 +12,8 @@
    - Tweak spacing, headers levels.
 6. Update CHANGELOG.md with the same release notes:
    - Check spacing, header levels.
-7. Push changes, check `git status`.
+   - Run `task docs-fmt`.
+7. Commit and push changes, check `git status`.
 
 ## Git tag
 
@@ -25,19 +26,20 @@
 
 ## Release
 
-1. Wait for the [packages CI build](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml?query=event%3Apush)
+1. Trim draft release notes.
+2. Wait for the [packages CI build](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml?query=event%3Apush)
    to finish.
-2. Upload the binary and `.deb` and `.rpm` packages to the draft release.
-3. Check:
+3. Upload the binary and `.deb` and `.rpm` packages to the draft release.
+4. Check:
    - <https://hub.docker.com/r/ferretdb/ferretdb/tags>
    - <https://hub.docker.com/r/ferretdb/ferretdb-dev/tags>
    - <https://hub.docker.com/r/ferretdb/all-in-one/tags>
    - <https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb>
    - <https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb-dev>
    - <https://github.com/FerretDB/FerretDB/pkgs/container/all-in-one>
-4. Close milestone in issues.
-5. Publish release on GitHub.
-6. Announce it on Slack.
+5. Close milestone in issues.
+6. Publish release on GitHub.
+7. Announce it on Slack.
 
 ## Soon after
 

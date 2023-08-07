@@ -5,7 +5,6 @@ author: Alexander Fashakin
 description: FerretDB 0.8.1 - the open-source MongoDB alternative - includes new features like version availability, `distinct` command & client TLS validation, and much more.
 image: /img/blog/FerretDB-v0.8.1.jpg
 tags: [release]
-date: 2023-01-19
 ---
 
 FerretDB 0.8.1 - the open-source MongoDB alternative - includes new features like version availability, `distinct` command & client TLS validation, and much more.
@@ -66,7 +65,7 @@ And for that reason, we've also included a way to validate a client's TLS certif
 ## Documentation
 
 Our documentation is also not left out from this round of improvements.
-The biggest change is that addition of the FerretDB blog which was built on Docusaurus– an open source software - and which now resides in our centralized FerretDB repository.
+The biggest change is that addition of the FerretDB blog which was built on Docusaurus – an open source software – and which now resides in our centralized FerretDB repository.
 
 We've added a section for CLI flags and environment variables.
 On top of that, we've reformatted our documentation setup to ensure that the deployment URL is visible in logs and can be previewed, and we also added comments and warnings about Git LFS.

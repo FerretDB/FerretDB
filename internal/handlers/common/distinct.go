@@ -15,14 +15,16 @@
 package common
 
 import (
+	"errors"
 	"fmt"
-	"strings"
 
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonpath"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -41,6 +43,7 @@ type DistinctParams struct {
 	Collation *types.Document `ferretdb:"collation,unimplemented"`
 
 	ReadConcern *types.Document `ferretdb:"readConcern,ignored"`
+	LSID        any             `ferretdb:"lsid,ignored"`
 }
 
 // GetDistinctParams returns `distinct` command parameters.
@@ -84,30 +87,37 @@ func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams
 //
 // If the key is found in the document, and the value is an array, each element of the array is added to the result.
 // Otherwise, the value itself is added to the result.
-func FilterDistinctValues(docs []*types.Document, key string) (*types.Array, error) {
-	distinct := types.MakeArray(len(docs))
+func FilterDistinctValues(iter types.DocumentsIterator, key string) (*types.Array, error) {
+	distinct := types.MakeArray(0)
 
-	for _, doc := range docs {
-		// docsAtSuffix contains all documents exist at the suffix key.
-		docsAtSuffix := []*types.Document{doc}
-		suffix := key
+	defer iter.Close()
 
-		if strings.ContainsRune(key, '.') {
-			path, err := types.NewPathFromString(key)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			// Multiple documents may be found at suffix by array dot notation.
-			suffix, docsAtSuffix = getDocumentsAtSuffix(doc, path)
+	for {
+		_, doc, err := iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
 		}
 
-		for _, doc := range docsAtSuffix {
-			val, err := doc.Get(suffix)
-			if err != nil {
-				continue
-			}
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 
+		path, err := types.NewPathFromString(key)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		// distinct using dot notation returns the value by valid array index
+		// or values for the given key in array's document
+		vals, err := commonpath.FindValues(doc, path, &commonpath.FindValuesOpts{
+			FindArrayIndex:     true,
+			FindArrayDocuments: true,
+		})
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		for _, val := range vals {
 			switch v := val.(type) {
 			case *types.Array:
 				for i := 0; i < v.Len(); i++ {

@@ -16,77 +16,80 @@ package sqlite
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 
-	_ "modernc.org/sqlite"
+	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 )
 
 // backend implements backends.Backend interface.
 type backend struct {
-	dir             string
-	pool            *connPool
-	metadataStorage *metadataStorage
+	r *metadata.Registry
 }
 
 // NewBackendParams represents the parameters of NewBackend function.
 type NewBackendParams struct {
-	Dir string
+	URI string
+	L   *zap.Logger
 }
 
 // NewBackend creates a new SQLite backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	pool := newConnPool(params.Dir)
-
-	storage, err := newMetadataStorage(params.Dir, pool)
+	r, err := metadata.NewRegistry(params.URI, params.L)
 	if err != nil {
 		return nil, err
 	}
 
 	return backends.BackendContract(&backend{
-		dir:             params.Dir,
-		pool:            pool,
-		metadataStorage: storage,
+		r: r,
 	}), nil
 }
 
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
-	b.pool.Close()
+	b.r.Close()
 }
 
 // Database implements backends.Backend interface.
-func (b *backend) Database(name string) backends.Database {
-	return newDatabase(b, name)
+func (b *backend) Database(name string) (backends.Database, error) {
+	return newDatabase(b.r, name), nil
 }
 
 // ListDatabases implements backends.Backend interface.
 //
 //nolint:lll // for readability
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
-	list, err := b.metadataStorage.listDatabases()
-	if err != nil {
-		return nil, err
+	list := b.r.DatabaseList(ctx)
+
+	res := &backends.ListDatabasesResult{
+		Databases: make([]backends.DatabaseInfo, len(list)),
+	}
+	for i, db := range list {
+		res.Databases[i] = backends.DatabaseInfo{Name: db}
 	}
 
-	var result backends.ListDatabasesResult
-	for _, db := range list {
-		result.Databases = append(result.Databases, backends.DatabaseInfo{Name: db})
-	}
-
-	return &result, nil
+	return res, nil
 }
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	err := os.Remove(filepath.Join(b.dir, params.Name+dbExtension))
-	if os.IsNotExist(err) {
-		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, err)
+	if dropped := b.r.DatabaseDrop(ctx, params.Name); !dropped {
+		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, nil)
 	}
 
-	return err
+	return nil
+}
+
+// Describe implements prometheus.Collector.
+func (b *backend) Describe(ch chan<- *prometheus.Desc) {
+	b.r.Describe(ch)
+}
+
+// Collect implements prometheus.Collector.
+func (b *backend) Collect(ch chan<- prometheus.Metric) {
+	b.r.Collect(ch)
 }
 
 // check interfaces

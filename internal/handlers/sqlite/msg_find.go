@@ -17,8 +17,12 @@ package sqlite
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -40,48 +44,55 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	if params.MaxTimeMS != 0 {
-		ctxWithTimeout, cancel := context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
-		defer cancel()
+	username, _ := conninfo.Get(ctx).Auth()
 
-		ctx = ctxWithTimeout
+	db, err := h.b.Database(params.DB)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "find")
+		}
+
+		return nil, lazyerrors.Error(err)
 	}
-
-	if params.BatchSize == 0 {
-		var reply wire.OpMsg
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{must.NotFail(types.NewDocument(
-				"cursor", must.NotFail(types.NewDocument(
-					"firstBatch", types.MakeArray(0),
-					"id", int64(0),
-					"ns", params.DB+"."+params.Collection,
-				)),
-				"ok", float64(1),
-			))},
-		}))
-
-		return &reply, nil
-	}
-
-	db := h.b.Database(params.DB)
 	defer db.Close()
 
-	res, err := db.Collection(params.Collection).Query(ctx, nil)
+	c, err := db.Collection(params.Collection)
 	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "find")
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter := res.DocsIterator
+	cancel := func() {}
+	if params.MaxTimeMS != 0 {
+		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
+		// TODO https://github.com/FerretDB/FerretDB/issues/2984
+		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
+	}
 
-	closer := iterator.NewMultiCloser(iter)
-	defer closer.Close()
+	// closer accumulates all things that should be closed / canceled.
+	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
 
-	iter = common.FilterIterator(iter, closer, params.Filter)
+	queryRes, err := c.Query(ctx, nil)
+	if err != nil {
+		closer.Close()
+		return nil, lazyerrors.Error(err)
+	}
+
+	closer.Add(queryRes.Iter)
+
+	iter := common.FilterIterator(queryRes.Iter, closer, params.Filter)
 
 	iter, err = common.SortIterator(iter, closer, params.Sort)
 	if err != nil {
-		var pathErr *types.DocumentPathError
-		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+		closer.Close()
+
+		var pathErr *types.PathError
+		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrPathContainsEmptyElement,
 				"Empty field names in path are not allowed",
@@ -98,21 +109,39 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	iter, err = common.ProjectionIterator(iter, closer, params.Projection, params.Filter)
 	if err != nil {
+		closer.Close()
 		return nil, lazyerrors.Error(err)
 	}
 
-	var resDocs []*types.Document
+	// Combine iterators chain and closer into a cursor to pass around.
+	// The context will be canceled when client disconnects or after maxTimeMS.
+	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
+		Iter:       iterator.WithClose(iterator.Interface[struct{}, *types.Document](iter), closer.Close),
+		DB:         params.DB,
+		Collection: params.Collection,
+		Username:   username,
+	})
 
-	resDocs, err = iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+	cursorID := cursor.ID
+
+	firstBatchDocs, err := iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor), int(params.BatchSize))
 	if err != nil {
+		cursor.Close()
 		return nil, lazyerrors.Error(err)
 	}
 
-	var cursorID int64
-
-	firstBatch := types.MakeArray(len(resDocs))
-	for _, doc := range resDocs {
+	firstBatch := types.MakeArray(len(firstBatchDocs))
+	for _, doc := range firstBatchDocs {
 		firstBatch.Append(doc)
+	}
+
+	if params.SingleBatch || firstBatch.Len() < int(params.BatchSize) {
+		// TODO: support tailable cursors https://github.com/FerretDB/FerretDB/issues/2283
+
+		// let the client know that there are no more results
+		cursorID = 0
+
+		cursor.Close()
 	}
 
 	var reply wire.OpMsg

@@ -15,52 +15,27 @@
 package testutil
 
 import (
-	"bytes"
 	"fmt"
-	"runtime"
 	"strings"
 	"sync"
-	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 var (
 	databaseNamesM sync.Mutex
-	databaseNames  = map[string][]byte{}
+	databaseNames  = map[string]string{}
 
 	collectionNamesM sync.Mutex
-	collectionNames  = map[string][]byte{}
+	collectionNames  = map[string]string{}
 )
-
-// stack returns the stack trace starting from the caller of caller.
-func stack() []byte {
-	pc := make([]uintptr, 100)
-
-	callers := runtime.Callers(2, pc)
-	if callers == 0 {
-		panic("runtime.Callers failed")
-	}
-
-	frames := runtime.CallersFrames(pc[:callers])
-	var buf bytes.Buffer
-
-	for {
-		frame, more := frames.Next()
-		if frame.File != "" {
-			fmt.Fprintf(&buf, "%s\n\t%s:%d\n", frame.Function, frame.File, frame.Line)
-		}
-
-		if !more {
-			return buf.Bytes()
-		}
-	}
-}
 
 // DatabaseName returns a stable FerretDB database name for that test.
 //
 // It should be called only once per test.
-func DatabaseName(tb testing.TB) string {
+func DatabaseName(tb testtb.TB) string {
 	tb.Helper()
 
 	// database names may contain lowercase and uppercase characters
@@ -75,13 +50,12 @@ func DatabaseName(tb testing.TB) string {
 	databaseNamesM.Lock()
 	defer databaseNamesM.Unlock()
 
-	// it maybe exactly the same if `go test -count=X` is used
-	current := stack()
-	if another, ok := databaseNames[name]; ok && !bytes.Equal(current, another) {
-		tb.Logf("Database name %q already used by another test:\n%s", name, another)
-		panic("duplicate database name")
+	// it may be the same test if `go test -count=X` is used
+	if t, ok := databaseNames[name]; ok && t != tb.Name() {
+		panic(fmt.Sprintf("Database name %q already used by another test %q.", name, tb.Name()))
 	}
-	databaseNames[name] = current
+
+	databaseNames[name] = tb.Name()
 
 	return name
 }
@@ -89,7 +63,7 @@ func DatabaseName(tb testing.TB) string {
 // CollectionName returns a stable FerretDB collection name for that test.
 //
 // It should be called only once per test.
-func CollectionName(tb testing.TB) string {
+func CollectionName(tb testtb.TB) string {
 	tb.Helper()
 
 	// do not use strings.ToLower because collection names can contain uppercase letters
@@ -104,13 +78,12 @@ func CollectionName(tb testing.TB) string {
 	collectionNamesM.Lock()
 	defer collectionNamesM.Unlock()
 
-	// it may be exactly the same if `go test -count=X` is used
-	current := stack()
-	if another, ok := collectionNames[name]; ok && !bytes.Equal(current, another) {
-		tb.Logf("Collection name %q already used by another test:\n%s", name, another)
-		panic("duplicate collection name")
+	// it may be the same test if `go test -count=X` is used
+	if t, ok := collectionNames[name]; ok && t != tb.Name() {
+		panic(fmt.Sprintf("Collection name %q already used by another test %q.", name, tb.Name()))
 	}
-	collectionNames[name] = current
+
+	collectionNames[name] = tb.Name()
 
 	return name
 }

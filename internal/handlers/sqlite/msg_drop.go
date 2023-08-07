@@ -16,6 +16,7 @@ package sqlite
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -47,7 +48,26 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	db := h.b.Database(dbName)
+	// Most backends would block on `DropCollection` below otherwise.
+	//
+	// There is a race condition: another client could create a new cursor for that collection
+	// after we closed all of them, but before we drop the collection itself.
+	// In that case, we expect the client to wait or to retry the operation.
+	for _, c := range h.cursors.All() {
+		if c.DB == dbName && c.Collection == collectionName {
+			c.Close()
+		}
+	}
+
+	db, err := h.b.Database(dbName)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid namespace specified '%s'", dbName)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "drop")
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
 	defer db.Close()
 
 	err = db.DropCollection(ctx, &backends.DropCollectionParams{
@@ -67,8 +87,12 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 		return &reply, nil
 
+	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
+		msg := fmt.Sprintf("Invalid collection name: %s", collectionName)
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "drop")
+
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
-		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNamespaceNotFound, "ns not found")
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNamespaceNotFound, "ns not found", "drop")
 
 	default:
 		return nil, lazyerrors.Error(err)

@@ -17,13 +17,11 @@ package pg
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -39,37 +37,16 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	mechanism, err := common.GetRequiredParam[string](doc, "mechanism")
-	if err != nil {
+	if err = common.SASLStart(ctx, doc); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
-	var username, password string
-
-	switch mechanism {
-	case "PLAIN":
-		username, password, err = common.SASLStartPlain(doc)
-	default:
-		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
-			"See https://docs.ferretdb.io/security/#authentication for more details."
-		err = commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrAuthenticationFailed,
-			msg,
-			"mechanism",
-		)
-	}
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	conninfo.Get(ctx).SetAuth(username, password)
 
 	if _, err = h.DBPool(ctx); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsInvalidAuthorizationSpecification(pgErr.Code) {
 			msg := "FerretDB failed to authenticate you in PostgreSQL:\n" +
 				strings.TrimSpace(pgErr.Error()) + "\n" +
-				"See https://docs.ferretdb.io/security/#authentication for more details."
+				"See https://docs.ferretdb.io/security/authentication/ for more details."
 
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrAuthenticationFailed,

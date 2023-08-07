@@ -6,6 +6,11 @@ run:
   timeout: 3m
 
 linters-settings:
+  asasalint:
+    exclude:
+      - ^lazyerrors\.Errorf$
+    use-builtin-exclusions: true
+    ignore-test: false
   errorlint:
     # see caveats at https://github.com/polyfloyd/go-errorlint#fmterrorf-wrapping-verb
     errorf: false
@@ -17,11 +22,11 @@ linters-settings:
   revive:
     ignore-generated-header: true
     severity: warning
-    # TODO enable-all-rules: true
+    # TODO enable-all-rules: true https://github.com/FerretDB/FerretDB/issues/2748
     rules:
       # https://github.com/mgechev/revive/blob/master/RULES_DESCRIPTIONS.md
       - name: exported
-        arguments: [checkPrivateReceivers]
+        arguments: [checkPrivateReceivers, disableStutteringCheck]
       - name: package-comments
   staticcheck:
     checks: ["all"]
@@ -62,8 +67,9 @@ linters:
     - unused
     - whitespace
 
-    # TODO configure and enable one by one
+    # TODO https://github.com/FerretDB/FerretDB/issues/2748
     - bidichk
+    - bodyclose
     - containedctx
     - contextcheck
     - cyclop
@@ -110,6 +116,8 @@ linters:
     - prealloc
     - predeclared
     - promlinter
+    - rowserrcheck
+    - sqlclosecheck
     - stylecheck
     - tagliatelle
     - tenv
@@ -120,13 +128,8 @@ linters:
     - unparam
     - varcheck
     - varnamelen
-    - wrapcheck
-
-    # TODO https://github.com/golangci/golangci-lint/issues/2649
-    - bodyclose
-    - rowserrcheck
-    - sqlclosecheck
     - wastedassign
+    - wrapcheck
 
     # deprecated
     - golint

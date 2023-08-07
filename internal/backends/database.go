@@ -32,8 +32,10 @@ import (
 //
 // See databaseContract and its methods for additional details.
 type Database interface {
+	// TODO remove?
 	Close()
-	Collection(string) Collection
+
+	Collection(string) (Collection, error)
 	ListCollections(context.Context, *ListCollectionsParams) (*ListCollectionsResult, error)
 	CreateCollection(context.Context, *CreateCollectionParams) error
 	DropCollection(context.Context, *DropCollectionParams) error
@@ -69,11 +71,20 @@ func (dbc *databaseContract) Close() {
 	resource.Untrack(dbc, dbc.token)
 }
 
-// Collection returns a Collection instance for the given name.
+// Collection returns a Collection instance for the given valid name.
 //
-// The collection (or database) does not need to exist; even parameters like name could be invalid.
-func (dbc *databaseContract) Collection(name string) Collection {
-	return dbc.db.Collection(name)
+// The collection (or database) does not need to exist.
+func (dbc *databaseContract) Collection(name string) (Collection, error) {
+	var res Collection
+
+	err := validateCollectionName(name)
+	if err == nil {
+		res, err = dbc.db.Collection(name)
+	}
+
+	checkError(err, ErrorCodeCollectionNameIsInvalid)
+
+	return res, err
 }
 
 // ListCollectionsParams represents the parameters of Database.ListCollections method.
@@ -91,15 +102,14 @@ type CollectionInfo struct {
 
 // ListCollections returns information about collections in the database.
 //
-// Database doesn't have to exist; that's not an error.
-//
-//nolint:lll // for readability
-func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCollectionsParams) (res *ListCollectionsResult, err error) {
+// Database may not exist; that's not an error.
+func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCollectionsParams) (*ListCollectionsResult, error) {
 	defer observability.FuncCall(ctx)()
-	defer checkError(err)
-	res, err = dbc.db.ListCollections(ctx, params)
 
-	return
+	res, err := dbc.db.ListCollections(ctx, params)
+	checkError(err)
+
+	return res, err
 }
 
 // CreateCollectionParams represents the parameters of Database.CreateCollection method.
@@ -107,15 +117,21 @@ type CreateCollectionParams struct {
 	Name string
 }
 
-// CreateCollection creates a new collection in the database; it should not already exist.
+// CreateCollection creates a new collection with valid name in the database; it should not already exist.
 //
 // Database may or may not exist; it should be created automatically if needed.
-func (dbc *databaseContract) CreateCollection(ctx context.Context, params *CreateCollectionParams) (err error) {
+// TODO https://github.com/FerretDB/FerretDB/issues/3069
+func (dbc *databaseContract) CreateCollection(ctx context.Context, params *CreateCollectionParams) error {
 	defer observability.FuncCall(ctx)()
-	defer checkError(err, ErrorCodeCollectionAlreadyExists, ErrorCodeCollectionNameIsInvalid)
-	err = dbc.db.CreateCollection(ctx, params)
 
-	return
+	err := validateCollectionName(params.Name)
+	if err == nil {
+		err = dbc.db.CreateCollection(ctx, params)
+	}
+
+	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionAlreadyExists)
+
+	return err
 }
 
 // DropCollectionParams represents the parameters of Database.DropCollection method.
@@ -123,13 +139,20 @@ type DropCollectionParams struct {
 	Name string
 }
 
-// DropCollection drops existing collection in the database.
-func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCollectionParams) (err error) {
+// DropCollection drops existing collection with valid name in the database.
+//
+// The errors for non-existing database and non-existing collection are the same (TODO?).
+func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCollectionParams) error {
 	defer observability.FuncCall(ctx)()
-	defer checkError(err, ErrorCodeCollectionDoesNotExist)
-	err = dbc.db.DropCollection(ctx, params)
 
-	return
+	err := validateCollectionName(params.Name)
+	if err == nil {
+		err = dbc.db.DropCollection(ctx, params)
+	}
+
+	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist) // TODO: ErrorCodeDatabaseDoesNotExist ?
+
+	return err
 }
 
 // check interfaces
