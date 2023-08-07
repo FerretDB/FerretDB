@@ -57,7 +57,7 @@ func _() {
 	_ = x[ErrPathContainsEmptyElement-15998]
 	_ = x[ErrOperatorWrongLenOfArgs-16020]
 	_ = x[ErrFieldPathInvalidName-16410]
-	_ = x[ErrGroupInvalidFieldPath-16872]
+	_ = x[ErrStageInvalidFieldPath-16872]
 	_ = x[ErrGroupUndefinedVariable-17276]
 	_ = x[ErrInvalidArg-28667]
 	_ = x[ErrSliceFirstArg-28724]

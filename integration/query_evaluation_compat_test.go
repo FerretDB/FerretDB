@@ -309,23 +309,21 @@ func TestQueryEvaluationCompatExpr(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
-		"Empty": {
-			filter: bson.D{{"$expr", bson.D{}}},
+		"Expression": {
+			filter: bson.D{{"$expr", "$v"}},
 		},
-		"Array": {
-			filter: bson.D{{"$expr", bson.A{}}},
-		},
-		"Int": {
-			filter: bson.D{{"$expr", int32(1)}},
+		"NonExistent": {
+			filter:     bson.D{{"$expr", "$non-existent"}},
+			resultType: emptyResult,
 		},
 		"Type": {
 			filter: bson.D{{"$expr", bson.D{{"$type", "$v"}}}},
 		},
-		"TypeRecursive": {
-			filter: bson.D{{"$expr", bson.D{{"$type", bson.D{{"$type", "$v"}}}}}},
-		},
 		"Sum": {
 			filter: bson.D{{"$expr", bson.D{{"$sum", "$v"}}}},
+		},
+		"SumType": {
+			filter: bson.D{{"$expr", bson.D{{"$type", bson.D{{"$sum", "$v"}}}}}},
 		},
 		"Gt": {
 			filter: bson.D{{"$expr", bson.D{{"$gt", bson.A{"$v", 2}}}}},

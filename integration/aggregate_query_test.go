@@ -34,6 +34,77 @@ func TestAggregateMatchExprErrors(t *testing.T) {
 		altMessage string              // optional, alternative error message
 		skip       string              // optional, skip test with a specified reason
 	}{
+		"TooManyFields": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", bson.D{{"$type", "v"}, {"$op", "v"}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    15983,
+				Name:    "Location15983",
+				Message: `An object representing an expression must have exactly one field: { $type: "v", $op: "v" }`,
+			},
+			altMessage: "An object representing an expression must have exactly one field",
+		},
+		"TypeWrongLen": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16020,
+				Name:    "Location16020",
+				Message: "Expression $type takes exactly 1 arguments. 2 were passed in.",
+			},
+		},
+		"InvalidNestedExpression": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", bson.D{{"$type", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16020,
+				Name:    "Location16020",
+				Message: "Expression $type takes exactly 1 arguments. 2 were passed in.",
+			},
+		},
+		"EmptyPath": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", "$"}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    16872,
+				Name:    "Location16872",
+				Message: "'$' by itself is not a valid FieldPath",
+			},
+		},
+		"EmptyVariable": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", "$$"}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "empty variable names are not allowed",
+			},
+		},
+		"InvalidVariable$": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", "$$$"}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "'$' starts with an invalid character for a user variable name",
+			},
+		},
+		"InvalidVariable$s": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", "$$$s"}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    9,
+				Name:    "FailedToParse",
+				Message: "'$s' starts with an invalid character for a user variable name",
+			},
+		},
 		"Recursive": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"$expr", bson.D{{"$expr", int32(1)}}}}}},

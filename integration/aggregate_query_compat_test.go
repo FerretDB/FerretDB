@@ -24,39 +24,30 @@ func TestAggregateCompatMatchExpr(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
-		"Empty": {
-			pipeline: bson.A{
-				bson.D{{"$match", bson.D{{"$expr", bson.D{}}}}},
-			},
-		},
-		"Array": {
-			pipeline: bson.A{
-				bson.D{{"$match", bson.D{{"$expr", bson.A{}}}}},
-			},
-		},
-		"Int": {
-			pipeline: bson.A{
-				bson.D{{"$match", bson.D{{"$expr", int32(1)}}}},
-			},
-		},
 		"Expression": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"$expr", "$v"}}}},
 			},
+		},
+		"NonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", "$non-existent"}}}},
+			},
+			resultType: emptyResult,
 		},
 		"Type": {
 			pipeline: bson.A{bson.D{{"$match", bson.D{
 				{"$expr", bson.D{{"$type", "$v"}}},
 			}}}},
 		},
-		"TypeRecursive": {
-			pipeline: bson.A{bson.D{{"$match", bson.D{
-				{"$expr", bson.D{{"$type", bson.D{{"$type", "$v"}}}}},
-			}}}},
-		},
 		"Sum": {
 			pipeline: bson.A{bson.D{{"$match", bson.D{
 				{"$expr", bson.D{{"$sum", "$v"}}},
+			}}}},
+		},
+		"SumType": {
+			pipeline: bson.A{bson.D{{"$match", bson.D{
+				{"$expr", bson.D{{"$type", bson.D{{"$sum", "$v"}}}}},
 			}}}},
 		},
 		"Gt": {

@@ -62,23 +62,90 @@ func (m *match) Process(ctx context.Context, iter types.DocumentsIterator, close
 func validateMatch(filter *types.Document) error {
 	if filter.Has("$expr") {
 		if _, err := operators.NewExpr(filter); err != nil {
-			var opErr operators.OperatorError
-			if errors.As(err, &opErr) {
-				switch opErr.Code() {
-				case operators.ErrInvalidExpression:
-					return commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrInvalidPipelineOperator,
-						fmt.Sprintf("Unrecognized expression '%s'", opErr.Name()),
-						"$match (stage)",
-					)
-				}
-			}
-
-			return lazyerrors.Error(err)
+			return processMatchStageError(err)
 		}
 	}
 
 	return nil
+}
+
+// processMatchStageError takes internal error related to operator evaluation and
+// expression evaluation and returns CommandError that can be returned by $match
+// aggregation stage.
+func processMatchStageError(err error) error {
+	var opErr operators.OperatorError
+	var exErr *aggregations.ExpressionError
+
+	switch {
+	case errors.As(err, &opErr):
+		switch opErr.Code() {
+		case operators.ErrTooManyFields:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrExpressionWrongLenOfFields,
+				"An object representing an expression must have exactly one field",
+				"$match (stage)",
+			)
+		case operators.ErrNotImplemented:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
+				"Invalid $match :: caused by :: "+opErr.Error(),
+				"$match (stage)",
+			)
+		case operators.ErrArgsInvalidLen:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrOperatorWrongLenOfArgs,
+				opErr.Error(),
+				"$match (stage)",
+			)
+		case operators.ErrInvalidExpression:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrInvalidPipelineOperator,
+				fmt.Sprintf("Unrecognized expression '%s'", opErr.Name()),
+				"$match (stage)",
+			)
+		case operators.ErrInvalidNestedExpression:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrInvalidPipelineOperator,
+				opErr.Error(),
+				"$match (stage)",
+			)
+		}
+
+	case errors.As(err, &exErr):
+		switch exErr.Code() {
+		case aggregations.ErrInvalidExpression:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf("'%s' starts with an invalid character for a user variable name", exErr.Name()),
+				"$match (stage)",
+			)
+		case aggregations.ErrEmptyFieldPath:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrStageInvalidFieldPath,
+				"'$' by itself is not a valid FieldPath",
+				"$match (stage)",
+			)
+		case aggregations.ErrUndefinedVariable:
+			// TODO https://github.com/FerretDB/FerretDB/issues/2275
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
+				"Aggregation expression variables are not implemented yet",
+				"$match (stage)",
+			)
+		case aggregations.ErrEmptyVariable:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				"empty variable names are not allowed",
+				"$match (stage)",
+			)
+		case aggregations.ErrNotExpression:
+			// handled by upstream and this should not be reachable for existing expression implementation
+			fallthrough
+		default:
+		}
+	}
+
+	return lazyerrors.Error(err)
 }
 
 // check interfaces

@@ -177,8 +177,8 @@ const (
 	// ErrFieldPathInvalidName indicates that FieldPath is invalid.
 	ErrFieldPathInvalidName = ErrorCode(16410) // Location16410
 
-	// ErrGroupInvalidFieldPath indicates invalid path is given for group _id.
-	ErrGroupInvalidFieldPath = ErrorCode(16872) // Location16872
+	// ErrStageInvalidFieldPath indicates invalid path is given for group _id.
+	ErrStageInvalidFieldPath = ErrorCode(16872) // Location16872
 
 	// ErrGroupUndefinedVariable indicates the variable is not defined.
 	ErrGroupUndefinedVariable = ErrorCode(17276) // Location17276
