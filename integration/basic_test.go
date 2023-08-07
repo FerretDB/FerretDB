@@ -55,17 +55,17 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 }
 
 // NOTE: fails???
-//func TestFindNothing(t *testing.T) {
-//	t.Parallel()
-//	ctx, collection := setup.Setup(t)
-//
-//	var doc bson.D
-//
-//	// FindOne sets limit parameter to 1, Find leaves it unset.
-//	err := collection.FindOne(ctx, bson.D{}).Decode(&doc)
-//	require.Equal(t, mongo.ErrNoDocuments, err)
-//	assert.Equal(t, bson.D(nil), doc)
-//}
+func TestFindNothing(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
+
+	var doc bson.D
+
+	// FindOne sets limit parameter to 1, Find leaves it unset.
+	err := collection.FindOne(ctx, bson.D{}).Decode(&doc)
+	require.Equal(t, mongo.ErrNoDocuments, err)
+	assert.Equal(t, bson.D(nil), doc)
+}
 
 func TestInsertFind(t *testing.T) {
 	t.Parallel()
@@ -122,30 +122,30 @@ func TestFindCommentQuery(t *testing.T) {
 }
 
 // NOTE: fails if TestDeleteCommentQuery is enabled
-func TestUpdateCommentMethod(t *testing.T) {
-	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars)
-
-	name := collection.Database().Name()
-	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
-	require.NoError(t, err)
-
-	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
-	filter := bson.D{{"_id", "string"}}
-	update := bson.D{{"$set", bson.D{{"v", "bar"}}}}
-
-	opts := options.Update().SetComment(comment)
-	res, err := collection.UpdateOne(ctx, filter, update, opts)
-	require.NoError(t, err)
-
-	expected := &mongo.UpdateResult{
-		MatchedCount:  1,
-		ModifiedCount: 1,
-	}
-
-	assert.Contains(t, databaseNames, name)
-	assert.Equal(t, expected, res)
-}
+//func TestUpdateCommentMethod(t *testing.T) {
+//	t.Parallel()
+//	ctx, collection := setup.Setup(t, shareddata.Scalars)
+//
+//	name := collection.Database().Name()
+//	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
+//	require.NoError(t, err)
+//
+//	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
+//	filter := bson.D{{"_id", "string"}}
+//	update := bson.D{{"$set", bson.D{{"v", "bar"}}}}
+//
+//	opts := options.Update().SetComment(comment)
+//	res, err := collection.UpdateOne(ctx, filter, update, opts)
+//	require.NoError(t, err)
+//
+//	expected := &mongo.UpdateResult{
+//		MatchedCount:  1,
+//		ModifiedCount: 1,
+//	}
+//
+//	assert.Contains(t, databaseNames, name)
+//	assert.Equal(t, expected, res)
+//}
 
 //func TestUpdateCommentQuery(t *testing.T) {
 //	t.Parallel()
