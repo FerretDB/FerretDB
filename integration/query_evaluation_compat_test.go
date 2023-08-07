@@ -304,3 +304,34 @@ func TestQueryEvaluationCompatMod(t *testing.T) {
 
 	testQueryCompat(t, testCases)
 }
+
+func TestQueryEvaluationCompatExpr(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]queryCompatTestCase{
+		"Empty": {
+			filter: bson.D{{"$expr", bson.D{}}},
+		},
+		"Array": {
+			filter: bson.D{{"$expr", bson.A{}}},
+		},
+		"Int": {
+			filter: bson.D{{"$expr", int32(1)}},
+		},
+		"Type": {
+			filter: bson.D{{"$expr", bson.D{{"$type", "$v"}}}},
+		},
+		"TypeRecursive": {
+			filter: bson.D{{"$expr", bson.D{{"$type", bson.D{{"$type", "$v"}}}}}},
+		},
+		"Sum": {
+			filter: bson.D{{"$expr", bson.D{{"$sum", "$v"}}}},
+		},
+		"Gt": {
+			filter: bson.D{{"$expr", bson.D{{"$gt", bson.A{"$v", 2}}}}},
+			skip:   "https://github.com/FerretDB/FerretDB/issues/1456",
+		},
+	}
+
+	testQueryCompat(t, testCases)
+}

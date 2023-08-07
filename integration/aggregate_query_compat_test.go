@@ -39,10 +39,36 @@ func TestAggregateCompatMatchExpr(t *testing.T) {
 				bson.D{{"$match", bson.D{{"$expr", int32(1)}}}},
 			},
 		},
-		"Expression": {
+		"Recursive": {
 			pipeline: bson.A{
-				bson.D{{"$match", bson.D{{"$expr", bson.D{{"$gt", bson.A{"$v", 2}}}}}}},
+				bson.D{{"$match", bson.D{{"$expr", bson.D{{"$expr", int32(1)}}}}}},
 			},
+		},
+		"RecursiveExpr": {
+			pipeline: bson.A{bson.D{{"$match", bson.D{
+				{"$expr", bson.D{{"$sum", bson.D{{"$expr", bson.D{{"$sum", "$v"}}}}}}},
+			}}}},
+		},
+		"Type": {
+			pipeline: bson.A{bson.D{{"$match", bson.D{
+				{"$expr", bson.D{{"$type", "$v"}}},
+			}}}},
+		},
+		"TypeRecursive": {
+			pipeline: bson.A{bson.D{{"$match", bson.D{
+				{"$expr", bson.D{{"$type", bson.D{{"$type", "$v"}}}}},
+			}}}},
+		},
+		"Sum": {
+			pipeline: bson.A{bson.D{{"$match", bson.D{
+				{"$expr", bson.D{{"$sum", "$v"}}},
+			}}}},
+		},
+		"Gt": {
+			pipeline: bson.A{bson.D{{"$match", bson.D{
+				{"$expr", bson.D{{"$gt", bson.A{"$v", 2}}}},
+			}}}},
+			skip: "https://github.com/FerretDB/FerretDB/issues/1456",
 		},
 	}
 

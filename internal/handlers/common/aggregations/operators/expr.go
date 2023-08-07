@@ -184,7 +184,8 @@ func evaluateExpr(exprValue any, doc *types.Document) (any, error) {
 
 			eval, err := evaluateExpr(v, doc)
 			if err != nil {
-				return nil, err
+				// skip failed evaluation result
+				continue
 			}
 
 			res.Append(eval)
