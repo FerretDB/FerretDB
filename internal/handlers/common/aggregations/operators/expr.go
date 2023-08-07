@@ -109,7 +109,7 @@ func validateExpr(exprValue any) error {
 			}
 		}
 	case string:
-		_, err := aggregations.NewExpression(exprValue)
+		_, err := aggregations.NewExpression(exprValue, nil)
 		var exprErr *aggregations.ExpressionError
 
 		if errors.As(err, &exprErr) && exprErr.Code() == aggregations.ErrNotExpression {
@@ -139,7 +139,6 @@ func evaluateExpr(exprValue any, doc *types.Document) (any, error) {
 
 				return v, nil
 			}
-
 			// not an aggregation operator, may be filter operator
 		}
 
@@ -193,7 +192,7 @@ func evaluateExpr(exprValue any, doc *types.Document) (any, error) {
 
 		return res, nil
 	case string:
-		expression, err := aggregations.NewExpression(exprValue)
+		expression, err := aggregations.NewExpression(exprValue, nil)
 
 		var exprErr *aggregations.ExpressionError
 		if errors.As(err, &exprErr) && exprErr.Code() == aggregations.ErrNotExpression {
