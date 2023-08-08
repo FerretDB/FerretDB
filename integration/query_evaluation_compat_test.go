@@ -312,6 +312,32 @@ func TestQueryEvaluationCompatExpr(t *testing.T) {
 		"Expression": {
 			filter: bson.D{{"$expr", "$v"}},
 		},
+		"ExpressionDotNotation": {
+			filter: bson.D{{"$expr", "$v.foo"}},
+		},
+		"ExpressionIndexDotNotation": {
+			filter: bson.D{{"$expr", "$v.0.foo"}},
+		},
+		"Document": {
+			filter: bson.D{{"$expr", bson.D{{"v", "$v"}}}},
+		},
+		"DocumentInvalid": {
+			filter:     bson.D{{"$expr", bson.D{{"v", "$"}}}},
+			resultType: emptyResult,
+		},
+		"Array": {
+			filter: bson.D{{"$expr", bson.A{"$v"}}},
+		},
+		"ArrayInvalid": {
+			filter:     bson.D{{"$expr", bson.A{"$"}}},
+			resultType: emptyResult,
+		},
+		"String": {
+			filter: bson.D{{"$expr", "v"}},
+		},
+		"Int": {
+			filter: bson.D{{"$expr", int32(1)}},
+		},
 		"NonExistent": {
 			filter:     bson.D{{"$expr", "$non-existent"}},
 			resultType: emptyResult,

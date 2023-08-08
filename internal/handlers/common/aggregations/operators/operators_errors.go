@@ -63,7 +63,7 @@ func (opErr OperatorError) Code() operatorErrorCode {
 	return opErr.code
 }
 
-// Name returns the name of the operator that produced an error.
+// Name returns the name of the operator (e.g. $sum) that produced an error.
 func (opErr OperatorError) Name() string {
 	return opErr.name
 }

@@ -34,6 +34,11 @@ func TestAggregateCompatMatchExpr(t *testing.T) {
 				bson.D{{"$match", bson.D{{"$expr", "$v.foo"}}}},
 			},
 		},
+		"ExpressionIndexDotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", "$v.0.foo"}}}},
+			},
+		},
 		"Document": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"$expr", bson.D{{"v", "$v"}}}}}},

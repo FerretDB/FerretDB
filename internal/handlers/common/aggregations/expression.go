@@ -69,7 +69,8 @@ func (e *ExpressionError) Code() ExpressionErrorCode {
 	return e.code
 }
 
-// Name returns the name of the expression that produced an error.
+// Name returns the value of an expression that produced an error.
+// For an expression `$$$variable`, the invalid value `$variable` is set.
 func (e *ExpressionError) Name() string {
 	return e.name
 }

@@ -55,7 +55,7 @@ func TestAggregateMatchExprErrors(t *testing.T) {
 				Message: "Expression $type takes exactly 1 arguments. 2 were passed in.",
 			},
 		},
-		"InvalidNestedExpression": {
+		"InvalidExpression": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"$expr", bson.D{{"$type", bson.D{{"$type", bson.A{"foo", "bar"}}}}}}}}},
 			},
@@ -63,6 +63,16 @@ func TestAggregateMatchExprErrors(t *testing.T) {
 				Code:    16020,
 				Name:    "Location16020",
 				Message: "Expression $type takes exactly 1 arguments. 2 were passed in.",
+			},
+		},
+		"InvalidNestedExpression": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", bson.D{{"$type", bson.D{{"$non-existent", "foo"}}}}}}}},
+			},
+			err: &mongo.CommandError{
+				Code:    168,
+				Name:    "InvalidPipelineOperator",
+				Message: "Unrecognized expression '$non-existent'",
 			},
 		},
 		"EmptyPath": {
