@@ -319,7 +319,14 @@ func TestQueryEvaluationCompatExpr(t *testing.T) {
 			filter: bson.D{{"$expr", "$v.0.foo"}},
 		},
 		"Document": {
+			filter: bson.D{{"$expr", bson.D{{"v", "foo"}}}},
+		},
+		"DocumentExpression": {
 			filter: bson.D{{"$expr", bson.D{{"v", "$v"}}}},
+		},
+		"DocumentNestedExpr": {
+			filter:     bson.D{{"$expr", bson.D{{"v", bson.D{{"$expr", int32(1)}}}}}},
+			resultType: emptyResult,
 		},
 		"DocumentInvalid": {
 			filter:     bson.D{{"$expr", bson.D{{"v", "$"}}}},
@@ -327,6 +334,9 @@ func TestQueryEvaluationCompatExpr(t *testing.T) {
 		},
 		"Array": {
 			filter: bson.D{{"$expr", bson.A{"$v"}}},
+		},
+		"ArrayMany": {
+			filter: bson.D{{"$expr", bson.A{nil, "foo", int32(42)}}},
 		},
 		"ArrayInvalid": {
 			filter:     bson.D{{"$expr", bson.A{"$"}}},

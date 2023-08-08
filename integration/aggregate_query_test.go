@@ -22,10 +22,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestAggregateMatchExprErrors(t *testing.T) {
 	t.Parallel()
+
+	ctx, collection := setup.Setup(t, shareddata.Composites)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
 		pipeline bson.A // required, aggregation pipeline stages
@@ -125,6 +128,16 @@ func TestAggregateMatchExprErrors(t *testing.T) {
 				Message: "Unrecognized expression '$expr'",
 			},
 		},
+		"ExpressionWithinField": {
+			pipeline: bson.A{bson.D{{"$match", bson.D{
+				{"v", bson.D{{"$expr", int32(1)}}},
+			}}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "unknown operator: $expr",
+			},
+		},
 		"GtNotArray": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"$expr", bson.D{{"$gt", 1}}}}}},
@@ -169,8 +182,6 @@ func TestAggregateMatchExprErrors(t *testing.T) {
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
-
-			ctx, collection := setup.Setup(t)
 
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)

@@ -41,8 +41,19 @@ func TestAggregateCompatMatchExpr(t *testing.T) {
 		},
 		"Document": {
 			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", bson.D{{"v", "foo"}}}}}},
+			},
+		},
+		"DocumentExpression": {
+			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"$expr", bson.D{{"v", "$v"}}}}}},
 			},
+		},
+		"DocumentNestedExpr": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"v", bson.D{{"foo", bson.D{{"$expr", int32(1)}}}}}}}},
+			},
+			resultType: emptyResult,
 		},
 		"DocumentInvalid": {
 			pipeline: bson.A{
@@ -53,6 +64,11 @@ func TestAggregateCompatMatchExpr(t *testing.T) {
 		"Array": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"$expr", bson.A{"$v"}}}}},
+			},
+		},
+		"ArrayMany": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", bson.A{nil, "foo", int32(42)}}}}},
 			},
 		},
 		"ArrayInvalid": {
