@@ -336,7 +336,9 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 	}
 }
 
-// filterExprOperator uses $expr aggregation operator to process the document.
+// filterExprOperator uses $expr aggregation operator to process the document
+// and returns boolean indicating filter match.
+//
 // If the result of processing $expr is null, zero value or false, it returns
 // false indicating filter was not matched. For other values, it returns true.
 func filterExprOperator(doc, filter *types.Document) (bool, error) {
