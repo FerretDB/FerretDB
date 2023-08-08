@@ -242,21 +242,19 @@ func prepareDocumentForUpdate(docs []*types.Document, params *FindAndModifyParam
 	}
 
 	upsertID := must.NotFail(params.Update.Get("_id"))
+	id := must.NotFail(update.Get("_id"))
 
-	for _, doc := range docs {
-		id := must.NotFail(doc.Get("_id"))
-		if id != upsertID {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrImmutableField,
-				fmt.Sprintf(
-					`Plan executor error during findAndModify :: caused `+
-						`by :: After applying the update, the (immutable) field `+
-						`'_id' was found to have been altered to _id: "%s"`,
-					upsertID,
-				),
-				"findAndModify",
-			)
-		}
+	if id != upsertID {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrImmutableField,
+			fmt.Sprintf(
+				`Plan executor error during findAndModify :: caused `+
+					`by :: After applying the update, the (immutable) field `+
+					`'_id' was found to have been altered to _id: "%s"`,
+				upsertID,
+			),
+			"findAndModify",
+		)
 	}
 
 	return update, nil
