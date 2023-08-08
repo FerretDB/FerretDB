@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// expr represents `$expr` operator.
+// expr represents $expr operator.
 type expr struct {
 	exprValue   any
 	errArgument string
@@ -131,7 +131,7 @@ func (e *expr) validateExpr(exprValue any) error {
 // processExpr recursively processes operators and expressions and returns processed `exprValue`.
 //
 // Each array values and document fields are processed recursively.
-// String expression is evaluated if any, an evaluation error due to missing field returns Null.
+// String expression is evaluated if any, and Null is returned if field is missing.
 // Any value that does not require processing, it returns the original value.
 func (e *expr) processExpr(exprValue any, doc *types.Document) (any, error) {
 	switch exprValue := exprValue.(type) {
