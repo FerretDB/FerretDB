@@ -23,6 +23,8 @@ import (
 
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonpath"
@@ -322,6 +324,8 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 	case "$comment":
 		return true, nil
 
+	case "$expr":
+		return filterExprOperator(doc, must.NotFail(types.NewDocument(operator, filterValue)))
 	default:
 		msg := fmt.Sprintf(
 			`unknown top level operator: %s. `+
@@ -331,6 +335,116 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 
 		return false, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, "$operator")
 	}
+}
+
+// filterExprOperator uses `$expr` aggregation operator to process the document.
+// If result of processing `$expr` is null, zero value number or boolean false,
+// it returns false indicating filter not matched. For other values, it returns true.
+func filterExprOperator(doc, filter *types.Document) (bool, error) {
+	op, err := operators.NewExpr(filter)
+	if err != nil {
+		return false, processExprError(err)
+	}
+
+	v, err := op.Process(doc)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	switch v := v.(type) {
+	case *types.Document, *types.Array, string, types.Binary, types.ObjectID, time.Time, types.Regex, types.Timestamp:
+		return true, nil
+	case float64, int32, int64:
+		if res := types.Compare(v, float64(0)); res == types.Equal {
+			return false, nil
+		}
+
+		return true, nil
+	case bool:
+		return v, nil
+	case types.NullType:
+		return false, nil
+	default:
+		panic(fmt.Sprintf("common.filterExprOperator: unexpected type %[1]T (%#[1]v)", v))
+	}
+}
+
+// processExprError takes internal error related to operator evaluation and
+// expression evaluation and returns CommandError.
+func processExprError(err error) error {
+	var opErr operators.OperatorError
+	var exErr *aggregations.ExpressionError
+
+	switch {
+	case errors.As(err, &opErr):
+		switch opErr.Code() {
+		case operators.ErrTooManyFields:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrExpressionWrongLenOfFields,
+				"An object representing an expression must have exactly one field",
+				"$expr",
+			)
+		case operators.ErrNotImplemented:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
+				"Invalid $match :: caused by :: "+opErr.Error(),
+				"$expr",
+			)
+		case operators.ErrArgsInvalidLen:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrOperatorWrongLenOfArgs,
+				opErr.Error(),
+				"$expr",
+			)
+		case operators.ErrInvalidExpression:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrInvalidPipelineOperator,
+				fmt.Sprintf("Unrecognized expression '%s'", opErr.Name()),
+				"$expr",
+			)
+		case operators.ErrInvalidNestedExpression:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrInvalidPipelineOperator,
+				opErr.Error(),
+				"$expr",
+			)
+		}
+
+	case errors.As(err, &exErr):
+		switch exErr.Code() {
+		case aggregations.ErrInvalidExpression:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf("'%s' starts with an invalid character for a user variable name", exErr.Name()),
+				"$expr",
+			)
+		case aggregations.ErrEmptyFieldPath:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrGroupInvalidFieldPath,
+				"'$' by itself is not a valid FieldPath",
+				"$expr",
+			)
+		case aggregations.ErrUndefinedVariable:
+			// TODO https://github.com/FerretDB/FerretDB/issues/2275
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
+				"Aggregation expression variables are not implemented yet",
+				"$expr",
+			)
+		case aggregations.ErrEmptyVariable:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				"empty variable names are not allowed",
+				"$expr",
+			)
+		case aggregations.ErrNotExpression:
+			// handled by upstream and this should not be reachable for existing expression implementation
+			fallthrough
+		default:
+		}
+	}
+
+	return lazyerrors.Error(err)
 }
 
 // filterFieldExpr handles {field: {expr}} or {field: {document}} filter.

@@ -44,10 +44,11 @@ func NewExpr(doc *types.Document) (Operator, error) {
 
 // Process implements Operator interface.
 func (e *expr) Process(doc *types.Document) (any, error) {
-	return evaluateExpr(e.exprValue, doc)
+	return processExpr(e.exprValue, doc)
 }
 
-// validateExpr recursively validates operators and expressions.
+// processExpr recursively validates operators and expressions.
+// Each array values and document fields are validated recursively.
 func validateExpr(exprValue any) error {
 	switch exprValue := exprValue.(type) {
 	case *types.Document:
@@ -117,14 +118,18 @@ func validateExpr(exprValue any) error {
 	return nil
 }
 
-// evaluateExpr recursively evaluates document's field expressions and operators.
-func evaluateExpr(exprValue any, doc *types.Document) (any, error) {
+// processExpr recursively processes operators and expressions and returns processed `exprValue`.
+//
+// Each array values and document fields are processed recursively.
+// String expression is evaluated if any, an evaluation error due to missing field returns Null.
+// Any value that does not require processing, it returns the original value.
+func processExpr(exprValue any, doc *types.Document) (any, error) {
 	switch exprValue := exprValue.(type) {
 	case *types.Document:
 		if IsOperator(exprValue) {
 			op, err := NewOperator(exprValue)
 			if err != nil {
-				// $expr was validated in NewExpr.
+				// $expr was validated in NewExpr
 				return nil, err
 			}
 
@@ -152,12 +157,12 @@ func evaluateExpr(exprValue any, doc *types.Document) (any, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			eval, err := evaluateExpr(v, doc)
+			processed, err := processExpr(v, doc)
 			if err != nil {
 				return nil, err
 			}
 
-			res.Set(k, eval)
+			res.Set(k, processed)
 		}
 
 		return res, nil
@@ -177,12 +182,12 @@ func evaluateExpr(exprValue any, doc *types.Document) (any, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			eval, err := evaluateExpr(v, doc)
+			processed, err := processExpr(v, doc)
 			if err != nil {
 				continue
 			}
 
-			res.Append(eval)
+			res.Append(processed)
 		}
 
 		return res, nil
@@ -191,21 +196,24 @@ func evaluateExpr(exprValue any, doc *types.Document) (any, error) {
 
 		var exprErr *aggregations.ExpressionError
 		if errors.As(err, &exprErr) && exprErr.Code() == aggregations.ErrNotExpression {
+			// not an expression, return the original value
 			return exprValue, nil
 		}
 
 		if err != nil {
-			// expression error was validated in NewExpr.
+			// expression error was validated in NewExpr
 			return nil, lazyerrors.Error(err)
 		}
 
 		v, err := expression.Evaluate(doc)
 		if err != nil {
+			// missing field is set to null
 			return types.Null, nil
 		}
 
 		return v, nil
 	default:
+		// nothing to process, return the original value
 		return exprValue, nil
 	}
 }
