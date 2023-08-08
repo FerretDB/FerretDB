@@ -585,10 +585,8 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
 				{"upsert", true},
-				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
+				{"update", bson.D{{"_id", "int32"}, {"v", "replaced"}}},
 			},
-			resultType: emptyResult, // _id must be an immutable field
-			skip:       "https://github.com/FerretDB/FerretDB/issues/3017",
 		},
 		"ExistsTrue": {
 			command: bson.D{
