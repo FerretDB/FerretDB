@@ -339,8 +339,9 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 // filterExprOperator uses $expr operator to allow usage of aggregation expression.
 // It returns boolean indicating filter has matched.
 //
-// If the result of processing $expr is null, zero value or false, it returns
-// false indicating filter was not matched. For other values, it returns true.
+// $expr is primary used by operators such as $gt and $cond which return boolean result.
+// However, if non-boolean result is returned from processing aggregation expression,
+// it returns false for null or zero value and true for all other values.
 func filterExprOperator(doc, filter *types.Document) (bool, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3170
 	op, err := operators.NewExpr(filter, "$expr")
@@ -357,11 +358,7 @@ func filterExprOperator(doc, filter *types.Document) (bool, error) {
 	case *types.Document, *types.Array, string, types.Binary, types.ObjectID, time.Time, types.Regex, types.Timestamp:
 		return true, nil
 	case float64, int32, int64:
-		if res := types.Compare(v, int32(0)); res == types.Equal {
-			return false, nil
-		}
-
-		return true, nil
+		return types.Compare(v, int32(0)) == types.Equal, nil
 	case bool:
 		return v, nil
 	case types.NullType:

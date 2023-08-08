@@ -345,8 +345,33 @@ func TestQueryEvaluationCompatExpr(t *testing.T) {
 		"String": {
 			filter: bson.D{{"$expr", "v"}},
 		},
+		"True": {
+			filter: bson.D{{"$expr", true}},
+		},
+		"False": {
+			filter:     bson.D{{"$expr", false}},
+			resultType: emptyResult,
+		},
+		"IntZero": {
+			filter:     bson.D{{"$expr", int32(0)}},
+			resultType: emptyResult,
+		},
 		"Int": {
 			filter: bson.D{{"$expr", int32(1)}},
+		},
+		"LongZero": {
+			filter:     bson.D{{"$expr", int64(0)}},
+			resultType: emptyResult,
+		},
+		"Long": {
+			filter: bson.D{{"$expr", int64(42)}},
+		},
+		"DoubleZero": {
+			filter:     bson.D{{"$expr", float64(0)}},
+			resultType: emptyResult,
+		},
+		"Double": {
+			filter: bson.D{{"$expr", float64(-1)}},
 		},
 		"NonExistent": {
 			filter:     bson.D{{"$expr", "$non-existent"}},

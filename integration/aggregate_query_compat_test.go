@@ -82,9 +82,48 @@ func TestAggregateCompatMatchExpr(t *testing.T) {
 				bson.D{{"$match", bson.D{{"$expr", "v"}}}},
 			},
 		},
+		"True": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", true}}}},
+			},
+		},
+		"False": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", false}}}},
+			},
+			resultType: emptyResult,
+		},
+		"IntZero": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", int32(0)}}}},
+			},
+			resultType: emptyResult,
+		},
 		"Int": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"$expr", int32(1)}}}},
+			},
+		},
+		"LongZero": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", int64(0)}}}},
+			},
+			resultType: emptyResult,
+		},
+		"Long": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", int64(42)}}}},
+			},
+		},
+		"DoubleZero": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", float64(0)}}}},
+			},
+			resultType: emptyResult,
+		},
+		"Double": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"$expr", float64(-1)}}}},
 			},
 		},
 		"NonExistent": {
