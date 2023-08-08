@@ -358,7 +358,7 @@ func filterExprOperator(doc, filter *types.Document) (bool, error) {
 	case *types.Document, *types.Array, string, types.Binary, types.ObjectID, time.Time, types.Regex, types.Timestamp:
 		return true, nil
 	case float64, int32, int64:
-		return types.Compare(v, int32(0)) == types.Equal, nil
+		return types.Compare(v, int32(0)) != types.Equal, nil
 	case bool:
 		return v, nil
 	case types.NullType:
