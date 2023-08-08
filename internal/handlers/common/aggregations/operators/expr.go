@@ -33,7 +33,9 @@ type expr struct {
 	errArgument string
 }
 
-// NewExpr validates and creates $expr operator.
+// NewExpr validates and creates $expr operator which allows usage of aggregation expression
+// from query and $match aggregation stage. $expr operator is a top level operator and
+// cannot be used from nested expression.
 //
 // It returns CommandError for invalid value of $expr operator.
 func NewExpr(exprValue *types.Document, errArgument string) (Operator, error) {
