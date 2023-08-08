@@ -17,8 +17,10 @@ package operators
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -27,41 +29,49 @@ import (
 
 // expr represents `$expr` operator.
 type expr struct {
-	exprValue any
+	exprValue   any
+	errArgument string
 }
 
 // NewExpr validates and creates $expr operator.
-func NewExpr(doc *types.Document) (Operator, error) {
-	v := must.NotFail(doc.Get("$expr"))
-	if err := validateExpr(v); err != nil {
+//
+// It returns CommandError for invalid value of $expr operator.
+func NewExpr(exprValue *types.Document, errArgument string) (Operator, error) {
+	v := must.NotFail(exprValue.Get("$expr"))
+	e := &expr{
+		exprValue:   v,
+		errArgument: errArgument,
+	}
+
+	if err := e.validateExpr(v); err != nil {
 		return nil, err
 	}
 
-	return &expr{
-		exprValue: v,
-	}, nil
+	return e, nil
 }
 
 // Process implements Operator interface.
 func (e *expr) Process(doc *types.Document) (any, error) {
-	return processExpr(e.exprValue, doc)
+	return e.processExpr(e.exprValue, doc)
 }
 
 // processExpr recursively validates operators and expressions.
 // Each array values and document fields are validated recursively.
-func validateExpr(exprValue any) error {
+//
+// It returns CommandError if any validation fails.
+func (e *expr) validateExpr(exprValue any) error {
 	switch exprValue := exprValue.(type) {
 	case *types.Document:
 		if IsOperator(exprValue) {
 			op, err := NewOperator(exprValue)
 			if err != nil {
-				return err
+				return processExprOperatorErrors(err, e.errArgument)
 			}
 
 			_, err = op.Process(nil)
 			if err != nil {
 				// TODO https://github.com/FerretDB/FerretDB/issues/3129
-				return err
+				return processExprOperatorErrors(err, e.errArgument)
 			}
 
 			return nil
@@ -80,7 +90,7 @@ func validateExpr(exprValue any) error {
 				return lazyerrors.Error(err)
 			}
 
-			if err = validateExpr(v); err != nil {
+			if err = e.validateExpr(v); err != nil {
 				return err
 			}
 		}
@@ -98,7 +108,7 @@ func validateExpr(exprValue any) error {
 				return lazyerrors.Error(err)
 			}
 
-			if err = validateExpr(v); err != nil {
+			if err = e.validateExpr(v); err != nil {
 				return err
 			}
 		}
@@ -111,7 +121,7 @@ func validateExpr(exprValue any) error {
 		}
 
 		if err != nil {
-			return err
+			return processExprOperatorErrors(err, e.errArgument)
 		}
 	}
 
@@ -123,20 +133,20 @@ func validateExpr(exprValue any) error {
 // Each array values and document fields are processed recursively.
 // String expression is evaluated if any, an evaluation error due to missing field returns Null.
 // Any value that does not require processing, it returns the original value.
-func processExpr(exprValue any, doc *types.Document) (any, error) {
+func (e *expr) processExpr(exprValue any, doc *types.Document) (any, error) {
 	switch exprValue := exprValue.(type) {
 	case *types.Document:
 		if IsOperator(exprValue) {
 			op, err := NewOperator(exprValue)
 			if err != nil {
 				// $expr was validated in NewExpr
-				return nil, err
+				return nil, lazyerrors.Error(err)
 			}
 
 			v, err := op.Process(doc)
 			if err != nil {
 				// Process does not return error for existing operators
-				return nil, err
+				return nil, lazyerrors.Error(err)
 			}
 
 			return v, nil
@@ -157,9 +167,9 @@ func processExpr(exprValue any, doc *types.Document) (any, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			processed, err := processExpr(v, doc)
+			processed, err := e.processExpr(v, doc)
 			if err != nil {
-				return nil, err
+				return nil, lazyerrors.Error(err)
 			}
 
 			res.Set(k, processed)
@@ -182,9 +192,9 @@ func processExpr(exprValue any, doc *types.Document) (any, error) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			processed, err := processExpr(v, doc)
+			processed, err := e.processExpr(v, doc)
 			if err != nil {
-				continue
+				return nil, lazyerrors.Error(err)
 			}
 
 			res.Append(processed)
@@ -216,6 +226,84 @@ func processExpr(exprValue any, doc *types.Document) (any, error) {
 		// nothing to process, return the original value
 		return exprValue, nil
 	}
+}
+
+// ProcessMatchStageError takes internal error related to operator evaluation and
+// expression evaluation and returns CommandError.
+func processExprOperatorErrors(err error, argument string) error {
+	var opErr OperatorError
+	var exErr *aggregations.ExpressionError
+
+	switch {
+	case errors.As(err, &opErr):
+		switch opErr.Code() {
+		case ErrTooManyFields:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrExpressionWrongLenOfFields,
+				"An object representing an expression must have exactly one field",
+				argument,
+			)
+		case ErrNotImplemented:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
+				"Invalid $match :: caused by :: "+opErr.Error(),
+				argument,
+			)
+		case ErrArgsInvalidLen:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrOperatorWrongLenOfArgs,
+				opErr.Error(),
+				argument,
+			)
+		case ErrInvalidExpression:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrInvalidPipelineOperator,
+				fmt.Sprintf("Unrecognized expression '%s'", opErr.Name()),
+				argument,
+			)
+		case ErrInvalidNestedExpression:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrInvalidPipelineOperator,
+				opErr.Error(),
+				argument,
+			)
+		}
+
+	case errors.As(err, &exErr):
+		switch exErr.Code() {
+		case aggregations.ErrInvalidExpression:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				fmt.Sprintf("'%s' starts with an invalid character for a user variable name", exErr.Name()),
+				argument,
+			)
+		case aggregations.ErrEmptyFieldPath:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrGroupInvalidFieldPath,
+				"'$' by itself is not a valid FieldPath",
+				argument,
+			)
+		case aggregations.ErrUndefinedVariable:
+			// TODO https://github.com/FerretDB/FerretDB/issues/2275
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
+				"Aggregation expression variables are not implemented yet",
+				argument,
+			)
+		case aggregations.ErrEmptyVariable:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				"empty variable names are not allowed",
+				argument,
+			)
+		case aggregations.ErrNotExpression:
+			// handled by upstream and this should not be reachable for existing expression implementation
+			fallthrough
+		default:
+		}
+	}
+
+	return lazyerrors.Error(err)
 }
 
 // check interfaces

@@ -16,8 +16,6 @@ package stages
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
@@ -25,7 +23,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // match represents $match stage.
@@ -45,7 +42,7 @@ func newMatch(stage *types.Document) (aggregations.Stage, error) {
 	}
 
 	if err := validateMatch(filter); err != nil {
-		return nil, processMatchStageError(err)
+		return nil, err
 	}
 
 	return &match{
@@ -58,95 +55,16 @@ func (m *match) Process(ctx context.Context, iter types.DocumentsIterator, close
 	return common.FilterIterator(iter, closer, m.filter), nil
 }
 
-// validateMatch validates $match filter.
+// validateMatch validates $expr field if any.
 func validateMatch(filter *types.Document) error {
 	if filter.Has("$expr") {
-		_, err := operators.NewExpr(filter)
+		_, err := operators.NewExpr(filter, "$match (stage)")
 		if err != nil {
-			return processMatchStageError(err)
+			return err
 		}
 	}
 
 	return nil
-}
-
-// processExprError takes internal error related to operator evaluation and
-// expression evaluation and returns CommandError that can be returned by $match
-// aggregation stage.
-func processMatchStageError(err error) error {
-	var opErr operators.OperatorError
-	var exErr *aggregations.ExpressionError
-
-	switch {
-	case errors.As(err, &opErr):
-		switch opErr.Code() {
-		case operators.ErrTooManyFields:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrExpressionWrongLenOfFields,
-				"An object representing an expression must have exactly one field",
-				"$match (stage)",
-			)
-		case operators.ErrNotImplemented:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
-				"Invalid $match :: caused by :: "+opErr.Error(),
-				"$match (stage)",
-			)
-		case operators.ErrArgsInvalidLen:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrOperatorWrongLenOfArgs,
-				opErr.Error(),
-				"$match (stage)",
-			)
-		case operators.ErrInvalidExpression:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrInvalidPipelineOperator,
-				fmt.Sprintf("Unrecognized expression '%s'", opErr.Name()),
-				"$match (stage)",
-			)
-		case operators.ErrInvalidNestedExpression:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrInvalidPipelineOperator,
-				opErr.Error(),
-				"$match (stage)",
-			)
-		}
-
-	case errors.As(err, &exErr):
-		switch exErr.Code() {
-		case aggregations.ErrInvalidExpression:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
-				fmt.Sprintf("'%s' starts with an invalid character for a user variable name", exErr.Name()),
-				"$match (stage)",
-			)
-		case aggregations.ErrEmptyFieldPath:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrGroupInvalidFieldPath,
-				"'$' by itself is not a valid FieldPath",
-				"$match (stage)",
-			)
-		case aggregations.ErrUndefinedVariable:
-			// TODO https://github.com/FerretDB/FerretDB/issues/2275
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
-				"Aggregation expression variables are not implemented yet",
-				"$match (stage)",
-			)
-		case aggregations.ErrEmptyVariable:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
-				"empty variable names are not allowed",
-				"$match (stage)",
-			)
-		case aggregations.ErrNotExpression:
-			// handled by upstream and this should not be reachable for existing expression implementation
-			fallthrough
-		default:
-		}
-	}
-
-	return lazyerrors.Error(err)
 }
 
 // check interfaces
