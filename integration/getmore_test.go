@@ -30,6 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestGetMoreCommand(t *testing.T) {
@@ -312,9 +313,14 @@ func TestGetMoreCommand(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
+			}
+
+			var t testtb.TB = tt
+			if tc.failsForSQLite != "" {
+				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
 			}
 
 			// Do not run subtests in t.Parallel() to eliminate the occurrence
@@ -485,8 +491,10 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 
 	cursorFuncs := []func(batchSize *int32) (*mongo.Cursor, error){findFunc, aggregateFunc}
 
-	t.Run("SetBatchSize", func(t *testing.T) {
-		t.Parallel()
+	t.Run("SetBatchSize", func(tt *testing.T) {
+		tt.Parallel()
+
+		t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 		for _, f := range cursorFuncs {
 			cursor, err := f(pointer.ToInt32(2))
@@ -527,8 +535,10 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 		}
 	})
 
-	t.Run("DefaultBatchSize", func(t *testing.T) {
-		t.Parallel()
+	t.Run("DefaultBatchSize", func(tt *testing.T) {
+		tt.Parallel()
+
+		t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 		for _, f := range cursorFuncs {
 			// unset batchSize uses default batchSize 101 for the first batch
@@ -553,8 +563,10 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 		}
 	})
 
-	t.Run("ZeroBatchSize", func(t *testing.T) {
-		t.Parallel()
+	t.Run("ZeroBatchSize", func(tt *testing.T) {
+		tt.Parallel()
+
+		t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 		for _, f := range cursorFuncs {
 			cursor, err := f(pointer.ToInt32(0))
