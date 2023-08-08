@@ -198,8 +198,10 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 // TestCreateIndexesCommandCompatCheckFields check that the response contains response's fields
 // such as numIndexBefore, numIndexAfter, createdCollectionAutomatically
 // contain the correct values.
-func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
-	t.Parallel()
+func TestCreateIndexesCommandCompatCheckFields(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3176")
 
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 	targetCollection := targetCollections[0]
