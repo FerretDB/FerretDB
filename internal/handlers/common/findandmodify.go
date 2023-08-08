@@ -228,26 +228,6 @@ func prepareDocumentForUpdate(docs []*types.Document, params *FindAndModifyParam
 		if _, err := UpdateDocument("findAndModify", update, params.Update); err != nil {
 			return nil, err
 		}
-
-		return update, nil
-	}
-
-	for _, k := range params.Update.Keys() {
-		v := must.NotFail(params.Update.Get(k))
-		if k == "_id" {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrImmutableField,
-				fmt.Sprintf(
-					"Plan executor error during findAndModify :: caused "+
-						"by :: After applying the update, the (immutable) field "+
-						"'_id' was found to have been altered to _id: \"%s\"",
-					v,
-				),
-				"findAndModify",
-			)
-		}
-
-		update.Set(k, v)
 	}
 
 	return update, nil
