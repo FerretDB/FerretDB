@@ -84,6 +84,7 @@ func NewOperator(doc *types.Document) (Operator, error) {
 	if doc.Len() > 1 {
 		return nil, newOperatorError(
 			ErrTooManyFields,
+			doc.Command(),
 			"The operator field specifies more than one operator",
 		)
 	}
@@ -99,11 +100,13 @@ func NewOperator(doc *types.Document) (Operator, error) {
 	case unsupported:
 		return nil, newOperatorError(
 			ErrNotImplemented,
+			operator,
 			fmt.Sprintf("The operator %s is not implemented yet", operator),
 		)
 	default:
 		return nil, newOperatorError(
 			ErrInvalidExpression,
+			operator,
 			fmt.Sprintf("Unrecognized expression '%s'", operator),
 		)
 	}
