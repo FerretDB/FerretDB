@@ -6,9 +6,6 @@
   const t = db.foo;
   t.drop();
 
-  t.insert({});
-  t.createIndexes;
-
   // works.
   assert.commandWorked(t.runCommand({ping: 1}));
   assert.commandWorked(t.runCommand({ping: 1, apiVersion: '1', apiStrict: true, apiDeprecationErrors: true}));
