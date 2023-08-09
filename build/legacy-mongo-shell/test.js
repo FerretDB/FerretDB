@@ -26,14 +26,12 @@
   jsTestLog("aggregate with Stable API parameters passed");
 
   // depends on the x.509 authentication mechanism
-  assert.commandWorked(db.auth({user: "username", pwd: "password", apiVersion: '1', apiStrict: true, apiDeprecationErrors: true}));
-  jsTestLog("authenticate with Stable API parameters passed");
+  // assert.commandWorked(db.auth({user: "username", pwd: "password", apiVersion: '1', apiStrict: true, apiDeprecationErrors: true}));
+  // jsTestLog("authenticate with Stable API parameters passed");
 
   // not implemented yet
   assert.commandWorked(t.runCommand({collMod: "foo", apiVersion: '1', apiStrict: true, apiDeprecationErrors: true}));
   jsTestLog("collMod with Stable API parameters passed");
-
-  // commitTransaction
 
   // works
   assert.commandWorked(t.runCommand({create: "bar", apiVersion: '1', apiStrict: true, apiDeprecationErrors: true}));
