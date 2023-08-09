@@ -36,6 +36,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
@@ -93,15 +94,18 @@ func openDB(name, uri string, singleConn bool, l *zap.Logger) (*fsql.DB, error) 
 // New creates a pool for SQLite databases in the directory specified by SQLite URI.
 //
 // All databases are opened on creation.
-func New(u string, l *zap.Logger) (*Pool, error) {
+//
+// The returned map is the initial set of existing databases.
+// It should not be modified.
+func New(u string, l *zap.Logger) (*Pool, map[string]*fsql.DB, error) {
 	uri, err := parseURI(u)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse SQLite URI %q: %s", u, err)
+		return nil, nil, fmt.Errorf("failed to parse SQLite URI %q: %s", u, err)
 	}
 
 	matches, err := filepath.Glob(filepath.Join(uri.Path, "*"+filenameExtension))
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, nil, lazyerrors.Error(err)
 	}
 
 	p := &Pool{
@@ -122,13 +126,13 @@ func New(u string, l *zap.Logger) (*Pool, error) {
 		db, err := openDB(name, uri, p.singleConn(), l)
 		if err != nil {
 			p.Close()
-			return nil, lazyerrors.Error(err)
+			return nil, nil, lazyerrors.Error(err)
 		}
 
 		p.dbs[name] = db
 	}
 
-	return p, nil
+	return p, p.dbs, nil
 }
 
 // memory returns true if the pool is for the in-memory database.
@@ -181,15 +185,10 @@ func (p *Pool) Close() {
 	resource.Untrack(p, p.token)
 }
 
-// DBS returns all databases.
-//
-// It is used in a single place during registry initialization.
-func (p *Pool) DBS() map[string]*fsql.DB {
-	return p.dbs
-}
-
 // List returns a sorted list of database names in the pool.
 func (p *Pool) List(ctx context.Context) []string {
+	defer observability.FuncCall(ctx)()
+
 	p.rw.RLock()
 	defer p.rw.RUnlock()
 
@@ -201,6 +200,8 @@ func (p *Pool) List(ctx context.Context) []string {
 
 // GetExisting returns an existing database by valid name, or nil.
 func (p *Pool) GetExisting(ctx context.Context, name string) *fsql.DB {
+	defer observability.FuncCall(ctx)()
+
 	p.rw.RLock()
 	defer p.rw.RUnlock()
 
@@ -216,6 +217,8 @@ func (p *Pool) GetExisting(ctx context.Context, name string) *fsql.DB {
 //
 // Returned boolean value indicates whether the database was created.
 func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, error) {
+	defer observability.FuncCall(ctx)()
+
 	db := p.GetExisting(ctx, name)
 	if db != nil {
 		return db, false, nil
@@ -248,6 +251,8 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, er
 //
 // Returned boolean value indicates whether the database was removed.
 func (p *Pool) Drop(ctx context.Context, name string) bool {
+	defer observability.FuncCall(ctx)()
+
 	p.rw.Lock()
 	defer p.rw.Unlock()
 
