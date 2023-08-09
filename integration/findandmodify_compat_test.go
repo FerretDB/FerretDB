@@ -237,7 +237,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 	testFindAndModifyCompat(t, testCases)
 }
 
-func TestFindAndModifyCompatUpdateDotNotation(t *testing.T) {
+func TestFindAndModifyCompatDotNotation(t *testing.T) {
 	testCases := map[string]findAndModifyCompatTestCase{
 		"Conflict": {
 			command: bson.D{
@@ -355,17 +355,17 @@ func TestFindAndModifyCompatUpdateSet(t *testing.T) {
 	testFindAndModifyCompat(t, testCases)
 }
 
-func TestFindAndModifyCompatUpdateUnset(t *testing.T) {
+func TestFindAndModifyCompatUnset(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]findAndModifyCompatTestCase{
-		"NonExistentExistsTrue": {
+		"NonExistentExistsT": {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", true}}}}},
 				{"update", bson.D{{"$unset", bson.D{{"v", ""}}}}},
 			},
 		},
-		"NonExistentExistsFalse": {
+		"NonExistentExistsF": {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", false}}}}},
 				{"update", bson.D{{"$unset", bson.D{{"v", ""}}}}},
@@ -690,7 +690,7 @@ func TestFindAndModifyCompatUpsertUnset(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]findAndModifyCompatTestCase{
-		"NonExistentExistsTrue": {
+		"NonExistentExistsT": {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", true}}}}},
 				{"upsert", true},
@@ -700,7 +700,7 @@ func TestFindAndModifyCompatUpsertUnset(t *testing.T) {
 				}},
 			},
 		},
-		"NonExistentExistsFalse": {
+		"NonExistentExistsF": {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", false}}}}},
 				{"upsert", true},
