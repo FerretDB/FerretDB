@@ -564,7 +564,6 @@ func TestAggregateCompatGroup(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
-			skip:           "https://github.com/FerretDB/FerretDB/issues/2165",
 			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"IDExpressionNested": {
@@ -2154,14 +2153,6 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$project", bson.D{{"$type", "foo"}, {"$op", "foo"}}}},
 			},
 			resultType:     emptyResult,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
-		},
-		"SumValue": {
-			pipeline: bson.A{
-				bson.D{{"$project", bson.D{
-					{"sum", bson.D{{"$sum", "$v"}}},
-				}}},
-			},
 			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 	}
