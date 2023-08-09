@@ -24,6 +24,10 @@ import (
 
 // MsgIsMaster implements HandlerInterface.
 func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	if err := common.IsNotClientMetadata(msg); err != nil {
+		return nil, err
+	}
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: common.IsMasterDocuments(),

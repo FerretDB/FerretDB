@@ -15,6 +15,13 @@
 // Package common provides common code for all handlers.
 package common
 
+import (
+	"errors"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/wire"
+)
+
 const (
 	// MinWireVersion is the minimal supported wire protocol version.
 	MinWireVersion = int32(0) // needed for some apps and drivers
@@ -22,3 +29,17 @@ const (
 	// MaxWireVersion is the maximal supported wire protocol version.
 	MaxWireVersion = int32(17)
 )
+
+// IsNotClientMetadata checks if the message does not contain client metadata.
+func IsNotClientMetadata(msg *wire.OpMsg) error {
+	document, err := msg.Document()
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if client, _ := document.Get("client"); client != nil {
+		return errors.New("The client metadata document may only be sent in the first hello")
+	}
+
+	return nil
+}

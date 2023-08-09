@@ -635,3 +635,29 @@ func TestPingCommand(t *testing.T) {
 		require.Empty(t, actualDatabases.Databases)
 	})
 }
+
+func TestMutatingClientMetadata(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+	db := collection.Database()
+	// setup.Skip
+
+	commands := []string{"hello", "isMaster"}
+
+	for _, command := range commands {
+		t.Run(command, func(t *testing.T) {
+			t.Parallel()
+
+			res := db.RunCommand(ctx, bson.D{
+				{command, int32(1)},
+				{"application", "foobar"},
+			})
+
+			var actualRes bson.D
+			err := res.Decode(&actualRes)
+			require.EqualError(t, err, "The client metadata document may only be sent in the first hello")
+
+		})
+	}
+}
