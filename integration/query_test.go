@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 	"math"
 	"testing"
 	"time"
@@ -841,37 +842,43 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 		sort    bson.D // optional, nil to leave sort unset
 		optSkip *int64 // optional, nil to leave optSkip unset
 
-		len           int                 // expected length of results
-		queryPushdown bool                // optional, set true for expected pushdown for query
-		limitPushdown bool                // optional, set true for expected pushdown for limit
-		err           *mongo.CommandError // optional, expected error from MongoDB
-		altMessage    string              // optional, alternative error message for FerretDB, ignored if empty
-		skip          string              // optional, skip test with a specified reason
+		len            int                 // expected length of results
+		queryPushdown  bool                // optional, set true for expected pushdown for query
+		limitPushdown  bool                // optional, set true for expected pushdown for limit
+		err            *mongo.CommandError // optional, expected error from MongoDB
+		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
+		skip           string              // optional, skip test with a specified reason
+		failsForSQLite string              // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"Simple": {
-			limit:         1,
-			len:           1,
-			limitPushdown: true,
+			limit:          1,
+			len:            1,
+			limitPushdown:  true,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
 		},
 		"AlmostAll": {
-			limit:         int64(len(shareddata.Composites.Docs()) - 1),
-			len:           len(shareddata.Composites.Docs()) - 1,
-			limitPushdown: true,
+			limit:          int64(len(shareddata.Composites.Docs()) - 1),
+			len:            len(shareddata.Composites.Docs()) - 1,
+			limitPushdown:  true,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
 		},
 		"All": {
-			limit:         int64(len(shareddata.Composites.Docs())),
-			len:           len(shareddata.Composites.Docs()),
-			limitPushdown: true,
+			limit:          int64(len(shareddata.Composites.Docs())),
+			len:            len(shareddata.Composites.Docs()),
+			limitPushdown:  true,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
 		},
 		"More": {
-			limit:         int64(len(shareddata.Composites.Docs()) + 1),
-			len:           len(shareddata.Composites.Docs()),
-			limitPushdown: true,
+			limit:          int64(len(shareddata.Composites.Docs()) + 1),
+			len:            len(shareddata.Composites.Docs()),
+			limitPushdown:  true,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
 		},
 		"Big": {
-			limit:         1000,
-			len:           len(shareddata.Composites.Docs()),
-			limitPushdown: true,
+			limit:          1000,
+			len:            len(shareddata.Composites.Docs()),
+			limitPushdown:  true,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
 		},
 		"Zero": {
 			limit:         0,
@@ -980,8 +987,13 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				rest...,
 			)
 
-			t.Run("Explain", func(t *testing.T) {
-				setup.SkipForMongoDB(t, "pushdown is FerretDB specific feature")
+			t.Run("Explain", func(tt *testing.T) {
+				setup.SkipForMongoDB(tt, "pushdown is FerretDB specific feature")
+
+				var t testtb.TB = tt
+				if tc.failsForSQLite != "" {
+					t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+				}
 
 				var res bson.D
 				err := collection.Database().RunCommand(ctx, bson.D{{"explain", query}}).Decode(&res)
@@ -995,6 +1007,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				assert.NoError(t, err)
 
 				var msg string
+
 				if !setup.IsSortPushdownEnabled() && tc.sort != nil {
 					tc.limitPushdown = false
 					msg = "Sort pushdown is disabled, but target resulted with limitPushdown"
