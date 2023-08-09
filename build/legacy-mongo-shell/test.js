@@ -5,6 +5,7 @@
 
   const t = db.foo;
   t.drop();
+  db.bar.drop();
 
   // works.
   assert.commandWorked(t.runCommand({ping: 1}));
@@ -40,11 +41,11 @@
   assert.commandWorked(t.runCommand({delete: 'bar', deletes: [{q: {}, limit: 0}], apiVersion: '1', apiStrict: true, apiDeprecationErrors: true}));
   jsTestLog('delete with Stable API parameters passed');
 
+  assert.commandWorked(t.runCommand({dropIndexes: 'bar', index: 'a', apiVersion: '1', apiStrict: true, apiDeprecationErrors: true}));
+  jsTestLog('dropIndexes with Stable API parameters passed');
+
   assert.commandWorked(t.runCommand({drop: 'bar', apiVersion: '1', apiStrict: true, apiDeprecationErrors: true}));
   jsTestLog('drop with Stable API parameters passed');
-
-  assert.commandWorked(t.runCommand({dropIndexes: 'bar', index: 'a_1', apiVersion: '1', apiStrict: true, apiDeprecationErrors: true}));
-  jsTestLog('dropIndexes with Stable API parameters passed');
 
   assert.commandWorked(t.runCommand({dropDatabase: 1, apiVersion: '1', apiStrict: true, apiDeprecationErrors: true}));
   jsTestLog('dropDatabase with Stable API parameters passed');
