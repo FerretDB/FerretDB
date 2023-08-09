@@ -15,8 +15,9 @@
 package integration
 
 import (
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 	"testing"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -452,7 +453,8 @@ func TestCreateIndexesCompatUnique(tt *testing.T) {
 		insertDoc bson.D             // required, document to insert for uniqueness check
 		new       bool               // optional, insert new document before check uniqueness
 
-		skip string // optional, skip test with a specified reason
+		skip           string // optional, skip test with a specified reason
+		failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"IDIndex": {
 			models: []mongo.IndexModel{
