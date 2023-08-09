@@ -15,10 +15,11 @@
 package integration
 
 import (
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 	"math"
 	"testing"
 	"time"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 
 	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
