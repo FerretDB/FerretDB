@@ -183,9 +183,9 @@ branches:
 
       required_status_checks:
         strict: true
-        contexts: []
+        contexts: [Test, license/cla, golangci-lint, Conform PR, Short test, Build docs, Summary, env-data, Format Files, Security Scan, Integration MongoDB 1/1, Integration PostgreSQL 1/3, Integration PostgreSQL 2/3, Integration PostgreSQL 3/3]
 
-      enforce_admins: true
+      enforce_admins: false
 
       required_linear_history: true
 
