@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,10 +28,10 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestListIndexesCompat(t *testing.T) {
-	t.Parallel()
+func TestListIndexesCompat(tt *testing.T) {
+	tt.Parallel()
 
-	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+	s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
 		Providers:                shareddata.AllProviders(),
 		AddNonExistentCollection: true,
 	})
@@ -40,9 +41,11 @@ func TestListIndexesCompat(t *testing.T) {
 		targetCollection := targetCollections[i]
 		compatCollection := compatCollections[i]
 
-		t.Run(targetCollection.Name(), func(t *testing.T) {
-			t.Helper()
-			t.Parallel()
+		tt.Run(targetCollection.Name(), func(tt *testing.T) {
+			tt.Helper()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3175")
 
 			targetCursor, targetErr := targetCollection.Indexes().List(ctx)
 			compatCursor, compatErr := compatCollection.Indexes().List(ctx)
@@ -441,8 +444,8 @@ func TestDropIndexesCompat(t *testing.T) {
 	}
 }
 
-func TestCreateIndexesCompatUnique(t *testing.T) {
-	t.Parallel()
+func TestCreateIndexesCompatUnique(tt *testing.T) {
+	tt.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		models    []mongo.IndexModel // required, index to create
@@ -509,13 +512,18 @@ func TestCreateIndexesCompatUnique(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		tt.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Helper()
-			t.Parallel()
+			tt.Helper()
+			tt.Parallel()
+
+			var t testtb.TB = tt
+			if tc.failsForSQLite != "" {
+				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+			}
 
 			res := setup.SetupCompatWithOpts(t,
 				&setup.SetupCompatOpts{
