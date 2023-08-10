@@ -29,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // newOperatorFunc is a type for a function that creates a standard aggregation operator.
@@ -93,6 +94,30 @@ func NewOperator(doc *types.Document) (Operator, error) {
 
 	newOperator, supported := Operators[operator]
 	_, unsupported := unsupportedOperators[operator]
+
+	expr := must.NotFail(doc.Get(operator))
+
+	if expr == nil {
+		panic("TODO?")
+	}
+
+	var args []any
+	if expr, ok := expr.(*types.Array); ok {
+		iter := expr.Iterator()
+		defer iter.Close()
+
+		for {
+			_, v, err := iter.Next()
+
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			args = append(args, v)
+		}
+	} else {
+		args = append(args, expr)
+	}
 
 	switch {
 	case supported:

@@ -22,7 +22,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // sum represents `$sum` operator.
@@ -41,7 +40,6 @@ type sum struct {
 // finds nested operators if any, validates path expressions
 // to populate `$sum` operator. It ignores values that are not summable.
 func newSum(args ...any) (Operator, error) {
-	expr := must.NotFail(doc.Get("$sum"))
 	operator := new(sum)
 
 	switch expr := expr.(type) {
