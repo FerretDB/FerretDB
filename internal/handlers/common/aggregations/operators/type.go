@@ -25,7 +25,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // typeOp represents `$type` operator.
@@ -35,10 +34,8 @@ type typeOp struct {
 
 // newType returns `$type` operator.
 func newType(args ...any) (Operator, error) {
-	param := must.NotFail(operation.Get("$type"))
-
 	return &typeOp{
-		param: param,
+		param: args,
 	}, nil
 }
 

@@ -121,7 +121,7 @@ func NewOperator(doc *types.Document) (Operator, error) {
 
 	switch {
 	case supported:
-		return newOperator(doc)
+		return newOperator(args)
 	case unsupported:
 		return nil, newOperatorError(
 			ErrNotImplemented,
