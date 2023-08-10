@@ -42,7 +42,7 @@ type newOperatorFunc func(expression *types.Document) (Operator, error)
 // Operator is a common interface for standard aggregation operators.
 type Operator interface {
 	// Process document and returns the result of applying operator.
-	Process(in *types.Document) (any, error)
+	Process(args ...any) (any, error)
 }
 
 // IsOperator returns true if provided document should be
