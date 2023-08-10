@@ -90,6 +90,7 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 			if param.Len() != 1 {
 				return nil, newOperatorError(
 					ErrArgsInvalidLen,
+					"$type",
 					fmt.Sprintf("Expression $type takes exactly 1 arguments. %d were passed in.", param.Len()),
 				)
 			}

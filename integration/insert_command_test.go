@@ -24,19 +24,21 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-func TestInsertCommandErrors(t *testing.T) {
-	t.Parallel()
+func TestInsertCommandErrors(tt *testing.T) {
+	tt.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
 		toInsert []any // required, slice of bson.D to insert
 		ordered  any   // required, sets it to `ordered`
 
-		cerr       *mongo.CommandError // optional, expected command error from MongoDB
-		werr       *mongo.WriteError   // optional, expected write error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		cerr           *mongo.CommandError // optional, expected command error from MongoDB
+		werr           *mongo.WriteError   // optional, expected write error from MongoDB
+		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
+		skip           string              // optional, skip test with a specified reason
+		failsForSQLite string              // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"InsertOrderedInvalid": {
 			toInsert: []any{
@@ -60,7 +62,8 @@ func TestInsertCommandErrors(t *testing.T) {
 				Message: `E11000 duplicate key error collection: ` +
 					`TestInsertCommandErrors-InsertDuplicateKey.TestInsertCommandErrors-InsertDuplicateKey index: _id_ dup key: { _id: "double" }`,
 			},
-			altMessage: "E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKey.TestInsertCommandErrors-InsertDuplicateKey",
+			altMessage:     "E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKey.TestInsertCommandErrors-InsertDuplicateKey",
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3183",
 		},
 		"InsertDuplicateKeyOrdered": {
 			toInsert: []any{
@@ -74,7 +77,8 @@ func TestInsertCommandErrors(t *testing.T) {
 				Message: `E11000 duplicate key error collection: ` +
 					`TestInsertCommandErrors-InsertDuplicateKeyOrdered.TestInsertCommandErrors-InsertDuplicateKeyOrdered index: _id_ dup key: { _id: "double" }`,
 			},
-			altMessage: `E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKeyOrdered.TestInsertCommandErrors-InsertDuplicateKeyOrdered`,
+			altMessage:     `E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKeyOrdered.TestInsertCommandErrors-InsertDuplicateKeyOrdered`,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3183",
 		},
 		"InsertArray": {
 			toInsert: []any{
@@ -90,12 +94,17 @@ func TestInsertCommandErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		tt.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			var t testtb.TB = tt
+			if tc.failsForSQLite != "" {
+				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+			}
 
 			require.NotNil(t, tc.toInsert, "toInsert must not be nil")
 			require.NotNil(t, tc.ordered, "ordered must not be nil")
@@ -112,12 +121,12 @@ func TestInsertCommandErrors(t *testing.T) {
 			assert.Nil(t, res)
 
 			if tc.cerr != nil {
-				AssertEqualAltCommandError(t, *tc.cerr, tc.altMessage, err)
+				AssertEqualAltCommandError(tt, *tc.cerr, tc.altMessage, err)
 				return
 			}
 
 			if tc.werr != nil {
-				AssertEqualAltWriteError(t, *tc.werr, tc.altMessage, err)
+				AssertEqualAltWriteError(tt, *tc.werr, tc.altMessage, err)
 				return
 			}
 
