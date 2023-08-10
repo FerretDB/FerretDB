@@ -35,6 +35,16 @@ func TestAggregateVariablesCompatRoot(t *testing.T) {
 			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 			skip:           "https://github.com/FerretDB/FerretDB/issues/1992",
 		},
+		"AddFieldsTwice": {
+			pipeline: bson.A{
+				bson.D{
+					{"$addFields", bson.D{{"field-1", "$$ROOT"}}},
+					{"$addFields", bson.D{{"field-2", "$$ROOT"}}},
+				},
+			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
+			skip:           "https://github.com/FerretDB/FerretDB/issues/1992",
+		},
 		"GroupID": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
