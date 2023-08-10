@@ -37,12 +37,12 @@ import (
 // While accumulators perform operations on multiple documents
 // (for example `$count` can count documents in each `$group` group),
 // standard operators perform operations on a single document.
-type newOperatorFunc func(expression *types.Document) (Operator, error)
+type newOperatorFunc func(args ...any) (Operator, error)
 
 // Operator is a common interface for standard aggregation operators.
 type Operator interface {
 	// Process document and returns the result of applying operator.
-	Process(args ...any) (any, error)
+	Process(in *types.Document) (any, error)
 }
 
 // IsOperator returns true if provided document should be

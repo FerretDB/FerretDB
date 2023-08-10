@@ -34,7 +34,7 @@ type typeOp struct {
 }
 
 // newType returns `$type` operator.
-func newType(operation *types.Document) (Operator, error) {
+func newType(args ...any) (Operator, error) {
 	param := must.NotFail(operation.Get("$type"))
 
 	return &typeOp{

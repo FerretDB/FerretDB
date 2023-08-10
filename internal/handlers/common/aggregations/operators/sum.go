@@ -40,7 +40,7 @@ type sum struct {
 // newSum collects values that can be summed in `numbers`,
 // finds nested operators if any, validates path expressions
 // to populate `$sum` operator. It ignores values that are not summable.
-func newSum(doc *types.Document) (Operator, error) {
+func newSum(args ...any) (Operator, error) {
 	expr := must.NotFail(doc.Get("$sum"))
 	operator := new(sum)
 
