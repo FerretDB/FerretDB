@@ -657,7 +657,6 @@ func TestMutatingClientMetadata(t *testing.T) {
 			var actualRes bson.D
 			err := res.Decode(&actualRes)
 			require.EqualError(t, err, "The client metadata document may only be sent in the first hello")
-
 		})
 	}
 }
