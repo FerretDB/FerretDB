@@ -585,6 +585,13 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
 				{"upsert", true},
+				{"update", bson.D{{"_id", "int32"}, {"v", "replaced"}}},
+			},
+		},
+		"UpdateDifferentID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
 				{"update", bson.D{{"_id", "replaced"}, {"v", "replaced"}}},
 			},
 			resultType: emptyResult, // _id must be an immutable field
