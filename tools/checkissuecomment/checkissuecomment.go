@@ -18,13 +18,14 @@ package main
 import (
 	"bufio"
 	"os"
+	"regexp"
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
-var todoURLPrefix = "// TODO https://github.com/FerretDB/FerretDB/issues/"
+var todoIssueRegex = regexp.MustCompile(`^// TODO https://github\.com/FerretDB/FerretDB/issues/\d+$`)
 
 var analyzer = &analysis.Analyzer{
 	Name: "checkissuecomment",
@@ -49,16 +50,16 @@ func run(pass *analysis.Pass) (any, error) {
 
 		scanner := bufio.NewScanner(f)
 		lineNumber := 1
-		var previousLine string
 
 		for scanner.Scan() {
 			line := scanner.Text()
 
-			if strings.Contains(line, todoURLPrefix) && strings.HasPrefix(previousLine, "//") {
-				pass.Reportf(file.Pos(), "TODO issue %s with comment %s found", line, previousLine)
+			if strings.Contains(line, "// TODO") {
+				if !todoIssueRegex.MatchString(line) {
+					pass.Reportf(file.Pos(), "TODO with missing issue link with proper lint %s", line)
+				}
 			}
 
-			previousLine = line
 			lineNumber++
 		}
 

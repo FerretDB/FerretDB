@@ -19,12 +19,13 @@ import (
 	"fmt"
 )
 
-// testing for issue lint
-func testIncorrect() {
-	fmt.Println("checking the lint which has only comment")
+// TODO https://github.com/FerretDB/FerretDB/issues/1234
+func testcorrect() {
+	fmt.Println("checking the lint which has proper TODO")
 }
 
+// issue to be resolved below
 // TODO https://github.com/FerretDB/FerretDB/issues/123
-func testIncorrectOnlycomment(v any) {
-	fmt.Println("checking the lint which has only issue link as comment")
+func testcorrectTODOcomment(v any) {
+	fmt.Println("checking the lint which has proper TODO with comment")
 }
