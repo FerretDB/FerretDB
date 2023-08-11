@@ -28,5 +28,5 @@ func testcorrect() {
 // issue to be resolved below
 // TODO https://github.com/FerretDB/FerretDB/issues/123
 func testcorrectTODOcomment(v any) {
-	fmt.Println("checking the lint which has proper TODO with comment")
+	fmt.Println("checking the lint which has proper TODO with comment") // TODO https://github.com/FerretDB/FerretDB/issues/2615
 }
