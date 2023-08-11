@@ -25,7 +25,7 @@ import (
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
-var todoIssueRegex = regexp.MustCompile(`^// TODO https://github\.com/FerretDB/FerretDB/issues/\d+$`)
+var todoIssueRegex = regexp.MustCompile(`^\s*// TODO https://github\.com/FerretDB/FerretDB/issues/\d+$`)
 
 var analyzer = &analysis.Analyzer{
 	Name: "checkissuecomment",

@@ -19,8 +19,9 @@ import (
 	"fmt"
 )
 
-// TODO https://github.com/FerretDB/FerretDB/issues/1234
+// TODO https://github.com/FerretDB/FerretDB/issues/2275
 func testcorrect() {
+	// TODO https://github.com/FerretDB/FerretDB/issues/2612
 	fmt.Println("checking the lint which has proper TODO")
 }
 
