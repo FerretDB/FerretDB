@@ -102,8 +102,8 @@ func NewOperator(doc *types.Document) (Operator, error) {
 	}
 
 	var args []any
-	if expr, ok := expr.(*types.Array); ok {
-		iter := expr.Iterator()
+	if arr, ok := expr.(*types.Array); ok {
+		iter := arr.Iterator()
 		defer iter.Close()
 
 		for {
@@ -121,7 +121,7 @@ func NewOperator(doc *types.Document) (Operator, error) {
 
 	switch {
 	case supported:
-		return newOperator(args)
+		return newOperator(args...)
 	case unsupported:
 		return nil, newOperatorError(
 			ErrNotImplemented,

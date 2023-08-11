@@ -174,17 +174,6 @@ func validateGroupKey(groupKey any) error {
 	}
 
 	if operators.IsOperator(doc) {
-		op, err := operators.NewOperator(doc)
-		if err != nil {
-			return processGroupStageError(err)
-		}
-
-		_, err = op.Process(nil)
-		if err != nil {
-			// TODO https://github.com/FerretDB/FerretDB/issues/3129
-			return processGroupStageError(err)
-		}
-
 		return nil
 	}
 
