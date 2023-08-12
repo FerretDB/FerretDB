@@ -646,17 +646,19 @@ func TestMutatingClientMetadata(t *testing.T) {
 	commands := []string{"hello", "isMaster"}
 
 	for _, command := range commands {
+		command := command
 		t.Run(command, func(t *testing.T) {
 			t.Parallel()
 
 			res := db.RunCommand(ctx, bson.D{
 				{command, int32(1)},
-				{"application", "foobar"},
+				{"client", bson.D{{"application", "foobar"}}},
 			})
 
 			var actualRes bson.D
 			err := res.Decode(&actualRes)
-			require.EqualError(t, err, "The client metadata document may only be sent in the first hello")
+			require.Nil(t, actualRes)
+			require.ErrorContains(t, err, "The client metadata document may only be sent in the first hello")
 		})
 	}
 }
