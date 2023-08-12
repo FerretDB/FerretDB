@@ -30,8 +30,8 @@ const (
 	MaxWireVersion = int32(17)
 )
 
-// IsNotClientMetadata checks if the message does not contain client metadata.
-func IsNotClientMetadata(msg *wire.OpMsg) error {
+// CheckClientMedata checks if the message does not contain client metadata.
+func CheckClientMedata(msg *wire.OpMsg) error {
 	document, err := msg.Document()
 	if err != nil {
 		return lazyerrors.Error(err)
