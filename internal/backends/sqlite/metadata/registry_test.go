@@ -17,6 +17,7 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -238,6 +239,62 @@ func TestDropSameStress(t *testing.T) {
 			})
 
 			require.Equal(t, int32(1), droppedTotal.Load())
+		})
+	}
+}
+
+func TestCreateDropSameStress(t *testing.T) {
+	ctx := testutil.Ctx(t)
+
+	for testName, uri := range map[string]string{
+		"file":             "file:./",
+		"file-immediate":   "file:./?_txlock=immediate",
+		"memory":           "file:./?mode=memory",
+		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
+	} {
+		t.Run(testName, func(t *testing.T) {
+			r, err := NewRegistry(uri, testutil.Logger(t))
+			require.NoError(t, err)
+			t.Cleanup(r.Close)
+
+			dbName := "db"
+			r.DatabaseDrop(ctx, dbName)
+
+			db, err := r.DatabaseGetOrCreate(ctx, dbName)
+			require.NoError(t, err)
+			require.NotNil(t, db)
+
+			t.Cleanup(func() {
+				r.DatabaseDrop(ctx, dbName)
+			})
+
+			collectionName := "collection"
+
+			created, err := r.CollectionCreate(ctx, dbName, collectionName)
+			require.NoError(t, err)
+			require.True(t, created)
+
+			teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+				ready <- struct{}{}
+				<-start
+
+				wg := sync.WaitGroup{}
+				go func() {
+					wg.Add(1)
+					_, err := r.CollectionDrop(ctx, dbName, collectionName)
+					require.NoError(t, err)
+					wg.Done()
+				}()
+
+				go func() {
+					wg.Add(1)
+					_, err = r.CollectionCreate(ctx, dbName, collectionName)
+					require.NoError(t, err)
+					wg.Done()
+				}()
+
+				wg.Wait()
+			})
 		})
 	}
 }
