@@ -29,16 +29,16 @@ Without further ado, let's check out some of the notable features in this releas
 
 In the new release, we've added support for the `$group` stage `_id` expression.
 
-With this update, users can now use more complex document structures for the `_id` field in `$group` aggregations; you can now group data using an expression like `{"$group": {_id: {"v": "$v"}}}`.
+With this update, users can now use more complex document structures for the `_id` field in `$group` aggregations; you can group data using an expression like `{"$group": {_id: {"v": "$v"}}}`.
 
-We've also added support for the `$expr` evaluation query operator, which allows you to use expressions within the `$match` aggregation stage, and the `find` command.
-For example, you can now execute queries like `db.values.find( { $expr: <expression> } )`.
-For the `$match` aggregation stage, you can use it like this: `db.col.aggregate({<aggregation expression>})`.
+We've also added support for the `$expr` operator in evaluation queries when using the `find` command, and in aggregation operations within the `$match` aggregation stage.
+For example, you can now execute queries like `db.values.find({ $expr: <expression> })`.
+And for the `$match` aggregation stage, you can use the operator like this: `db.col.aggregate({ $match: { $expr: <expression> } })`.
 
 ## Bug fixes
 
 We've fixed a bug that caused the `findAndModify` command to return an immutable `_id` error when upserting the same `_id`.
-Previously, one of our users experienced an error when executing an `updateOne` operation that upserts the same `_id`, for example, `db.test.updateOne({ _id: 1}, { $set: { _id: 1, a: 1 }})`.
+Previously, one of our users experienced an error when executing an `updateOne` operation that upserts the same `_id`, for example, `db.test.updateOne({ _id: 1 }, { $set: { _id: 1, a: 1 } })`.
 With this bug fix, users can now execute such commands without encountering an error.
 
 ## Other changes
