@@ -10,13 +10,13 @@ tags: [release]
 
 ![FerretDB v.1.8.0 - new release](/img/blog/ferretdb-v1.8.0.jpg)
 
-FerretDB v1.8.0 has just been released with new features, bug fixes, and improvements to the SQLite and PostgreSQL backend.
+FerretDB v1.8.0 has just been released with new features, bug fixes, and improvements to the SQLite and PostgreSQL backends.
 
 <!--truncate-->
 
-In the last few weeks we've added support for the `$group` stage `_id` expression and the `$expr` evaluation query operator, and also made several optimizations and resolved issues with some of the previously implemented commands, our integration tests, and among others.
+In the last few weeks we've added support for the `$group` stage `_id` expression and the `$expr` evaluation query operator, and also made several optimizations and resolved issues with some of the previously implemented commands, our integration tests, among others.
 
-These are quite times for many people across the globe, including FerretDB maintainers and contributors, as we enjoy the summer vacations and the warm weather.
+These are quiet times for many people across the globe, including FerretDB maintainers and contributors, as we enjoy the summer vacations and the warm weather.
 
 At [FerretDB](https://www.ferretdb.io), we see this period as an exciting one!
 For instance, with the latest improvements and additions in FerretDB v1.8.0, we are getting closer to the production-ready release of the SQLite backend for FerretDB, which should be available soon.
@@ -31,10 +31,9 @@ In the new release, we've added support for the `$group` stage `_id` expression.
 
 With this update, users can now use more complex document structures for the `_id` field in `$group` aggregations; you can now group data using an expression like `{"$group": {_id: {"v": "$v"}}}`.
 
-We've also added support for the `$expr` evaluation query operator.
-This operator allows you to use aggregation expressions within the `$match` aggregation stage and the `find` command.
-For example, you can now execute queries like `db.values.find( { $expr: { $gt: [ "$v" , 2] } } )`.
-For the `$match` aggregation stage, you can use it like this: `{ $match: { $expr: { <aggregation expression> } } }`.
+We've also added support for the `$expr` evaluation query operator, which allows you to use expressions within the `$match` aggregation stage, and the `find` command.
+For example, you can now execute queries like `db.values.find( { $expr: <expression> } )`.
+For the `$match` aggregation stage, you can use it like this: `db.col.aggregate({<aggregation expression>})`.
 
 ## Bug fixes
 
