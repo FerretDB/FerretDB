@@ -3,7 +3,7 @@ slug: ferretdb-new-release-v180
 title: FerretDB v1.8.0 – New release
 authors: [alex]
 description: >
-  FerretDB v1.8.0 has just been released with new features, bug fixes, and improvements to the SQLite and PostgreSQL backend.
+  FerretDB v1.8.0 has just been released with new features, bug fixes, and improvements to the SQLite and PostgreSQL backends.
 image: /img/blog/ferretdb-v1.8.0.jpg
 tags: [release]
 ---
@@ -31,9 +31,8 @@ In the new release, we've added support for the `$group` stage `_id` expression.
 
 With this update, users can now use more complex document structures for the `_id` field in `$group` aggregations; you can group data using an expression like `{"$group": {_id: {"v": "$v"}}}`.
 
-We've also added support for the `$expr` operator in evaluation queries when using the `find` command, and in aggregation operations within the `$match` aggregation stage.
-For example, you can now execute queries like `db.values.find({ $expr: <expression> })`.
-And for the `$match` aggregation stage, you can use the operator like this: `db.col.aggregate({ $match: { $expr: <expression> } })`.
+We've added support for the `$expr` evaluation query operator and also extended the support for the `FilterIterator` and now it's possible to run it from the `find` command (i.e. `(db.values.find({ $expr: <expression> }))`) and within the `$match` aggregation stage.
+Since `$match` stage does not accept the use of raw aggregation expressions, you'll need to use an `$expr` query expression which should take this form `{ $match: { $expr: { <aggregation expression> } } }`.
 
 ## Bug fixes
 
