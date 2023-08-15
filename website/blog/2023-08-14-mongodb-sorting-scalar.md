@@ -3,7 +3,7 @@ slug: mongodb-sorting-scalar
 title: How MongoDB sorting works for scalar values
 authors: [chi]
 description: >
-  In this blog post, we explore in detail how MongoDB sorting works.
+  In this blog post, we explore in detail how MongoDB sorting works for scalar values.
 keywords:
   - MongoDB sorting
   - BSON comparison order
@@ -14,11 +14,12 @@ draft: true
 
 ![MongoDB sorting works for scalar values](/img/blog/mongodb-sorting-scalar.jpg)
 
-In this blog post, we explore in detail how MongoDB sorting works.
+In this blog post, we explore in detail how MongoDB sorting works for scalar values.
 
 <!--truncate-->
 
 Sorting compares BSON values to determine which value is equal, greater or less than the other to order them in the ascending or descending order.
+For comparing different BSON types, [BSON comparison order](#bson-comparison-order) is used.
 
 ## BSON comparison order
 
@@ -47,17 +48,62 @@ Below table shows the predefined BSON comparison order.
 ## How does comparison work for different BSON type?
 
 For comparing different BSON types, each BSON type has predefined order of comparison is assigned.
-For Null BSON type, order of comparison is 1.
-For a String BSON type, order of comparison is 3.
-When you compare Null with String, Null is less than String.
+Null BSON type has the lowest order of comparison, so Null is the lowest BSON value.
+When you compare Null with String, Null is less than any String.
 
 So comparing different BSON type is merely looking up the order of comparison table for each BSON type and using predefined order.
+There are exceptions for Object and Array values, we will be discussing them in another blog post.
 
 ## How does comparison work for numbers?
 
 Although numbers have different BSON types Integers, Longs, Doubles and Decimals, they are considered equivalent for the purpose of comparison.
-That means zero value of any BSON number type is equivalent to other BSON number type.
+That means same value of any BSON number type is equivalent to same value of other BSON number type.
 
 ## Sorting examples
+
+Suppose you have the following collection:
+
+```js
+db.outfits.insertMany([
+  { _id: 1, name: 'T-shirt', size: 'M' },
+  { _id: 2, name: 'jeans', size: 32 },
+  { _id: 3, name: 'shorts', size: 34 },
+  { _id: 4, name: 'belt', size: null }
+])
+```
+
+To sort the collection in ascending order by `size` field, following query is run.
+
+```js
+db.outfits.find().sort({ size: 1 })
+```
+
+The output is sorted by the lowest BSON type Null first, then next lowest BSON type Number and finally by String.
+
+```json5
+[
+  { _id: 4, name: 'belt', size: null },
+  { _id: 2, name: 'jeans', size: 32 },
+  { _id: 3, name: 'shorts', size: 34 },
+  { _id: 1, name: 'T-shirt', size: 'M' }
+]
+```
+
+Similarly, the collection is sorted in descending order by `size` field by running following query.
+
+```js
+db.outfits.find().sort({ size: -1 })
+```
+
+This time, the output is sorted by the higher BSON type String, then by Numbers and finally by Null.
+
+```json5
+[
+  { _id: 1, name: 'T-shirt', size: 'M' },
+  { _id: 3, name: 'shorts', size: 34 },
+  { _id: 2, name: 'jeans', size: 32 },
+  { _id: 4, name: 'belt', size: null }
+]
+```
 
 ## Roundup
