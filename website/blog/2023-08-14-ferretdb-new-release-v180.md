@@ -27,12 +27,13 @@ Without further ado, let's check out some of the notable features in this releas
 
 ## New features
 
-In the new release, we've added support for the `$group` stage `_id` expression.
+In the new release, we've added support for expressions in the `$group` stage.
+With this update, users can now use more complex document structures for the `_id` field in `$group` aggregations;
+you can group data using an expression like `{"$group": {_id: {"v": "$v"}}}`.
 
-With this update, users can now use more complex document structures for the `_id` field in `$group` aggregations; you can group data using an expression like `{"$group": {_id: {"v": "$v"}}}`.
-
-We've added support for the `$expr` evaluation query operator and also extended the support for the `FilterIterator` and now it's possible to run it from the `find` command (i.e. `(db.values.find({ $expr: <expression> }))`) and within the `$match` aggregation stage.
-Since `$match` stage does not accept the use of raw aggregation expressions, you'll need to use an `$expr` query expression which should take this form `{ $match: { $expr: { <aggregation expression> } } }`.
+We've added support for the `$expr` evaluation query operator.
+It is now possible to use aggregation expressions within the query language.
+For example, you can now run a query like `db.values.find({$expr: {$sum: '$v'}})` to find all documents where the sum of values in the `v` field is non-zero.
 
 ## Bug fixes
 
