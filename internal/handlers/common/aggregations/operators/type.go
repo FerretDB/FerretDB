@@ -34,14 +34,16 @@ type typeOp struct {
 
 // newType returns `$type` operator.
 func newType(args ...any) (Operator, error) {
-	if len(args) == 1 {
-		return &typeOp{
-			param: args[0],
-		}, nil
+	if len(args) != 1 {
+		return nil, newOperatorError(
+			ErrArgsInvalidLen,
+			"$type",
+			fmt.Sprintf("Expression $type takes exactly 1 arguments. %d were passed in.", len(args)),
+		)
 	}
 
 	return &typeOp{
-		param: args,
+		param: args[0],
 	}, nil
 }
 
@@ -89,21 +91,8 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 			// the result of nested operator needs to be evaluated
 			paramEvaluated = false
 
-		case *types.Array:
-			if param.Len() != 1 {
-				return nil, newOperatorError(
-					ErrArgsInvalidLen,
-					"$type",
-					fmt.Sprintf("Expression $type takes exactly 1 arguments. %d were passed in.", param.Len()),
-				)
-			}
-
-			value, err := param.Get(0)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			res = value
+		//case *types.Array:
+		//	res = value
 
 		case float64, types.Binary, types.ObjectID, bool, time.Time,
 			types.NullType, types.Regex, int32, types.Timestamp, int64:
