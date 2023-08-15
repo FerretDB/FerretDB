@@ -46,10 +46,10 @@ func newSum(args ...any) (Operator, error) {
 		switch arg := arg.(type) {
 		case *types.Document:
 			if IsOperator(arg) {
-				operator.operators = []*types.Document{arg}
+				operator.operators = append(operator.operators, arg)
 			}
 		case float64:
-			operator.numbers = []any{arg}
+			operator.numbers = append(operator.numbers, arg)
 		case string:
 			ex, err := aggregations.NewExpression(arg, nil)
 
@@ -64,7 +64,7 @@ func newSum(args ...any) (Operator, error) {
 
 			operator.expressions = []*aggregations.Expression{ex}
 		case int32, int64:
-			operator.numbers = []any{arg}
+			operator.numbers = append(operator.numbers, arg)
 		}
 	}
 
