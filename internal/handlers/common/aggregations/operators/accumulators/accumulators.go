@@ -29,7 +29,7 @@ import (
 )
 
 // newAccumulatorFunc is a type for a function that creates an accumulation operator.
-type newAccumulatorFunc func(expression *types.Document) (Accumulator, error)
+type newAccumulatorFunc func(args ...[]any) (Accumulator, error)
 
 // Accumulator is a common interface for aggregation accumulation operators.
 type Accumulator interface {
