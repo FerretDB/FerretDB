@@ -42,6 +42,8 @@ type sum struct {
 func newSum(args ...any) (Operator, error) {
 	operator := new(sum)
 
+	operator.arrayLen = len(args)
+
 	for _, arg := range args {
 		switch arg := arg.(type) {
 		case *types.Document:
