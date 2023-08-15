@@ -62,7 +62,7 @@ func newSum(args ...any) (Operator, error) {
 				return nil, err
 			}
 
-			operator.expressions = []*aggregations.Expression{ex}
+			operator.expressions = append(operator.expressions, ex)
 		case int32, int64:
 			operator.numbers = append(operator.numbers, arg)
 		}
