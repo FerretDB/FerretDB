@@ -97,11 +97,8 @@ func NewOperator(doc *types.Document) (Operator, error) {
 
 	expr := must.NotFail(doc.Get(operator))
 
-	if expr == nil {
-		panic("TODO?")
-	}
-
 	var args []any
+
 	if arr, ok := expr.(*types.Array); ok {
 		iter := arr.Iterator()
 		defer iter.Close()
