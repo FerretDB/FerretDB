@@ -91,10 +91,7 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 			// the result of nested operator needs to be evaluated
 			paramEvaluated = false
 
-		//case *types.Array:
-		//	res = value
-
-		case float64, types.Binary, types.ObjectID, bool, time.Time,
+		case *types.Array, float64, types.Binary, types.ObjectID, bool, time.Time,
 			types.NullType, types.Regex, int32, types.Timestamp, int64:
 			res = param
 
