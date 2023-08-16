@@ -129,7 +129,8 @@ db.outfits.find().sort({ size: -1 })
 
 This time, the output is sorted by the higher BSON type String document `flip flops`, then by documents with Numbers `sandals`, `sneakers` and `boots` and finally `slippers` with a non-existent `size` field.
 
-Suppose you want to sort by `color` field. There are more than one document with color with `blue`, and also there is a document with Null and missing `color` field.
+Suppose you want to sort by `color` field.
+There are more than one document with color with `blue`, and also there is a document with Null and missing `color` field.
 
 For example, `flip flops` has a Null value for `color` field and `slippers` is missing the field.
 Null and non-existent field is considered equivalent so either of them can be the first.
