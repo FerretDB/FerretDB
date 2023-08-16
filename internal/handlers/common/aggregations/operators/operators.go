@@ -137,11 +137,15 @@ func NewOperator(doc *types.Document) (Operator, error) {
 }
 
 // Operators maps all standard aggregation operators.
-var Operators = map[string]newOperatorFunc{
-	// sorted alphabetically
-	"$sum":  newSum,
-	"$type": newType,
-	// please keep sorted alphabetically
+var Operators map[string]newOperatorFunc
+
+func init() {
+	Operators = map[string]newOperatorFunc{
+		// sorted alphabetically
+		"$sum":  newSum,
+		"$type": newType,
+		// please keep sorted alphabetically
+	}
 }
 
 // unsupportedOperators maps all unsupported yet operators.

@@ -31,8 +31,7 @@ import (
 type typeOp struct {
 	param any
 
-	// operator is a documents containing operator expressions i.e. `[{$sum: 1}]`
-	operator *types.Document
+	operator Operator
 }
 
 // newType returns `$type` operator.
@@ -52,7 +51,22 @@ func newType(args ...any) (Operator, error) {
 		if !IsOperator(param) {
 			break
 		}
-		operator.operator = param
+
+		op, err := NewOperator(param)
+		if err != nil {
+			var opErr OperatorError
+			if !errors.As(err, &opErr) {
+				return nil, lazyerrors.Error(err)
+			}
+
+			if opErr.Code() == ErrInvalidExpression {
+				opErr.code = ErrInvalidNestedExpression
+			}
+
+			return nil, opErr
+		}
+
+		operator.operator = op
 
 	case *types.Array, string, float64, types.Binary, types.ObjectID, bool, time.Time,
 		types.NullType, types.Regex, int32, types.Timestamp, int64:
@@ -81,20 +95,6 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 			if !IsOperator(param) {
 				res = param
 				break
-			}
-
-			operator, err := NewOperator(param)
-			if err != nil {
-				var opErr OperatorError
-				if !errors.As(err, &opErr) {
-					return nil, lazyerrors.Error(err)
-				}
-
-				if opErr.Code() == ErrInvalidExpression {
-					opErr.code = ErrInvalidNestedExpression
-				}
-
-				return nil, opErr
 			}
 
 			if typeParam, err = operator.Process(doc); err != nil {
