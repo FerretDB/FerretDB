@@ -42,9 +42,7 @@ Finally, you will also need [git-lfs](https://git-lfs.github.com) installed and 
 ### Making a working copy
 
 Fork the [FerretDB repository on GitHub](https://github.com/FerretDB/FerretDB/fork).
-To have all the tags in the repository and what they point to, copy all branches by removing checkmark for `copy the main branch only` before forking.
-
-After forking FerretDB on GitHub, you can clone the repository and add upstream repository as a remote:
+After that, you can clone the repository and add the upstream repository as a remote:
 
 ```sh
 git clone git@github.com:<YOUR_GITHUB_USERNAME>/FerretDB.git
@@ -52,6 +50,9 @@ cd FerretDB
 git remote add upstream https://github.com/FerretDB/FerretDB.git
 git fetch --all --tags
 ```
+
+The last command would fetch all Git tags from our repository that GitHub won't copy to fork by default.
+`git describe` command uses them to determine the FerretDB version during the build process.
 
 To run development commands, you should first install the [`task`](https://taskfile.dev/) tool.
 You can do this by changing the directory to `tools` (`cd tools`) and running `go generate -x`.
@@ -289,16 +290,19 @@ const doubleMaxPrec = float64(1<<53 - 1) // 9007199254740991.0:    largest doubl
 
 Before submitting a pull request, please make sure that:
 
-1. Tests are added or updated for new functionality or fixed bugs.
+1. Your changes are committed to a [new branch](https://docs.github.com/en/get-started/quickstart/github-flow)
+   created from the [current state](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)
+   of our main branch.
+2. Tests are added or updated for new functionality or fixed bugs.
    Typical test cases include:
    - happy paths;
    - dot notation for existing and non-existent paths;
    - edge cases for invalid or unexpected values or types.
-2. Comments are added or updated for all new or changed code.
+3. Comments are added or updated for all new or changed code.
    Please add missing comments for all (both exported and unexported)
    new and changed top-level declarations (`package`, `var`, `const`, `func`, `type`).
    Please also check that formatting is correct in the `task godocs` output.
-3. `task all` passes.
+4. `task all` passes.
 
 #### Submitting PR
 
@@ -363,5 +367,8 @@ With `task` installed (see above), you may do the following:
 
 Before submitting a pull request, please make sure that:
 
-1. Documentation is formatted, linted, and built with `task docs`.
-2. Documentation is written according to our [writing guide](https://docs.ferretdb.io/contributing/writing-guide/).
+1. Your changes are committed to a [new branch](https://docs.github.com/en/get-started/quickstart/github-flow)
+   created from the [current state](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)
+   of our main branch.
+2. Documentation is formatted, linted, and built with `task docs`.
+3. Documentation is written according to our [writing guide](https://docs.ferretdb.io/contributing/writing-guide/).

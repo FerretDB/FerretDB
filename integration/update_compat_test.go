@@ -42,7 +42,8 @@ type updateCompatTestCase struct {
 	resultType  compatTestCaseResultType // defaults to nonEmptyResult
 	providers   []shareddata.Provider    // defaults to shareddata.AllProviders()
 
-	skip string // skips test if non-empty
+	skip           string // skips test if non-empty
+	failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue
 }
 
 // testUpdateCompat tests update compatibility test cases.
@@ -549,10 +550,11 @@ func TestUpdateCompat(t *testing.T) {
 			replace: bson.D{},
 		},
 		"ReplaceNonExistentUpsert": {
-			filter:      bson.D{{"non-existent", "no-match"}},
-			replace:     bson.D{{"_id", "new"}},
-			replaceOpts: options.Replace().SetUpsert(true),
-			resultType:  emptyResult,
+			filter:         bson.D{{"non-existent", "no-match"}},
+			replace:        bson.D{{"_id", "new"}},
+			replaceOpts:    options.Replace().SetUpsert(true),
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3183",
 		},
 		"UpdateNonExistentUpsert": {
 			filter:     bson.D{{"_id", "non-existent"}},
