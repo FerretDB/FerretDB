@@ -14,12 +14,12 @@ tags: [tag1, tag2]
 draft: true
 ---
 
+![Image alt description](/img/blog/banner-image.jpg) <!---Please add the path for the image banner (i.e. /img/blog/banner-image.png).-->
+
 Leave a space before starting article.
 Please write a short summary of the article here.
 This can be the same as the `description` above.
 Then add the feature image of the article
-
-![Image alt description](/img/blog/banner-image.jpg) <!---Please add the path for the image banner (i.e. /img/blog/banner-image.png).-->
 
 <!--truncate-->
 
@@ -36,7 +36,7 @@ All images for this blog post - including the banner image - should be stored in
 You can also store the images in a folder with the blog post date under this directory for example, `/img/blog/2022-12-29/banner.png`.
 
 Regular blog authors and engineers can be added to `authors.yml`.
-When the author information is present in `authors.yml`, fill the unique author name in the frontmatter as (`authors: [name tag]`).
+When the author information is present in `authors.yml`, fill the unique author name in the frontmatter as (`authors: [name1 name2]`).
 Ensure to remove all other descriptions in the frontmatter about the author (`author`, `author_url`, `author title`, and `author_image_url`).
 
 ## formatting guidelines
