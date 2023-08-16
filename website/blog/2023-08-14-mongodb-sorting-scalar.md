@@ -129,15 +129,15 @@ db.outfits.find().sort({ size: -1 })
 
 This time, the output is sorted by the higher BSON type String document `flip flops`, then by documents with Numbers `sandals`, `sneakers` and `boots` and finally `slippers` with a non-existent `size` field.
 
-Suppose you want to sort by `color`. There are more than one document with color with `blue`, and also there is a document with Null and missing `color` field.
+Suppose you want to sort by `color` field. There are more than one document with color with `blue`, and also there is a document with Null and missing `color` field.
 
 For example, `flip flops` has a Null value for `color` field and `slippers` is missing the field.
 Null and non-existent field is considered equivalent so either of them can be the first.
 In such a scenario, the default order that results were found from the database is used.
 
 To consistently preserve the same sorting order, it is recommended to use `_id` as the second field for sorting.
-Such case, if `color` has an equivalent value, it uses `_id` to sort them, allowing consistent output.
-The uniqueness property of `_id` makes the sorting output consistent.
+Such case, if `color` field has an equivalent value, it uses `_id` field to sort them, allowing consistent output.
+The uniqueness property of `_id` field makes the sorting output consistent.
 
 ```js
 db.outfits.find().sort({ color: 1, _id: 1 })
@@ -153,8 +153,10 @@ db.outfits.find().sort({ color: 1, _id: 1 })
 ]
 ```
 
-The output shows that `sandals` is sorted before `slippers` even though they have equivalent `color` field value, because it uses the second sort field `_id` and `sandals` has a lower `_id`.
-Similarly, `flip flops` and `sneakers` have the same `color` field value. But `flip flops` is sorted before because it has a lower `_id`.
+The output shows that `sandals` is sorted before `slippers` even though they have equivalent `color` field value.
+It is because it uses the second sort field `_id` and `sandals` has a lower `_id`.
+Similarly, `flip flops` and `sneakers` have the same `color` field value.
+But `flip flops` is sorted before because it has a lower `_id`.
 
 ## Roundup
 
