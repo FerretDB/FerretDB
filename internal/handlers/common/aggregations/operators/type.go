@@ -83,6 +83,20 @@ func newType(args ...any) (Operator, error) {
 func (t *typeOp) Process(doc *types.Document) (any, error) {
 	typeParam := t.param
 
+	if t.operator != nil {
+		var err error
+		typeParam, err = t.operator.Process(doc)
+
+		if err != nil {
+			var opErr OperatorError
+			if !errors.As(err, &opErr) {
+				return nil, lazyerrors.Error(err)
+			}
+
+			return nil, err
+		}
+	}
+
 	var paramEvaluated bool
 
 	var res any
