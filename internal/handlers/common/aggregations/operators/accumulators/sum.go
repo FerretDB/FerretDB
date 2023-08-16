@@ -34,7 +34,7 @@ type sum struct {
 }
 
 // newSum creates a new $sum aggregation operator.
-func newSum(accumulation *types.Document) (Accumulator, error) {
+func newSum(args ...[]any) (Accumulator, error) {
 	expression := must.NotFail(accumulation.Get("$sum"))
 	accumulator := new(sum)
 

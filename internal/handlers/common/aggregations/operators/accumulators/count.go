@@ -27,7 +27,7 @@ import (
 type count struct{}
 
 // newCount creates a new $count aggregation operator.
-func newCount(expr *types.Document) (Accumulator, error) {
+func newCount(args ...[]any) (Accumulator, error) {
 	expression, err := common.GetRequiredParam[*types.Document](expr, "$count")
 	if err != nil || expression.Len() != 0 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
