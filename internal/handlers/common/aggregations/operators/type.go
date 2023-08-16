@@ -118,6 +118,7 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 			}
 
 			res = value
+
 			break
 		}
 

@@ -29,7 +29,7 @@ type sum struct {
 	// expressions are valid path expression requiring evaluation
 	expressions []*aggregations.Expression
 	// operators are documents containing operator expressions i.e. `[{$sum: 1}]`
-	operators []*types.Document
+	operators []Operator
 	// numbers are int32, int64 or float64 values
 	numbers []any
 	// arrayLen is set when $sum operator contains array field such as `{$sum: [1, "$v"]}`
@@ -47,9 +47,25 @@ func newSum(args ...any) (Operator, error) {
 	for _, arg := range args {
 		switch arg := arg.(type) {
 		case *types.Document:
-			if IsOperator(arg) {
-				operator.operators = append(operator.operators, arg)
+			if !IsOperator(arg) {
+				break
 			}
+
+			op, err := NewOperator(arg)
+			if err != nil {
+				var opErr OperatorError
+				if !errors.As(err, &opErr) {
+					return nil, lazyerrors.Error(err)
+				}
+
+				if opErr.Code() == ErrInvalidExpression {
+					opErr.code = ErrInvalidNestedExpression
+				}
+
+				return nil, opErr
+			}
+
+			operator.operators = append(operator.operators, op)
 		case float64:
 			operator.numbers = append(operator.numbers, arg)
 		case string:
