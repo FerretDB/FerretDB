@@ -38,6 +38,8 @@ import (
 // While accumulators perform operations on multiple documents
 // (for example `$count` can count documents in each `$group` group),
 // standard operators perform operations on a single document.
+// It takes the arguments extracted from the document, and not the
+// whole array/document.
 type newOperatorFunc func(args ...any) (Operator, error)
 
 // Operator is a common interface for standard aggregation operators.
