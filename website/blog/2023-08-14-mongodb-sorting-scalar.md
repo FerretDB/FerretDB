@@ -54,18 +54,18 @@ When you compare Null with String, Null is less than any String.
 Comparing different BSON type is merely looking up the order of comparison table for each BSON type and using predefined order.
 There are exceptions for Object and Array values, we will be discussing them in another blog post.
 
-## Number comparison
+### Number comparison
 
 Although numbers have different BSON types Integers, Longs, Doubles and Decimals, they are considered equivalent BSON type for the purpose of comparison.
 That means comparing numbers consider their values but whether they are Integers, Longs, Doubles or Decimals are not relevant.
 For instance, an Integer value 0 is equivalent to Double 0.0 as far as comparison is concerned.
 
-## Null and missing field comparison
+### Null and missing field comparison
 
 For the comparison purpose, missing field is equivalent to Null.
 This means that Null and missing field are equal as far as comparison is concerned.
 
-## Sorting examples
+## Examples showcasing Sorting for scalar values
 
 Suppose you have `outfits` collection, it has `size` field specifying its size.
 Of the collection, `size` field of `flip flops` has String field value, `sandals` and `boots` have Integer field value,
