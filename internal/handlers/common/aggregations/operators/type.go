@@ -30,6 +30,9 @@ import (
 // typeOp represents `$type` operator.
 type typeOp struct {
 	param any
+
+	// operator is a documents containing operator expressions i.e. `[{$sum: 1}]`
+	operator *types.Document
 }
 
 // newType returns `$type` operator.
@@ -42,9 +45,24 @@ func newType(args ...any) (Operator, error) {
 		)
 	}
 
-	return &typeOp{
-		param: args[0],
-	}, nil
+	operator := new(typeOp)
+
+	switch param := args[0].(type) {
+	case *types.Document:
+		if !IsOperator(param) {
+			break
+		}
+		operator.operator = param
+
+	case *types.Array, string, float64, types.Binary, types.ObjectID, bool, time.Time,
+		types.NullType, types.Regex, int32, types.Timestamp, int64:
+		operator.param = param
+
+	default:
+		panic(fmt.Sprint("wrong type of value: ", param))
+	}
+
+	return operator, nil
 }
 
 // Process implements Operator interface.
