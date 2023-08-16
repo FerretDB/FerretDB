@@ -49,6 +49,7 @@ func newType(args ...any) (Operator, error) {
 	switch param := args[0].(type) {
 	case *types.Document:
 		if !IsOperator(param) {
+			operator.param = param
 			break
 		}
 
