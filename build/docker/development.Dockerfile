@@ -80,7 +80,7 @@ EOF
 
 # final stage
 
-FROM golang:1.20.7 AS development
+FROM golang:1.21.0 AS development
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
