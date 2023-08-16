@@ -97,58 +97,33 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 		}
 	}
 
-	var paramEvaluated bool
-
 	var res any
 
-	for !paramEvaluated {
-		paramEvaluated = true
+	switch param := typeParam.(type) {
+	case *types.Document, *types.Array, float64, types.Binary, types.ObjectID, bool, time.Time,
+		types.NullType, types.Regex, int32, types.Timestamp, int64:
+		res = param
 
-		switch param := typeParam.(type) {
-		case *types.Document:
-			if !IsOperator(param) {
-				res = param
-				break
-			}
-
-			if typeParam, err = operator.Process(doc); err != nil {
-				var opErr OperatorError
-				if !errors.As(err, &opErr) {
-					return nil, lazyerrors.Error(err)
-				}
-
+	case string:
+		if strings.HasPrefix(param, "$") {
+			expression, err := aggregations.NewExpression(param, nil)
+			if err != nil {
 				return nil, err
 			}
 
-			// the result of nested operator needs to be evaluated
-			paramEvaluated = false
-
-		case *types.Array, float64, types.Binary, types.ObjectID, bool, time.Time,
-			types.NullType, types.Regex, int32, types.Timestamp, int64:
-			res = param
-
-		case string:
-			if strings.HasPrefix(param, "$") {
-				expression, err := aggregations.NewExpression(param, nil)
-				if err != nil {
-					return nil, err
-				}
-
-				value, err := expression.Evaluate(doc)
-				if err != nil {
-					return "missing", nil
-				}
-
-				res = value
-
-				continue
+			value, err := expression.Evaluate(doc)
+			if err != nil {
+				return "missing", nil
 			}
 
-			res = param
-
-		default:
-			panic(fmt.Sprint("wrong type of value: ", typeParam))
+			res = value
+			break
 		}
+
+		res = param
+
+	default:
+		panic(fmt.Sprint("wrong type of value: ", typeParam))
 	}
 
 	return commonparams.AliasFromType(res), nil
