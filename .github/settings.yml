@@ -1,0 +1,199 @@
+repository:
+  name: FerretDB
+
+  description: A truly Open Source MongoDB alternative
+
+  homepage: www.ferretdb.io
+
+  topics: go, golang, postgres, mongo, database, mongodb, postgresql, document, mongodb-database, mongo-db, ferretdb
+  
+  private: false
+
+  has_issues: true
+
+  has_projects: true
+
+  # ?
+  has_wiki: false
+
+  # ?
+  has_downloads: false
+
+  default_branch: main
+
+  allow_squash_merge: true
+
+  # ?
+  allow_merge_commit: true
+
+  # ?
+  allow_rebase_merge: false
+
+  # ?
+  delete_branch_on_merge: false
+
+  # ???
+  enable_automated_security_fixes: false
+  
+  # ?
+  enable_vulnerability_alerts: false
+
+labels:
+  - name: not ready
+    color: 000000
+    description: Issues that are not ready to be worked on; PRs that should skip CI
+
+  - name: packages
+    color: 9B022C
+    description: PRs that should build packages
+
+  - name: use-git-lfs
+    color: FF0000
+    description: PRs that add large files without Git LFS
+
+  - name: help wanted
+    color: 006B75
+    description: Issues that require extra attention
+
+  - name: project
+    color: E99695
+    description: Project maintenance
+
+  - name: spam
+    color: C5DEF5
+    description: Spam issues and PRs
+  
+  - name: trust
+    color: 00FF00
+    description: PRs that can access Actions secrets
+
+  - name: good first issue
+    color: 5319E7  
+    description: Good issues for new external contributors
+
+  - name: documentation
+    color: 0052CC
+    description: Something user-visible is badly or not documented
+
+  - name: do not merge
+    color: 0052CC
+    description: PRs that should not be merged
+
+  - name: deps
+    color: D4C5F9
+    description: PRs that update dependencies
+
+  - name: conflict
+    color: FF0000
+    description: PRs that have merge conflicts
+
+  - name: code/feature
+    color: 0E8A16
+    description: Some user-visible feature is not implemented yet
+
+  - name: code/enhancement
+    color: FBCA04
+    description: Some user-visible feature could work better
+
+  - name: code/chore
+    color: E99695
+    description: Code maintenance improvements
+
+  - name: code/bug-regression
+    color: FF0000
+    description: Some user-visible feature works incorrectly, but worked before
+
+  - name: code/bug
+    color: CC0000
+    description: Some user-visible feature works incorrectly
+
+  - name: blog/marketing
+    color: 80D0C9
+    description: Marketing (and releases) blog posts
+
+  - name: blog/engineering
+    color: FEF2C0
+    description: Engineering blog posts
+
+  - name: badly estimated
+    color: FF3333
+    description: Scope, difficulty and/or clarify were different
+
+  - name: backend/sqlite
+    color: 2C8FCA
+    description: Issues about SQLite backend
+
+  - name: backend/pg
+    color: 305C83
+    description: Issues about PostgreSQL backend
+
+  - name: area/params
+    color: FBCA04
+    description: Issues about parameters extraction
+
+  - name: area/indexes
+    color: 006B75
+    description: Issues about indexes
+
+  - name: area/fuzz
+    color: D4C5F9
+    description: Issues about fuzzing
+
+  - name: area/cursors
+    color: D93F0B
+    description: Issues about cursors
+
+  - name: area/aggregations
+    color: 5319E7
+    description: Issues about aggregation pipelines
+
+milestones:
+  - title: next
+    description: next
+    state: open
+
+
+collaborators:
+  #TODO
+  # Not sure you even have those
+
+environments:
+  #TODO
+
+teams:
+  #TODO
+
+branches:
+  #TODO
+  - name: main
+    prottection:
+
+      required_pull_request_reviews: 
+
+        required_approving_review_count: 3
+
+        dismiss_stale_review: true
+
+        require_code_owner_review: true
+
+        # ?
+        dismissal_restricitions:
+          users: []
+          teams: []
+
+      required_status_checks:
+        strict: true
+        contexts: [Test, license/cla, golangci-lint, Conform PR, Short test, Build docs, Summary, env-data, Format Files, Security Scan, Integration MongoDB 1/1, Integration PostgreSQL 1/3, Integration PostgreSQL 2/3, Integration PostgreSQL 3/3]
+
+      enforce_admins: false
+
+      required_linear_history: true
+
+      restrictions:
+        apps: []
+        users: []
+        teams: []
+
+
+
+
