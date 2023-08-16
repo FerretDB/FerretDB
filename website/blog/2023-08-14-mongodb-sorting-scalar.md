@@ -30,19 +30,19 @@ Below table shows the predefined BSON comparison order for each BSON type.
 <!-- use newline in column header for appropriate spacing of columns -->
 <!-- markdownlint-disable MD033 -->
 
-| Order of Comparison<br/>(lowest to highest) | BSON Types                                   |
-| ------------------------------------------- | -------------------------------------------- |
-| 1                                           | Null                                         |
-| 2                                           | Numbers (Integers, Longs, Doubles, Decimals) |
-| 3                                           | String                                       |
-| 4                                           | Object                                       |
-| 5                                           | Array                                        |
-| 6                                           | BinData                                      |
-| 7                                           | ObjectId                                     |
-| 8                                           | Boolean                                      |
-| 9                                           | Date                                         |
-| 10                                          | Timestamp                                    |
-| 11                                          | Regular Expression                           |
+| Order of Comparison<br/>(lowest to highest) | BSON Types                               |
+| ------------------------------------------- | ---------------------------------------- |
+| 1                                           | Null                                     |
+| 2                                           | Numbers (Integer, Long, Double, Decimal) |
+| 3                                           | String                                   |
+| 4                                           | Object                                   |
+| 5                                           | Array                                    |
+| 6                                           | BinData                                  |
+| 7                                           | ObjectId                                 |
+| 8                                           | Boolean                                  |
+| 9                                           | Date                                     |
+| 10                                          | Timestamp                                |
+| 11                                          | Regular Expression                       |
 
 ## Comparison of different BSON types
 
@@ -56,8 +56,8 @@ There is an exception for Array values, we will be discussing them in another bl
 
 ### Number comparison
 
-Although numbers have different BSON types, namely Integers, Longs, Doubles and Decimals, they are considered the equivalent BSON type for the purpose of comparison.
-That means comparing numbers consider their values but whether they are Integers, Longs, Doubles or Decimals are not relevant.
+Although numbers have different BSON types, namely Integer, Long, Double and Decimal, they are considered the equivalent BSON type for the purpose of comparison.
+That means comparing numbers consider their values but whether they are Integer, Long, Double or Decimal are not relevant.
 For instance, an Integer value 0 is equivalent to Double 0.0 as far as comparison is concerned.
 
 ### Null and non-existent field comparison
