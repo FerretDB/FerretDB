@@ -1,0 +1,256 @@
+// Copyright 2021 FerretDB Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package administration
+
+import (
+	"strings"
+	"testing"
+
+	"github.com/FerretDB/FerretDB/integration"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
+)
+
+func TestRenameCollectionCompat(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers:                []shareddata.Provider{shareddata.DocumentsDocuments, shareddata.Bools},
+		AddNonExistentCollection: true,
+	})
+
+	ctx, targetCollection, compatCollection := s.Ctx, s.TargetCollections[0], s.CompatCollections[0]
+	targetCollectionExists, compatCollectionExists := s.TargetCollections[1], s.CompatCollections[1]
+
+	targetDB := targetCollection.Database()
+	compatDB := compatCollection.Database()
+
+	// Collection rename should be performed while connecting to the admin database.
+	targetDBConnect := targetCollection.Database().Client().Database("admin")
+	compatDBConnect := compatCollection.Database().Client().Database("admin")
+
+	for name, tc := range map[string]struct {
+		targetNSFrom any
+		compatNSFrom any
+		targetNSTo   any
+		compatNSTo   any
+		resultType   integration.CompatTestCaseResultType
+	}{
+		"Valid": {
+			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
+			compatNSFrom: compatDB.Name() + "." + compatCollection.Name(),
+			targetNSTo:   targetDB.Name() + ".newCollection",
+			compatNSTo:   targetDB.Name() + ".newCollection",
+		},
+		"NilFrom": {
+			targetNSFrom: nil,
+			compatNSFrom: nil,
+			targetNSTo:   targetDB.Name() + ".newCollection",
+			compatNSTo:   compatDB.Name() + ".newCollection",
+			resultType:   integration.EmptyResult,
+		},
+		"NilTo": {
+			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
+			compatNSFrom: compatDB.Name() + "." + compatCollection.Name(),
+			targetNSTo:   nil,
+			compatNSTo:   nil,
+			resultType:   integration.EmptyResult,
+		},
+		"BadTypeFrom": {
+			targetNSFrom: int32(42),
+			compatNSFrom: int32(42),
+			targetNSTo:   targetDB.Name() + ".newCollection",
+			compatNSTo:   compatDB.Name() + ".newCollection",
+			resultType:   integration.EmptyResult,
+		},
+		"BadTypeTo": {
+			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
+			compatNSFrom: compatDB.Name() + "." + compatCollection.Name(),
+			targetNSTo:   int32(42),
+			compatNSTo:   int32(42),
+			resultType:   integration.EmptyResult,
+		},
+		"EmptyFrom": {
+			targetNSFrom: "",
+			compatNSFrom: "",
+			targetNSTo:   targetDB.Name() + ".newCollection",
+			compatNSTo:   compatDB.Name() + ".newCollection",
+			resultType:   integration.EmptyResult,
+		},
+		"EmptyTo": {
+			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
+			compatNSFrom: compatDB.Name() + "." + compatCollection.Name(),
+			targetNSTo:   "",
+			compatNSTo:   "",
+			resultType:   integration.EmptyResult,
+		},
+		"EmptyDBFrom": {
+			targetNSFrom: "." + targetCollection.Name(),
+			compatNSFrom: "." + compatCollection.Name(),
+			targetNSTo:   targetDB.Name() + ".newCollection",
+			compatNSTo:   compatDB.Name() + ".newCollection",
+			resultType:   integration.EmptyResult,
+		},
+		"EmptyDBTo": {
+			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
+			compatNSFrom: compatDB.Name() + "." + compatCollection.Name(),
+			targetNSTo:   ".newCollection",
+			compatNSTo:   ".newCollection",
+			resultType:   integration.EmptyResult,
+		},
+		"EmptyCollectionFrom": {
+			targetNSFrom: targetDB.Name() + ".",
+			compatNSFrom: compatDB.Name() + ".",
+			targetNSTo:   targetDB.Name() + ".newCollection",
+			compatNSTo:   targetDB.Name() + ".newCollection",
+			resultType:   integration.EmptyResult,
+		},
+		"EmptyCollectionTo": {
+			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
+			compatNSFrom: compatDB.Name() + "." + compatCollection.Name(),
+			targetNSTo:   targetDB.Name() + ".",
+			compatNSTo:   targetDB.Name() + ".",
+			resultType:   integration.EmptyResult,
+		},
+		"NonExistentDB": {
+			targetNSFrom: "nonExistentDB." + targetCollection.Name(),
+			compatNSFrom: "nonExistentDB." + compatCollection.Name(),
+			targetNSTo:   "nonExistentDB.newCollection",
+			compatNSTo:   "nonExistentDB.newCollection",
+			resultType:   integration.EmptyResult,
+		},
+		"NonExistentCollectionFrom": {
+			targetNSFrom: targetDB.Name() + ".nonExistentCollection",
+			compatNSFrom: compatDB.Name() + ".nonExistentCollection",
+			targetNSTo:   targetDB.Name() + ".newCollection",
+			compatNSTo:   targetDB.Name() + ".newCollection",
+			resultType:   integration.EmptyResult,
+		},
+		"CollectionToAlreadyExists": {
+			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
+			compatNSFrom: compatDB.Name() + "." + compatCollection.Name(),
+			targetNSTo:   targetDB.Name() + "." + targetCollectionExists.Name(),
+			compatNSTo:   targetDB.Name() + "." + compatCollectionExists.Name(),
+			resultType:   integration.EmptyResult,
+		},
+		"SameNamespace": {
+			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
+			compatNSFrom: compatDB.Name() + "." + compatCollection.Name(),
+			targetNSTo:   targetDB.Name() + "." + targetCollection.Name(),
+			compatNSTo:   targetDB.Name() + "." + compatCollection.Name(),
+			resultType:   integration.EmptyResult,
+		},
+		"InvalidNameTo": {
+			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
+			compatNSFrom: compatDB.Name() + "." + compatCollection.Name(),
+			targetNSTo:   targetDB.Name() + ".new$Collection",
+			compatNSTo:   targetDB.Name() + ".new$Collection",
+			resultType:   integration.EmptyResult,
+		},
+		"LongNameTo": {
+			targetNSFrom: targetDB.Name() + "." + targetCollection.Name(),
+			compatNSFrom: compatDB.Name() + "." + compatCollection.Name(),
+			targetNSTo:   targetDB.Name() + "." + strings.Repeat("aB", 150),
+			compatNSTo:   targetDB.Name() + "." + strings.Repeat("aB", 150),
+			resultType:   integration.EmptyResult,
+		},
+	} {
+		name, tc := name, tc
+
+		t.Run(name, func(tt *testing.T) {
+			tt.Helper()
+
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2760")
+
+			var targetRes bson.D
+			targetCommand := bson.D{{"renameCollection", tc.targetNSFrom}, {"to", tc.targetNSTo}}
+			targetErr := targetDBConnect.RunCommand(ctx, targetCommand).Decode(&targetRes)
+
+			var compatRes bson.D
+			compatCommand := bson.D{{"renameCollection", tc.compatNSFrom}, {"to", tc.compatNSTo}}
+			compatErr := compatDBConnect.RunCommand(ctx, compatCommand).Decode(&compatRes)
+
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				integration.AssertMatchesCommandError(t, compatErr, targetErr)
+
+				return
+			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
+
+			// Collection lists after rename must be the same
+			targetNames, err := targetDB.ListCollectionNames(ctx, bson.D{})
+			require.NoError(t, err)
+
+			compatNames, err := compatDB.ListCollectionNames(ctx, bson.D{})
+			require.NoError(t, err)
+
+			assert.ElementsMatch(t, targetNames, compatNames)
+
+			// Recreation of collection with the old name must be possible
+			err = targetDB.CreateCollection(ctx, targetCollection.Name())
+			require.NoError(t, err)
+
+			err = compatDB.CreateCollection(ctx, compatCollection.Name())
+			require.NoError(t, err)
+
+			// Collection lists after recreation must be the same
+			targetNames, err = targetDB.ListCollectionNames(ctx, bson.D{})
+			require.NoError(t, err)
+
+			compatNames, err = compatDB.ListCollectionNames(ctx, bson.D{})
+			require.NoError(t, err)
+
+			assert.ElementsMatch(t, targetNames, compatNames)
+
+			// Rename one more time
+			targetCommand = bson.D{{"renameCollection", tc.targetNSFrom}, {"to", tc.targetNSTo.(string) + "_new"}}
+			targetErr = targetDBConnect.RunCommand(ctx, targetCommand).Decode(&targetRes)
+			require.NoError(t, targetErr)
+
+			compatCommand = bson.D{{"renameCollection", tc.compatNSFrom}, {"to", tc.compatNSTo.(string) + "_new"}}
+			compatErr = compatDBConnect.RunCommand(ctx, compatCommand).Decode(&compatRes)
+			require.NoError(t, compatErr)
+
+			// Rename back
+			targetCommand = bson.D{{"renameCollection", tc.targetNSTo.(string) + "_new"}, {"to", tc.targetNSFrom}}
+			targetErr = targetDBConnect.RunCommand(ctx, targetCommand).Decode(&targetRes)
+			require.NoError(t, targetErr)
+
+			compatCommand = bson.D{{"renameCollection", tc.compatNSTo.(string) + "_new"}, {"to", tc.compatNSFrom}}
+			compatErr = compatDBConnect.RunCommand(ctx, compatCommand).Decode(&compatRes)
+			require.NoError(t, compatErr)
+
+			// Collection lists after all the manipulations must be the same
+			targetNames, err = targetDB.ListCollectionNames(ctx, bson.D{})
+			require.NoError(t, err)
+
+			compatNames, err = compatDB.ListCollectionNames(ctx, bson.D{})
+			require.NoError(t, err)
+
+			assert.ElementsMatch(t, targetNames, compatNames)
+		})
+	}
+}

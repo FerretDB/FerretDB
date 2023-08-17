@@ -33,19 +33,19 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-//go:generate ../bin/stringer -linecomment -type compatTestCaseResultType
+//go:generate ../bin/stringer -linecomment -type CompatTestCaseResultType
 
-// compatTestCaseResultType represents compatibility test case result type.
+// CompatTestCaseResultType represents compatibility test case result type.
 //
 // It is used to avoid errors with invalid queries making tests pass.
-type compatTestCaseResultType int
+type CompatTestCaseResultType int
 
 const (
-	// Test case should return non-empty result at least for one collection/provider.
-	nonEmptyResult compatTestCaseResultType = iota
+	// NonEmptyResult indicates that test case should return non-empty result at least for one collection/provider.
+	NonEmptyResult CompatTestCaseResultType = iota
 
-	// Test case should return empty result for all collections/providers.
-	emptyResult
+	// EmptyResult indicates that test case should return empty result for all collections/providers.
+	EmptyResult
 )
 
 // convert converts given driver value (bson.D, bson.A, etc) to FerretDB types package value.
@@ -411,9 +411,9 @@ func FindAll(t testtb.TB, ctx context.Context, collection *mongo.Collection) []b
 	return FetchAll(t, ctx, cursor)
 }
 
-// generateDocuments generates documents with _id ranging from startID to endID.
+// GenerateDocuments generates documents with _id ranging from startID to endID.
 // It returns bson.A and []bson.D both containing same bson.D documents.
-func generateDocuments(startID, endID int32) (bson.A, []bson.D) {
+func GenerateDocuments(startID, endID int32) (bson.A, []bson.D) {
 	var arr bson.A
 	var docs []bson.D
 

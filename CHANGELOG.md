@@ -342,7 +342,7 @@ This and earlier versions of FerretDB with Tigris support will still be availabl
 - Add more consistency to table tests' field names by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2717
 - Don't use `sjson.GetTypeOfValue` where it shouldn't be used by @noisersup in https://github.com/FerretDB/FerretDB/pull/2728
 - Unify test file names by @w84thesun in https://github.com/FerretDB/FerretDB/pull/2709
-- Make `testFindAndModifyCompat` work with `compatTestCaseResultType` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2739
+- Make `testFindAndModifyCompat` work with `CompatTestCaseResultType` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2739
 - Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2745
 - Call `ListSpecifications` driver's method in tests to check indexes by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/2746
 - Simplify `CountIterator` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2759
