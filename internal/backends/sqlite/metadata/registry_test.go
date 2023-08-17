@@ -278,19 +278,20 @@ func TestCreateDropSameStress(t *testing.T) {
 				ready <- struct{}{}
 				<-start
 
-				wg := sync.WaitGroup{}
+				var wg sync.WaitGroup
+				wg.Add(1)
 				go func() {
-					wg.Add(1)
+					defer wg.Done()
+
 					_, err := r.CollectionDrop(ctx, dbName, collectionName)
 					require.NoError(t, err)
-					wg.Done()
 				}()
 
+				wg.Add(1)
 				go func() {
-					wg.Add(1)
+					defer wg.Done()
 					_, err = r.CollectionCreate(ctx, dbName, collectionName)
 					require.NoError(t, err)
-					wg.Done()
 				}()
 
 				wg.Wait()
