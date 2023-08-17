@@ -38,8 +38,6 @@ RUN --mount=type=cache,target=/cache \
 ENV GOPROXY https://proxy.golang.org
 
 ENV CGO_ENABLED=1
-ENV GOCOVERDIR=cover
-ENV GORACE=halt_on_error=1,history_size=2
 ENV GOARM=7
 
 # do not raise it without providing a v1 build because v2+ is problematic
@@ -85,6 +83,11 @@ ARG LABEL_VERSION
 ARG LABEL_COMMIT
 
 COPY --from=development-build /src/bin/ferretdb /ferretdb
+
+ENV GOCOVERDIR=/tmp/cover
+ENV GORACE=halt_on_error=1,history_size=2
+
+RUN mkdir /tmp/cover
 
 WORKDIR /
 ENTRYPOINT [ "/ferretdb" ]
