@@ -25,7 +25,8 @@ import (
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
-var todoIssueRegex = regexp.MustCompile(`.*\/\/\s*TODO https://github\.com/FerretDB/FerretDB/issues/\d+$`)
+var isIssueRegex = regexp.MustCompile(`(?i)(issue\ *\d+)*(\d+\ *issue)*(#\ *\d+)*(TODO \d+)*`)
+var todoIssueRegex = regexp.MustCompile(`^[ \t]*\/\/\s*TODO https://github\.com/FerretDB/FerretDB/issues/\d+$`)
 
 var analyzer = &analysis.Analyzer{
 	Name: "checkissuecomment",
@@ -54,8 +55,11 @@ func run(pass *analysis.Pass) (any, error) {
 		for scanner.Scan() {
 			line := scanner.Text()
 
-			if strings.Contains(line, "// TODO") && (!todoIssueRegex.MatchString(line)) {
-				pass.Reportf(file.Pos(), "TODO comments must satisfy the pattern: %s", strings.TrimSpace(line))
+			if strings.Contains(line, "// TODO") &&
+				isIssueRegex.MatchString(line) &&
+				!todoIssueRegex.MatchString(line) {
+
+				pass.Reportf(file.Pos(), "TODO comments mentioning issues must satisfy the pattern (// TODO <issue_url>): %s", strings.TrimSpace(line))
 			}
 
 			lineNumber++

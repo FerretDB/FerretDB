@@ -23,6 +23,9 @@ import (
 func testcorrect() {
 	// TODO https://github.com/FerretDB/FerretDB/issues/2612
 	fmt.Println("checking the lint which has proper TODO")
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/2612
+	fmt.Println("checking the lint which has proper TODO")
 }
 
 // issue to be resolved below
