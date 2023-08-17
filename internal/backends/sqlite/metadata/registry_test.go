@@ -17,7 +17,6 @@ package metadata
 import (
 	"context"
 	"fmt"
-	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -270,32 +269,31 @@ func TestCreateDropSameStress(t *testing.T) {
 
 			collectionName := "collection"
 
-			created, err := r.CollectionCreate(ctx, dbName, collectionName)
-			require.NoError(t, err)
-			require.True(t, created)
+			var i, createdTotal, droppedTotal atomic.Int32
 
 			teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+				id := i.Add(1)
+
 				ready <- struct{}{}
 				<-start
 
-				var wg sync.WaitGroup
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-
-					_, err := r.CollectionDrop(ctx, dbName, collectionName)
+				if id%2 == 0 {
+					created, err := r.CollectionCreate(ctx, dbName, collectionName)
 					require.NoError(t, err)
-				}()
-
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					_, err = r.CollectionCreate(ctx, dbName, collectionName)
+					if created {
+						createdTotal.Add(1)
+					}
+				} else {
+					dropped, err := r.CollectionDrop(ctx, dbName, collectionName)
 					require.NoError(t, err)
-				}()
-
-				wg.Wait()
+					if dropped {
+						droppedTotal.Add(1)
+					}
+				}
 			})
+
+			require.Less(t, int32(1), createdTotal.Load())
+			require.Less(t, int32(1), droppedTotal.Load())
 		})
 	}
 }
