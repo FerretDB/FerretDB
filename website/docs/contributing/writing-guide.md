@@ -1,6 +1,6 @@
 ---
 sidebar_position: 99
-draft: true
+unlisted: true # linked from CONTRIBUTING.md
 ---
 
 # Writing guide
