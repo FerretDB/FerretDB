@@ -48,8 +48,6 @@ func TestVersion(t *testing.T) {
 	commit := regexp.MustCompile(`commit: ([0-9a-f]{40})`).FindStringSubmatch(string(b))
 	require.Len(t, commit, 2)
 
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/2102")
-
 	cmd = exec.CommandContext(ctx, "go", "version", "-m", bin)
 	b, err = cmd.Output()
 	require.NoError(t, err)

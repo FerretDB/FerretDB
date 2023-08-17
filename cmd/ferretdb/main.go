@@ -49,8 +49,8 @@ import (
 // Keep order in sync with documentation.
 var cli struct {
 	Version  bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
-	Mode     string `default:"${default_mode}" help:"${help_mode}"                      enum:"${enum_mode}"`
 	Handler  string `default:"pg"              help:"${help_handler}"`
+	Mode     string `default:"${default_mode}" help:"${help_mode}"                      enum:"${enum_mode}"`
 	StateDir string `default:"."               help:"Process state directory."`
 
 	Listen struct {
