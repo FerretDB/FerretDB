@@ -144,7 +144,7 @@ tasks:
     run: once
     deps: [gen-version]
     cmds:
-      - go build -cover -o=bin/ferretdb{{exeExt}} {{.RACE_FLAG}} -tags=ferretdb_debug,{{.BUILD_TAGS}} -coverpkg=./... ./cmd/ferretdb
+      - go build -cover -o=bin/ferretdb{{exeExt}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -coverpkg=./... ./cmd/ferretdb
 
   gen:
     desc: "Generate (and format) Go code"
@@ -193,7 +193,7 @@ tasks:
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags=ferretdb_debug,{{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
+        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-pg.txt
         -target-backend=ferretdb-pg
         -target-tls
