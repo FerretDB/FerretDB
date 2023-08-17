@@ -25,8 +25,11 @@ import (
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
-var isIssueRegex = regexp.MustCompile(`(?i)(issue\ *\d+)*(\d+\ *issue)*(#\ *\d+)*(TODO \d+)*`)
-var todoIssueRegex = regexp.MustCompile(`^[ \t]*\/\/\s*TODO https://github\.com/FerretDB/FerretDB/issues/\d+$`)
+// todoIssueRegex matches potential TODO representations of an issue.
+var todoIssueRegex = regexp.MustCompile(`(?i)(?:issue[s]?|TODO|#):?\/?\s*\d+`)
+
+// validTodoIssueRegex matches correct TODO comment with the issue number.
+var validTodoIssueRegex = regexp.MustCompile(`^(.*?)\/\/\s*TODO https://github\.com/FerretDB/FerretDB/issues/\d+$`)
 
 var analyzer = &analysis.Analyzer{
 	Name: "checkissuecomment",
@@ -55,11 +58,11 @@ func run(pass *analysis.Pass) (any, error) {
 		for scanner.Scan() {
 			line := scanner.Text()
 
-			if strings.Contains(line, "// TODO") &&
-				isIssueRegex.MatchString(line) &&
-				!todoIssueRegex.MatchString(line) {
-
-				pass.Reportf(file.Pos(), "TODO comments mentioning issues must satisfy the pattern (// TODO <issue_url>): %s", strings.TrimSpace(line))
+			if strings.Contains(line, "// TODO") {
+				if todoIssueRegex.MatchString(line) &&
+					!validTodoIssueRegex.MatchString(line) {
+					pass.Reportf(file.Pos(), "TODO comments mentioning issues must satisfy the pattern (// TODO <issue_url>): %s", strings.TrimSpace(line))
+				}
 			}
 
 			lineNumber++
