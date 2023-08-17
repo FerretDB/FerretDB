@@ -33,6 +33,8 @@ import (
 )
 
 // newOperatorFunc is a type for a function that creates a standard aggregation operator.
+// Every implementation of this function must validate fields and all of the nested
+// expressions and operators.
 //
 // By standard aggregation operator we mean any operator that is not accumulator.
 // While accumulators perform operations on multiple documents
@@ -45,6 +47,8 @@ type newOperatorFunc func(args ...any) (Operator, error)
 // Operator is a common interface for standard aggregation operators.
 type Operator interface {
 	// Process document and returns the result of applying operator.
+	// It shouldn't be responsible for any document or nested objects
+	// parsing/validation. For that, please use newOperatorFunc.
 	Process(in *types.Document) (any, error)
 }
 

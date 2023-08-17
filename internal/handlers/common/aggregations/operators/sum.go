@@ -28,7 +28,7 @@ import (
 type sum struct {
 	// expressions are valid path expression requiring evaluation
 	expressions []*aggregations.Expression
-	// operators are documents containing operator expressions i.e. `[{$sum: 1}]`
+	// operators are documents containing nested operators
 	operators []Operator
 	// numbers are int32, int64 or float64 values
 	numbers []any
@@ -135,15 +135,14 @@ func (s *sum) Process(doc *types.Document) (any, error) {
 		}
 	}
 
-	for _, operatorExpr := range s.operators {
-		// NewOperator is created here, doing it in newSum() creates initialization cycle for operators
-		op, err := NewOperator(operatorExpr)
+	for _, operator := range s.operators {
+		v, err := operator.Process(doc)
 		if err != nil {
-			return nil, err
-		}
+			var opErr OperatorError
+			if !errors.As(err, &opErr) {
+				return nil, lazyerrors.Error(err)
+			}
 
-		v, err := op.Process(doc)
-		if err != nil {
 			return nil, err
 		}
 
