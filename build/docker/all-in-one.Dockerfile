@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.20.6-1 AS all-in-one-build
+FROM ghcr.io/ferretdb/golang:1.20.7-1 AS all-in-one-build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -80,7 +80,7 @@ EOF
 
 # final stage
 
-FROM postgres:15.3 AS all-in-one
+FROM postgres:15.4 AS all-in-one
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
