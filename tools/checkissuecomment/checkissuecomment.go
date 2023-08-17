@@ -25,7 +25,7 @@ import (
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
-var todoIssueRegex = regexp.MustCompile(`(.*?)\/\/\s*TODO https://github\.com/FerretDB/FerretDB/issues/\d+$`)
+var todoIssueRegex = regexp.MustCompile(`.*\/\/\s*TODO https://github\.com/FerretDB/FerretDB/issues/\d+$`)
 
 var analyzer = &analysis.Analyzer{
 	Name: "checkissuecomment",
@@ -37,7 +37,7 @@ func main() {
 	singlechecker.Main(analyzer)
 }
 
-// It analyses the presence of TODO issue in code.
+// run analyses the presence of TODO issue in code.
 func run(pass *analysis.Pass) (any, error) {
 	for _, file := range pass.Files {
 		fileName := pass.Fset.File(file.Pos()).Name()
@@ -54,10 +54,8 @@ func run(pass *analysis.Pass) (any, error) {
 		for scanner.Scan() {
 			line := scanner.Text()
 
-			if strings.Contains(line, "// TODO") {
-				if !todoIssueRegex.MatchString(line) {
-					pass.Reportf(file.Pos(), "TODO with missing issue link with proper lint %s", line)
-				}
+			if strings.Contains(line, "// TODO") && (!todoIssueRegex.MatchString(line)) {
+				pass.Reportf(file.Pos(), "TODO comments must satisfy the pattern: %s", strings.TrimSpace(line))
 			}
 
 			lineNumber++
