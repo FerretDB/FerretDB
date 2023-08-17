@@ -65,14 +65,8 @@ func (e *expr) validateExpr(exprValue any) error {
 	switch exprValue := exprValue.(type) {
 	case *types.Document:
 		if IsOperator(exprValue) {
-			op, err := NewOperator(exprValue)
+			_, err := NewOperator(exprValue)
 			if err != nil {
-				return processExprOperatorErrors(err, e.errArgument)
-			}
-
-			_, err = op.Process(nil)
-			if err != nil {
-				// TODO https://github.com/FerretDB/FerretDB/issues/3129
 				return processExprOperatorErrors(err, e.errArgument)
 			}
 

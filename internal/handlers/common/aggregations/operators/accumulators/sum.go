@@ -46,11 +46,6 @@ func newSum(accumulation *types.Document) (Accumulator, error) {
 		}
 
 		op, err := operators.NewOperator(expr)
-		if err == nil {
-			// TODO https://github.com/FerretDB/FerretDB/issues/3129
-			_, err = op.Process(nil)
-		}
-
 		if err != nil {
 			var opErr operators.OperatorError
 			if !errors.As(err, &opErr) {
