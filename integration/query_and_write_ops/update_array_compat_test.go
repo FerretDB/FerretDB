@@ -17,9 +17,9 @@ package query_and_write_ops
 import (
 	"testing"
 
-	"github.com/FerretDB/FerretDB/integration"
-
 	"go.mongodb.org/mongo-driver/bson"
+
+	"github.com/FerretDB/FerretDB/integration"
 )
 
 func TestUpdateArrayCompatPop(t *testing.T) {

@@ -18,12 +18,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/FerretDB/FerretDB/integration"
-
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
+	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 

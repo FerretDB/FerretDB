@@ -19,10 +19,10 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/integration"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/FerretDB/FerretDB/integration"
 )
 
 func TestQueryEvaluationCompatRegexErrors(t *testing.T) {

@@ -17,10 +17,10 @@ package query_and_write_ops
 import (
 	"testing"
 
-	"github.com/FerretDB/FerretDB/integration"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/FerretDB/FerretDB/integration"
 )
 
 func TestQueryLogicalCompatAnd(t *testing.T) {

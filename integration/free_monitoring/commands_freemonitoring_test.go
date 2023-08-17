@@ -17,13 +17,12 @@ package free_monitoring
 import (
 	"testing"
 
-	"github.com/FerretDB/FerretDB/integration"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
+	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
