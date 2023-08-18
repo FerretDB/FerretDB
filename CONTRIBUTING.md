@@ -263,25 +263,28 @@ const doubleMaxPrec = float64(1<<53 - 1) // 9007199254740991.0:    largest doubl
 
 #### Integration tests naming guidelines
 
-1. Test names should include the name of the command being tested.
+1. Inside the `integration` directory, test files are organized into subdirectories 
+   based on command groups, such as `aggregation`, `diagnostic`, 
+   `query_and_write_ops` (query and write operations) etc.
+2. Test names should include the name of the command being tested.
    For instance, `TestDistinct` for testing the distinct command.
-2. Compatibility tests should have `Compat` in the name, following the command.
+3. Compatibility tests should have `Compat` in the name, following the command.
    For example, `TestDistinctCompat`.
-3. If the test doesn't use driver method but runs a command directly via `RunCommand`,
+4. If the test doesn't use driver method but runs a command directly via `RunCommand`,
    the suffix `Command` should be added.
    For example, `TestDistinctCommand`.
-4. If the test is both compat and runs a command, the suffix `CommandCompat` should be added.
+5. If the test is both compat and runs a command, the suffix `CommandCompat` should be added.
    For example, `TestInsertCommandCompat`.
-5. If the file consists of compatibility tests, add the `_compat` suffix.
+6. If the file consists of compatibility tests, add the `_compat` suffix.
    For example, `distinct_compat_test.go`.
-6. Test names should be descriptive and provide information about the functionality or condition being tested.
+7. Test names should be descriptive and provide information about the functionality or condition being tested.
    If the test is checking for a specific error scenario, include the error scenario in the name.
-7. Keep test names concise, avoiding overly cryptic names.
+8. Keep test names concise, avoiding overly cryptic names.
    Use abbreviations when appropriate.
-8. Avoid including test data in the name to maintain clarity and prevent excessively long names.
-9. Test case names should follow `TitleCase` capitalization style.
-   No spaces, dashes or underscores should be used neither for test names nor for test case names.
-10. Keep the concatenation of test name segments (test, subtests, and handler) within 64 characters
+9. Avoid including test data in the name to maintain clarity and prevent excessively long names.
+10. Test case names should follow `TitleCase` capitalization style.
+    No spaces, dashes or underscores should be used neither for test names nor for test case names.
+11. Keep the concatenation of test name segments (test, subtests, and handler) within 64 characters
     to satisfy the maximum limit for database names.
 
 ### Submitting code changes
