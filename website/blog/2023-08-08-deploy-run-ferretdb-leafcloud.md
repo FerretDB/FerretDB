@@ -30,14 +30,15 @@ We're going to set up FerretDB on a Kubernetes cluster and deploy it to Leafclou
 ### Prerequisites
 
 - Kubectl
-- Leafcloud account (ensure you have enough volumes to run the cluster)
+- Leafcloud account (ensure you have enough volume to run the cluster)
 
 ### Creating a Kubernetes Cluster in Leafcloud
 
 We will start by creating a Kubernetes cluster, using the OpenStack CLI.
 Leafcloud manages and deploys container clusters using the OpenStack Magnum project.
 
-Start by installing the OpenStack CLI using the following command:
+Start by installing the OpenStack CLI; we'll be following the [Leafcloud guide](https://docs.leaf.cloud/en/latest/Getting-Started/Using-Openstack-CLI/) to help us set this up.
+You can also follow the [OpenStack CLI installation guide](https://docs.openstack.org/mitaka/user-guide/common/cli_install_openstack_command_line_clients.html) to set up the CLI for your OS.
 
 ```sh
 sudo apt update -y
@@ -50,7 +51,7 @@ pip install python-openstackclient
 pip install python-magnumclient
 ```
 
-Once it's installed, you need to log in to your Leafcloud account to download the OpenStack RC file that contains the environment variables for your command-line client.
+Once it's installed, you need to log in to your [Leafcloud account](https://create.leaf.cloud/) to download the OpenStack RC file that contains the environment variables for your command-line client.
 
 After downloading the file, copy and paste the file's contents into a new document as:
 
@@ -113,12 +114,15 @@ openstack coe cluster config my-k8s-cluster
 ```
 
 A file named 'config' will be downloaded to your home directory.
+`kubectl` uses the config file to determine which configuration file to read so as to connect to the Kubernetes cluster.
+Besides, all subsequent `kubectl` commands in a terminal session will use this configuration until it is unset or changed.
 
 ```sh
 export KUBECONFIG=/home/<username>/config
 ```
 
-Your cluster should now be reachable using Kubectl.
+Your cluster should now be reachable using `kubectl`.
+
 Enter the command to confirm:
 
 ```sh
@@ -161,14 +165,15 @@ git clone --depth 1 "git@github.com:${YOUR_GITHUB_UN}/postgres-operator-examples
 cd postgres-operator-examples
 ```
 
-Using the same CLI, we can install the PostgreSQL Operator from Crunchy Data with the following command:
+Using the same CLI, we can install the PostgreSQL Operator from Crunchy Data.
+Note that we are using the default setup for this tutorial so you can still go ahead to modify it as you please.
 
 ```sh
 kubectl apply -k kustomize/install/namespace
 kubectl apply --server-side -k kustomize/install/default
 ```
 
-This process generates a namespace known as postgres-operator, establishing all necessary objects for PGO deployment.
+This process generates a namespace known as `postgres-operator`, establishing all necessary objects for PGO deployment.
 
 To monitor the progress of your installation, execute the command below:
 
@@ -241,49 +246,60 @@ PG_CLUSTER_PRIMARY_POD=$(kubectl get pod -n postgres-operator -o name \
 kubectl -n postgres-operator port-forward "${PG_CLUSTER_PRIMARY_POD}" 5432:5432
 ```
 
-Go back to the main terminal and establish a connection to your PostgreSQL cluster.
+Now we need to configure postgres according to FerretDB requirements.
+To do that, we're going to create a new user and password credential, and then create a database assigned with all privileges to the created user.
+
+Let's create a `Secret`for a generated random password that will serve as the user credential for the postgres user and store it in a file called `secret.sh`:
 
 ```sh
-kubectl exec -it hippo-instance1-mrpt-0 -n postgres-operator -- psql -U postgres
+#!/bin/sh
+
+PASSWORD=$(openssl rand -base64 8)
+
+kubectl -n postgres-operator create secret generic ferretdb-secret \
+  --from-literal=password=$PASSWORD \
 ```
 
-We need to configure the PostgreSQL according to FerretDB requirements.
-We're going to create a new user and password credential, and then create a database assigned with all privileges to that user.
-
-```sql
-CREATE USER <username> WITH PASSWORD <password>;
-```
-
-Then create a database named `ferretdb`:
-
-```sql
-postgres=# CREATE DATABASE ferretdb OWNER ferretdb;
-```
-
-Next, grant all privileges on the new database to the user:
-
-```sql
-GRANT ALL PRIVILEGES ON DATABASE ferretdb TO ferretdb;
-```
-
-Let's use the new Postgres database context:
+Run the following command to execute the script:
 
 ```text
-postgres=# \c ferretdb
-You are now connected to database "ferretdb" as user "postgres".
+chmod +x secret.sh
+./secret.sh
 ```
 
-Finally we're going to set the `search_path` to ferretdb:
+To create the user and database, we need to execute the psql command inside the pod since we have it running in Kubernetes.
+Here's how to do it:
 
-```sql
-set search_path to ferretdb;
+```sh
+PASSWORD=$(kubectl -n postgres-operator get secret ferretdb-secret -o=jsonpath='{.data.password}' | base64 -d)
+kubectl -n postgres-operator exec -it hippo-instance1-mrpt-0 -- psql -U postgres -c "CREATE USER ferretuser WITH PASSWORD '$PASSWORD';"
 ```
+
+Here, we are getting the password stored in `Secret` and then connect to our postgres instance before creating the user and assiging the password to the user using SQL command.
+Note that the `hippo-instance1-mrpt-0` is the name of the pod that is running the postgres instance.
+You should update this with your own postgres instance name which you can get by running `kubectl -n postgres-operator get pods`.
+
+Next, we'll create a database named `ferretdb` and assign all privileges to the user (`ferretuser`) we created:
+
+```sh
+kubectl -n postgres-operator exec -it hippo-instance1-mrpt-0 -- psql -U postgres -c "CREATE DATABASE ferretdb OWNER ferretuser;"
+```
+
+Check if the user and database were created successfully:
+
+```sh
+kubectl -n postgres-operator exec -it hippo-instance1-mrpt-0 -- psql -U postgres -l
+```
+
+Great!
+Now we have a postgres instance running in Kubernetes with a user and database that we can use for FerretDB.
 
 ### Deploying FerretDB
 
 Now that we have verified that PostgreSQL is working properly, it's time to set up and install FerretDB to communicate with our PostgreSQL cluster.
 To do this, we'll need to create and apply a deployment and service manifest.
 This YAML file will define the container specifications for FerretDB, any associated MongoDB components, and the necessary service configuration to establish a connection to PostgreSQL.
+We've also included a `Secret` for the `ferretuser` password we created earlier.
 
 The deployment YAML used for this project looks like this:
 
@@ -311,10 +327,15 @@ spec:
           ports:
             - containerPort: 27017
           env:
+            - name: POSTGRES_USERNAME
+              value: ferretuser
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ferretdb-secret
+                  key: password
             - name: FERRETDB_POSTGRESQL_URL
-              value: postgres://username:password@hippo-ha:5432/ferretdb
-      imagePullSecrets:
-        - name: ghcr-ferretdb-secret
+              value: postgres://$(POSTGRES_USERNAME):$(POSTGRES_PASSWORD)@hippo-ha:5432/ferretdb
 ---
 apiVersion: v1
 kind: Service
@@ -351,7 +372,7 @@ hippo-repo-host-0          2/2     Running     0          7h
 pgo-6f664c9f44-mmptx       1/1     Running     0          7h
 ```
 
-Next you need to connect using your FerretDB URI, where username and password should correspond with the PosgreSQL credentials set earlier, and you can get the FERRETDB SVC by running `kubectl -n postgres-operator get pods`.
+Next you need to connect using your FerretDB URI, where username and password should correspond with the PosgreSQL credentials set earlier, and you can get the FERRETDB SVC (`10.254.17.193:27017`) by running `kubectl -n postgres-operator get pods`.
 
 ```text
 kubectl get svc -n postgres-operator
@@ -371,14 +392,14 @@ Let's use the following command to open up a mongosh shell:
 kubectl -n postgres-operator run mongosh --image=rtsp/mongosh --rm -it -- bash
 ```
 
-Once the mongosh shell is open, connect to your FerretDB instance using the command:
+Once the mongosh is open, connect to your FerretDB instance using the command:
 
 ```sh
 mongosh "mongodb://<username>:<password>@{FERRETDB SVC}/ferretdb?authMechanism=PLAIN"
 ```
 
 And that's it!.
-You're connected to FerretDB.
+You've connected to FerretDB.
 
 ## Basic examples on FerretDB
 
@@ -414,7 +435,28 @@ db.testing.find()[
 ]
 ```
 
+### How FerretDB stores data in PostgreSQL
+
 We can take a look our data in PostgreSQL to see how the FerretDB conversion works out.
+
+In another terminal, let's establish a connection to your PostgreSQL cluster.
+
+```sh
+kubectl exec -it hippo-instance1-mrpt-0 -n postgres-operator -- psql -U postgres
+```
+
+Let's switch to the new `ferretdb` database context:
+
+```text
+postgres=# \c ferretdb
+You are now connected to database "ferretdb" as user "postgres".
+```
+
+Finally we're going to set the `search_path` to ferretdb:
+
+```sql
+set search_path to ferretdb;
+```
 
 ```text
 ferretdb=# \dt
