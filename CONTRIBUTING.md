@@ -263,8 +263,8 @@ const doubleMaxPrec = float64(1<<53 - 1) // 9007199254740991.0:    largest doubl
 
 #### Integration tests naming guidelines
 
-1. Inside the `integration` directory, test files are organized into subdirectories 
-   based on command groups, such as `aggregation`, `diagnostic`, 
+1. Inside the `integration` directory, test files are organized into subdirectories
+   based on command groups, such as `aggregation`, `diagnostic`,
    `query_and_write_ops` (query and write operations) etc.
 2. Test names should include the name of the command being tested.
    For instance, `TestDistinct` for testing the distinct command.
