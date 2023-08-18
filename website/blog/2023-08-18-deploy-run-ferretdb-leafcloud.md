@@ -251,7 +251,7 @@ To do that, we're going to create a new user and password credential, and then c
 
 Let's create a `Secret`for a generated random password that will serve as the user credential for the postgres user and store it in a file called `secret.sh`:
 
-```sh
+```text
 #!/bin/sh
 
 PASSWORD=$(openssl rand -base64 8)
@@ -372,7 +372,7 @@ hippo-repo-host-0          2/2     Running     0          7h
 pgo-6f664c9f44-mmptx       1/1     Running     0          7h
 ```
 
-Next you need to connect using your FerretDB URI, where username and password should correspond with the PosgreSQL credentials set earlier, and you can get the FERRETDB SVC (`10.254.17.193:27017`) by running `kubectl -n postgres-operator get pods`.
+Next you need to connect using your FerretDB URI, where username and password should correspond with the PosgreSQL credentials set earlier, and you can get the FERRETDB SVC (`10.254.17.193:27017`) by running `kubectl get svc -n postgres-operator`.
 
 ```text
 kubectl get svc -n postgres-operator
@@ -395,7 +395,13 @@ kubectl -n postgres-operator run mongosh --image=rtsp/mongosh --rm -it -- bash
 Once the mongosh is open, connect to your FerretDB instance using the command:
 
 ```sh
-mongosh "mongodb://<username>:<password>@{FERRETDB SVC}/ferretdb?authMechanism=PLAIN"
+mongosh "mongodb://ferretuser:<password>@{FERRETDB SVC}/ferretdb?authMechanism=PLAIN"
+```
+
+Note that you can get the `ferretuser` password by running:
+
+```sh
+kubectl get secret ferretdb-secret -n postgres-operator -o jsonpath='{.data.password}' | base64 --decode
 ```
 
 And that's it!.
