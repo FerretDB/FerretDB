@@ -10,7 +10,7 @@ tags: [events, community, open source]
 
 ![FerretDB is going to Postgres Ibiza 2023](/img/blog/postgres-ibiza-2023.jpg)
 
-**There would be no [FerretDB](https://www.ferretdb.io) with [Postgres](https://www.postgresql.org/). We heavily rely on not just the software, but also its community to make FerretDB happen. It is why Postgres Ibiza is an event that we wouldn't miss this year. Let's meet and spend some amazing time together!**
+**There would be no [FerretDB](https://www.ferretdb.io) without [Postgres](https://www.postgresql.org/). We heavily rely on not just the software, but also its community to make FerretDB happen. It is why Postgres Ibiza is an event that we wouldn't miss this year. Let's meet and spend some amazing time together!**
 
 <!--truncate-->
 
