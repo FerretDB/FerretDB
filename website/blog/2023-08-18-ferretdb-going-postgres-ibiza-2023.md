@@ -3,7 +3,7 @@ slug: ferretdb-going-postgres-ibiza-2023
 title: 'FerretDB is going to Postgres Ibiza 2023'
 author: Peter Benei
 description: >
-  There would be no FerretDB with Postgres; Postgres Ibiza is an event that we wouldn’t miss this year. Let’s meet and spend some amazing time together!
+  There would be no FerretDB without Postgres; Postgres Ibiza is an event that we wouldn’t miss this year. Let’s meet and spend some amazing time together!
 image: /img/blog/postgres-ibiza-2023.jpg
 tags: [events, community, open source]
 ---
