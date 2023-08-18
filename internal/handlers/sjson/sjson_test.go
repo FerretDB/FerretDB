@@ -191,62 +191,28 @@ func isValidDocumentData(v sjsontype) bool {
 }
 
 func addRecordedFuzzDocs(f *testing.F, needDocument, needSchema bool) int {
-	// We're trying to use that corpus with our hopes set high,
-	// but chances are, it will still be 0 extra documents.
-	// See #3067 for more details.
-	records, err := wire.LoadRecords(filepath.Join("..", "..", "..", "tmp", "records"), 100)
+	docs, err := wire.LoadDataDocuments(filepath.Join("..", "..", "..", "tmp", "records"), 100)
 	require.NoError(f, err)
 
 	var n int
 
-	for _, rec := range records {
-		if rec.Body == nil {
-			continue
-		}
+	for _, doc := range docs {
+		args := make([]any, 0, 2)
 
-		var docs []*types.Document
-
-		switch b := rec.Body.(type) {
-		case *wire.OpMsg:
-			doc, err := b.Document()
+		if needDocument {
+			j, err := MarshalSingleValue(doc)
 			require.NoError(f, err)
-			docs = append(docs, doc)
-
-		case *wire.OpQuery:
-			if doc := b.Query; doc != nil {
-				docs = append(docs, doc)
-			}
-
-			if doc := b.ReturnFieldsSelector; doc != nil {
-				docs = append(docs, doc)
-			}
-
-		case *wire.OpReply:
-			docs = append(docs, b.Documents...)
+			args = append(args, string(j))
 		}
 
-		for _, doc := range docs {
-			if doc.ValidateData() != nil {
-				continue
-			}
-
-			args := make([]any, 0, 2)
-
-			if needDocument {
-				j, err := MarshalSingleValue(doc)
-				require.NoError(f, err)
-				args = append(args, j)
-			}
-
-			if needSchema {
-				sch, err := marshalSchemaForDoc(doc)
-				require.NoError(f, err)
-				args = append(args, sch)
-			}
-
-			f.Add(args...)
-			n++
+		if needSchema {
+			sch, err := marshalSchemaForDoc(doc)
+			require.NoError(f, err)
+			args = append(args, string(sch))
 		}
+
+		f.Add(args...)
+		n++
 	}
 
 	return n
