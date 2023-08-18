@@ -29,9 +29,9 @@ func TestTestsShard(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, tests, "TestQueryCompatLimit")
 
-	// TODO replace with a real test name is a subdirectory
-	// https://github.com/FerretDB/engineering/issues/66
-	assert.Contains(t, tests, "TestSubDir")
+	// check that integration tests from subdirectories are included
+	assert.Contains(t, tests, "TestCreateStress")
+	assert.Contains(t, tests, "TestCommandsDiagnosticExplain")
 
 	t.Run("ShardTestsInvalidIndex", func(t *testing.T) {
 		t.Parallel()
