@@ -23,6 +23,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
@@ -80,7 +81,7 @@ func (db *DB) QueryContext(ctx context.Context, query string, args ...any) (*Row
 	fields = append(fields, zap.Duration("time", time.Since(start)), zap.Error(err))
 	db.l.Sugar().With(fields...).Debugf("<<< %s", query)
 
-	return WrapRows(rows), err
+	return wrapRows(rows), err
 }
 
 // QueryRowContext calls [*sql.DB.QueryRowContext].
@@ -123,6 +124,53 @@ func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 	db.l.Sugar().With(fields...).Debugf("<<< %s", query)
 
 	return res, err
+}
+
+// InTransaction wraps the given function f in a transaction.
+//
+// If f returns an error or context is canceled, the transaction is rolled back.
+func (db *DB) InTransaction(ctx context.Context, f func(*Tx) error) (err error) {
+	defer observability.FuncCall(ctx)()
+
+	var tx *sql.Tx
+	if tx, err = db.sqlDB.BeginTx(ctx, nil); err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
+
+	var done bool
+
+	defer func() {
+		// It is not enough to check `err == nil` there,
+		// because in tests `f` could contain testify/require.XXX or `testing.TB.FailNow()` calls
+		// that call `runtime.Goexit()`, leaving `err` unset in `err = f(tx)` below.
+		// This situation would hang a test.
+		//
+		// As a bonus, checking a separate variable also handles any panics in `f`,
+		// including `panic(nil)` that is problematic for tests too.
+		if done {
+			return
+		}
+
+		if err == nil {
+			err = lazyerrors.Errorf("transaction was not committed")
+		}
+
+		_ = tx.Rollback()
+	}()
+
+	if err = f(wrapTx(tx)); err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
+
+	if err = tx.Commit(); err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
+
+	done = true
+	return
 }
 
 // check interfaces

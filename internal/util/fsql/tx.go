@@ -20,23 +20,23 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
-// Rows wraps [*database/sql.Rows] with resource tracking.
+// Tz wraps [*database/sql.Tx] with resource tracking.
 //
-// It exposes the subset of *sql.Rows methods we use.
-type Rows struct {
-	sqlRows *sql.Rows
-	token   *resource.Token
+// It exposes the subset of *sql.Tx methods we use.
+type Tx struct {
+	sqlTx *sql.Tx
+	token *resource.Token
 }
 
-// wrapRows creates new Rows.
-func wrapRows(rows *sql.Rows) *Rows {
-	if rows == nil {
+// wrapTx creates new Tx.
+func wrapTx(tx *sql.Tx) *Tx {
+	if tx == nil {
 		return nil
 	}
 
-	res := &Rows{
-		sqlRows: rows,
-		token:   resource.NewToken(),
+	res := &Tx{
+		sqlTx: tx,
+		token: resource.NewToken(),
 	}
 
 	resource.Track(res, res.token)
@@ -44,23 +44,14 @@ func wrapRows(rows *sql.Rows) *Rows {
 	return res
 }
 
-// Close calls [*sql.Rows.Close].
-func (rows *Rows) Close() error {
-	resource.Untrack(rows, rows.token)
-	return rows.sqlRows.Close()
+// Commit calls [*sql.Tx.Commit].
+func (tx *Tx) Commit() error {
+	resource.Untrack(tx, tx.token)
+	return tx.sqlTx.Commit()
 }
 
-// Err calls [*sql.Rows.Err].
-func (rows *Rows) Err() error {
-	return rows.sqlRows.Err()
-}
-
-// Next calls [*sql.Rows.Next].
-func (rows *Rows) Next() bool {
-	return rows.sqlRows.Next()
-}
-
-// Scan calls [*sql.Rows.Scan].
-func (rows *Rows) Scan(dest ...any) error {
-	return rows.sqlRows.Scan(dest...)
+// Rollback calls [*sql.Tx.Rollback].
+func (tx *Tx) Rollback() error {
+	resource.Untrack(tx, tx.token)
+	return tx.sqlTx.Rollback()
 }
