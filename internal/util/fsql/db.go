@@ -132,11 +132,13 @@ func (db *DB) ExecContext(ctx context.Context, query string, args ...any) (sql.R
 func (db *DB) InTransaction(ctx context.Context, f func(*Tx) error) (err error) {
 	defer observability.FuncCall(ctx)()
 
-	var tx *sql.Tx
-	if tx, err = db.sqlDB.BeginTx(ctx, nil); err != nil {
+	var sqlTx *sql.Tx
+	if sqlTx, err = db.sqlDB.BeginTx(ctx, nil); err != nil {
 		err = lazyerrors.Error(err)
 		return
 	}
+
+	tx := wrapTx(sqlTx, db.l)
 
 	var done bool
 
@@ -159,7 +161,7 @@ func (db *DB) InTransaction(ctx context.Context, f func(*Tx) error) (err error) 
 		_ = tx.Rollback()
 	}()
 
-	if err = f(wrapTx(tx)); err != nil {
+	if err = f(tx); err != nil {
 		err = lazyerrors.Error(err)
 		return
 	}

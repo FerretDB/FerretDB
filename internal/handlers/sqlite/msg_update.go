@@ -189,7 +189,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 			iter := must.NotFail(types.NewArray(doc)).Iterator()
 			defer iter.Close()
 
-			_, err = c.Insert(ctx, &backends.InsertParams{
+			_, err = c.InsertAll(ctx, &backends.InsertAllParams{
 				Iter: iter,
 			})
 			if err != nil {

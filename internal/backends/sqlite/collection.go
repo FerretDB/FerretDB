@@ -23,6 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -73,7 +74,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 }
 
 // Insert implements backends.Collection interface.
-func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) (*backends.InsertResult, error) {
+func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
 	if _, err := c.r.CollectionCreate(ctx, c.dbName, c.name); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -86,35 +87,41 @@ func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) 
 	}
 
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
-	q := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
 
-	var res backends.InsertResult
+	var res backends.InsertAllResult
 
-	for {
-		_, d, err := params.Iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
+	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
+		for {
+			_, d, err := params.Iter.Next()
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				return nil
+			}
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			doc := d.(*types.Document)
+
+			if err = doc.ValidateData(); err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			b, err := sjson.Marshal(doc)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			q := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
+
+			if _, err = tx.ExecContext(ctx, q, string(b)); err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			res.Inserted++
 		}
-
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		doc, ok := d.(*types.Document)
-		if !ok {
-			panic(fmt.Sprintf("expected document, got %T", d))
-		}
-
-		b, err := sjson.Marshal(doc)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		if _, err = db.ExecContext(ctx, q, string(b)); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		res.Inserted++
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return &res, nil

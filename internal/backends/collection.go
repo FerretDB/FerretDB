@@ -34,7 +34,7 @@ import (
 // See collectionContract and its methods for additional details.
 type Collection interface {
 	Query(context.Context, *QueryParams) (*QueryResult, error)
-	Insert(context.Context, *InsertParams) (*InsertResult, error)
+	InsertAll(context.Context, *InsertAllParams) (*InsertAllResult, error)
 	Update(context.Context, *UpdateParams) (*UpdateResult, error)
 	Delete(context.Context, *DeleteParams) (*DeleteResult, error)
 }
@@ -82,26 +82,32 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 	return res, err
 }
 
-// InsertParams represents the parameters of Collection.Insert method.
-type InsertParams struct {
+// InsertAllParams represents the parameters of Collection.InsertAll method.
+type InsertAllParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/2750
 	// that should be types.DocumentIterator
 	Iter iterator.Interface[int, any]
 }
 
-// InsertResult represents the results of Collection.Insert method.
-type InsertResult struct {
+// InsertAllResult represents the results of Collection.InsertAll method.
+type InsertAllResult struct {
 	Inserted int64
 }
 
-// Insert inserts documents into the collection.
+// InsertAll inserts all or none documents into the collection.
+//
+// The operation should be atomic.
+// If some documents cannot be inserted, the operation should be rolled back,
+// and the first encountered error should be returned.
+//
+// The implementation should call [*types.Document.ValidateData] on every incoming document.
 //
 // Both database and collection may or may not exist; they should be created automatically if needed.
 // TODO https://github.com/FerretDB/FerretDB/issues/3069
-func (cc *collectionContract) Insert(ctx context.Context, params *InsertParams) (*InsertResult, error) {
+func (cc *collectionContract) InsertAll(ctx context.Context, params *InsertAllParams) (*InsertAllResult, error) {
 	defer observability.FuncCall(ctx)()
 
-	res, err := cc.c.Insert(ctx, params)
+	res, err := cc.c.InsertAll(ctx, params)
 	checkError(err)
 
 	return res, err

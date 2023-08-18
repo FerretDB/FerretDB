@@ -16,12 +16,14 @@ package sqlite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -60,11 +62,31 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter := params.Docs.Iterator()
-	defer iter.Close()
+	closer := iterator.NewMultiCloser()
+	defer closer.Close()
 
-	res, err := c.Insert(ctx, &backends.InsertParams{
-		Iter: iter,
+	allDocs := make([]any, 0, params.Docs.Len())
+
+	allDocsIter := params.Docs.Iterator()
+	closer.Add(allDocsIter)
+
+	for {
+		_, doc, err := allDocsIter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		allDocs = append(allDocs, doc)
+	}
+
+	insertIter := iterator.ForSlice(allDocs)
+	closer.Add(insertIter)
+
+	res, err := c.InsertAll(ctx, &backends.InsertAllParams{
+		Iter: insertIter,
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
