@@ -17,9 +17,7 @@ package setup
 import (
 	"context"
 	"net/http"
-	"net/url"
 	"os"
-	"path/filepath"
 	"runtime"
 	"time"
 
@@ -77,21 +75,6 @@ func Startup() {
 
 	if !slices.Contains(allBackends, *targetBackendF) {
 		zap.S().Fatalf("Unknown target backend %q.", *targetBackendF)
-	}
-
-	if *sqliteURLF != "" {
-		u, err := url.Parse(*sqliteURLF)
-		if err != nil {
-			zap.S().Fatalf("Failed to parse -sqlite-url %s: %s", u, err)
-		}
-
-		must.BeTrue(u.Path == "")
-		must.BeTrue(u.Opaque != "")
-
-		dir := must.NotFail(filepath.Abs(u.Opaque))
-		zap.S().Infof("Recreating %s", dir)
-		_ = os.Remove(dir)
-		must.NoError(os.MkdirAll(dir, 0o777))
 	}
 
 	if u := *targetURLF; u != "" {

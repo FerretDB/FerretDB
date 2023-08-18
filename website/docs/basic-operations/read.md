@@ -50,7 +50,7 @@ db.scientists.findOne({ invention: 'Turing Machine' })
 
 ## Retrieve all documents in a collection
 
-The `find()` command is used for retrieveing all the documents in a collection.
+The `find()` command is used for retrieving all the documents in a collection.
 
 ```js
 db.collection.find()
