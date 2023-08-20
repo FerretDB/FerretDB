@@ -16,8 +16,7 @@
 package common
 
 import (
-	"errors"
-
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -38,7 +37,7 @@ func CheckClientMedata(msg *wire.OpMsg) error {
 	}
 
 	if client, _ := document.Get("client"); client != nil {
-		return errors.New("The client metadata document may only be sent in the first hello")
+		return commonerrors.NewCommandErrorMsg(commonerrors.ErrClientMetadataCannotBeMutated, "The client metadata document may only be sent in the first hello")
 	}
 
 	return nil
