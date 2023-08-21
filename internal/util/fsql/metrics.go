@@ -71,8 +71,65 @@ func (c *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 		float64(stats.OpenConnections),
 	)
 
-	// Add other metrics from stats here.
-	// TODO https://github.com/FerretDB/FerretDB/issues/2909
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "in_use"),
+			"The number of connections currently in use.",
+			nil, c.labels,
+		),
+		prometheus.GaugeValue,
+		float64(stats.InUse),
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "idle"),
+			"The number of idle connections.",
+			nil, c.labels,
+		),
+		prometheus.GaugeValue,
+		float64(stats.Idle),
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "wait_count"),
+			"The total number of connections waited for.",
+			nil, c.labels,
+		),
+		prometheus.CounterValue,
+		float64(stats.WaitCount),
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "wait_duration_seconds"),
+			"The total time blocked waiting for a new connection.",
+			nil, c.labels,
+		),
+		prometheus.CounterValue,
+		float64(stats.WaitDuration.Seconds()),
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "max_idle_closed"),
+			"The total number of connections closed due to SetMaxIdleConns.",
+			nil, c.labels,
+		),
+		prometheus.CounterValue,
+		float64(stats.MaxIdleClosed),
+	)
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "max_idle_time_closed_total"),
+			"The total number of connections closed due to SetConnMaxIdleTime.",
+			nil, c.labels,
+		),
+		prometheus.CounterValue,
+		float64(stats.MaxIdleTimeClosed),
+	)
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
