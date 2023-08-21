@@ -190,5 +190,18 @@ func updateDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc *t
 		return res, nil
 	}
 
-	return 0, commonerrors.CheckError(err)
+	var ve *types.ValidationError
+
+	if !errors.As(err, &ve) {
+		return 0, lazyerrors.Error(err)
+	}
+
+	switch ve.Code() {
+	case types.ErrValidation, types.ErrIDNotFound:
+		return 0, commonerrors.NewCommandErrorMsg(commonerrors.ErrBadValue, ve.Error())
+	case types.ErrWrongIDType:
+		return 0, commonerrors.NewWriteErrorMsg(commonerrors.ErrInvalidID, ve.Error())
+	default:
+		panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
+	}
 }

@@ -70,7 +70,7 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 	var ce *commonerrors.CommandError
 	if errors.As(err, &ce) {
 		if ce.Code() == commonerrors.ErrInvalidNamespace {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, ce.Unwrap().Error(), "find")
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, ce.Error(), "find")
 		}
 	}
 

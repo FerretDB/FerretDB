@@ -69,11 +69,6 @@ func (e *CommandError) Error() string {
 	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", e.code, e.err)
 }
 
-// Unwrap implements ProtoErr interface.
-func (e *CommandError) Unwrap() error {
-	return e.err
-}
-
 // Code implements ProtoErr interface.
 func (e *CommandError) Code() ErrorCode {
 	return e.code
@@ -85,6 +80,7 @@ func (e *CommandError) Document() *types.Document {
 		"ok", float64(0),
 		"errmsg", e.err.Error(),
 	))
+
 	if e.code != errUnset {
 		d.Set("code", int32(e.code))
 		d.Set("codeName", e.code.String())
