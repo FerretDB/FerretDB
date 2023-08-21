@@ -69,7 +69,7 @@ func newType(args ...any) (Operator, error) {
 
 		operator.operator = op
 
-	case *types.Array, string, float64, types.Binary, types.ObjectID, bool, time.Time,
+	case *types.Array, float64, string, types.Binary, types.ObjectID, bool, time.Time,
 		types.NullType, types.Regex, int32, types.Timestamp, int64:
 		operator.param = param
 
