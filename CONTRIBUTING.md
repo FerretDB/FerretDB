@@ -107,9 +107,10 @@ While running, it logs a difference between both returned responses,
 but sends the one from FerretDB to the client.
 If you want to get the MongoDB response, you can run `task run-proxy` to start FerretDB in `diff-proxy` mode.
 
-#### Diff-proxy mode in use
+#### Diff-proxy mode in action
 
-As well as collecting metrics for telemetry, `diff-proxy` mode will also write command metrics to stdout upon an interrupt signal. This is a useful way to quickly determine what commands are unimplemented for the client requests sent by your application.
+As well as collecting metrics for telemetry, `diff-proxy` mode will also write command metrics to stdout upon an interrupt signal.
+This is a useful way to quickly determine what commands are unimplemented for the client requests sent by your application.
 
 ```sh
 # we ran task run-proxy and then sent an interrupt ctrl+c after some time
