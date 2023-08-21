@@ -2301,6 +2301,14 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 			},
 			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
+		"Document": {
+			pipeline: bson.A{
+				bson.D{{"$project", bson.D{
+					{"sumtype", bson.D{{"$sum", bson.D{{"foo", "bar"}}}}},
+				}}},
+			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
+		},
 		"Type": {
 			pipeline: bson.A{
 				bson.D{{"$project", bson.D{
