@@ -61,7 +61,7 @@ func run(pass *analysis.Pass) (any, error) {
 			if strings.Contains(line, "// TODO") {
 				if todoIssueRegex.MatchString(line) &&
 					!validTodoIssueRegex.MatchString(line) {
-					pass.Reportf(file.Pos(), "TODO comments mentioning issues must satisfy the pattern (// TODO <issue_url>): %s", strings.TrimSpace(line))
+					pass.Reportf(file.Pos(), "TODO comments mentioning issues not satisfied the pattern (// TODO <issue_url>): %s on line number: %d", strings.TrimSpace(line), lineNumber)
 				}
 			}
 
