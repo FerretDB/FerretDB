@@ -17,10 +17,8 @@ package commonerrors
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -362,22 +360,4 @@ func ProtocolError(err error) ProtoErr {
 
 	//nolint:errorlint // only *CommandError could be returned
 	return NewCommandError(errInternalError, err).(*CommandError)
-}
-
-// CheckError checks error type and returns properly translated error.
-func CheckError(err error) error {
-	var ve *types.ValidationError
-
-	if !errors.As(err, &ve) {
-		return lazyerrors.Error(err)
-	}
-
-	switch ve.Code() {
-	case types.ErrValidation, types.ErrIDNotFound:
-		return NewCommandErrorMsg(ErrBadValue, ve.Error())
-	case types.ErrWrongIDType:
-		return NewWriteErrorMsg(ErrInvalidID, ve.Error())
-	default:
-		panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
-	}
 }

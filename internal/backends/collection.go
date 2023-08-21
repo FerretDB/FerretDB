@@ -94,13 +94,11 @@ type InsertAllResult struct {
 	Inserted int64
 }
 
-// InsertAll inserts all or none documents into the collection.
+// InsertAll inserts all or none valid documents into the collection.
 //
 // The operation should be atomic.
 // If some documents cannot be inserted, the operation should be rolled back,
 // and the first encountered error should be returned.
-//
-// The implementation should call [*types.Document.ValidateData] on every incoming document.
 //
 // Both database and collection may or may not exist; they should be created automatically if needed.
 // TODO https://github.com/FerretDB/FerretDB/issues/3069

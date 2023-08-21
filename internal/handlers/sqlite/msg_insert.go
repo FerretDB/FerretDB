@@ -38,7 +38,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	params, err := common.GetInsertParams(document, h.L)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	db, err := h.b.Database(params.DB)
@@ -71,11 +71,21 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	closer.Add(allDocsIter)
 
 	for {
-		_, doc, err := allDocsIter.Next()
+		_, d, err := allDocsIter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
 		}
 		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		doc := d.(*types.Document)
+
+		if !doc.Has("_id") {
+			doc.Set("_id", types.NewObjectID())
+		}
+
+		if err = doc.ValidateData(); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 

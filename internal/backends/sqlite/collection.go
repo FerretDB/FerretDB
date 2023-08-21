@@ -102,15 +102,12 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 			doc := d.(*types.Document)
 
-			if err = doc.ValidateData(); err != nil {
-				return lazyerrors.Error(err)
-			}
-
 			b, err := sjson.Marshal(doc)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
 
+			// FIXME use batches
 			q := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
 
 			if _, err = tx.ExecContext(ctx, q, string(b)); err != nil {
