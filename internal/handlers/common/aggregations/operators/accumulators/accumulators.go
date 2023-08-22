@@ -22,10 +22,12 @@
 package accumulators
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
@@ -62,6 +64,26 @@ func NewAccumulator(stage, key string, value any) (Accumulator, error) {
 
 	operator := accumulation.Command()
 
+	expr := must.NotFail(accumulation.Get(operator))
+
+	var args []any
+	if arr, ok := expr.(*types.Array); ok {
+		iter := arr.Iterator()
+		defer iter.Close()
+
+		for {
+			_, v, err := iter.Next()
+
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			args = append(args, v)
+		}
+	} else {
+		args = append(args, expr)
+	}
+
 	newAccumulator, ok := Accumulators[operator]
 	if !ok {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -71,9 +93,7 @@ func NewAccumulator(stage, key string, value any) (Accumulator, error) {
 		)
 	}
 
-	expression := must.NotFail(accumulation.Get(operator))
-
-	return newAccumulator(accumulation)
+	return newAccumulator(args...)
 }
 
 // Accumulators maps all aggregation accumulators.
