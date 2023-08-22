@@ -30,7 +30,7 @@ const (
 )
 
 // CheckClientMedata checks if the message does not contain client metadata.
-func CheckClientMedata(msg *wire.OpMsg) error {
+func CheckClientMetadata(msg *wire.OpMsg) error {
 	document, err := msg.Document()
 	if err != nil {
 		return lazyerrors.Error(err)
