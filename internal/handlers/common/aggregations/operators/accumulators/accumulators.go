@@ -67,8 +67,15 @@ func NewAccumulator(stage, key string, value any) (Accumulator, error) {
 	expr := must.NotFail(accumulation.Get(operator))
 
 	var args []any
-	if arr, ok := expr.(*types.Array); ok {
-		iter := arr.Iterator()
+
+	switch expr := expr.(type) {
+	case *types.Document:
+		if expr.Len() == 0 {
+			break
+		}
+		args = append(args, expr)
+	case *types.Array:
+		iter := expr.Iterator()
 		defer iter.Close()
 
 		for {
@@ -80,7 +87,7 @@ func NewAccumulator(stage, key string, value any) (Accumulator, error) {
 
 			args = append(args, v)
 		}
-	} else {
+	default:
 		args = append(args, expr)
 	}
 

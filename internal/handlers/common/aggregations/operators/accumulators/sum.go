@@ -36,6 +36,14 @@ type sum struct {
 func newSum(args ...any) (Accumulator, error) {
 	accumulator := new(sum)
 
+	if len(args) > 1 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageGroupUnaryOperator,
+			"The $sum accumulator is a unary operator",
+			"$sum (accumulator)",
+		)
+	}
+
 	for _, arg := range args {
 		switch arg := arg.(type) {
 		case *types.Document:
@@ -55,12 +63,6 @@ func newSum(args ...any) (Accumulator, error) {
 			}
 
 			accumulator.operator = op
-		case *types.Array:
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrStageGroupUnaryOperator,
-				"The $sum accumulator is a unary operator",
-				"$sum (accumulator)",
-			)
 		case float64:
 			accumulator.number = arg
 		case string:
