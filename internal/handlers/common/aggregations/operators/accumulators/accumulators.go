@@ -73,6 +73,7 @@ func NewAccumulator(stage, key string, value any) (Accumulator, error) {
 		if expr.Len() == 0 {
 			break
 		}
+
 		args = append(args, expr)
 	case *types.Array:
 		iter := expr.Iterator()
