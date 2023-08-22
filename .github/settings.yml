@@ -31,6 +31,10 @@ labels:
     color: "#FBCA04"
     description: Issues about parameters extraction
 
+  - name: area/pushdown
+    color: "#83F7BA"
+    description: Issues about query pushdown
+
   - name: backend/pg
     color: "#305C83"
     description: Issues about PostgreSQL backend
