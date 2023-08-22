@@ -93,7 +93,7 @@ func (c *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, subsystem, "wait_count"),
+			prometheus.BuildFQName(namespace, subsystem, "wait_count_total"),
 			"The total number of connections waited for.",
 			nil, c.labels,
 		),
@@ -103,7 +103,7 @@ func (c *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, subsystem, "wait_duration_seconds"),
+			prometheus.BuildFQName(namespace, subsystem, "wait_duration_seconds_total"),
 			"The total time blocked waiting for a new connection.",
 			nil, c.labels,
 		),
@@ -113,7 +113,7 @@ func (c *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, subsystem, "max_idle_closed"),
+			prometheus.BuildFQName(namespace, subsystem, "max_idle_closed_total"),
 			"The total number of connections closed due to SetMaxIdleConns.",
 			nil, c.labels,
 		),
