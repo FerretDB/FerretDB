@@ -27,6 +27,12 @@ type count struct{}
 
 // newCount creates a new $count aggregation operator.
 func newCount(args ...any) (Accumulator, error) {
+	if len(args) == 1 {
+		if doc, ok := args[0].(*types.Document); ok && doc.Len() == 0 {
+			return new(count), nil
+		}
+	}
+
 	if len(args) != 0 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrTypeMismatch,

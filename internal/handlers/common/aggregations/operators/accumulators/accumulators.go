@@ -70,11 +70,8 @@ func NewAccumulator(stage, key string, value any) (Accumulator, error) {
 
 	switch expr := expr.(type) {
 	case *types.Document:
-		if expr.Len() == 0 {
-			break
-		}
-
 		args = append(args, expr)
+
 	case *types.Array:
 		iter := expr.Iterator()
 		defer iter.Close()

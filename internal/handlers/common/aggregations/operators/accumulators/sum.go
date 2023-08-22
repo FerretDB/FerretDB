@@ -36,7 +36,7 @@ type sum struct {
 func newSum(args ...any) (Accumulator, error) {
 	accumulator := new(sum)
 
-	if len(args) > 1 {
+	if len(args) != 1 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupUnaryOperator,
 			"The $sum accumulator is a unary operator",
