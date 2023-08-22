@@ -351,7 +351,7 @@ func (r *Registry) Collect(ch chan<- prometheus.Metric) {
 	r.p.Collect(ch)
 
 	r.rw.RLock()
-	defer r.rw.RLock()
+	defer r.rw.RUnlock()
 
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
