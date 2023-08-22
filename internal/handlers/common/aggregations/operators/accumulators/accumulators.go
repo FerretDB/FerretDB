@@ -26,6 +26,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // newAccumulatorFunc is a type for a function that creates an accumulation operator.
@@ -69,6 +70,8 @@ func NewAccumulator(stage, key string, value any) (Accumulator, error) {
 			operator+" (accumulator)",
 		)
 	}
+
+	expression := must.NotFail(accumulation.Get(operator))
 
 	return newAccumulator(accumulation)
 }

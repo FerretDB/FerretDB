@@ -23,7 +23,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // sum represents $sum aggregation operator.
@@ -35,7 +34,6 @@ type sum struct {
 
 // newSum creates a new $sum aggregation operator.
 func newSum(args ...any) (Accumulator, error) {
-	expression := must.NotFail(accumulation.Get("$sum"))
 	accumulator := new(sum)
 
 	switch expr := expression.(type) {
