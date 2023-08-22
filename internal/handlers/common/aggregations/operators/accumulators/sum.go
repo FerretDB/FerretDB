@@ -77,7 +77,6 @@ func newSum(args ...any) (Accumulator, error) {
 			accumulator.number = int32(0)
 			// $sum returns 0 on non-numeric field
 		}
-
 	}
 
 	return accumulator, nil
