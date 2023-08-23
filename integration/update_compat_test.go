@@ -557,10 +557,11 @@ func TestUpdateCompat(t *testing.T) {
 			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3183",
 		},
 		"UpdateNonExistentUpsert": {
-			filter:     bson.D{{"_id", "non-existent"}},
-			update:     bson.D{{"$set", bson.D{{"v", int32(42)}}}},
-			updateOpts: options.Update().SetUpsert(true),
-			resultType: emptyResult,
+			filter:         bson.D{{"_id", "non-existent"}},
+			update:         bson.D{{"$set", bson.D{{"v", int32(42)}}}},
+			updateOpts:     options.Update().SetUpsert(true),
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3183",
 		},
 	}
 
