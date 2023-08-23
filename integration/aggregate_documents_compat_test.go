@@ -40,7 +40,6 @@ type aggregateStagesCompatTestCase struct {
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
 	skip           string                   // skip test for all handlers, must have issue number mentioned
-	failsForSQLite string                   // optional, if set, the case is expected to fail for SQLite due to given issue
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -106,10 +105,7 @@ func testAggregateStagesCompatWithProviders(tt *testing.T, providers shareddata.
 				tt.Run(targetCollection.Name(), func(tt *testing.T) {
 					tt.Helper()
 
-					var t testtb.TB = tt
-					if tc.failsForSQLite != "" {
-						t = setup.FailsForSQLite(tt, tc.failsForSQLite)
-					}
+					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 					explainCommand := bson.D{{"explain", bson.D{
 						{"aggregate", targetCollection.Name()},
@@ -158,7 +154,7 @@ func testAggregateStagesCompatWithProviders(tt *testing.T, providers shareddata.
 				})
 			}
 
-			if tc.failsForSQLite != "" && setup.IsSQLite(tt) {
+			if setup.IsSQLite(tt) {
 				return
 			}
 
