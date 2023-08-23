@@ -29,7 +29,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // aggregateStagesCompatTestCase describes aggregation stages compatibility test case.
@@ -175,8 +174,7 @@ type aggregateCommandCompatTestCase struct {
 	command    bson.D                   // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 
-	skip           string // skip test for all handlers, must have issue number mentioned
-	failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue
+	skip string // skip test for all handlers, must have issue number mentioned
 }
 
 // testAggregateCommandCompat tests aggregate pipeline compatibility test cases using one collection.
@@ -212,10 +210,7 @@ func testAggregateCommandCompat(tt *testing.T, testCases map[string]aggregateCom
 			tt.Run(targetCollection.Name(), func(tt *testing.T) {
 				tt.Helper()
 
-				var t testtb.TB = tt
-				if tc.failsForSQLite != "" {
-					t = setup.FailsForSQLite(tt, tc.failsForSQLite)
-				}
+				t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 				var targetRes, compatRes bson.D
 				targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
@@ -243,7 +238,8 @@ func testAggregateCommandCompat(tt *testing.T, testCases map[string]aggregateCom
 				}
 			})
 
-			if tc.failsForSQLite != "" && setup.IsSQLite(tt) {
+			// TODO https://github.com/FerretDB/FerretDB/issues/3148
+			if setup.IsSQLite(tt) {
 				return
 			}
 
