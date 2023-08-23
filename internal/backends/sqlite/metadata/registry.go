@@ -16,7 +16,6 @@ package metadata
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"hash/fnv"
 	"sort"
@@ -228,7 +227,7 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]string,
 //
 // Returned boolean value indicates whether the collection was created.
 // If collection already exists, (false, nil) is returned.
-func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collectionName string) (bool, error) {
+func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	r.rw.Lock()
@@ -246,8 +245,11 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 
 	h := fnv.New32a()
 	must.NotFail(h.Write([]byte(collectionName)))
+	s := h.Sum32()
 
-	tableName := strings.ToLower(collectionName) + "_" + hex.EncodeToString(h.Sum(nil))
+	// TODO https://github.com/FerretDB/FerretDB/issues/2760
+
+	tableName := fmt.Sprintf("%s_%08x", strings.ToLower(collectionName), s)
 	if strings.HasPrefix(tableName, reservedTablePrefix) {
 		tableName = "_" + tableName
 	}
@@ -287,7 +289,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName string, collecti
 // CollectionGet returns collection metadata.
 //
 // If database or collection does not exist, nil is returned.
-func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionName string) *Collection {
+func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName string) *Collection {
 	defer observability.FuncCall(ctx)()
 
 	r.rw.RLock()
@@ -305,7 +307,7 @@ func (r *Registry) CollectionGet(ctx context.Context, dbName string, collectionN
 //
 // Returned boolean value indicates whether the collection was dropped.
 // If database or collection did not exist, (false, nil) is returned.
-func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collectionName string) (bool, error) {
+func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	db := r.p.GetExisting(ctx, dbName)
@@ -339,6 +341,15 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName string, collection
 	delete(r.colls[dbName], collectionName)
 
 	return true, nil
+}
+
+// CollectionRename renames a collection in the database.
+//
+// Returned boolean value indicates whether the collection was renamed.
+// If database or collection did not exist, (false, nil) is returned.
+func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/2760
+	panic("not implemented")
 }
 
 // Describe implements prometheus.Collector.
