@@ -110,7 +110,7 @@ If you want to get the MongoDB response, you can run `task run-proxy` to start F
 #### Diff-proxy mode in action
 
 As well as collecting metrics for telemetry, `diff-proxy` mode will also write command metrics to stdout upon receiving an interrupt signal.
-This is a useful way to quickly determine what commands are unimplemented for the client requests sent by your application.
+This is a useful way to quickly determine what commands are not implemented for the client requests sent by your application.
 
 ```sh
 # we ran task run-proxy and then sent an interrupt ctrl+c after some time
