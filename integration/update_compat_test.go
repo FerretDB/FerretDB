@@ -42,8 +42,8 @@ type updateCompatTestCase struct {
 	resultType  compatTestCaseResultType // defaults to nonEmptyResult
 	providers   []shareddata.Provider    // defaults to shareddata.AllProviders()
 
-	skip           string // skips test if non-empty
-	failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue
+	skip          string // skips test if non-empty
+	skipForSQLite string // optional, if set, the case is skipped for SQLite due to given issue
 }
 
 // testUpdateCompat tests update compatibility test cases.
@@ -57,6 +57,10 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 
 			if tc.skip != "" {
 				t.Skip(tc.skip)
+			}
+
+			if tc.skipForSQLite != "" {
+				t.Skip(tc.skipForSQLite)
 			}
 
 			t.Parallel()
@@ -550,18 +554,18 @@ func TestUpdateCompat(t *testing.T) {
 			replace: bson.D{},
 		},
 		"ReplaceNonExistentUpsert": {
-			filter:         bson.D{{"non-existent", "no-match"}},
-			replace:        bson.D{{"_id", "new"}},
-			replaceOpts:    options.Replace().SetUpsert(true),
-			resultType:     emptyResult,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3183",
+			filter:        bson.D{{"non-existent", "no-match"}},
+			replace:       bson.D{{"_id", "new"}},
+			replaceOpts:   options.Replace().SetUpsert(true),
+			resultType:    emptyResult,
+			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/3183",
 		},
 		"UpdateNonExistentUpsert": {
-			filter:         bson.D{{"_id", "non-existent"}},
-			update:         bson.D{{"$set", bson.D{{"v", int32(42)}}}},
-			updateOpts:     options.Update().SetUpsert(true),
-			resultType:     emptyResult,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3183",
+			filter:        bson.D{{"_id", "non-existent"}},
+			update:        bson.D{{"$set", bson.D{{"v", int32(42)}}}},
+			updateOpts:    options.Update().SetUpsert(true),
+			resultType:    emptyResult,
+			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/3183",
 		},
 	}
 
