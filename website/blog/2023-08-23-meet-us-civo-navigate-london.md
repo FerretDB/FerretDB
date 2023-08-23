@@ -3,7 +3,7 @@ slug: meet-us-civo-navigate-london
 title: 'Meet us at Civo Navigate in London'
 author: Peter Benei
 description: >
-  Since [FerretDB](https://www.ferretdb.io) became available on the Civo Cloud, we are taking a more active role in the Civo community. We are super excited to join Civo Navigate as an attendee, speaker, and also as a proud sponsor of the event.
+  We are super excited to join Civo Navigate as an attendee, speaker, and also as a proud sponsor of the event.
 image: /img/blog/civo-navigate.jpg
 tags: [events, community, open source]
 ---
