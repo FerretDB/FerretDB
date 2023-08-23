@@ -69,6 +69,13 @@ func (e *CommandError) Error() string {
 	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", e.code, e.err)
 }
 
+// Err returns original error.
+//
+// It is not called Unwrap to prevent unwrapping by errors.Is and errors.As.
+func (e *CommandError) Err() error {
+	return e.err
+}
+
 // Code implements ProtoErr interface.
 func (e *CommandError) Code() ErrorCode {
 	return e.code
