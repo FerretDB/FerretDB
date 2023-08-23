@@ -33,8 +33,6 @@ var (
 )
 
 // DatabaseName returns a stable FerretDB database name for that test.
-//
-// It should be called only once per test.
 func DatabaseName(tb testtb.TB) string {
 	tb.Helper()
 
@@ -61,8 +59,6 @@ func DatabaseName(tb testtb.TB) string {
 }
 
 // CollectionName returns a stable FerretDB collection name for that test.
-//
-// It should be called only once per test.
 func CollectionName(tb testtb.TB) string {
 	tb.Helper()
 

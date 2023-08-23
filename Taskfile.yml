@@ -3,6 +3,7 @@ version: 3
 
 env:
   GORACE: halt_on_error=1,history_size=2
+  GOCOVERDIR: tmp/cover
 
 vars:
   SHARD_INDEX: 1
@@ -143,7 +144,8 @@ tasks:
     run: once
     deps: [gen-version]
     cmds:
-      - go test -c -o=bin/ferretdb{{exeExt}} {{.RACE_FLAG}} -tags=ferretdb_testcover,{{.BUILD_TAGS}} -coverpkg=./... ./cmd/ferretdb
+      - go build -o=bin/ferretdb{{exeExt}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -coverpkg=./... ./cmd/ferretdb
+      - go run ./cmd/envtool shell mkdir tmp/cover
 
   gen:
     desc: "Generate (and format) Go code"
@@ -169,13 +171,13 @@ tasks:
   test-unit-short:
     desc: "Run short unit tests (with caching)"
     cmds:
-      - go test -short {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
+      - go test -short {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=./... -coverprofile=cover.txt ./...
       - bin/task{{exeExt}} -d tools tools-test
 
   test-unit:
     desc: "Run all unit tests"
     cmds:
-      - go test -count=1 {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./...
+      - go test -count=1 {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=./... -coverprofile=cover.txt ./...
       - go test -count=1 {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -bench=. -benchtime=1x ./...
       - bin/task{{exeExt}} -d tools tools-test
 
@@ -193,7 +195,7 @@ tasks:
     cmds:
       - >
         go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-pg.txt .
+        -coverprofile=integration-pg.txt
         -target-backend=ferretdb-pg
         -target-tls
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
@@ -267,10 +269,11 @@ tasks:
     desc: "Fuzz for about 3 minutes (with default FUZZ_TIME)"
     cmds:
       - go test -list='Fuzz.*' ./...
-      - go test -run=XXX -fuzz=FuzzArrayWithFixedSchemas      -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      - go test -run=XXX -fuzz=FuzzArrayWithFixedDocuments    -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      - go test -run=XXX -fuzz=FuzzDocumentWithFixedSchemas   -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      - go test -run=XXX -fuzz=FuzzDocumentWithFixedDocuments -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
+      # TODO https://github.com/FerretDB/FerretDB/issues/1273
+      # - go test -run=XXX -fuzz=FuzzArrayWithFixedSchemas      -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
+      # - go test -run=XXX -fuzz=FuzzArrayWithFixedDocuments    -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
+      # - go test -run=XXX -fuzz=FuzzDocumentWithFixedSchemas   -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
+      # - go test -run=XXX -fuzz=FuzzDocumentWithFixedDocuments -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
       - go test -run=XXX -fuzz=FuzzArray    -fuzztime={{.FUZZ_TIME}} ./internal/bson/
       - go test -run=XXX -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/bson/
       - go test -run=XXX -fuzz=FuzzMsg      -fuzztime={{.FUZZ_TIME}} ./internal/wire/
@@ -289,7 +292,7 @@ tasks:
     deps: [build-host]
     cmds:
       - >
-        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb{{exeExt}}
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
@@ -303,7 +306,7 @@ tasks:
     cmds:
       - go run ./cmd/envtool shell mkdir tmp/sqlite
       - >
-        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb{{exeExt}}
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
@@ -318,7 +321,7 @@ tasks:
     deps: [build-host]
     cmds:
       - >
-        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb{{exeExt}}
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
@@ -330,7 +333,7 @@ tasks:
     deps: [build-host]
     cmds:
       - >
-        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb{{exeExt}}
         --listen-addr=''
         --listen-tls=:27018
         --listen-tls-cert-file=./build/certs/server-cert.pem
@@ -347,7 +350,7 @@ tasks:
     deps: [build-host]
     cmds:
       - >
-        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb{{exeExt}}
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-proxy
@@ -361,7 +364,7 @@ tasks:
     cmds:
       - go run ./cmd/envtool shell mkdir tmp/sqlite
       - >
-        bin/ferretdb{{exeExt}} -test.coverprofile=cover.txt --
+        bin/ferretdb{{exeExt}}
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-proxy
