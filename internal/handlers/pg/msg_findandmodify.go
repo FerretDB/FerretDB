@@ -79,8 +79,8 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		}
 
 		if err = common.SortDocuments(resDocs, params.Sort); err != nil {
-			var pathErr *types.DocumentPathError
-			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+			var pathErr *types.PathError
+			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
 				return commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrPathContainsEmptyElement,
 					"FieldPath field names may not be empty strings.",

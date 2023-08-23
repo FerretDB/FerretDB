@@ -2,6 +2,45 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.8.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.8.0) (2023-08-14)
+
+### New Features 🎉
+
+- Implement `$group` stage `_id` expression by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3138
+- Implement `$expr` evaluation query operator by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3163
+
+### Fixed Bugs 🐛
+
+- Do not return immutable `_id` error from `findAndModify` for upserting same `_id` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3171
+
+### Enhancements 🛠
+
+- Cache SQLite tables metadata by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3124
+- Use lock for SQLite metadata by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3146
+
+### Other Changes 🤖
+
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3142
+- Improve MongoDB/FerretDB error checking in tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3143
+- Expect some `aggregate` and `insert` tests to fail for SQLite by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3147
+- Make administration command integration tests pass for SQLite by @noisersup in https://github.com/FerretDB/FerretDB/pull/3152
+- Bump deps, including Go by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3160
+- Make aggregate stats integration tests pass for SQLite by @noisersup in https://github.com/FerretDB/FerretDB/pull/3151
+- Simplify tests a bit by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3149
+- Make `distinct` and `explain` command integration tests pass for SQLite by @noisersup in https://github.com/FerretDB/FerretDB/pull/3159
+- Use one implementation for finding path values by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3087
+- Make aggregate documents compat tests pass for SQLite by @noisersup in https://github.com/FerretDB/FerretDB/pull/3150
+- Make `query` integration tests pass for SQLite by @noisersup in https://github.com/FerretDB/FerretDB/pull/3182
+- Make `findAndModify` integration tests pass for SQLite by @noisersup in https://github.com/FerretDB/FerretDB/pull/3173
+- Make index integration tests pass for SQLite by @noisersup in https://github.com/FerretDB/FerretDB/pull/3185
+- Add tests for `$$ROOT` aggregation expression variable by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3180
+- Make `getMore` integration tests pass for SQLite by @noisersup in https://github.com/FerretDB/FerretDB/pull/3174
+- Make `update` integration tests pass for SQLite by @noisersup in https://github.com/FerretDB/FerretDB/pull/3184
+- Add tests for `$$ROOT` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3187
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/49?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.7.0...v1.8.0).
+
 ## [v1.7.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.7.0) (2023-07-31)
 
 ### New Features 🎉

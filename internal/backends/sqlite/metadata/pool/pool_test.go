@@ -30,7 +30,7 @@ func TestCreateDrop(t *testing.T) {
 	ctx := testutil.Ctx(t)
 
 	// that also tests that query parameters are preserved by using non-writable directory
-	p, err := New("file:/?mode=memory&_pragma=journal_mode(wal)", testutil.Logger(t))
+	p, _, err := New("file:/?mode=memory&_pragma=journal_mode(wal)", testutil.Logger(t))
 	require.NoError(t, err)
 	t.Cleanup(p.Close)
 
@@ -77,11 +77,13 @@ func TestCreateDropStress(t *testing.T) {
 	ctx := testutil.Ctx(t)
 
 	for testName, uri := range map[string]string{
-		"file":   "file:./",
-		"memory": "file:./?mode=memory",
+		"file":             "file:./",
+		"file-immediate":   "file:./?_txlock=immediate",
+		"memory":           "file:./?mode=memory",
+		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
 	} {
 		t.Run(testName, func(t *testing.T) {
-			p, err := New(uri, testutil.Logger(t))
+			p, _, err := New(uri, testutil.Logger(t))
 			require.NoError(t, err)
 			t.Cleanup(p.Close)
 
@@ -135,7 +137,7 @@ func TestDefaults(t *testing.T) {
 	t.Parallel()
 	ctx := testutil.Ctx(t)
 
-	p, err := New("file:./", testutil.Logger(t))
+	p, _, err := New("file:./", testutil.Logger(t))
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		p.Drop(ctx, t.Name())
