@@ -57,7 +57,7 @@ func getPositionalProjection(arr *types.Array, filter *types.Document, positiona
 	for {
 		_, elem, err := iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
-			// TODO: https://github.com/FerretDB/FerretDB/issues/2522
+			// TODO https://github.com/FerretDB/FerretDB/issues/2522
 			// when none of element satisfies all filter condition, positional
 			// operator returns an arbitrary value not empty array.
 			return new(types.Array), nil

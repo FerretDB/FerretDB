@@ -484,7 +484,8 @@ func TestFindAndModifyCompatUpdateRename(t *testing.T) {
 
 // TestFindAndModifyCompatSort tests how various sort orders are handled.
 //
-// TODO Add more tests for sort: https://github.com/FerretDB/FerretDB/issues/2168
+// Add more tests for sort.
+// TODO https://github.com/FerretDB/FerretDB/issues/2168
 func TestFindAndModifyCompatSort(t *testing.T) {
 	t.Parallel()
 

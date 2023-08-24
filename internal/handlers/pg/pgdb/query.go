@@ -258,7 +258,8 @@ func prepareWhereClause(p *Placeholder, sqlFilters *types.Document) (string, []a
 
 		switch {
 		case err == nil:
-			// TODO dot notation https://github.com/FerretDB/FerretDB/issues/2069
+			// Handle dot notation.
+			// TODO https://github.com/FerretDB/FerretDB/issues/2069
 			if path.Len() > 1 {
 				continue
 			}
@@ -322,7 +323,8 @@ func prepareWhereClause(p *Placeholder, sqlFilters *types.Document) (string, []a
 					}
 
 				default:
-					// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
+					// $gt and $lt
+					// TODO https://github.com/FerretDB/FerretDB/issues/1875
 					continue
 				}
 			}

@@ -85,7 +85,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					continue
 				}
 
-				// TODO: https://github.com/FerretDB/FerretDB/issues/3040
+				// TODO https://github.com/FerretDB/FerretDB/issues/3040
 				hasQueryOperators, err := common.HasQueryOperator(u.Filter)
 				if err != nil {
 					return lazyerrors.Error(err)
@@ -104,7 +104,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				}
 
 				if hasUpdateOperators {
-					// TODO: https://github.com/FerretDB/FerretDB/issues/3044
+					// TODO https://github.com/FerretDB/FerretDB/issues/3044
 					if _, err = common.UpdateDocument(document.Command(), doc, u.Update); err != nil {
 						return err
 					}
@@ -130,7 +130,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				continue
 			}
 
-			if len(resDocs) > 1 && !u.Multi {
+			if len(resDocs) > 1 && !u.Multi { // lalala
 				resDocs = resDocs[:1]
 			}
 
