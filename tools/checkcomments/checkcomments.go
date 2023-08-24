@@ -41,7 +41,7 @@ func run(pass *analysis.Pass) (any, error) {
 	for _, f := range pass.Files {
 		for _, cg := range f.Comments {
 			for _, c := range cg.List {
-				// the space between // and TODO is always by `task fmt`
+				// the space between `//` and `TODO` is always added by `task fmt`
 				if strings.HasPrefix(c.Text, "// TODO") {
 					// skip comments without URLs for now
 					// TODO https://github.com/FerretDB/FerretDB/issues/2733
