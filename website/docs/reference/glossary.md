@@ -12,7 +12,7 @@ _This section contains a list of common terminologies related to FerretDB_.
 
 #### aggregation
 
-A way of processsing documents in a collection and passing them through various operations or stages.
+A way of processing documents in a collection and passing them through various operations or stages.
 See [list of supported aggregation operations and commands here](supported-commands.md#aggregation-pipelines).
 
 #### aggregation pipeline

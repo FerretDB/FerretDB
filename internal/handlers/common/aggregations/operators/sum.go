@@ -22,7 +22,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // sum represents `$sum` operator.
@@ -40,73 +39,35 @@ type sum struct {
 // newSum collects values that can be summed in `numbers`,
 // finds nested operators if any, validates path expressions
 // to populate `$sum` operator. It ignores values that are not summable.
-func newSum(doc *types.Document) (Operator, error) {
-	expr := must.NotFail(doc.Get("$sum"))
+func newSum(args ...any) (Operator, error) {
 	operator := new(sum)
 
-	switch expr := expr.(type) {
-	case *types.Document:
-		if IsOperator(expr) {
-			operator.operators = []*types.Document{expr}
-		}
-	case *types.Array:
-		operator.arrayLen = expr.Len()
+	operator.arrayLen = len(args)
 
-		iter := expr.Iterator()
-		defer iter.Close()
+	for _, arg := range args {
+		switch arg := arg.(type) {
+		case *types.Document:
+			if IsOperator(arg) {
+				operator.operators = append(operator.operators, arg)
+			}
+		case float64:
+			operator.numbers = append(operator.numbers, arg)
+		case string:
+			ex, err := aggregations.NewExpression(arg, nil)
 
-		for {
-			_, v, err := iter.Next()
-
-			if errors.Is(err, iterator.ErrIteratorDone) {
+			var exErr *aggregations.ExpressionError
+			if errors.As(err, &exErr) && exErr.Code() == aggregations.ErrNotExpression {
 				break
 			}
 
 			if err != nil {
-				return nil, lazyerrors.Error(err)
+				return nil, err
 			}
 
-			switch elemExpr := v.(type) {
-			case *types.Document:
-				if IsOperator(elemExpr) {
-					operator.operators = append(operator.operators, elemExpr)
-				}
-			case float64:
-				operator.numbers = append(operator.numbers, elemExpr)
-			case string:
-				ex, err := aggregations.NewExpression(elemExpr)
-
-				var exErr *aggregations.ExpressionError
-				if errors.As(err, &exErr) && exErr.Code() == aggregations.ErrNotExpression {
-					break
-				}
-
-				if err != nil {
-					return nil, err
-				}
-
-				operator.expressions = append(operator.expressions, ex)
-			case int32, int64:
-				operator.numbers = append(operator.numbers, elemExpr)
-			}
+			operator.expressions = append(operator.expressions, ex)
+		case int32, int64:
+			operator.numbers = append(operator.numbers, arg)
 		}
-	case float64:
-		operator.numbers = []any{expr}
-	case string:
-		ex, err := aggregations.NewExpression(expr)
-
-		var exErr *aggregations.ExpressionError
-		if errors.As(err, &exErr) && exErr.Code() == aggregations.ErrNotExpression {
-			break
-		}
-
-		if err != nil {
-			return nil, err
-		}
-
-		operator.expressions = []*aggregations.Expression{ex}
-	case int32, int64:
-		operator.numbers = []any{expr}
 	}
 
 	return operator, nil

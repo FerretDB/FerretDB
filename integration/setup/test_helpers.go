@@ -28,6 +28,13 @@ func IsMongoDB(tb testtb.TB) bool {
 	return *targetBackendF == "mongodb"
 }
 
+// IsSQLite returns true if the current test is running for SQLite.
+//
+// This function should not be used lightly.
+func IsSQLite(tb testtb.TB) bool {
+	return *targetBackendF == "ferretdb-sqlite"
+}
+
 // FailsForFerretDB return testtb.TB that expects test to fail for FerretDB and pass for MongoDB.
 //
 // This function should not be used lightly and always with an issue URL.
