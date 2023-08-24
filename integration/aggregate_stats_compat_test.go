@@ -130,7 +130,8 @@ func TestAggregateCompatCollStats(tt *testing.T) {
 						nonEmptyResults = true
 					}
 
-					// TODO Check the returned values when possible: https://github.com/FerretDB/FerretDB/issues/2349
+					// Check the returned values when possible
+					// TODO https://github.com/FerretDB/FerretDB/issues/2349
 				})
 			}
 

@@ -85,7 +85,7 @@ The result will be saved as `bin/ferretdb`.
 With `task` installed (see above), you may do the following:
 
 1. Start the development environment with `task env-up`.
-2. Run all tests in another terminal window with `task test`.
+2. Run all tests in another terminal window with `task test` (see [below](#running-tests)).
 3. Start FerretDB with `task run`.
    This will start it in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
    The differences in response are then logged and the FerretDB response is sent back to the client.

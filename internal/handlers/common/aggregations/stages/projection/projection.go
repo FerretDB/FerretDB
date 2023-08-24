@@ -290,7 +290,7 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 
 	projectedWithoutID, err := projectDocumentWithoutID(doc, projection, inclusion)
 	if err != nil {
-		// TODO: https://github.com/FerretDB/FerretDB/issues/2633
+		// TODO https://github.com/FerretDB/FerretDB/issues/2633
 		return nil, err
 	}
 

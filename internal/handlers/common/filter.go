@@ -972,7 +972,7 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 		return (^uint64(value) & bitmask) == bitmask, nil
 
 	case types.Binary:
-		// TODO: https://github.com/FerretDB/FerretDB/issues/508
+		// TODO https://github.com/FerretDB/FerretDB/issues/508
 		return false, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNotImplemented,
 			"BinData() not supported yet",
@@ -1006,7 +1006,7 @@ func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 		return (uint64(value) & bitmask) == bitmask, nil
 
 	case types.Binary:
-		// TODO: https://github.com/FerretDB/FerretDB/issues/508
+		// TODO https://github.com/FerretDB/FerretDB/issues/508
 		return false, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNotImplemented,
 			"BinData() not supported yet",
@@ -1040,7 +1040,7 @@ func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 		return (^uint64(value) & bitmask) != 0, nil
 
 	case types.Binary:
-		// TODO: https://github.com/FerretDB/FerretDB/issues/508
+		// TODO https://github.com/FerretDB/FerretDB/issues/508
 		return false, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNotImplemented,
 			"BinData() not supported yet",
@@ -1074,7 +1074,7 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 		return (uint64(value) & bitmask) != 0, nil
 
 	case types.Binary:
-		// TODO: https://github.com/FerretDB/FerretDB/issues/508
+		// TODO https://github.com/FerretDB/FerretDB/issues/508
 		return false, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNotImplemented,
 			"BinData() not supported yet",
@@ -1487,7 +1487,7 @@ func filterFieldValueByTypeCode(fieldValue any, code commonparams.TypeCode) (boo
 
 // filterFieldExprElemMatch handles {field: {$elemMatch: value}}.
 // Returns false if doc value is not an array.
-// TODO: https://github.com/FerretDB/FerretDB/issues/364
+// TODO https://github.com/FerretDB/FerretDB/issues/364
 func filterFieldExprElemMatch(doc *types.Document, filterKey, filterSuffix string, exprValue any) (bool, error) {
 	expr, ok := exprValue.(*types.Document)
 	if !ok {
@@ -1507,7 +1507,7 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey, filterSuffix strin
 			)
 		}
 
-		// TODO: https://github.com/FerretDB/FerretDB/issues/730
+		// TODO https://github.com/FerretDB/FerretDB/issues/730
 		if slices.Contains([]string{"$and", "$or", "$nor"}, key) {
 			return false, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,
@@ -1516,7 +1516,7 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey, filterSuffix strin
 			)
 		}
 
-		// TODO: https://github.com/FerretDB/FerretDB/issues/731
+		// TODO https://github.com/FerretDB/FerretDB/issues/731
 		if slices.Contains([]string{"$ne", "$not"}, key) {
 			return false, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,

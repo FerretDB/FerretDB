@@ -51,7 +51,9 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 	require.NotEmpty(t, providers)
 
 	// Use shared setup because find queries can't modify data.
-	// TODO Use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
+	//
+	// Use read-only user.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1025
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 		Providers: providers,
 	})
@@ -301,7 +303,7 @@ func TestQueryCompatSortDotNotation(t *testing.T) {
 	t.Parallel()
 
 	providers := shareddata.AllProviders().
-		// TODO: https://github.com/FerretDB/FerretDB/issues/2618
+		// TODO https://github.com/FerretDB/FerretDB/issues/2618
 		Remove(shareddata.ArrayDocuments)
 
 	testCases := map[string]queryCompatTestCase{
