@@ -12,7 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package observability provides abstractions for tracing, metrics, etc.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/3244
-package observability
+// Package testdata provides vet tool test data.
+package testdata
+
+func testCorrect() {
+	// TODO https://github.com/FerretDB/FerretDB/issues/2733
+}
+
+func testCorrectForNow() {
+	// TODO no URL
+}
+
+func testIncorrect() {
+	// TODO: https://github.com/FerretDB/FerretDB/issues/2733 // want "invalid TODO comment"
+}

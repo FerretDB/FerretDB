@@ -12,7 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package observability provides abstractions for tracing, metrics, etc.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/3244
-package observability
+package main
+
+import (
+	"testing"
+
+	"golang.org/x/tools/go/analysis/analysistest"
+)
+
+func TestCheckCommentIssue(t *testing.T) {
+	analysistest.Run(t, analysistest.TestData(), analyzer)
+}

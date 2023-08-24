@@ -39,7 +39,8 @@ func (dt *dateTimeType) ReadFrom(r *bufio.Reader) error {
 		return lazyerrors.Errorf("bson.DateTime.ReadFrom (binary.Read): %w", err)
 	}
 
-	// TODO Use .UTC(): https://github.com/FerretDB/FerretDB/issues/43
+	// Use .UTC()
+	// TODO https://github.com/FerretDB/FerretDB/issues/43
 	*dt = dateTimeType(time.UnixMilli(ts))
 	return nil
 }
