@@ -10,11 +10,9 @@ tags: [compatible applications, tutorial, postgresql tools]
 
 ![Using PgManage as PostgreSQL GUI Admin for FerretDB](/img/blog/ferretdb-pgmanage.jpg)
 
-One of the biggest advantages of using [FerretDB](https://www.ferretdb.io/) – the truly open source alternative alternative to MongoDB – is that you can manage, scale, and deploy it on almost any PostgreSQL architecture.
+One of the biggest advantages of using [FerretDB](https://www.ferretdb.io/) – the truly open source alternative alternative to MongoDB – is that you can manage, scale, and deploy it on almost any PostgreSQL management architecture, and that includes [PgManage](https://www.commandprompt.com/products/pgmanage/).
 
 <!--truncate-->
-
-And that's the case with [PgManage](https://www.commandprompt.com/products/pgmanage/).
 
 PgManage is a product offering from [CommandPrompt, Inc.](https://www.commandprompt.com/) that provides an open source GUI management platform for Postgres.
 It is able to query and manage several database management systems including PostgreSQL, MySQL, SQLite, and Oracle.
