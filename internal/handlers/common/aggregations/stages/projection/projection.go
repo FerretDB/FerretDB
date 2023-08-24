@@ -23,6 +23,7 @@ import (
 
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -76,6 +77,7 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 			)
 		}
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/3127
 		path, err := types.NewPathFromString(key)
 		if err != nil {
 			if strings.HasSuffix(key, "$") {
@@ -288,7 +290,7 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 
 	projectedWithoutID, err := projectDocumentWithoutID(doc, projection, inclusion)
 	if err != nil {
-		// TODO: https://github.com/FerretDB/FerretDB/issues/2633
+		// TODO https://github.com/FerretDB/FerretDB/issues/2633
 		return nil, err
 	}
 
@@ -327,6 +329,7 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 			return nil, lazyerrors.Error(err)
 		}
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/3127
 		path, err := types.NewPathFromString(key)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
@@ -621,52 +624,87 @@ func setBySourceOrder(key string, val any, source, projected *types.Document) {
 // Command error codes:
 // - ErrEmptySubProject when operator value is empty.
 // - ErrFieldPathInvalidName when FieldPath is invalid.
-// - ErrNotImplemented when the operator is not implemented yet.
+// - ErrNotImplemented when the operator or expression is not implemented yet.
 // - ErrOperatorWrongLenOfArgs when the operator has an invalid number of arguments.
-// - ErrInvalidPipelineOperator when an the operator does not exist.
+// - ErrInvalidPipelineOperator when the operator does not exist.
+// - ErrFailedToParse when operator has invalid variable expression.
+// - ErrGroupInvalidFieldPath when operator has empty path expression.
 func processOperatorError(err error) error {
 	if err == nil {
 		return nil
 	}
 
 	var opErr operators.OperatorError
-	if !errors.As(err, &opErr) {
-		return lazyerrors.Error(err)
+	var exErr *aggregations.ExpressionError
+
+	switch {
+	case errors.As(err, &opErr):
+		switch opErr.Code() {
+		case operators.ErrTooManyFields:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFieldPathInvalidName,
+				"Invalid $project :: caused by :: FieldPath field names may not start with '$'."+
+					" Consider using $getField or $setField.",
+				"$project (stage)",
+			)
+		case operators.ErrNotImplemented:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
+				"Invalid $project :: caused by :: "+opErr.Error(),
+				"$project (stage)",
+			)
+		case operators.ErrArgsInvalidLen:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrOperatorWrongLenOfArgs,
+				"Invalid $project :: caused by :: "+opErr.Error(),
+				"$project (stage)",
+			)
+		case operators.ErrInvalidExpression:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrAggregateInvalidExpression,
+				"Invalid $project :: caused by :: "+opErr.Error(),
+				"$project (stage)",
+			)
+		case operators.ErrInvalidNestedExpression:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrInvalidPipelineOperator,
+				"Invalid $project :: caused by :: "+opErr.Error(),
+				"$project (stage)",
+			)
+		}
+
+	case errors.As(err, &exErr):
+		switch exErr.Code() {
+		case aggregations.ErrNotExpression:
+			// handled by upstream and this should not be reachable for existing expression implementation
+			fallthrough
+		case aggregations.ErrInvalidExpression:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				"Invalid $project :: caused by :: '$' starts with an invalid character for a user variable name",
+				"$project (stage)",
+			)
+		case aggregations.ErrEmptyFieldPath:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrGroupInvalidFieldPath,
+				"Invalid $project :: caused by :: '$' by itself is not a valid FieldPath",
+				"$project (stage)",
+			)
+		case aggregations.ErrUndefinedVariable:
+			// TODO https://github.com/FerretDB/FerretDB/issues/2275
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
+				"Aggregation expression variables are not implemented yet",
+				"$project (stage)",
+			)
+		case aggregations.ErrEmptyVariable:
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrFailedToParse,
+				"Invalid $project :: caused by :: empty variable names are not allowed",
+				"$project (stage)",
+			)
+		}
 	}
 
-	switch opErr.Code() {
-	case operators.ErrTooManyFields:
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrFieldPathInvalidName,
-			"Invalid $project :: caused by :: FieldPath field names may not start with '$'."+
-				" Consider using $getField or $setField.",
-			"$project (stage)",
-		)
-	case operators.ErrNotImplemented:
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrNotImplemented,
-			"Invalid $project :: caused by :: "+opErr.Error(),
-			"$project (stage)",
-		)
-	case operators.ErrArgsInvalidLen:
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrOperatorWrongLenOfArgs,
-			"Invalid $project :: caused by :: "+opErr.Error(),
-			"$project (stage)",
-		)
-	case operators.ErrInvalidExpression:
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrAggregateInvalidExpression,
-			"Invalid $project :: caused by :: "+opErr.Error(),
-			"$project (stage)",
-		)
-	case operators.ErrInvalidNestedExpression:
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrInvalidPipelineOperator,
-			"Invalid $project :: caused by :: "+opErr.Error(),
-			"$project (stage)",
-		)
-	default:
-		return lazyerrors.Error(err)
-	}
+	return lazyerrors.Error(err)
 }

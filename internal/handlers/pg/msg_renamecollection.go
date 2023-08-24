@@ -47,7 +47,8 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO Implement dropTarget param: https://github.com/FerretDB/FerretDB/issues/2565
+	// Implement dropTarget param
+	// TODO https://github.com/FerretDB/FerretDB/issues/2565
 	if err = common.UnimplementedNonDefault(document, "dropTarget", func(v any) bool {
 		b, ok := v.(bool)
 		return ok && !b
@@ -101,7 +102,8 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		)
 	}
 
-	// TODO Support cross-database rename: https://github.com/FerretDB/FerretDB/issues/2563
+	// Support cross-database rename
+	// TODO https://github.com/FerretDB/FerretDB/issues/2563
 	if db != dbTo {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNotImplemented,

@@ -12,11 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package subdir
+// Package testdata provides vet tool test data.
+package testdata
 
-import "testing"
+func testCorrect() {
+	// TODO https://github.com/FerretDB/FerretDB/issues/2733
+}
 
-func TestSubDir(t *testing.T) {
-	// TODO https://github.com/FerretDB/engineering/issues/66
-	// Remove this directory once this issue is done.
+func testCorrectForNow() {
+	// TODO no URL
+}
+
+func testIncorrect() {
+	// TODO: https://github.com/FerretDB/FerretDB/issues/2733 // want "invalid TODO comment"
 }

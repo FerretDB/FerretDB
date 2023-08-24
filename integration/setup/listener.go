@@ -19,6 +19,7 @@ import (
 	"errors"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/stretchr/testify/require"
@@ -29,6 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/state"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
@@ -107,16 +109,19 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 	switch *targetBackendF {
 	case "ferretdb-pg":
 		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for %q", *targetBackendF)
+		require.Empty(tb, *sqliteURLF, "-sqlite-url must be empty for %q", *targetBackendF)
 		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
 		handler = "pg"
 
 	case "ferretdb-sqlite":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
+		require.NotEmpty(tb, *sqliteURLF, "-sqlite-url must be set for %q", *targetBackendF)
 		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
 		handler = "sqlite"
 
 	case "ferretdb-hana":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
+		require.Empty(tb, *sqliteURLF, "-sqlite-url must be empty for %q", *targetBackendF)
 		require.NotEmpty(tb, *hanaURLF, "-hana-url must be set for %q", *targetBackendF)
 		handler = "hana"
 
@@ -128,6 +133,33 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		panic("not reached")
 	}
 
+	// use per-test directory to prevent handler's/backend's metadata registry
+	// read databases owned by concurrent tests
+	sqliteURL := *sqliteURLF
+	if sqliteURL != "" {
+		u, err := url.Parse(sqliteURL)
+		require.NoError(tb, err)
+
+		require.True(tb, u.Path == "")
+		require.True(tb, u.Opaque != "")
+
+		u.Opaque = path.Join(u.Opaque, testutil.DatabaseName(tb)) + "/"
+		sqliteURL = u.String()
+
+		dir, err := filepath.Abs(u.Opaque)
+		require.NoError(tb, err)
+		require.NoError(tb, os.MkdirAll(dir, 0o777))
+
+		tb.Cleanup(func() {
+			if tb.Failed() {
+				tb.Logf("Keeping %s (%s) for debugging.", dir, sqliteURL)
+				return
+			}
+
+			require.NoError(tb, os.RemoveAll(dir))
+		})
+	}
+
 	p, err := state.NewProvider("")
 	require.NoError(tb, err)
 
@@ -137,10 +169,8 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		StateProvider: p,
 
 		PostgreSQLURL: *postgreSQLURLF,
-
-		SQLiteURL: sqliteURL.String(),
-
-		HANAURL: *hanaURLF,
+		SQLiteURL:     sqliteURL,
+		HANAURL:       *hanaURLF,
 
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown: *disableFilterPushdownF,

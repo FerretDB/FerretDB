@@ -81,6 +81,7 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		positionalProjection := strings.HasSuffix(key, "$")
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/3127
 		path, err := types.NewPathFromString(key)
 		if err != nil {
 			if positionalProjection {

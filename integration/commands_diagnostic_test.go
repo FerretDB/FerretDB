@@ -74,8 +74,10 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(name, func(tt *testing.T) {
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3050")
 
 			var actual bson.D
 
@@ -184,12 +186,14 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
 
 			require.NotNil(t, tc.command, "command must not be nil")
 
@@ -301,11 +305,8 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		command bson.D // required, command to run
-
-		err        *mongo.CommandError // required, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		command bson.D
+		err     *mongo.CommandError
 	}{
 		"InvalidTypeDocument": {
 			command: bson.D{{"validate", bson.D{}}},
@@ -314,7 +315,6 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 				Name:    "InvalidNamespace",
 				Message: "collection name has invalid type object",
 			},
-			altMessage: "collection name has invalid type object",
 		},
 		"NonExistentCollection": {
 			command: bson.D{{"validate", "nonExistentCollection"}},
@@ -327,10 +327,6 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			require.NotNil(t, tc.command, "command must not be nil")
@@ -342,7 +338,7 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(res)
 
 			assert.Nil(t, res)
-			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			AssertEqualCommandError(t, *tc.err, err)
 		})
 	}
 }
