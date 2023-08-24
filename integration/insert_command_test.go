@@ -121,12 +121,12 @@ func TestInsertCommandErrors(tt *testing.T) {
 			assert.Nil(t, res)
 
 			if tc.cerr != nil {
-				AssertEqualAltCommandError(tt, *tc.cerr, tc.altMessage, err)
+				AssertEqualAltCommandError(t, *tc.cerr, tc.altMessage, err)
 				return
 			}
 
 			if tc.werr != nil {
-				AssertEqualAltWriteError(tt, *tc.werr, tc.altMessage, err)
+				AssertEqualAltWriteError(t, *tc.werr, tc.altMessage, err)
 				return
 			}
 
