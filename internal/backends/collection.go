@@ -37,6 +37,7 @@ type Collection interface {
 	Insert(context.Context, *InsertParams) (*InsertResult, error)
 	Update(context.Context, *UpdateParams) (*UpdateResult, error)
 	Delete(context.Context, *DeleteParams) (*DeleteResult, error)
+	Explain(context.Context, *ExplainParams) (*ExplainResult, error)
 }
 
 // collectionContract implements Collection interface.
@@ -59,6 +60,7 @@ func CollectionContract(c Collection) Collection {
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
 	// nothing for now - no pushdowns yet
+	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 }
 
 // QueryResult represents the results of Collection.Query method.
@@ -149,6 +151,29 @@ func (cc *collectionContract) Delete(ctx context.Context, params *DeleteParams) 
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.Delete(ctx, params)
+	checkError(err)
+
+	return res, err
+}
+
+// ExplainParams represents the parameters of Collection.Explain method.
+type ExplainParams struct {
+	// nothing for now - no pushdowns yet
+	// TODO https://github.com/FerretDB/FerretDB/issues/3235
+}
+
+// ExplainResult represents the results of Collection.Explain method.
+type ExplainResult struct {
+	QueryPlanner *types.Document
+}
+
+// Explain return a backend-specific execution plan for the given query.
+//
+// Database or collection may not exist; that's not an error.
+func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams) (*ExplainResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := cc.c.Explain(ctx, params)
 	checkError(err)
 
 	return res, err

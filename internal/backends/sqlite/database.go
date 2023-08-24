@@ -95,6 +95,12 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 	return nil
 }
 
+// RenameCollection implements backends.Database interface.
+func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
+	// TODO https://github.com/FerretDB/FerretDB/issues/2760
+	panic("not implemented")
+}
+
 // check interfaces
 var (
 	_ backends.Database = (*database)(nil)
