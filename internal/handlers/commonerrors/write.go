@@ -52,15 +52,6 @@ func (we *WriteErrors) Error() string {
 	return err
 }
 
-// Unwrap implements ProtoErr interface.
-func (we *WriteErrors) Unwrap() error {
-	for _, e := range we.errs {
-		return errors.New(e.errmsg)
-	}
-
-	return nil
-}
-
 // Code implements ProtoErr interface.
 func (we *WriteErrors) Code() ErrorCode {
 	for _, e := range we.errs {
@@ -116,7 +107,7 @@ func (we *WriteErrors) Append(err error, index int32) {
 	case errors.As(err, &cmdErr):
 		we.errs = append(we.errs, writeError{
 			code:   cmdErr.code,
-			errmsg: cmdErr.Unwrap().Error(),
+			errmsg: cmdErr.err.Error(),
 			index:  &index,
 		})
 
@@ -142,22 +133,7 @@ func (we *WriteErrors) Merge(we2 *WriteErrors, index int32) {
 	}
 }
 
-// writeError represents protocol write error.
-// It required to build the correct write error result.
-// The index field is optional and won't be used if it's nil.
-type writeError struct {
-	code   ErrorCode
-	errmsg string
-	index  *int32
-}
-
-// Error implements error interface.
-func (we *writeError) Error() string {
-	return we.errmsg
-}
-
 // check interfaces
 var (
 	_ ProtoErr = (*WriteErrors)(nil)
-	_ error    = (*writeError)(nil)
 )

@@ -12,7 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package observability provides abstractions for tracing, metrics, etc.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/3244
-package observability
+package cursor
+
+import "testing"
+
+func TestDummy(t *testing.T) {
+	// we need at least one test per package to correctly calculate coverage
+}
