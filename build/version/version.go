@@ -30,7 +30,7 @@
 //
 //	ferretdb_debug - enables debug build (see below; implied by builds with race detector)
 //	ferretdb_hana  - enables Hana backend (alpha)
-//	ferretdb_newpg - enables new PostgreSQL backend (alpha)
+//	ferretdb_newpg - replaces PostgreSQL backend with a new version (alpha)
 //
 // # Debug builds
 //
