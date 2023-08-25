@@ -153,6 +153,7 @@ func testAggregateStagesCompatWithProviders(tt *testing.T, providers shareddata.
 				})
 			}
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3148
 			if setup.IsSQLite(tt) {
 				return
 			}
