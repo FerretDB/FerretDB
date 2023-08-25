@@ -794,7 +794,8 @@ func TestAggregateCompatGroup(t *testing.T) {
 func TestAggregateCompatGroupExpressionDottedFields(t *testing.T) {
 	t.Parallel()
 
-	// TODO Use all providers after fixing $sort problem:  https://github.com/FerretDB/FerretDB/issues/2276.
+	// Use all providers after fixing $sort problem:
+	// TODO https://github.com/FerretDB/FerretDB/issues/2276
 	//
 	// Currently, providers Composites, DocumentsDeeplyNested, ArrayAndDocuments and Mixed
 	// cannot be used due to sorting difference.
@@ -1039,7 +1040,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 		// TODO: handle $sum of doubles near max precision.
 		// https://github.com/FerretDB/FerretDB/issues/2300
 		Remove(shareddata.Doubles).
-		// TODO: https://github.com/FerretDB/FerretDB/issues/2616
+		// TODO https://github.com/FerretDB/FerretDB/issues/2616
 		Remove(shareddata.ArrayDocuments)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -1390,7 +1391,7 @@ func TestAggregateCompatSortDotNotation(t *testing.T) {
 	t.Parallel()
 
 	providers := shareddata.AllProviders().
-		// TODO: https://github.com/FerretDB/FerretDB/issues/2617
+		// TODO https://github.com/FerretDB/FerretDB/issues/2617
 		Remove(shareddata.ArrayDocuments)
 
 	testCases := map[string]aggregateStagesCompatTestCase{

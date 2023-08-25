@@ -69,8 +69,10 @@ func (e *CommandError) Error() string {
 	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", e.code, e.err)
 }
 
-// Unwrap implements ProtoErr interface.
-func (e *CommandError) Unwrap() error {
+// Err returns original error.
+//
+// It is not called Unwrap to prevent unwrapping by errors.Is and errors.As.
+func (e *CommandError) Err() error {
 	return e.err
 }
 
@@ -85,6 +87,7 @@ func (e *CommandError) Document() *types.Document {
 		"ok", float64(0),
 		"errmsg", e.err.Error(),
 	))
+
 	if e.code != errUnset {
 		d.Set("code", int32(e.code))
 		d.Set("codeName", e.code.String())

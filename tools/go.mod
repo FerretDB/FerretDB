@@ -11,9 +11,9 @@ require (
 	github.com/reviewdog/reviewdog v0.14.2
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/oauth2 v0.11.0
-	golang.org/x/perf v0.0.0-20230717203022-1ba3a21238c9
-	golang.org/x/tools v0.12.0
-	golang.org/x/vuln v1.0.0
+	golang.org/x/perf v0.0.0-20230822165715-3c60af34b3f4
+	golang.org/x/tools v0.12.1-0.20230815132531-74c255bcf846
+	golang.org/x/vuln v1.0.1
 	mvdan.cc/gofumpt v0.5.0
 )
 
