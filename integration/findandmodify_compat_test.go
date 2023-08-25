@@ -544,7 +544,7 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"new", true},
 			},
 		},
-		"UpsertNoSuchReplaceDocument": {
+		"UpsertNoReplaceDocument": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "no-such-doc"}}},
 				{"update", bson.D{{"v", 43.13}}},
