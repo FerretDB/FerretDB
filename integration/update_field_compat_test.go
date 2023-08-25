@@ -959,7 +959,7 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.-1.bar", int32(1)}}}},
 			resultType: emptyResult,
 		},
-		"DotNotIndexOutOfArr": {
+		"DotNotatIndexOutOfArr": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.100.bar", int32(1)}}}},
 			resultType: emptyResult,
 		},
@@ -1194,7 +1194,7 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 			update:     bson.D{{"$mul", bson.D{{"v..", int32(45)}}}},
 			resultType: emptyResult,
 		},
-		"DotNotIndexOverArrayLength": {
+		"DotNotatIndexOverArrayLen": {
 			update: bson.D{{"$mul", bson.D{{"v.100.bar", int32(45)}}}},
 		},
 		"DotNotationFieldNumericName": {
