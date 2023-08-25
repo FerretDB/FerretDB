@@ -872,8 +872,8 @@ func TestAggregateUnsetErrors(t *testing.T) {
 	}
 }
 
-func TestAggregateSortErrors(t *testing.T) {
-	t.Parallel()
+func TestAggregateSortErrors(tt *testing.T) {
+	tt.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
 		pipeline bson.A // required, aggregation pipeline stages
@@ -894,12 +894,14 @@ func TestAggregateSortErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		tt.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")

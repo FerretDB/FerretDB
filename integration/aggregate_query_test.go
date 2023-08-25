@@ -25,17 +25,18 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestAggregateMatchExprErrors(t *testing.T) {
-	t.Parallel()
+func TestAggregateMatchExprErrors(tt *testing.T) {
+	tt.Parallel()
 
-	ctx, collection := setup.Setup(t, shareddata.Composites)
+	ctx, collection := setup.Setup(tt, shareddata.Composites)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
 		pipeline bson.A // required, aggregation pipeline stages
 
-		err        *mongo.CommandError // required
-		altMessage string              // optional, alternative error message
-		skip       string              // optional, skip test with a specified reason
+		err            *mongo.CommandError // required
+		altMessage     string              // optional, alternative error message
+		skip           string              // optional, skip test with a specified reason
+		failsForSQLite string              // optional, if set, the case is expected to fail for SQLite due to given issue}
 	}{
 		"TooManyFields": {
 			pipeline: bson.A{
@@ -173,12 +174,14 @@ func TestAggregateMatchExprErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		tt.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
