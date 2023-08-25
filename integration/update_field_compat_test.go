@@ -212,7 +212,7 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 		"DotNotationNegativeIndex": {
 			update: bson.D{{"$inc", bson.D{{"v.-1", int32(42)}}}},
 		},
-		"DotNotatIndexOutsideArray": {
+		"DotNotatIndexOutOfArray": {
 			update: bson.D{{"$inc", bson.D{{"v.100", int32(42)}}}},
 		},
 		"DotNotatArrayFieldNotExist": {
