@@ -269,10 +269,11 @@ tasks:
     desc: "Fuzz for about 3 minutes (with default FUZZ_TIME)"
     cmds:
       - go test -list='Fuzz.*' ./...
-      - go test -run=XXX -fuzz=FuzzArrayWithFixedSchemas      -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      - go test -run=XXX -fuzz=FuzzArrayWithFixedDocuments    -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      - go test -run=XXX -fuzz=FuzzDocumentWithFixedSchemas   -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      - go test -run=XXX -fuzz=FuzzDocumentWithFixedDocuments -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
+      # TODO https://github.com/FerretDB/FerretDB/issues/1273
+      # - go test -run=XXX -fuzz=FuzzArrayWithFixedSchemas      -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
+      # - go test -run=XXX -fuzz=FuzzArrayWithFixedDocuments    -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
+      # - go test -run=XXX -fuzz=FuzzDocumentWithFixedSchemas   -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
+      # - go test -run=XXX -fuzz=FuzzDocumentWithFixedDocuments -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
       - go test -run=XXX -fuzz=FuzzArray    -fuzztime={{.FUZZ_TIME}} ./internal/bson/
       - go test -run=XXX -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/bson/
       - go test -run=XXX -fuzz=FuzzMsg      -fuzztime={{.FUZZ_TIME}} ./internal/wire/
@@ -380,8 +381,9 @@ tasks:
       - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
       - bin/go-sumtype{{exeExt}} ./...
       - go vet -vettool=./bin/checkswitch{{exeExt}} ./...
-      - bin/task{{exeExt}} -d integration integration-lint
-      - bin/task{{exeExt}} -d tools tools-lint
+      - go vet -vettool=./bin/checkcomments{{exeExt}} ./...
+      - bin/task{{exeExt}} -d integration lint
+      - bin/task{{exeExt}} -d tools lint
 
   security:
     desc: "Run security scanners"

@@ -26,7 +26,8 @@ import (
 // compareTypeOrderResult represents the comparison order of data types.
 type compareTypeOrderResult uint8
 
-// TODO: handle sorting for documentDataType and arrayDataType; https://github.com/FerretDB/FerretDB/issues/457
+// handle sorting for documentDataType and arrayDataType
+// TODO https://github.com/FerretDB/FerretDB/issues/457
 const (
 	_ compareTypeOrderResult = iota
 	nullDataType

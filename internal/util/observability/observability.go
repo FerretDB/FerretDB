@@ -13,4 +13,6 @@
 // limitations under the License.
 
 // Package observability provides abstractions for tracing, metrics, etc.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3244
 package observability

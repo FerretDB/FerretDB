@@ -320,14 +320,13 @@ type ErrInfo struct {
 
 // ProtoErr represents protocol error type.
 type ProtoErr interface {
+	// Error returns error representation for logging and debugging.
 	error
-	// Unwrap returns unwrapped error.
-	Unwrap() error
-	// Code returns ErrorCode.
+	// Code returns error's code.
 	Code() ErrorCode
-	// Document returns *types.Document.
+	// Document returns a document representation of the error.
 	Document() *types.Document
-	// Info returns *ErrInfo.
+	// Info returns additional error information, or nil.
 	Info() *ErrInfo
 }
 
