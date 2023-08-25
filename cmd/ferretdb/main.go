@@ -298,6 +298,9 @@ func run() {
 		return
 	}
 
+	// safe to always enable
+	runtime.SetBlockProfileRate(10000)
+
 	stateProvider := setupState()
 
 	metricsRegisterer := setupMetrics(stateProvider)

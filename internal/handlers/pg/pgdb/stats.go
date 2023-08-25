@@ -34,7 +34,8 @@ type ServerStats struct {
 // MongoDB uses "numbers" for those values that could be int32 or int64.
 // FerretDB always returns int64 for simplicity.
 //
-// TODO Include more data https://github.com/FerretDB/FerretDB/issues/2447.
+// Include more data.
+// TODO https://github.com/FerretDB/FerretDB/issues/2447
 type DBStats struct {
 	CountCollections int64
 	CountObjects     int64
@@ -49,7 +50,8 @@ type DBStats struct {
 // MongoDB uses "numbers" for those values that could be int32 or int64.
 // FerretDB always returns int64 for simplicity.
 //
-// TODO Include more data https://github.com/FerretDB/FerretDB/issues/2447.
+// Include more data.
+// TODO https://github.com/FerretDB/FerretDB/issues/2447
 type CollStats struct {
 	CountObjects   int64
 	CountIndexes   int64

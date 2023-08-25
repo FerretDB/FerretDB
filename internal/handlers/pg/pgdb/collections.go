@@ -178,7 +178,8 @@ func CreateCollectionIfNotExists(ctx context.Context, tx pgx.Tx, db, collection 
 // It returns (possibly wrapped) ErrTableNotExist if database or collection does not exist.
 // Please use errors.Is to check the error.
 //
-// TODO Test correctness for concurrent cases https://github.com/FerretDB/FerretDB/issues/1684
+// Test correctness for concurrent cases.
+// TODO https://github.com/FerretDB/FerretDB/issues/1684
 func DropCollection(ctx context.Context, tx pgx.Tx, db, collection string) error {
 	ms := newMetadataStorage(tx, db, collection)
 	tableName, err := ms.getTableName(ctx)
