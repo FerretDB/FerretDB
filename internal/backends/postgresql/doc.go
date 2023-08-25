@@ -12,5 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pg provides backend for PostgreSQL and compatible databases.
-package pg
+// Package postgresql provides backend for PostgreSQL and compatible databases.
+package postgresql
