@@ -24,7 +24,7 @@ import (
 
 // MsgIsMaster implements HandlerInterface.
 func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if err := common.CheckClientMedata(msg); err != nil {
+	if err := common.CheckClientMetadata(msg); err != nil {
 		return nil, err
 	}
 

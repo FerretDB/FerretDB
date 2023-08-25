@@ -29,7 +29,7 @@ const (
 	MaxWireVersion = int32(17)
 )
 
-// CheckClientMedata checks if the message does not contain client metadata.
+// CheckClientMetadata checks if the message does not contain client metadata.
 func CheckClientMetadata(msg *wire.OpMsg) error {
 	document, err := msg.Document()
 	if err != nil {
