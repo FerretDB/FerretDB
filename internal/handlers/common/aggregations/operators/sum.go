@@ -28,7 +28,7 @@ import (
 type sum struct {
 	// expressions are valid path expression requiring evaluation
 	expressions []*aggregations.Expression
-	// operators are documents containing nested operators
+	// operators stores all nested operators from the $sum operator
 	operators []Operator
 	// numbers are int32, int64 or float64 values
 	numbers []any
