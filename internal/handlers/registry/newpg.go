@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build ferretdb_newpg
+
 package registry
 
 import (
@@ -19,16 +21,16 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/sqlite"
 )
 
-// init registers "sqlite" handler.
+// init registers new "pg" handler.
 func init() {
-	registry["sqlite"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		opts.Logger.Warn("SQLite backend is in beta.")
+	registry["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
+		opts.Logger.Warn("New PostgreSQL backend is in alpha.")
 
 		handlerOpts := &sqlite.NewOpts{
-			Backend: "sqlite",
-			URI:     opts.SQLiteURL,
+			Backend: "postgresql",
+			URI:     opts.PostgreSQLURL,
 
-			L:             opts.Logger.Named("sqlite"),
+			L:             opts.Logger.Named("postgresql"),
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 
