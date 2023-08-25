@@ -150,7 +150,20 @@ func insertDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc *t
 		)
 
 	default:
-		return commonerrors.CheckError(err)
+		var ve *types.ValidationError
+
+		if !errors.As(err, &ve) {
+			return lazyerrors.Error(err)
+		}
+
+		switch ve.Code() {
+		case types.ErrValidation, types.ErrIDNotFound:
+			return commonerrors.NewCommandErrorMsg(commonerrors.ErrBadValue, ve.Error())
+		case types.ErrWrongIDType:
+			return commonerrors.NewWriteErrorMsg(commonerrors.ErrInvalidID, ve.Error())
+		default:
+			panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
+		}
 	}
 }
 

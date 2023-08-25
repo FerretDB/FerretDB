@@ -39,11 +39,8 @@ func TestQueryBadFindType(t *testing.T) {
 	ctx, collection := s.Ctx, s.Collection
 
 	for name, tc := range map[string]struct {
-		value any // optional, used for find value
-
-		err        *mongo.CommandError // required, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		value any
+		err   *mongo.CommandError
 	}{
 		"Document": {
 			value: bson.D{},
@@ -52,7 +49,6 @@ func TestQueryBadFindType(t *testing.T) {
 				Name:    "BadValue",
 				Message: "collection name has invalid type object",
 			},
-			altMessage: "collection name has invalid type object",
 		},
 		"Array": {
 			value: primitive.A{},
@@ -145,24 +141,19 @@ func TestQueryBadFindType(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			require.NotNil(t, tc.err, "err must not be nil")
 
 			cmd := bson.D{
 				{"find", tc.value},
-				{"projection", bson.D{{"v", "some"}}},
 			}
 
 			var res bson.D
 			err := collection.Database().RunCommand(ctx, cmd).Decode(&res)
 
-			assert.Nil(t, res)
-			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			require.Nil(t, res)
+			AssertEqualCommandError(t, *tc.err, err)
 		})
 	}
 }
