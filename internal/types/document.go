@@ -50,7 +50,8 @@ type field struct {
 // ConvertDocument converts bson.Document to *types.Document.
 // It references the same data without copying it.
 //
-// TODO Remove this function: https://github.com/FerretDB/FerretDB/issues/260
+// Remove this function.
+// TODO https://github.com/FerretDB/FerretDB/issues/260
 func ConvertDocument(d document) (*Document, error) {
 	if d == nil {
 		panic("types.ConvertDocument: d is nil")
