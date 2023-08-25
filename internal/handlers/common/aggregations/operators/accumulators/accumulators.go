@@ -22,14 +22,18 @@
 package accumulators
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // newAccumulatorFunc is a type for a function that creates an accumulation operator.
-type newAccumulatorFunc func(expression *types.Document) (Accumulator, error)
+// It takes the arguments extracted from the accumulator document.
+type newAccumulatorFunc func(args ...any) (Accumulator, error)
 
 // Accumulator is a common interface for aggregation accumulation operators.
 type Accumulator interface {
@@ -61,6 +65,30 @@ func NewAccumulator(stage, key string, value any) (Accumulator, error) {
 
 	operator := accumulation.Command()
 
+	expr := must.NotFail(accumulation.Get(operator))
+
+	var args []any
+
+	switch expr := expr.(type) {
+	case *types.Document:
+		args = append(args, expr)
+	case *types.Array:
+		iter := expr.Iterator()
+		defer iter.Close()
+
+		for {
+			_, v, err := iter.Next()
+
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			args = append(args, v)
+		}
+	default:
+		args = append(args, expr)
+	}
+
 	newAccumulator, ok := Accumulators[operator]
 	if !ok {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -70,7 +98,7 @@ func NewAccumulator(stage, key string, value any) (Accumulator, error) {
 		)
 	}
 
-	return newAccumulator(accumulation)
+	return newAccumulator(args...)
 }
 
 // Accumulators maps all aggregation accumulators.
