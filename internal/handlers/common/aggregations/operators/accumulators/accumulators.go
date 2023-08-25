@@ -32,6 +32,7 @@ import (
 )
 
 // newAccumulatorFunc is a type for a function that creates an accumulation operator.
+// It takes the arguments extracted from the accumulator document.
 type newAccumulatorFunc func(args ...any) (Accumulator, error)
 
 // Accumulator is a common interface for aggregation accumulation operators.
@@ -71,7 +72,6 @@ func NewAccumulator(stage, key string, value any) (Accumulator, error) {
 	switch expr := expr.(type) {
 	case *types.Document:
 		args = append(args, expr)
-
 	case *types.Array:
 		iter := expr.Iterator()
 		defer iter.Close()
