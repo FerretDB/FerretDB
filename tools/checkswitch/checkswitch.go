@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package main contains linter for switches.
 package main
 
 import (
@@ -111,8 +112,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 					idxSl, ok := orderTypes[name]
 					if ok && (idxSl < idx) {
-						msg := fmt.Sprintf("%s should go before %s in the switch", name, lastName)
-						pass.Reportf(n.Pos(), msg)
+						pass.Reportf(n.Pos(), "%s should go before %s in the switch", name, lastName)
 					}
 					idx, lastName = idxSl, name
 
@@ -140,8 +140,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 							subidxSl, ok := orderTypes[name]
 							if ok && (subidxSl < subidx) {
-								msg := fmt.Sprintf("%s should go before %s in the switch", name, sublastName)
-								pass.Reportf(n.Pos(), msg)
+								pass.Reportf(n.Pos(), "%s should go before %s in the switch", name, sublastName)
 							}
 							subidx, sublastName = subidxSl, name
 						}

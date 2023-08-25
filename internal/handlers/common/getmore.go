@@ -43,7 +43,8 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 		return nil, err
 	}
 
-	// TODO: Use ExtractParam https://github.com/FerretDB/FerretDB/issues/2859
+	// Use ExtractParam.
+	// TODO https://github.com/FerretDB/FerretDB/issues/2859
 	v, _ := document.Get("collection")
 	if v == nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -82,7 +83,7 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 		)
 	}
 
-	// TODO maxTimeMS https://github.com/FerretDB/FerretDB/issues/2984
+	// TODO https://github.com/FerretDB/FerretDB/issues/2984
 	v, _ = document.Get("maxTimeMS")
 	if v == nil {
 		v = int64(0)
@@ -134,11 +135,13 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 		)
 	}
 
-	// TODO comment https://github.com/FerretDB/FerretDB/issues/2986
+	// Handle comment.
+	// TODO https://github.com/FerretDB/FerretDB/issues/2986
 
 	username, _ := conninfo.Get(ctx).Auth()
 
-	// TODO: Use ExtractParam https://github.com/FerretDB/FerretDB/issues/2859
+	// Use ExtractParam.
+	// TODO https://github.com/FerretDB/FerretDB/issues/2859
 	cursor := registry.Get(cursorID)
 	if cursor == nil || cursor.Username != username {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -150,9 +153,10 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 
 	v, _ = document.Get("batchSize")
 	if v == nil || types.Compare(v, int32(0)) == types.Equal {
-		// TODO: Use 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
+		// Use 16MB batchSize limit.
 		// Unlimited default batchSize is used for missing batchSize and zero values,
 		// set 250 assuming it is small enough not to crash FerretDB.
+		// TODO https://github.com/FerretDB/FerretDB/issues/2824
 		v = int32(250)
 	}
 

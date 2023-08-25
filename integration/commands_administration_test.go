@@ -714,7 +714,9 @@ func TestCommandsAdministrationCollStats(tt *testing.T) {
 
 	// Values are returned as "numbers" that could be int32 or int64.
 	// FerretDB always returns int64 for simplicity.
-	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
+	//
+	// Set better expected results.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1771
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 	assert.EqualValues(t, 6, must.NotFail(doc.Get("count"))) // // Number of documents in DocumentsStrings
 	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
@@ -742,7 +744,8 @@ func TestCommandsAdministrationCollStatsWithScale(tt *testing.T) {
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
-	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
+	// Set better expected results.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1771
 	doc := ConvertDocument(t, actual)
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 	assert.EqualValues(t, 6, must.NotFail(doc.Get("count"))) // Number of documents in DocumentsStrings
@@ -862,7 +865,9 @@ func TestCommandsAdministrationDBStats(tt *testing.T) {
 
 	// Values are returned as "numbers" that could be int32 or int64.
 	// FerretDB always returns int64 for simplicity.
-	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
+	//
+	// Set better expected results.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1771
 	doc := ConvertDocument(t, actual)
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
 	assert.EqualValues(t, 1, doc.Remove("collections"))
@@ -894,7 +899,7 @@ func TestCommandsAdministrationDBStatsEmpty(tt *testing.T) {
 
 	assert.Equal(t, float64(1), doc.Remove("ok"))
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
-	assert.EqualValues(t, float64(1), doc.Remove("scaleFactor")) // TODO use assert.Equal https://github.com/FerretDB/FerretDB/issues/727
+	assert.EqualValues(t, float64(1), doc.Remove("scaleFactor")) // https://github.com/FerretDB/FerretDB/issues/727
 
 	assert.InDelta(t, 1, doc.Remove("collections"), 1)
 	assert.InDelta(t, 35500, doc.Remove("dataSize"), 35500)
@@ -944,7 +949,7 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(tt *testing.T) {
 
 	assert.Equal(t, float64(1), doc.Remove("ok"))
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
-	assert.EqualValues(t, float64(1000), doc.Remove("scaleFactor")) // TODO use assert.Equal https://github.com/FerretDB/FerretDB/issues/727
+	assert.EqualValues(t, float64(1000), doc.Remove("scaleFactor")) // TODO https://github.com/FerretDB/FerretDB/issues/727
 
 	assert.InDelta(t, 1, doc.Remove("collections"), 1)
 	assert.InDelta(t, 35500, doc.Remove("dataSize"), 35500)

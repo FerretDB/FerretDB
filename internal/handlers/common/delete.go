@@ -40,7 +40,7 @@ type DeleteParams struct {
 type Delete struct {
 	Filter  *types.Document `ferretdb:"q"`
 	Limited bool            `ferretdb:"limit,zeroOrOneAsBool"`
-	// TODO: https://github.com/FerretDB/FerretDB/issues/2627
+	// TODO https://github.com/FerretDB/FerretDB/issues/2627
 	Comment string `ferretdb:"comment,opt"`
 
 	Collation *types.Document `ferretdb:"collation,unimplemented"`
