@@ -2069,7 +2069,6 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sumtype", bson.D{{"$sum", bson.D{{"foo", "bar"}}}}},
 				}}},
 			},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Type": {
 			pipeline: bson.A{
@@ -2084,8 +2083,7 @@ func TestAggregateCompatProjectSum(t *testing.T) {
 					{"sum", bson.D{{"$sum", bson.D{{"$invalid", "foo"}}}}},
 				}}},
 			},
-			resultType:     emptyResult,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
+			resultType: emptyResult,
 		},
 		"RecursiveEmptyVariable": {
 			pipeline: bson.A{
