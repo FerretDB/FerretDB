@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 )
@@ -26,11 +27,16 @@ import (
 type backend struct{}
 
 // NewBackendParams represents the parameters of NewBackend function.
-type NewBackendParams struct{}
+//
+//nolint:vet // for readability
+type NewBackendParams struct {
+	URI string
+	L   *zap.Logger
+}
 
 // NewBackend creates a new backend for PostgreSQL-compatible database.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	return backends.BackendContract(&backend{}), nil
+	return backends.BackendContract(new(backend)), nil
 }
 
 // Close implements backends.Backend interface.
