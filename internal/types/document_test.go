@@ -116,6 +116,27 @@ func TestDocument(t *testing.T) {
 			))
 			assert.Equal(t, expected, doc)
 		})
+
+		t.Run("freezeDocument", func(t *testing.T) {
+			t.Parallel()
+
+			doc := must.NotFail(NewDocument(
+				"42", false,
+				"7", true,
+			))
+
+			doc.SortFieldsByKey()
+
+			assert.PanicsWithValue(t, "this document is not mutable its been freezed", func() {
+				doc.SortFieldsByKey() // This should panic since the document is frozen
+			})
+
+			expected := must.NotFail(NewDocument(
+				"42", false,
+				"7", true,
+			))
+			assert.Equal(t, expected, doc)
+		})
 	})
 
 	t.Run("moveIDToTheFirstIndex", func(t *testing.T) {

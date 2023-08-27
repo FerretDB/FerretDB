@@ -121,7 +121,7 @@ func deepCopy(value any) any {
 			}
 		}
 
-		return &Document{fields}
+		return &Document{fields, false}
 
 	case *Array:
 		s := make([]any, len(value.s))

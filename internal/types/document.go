@@ -37,6 +37,7 @@ type document interface {
 // (key/value pairs where key is a string and value is any BSON value).
 type Document struct {
 	fields []field
+	frozen bool
 }
 
 // field represents a field in the document.
@@ -77,7 +78,7 @@ func ConvertDocument(d document) (*Document, error) {
 		}
 	}
 
-	return &Document{fields}, nil
+	return &Document{fields, false}, nil
 }
 
 // MakeDocument creates an empty document with set capacity.
@@ -379,6 +380,9 @@ func (d *Document) RemoveByPath(path Path) {
 
 // SortFieldsByKey sorts the document fields by ascending order of the key.
 func (d *Document) SortFieldsByKey() {
+	if d.frozen {
+		panic("this document is not mutable its been freezed")
+	}
 	sort.Slice(d.fields, func(i, j int) bool { return d.fields[i].key < d.fields[j].key })
 }
 
@@ -423,6 +427,10 @@ func (d *Document) moveIDToTheFirstIndex() {
 	d.fields = slices.Insert(d.fields, 0, field{key: d.fields[idIdx].key, value: d.fields[idIdx].value})
 
 	d.fields = slices.Delete(d.fields, idIdx+1, idIdx+2)
+}
+
+func (d *Document) Freeze() {
+	d.frozen = true
 }
 
 // check interfaces
