@@ -273,6 +273,9 @@ func (d *Document) Get(key string) (any, error) {
 //
 // As a special case, _id always becomes the first key.
 func (d *Document) Set(key string, value any) {
+	if d.frozen {
+		panic("this document is not mutable its been freezed")
+	}
 	if d.isKeyDuplicate(key) {
 		panic(fmt.Sprintf("types.Document.Set: key is duplicated: %s", key))
 	}
@@ -290,6 +293,9 @@ func (d *Document) Set(key string, value any) {
 // Remove the given key and return its value, or nil if the key does not exist.
 // If the key is duplicated, it panics.
 func (d *Document) Remove(key string) any {
+	if d.frozen {
+		panic("this document is not mutable its been freezed")
+	}
 	if d.isKeyDuplicate(key) {
 		panic(fmt.Sprintf("types.Document.Remove: key is duplicated: %s", key))
 	}
@@ -322,6 +328,10 @@ func (d *Document) GetByPath(path Path) (any, error) {
 // The Document type will be used to create these parts.
 // If multiple fields match the path it panics.
 func (d *Document) SetByPath(path Path, value any) error {
+	if d.frozen {
+		panic("this document is not mutable its been freezed")
+	}
+
 	if path.Len() == 1 {
 		d.Set(path.Slice()[0], value)
 		return nil
@@ -370,6 +380,9 @@ func (d *Document) SetByPath(path Path, value any) error {
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
 // If the Path has only one element, it removes the value for the given key.
 func (d *Document) RemoveByPath(path Path) {
+	if d.frozen {
+		panic("this document is not mutable its been freezed")
+	}
 	if path.Len() == 1 {
 		d.Remove(path.Slice()[0])
 

@@ -84,6 +84,10 @@ func (a *Array) GetByPath(path Path) (any, error) {
 
 // Set sets the value at the given index.
 func (a *Array) Set(index int, value any) error {
+	if a.frozen {
+		panic("this array is not mutable its been freezed")
+	}
+
 	if l := a.Len(); index < 0 || index >= l {
 		return fmt.Errorf("types.Array.Set: index %d is out of bounds [0-%d)", index, l)
 	}
@@ -216,6 +220,10 @@ func (a *Array) ContainsAll(b *Array) bool {
 
 // Remove removes the value at the given index.
 func (a *Array) Remove(index int) {
+	if a.frozen {
+		panic("this array is not mutable its been freezed")
+	}
+
 	if l := a.Len(); index < 0 || index >= l {
 		panic("types.Array.Remove: index is out of bounds")
 	}

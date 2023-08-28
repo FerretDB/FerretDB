@@ -58,6 +58,22 @@ func TestDocument(t *testing.T) {
 		assert.Equal(t, "foo", doc.Command())
 	})
 
+	t.Run("panic value", func(t *testing.T) {
+		t.Parallel()
+
+		assert.Nil(t, must.NotFail(NewDocument()).fields)
+
+		var doc Document
+		assert.Equal(t, 0, doc.Len())
+		assert.Nil(t, doc.fields)
+		assert.Equal(t, "", doc.Command())
+
+		doc.Freeze()
+		assert.PanicsWithValue(t, "this document is not mutable its been freezed", func() {
+			doc.Set("foo", Null)
+		})
+	})
+
 	t.Run("NewDocument", func(t *testing.T) {
 		t.Parallel()
 
@@ -177,12 +193,13 @@ func TestDocument(t *testing.T) {
 
 	t.Run("SetByPath", func(t *testing.T) {
 		for _, tc := range []struct {
-			name     string
-			document *Document
-			expected *Document
-			key      string
-			value    any
-			err      error
+			name           string
+			document       *Document
+			expected       *Document
+			key            string
+			value          any
+			err            error
+			expectPanicMsg string
 		}{
 			{
 				name:     "path exists",
@@ -237,6 +254,14 @@ func TestDocument(t *testing.T) {
 					"v", must.NotFail(NewArray("a", Null, "bar")),
 				)),
 			},
+			{
+				name:           "panic error for trying SetPath for freezed doc",
+				document:       must.NotFail(NewDocument("foo", must.NotFail(NewDocument("bar", "baz")))),
+				key:            "foo.baz",
+				value:          "bar",
+				expected:       must.NotFail(NewDocument("foo", must.NotFail(NewDocument("bar", "baz")))),
+				expectPanicMsg: "this document is not mutable its been freezed",
+			},
 		} {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
@@ -245,7 +270,18 @@ func TestDocument(t *testing.T) {
 				path, err := NewPathFromString(tc.key)
 				require.NoError(t, err)
 
-				err = tc.document.SetByPath(path, tc.value)
+				if tc.expectPanicMsg != "" {
+					tc.document.frozen = true
+					assert.PanicsWithValue(t, tc.expectPanicMsg, func() {
+						errr := tc.document.SetByPath(path, tc.value)
+						require.NoError(t, errr)
+					})
+					tc.document.frozen = false
+				}
+
+				if tc.expectPanicMsg == "" {
+					err = tc.document.SetByPath(path, tc.value)
+				}
 
 				if tc.err != nil {
 					assert.Equal(t, tc.err, err)
