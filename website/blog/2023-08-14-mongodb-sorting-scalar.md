@@ -62,12 +62,12 @@ For instance, an Integer value 0 is equivalent to Double 0.0 as far as compariso
 
 ### Null and non-existent field comparison
 
-For the comparison purpose, non-existent field is equivalent to Null.
+For the comparison purpose, a non-existent field is equivalent to Null.
 This means that a field `v` with Null value `{:v null}` and a non-existent `v` field in `{}` are equal as far as comparison is concerned.
 
-## Examples showcasing Sorting for scalar values
+## Examples showcasing sorting for scalar values
 
-Let's create an `outfits` collection using following query to insert documents.
+Let's create an `outfits` collection using the following query to insert documents.
 
 ```js
 db.outfits.insertMany([
@@ -106,7 +106,7 @@ The numbers have higher BSON order of comparison than Null BSON type, so they co
 The documents with numbers are `boots` with Integer BSON type, `sneaker` with Double BSON type and `sandals` with Integer BSON type.
 Notice that Integer BSON type is followed by Double BSON type then by another Integer BSON type?
 The numbers are considered [equivalent BSON types](#number-comparison) so only the values of each number are compared regardless of its specific BSON number type.
-The document `boots` has `size` field value of 8 which is less than 8.5 of `sneakers` or 9 of `sneakers`, so it comes next.
+The document `boots` has a `size` field value of 8 which is less than 8.5 of `sneakers` or 9 of `sandals`, so `boots` comes after that.
 Then the document `sneakers` comes next.
 
 Finally, `flip flops` with String BSON type which has a higher BSON order of comparison than Numbers comes last.
@@ -137,8 +137,8 @@ Null and non-existent field is considered equivalent so either of them can be th
 In such a scenario, the default order that results were found from the database is used.
 
 To consistently preserve the same sorting order, it is recommended to use `_id` as the second field of sorting order.
-Such case, if `color` field has an equivalent value, it uses `_id` field to sort them, allowing consistent output.
-The uniqueness property of `_id` field makes the sorting output consistent.
+Such case, if the `color` field has an equivalent value, it uses the `_id` field to sort them, allowing consistent output.
+The uniqueness property of the `_id` field makes the sorting output consistent.
 
 ```js
 db.outfits.find().sort({ color: 1, _id: 1 })
@@ -154,7 +154,7 @@ db.outfits.find().sort({ color: 1, _id: 1 })
 ]
 ```
 
-The output shows that `sandals` is sorted before `slippers` even though they have equivalent `color` field value.
+The output shows that the document `sandals` is sorted before `slippers` even though they have equivalent `color` field value.
 It is because it uses the second sort field `_id` and `sandals` has a lower `_id`.
 Similarly, `flip flops` and `sneakers` have the same `color` field value.
 But `flip flops` is sorted before because it has a lower `_id`.
