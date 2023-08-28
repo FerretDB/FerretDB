@@ -25,10 +25,10 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestAggregateMatchExprErrors(tt *testing.T) {
-	tt.Parallel()
+func TestAggregateMatchExprErrors(t *testing.T) {
+	t.Parallel()
 
-	ctx, collection := setup.Setup(tt, shareddata.Composites)
+	ctx, collection := setup.Setup(t, shareddata.Composites)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
 		pipeline bson.A // required, aggregation pipeline stages
@@ -174,14 +174,12 @@ func TestAggregateMatchExprErrors(tt *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
+			t.Parallel()
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")

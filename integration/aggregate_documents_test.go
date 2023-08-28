@@ -67,8 +67,6 @@ func TestAggregateAddFieldsErrors(t *testing.T) {
 
 			tt.Parallel()
 
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
-
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
@@ -279,8 +277,6 @@ func TestAggregateGroupErrors(t *testing.T) {
 			}
 
 			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -603,8 +599,6 @@ func TestAggregateProjectErrors(t *testing.T) {
 
 			tt.Parallel()
 
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
-
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
@@ -655,8 +649,6 @@ func TestAggregateSetErrors(t *testing.T) {
 			}
 
 			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -859,8 +851,6 @@ func TestAggregateUnsetErrors(t *testing.T) {
 
 			tt.Parallel()
 
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
-
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
@@ -872,8 +862,8 @@ func TestAggregateUnsetErrors(t *testing.T) {
 	}
 }
 
-func TestAggregateSortErrors(tt *testing.T) {
-	tt.Parallel()
+func TestAggregateSortErrors(t *testing.T) {
+	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
 		pipeline bson.A // required, aggregation pipeline stages
@@ -894,14 +884,12 @@ func TestAggregateSortErrors(tt *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
 				tt.Skip(tc.skip)
 			}
 
 			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -1096,8 +1084,6 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 
 			tt.Parallel()
 
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
-
 			require.NotNil(t, tc.err, "err must not be nil")
 
 			var res bson.D
@@ -1216,8 +1202,6 @@ func TestAggregateCommandCursor(t *testing.T) {
 			}
 
 			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 			var pipeline any = bson.A{}
 			if tc.pipeline != nil {
