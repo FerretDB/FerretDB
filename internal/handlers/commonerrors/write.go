@@ -21,6 +21,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// writeError represents protocol write error.
+// It required to build the correct write error result.
+// The index field is optional and won't be used if it's nil.
+type writeError struct {
+	index  int32
+	errmsg string
+	code   ErrorCode
+}
+
 // WriteErrors represents a slice of protocol write errors.
 // It could be returned for Update, Insert, Delete, and Replace operations.
 type WriteErrors struct {
@@ -68,9 +77,7 @@ func (we *WriteErrors) Document() *types.Document {
 	for _, e := range we.errs {
 		doc := must.NotFail(types.NewDocument())
 
-		if e.index != nil {
-			doc.Set("index", *e.index)
-		}
+		doc.Set("index", e.index)
 
 		// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message.
 		// Otherwise, the mongo client would parse it as a CommandError.
@@ -101,21 +108,21 @@ func (we *WriteErrors) Append(err error, index int32) {
 
 	switch {
 	case errors.As(err, &writeErr):
-		writeErr.index = &index
+		writeErr.index = index
 		we.errs = append(we.errs, *writeErr)
 
 	case errors.As(err, &cmdErr):
 		we.errs = append(we.errs, writeError{
 			code:   cmdErr.code,
 			errmsg: cmdErr.err.Error(),
-			index:  &index,
+			index:  index,
 		})
 
 	default:
 		we.errs = append(we.errs, writeError{
 			code:   errInternalError,
 			errmsg: err.Error(),
-			index:  &index,
+			index:  index,
 		})
 	}
 }
@@ -128,7 +135,7 @@ func (we *WriteErrors) Len() int {
 // Merge merges the given WriteErrors with the current one and sets the given index.
 func (we *WriteErrors) Merge(we2 *WriteErrors, index int32) {
 	for _, e := range we2.errs {
-		e.index = &index
+		e.index = index
 		we.errs = append(we.errs, e)
 	}
 }

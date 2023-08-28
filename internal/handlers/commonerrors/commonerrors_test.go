@@ -14,8 +14,14 @@
 
 package commonerrors
 
-import "testing"
+import (
+	"io"
+	"testing"
 
-func TestDummy(t *testing.T) {
-	// we need at least one test per package to correctly calculate coverage
+	"github.com/stretchr/testify/assert"
+)
+
+func TestNoWrapping(t *testing.T) {
+	err := NewCommandError(errInternalError, io.EOF)
+	assert.NotErrorIs(t, err, io.EOF)
 }
