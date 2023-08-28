@@ -50,7 +50,7 @@ func newSort(stage *types.Document) (aggregations.Stage, error) {
 		)
 	}
 
-	// TODO: https://github.com/FerretDB/FerretDB/issues/2090
+	// TODO https://github.com/FerretDB/FerretDB/issues/2090
 
 	return &sort{
 		fields: fields,

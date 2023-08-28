@@ -55,6 +55,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	cmd := params.Command
 	cmd.Set("$db", params.DB)
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3050
+
 	queryPlanner := types.MakeDocument(0)
 
 	var reply wire.OpMsg

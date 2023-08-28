@@ -85,7 +85,7 @@ The result will be saved as `bin/ferretdb`.
 With `task` installed (see above), you may do the following:
 
 1. Start the development environment with `task env-up`.
-2. Run all tests in another terminal window with `task test`.
+2. Run all tests in another terminal window with `task test` (see [below](#running-tests)).
 3. Start FerretDB with `task run`.
    This will start it in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
    The differences in response are then logged and the FerretDB response is sent back to the client.
@@ -211,7 +211,7 @@ but please also tell us about it, so we can improve all of it.
 If, on the other hand, you see code that is inconsistent without apparent reason (or comment),
 please improve it as you work on it.
 
-Our code most of the standard Go conventions,
+Our code follows most of the standard Go conventions,
 documented on [CodeReviewComments wiki page](https://github.com/golang/go/wiki/CodeReviewComments).
 Some of our idiosyncrasies:
 

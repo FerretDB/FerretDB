@@ -1,6 +1,14 @@
 ---
 # https://github.com/repository-settings/app
 
+repository:
+  allow_squash_merge: true
+  allow_merge_commit: false
+  allow_rebase_merge: false
+  delete_branch_on_merge: true
+  enable_automated_security_fixes: true
+  enable_vulnerability_alerts: true
+
 # https://docs.github.com/en/rest/issues/labels
 labels:
   - name: area/aggregations
@@ -22,6 +30,10 @@ labels:
   - name: area/params
     color: "#FBCA04"
     description: Issues about parameters extraction
+
+  - name: area/pushdown
+    color: "#83F7BA"
+    description: Issues about query pushdown
 
   - name: backend/pg
     color: "#305C83"
