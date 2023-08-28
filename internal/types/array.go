@@ -223,7 +223,7 @@ func (a *Array) Remove(index int) {
 	a.s = append(a.s[:index], a.s[index+1:]...)
 }
 
-// if its frozen it will panic if you try to update values
+// Freeze check it will panic if you try to update values.
 func (a *Array) Freeze() {
 	a.frozen = true
 }

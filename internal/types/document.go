@@ -429,7 +429,7 @@ func (d *Document) moveIDToTheFirstIndex() {
 	d.fields = slices.Delete(d.fields, idIdx+1, idIdx+2)
 }
 
-// if its frozen it will panic if you try to update values
+// Freeze check it will panic if you try to update values.
 func (d *Document) Freeze() {
 	d.frozen = true
 }
