@@ -103,14 +103,10 @@ func (we *WriteErrors) Info() *ErrInfo {
 // appends it to WriteErrors. The index value is an
 // index of the query with error.
 func (we *WriteErrors) Append(err error, index int32) {
-	var writeErr *writeError
 	var cmdErr *CommandError
 
 	switch {
-	case errors.As(err, &writeErr):
-		writeErr.index = index
-		we.errs = append(we.errs, *writeErr)
-
+	// FIXME
 	case errors.As(err, &cmdErr):
 		we.errs = append(we.errs, writeError{
 			code:   cmdErr.code,
