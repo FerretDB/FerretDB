@@ -25,7 +25,8 @@ import (
 //
 // Zero value is a valid empty array.
 type Array struct {
-	s []any
+	s      []any
+	frozen bool
 }
 
 // MakeArray creates an empty array with set capacity.
@@ -107,6 +108,9 @@ func (a *Array) Append(values ...any) {
 
 // RemoveByPath removes (cuts) value by path, doing nothing if path points to nothing.
 func (a *Array) RemoveByPath(path Path) {
+	if a.frozen {
+		panic("this array is not mutable its been freezed")
+	}
 	removeByPath(a, path)
 }
 
@@ -217,4 +221,9 @@ func (a *Array) Remove(index int) {
 	}
 
 	a.s = append(a.s[:index], a.s[index+1:]...)
+}
+
+// if its frozen it will panic if you try to update values
+func (a *Array) Freeze() {
+	a.frozen = true
 }
