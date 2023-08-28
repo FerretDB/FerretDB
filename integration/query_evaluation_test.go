@@ -29,7 +29,8 @@ import (
 )
 
 func TestQueryEvaluationRegex(t *testing.T) {
-	// TODO: move to compat https://github.com/FerretDB/FerretDB/issues/1576
+	// Move to compat.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1576
 
 	t.Parallel()
 	ctx, collection := setup.Setup(t, shareddata.Scalars)

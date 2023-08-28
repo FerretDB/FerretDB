@@ -17,7 +17,6 @@ package integration
 
 import (
 	"context"
-	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -294,7 +293,7 @@ func AssertEqualAltCommandError(t testtb.TB, expected mongo.CommandError, altMes
 
 // AssertEqualAltWriteError asserts that the expected MongoDB error is the same as the actual;
 // the alternative error message may be provided if FerretDB is unable to produce exactly the same text as MongoDB.
-func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessage string, actual error) bool {
+func AssertEqualAltWriteError(t testtb.TB, expected mongo.WriteError, altMessage string, actual error) bool {
 	t.Helper()
 
 	we, ok := actual.(mongo.WriteException)

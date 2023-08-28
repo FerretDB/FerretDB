@@ -28,7 +28,8 @@ import (
 func TestIterator[K, V any](t *testing.T, newIter func() iterator.Interface[K, V]) {
 	t.Helper()
 
-	// TODO more tests https://github.com/FerretDB/FerretDB/issues/2867
+	// more tests
+	// TODO https://github.com/FerretDB/FerretDB/issues/2867
 
 	t.Run("Close", func(t *testing.T) {
 		t.Parallel()

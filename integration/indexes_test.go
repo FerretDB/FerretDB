@@ -26,8 +26,8 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestDropIndexesCommandErrors(t *testing.T) {
-	t.Parallel()
+func TestDropIndexesCommandErrors(tt *testing.T) {
+	tt.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		toCreate []mongo.IndexModel // optional, if set, create the given indexes before drop is called
@@ -132,12 +132,14 @@ func TestDropIndexesCommandErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		tt.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3183")
 
 			if tc.command != nil {
 				require.Nil(t, tc.toDrop, "toDrop must be nil when using command")
@@ -175,8 +177,8 @@ func TestDropIndexesCommandErrors(t *testing.T) {
 	}
 }
 
-func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
-	t.Parallel()
+func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
+	tt.Parallel()
 
 	for name, tc := range map[string]struct {
 		indexes        any  // optional
@@ -369,12 +371,14 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		tt.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3183")
 
 			if tc.missingIndexes {
 				require.Nil(t, tc.indexes, "indexes must be nil if missingIndexes is true")
@@ -409,8 +413,8 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 	}
 }
 
-func TestCreateIndexesCommandInvalidCollection(t *testing.T) {
-	t.Parallel()
+func TestCreateIndexesCommandInvalidCollection(tt *testing.T) {
+	tt.Parallel()
 
 	for name, tc := range map[string]struct {
 		collectionName any
@@ -465,12 +469,14 @@ func TestCreateIndexesCommandInvalidCollection(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		tt.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3183")
 
 			provider := shareddata.ArrayDocuments // one provider is enough to check for errors
 			ctx, collection := setup.Setup(t, provider)
@@ -489,8 +495,8 @@ func TestCreateIndexesCommandInvalidCollection(t *testing.T) {
 	}
 }
 
-func TestDropIndexesCommandInvalidCollection(t *testing.T) {
-	t.Parallel()
+func TestDropIndexesCommandInvalidCollection(tt *testing.T) {
+	tt.Parallel()
 
 	for name, tc := range map[string]struct {
 		collectionName any
@@ -539,12 +545,14 @@ func TestDropIndexesCommandInvalidCollection(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		tt.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3183")
 
 			provider := shareddata.ArrayDocuments // one provider is enough to check for errors
 			ctx, collection := setup.Setup(t, provider)

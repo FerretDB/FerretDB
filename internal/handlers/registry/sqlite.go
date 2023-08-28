@@ -22,10 +22,11 @@ import (
 // init registers "sqlite" handler.
 func init() {
 	registry["sqlite"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		opts.Logger.Warn("SQLite handler is in beta.")
+		opts.Logger.Warn("SQLite backend is in beta.")
 
 		handlerOpts := &sqlite.NewOpts{
-			URI: opts.SQLiteURL,
+			Backend: "sqlite",
+			URI:     opts.SQLiteURL,
 
 			L:             opts.Logger.Named("sqlite"),
 			ConnMetrics:   opts.ConnMetrics,
