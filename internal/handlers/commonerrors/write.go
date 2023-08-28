@@ -25,18 +25,24 @@ import (
 // It required to build the correct write error result.
 // The index field is optional and won't be used if it's nil.
 type writeError struct {
-	index  int32
+	// the order of fields is weird to make the struct smaller due to alignment
+
 	errmsg string
+	index  int32
 	code   ErrorCode
 }
 
 // WriteErrors represents a slice of protocol write errors.
 // It could be returned for Update, Insert, Delete, and Replace operations.
+//
+// Deprecated: https://github.com/FerretDB/FerretDB/issues/3263.
 type WriteErrors struct {
 	errs []writeError
 }
 
 // NewWriteErrorMsg creates a new protocol write error with given ErrorCode and message.
+//
+// Deprecated: https://github.com/FerretDB/FerretDB/issues/3263.
 func NewWriteErrorMsg(code ErrorCode, msg string) error {
 	return &WriteErrors{
 		errs: []writeError{{
@@ -61,33 +67,20 @@ func (we *WriteErrors) Error() string {
 	return err
 }
 
-// Code implements ProtoErr interface.
-func (we *WriteErrors) Code() ErrorCode {
-	for _, e := range we.errs {
-		return e.code
-	}
-
-	return errUnset
-}
-
 // Document implements ProtoErr interface.
 func (we *WriteErrors) Document() *types.Document {
-	errs := must.NotFail(types.NewArray())
+	errs := types.MakeArray(we.Len())
 
 	for _, e := range we.errs {
-		doc := must.NotFail(types.NewDocument())
+		doc := types.MakeDocument(3)
 
 		doc.Set("index", e.index)
-
-		// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message.
-		// Otherwise, the mongo client would parse it as a CommandError.
 		doc.Set("code", int32(e.code))
 		doc.Set("errmsg", e.errmsg)
 
 		errs.Append(doc)
 	}
 
-	// "writeErrors" field must be present in the result document so that clients can parse it as WriteErrors.
 	return must.NotFail(types.NewDocument(
 		"ok", float64(1),
 		"writeErrors", errs,
@@ -106,7 +99,6 @@ func (we *WriteErrors) Append(err error, index int32) {
 	var cmdErr *CommandError
 
 	switch {
-	// FIXME
 	case errors.As(err, &cmdErr):
 		we.errs = append(we.errs, writeError{
 			code:   cmdErr.code,

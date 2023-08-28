@@ -25,3 +25,9 @@ func TestNoWrapping(t *testing.T) {
 	err := NewCommandError(errInternalError, io.EOF)
 	assert.NotErrorIs(t, err, io.EOF)
 }
+
+func TestErrorCodes(t *testing.T) {
+	// conn.route depends on non-empty strings
+	assert.NotEmpty(t, errUnset.String())
+	assert.NotEmpty(t, errInternalError.String())
+}

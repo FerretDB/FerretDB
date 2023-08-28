@@ -323,9 +323,6 @@ type ProtoErr interface {
 	// Error returns error representation for logging and debugging.
 	error
 
-	// Code returns error's code.
-	Code() ErrorCode
-
 	// Document returns error representation for returning to the client.
 	Document() *types.Document
 
