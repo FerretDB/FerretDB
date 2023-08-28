@@ -17,13 +17,13 @@ In this blog post, we explore how MongoDB sorting works for scalar values.
 
 <!--truncate-->
 
-Sorting compares BSON values to determine which value is equal, greater or less than the other to order them in the ascending or descending order.
+Sorting compares BSON values to determine which value is equal, greater or less than the other to return them in the ascending or descending order.
 For comparing different BSON types, [BSON comparison order](#bson-comparison-order) is used.
 
 ## BSON comparison order
 
 If two BSON values share the same BSON type, their values are compared to determine which value is greater or less.
-However, if the BSON types are different, a predefined BSON comparison order is used to determine which BSON type is greater or less.
+However, if the BSON types are different, a predefined BSON comparison order is used.
 
 Below table shows the predefined BSON comparison order for each BSON type.
 
@@ -44,9 +44,9 @@ Below table shows the predefined BSON comparison order for each BSON type.
 | 10                                          | Timestamp                                |
 | 11                                          | Regular Expression                       |
 
-## Comparison of different BSON types
+## Comparison of values with different BSON types
 
-For comparing different BSON types, each BSON type has a predefined order of comparison assigned.
+To compare values of different BSON types, use the predefined order of comparison assigned to each BSON type.
 For example, Null BSON type has the lowest order of comparison 1, so Null is less than any other BSON values.
 Boolean BSON type on the other hand has the order of comparison 8, a BSON type such as ObjectId with a lower order of comparison is less than a Boolean value
 and a BSON type such as Timestamp with a higher order of comparison is greater than a Boolean value.
@@ -63,11 +63,11 @@ For instance, an Integer value 0 is equivalent to Double 0.0 as far as compariso
 ### Null and non-existent field comparison
 
 For the comparison purpose, non-existent field is equivalent to Null.
-This means that Null and non-existent field are equal as far as comparison is concerned.
+This means that a field `v` with Null value `{:v null}` and a non-existent `v` field in `{}` are equal as far as comparison is concerned.
 
 ## Examples showcasing Sorting for scalar values
 
-Suppose there is an `outfits` collection, following query inserts documents.
+Let's create an `outfits` collection using following query to insert documents.
 
 ```js
 db.outfits.insertMany([
@@ -82,7 +82,7 @@ db.outfits.insertMany([
 The `outfits` collection has a `size` field, and it contains different BSON types.
 The document `flip flops` has String field value, `sandals` and `boots` have Integer field values,
 `sneakers` has Double field value and `slippers` is missing the field `size`.
-To sort the collection in ascending order by `size` field, sorting order 1 is used and the following query is run.
+To return the documents in ascending order by `size` field, sorting order 1 is used and the following query is run.
 
 ```js
 db.outfits.find().sort({ size: 1 })
