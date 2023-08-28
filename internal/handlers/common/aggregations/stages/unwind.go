@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonpath"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -54,10 +55,13 @@ func newUnwind(stage *types.Document) (aggregations.ProcessorStage, error) {
 			)
 		}
 
-		opts := aggregations.ExpressionOpts{
-			IgnoreArrays: true,
-		}
-		expr, err = aggregations.NewExpressionWithOpts(field, &opts)
+		// For $unwind to deconstruct an array from dot notation, array must be at the suffix.
+		// It returns empty result if array is found at other parts of dot notation,
+		// so it does not return value by index of array nor values for given key in array's document.
+		expr, err = aggregations.NewExpression(field, &commonpath.FindValuesOpts{
+			FindArrayIndex:     false,
+			FindArrayDocuments: false,
+		})
 
 		if err != nil {
 			var exprErr *aggregations.ExpressionError

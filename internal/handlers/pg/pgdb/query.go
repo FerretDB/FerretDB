@@ -254,21 +254,22 @@ func prepareWhereClause(p *Placeholder, sqlFilters *types.Document) (string, []a
 
 		path, err := types.NewPathFromString(rootKey)
 
-		var pe *types.DocumentPathError
+		var pe *types.PathError
 
 		switch {
 		case err == nil:
-			// TODO dot notation https://github.com/FerretDB/FerretDB/issues/2069
+			// Handle dot notation.
+			// TODO https://github.com/FerretDB/FerretDB/issues/2069
 			if path.Len() > 1 {
 				continue
 			}
 		case errors.As(err, &pe):
 			// ignore empty key error, otherwise return error
-			if pe.Code() != types.ErrDocumentPathEmptyKey {
+			if pe.Code() != types.ErrPathElementEmpty {
 				return "", nil, lazyerrors.Error(err)
 			}
 		default:
-			panic("Invalid error type: DocumentPathError expected ")
+			panic("Invalid error type: PathError expected")
 		}
 
 		switch v := rootVal.(type) {
@@ -322,7 +323,8 @@ func prepareWhereClause(p *Placeholder, sqlFilters *types.Document) (string, []a
 					}
 
 				default:
-					// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
+					// $gt and $lt
+					// TODO https://github.com/FerretDB/FerretDB/issues/1875
 					continue
 				}
 			}

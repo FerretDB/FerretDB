@@ -82,13 +82,14 @@ func newCollStats(params newProducerStageParams) (aggregations.ProducerStage, er
 		datasource: params.datasource,
 	}
 
-	// TODO Return error on invalid type of count: https://github.com/FerretDB/FerretDB/issues/2336
+	// Return error on invalid type of count.
+	// TODO https://github.com/FerretDB/FerretDB/issues/2336
 	cs.count = fields.Has("count")
 
-	// TODO Implement latencyStats: https://github.com/FerretDB/FerretDB/issues/2341
+	// TODO https://github.com/FerretDB/FerretDB/issues/2341
 	cs.latencyStats = fields.Has("latencyStats")
 
-	// TODO Implement queryExecStats: https://github.com/FerretDB/FerretDB/issues/2341
+	// TODO https://github.com/FerretDB/FerretDB/issues/2341
 	cs.queryExecStats = fields.Has("queryExecStats")
 
 	if fields.Has("storageStats") {

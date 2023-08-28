@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.20.6-1 AS development-build
+FROM ghcr.io/ferretdb/golang:1.20.7-1 AS development-build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -38,8 +38,6 @@ RUN --mount=type=cache,target=/cache \
 ENV GOPROXY https://proxy.golang.org
 
 ENV CGO_ENABLED=1
-ENV GOCOVERDIR=cover
-ENV GORACE=halt_on_error=1,history_size=2
 ENV GOARM=7
 
 # do not raise it without providing a v1 build because v2+ is problematic
@@ -70,8 +68,7 @@ fi
 # check that stdlib was cached
 go install -v -race=$RACE std
 
-go build -v                 -o=bin/ferretdb -race=$RACE -tags=ferretdb_testcover ./cmd/ferretdb
-go test  -c -coverpkg=./... -o=bin/ferretdb -race=$RACE -tags=ferretdb_testcover ./cmd/ferretdb
+go build -o=bin/ferretdb -race=$RACE -tags=ferretdb_debug -coverpkg=./... ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version
@@ -80,12 +77,17 @@ EOF
 
 # final stage
 
-FROM golang:1.20.6 AS development
+FROM golang:1.20.7 AS development
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
 
 COPY --from=development-build /src/bin/ferretdb /ferretdb
+
+ENV GOCOVERDIR=/tmp/cover
+ENV GORACE=halt_on_error=1,history_size=2
+
+RUN mkdir /tmp/cover
 
 WORKDIR /
 ENTRYPOINT [ "/ferretdb" ]

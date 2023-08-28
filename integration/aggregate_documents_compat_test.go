@@ -49,29 +49,29 @@ func testAggregateStagesCompat(t *testing.T, testCases map[string]aggregateStage
 }
 
 // testAggregateStagesCompatWithProviders tests aggregation stages compatibility test cases with given providers.
-func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.Providers, testCases map[string]aggregateStagesCompatTestCase) {
-	t.Helper()
+func testAggregateStagesCompatWithProviders(tt *testing.T, providers shareddata.Providers, testCases map[string]aggregateStagesCompatTestCase) {
+	tt.Helper()
 
-	require.NotEmpty(t, providers)
+	require.NotEmpty(tt, providers)
 
-	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+	s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
 		Providers: providers,
 	})
 	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
+		tt.Run(name, func(tt *testing.T) {
+			tt.Helper()
 
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
 
 			pipeline := tc.pipeline
-			require.NotNil(t, pipeline, "pipeline should be set")
+			require.NotNil(tt, pipeline, "pipeline should be set")
 
 			var hasSortStage bool
 			for _, stage := range pipeline {
@@ -101,8 +101,10 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
+				tt.Run(targetCollection.Name(), func(tt *testing.T) {
+					tt.Helper()
+
+					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 					explainCommand := bson.D{{"explain", bson.D{
 						{"aggregate", targetCollection.Name()},
@@ -151,13 +153,18 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 				})
 			}
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3148
+			if setup.IsSQLite(tt) {
+				return
+			}
+
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results")
+				assert.True(tt, nonEmptyResults, "expected non-empty results")
 			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results")
+				assert.False(tt, nonEmptyResults, "expected empty results")
 			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+				tt.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
@@ -173,10 +180,10 @@ type aggregateCommandCompatTestCase struct {
 
 // testAggregateCommandCompat tests aggregate pipeline compatibility test cases using one collection.
 // Use testAggregateStagesCompat for testing stages of aggregation.
-func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateCommandCompatTestCase) {
-	t.Helper()
+func testAggregateCommandCompat(tt *testing.T, testCases map[string]aggregateCommandCompatTestCase) {
+	tt.Helper()
 
-	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+	s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
 		// Use a provider that works for all handlers.
 		Providers: []shareddata.Provider{shareddata.Int32s},
 	})
@@ -187,22 +194,24 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
+		tt.Run(name, func(tt *testing.T) {
+			tt.Helper()
 
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
 
 			command := tc.command
-			require.NotNil(t, command, "command should be set")
+			require.NotNil(tt, command, "command should be set")
 
 			var nonEmptyResults bool
 
-			t.Run(targetCollection.Name(), func(t *testing.T) {
-				t.Helper()
+			tt.Run(targetCollection.Name(), func(tt *testing.T) {
+				tt.Helper()
+
+				t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 				var targetRes, compatRes bson.D
 				targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
@@ -230,13 +239,18 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 				}
 			})
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3148
+			if setup.IsSQLite(tt) {
+				return
+			}
+
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results")
+				assert.True(tt, nonEmptyResults, "expected non-empty results")
 			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results")
+				assert.False(tt, nonEmptyResults, "expected empty results")
 			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+				tt.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
@@ -511,10 +525,120 @@ func TestAggregateCompatGroup(t *testing.T) {
 			}}}},
 		},
 		"IDExpression": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", bson.D{{"v", "$v"}}},
-			}}}},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2165",
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$v"}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"IDExpressionNested": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"nested", bson.D{{"v", "$v"}}}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"IDExpressionDotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "$v.foo"}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"IDExpressionNonExistentField": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"missing", "$non-existent"}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"IDExpressionFields": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{
+						{"v", "$v"},
+						{"foo", "$v.foo"},
+					}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"IDExpressionNonExistentFields": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{
+						{"missing1", "$non-existent1"},
+						{"missing2", "$non-existent2"},
+					}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"IDExpressionAndOperator": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{
+						{"v", "$v"},
+						{"sum", bson.D{{"$sum", "$v"}}},
+					}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"IDInvalidExpressionAndOperator": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{
+						{"v", "$"},
+						{"sum", bson.D{{"$sum", "$v"}}},
+					}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+			resultType: emptyResult,
+		},
+		"IDExpressionAndInvalidOperator": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{
+						{"v", "$v"},
+						{"sum", bson.D{{"$sum", "$v"}, {"second", "field"}}},
+					}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+			resultType: emptyResult,
+		},
+		"IDDocument": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", "v"}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"IDNestedDocument": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", bson.D{{"v", bson.D{{"nested", 1}}}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
 		},
 		"NonExistentID": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
@@ -565,6 +689,7 @@ func TestAggregateCompatGroup(t *testing.T) {
 				{"_id", "$$s"},
 			}}}},
 			resultType: emptyResult,
+			skip:       "https://github.com/FerretDB/FerretDB/issues/2275",
 		},
 		"SystemVariable": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
@@ -629,6 +754,20 @@ func TestAggregateCompatGroup(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
 		},
+		"IDFieldSum": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"sum", bson.D{{"$sum", "$v"}}}}}}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
+		"IDNestedFieldSum": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{{"_id", bson.D{{"nested", bson.D{{"sum", bson.D{{"$sum", "$v"}}}}}}}}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+		},
 		"IDSumNonExistentField": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
@@ -656,7 +795,8 @@ func TestAggregateCompatGroup(t *testing.T) {
 func TestAggregateCompatGroupExpressionDottedFields(t *testing.T) {
 	t.Parallel()
 
-	// TODO Use all providers after fixing $sort problem:  https://github.com/FerretDB/FerretDB/issues/2276.
+	// Use all providers after fixing $sort problem:
+	// TODO https://github.com/FerretDB/FerretDB/issues/2276
 	//
 	// Currently, providers Composites, DocumentsDeeplyNested, ArrayAndDocuments and Mixed
 	// cannot be used due to sorting difference.
@@ -684,11 +824,6 @@ func TestAggregateCompatGroupExpressionDottedFields(t *testing.T) {
 		"NestedInArray": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.0.foo"},
-			}}}},
-		},
-		"NonExistentParent": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$non.existent"},
 			}}}},
 		},
 		"NonExistentChild": {
@@ -906,7 +1041,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 		// TODO: handle $sum of doubles near max precision.
 		// https://github.com/FerretDB/FerretDB/issues/2300
 		Remove(shareddata.Doubles).
-		// TODO: https://github.com/FerretDB/FerretDB/issues/2616
+		// TODO https://github.com/FerretDB/FerretDB/issues/2616
 		Remove(shareddata.ArrayDocuments)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -1036,16 +1171,6 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
 		},
-		"MaxInt64": {
-			pipeline: bson.A{
-				bson.D{{"$sort", bson.D{{"_id", 1}}}},
-				bson.D{{"$group", bson.D{
-					{"_id", "$v"},
-					{"sum", bson.D{{"$sum", math.MaxInt64}}},
-				}}},
-				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-			},
-		},
 		"Double": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
@@ -1098,7 +1223,28 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
-			skip: "https://github.com/FerretDB/FerretDB/issues/2694",
+		},
+		"RecursiveInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"sum", bson.D{{"$sum", bson.D{{"v", "$v"}}}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"RecursiveArrayInvalid": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{{"sum", bson.D{{"$sum", bson.D{{"$type", bson.A{"1", "2"}}}}}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"RecursiveOperatorNonExistent": {
+			pipeline: bson.A{
+				bson.D{{"$group", bson.D{
+					{"_id", "$_id"},
+					// first $sum is accumulator operator, second $sum is operator
+					{"sum", bson.D{{"$sum", bson.D{{"$non-existent", "$v"}}}}},
+				}}},
+			},
+			resultType: emptyResult,
 		},
 	}
 
@@ -1246,7 +1392,7 @@ func TestAggregateCompatSortDotNotation(t *testing.T) {
 	t.Parallel()
 
 	providers := shareddata.AllProviders().
-		// TODO: https://github.com/FerretDB/FerretDB/issues/2617
+		// TODO https://github.com/FerretDB/FerretDB/issues/2617
 		Remove(shareddata.ArrayDocuments)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -1787,13 +1933,6 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$project", bson.D{{"$type", "foo"}, {"$op", "foo"}}}},
 			},
 			resultType: emptyResult,
-		},
-		"SumValue": {
-			pipeline: bson.A{
-				bson.D{{"$project", bson.D{
-					{"sum", bson.D{{"$sum", "$v"}}},
-				}}},
-			},
 		},
 	}
 

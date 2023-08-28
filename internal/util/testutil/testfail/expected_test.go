@@ -14,23 +14,57 @@
 
 package testfail
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestNormal(t *testing.T) {
+	// comment out to test manually
+	t.Skip("test fails (as expected)")
+
+	t.Parallel()
+
+	t.Run("Fatal", func(t *testing.T) {
+		t.Fatal("Fatal")
+
+		panic("not reached")
+	})
+
+	assert.True(t, t.Failed())
+
+	t.Run("ErrorAndSkip", func(t *testing.T) {
+		t.Error("Error")
+		t.SkipNow()
+
+		panic("not reached")
+	})
+
+	assert.True(t, t.Failed())
+
+	t.Skip("skipping failing test does not mark it as not failed")
+}
 
 func TestExpected(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Fail", func(tt *testing.T) {
-		tt.Parallel()
-
+	t.Run("Fatal", func(tt *testing.T) {
 		t := Expected(tt, "expected failure")
-		t.FailNow()
+		t.Fatal("Fatal")
+
+		panic("not reached")
 	})
 
-	t.Run("FailAndSkip", func(tt *testing.T) {
-		tt.Parallel()
+	assert.False(t, t.Failed())
 
+	t.Run("ErrorAndSkip", func(tt *testing.T) {
 		t := Expected(tt, "expected failure")
-		t.Fail()
+		t.Error("Error")
 		t.SkipNow()
+
+		panic("not reached")
 	})
+
+	assert.False(t, t.Failed())
 }

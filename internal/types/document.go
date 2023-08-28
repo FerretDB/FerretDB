@@ -33,7 +33,8 @@ type document interface {
 	Values() []any
 }
 
-// Document represents BSON document.
+// Document represents BSON document: an ordered collection of fields
+// (key/value pairs where key is a string and value is any BSON value).
 type Document struct {
 	fields []field
 }
@@ -49,7 +50,8 @@ type field struct {
 // ConvertDocument converts bson.Document to *types.Document.
 // It references the same data without copying it.
 //
-// TODO Remove this function: https://github.com/FerretDB/FerretDB/issues/260
+// Remove this function.
+// TODO https://github.com/FerretDB/FerretDB/issues/260
 func ConvertDocument(d document) (*Document, error) {
 	if d == nil {
 		panic("types.ConvertDocument: d is nil")
@@ -126,7 +128,7 @@ func (d *Document) DeepCopy() *Document {
 	return deepCopy(d).(*Document)
 }
 
-// Len returns the number of elements in the document.
+// Len returns the number of fields in the document.
 //
 // It returns 0 for nil Document.
 func (d *Document) Len() int {
@@ -308,7 +310,7 @@ func (d *Document) HasByPath(path Path) bool {
 	return err == nil
 }
 
-// GetByPath returns a value by path - a sequence of indexes and keys.
+// GetByPath returns a value by path.
 // If the Path has only one element, it returns the value for the given key.
 func (d *Document) GetByPath(path Path) (any, error) {
 	return getByPath(d, path)

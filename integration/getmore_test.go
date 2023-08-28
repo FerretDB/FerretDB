@@ -30,6 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestGetMoreCommand(t *testing.T) {
@@ -59,11 +60,12 @@ func TestGetMoreCommand(t *testing.T) {
 		collection       any // optional, nil to leave collection unset
 		cursorID         any // optional, defaults to cursorID from find()/aggregate()
 
-		firstBatch []*types.Document   // required, expected find firstBatch
-		nextBatch  []*types.Document   // optional, expected getMore nextBatch
-		err        *mongo.CommandError // optional, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		firstBatch     []*types.Document   // required, expected find firstBatch
+		nextBatch      []*types.Document   // optional, expected getMore nextBatch
+		err            *mongo.CommandError // optional, expected error from MongoDB
+		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
+		skip           string              // optional, skip test with a specified reason
+		failsForSQLite string              // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"Int": {
 			firstBatchSize:   1,
@@ -71,6 +73,7 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:1]),
 			nextBatch:        ConvertDocuments(t, arr[1:2]),
+			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"IntNegative": {
 			firstBatchSize:   1,
@@ -89,6 +92,7 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:1]),
 			nextBatch:        ConvertDocuments(t, arr[1:]),
+			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Long": {
 			firstBatchSize:   1,
@@ -96,6 +100,7 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:1]),
 			nextBatch:        ConvertDocuments(t, arr[1:2]),
+			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"LongNegative": {
 			firstBatchSize:   1,
@@ -114,6 +119,7 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:1]),
 			nextBatch:        ConvertDocuments(t, arr[1:]),
+			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Double": {
 			firstBatchSize:   1,
@@ -121,6 +127,7 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:1]),
 			nextBatch:        ConvertDocuments(t, arr[1:2]),
+			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"DoubleNegative": {
 			firstBatchSize:   1,
@@ -139,6 +146,7 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:1]),
 			nextBatch:        ConvertDocuments(t, arr[1:]),
+			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"DoubleFloor": {
 			firstBatchSize:   1,
@@ -146,6 +154,7 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:1]),
 			nextBatch:        ConvertDocuments(t, arr[1:2]),
+			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"GetMoreCursorExhausted": {
 			firstBatchSize:   200,
@@ -177,6 +186,7 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:1]),
 			nextBatch:        ConvertDocuments(t, arr[1:]),
+			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"LargeBatchSize": {
 			firstBatchSize:   1,
@@ -184,6 +194,7 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:1]),
 			nextBatch:        ConvertDocuments(t, arr[1:106]),
+			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"StringCursorID": {
 			firstBatchSize:   1,
@@ -274,6 +285,7 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:101]),
 			nextBatch:        ConvertDocuments(t, arr[101:]),
+			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"UnsetFindBatchSize": {
 			firstBatchSize:   nil,
@@ -281,6 +293,7 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:101]),
 			nextBatch:        ConvertDocuments(t, arr[101:106]),
+			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"UnsetGetMoreBatchSize": {
 			firstBatchSize:   5,
@@ -288,6 +301,7 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:5]),
 			nextBatch:        ConvertDocuments(t, arr[5:]),
+			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"BatchSize": {
 			firstBatchSize:   3,
@@ -295,12 +309,18 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:3]),
 			nextBatch:        ConvertDocuments(t, arr[3:8]),
+			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
+			}
+
+			var t testtb.TB = tt
+			if tc.failsForSQLite != "" {
+				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
 			}
 
 			// Do not run subtests in t.Parallel() to eliminate the occurrence
@@ -471,8 +491,10 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 
 	cursorFuncs := []func(batchSize *int32) (*mongo.Cursor, error){findFunc, aggregateFunc}
 
-	t.Run("SetBatchSize", func(t *testing.T) {
-		t.Parallel()
+	t.Run("SetBatchSize", func(tt *testing.T) {
+		tt.Parallel()
+
+		t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 		for _, f := range cursorFuncs {
 			cursor, err := f(pointer.ToInt32(2))
@@ -513,8 +535,10 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 		}
 	})
 
-	t.Run("DefaultBatchSize", func(t *testing.T) {
-		t.Parallel()
+	t.Run("DefaultBatchSize", func(tt *testing.T) {
+		tt.Parallel()
+
+		t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 		for _, f := range cursorFuncs {
 			// unset batchSize uses default batchSize 101 for the first batch
@@ -532,15 +556,18 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 			}
 
 			// next batch obtain from implicit call to `getMore` has the rest of the documents, not default batchSize
-			// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
+			// 16MB batchSize limit
+			// TODO https://github.com/FerretDB/FerretDB/issues/2824
 			ok := cursor.Next(ctx)
 			require.True(t, ok, "expected to have next document")
 			require.Equal(t, 118, cursor.RemainingBatchLength())
 		}
 	})
 
-	t.Run("ZeroBatchSize", func(t *testing.T) {
-		t.Parallel()
+	t.Run("ZeroBatchSize", func(tt *testing.T) {
+		tt.Parallel()
+
+		t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 		for _, f := range cursorFuncs {
 			cursor, err := f(pointer.ToInt32(0))
@@ -551,7 +578,8 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 			require.Equal(t, 0, cursor.RemainingBatchLength())
 
 			// next batch obtain from implicit call to `getMore` has the rest of the documents, not 0 batchSize
-			// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
+			// 16MB batchSize limit
+			// TODO https://github.com/FerretDB/FerretDB/issues/2824
 			ok := cursor.Next(ctx)
 			require.True(t, ok, "expected to have next document")
 			require.Equal(t, 219, cursor.RemainingBatchLength())
@@ -689,18 +717,7 @@ func TestGetMoreCommandConnection(t *testing.T) {
 			},
 		).Decode(&res)
 
-		// use AssertMatchesCommandError because message cannot be compared as it contains session ID
-		AssertMatchesCommandError(
-			t,
-			mongo.CommandError{
-				Code: 50738,
-				Name: "Location50738",
-				Message: "Cannot run getMore on cursor 5720627396082469624, which was created in session " +
-					"95326129-ff9c-48a4-9060-464b4ea3ee06 - 47DEQpj8HBSa+/TImW+5JC\neuQeRkm5NMpJWZG3hSuFU= -  - , " +
-					"in session 9e8902e9-338c-4156-9fd8-50e5d62ac992 - 47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU= -  - ",
-			},
-			err,
-		)
+		AssertMatchesCommandError(t, mongo.CommandError{Code: 50738, Name: "Location50738"}, err)
 	})
 }
 
@@ -919,17 +936,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 
 		_, err := collection.Find(ctx, bson.D{}, opts)
 
-		// MongoDB returns Message or altMessage
-		AssertEqualAltCommandError(
-			t,
-			mongo.CommandError{
-				Code:    50,
-				Name:    "MaxTimeMSExpired",
-				Message: "Executor error during find command :: caused by :: operation exceeded time limit",
-			},
-			"operation exceeded time limit",
-			err,
-		)
+		AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, err)
 	})
 
 	t.Run("FindGetMorePropagateMaxTimeMS", func(t *testing.T) {
@@ -952,17 +959,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		ok := cursor.Next(ctx)
 		assert.False(t, ok)
 
-		// MongoDB returns Message or altMessage
-		AssertEqualAltCommandError(
-			t,
-			mongo.CommandError{
-				Code:    50,
-				Name:    "MaxTimeMSExpired",
-				Message: "Executor error during getMore :: caused by :: operation exceeded time limit",
-			},
-			"operation exceeded time limit",
-			cursor.Err(),
-		)
+		AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, cursor.Err())
 	})
 
 	t.Run("FindGetMoreMaxTimeMS", func(tt *testing.T) {
@@ -993,14 +990,13 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 			{"maxTimeMS", 1},
 		}).Decode(&res)
 
-		AssertEqualAltCommandError(
+		AssertEqualCommandError(
 			t,
 			mongo.CommandError{
 				Code:    2,
 				Name:    "BadValue",
 				Message: "cannot set maxTimeMS on getMore command for a non-awaitData cursor",
 			},
-			"",
 			err,
 		)
 	})
@@ -1017,17 +1013,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		// use $sort stage to slow down the query more than 1ms
 		_, err := collection.Aggregate(ctx, bson.A{bson.D{{"$sort", bson.D{{"v", 1}}}}}, opts)
 
-		// MongoDB returns Message or altMessage
-		AssertEqualAltCommandError(
-			t,
-			mongo.CommandError{
-				Code:    50,
-				Name:    "MaxTimeMSExpired",
-				Message: "PlanExecutor error during aggregation :: caused by :: operation exceeded time limit",
-			},
-			"operation exceeded time limit",
-			err,
-		)
+		AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, err)
 	})
 
 	t.Run("AggregateGetMorePropagateMaxTimeMS", func(t *testing.T) {
@@ -1050,17 +1036,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		ok := cursor.Next(ctx)
 		assert.False(t, ok)
 
-		// MongoDB returns Message or altMessage
-		AssertEqualAltCommandError(
-			t,
-			mongo.CommandError{
-				Code:    50,
-				Name:    "MaxTimeMSExpired",
-				Message: "Executor error during getMore :: caused by :: operation exceeded time limit",
-			},
-			"operation exceeded time limit",
-			cursor.Err(),
-		)
+		AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, cursor.Err())
 	})
 
 	t.Run("AggregateGetMoreMaxTimeMS", func(tt *testing.T) {

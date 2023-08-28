@@ -19,6 +19,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -40,6 +41,10 @@ func newMatch(stage *types.Document) (aggregations.ProcessorStage, error) {
 		)
 	}
 
+	if err := validateMatch(filter); err != nil {
+		return nil, err
+	}
+
 	return &match{
 		filter: filter,
 	}, nil
@@ -48,6 +53,18 @@ func newMatch(stage *types.Document) (aggregations.ProcessorStage, error) {
 // Process implements ProcessorStage interface.
 func (m *match) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	return common.FilterIterator(iter, closer, m.filter), nil
+}
+
+// validateMatch validates $expr field if any.
+func validateMatch(filter *types.Document) error {
+	if filter.Has("$expr") {
+		_, err := operators.NewExpr(filter, "$match (stage)")
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // check interfaces

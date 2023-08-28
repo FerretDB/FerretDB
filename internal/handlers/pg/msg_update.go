@@ -85,7 +85,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					continue
 				}
 
-				// TODO: https://github.com/FerretDB/FerretDB/issues/3040
+				// TODO https://github.com/FerretDB/FerretDB/issues/3040
 				hasQueryOperators, err := common.HasQueryOperator(u.Filter)
 				if err != nil {
 					return lazyerrors.Error(err)
@@ -104,7 +104,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				}
 
 				if hasUpdateOperators {
-					// TODO: https://github.com/FerretDB/FerretDB/issues/3044
+					// TODO https://github.com/FerretDB/FerretDB/issues/3044
 					if _, err = common.UpdateDocument(document.Command(), doc, u.Update); err != nil {
 						return err
 					}
@@ -130,7 +130,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				continue
 			}
 
-			if len(resDocs) > 1 && !u.Multi {
+			if len(resDocs) > 1 && !u.Multi { // lalala
 				resDocs = resDocs[:1]
 			}
 
@@ -190,5 +190,18 @@ func updateDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc *t
 		return res, nil
 	}
 
-	return 0, commonerrors.CheckError(err)
+	var ve *types.ValidationError
+
+	if !errors.As(err, &ve) {
+		return 0, lazyerrors.Error(err)
+	}
+
+	switch ve.Code() {
+	case types.ErrValidation, types.ErrIDNotFound:
+		return 0, commonerrors.NewCommandErrorMsg(commonerrors.ErrBadValue, ve.Error())
+	case types.ErrWrongIDType:
+		return 0, commonerrors.NewWriteErrorMsg(commonerrors.ErrInvalidID, ve.Error())
+	default:
+		panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
+	}
 }

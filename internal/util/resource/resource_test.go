@@ -12,5 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package sqlite provides SQLite backend.
-package sqlite
+package resource
+
+import "testing"
+
+func TestDummy(t *testing.T) {
+	// we need at least one test per package to correctly calculate coverage
+}

@@ -31,6 +31,8 @@ type insertCompatTestCase struct {
 	insert     []any                    // required, slice of bson.D to be insert
 	ordered    bool                     // defaults to false
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
+
+	skipForSQLite string // optional, if set, the case is skipped for SQLite due to given issue
 }
 
 // testInsertCompat tests insert compatibility test cases.
@@ -39,6 +41,11 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 
 	for name, tc := range testCases {
 		name, tc := name, tc
+
+		if tc.skipForSQLite != "" && setup.IsSQLite(t) {
+			t.Skipf(tc.skipForSQLite)
+		}
+
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 			t.Parallel()
@@ -50,7 +57,7 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 				ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
 				insert := tc.insert
-				require.NotNil(t, insert, "insert should be set")
+				require.NotEmpty(t, insert, "insert should be set")
 
 				for i := range targetCollections {
 					targetCollection := targetCollections[i]
@@ -63,7 +70,7 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 							compatInsertRes, compatErr := compatCollection.InsertOne(ctx, doc)
 
 							if targetErr != nil {
-								switch targetErr := targetErr.(type) { //nolint:errorlint // don't inspect error chain.
+								switch targetErr := targetErr.(type) { //nolint:errorlint // don't inspect error chain
 								case mongo.WriteException:
 									AssertMatchesWriteError(t, compatErr, targetErr)
 								case mongo.BulkWriteException:
@@ -91,8 +98,6 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 				}
 			})
 
-			// InsertOne and InsertMany might have different response formats,
-			// so both need to be tested.
 			t.Run("InsertMany", func(t *testing.T) {
 				t.Helper()
 				t.Parallel()
@@ -100,12 +105,13 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 				ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
 				insert := tc.insert
-				require.NotNil(t, insert, "insert should be set")
+				require.NotEmpty(t, insert, "insert should be set")
 
 				var nonEmptyResults bool
 				for i := range targetCollections {
 					targetCollection := targetCollections[i]
 					compatCollection := compatCollections[i]
+
 					t.Run(targetCollection.Name(), func(t *testing.T) {
 						t.Helper()
 
@@ -120,7 +126,7 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 						}
 
 						if targetErr != nil {
-							switch targetErr := targetErr.(type) { //nolint:errorlint // don't inspect error chain.
+							switch targetErr := targetErr.(type) { //nolint:errorlint // don't inspect error chain
 							case mongo.WriteException:
 								AssertMatchesWriteError(t, compatErr, targetErr)
 							case mongo.BulkWriteException:
@@ -163,48 +169,58 @@ func TestInsertCompat(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]insertCompatTestCase{
-		"InsertIDArray": {
-			insert:     []any{bson.D{{"_id", bson.A{"foo", "bar"}}}},
-			resultType: emptyResult,
-		},
-		"InsertIDRegex": {
-			insert:     []any{bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}}},
-			resultType: emptyResult,
+		"Normal": {
+			insert: []any{bson.D{{"_id", int32(42)}}},
 		},
 
-		"InsertOrderedAllErrors": {
+		"IDArray": {
+			insert:        []any{bson.D{{"_id", bson.A{"foo", "bar"}}}},
+			resultType:    emptyResult,
+			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/2750",
+		},
+		"IDRegex": {
+			insert:        []any{bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}}},
+			resultType:    emptyResult,
+			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/2750",
+		},
+
+		"OrderedAllErrors": {
 			insert: []any{
 				bson.D{{"_id", bson.A{"foo", "bar"}}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 			},
-			ordered:    true,
-			resultType: emptyResult,
+			ordered:       true,
+			resultType:    emptyResult,
+			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/2750",
 		},
-		"InsertUnorderedAllErrors": {
+		"UnorderedAllErrors": {
 			insert: []any{
 				bson.D{{"_id", bson.A{"foo", "bar"}}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 			},
-			ordered:    false,
-			resultType: emptyResult,
+			ordered:       false,
+			resultType:    emptyResult,
+			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/2750",
 		},
 
-		"InsertOrderedOneError": {
+		"OrderedOneError": {
 			insert: []any{
 				bson.D{{"_id", "1"}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 				bson.D{{"_id", "2"}},
 			},
-			ordered: true,
+			ordered:       true,
+			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/2750",
 		},
-		"InsertUnorderedOneError": {
+		"UnorderedOneError": {
 			insert: []any{
 				bson.D{{"_id", "1"}},
 				bson.D{{"_id", "1"}}, // to test duplicate key error
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 				bson.D{{"_id", "2"}},
 			},
-			ordered: false,
+			ordered:       false,
+			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/2750",
 		},
 	}
 

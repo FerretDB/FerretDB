@@ -77,6 +77,7 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 			)
 		}
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/3127
 		path, err := types.NewPathFromString(key)
 		if err != nil {
 			if strings.HasSuffix(key, "$") {
@@ -289,7 +290,7 @@ func ProjectDocument(doc, projection *types.Document, inclusion bool) (*types.Do
 
 	projectedWithoutID, err := projectDocumentWithoutID(doc, projection, inclusion)
 	if err != nil {
-		// TODO: https://github.com/FerretDB/FerretDB/issues/2633
+		// TODO https://github.com/FerretDB/FerretDB/issues/2633
 		return nil, err
 	}
 
@@ -328,6 +329,7 @@ func projectDocumentWithoutID(doc *types.Document, projection *types.Document, i
 			return nil, lazyerrors.Error(err)
 		}
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/3127
 		path, err := types.NewPathFromString(key)
 		if err != nil {
 			return nil, lazyerrors.Error(err)

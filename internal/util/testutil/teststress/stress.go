@@ -67,7 +67,10 @@ func Stress(tb testtb.TB, f func(ready chan<- struct{}, start <-chan struct{})) 
 
 	for i := 0; i < NumGoroutines; i++ {
 		select {
-		case <-readyCh:
+		case _, ok := <-readyCh:
+			if !ok {
+				tb.Error("f closed ready channel")
+			}
 		case <-ctx.Done():
 		}
 	}

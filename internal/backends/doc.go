@@ -14,7 +14,7 @@
 
 // Package backends provides common interfaces and code for all backend implementations.
 //
-// # Design principles.
+// # Design principles
 //
 //  1. Interfaces are relatively high-level and "fat" (or not).
 //     We are generally doing one backend interface call per handler call.
@@ -29,7 +29,7 @@
 //     Database objects are almost stateless but should be Close()'d to avoid connection leaks.
 //     Collection objects are fully stateless.
 //  3. Contexts are per-operation and should not be stored.
-//  4. Errors returned by methods could be nil, *Error, or some other opaque error type.
+//  4. Errors returned by methods could be nil, [*Error], or some other opaque error type.
 //     *Error values can't be wrapped or be present anywhere in the error chain.
 //     Contracts enforce *Error codes; they are not documented in the code comments
 //     but are visible in the contract's code (to avoid duplication).
