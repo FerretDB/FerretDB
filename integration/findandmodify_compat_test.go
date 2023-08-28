@@ -237,7 +237,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 	testFindAndModifyCompat(t, testCases)
 }
 
-func TestFindAndModifyCompatUpdateDotNotation(t *testing.T) {
+func TestFindAndModifyCompatDotNotation(t *testing.T) {
 	testCases := map[string]findAndModifyCompatTestCase{
 		"Conflict": {
 			command: bson.D{
@@ -355,17 +355,17 @@ func TestFindAndModifyCompatUpdateSet(t *testing.T) {
 	testFindAndModifyCompat(t, testCases)
 }
 
-func TestFindAndModifyCompatUpdateUnset(t *testing.T) {
+func TestFindAndModifyCompatUnset(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]findAndModifyCompatTestCase{
-		"NonExistentExistsTrue": {
+		"NonExistentExistsT": {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", true}}}}},
 				{"update", bson.D{{"$unset", bson.D{{"v", ""}}}}},
 			},
 		},
-		"NonExistentExistsFalse": {
+		"NonExistentExistsF": {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", false}}}}},
 				{"update", bson.D{{"$unset", bson.D{{"v", ""}}}}},
@@ -484,7 +484,8 @@ func TestFindAndModifyCompatUpdateRename(t *testing.T) {
 
 // TestFindAndModifyCompatSort tests how various sort orders are handled.
 //
-// TODO Add more tests for sort: https://github.com/FerretDB/FerretDB/issues/2168
+// Add more tests for sort.
+// TODO https://github.com/FerretDB/FerretDB/issues/2168
 func TestFindAndModifyCompatSort(t *testing.T) {
 	t.Parallel()
 
@@ -543,7 +544,7 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"new", true},
 			},
 		},
-		"UpsertNoSuchReplaceDocument": {
+		"UpsertNoReplaceDocument": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "no-such-doc"}}},
 				{"update", bson.D{{"v", 43.13}}},
@@ -582,6 +583,13 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 			},
 		},
 		"UpdateID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"_id", "int32"}, {"v", "replaced"}}},
+			},
+		},
+		"UpdateDifferentID": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
 				{"upsert", true},
@@ -690,7 +698,7 @@ func TestFindAndModifyCompatUpsertUnset(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]findAndModifyCompatTestCase{
-		"NonExistentExistsTrue": {
+		"NonExistentExistsT": {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", true}}}}},
 				{"upsert", true},
@@ -700,7 +708,7 @@ func TestFindAndModifyCompatUpsertUnset(t *testing.T) {
 				}},
 			},
 		},
-		"NonExistentExistsFalse": {
+		"NonExistentExistsF": {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", false}}}}},
 				{"upsert", true},
@@ -776,29 +784,31 @@ type findAndModifyCompatTestCase struct {
 }
 
 // testFindAndModifyCompat tests findAndModify compatibility test cases.
-func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCompatTestCase) {
-	t.Helper()
+func testFindAndModifyCompat(tt *testing.T, testCases map[string]findAndModifyCompatTestCase) {
+	tt.Helper()
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
+		tt.Run(name, func(tt *testing.T) {
+			tt.Helper()
 
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
 
 			// Use per-test setup because findAndModify modifies data set.
-			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+			ctx, targetCollections, compatCollections := setup.SetupCompat(tt)
 
 			var nonEmptyResults bool
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
+				tt.Run(targetCollection.Name(), func(tt *testing.T) {
+					tt.Helper()
+
+					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
 
 					targetCommand := bson.D{{"findAndModify", targetCollection.Name()}}
 					targetCommand = append(targetCommand, tc.command...)
@@ -865,13 +875,18 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 				})
 			}
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3049
+			if setup.IsSQLite(tt) {
+				return
+			}
+
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results")
+				assert.True(tt, nonEmptyResults, "expected non-empty results")
 			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results")
+				assert.False(tt, nonEmptyResults, "expected empty results")
 			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+				tt.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}

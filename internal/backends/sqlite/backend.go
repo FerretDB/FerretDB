@@ -17,8 +17,8 @@ package sqlite
 import (
 	"context"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
-	_ "modernc.org/sqlite"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
@@ -30,6 +30,8 @@ type backend struct {
 }
 
 // NewBackendParams represents the parameters of NewBackend function.
+//
+//nolint:vet // for readability
 type NewBackendParams struct {
 	URI string
 	L   *zap.Logger
@@ -37,7 +39,7 @@ type NewBackendParams struct {
 
 // NewBackend creates a new SQLite backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	r, err := metadata.NewRegistry(params.URI, params.L.Named("metadata"))
+	r, err := metadata.NewRegistry(params.URI, params.L)
 	if err != nil {
 		return nil, err
 	}
@@ -53,8 +55,8 @@ func (b *backend) Close() {
 }
 
 // Database implements backends.Backend interface.
-func (b *backend) Database(name string) backends.Database {
-	return newDatabase(b.r, name)
+func (b *backend) Database(name string) (backends.Database, error) {
+	return newDatabase(b.r, name), nil
 }
 
 // ListDatabases implements backends.Backend interface.
@@ -80,6 +82,16 @@ func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabas
 	}
 
 	return nil
+}
+
+// Describe implements prometheus.Collector.
+func (b *backend) Describe(ch chan<- *prometheus.Desc) {
+	b.r.Describe(ch)
+}
+
+// Collect implements prometheus.Collector.
+func (b *backend) Collect(ch chan<- prometheus.Metric) {
+	b.r.Collect(ch)
 }
 
 // check interfaces

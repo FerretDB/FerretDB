@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -320,8 +321,12 @@ func packageVersion(w io.Writer, file string) error {
 // cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
-	Debug bool     `help:"Enable debug mode."`
+	Debug bool `help:"Enable debug mode."`
+
 	Setup struct{} `cmd:"" help:"Setup development environment."`
+
+	PackageVersion struct{} `cmd:"" help:"Print package version."`
+
 	Shell struct {
 		Mkdir struct {
 			Paths []string `arg:"" name:"path" help:"Paths to create." type:"path"`
@@ -331,14 +336,21 @@ var cli struct {
 		} `cmd:"" help:"Remove directories."`
 		Read struct {
 			Paths []string `arg:"" name:"path" help:"Paths to read." type:"path"`
-		} `cmd:"" help:"read files"`
+		} `cmd:"" help:"Read files."`
 	} `cmd:""`
-	PackageVersion struct{} `cmd:"" help:"Print package version"`
-	Tests          struct {
+
+	Tests struct {
 		Shard struct {
 			Index uint `help:"Shard index, starting from 1" required:""`
 			Total uint `help:"Total number of shards"       required:""`
-		} `cmd:"" help:"Print sharded integration tests"`
+		} `cmd:"" help:"Print sharded integration tests."`
+	} `cmd:""`
+
+	Fuzz struct {
+		Corpus struct {
+			Src string `arg:"" help:"Source, one of: 'seed', 'generated', or collected corpus' directory."`
+			Dst string `arg:"" help:"Destination, one of: 'seed', 'generated', or collected corpus' directory."`
+		} `cmd:"" help:"Sync fuzz corpora."`
 	} `cmd:""`
 }
 
@@ -376,6 +388,46 @@ func main() {
 		err = packageVersion(os.Stdout, versionFile)
 	case "tests shard":
 		err = testsShard(os.Stdout, cli.Tests.Shard.Index, cli.Tests.Shard.Total)
+
+	case "fuzz corpus <src> <dst>":
+		var seedCorpus, generatedCorpus string
+
+		if seedCorpus, err = os.Getwd(); err != nil {
+			logger.Fatal(err)
+		}
+
+		if generatedCorpus, err = fuzzGeneratedCorpus(); err != nil {
+			logger.Fatal(err)
+		}
+
+		var src, dst string
+
+		switch cli.Fuzz.Corpus.Src {
+		case "seed":
+			src = seedCorpus
+		case "generated":
+			src = generatedCorpus
+		default:
+			if src, err = filepath.Abs(cli.Fuzz.Corpus.Src); err != nil {
+				logger.Fatal(err)
+			}
+		}
+
+		switch cli.Fuzz.Corpus.Dst {
+		case "seed":
+			// Because we would need to add `/testdata/fuzz` back, and that's not very easy.
+			logger.Fatal("Copying to seed corpus is not supported.")
+		case "generated":
+			dst = generatedCorpus
+		default:
+			dst, err = filepath.Abs(cli.Fuzz.Corpus.Dst)
+			if err != nil {
+				logger.Fatal(err)
+			}
+		}
+
+		err = fuzzCopyCorpus(src, dst, logger)
+
 	default:
 		err = fmt.Errorf("unknown command: %s", cmd)
 	}

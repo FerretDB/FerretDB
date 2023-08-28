@@ -55,13 +55,23 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	cmd := params.Command
 	cmd.Set("$db", params.DB)
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3050
+
+	queryPlanner := types.MakeDocument(0)
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"queryPlanner", queryPlanner,
 			"explainVersion", "1",
 			"command", cmd,
-			"pushdown", !h.DisableFilterPushdown,
 			"serverInfo", serverInfo,
+
+			// our extensions
+			"pushdown", !h.DisableFilterPushdown,
+			"sortingPushdown", false,
+			"limitPushdown", false,
+
 			"ok", float64(1),
 		))},
 	}))

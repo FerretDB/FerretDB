@@ -232,62 +232,6 @@ func TestEmptyKey(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func TestFindAndModifyCommentMethod(t *testing.T) {
-	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars)
-
-	name := collection.Database().Name()
-	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
-	require.NoError(t, err)
-
-	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
-	filter := bson.D{{"_id", "string"}}
-
-	opts := options.Delete().SetComment(comment)
-	res, err := collection.DeleteOne(ctx, filter, opts)
-	require.NoError(t, err)
-
-	expected := &mongo.DeleteResult{
-		DeletedCount: 1,
-	}
-
-	assert.Contains(t, databaseNames, name)
-	assert.Equal(t, expected, res)
-}
-
-func TestFindAndModifyCommentQuery(t *testing.T) {
-	t.Parallel()
-	ctx, collection := setup.Setup(t, shareddata.Scalars)
-
-	name := collection.Database().Name()
-	databaseNames, err := collection.Database().Client().ListDatabaseNames(ctx, bson.D{})
-	require.NoError(t, err)
-
-	comment := "*/ 1; DROP SCHEMA " + name + " CASCADE -- "
-	request := bson.D{
-		{"findAndModify", collection.Name()},
-		{"query", bson.D{{"_id", "string"}, {"$comment", comment}}},
-		{"update", bson.D{{"$set", bson.D{{"v", "bar"}}}}},
-	}
-
-	expectedLastErrObj := bson.D{
-		{"n", int32(1)},
-		{"updatedExisting", true},
-	}
-
-	var actual bson.D
-	err = collection.Database().RunCommand(ctx, request).Decode(&actual)
-	require.NoError(t, err)
-
-	lastErrObj, ok := actual.Map()["lastErrorObject"].(bson.D)
-	if !ok {
-		t.Fatal(actual)
-	}
-
-	assert.Contains(t, databaseNames, name)
-	AssertEqualDocuments(t, expectedLastErrObj, lastErrObj)
-}
-
 func TestCollectionName(t *testing.T) {
 	t.Parallel()
 
@@ -313,7 +257,7 @@ func TestCollectionName(t *testing.T) {
 					collectionName300,
 				),
 			},
-			altMessage: fmt.Sprintf("Invalid collection name: 'TestCollectionName.%s'", collectionName300),
+			altMessage: fmt.Sprintf("Invalid collection name: %s", collectionName300),
 		},
 		"LongEnough": {
 			collection: collectionName235,
@@ -328,7 +272,6 @@ func TestCollectionName(t *testing.T) {
 				Code:    73,
 				Message: `Invalid collection name: collection_name_with_a-$`,
 			},
-			altMessage: `Invalid collection name: 'TestCollectionName.collection_name_with_a-$'`,
 		},
 		"WithADash": {
 			collection: "collection_name_with_a-",
@@ -343,7 +286,7 @@ func TestCollectionName(t *testing.T) {
 				Code:    73,
 				Message: "Invalid namespace specified 'TestCollectionName.'",
 			},
-			altMessage: "Invalid collection name: 'TestCollectionName.'",
+			altMessage: "Invalid collection name: ",
 		},
 		"Null": {
 			collection: "\x00",
@@ -352,7 +295,7 @@ func TestCollectionName(t *testing.T) {
 				Code:    73,
 				Message: "namespaces cannot have embedded null characters",
 			},
-			altMessage: "Invalid collection name: 'TestCollectionName.\x00'",
+			altMessage: "Invalid collection name: \x00",
 		},
 		"DotSurround": {
 			collection: ".collection..",
@@ -361,6 +304,7 @@ func TestCollectionName(t *testing.T) {
 				Code:    73,
 				Message: "Collection names cannot start with '.': .collection..",
 			},
+			altMessage: "Invalid collection name: .collection..",
 		},
 		"Dot": {
 			collection: "collection.name",
@@ -379,6 +323,9 @@ func TestCollectionName(t *testing.T) {
 		},
 		"Capital": {
 			collection: "A",
+		},
+		"Sqlite": {
+			collection: "sqlite_",
 		},
 	}
 
@@ -399,14 +346,12 @@ func TestCollectionName(t *testing.T) {
 
 			assert.NoError(t, err)
 
-			// check collection name is in the list.
 			names, err := collection.Database().ListCollectionNames(ctx, bson.D{})
 			require.NoError(t, err)
 			assert.Contains(t, names, tc.collection)
 
 			newCollection := collection.Database().Collection(tc.collection)
 
-			// document can be inserted and found in the collection.
 			doc := bson.D{{"_id", "item"}}
 			_, err = newCollection.InsertOne(ctx, doc)
 			require.NoError(t, err)
@@ -475,15 +420,10 @@ func TestDatabaseName(t *testing.T) {
 			"TooLongForBothDBs": {
 				db: dbName64,
 				err: &mongo.CommandError{
-					Name: "InvalidNamespace",
-					Code: 73,
-					Message: fmt.Sprintf(
-						"Invalid namespace specified '%s.%s'",
-						dbName64,
-						"TestDatabaseName-Err",
-					),
+					Name:    "InvalidNamespace",
+					Code:    73,
+					Message: fmt.Sprintf("Invalid namespace specified '%s.TestDatabaseName-Err'", dbName64),
 				},
-				altMessage: fmt.Sprintf("Invalid namespace: %s.%s", dbName64, "TestDatabaseName-Err"),
 			},
 			"WithASlash": {
 				db: "/",
@@ -492,17 +432,15 @@ func TestDatabaseName(t *testing.T) {
 					Code:    73,
 					Message: `Invalid namespace specified '/.TestDatabaseName-Err'`,
 				},
-				altMessage: `Invalid namespace: /.TestDatabaseName-Err`,
 			},
 
 			"WithABackslash": {
-				db: "\\",
+				db: `\`,
 				err: &mongo.CommandError{
 					Name:    "InvalidNamespace",
 					Code:    73,
 					Message: `Invalid namespace specified '\.TestDatabaseName-Err'`,
 				},
-				altMessage: `Invalid namespace: \.TestDatabaseName-Err`,
 			},
 			"WithADollarSign": {
 				db: "name_with_a-$",
@@ -511,6 +449,7 @@ func TestDatabaseName(t *testing.T) {
 					Code:    73,
 					Message: `Invalid namespace: name_with_a-$.TestDatabaseName-Err`,
 				},
+				altMessage: `Invalid namespace specified 'name_with_a-$.TestDatabaseName-Err'`,
 			},
 			"WithSpace": {
 				db: "data base",
@@ -519,7 +458,6 @@ func TestDatabaseName(t *testing.T) {
 					Code:    73,
 					Message: `Invalid namespace specified 'data base.TestDatabaseName-Err'`,
 				},
-				altMessage: `Invalid namespace: data base.TestDatabaseName-Err`,
 			},
 			"WithDot": {
 				db: "database.test",
@@ -528,7 +466,7 @@ func TestDatabaseName(t *testing.T) {
 					Code:    73,
 					Message: `'.' is an invalid character in the database name: database.test`,
 				},
-				altMessage: `Invalid namespace: database.test.TestDatabaseName-Err`,
+				altMessage: `Invalid namespace specified 'database.test.TestDatabaseName-Err'`,
 			},
 		}
 
@@ -602,6 +540,53 @@ func TestDebugError(t *testing.T) {
 
 		require.NoError(t, db.Client().Ping(ctx, nil), "other errors should not close connection")
 	})
+}
+
+func TestCheckingNestedDocuments(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		doc any
+		err error
+	}{
+		"1ok": {
+			doc: CreateNestedDocument(1),
+		},
+		"10ok": {
+			doc: CreateNestedDocument(10),
+		},
+		"100ok": {
+			doc: CreateNestedDocument(100),
+		},
+		"179ok": {
+			doc: CreateNestedDocument(179),
+		},
+		"180fail": {
+			doc: CreateNestedDocument(180),
+			err: fmt.Errorf("bson.Array.ReadFrom (document has exceeded the max supported nesting: 179."),
+		},
+		"180endedWithDocumentFail": {
+			doc: bson.D{{"v", CreateNestedDocument(179)}},
+			err: fmt.Errorf("bson.Document.ReadFrom (document has exceeded the max supported nesting: 179."),
+		},
+		"1000fail": {
+			doc: CreateNestedDocument(1000),
+			err: fmt.Errorf("bson.Document.ReadFrom (document has exceeded the max supported nesting: 179."),
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			ctx, collection := setup.Setup(t)
+			_, err := collection.InsertOne(ctx, tc.doc)
+			if tc.err != nil {
+				require.Error(t, tc.err)
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
 }
 
 func TestPingCommand(t *testing.T) {

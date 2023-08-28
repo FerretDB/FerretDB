@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/postgresql"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
@@ -51,7 +52,8 @@ type Handler struct {
 //
 //nolint:vet // for readability
 type NewOpts struct {
-	URI string
+	Backend string
+	URI     string
 
 	L             *zap.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
@@ -63,10 +65,24 @@ type NewOpts struct {
 
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
-	b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
-		URI: opts.URI,
-		L:   opts.L,
-	})
+	var b backends.Backend
+	var err error
+
+	switch opts.Backend {
+	case "postgresql":
+		b, err = postgresql.NewBackend(&postgresql.NewBackendParams{
+			URI: opts.URI,
+			L:   opts.L,
+		})
+	case "sqlite":
+		b, err = sqlite.NewBackend(&sqlite.NewBackendParams{
+			URI: opts.URI,
+			L:   opts.L,
+		})
+	default:
+		panic("unknown backend: " + opts.Backend)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -86,11 +102,13 @@ func (h *Handler) Close() {
 
 // Describe implements handlers.Interface.
 func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
+	h.b.Describe(ch)
 	h.cursors.Describe(ch)
 }
 
 // Collect implements handlers.Interface.
 func (h *Handler) Collect(ch chan<- prometheus.Metric) {
+	h.b.Collect(ch)
 	h.cursors.Collect(ch)
 }
 

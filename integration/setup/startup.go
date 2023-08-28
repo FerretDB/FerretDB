@@ -17,7 +17,6 @@ package setup
 import (
 	"context"
 	"net/http"
-	"net/url"
 	"os"
 	"runtime"
 	"time"
@@ -43,11 +42,6 @@ var listenerMetrics = connmetrics.NewListenerMetrics()
 
 // jaegerExporter is a shared Jaeger exporter for tests.
 var jaegerExporter *jaeger.Exporter
-
-// sqliteURL is a URI for SQLite backend tests.
-//
-// We don't use testing.T.TempDir() or something to make debugging of failed tests easier.
-var sqliteURL = must.NotFail(url.Parse("file:../tmp/sqlite-tests/"))
 
 // Startup initializes things that should be initialized only once.
 func Startup() {
@@ -82,11 +76,6 @@ func Startup() {
 	if !slices.Contains(allBackends, *targetBackendF) {
 		zap.S().Fatalf("Unknown target backend %q.", *targetBackendF)
 	}
-
-	must.BeTrue(sqliteURL.Path == "")
-	must.BeTrue(sqliteURL.Opaque != "")
-	_ = os.Remove(sqliteURL.Opaque)
-	must.NoError(os.MkdirAll(sqliteURL.Opaque, 0o777))
 
 	if u := *targetURLF; u != "" {
 		client, err := makeClient(ctx, u)

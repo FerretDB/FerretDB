@@ -27,6 +27,7 @@ tasks:
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
         -target-backend=ferretdb-sqlite
+        -sqlite-url=file:../tmp/sqlite-tests/
       # no hana yet
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
@@ -38,13 +39,15 @@ tasks:
     cmds:
       - go generate -x ./...
 
-  integration-lint:
+  lint:
+    desc: "Run linters"
     cmds:
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
       - ../bin/go-consistent{{exeExt}} -pedantic ./...
       - ../bin/go-sumtype{{exeExt}} ./...
       - go vet -vettool=../bin/checkswitch{{exeExt}} ./...
+      - go vet -vettool=../bin/checkcomments{{exeExt}} ./...
 
   integration-security:
     cmds:
@@ -86,6 +89,7 @@ tasks:
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-sqlite
+        -sqlite-url=file:../tmp/sqlite-tests/
         | tee new-sqlite.txt
       - ../bin/benchstat{{exeExt}} old-sqlite.txt new-sqlite.txt
 
@@ -98,6 +102,7 @@ tasks:
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-sqlite
+        -sqlite-url=file:../tmp/sqlite-tests/
         -- -disable-filter-pushdown
         | tee new-sqlite.txt
       - ../bin/benchstat{{exeExt}} old-sqlite.txt new-sqlite.txt

@@ -42,8 +42,8 @@ func (db *database) Close() {
 }
 
 // Collection implements backends.Database interface.
-func (db *database) Collection(name string) backends.Collection {
-	return newCollection(db.r, db.name, name)
+func (db *database) Collection(name string) (backends.Collection, error) {
+	return newCollection(db.r, db.name, name), nil
 }
 
 // ListCollections implements backends.Database interface.
@@ -93,6 +93,12 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 	}
 
 	return nil
+}
+
+// RenameCollection implements backends.Database interface.
+func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
+	// TODO https://github.com/FerretDB/FerretDB/issues/2760
+	panic("not implemented")
 }
 
 // check interfaces
