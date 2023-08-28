@@ -141,7 +141,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 func TestCommandsAdministrationListDatabases(tt *testing.T) {
 	tt.Parallel()
 
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3260")
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	db := collection.Database()
