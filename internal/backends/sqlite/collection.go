@@ -213,8 +213,8 @@ func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) 
 
 // Explain implements backends.Collection interface.
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3050
-	panic("not implemented")
+
+	q := fmt.Sprintf("EXPLAIN QUERY PLAN")
 }
 
 // check interfaces
