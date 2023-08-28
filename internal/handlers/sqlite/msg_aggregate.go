@@ -258,21 +258,20 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var iter iterator.Interface[struct{}, *types.Document]
 
-	// At this point we have a list of stages to apply to the documents or stats.
-	// If collStatsDocuments contains the same stages as stagesDocuments, we apply aggregation to documents fetched from the DB.
-	// If collStatsDocuments contains more stages than stagesDocuments, we apply aggregation to statistics fetched from the DB.
-	if len(collStatsDocuments) == len(stagesDocuments) {
-		// TODO https://github.com/FerretDB/FerretDB/issues/3235
-		// TODO https://github.com/FerretDB/FerretDB/issues/3181
-		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{c, stagesDocuments})
-	} else {
-		// TODO https://github.com/FerretDB/FerretDB/issues/2775
+	// TODO https://github.com/FerretDB/FerretDB/issues/2775
+	if len(collStatsDocuments) != len(stagesDocuments) {
+		closer.Close()
+
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNotImplemented,
 			"$collStats is not supported yet",
 			"$collStats (stage)",
 		)
 	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3235
+	// TODO https://github.com/FerretDB/FerretDB/issues/3181
+	iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{c, stagesDocuments})
 
 	if err != nil {
 		closer.Close()

@@ -101,10 +101,8 @@ func testAggregateStagesCompatWithProviders(tt *testing.T, providers shareddata.
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				tt.Run(targetCollection.Name(), func(tt *testing.T) {
+				tt.Run(targetCollection.Name(), func(t *testing.T) {
 					tt.Helper()
-
-					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 					explainCommand := bson.D{{"explain", bson.D{
 						{"aggregate", targetCollection.Name()},
@@ -151,11 +149,6 @@ func testAggregateStagesCompatWithProviders(tt *testing.T, providers shareddata.
 						nonEmptyResults = true
 					}
 				})
-			}
-
-			// TODO https://github.com/FerretDB/FerretDB/issues/3148
-			if setup.IsSQLite(tt) {
-				return
 			}
 
 			switch tc.resultType {
@@ -208,10 +201,8 @@ func testAggregateCommandCompat(tt *testing.T, testCases map[string]aggregateCom
 
 			var nonEmptyResults bool
 
-			tt.Run(targetCollection.Name(), func(tt *testing.T) {
+			tt.Run(targetCollection.Name(), func(t *testing.T) {
 				tt.Helper()
-
-				t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 				var targetRes, compatRes bson.D
 				targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
@@ -238,11 +229,6 @@ func testAggregateCommandCompat(tt *testing.T, testCases map[string]aggregateCom
 					nonEmptyResults = true
 				}
 			})
-
-			// TODO https://github.com/FerretDB/FerretDB/issues/3148
-			if setup.IsSQLite(tt) {
-				return
-			}
 
 			switch tc.resultType {
 			case nonEmptyResult:
