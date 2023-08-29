@@ -96,10 +96,8 @@ func TestDistinctCommandErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3157")
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
 			require.NotNil(t, tc.command, "command must not be nil")
 			require.NotNil(t, tc.filter, "filter must not be nil")
@@ -121,10 +119,8 @@ func TestDistinctCommandErrors(t *testing.T) {
 	}
 }
 
-func TestDistinctDuplicates(tt *testing.T) {
-	tt.Parallel()
-
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3157")
+func TestDistinctDuplicates(t *testing.T) {
+	t.Parallel()
 
 	ctx, coll := setup.Setup(t)
 
