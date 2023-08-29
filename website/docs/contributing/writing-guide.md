@@ -28,8 +28,8 @@ for file names, directory names, and slugs because URL paths typically use dashe
 
 Ensure that the file name/URL path matches the title of the page.
 For example, if the title of your page is "Getting Started", then the file name/URL path should also be "getting-started" to maintain consistency.
-It is recommended to omit the `slug` field from the front matter, since the file name is used by default as the URL path.
-Only use the `slug` field in some special cases, such as when creating custom or external links, or for backward compatibility with existing links.
+The `slug` field should be the same as the file name.
+Only use a different `slug` field in some special cases, such as for backward compatibility with existing links.
 
 ## Sidebar position
 
