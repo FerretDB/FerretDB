@@ -65,6 +65,8 @@ type QueryParams struct {
 
 // QueryResult represents the results of Collection.Query method.
 type QueryResult struct {
+	// nothing for now - no pushdowns yet
+	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Iter types.DocumentsIterator
 }
 
@@ -165,6 +167,7 @@ type ExplainParams struct {
 // ExplainResult represents the results of Collection.Explain method.
 type ExplainResult struct {
 	QueryPlanner *types.Document
+	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 }
 
 // Explain return a backend-specific execution plan for the given query.

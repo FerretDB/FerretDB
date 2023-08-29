@@ -216,14 +216,14 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
 		return &backends.ExplainResult{
-			Iter: newQueryIterator(ctx, nil),
+			// TODO
 		}, nil
 	}
 
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
 		return &backends.ExplainResult{
-			Iter: newQueryIterator(ctx, nil),
+			//TODO
 		}, nil
 	}
 
