@@ -23,6 +23,7 @@ import (
 
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonpath"
@@ -322,6 +323,8 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 	case "$comment":
 		return true, nil
 
+	case "$expr":
+		return filterExprOperator(doc, must.NotFail(types.NewDocument(operator, filterValue)))
 	default:
 		msg := fmt.Sprintf(
 			`unknown top level operator: %s. `+
@@ -330,6 +333,38 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 		)
 
 		return false, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, "$operator")
+	}
+}
+
+// filterExprOperator uses $expr operator to allow usage of aggregation expression.
+// It returns boolean indicating filter has matched.
+//
+// $expr is primary used by operators such as $gt and $cond which return boolean result.
+// However, if non-boolean result is returned from processing aggregation expression,
+// it returns false for null or zero value and true for all other values.
+func filterExprOperator(doc, filter *types.Document) (bool, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/3170
+	op, err := operators.NewExpr(filter, "$expr")
+	if err != nil {
+		return false, err
+	}
+
+	v, err := op.Process(doc)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	switch v := v.(type) {
+	case *types.Document, *types.Array, string, types.Binary, types.ObjectID, time.Time, types.Regex, types.Timestamp:
+		return true, nil
+	case float64, int32, int64:
+		return types.Compare(v, int32(0)) != types.Equal, nil
+	case bool:
+		return v, nil
+	case types.NullType:
+		return false, nil
+	default:
+		panic(fmt.Sprintf("common.filterExprOperator: unexpected type %[1]T (%#[1]v)", v))
 	}
 }
 
@@ -937,7 +972,7 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 		return (^uint64(value) & bitmask) == bitmask, nil
 
 	case types.Binary:
-		// TODO: https://github.com/FerretDB/FerretDB/issues/508
+		// TODO https://github.com/FerretDB/FerretDB/issues/508
 		return false, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNotImplemented,
 			"BinData() not supported yet",
@@ -971,7 +1006,7 @@ func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 		return (uint64(value) & bitmask) == bitmask, nil
 
 	case types.Binary:
-		// TODO: https://github.com/FerretDB/FerretDB/issues/508
+		// TODO https://github.com/FerretDB/FerretDB/issues/508
 		return false, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNotImplemented,
 			"BinData() not supported yet",
@@ -1005,7 +1040,7 @@ func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 		return (^uint64(value) & bitmask) != 0, nil
 
 	case types.Binary:
-		// TODO: https://github.com/FerretDB/FerretDB/issues/508
+		// TODO https://github.com/FerretDB/FerretDB/issues/508
 		return false, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNotImplemented,
 			"BinData() not supported yet",
@@ -1039,7 +1074,7 @@ func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
 		return (uint64(value) & bitmask) != 0, nil
 
 	case types.Binary:
-		// TODO: https://github.com/FerretDB/FerretDB/issues/508
+		// TODO https://github.com/FerretDB/FerretDB/issues/508
 		return false, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNotImplemented,
 			"BinData() not supported yet",
@@ -1452,7 +1487,7 @@ func filterFieldValueByTypeCode(fieldValue any, code commonparams.TypeCode) (boo
 
 // filterFieldExprElemMatch handles {field: {$elemMatch: value}}.
 // Returns false if doc value is not an array.
-// TODO: https://github.com/FerretDB/FerretDB/issues/364
+// TODO https://github.com/FerretDB/FerretDB/issues/364
 func filterFieldExprElemMatch(doc *types.Document, filterKey, filterSuffix string, exprValue any) (bool, error) {
 	expr, ok := exprValue.(*types.Document)
 	if !ok {
@@ -1472,7 +1507,7 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey, filterSuffix strin
 			)
 		}
 
-		// TODO: https://github.com/FerretDB/FerretDB/issues/730
+		// TODO https://github.com/FerretDB/FerretDB/issues/730
 		if slices.Contains([]string{"$and", "$or", "$nor"}, key) {
 			return false, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,
@@ -1481,7 +1516,7 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey, filterSuffix strin
 			)
 		}
 
-		// TODO: https://github.com/FerretDB/FerretDB/issues/731
+		// TODO https://github.com/FerretDB/FerretDB/issues/731
 		if slices.Contains([]string{"$ne", "$not"}, key) {
 			return false, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,

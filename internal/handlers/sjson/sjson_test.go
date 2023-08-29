@@ -191,9 +191,7 @@ func isValidDocumentData(v sjsontype) bool {
 }
 
 func addRecordedFuzzDocs(f *testing.F, needDocument, needSchema bool) int {
-	// We're trying to use that corpus with our hopes set high,
-	// but chances are, it will still be 0 extra documents.
-	// See #3067 for more details.
+	// TODO https://github.com/FerretDB/FerretDB/issues/3067
 	records, err := wire.LoadRecords(filepath.Join("..", "..", "..", "tmp", "records"), 100)
 	require.NoError(f, err)
 

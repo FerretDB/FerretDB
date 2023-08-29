@@ -86,5 +86,9 @@ func Handlers() []string {
 		res = append(res, h)
 	}
 
+	if len(res) != len(registry) {
+		panic("registry is not in sync")
+	}
+
 	return res
 }

@@ -39,7 +39,7 @@ type UpdatesParams struct {
 
 // UpdateParams represents a single update operation parameters.
 type UpdateParams struct {
-	// TODO: https://github.com/FerretDB/FerretDB/issues/2627
+	// TODO https://github.com/FerretDB/FerretDB/issues/2627
 	// get comment from query, e.g. db.collection.UpdateOne({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
 	Filter *types.Document `ferretdb:"q,opt"`
 	Update *types.Document `ferretdb:"u,opt"` // TODO https://github.com/FerretDB/FerretDB/issues/2742

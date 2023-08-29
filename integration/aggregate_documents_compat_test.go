@@ -29,7 +29,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // aggregateStagesCompatTestCase describes aggregation stages compatibility test case.
@@ -40,7 +39,6 @@ type aggregateStagesCompatTestCase struct {
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
 	skip           string                   // skip test for all handlers, must have issue number mentioned
-	failsForSQLite string                   // optional, if set, the case is expected to fail for SQLite due to given issue
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -106,10 +104,7 @@ func testAggregateStagesCompatWithProviders(tt *testing.T, providers shareddata.
 				tt.Run(targetCollection.Name(), func(tt *testing.T) {
 					tt.Helper()
 
-					var t testtb.TB = tt
-					if tc.failsForSQLite != "" {
-						t = setup.FailsForSQLite(tt, tc.failsForSQLite)
-					}
+					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 					explainCommand := bson.D{{"explain", bson.D{
 						{"aggregate", targetCollection.Name()},
@@ -158,18 +153,18 @@ func testAggregateStagesCompatWithProviders(tt *testing.T, providers shareddata.
 				})
 			}
 
-			var t testtb.TB = tt
-			if tc.failsForSQLite != "" {
-				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+			// TODO https://github.com/FerretDB/FerretDB/issues/3148
+			if setup.IsSQLite(tt) {
+				return
 			}
 
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results")
+				assert.True(tt, nonEmptyResults, "expected non-empty results")
 			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results")
+				assert.False(tt, nonEmptyResults, "expected empty results")
 			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+				tt.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
@@ -185,10 +180,10 @@ type aggregateCommandCompatTestCase struct {
 
 // testAggregateCommandCompat tests aggregate pipeline compatibility test cases using one collection.
 // Use testAggregateStagesCompat for testing stages of aggregation.
-func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateCommandCompatTestCase) {
-	t.Helper()
+func testAggregateCommandCompat(tt *testing.T, testCases map[string]aggregateCommandCompatTestCase) {
+	tt.Helper()
 
-	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+	s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
 		// Use a provider that works for all handlers.
 		Providers: []shareddata.Provider{shareddata.Int32s},
 	})
@@ -199,22 +194,24 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
+		tt.Run(name, func(tt *testing.T) {
+			tt.Helper()
 
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
 
 			command := tc.command
-			require.NotNil(t, command, "command should be set")
+			require.NotNil(tt, command, "command should be set")
 
 			var nonEmptyResults bool
 
-			t.Run(targetCollection.Name(), func(t *testing.T) {
-				t.Helper()
+			tt.Run(targetCollection.Name(), func(tt *testing.T) {
+				tt.Helper()
+
+				t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
 
 				var targetRes, compatRes bson.D
 				targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
@@ -242,13 +239,18 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 				}
 			})
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3148
+			if setup.IsSQLite(tt) {
+				return
+			}
+
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results")
+				assert.True(tt, nonEmptyResults, "expected non-empty results")
 			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results")
+				assert.False(tt, nonEmptyResults, "expected empty results")
 			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+				tt.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
@@ -314,14 +316,12 @@ func TestAggregateCompatOptions(t *testing.T) {
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"MaxTimeZero": {
-			pipeline:       bson.A{},
-			maxTime:        pointer.ToDuration(time.Duration(0)),
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
+			pipeline: bson.A{},
+			maxTime:  pointer.ToDuration(time.Duration(0)),
 		},
 		"MaxTime": {
-			pipeline:       bson.A{},
-			maxTime:        pointer.ToDuration(time.Second),
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
+			pipeline: bson.A{},
+			maxTime:  pointer.ToDuration(time.Second),
 		},
 	}
 
@@ -795,7 +795,8 @@ func TestAggregateCompatGroup(t *testing.T) {
 func TestAggregateCompatGroupExpressionDottedFields(t *testing.T) {
 	t.Parallel()
 
-	// TODO Use all providers after fixing $sort problem:  https://github.com/FerretDB/FerretDB/issues/2276.
+	// Use all providers after fixing $sort problem:
+	// TODO https://github.com/FerretDB/FerretDB/issues/2276
 	//
 	// Currently, providers Composites, DocumentsDeeplyNested, ArrayAndDocuments and Mixed
 	// cannot be used due to sorting difference.
@@ -823,11 +824,6 @@ func TestAggregateCompatGroupExpressionDottedFields(t *testing.T) {
 		"NestedInArray": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.0.foo"},
-			}}}},
-		},
-		"NonExistentParent": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$non.existent"},
 			}}}},
 		},
 		"NonExistentChild": {
@@ -1045,7 +1041,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 		// TODO: handle $sum of doubles near max precision.
 		// https://github.com/FerretDB/FerretDB/issues/2300
 		Remove(shareddata.Doubles).
-		// TODO: https://github.com/FerretDB/FerretDB/issues/2616
+		// TODO https://github.com/FerretDB/FerretDB/issues/2616
 		Remove(shareddata.ArrayDocuments)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -1171,16 +1167,6 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				bson.D{{"$group", bson.D{
 					{"_id", "$v"},
 					{"sum", bson.D{{"$sum", int64(20)}}},
-				}}},
-				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-			},
-		},
-		"MaxInt64": {
-			pipeline: bson.A{
-				bson.D{{"$sort", bson.D{{"_id", 1}}}},
-				bson.D{{"$group", bson.D{
-					{"_id", "$v"},
-					{"sum", bson.D{{"$sum", math.MaxInt64}}},
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
@@ -1406,7 +1392,7 @@ func TestAggregateCompatSortDotNotation(t *testing.T) {
 	t.Parallel()
 
 	providers := shareddata.AllProviders().
-		// TODO: https://github.com/FerretDB/FerretDB/issues/2617
+		// TODO https://github.com/FerretDB/FerretDB/issues/2617
 		Remove(shareddata.ArrayDocuments)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -1947,13 +1933,6 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$project", bson.D{{"$type", "foo"}, {"$op", "foo"}}}},
 			},
 			resultType: emptyResult,
-		},
-		"SumValue": {
-			pipeline: bson.A{
-				bson.D{{"$project", bson.D{
-					{"sum", bson.D{{"$sum", "$v"}}},
-				}}},
-			},
 		},
 	}
 

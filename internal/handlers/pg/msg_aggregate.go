@@ -185,7 +185,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		switch d.Command() {
 		case "$collStats":
 			if i > 0 {
-				// TODO Add a test to cover this error: https://github.com/FerretDB/FerretDB/issues/2349
+				// Add a test to cover this error.
+				// TODO https://github.com/FerretDB/FerretDB/issues/2349
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrCollStatsIsNotFirstStage,
 					"$collStats is only valid as the first stage in a pipeline",
@@ -266,7 +267,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})
 	} else {
 		// stats stages are provided - fetch stats from the DB and apply stages to them
-		// TODO move $collStatsDocuments specific logic to its stage https://github.com/FerretDB/FerretDB/issues/2423
+		// move $collStatsDocuments specific logic to its stage
+		// TODO https://github.com/FerretDB/FerretDB/issues/2423
 		statistics := stages.GetStatistics(collStatsDocuments)
 
 		iter, err = processStagesStats(ctx, closer, &stagesStatsParams{
@@ -377,7 +379,9 @@ type stagesStatsParams struct {
 }
 
 // processStagesStats retrieves the statistics from the database and then processes them through the stages.
-// TODO move $collStats specific logic to its stage https://github.com/FerretDB/FerretDB/issues/2423
+//
+// Move $collStats specific logic to its stage.
+// TODO https://github.com/FerretDB/FerretDB/issues/2423
 func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *stagesStatsParams) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	// Clarify what needs to be retrieved from the database and retrieve it.
 	_, hasCount := p.statistics[stages.StatisticCount]
