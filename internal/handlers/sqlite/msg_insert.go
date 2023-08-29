@@ -29,6 +29,22 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+type writeError struct {
+	// the order of fields is weird to make the struct smaller due to alignment
+
+	errmsg string
+	index  int32
+	code   commonerrors.ErrorCode
+}
+
+func (we *writeError) Document() *types.Document {
+	return must.NotFail(types.NewDocument(
+		"index", we.index,
+		"code", int32(we.code),
+		"errmsg", we.errmsg,
+	))
+}
+
 // MsgInsert implements HandlerInterface.
 func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
@@ -65,13 +81,14 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	closer := iterator.NewMultiCloser()
 	defer closer.Close()
 
-	allDocs := make([]*types.Document, 0, params.Docs.Len())
+	docsIter := params.Docs.Iterator()
+	closer.Add(docsIter)
 
-	allDocsIter := params.Docs.Iterator()
-	closer.Add(allDocsIter)
+	var inserted int32
+	writeErrors := types.MakeArray(0)
 
 	for {
-		_, d, err := allDocsIter.Next()
+		i, d, err := docsIter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
 		}
@@ -86,42 +103,64 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		if err = doc.ValidateData(); err != nil {
+			var ve *types.ValidationError
+
+			if !errors.As(err, &ve) {
+				return nil, lazyerrors.Error(err)
+			}
+
+			var ec commonerrors.ErrorCode
+
+			switch ve.Code() {
+			case types.ErrValidation, types.ErrIDNotFound:
+				ec = commonerrors.ErrBadValue
+			case types.ErrWrongIDType:
+				ec = commonerrors.ErrInvalidID
+			default:
+				panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
+			}
+
+			we := &writeError{
+				index:  int32(i),
+				code:   ec,
+				errmsg: ve.Error(),
+			}
+			writeErrors.Append(we.Document())
+
+			continue
+		}
+
+		// use bigger batches on a happy path, downgrade to one-document batches on error
+		// TODO https://github.com/FerretDB/FerretDB/issues/3271
+
+		_, err = c.InsertAll(ctx, &backends.InsertAllParams{
+			Docs: []*types.Document{doc},
+		})
+		if err != nil {
+			if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
+				we := &writeError{
+					index:  int32(i),
+					code:   commonerrors.ErrDuplicateKeyInsert,
+					errmsg: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
+				}
+				writeErrors.Append(we.Document())
+
+				continue
+			}
+
 			return nil, lazyerrors.Error(err)
 		}
 
-		allDocs = append(allDocs, doc)
+		inserted++
 	}
-
-	// use bigger batches on a happy path, downgrade to one-document batches on error
-	// TODO https://github.com/FerretDB/FerretDB/issues/3271
-
-	_, err = c.InsertAll(ctx, &backends.InsertAllParams{
-		Docs: allDocs,
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	replyDoc := must.NotFail(types.NewDocument(
-		"n", int32(len(allDocs)),
-		"ok", float64(1),
-	))
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/2750
-	//
-	// if len(res.Errors) > 0 {
-	// 	var errs *commonerrors.WriteErrors
-	//
-	// 	for i := 0; i < len(res.Errors); i++ {
-	// 		errs.Append(err, int32(i))
-	// 	}
-	//
-	// 	replyDoc = errs.Document()
-	// }
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{replyDoc},
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"n", inserted,
+			"writeErrors", writeErrors,
+			"ok", float64(1),
+		))},
 	}))
 
 	return &reply, nil
