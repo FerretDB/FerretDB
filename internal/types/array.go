@@ -84,10 +84,7 @@ func (a *Array) GetByPath(path Path) (any, error) {
 
 // Set sets the value at the given index.
 func (a *Array) Set(index int, value any) error {
-	if a.frozen {
-		panic("this array is not mutable its been freezed")
-	}
-
+	a.checkFrozen()
 	if l := a.Len(); index < 0 || index >= l {
 		return fmt.Errorf("types.Array.Set: index %d is out of bounds [0-%d)", index, l)
 	}
@@ -112,9 +109,7 @@ func (a *Array) Append(values ...any) {
 
 // RemoveByPath removes (cuts) value by path, doing nothing if path points to nothing.
 func (a *Array) RemoveByPath(path Path) {
-	if a.frozen {
-		panic("this array is not mutable its been freezed")
-	}
+	a.checkFrozen()
 	removeByPath(a, path)
 }
 
@@ -220,10 +215,7 @@ func (a *Array) ContainsAll(b *Array) bool {
 
 // Remove removes the value at the given index.
 func (a *Array) Remove(index int) {
-	if a.frozen {
-		panic("this array is not mutable its been freezed")
-	}
-
+	a.checkFrozen()
 	if l := a.Len(); index < 0 || index >= l {
 		panic("types.Array.Remove: index is out of bounds")
 	}
@@ -234,4 +226,11 @@ func (a *Array) Remove(index int) {
 // Freeze check it will panic if you try to update values.
 func (a *Array) Freeze() {
 	a.frozen = true
+}
+
+// checkFrozen will check fiven array is frozen or not.
+func (a *Array) checkFrozen() {
+	if a.frozen {
+		panic("this array is not mutable its been freezed")
+	}
 }
