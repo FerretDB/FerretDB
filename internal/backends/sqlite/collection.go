@@ -94,8 +94,8 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 				return lazyerrors.Error(err)
 			}
 
-			// use batches
-			// TODO https://github.com/FerretDB/FerretDB/issues/2750
+			// use batches: INSERT INTO %q %s VALUES (?), (?), (?), ... up to, say, 100 documents
+			// TODO https://github.com/FerretDB/FerretDB/issues/3271
 			q := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
 
 			if _, err = tx.ExecContext(ctx, q, string(b)); err != nil {

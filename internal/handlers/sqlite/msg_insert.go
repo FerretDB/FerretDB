@@ -92,6 +92,9 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		allDocs = append(allDocs, doc)
 	}
 
+	// use bigger batches on a happy path, downgrade to one-document batches on error
+	// TODO https://github.com/FerretDB/FerretDB/issues/3271
+
 	_, err = c.InsertAll(ctx, &backends.InsertAllParams{
 		Docs: allDocs,
 	})
