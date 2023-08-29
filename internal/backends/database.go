@@ -187,8 +187,7 @@ func (dbc *databaseContract) RenameCollection(ctx context.Context, params *Renam
 }
 
 // StatsParams represents the parameters of Database.Stats method.
-type StatsParams struct {
-}
+type StatsParams struct{}
 
 // StatsResult represents the results of Database.Stats method.
 //
