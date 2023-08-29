@@ -21,9 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// writeError represents protocol write error.
-// It required to build the correct write error result.
-// The index field is optional and won't be used if it's nil.
+// writeError represents a single write error details.
 type writeError struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
@@ -32,7 +30,7 @@ type writeError struct {
 	code   ErrorCode
 }
 
-// WriteErrors represents a slice of protocol write errors.
+// WriteErrors represents a list of write errors.
 // It could be returned for Update, Insert, Delete, and Replace operations.
 //
 // Deprecated: https://github.com/FerretDB/FerretDB/issues/3263.
