@@ -109,23 +109,27 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return nil, lazyerrors.Error(err)
 			}
 
-			var ec commonerrors.ErrorCode
+			var code commonerrors.ErrorCode
 
 			switch ve.Code() {
 			case types.ErrValidation, types.ErrIDNotFound:
-				ec = commonerrors.ErrBadValue
+				code = commonerrors.ErrBadValue
 			case types.ErrWrongIDType:
-				ec = commonerrors.ErrInvalidID
+				code = commonerrors.ErrInvalidID
 			default:
 				panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
 			}
 
 			we := &writeError{
 				index:  int32(i),
-				code:   ec,
+				code:   code,
 				errmsg: ve.Error(),
 			}
 			writeErrors.Append(we.Document())
+
+			if params.Ordered {
+				break
+			}
 
 			continue
 		}
@@ -145,6 +149,10 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				}
 				writeErrors.Append(we.Document())
 
+				if params.Ordered {
+					break
+				}
+
 				continue
 			}
 
@@ -154,13 +162,19 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		inserted++
 	}
 
+	res := must.NotFail(types.NewDocument(
+		"n", inserted,
+	))
+
+	if writeErrors.Len() > 0 {
+		res.Set("writeErrors", writeErrors)
+	}
+
+	res.Set("ok", float64(1))
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"n", inserted,
-			"writeErrors", writeErrors,
-			"ok", float64(1),
-		))},
+		Documents: []*types.Document{res},
 	}))
 
 	return &reply, nil
