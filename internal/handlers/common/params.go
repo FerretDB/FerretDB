@@ -552,8 +552,10 @@ func performBitLogic(bitOp string, v1, v2 any) (any, error) {
 	default:
 		return nil, fmt.Errorf(
 			`The $bit modifier only supports 'and', 'or', and 'xor', not '%s'`+
-				` which is an unknown operator`,
+				` which is an unknown operator: {%s: %#v}`,
 			bitOp,
+			bitOp,
+			v1,
 		)
 	}
 }

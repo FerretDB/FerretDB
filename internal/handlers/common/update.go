@@ -795,21 +795,16 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 		case int32, int64:
 		default:
 			return false, newUpdateError(
-				commonerrors.ErrTypeMismatch,
+				commonerrors.ErrBadValue,
 				fmt.Sprintf(
-					`Cannot apply $bit to a value of non-integral type. `+
-						`{_id: %s} has the field '%s' of non-numeric type %s`,
+					`Cannot apply $bit to a value of non-integral type.`+
+						`_id: %s has the field %s of non-integer type %s`,
 					types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
 					bitKey,
 					commonparams.AliasFromType(docValue),
 				),
 				command,
 			)
-		}
-
-		// empty operands result in no changes
-		if nestedDoc.Len() == 0 {
-			continue
 		}
 
 		for _, bitOp := range nestedDoc.Keys() {
@@ -834,10 +829,12 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 
 			case errors.Is(err, commonparams.ErrUnexpectedLeftOpType):
 				return false, newUpdateError(
-					commonerrors.ErrTypeMismatch,
+					commonerrors.ErrBadValue,
 					fmt.Sprintf(
 						`The $bit modifier field must be an Integer(32/64 bit); a `+
-							`%s is not supported here`,
+							`'%s' is not supported here: {%s: %#v}`,
+						commonparams.AliasFromType(bitOpValue),
+						bitOp,
 						bitOpValue,
 					),
 					command,
@@ -845,17 +842,19 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 
 			case errors.Is(err, commonparams.ErrUnexpectedRightOpType):
 				return false, newUpdateError(
-					commonerrors.ErrTypeMismatch,
+					commonerrors.ErrBadValue,
 					fmt.Sprintf(
 						`The $bit modifier field must be an Integer(32/64 bit); a `+
-							`%s is not supported here`,
+							`'%s' is not supported here: {%s: %+v}`,
+						commonparams.AliasFromType(docValue),
+						bitOp,
 						docValue,
 					),
 					command,
 				)
 
 			default:
-				return false, newUpdateError(commonerrors.ErrInvalidArg, err.Error(), command)
+				return false, newUpdateError(commonerrors.ErrBadValue, err.Error(), command)
 			}
 		}
 	}
