@@ -66,7 +66,7 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 			tt.Helper()
 
 			tt.Parallel()
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3259")
 
 			var targetRes bson.D
 			targetCommand := bson.D{{"collStats", targetCollection.Name()}, {"scale", tc.scale}}
@@ -124,7 +124,7 @@ func TestCommandsAdministrationCompatDBStatsWithScale(t *testing.T) {
 
 			tt.Parallel()
 
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3259")
 
 			var targetRes bson.D
 			targetCommand := bson.D{{"dbStats", int32(1)}, {"scale", tc.scale}}
