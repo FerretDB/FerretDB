@@ -16,6 +16,7 @@
 package main
 
 import (
+	"net/http"
 	"regexp"
 	"strings"
 
@@ -49,8 +50,8 @@ func run(pass *analysis.Pass) (any, error) {
 						continue
 					}
 
-					if !todoRE.MatchString(c.Text) {
-						pass.Reportf(c.Pos(), "invalid TODO comment")
+					if !todoRE.MatchString(c.Text) && isIssueOpen(c.Text) {
+						pass.Reportf(c.Pos(), "invalid TODO comment and issue is still open")
 					}
 				}
 			}
@@ -58,4 +59,28 @@ func run(pass *analysis.Pass) (any, error) {
 	}
 
 	return nil, nil
+}
+
+func isIssueOpen(todoText string) bool {
+	issueURL := getURL(todoText)
+	if issueURL == "" {
+		return false
+	}
+	resp, err := http.Get(issueURL)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+
+	return resp.StatusCode == http.StatusOK
+}
+
+func getURL(todoText string) string {
+	arrText := strings.Split(todoText, " ")
+	for _, text := range arrText {
+		if strings.Contains(text, "https://") {
+			return text
+		}
+	}
+	return ""
 }
