@@ -213,8 +213,31 @@ func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) 
 
 // Explain implements backends.Collection interface.
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
+	db := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if db == nil {
+		return &backends.ExplainResult{
+			Iter: newQueryIterator(ctx, nil),
+		}, nil
+	}
 
-	q := fmt.Sprintf("EXPLAIN QUERY PLAN")
+	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if meta == nil {
+		return &backends.ExplainResult{
+			Iter: newQueryIterator(ctx, nil),
+		}, nil
+	}
+
+	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`, metadata.DefaultColumn, meta.TableName)
+
+	rows, err := db.QueryContext(ctx, q)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &backends.ExplainResult{
+		Iter: newQueryIterator(ctx, rows),
+	}, nil
+
 }
 
 // check interfaces
