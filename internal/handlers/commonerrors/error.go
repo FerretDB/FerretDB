@@ -322,10 +322,10 @@ type ErrInfo struct {
 type ProtoErr interface {
 	// Error returns error representation for logging and debugging.
 	error
-	// Code returns error's code.
-	Code() ErrorCode
-	// Document returns a document representation of the error.
+
+	// Document returns error representation for returning to the client.
 	Document() *types.Document
+
 	// Info returns additional error information, or nil.
 	Info() *ErrInfo
 }
