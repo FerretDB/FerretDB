@@ -65,7 +65,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	closer := iterator.NewMultiCloser()
 	defer closer.Close()
 
-	allDocs := make([]any, 0, params.Docs.Len())
+	allDocs := make([]*types.Document, 0, params.Docs.Len())
 
 	allDocsIter := params.Docs.Iterator()
 	closer.Add(allDocsIter)
@@ -92,18 +92,15 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		allDocs = append(allDocs, doc)
 	}
 
-	insertIter := iterator.ForSlice(allDocs)
-	closer.Add(insertIter)
-
-	res, err := c.InsertAll(ctx, &backends.InsertAllParams{
-		Iter: insertIter,
+	_, err = c.InsertAll(ctx, &backends.InsertAllParams{
+		Docs: allDocs,
 	})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	replyDoc := must.NotFail(types.NewDocument(
-		"n", int32(res.Inserted),
+		"n", int32(len(allDocs)),
 		"ok", float64(1),
 	))
 

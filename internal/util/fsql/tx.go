@@ -19,9 +19,10 @@ import (
 	"database/sql"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
-	"go.uber.org/zap"
 )
 
 // Tz wraps [*database/sql.Tx] with resource tracking.

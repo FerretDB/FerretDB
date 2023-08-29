@@ -186,11 +186,8 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 
 			// TODO https://github.com/FerretDB/FerretDB/issues/2612
 
-			iter := must.NotFail(types.NewArray(doc)).Iterator()
-			defer iter.Close()
-
 			_, err = c.InsertAll(ctx, &backends.InsertAllParams{
-				Iter: iter,
+				Docs: []*types.Document{doc},
 			})
 			if err != nil {
 				return 0, 0, nil, err

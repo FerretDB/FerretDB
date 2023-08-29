@@ -75,7 +75,7 @@ func TestCreateDrop(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
-	dbName := t.Name()
+	dbName := testutil.DatabaseName(t)
 
 	db, err := r.DatabaseGetOrCreate(ctx, dbName)
 	require.NoError(t, err)
@@ -85,7 +85,7 @@ func TestCreateDrop(t *testing.T) {
 		r.DatabaseDrop(ctx, dbName)
 	})
 
-	collectionName := t.Name()
+	collectionName := testutil.CollectionName(t)
 
 	testCollection(t, ctx, r, db, dbName, collectionName)
 }

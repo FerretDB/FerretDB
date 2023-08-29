@@ -19,6 +19,9 @@ import (
 	"errors"
 	"fmt"
 
+	sqlite3 "modernc.org/sqlite"
+	sqlite3lib "modernc.org/sqlite/lib"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
@@ -81,47 +84,37 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2750
 
-	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
-	if meta == nil {
-		panic(fmt.Sprintf("just created collection %q does not exist", c.name))
-	}
-
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
-
-	var res backends.InsertAllResult
+	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 
 	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
-		for {
-			_, d, err := params.Iter.Next()
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				return nil
-			}
-			if err != nil {
-				return lazyerrors.Error(err)
-			}
-
-			doc := d.(*types.Document)
-
+		for _, doc := range params.Docs {
 			b, err := sjson.Marshal(doc)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
 
-			// FIXME use batches
+			// use batches
+			// TODO https://github.com/FerretDB/FerretDB/issues/2750
 			q := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
 
 			if _, err = tx.ExecContext(ctx, q, string(b)); err != nil {
+				var se *sqlite3.Error
+				if errors.As(err, &se) && se.Code() == sqlite3lib.SQLITE_CONSTRAINT_UNIQUE {
+					return backends.NewError(backends.ErrorCodeInsertDuplicateID, err)
+				}
+
 				return lazyerrors.Error(err)
 			}
-
-			res.Inserted++
 		}
+
+		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return &res, nil
+	return new(backends.InsertAllResult), nil
 }
 
 // Update implements backends.Collection interface.

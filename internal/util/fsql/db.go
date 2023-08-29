@@ -162,7 +162,7 @@ func (db *DB) InTransaction(ctx context.Context, f func(*Tx) error) (err error) 
 	}()
 
 	if err = f(tx); err != nil {
-		err = lazyerrors.Error(err)
+		// do not wrap f's error because the caller depends on it in some cases
 		return
 	}
 
