@@ -101,6 +101,27 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 	panic("not implemented")
 }
 
+// DBStats implements backends.Database interface.
+//
+// If the database does not exist, it returns *backends.DBStatsResult filled with zeros for all the fields.
+func (db *database) DBStats(ctx context.Context) (*backends.DBStatsResult, error) {
+	stats := new(backends.DBStatsResult)
+
+	d := db.r.DatabaseGetExisting(ctx, db.name)
+	if d == nil {
+		return stats, nil
+	}
+
+	// Call ANALYZE to update statistics, the actual statistics are needed to estimate the number of rows in all tables,
+	// see https://www.sqlite.org/lang_analyze.html.
+	q := `ANALYZE`
+	if _, err := d.ExecContext(ctx, q); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return stats, nil
+}
+
 // check interfaces
 var (
 	_ backends.Database = (*database)(nil)
