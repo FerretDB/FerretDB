@@ -41,7 +41,7 @@ type Database interface {
 	DropCollection(context.Context, *DropCollectionParams) error
 	RenameCollection(context.Context, *RenameCollectionParams) error
 
-	DBStats(context.Context) (*DBStatsResult, error)
+	Stats(context.Context, *StatsParams) (*StatsResult, error)
 }
 
 // databaseContract implements Database interface.
@@ -186,13 +186,14 @@ func (dbc *databaseContract) RenameCollection(ctx context.Context, params *Renam
 	return err
 }
 
-// DBStatsResult represents the results of Database.DBStats method.
-//
-// MongoDB returns "numbers" that could be int32 or int64.
-// FerretDB always returns int64 for simplicity.
+// StatsParams represents the parameters of Database.Stats method.
+type StatsParams struct {
+}
+
+// StatsResult represents the results of Database.Stats method.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/2447
-type DBStatsResult struct {
+type StatsResult struct {
 	CountCollections int64
 	CountObjects     int64
 	CountIndexes     int64
@@ -201,13 +202,13 @@ type DBStatsResult struct {
 	SizeCollections  int64
 }
 
-// DBStats returns statistics about the database.
+// Stats returns statistics about the database.
 //
 // Database may not exist; that's not an error.
-func (dbc *databaseContract) DBStats(ctx context.Context) (*DBStatsResult, error) {
+func (dbc *databaseContract) Stats(ctx context.Context, params *StatsParams) (*StatsResult, error) {
 	defer observability.FuncCall(ctx)()
 
-	res, err := dbc.db.DBStats(ctx)
+	res, err := dbc.db.Stats(ctx, params)
 	checkError(err)
 
 	return res, err
