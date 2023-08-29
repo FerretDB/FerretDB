@@ -161,9 +161,9 @@ func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 
 		default:
 			if strings.HasPrefix(updateOp, "$") {
-				return false, commonerrors.NewCommandError(
+				return false, commonerrors.NewCommandErrorMsg(
 					commonerrors.ErrNotImplemented,
-					fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp),
+					fmt.Sprintf("UpdateDocument: unhandled operation %q", updateOp),
 				)
 			}
 
@@ -199,7 +199,8 @@ func processSetFieldExpression(command string, doc, setDoc *types.Document, setO
 	for _, setKey := range setDocKeys {
 		setValue := must.NotFail(setDoc.Get(setKey))
 
-		// TODO: validate immutable _id https://github.com/FerretDB/FerretDB/issues/3017
+		// validate immutable _id
+		// TODO https://github.com/FerretDB/FerretDB/issues/3017
 
 		if setOnInsert {
 			// $setOnInsert do not set null and empty array value.

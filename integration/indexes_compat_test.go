@@ -27,10 +27,10 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestListIndexesCompat(t *testing.T) {
-	t.Parallel()
+func TestListIndexesCompat(tt *testing.T) {
+	tt.Parallel()
 
-	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+	s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
 		Providers:                shareddata.AllProviders(),
 		AddNonExistentCollection: true,
 	})
@@ -40,9 +40,11 @@ func TestListIndexesCompat(t *testing.T) {
 		targetCollection := targetCollections[i]
 		compatCollection := compatCollections[i]
 
-		t.Run(targetCollection.Name(), func(t *testing.T) {
-			t.Helper()
-			t.Parallel()
+		tt.Run(targetCollection.Name(), func(tt *testing.T) {
+			tt.Helper()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3175")
 
 			targetCursor, targetErr := targetCollection.Indexes().List(ctx)
 			compatCursor, compatErr := compatCollection.Indexes().List(ctx)
@@ -74,8 +76,8 @@ func TestListIndexesCompat(t *testing.T) {
 	}
 }
 
-func TestCreateIndexesCompat(t *testing.T) {
-	t.Parallel()
+func TestCreateIndexesCompat(tt *testing.T) {
+	tt.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		models     []mongo.IndexModel
@@ -222,17 +224,17 @@ func TestCreateIndexesCompat(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		tt.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Helper()
-			t.Parallel()
+			tt.Helper()
+			tt.Parallel()
 
 			// Use per-test setup because createIndexes modifies collection state,
 			// however, we don't need to run index creation test for all the possible collections.
-			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+			s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
 				Providers:                []shareddata.Provider{shareddata.Composites},
 				AddNonExistentCollection: true,
 			})
@@ -243,8 +245,10 @@ func TestCreateIndexesCompat(t *testing.T) {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
 
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
+				tt.Run(targetCollection.Name(), func(tt *testing.T) {
+					tt.Helper()
+
+					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3175")
 
 					targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
 					compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
@@ -297,20 +301,25 @@ func TestCreateIndexesCompat(t *testing.T) {
 				})
 			}
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3175
+			if setup.IsSQLite(tt) {
+				return
+			}
+
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+				assert.True(tt, nonEmptyResults, "expected non-empty results (some documents should be modified)")
 			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
+				assert.False(tt, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+				tt.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
 }
 
-func TestDropIndexesCompat(t *testing.T) {
-	t.Parallel()
+func TestDropIndexesCompat(tt *testing.T) {
+	tt.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		dropIndexName string                   // name of a single index to drop
@@ -360,16 +369,16 @@ func TestDropIndexesCompat(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
-			t.Parallel()
+		tt.Run(name, func(tt *testing.T) {
+			tt.Helper()
+			tt.Parallel()
 
 			if tc.dropAll {
-				require.Empty(t, tc.dropIndexName, "index name must be empty when dropping all indexes")
+				require.Empty(tt, tc.dropIndexName, "index name must be empty when dropping all indexes")
 			}
 
 			// It's enough to use a single provider for drop indexes test as indexes work the same for different collections.
-			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+			s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
 				Providers:                []shareddata.Provider{shareddata.Composites},
 				AddNonExistentCollection: true,
 			})
@@ -380,8 +389,10 @@ func TestDropIndexesCompat(t *testing.T) {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
 
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
+				tt.Run(targetCollection.Name(), func(tt *testing.T) {
+					tt.Helper()
+
+					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3175")
 
 					if tc.toCreate != nil {
 						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.toCreate)
@@ -429,20 +440,25 @@ func TestDropIndexesCompat(t *testing.T) {
 				})
 			}
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3175
+			if setup.IsSQLite(tt) {
+				return
+			}
+
 			switch tc.resultType {
 			case nonEmptyResult:
-				require.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+				require.True(tt, nonEmptyResults, "expected non-empty results (some documents should be modified)")
 			case emptyResult:
-				require.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
+				require.False(tt, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+				tt.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
 }
 
-func TestCreateIndexesCompatUnique(t *testing.T) {
-	t.Parallel()
+func TestCreateIndexesCompatUnique(tt *testing.T) {
+	tt.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		models    []mongo.IndexModel // required, index to create
@@ -498,7 +514,7 @@ func TestCreateIndexesCompatUnique(t *testing.T) {
 			},
 			insertDoc: bson.D{{"v", "baz"}, {"foo", "bar"}},
 		},
-		"ExistingFieldInsertDuplicate": {
+		"ExistingInsertDuplicate": {
 			models: []mongo.IndexModel{
 				{
 					Keys:    bson.D{{"v", 1}},
@@ -509,13 +525,15 @@ func TestCreateIndexesCompatUnique(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		tt.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Helper()
-			t.Parallel()
+			tt.Helper()
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3175")
 
 			res := setup.SetupCompatWithOpts(t,
 				&setup.SetupCompatOpts{

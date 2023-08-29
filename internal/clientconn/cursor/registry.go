@@ -47,8 +47,6 @@ func init() {
 
 // Registry stores cursors.
 //
-// TODO better cleanup (?), more metrics https://github.com/FerretDB/FerretDB/issues/2862
-//
 //nolint:vet // for readability
 type Registry struct {
 	rw sync.RWMutex

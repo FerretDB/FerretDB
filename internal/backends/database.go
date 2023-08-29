@@ -39,6 +39,7 @@ type Database interface {
 	ListCollections(context.Context, *ListCollectionsParams) (*ListCollectionsResult, error)
 	CreateCollection(context.Context, *CreateCollectionParams) error
 	DropCollection(context.Context, *DropCollectionParams) error
+	RenameCollection(context.Context, *RenameCollectionParams) error
 }
 
 // databaseContract implements Database interface.
@@ -148,6 +149,34 @@ func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCol
 	err := validateCollectionName(params.Name)
 	if err == nil {
 		err = dbc.db.DropCollection(ctx, params)
+	}
+
+	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist) // TODO: ErrorCodeDatabaseDoesNotExist ?
+
+	return err
+}
+
+// RenameCollectionParams represents the parameters of Database.RenameCollection method.
+type RenameCollectionParams struct {
+	OldName string
+	NewName string
+}
+
+// RenameCollection renames existing collection in the database.
+// Both old and new names should be valid.
+//
+// The errors for non-existing database and non-existing collection are the same (TODO?).
+func (dbc *databaseContract) RenameCollection(ctx context.Context, params *RenameCollectionParams) error {
+	defer observability.FuncCall(ctx)()
+
+	err := validateCollectionName(params.OldName)
+
+	if err == nil {
+		err = validateCollectionName(params.NewName)
+	}
+
+	if err == nil {
+		err = dbc.db.RenameCollection(ctx, params)
 	}
 
 	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist) // TODO: ErrorCodeDatabaseDoesNotExist ?

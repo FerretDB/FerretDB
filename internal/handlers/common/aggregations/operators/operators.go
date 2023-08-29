@@ -29,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // newOperatorFunc is a type for a function that creates a standard aggregation operator.
@@ -37,7 +38,9 @@ import (
 // While accumulators perform operations on multiple documents
 // (for example `$count` can count documents in each `$group` group),
 // standard operators perform operations on a single document.
-type newOperatorFunc func(expression *types.Document) (Operator, error)
+// It takes the arguments extracted from the document, and not the
+// whole array/document.
+type newOperatorFunc func(args ...any) (Operator, error)
 
 // Operator is a common interface for standard aggregation operators.
 type Operator interface {
@@ -84,6 +87,7 @@ func NewOperator(doc *types.Document) (Operator, error) {
 	if doc.Len() > 1 {
 		return nil, newOperatorError(
 			ErrTooManyFields,
+			doc.Command(),
 			"The operator field specifies more than one operator",
 		)
 	}
@@ -93,17 +97,40 @@ func NewOperator(doc *types.Document) (Operator, error) {
 	newOperator, supported := Operators[operator]
 	_, unsupported := unsupportedOperators[operator]
 
+	expr := must.NotFail(doc.Get(operator))
+
+	var args []any
+
+	if arr, ok := expr.(*types.Array); ok {
+		iter := arr.Iterator()
+		defer iter.Close()
+
+		for {
+			_, v, err := iter.Next()
+
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			args = append(args, v)
+		}
+	} else {
+		args = append(args, expr)
+	}
+
 	switch {
 	case supported:
-		return newOperator(doc)
+		return newOperator(args...)
 	case unsupported:
 		return nil, newOperatorError(
 			ErrNotImplemented,
+			operator,
 			fmt.Sprintf("The operator %s is not implemented yet", operator),
 		)
 	default:
 		return nil, newOperatorError(
 			ErrInvalidExpression,
+			operator,
 			fmt.Sprintf("Unrecognized expression '%s'", operator),
 		)
 	}

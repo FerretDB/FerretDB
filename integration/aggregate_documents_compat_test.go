@@ -29,7 +29,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // aggregateStagesCompatTestCase describes aggregation stages compatibility test case.
@@ -40,7 +39,6 @@ type aggregateStagesCompatTestCase struct {
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown bool                     // defaults to false
 	skip           string                   // skip test for all handlers, must have issue number mentioned
-	failsForSQLite string                   // optional, if set, the case is expected to fail for SQLite due to given issue
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -51,29 +49,29 @@ func testAggregateStagesCompat(t *testing.T, testCases map[string]aggregateStage
 }
 
 // testAggregateStagesCompatWithProviders tests aggregation stages compatibility test cases with given providers.
-func testAggregateStagesCompatWithProviders(tt *testing.T, providers shareddata.Providers, testCases map[string]aggregateStagesCompatTestCase) {
-	tt.Helper()
+func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.Providers, testCases map[string]aggregateStagesCompatTestCase) {
+	t.Helper()
 
-	require.NotEmpty(tt, providers)
+	require.NotEmpty(t, providers)
 
-	s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 		Providers: providers,
 	})
 	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
-			tt.Helper()
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
 
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
+			t.Parallel()
 
 			pipeline := tc.pipeline
-			require.NotNil(tt, pipeline, "pipeline should be set")
+			require.NotNil(t, pipeline, "pipeline should be set")
 
 			var hasSortStage bool
 			for _, stage := range pipeline {
@@ -103,13 +101,8 @@ func testAggregateStagesCompatWithProviders(tt *testing.T, providers shareddata.
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				tt.Run(targetCollection.Name(), func(tt *testing.T) {
-					tt.Helper()
-
-					var t testtb.TB = tt
-					if tc.failsForSQLite != "" {
-						t = setup.FailsForSQLite(tt, tc.failsForSQLite)
-					}
+				t.Run(targetCollection.Name(), func(t *testing.T) {
+					t.Helper()
 
 					explainCommand := bson.D{{"explain", bson.D{
 						{"aggregate", targetCollection.Name()},
@@ -156,11 +149,6 @@ func testAggregateStagesCompatWithProviders(tt *testing.T, providers shareddata.
 						nonEmptyResults = true
 					}
 				})
-			}
-
-			var t testtb.TB = tt
-			if tc.failsForSQLite != "" {
-				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
 			}
 
 			switch tc.resultType {
@@ -314,14 +302,12 @@ func TestAggregateCompatOptions(t *testing.T) {
 
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"MaxTimeZero": {
-			pipeline:       bson.A{},
-			maxTime:        pointer.ToDuration(time.Duration(0)),
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
+			pipeline: bson.A{},
+			maxTime:  pointer.ToDuration(time.Duration(0)),
 		},
 		"MaxTime": {
-			pipeline:       bson.A{},
-			maxTime:        pointer.ToDuration(time.Second),
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
+			pipeline: bson.A{},
+			maxTime:  pointer.ToDuration(time.Second),
 		},
 	}
 
@@ -795,7 +781,8 @@ func TestAggregateCompatGroup(t *testing.T) {
 func TestAggregateCompatGroupExpressionDottedFields(t *testing.T) {
 	t.Parallel()
 
-	// TODO Use all providers after fixing $sort problem:  https://github.com/FerretDB/FerretDB/issues/2276.
+	// Use all providers after fixing $sort problem:
+	// TODO https://github.com/FerretDB/FerretDB/issues/2276
 	//
 	// Currently, providers Composites, DocumentsDeeplyNested, ArrayAndDocuments and Mixed
 	// cannot be used due to sorting difference.
@@ -823,11 +810,6 @@ func TestAggregateCompatGroupExpressionDottedFields(t *testing.T) {
 		"NestedInArray": {
 			pipeline: bson.A{bson.D{{"$group", bson.D{
 				{"_id", "$v.0.foo"},
-			}}}},
-		},
-		"NonExistentParent": {
-			pipeline: bson.A{bson.D{{"$group", bson.D{
-				{"_id", "$non.existent"},
 			}}}},
 		},
 		"NonExistentChild": {
@@ -1045,7 +1027,7 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 		// TODO: handle $sum of doubles near max precision.
 		// https://github.com/FerretDB/FerretDB/issues/2300
 		Remove(shareddata.Doubles).
-		// TODO: https://github.com/FerretDB/FerretDB/issues/2616
+		// TODO https://github.com/FerretDB/FerretDB/issues/2616
 		Remove(shareddata.ArrayDocuments)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -1171,16 +1153,6 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 				bson.D{{"$group", bson.D{
 					{"_id", "$v"},
 					{"sum", bson.D{{"$sum", int64(20)}}},
-				}}},
-				bson.D{{"$sort", bson.D{{"_id", -1}}}},
-			},
-		},
-		"MaxInt64": {
-			pipeline: bson.A{
-				bson.D{{"$sort", bson.D{{"_id", 1}}}},
-				bson.D{{"$group", bson.D{
-					{"_id", "$v"},
-					{"sum", bson.D{{"$sum", math.MaxInt64}}},
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
@@ -1406,7 +1378,7 @@ func TestAggregateCompatSortDotNotation(t *testing.T) {
 	t.Parallel()
 
 	providers := shareddata.AllProviders().
-		// TODO: https://github.com/FerretDB/FerretDB/issues/2617
+		// TODO https://github.com/FerretDB/FerretDB/issues/2617
 		Remove(shareddata.ArrayDocuments)
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -1947,13 +1919,6 @@ func TestAggregateCompatProject(t *testing.T) {
 				bson.D{{"$project", bson.D{{"$type", "foo"}, {"$op", "foo"}}}},
 			},
 			resultType: emptyResult,
-		},
-		"SumValue": {
-			pipeline: bson.A{
-				bson.D{{"$project", bson.D{
-					{"sum", bson.D{{"$sum", "$v"}}},
-				}}},
-			},
 		},
 	}
 

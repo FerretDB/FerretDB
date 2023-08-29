@@ -532,7 +532,8 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 			}
 
 			// next batch obtain from implicit call to `getMore` has the rest of the documents, not default batchSize
-			// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
+			// 16MB batchSize limit
+			// TODO https://github.com/FerretDB/FerretDB/issues/2824
 			ok := cursor.Next(ctx)
 			require.True(t, ok, "expected to have next document")
 			require.Equal(t, 118, cursor.RemainingBatchLength())
@@ -551,7 +552,8 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 			require.Equal(t, 0, cursor.RemainingBatchLength())
 
 			// next batch obtain from implicit call to `getMore` has the rest of the documents, not 0 batchSize
-			// TODO: 16MB batchSize limit https://github.com/FerretDB/FerretDB/issues/2824
+			// 16MB batchSize limit
+			// TODO https://github.com/FerretDB/FerretDB/issues/2824
 			ok := cursor.Next(ctx)
 			require.True(t, ok, "expected to have next document")
 			require.Equal(t, 219, cursor.RemainingBatchLength())

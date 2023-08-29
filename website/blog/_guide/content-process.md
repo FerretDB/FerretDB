@@ -26,9 +26,9 @@ Please find the [template](YYYY-MM-DD.blog-template.md) here and feel free to st
 
 ### Names and URLs
 
-The file name should be in the format `YYYY-MM-DD-title-in-kebab-case-with-dashes.md`,
-where `YYYY-MM-DD` is the date of the post, and `title-in-kebab-case-with-dashes` is a descriptive title of the post.
-Please do not underscores or spaces in the file names, directory names, or slugs because URL paths typically use dashes.
+The file name should be in the format `YYYY-MM-DD-shortened-article-name.md` or `YYYY-MM-DD-folder-name/article-name.md`,
+where `YYYY-MM-DD` is the date of the post, and `shortened-article-name` is a shortened descriptive title of the post.
+Please do not use underscores or spaces in the file names, directory names, or slugs because URL paths typically use dashes.
 
 ### Tags
 
@@ -81,7 +81,9 @@ Please see our [writing guide](writing-guide.md) for help formatting your blog p
 
 Front matter is the metadata that appears at the top of the markdown file and provides information about the post, such as the title and author.
 
-In the front matter, ensure to set the `draft: true` in the front matter until it's ready to publish.
+In the front matter, `draft: true` keeps the page hidden from the visitors of the site.
+Use this option if you plan to merge the content into `main` branch while keeping the page hidden.
+Other cases, remove `draft: true` to enable CI to build and render the new content during the reviewing.
 Make sure to include all necessary information in the front matter, such as the title and author.
 
 ## Reviewing and Editing Content
@@ -99,7 +101,7 @@ Once the content is ready for review, please open a PR and assign it to @Ferretd
 ## Final Approval and Publishing
 
 The final approval for publishing content is given once it has passed through all reviews and approved by the team.
-To publish the content, change the date in file name to the proposed published date, and then remove `draft: true` from the front matter.
+To publish the content, change the date in file name to the proposed published date, and then remove `draft: true` if set from the front matter.
 
 ## Post Publishing
 

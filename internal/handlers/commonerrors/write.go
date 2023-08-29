@@ -21,13 +21,26 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// WriteErrors represents a slice of protocol write errors.
+// writeError represents a single write error details.
+type writeError struct {
+	// the order of fields is weird to make the struct smaller due to alignment
+
+	errmsg string
+	index  int32
+	code   ErrorCode
+}
+
+// WriteErrors represents a list of write errors.
 // It could be returned for Update, Insert, Delete, and Replace operations.
+//
+// Deprecated: https://github.com/FerretDB/FerretDB/issues/3263.
 type WriteErrors struct {
 	errs []writeError
 }
 
 // NewWriteErrorMsg creates a new protocol write error with given ErrorCode and message.
+//
+// Deprecated: https://github.com/FerretDB/FerretDB/issues/3263.
 func NewWriteErrorMsg(code ErrorCode, msg string) error {
 	return &WriteErrors{
 		errs: []writeError{{
@@ -52,44 +65,20 @@ func (we *WriteErrors) Error() string {
 	return err
 }
 
-// Unwrap implements ProtoErr interface.
-func (we *WriteErrors) Unwrap() error {
-	for _, e := range we.errs {
-		return errors.New(e.errmsg)
-	}
-
-	return nil
-}
-
-// Code implements ProtoErr interface.
-func (we *WriteErrors) Code() ErrorCode {
-	for _, e := range we.errs {
-		return e.code
-	}
-
-	return errUnset
-}
-
 // Document implements ProtoErr interface.
 func (we *WriteErrors) Document() *types.Document {
-	errs := must.NotFail(types.NewArray())
+	errs := types.MakeArray(we.Len())
 
 	for _, e := range we.errs {
-		doc := must.NotFail(types.NewDocument())
+		doc := types.MakeDocument(3)
 
-		if e.index != nil {
-			doc.Set("index", *e.index)
-		}
-
-		// Fields "code" and "errmsg" must always be filled in so that clients can parse the error message.
-		// Otherwise, the mongo client would parse it as a CommandError.
+		doc.Set("index", e.index)
 		doc.Set("code", int32(e.code))
 		doc.Set("errmsg", e.errmsg)
 
 		errs.Append(doc)
 	}
 
-	// "writeErrors" field must be present in the result document so that clients can parse it as WriteErrors.
 	return must.NotFail(types.NewDocument(
 		"ok", float64(1),
 		"writeErrors", errs,
@@ -105,26 +94,21 @@ func (we *WriteErrors) Info() *ErrInfo {
 // appends it to WriteErrors. The index value is an
 // index of the query with error.
 func (we *WriteErrors) Append(err error, index int32) {
-	var writeErr *writeError
 	var cmdErr *CommandError
 
 	switch {
-	case errors.As(err, &writeErr):
-		writeErr.index = &index
-		we.errs = append(we.errs, *writeErr)
-
 	case errors.As(err, &cmdErr):
 		we.errs = append(we.errs, writeError{
 			code:   cmdErr.code,
-			errmsg: cmdErr.Unwrap().Error(),
-			index:  &index,
+			errmsg: cmdErr.err.Error(),
+			index:  index,
 		})
 
 	default:
 		we.errs = append(we.errs, writeError{
 			code:   errInternalError,
 			errmsg: err.Error(),
-			index:  &index,
+			index:  index,
 		})
 	}
 }
@@ -137,27 +121,12 @@ func (we *WriteErrors) Len() int {
 // Merge merges the given WriteErrors with the current one and sets the given index.
 func (we *WriteErrors) Merge(we2 *WriteErrors, index int32) {
 	for _, e := range we2.errs {
-		e.index = &index
+		e.index = index
 		we.errs = append(we.errs, e)
 	}
-}
-
-// writeError represents protocol write error.
-// It required to build the correct write error result.
-// The index field is optional and won't be used if it's nil.
-type writeError struct {
-	code   ErrorCode
-	errmsg string
-	index  *int32
-}
-
-// Error implements error interface.
-func (we *writeError) Error() string {
-	return we.errmsg
 }
 
 // check interfaces
 var (
 	_ ProtoErr = (*WriteErrors)(nil)
-	_ error    = (*writeError)(nil)
 )

@@ -184,8 +184,6 @@ func validateGroupKey(groupKey any) error {
 			// TODO https://github.com/FerretDB/FerretDB/issues/3129
 			return processGroupStageError(err)
 		}
-
-		return nil
 	}
 
 	iter := doc.Iterator()

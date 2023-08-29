@@ -23,7 +23,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // sum represents $sum aggregation operator.
@@ -34,52 +33,50 @@ type sum struct {
 }
 
 // newSum creates a new $sum aggregation operator.
-func newSum(accumulation *types.Document) (Accumulator, error) {
-	expression := must.NotFail(accumulation.Get("$sum"))
+func newSum(args ...any) (Accumulator, error) {
 	accumulator := new(sum)
 
-	switch expr := expression.(type) {
-	case *types.Document:
-		if !operators.IsOperator(expr) {
-			accumulator.number = int32(0)
-			break
-		}
-
-		op, err := operators.NewOperator(expr)
-		if err == nil {
-			// TODO https://github.com/FerretDB/FerretDB/issues/3129
-			_, err = op.Process(nil)
-		}
-
-		if err != nil {
-			var opErr operators.OperatorError
-			if !errors.As(err, &opErr) {
-				return nil, lazyerrors.Error(err)
-			}
-
-			return nil, opErr
-		}
-
-		accumulator.operator = op
-	case *types.Array:
+	if len(args) != 1 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrStageGroupUnaryOperator,
 			"The $sum accumulator is a unary operator",
 			"$sum (accumulator)",
 		)
-	case float64:
-		accumulator.number = expr
-	case string:
-		var err error
-		if accumulator.expression, err = aggregations.NewExpression(expr, nil); err != nil {
-			// $sum returns 0 on non-existent field.
+	}
+
+	for _, arg := range args {
+		switch arg := arg.(type) {
+		case *types.Document:
+			if !operators.IsOperator(arg) {
+				accumulator.number = int32(0)
+				break
+			}
+
+			op, err := operators.NewOperator(arg)
+			if err != nil {
+				var opErr operators.OperatorError
+				if !errors.As(err, &opErr) {
+					return nil, lazyerrors.Error(err)
+				}
+
+				return nil, opErr
+			}
+
+			accumulator.operator = op
+		case float64:
+			accumulator.number = arg
+		case string:
+			var err error
+			if accumulator.expression, err = aggregations.NewExpression(arg, nil); err != nil {
+				// $sum returns 0 on non-existent field.
+				accumulator.number = int32(0)
+			}
+		case int32, int64:
+			accumulator.number = arg
+		default:
 			accumulator.number = int32(0)
+			// $sum returns 0 on non-numeric field
 		}
-	case int32, int64:
-		accumulator.number = expr
-	default:
-		accumulator.number = int32(0)
-		// $sum returns 0 on non-numeric field
 	}
 
 	return accumulator, nil
