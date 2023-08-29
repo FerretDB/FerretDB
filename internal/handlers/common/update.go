@@ -167,9 +167,9 @@ func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 
 		default:
 			if strings.HasPrefix(updateOp, "$") {
-				return false, commonerrors.NewCommandError(
+				return false, commonerrors.NewCommandErrorMsg(
 					commonerrors.ErrNotImplemented,
-					fmt.Errorf("UpdateDocument: unhandled operation %q", updateOp),
+					fmt.Sprintf("UpdateDocument: unhandled operation %q", updateOp),
 				)
 			}
 
