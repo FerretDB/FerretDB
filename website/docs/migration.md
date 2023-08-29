@@ -26,11 +26,8 @@ As an example, let us say that your application performs some complex query and 
 me@foobar:~/FerretDB$ bin/task env-up
 # in another terminal run the debug build which runs in diff-normal mode by default
 me@foobar:~/FerretDB$ bin/task run
-task: [build-host] go build -o=bin/ferretdb -race=true -tags=ferretdb_debug,ferretdb_hana -coverpkg=./... ./cmd/ferretdb
-task: [build-host] go run ./cmd/envtool shell mkdir tmp/cover
-task: [run] bin/ferretdb --listen-addr=:27017 --proxy-addr=127.0.0.1:47017 --mode=diff-normal --handler=pg --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50 --test-records-dir=tmp/records
 ```
-1. Note that because we are running in `diff-normal` mode the error returned from FerretDB will be sent to the client, which, in most cases doesn't require further inspection of the diff output.
+2. Note that because we are running in `diff-normal` mode the error returned from FerretDB will be sent to the client, which, in most cases doesn't require further inspection of the diff output.
 
 ```sh
 me@foobar:~/FerretDB$ mongosh --quiet
@@ -86,15 +83,49 @@ MongoServerError: $group accumulator "$first" is not implemented yet
 test> 
 ```
 
+### Manual and automated testing with `diff-proxy` mode
+
+`diff-proxy` mode will forward client requests to a MongoDB-compatible database, but return the proxy responses to the client, and will log the difference between them.
+
+Using the same example above we could further inspect the diff output.
+
+1. Run FerretDB in `diff-proxy` mode.
+
+```sh
+me@foobar:~/FerretDB$ bin/task run-proxy
+```
+
+2. Run the same query again.
+
+```sh
+test> db.posts.aggregate(
+...   [
+...     { $sort: { date: 1, author: 1 } },
+...     {
+...       $group:
+...         {
+...           _id: "$author",
+...           firstPost: { $first: "$date" }
+...         }
+...     }
+...   ]
+... );
+[
+  { _id: 'Alice', firstPost: ISODate("2023-08-20T10:33:23.134Z") },
+  { _id: 'Bob', firstPost: ISODate("2023-08-28T10:33:23.134Z") }
+]
+test>
+```
+
 Example diff output:
 
 ```sh
-2023-08-29T13:02:22.999+0200	WARN	// 127.0.0.1:39954 -> 127.0.0.1:27017 	clientconn/conn.go:360	Header diff:
+2023-08-29T13:25:09.048+0200	WARN	// 127.0.0.1:33522 -> 127.0.0.1:27017 	clientconn/conn.go:360	Header diff:
 --- res header
 +++ proxy header
 @@ -1 +1 @@
--length:   140, id:    3, response_to:   12, opcode: OP_MSG
-+length:   181, id:  190, response_to:   12, opcode: OP_MSG
+-length:   140, id:    2, response_to:  156, opcode: OP_MSG
++length:   181, id:  360, response_to:  156, opcode: OP_MSG
 
 Body diff:
 --- res body
@@ -120,9 +151,9 @@ Body diff:
 +                "_id",
 +                "firstPost"
 +              ],
-+              "_id": "Bob",
++              "_id": "Alice",
 +              "firstPost": {
-+                "$d": 1693218803134
++                "$d": 1692527603134
 +              }
 +            },
 +            {
@@ -130,9 +161,9 @@ Body diff:
 +                "_id",
 +                "firstPost"
 +              ],
-+              "_id": "Alice",
++              "_id": "Bob",
 +              "firstPost": {
-+                "$d": 1692527603134
++                "$d": 1693218803134
 +              }
 +            }
 +          ],
@@ -151,8 +182,6 @@ Body diff:
 +        }
        },
 ```
-
-### Manual and automated testing with `diff-proxy` mode
 
 ### Response metrics
 
