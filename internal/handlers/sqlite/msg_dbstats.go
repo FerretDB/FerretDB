@@ -16,83 +16,12 @@ package sqlite
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgDBStats implements HandlerInterface.
 func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	command := document.Command()
-
-	dbParam, err := common.GetRequiredParam[string](document, "$db")
-	if err != nil {
-		return nil, err
-	}
-
-	scale := int64(1)
-
-	var s any
-	if s, err = document.Get("scale"); err == nil {
-		if scale, err = commonparams.GetValidatedNumberParamWithMinValue(command, "scale", s, 1); err != nil {
-			return nil, err
-		}
-	}
-
-	db, err := h.b.Database(dbParam)
-	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid database specified '%s'", dbParam)
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
-		}
-
-		return nil, lazyerrors.Error(err)
-	}
-	defer db.Close()
-
-	stats, err := db.DBStats(ctx)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	pairs := []any{
-		"db", db,
-		"collections", stats.CountCollections,
-		// TODO https://github.com/FerretDB/FerretDB/issues/176
-		"views", int32(0),
-		"objects", stats.CountObjects,
-	}
-
-	if stats.CountObjects > 0 {
-		pairs = append(pairs, "avgObjSize", stats.SizeCollections/stats.CountObjects)
-	}
-
-	pairs = append(pairs,
-		"dataSize", stats.SizeCollections/scale,
-		"storageSize", stats.SizeCollections/scale,
-		"indexes", stats.CountIndexes,
-		"indexSize", stats.SizeIndexes/scale,
-		"totalSize", stats.SizeTotal/scale,
-		"scaleFactor", float64(scale),
-		"ok", float64(1),
-	)
-
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
-	}))
-
-	return &reply, nil
+	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }
