@@ -49,29 +49,29 @@ func testAggregateStagesCompat(t *testing.T, testCases map[string]aggregateStage
 }
 
 // testAggregateStagesCompatWithProviders tests aggregation stages compatibility test cases with given providers.
-func testAggregateStagesCompatWithProviders(tt *testing.T, providers shareddata.Providers, testCases map[string]aggregateStagesCompatTestCase) {
-	tt.Helper()
+func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.Providers, testCases map[string]aggregateStagesCompatTestCase) {
+	t.Helper()
 
-	require.NotEmpty(tt, providers)
+	require.NotEmpty(t, providers)
 
-	s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 		Providers: providers,
 	})
 	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
-			tt.Helper()
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
 
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
+			t.Parallel()
 
 			pipeline := tc.pipeline
-			require.NotNil(tt, pipeline, "pipeline should be set")
+			require.NotNil(t, pipeline, "pipeline should be set")
 
 			var hasSortStage bool
 			for _, stage := range pipeline {
@@ -101,10 +101,8 @@ func testAggregateStagesCompatWithProviders(tt *testing.T, providers shareddata.
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				tt.Run(targetCollection.Name(), func(tt *testing.T) {
-					tt.Helper()
-
-					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
+				t.Run(targetCollection.Name(), func(t *testing.T) {
+					t.Helper()
 
 					explainCommand := bson.D{{"explain", bson.D{
 						{"aggregate", targetCollection.Name()},
@@ -153,18 +151,13 @@ func testAggregateStagesCompatWithProviders(tt *testing.T, providers shareddata.
 				})
 			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3148
-			if setup.IsSQLite(tt) {
-				return
-			}
-
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(tt, nonEmptyResults, "expected non-empty results")
+				assert.True(t, nonEmptyResults, "expected non-empty results")
 			case emptyResult:
-				assert.False(tt, nonEmptyResults, "expected empty results")
+				assert.False(t, nonEmptyResults, "expected empty results")
 			default:
-				tt.Fatalf("unknown result type %v", tc.resultType)
+				t.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
@@ -180,10 +173,10 @@ type aggregateCommandCompatTestCase struct {
 
 // testAggregateCommandCompat tests aggregate pipeline compatibility test cases using one collection.
 // Use testAggregateStagesCompat for testing stages of aggregation.
-func testAggregateCommandCompat(tt *testing.T, testCases map[string]aggregateCommandCompatTestCase) {
-	tt.Helper()
+func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateCommandCompatTestCase) {
+	t.Helper()
 
-	s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 		// Use a provider that works for all handlers.
 		Providers: []shareddata.Provider{shareddata.Int32s},
 	})
@@ -194,24 +187,22 @@ func testAggregateCommandCompat(tt *testing.T, testCases map[string]aggregateCom
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
-			tt.Helper()
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
 
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
+			t.Parallel()
 
 			command := tc.command
-			require.NotNil(tt, command, "command should be set")
+			require.NotNil(t, command, "command should be set")
 
 			var nonEmptyResults bool
 
-			tt.Run(targetCollection.Name(), func(tt *testing.T) {
-				tt.Helper()
-
-				t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
+			t.Run(targetCollection.Name(), func(t *testing.T) {
+				t.Helper()
 
 				var targetRes, compatRes bson.D
 				targetErr := targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
@@ -239,18 +230,13 @@ func testAggregateCommandCompat(tt *testing.T, testCases map[string]aggregateCom
 				}
 			})
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3148
-			if setup.IsSQLite(tt) {
-				return
-			}
-
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(tt, nonEmptyResults, "expected non-empty results")
+				assert.True(t, nonEmptyResults, "expected non-empty results")
 			case emptyResult:
-				assert.False(tt, nonEmptyResults, "expected empty results")
+				assert.False(t, nonEmptyResults, "expected empty results")
 			default:
-				tt.Fatalf("unknown result type %v", tc.resultType)
+				t.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}

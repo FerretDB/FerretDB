@@ -2,6 +2,51 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.9.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.9.0) (2023-08-28)
+
+### Enhancements 🛠
+
+- Add more metrics for `*sql.DB` by @slavabobik in https://github.com/FerretDB/FerretDB/pull/3230
+
+### Documentation 📄
+
+- Add blog post for FerretDB v1.8.0 by @Fashander in https://github.com/FerretDB/FerretDB/pull/3198
+- Fix typos in documentation by @pratikmota in https://github.com/FerretDB/FerretDB/pull/3217
+- Make the writing guide accessible but unlisted by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3221
+- Add blogpost on Leafcloud by @Fashander in https://github.com/FerretDB/FerretDB/pull/3153
+- Add Postgres Ibiza event blog post by @Fashander in https://github.com/FerretDB/FerretDB/pull/3210
+- Add Civo Navigate event blog post by @Fashander in https://github.com/FerretDB/FerretDB/pull/3201
+
+### Other Changes 🤖
+
+- Configure repo settings with files by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3208
+- Update `go-hdb` to v1.4.1 by @aenkya in https://github.com/FerretDB/FerretDB/pull/3213
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3215
+- Add another stress test for SQLite by @noisersup in https://github.com/FerretDB/FerretDB/pull/3195
+- Improve building with test coverage information by @durgakiran in https://github.com/FerretDB/FerretDB/pull/3059
+- Fix concurrent SQLite tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3222
+- Refactor aggregation operators by @noisersup in https://github.com/FerretDB/FerretDB/pull/3188
+- Add stubs for `renameCollection` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3233
+- Update issue links by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3234
+- Add stubs for `explain` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3236
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3248
+- Add linter for issue comments by @KrishnaSindhur in https://github.com/FerretDB/FerretDB/pull/3154
+- Simplify `commonerrors` package by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3227
+- Publish Docker images on quay.io by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3250
+- Refactor aggregation accumulators by @noisersup in https://github.com/FerretDB/FerretDB/pull/3203
+- Add new PostgreSQL backend stub by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3251
+- Cleanup SQLite tests by @noisersup in https://github.com/FerretDB/FerretDB/pull/3246
+
+### New Contributors
+
+- @aenkya made their first contribution in https://github.com/FerretDB/FerretDB/pull/3213
+- @pratikmota made their first contribution in https://github.com/FerretDB/FerretDB/pull/3217
+- @durgakiran made their first contribution in https://github.com/FerretDB/FerretDB/pull/3059
+- @slavabobik made their first contribution in https://github.com/FerretDB/FerretDB/pull/3230
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/50?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.8.0...v1.9.0).
+
 ## [v1.8.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.8.0) (2023-08-14)
 
 ### New Features 🎉
