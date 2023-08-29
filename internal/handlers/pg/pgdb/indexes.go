@@ -199,7 +199,7 @@ func createPgIndexIfNotExists(ctx context.Context, tx pgx.Tx, schema, table, ind
 
 	unique := ""
 	if isUnique {
-		unique = " UNIQUE"
+		// unique = " UNIQUE"
 	}
 
 	fieldsDef := make([]string, len(fields))
