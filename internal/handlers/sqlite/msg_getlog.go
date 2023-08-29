@@ -96,7 +96,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		startupWarnings := []string{
-			"Powered by FerretDB " + info.Version + " and PostgreSQL" + hv + ".",
+			"Powered by FerretDB " + info.Version + " and SQLite" + hv + ".",
 			"Please star us on GitHub: https://github.com/FerretDB/FerretDB.",
 		}
 
