@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sqlite
+package postgresql
 
 import (
 	"context"
@@ -21,13 +21,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 )
 
 // backend implements backends.Backend interface.
-type backend struct {
-	r *metadata.Registry
-}
+type backend struct{}
 
 // NewBackendParams represents the parameters of NewBackend function.
 //
@@ -37,61 +34,40 @@ type NewBackendParams struct {
 	L   *zap.Logger
 }
 
-// NewBackend creates a new SQLite backend.
+// NewBackend creates a new backend for PostgreSQL-compatible database.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	r, err := metadata.NewRegistry(params.URI, params.L)
-	if err != nil {
-		return nil, err
-	}
-
-	return backends.BackendContract(&backend{
-		r: r,
-	}), nil
+	return backends.BackendContract(new(backend)), nil
 }
 
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
-	b.r.Close()
 }
 
 // Database implements backends.Backend interface.
 func (b *backend) Database(name string) (backends.Database, error) {
-	return newDatabase(b.r, name), nil
+	return newDatabase(name), nil
 }
 
 // ListDatabases implements backends.Backend interface.
 //
 //nolint:lll // for readability
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
-	list := b.r.DatabaseList(ctx)
-
-	res := &backends.ListDatabasesResult{
-		Databases: make([]backends.DatabaseInfo, len(list)),
-	}
-	for i, db := range list {
-		res.Databases[i] = backends.DatabaseInfo{Name: db}
-	}
-
-	return res, nil
+	panic("not implemented")
 }
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	if dropped := b.r.DatabaseDrop(ctx, params.Name); !dropped {
-		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, nil)
-	}
-
-	return nil
+	panic("not implemented")
 }
 
 // Describe implements prometheus.Collector.
 func (b *backend) Describe(ch chan<- *prometheus.Desc) {
-	b.r.Describe(ch)
+	panic("not implemented")
 }
 
 // Collect implements prometheus.Collector.
 func (b *backend) Collect(ch chan<- prometheus.Metric) {
-	b.r.Collect(ch)
+	panic("not implemented")
 }
 
 // check interfaces

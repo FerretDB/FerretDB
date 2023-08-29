@@ -12,23 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package commonerrors
-
-// writeError represents protocol write error.
-// It required to build the correct write error result.
-// The index field is optional and won't be used if it's nil.
-type writeError struct {
-	index  *int32
-	errmsg string
-	code   ErrorCode
-}
-
-// Error implements error interface.
-func (we *writeError) Error() string {
-	return we.errmsg
-}
-
-// check interfaces
-var (
-	_ error = (*writeError)(nil)
-)
+// Package postgresql provides backend for PostgreSQL and compatible databases.
+package postgresql
