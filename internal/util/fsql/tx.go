@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
-// Tz wraps [*database/sql.Tx] with resource tracking.
+// Tx wraps [*database/sql.Tx] with resource tracking.
 //
 // It exposes the subset of *sql.Tx methods we use.
 type Tx struct {

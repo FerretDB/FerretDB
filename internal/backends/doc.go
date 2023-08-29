@@ -16,7 +16,7 @@
 //
 // # Design principles
 //
-//  1. Interfaces are relatively high-level and "fat" (or not FIXME).
+//  1. Interfaces are relatively high-level and "fat" (or not).
 //     We are generally doing one backend interface call per handler call.
 //     For example, `insert` command handler calls only
 //     `db.Database("database").Collection("collection").Insert(ctx, params)` method that would
@@ -35,5 +35,5 @@
 //     but are visible in the contract's code (to avoid duplication).
 //
 // Figure it out, especially point number 1. Update, expand, etc.
-// FIXME https://github.com/FerretDB/FerretDB/issues/3069
+// TODO https://github.com/FerretDB/FerretDB/issues/3069
 package backends

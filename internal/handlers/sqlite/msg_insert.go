@@ -29,6 +29,10 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// writeError represents a single write error details.
+//
+// Find a better place for this struct.
+// TODO https://github.com/FerretDB/FerretDB/issues/3263
 type writeError struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
@@ -37,6 +41,7 @@ type writeError struct {
 	code   commonerrors.ErrorCode
 }
 
+// Document returns a document representation of the write error.
 func (we *writeError) Document() *types.Document {
 	return must.NotFail(types.NewDocument(
 		"index", we.index,
@@ -78,11 +83,8 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	closer := iterator.NewMultiCloser()
-	defer closer.Close()
-
 	docsIter := params.Docs.Iterator()
-	closer.Add(docsIter)
+	defer docsIter.Close()
 
 	var inserted int32
 	writeErrors := types.MakeArray(0)
@@ -92,6 +94,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
 		}
+
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

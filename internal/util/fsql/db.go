@@ -133,6 +133,7 @@ func (db *DB) InTransaction(ctx context.Context, f func(*Tx) error) (err error) 
 	defer observability.FuncCall(ctx)()
 
 	var sqlTx *sql.Tx
+
 	if sqlTx, err = db.sqlDB.BeginTx(ctx, nil); err != nil {
 		err = lazyerrors.Error(err)
 		return
@@ -172,6 +173,7 @@ func (db *DB) InTransaction(ctx context.Context, f func(*Tx) error) (err error) 
 	}
 
 	done = true
+
 	return
 }
 
