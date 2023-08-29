@@ -138,8 +138,7 @@ func (r *Registry) DatabaseSize(ctx context.Context, dbName string) (int64, erro
 		return 0, nil
 	}
 
-	q := fmt.Sprintf("SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()")
-	row := db.QueryRowContext(ctx, q)
+	row := db.QueryRowContext(ctx, "SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()")
 
 	var size int64
 	if err := row.Scan(&size); err != nil {

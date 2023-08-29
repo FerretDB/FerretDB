@@ -17,13 +17,12 @@ package sqlite
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // backend implements backends.Backend interface.
@@ -73,6 +72,7 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 	for i, db := range list {
 		var size int64
 		var err error
+
 		if size, err = b.r.DatabaseSize(ctx, db); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
