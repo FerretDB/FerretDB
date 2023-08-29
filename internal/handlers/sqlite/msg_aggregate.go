@@ -65,8 +65,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	// TODO handle collection-agnostic pipelines ({aggregate: 1})
-	// https://github.com/FerretDB/FerretDB/issues/1890
+	// handle collection-agnostic pipelines ({aggregate: 1})
+	// TODO https://github.com/FerretDB/FerretDB/issues/1890
 	var ok bool
 	var collection string
 
