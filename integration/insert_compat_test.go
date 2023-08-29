@@ -56,7 +56,6 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 				for i := range targetCollections {
 					targetCollection := targetCollections[i]
 					compatCollection := compatCollections[i]
-
 					t.Run(targetCollection.Name(), func(t *testing.T) {
 						t.Helper()
 
