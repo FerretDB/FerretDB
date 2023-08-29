@@ -32,7 +32,7 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	}
 
 	res.Set("catalogStats", must.NotFail(types.NewDocument(
-		"collections", int32(0), // TODO
+		"collections", int32(0), // TODO https://github.com/FerretDB/FerretDB/issues/2775
 		"capped", int32(0),
 		"clustered", int32(0),
 		"timeseries", int32(0),
