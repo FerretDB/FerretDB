@@ -37,6 +37,9 @@
    - <https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb>
    - <https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb-dev>
    - <https://github.com/FerretDB/FerretDB/pkgs/container/all-in-one>
+   - <https://quay.io/repository/ferretdb/ferretdb?tab=tags>
+   - <https://quay.io/repository/ferretdb/ferretdb-dev?tab=tags>
+   - <https://quay.io/repository/ferretdb/all-in-one?tab=tags>
 5. Close milestone in issues.
 6. Publish release on GitHub.
 7. Announce it on Slack.
