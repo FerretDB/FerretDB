@@ -60,12 +60,12 @@ func TestAggregateAddFieldsErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
+			t.Parallel()
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -271,12 +271,12 @@ func TestAggregateGroupErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
+			t.Parallel()
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -592,12 +592,12 @@ func TestAggregateProjectErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
+			t.Parallel()
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -643,12 +643,12 @@ func TestAggregateSetErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
+			t.Parallel()
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -844,12 +844,12 @@ func TestAggregateUnsetErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
+			t.Parallel()
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -884,12 +884,12 @@ func TestAggregateSortErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
+			t.Parallel()
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -1077,12 +1077,12 @@ func TestAggregateCommandMaxTimeMSErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
+			t.Parallel()
 
 			require.NotNil(t, tc.err, "err must not be nil")
 
@@ -1196,12 +1196,12 @@ func TestAggregateCommandCursor(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
+			t.Parallel()
 
 			var pipeline any = bson.A{}
 			if tc.pipeline != nil {

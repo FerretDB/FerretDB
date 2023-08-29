@@ -30,7 +30,6 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestGetMoreCommand(t *testing.T) {
@@ -299,12 +298,10 @@ func TestGetMoreCommand(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
-
-			var t testtb.TB = tt
 
 			// Do not run subtests in t.Parallel() to eliminate the occurrence
 			// of session error.
@@ -474,8 +471,8 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 
 	cursorFuncs := []func(batchSize *int32) (*mongo.Cursor, error){findFunc, aggregateFunc}
 
-	t.Run("SetBatchSize", func(tt *testing.T) {
-		tt.Parallel()
+	t.Run("SetBatchSize", func(t *testing.T) {
+		t.Parallel()
 
 		for _, f := range cursorFuncs {
 			cursor, err := f(pointer.ToInt32(2))
@@ -516,8 +513,8 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 		}
 	})
 
-	t.Run("DefaultBatchSize", func(tt *testing.T) {
-		tt.Parallel()
+	t.Run("DefaultBatchSize", func(t *testing.T) {
+		t.Parallel()
 
 		for _, f := range cursorFuncs {
 			// unset batchSize uses default batchSize 101 for the first batch
@@ -543,8 +540,8 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 		}
 	})
 
-	t.Run("ZeroBatchSize", func(tt *testing.T) {
-		tt.Parallel()
+	t.Run("ZeroBatchSize", func(t *testing.T) {
+		t.Parallel()
 
 		for _, f := range cursorFuncs {
 			cursor, err := f(pointer.ToInt32(0))
