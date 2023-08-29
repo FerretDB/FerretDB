@@ -159,6 +159,12 @@ func UpdateDocument(command string, doc, update *types.Document) (bool, error) {
 				return false, err
 			}
 
+		case "$bit":
+			changed, err = processBitFieldExpression(command, doc, updateV.(*types.Document))
+			if err != nil {
+				return false, err
+			}
+
 		default:
 			if strings.HasPrefix(updateOp, "$") {
 				return false, commonerrors.NewCommandError(
@@ -745,6 +751,91 @@ func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) 
 	return changed, nil
 }
 
+func processBitFieldExpression(command string, doc *types.Document, updateV any) (bool, error) {
+	var changed bool
+
+	bitDoc := updateV.(*types.Document)
+
+	for _, bitKey := range bitDoc.Keys() {
+		bitValue := must.NotFail(bitDoc.Get(bitKey))
+
+		nestedDoc, ok := bitValue.(*types.Document)
+		if !ok {
+			return false, newUpdateError(
+				commonerrors.ErrTypeMismatch,
+				fmt.Sprintf(
+					`The $bit modifier is incompatible with a %s. `+
+						`You must pass in an embedded document: {$bit: {field: {and/or/xor: #} }}`,
+					commonparams.AliasFromType(bitValue),
+				),
+				command,
+			)
+		}
+
+		path := must.NotFail(types.NewPathFromString(bitKey))
+
+		// $bit ignores fields that does not exist
+		if !doc.HasByPath(path) {
+			continue
+		}
+
+		docValue, err := doc.GetByPath(path)
+		if err != nil {
+			return false, err
+		}
+
+		// $bit operations can only be performed on integer fields
+		switch docValue.(type) {
+		case int32, int64:
+		default:
+			return false, newUpdateError(
+				commonerrors.ErrTypeMismatch,
+				fmt.Sprintf(
+					`Cannot apply $bit to a value of non-integral type. `+
+						`{_id: %s} has the field '%s' of non-numeric type %s`,
+					types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
+					bitKey,
+					commonparams.AliasFromType(docValue),
+				),
+				command,
+			)
+		}
+
+		for _, bitOp := range nestedDoc.Keys() {
+			bitOpValue := must.NotFail(nestedDoc.Get(bitOp))
+			fieldType := commonparams.AliasFromType(bitOpValue)
+
+			// $bit operator argument must be an integer (Int32/Long)
+			if fieldType != "int" && fieldType != "long" {
+				return false, newUpdateError(
+					commonerrors.ErrTypeMismatch,
+					fmt.Sprintf(
+						`The $bit modifier field must be an Integer(32/64 bit); a `+
+							`%s is not supported here`,
+						fieldType,
+					),
+					command,
+				)
+			}
+
+			bitOpResult, err := performBitLogic(bitOp, bitOpValue, docValue)
+			if err == nil {
+				if err = doc.SetByPath(path, bitOpResult); err != nil {
+					return false, lazyerrors.Error(err)
+				}
+
+				changed = true
+
+				continue
+			}
+
+			return false, err
+		}
+	}
+
+	return changed, nil
+}
+
 // ValidateUpdateOperators validates update statement.
 // ValidateUpdateOperators returns CommandError for findAndModify case-insensitive command name,
 // WriteError for other commands.
@@ -824,6 +915,11 @@ func ValidateUpdateOperators(command string, update *types.Document) error {
 		return err
 	}
 
+	bit, err := extractValueFromUpdateOperator(command, "$bit", update)
+	if err != nil {
+		return err
+	}
+
 	if err = validateOperatorKeys(
 		command,
 		addToSet,
@@ -839,6 +935,7 @@ func ValidateUpdateOperators(command string, update *types.Document) error {
 		set,
 		setOnInsert,
 		unset,
+		bit,
 	); err != nil {
 		return err
 	}
@@ -865,6 +962,7 @@ func HasSupportedUpdateModifiers(command string, update *types.Document) (bool, 
 			"$inc", "$min", "$max", "$mul",
 			"$rename",
 			"$set", "$setOnInsert", "$unset",
+			"$bit",
 
 			// array update operators:
 			"$pop", "$push", "$addToSet", "$pullAll", "$pull":
