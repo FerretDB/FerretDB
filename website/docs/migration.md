@@ -117,7 +117,7 @@ test> db.posts.aggregate(
 test>
 ```
 
-Example diff output:
+In the diff output below we can see that the `$first` accumulator operator it not implemented in FerretDB.
 
 ```sh
 2023-08-29T13:25:09.048+0200	WARN	// 127.0.0.1:33522 -> 127.0.0.1:27017 	clientconn/conn.go:360	Header diff:
