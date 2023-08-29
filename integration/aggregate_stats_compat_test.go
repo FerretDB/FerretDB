@@ -41,19 +41,19 @@ func TestAggregateCompatCollStats(tt *testing.T) {
 		},
 		"EmptyCollStats": {
 			collStats:      bson.D{},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/2423",
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3259",
 		},
 		"Count": {
 			collStats:      bson.D{{"count", bson.D{}}},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/2423",
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3259",
 		},
 		"StorageStats": {
 			collStats:      bson.D{{"storageStats", bson.D{}}},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/2423",
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3259",
 		},
 		"StorageStatsWithScale": {
 			collStats:      bson.D{{"storageStats", bson.D{{"scale", 1000}}}},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/2423",
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3259",
 		},
 		"StorageStatsNegativeScale": {
 			collStats:  bson.D{{"storageStats", bson.D{{"scale", -1000}}}},
@@ -61,7 +61,7 @@ func TestAggregateCompatCollStats(tt *testing.T) {
 		},
 		"StorageStatsFloatScale": {
 			collStats:      bson.D{{"storageStats", bson.D{{"scale", 42.42}}}},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/2423",
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3259",
 		},
 		"StorageStatsInvalidScale": {
 			collStats:  bson.D{{"storageStats", bson.D{{"scale", "invalid"}}}},
@@ -69,7 +69,7 @@ func TestAggregateCompatCollStats(tt *testing.T) {
 		},
 		"CountAndStorageStats": {
 			collStats:      bson.D{{"count", bson.D{}}, {"storageStats", bson.D{}}},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/2423",
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3259",
 		},
 	} {
 		name, tc := name, tc
@@ -146,7 +146,7 @@ func TestAggregateCompatCollStats(tt *testing.T) {
 				})
 			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/2423
+			// TODO https://github.com/FerretDB/FerretDB/issues/3259
 			if setup.IsSQLite(tt) {
 				return
 			}
