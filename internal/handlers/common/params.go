@@ -464,7 +464,7 @@ func multiplyLongSafely(v1, v2 int64) (int64, error) {
 	return res, nil
 }
 
-// performBitLogic returns the result of a bitwise operation on two integer(int32/int64) values.
+// performBitLogic returns the result of a bitwise operation on two Integer(int32/int64) values.
 // It only supports 'and', 'or' and 'xor' bitwise operators.
 //
 // The result produced will be the broader type: int32 & int64 = int64.

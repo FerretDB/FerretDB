@@ -1207,3 +1207,16 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 
 	testUpdateCompat(t, testCases)
 }
+
+func TestUpdateFieldCompatBit(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"EmptyUpdateOperand": {
+			update:     bson.D{{"$bit", bson.D{}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}

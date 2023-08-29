@@ -752,6 +752,8 @@ func processCurrentDateFieldExpression(doc *types.Document, currentDateVal any) 
 	return changed, nil
 }
 
+// processBitFieldExpression updates document according to $bit operator.
+// If document was changed, it returns true.
 func processBitFieldExpression(command string, doc *types.Document, updateV any) (bool, error) {
 	var changed bool
 
@@ -773,7 +775,10 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 			)
 		}
 
-		path := must.NotFail(types.NewPathFromString(bitKey))
+		path, err := types.NewPathFromString(bitKey)
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
 
 		// $bit ignores fields that does not exist
 		if !doc.HasByPath(path) {
@@ -785,7 +790,7 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 			return false, err
 		}
 
-		// $bit operations can only be performed on integer fields
+		// $bit operations can only be performed on integer(int32/int64) fields
 		switch docValue.(type) {
 		case int32, int64:
 		default:
@@ -802,35 +807,56 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 			)
 		}
 
+		// empty operands result in no changes
+		if nestedDoc.Len() == 0 {
+			continue
+		}
+
 		for _, bitOp := range nestedDoc.Keys() {
 			bitOpValue := must.NotFail(nestedDoc.Get(bitOp))
-			fieldType := commonparams.AliasFromType(bitOpValue)
 
-			// $bit operator argument must be an integer (Int32/Long)
-			if fieldType != "int" && fieldType != "long" {
-				return false, newUpdateError(
-					commonerrors.ErrTypeMismatch,
-					fmt.Sprintf(
-						`The $bit modifier field must be an Integer(32/64 bit); a `+
-							`%s is not supported here`,
-						fieldType,
-					),
-					command,
-				)
-			}
+			var bitOpResult any
+			bitOpResult, err = performBitLogic(bitOp, bitOpValue, docValue)
 
-			bitOpResult, err := performBitLogic(bitOp, bitOpValue, docValue)
-			if err == nil {
+			switch {
+			case err == nil:
 				if err = doc.SetByPath(path, bitOpResult); err != nil {
 					return false, lazyerrors.Error(err)
+				}
+
+				if docValue == bitOpResult {
+					continue
 				}
 
 				changed = true
 
 				continue
-			}
 
-			return false, err
+			case errors.Is(err, commonparams.ErrUnexpectedLeftOpType):
+				return false, newUpdateError(
+					commonerrors.ErrTypeMismatch,
+					fmt.Sprintf(
+						`The $bit modifier field must be an Integer(32/64 bit); a `+
+							`%s is not supported here`,
+						bitOpValue,
+					),
+					command,
+				)
+
+			case errors.Is(err, commonparams.ErrUnexpectedRightOpType):
+				return false, newUpdateError(
+					commonerrors.ErrTypeMismatch,
+					fmt.Sprintf(
+						`The $bit modifier field must be an Integer(32/64 bit); a `+
+							`%s is not supported here`,
+						docValue,
+					),
+					command,
+				)
+
+			default:
+				return false, newUpdateError(commonerrors.ErrInvalidArg, err.Error(), command)
+			}
 		}
 	}
 
