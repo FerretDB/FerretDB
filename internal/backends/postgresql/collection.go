@@ -49,8 +49,8 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 	panic("not implemented")
 }
 
-// Delete implements backends.Collection interface.
-func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) (*backends.DeleteResult, error) {
+// DeleteAll implements backends.Collection interface.
+func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllParams) (*backends.DeleteAllResult, error) {
 	panic("not implemented")
 }
 
