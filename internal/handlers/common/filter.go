@@ -37,6 +37,9 @@ import (
 //
 // Passed arguments must not be modified.
 func FilterDocument(doc, filter *types.Document) (bool, error) {
+	doc.Freeze()
+	filter.Freeze()
+
 	iter := filter.Iterator()
 	defer iter.Close()
 

@@ -41,9 +41,6 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	var deleted int32
-	var delErrors commonerrors.WriteErrors
-
 	db, err := h.b.Database(params.DB)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
@@ -65,58 +62,71 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	// process every delete filter
-	for i, deleteParams := range params.Deletes {
-		del, err := execDelete(ctx, c, deleteParams.Filter, deleteParams.Limited)
-		if err == nil {
-			deleted += del
-			continue
-		}
+	var deleted int32
+	writeErrors := types.MakeArray(0)
 
-		delErrors.Append(err, int32(i))
+	for i, p := range params.Deletes {
+		d, err := execDelete(ctx, c, &p)
 
-		if params.Ordered {
-			break
+		deleted += d
+
+		if err != nil {
+			var ce *commonerrors.CommandError
+			if errors.As(err, &ce) {
+				we := &writeError{
+					index:  int32(i),
+					code:   ce.Code(),
+					errmsg: ce.Err().Error(),
+				}
+
+				writeErrors.Append(we.Document())
+
+				if params.Ordered {
+					break
+				}
+
+				continue
+			}
+
+			return nil, lazyerrors.Error(err)
 		}
 	}
 
-	replyDoc := must.NotFail(types.NewDocument(
+	res := must.NotFail(types.NewDocument(
 		"n", deleted,
 	))
 
-	if delErrors.Len() > 0 {
-		// "writeErrors" should be after "n" field
-		replyDoc.Set("writeErrors", must.NotFail(delErrors.Document().Get("writeErrors")))
+	if writeErrors.Len() > 0 {
+		res.Set("writeErrors", writeErrors)
 	}
 
-	replyDoc.Set("ok", float64(1))
+	res.Set("ok", float64(1))
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{replyDoc},
+		Documents: []*types.Document{res},
 	}))
 
 	return &reply, nil
 }
 
-// execDelete fetches documents, filters them out, limits them (if needed) and deletes them.
-// If limited is true, only the first matched document is chosen for deletion, otherwise all matched documents are chosen.
-// It returns the number of deleted documents or an error.
-func execDelete(ctx context.Context, coll backends.Collection, filter *types.Document, limited bool) (int32, error) {
-	// query documents here
-	res, err := coll.Query(ctx, nil)
+// execDelete performs a single delete operation.
+//
+// It returns a number of deleted documents or error.
+// The error is either a (wrapped) *commonerrors.CommandError or something fatal.
+func execDelete(ctx context.Context, c backends.Collection, p *common.Delete) (int32, error) {
+	q, err := c.Query(ctx, nil)
 	if err != nil {
 		return 0, lazyerrors.Error(err)
 	}
 
-	defer res.Iter.Close()
+	defer q.Iter.Close()
 
 	var ids []any
-	var doc *types.Document
-	var matches bool
-
 	for {
-		if _, doc, err = res.Iter.Next(); err != nil {
+		var doc *types.Document
+
+		if _, doc, err = q.Iter.Next(); err != nil {
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
 			}
@@ -124,7 +134,9 @@ func execDelete(ctx context.Context, coll backends.Collection, filter *types.Doc
 			return 0, lazyerrors.Error(err)
 		}
 
-		if matches, err = common.FilterDocument(doc, filter); err != nil {
+		var matches bool
+
+		if matches, err = common.FilterDocument(doc, p.Filter); err != nil {
 			return 0, lazyerrors.Error(err)
 		}
 
@@ -134,23 +146,19 @@ func execDelete(ctx context.Context, coll backends.Collection, filter *types.Doc
 
 		ids = append(ids, must.NotFail(doc.Get("_id")))
 
-		// if limit is set, no need to fetch all the documents
-		if limited {
-			res.Iter.Close() // call Close() to release the underlying connection early
-
+		if p.Limited {
 			break
 		}
 	}
 
-	// if no documents matched, there is nothing to delete
 	if len(ids) == 0 {
 		return 0, nil
 	}
 
-	deleteRes, err := coll.DeleteAll(ctx, &backends.DeleteAllParams{IDs: ids})
+	d, err := c.DeleteAll(ctx, &backends.DeleteAllParams{IDs: ids})
 	if err != nil {
-		return 0, err
+		return 0, lazyerrors.Error(err)
 	}
 
-	return int32(deleteRes.Deleted), nil
+	return d.Deleted, nil
 }
