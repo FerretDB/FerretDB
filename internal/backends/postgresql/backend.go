@@ -36,7 +36,7 @@ type NewBackendParams struct {
 
 // NewBackend creates a new backend for PostgreSQL-compatible database.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	return backends.BackendContract(&backend{}), nil
+	return backends.BackendContract(new(backend)), nil
 }
 
 // Close implements backends.Backend interface.

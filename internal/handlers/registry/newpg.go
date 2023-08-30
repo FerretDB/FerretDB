@@ -27,7 +27,7 @@ func init() {
 		opts.Logger.Warn("New PostgreSQL backend is in alpha.")
 
 		handlerOpts := &sqlite.NewOpts{
-			Backend: sqlite.PostgreSQL,
+			Backend: "postgresql",
 			URI:     opts.PostgreSQLURL,
 
 			L:             opts.Logger.Named("postgresql"),
