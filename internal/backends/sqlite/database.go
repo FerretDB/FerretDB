@@ -120,15 +120,50 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 	}
 
 	// Total size is the disk space used by the database.
-	// See https://www.sqlite.org/pragma.html#pragma_page_size.
-	q = `PRAGMA PAGE_SIZE`
+	// See https://www.sqlite.org/dbstat.html.
+	q = `
+		SELECT
+			SUM(pgsize)
+		FROM dbstat`
 
-	res, err := d.ExecContext(ctx, q)
+	err := d.QueryRowContext(ctx, q).Scan(&stats.SizeTotal)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	_ = res
+	q = `
+		SELECT
+		    COUNT(s.name)             AS CountTables,
+			COALESCE(SUM(d.pgsize),0) AS SizeTables
+		FROM sqlite_schema AS s
+			LEFT JOIN dbstat AS d ON d.name = s.tbl_name
+		WHERE s.type = 'table' AND s.name NOT LIKE 'sqlite_%' AND s.name NOT LIKE '_ferretdb_collections%'`
+
+	if err = d.QueryRowContext(ctx, q).Scan(&stats.CountCollections, &stats.SizeCollections); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	q = `
+		SELECT
+		    COUNT(s.name)             AS CountIndexes,
+			COALESCE(SUM(d.pgsize),0) AS SizeIndexes
+		FROM sqlite_schema AS s
+			LEFT JOIN dbstat AS d ON d.name = s.tbl_name
+		WHERE s.type = 'index'`
+
+	if err = d.QueryRowContext(ctx, q).Scan(&stats.CountIndexes, &stats.SizeIndexes); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	q = `SELECT COUNT(*)
+		FROM
+		    SELECT name
+		    FROM sqlite_schema
+			WHERE type ='table' AND name NOT LIKE 'sqlite_%'`
+
+	if err = d.QueryRowContext(ctx, q).Scan(&stats.CountObjects); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	return nil, nil
 }
