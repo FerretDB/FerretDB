@@ -1,7 +1,7 @@
 github.com/AlekSi/pointer v1.2.0 h1:glcy/gc4h8HnG2Z3ZECSzZ1IX1x2JxRVuDzaJwQE0+w=
 github.com/AlekSi/pointer v1.2.0/go.mod h1:gZGfd3dpW4vEc/UlyfKKi1roIqcCgwOIvb0tSNSBle0=
-github.com/SAP/go-hdb v1.4.3 h1:7oHl6jjWtSbbs/WibUx9sBqxGahGga+WvDW44Ri6xXw=
-github.com/SAP/go-hdb v1.4.3/go.mod h1:Aob/HWl0pYaCxrAQwCwPHQa0k7DcO4Fuc3WzLCdtdHg=
+github.com/SAP/go-hdb v1.4.4 h1:9JwuG4lxeYC1g9SwW8l8IHs5bWjo04B7V1ji+Xqoxfs=
+github.com/SAP/go-hdb v1.4.4/go.mod h1:Aob/HWl0pYaCxrAQwCwPHQa0k7DcO4Fuc3WzLCdtdHg=
 github.com/alecthomas/assert/v2 v2.1.0 h1:tbredtNcQnoSd3QBhQWI7QZ3XHOVkw1Moklp2ojoH/0=
 github.com/alecthomas/kong v0.8.0 h1:ryDCzutfIqJPnNn0omnrgHLbAggDQM2VWHikE1xqK7s=
 github.com/alecthomas/kong v0.8.0/go.mod h1:n1iCIO2xS46oE8ZfYCNDqdR0b0wZNrXAIAqro/2132U=
