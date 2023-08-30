@@ -12,26 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sqlite
+package postgresql
 
 import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // database implements backends.Database interface.
 type database struct {
-	r    *metadata.Registry
 	name string
 }
 
 // newDatabase creates a new Database.
-func newDatabase(r *metadata.Registry, name string) backends.Database {
+func newDatabase(name string) backends.Database {
 	return backends.DatabaseContract(&database{
-		r:    r,
 		name: name,
 	})
 }
@@ -43,61 +39,28 @@ func (db *database) Close() {
 
 // Collection implements backends.Database interface.
 func (db *database) Collection(name string) (backends.Collection, error) {
-	return newCollection(db.r, db.name, name), nil
+	return newCollection(db.name, name), nil
 }
 
 // ListCollections implements backends.Database interface.
 //
 //nolint:lll // for readability
 func (db *database) ListCollections(ctx context.Context, params *backends.ListCollectionsParams) (*backends.ListCollectionsResult, error) {
-	list, err := db.r.CollectionList(ctx, db.name)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	res := make([]backends.CollectionInfo, len(list))
-	for i, name := range list {
-		res[i] = backends.CollectionInfo{
-			Name: name,
-		}
-	}
-
-	return &backends.ListCollectionsResult{
-		Collections: res,
-	}, nil
+	panic("not implemented")
 }
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	created, err := db.r.CollectionCreate(ctx, db.name, params.Name)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	if !created {
-		return backends.NewError(backends.ErrorCodeCollectionAlreadyExists, err)
-	}
-
-	return nil
+	panic("not implemented")
 }
 
 // DropCollection implements backends.Database interface.
 func (db *database) DropCollection(ctx context.Context, params *backends.DropCollectionParams) error {
-	dropped, err := db.r.CollectionDrop(ctx, db.name, params.Name)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	if !dropped {
-		return backends.NewError(backends.ErrorCodeCollectionDoesNotExist, err)
-	}
-
-	return nil
+	panic("not implemented")
 }
 
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2760
 	panic("not implemented")
 }
 

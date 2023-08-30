@@ -62,8 +62,7 @@ func TestInsertCommandErrors(tt *testing.T) {
 				Message: `E11000 duplicate key error collection: ` +
 					`TestInsertCommandErrors-InsertDuplicateKey.TestInsertCommandErrors-InsertDuplicateKey index: _id_ dup key: { _id: "double" }`,
 			},
-			altMessage:     "E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKey.TestInsertCommandErrors-InsertDuplicateKey",
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3183",
+			altMessage: "E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKey.TestInsertCommandErrors-InsertDuplicateKey",
 		},
 		"InsertDuplicateKeyOrdered": {
 			toInsert: []any{
@@ -77,8 +76,7 @@ func TestInsertCommandErrors(tt *testing.T) {
 				Message: `E11000 duplicate key error collection: ` +
 					`TestInsertCommandErrors-InsertDuplicateKeyOrdered.TestInsertCommandErrors-InsertDuplicateKeyOrdered index: _id_ dup key: { _id: "double" }`,
 			},
-			altMessage:     `E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKeyOrdered.TestInsertCommandErrors-InsertDuplicateKeyOrdered`,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3183",
+			altMessage: `E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKeyOrdered.TestInsertCommandErrors-InsertDuplicateKeyOrdered`,
 		},
 		"InsertArray": {
 			toInsert: []any{
@@ -121,12 +119,12 @@ func TestInsertCommandErrors(tt *testing.T) {
 			assert.Nil(t, res)
 
 			if tc.cerr != nil {
-				AssertEqualAltCommandError(tt, *tc.cerr, tc.altMessage, err)
+				AssertEqualAltCommandError(t, *tc.cerr, tc.altMessage, err)
 				return
 			}
 
 			if tc.werr != nil {
-				AssertEqualAltWriteError(tt, *tc.werr, tc.altMessage, err)
+				AssertEqualAltWriteError(t, *tc.werr, tc.altMessage, err)
 				return
 			}
 

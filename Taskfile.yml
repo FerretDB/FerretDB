@@ -596,6 +596,16 @@ tasks:
       - docker compose run --rm markdownlint "build/.markdownlint.yml" "**/*.md"
       - bin/checkdocs
 
+  pngcrush:
+    cmds:
+      - pngcrush -ow -brute {{.FILE}}
+    requires:
+      vars: [FILE]
+
+  pngcrush-all:
+    cmds:
+      - find . -type f -name '*.png' | parallel "pngcrush -ow -brute {} {.}.temp"
+
   docs-dev:
     desc: "Start documentation development server"
     cmds:

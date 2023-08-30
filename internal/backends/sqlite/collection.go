@@ -19,10 +19,14 @@ import (
 	"errors"
 	"fmt"
 
+	sqlite3 "modernc.org/sqlite"
+	sqlite3lib "modernc.org/sqlite/lib"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -73,51 +77,44 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 }
 
 // Insert implements backends.Collection interface.
-func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) (*backends.InsertResult, error) {
+func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
 	if _, err := c.r.CollectionCreate(ctx, c.dbName, c.name); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2750
 
-	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
-	if meta == nil {
-		panic(fmt.Sprintf("just created collection %q does not exist", c.name))
-	}
-
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
-	q := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
+	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 
-	var res backends.InsertResult
+	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
+		for _, doc := range params.Docs {
+			b, err := sjson.Marshal(doc)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
 
-	for {
-		_, d, err := params.Iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
+			// use batches: INSERT INTO %q %s VALUES (?), (?), (?), ... up to, say, 100 documents
+			// TODO https://github.com/FerretDB/FerretDB/issues/3271
+			q := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
+
+			if _, err = tx.ExecContext(ctx, q, string(b)); err != nil {
+				var se *sqlite3.Error
+				if errors.As(err, &se) && se.Code() == sqlite3lib.SQLITE_CONSTRAINT_UNIQUE {
+					return backends.NewError(backends.ErrorCodeInsertDuplicateID, err)
+				}
+
+				return lazyerrors.Error(err)
+			}
 		}
 
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		doc, ok := d.(*types.Document)
-		if !ok {
-			panic(fmt.Sprintf("expected document, got %T", d))
-		}
-
-		b, err := sjson.Marshal(doc)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		if _, err = db.ExecContext(ctx, q, string(b)); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		res.Inserted++
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	return &res, nil
+	return new(backends.InsertAllResult), nil
 }
 
 // Update implements backends.Collection interface.
