@@ -78,7 +78,7 @@ func ConvertDocument(d document) (*Document, error) {
 		}
 	}
 
-	return &Document{fields, false}, nil
+	return &Document{fields: fields}, nil
 }
 
 // MakeDocument creates an empty document with set capacity.
@@ -121,7 +121,20 @@ func NewDocument(pairs ...any) (*Document, error) {
 
 func (*Document) compositeType() {}
 
-// DeepCopy returns a deep copy of this Document.
+// Freeze prevents document from further modifications.
+// Any methods that would modify the document will panic.
+func (d *Document) Freeze() {
+	d.frozen = true
+}
+
+// checkFrozen panics if document is frozen.
+func (d *Document) checkFrozen() {
+	if d.frozen {
+		panic("document is frozen and can't be modified")
+	}
+}
+
+// DeepCopy returns an unfrozen deep copy of this Document.
 func (d *Document) DeepCopy() *Document {
 	if d == nil {
 		panic("types.Document.DeepCopy: nil document")
@@ -274,6 +287,7 @@ func (d *Document) Get(key string) (any, error) {
 // As a special case, _id always becomes the first key.
 func (d *Document) Set(key string, value any) {
 	d.checkFrozen()
+
 	if d.isKeyDuplicate(key) {
 		panic(fmt.Sprintf("types.Document.Set: key is duplicated: %s", key))
 	}
@@ -292,6 +306,7 @@ func (d *Document) Set(key string, value any) {
 // If the key is duplicated, it panics.
 func (d *Document) Remove(key string) any {
 	d.checkFrozen()
+
 	if d.isKeyDuplicate(key) {
 		panic(fmt.Sprintf("types.Document.Remove: key is duplicated: %s", key))
 	}
@@ -325,6 +340,7 @@ func (d *Document) GetByPath(path Path) (any, error) {
 // If multiple fields match the path it panics.
 func (d *Document) SetByPath(path Path, value any) error {
 	d.checkFrozen()
+
 	if path.Len() == 1 {
 		d.Set(path.Slice()[0], value)
 		return nil
@@ -374,6 +390,7 @@ func (d *Document) SetByPath(path Path, value any) error {
 // If the Path has only one element, it removes the value for the given key.
 func (d *Document) RemoveByPath(path Path) {
 	d.checkFrozen()
+
 	if path.Len() == 1 {
 		d.Remove(path.Slice()[0])
 
@@ -385,6 +402,7 @@ func (d *Document) RemoveByPath(path Path) {
 // SortFieldsByKey sorts the document fields by ascending order of the key.
 func (d *Document) SortFieldsByKey() {
 	d.checkFrozen()
+
 	sort.Slice(d.fields, func(i, j int) bool { return d.fields[i].key < d.fields[j].key })
 }
 
@@ -409,6 +427,8 @@ func (d *Document) isKeyDuplicate(targetKey string) bool {
 // moveIDToTheFirstIndex sets the _id field of the document at the first position.
 // If the _id field is not present, it does nothing.
 func (d *Document) moveIDToTheFirstIndex() {
+	d.checkFrozen()
+
 	if !d.Has("_id") {
 		return
 	}
@@ -429,18 +449,6 @@ func (d *Document) moveIDToTheFirstIndex() {
 	d.fields = slices.Insert(d.fields, 0, field{key: d.fields[idIdx].key, value: d.fields[idIdx].value})
 
 	d.fields = slices.Delete(d.fields, idIdx+1, idIdx+2)
-}
-
-// Freeze check it will panic if you try to update values.
-func (d *Document) Freeze() {
-	d.frozen = true
-}
-
-// checkFrozen will check fiven documant is frozen or not.
-func (d *Document) checkFrozen() {
-	if d.frozen {
-		panic("this document is not mutable its been freezed")
-	}
 }
 
 // check interfaces

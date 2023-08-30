@@ -75,7 +75,7 @@ func TestDocumentValidateData(t *testing.T) {
 				reason: errors.New(`invalid document: document must contain '_id' field`),
 			},
 			"Array": {
-				doc:    must.NotFail(NewDocument("_id", &Array{[]any{"foo", "bar"}, false})),
+				doc:    must.NotFail(NewDocument("_id", &Array{s: []any{"foo", "bar"}})),
 				reason: errors.New("The '_id' value cannot be of type array"),
 			},
 			"Regex": {

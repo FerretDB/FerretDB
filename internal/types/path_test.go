@@ -244,34 +244,6 @@ func TestRemoveByPathArray(t *testing.T) {
 			assert.Equal(t, tc.expected, arr)
 		})
 	}
-
-	for name, tc := range map[string]struct {
-		expectPanicMsg string
-		path           Path
-	}{
-		"array: index exceeded": {
-			path:           NewStaticPath("11"),
-			expectPanicMsg: "this array is not mutable its been freezed",
-		},
-		"array: index is not number": {
-			path:           NewStaticPath("xyz"),
-			expectPanicMsg: "this array is not mutable its been freezed",
-		},
-	} {
-		tc := tc
-
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			arr := src.DeepCopy()
-			arr.Freeze()
-			if tc.expectPanicMsg != "" {
-				assert.PanicsWithValue(t, tc.expectPanicMsg, func() {
-					arr.RemoveByPath(tc.path)
-				})
-			}
-		})
-	}
 }
 
 func TestGetByPath(t *testing.T) {

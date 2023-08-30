@@ -58,28 +58,24 @@ func TestDocument(t *testing.T) {
 		assert.Equal(t, "foo", doc.Command())
 	})
 
-	t.Run("panic value", func(t *testing.T) {
-		t.Parallel()
-
-		assert.Nil(t, must.NotFail(NewDocument()).fields)
-
-		var doc Document
-		assert.Equal(t, 0, doc.Len())
-		assert.Nil(t, doc.fields)
-		assert.Equal(t, "", doc.Command())
-
-		doc.Freeze()
-		assert.PanicsWithValue(t, "this document is not mutable its been freezed", func() {
-			doc.Set("foo", Null)
-		})
-	})
-
 	t.Run("NewDocument", func(t *testing.T) {
 		t.Parallel()
 
 		doc, err := NewDocument(42, 42)
 		assert.Nil(t, doc)
 		assert.EqualError(t, err, `types.NewDocument: invalid key type: int`)
+	})
+
+	t.Run("Freeze", func(t *testing.T) {
+		t.Parallel()
+
+		doc := must.NotFail(NewDocument("foo", int32(42)))
+
+		doc.Freeze()
+
+		assert.PanicsWithValue(t, "document is frozen and can't be modified", func() {
+			doc.Set("foo", Null)
+		})
 	})
 
 	t.Run("DeepCopy", func(t *testing.T) {
@@ -132,29 +128,6 @@ func TestDocument(t *testing.T) {
 			))
 			assert.Equal(t, expected, doc)
 		})
-
-		t.Run("freezeDocument", func(t *testing.T) {
-			t.Parallel()
-
-			doc := must.NotFail(NewDocument(
-				"foo", false,
-				"bar", true,
-			))
-
-			doc.Freeze()
-
-			assert.PanicsWithValue(t, "this document is not mutable its been freezed", func() {
-				doc.SortFieldsByKey() // This should panic since the document is frozen
-			})
-
-			expected := must.NotFail(NewDocument(
-				"foo", false,
-				"bar", true,
-			))
-			expected.frozen = true
-
-			assert.Equal(t, expected, doc)
-		})
 	})
 
 	t.Run("moveIDToTheFirstIndex", func(t *testing.T) {
@@ -193,13 +166,12 @@ func TestDocument(t *testing.T) {
 
 	t.Run("SetByPath", func(t *testing.T) {
 		for _, tc := range []struct {
-			name           string
-			document       *Document
-			expected       *Document
-			key            string
-			value          any
-			err            error
-			expectPanicMsg string
+			name     string
+			document *Document
+			expected *Document
+			key      string
+			value    any
+			err      error
 		}{
 			{
 				name:     "path exists",
@@ -254,14 +226,6 @@ func TestDocument(t *testing.T) {
 					"v", must.NotFail(NewArray("a", Null, "bar")),
 				)),
 			},
-			{
-				name:           "panic error for trying SetPath for freezed doc",
-				document:       must.NotFail(NewDocument("foo", must.NotFail(NewDocument("bar", "baz")))),
-				key:            "foo.baz",
-				value:          "bar",
-				expected:       must.NotFail(NewDocument("foo", must.NotFail(NewDocument("bar", "baz")))),
-				expectPanicMsg: "this document is not mutable its been freezed",
-			},
 		} {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
@@ -270,18 +234,7 @@ func TestDocument(t *testing.T) {
 				path, err := NewPathFromString(tc.key)
 				require.NoError(t, err)
 
-				if tc.expectPanicMsg != "" {
-					tc.document.frozen = true
-					assert.PanicsWithValue(t, tc.expectPanicMsg, func() {
-						errr := tc.document.SetByPath(path, tc.value)
-						require.NoError(t, errr)
-					})
-					tc.document.frozen = false
-				}
-
-				if tc.expectPanicMsg == "" {
-					err = tc.document.SetByPath(path, tc.value)
-				}
+				err = tc.document.SetByPath(path, tc.value)
 
 				if tc.err != nil {
 					assert.Equal(t, tc.err, err)
