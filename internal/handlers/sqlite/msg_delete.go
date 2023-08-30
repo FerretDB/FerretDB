@@ -120,8 +120,6 @@ func execDelete(ctx context.Context, c backends.Collection, p *common.Delete) (i
 		return 0, lazyerrors.Error(err)
 	}
 
-	defer q.Iter.Close()
-
 	var ids []any
 	for {
 		var doc *types.Document
@@ -131,12 +129,14 @@ func execDelete(ctx context.Context, c backends.Collection, p *common.Delete) (i
 				break
 			}
 
+			q.Iter.Close()
 			return 0, lazyerrors.Error(err)
 		}
 
 		var matches bool
 
 		if matches, err = common.FilterDocument(doc, p.Filter); err != nil {
+			q.Iter.Close()
 			return 0, lazyerrors.Error(err)
 		}
 
@@ -150,6 +150,9 @@ func execDelete(ctx context.Context, c backends.Collection, p *common.Delete) (i
 			break
 		}
 	}
+
+	// close read transaction before starting write transaction
+	q.Iter.Close()
 
 	if len(ids) == 0 {
 		return 0, nil
