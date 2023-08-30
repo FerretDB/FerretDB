@@ -25,74 +25,77 @@ You would do the following:
 
 1. Start the environment and run FerretDB.
 
-```sh
-# in a terminal run env-up to start the environment
-me@foobar:~/FerretDB$ bin/task env-up
-# in another terminal run the debug build which runs in diff-normal mode by default
-me@foobar:~/FerretDB$ bin/task run
-```
+   ```sh
+   # in a terminal run env-up to start the environment
+   me@foobar:~/FerretDB$ bin/task env-up
+   # in another terminal run the debug build which runs in diff-normal mode by default
+   me@foobar:~/FerretDB$ bin/task run
+   ```
 
-Please note that due to running in `diff-normal` mode, any error returned from FerretDB will be transmitted to the client.
-In the majority of cases, this does not necessitate additional scrutiny of the diff output.
-Nevertheless, if FerretDB does not handle the error, additional inspection becomes necessary.
+2. Run `mongosh` and insert some documents.
 
-```sh
-# run mongosh
-me@foobar:~/FerretDB$ mongosh --quiet
-```
-```js
-// insert some documents
-test> db.posts.insertMany([
-...   {
-...     title: 'title A',
-...     body: 'some content',
-...     author: 'Bob',
-...     date: ISODate("2023-08-29T10:33:23.134Z"),
-...   },
-...   {
-...     title: 'another title',
-...     body: 'some content',
-...     author: 'Bob',
-...     date: ISODate("2023-08-28T10:33:23.134Z"),
-...   },
-...   {
-...     title: 'title B',
-...     body: 'some content',
-...     author: 'Alice',
-...     date: ISODate("2023-08-20T10:33:23.134Z"),
-...   },
-...   {
-...     title: 'some other title',
-...     body: 'some content',
-...     author: 'Alice',
-...     date: ISODate("2023-08-21T10:33:23.134Z"),
-...   },
-... ]);
-{
-  acknowledged: true,
-  insertedIds: {
-    '0': ObjectId("64edcfc975dd10e7bfb36add"),
-    '1': ObjectId("64edcfc975dd10e7bfb36ade"),
-    '2': ObjectId("64edcfc975dd10e7bfb36adf"),
-    '3': ObjectId("64edcfc975dd10e7bfb36ae0")
-  }
-}
-test> // run a query to fetch the first post from each author sorted by date and author
-test> db.posts.aggregate(
-...   [
-...     { $sort: { date: 1, author: 1 } },
-...     {
-...       $group:
-...         {
-...           _id: "$author",
-...           firstPost: { $first: "$date" }
-...         }
-...     }
-...   ]
-... );
-MongoServerError: $group accumulator "$first" is not implemented yet
-test>
-```
+   Please note that due to running in `diff-normal` mode, any error returned from FerretDB will be transmitted to the client.
+   In the majority of cases, this does not necessitate additional scrutiny of the diff output.
+   Nevertheless, if FerretDB does not handle the error, additional inspection becomes necessary.
+
+   ```sh
+   # run mongosh
+   me@foobar:~/FerretDB$ mongosh --quiet
+   ```
+
+   ```js
+   // insert some documents
+   test> db.posts.insertMany([
+   ...   {
+   ...     title: 'title A',
+   ...     body: 'some content',
+   ...     author: 'Bob',
+   ...     date: ISODate("2023-08-29T10:33:23.134Z"),
+   ...   },
+   ...   {
+   ...     title: 'another title',
+   ...     body: 'some content',
+   ...     author: 'Bob',
+   ...     date: ISODate("2023-08-28T10:33:23.134Z"),
+   ...   },
+   ...   {
+   ...     title: 'title B',
+   ...     body: 'some content',
+   ...     author: 'Alice',
+   ...     date: ISODate("2023-08-20T10:33:23.134Z"),
+   ...   },
+   ...   {
+   ...     title: 'some other title',
+   ...     body: 'some content',
+   ...     author: 'Alice',
+   ...     date: ISODate("2023-08-21T10:33:23.134Z"),
+   ...   },
+   ... ]);
+   {
+     acknowledged: true,
+     insertedIds: {
+       '0': ObjectId("64edcfc975dd10e7bfb36add"),
+       '1': ObjectId("64edcfc975dd10e7bfb36ade"),
+       '2': ObjectId("64edcfc975dd10e7bfb36adf"),
+       '3': ObjectId("64edcfc975dd10e7bfb36ae0")
+     }
+   }
+   test> // run a query to fetch the first post from each author sorted by date and author
+   test> db.posts.aggregate(
+   ...   [
+   ...     { $sort: { date: 1, author: 1 } },
+   ...     {
+   ...       $group:
+   ...         {
+   ...           _id: "$author",
+   ...           firstPost: { $first: "$date" }
+   ...         }
+   ...     }
+   ...   ]
+   ... );
+   MongoServerError: $group accumulator "$first" is not implemented yet
+   test>
+   ```
 
 ### Manual and automated testing with `diff-proxy` mode
 
@@ -126,7 +129,7 @@ test>
 In the diff output below we have discovered that the query cannot be serviced by our application because the `$first` accumulator operator is not implemented in FerretDB.
 
 ```sh
-2023-08-29T13:25:09.048+0200	WARN	// 127.0.0.1:33522 -> 127.0.0.1:27017 	clientconn/conn.go:360	Header diff:
+2023-08-29T13:25:09.048+0200  WARN  // 127.0.0.1:33522 -> 127.0.0.1:27017  clientconn/conn.go:360 Header diff:
 --- res header
 +++ proxy header
 @@ -1 +1 @@
