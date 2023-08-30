@@ -19,13 +19,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"runtime/trace"
 	"strings"
-	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
@@ -33,7 +32,10 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // Flags.
@@ -46,27 +48,32 @@ var (
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix socket")
 
 	postgreSQLURLF = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'pg' handler.")
-	tigrisURLSF    = flag.String("tigris-urls", "", "in-process FerretDB: Tigris URLs for 'tigris' handler (comma separated)")
+	sqliteURLF     = flag.String("sqlite-url", "", "in-process FerretDB: SQLite URI for 'sqlite' handler.")
+	hanaURLF       = flag.String("hana-url", "", "in-process FerretDB: Hana URL for 'hana' handler.")
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
+
+	benchDocsF = flag.Int("bench-docs", 0, "benchmarks: number of documents to generate per iteration")
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
-	disablePushdownF = flag.Bool("disable-pushdown", false, "disable query pushdown")
+	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
+	enableSortPushdownF    = flag.Bool("enable-sort-pushdown", false, "enable sort pushdown")
 )
 
 // Other globals.
 var (
-	allBackends = []string{"ferretdb-pg", "ferretdb-tigris", "mongodb"}
+	allBackends = []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-hana", "mongodb"}
 
 	CertsRoot = filepath.Join("..", "build", "certs") // relative to `integration` directory
 )
 
 // SetupOpts represents setup options.
 //
-// TODO Add option to use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
+// Add option to use read-only user.
+// TODO https://github.com/FerretDB/FerretDB/issues/1025
 type SetupOpts struct {
 	// Database to use. If empty, temporary test-specific database is created and dropped after test.
 	DatabaseName string
@@ -77,6 +84,12 @@ type SetupOpts struct {
 
 	// Data providers. If empty, collection is not created.
 	Providers []shareddata.Provider
+
+	// Benchmark data provider. If empty, collection is not created.
+	BenchmarkProvider shareddata.BenchmarkProvider
+
+	// ExtraOptions sets the options in MongoDB URI, when the option exists it overwrites that option.
+	ExtraOptions url.Values
 }
 
 // SetupResult represents setup results.
@@ -87,7 +100,7 @@ type SetupResult struct {
 }
 
 // IsUnixSocket returns true if MongoDB URI is a Unix socket.
-func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
+func (s *SetupResult) IsUnixSocket(tb testtb.TB) bool {
 	tb.Helper()
 
 	// we can't use a regular url.Parse because
@@ -103,7 +116,7 @@ func (s *SetupResult) IsUnixSocket(tb testing.TB) bool {
 }
 
 // SetupWithOpts setups the test according to given options.
-func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
+func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	tb.Helper()
 
 	ctx, cancel := context.WithCancel(testutil.Ctx(tb))
@@ -121,22 +134,36 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	if *debugSetupF {
 		level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	}
-	logger := testutil.Logger(tb, level)
+	logger := testutil.LevelLogger(tb, level)
 
-	var client *mongo.Client
-	var uri string
-
-	if *targetURLF == "" {
-		client, uri = setupListener(tb, ctx, logger)
-	} else {
-		client = setupClient(tb, ctx, *targetURLF)
-		uri = *targetURLF
+	uri := *targetURLF
+	if uri == "" {
+		uri = setupListener(tb, setupCtx, logger)
 	}
+
+	if opts.ExtraOptions != nil {
+		u, err := url.Parse(uri)
+		require.NoError(tb, err)
+
+		q := u.Query()
+
+		for k, vs := range opts.ExtraOptions {
+			for _, v := range vs {
+				q.Set(k, v)
+			}
+		}
+
+		u.RawQuery = q.Encode()
+		uri = u.String()
+		tb.Logf("URI with extra options: %s", uri)
+	}
+
+	client := setupClient(tb, setupCtx, uri)
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	collection := setupCollection(tb, ctx, client, opts)
+	collection := setupCollection(tb, setupCtx, client, opts)
 
 	level.SetLevel(*logLevelF)
 
@@ -147,8 +174,8 @@ func SetupWithOpts(tb testing.TB, opts *SetupOpts) *SetupResult {
 	}
 }
 
-// Setup setups a single collection for all compatible providers, if the are present.
-func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
+// Setup setups a single collection for all providers, if the are present.
+func Setup(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
 	tb.Helper()
 
 	s := SetupWithOpts(tb, &SetupOpts{
@@ -157,14 +184,14 @@ func Setup(tb testing.TB, providers ...shareddata.Provider) (context.Context, *m
 	return s.Ctx, s.Collection
 }
 
-// setupCollection setups a single collection for all compatible providers, if they are present.
-func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
+// setupCollection setups a single collection for all providers, if they are present.
+func setupCollection(tb testtb.TB, ctx context.Context, client *mongo.Client, opts *SetupOpts) *mongo.Collection {
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupCollection")
 	defer span.End()
 
-	defer trace.StartRegion(ctx, "setupCollection").End()
+	defer observability.FuncCall(ctx)()
 
 	var ownDatabase bool
 	databaseName := opts.DatabaseName
@@ -190,46 +217,19 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	}
 
 	var inserted bool
-	for _, provider := range opts.Providers {
-		if *targetURLF == "" && !slices.Contains(provider.Handlers(), getHandler()) {
-			tb.Logf(
-				"Provider %q is not compatible with handler %q, skipping it.",
-				provider.Name(), getHandler(),
-			)
 
-			continue
-		}
-
-		spanName := fmt.Sprintf("setupCollection/%s/%s", collectionName, provider.Name())
-		provCtx, span := otel.Tracer("").Start(ctx, spanName)
-		region := trace.StartRegion(provCtx, spanName)
-
-		// if validators are set, create collection with them (otherwise collection will be created on first insert)
-		if validators := provider.Validators(getHandler(), collectionName); len(validators) > 0 {
-			var copts options.CreateCollectionOptions
-			for key, value := range validators {
-				copts.SetValidator(bson.D{{key, value}})
-			}
-
-			require.NoError(tb, database.CreateCollection(provCtx, collectionName, &copts))
-		}
-
-		docs := shareddata.Docs(provider)
-		require.NotEmpty(tb, docs)
-
-		res, err := collection.InsertMany(provCtx, docs)
-		require.NoError(tb, err, "provider %q", provider.Name())
-		require.Len(tb, res.InsertedIDs, len(docs))
-		inserted = true
-
-		region.End()
-		span.End()
+	switch {
+	case len(opts.Providers) > 0:
+		require.Nil(tb, opts.BenchmarkProvider, "Both Providers and BenchmarkProvider were set")
+		inserted = insertProviders(tb, ctx, collection, opts.Providers...)
+	case opts.BenchmarkProvider != nil:
+		inserted = insertBenchmarkProvider(tb, ctx, collection, opts.BenchmarkProvider)
 	}
 
-	if len(opts.Providers) == 0 {
+	if len(opts.Providers) == 0 && opts.BenchmarkProvider == nil {
 		tb.Logf("Collection %s.%s wasn't created because no providers were set.", databaseName, collectionName)
 	} else {
-		require.True(tb, inserted, "all providers were not compatible")
+		require.True(tb, inserted)
 	}
 
 	if ownCollection {
@@ -251,4 +251,72 @@ func setupCollection(tb testing.TB, ctx context.Context, client *mongo.Client, o
 	}
 
 	return collection
+}
+
+// insertProviders inserts documents from specified Providers into collection. It returns true if any document was inserted.
+func insertProviders(tb testtb.TB, ctx context.Context, collection *mongo.Collection, providers ...shareddata.Provider) (inserted bool) {
+	tb.Helper()
+
+	collectionName := collection.Name()
+
+	for _, provider := range providers {
+		spanName := fmt.Sprintf("insertProviders/%s/%s", collectionName, provider.Name())
+		provCtx, span := otel.Tracer("").Start(ctx, spanName)
+		region := trace.StartRegion(provCtx, spanName)
+
+		docs := shareddata.Docs(provider)
+		require.NotEmpty(tb, docs)
+
+		res, err := collection.InsertMany(provCtx, docs)
+		require.NoError(tb, err, "provider %q", provider.Name())
+		require.Len(tb, res.InsertedIDs, len(docs))
+		inserted = true
+
+		region.End()
+		span.End()
+	}
+
+	return
+}
+
+// insertBenchmarkProvider inserts documents from specified BenchmarkProvider into collection.
+// It returns true if any document was inserted.
+//
+// The function calculates the checksum of all inserted documents and compare them with provider's hash.
+func insertBenchmarkProvider(tb testtb.TB, ctx context.Context, collection *mongo.Collection, provider shareddata.BenchmarkProvider) (inserted bool) {
+	tb.Helper()
+
+	collectionName := collection.Name()
+
+	spanName := fmt.Sprintf("insertBenchmarkProvider/%s/%s", collectionName, provider.Name())
+	provCtx, span := otel.Tracer("").Start(ctx, spanName)
+	region := trace.StartRegion(provCtx, spanName)
+
+	iter := provider.NewIterator()
+	defer iter.Close()
+
+	for {
+		docs, err := iterator.ConsumeValuesN(iter, 100)
+		require.NoError(tb, err)
+
+		if len(docs) == 0 {
+			break
+		}
+
+		insertDocs := make([]any, len(docs))
+		for i, doc := range docs {
+			insertDocs[i] = doc
+		}
+
+		res, err := collection.InsertMany(provCtx, insertDocs)
+		require.NoError(tb, err)
+		require.Len(tb, res.InsertedIDs, len(docs))
+
+		inserted = true
+	}
+
+	region.End()
+	span.End()
+
+	return
 }

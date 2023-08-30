@@ -15,12 +15,15 @@
 package pg
 
 import (
-	"bytes"
 	"context"
-	"fmt"
+	"errors"
+	"strings"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -34,44 +37,24 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	mechanism, err := common.GetRequiredParam[string](doc, "mechanism")
-	if err != nil {
+	if err = common.SASLStart(ctx, doc); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
-	if mechanism != "PLAIN" {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrTypeMismatch,
-			"Unsupported mechanism '"+mechanism+"'",
-			"mechanism",
-		)
-	}
-
-	payload, err := common.GetRequiredParam[types.Binary](doc, "payload")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	parts := bytes.Split(payload.B, []byte{0})
-	if l := len(parts); l != 3 {
-		return nil, common.NewCommandErrorMsgWithArgument(
-			common.ErrTypeMismatch,
-			fmt.Sprintf("Invalid payload (expected 3 parts, got %d)", l),
-			"payload",
-		)
-	}
-
-	authzid, authcid, passwd := parts[0], parts[1], parts[2]
-
-	// Some drivers (Go) send empty authorization identity (authzid),
-	// while others (Java) set it to the same value as authentication identity (authcid)
-	// (see https://www.rfc-editor.org/rfc/rfc4616.html).
-	// Ignore authzid for now.
-	_ = authzid
-
-	conninfo.Get(ctx).SetAuth(string(authcid), string(passwd))
 
 	if _, err = h.DBPool(ctx); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgerrcode.IsInvalidAuthorizationSpecification(pgErr.Code) {
+			msg := "FerretDB failed to authenticate you in PostgreSQL:\n" +
+				strings.TrimSpace(pgErr.Error()) + "\n" +
+				"See https://docs.ferretdb.io/security/authentication/ for more details."
+
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrAuthenticationFailed,
+				msg,
+				"payload",
+			)
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 

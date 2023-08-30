@@ -24,12 +24,16 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+//go:generate ../../bin/stringer -linecomment -type ValidationErrorCode
+
 // ValidationErrorCode represents ValidationData error code.
 type ValidationErrorCode int
 
 const (
+	_ ValidationErrorCode = iota
+
 	// ErrValidation indicates that document is invalid.
-	ErrValidation ValidationErrorCode = iota + 1
+	ErrValidation
 
 	// ErrWrongIDType indicates that _id field is invalid.
 	ErrWrongIDType

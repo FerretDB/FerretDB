@@ -40,13 +40,14 @@ type request struct {
 	Commit           string         `json:"commit"`
 	Branch           string         `json:"branch"`
 	Dirty            bool           `json:"dirty"`
-	Package          string         `json:"-"` // TODO https://github.com/FerretDB/FerretDB/issues/1805
+	Package          string         `json:"package"`
 	Debug            bool           `json:"debug"`
 	BuildEnvironment map[string]any `json:"build_environment"`
 	OS               string         `json:"os"`
 	Arch             string         `json:"arch"`
 
-	HandlerVersion string `json:"handler_version"` // PostgreSQL, Tigris, etc version
+	Handler        string `json:"handler"`
+	HandlerVersion string `json:"handler_version"`
 
 	UUID   string        `json:"uuid"`
 	Uptime time.Duration `json:"uptime"`
@@ -61,7 +62,8 @@ type request struct {
 
 // response represents telemetry response.
 type response struct {
-	LatestVersion string `json:"latest_version"`
+	LatestVersion   string `json:"latest_version"`
+	UpdateAvailable bool   `json:"update_available"`
 }
 
 // Reporter sends telemetry reports if telemetry is enabled.
@@ -79,6 +81,7 @@ type NewReporterOpts struct {
 	P              *state.Provider
 	ConnMetrics    *connmetrics.ConnMetrics
 	L              *zap.Logger
+	Handler        string
 	UndecidedDelay time.Duration
 	ReportInterval time.Duration
 	ReportTimeout  time.Duration
@@ -114,7 +117,7 @@ func (r *Reporter) Run(ctx context.Context) {
 
 	r.firstReportDelay(ctx, ch)
 
-	for ctx.Err() == nil {
+	for context.Cause(ctx) == nil {
 		r.report(ctx)
 
 		ctxutil.Sleep(ctx, r.ReportInterval)
@@ -130,7 +133,7 @@ func (r *Reporter) Run(ctx context.Context) {
 }
 
 // firstReportDelay waits until telemetry reporting state is decided,
-// main context is cancelled, or timeout is reached.
+// main context is canceled, or timeout is reached.
 func (r *Reporter) firstReportDelay(ctx context.Context, ch <-chan struct{}) {
 	// no delay for decided state
 	if r.P.Get().Telemetry != nil {
@@ -160,7 +163,7 @@ func (r *Reporter) firstReportDelay(ctx context.Context, ch <-chan struct{}) {
 }
 
 // makeRequest creates a new telemetry request.
-func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
+func makeRequest(s *state.State, m *connmetrics.ConnMetrics, handler string) *request {
 	commandMetrics := map[string]map[string]map[string]map[string]int{}
 
 	for opcode, commands := range m.GetResponses() {
@@ -224,6 +227,7 @@ func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
 		OS:               runtime.GOOS,
 		Arch:             runtime.GOARCH,
 
+		Handler:        handler,
 		HandlerVersion: s.HandlerVersion,
 
 		UUID:   s.UUID,
@@ -233,15 +237,19 @@ func makeRequest(s *state.State, m *connmetrics.ConnMetrics) *request {
 	}
 }
 
-// report sends telemetry report unless telemetry is disabled.
+// report sends http POST request to telemetry unless telemetry is disabled.
+// It fetches available update and the latest version, then updates the state of provider
+// with update available and latest version if any update is available.
 func (r *Reporter) report(ctx context.Context) {
 	s := r.P.Get()
+
 	if s.Telemetry != nil && !*s.Telemetry {
 		r.L.Debug("Telemetry is disabled, skipping reporting.")
+
 		return
 	}
 
-	request := makeRequest(s, r.ConnMetrics)
+	request := makeRequest(s, r.ConnMetrics, r.Handler)
 	r.L.Info("Reporting telemetry.", zap.String("url", r.URL), zap.Any("data", request))
 
 	b, err := json.Marshal(request)
@@ -279,20 +287,22 @@ func (r *Reporter) report(ctx context.Context) {
 		return
 	}
 
+	r.L.Debug("Read telemetry response.", zap.Any("response", response))
+
 	if response.LatestVersion == "" {
 		r.L.Debug("No latest version in telemetry response.")
 		return
 	}
 
-	if response.LatestVersion != s.LatestVersion {
-		err = r.P.Update(func(s *state.State) { s.LatestVersion = response.LatestVersion })
-		if err != nil {
-			r.L.Error("Failed to update state with latest version.", zap.Error(err))
-			return
-		}
+	if err = r.P.Update(func(s *state.State) {
+		s.LatestVersion = response.LatestVersion
+		s.UpdateAvailable = response.UpdateAvailable
+	}); err != nil {
+		r.L.Error("Failed to update state with latest version.", zap.Error(err))
+		return
 	}
 
-	if s = r.P.Get(); s.UpdateAvailable() {
+	if s.UpdateAvailable {
 		r.L.Info(
 			"A new version available!",
 			zap.String("current_version", request.Version), zap.String("latest_version", s.LatestVersion),

@@ -16,6 +16,7 @@ package integration
 
 import (
 	"math"
+	"testing"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -25,19 +26,18 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatImplicit(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
-			filter:        bson.D{{"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
+			filter: bson.D{{"v", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}},
 		},
 		"DocumentReverse": {
-			filter:        bson.D{{"v", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
+			filter: bson.D{{"v", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}},
 		},
 		"DocumentNull": {
-			filter:        bson.D{{"v", bson.D{{"foo", nil}}}},
-			skipForTigris: "Tigris does not support null values in objects",
+			filter: bson.D{{"v", bson.D{{"foo", nil}}}},
 		},
 		"DocumentEmpty": {
 			filter: bson.D{{"v", bson.D{}}},
@@ -47,8 +47,7 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 			resultType: emptyResult,
 		},
 		"DocumentDotNotation": {
-			filter:        bson.D{{"v.foo", int32(42)}},
-			skipForTigris: "No suitable Tigris-compatible provider to test this data",
+			filter: bson.D{{"v.foo", int32(42)}},
 		},
 		"DocumentDotNotationNoSuchField": {
 			filter:     bson.D{{"no-such-field.some", 42}},
@@ -87,9 +86,63 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 			resultPushdown: true,
 		},
 		"DoubleBig": {
-			filter:         bson.D{{"v", float64(2 << 60)}},
+			filter:         bson.D{{"v", float64(1 << 61)}},
 			resultPushdown: true,
 		},
+		"DoubleBigPlus": {
+			filter:         bson.D{{"v", float64((1 << 61) + 1)}},
+			resultPushdown: true,
+		},
+		"DoubleBigMinus": {
+			filter:         bson.D{{"v", float64((1 << 61) - 1)}},
+			resultPushdown: true,
+		},
+		"DoubleNegBig": {
+			filter:         bson.D{{"v", -float64(1 << 61)}},
+			resultPushdown: true,
+		},
+		"DoubleNegBigPlus": {
+			filter:         bson.D{{"v", -float64(1<<61) + 1}},
+			resultPushdown: true,
+		},
+		"DoubleNegBigMinus": {
+			filter:         bson.D{{"v", -float64(1<<61) - 1}},
+			resultPushdown: true,
+		},
+		"Int64Max": {
+			filter:         bson.D{{"v", int64(math.MaxInt64)}},
+			resultPushdown: true,
+		},
+		"Int64Min": {
+			filter:         bson.D{{"v", int64(math.MinInt64)}},
+			resultPushdown: true,
+		},
+
+		"Int64Big": {
+			filter:         bson.D{{"v", int64(1 << 61)}},
+			resultPushdown: true,
+		},
+		"Int64BigPlus": {
+			filter:         bson.D{{"v", int64(1<<61) + 1}},
+			resultPushdown: true,
+		},
+		"Int64BigMinus": {
+			filter:         bson.D{{"v", int64(1<<61) - 1}},
+			resultPushdown: true,
+		},
+		"Int64NegBig": {
+			filter:         bson.D{{"v", -int64(1 << 61)}},
+			resultPushdown: true,
+		},
+		"Int64NegBigPlus": {
+			filter:         bson.D{{"v", -int64(1<<61) + 1}},
+			resultPushdown: true,
+		},
+		"Int64NegBigMinus": {
+			filter:         bson.D{{"v", -int64(1<<61) - 1}},
+			resultPushdown: true,
+		},
+
 		"String": {
 			filter:         bson.D{{"v", "foo"}},
 			resultPushdown: true,
@@ -105,7 +158,6 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 		"StringEmpty": {
 			filter:         bson.D{{"v", ""}},
 			resultPushdown: true,
-			skipForTigris:  "https://github.com/FerretDB/FerretDB/issues/1940",
 		},
 		"Binary": {
 			filter: bson.D{{"v", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}},
@@ -114,10 +166,28 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", primitive.Binary{}}},
 		},
 		"BoolFalse": {
-			filter: bson.D{{"v", false}},
+			filter:         bson.D{{"v", false}},
+			resultPushdown: true,
 		},
 		"BoolTrue": {
-			filter: bson.D{{"v", true}},
+			filter:         bson.D{{"v", true}},
+			resultPushdown: true,
+		},
+		"Datetime": {
+			filter:         bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}},
+			resultPushdown: true,
+		},
+		"DatetimeEpoch": {
+			filter:         bson.D{{"v", primitive.NewDateTimeFromTime(time.Unix(0, 0))}},
+			resultPushdown: true,
+		},
+		"DatetimeYearMin": {
+			filter:         bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}},
+			resultPushdown: true,
+		},
+		"DatetimeYearMax": {
+			filter:         bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}},
+			resultPushdown: true,
 		},
 		"IDNull": {
 			filter:     bson.D{{"_id", nil}},
@@ -159,12 +229,20 @@ func testQueryComparisonCompatImplicit() map[string]queryCompatTestCase {
 		"ValueRegex": {
 			filter: bson.D{{"v", primitive.Regex{Pattern: "^fo"}}},
 		},
+
+		"EmptyKey": {
+			filter:         bson.D{{"", "foo"}},
+			resultType:     emptyResult,
+			resultPushdown: true,
+		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatEq(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
 			filter: bson.D{{"v", bson.D{
@@ -172,7 +250,6 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 					{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}},
 				}},
 			}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"DocumentShuffledKeys": {
 			filter: bson.D{{"v", bson.D{
@@ -180,8 +257,8 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 					{"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}, {"foo", int32(42)},
 				}},
 			}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
-			resultType:    emptyResult,
+
+			resultType: emptyResult,
 		},
 		"DocumentDotNotation": {
 			filter: bson.D{{"v.foo", bson.D{{"$eq", int32(42)}}}},
@@ -192,26 +269,22 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 					{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)},
 				}},
 			}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
 		},
 		"DocumentNull": {
-			filter:        bson.D{{"v", bson.D{{"$eq", bson.D{{"foo", nil}}}}}},
-			skipForTigris: "Tigri does not support null values in objects",
+			filter: bson.D{{"v", bson.D{{"$eq", bson.D{{"foo", nil}}}}}},
 		},
 		"DocumentEmpty": {
 			filter: bson.D{{"v", bson.D{{"$eq", bson.D{}}}}},
 		},
 		"Array": {
-			filter:        bson.D{{"v", bson.D{{"$eq", bson.A{int32(42), "foo", nil}}}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
+			filter: bson.D{{"v", bson.D{{"$eq", bson.A{int32(42), "foo", nil}}}}},
 		},
 		"ArrayShuffledValues": {
 			filter:     bson.D{{"v", bson.D{{"$eq", bson.A{"foo", nil, int32(42)}}}}},
 			resultType: emptyResult,
 		},
 		"ArrayReverse": {
-			filter:        bson.D{{"v", bson.D{{"$eq", bson.A{nil, "foo", int32(42)}}}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
+			filter: bson.D{{"v", bson.D{{"$eq", bson.A{nil, "foo", int32(42)}}}}},
 		},
 		"ArrayNull": {
 			filter: bson.D{{"v", bson.D{{"$eq", bson.A{nil}}}}},
@@ -220,37 +293,91 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$eq", bson.A{}}}}},
 		},
 		"Double": {
-			filter: bson.D{{"v", bson.D{{"$eq", 42.13}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", 42.13}}}},
+			resultPushdown: true,
 		},
 		"DoubleWhole": {
-			filter: bson.D{{"v", bson.D{{"$eq", 42.0}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", 42.0}}}},
+			resultPushdown: true,
 		},
 		"DoubleZero": {
-			filter: bson.D{{"v", bson.D{{"$eq", 0.0}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", 0.0}}}},
+			resultPushdown: true,
 		},
 		"DoubleMax": {
-			filter: bson.D{{"v", bson.D{{"$eq", math.MaxFloat64}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", math.MaxFloat64}}}},
+			resultPushdown: true,
 		},
 		"DoubleSmallest": {
-			filter: bson.D{{"v", bson.D{{"$eq", math.SmallestNonzeroFloat64}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", math.SmallestNonzeroFloat64}}}},
+			resultPushdown: true,
 		},
-		"DoubleBigInt64": {
-			filter: bson.D{{"v", bson.D{{"$eq", float64(2 << 61)}}}},
+
+		"DoubleBig": {
+			filter:         bson.D{{"v", bson.D{{"$eq", float64(1 << 61)}}}},
+			resultPushdown: true,
 		},
-		"DoubleBigInt64PlusOne": {
-			filter: bson.D{{"v", bson.D{{"$eq", float64(2<<61 + 1)}}}},
+		"DoubleBigPlus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", float64((1 << 61) + 1)}}}},
+			resultPushdown: true,
 		},
+		"DoubleBigMinus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", float64((1 << 61) - 1)}}}},
+			resultPushdown: true,
+		},
+		"DoubleNegBig": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -float64(1 << 61)}}}},
+			resultPushdown: true,
+		},
+		"DoubleNegBigPlus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -float64((1 << 61) + 1)}}}},
+			resultPushdown: true,
+		},
+		"DoubleNegBigMinus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -float64((1 << 61) - 1)}}}},
+			resultPushdown: true,
+		},
+
+		"DoublePrecMax": {
+			filter:         bson.D{{"v", bson.D{{"$eq", float64(1 << 53)}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMaxPlus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", float64(1<<53) + 1}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMaxMinus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", float64(1<<53) - 1}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMin": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -float64(1<<53 - 1)}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMinPlus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -float64(1<<53-1) + 1}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMinMinus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -float64(1<<53-1) - 1}}}},
+			resultPushdown: true,
+		},
+
 		"String": {
-			filter: bson.D{{"v", bson.D{{"$eq", "foo"}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", "foo"}}}},
+			resultPushdown: true,
 		},
 		"StringDouble": {
-			filter: bson.D{{"v", bson.D{{"$eq", "42.13"}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", "42.13"}}}},
+			resultPushdown: true,
 		},
 		"StringWhole": {
-			filter: bson.D{{"v", bson.D{{"$eq", "42"}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", "42"}}}},
+			resultPushdown: true,
 		},
 		"StringEmpty": {
-			filter: bson.D{{"v", bson.D{{"$eq", ""}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", ""}}}},
+			resultPushdown: true,
 		},
 		"Binary": {
 			filter: bson.D{{"v", bson.D{{"$eq", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
@@ -259,28 +386,36 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$eq", primitive.Binary{Data: []byte{}}}}}},
 		},
 		"ObjectID": {
-			filter: bson.D{{"v", bson.D{{"$eq", must.NotFail(primitive.ObjectIDFromHex("000102030405060708091011"))}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", must.NotFail(primitive.ObjectIDFromHex("000102030405060708091011"))}}}},
+			resultPushdown: true,
 		},
 		"ObjectIDEmpty": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.NilObjectID}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", primitive.NilObjectID}}}},
+			resultPushdown: true,
 		},
 		"BoolFalse": {
-			filter: bson.D{{"v", bson.D{{"$eq", false}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", false}}}},
+			resultPushdown: true,
 		},
 		"BoolTrue": {
-			filter: bson.D{{"v", bson.D{{"$eq", true}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", true}}}},
+			resultPushdown: true,
 		},
 		"Datetime": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
+			resultPushdown: true,
 		},
 		"DatetimeEpoch": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
-		},
-		"DatetimeYearMax": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
+			resultPushdown: true,
 		},
 		"DatetimeYearMin": {
-			filter: bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}}}},
+			resultPushdown: true,
+		},
+		"DatetimeYearMax": {
+			filter:         bson.D{{"v", bson.D{{"$eq", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}}}},
+			resultPushdown: true,
 		},
 		"Null": {
 			filter: bson.D{{"v", bson.D{{"$eq", nil}}}},
@@ -296,16 +431,20 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$eq", primitive.Regex{}}}}},
 		},
 		"Int32": {
-			filter: bson.D{{"v", bson.D{{"$eq", int32(42)}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", int32(42)}}}},
+			resultPushdown: true,
 		},
 		"Int32Zero": {
-			filter: bson.D{{"v", bson.D{{"$eq", int32(0)}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", int32(0)}}}},
+			resultPushdown: true,
 		},
 		"Int32Max": {
-			filter: bson.D{{"v", bson.D{{"$eq", int32(math.MaxInt32)}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", int32(math.MaxInt32)}}}},
+			resultPushdown: true,
 		},
 		"Int32Min": {
-			filter: bson.D{{"v", bson.D{{"$eq", int32(math.MinInt32)}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", int32(math.MinInt32)}}}},
+			resultPushdown: true,
 		},
 		"Timestamp": {
 			filter: bson.D{{"v", bson.D{{"$eq", primitive.Timestamp{T: 42, I: 13}}}}},
@@ -314,24 +453,72 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$eq", primitive.Timestamp{I: 1}}}}},
 		},
 		"Int64": {
-			filter: bson.D{{"v", bson.D{{"$eq", int64(42)}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(42)}}}},
+			resultPushdown: true,
 		},
 		"Int64Zero": {
-			filter: bson.D{{"v", bson.D{{"$eq", int64(0)}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(0)}}}},
+			resultPushdown: true,
 		},
 		"Int64Max": {
-			filter: bson.D{{"v", bson.D{{"$eq", int64(math.MaxInt64)}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(math.MaxInt64)}}}},
+			resultPushdown: true,
 		},
 		"Int64Min": {
-			filter: bson.D{{"v", bson.D{{"$eq", int64(math.MinInt64)}}}},
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(math.MinInt64)}}}},
+			resultPushdown: true,
 		},
-		"Int64DoubleBig": {
-			filter: bson.D{{"v", bson.D{{"$eq", int64(2 << 60)}}}},
+
+		"Int64Big": {
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(1 << 61)}}}},
+			resultPushdown: true,
 		},
-		"Int64DoubleBigPlusOne": {
-			filter:     bson.D{{"v", bson.D{{"$eq", int64(2<<60 + 1)}}}},
-			resultType: emptyResult,
+		"Int64BigPlusOne": {
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(1<<61) + 1}}}},
+			resultPushdown: true,
 		},
+		"Int64BigMinusOne": {
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(1<<61) - 1}}}},
+			resultPushdown: true,
+		},
+		"Int64NegBig": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -int64(1 << 61)}}}},
+			resultPushdown: true,
+		},
+		"Int64NegBigPlusOne": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -int64(1<<61) + 1}}}},
+			resultPushdown: true,
+		},
+		"Int64NegBigMinusOne": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -int64(1<<61) - 1}}}},
+			resultPushdown: true,
+		},
+
+		"Int64PrecMax": {
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(1 << 53)}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMaxPlusOne": {
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(1<<53 + 1)}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMaxMinusOne": {
+			filter:         bson.D{{"v", bson.D{{"$eq", int64(1<<53 - 1)}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMin": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -int64(1<<53 - 1)}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMinPlus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -int64(1<<53-1) + 1}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMinMinus": {
+			filter:         bson.D{{"v", bson.D{{"$eq", -int64(1<<53-1) - 1}}}},
+			resultPushdown: true,
+		},
+
 		"IDNull": {
 			filter:     bson.D{{"_id", bson.D{{"$eq", nil}}}},
 			resultType: emptyResult,
@@ -341,10 +528,12 @@ func testQueryComparisonCompatEq() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryComparisonCompatGt() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatGt(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
 			filter: bson.D{{"v", bson.D{
@@ -370,10 +559,8 @@ func testQueryComparisonCompatGt() map[string]queryCompatTestCase {
 						{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)},
 					}},
 				}},
-				{"_id", bson.D{{"$ne", "array-documents-nested"}}}, // satisfies the $gt condition
 			},
-			resultType:    emptyResult,
-			skipForTigris: "No suitable Tigris-compatible provider to test this data",
+			resultPushdown: false,
 		},
 		"DocumentNull": {
 			filter: bson.D{{"v", bson.D{{"$gt", bson.D{{"foo", nil}}}}}},
@@ -400,8 +587,7 @@ func testQueryComparisonCompatGt() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$gt", bson.A{int32(42), "foo"}}}}},
 		},
 		"ArrayShuffledValues": {
-			filter:        bson.D{{"v", bson.D{{"$gt", bson.A{"foo", nil, int32(42)}}}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
+			filter: bson.D{{"v", bson.D{{"$gt", bson.A{"foo", nil, int32(42)}}}}},
 		},
 		"Double": {
 			filter: bson.D{{"v", bson.D{{"$gt", 41.13}}}},
@@ -470,14 +656,31 @@ func testQueryComparisonCompatGt() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$gt", int64(math.MaxInt64)}}}},
 		},
 		"Int64Big": {
-			filter: bson.D{{"v", bson.D{{"$gt", int64(2<<60 - 1)}}}},
+			filter: bson.D{{"v", bson.D{{"$gt", int64(1 << 61)}}}},
+		},
+		"Int64BigPlusOne": {
+			filter: bson.D{{"v", bson.D{{"$gt", int64(1<<61) + 1}}}},
+		},
+		"Int64BigMinusOne": {
+			filter: bson.D{{"v", bson.D{{"$gt", int64(1<<61) - 1}}}},
+		},
+		"Int64NegBig": {
+			filter: bson.D{{"v", bson.D{{"$gt", -int64(1 << 61)}}}},
+		},
+		"Int64NegBigPlusOne": {
+			filter: bson.D{{"v", bson.D{{"$gt", -int64(1<<61) + 1}}}},
+		},
+		"Int64NegBigMinusOne": {
+			filter: bson.D{{"v", bson.D{{"$gt", -int64(1<<61) - 1}}}},
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryComparisonCompatGte() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatGte(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
 			filter: bson.D{{"v", bson.D{{"$gte", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
@@ -489,8 +692,7 @@ func testQueryComparisonCompatGte() map[string]queryCompatTestCase {
 			filter: bson.D{{"v.foo", bson.D{{"$gte", int32(42)}}}},
 		},
 		"DocumentReverse": {
-			filter:        bson.D{{"v", bson.D{{"$gte", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
+			filter: bson.D{{"v", bson.D{{"$gte", bson.D{{"array", bson.A{int32(42), "foo", nil}}, {"42", "foo"}, {"foo", int32(42)}}}}}},
 		},
 		"DocumentNull": {
 			filter: bson.D{{"v", bson.D{{"$gte", bson.D{{"foo", nil}}}}}},
@@ -517,8 +719,7 @@ func testQueryComparisonCompatGte() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$gte", bson.A{int32(42), "foo"}}}}},
 		},
 		"ArrayShuffledValues": {
-			filter:        bson.D{{"v", bson.D{{"$gte", bson.A{"foo", nil, int32(42)}}}}},
-			skipForTigris: "Tigris does not support mixed types in arrays",
+			filter: bson.D{{"v", bson.D{{"$gte", bson.A{"foo", nil, int32(42)}}}}},
 		},
 		"Double": {
 			filter: bson.D{{"v", bson.D{{"$gte", 41.13}}}},
@@ -589,10 +790,12 @@ func testQueryComparisonCompatGte() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryComparisonCompatLt() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatLt(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
 			filter: bson.D{{"v", bson.D{{"$lt", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
@@ -707,14 +910,16 @@ func testQueryComparisonCompatLt() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$lt", int64(math.MinInt64)}}}},
 		},
 		"Int64Big": {
-			filter: bson.D{{"v", bson.D{{"$lt", int64(2<<60 + 1)}}}},
+			filter: bson.D{{"v", bson.D{{"$lt", int64(1<<61 + 1)}}}},
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryComparisonCompatLte() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatLte(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Document": {
 			filter: bson.D{{"v", bson.D{{"$lte", bson.D{{"foo", int32(42)}, {"42", "foo"}, {"array", bson.A{int32(42), "foo", nil}}}}}}},
@@ -824,10 +1029,15 @@ func testQueryComparisonCompatLte() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryComparisonCompatNin() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatNin(t *testing.T) {
+	t.Parallel()
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/2291
+	providers := shareddata.AllProviders().Remove(shareddata.ArrayAndDocuments)
+
 	var scalarDataTypesFilter bson.A
 	for _, scalarDataType := range shareddata.Scalars.Docs() {
 		scalarDataTypesFilter = append(scalarDataTypesFilter, scalarDataType.Map()["v"])
@@ -864,10 +1074,15 @@ func testQueryComparisonCompatNin() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompatWithProviders(t, providers, testCases)
 }
 
-func testQueryComparisonCompatIn() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatIn(t *testing.T) {
+	t.Parallel()
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/2291
+	providers := shareddata.AllProviders().Remove(shareddata.ArrayAndDocuments)
+
 	var scalarDataTypesFilter bson.A
 	for _, scalarDataType := range shareddata.Scalars.Docs() {
 		scalarDataTypesFilter = append(scalarDataTypesFilter, scalarDataType.Map()["v"])
@@ -904,10 +1119,12 @@ func testQueryComparisonCompatIn() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompatWithProviders(t, providers, testCases)
 }
 
-func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatNe(t *testing.T) {
+	t.Parallel()
+
 	testCases := map[string]queryCompatTestCase{
 		"Array": {
 			filter: bson.D{{"v", bson.D{{"$ne", bson.A{int32(42), "foo", nil}}}}},
@@ -916,25 +1133,76 @@ func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$ne", bson.A{"foo", nil, int32(42)}}}}},
 		},
 		"Double": {
-			filter: bson.D{{"v", bson.D{{"$ne", 41.13}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", 41.13}}}},
+			resultPushdown: true,
 		},
 		"DoubleMax": {
-			filter: bson.D{{"v", bson.D{{"$ne", math.MaxFloat64}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", math.MaxFloat64}}}},
+			resultPushdown: true,
 		},
 		"DoubleSmallest": {
-			filter: bson.D{{"v", bson.D{{"$ne", math.SmallestNonzeroFloat64}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", math.SmallestNonzeroFloat64}}}},
+			resultPushdown: true,
 		},
 		"DoubleZero": {
-			filter: bson.D{{"v", bson.D{{"$ne", 0.0}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", 0.0}}}},
+			resultPushdown: true,
 		},
 		"DoubleBig": {
-			filter: bson.D{{"v", bson.D{{"$ne", float64(2 << 60)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", float64(1 << 61)}}}},
+			resultPushdown: true,
+		},
+		"DoubleBigPlus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", float64(1<<61) + 1}}}},
+			resultPushdown: true,
+		},
+		"DoubleBigMinus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", float64(1<<61) - 1}}}},
+			resultPushdown: true,
+		},
+		"DoubleNegBig": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -float64(1 << 61)}}}},
+			resultPushdown: true,
+		},
+		"DoubleNegBigPlus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -float64(1<<61) + 1}}}},
+			resultPushdown: true,
+		},
+		"DoubleNegBigMinus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -float64(1<<61) - 1}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMax": {
+			filter:         bson.D{{"v", bson.D{{"$ne", float64(1 << 53)}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMaxPlus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", float64(1<<53) + 1}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMaxMinus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", float64(1<<53) - 1}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMin": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -float64(1<<53 - 1)}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMinPlus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -float64(1<<53-1) + 1}}}},
+			resultPushdown: true,
+		},
+		"DoublePrecMinMinus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -float64(1<<53-1) - 1}}}},
+			resultPushdown: true,
 		},
 		"String": {
-			filter: bson.D{{"v", bson.D{{"$ne", "foo"}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", "foo"}}}},
+			resultPushdown: true,
 		},
 		"StringEmpty": {
-			filter: bson.D{{"v", bson.D{{"$ne", ""}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", ""}}}},
+			resultPushdown: true,
 		},
 		"Binary": {
 			filter: bson.D{{"v", bson.D{{"$ne", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}},
@@ -943,22 +1211,28 @@ func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$ne", primitive.Binary{Data: []byte{}}}}}},
 		},
 		"BoolFalse": {
-			filter: bson.D{{"v", bson.D{{"$ne", false}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", false}}}},
+			resultPushdown: true,
 		},
 		"BoolTrue": {
-			filter: bson.D{{"v", bson.D{{"$ne", true}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", true}}}},
+			resultPushdown: true,
 		},
 		"Datetime": {
-			filter: bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}}}},
+			resultPushdown: true,
 		},
 		"DatetimeEpoch": {
-			filter: bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
-		},
-		"DatetimeYearMax": {
-			filter: bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Unix(0, 0))}}}},
+			resultPushdown: true,
 		},
 		"DatetimeYearMin": {
-			filter: bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}}}},
+			resultPushdown: true,
+		},
+		"DatetimeYearMax": {
+			filter:         bson.D{{"v", bson.D{{"$ne", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}}}},
+			resultPushdown: true,
 		},
 		"Timestamp": {
 			filter: bson.D{{"v", bson.D{{"$ne", primitive.Timestamp{T: 42, I: 13}}}}},
@@ -970,31 +1244,85 @@ func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
 			filter: bson.D{{"v", bson.D{{"$ne", nil}}}},
 		},
 		"Int32": {
-			filter: bson.D{{"v", bson.D{{"$ne", int32(42)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int32(42)}}}},
+			resultPushdown: true,
 		},
 		"Int32Zero": {
-			filter: bson.D{{"v", bson.D{{"$ne", int32(0)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int32(0)}}}},
+			resultPushdown: true,
 		},
 		"Int32Max": {
-			filter: bson.D{{"v", bson.D{{"$ne", int32(math.MaxInt32)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int32(math.MaxInt32)}}}},
+			resultPushdown: true,
 		},
 		"Int32Min": {
-			filter: bson.D{{"v", bson.D{{"$ne", int32(math.MinInt32)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int32(math.MinInt32)}}}},
+			resultPushdown: true,
 		},
 		"Int64": {
-			filter: bson.D{{"v", bson.D{{"$ne", int64(42)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int64(42)}}}},
+			resultPushdown: true,
 		},
 		"Int64Zero": {
-			filter: bson.D{{"v", bson.D{{"$ne", int64(0)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int64(0)}}}},
+			resultPushdown: true,
 		},
 		"Int64Max": {
-			filter: bson.D{{"v", bson.D{{"$ne", int64(math.MaxInt64)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int64(math.MaxInt64)}}}},
+			resultPushdown: true,
 		},
 		"Int64Min": {
-			filter: bson.D{{"v", bson.D{{"$ne", int64(math.MinInt64)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int64(math.MinInt64)}}}},
+			resultPushdown: true,
 		},
 		"Int64Big": {
-			filter: bson.D{{"v", bson.D{{"$ne", int64(2 << 61)}}}},
+			filter:         bson.D{{"v", bson.D{{"$ne", int64(1 << 61)}}}},
+			resultPushdown: true,
+		},
+		"Int64BigPlusOne": {
+			filter:         bson.D{{"v", bson.D{{"$ne", int64((1 << 61) + 1)}}}},
+			resultPushdown: true,
+		},
+		"Int64BigMinusOne": {
+			filter:         bson.D{{"v", bson.D{{"$ne", int64((1 << 61) - 1)}}}},
+			resultPushdown: true,
+		},
+		"Int64NegBig": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -int64(1 << 61)}}}},
+			resultPushdown: true,
+		},
+		"Int64NegBigPlusOne": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -int64(1<<61) + 1}}}},
+			resultPushdown: true,
+		},
+		"Int64NegBigMinusOne": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -int64(1<<61) - 1}}}},
+			resultPushdown: true,
+		},
+
+		"Int64PrecMax": {
+			filter:         bson.D{{"v", bson.D{{"$ne", int64(1 << 53)}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMaxPlusOne": {
+			filter:         bson.D{{"v", bson.D{{"$ne", int64((1 << 53) + 1)}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMaxMinusOne": {
+			filter:         bson.D{{"v", bson.D{{"$ne", int64((1 << 53) - 1)}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMin": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -int64(1<<53 - 1)}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMinPlus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -int64(1<<53-1) + 1}}}},
+			resultPushdown: true,
+		},
+		"Int64PrecMinMinus": {
+			filter:         bson.D{{"v", bson.D{{"$ne", -int64(1<<53-1) - 1}}}},
+			resultPushdown: true,
 		},
 		"Regex": {
 			filter:     bson.D{{"v", bson.D{{"$ne", primitive.Regex{Pattern: "foo"}}}}},
@@ -1008,10 +1336,12 @@ func testQueryComparisonCompatNe() map[string]queryCompatTestCase {
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }
 
-func testQueryComparisonCompatMultipleOperators() map[string]queryCompatTestCase {
+func TestQueryComparisonCompatMultipleOperators(t *testing.T) {
+	t.Parallel()
+
 	var scalarDataTypesFilter bson.A
 	for _, scalarDataType := range shareddata.Scalars.Docs() {
 		scalarDataTypesFilter = append(scalarDataTypesFilter, scalarDataType.Map()["v"])
@@ -1034,8 +1364,15 @@ func testQueryComparisonCompatMultipleOperators() map[string]queryCompatTestCase
 				{"_id", bson.D{{"$nin", bson.A{"int64"}}, {"$ne", "int32"}}},
 				{"v", bson.D{{"$eq", int32(42)}}},
 			},
+			resultPushdown: true,
+		},
+		"EqNe": {
+			filter: bson.D{
+				{"v", bson.D{{"$eq", int32(42)}, {"$ne", int32(0)}}},
+			},
+			resultPushdown: true,
 		},
 	}
 
-	return testCases
+	testQueryCompat(t, testCases)
 }

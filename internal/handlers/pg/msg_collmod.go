@@ -17,11 +17,14 @@ package pg
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgCollMod implements HandlerInterface.
 func (h *Handler) MsgCollMod(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, common.NewCommandErrorMsg(common.ErrNotImplemented, "`collMod` command is not implemented yet")
+	return nil, commonerrors.NewCommandErrorMsg(
+		commonerrors.ErrNotImplemented,
+		"`collMod` command is not implemented yet",
+	)
 }

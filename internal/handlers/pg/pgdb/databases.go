@@ -20,15 +20,15 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // validateDatabaseNameRe validates FerretDB database / PostgreSQL schema names.
-var validateDatabaseNameRe = regexp.MustCompile("^[a-z_-][a-z0-9_-]{0,62}$")
+var validateDatabaseNameRe = regexp.MustCompile("^[a-zA-Z0-9_-]{1,63}$")
 
 // Databases returns a sorted list of FerretDB databases / PostgreSQL schemas.
 func Databases(ctx context.Context, tx pgx.Tx) ([]string, error) {
@@ -89,25 +89,25 @@ func CreateDatabaseIfNotExists(ctx context.Context, tx pgx.Tx, db string) error 
 }
 
 // DropDatabase drops FerretDB database.
-//
-// It returns ErrSchemaNotExist if schema does not exist.
-func DropDatabase(ctx context.Context, tx pgx.Tx, db string) error {
-	_, err := tx.Exec(ctx, `DROP SCHEMA `+pgx.Identifier{db}.Sanitize()+` CASCADE`)
-	if err == nil {
-		return nil
+func DropDatabase(ctx context.Context, tx pgx.Tx, db string) (err error) {
+	if _, err = tx.Exec(ctx, `DROP SCHEMA `+pgx.Identifier{db}.Sanitize()+` CASCADE`); err == nil {
+		return
 	}
 
 	pgErr, ok := err.(*pgconn.PgError)
 	if !ok {
-		return lazyerrors.Error(err)
+		err = lazyerrors.Error(err)
+		return
 	}
 
 	switch pgErr.Code {
 	case pgerrcode.InvalidSchemaName:
-		return ErrSchemaNotExist
+		err = ErrSchemaNotExist
 	default:
-		return lazyerrors.Error(err)
+		err = lazyerrors.Error(err)
 	}
+
+	return
 }
 
 // DatabaseSize returns the size of the current database in bytes.
@@ -144,7 +144,7 @@ func (pgPool *Pool) TablesSize(ctx context.Context, tx pgx.Tx, db string) (int64
 		// and the moment we get the size of the table. In this case, we might receive an error from the database,
 		// and transaction will be interrupted. Such errors are not critical, we can just ignore them, and
 		// we don't need to interrupt the whole transaction.
-		err = pgPool.QueryRow(ctx, "SELECT COALESCE(pg_total_relation_size($1), 0)", fullName).Scan(&tableSize)
+		err = pgPool.p.QueryRow(ctx, "SELECT COALESCE(pg_total_relation_size($1), 0)", fullName).Scan(&tableSize)
 		if err == nil {
 			sizeOnDisk += tableSize
 			continue

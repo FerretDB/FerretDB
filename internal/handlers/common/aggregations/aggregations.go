@@ -14,3 +14,16 @@
 
 // Package aggregations provides aggregation pipelines.
 package aggregations
+
+import (
+	"context"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+)
+
+// Stage is a common interface for all aggregation stages.
+type Stage interface {
+	// Process applies an aggregate stage on documents from iterator.
+	Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error)
+}

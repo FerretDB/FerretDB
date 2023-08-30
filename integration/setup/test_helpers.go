@@ -15,58 +15,71 @@
 package setup
 
 import (
-	"testing"
-
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testfail"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-// IsTigris returns true if tests are running against FerretDB with `tigris` handler.
+// IsMongoDB returns true if the current test is running for MongoDB.
 //
 // This function should not be used lightly.
-func IsTigris(tb testing.TB) bool {
-	tb.Helper()
-
-	return *targetBackendF == "ferretdb-tigris"
+func IsMongoDB(tb testtb.TB) bool {
+	return *targetBackendF == "mongodb"
 }
 
-// SkipForTigris is deprecated.
-//
-// Deprecated: use SkipForTigrisWithReason instead if you must.
-func SkipForTigris(tb testing.TB) {
-	tb.Helper()
-
-	SkipForTigrisWithReason(tb, "empty, please update this test")
-}
-
-// SkipForTigrisWithReason skips the current test for FerretDB with `tigris` handler.
+// IsSQLite returns true if the current test is running for SQLite.
 //
 // This function should not be used lightly.
-func SkipForTigrisWithReason(tb testing.TB, reason string) {
+func IsSQLite(tb testtb.TB) bool {
+	return *targetBackendF == "ferretdb-sqlite"
+}
+
+// FailsForFerretDB return testtb.TB that expects test to fail for FerretDB and pass for MongoDB.
+//
+// This function should not be used lightly and always with an issue URL.
+func FailsForFerretDB(tb testtb.TB, reason string) testtb.TB {
 	tb.Helper()
 
-	if !IsTigris(tb) {
-		return
+	if IsMongoDB(tb) {
+		return tb
 	}
 
-	require.NotEmpty(tb, reason, "reason must not be empty")
-
-	tb.Skipf("Skipping for Tigris: %s.", reason)
+	return testfail.Expected(tb, reason)
 }
 
-// TigrisOnlyWithReason skips the current test except for FerretDB with `tigris` handler.
+// FailsForSQLite return testtb.TB that expects test to fail for FerretDB with SQLite backend and pass otherwise.
 //
-// This function should not be used lightly.
-func TigrisOnlyWithReason(tb testing.TB, reason string) {
+// This function should not be used lightly and always with an issue URL.
+func FailsForSQLite(tb testtb.TB, reason string) testtb.TB {
 	tb.Helper()
 
-	require.NotEmpty(tb, reason, "reason must not be empty")
+	if *targetBackendF == "ferretdb-sqlite" {
+		return testfail.Expected(tb, reason)
+	}
 
-	if !IsTigris(tb) {
-		tb.Skipf("Skipping for non-tigris: %s", reason)
+	return tb
+}
+
+// SkipForMongoDB skips the current test for MongoDB.
+//
+// This function should not be used lightly and always with an issue URL.
+func SkipForMongoDB(tb testtb.TB, reason string) {
+	tb.Helper()
+
+	if IsMongoDB(tb) {
+		require.NotEmpty(tb, reason, "reason must not be empty")
+
+		tb.Skipf("Skipping for MongoDB: %s.", reason)
 	}
 }
 
-// IsPushdownDisabled returns if FerretDB pushdowns are disabled.
+// IsPushdownDisabled returns true if FerretDB pushdowns are disabled.
 func IsPushdownDisabled() bool {
-	return *disablePushdownF
+	return *disableFilterPushdownF
+}
+
+// IsSortPushdownEnabled returns true if sort pushdown is enabled.
+func IsSortPushdownEnabled() bool {
+	return *enableSortPushdownF
 }

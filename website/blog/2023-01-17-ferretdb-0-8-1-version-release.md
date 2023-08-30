@@ -1,16 +1,15 @@
 ---
 slug: ferretdb-0-8-1-version-release
-title: "FerretDB new version release - 0.8.1"
+title: FerretDB new version release - 0.8.1
 author: Alexander Fashakin
 description: FerretDB 0.8.1 - the open-source MongoDB alternative - includes new features like version availability, `distinct` command & client TLS validation, and much more.
-image: /img/blog/FerretDB_v0.8.1.jpg
+image: /img/blog/FerretDB-v0.8.1.jpg
 tags: [release]
-date: 2023-01-19
 ---
 
 FerretDB 0.8.1 - the open-source MongoDB alternative - includes new features like version availability, `distinct` command & client TLS validation, and much more.
 
-![FerretDB version 0.8.1](/img/blog/FerretDB_v0.8.1.jpg)
+![FerretDB version 0.8.1](/img/blog/FerretDB-v0.8.1.jpg)
 
 <!--truncate-->
 
@@ -27,7 +26,7 @@ We are delighted to announce that we now report the availability of newer versio
 However, this is only available for users with telemetry enabled.
 If telemetry is enabled and a newer version of FerretDB is available, you'll be notified and can stay up-to-date with the latest and best version of FerretDB.
 
-If you are yet to enable telemetry and you’d love to access this feature, please [see our documentation here](https://docs.ferretdb.io/telemetry/).
+If you are yet to enable telemetry and you'd love to access this feature, please [see our documentation here](https://docs.ferretdb.io/telemetry/).
 
 Next, we've implemented the `distinct` command in FerretDB.
 With this command, you can easily find the unique values of specific fields in your data.
@@ -66,7 +65,7 @@ And for that reason, we've also included a way to validate a client's TLS certif
 ## Documentation
 
 Our documentation is also not left out from this round of improvements.
-The biggest change is that addition of the FerretDB blog which was built on Docusaurus– an open source software - and which now resides in our centralized FerretDB repository.
+The biggest change is that addition of the FerretDB blog which was built on Docusaurus – an open source software – and which now resides in our centralized FerretDB repository.
 
 We've added a section for CLI flags and environment variables.
 On top of that, we've reformatted our documentation setup to ensure that the deployment URL is visible in logs and can be previewed, and we also added comments and warnings about Git LFS.

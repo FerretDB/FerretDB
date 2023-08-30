@@ -21,20 +21,24 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
-// Handler implements handlers.Interface on top of PostgreSQL.
+// Handler implements handlers.Interface on PostgreSQL.
 type Handler struct {
 	*NewOpts
-	url url.URL
+
+	url     url.URL
+	cursors *cursor.Registry
 
 	// accessed by DBPool(ctx)
 	rw    sync.RWMutex
@@ -45,10 +49,13 @@ type Handler struct {
 type NewOpts struct {
 	PostgreSQLURL string
 
-	L               *zap.Logger
-	Metrics         *connmetrics.ConnMetrics
-	StateProvider   *state.Provider
-	DisablePushdown bool
+	L             *zap.Logger
+	ConnMetrics   *connmetrics.ConnMetrics
+	StateProvider *state.Provider
+
+	// test options
+	DisableFilterPushdown bool
+	EnableSortPushdown    bool
 }
 
 // New returns a new handler.
@@ -65,6 +72,7 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	h := &Handler{
 		NewOpts: opts,
 		url:     *u,
+		cursors: cursor.NewRegistry(opts.L.Named("cursors")),
 		pools:   make(map[string]*pgdb.Pool, 1),
 	}
 
@@ -80,6 +88,8 @@ func (h *Handler) Close() {
 		p.Close()
 		delete(h.pools, k)
 	}
+
+	h.cursors.Close()
 }
 
 // DBPool returns database connection pool for the given client connection.
@@ -126,14 +136,24 @@ func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
 
 	p, err := pgdb.NewPool(ctx, url, h.L, h.StateProvider)
 	if err != nil {
-		h.L.Warn("DBPool: authentication failed", zap.String("username", username), zap.Error(err))
+		h.L.Warn("DBPool: connection failed", zap.String("username", username), zap.Error(err))
 		return nil, lazyerrors.Error(err)
 	}
 
-	h.L.Info("DBPool: authentication succeed", zap.String("username", username))
+	h.L.Info("DBPool: connection succeed", zap.String("username", username))
 	h.pools[url] = p
 
 	return p, nil
+}
+
+// Describe implements handlers.Interface.
+func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
+	// TODO
+}
+
+// Collect implements handlers.Interface.
+func (h *Handler) Collect(ch chan<- prometheus.Metric) {
+	// TODO
 }
 
 // check interfaces

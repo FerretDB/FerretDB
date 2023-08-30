@@ -24,7 +24,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/build/version"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -47,18 +48,18 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	if _, ok := getLog.(types.NullType); ok {
-		return nil, common.NewCommandErrorMsg(
-			common.ErrMissingField,
+		return nil, commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrMissingField,
 			`BSON field 'getLog.getLog' is missing but a required field`,
 		)
 	}
 
 	if _, ok := getLog.(string); !ok {
-		return nil, common.NewCommandError(
-			common.ErrTypeMismatch,
+		return nil, commonerrors.NewCommandError(
+			commonerrors.ErrTypeMismatch,
 			fmt.Errorf(
 				"BSON field 'getLog.getLog' is the wrong type '%s', expected type 'string'",
-				common.AliasFromType(getLog),
+				commonparams.AliasFromType(getLog),
 			),
 		)
 	}
@@ -87,6 +88,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		info := version.Get()
 
+		// it may be empty if no connection was established yet
 		hv, _, _ := strings.Cut(state.HandlerVersion, " ")
 		if hv != "" {
 			hv = " " + hv
@@ -104,7 +106,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				"The telemetry state is undecided.",
 				"Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.",
 			)
-		case state.UpdateAvailable():
+		case state.UpdateAvailable:
 			startupWarnings = append(
 				startupWarnings,
 				fmt.Sprintf(
@@ -141,8 +143,8 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	default:
-		return nil, common.NewCommandError(
-			common.ErrOperationFailed,
+		return nil, commonerrors.NewCommandError(
+			commonerrors.ErrOperationFailed,
 			fmt.Errorf("no RecentEntries named: %s", getLog),
 		)
 	}

@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,7 +29,13 @@ import (
 
 // countCompatTestCase describes count compatibility test case.
 type countCompatTestCase struct {
-	filter     bson.D                   // required
+	filter bson.D // required, filter for the query
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/2255
+	// those two probably should be of the same type
+	optSkip any   // optional, skip option for the query, defaults to nil
+	limit   int64 // optional, limit option for the query, defaults to 0
+
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 }
 
@@ -37,7 +44,9 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 	t.Helper()
 
 	// Use shared setup because find queries can't modify data.
-	// TODO Use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
+	//
+	// Use read-only user.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1025
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 		Providers:                shareddata.AllProviders(),
 		AddNonExistentCollection: true,
@@ -67,17 +76,23 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 					targetErr := targetCollection.Database().RunCommand(ctx, bson.D{
 						{"count", targetCollection.Name()},
 						{"query", filter},
+						{"skip", tc.optSkip},
+						{"limit", tc.limit},
 					}).Decode(&targetRes)
 					compatErr := compatCollection.Database().RunCommand(ctx, bson.D{
 						{"count", compatCollection.Name()},
 						{"query", filter},
+						{"skip", tc.optSkip},
+						{"limit", tc.limit},
 					}).Decode(&compatRes)
 
 					if targetErr != nil {
 						t.Logf("Target error: %v", targetErr)
-						targetErr = UnsetRaw(t, targetErr)
-						compatErr = UnsetRaw(t, compatErr)
-						assert.Equal(t, compatErr, targetErr)
+						t.Logf("Compat error: %v", compatErr)
+
+						// error messages are intentionally not compared
+						AssertMatchesCommandError(t, compatErr, targetErr)
+
 						return
 					}
 					require.NoError(t, compatErr, "compat error; target returned no error")
@@ -109,25 +124,98 @@ func TestCountCompat(t *testing.T) {
 
 	testCases := map[string]countCompatTestCase{
 		"Empty": {
-			filter: bson.D{},
+			filter:  bson.D{},
+			optSkip: 0,
 		},
 		"IDString": {
-			filter: bson.D{{"_id", "string"}},
+			filter:  bson.D{{"_id", "string"}},
+			optSkip: 0,
 		},
 		"IDObjectID": {
-			filter: bson.D{{"_id", primitive.NilObjectID}},
+			filter:  bson.D{{"_id", primitive.NilObjectID}},
+			optSkip: 0,
 		},
 		"IDNotExists": {
-			filter: bson.D{{"_id", "count-id-not-exists"}},
+			filter:  bson.D{{"_id", "count-id-not-exists"}},
+			optSkip: 0,
 		},
 		"IDBool": {
-			filter: bson.D{{"_id", "bool-true"}},
+			filter:  bson.D{{"_id", "bool-true"}},
+			optSkip: 0,
 		},
 		"FieldTrue": {
-			filter: bson.D{{"v", true}},
+			filter:  bson.D{{"v", true}},
+			optSkip: 0,
 		},
 		"FieldTypeArrays": {
-			filter: bson.D{{"v", bson.D{{"$type", "array"}}}},
+			filter:  bson.D{{"v", bson.D{{"$type", "array"}}}},
+			optSkip: 0,
+		},
+
+		"LimitAlmostAll": {
+			filter: bson.D{},
+			limit:  int64(len(shareddata.Strings.Docs()) - 1),
+		},
+		"LimitAll": {
+			filter: bson.D{},
+			limit:  int64(len(shareddata.Strings.Docs())),
+		},
+		"LimitMore": {
+			filter: bson.D{},
+			limit:  int64(len(shareddata.Strings.Docs()) + 1),
+		},
+
+		"SkipSimple": {
+			filter:  bson.D{},
+			optSkip: 1,
+		},
+		"SkipAlmostAll": {
+			filter:  bson.D{},
+			optSkip: len(shareddata.Strings.Docs()) - 1,
+		},
+		"SkipAll": {
+			filter:  bson.D{},
+			optSkip: len(shareddata.Strings.Docs()),
+		},
+		"SkipMore": {
+			filter:  bson.D{},
+			optSkip: len(shareddata.Strings.Docs()) + 1,
+		},
+		"SkipBig": {
+			filter:  bson.D{},
+			optSkip: 1000,
+		},
+		"SkipDouble": {
+			filter:  bson.D{},
+			optSkip: 1.111,
+		},
+		"SkipNegative": {
+			filter:     bson.D{},
+			optSkip:    -1,
+			resultType: emptyResult,
+		},
+		"SkipNegativeDouble": {
+			filter:     bson.D{},
+			optSkip:    -1.111,
+			resultType: emptyResult,
+		},
+		"SkipNegativeDoubleCeil": {
+			filter:     bson.D{},
+			optSkip:    -1.888,
+			resultType: emptyResult,
+		},
+		"SkipMinFloat": {
+			filter:     bson.D{},
+			optSkip:    -math.MaxFloat64,
+			resultType: emptyResult,
+		},
+		"SkipNull": {
+			filter: bson.D{},
+		},
+		"SkipString": {
+			filter:     bson.D{},
+			optSkip:    "foo",
+			resultType: emptyResult,
 		},
 	}
 

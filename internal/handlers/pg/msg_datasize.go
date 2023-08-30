@@ -16,13 +16,14 @@ package pg
 
 import (
 	"context"
-	"errors"
-	"strings"
+	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -48,39 +49,52 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 
 	common.Ignored(document, h.L, "estimate")
 
-	m := document.Map()
-	target, ok := m["dataSize"].(string)
+	var namespaceParam any
+
+	if namespaceParam, err = document.Get(document.Command()); err != nil {
+		return nil, err
+	}
+
+	namespace, ok := namespaceParam.(string)
 	if !ok {
-		return nil, lazyerrors.New("no target collection")
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			fmt.Sprintf("collection name has invalid type %s", commonparams.AliasFromType(namespaceParam)),
+			document.Command(),
+		)
 	}
-	targets := strings.Split(target, ".")
-	if len(targets) != 2 {
-		return nil, lazyerrors.New("target collection must be like: 'database.collection'")
+
+	db, collection, err := splitNamespace(namespace)
+	if err != nil {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidNamespace,
+			fmt.Sprintf("Invalid namespace specified '%s'", namespace),
+			"dataSize",
+		)
 	}
-	db, collection := targets[0], targets[1]
+
+	var stats *pgdb.CollStats
 
 	started := time.Now()
-	stats, err := dbPool.SchemaStats(ctx, db, collection)
+
+	if err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		stats, err = pgdb.CalculateCollStats(ctx, tx, db, collection)
+		return err
+	}); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	elapses := time.Since(started)
 
 	addEstimate := true
-	if err != nil {
-		if !errors.Is(err, pgx.ErrNoRows) {
-			return nil, lazyerrors.Error(err)
-		}
-
-		// return zeroes for non-existent collection
-		stats = new(pgdb.DBStats)
-		addEstimate = false
-	}
 
 	var pairs []any
 	if addEstimate {
 		pairs = append(pairs, "estimate", false)
 	}
 	pairs = append(pairs,
-		"size", int32(stats.SizeTotal),
-		"numObjects", stats.CountRows,
+		"size", stats.SizeTotal,
+		"numObjects", stats.CountObjects,
 		"millis", int32(elapses.Milliseconds()),
 		"ok", float64(1),
 	)

@@ -1,19 +1,38 @@
 ---
+# This workflow is dangerous and should be handled with great care to avoid security problems.
+# See the warning at conform-pr.yml.
+
+# We also tried a different approach: build Docker image in one normal, secure `pull_request` workflow,
+# upload artifact, and then download and publish it in another workflow that has access to secrets, but treats
+# artifact as passive data. We use buildx for building multi-platform images, and there is a way to export
+# multi-platform OCI tarball: https://docs.docker.com/engine/reference/commandline/buildx_build/#output
+# Unfortunately, it seems that there is no way to import that tarball in another workflow and publish it
+# as a Docker image, as strange as it sounds: https://github.com/docker/buildx/issues/186
+
 name: Packages
 on:
-  pull_request:
+  pull_request_target:
     types:
-      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      # not for "labeled" to prevent two builds for "labeled" and "unlabeled" when labels are changed
+      - unlabeled # if GitHub Actions stuck, add and remove "not ready" label to force rebuild
       - opened
       - reopened
       - synchronize
   push:
     branches:
       - main
+      - releases/*
     tags:
       - "*"
   schedule:
-    - cron: "12 2 * * *"
+    - cron: "12 0 * * 1" # on Mondays to pre-fill cache
+
+# Do not run this workflow in parallel for any PR change or branch/tag push
+# to prevent concurrent pushes for the same Docker image tag
+# and save some resources.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: false
 
 env:
   GOPATH: /home/runner/go
@@ -25,18 +44,56 @@ env:
 jobs:
   build:
     name: Build packages
-    runs-on: ubuntu-22.04
+    runs-on:
+      group: paid
+    timeout-minutes: 90
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    if: >
+      github.event_name != 'pull_request_target' ||
+      (
+        contains(github.event.pull_request.labels.*.name, 'trust') &&
+        !contains(github.event.pull_request.labels.*.name, 'not ready') &&
+        contains(github.event.pull_request.labels.*.name, 'packages')
+      )
+
+    permissions:
+      packages: write
 
     steps:
+      - name: Setup permissions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+        if: false
+
       - name: Checkout code
+        if: github.event_name != 'pull_request_target'
         uses: actions/checkout@v3
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
 
+      - name: Checkout pull request code
+        if: github.event_name == 'pull_request_target'
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: false
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      # for version.txt on push tags; see https://github.com/actions/checkout/issues/290
+      - name: Fetch annotated tags
+        run: |
+          git fetch --tags --force
+          git status
+
+      # for branch.txt on pull_request_target; `main` is already checked out on push / schedule
+      - name: Name branch
+        if: github.event_name == 'pull_request_target'
+        env:
+          BRANCH: ${{ github.head_ref }} # see https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
+        run: git checkout -b $BRANCH
+
       - name: Setup Go
+        id: setup
         uses: FerretDB/github-actions/setup-go@main
         with:
           cache-key: packages
@@ -48,11 +105,58 @@ jobs:
       - name: Run init
         run: bin/task init
 
-      - name: Build release binary
-        run: bin/task build-release
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v2
 
-      - name: Build packages
-        run: bin/task packages
+      - name: Initialize Docker Buildx builder
+        run: bin/task docker-init
+
+      - name: Extract Docker image names
+        id: extract
+        uses: FerretDB/github-actions/extract-docker-tag@main
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ferretdbbot
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Quay.io
+        uses: docker/login-action@v2
+        with:
+          registry: quay.io
+          username: ferretdbbot
+          password: ${{ secrets.QUAY_TOKEN }}
+
+      - name: Restore Go caches
+        uses: actions/cache@v3
+        with:
+          path: tmp/docker/gocaches
+          key: packages-gocaches-${{ steps.setup.outputs.cache_week }}-${{ hashFiles('**/go.mod') }}
+          restore-keys: |
+            packages-gocaches-${{ steps.setup.outputs.cache_week }}-
+
+      - name: Build and push all-in-one Docker images ${{ steps.extract.outputs.all_in_one_images }}
+        if: steps.extract.outputs.all_in_one_images != ''
+        run: bin/task docker-all-in-one-push DOCKER_IMAGES=${{ steps.extract.outputs.all_in_one_images }}
+
+      - name: Build and push development Docker images ${{ steps.extract.outputs.development_images }}
+        if: steps.extract.outputs.development_images != ''
+        run: bin/task docker-development-push DOCKER_IMAGES=${{ steps.extract.outputs.development_images }}
+
+      - name: Build and push production Docker images ${{ steps.extract.outputs.production_images }}
+        if: steps.extract.outputs.production_images != ''
+        run: bin/task docker-production-push DOCKER_IMAGES=${{ steps.extract.outputs.production_images }}
+
+      - name: Build production release binary
+        run: bin/task build-release
 
       - name: Upload ferretdb
         uses: actions/upload-artifact@v3
@@ -62,18 +166,26 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-      - name: Upload ferretdb.deb
+      - name: Build Linux packages
+        run: bin/task packages
+
+      - name: Upload .deb package
         uses: actions/upload-artifact@v3
         with:
           name: ferretdb.deb
-          path: build/deb/ferretdb.deb
+          path: tmp/debs/ferretdb.deb
           retention-days: 1
           if-no-files-found: error
 
-      - name: Upload ferretdb.rpm
+      - name: Upload .rpm package
         uses: actions/upload-artifact@v3
         with:
           name: ferretdb.rpm
-          path: build/rpm/ferretdb.rpm
+          path: tmp/rpms/ferretdb.rpm
           retention-days: 1
           if-no-files-found: error
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code

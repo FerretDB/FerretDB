@@ -39,21 +39,19 @@ import (
 type Config struct {
 	Listener ListenerConfig
 
-	// Handler to use; one of `pg` or `tigris` (if enabled at compile-time).
+	// Handler to use; one of `pg` or `sqlite`.
 	Handler string
 
 	// PostgreSQL connection string for `pg` handler.
 	// See:
-	// * https://pkg.go.dev/github.com/jackc/pgx/v4/pgxpool#ParseConfig
-	// * https://pkg.go.dev/github.com/jackc/pgx/v4#ParseConfig
-	// * https://pkg.go.dev/github.com/jackc/pgconn#ParseConfig
+	//   - https://pkg.go.dev/github.com/jackc/pgx/v5/pgxpool#ParseConfig
+	//   - https://pkg.go.dev/github.com/jackc/pgx/v5#ParseConfig
+	//   - https://pkg.go.dev/github.com/jackc/pgx/v5/pgconn#ParseConfig
 	PostgreSQLURL string // For example: `postgres://hostname:5432/ferretdb`.
 
-	// Tigris parameters for `tigris` handler.
-	// See https://www.tigrisdata.com/docs/sdkstools/golang/getting-started/
-	TigrisURL          string
-	TigrisClientID     string
-	TigrisClientSecret string
+	// SQLite URI (directory) for `sqlite` handler.
+	// See https://www.sqlite.org/uri.html.
+	SQLiteURL string // For example: `file:data/`.
 }
 
 // ListenerConfig represents listener configuration.
@@ -89,6 +87,8 @@ type FerretDB struct {
 
 // New creates a new instance of embeddable FerretDB implementation.
 func New(config *Config) (*FerretDB, error) {
+	version.Get().Package = "embedded"
+
 	if config.Listener.TCP == "" &&
 		config.Listener.Unix == "" &&
 		config.Listener.TLS == "" {
@@ -100,18 +100,26 @@ func New(config *Config) (*FerretDB, error) {
 		return nil, fmt.Errorf("failed to construct handler: %s", err)
 	}
 
+	// Telemetry reporter is not created or running anyway,
+	// but disable telemetry explicitly to disable confusing startupWarnings.
+	err = p.Update(func(s *state.State) {
+		s.DisableTelemetry()
+		s.TelemetryLocked = true
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to construct handler: %s", err)
+	}
+
 	metrics := connmetrics.NewListenerMetrics()
 
 	h, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
 		Logger:        logger,
-		Metrics:       metrics.ConnMetrics,
+		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: p,
 
 		PostgreSQLURL: config.PostgreSQLURL,
 
-		TigrisURL:          config.TigrisURL,
-		TigrisClientID:     config.TigrisClientID,
-		TigrisClientSecret: config.TigrisClientSecret,
+		SQLiteURL: config.SQLiteURL,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct handler: %s", err)
@@ -137,12 +145,10 @@ func New(config *Config) (*FerretDB, error) {
 	}, nil
 }
 
-// Run runs FerretDB until ctx is done.
+// Run runs FerretDB until ctx is canceled.
 //
-// When this method returns, listener and all connections are closed.
+// When this method returns, listener and all connections, as well as handler are closed.
 func (f *FerretDB) Run(ctx context.Context) error {
-	defer f.l.Handler.Close()
-
 	err := f.l.Run(ctx)
 	if errors.Is(err, context.Canceled) {
 		err = nil
@@ -166,9 +172,9 @@ func (f *FerretDB) MongoDBURI() string {
 
 	switch {
 	case f.config.Listener.TLS != "":
-		q := make(url.Values)
-
-		q.Set("tls", "true")
+		q := url.Values{
+			"tls": []string{"true"},
+		}
 
 		u = &url.URL{
 			Scheme:   "mongodb",

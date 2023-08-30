@@ -18,9 +18,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -54,6 +55,13 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
+	// PostgreSQL would block on `DropDatabase` below otherwise
+	for _, c := range h.cursors.All() {
+		if c.DB == db && c.Collection == collection {
+			c.Close()
+		}
+	}
+
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		return pgdb.DropCollection(ctx, tx, db, collection)
 	})
@@ -61,8 +69,8 @@ func (h *Handler) MsgDrop(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	switch {
 	case err == nil:
 		// nothing
-	case errors.Is(err, pgdb.ErrSchemaNotExist), errors.Is(err, pgdb.ErrTableNotExist):
-		return nil, common.NewCommandErrorMsg(common.ErrNamespaceNotFound, "ns not found")
+	case errors.Is(err, pgdb.ErrTableNotExist):
+		return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrNamespaceNotFound, "ns not found")
 	default:
 		return nil, lazyerrors.Error(err)
 	}

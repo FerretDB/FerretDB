@@ -18,13 +18,17 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"strconv"
 	"strings"
 	"time"
 
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonpath"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -33,61 +37,89 @@ import (
 //
 // Passed arguments must not be modified.
 func FilterDocument(doc, filter *types.Document) (bool, error) {
-	filterMap := filter.Map()
-	if len(filterMap) == 0 {
-		return true, nil
-	}
+	iter := filter.Iterator()
+	defer iter.Close()
 
-	// top-level filters are ANDed together
-	for _, filterKey := range filter.Keys() {
-		filterValue := filterMap[filterKey]
+	for {
+		filterKey, filterValue, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				return true, nil
+			}
+
+			return false, lazyerrors.Error(err)
+		}
+
+		// top-level filters are ANDed together
 		matches, err := filterDocumentPair(doc, filterKey, filterValue)
 		if err != nil {
-			return false, err
+			return false, lazyerrors.Error(err)
 		}
 		if !matches {
 			return false, nil
 		}
 	}
+}
 
-	return true, nil
+// HasQueryOperator recursively checks if filter document contains any operator prefixed with $.
+func HasQueryOperator(filter *types.Document) (bool, error) {
+	iter := filter.Iterator()
+	defer iter.Close()
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				return false, nil
+			}
+
+			return false, lazyerrors.Error(err)
+		}
+
+		if strings.HasPrefix(k, "$") {
+			return true, nil
+		}
+
+		doc, ok := v.(*types.Document)
+		if !ok {
+			continue
+		}
+
+		hasOperator, err := HasQueryOperator(doc)
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
+
+		if hasOperator {
+			return true, nil
+		}
+	}
 }
 
 // filterDocumentPair handles a single filter element key/value pair {filterKey: filterValue}.
 func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) (bool, error) {
+	var vals []any
+	filterSuffix := filterKey
+
 	if strings.ContainsRune(filterKey, '.') {
-		// {field1./.../.fieldN: filterValue}
 		path, err := types.NewPathFromString(filterKey)
 		if err != nil {
 			return false, lazyerrors.Error(err)
 		}
 
-		// we pass the path without the last key because we want {fieldN: *someValue*}, not just *someValue*
-		docValue, err := doc.GetByPath(path.TrimSuffix())
-		if err != nil {
-			return false, nil // no error - the field is just not present
+		filterSuffix = path.Suffix()
+
+		// filter using dot notation returns the value by valid array index
+		// or values for the given key in array's document
+		if vals, err = commonpath.FindValues(doc, path, &commonpath.FindValuesOpts{
+			FindArrayIndex:     true,
+			FindArrayDocuments: true,
+		}); err != nil {
+			return false, lazyerrors.Error(err)
 		}
-
-		switch docValue := docValue.(type) {
-		case *types.Document:
-			doc = docValue
-			filterKey = path.Suffix()
-		case *types.Array:
-			index, err := strconv.Atoi(path.Suffix())
-			if err != nil {
-				return false, nil
-			}
-
-			if docValue.Len() == 0 || docValue.Len() <= index {
-				return false, nil
-			}
-
-			value, err := docValue.Get(index)
-			if err != nil {
-				return false, err
-			}
-
-			doc = must.NotFail(types.NewDocument(filterKey, value))
+	} else {
+		if val, _ := doc.Get(filterKey); val != nil {
+			vals = []any{val}
 		}
 	}
 
@@ -98,42 +130,59 @@ func filterDocumentPair(doc *types.Document, filterKey string, filterValue any) 
 
 	switch filterValue := filterValue.(type) {
 	case *types.Document:
-		// {field: {expr}} or {field: {document}}
-		return filterFieldExpr(doc, filterKey, filterValue)
-
-	case *types.Array:
-		// {field: [array]}
-		docValue, err := doc.Get(filterKey)
-		if err != nil {
-			return false, nil // no error - the field is just not present
+		var docs []*types.Document
+		for _, val := range vals {
+			docs = append(docs, must.NotFail(types.NewDocument(filterSuffix, val)))
 		}
-		result := types.Compare(docValue, filterValue)
 
-		return result == types.Equal, nil
-
-	case types.Regex:
-		// {field: /regex/}
-		docValue, err := doc.Get(filterKey)
-		if err != nil {
-			return false, nil // no error - the field is just not present
+		if len(docs) == 0 {
+			// operators like $nin uses empty document to filter non-existent field
+			docs = append(docs, types.MakeDocument(0))
 		}
-		return filterFieldRegex(docValue, filterValue)
 
-	default:
-		// {field: value}
-		docValue, err := doc.Get(filterKey)
-		if err != nil {
-			// comparing not existent field with null should return true
-			if _, ok := filterValue.(types.NullType); ok {
+		for _, doc := range docs {
+			// {field: {expr}} or {field: {document}}
+			ok, err := filterFieldExpr(doc, filterKey, filterSuffix, filterValue)
+			if err != nil {
+				return false, err
+			}
+
+			if ok {
 				return true, nil
 			}
-			return false, nil // no error - the field is just not present
+		}
+	case types.NullType:
+		if len(vals) == 0 {
+			// comparing non-existent field with null returns true
+			return true, nil
 		}
 
-		result := types.Compare(docValue, filterValue)
+		for _, val := range vals {
+			if result := types.Compare(val, filterValue); result == types.Equal {
+				return true, nil
+			}
+		}
+	case types.Regex:
+		for _, val := range vals {
+			ok, err := filterFieldRegex(val, filterValue)
+			if err != nil {
+				return false, err
+			}
 
-		return result == types.Equal, nil
+			if ok {
+				return true, nil
+			}
+		}
+	default:
+		for _, val := range vals {
+			if result := types.Compare(val, filterValue); result == types.Equal {
+				return true, nil
+			}
+		}
 	}
+
+	// If we got here, it means that none of the documents matched the filter.
+	return false, nil
 }
 
 // filterOperator handles a top-level operator filter {$operator: filterValue}.
@@ -143,18 +192,26 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 		// {$and: [{expr1}, {expr2}, ...]}
 		exprs, ok := filterValue.(*types.Array)
 		if !ok {
-			return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$and must be an array", operator)
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				"$and must be an array",
+				operator,
+			)
 		}
 
 		if exprs.Len() == 0 {
-			return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$and/$or/$nor must be a nonempty array", operator)
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				"$and/$or/$nor must be a nonempty array",
+				operator,
+			)
 		}
 
 		for i := 0; i < exprs.Len(); i++ {
 			_, ok := must.NotFail(exprs.Get(i)).(*types.Document)
 			if !ok {
-				return false, NewCommandErrorMsgWithArgument(
-					ErrBadValue,
+				return false, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrBadValue,
 					"$or/$and/$nor entries need to be full objects",
 					operator,
 				)
@@ -179,18 +236,26 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 		// {$or: [{expr1}, {expr2}, ...]}
 		exprs, ok := filterValue.(*types.Array)
 		if !ok {
-			return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$or must be an array", operator)
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				"$or must be an array",
+				operator,
+			)
 		}
 
 		if exprs.Len() == 0 {
-			return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$and/$or/$nor must be a nonempty array", operator)
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				"$and/$or/$nor must be a nonempty array",
+				operator,
+			)
 		}
 
 		for i := 0; i < exprs.Len(); i++ {
 			_, ok := must.NotFail(exprs.Get(i)).(*types.Document)
 			if !ok {
-				return false, NewCommandErrorMsgWithArgument(
-					ErrBadValue,
+				return false, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrBadValue,
 					"$or/$and/$nor entries need to be full objects",
 					operator,
 				)
@@ -215,18 +280,26 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 		// {$nor: [{expr1}, {expr2}, ...]}
 		exprs, ok := filterValue.(*types.Array)
 		if !ok {
-			return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$nor must be an array", operator)
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				"$nor must be an array",
+				operator,
+			)
 		}
 
 		if exprs.Len() == 0 {
-			return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$and/$or/$nor must be a nonempty array", operator)
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				"$and/$or/$nor must be a nonempty array",
+				operator,
+			)
 		}
 
 		for i := 0; i < exprs.Len(); i++ {
 			_, ok := must.NotFail(exprs.Get(i)).(*types.Document)
 			if !ok {
-				return false, NewCommandErrorMsgWithArgument(
-					ErrBadValue,
+				return false, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrBadValue,
 					"$or/$and/$nor entries need to be full objects",
 					operator,
 				)
@@ -250,6 +323,8 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 	case "$comment":
 		return true, nil
 
+	case "$expr":
+		return filterExprOperator(doc, must.NotFail(types.NewDocument(operator, filterValue)))
 	default:
 		msg := fmt.Sprintf(
 			`unknown top level operator: %s. `+
@@ -257,15 +332,47 @@ func filterOperator(doc *types.Document, operator string, filterValue any) (bool
 			operator,
 		)
 
-		return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, "$operator")
+		return false, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, "$operator")
+	}
+}
+
+// filterExprOperator uses $expr operator to allow usage of aggregation expression.
+// It returns boolean indicating filter has matched.
+//
+// $expr is primary used by operators such as $gt and $cond which return boolean result.
+// However, if non-boolean result is returned from processing aggregation expression,
+// it returns false for null or zero value and true for all other values.
+func filterExprOperator(doc, filter *types.Document) (bool, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/3170
+	op, err := operators.NewExpr(filter, "$expr")
+	if err != nil {
+		return false, err
+	}
+
+	v, err := op.Process(doc)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	switch v := v.(type) {
+	case *types.Document, *types.Array, string, types.Binary, types.ObjectID, time.Time, types.Regex, types.Timestamp:
+		return true, nil
+	case float64, int32, int64:
+		return types.Compare(v, int32(0)) != types.Equal, nil
+	case bool:
+		return v, nil
+	case types.NullType:
+		return false, nil
+	default:
+		panic(fmt.Sprintf("common.filterExprOperator: unexpected type %[1]T (%#[1]v)", v))
 	}
 }
 
 // filterFieldExpr handles {field: {expr}} or {field: {document}} filter.
-func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document) (bool, error) {
+func filterFieldExpr(doc *types.Document, filterKey, filterSuffix string, expr *types.Document) (bool, error) {
 	// check if both documents are empty
 	if expr.Len() == 0 {
-		fieldValue, err := doc.Get(filterKey)
+		fieldValue, err := doc.Get(filterSuffix)
 		if err != nil {
 			return false, nil
 		}
@@ -283,7 +390,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		exprValue := must.NotFail(expr.Get(exprKey))
 
-		fieldValue, err := doc.Get(filterKey)
+		fieldValue, err := doc.Get(filterSuffix)
 		if err != nil {
 			switch exprKey {
 			case "$exists", "$not", "$elemMatch":
@@ -336,7 +443,11 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 				return true, nil
 			case types.Regex:
-				return false, NewCommandErrorMsgWithArgument(ErrBadValue, "Can't have regex as arg to $ne.", exprKey)
+				return false, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrBadValue,
+					"Can't have regex as arg to $ne.",
+					exprKey,
+				)
 			default:
 				result := types.Compare(fieldValue, exprValue)
 				if result == types.Equal {
@@ -348,7 +459,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// {field: {$gt: exprValue}}
 			if _, ok := exprValue.(types.Regex); ok {
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
-				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
+				return false, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, exprKey)
 			}
 
 			// Array and non-array comparison with $gt compares the non-array
@@ -373,7 +484,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// {field: {$gte: exprValue}}
 			if _, ok := exprValue.(types.Regex); ok {
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
-				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
+				return false, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, exprKey)
 			}
 
 			// Array and non-array comparison with $gte compares the non-array
@@ -397,7 +508,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// {field: {$lt: exprValue}}
 			if _, ok := exprValue.(types.Regex); ok {
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
-				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
+				return false, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, exprKey)
 			}
 
 			// Array and non-array comparison with $lt compares the non-array
@@ -422,7 +533,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// {field: {$lte: exprValue}}
 			if _, ok := exprValue.(types.Regex); ok {
 				msg := fmt.Sprintf(`Can't have RegEx as arg to predicate over field '%s'.`, filterKey)
-				return false, NewCommandErrorMsgWithArgument(ErrBadValue, msg, exprKey)
+				return false, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, exprKey)
 			}
 
 			// Array and non-array comparison with $lte compares the non-array
@@ -447,7 +558,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// {field: {$in: [value1, value2, ...]}}
 			arr, ok := exprValue.(*types.Array)
 			if !ok {
-				return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$in needs an array", exprKey)
+				return false, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, "$in needs an array", exprKey)
 			}
 
 			var found bool
@@ -460,7 +571,11 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				case *types.Document:
 					for _, key := range arrValue.Keys() {
 						if strings.HasPrefix(key, "$") {
-							return false, NewCommandErrorMsgWithArgument(ErrBadValue, "cannot nest $ under $in", exprKey)
+							return false, commonerrors.NewCommandErrorMsgWithArgument(
+								commonerrors.ErrBadValue,
+								"cannot nest $ under $in",
+								exprKey,
+							)
 						}
 					}
 
@@ -493,7 +608,11 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// {field: {$nin: [value1, value2, ...]}}
 			arr, ok := exprValue.(*types.Array)
 			if !ok {
-				return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$nin needs an array", exprKey)
+				return false, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrBadValue,
+					"$nin needs an array",
+					exprKey,
+				)
 			}
 
 			var found bool
@@ -506,7 +625,11 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 				case *types.Document:
 					for _, key := range arrValue.Keys() {
 						if strings.HasPrefix(key, "$") {
-							return false, NewCommandErrorMsgWithArgument(ErrBadValue, "cannot nest $ under $in", exprKey)
+							return false, commonerrors.NewCommandErrorMsgWithArgument(
+								commonerrors.ErrBadValue,
+								"cannot nest $ under $in",
+								exprKey,
+							)
 						}
 					}
 
@@ -539,7 +662,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			// {field: {$not: {expr}}}
 			switch exprValue := exprValue.(type) {
 			case *types.Document:
-				res, err := filterFieldExpr(doc, filterKey, exprValue)
+				res, err := filterFieldExpr(doc, filterKey, filterSuffix, exprValue)
 				if res || err != nil {
 					return false, err
 				}
@@ -550,7 +673,11 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 					return false, err
 				}
 			default:
-				return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$not needs a regex or a document", exprKey)
+				return false, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrBadValue,
+					"$not needs a regex or a document",
+					exprKey,
+				)
 			}
 
 		case "$regex":
@@ -563,7 +690,7 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 
 		case "$elemMatch":
 			// {field: {$elemMatch: value}}
-			res, err := filterFieldExprElemMatch(doc, filterKey, exprValue)
+			res, err := filterFieldExprElemMatch(doc, filterKey, filterSuffix, exprValue)
 			if !res || err != nil {
 				return false, err
 			}
@@ -632,7 +759,11 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 			}
 
 		default:
-			return false, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf("unknown operator: %s", exprKey), "$operator")
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf("unknown operator: %s", exprKey),
+				"$operator",
+			)
 		}
 	}
 
@@ -644,8 +775,8 @@ func filterFieldExpr(doc *types.Document, filterKey string, expr *types.Document
 func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 	for _, option := range regex.Options {
 		if !slices.Contains([]rune{'i', 'm', 's', 'x'}, option) {
-			return false, NewCommandErrorMsgWithArgument(
-				ErrBadRegexOption,
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadRegexOption,
 				fmt.Sprintf(" invalid flag in regex options: %c", option),
 				"$options",
 			)
@@ -655,10 +786,18 @@ func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 	re, err := regex.Compile()
 	if err != nil && err == types.ErrOptionNotImplemented {
 		// TODO: options can be set both in $options or $regex so it's hard to specify here the valid field
-		return false, NewCommandErrorMsgWithArgument(ErrNotImplemented, `option 'x' not implemented`, "$options")
+		return false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
+			`option 'x' not implemented`,
+			"$options",
+		)
 	}
 	if err != nil {
-		return false, NewCommandErrorMsgWithArgument(ErrRegexMissingParen, err.Error(), "$regex")
+		return false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrRegexMissingParen,
+			err.Error(),
+			"$regex",
+		)
 	}
 
 	switch fieldValue := fieldValue.(type) {
@@ -691,7 +830,11 @@ func filterFieldExprRegex(fieldValue any, regexValue, optionsValue any) (bool, e
 	if optionsValue != nil {
 		var ok bool
 		if options, ok = optionsValue.(string); !ok {
-			return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$options has to be a string", "$options")
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				"$options has to be a string",
+				"$options",
+			)
 		}
 	}
 
@@ -706,37 +849,44 @@ func filterFieldExprRegex(fieldValue any, regexValue, optionsValue any) (bool, e
 	case types.Regex:
 		if options != "" {
 			if regexValue.Options != "" {
-				return false, NewCommandErrorMsg(ErrRegexOptions, "options set in both $regex and $options")
+				return false, commonerrors.NewCommandErrorMsg(
+					commonerrors.ErrRegexOptions,
+					"options set in both $regex and $options",
+				)
 			}
 			regexValue.Options = options
 		}
 		return filterFieldRegex(fieldValue, regexValue)
 
 	default:
-		return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$regex has to be a string", "$regex")
+		return false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			"$regex has to be a string",
+			"$regex",
+		)
 	}
 }
 
 // filterFieldExprSize handles {field: {$size: sizeValue}} filter.
 func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
-	size, err := GetWholeNumberParam(sizeValue)
+	size, err := commonparams.GetWholeNumberParam(sizeValue)
 	if err != nil {
 		switch err {
-		case errUnexpectedType:
-			return false, NewCommandErrorMsgWithArgument(
-				ErrBadValue,
+		case commonparams.ErrUnexpectedType:
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
 				fmt.Sprintf(`Failed to parse $size. Expected a number in: $size: %s`, types.FormatAnyValue(sizeValue)),
 				"$size",
 			)
-		case errNotWholeNumber:
-			return false, NewCommandErrorMsgWithArgument(
-				ErrBadValue,
+		case commonparams.ErrNotWholeNumber:
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
 				fmt.Sprintf(`Failed to parse $size. Expected an integer: $size: %s`, types.FormatAnyValue(sizeValue)),
 				"$size",
 			)
-		case errInfinity:
-			return false, NewCommandErrorMsgWithArgument(
-				ErrBadValue,
+		case commonparams.ErrInfinity:
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
 				fmt.Sprintf(
 					`Failed to parse $size. Cannot represent as a 64-bit integer: $size: %s`,
 					types.FormatAnyValue(sizeValue),
@@ -749,8 +899,8 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 	}
 
 	if size < 0 {
-		return false, NewCommandErrorMsgWithArgument(
-			ErrBadValue,
+		return false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf(
 				`Failed to parse $size. Expected a non-negative number in: $size: %s`,
 				types.FormatAnyValue(sizeValue),
@@ -777,7 +927,7 @@ func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
 func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
 	query, ok := allValue.(*types.Array)
 	if !ok {
-		return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$all needs an array", "$all")
+		return false, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, "$all needs an array", "$all")
 	}
 
 	if query.Len() == 0 {
@@ -808,37 +958,31 @@ func filterFieldExprAll(fieldValue any, allValue any) (bool, error) {
 
 // filterFieldExprBitsAllClear handles {field: {$bitsAllClear: value}} filter.
 func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
+	bitmask, err := getBinaryMaskParam("$bitsAllClear", maskValue)
+	if err != nil {
+		return false, err
+	}
+
 	switch value := fieldValue.(type) {
 	case float64:
 		if isInvalidBitwiseValue(value) {
 			return false, nil
 		}
 
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
-		}
-
 		return (^uint64(value) & bitmask) == bitmask, nil
 
 	case types.Binary:
-		// TODO: https://github.com/FerretDB/FerretDB/issues/508
-		return false, NewCommandErrorMsgWithArgument(ErrNotImplemented, "BinData() not supported yet", "$bitsAllClear")
+		// TODO https://github.com/FerretDB/FerretDB/issues/508
+		return false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
+			"BinData() not supported yet",
+			"$bitsAllClear",
+		)
 
 	case int32:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
-		}
-
 		return (^uint64(value) & bitmask) == bitmask, nil
 
 	case int64:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAllClear", maskValue)
-		}
-
 		return (^uint64(value) & bitmask) == bitmask, nil
 
 	default:
@@ -848,37 +992,31 @@ func filterFieldExprBitsAllClear(fieldValue, maskValue any) (bool, error) {
 
 // filterFieldExprBitsAllSet handles {field: {$bitsAllSet: value}} filter.
 func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
+	bitmask, err := getBinaryMaskParam("$bitsAllSet", maskValue)
+	if err != nil {
+		return false, err
+	}
+
 	switch value := fieldValue.(type) {
 	case float64:
 		if isInvalidBitwiseValue(value) {
 			return false, nil
 		}
 
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
-		}
-
 		return (uint64(value) & bitmask) == bitmask, nil
 
 	case types.Binary:
-		// TODO: https://github.com/FerretDB/FerretDB/issues/508
-		return false, NewCommandErrorMsgWithArgument(ErrNotImplemented, "BinData() not supported yet", "$bitsAllSet")
+		// TODO https://github.com/FerretDB/FerretDB/issues/508
+		return false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
+			"BinData() not supported yet",
+			"$bitsAllSet",
+		)
 
 	case int32:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
-		}
-
 		return (uint64(value) & bitmask) == bitmask, nil
 
 	case int64:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAllSet", maskValue)
-		}
-
 		return (uint64(value) & bitmask) == bitmask, nil
 
 	default:
@@ -888,37 +1026,31 @@ func filterFieldExprBitsAllSet(fieldValue, maskValue any) (bool, error) {
 
 // filterFieldExprBitsAnyClear handles {field: {$bitsAnyClear: value}} filter.
 func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
+	bitmask, err := getBinaryMaskParam("$bitsAnyClear", maskValue)
+	if err != nil {
+		return false, err
+	}
+
 	switch value := fieldValue.(type) {
 	case float64:
 		if isInvalidBitwiseValue(value) {
 			return false, nil
 		}
 
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
-		}
-
 		return (^uint64(value) & bitmask) != 0, nil
 
 	case types.Binary:
-		// TODO: https://github.com/FerretDB/FerretDB/issues/508
-		return false, NewCommandErrorMsgWithArgument(ErrNotImplemented, "BinData() not supported yet", "$bitsAnyClear")
+		// TODO https://github.com/FerretDB/FerretDB/issues/508
+		return false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
+			"BinData() not supported yet",
+			"$bitsAnyClear",
+		)
 
 	case int32:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
-		}
-
 		return (^uint64(value) & bitmask) != 0, nil
 
 	case int64:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAnyClear", maskValue)
-		}
-
 		return (^uint64(value) & bitmask) != 0, nil
 
 	default:
@@ -928,35 +1060,31 @@ func filterFieldExprBitsAnyClear(fieldValue, maskValue any) (bool, error) {
 
 // filterFieldExprBitsAnySet handles {field: {$bitsAnySet: value}} filter.
 func filterFieldExprBitsAnySet(fieldValue, maskValue any) (bool, error) {
+	bitmask, err := getBinaryMaskParam("$bitsAnySet", maskValue)
+	if err != nil {
+		return false, err
+	}
+
 	switch value := fieldValue.(type) {
 	case float64:
 		if isInvalidBitwiseValue(value) {
 			return false, nil
 		}
 
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
-		}
-
 		return (uint64(value) & bitmask) != 0, nil
 
 	case types.Binary:
-		// TODO: https://github.com/FerretDB/FerretDB/issues/508
-		return false, NewCommandErrorMsgWithArgument(ErrNotImplemented, "BinData() not supported yet", "$bitsAnySet")
+		// TODO https://github.com/FerretDB/FerretDB/issues/508
+		return false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
+			"BinData() not supported yet",
+			"$bitsAnySet",
+		)
 
 	case int32:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
-		}
 		return (uint64(value) & bitmask) != 0, nil
 
 	case int64:
-		bitmask, err := getBinaryMaskParam(maskValue)
-		if err != nil {
-			return false, formatBitwiseOperatorErr(err, "$bitsAnySet", maskValue)
-		}
 		return (uint64(value) & bitmask) != 0, nil
 
 	default:
@@ -981,18 +1109,26 @@ func isInvalidBitwiseValue(value float64) bool {
 func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 	arr := exprValue.(*types.Array)
 	if arr.Len() < 2 {
-		return false, NewCommandErrorMsgWithArgument(ErrBadValue, `malformed mod, not enough elements`, "$mod")
+		return false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			`malformed mod, not enough elements`,
+			"$mod",
+		)
 	}
 	if arr.Len() > 2 {
-		return false, NewCommandErrorMsgWithArgument(ErrBadValue, `malformed mod, too many elements`, "$mod")
+		return false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			`malformed mod, too many elements`,
+			"$mod",
+		)
 	}
 
 	var field, divisor, remainder int64
 	switch d := must.NotFail(arr.Get(0)).(type) {
 	case float64:
 		if math.IsNaN(d) || math.IsInf(d, 0) {
-			return false, NewCommandErrorMsgWithArgument(
-				ErrBadValue,
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
 				`malformed mod, divisor value is invalid :: caused by :: `+`Unable to coerce NaN/Inf to integral type`,
 				"$mod",
 			)
@@ -1000,8 +1136,8 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 
 		d = math.Trunc(d)
 		if d >= float64(math.MaxInt64) || d < float64(math.MinInt64) {
-			return false, NewCommandErrorMsgWithArgument(
-				ErrBadValue,
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
 				`malformed mod, divisor value is invalid :: caused by :: `+`Out of bounds coercing to integral value`,
 				"$mod",
 			)
@@ -1016,14 +1152,18 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 		divisor = d
 
 	default:
-		return false, NewCommandErrorMsgWithArgument(ErrBadValue, `malformed mod, divisor not a number`, "$mod")
+		return false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			`malformed mod, divisor not a number`,
+			"$mod",
+		)
 	}
 
 	switch r := must.NotFail(arr.Get(1)).(type) {
 	case float64:
 		if math.IsNaN(r) || math.IsInf(r, 0) {
-			return false, NewCommandErrorMsgWithArgument(
-				ErrBadValue,
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
 				`malformed mod, remainder value is invalid :: caused by :: `+
 					`Unable to coerce NaN/Inf to integral type`, "$mod",
 			)
@@ -1031,9 +1171,9 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 
 		r = math.Trunc(r)
 
-		if r >= float64(math.MaxInt64) || r < float64(-9.223372036854776832e+18) {
-			return false, NewCommandErrorMsgWithArgument(
-				ErrBadValue,
+		if r >= float64(math.MaxInt64) || r < float64(math.MinInt64) {
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
 				`malformed mod, remainder value is invalid :: caused by :: `+
 					`Out of bounds coercing to integral value`, "$mod",
 			)
@@ -1048,11 +1188,19 @@ func filterFieldMod(fieldValue, exprValue any) (bool, error) {
 		remainder = r
 
 	default:
-		return false, NewCommandErrorMsgWithArgument(ErrBadValue, `malformed mod, remainder not a number`, "$mod")
+		return false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			`malformed mod, remainder not a number`,
+			"$mod",
+		)
 	}
 
 	if divisor == 0 {
-		return false, NewCommandErrorMsgWithArgument(ErrBadValue, `divisor cannot be 0`, "$mod")
+		return false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			`divisor cannot be 0`,
+			"$mod",
+		)
 	}
 
 	switch f := fieldValue.(type) {
@@ -1107,7 +1255,7 @@ func filterFieldExprExists(fieldExist bool, exprValue any) (bool, error) {
 func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 	switch exprValue := exprValue.(type) {
 	case *types.Array:
-		hasSameType := hasSameTypeElements(exprValue)
+		hasSameType := commonparams.HasSameTypeElements(exprValue)
 
 		for i := 0; i < exprValue.Len(); i++ {
 			exprValue := must.NotFail(exprValue.Get(i))
@@ -1115,21 +1263,21 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 			switch exprValue := exprValue.(type) {
 			case float64:
 				if math.IsNaN(exprValue) || math.IsInf(exprValue, 0) {
-					return false, NewCommandErrorMsgWithArgument(
-						ErrBadValue,
+					return false, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrBadValue,
 						`Invalid numerical type code: `+strings.Trim(strings.ToLower(fmt.Sprintf("%v", exprValue)), "+"),
 						"$type",
 					)
 				}
 				if exprValue != math.Trunc(exprValue) {
-					return false, NewCommandErrorMsgWithArgument(
-						ErrBadValue,
+					return false, commonerrors.NewCommandErrorMsgWithArgument(
+						commonerrors.ErrBadValue,
 						fmt.Sprintf(`Invalid numerical type code: %v`, exprValue),
 						"$type",
 					)
 				}
 
-				code, err := newTypeCode(int32(exprValue))
+				code, err := commonparams.NewTypeCode(int32(exprValue))
 				if err != nil {
 					return false, err
 				}
@@ -1147,7 +1295,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 				}
 
 			case string:
-				code, err := parseTypeCode(exprValue)
+				code, err := commonparams.ParseTypeCode(exprValue)
 				if err != nil {
 					return false, err
 				}
@@ -1159,7 +1307,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 					return true, nil
 				}
 			case int32:
-				code, err := newTypeCode(exprValue)
+				code, err := commonparams.NewTypeCode(exprValue)
 				if err != nil {
 					return false, err
 				}
@@ -1176,8 +1324,8 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 					return true, nil
 				}
 			default:
-				return false, NewCommandErrorMsgWithArgument(
-					ErrBadValue,
+				return false, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrBadValue,
 					fmt.Sprintf(`Invalid numerical type code: %s`, exprValue),
 					"$type",
 				)
@@ -1187,21 +1335,21 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 
 	case float64:
 		if math.IsNaN(exprValue) || math.IsInf(exprValue, 0) {
-			return false, NewCommandErrorMsgWithArgument(
-				ErrBadValue,
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
 				`Invalid numerical type code: `+strings.Trim(strings.ToLower(fmt.Sprintf("%v", exprValue)), "+"),
 				"$type",
 			)
 		}
 		if exprValue != math.Trunc(exprValue) {
-			return false, NewCommandErrorMsgWithArgument(
-				ErrBadValue,
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
 				fmt.Sprintf(`Invalid numerical type code: %v`, exprValue),
 				"$type",
 			)
 		}
 
-		code, err := newTypeCode(int32(exprValue))
+		code, err := commonparams.NewTypeCode(int32(exprValue))
 		if err != nil {
 			return false, err
 		}
@@ -1209,7 +1357,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 		return filterFieldValueByTypeCode(fieldValue, code)
 
 	case string:
-		code, err := parseTypeCode(exprValue)
+		code, err := commonparams.ParseTypeCode(exprValue)
 		if err != nil {
 			return false, err
 		}
@@ -1217,7 +1365,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 		return filterFieldValueByTypeCode(fieldValue, code)
 
 	case int32:
-		code, err := newTypeCode(exprValue)
+		code, err := commonparams.NewTypeCode(exprValue)
 		if err != nil {
 			return false, err
 		}
@@ -1225,8 +1373,8 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 		return filterFieldValueByTypeCode(fieldValue, code)
 
 	default:
-		return false, NewCommandErrorMsgWithArgument(
-			ErrBadValue,
+		return false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf(`Invalid numerical type code: %v`, exprValue),
 			"$type",
 		)
@@ -1234,9 +1382,9 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 }
 
 // filterFieldValueByTypeCode filters fieldValue by given type code.
-func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
+func filterFieldValueByTypeCode(fieldValue any, code commonparams.TypeCode) (bool, error) {
 	// check types.Array elements for match to given code.
-	if array, ok := fieldValue.(*types.Array); ok && code != typeCodeArray {
+	if array, ok := fieldValue.(*types.Array); ok && code != commonparams.TypeCodeArray {
 		for i := 0; i < array.Len(); i++ {
 			value, err := array.Get(i)
 			if err != nil {
@@ -1260,75 +1408,75 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 	}
 
 	switch code {
-	case typeCodeArray:
+	case commonparams.TypeCodeArray:
 		if _, ok := fieldValue.(*types.Array); !ok {
 			return false, nil
 		}
-	case typeCodeObject:
+	case commonparams.TypeCodeObject:
 		if _, ok := fieldValue.(*types.Document); !ok {
 			return false, nil
 		}
-	case typeCodeDouble:
+	case commonparams.TypeCodeDouble:
 		if _, ok := fieldValue.(float64); !ok {
 			return false, nil
 		}
-	case typeCodeString:
+	case commonparams.TypeCodeString:
 		if _, ok := fieldValue.(string); !ok {
 			return false, nil
 		}
-	case typeCodeBinData:
+	case commonparams.TypeCodeBinData:
 		if _, ok := fieldValue.(types.Binary); !ok {
 			return false, nil
 		}
-	case typeCodeObjectID:
+	case commonparams.TypeCodeObjectID:
 		if _, ok := fieldValue.(types.ObjectID); !ok {
 			return false, nil
 		}
-	case typeCodeBool:
+	case commonparams.TypeCodeBool:
 		if _, ok := fieldValue.(bool); !ok {
 			return false, nil
 		}
-	case typeCodeDate:
+	case commonparams.TypeCodeDate:
 		if _, ok := fieldValue.(time.Time); !ok {
 			return false, nil
 		}
-	case typeCodeNull:
+	case commonparams.TypeCodeNull:
 		if _, ok := fieldValue.(types.NullType); !ok {
 			return false, nil
 		}
-	case typeCodeRegex:
+	case commonparams.TypeCodeRegex:
 		if _, ok := fieldValue.(types.Regex); !ok {
 			return false, nil
 		}
-	case typeCodeInt:
+	case commonparams.TypeCodeInt:
 		if _, ok := fieldValue.(int32); !ok {
 			return false, nil
 		}
-	case typeCodeTimestamp:
+	case commonparams.TypeCodeTimestamp:
 		if _, ok := fieldValue.(types.Timestamp); !ok {
 			return false, nil
 		}
-	case typeCodeLong:
+	case commonparams.TypeCodeLong:
 		if _, ok := fieldValue.(int64); !ok {
 			return false, nil
 		}
-	case typeCodeNumber:
-		// typeCodeNumber should match int32, int64 and float64 types
+	case commonparams.TypeCodeNumber:
+		// TypeCodeNumber should match int32, int64 and float64 types
 		switch fieldValue.(type) {
 		case float64, int32, int64:
 			return true, nil
 		default:
 			return false, nil
 		}
-	case typeCodeDecimal, typeCodeMinKey, typeCodeMaxKey:
-		return false, NewCommandErrorMsgWithArgument(
-			ErrNotImplemented,
+	case commonparams.TypeCodeDecimal, commonparams.TypeCodeMinKey, commonparams.TypeCodeMaxKey:
+		return false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNotImplemented,
 			fmt.Sprintf(`Type code %v not implemented`, code),
 			"$type",
 		)
 	default:
-		return false, NewCommandErrorMsgWithArgument(
-			ErrBadValue,
+		return false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf(`Unknown type name alias: %s`, code.String()),
 			"$type",
 		)
@@ -1339,46 +1487,54 @@ func filterFieldValueByTypeCode(fieldValue any, code typeCode) (bool, error) {
 
 // filterFieldExprElemMatch handles {field: {$elemMatch: value}}.
 // Returns false if doc value is not an array.
-// TODO: https://github.com/FerretDB/FerretDB/issues/364
-func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue any) (bool, error) {
+// TODO https://github.com/FerretDB/FerretDB/issues/364
+func filterFieldExprElemMatch(doc *types.Document, filterKey, filterSuffix string, exprValue any) (bool, error) {
 	expr, ok := exprValue.(*types.Document)
 	if !ok {
-		return false, NewCommandErrorMsgWithArgument(ErrBadValue, "$elemMatch needs an Object", "$elemMatch")
+		return false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
+			"$elemMatch needs an Object",
+			"$elemMatch",
+		)
 	}
 
 	for _, key := range expr.Keys() {
 		if slices.Contains([]string{"$text", "$where"}, key) {
-			return false, NewCommandErrorMsgWithArgument(
-				ErrBadValue,
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
 				fmt.Sprintf("%s can only be applied to the top-level document", key),
 				"$elemMatch",
 			)
 		}
 
-		// TODO: https://github.com/FerretDB/FerretDB/issues/730
+		// TODO https://github.com/FerretDB/FerretDB/issues/730
 		if slices.Contains([]string{"$and", "$or", "$nor"}, key) {
-			return false, NewCommandErrorMsgWithArgument(
-				ErrNotImplemented,
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
 				fmt.Sprintf("$elemMatch: support for %s not implemented yet", key),
 				"$elemMatch",
 			)
 		}
 
-		// TODO: https://github.com/FerretDB/FerretDB/issues/731
+		// TODO https://github.com/FerretDB/FerretDB/issues/731
 		if slices.Contains([]string{"$ne", "$not"}, key) {
-			return false, NewCommandErrorMsgWithArgument(
-				ErrNotImplemented,
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNotImplemented,
 				fmt.Sprintf("$elemMatch: support for %s not implemented yet", key),
 				"$elemMatch",
 			)
 		}
 
 		if expr.Len() > 1 && !strings.HasPrefix(key, "$") {
-			return false, NewCommandErrorMsgWithArgument(ErrBadValue, fmt.Sprintf("unknown operator: %s", key), "$elemMatch")
+			return false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf("unknown operator: %s", key),
+				"$elemMatch",
+			)
 		}
 	}
 
-	value, err := doc.Get(filterKey)
+	value, err := doc.Get(filterSuffix)
 	if err != nil {
 		return false, nil
 	}
@@ -1387,43 +1543,5 @@ func filterFieldExprElemMatch(doc *types.Document, filterKey string, exprValue a
 		return false, nil
 	}
 
-	return filterFieldExpr(doc, filterKey, expr)
-}
-
-// formatBitwiseOperatorErr formats protocol error for given internal error and bitwise operator.
-// Mask value used in error message.
-func formatBitwiseOperatorErr(err error, operator string, maskValue any) error {
-	switch {
-	case errors.Is(err, errNotWholeNumber):
-		return NewCommandErrorMsgWithArgument(
-			ErrFailedToParse,
-			fmt.Sprintf("Expected an integer: %s: %#v", operator, maskValue),
-			operator,
-		)
-
-	case errors.Is(err, errNegativeNumber):
-		if _, ok := maskValue.(float64); ok {
-			return NewCommandErrorMsgWithArgument(
-				ErrFailedToParse,
-				fmt.Sprintf(`Expected a non-negative number in: %s: %.1f`, operator, maskValue),
-				operator,
-			)
-		}
-
-		return NewCommandErrorMsgWithArgument(
-			ErrFailedToParse,
-			fmt.Sprintf(`Expected a non-negative number in: %s: %v`, operator, maskValue),
-			operator,
-		)
-
-	case errors.Is(err, errNotBinaryMask):
-		return NewCommandErrorMsgWithArgument(
-			ErrBadValue,
-			fmt.Sprintf(`value takes an Array, a number, or a BinData but received: %s: %#v`, operator, maskValue),
-			operator,
-		)
-
-	default:
-		return err
-	}
+	return filterFieldExpr(doc, filterKey, filterSuffix, expr)
 }

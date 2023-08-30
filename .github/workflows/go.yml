@@ -3,15 +3,16 @@ name: Go
 on:
   pull_request:
     types:
-      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - unlabeled # if GitHub Actions stuck, add and remove "not ready" label to force rebuild
       - opened
       - reopened
       - synchronize
   push:
     branches:
       - main
+      - releases/*
   schedule:
-    - cron: "12 2 * * *"
+    - cron: "12 0 * * *"
 
 env:
   GOPATH: /home/runner/go
@@ -24,10 +25,20 @@ jobs:
   short-test:
     name: Short test
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    # Do not run this job in parallel for any PR change or branch push.
+    concurrency:
+      group: ${{ github.workflow }}-short-test-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
+      - name: Setup permissions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+        if: false
+
       - name: Checkout code
         uses: actions/checkout@v3
         with:
@@ -48,6 +59,8 @@ jobs:
 
       - name: Run short unit tests
         run: bin/task test-unit-short
+        env:
+          GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
@@ -62,10 +75,20 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    # Do not run this job in parallel for any PR change or branch push.
+    concurrency:
+      group: ${{ github.workflow }}-test-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
+      - name: Setup permissions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+        if: false
+
       - name: Checkout code
         uses: actions/checkout@v3
         with:
@@ -90,11 +113,16 @@ jobs:
       - name: Regenerate and reformat
         run: bin/task gen
 
+      - name: Build bin/ferretdb
+        run: bin/task build-host
+
       - name: Wait for and setup environment
         run: bin/task env-setup
 
       - name: Run unit tests
         run: bin/task test-unit
+        env:
+          GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
 
       # The token is not required but should make uploads more stable.
       # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
@@ -102,8 +130,9 @@ jobs:
       # Unfortunately, it seems that tokenless uploads fail too often.
       # See https://github.com/codecov/codecov-action/issues/837.
       #
-      # We also can't use ${{ vars.CODECOV_TOKEN }} because that seems to be broken ATM.
-      - name: Upload coverage information
+      # We also can't use ${{ vars.CODECOV_TOKEN }}: https://github.com/orgs/community/discussions/44322
+      - name: Upload coverage information to codecov
+        if: always()
         uses: codecov/codecov-action@v3
         with:
           token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
@@ -111,6 +140,13 @@ jobs:
           flags: unit
           fail_ci_if_error: true
           verbose: true
+
+      - name: Upload coverage information to coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          file: ./cover.txt
+          flag-name: unit
+          parallel: true
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
@@ -122,13 +158,181 @@ jobs:
           git status
           git diff --exit-code
 
+  integration:
+    name: Integration ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
+    runs-on:
+      group: paid
+    timeout-minutes: 20
+
+    # Do not run this job in parallel for any PR change or branch push
+    # to save some resources.
+    concurrency:
+      group: ${{ github.workflow }}-integration-${{ matrix.name }}-${{ matrix.shard_index }}-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "MongoDB", task: "mongodb", shard_index: 1, shard_total: 1 }
+          - { name: "PostgreSQL", task: "pg", shard_index: 1, shard_total: 3 }
+          - { name: "PostgreSQL", task: "pg", shard_index: 2, shard_total: 3 }
+          - { name: "PostgreSQL", task: "pg", shard_index: 3, shard_total: 3 }
+          - { name: "SQLite", task: "sqlite", shard_index: 1, shard_total: 3 }
+          - { name: "SQLite", task: "sqlite", shard_index: 2, shard_total: 3 }
+          - { name: "SQLite", task: "sqlite", shard_index: 3, shard_total: 3 }
+
+    steps:
+      - name: Setup permissions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+        if: false
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: integration
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Start environment
+        run: bin/task env-up-detach
+
+      - name: Run init
+        run: bin/task init
+
+      - name: Wait for and setup environment
+        run: bin/task env-setup
+
+      - name: Run ${{ matrix.name }} tests (${{ matrix.shard_index }}/${{ matrix.shard_total }})
+        run: bin/task test-integration-${{ matrix.task }} SHARD_INDEX=${{ matrix.shard_index }} SHARD_TOTAL=${{ matrix.shard_total }}
+        env:
+          GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
+
+      # The token is not required but should make uploads more stable.
+      # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
+      #
+      # Unfortunately, it seems that tokenless uploads fail too often.
+      # See https://github.com/codecov/codecov-action/issues/837.
+      #
+      # We also can't use ${{ vars.CODECOV_TOKEN }}: https://github.com/orgs/community/discussions/44322
+      - name: Upload coverage information to codecov
+        if: always()
+        uses: codecov/codecov-action@v3
+        with:
+          token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
+          files: ./integration/integration-${{ matrix.task }}.txt
+          flags: integration,${{ matrix.task }},shard-${{ matrix.shard_index }}
+          fail_ci_if_error: true
+          verbose: true
+
+      - name: Upload coverage information to coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          file: ./integration/integration-${{ matrix.task }}.txt
+          flag-name: integration-${{ matrix.task }}-${{ matrix.shard_index }}
+          parallel: true
+
+      # we don't want them on CI
+      - name: Clean test and fuzz caches
+        if: always()
+        run: go clean -testcache -fuzzcache
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code
+
+  # https://github.com/lemurheavy/coveralls-public/issues/1636
+  submit-coveralls:
+    name: Submit final coveralls report
+    runs-on: ubuntu-22.04
+
+    needs: [test, integration]
+    if: always() && (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready'))
+
+    steps:
+      - name: Setup permissions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+        if: false
+
+      - name: Submit coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          parallel-finished: true
+
+  env-data:
+    name: env-data
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+
+    # Do not run this job in parallel for any PR change or branch push.
+    concurrency:
+      group: ${{ github.workflow }}-env-data-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
+
+    steps:
+      - name: Setup permissions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+        if: false
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: env-data
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Start environment
+        run: bin/task env-up-detach
+
+      - name: Run init
+        run: bin/task init
+
+      - name: Wait for and setup environment
+        run: bin/task env-setup
+
+      - name: Run env-data
+        run: bin/task env-data
+        env:
+          GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
+
   golangci-lint:
     name: golangci-lint
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    # Do not run this job in parallel for any PR change or branch push.
+    concurrency:
+      group: ${{ github.workflow }}-golangci-lint-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
+      - name: Setup permissions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+        if: false
+
       - name: Checkout code
         uses: actions/checkout@v3
         with:
@@ -146,10 +350,20 @@ jobs:
   fuzz-short:
     name: Fuzz short
     runs-on: ubuntu-22.04
+    timeout-minutes: 15
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    # Do not run this job in parallel for any PR change or branch push.
+    concurrency:
+      group: ${{ github.workflow }}-fuzz-short-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
+
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
+      - name: Setup permissions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+        if: false
+
       - name: Checkout code
         uses: actions/checkout@v3
         with:
@@ -207,27 +421,45 @@ jobs:
 
       - name: Collect corpus
         if: always()
-        run: |
-          bin/task fuzz-corpus
-          go run ./cmd/fuzztool corpus seed ../fuzz-corpus
+        run: bin/task fuzz-corpus
         working-directory: source
 
       # `secrets` are not supported in `if`, so we have to do this trick with environment variable:
       # https://docs.github.com/en/actions/learn-github-actions/contexts#context-availability
       # https://github.com/actions/runner/issues/520
-      - name: Push corpus
-        if: ${{ always() && env.KEY != '' }}
+
+      - name: Push corpus if possible
+        if: always() && env.KEY != ''
         env:
           KEY: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
         run: |
+          set -x
           git config user.name ferretdb-bot
           git config user.email ferretdb-bot@ferretdb.io
           git add --all .
+          git diff-index -p HEAD
           git diff-index --quiet HEAD || git commit --message 'Update corpus'
           git fetch
           git rebase origin/main
           git push
         working-directory: fuzz-corpus
+
+      - name: Compress corpus before upload
+        if: failure() || env.KEY == ''
+        env:
+          KEY: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
+        run: zip -r -q -9 fuzz-corpus.zip fuzz-corpus
+
+      - name: Upload corpus on failure or if push is not possible
+        if: failure() || env.KEY == ''
+        env:
+          KEY: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: fuzz-corpus
+          path: fuzz-corpus.zip
+          retention-days: 1
+          if-no-files-found: error
 
       - name: Collect Linux logs
         if: failure()
@@ -239,13 +471,16 @@ jobs:
           sudo chmod 0666 /tmp/logs/*
         working-directory: source
 
-      # TODO zip logs https://github.com/FerretDB/FerretDB/issues/2086
+      - name: Compress Linux logs before upload
+        if: failure()
+        run: zip -r -q -9 linux-logs.zip /tmp/logs
+
       - name: Upload Linux logs
         if: failure()
         uses: actions/upload-artifact@v3
         with:
           name: linux-logs
-          path: /tmp/logs
+          path: linux-logs.zip
           retention-days: 1
           if-no-files-found: error
 

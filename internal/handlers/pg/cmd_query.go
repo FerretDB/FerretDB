@@ -16,46 +16,70 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"time"
+	"strings"
+
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // CmdQuery implements HandlerInterface.
 func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
-	if query.FullCollectionName == "admin.$cmd" {
-		switch cmd := query.Query.Command(); cmd {
-		case "ismaster", "isMaster": // both are valid
-			reply := &wire.OpReply{
-				NumberReturned: 1,
-				Documents: []*types.Document{must.NotFail(types.NewDocument(
-					"ismaster", true, // only lowercase
-					// topologyVersion
-					"maxBsonObjectSize", int32(types.MaxDocumentLen),
-					"maxMessageSizeBytes", int32(wire.MaxMsgLen),
-					"maxWriteBatchSize", int32(100000),
-					"localTime", time.Now(),
-					// logicalSessionTimeoutMinutes
-					// connectionId
-					"minWireVersion", common.MinWireVersion,
-					"maxWireVersion", common.MaxWireVersion,
-					"readOnly", false,
-					"ok", float64(1),
-				))},
-			}
-			return reply, nil
+	cmd := query.Query.Command()
+	collection := query.FullCollectionName
 
-		default:
-			msg := fmt.Sprintf("CmdQuery: unhandled command %q", cmd)
-			return nil, common.NewCommandErrorMsg(common.ErrNotImplemented, msg)
-		}
+	// both are valid and are allowed to be run against any database as we don't support authorization yet
+	if (cmd == "ismaster" || cmd == "isMaster") && strings.HasSuffix(collection, ".$cmd") {
+		return common.IsMaster()
 	}
 
-	msg := fmt.Sprintf("CmdQuery: unhandled collection %q", query.FullCollectionName)
+	// defaults to the database name if supplied on the connection string or $external
+	if cmd == "saslStart" && strings.HasSuffix(collection, ".$cmd") {
+		var emptyPayload types.Binary
 
-	return nil, common.NewCommandErrorMsg(common.ErrNotImplemented, msg)
+		if err := common.SASLStart(ctx, query.Query); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if _, err := h.DBPool(ctx); err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgerrcode.IsInvalidAuthorizationSpecification(pgErr.Code) {
+				msg := "FerretDB failed to authenticate you in PostgreSQL:\n" +
+					strings.TrimSpace(pgErr.Error()) + "\n" +
+					"See https://docs.ferretdb.io/security/authentication/ for more details."
+
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrAuthenticationFailed,
+					msg,
+					"OpQuery: "+cmd,
+				)
+			}
+
+			return nil, lazyerrors.Error(err)
+		}
+
+		return &wire.OpReply{
+			NumberReturned: 1,
+			Documents: []*types.Document{must.NotFail(types.NewDocument(
+				"conversationId", int32(1),
+				"done", true,
+				"payload", emptyPayload,
+				"ok", float64(1),
+			))},
+		}, nil
+	}
+
+	return nil, commonerrors.NewCommandErrorMsgWithArgument(
+		commonerrors.ErrNotImplemented,
+		fmt.Sprintf("CmdQuery: unhandled command %q for collection %q", cmd, collection),
+		"OpQuery: "+cmd,
+	)
 }

@@ -18,7 +18,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
@@ -45,6 +45,13 @@ func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	db, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
+	}
+
+	// PostgreSQL would block on `DropDatabase` below otherwise
+	for _, c := range h.cursors.All() {
+		if c.DB == db {
+			c.Close()
+		}
 	}
 
 	res := must.NotFail(types.NewDocument())

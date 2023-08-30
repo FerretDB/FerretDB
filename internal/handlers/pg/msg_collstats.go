@@ -16,8 +16,13 @@ package pg
 
 import (
 	"context"
+	"errors"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -48,23 +53,57 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	stats, err := dbPool.SchemaStats(ctx, db, collection)
-	if err != nil {
+	scale := int64(1)
+
+	var s any
+	if s, err = document.Get("scale"); err == nil {
+		if scale, err = commonparams.GetValidatedNumberParamWithMinValue(command, "scale", s, 1); err != nil {
+			return nil, err
+		}
+	}
+
+	var stats *pgdb.CollStats
+
+	if err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		stats, err = pgdb.CalculateCollStats(ctx, tx, db, collection)
+		return err
+	}); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
+	switch {
+	case err == nil:
+		// do nothing
+	case errors.Is(err, pgdb.ErrTableNotExist):
+		// Return empty stats for non-existent collections.
+		stats = new(pgdb.CollStats)
+	default:
+		return nil, lazyerrors.Error(err)
+	}
+
+	pairs := []any{
+		"ns", db + "." + collection,
+		"size", stats.SizeCollection / int64(scale),
+		"count", stats.CountObjects,
+	}
+
+	// If there are objects in the collection, calculate the average object size.
+	if stats.CountObjects > 0 {
+		pairs = append(pairs, "avgObjSize", stats.SizeCollection/stats.CountObjects)
+	}
+
+	pairs = append(pairs,
+		"storageSize", stats.SizeTotal/scale,
+		"nindexes", stats.CountIndexes,
+		"totalIndexSize", stats.SizeIndexes/scale,
+		"totalSize", stats.SizeTotal/scale,
+		"scaleFactor", int32(scale),
+		"ok", float64(1),
+	)
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"ns", db+"."+collection,
-			"count", stats.CountRows,
-			"size", stats.SizeTotal,
-			"storageSize", stats.SizeRelation,
-			"totalIndexSize", stats.SizeIndexes,
-			"totalSize", stats.SizeTotal,
-			"scaleFactor", int32(1),
-			"ok", float64(1),
-		))},
+		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
 	}))
 
 	return &reply, nil

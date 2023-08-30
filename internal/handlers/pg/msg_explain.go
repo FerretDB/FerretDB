@@ -18,10 +18,11 @@ import (
 	"context"
 	"os"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -41,51 +42,52 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	var qp pgdb.QueryParams
-
-	if qp.DB, err = common.GetRequiredParam[string](document, "$db"); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	common.Ignored(document, h.L, "verbosity")
-
-	command, err := common.GetRequiredParam[*types.Document](document, document.Command())
+	params, err := common.GetExplainParams(document, h.L)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
-	if qp.Collection, err = common.GetRequiredParam[string](command, command.Command()); err != nil {
-		return nil, lazyerrors.Error(err)
+	qp := pgdb.QueryParams{
+		DB:         params.DB,
+		Collection: params.Collection,
+		Explain:    true,
+		Filter:     params.Filter,
+		Sort:       params.Sort,
 	}
 
-	qp.Explain = true
-
-	explain, err := common.GetRequiredParam[*types.Document](document, "explain")
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	if params.Aggregate {
+		qp.Filter, qp.Sort = aggregations.GetPushdownQuery(params.StagesDocs)
 	}
 
-	qp.Filter, err = common.GetOptionalParam[*types.Document](explain, "filter", nil)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if h.DisablePushdown {
+	if h.DisableFilterPushdown {
 		qp.Filter = nil
 	}
 
+	if !h.EnableSortPushdown {
+		qp.Sort = nil
+	}
+
+	// Limit pushdown is not applied if:
+	//  - `filter` is set, it must fetch all documents to filter them in memory;
+	//  - `sort` is set but `EnableSortPushdown` is not set, it must fetch all documents
+	//  and sort them in memory;
+	//  - `skip` is non-zero value, skip pushdown is not supported yet.
+	// TODO https://github.com/FerretDB/FerretDB/issues/3016
+	if params.Filter.Len() == 0 && (params.Sort.Len() == 0 || h.EnableSortPushdown) && params.Skip == 0 {
+		qp.Limit = params.Limit
+	}
+
 	var queryPlanner *types.Document
+	var results pgdb.QueryResults
+
 	err = dbPool.InTransaction(ctx, func(tx pgx.Tx) error {
 		var err error
-		queryPlanner, err = pgdb.Explain(ctx, tx, &qp)
+		queryPlanner, results, err = pgdb.Explain(ctx, tx, &qp)
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
-
-	// if filter was set, it means that pushdown was done
-	pushdown := queryPlanner.HasByPath(types.NewStaticPath("Plan", "Filter"))
 
 	hostname, err := os.Hostname()
 	if err != nil {
@@ -96,10 +98,12 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		"host", hostname,
 		"version", version.Get().MongoDBVersion,
 		"gitVersion", version.Get().Commit,
+
+		// our extensions
 		"ferretdbVersion", version.Get().Version,
 	))
 
-	cmd := command.DeepCopy()
+	cmd := params.Command
 	cmd.Set("$db", qp.DB)
 
 	var reply wire.OpMsg
@@ -108,8 +112,13 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			"queryPlanner", queryPlanner,
 			"explainVersion", "1",
 			"command", cmd,
-			"pushdown", pushdown,
 			"serverInfo", serverInfo,
+
+			// our extensions
+			"pushdown", results.FilterPushdown,
+			"sortingPushdown", results.SortPushdown,
+			"limitPushdown", results.LimitPushdown,
+
 			"ok", float64(1),
 		))},
 	}))

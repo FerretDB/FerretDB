@@ -17,6 +17,8 @@ package setup
 import (
 	"context"
 	"net/http"
+	"os"
+	"runtime"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -28,24 +30,44 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// listenerMetrics are shared between tests.
+var listenerMetrics = connmetrics.NewListenerMetrics()
+
+// jaegerExporter is a shared Jaeger exporter for tests.
 var jaegerExporter *jaeger.Exporter
 
 // Startup initializes things that should be initialized only once.
 func Startup() {
 	logging.Setup(zap.DebugLevel, "")
 
-	// use any available port to allow running different configuration in parallel
+	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
+	if os.Getenv("RUNNER_DEBUG") == "1" {
+		zap.S().Info("Enabling setup debug logging on GitHub Actions.")
+		*debugSetupF = true
+	}
+
+	prometheus.DefaultRegisterer.MustRegister(listenerMetrics)
+
+	// use any available port to allow running different configurations in parallel
 	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	// do basic flags validation earlier, before all tests
+
+	for _, p := range shareddata.AllBenchmarkProviders() {
+		if g, ok := p.(shareddata.BenchmarkGenerator); ok {
+			g.Init(*benchDocsF)
+		}
+	}
 
 	if *targetBackendF == "" {
 		zap.S().Fatal("-target-backend must be set.")
@@ -106,4 +128,8 @@ func Shutdown() {
 	defer cancel()
 
 	must.NoError(jaegerExporter.Shutdown(ctx))
+
+	// to increase a chance of resource finalizers to spot problems
+	runtime.GC()
+	runtime.GC()
 }

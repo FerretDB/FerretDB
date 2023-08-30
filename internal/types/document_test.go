@@ -34,6 +34,10 @@ func TestDocument(t *testing.T) {
 		assert.Nil(t, doc.Map())
 		assert.Nil(t, doc.Keys())
 		assert.Equal(t, "", doc.Command())
+
+		value, err := doc.Get("foo")
+		assert.Error(t, err)
+		assert.Nil(t, value)
 	})
 
 	t.Run("ZeroValues", func(t *testing.T) {
@@ -60,6 +64,18 @@ func TestDocument(t *testing.T) {
 		doc, err := NewDocument(42, 42)
 		assert.Nil(t, doc)
 		assert.EqualError(t, err, `types.NewDocument: invalid key type: int`)
+	})
+
+	t.Run("Freeze", func(t *testing.T) {
+		t.Parallel()
+
+		doc := must.NotFail(NewDocument("foo", int32(42)))
+
+		doc.Freeze()
+
+		assert.PanicsWithValue(t, "document is frozen and can't be modified", func() {
+			doc.Set("foo", Null)
+		})
 	})
 
 	t.Run("DeepCopy", func(t *testing.T) {

@@ -17,10 +17,10 @@ package pgdb
 import (
 	"context"
 	"errors"
-	"math/rand"
 	"time"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/tracelog"
 
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -43,18 +43,47 @@ func (e *transactionConflictError) Error() string {
 }
 
 // InTransaction wraps the given function f in a transaction.
+//
 // If f returns an error, the transaction is rolled back.
+//
+// Passed context will be used for BEGIN/ROLLBACK/COMMIT statements.
+// Context cancellation does not rollback the transaction.
+// In practice, f should use the same ctx for Query/QueryRow/Exec that would return an error if context is canceled.
+//
 // Errors are wrapped with lazyerrors.Error,
 // so the caller needs to use errors.Is to check the error,
 // for example, errors.Is(err, ErrSchemaNotExist).
 func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (err error) {
-	var tx pgx.Tx
-	if tx, err = pgPool.Begin(ctx); err != nil {
+	var keepTx pgx.Tx
+
+	err = pgPool.InTransactionKeep(ctx, func(tx pgx.Tx) error {
+		keepTx = tx
+		return f(tx)
+	})
+	if err != nil {
 		err = lazyerrors.Error(err)
 		return
 	}
 
-	var committed bool
+	err = keepTx.Commit(ctx)
+	if err != nil {
+		err = lazyerrors.Error(err)
+		_ = keepTx.Rollback(ctx)
+	}
+
+	return
+}
+
+// InTransactionKeep is a variant of InTransaction that keeps transaction open if there is no error.
+func (pgPool *Pool) InTransactionKeep(ctx context.Context, f func(pgx.Tx) error) (err error) {
+	var tx pgx.Tx
+
+	if tx, err = pgPool.p.Begin(ctx); err != nil {
+		err = lazyerrors.Error(err)
+		return
+	}
+
+	var done bool
 
 	defer func() {
 		// It is not enough to check `err == nil` there,
@@ -62,22 +91,17 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 		// that call `runtime.Goexit()`, leaving `err` unset in `err = f(tx)` below.
 		// This situation would hang a test.
 		//
-		// As a bonus, checking a separate variable also handles any panics in `f`.
-		if committed {
+		// As a bonus, checking a separate variable also handles any panics in `f`,
+		// including `panic(nil)` that is problematic for tests too.
+		if done {
 			return
 		}
 
-		if rerr := tx.Rollback(ctx); rerr != nil {
-			pgPool.Config().ConnConfig.Logger.Log(
-				ctx, pgx.LogLevelError, "failed to perform rollback",
-				map[string]any{"error": rerr},
-			)
-
-			// in case of `runtime.Goexit()` or `panic(nil)`; see above
-			if err == nil {
-				err = rerr
-			}
+		if err == nil {
+			err = lazyerrors.Errorf("transaction was not committed")
 		}
+
+		_ = tx.Rollback(ctx)
 	}()
 
 	if err = f(tx); err != nil {
@@ -85,12 +109,7 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 		return
 	}
 
-	if err = tx.Commit(ctx); err != nil {
-		err = lazyerrors.Error(err)
-		return
-	}
-
-	committed = true
+	done = true
 	return
 }
 
@@ -98,37 +117,36 @@ func (pgPool *Pool) InTransaction(ctx context.Context, f func(pgx.Tx) error) (er
 // If f returns (possibly wrapped) *transactionConflictError, the transaction is retried multiple times with delays.
 // If the transaction still fails after that, the last error is returned.
 func (pgPool *Pool) InTransactionRetry(ctx context.Context, f func(pgx.Tx) error) error {
-	// TODO use exponential backoff with jitter instead
-	// https://github.com/FerretDB/FerretDB/issues/1720
 	const (
 		retriesMax    = 30
-		retryDelayMin = 100 * time.Millisecond
 		retryDelayMax = 200 * time.Millisecond
 	)
 
-	var err error
-	var tcErr *transactionConflictError
+	var retry int64
 
-	for retry := 0; retry < retriesMax; retry++ {
-		err = pgPool.InTransaction(ctx, f)
+	for {
+		err := pgPool.InTransaction(ctx, f)
+		var tcErr *transactionConflictError
 
 		switch {
 		case err == nil:
 			return nil
-		case errors.As(err, &tcErr):
-			deltaMS := rand.Int63n((retryDelayMax - retryDelayMin).Milliseconds())
-			delay := retryDelayMin + time.Duration(deltaMS)*time.Millisecond
 
-			pgPool.Config().ConnConfig.Logger.Log(
-				ctx, pgx.LogLevelWarn, "transaction failed, retrying",
-				map[string]any{"err": err, "delay": delay},
+		case errors.As(err, &tcErr):
+			if retry >= retriesMax {
+				return lazyerrors.Errorf("giving up after %d retries: %w", retry, err)
+			}
+
+			retry++
+			pgPool.logger.Log(
+				ctx, tracelog.LogLevelWarn, "attempt failed, retrying",
+				map[string]any{"err": err, "retry": retry},
 			)
 
-			ctxutil.Sleep(ctx, delay)
+			ctxutil.SleepWithJitter(ctx, retryDelayMax, retry)
+
 		default:
-			return lazyerrors.Error(err)
+			return lazyerrors.Errorf("non-retriable error: %w", err)
 		}
 	}
-
-	return lazyerrors.Error(err)
 }

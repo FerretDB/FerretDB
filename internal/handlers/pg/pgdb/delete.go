@@ -18,15 +18,15 @@ import (
 	"context"
 	"strings"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // DeleteDocumentsByID deletes documents by given IDs.
 func DeleteDocumentsByID(ctx context.Context, tx pgx.Tx, qp *QueryParams, ids []any) (int64, error) {
-	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
+	table, err := newMetadataStorage(tx, qp.DB, qp.Collection).getTableName(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -54,7 +54,7 @@ func deleteByIDs(ctx context.Context, tx pgx.Tx, d execDeleteParams, ids []any) 
 
 	for i, id := range ids {
 		placeholders[i] = p.Next()
-		idsMarshalled[i] = must.NotFail(pjson.MarshalSingleValue(id))
+		idsMarshalled[i] = must.NotFail(sjson.MarshalSingleValue(id))
 	}
 
 	sql := `DELETE `

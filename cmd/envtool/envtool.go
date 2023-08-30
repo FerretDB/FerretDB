@@ -26,20 +26,19 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/alecthomas/kong"
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/tigrisdata/tigris-client-go/config"
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
-	"github.com/FerretDB/FerretDB/internal/handlers/tigris/tigrisdb"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -54,11 +53,15 @@ var (
 	errorTemplate = template.Must(template.New("error").Option("missingkey=error").Parse(string(errorTemplateB)))
 )
 
-// waitForPort waits for the given port to be available until ctx is done.
+// versionFile contains version information with leading v.
+const versionFile = "build/version/version.txt"
+
+// waitForPort waits for the given port to be available until ctx is canceled.
 func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) error {
 	addr := fmt.Sprintf("127.0.0.1:%d", port)
 	logger.Infof("Waiting for %s to be up...", addr)
 
+	var retry int64
 	for ctx.Err() == nil {
 		conn, err := net.Dial("tcp", addr)
 		if err == nil {
@@ -67,7 +70,9 @@ func waitForPort(ctx context.Context, logger *zap.SugaredLogger, port uint16) er
 		}
 
 		logger.Infof("%s: %s", addr, err)
-		ctxutil.Sleep(ctx, time.Second)
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
 	}
 
 	return fmt.Errorf("failed to connect to %s", addr)
@@ -96,13 +101,20 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 
 	var pgPool *pgdb.Pool
 
+	var retry int64
 	for ctx.Err() == nil {
 		if pgPool, err = pgdb.NewPool(ctx, uri, logger.Desugar(), p); err == nil {
 			break
 		}
 
 		logger.Infof("%s: %s", uri, err)
-		ctxutil.Sleep(ctx, time.Second)
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 
 	defer pgPool.Close()
@@ -120,20 +132,22 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 
 	logger.Info("Tweaking settings...")
 
-	for _, q := range []string{
-		`CREATE ROLE readonly NOINHERIT LOGIN PASSWORD 'readonly_password'`,
+	return pgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		for _, q := range []string{
+			`CREATE ROLE readonly NOINHERIT LOGIN PASSWORD 'readonly_password'`,
 
-		// TODO Grant permissions to readonly role.
-		// https://github.com/FerretDB/FerretDB/issues/1025
+			// TODO Grant permissions to readonly role.
+			// https://github.com/FerretDB/FerretDB/issues/1025
 
-		`ANALYZE`, // to make tests more stable
-	} {
-		if _, err = pgPool.Exec(ctx, q); err != nil {
-			return err
+			`ANALYZE`, // to make tests more stable
+		} {
+			if _, err = tx.Exec(ctx, q); err != nil {
+				return err
+			}
 		}
-	}
 
-	return nil
+		return nil
+	})
 }
 
 // setupPostgres configures `postgres` container.
@@ -147,55 +161,6 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 	return setupAnyPostgres(ctx, logger.Named("postgres_secured"), "postgres://username:password@127.0.0.1:5433/ferretdb")
 }
 
-// setupAnyTigris configures given Tigris.
-func setupAnyTigris(ctx context.Context, logger *zap.SugaredLogger, port uint16) error {
-	err := waitForPort(ctx, logger, port)
-	if err != nil {
-		return err
-	}
-
-	cfg := &config.Driver{
-		URL: fmt.Sprintf("127.0.0.1:%d", port),
-	}
-
-	var db *tigrisdb.TigrisDB
-
-	for ctx.Err() == nil {
-		if db, err = tigrisdb.New(ctx, cfg, logger.Desugar()); err == nil {
-			break
-		}
-
-		logger.Infof("%s: %s", cfg.URL, err)
-		ctxutil.Sleep(ctx, time.Second)
-	}
-
-	defer db.Driver.Close()
-
-	logger.Info("Creating databases...")
-
-	for _, name := range []string{"admin", "test"} {
-		if _, err = db.Driver.CreateProject(ctx, name); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// setupTigris configures all Tigris containers.
-func setupTigris(ctx context.Context, logger *zap.SugaredLogger) error {
-	logger = logger.Named("tigris")
-
-	// See docker-compose.yml.
-	for _, port := range []uint16{8081, 8091, 8092, 8093, 8094} {
-		if err := setupAnyTigris(ctx, logger.Named(strconv.Itoa(int(port))), port); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
 // setup runs all setup commands.
 func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 	go debug.RunHandler(ctx, "127.0.0.1:8089", prometheus.DefaultRegisterer, logger.Named("debug").Desugar())
@@ -205,10 +170,6 @@ func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 	}
 
 	if err := setupPostgresSecured(ctx, logger); err != nil {
-		return err
-	}
-
-	if err := setupTigris(ctx, logger); err != nil {
 		return err
 	}
 
@@ -302,14 +263,99 @@ func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
 	})
 }
 
+// shellMkDir creates all directories from given paths.
+func shellMkDir(paths ...string) error {
+	var errs error
+
+	for _, path := range paths {
+		if err := os.MkdirAll(path, 0o777); err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
+
+	return errs
+}
+
+// shellRmDir removes all directories from given paths.
+func shellRmDir(paths ...string) error {
+	var errs error
+
+	for _, path := range paths {
+		if err := os.RemoveAll(path); err != nil {
+			errs = errors.Join(errs, err)
+		}
+	}
+
+	return errs
+}
+
+// shellRead will show the content of a file.
+func shellRead(w io.Writer, paths ...string) error {
+	for _, path := range paths {
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		fmt.Fprint(w, string(b))
+	}
+
+	return nil
+}
+
+// packageVersion will print out FerretDB's package version (omitting leading v).
+func packageVersion(w io.Writer, file string) error {
+	b, err := os.ReadFile(file)
+	if err != nil {
+		return err
+	}
+
+	v := string(b)
+	v = strings.TrimPrefix(v, "v")
+
+	_, err = fmt.Fprint(w, v)
+
+	return err
+}
+
 // cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
 	Debug bool `help:"Enable debug mode."`
+
+	Setup struct{} `cmd:"" help:"Setup development environment."`
+
+	PackageVersion struct{} `cmd:"" help:"Print package version."`
+
+	Shell struct {
+		Mkdir struct {
+			Paths []string `arg:"" name:"path" help:"Paths to create." type:"path"`
+		} `cmd:"" help:"Create directories if they do not already exist."`
+		Rmdir struct {
+			Paths []string `arg:"" name:"path" help:"Paths to remove." type:"path"`
+		} `cmd:"" help:"Remove directories."`
+		Read struct {
+			Paths []string `arg:"" name:"path" help:"Paths to read." type:"path"`
+		} `cmd:"" help:"Read files."`
+	} `cmd:""`
+
+	Tests struct {
+		Shard struct {
+			Index uint `help:"Shard index, starting from 1" required:""`
+			Total uint `help:"Total number of shards"       required:""`
+		} `cmd:"" help:"Print sharded integration tests."`
+	} `cmd:""`
+
+	Fuzz struct {
+		Corpus struct {
+			Src string `arg:"" help:"Source, one of: 'seed', 'generated', or collected corpus' directory."`
+			Dst string `arg:"" help:"Destination, one of: 'seed', 'generated', or collected corpus' directory."`
+		} `cmd:"" help:"Sync fuzz corpora."`
+	} `cmd:""`
 }
 
 func main() {
-	kong.Parse(&cli)
+	kongCtx := kong.Parse(&cli)
 
 	// always enable debug logging on CI
 	if t, _ := strconv.ParseBool(os.Getenv("CI")); t {
@@ -327,7 +373,66 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
-	if err := setup(ctx, logger); err != nil {
+	var err error
+
+	switch cmd := kongCtx.Command(); cmd {
+	case "setup":
+		err = setup(ctx, logger)
+	case "shell mkdir <path>":
+		err = shellMkDir(cli.Shell.Mkdir.Paths...)
+	case "shell rmdir <path>":
+		err = shellRmDir(cli.Shell.Rmdir.Paths...)
+	case "shell read <path>":
+		err = shellRead(os.Stdout, cli.Shell.Read.Paths...)
+	case "package-version":
+		err = packageVersion(os.Stdout, versionFile)
+	case "tests shard":
+		err = testsShard(os.Stdout, cli.Tests.Shard.Index, cli.Tests.Shard.Total)
+
+	case "fuzz corpus <src> <dst>":
+		var seedCorpus, generatedCorpus string
+
+		if seedCorpus, err = os.Getwd(); err != nil {
+			logger.Fatal(err)
+		}
+
+		if generatedCorpus, err = fuzzGeneratedCorpus(); err != nil {
+			logger.Fatal(err)
+		}
+
+		var src, dst string
+
+		switch cli.Fuzz.Corpus.Src {
+		case "seed":
+			src = seedCorpus
+		case "generated":
+			src = generatedCorpus
+		default:
+			if src, err = filepath.Abs(cli.Fuzz.Corpus.Src); err != nil {
+				logger.Fatal(err)
+			}
+		}
+
+		switch cli.Fuzz.Corpus.Dst {
+		case "seed":
+			// Because we would need to add `/testdata/fuzz` back, and that's not very easy.
+			logger.Fatal("Copying to seed corpus is not supported.")
+		case "generated":
+			dst = generatedCorpus
+		default:
+			dst, err = filepath.Abs(cli.Fuzz.Corpus.Dst)
+			if err != nil {
+				logger.Fatal(err)
+			}
+		}
+
+		err = fuzzCopyCorpus(src, dst, logger)
+
+	default:
+		err = fmt.Errorf("unknown command: %s", cmd)
+	}
+
+	if err != nil {
 		printDiagnosticData(err, logger)
 		os.Exit(1)
 	}

@@ -14,13 +14,12 @@
 
 // Package types provides Go types matching BSON types that don't have built-in Go equivalents.
 //
-// All BSON types have five representations in FerretDB:
+// All BSON types have four representations in FerretDB:
 //
 //  1. As they are used in "business logic" / handlers - `types` package.
 //  2. As they are used for logging - `fjson` package.
 //  3. As they are used in the wire protocol implementation - `bson` package.
-//  4. As they are used to store data in PostgreSQL - `pjson` package.
-//  5. As they are used to store data in Tigris - `tjson` package.
+//  4. As they are used to store data in SQL based databases - `sjson` package.
 //
 // The reason for that is a separation of concerns: to avoid method names clashes, to simplify type asserts,
 // to make refactorings and optimizations easier, etc.
@@ -60,6 +59,9 @@ import (
 
 // MaxDocumentLen is the maximum BSON object size.
 const MaxDocumentLen = 16 * 1024 * 1024 // 16 MiB = 16777216 bytes
+
+// MaxSafeDouble is the maximum double value that can be represented precisely.
+const MaxSafeDouble = float64(1<<53 - 1) // 52bit mantissa max value = 9007199254740991
 
 // ScalarType represents scalar type.
 type ScalarType interface {
@@ -119,7 +121,9 @@ func deepCopy(value any) any {
 			}
 		}
 
-		return &Document{fields}
+		return &Document{
+			fields: fields,
+		}
 
 	case *Array:
 		s := make([]any, len(value.s))

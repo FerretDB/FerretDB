@@ -18,8 +18,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/AlekSi/pointer"
-
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -28,7 +27,7 @@ import (
 )
 
 // SetFreeMonitoring is a part of common implementation of the setFreeMonitoring command.
-func SetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.Provider) (*wire.OpMsg, error) {
+func SetFreeMonitoring(_ context.Context, msg *wire.OpMsg, provider *state.Provider) (*wire.OpMsg, error) {
 	if provider == nil {
 		panic("provider cannot be equal to nil")
 	}
@@ -51,8 +50,8 @@ func SetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.Pro
 	case "disable":
 		telemetryState = false
 	default:
-		return nil, NewCommandErrorMsgWithArgument(
-			ErrBadValue,
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrBadValue,
 			fmt.Sprintf(
 				"Enumeration value '%s' for field '%s' is not a valid value.",
 				action,
@@ -63,14 +62,20 @@ func SetFreeMonitoring(ctx context.Context, msg *wire.OpMsg, provider *state.Pro
 	}
 
 	if provider.Get().TelemetryLocked {
-		return nil, NewCommandErrorMsgWithArgument(
-			ErrFreeMonitoringDisabled,
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrFreeMonitoringDisabled,
 			"Free Monitoring has been disabled via the command-line and/or config file",
 			action,
 		)
 	}
 
-	if err := provider.Update(func(s *state.State) { s.Telemetry = pointer.ToBool(telemetryState) }); err != nil {
+	if err := provider.Update(func(s *state.State) {
+		if telemetryState {
+			s.EnableTelemetry()
+		} else {
+			s.DisableTelemetry()
+		}
+	}); err != nil {
 		return nil, err
 	}
 

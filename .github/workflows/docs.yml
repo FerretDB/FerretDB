@@ -3,15 +3,16 @@ name: Docs
 on:
   pull_request:
     types:
-      - unlabeled # if GitHub Actions stuck, add and remove "no ci" label to force rebuild
+      - unlabeled # if GitHub Actions stuck, add and remove "not ready" label to force rebuild
       - opened
       - reopened
       - synchronize
   push:
     branches:
       - main
+      - releases/*
   schedule:
-    - cron: "42 3 * * *" # after Integration workflow
+    - cron: "12 0 * * *"
 
 # Do not run this workflow in parallel for any PR change or branch push
 # to prevent concurrent deployments to GitHub Pages.
@@ -30,10 +31,15 @@ jobs:
   build:
     name: Build docs
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
 
-    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'no ci')
+    if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
     steps:
+      - name: Setup permissions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+        if: false
+
       - name: Checkout code
         uses: actions/checkout@v3
         with:
@@ -68,10 +74,13 @@ jobs:
       - name: Build docs
         run: bin/task docs
 
+      - name: Create directory
+        run: mkdir tmp
+
       - name: Archive docs
         run: >
           tar --directory website/build
-          --file docs.tar
+          --file tmp/docs.tar
           --create
           --verbose
           .
@@ -81,7 +90,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: docs
-          path: docs.tar
+          path: tmp/docs.tar
           retention-days: 1
           if-no-files-found: error
 
@@ -93,6 +102,7 @@ jobs:
   github:
     name: Deploy to GitHub Pages
     runs-on: ubuntu-22.04
+    timeout-minutes: 10
 
     # deploy only on push to main; exclude pull_request and schedule
     needs: build
@@ -107,9 +117,13 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
 
     steps:
+      - name: Setup permissions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+        if: false
+
       - name: Deploy to GitHub Pages
         id: deploy
-        uses: actions/deploy-pages@v1
+        uses: actions/deploy-pages@v2
         with:
           artifact_name: docs
           timeout: 300000 # 5*60*1000 milliseconds

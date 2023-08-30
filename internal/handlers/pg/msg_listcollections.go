@@ -18,9 +18,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -45,19 +46,19 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/301
-	// if err = common.UnimplementedNonDefault(document, "nameOnly", func(v any) bool {
-	// 	nameOnly, ok := v.(bool)
-	// 	return ok && !nameOnly
-	// }); err != nil {
-	// 	return nil, err
-	// }
-
 	common.Ignored(document, h.L, "comment", "authorizedCollections")
 
 	db, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
+	}
+
+	var nameOnly bool
+	if v, _ := document.Get("nameOnly"); v != nil {
+		nameOnly, err = commonparams.GetBoolOptionalParam("nameOnly", v)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var names []string
@@ -93,10 +94,17 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 			continue
 		}
 
+		if nameOnly {
+			d = must.NotFail(types.NewDocument(
+				"name", n,
+			))
+		}
+
 		collections.Append(d)
 	}
 
 	var reply wire.OpMsg
+
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(

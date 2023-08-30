@@ -34,12 +34,11 @@ import (
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t) // no providers there
 
@@ -64,7 +63,7 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 		Name:    "NamespaceNotFound",
 		Message: `ns not found`,
 	}
-	AssertEqualError(t, expectedErr, err)
+	AssertEqualCommandError(t, expectedErr, err)
 
 	err = db.CreateCollection(ctx, name)
 	require.NoError(t, err)
@@ -73,9 +72,9 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 	expectedErr = mongo.CommandError{
 		Code:    48,
 		Name:    "NamespaceExists",
-		Message: `Collection testcommandsadministrationcreatedroplist.TestCommandsAdministrationCreateDropList already exists.`,
+		Message: `Collection TestCommandsAdministrationCreateDropList.TestCommandsAdministrationCreateDropList already exists.`,
 	}
-	AssertEqualError(t, expectedErr, err)
+	AssertEqualCommandError(t, expectedErr, err)
 
 	names, err = db.ListCollectionNames(ctx, bson.D{})
 	require.NoError(t, err)
@@ -92,12 +91,10 @@ func TestCommandsAdministrationCreateDropList(t *testing.T) {
 		Name:    "NamespaceNotFound",
 		Message: `ns not found`,
 	}
-	AssertEqualError(t, expectedErr, err)
+	AssertEqualCommandError(t, expectedErr, err)
 }
 
 func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	ctx, collection := setup.Setup(t) // no providers there
 
@@ -141,8 +138,10 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
 }
 
-func TestCommandsAdministrationListDatabases(t *testing.T) {
-	t.Parallel()
+func TestCommandsAdministrationListDatabases(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3260")
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	db := collection.Database()
@@ -162,8 +161,6 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	}
 
 	assert.Equal(t, expected, actual)
-
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1051")
 
 	assert.NotZero(t, actual.Databases[0].SizeOnDisk, "%s's SizeOnDisk should be non-zero", name)
 	assert.False(t, actual.Databases[0].Empty, "%s's Empty should be false", name)
@@ -196,19 +193,19 @@ func TestCommandsAdministrationListCollections(t *testing.T) {
 }
 
 func TestCommandsAdministrationGetParameter(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	t.Parallel()
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
 	})
 
 	for name, tc := range map[string]struct {
-		command    bson.D
-		expected   map[string]any
-		unexpected []string
-		err        *mongo.CommandError
-		altMessage string
+		command    bson.D         // required, command to run
+		expected   map[string]any // optional, expected keys of response
+		unexpected []string       // optional, unexpected keys of response
+
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"GetParameter_Asterisk1": {
 			command: bson.D{{"getParameter", "*"}},
@@ -506,18 +503,48 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			},
 			altMessage: `BSON field 'allParameters' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'`,
 		},
+		"FeatureCompatibilityVersion": {
+			command: bson.D{
+				{"getParameter", bson.D{}},
+				{"featureCompatibilityVersion", 1},
+			},
+			expected: map[string]any{
+				"featureCompatibilityVersion": bson.D{{"version", "6.0"}},
+				"ok":                          float64(1),
+			},
+		},
+		"FeatureCompatibilityVersionShowDetails": {
+			command: bson.D{
+				{"getParameter", bson.D{{"showDetails", true}}},
+				{"featureCompatibilityVersion", 1},
+			},
+			expected: map[string]any{
+				"featureCompatibilityVersion": bson.D{
+					{"value", bson.D{{"version", "6.0"}}},
+					{"settableAtRuntime", false},
+					{"settableAtStartup", false},
+				},
+				"ok": float64(1),
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
 			t.Parallel()
+
+			require.NotNil(t, tc.command, "command must not be nil")
 
 			var actual bson.D
 			err := s.Collection.Database().RunCommand(s.Ctx, tc.command).Decode(&actual)
-
 			if tc.err != nil {
-				AssertEqualAltError(t, *tc.err, tc.altMessage, err)
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 				return
 			}
+
 			require.NoError(t, err)
 
 			m := actual.Map()
@@ -539,6 +566,56 @@ func TestCommandsAdministrationGetParameter(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetParameterCommandAuthenticationMechanisms(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		DatabaseName: "admin",
+	})
+
+	t.Run("ShowDetails", func(t *testing.T) {
+		var res bson.D
+		err := s.Collection.Database().RunCommand(s.Ctx, bson.D{
+			{"getParameter", bson.D{{"showDetails", true}}},
+			{"authenticationMechanisms", 1},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		doc := ConvertDocument(t, res)
+		v, _ := doc.Get("authenticationMechanisms")
+		require.NotNil(t, v)
+
+		resOk, _ := doc.Get("ok")
+		require.Equal(t, float64(1), resOk)
+
+		authenticationMechanisms, ok := v.(*types.Document)
+		require.True(t, ok)
+
+		settableAtRuntime, _ := authenticationMechanisms.Get("settableAtRuntime")
+		require.Equal(t, false, settableAtRuntime)
+
+		settableAtStartup, _ := authenticationMechanisms.Get("settableAtStartup")
+		require.Equal(t, true, settableAtStartup)
+	})
+
+	t.Run("Plain", func(t *testing.T) {
+		setup.SkipForMongoDB(t, "PLAIN authentication mechanism is not support by MongoDB")
+
+		var res bson.D
+		err := s.Collection.Database().RunCommand(s.Ctx, bson.D{
+			{"getParameter", bson.D{}},
+			{"authenticationMechanisms", 1},
+		}).Decode(&res)
+		require.NoError(t, err)
+
+		expected := bson.D{
+			{"authenticationMechanisms", bson.A{"PLAIN"}},
+			{"ok", float64(1)},
+		}
+		require.Equal(t, expected, res)
+	})
 }
 
 func TestCommandsAdministrationBuildInfo(t *testing.T) {
@@ -573,29 +650,59 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 	assert.True(t, ok)
 }
 
-func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
+func TestCommandsAdministrationBuildInfoFerretdbExtensions(t *testing.T) {
+	setup.SkipForMongoDB(t, "FerretDB-specific command's extensions")
+
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
+
+	var actual bson.D
+	command := bson.D{{"buildInfo", int32(1)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+
+	ferretdbFeatures, err := doc.Get("ferretdbFeatures")
+	assert.NoError(t, err)
+	ferretdbFeaturesDoc, ok := ferretdbFeatures.(*types.Document)
+	assert.True(t, ok)
+	assert.NotNil(t, ferretdbFeatures)
+	aggregationStages, err := ferretdbFeaturesDoc.Get("aggregationStages")
+	aggregationStagesArray, ok := aggregationStages.(*types.Array)
+	assert.True(t, ok)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, aggregationStagesArray)
+}
+
+func TestCommandsAdministrationCollStatsEmpty(tt *testing.T) {
+	tt.Parallel()
+	ctx, collection := setup.Setup(tt)
+
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3259")
 
 	var actual bson.D
 	command := bson.D{{"collStats", collection.Name()}}
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
+	// Expected result is to have empty statistics (neither the database nor the collection exists)
 	doc := ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
-	assert.Equal(t, int32(0), must.NotFail(doc.Get("count")))
+	assert.EqualValues(t, 0, must.NotFail(doc.Get("size")))
+	assert.EqualValues(t, 0, must.NotFail(doc.Get("count")))
+	assert.EqualValues(t, 0, must.NotFail(doc.Get("storageSize")))
+	assert.EqualValues(t, 0, must.NotFail(doc.Get("nindexes")))
+	assert.EqualValues(t, 0, must.NotFail(doc.Get("totalIndexSize")))
+	assert.EqualValues(t, 0, must.NotFail(doc.Get("totalSize")))
 	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
-
-	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 8_012)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 8_012)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 8_012)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 8_012)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 }
 
-func TestCommandsAdministrationCollStats(t *testing.T) {
-	t.Parallel()
+func TestCommandsAdministrationCollStats(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3259")
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
@@ -604,22 +711,62 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	require.NoError(t, err)
 
 	doc := ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
-	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 
-	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
-	assert.InDelta(t, float64(8012), must.NotFail(doc.Get("size")), 36_000)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("storageSize")), 36_000)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalIndexSize")), 36_000)
-	assert.InDelta(t, float64(4096), must.NotFail(doc.Get("totalSize")), 32_904)
+	// Values are returned as "numbers" that could be int32 or int64.
+	// FerretDB always returns int64 for simplicity.
+	//
+	// Set better expected results.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1771
+	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
+	assert.EqualValues(t, 6, must.NotFail(doc.Get("count"))) // // Number of documents in DocumentsStrings
+	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+
+	// Values are returned as "numbers" that could be int32 or int64.
+	// FerretDB always returns int64 for simplicity.
+	assert.InDelta(t, 40_000, must.NotFail(doc.Get("size")), 39_900)
+	assert.InDelta(t, 2_400, must.NotFail(doc.Get("avgObjSize")), 2_370)
+	assert.InDelta(t, 40_000, must.NotFail(doc.Get("storageSize")), 39_900)
+	assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
+	assert.InDelta(t, 12_000, must.NotFail(doc.Get("totalIndexSize")), 11_000)
+	assert.InDelta(t, 32_000, must.NotFail(doc.Get("totalSize")), 30_000)
+}
+
+func TestCommandsAdministrationCollStatsWithScale(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3259")
+
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+
+	var actual bson.D
+	command := bson.D{{"collStats", collection.Name()}, {"scale", float64(1_000)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	// Set better expected results.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1771
+	doc := ConvertDocument(t, actual)
+	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
+	assert.EqualValues(t, 6, must.NotFail(doc.Get("count"))) // Number of documents in DocumentsStrings
+	assert.Equal(t, int32(1000), must.NotFail(doc.Get("scaleFactor")))
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+
+	assert.InDelta(t, 16, must.NotFail(doc.Get("size")), 16)
+	assert.InDelta(t, 2_400, must.NotFail(doc.Get("avgObjSize")), 2_370)
+	assert.InDelta(t, 24, must.NotFail(doc.Get("storageSize")), 24)
+	assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
+	assert.InDelta(t, 8, must.NotFail(doc.Get("totalIndexSize")), 8)
+	assert.InDelta(t, 24, must.NotFail(doc.Get("totalSize")), 24)
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Existing", func(t *testing.T) {
-		t.Parallel()
+	t.Run("Existing", func(tt *testing.T) {
+		tt.Parallel()
+
+		t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
 		ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 		var actual bson.D
@@ -629,13 +776,15 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 
 		doc := ConvertDocument(t, actual)
 		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-		assert.InDelta(t, float64(24_576), must.NotFail(doc.Get("size")), 24_576)
-		assert.InDelta(t, float64(4), must.NotFail(doc.Get("numObjects")), 4) // TODO https://github.com/FerretDB/FerretDB/issues/727
-		assert.InDelta(t, float64(200), must.NotFail(doc.Get("millis")), 200)
+		assert.InDelta(t, 24_576, must.NotFail(doc.Get("size")), 24_576)
+		assert.InDelta(t, 4, must.NotFail(doc.Get("numObjects")), 4) // TODO https://github.com/FerretDB/FerretDB/issues/727
+		assert.InDelta(t, 200, must.NotFail(doc.Get("millis")), 200)
 	})
 
-	t.Run("NonExisting", func(t *testing.T) {
-		t.Parallel()
+	t.Run("NonExistent", func(tt *testing.T) {
+		tt.Parallel()
+
+		t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
 		ctx, collection := setup.Setup(t)
 
 		var actual bson.D
@@ -645,14 +794,68 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 
 		doc := ConvertDocument(t, actual)
 		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-		assert.Equal(t, int32(0), must.NotFail(doc.Get("size")))
-		assert.Equal(t, int32(0), must.NotFail(doc.Get("numObjects")))
-		assert.InDelta(t, float64(159), must.NotFail(doc.Get("millis")), 159)
+		assert.EqualValues(t, 0, must.NotFail(doc.Get("size")))
+		assert.EqualValues(t, 0, must.NotFail(doc.Get("numObjects")))
+		assert.InDelta(t, 159, must.NotFail(doc.Get("millis")), 159)
 	})
 }
 
-func TestCommandsAdministrationDBStats(t *testing.T) {
-	t.Parallel()
+func TestCommandsAdministrationDataSizeErrors(tt *testing.T) {
+	tt.Parallel()
+
+	ctx, collection := setup.Setup(tt, shareddata.DocumentsStrings)
+
+	for name, tc := range map[string]struct { //nolint:vet // for readability
+		command bson.D // required, command to run
+
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"InvalidNamespace": {
+			command: bson.D{{"dataSize", "invalid"}},
+			err: &mongo.CommandError{
+				Code:    73,
+				Name:    "InvalidNamespace",
+				Message: "Invalid namespace specified 'invalid'",
+			},
+		},
+		"InvalidNamespaceTypeDocument": {
+			command: bson.D{{"dataSize", bson.D{}}},
+			err: &mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "collection name has invalid type object",
+			},
+		},
+	} {
+		name, tc := name, tc
+
+		tt.Run(name, func(tt *testing.T) {
+			if tc.skip != "" {
+				tt.Skip(tc.skip)
+			}
+
+			tt.Parallel()
+
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
+
+			require.NotNil(t, tc.command, "command must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			var actual bson.D
+			err := collection.Database().RunCommand(ctx, tc.command).Decode(&actual)
+
+			assert.Nil(t, actual)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestCommandsAdministrationDBStats(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3259")
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
@@ -660,22 +863,31 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
+	// Values are returned as "numbers" that could be int32 or int64.
+	// FerretDB always returns int64 for simplicity.
+	//
+	// Set better expected results.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1771
 	doc := ConvertDocument(t, actual)
-
-	assert.Equal(t, float64(1), doc.Remove("ok"))
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
+	assert.EqualValues(t, 1, doc.Remove("collections"))
+	assert.EqualValues(t, 6, doc.Remove("objects")) // Number of documents in DocumentsStrings
 	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
+	assert.Equal(t, float64(1), doc.Remove("ok"))
 
-	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
-	assert.InDelta(t, float64(37500), doc.Remove("dataSize"), 37500)
-	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
+	assert.InDelta(t, 37_500, doc.Remove("avgObjSize"), 37_460)
+	assert.InDelta(t, 37_500, doc.Remove("dataSize"), 37_450)
+	assert.InDelta(t, 37_500, doc.Remove("storageSize"), 37_450)
+	assert.InDelta(t, 49_152, doc.Remove("totalSize"), 49_100)
 
 	// TODO assert.Empty(t, doc.Keys())
 	// https://github.com/FerretDB/FerretDB/issues/727
 }
 
-func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
-	t.Parallel()
+func TestCommandsAdministrationDBStatsEmpty(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3259")
 	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
@@ -687,18 +899,20 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 
 	assert.Equal(t, float64(1), doc.Remove("ok"))
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
-	assert.EqualValues(t, float64(1), doc.Remove("scaleFactor")) // TODO use assert.Equal https://github.com/FerretDB/FerretDB/issues/727
+	assert.EqualValues(t, float64(1), doc.Remove("scaleFactor")) // https://github.com/FerretDB/FerretDB/issues/727
 
-	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
-	assert.InDelta(t, float64(35500), doc.Remove("dataSize"), 35500)
-	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
+	assert.InDelta(t, 1, doc.Remove("collections"), 1)
+	assert.InDelta(t, 35500, doc.Remove("dataSize"), 35500)
+	assert.InDelta(t, 16384, doc.Remove("totalSize"), 16384)
 
 	// TODO assert.Empty(t, doc.Keys())
 	// https://github.com/FerretDB/FerretDB/issues/727
 }
 
-func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
-	t.Parallel()
+func TestCommandsAdministrationDBStatsWithScale(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3259")
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
@@ -712,16 +926,18 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
 	assert.Equal(t, float64(1000), doc.Remove("scaleFactor"))
 
-	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
-	assert.InDelta(t, float64(35500), doc.Remove("dataSize"), 35500)
-	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
+	assert.InDelta(t, 1, doc.Remove("collections"), 1)
+	assert.InDelta(t, 35500, doc.Remove("dataSize"), 35500)
+	assert.InDelta(t, 16384, doc.Remove("totalSize"), 16384)
 
 	// TODO assert.Empty(t, doc.Keys())
 	// https://github.com/FerretDB/FerretDB/issues/727
 }
 
-func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
-	t.Parallel()
+func TestCommandsAdministrationDBStatsEmptyWithScale(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3259")
 	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
@@ -733,11 +949,11 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 
 	assert.Equal(t, float64(1), doc.Remove("ok"))
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
-	assert.EqualValues(t, float64(1000), doc.Remove("scaleFactor")) // TODO use assert.Equal https://github.com/FerretDB/FerretDB/issues/727
+	assert.EqualValues(t, float64(1000), doc.Remove("scaleFactor")) // TODO https://github.com/FerretDB/FerretDB/issues/727
 
-	assert.InDelta(t, int32(1), doc.Remove("collections"), 1)
-	assert.InDelta(t, float64(35500), doc.Remove("dataSize"), 35500)
-	assert.InDelta(t, float64(16384), doc.Remove("totalSize"), 16384)
+	assert.InDelta(t, 1, doc.Remove("collections"), 1)
+	assert.InDelta(t, 35500, doc.Remove("dataSize"), 35500)
+	assert.InDelta(t, 16384, doc.Remove("totalSize"), 16384)
 
 	// TODO assert.Empty(t, doc.Keys())
 	// https://github.com/FerretDB/FerretDB/issues/727
@@ -745,8 +961,6 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 
 //nolint:paralleltest // we test a global server status
 func TestCommandsAdministrationServerStatus(t *testing.T) {
-	setup.SkipForTigris(t)
-
 	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
@@ -777,8 +991,8 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.True(t, ok)
 
 	// catalogStats is calculated across all the databases, so there could be quite a lot of collections here.
-	assert.InDelta(t, float64(250), must.NotFail(catalogStats.Get("collections")), 250)
-	assert.InDelta(t, float64(3), must.NotFail(catalogStats.Get("internalCollections")), 3)
+	assert.InDelta(t, 632, must.NotFail(catalogStats.Get("collections")), 632)
+	assert.InDelta(t, 3, must.NotFail(catalogStats.Get("internalCollections")), 3)
 
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("timeseries")))
@@ -864,9 +1078,8 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 	})
 
 	for name, tc := range map[string]struct {
-		expectedStatus string
-		err            *mongo.CommandError
-		command        bson.D
+		command        bson.D // required, command to run
+		expectedStatus string // optional
 	}{
 		"Enable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
@@ -880,20 +1093,34 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 		name, tc := name, tc
 
 		t.Run(name, func(t *testing.T) {
+			require.NotNil(t, tc.command, "command must not be nil")
+
 			res := s.Collection.Database().RunCommand(s.Ctx, tc.command)
 			require.NoError(t, res.Err())
 
-			var actual bson.D
-			err := s.Collection.Database().RunCommand(s.Ctx, bson.D{{"serverStatus", 1}}).Decode(&actual)
-			require.NoError(t, err)
+			// MongoDB might be slow to update the status
+			var status any
+			var retry int64
+			for i := 0; i < 3; i++ {
+				var actual bson.D
+				err := s.Collection.Database().RunCommand(s.Ctx, bson.D{{"serverStatus", 1}}).Decode(&actual)
+				require.NoError(t, err)
 
-			doc := ConvertDocument(t, actual)
+				doc := ConvertDocument(t, actual)
 
-			freeMonitoring, ok := must.NotFail(doc.Get("freeMonitoring")).(*types.Document)
-			assert.True(t, ok)
+				freeMonitoring, ok := must.NotFail(doc.Get("freeMonitoring")).(*types.Document)
+				assert.True(t, ok)
 
-			status, err := freeMonitoring.Get("state")
-			assert.NoError(t, err)
+				status, err = freeMonitoring.Get("state")
+				assert.NoError(t, err)
+
+				if status == tc.expectedStatus {
+					break
+				}
+
+				retry++
+				ctxutil.SleepWithJitter(s.Ctx, time.Second, retry)
+			}
 
 			assert.Equal(t, tc.expectedStatus, status)
 		})
@@ -901,7 +1128,7 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 }
 
 func TestCommandsAdministrationServerStatusStress(t *testing.T) {
-	setup.SkipForTigrisWithReason(t, "https://github.com/FerretDB/FerretDB/issues/1507")
+	// TODO rewrite using teststress.Stress
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	client := collection.Database().Client()
@@ -928,24 +1155,7 @@ func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 
 			collName := fmt.Sprintf("stress_%d", i)
 
-			schema := fmt.Sprintf(`{
-				"title": "%s",
-				"description": "Create Collection Stress %d",
-				"primary_key": ["_id"],
-				"properties": {
-					"_id": {"type": "string"},
-					"v": {"type": "string"}
-				}
-			}`, collName, i,
-			)
-
-			// Set $tigrisSchemaString for tigris only.
-			var opts options.CreateCollectionOptions
-			if setup.IsTigris(t) {
-				opts.Validator = bson.D{{"$tigrisSchemaString", schema}}
-			}
-
-			err := db.CreateCollection(ctx, collName, &opts)
+			err := db.CreateCollection(ctx, collName)
 			assert.NoError(t, err)
 
 			err = db.Drop(ctx)
@@ -976,7 +1186,8 @@ func TestCommandsAdministrationCurrentOp(t *testing.T) {
 	})
 
 	var res bson.D
-	err := s.Collection.Database().RunCommand(s.Ctx,
+	err := s.Collection.Database().RunCommand(
+		s.Ctx,
 		bson.D{{"currentOp", int32(1)}},
 	).Decode(&res)
 	require.NoError(t, err)
@@ -987,71 +1198,120 @@ func TestCommandsAdministrationCurrentOp(t *testing.T) {
 	assert.True(t, ok)
 }
 
-func TestCommandsAdministrationListIndexes(t *testing.T) {
+func TestCommandsAdministrationKillCursors(t *testing.T) {
 	t.Parallel()
 
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+	ctx, collection := setup.Setup(t, shareddata.Strings)
 
-	for i := range targetCollections {
-		targetCollection := targetCollections[i]
-		compatCollection := compatCollections[i]
+	// does not show up in cursorsAlive or anywhere else
+	cursor, err := collection.Find(ctx, bson.D{}, options.Find().SetBatchSize(1))
+	require.NoError(t, err)
+	require.True(t, cursor.Next(ctx))
 
-		t.Run(targetCollection.Name(), func(t *testing.T) {
-			t.Parallel()
+	defer cursor.Close(ctx)
 
-			targetCur, targetErr := targetCollection.Indexes().List(ctx)
-			compatCur, compatErr := compatCollection.Indexes().List(ctx)
+	t.Run("Empty", func(t *testing.T) {
+		t.Parallel()
 
-			require.NoError(t, compatErr)
-			assert.Equal(t, compatErr, targetErr)
+		var actual bson.D
+		err := collection.Database().RunCommand(ctx, bson.D{
+			{"killCursors", collection.Name()},
+			{"cursors", bson.A{}},
+		}).Decode(&actual)
+		require.NoError(t, err)
+		expected := bson.D{
+			{"cursorsKilled", bson.A{}},
+			{"cursorsNotFound", bson.A{}},
+			{"cursorsAlive", bson.A{}},
+			{"cursorsUnknown", bson.A{}},
+			{"ok", float64(1)},
+		}
+		AssertEqualDocuments(t, expected, actual)
+	})
 
-			targetRes := FetchAll(t, ctx, targetCur)
-			compatRes := FetchAll(t, ctx, compatCur)
+	t.Run("WrongType", func(t *testing.T) {
+		t.Parallel()
 
-			assert.Equal(t, compatRes, targetRes)
-		})
-	}
-}
+		c, err := collection.Find(ctx, bson.D{}, options.Find().SetBatchSize(1))
+		require.NoError(t, err)
+		require.True(t, c.Next(ctx))
+		defer c.Close(ctx)
 
-// TestCommandsAdministrationRunCommandListIndexes tests the behavior when listIndexes is called through RunCommand.
-// It's handy to use it to test the correctness of errors.
-func TestCommandsAdministrationRunCommandListIndexes(t *testing.T) {
-	t.Parallel()
+		var actual bson.D
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"killCursors", collection.Name()},
+			{"cursors", bson.A{c.ID(), int32(100500)}},
+		}).Decode(&actual)
+		expectedErr := mongo.CommandError{
+			Code:    14,
+			Name:    "TypeMismatch",
+			Message: "BSON field 'killCursors.cursors.1' is the wrong type 'int', expected type 'long'",
+		}
+		AssertEqualCommandError(t, expectedErr, err)
 
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
-	targetCollection := targetCollections[0]
-	compatCollection := compatCollections[0]
+		assert.True(t, c.Next(ctx))
+		assert.NoError(t, c.Err())
+	})
 
-	for name, tc := range map[string]struct {
-		collectionName any
-		expectedError  *mongo.CommandError
-	}{
-		"non-existent-collection": {
-			collectionName: "non-existent-collection",
-		},
-		"invalid-collection-name": {
-			collectionName: 42,
-		},
-	} {
-		name, tc := name, tc
+	t.Run("Found", func(t *testing.T) {
+		t.Parallel()
 
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+		c, err := collection.Find(ctx, bson.D{}, options.Find().SetBatchSize(1))
+		require.NoError(t, err)
+		require.True(t, c.Next(ctx))
+		defer c.Close(ctx)
 
-			var targetRes bson.D
-			targetErr := targetCollection.Database().RunCommand(
-				ctx, bson.D{{"listIndexes", tc.collectionName}},
-			).Decode(&targetRes)
+		var actual bson.D
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"killCursors", collection.Name()},
+			{"cursors", bson.A{c.ID()}},
+		}).Decode(&actual)
+		require.NoError(t, err)
+		expected := bson.D{
+			{"cursorsKilled", bson.A{c.ID()}},
+			{"cursorsNotFound", bson.A{}},
+			{"cursorsAlive", bson.A{}},
+			{"cursorsUnknown", bson.A{}},
+			{"ok", float64(1)},
+		}
+		AssertEqualDocuments(t, expected, actual)
 
-			var compatRes bson.D
-			compatErr := compatCollection.Database().RunCommand(
-				ctx, bson.D{{"listIndexes", tc.collectionName}},
-			).Decode(&targetRes)
+		assert.False(t, c.Next(ctx))
+		expectedErr := mongo.CommandError{
+			Code: 43,
+			Name: "CursorNotFound",
+		}
+		AssertMatchesCommandError(t, expectedErr, c.Err())
+	})
 
-			require.Nil(t, targetRes)
-			require.Nil(t, compatRes)
+	t.Run("NotFound", func(t *testing.T) {
+		t.Parallel()
 
-			AssertMatchesCommandError(t, compatErr, targetErr)
-		})
-	}
+		c, err := collection.Find(ctx, bson.D{}, options.Find().SetBatchSize(1))
+		require.NoError(t, err)
+		require.True(t, c.Next(ctx))
+		defer c.Close(ctx)
+
+		var actual bson.D
+		err = collection.Database().RunCommand(ctx, bson.D{
+			{"killCursors", collection.Name()},
+			{"cursors", bson.A{c.ID(), int64(100500)}},
+		}).Decode(&actual)
+		require.NoError(t, err)
+		expected := bson.D{
+			{"cursorsKilled", bson.A{c.ID()}},
+			{"cursorsNotFound", bson.A{int64(100500)}},
+			{"cursorsAlive", bson.A{}},
+			{"cursorsUnknown", bson.A{}},
+			{"ok", float64(1)},
+		}
+		AssertEqualDocuments(t, expected, actual)
+
+		assert.False(t, c.Next(ctx))
+		expectedErr := mongo.CommandError{
+			Code: 43,
+			Name: "CursorNotFound",
+		}
+		AssertMatchesCommandError(t, expectedErr, c.Err())
+	})
 }

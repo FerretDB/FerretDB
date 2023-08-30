@@ -1,5 +1,5 @@
 ---
-# This file is used for the development of FerretDB, not for actually running it.
+# This file is used for the development environment, not for running FerretDB in production.
 
 services:
   postgres:
@@ -7,7 +7,12 @@ services:
       context: ./build/deps
       dockerfile: postgres.Dockerfile
     container_name: ferretdb_postgres
-    command: postgres -c 'max_connections=200'
+    command: >
+      postgres
+      -c log_min_duration_statement=1000ms
+      -c log_min_error_statement=WARNING
+      -c log_min_messages=WARNING
+      -c max_connections=200
     ports:
       - 5432:5432
     extra_hosts:
@@ -25,7 +30,12 @@ services:
       context: ./build/deps
       dockerfile: postgres.Dockerfile
     container_name: ferretdb_postgres_secured
-    command: postgres -c 'max_connections=200'
+    command: >
+      postgres
+      -c log_min_duration_statement=1000ms
+      -c log_min_error_statement=WARNING
+      -c log_min_messages=WARNING
+      -c max_connections=200
     ports:
       - 5433:5432
     extra_hosts:
@@ -36,56 +46,6 @@ services:
       - POSTGRES_USER=username
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=ferretdb
-
-  # The main Tigris instance that is used by `task run-tigris`, etc.
-  tigris:
-    build:
-      context: ./build/deps
-      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
-    container_name: ferretdb_tigris
-    ports:
-      - 8081:8081
-    environment:
-      - TIGRIS_SERVER_LOG_LEVEL=info
-
-  # Additional instances for faster integration tests.
-  # Due to the single-core nature of FoundationDB, that's the easiest way to speed up them.
-  tigris1:
-    build:
-      context: ./build/deps
-      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
-    container_name: ferretdb_tigris1
-    ports:
-      - 8091:8081
-    environment:
-      - TIGRIS_SERVER_LOG_LEVEL=info
-  tigris2:
-    build:
-      context: ./build/deps
-      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
-    container_name: ferretdb_tigris2
-    ports:
-      - 8092:8081
-    environment:
-      - TIGRIS_SERVER_LOG_LEVEL=info
-  tigris3:
-    build:
-      context: ./build/deps
-      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
-    container_name: ferretdb_tigris3
-    ports:
-      - 8093:8081
-    environment:
-      - TIGRIS_SERVER_LOG_LEVEL=info
-  tigris4:
-    build:
-      context: ./build/deps
-      dockerfile: ${TIGRIS_DOCKERFILE:-tigris}.Dockerfile
-    container_name: ferretdb_tigris4
-    ports:
-      - 8094:8081
-    environment:
-      - TIGRIS_SERVER_LOG_LEVEL=info
 
   mongodb:
     build:
@@ -161,15 +121,26 @@ services:
       context: ./build/deps
       dockerfile: ubuntu2204.Dockerfile
     container_name: ferretdb_ubuntu
+    platform: linux/amd64
     volumes:
-      - ./build/deb:/deb
+      - ./tmp/debs:/debs
   ubi:
     build:
       context: ./build/deps
       dockerfile: ubi9.Dockerfile
     container_name: ferretdb_ubi
+    platform: linux/amd64
     volumes:
-      - ./build/rpm:/rpm
+      - ./tmp/rpms:/rpms
+
+  # for YAML files
+  prettier:
+    build:
+      context: ./build/deps
+      dockerfile: ferretdb-prettier.Dockerfile
+    container_name: ferretdb_ferretdb-prettier
+    volumes:
+      - .:/workdir
 
   # for documentation
   textlint:
@@ -197,6 +168,7 @@ services:
       - CLOUDFLARE_ACCOUNT_ID
       - CLOUDFLARE_API_TOKEN
       - WRANGLER_SEND_METRICS=false
+      # - WRANGLER_LOG=debug # TODO https://github.com/cloudflare/workers-sdk/issues/3073
     volumes:
       - .:/workdir # mount everything for wrangler to pick up branch name, commit hash, etc from git
   docusaurus-docs:

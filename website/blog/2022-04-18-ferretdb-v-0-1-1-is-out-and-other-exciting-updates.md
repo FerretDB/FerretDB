@@ -1,10 +1,9 @@
 ---
 slug: ferretdb-v-0-1-1-is-out-and-other-exciting-updates
-title: "FerretDB v.0.1.1 is out, and other exciting updates"
+title: FerretDB v.0.1.1 is out, and other exciting updates
 author: Peter Farkas
 description: We released v.0.1.1, with further enhancements and fixes on top of FerretDB v.0.1.0, which introduced exciting changes, enhancing our ability to match the behavior of MongoDB as closely as possible.
 tags: [release]
-date: 2022-04-18
 ---
 
 It is not easy to contain our excitement about all the good things happening at FerretDB.
@@ -25,7 +24,7 @@ Spanish speakers can also learn more on what happened in v.0.1.0 by reading a [g
 **What's next?**
 
 In the short term, we will be focusing on creating compatibility with certain applications.
-One of these will be the [CLA Assistant](https://cla-assistant.io/ "CLA Assistant"), which we are planning to support from our next release, 0.2.0.
+One of these will be the [CLA Assistant](https://cla-assistant.io/ 'CLA Assistant'), which we are planning to support from our next release, 0.2.0.
 Our aim is to bring FerretDB close to real world use cases, as we believe that this is how we can truly grow as a useful product.
 Yes, it may be early, but it's actually never too early!
 

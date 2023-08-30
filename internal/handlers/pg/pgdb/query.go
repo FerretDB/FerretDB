@@ -22,10 +22,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 	"golang.org/x/exp/maps"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pjson"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -43,6 +44,8 @@ type FetchedDocs struct {
 type QueryParams struct {
 	// Query filter for possible pushdown; may be ignored in part or entirely.
 	Filter     *types.Document
+	Sort       *types.Document
+	Limit      int64 // 0 does not apply limit to the query
 	DB         string
 	Collection string
 	Comment    string
@@ -50,65 +53,50 @@ type QueryParams struct {
 }
 
 // Explain returns SQL EXPLAIN results for given query parameters.
-func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, error) {
-	exists, err := CollectionExists(ctx, tx, qp.DB, qp.Collection)
+//
+// It returns (possibly wrapped) ErrTableNotExist if database or collection does not exist.
+func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, QueryResults, error) {
+	var res QueryResults
+
+	table, err := newMetadataStorage(tx, qp.DB, qp.Collection).getTableName(ctx)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, res, lazyerrors.Error(err)
 	}
 
-	if !exists {
-		return nil, lazyerrors.Error(ErrTableNotExist)
-	}
-
-	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
+	var iter types.DocumentsIterator
+	iter, res, err = buildIterator(ctx, tx, &iteratorParams{
+		schema:    qp.DB,
+		table:     table,
+		comment:   qp.Comment,
+		explain:   qp.Explain,
+		filter:    qp.Filter,
+		sort:      qp.Sort,
+		limit:     qp.Limit,
+		unmarshal: unmarshalExplain,
+	})
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, res, lazyerrors.Error(err)
 	}
 
-	var query string
+	defer iter.Close()
 
-	if qp.Explain {
-		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
+	_, plan, err := iter.Next()
+
+	switch {
+	case errors.Is(err, iterator.ErrIteratorDone):
+		return nil, res, lazyerrors.Error(errors.New("no rows returned from EXPLAIN"))
+	case err != nil:
+		return nil, res, lazyerrors.Error(err)
 	}
 
-	query += `SELECT _jsonb `
+	return plan, res, nil
+}
 
-	if c := qp.Comment; c != "" {
-		// prevent SQL injections
-		c = strings.ReplaceAll(c, "/*", "/ *")
-		c = strings.ReplaceAll(c, "*/", "* /")
-
-		query += `/* ` + c + ` */ `
-	}
-
-	query += ` FROM ` + pgx.Identifier{qp.DB, table}.Sanitize()
-
-	where, args, err := prepareWhereClause(qp.Filter)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	query += where
-
-	rows, err := tx.Query(ctx, query, args...)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-	defer rows.Close()
-
-	var res *types.Document
-
-	if !rows.Next() {
-		return nil, lazyerrors.Error(errors.New("no rows returned from EXPLAIN"))
-	}
-
-	var b []byte
-	if err = rows.Scan(&b); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
+// unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.
+// EXPLAIN result is not sjson, so it cannot be unmarshalled by sjson.Unmarshal.
+func unmarshalExplain(b []byte) (*types.Document, error) {
 	var plans []map[string]any
-	if err = json.Unmarshal(b, &plans); err != nil {
+	if err := json.Unmarshal(b, &plans); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -116,13 +104,14 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, 
 		return nil, lazyerrors.Error(errors.New("no execution plan returned"))
 	}
 
-	res = convertJSON(plans[0]).(*types.Document)
+	return convertJSON(plans[0]).(*types.Document), nil
+}
 
-	if err = rows.Err(); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return res, nil
+// QueryResults represents operations that were done by query builder.
+type QueryResults struct {
+	FilterPushdown bool
+	SortPushdown   bool
+	LimitPushdown  bool
 }
 
 // QueryDocuments returns an queryIterator to fetch documents for given SQLParams.
@@ -130,76 +119,54 @@ func Explain(ctx context.Context, tx pgx.Tx, qp *QueryParams) (*types.Document, 
 // If an error occurs, it returns nil and that error, possibly wrapped.
 //
 // Transaction is not closed by this function. Use iterator.WithClose if needed.
-func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (iterator.Interface[int, *types.Document], error) {
-	table, err := getMetadata(ctx, tx, qp.DB, qp.Collection)
+func QueryDocuments(ctx context.Context, tx pgx.Tx, qp *QueryParams) (types.DocumentsIterator, QueryResults, error) {
+	table, err := newMetadataStorage(tx, qp.DB, qp.Collection).getTableName(ctx)
+
+	var res QueryResults
 
 	switch {
 	case err == nil:
 		// do nothing
 	case errors.Is(err, ErrTableNotExist):
-		return newIterator(ctx, nil), nil
+		return newIterator(ctx, nil, new(iteratorParams)), res, nil
 	default:
-		return nil, lazyerrors.Error(err)
+		return nil, res, lazyerrors.Error(err)
 	}
 
-	iter, err := buildIterator(ctx, tx, &iteratorParams{
+	var iter types.DocumentsIterator
+	iter, res, err = buildIterator(ctx, tx, &iteratorParams{
 		schema:  qp.DB,
 		table:   table,
 		comment: qp.Comment,
 		explain: qp.Explain,
 		filter:  qp.Filter,
+		sort:    qp.Sort,
+		limit:   qp.Limit,
 	})
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, res, lazyerrors.Error(err)
 	}
 
-	return iter, nil
-}
-
-// queryById returns the first found document by its ID from the given PostgreSQL schema and table.
-// If the document is not found, it returns nil and no error.
-func queryById(ctx context.Context, tx pgx.Tx, schema, table string, id any) (*types.Document, error) {
-	query := `SELECT _jsonb FROM ` + pgx.Identifier{schema, table}.Sanitize()
-
-	where, args, err := prepareWhereClause(must.NotFail(types.NewDocument("_id", id)))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	query += where
-
-	var b []byte
-	err = tx.QueryRow(ctx, query, args...).Scan(&b)
-
-	switch {
-	case err == nil:
-		// do nothing
-	case errors.Is(err, pgx.ErrNoRows):
-		return nil, nil
-	default:
-		return nil, lazyerrors.Error(err)
-	}
-
-	doc, err := pjson.Unmarshal(b)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return doc, nil
+	return iter, res, nil
 }
 
 // iteratorParams contains parameters for building an iterator.
 type iteratorParams struct {
-	schema  string
-	table   string
-	comment string
-	explain bool
-	filter  *types.Document
+	schema    string
+	table     string
+	comment   string
+	explain   bool
+	filter    *types.Document
+	sort      *types.Document
+	limit     int64
+	forUpdate bool                                    // if SELECT FOR UPDATE is needed.
+	unmarshal func(b []byte) (*types.Document, error) // if set, iterator uses unmarshal to convert row to *types.Document.
 }
 
 // buildIterator returns an iterator to fetch documents for given iteratorParams.
-func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.Interface[int, *types.Document], error) {
+func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.DocumentsIterator, QueryResults, error) {
 	var query string
+	var res QueryResults
 
 	if p.explain {
 		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
@@ -217,29 +184,180 @@ func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (iterator.
 
 	query += ` FROM ` + pgx.Identifier{p.schema, p.table}.Sanitize()
 
-	where, args, err := prepareWhereClause(p.filter)
+	var placeholder Placeholder
+
+	where, args, err := prepareWhereClause(&placeholder, p.filter)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, res, lazyerrors.Error(err)
 	}
+
+	res.FilterPushdown = where != ""
 
 	query += where
 
-	rows, err := tx.Query(ctx, query, args...)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	if p.forUpdate {
+		query += ` FOR UPDATE`
 	}
 
-	return newIterator(ctx, rows), nil
+	if p.sort != nil {
+		var sort string
+		var sortArgs []any
+
+		sort, sortArgs, err = prepareOrderByClause(&placeholder, p.sort)
+		if err != nil {
+			return nil, res, lazyerrors.Error(err)
+		}
+
+		query += sort
+		args = append(args, sortArgs...)
+
+		res.SortPushdown = sort != ""
+	}
+
+	if p.limit != 0 {
+		query += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
+		args = append(args, p.limit)
+		res.LimitPushdown = true
+	}
+
+	rows, err := tx.Query(ctx, query, args...)
+	if err != nil {
+		return nil, res, lazyerrors.Error(err)
+	}
+
+	return newIterator(ctx, rows, p), res, nil
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
-func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
+func prepareWhereClause(p *Placeholder, sqlFilters *types.Document) (string, []any, error) {
 	var filters []string
 	var args []any
-	var p Placeholder
 
 	iter := sqlFilters.Iterator()
 	defer iter.Close()
+
+	// iterate through root document
+	for {
+		rootKey, rootVal, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return "", nil, lazyerrors.Error(err)
+		}
+
+		// don't pushdown $comment, it's attached to query in handlers
+		if strings.HasPrefix(rootKey, "$") {
+			continue
+		}
+
+		path, err := types.NewPathFromString(rootKey)
+
+		var pe *types.PathError
+
+		switch {
+		case err == nil:
+			// Handle dot notation.
+			// TODO https://github.com/FerretDB/FerretDB/issues/2069
+			if path.Len() > 1 {
+				continue
+			}
+		case errors.As(err, &pe):
+			// ignore empty key error, otherwise return error
+			if pe.Code() != types.ErrPathElementEmpty {
+				return "", nil, lazyerrors.Error(err)
+			}
+		default:
+			panic("Invalid error type: PathError expected")
+		}
+
+		switch v := rootVal.(type) {
+		case *types.Document:
+			iter := v.Iterator()
+			defer iter.Close()
+
+			// iterate through subdocument, as it may contain operators
+			for {
+				k, v, err := iter.Next()
+				if err != nil {
+					if errors.Is(err, iterator.ErrIteratorDone) {
+						break
+					}
+
+					return "", nil, lazyerrors.Error(err)
+				}
+
+				switch k {
+				case "$eq":
+					if f, a := filterEqual(p, rootKey, v); f != "" {
+						filters = append(filters, f)
+						args = append(args, a...)
+					}
+
+				case "$ne":
+					sql := `NOT ( ` +
+						// does document contain the key,
+						// it is necessary, as NOT won't work correctly if the key does not exist.
+						`_jsonb ? %[1]s AND ` +
+						// does the value under the key is equal to filter value
+						`_jsonb->%[1]s @> %[2]s AND ` +
+						// does the value type is equal to the filter's one
+						`_jsonb->'$s'->'p'->%[1]s->'t' = '"%[3]s"' )`
+
+					switch v := v.(type) {
+					case *types.Document, *types.Array, types.Binary,
+						types.NullType, types.Regex, types.Timestamp:
+						// type not supported for pushdown
+
+					case float64, bool, int32, int64:
+						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next(), sjson.GetTypeOfValue(v)))
+						args = append(args, rootKey, v)
+
+					case string, types.ObjectID, time.Time:
+						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next(), sjson.GetTypeOfValue(v)))
+						args = append(args, rootKey, string(must.NotFail(sjson.MarshalSingleValue(v))))
+
+					default:
+						panic(fmt.Sprintf("Unexpected type of value: %v", v))
+					}
+
+				default:
+					// $gt and $lt
+					// TODO https://github.com/FerretDB/FerretDB/issues/1875
+					continue
+				}
+			}
+
+		case *types.Array, types.Binary, types.NullType, types.Regex, types.Timestamp:
+			// type not supported for pushdown
+
+		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
+			if f, a := filterEqual(p, rootKey, v); f != "" {
+				filters = append(filters, f)
+				args = append(args, a...)
+			}
+
+		default:
+			panic(fmt.Sprintf("Unexpected type of value: %v", v))
+		}
+	}
+
+	var filter string
+	if len(filters) > 0 {
+		filter = ` WHERE ` + strings.Join(filters, " AND ")
+	}
+
+	return filter, args, nil
+}
+
+// prepareOrderByClause adds ORDER BY clause with given sort document and returns the query and arguments.
+func prepareOrderByClause(p *Placeholder, sort *types.Document) (string, []any, error) {
+	iter := sort.Iterator()
+	defer iter.Close()
+
+	var key string
+	var order types.SortType
 
 	for {
 		k, v, err := iter.Next()
@@ -251,78 +369,102 @@ func prepareWhereClause(sqlFilters *types.Document) (string, []any, error) {
 			return "", nil, lazyerrors.Error(err)
 		}
 
-		if k != "" {
-			// skip $comment
-			if k[0] == '$' {
-				continue
-			}
-
-			path, err := types.NewPathFromString(k)
-			if err != nil {
-				return "", nil, lazyerrors.Error(err)
-			}
-
-			// TODO dot notation https://github.com/FerretDB/FerretDB/issues/2069
-			if path.Len() > 1 {
-				continue
-			}
+		// Skip sorting if there are more than one sort parameters
+		if order != 0 {
+			return "", nil, nil
 		}
 
-		// Handle _id with a simpler query, as it can't be an array
-		if k == "_id" {
-			switch v := v.(type) {
-			case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
-				// type not supported for pushdown
-				// TODO $eq and $ne https://github.com/FerretDB/FerretDB/issues/1840
-				// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
-			case float64, string, types.ObjectID, int32, int64:
-				// Select if value under the key is equal to provided value.
-				sql := `(_jsonb->%[1]s)::jsonb = %[2]s`
-
-				// placeholder p.Next() returns SQL argument references such as $1, $2 to prevent SQL injections.
-				// placeholder $1 is used for field key,
-				// placeholder $2 is used for field value v.
-				filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-				args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
-
-			default:
-				panic(fmt.Sprintf("Unexpected type of value: %v", v))
-			}
-
-			continue
+		order, err = common.GetSortType(k, v)
+		if err != nil {
+			return "", nil, err
 		}
 
-		switch v := v.(type) {
-		case *types.Document, *types.Array, types.Binary, bool, time.Time, types.NullType, types.Regex, types.Timestamp:
-			// type not supported for pushdown
-			// TODO $eq and $ne https://github.com/FerretDB/FerretDB/issues/1840
-			// TODO $gt and $lt https://github.com/FerretDB/FerretDB/issues/1875
-			continue
+		key = k
+	}
 
-		case float64, string, types.ObjectID, int32, int64:
-			// Select if value under the key is equal to provided value.
-			// If the value under the key is not equal to v,
-			// but the value under the key k is an array - select if it contains the value equal to v.
-			sql := `(_jsonb->%[1]s)::jsonb = %[2]s OR (_jsonb->%[1]s)::jsonb @> %[2]s`
+	// Skip sorting dot notation
+	if strings.ContainsRune(key, '.') {
+		return "", nil, nil
+	}
 
-			// placeholder p.Next() returns SQL argument references such as $1, $2 to prevent SQL injections.
-			// placeholder $1 is used for field key,
-			// placeholder $2 is used for field value v.
-			filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next()))
-			args = append(args, k, string(must.NotFail(pjson.MarshalSingleValue(v))))
+	var sqlOrder string
 
+	switch order {
+	case types.Descending:
+		sqlOrder = "DESC"
+	case types.Ascending:
+		sqlOrder = "ASC"
+	case 0:
+		return "", nil, nil
+	default:
+		panic(fmt.Sprint("forbidden order:", order))
+	}
+
+	return fmt.Sprintf(" ORDER BY _jsonb->%s %s", p.Next(), sqlOrder), []any{key}, nil
+}
+
+// filterEqual returns the proper SQL filter with arguments that filters documents
+// where the value under k is equal to v.
+func filterEqual(p *Placeholder, k string, v any) (filter string, args []any) {
+	// Select if value under the key is equal to provided value.
+	sql := `_jsonb->%[1]s @> %[2]s`
+
+	switch v := v.(type) {
+	case *types.Document, *types.Array, types.Binary,
+		types.NullType, types.Regex, types.Timestamp:
+		// type not supported for pushdown
+
+	case float64:
+		// If value is not safe double, fetch all numbers out of safe range.
+		switch {
+		case v > types.MaxSafeDouble:
+			sql = `_jsonb->%[1]s > %[2]s`
+			v = types.MaxSafeDouble
+
+		case v < -types.MaxSafeDouble:
+			sql = `_jsonb->%[1]s < %[2]s`
+			v = -types.MaxSafeDouble
 		default:
-			panic(fmt.Sprintf("Unexpected type of value: %v", v))
+			// don't change the default eq query
 		}
+
+		filter = fmt.Sprintf(sql, p.Next(), p.Next())
+		args = append(args, k, v)
+
+	case string, types.ObjectID, time.Time:
+		// don't change the default eq query
+		filter = fmt.Sprintf(sql, p.Next(), p.Next())
+		args = append(args, k, string(must.NotFail(sjson.MarshalSingleValue(v))))
+
+	case bool, int32:
+		// don't change the default eq query
+		filter = fmt.Sprintf(sql, p.Next(), p.Next())
+		args = append(args, k, v)
+
+	case int64:
+		maxSafeDouble := int64(types.MaxSafeDouble)
+
+		// If value cannot be safe double, fetch all numbers out of the safe range.
+		switch {
+		case v > maxSafeDouble:
+			sql = `_jsonb->%[1]s > %[2]s`
+			v = maxSafeDouble
+
+		case v < -maxSafeDouble:
+			sql = `_jsonb->%[1]s < %[2]s`
+			v = -maxSafeDouble
+		default:
+			// don't change the default eq query
+		}
+
+		filter = fmt.Sprintf(sql, p.Next(), p.Next())
+		args = append(args, k, v)
+
+	default:
+		panic(fmt.Sprintf("Unexpected type of value: %v", v))
 	}
 
-	var query string
-
-	if len(filters) > 0 {
-		query = ` WHERE ` + strings.Join(filters, " AND ")
-	}
-
-	return query, args, nil
+	return
 }
 
 // convertJSON transforms decoded JSON map[string]any value into *types.Document.

@@ -14,6 +14,8 @@
 
 // Package debugbuild provides information about whatever this is a debug build or not.
 //
+// See build/version package documentation for more details.
+//
 // It is a separate package to avoid dependency cycles.
 package debugbuild
 

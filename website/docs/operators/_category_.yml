@@ -1,0 +1,8 @@
+---
+label: Operators
+position: 5
+link:
+  type: generated-index
+  description: >
+    The complete list of operators, including query operators, update operators,
+    aggregation operators, etc.

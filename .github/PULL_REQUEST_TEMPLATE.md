@@ -16,12 +16,12 @@ Closes #{issue_number}.
     please follow CONTRIBUTING.md.
 -->
 
-* [ ] I added/updated unit tests.
-* [ ] I added/updated integration/compatibility tests.
-* [ ] I added/updated comments and checked rendering.
-* [ ] I made spot refactorings.
-* [ ] I updated user documentation.
-* [ ] I ran `task all`, and it passed.
-* [ ] I ensured that PR title is good enough for the changelog.
-* [ ] (for maintainers only) I set Reviewers ([`@FerretDB/core`](https://github.com/orgs/FerretDB/teams/core)), Assignee, Labels, Project and project's Sprint fields.
-* [ ] I marked all done items in this checklist.
+- [ ] I added/updated unit tests (and they pass).
+- [ ] I added/updated integration/compatibility tests (and they pass).
+- [ ] I added/updated comments and checked rendering.
+- [ ] I made spot refactorings.
+- [ ] I updated user documentation.
+- [ ] I ran `task all`, and it passed.
+- [ ] I ensured that PR title is good enough for the changelog.
+- [ ] (for maintainers only) I set Reviewers ([`@FerretDB/core`](https://github.com/orgs/FerretDB/teams/core)), Milestone (`Next`), Labels, Project and project's Sprint fields.
+- [ ] I marked all done items in this checklist.

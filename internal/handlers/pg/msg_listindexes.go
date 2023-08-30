@@ -16,12 +16,14 @@ package pg
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -59,36 +61,52 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	if !ok {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", common.AliasFromType(collectionParam)),
+			fmt.Sprintf("collection name has invalid type %s", commonparams.AliasFromType(collectionParam)),
 			document.Command(),
 		)
 	}
 
-	var exists bool
+	var indexes []pgdb.Index
 
-	if err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		exists, err = pgdb.CollectionExists(ctx, tx, db, collection)
+	err = dbPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
+		indexes, err = pgdb.Indexes(ctx, tx, db, collection)
 		return err
-	}); err != nil {
-		return nil, err
-	}
+	})
 
-	if !exists {
+	switch {
+	case err == nil:
+		// do nothing
+	case errors.Is(err, pgdb.ErrTableNotExist):
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrNamespaceNotFound,
 			fmt.Sprintf("ns does not exist: %s.%s", db, collection),
 		)
+	default:
+		return nil, lazyerrors.Error(err)
 	}
 
-	firstBatch := must.NotFail(types.NewArray(
-		must.NotFail(types.NewDocument(
+	firstBatch := types.MakeArray(len(indexes))
+
+	for _, index := range indexes {
+		indexKey := must.NotFail(types.NewDocument())
+
+		for _, key := range index.Key {
+			indexKey.Set(key.Field, int32(key.Order))
+		}
+
+		indexDoc := must.NotFail(types.NewDocument(
 			"v", int32(2),
-			"key", must.NotFail(types.NewDocument(
-				"_id", int32(1),
-			)),
-			"name", "_id_",
-		)),
-	))
+			"key", indexKey,
+			"name", index.Name,
+		))
+
+		// only non-default unique indexes should have unique field in the response
+		if index.Unique != nil && *index.Unique && index.Name != "_id_" {
+			indexDoc.Set("unique", *index.Unique)
+		}
+
+		firstBatch.Append(indexDoc)
+	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{

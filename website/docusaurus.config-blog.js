@@ -61,12 +61,12 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
-      image: 'img/logo_dark.jpg',
+      image: 'img/logo-dark.jpg',
       navbar: {
         logo: {
           alt: 'FerretDB Logo',
-          src: 'img/logo_dark.jpg',
-          srcDark:'img/logo_light.png'
+          src: 'img/logo-dark.jpg',
+          srcDark:'img/logo-light.png'
         },
         items: [
           {
@@ -144,6 +144,7 @@ const config = {
       prism: {
         theme: lightCodeTheme,
         darkTheme: darkCodeTheme,
+        additionalLanguages: ['go', 'json5', 'sql'],
       },
     }),
 };
