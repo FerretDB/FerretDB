@@ -22,12 +22,12 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // backend implements backends.Backend interface.
 type backend struct {
-	r       *metadata.Registry
-	version string
+	r *metadata.Registry
 }
 
 // NewBackendParams represents the parameters of NewBackend function.
@@ -40,14 +40,13 @@ type NewBackendParams struct {
 
 // NewBackend creates a new SQLite backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	r, version, err := metadata.NewRegistry(params.URI, params.L)
+	r, err := metadata.NewRegistry(params.URI, params.L)
 	if err != nil {
 		return nil, err
 	}
 
 	return backends.BackendContract(&backend{
-		r:       r,
-		version: version,
+		r: r,
 	}), nil
 }
 
@@ -87,11 +86,16 @@ func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabas
 }
 
 // Info implements backends.Backend interface.
-func (b *backend) Info() *backends.Info {
+func (b *backend) Info(ctx context.Context) (*backends.Info, error) {
+	version, err := b.r.Version(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	return &backends.Info{
 		Name:    "SQLite",
-		Version: b.version,
-	}
+		Version: version,
+	}, nil
 }
 
 // Describe implements prometheus.Collector.

@@ -213,6 +213,23 @@ func (p *Pool) GetExisting(ctx context.Context, name string) *fsql.DB {
 	return db
 }
 
+// GetFirst returns a database from the pool, or nil if there are no databases in the pool.
+//
+// As the pool is not ordered, the returned database is not guaranteed to be the same.
+// This method can be used when a DB-agnostic query is needed.
+func (p *Pool) GetFirst(ctx context.Context) *fsql.DB {
+	defer observability.FuncCall(ctx)()
+
+	p.rw.RLock()
+	defer p.rw.RUnlock()
+
+	for _, db := range p.dbs {
+		return db
+	}
+
+	return nil
+}
+
 // GetOrCreate returns an existing database by valid name, or creates a new one.
 //
 // Returned boolean value indicates whether the database was created.

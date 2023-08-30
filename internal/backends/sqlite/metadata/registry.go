@@ -65,12 +65,10 @@ type Registry struct {
 }
 
 // NewRegistry creates a registry for SQLite databases in the directory specified by SQLite URI.
-//
-// As the second return value, it returns the version of SQLite.
-func NewRegistry(u string, l *zap.Logger) (*Registry, string, error) {
+func NewRegistry(u string, l *zap.Logger) (*Registry, error) {
 	p, initDBs, err := pool.New(u, l)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	r := &Registry{
@@ -79,35 +77,14 @@ func NewRegistry(u string, l *zap.Logger) (*Registry, string, error) {
 		colls: map[string]map[string]*Collection{},
 	}
 
-	var ver string
 	for name, db := range initDBs {
 		if err = r.initCollections(context.Background(), name, db); err != nil {
 			r.Close()
-			return nil, "", lazyerrors.Error(err)
-		}
-
-		// query version for the first DB only
-		if ver == "" {
-			if ver, err = version(db); err != nil {
-				r.Close()
-				return nil, "", lazyerrors.Error(err)
-			}
+			return nil, lazyerrors.Error(err)
 		}
 	}
 
-	return r, ver, nil
-}
-
-// version returns SQLite version.
-func version(db *fsql.DB) (string, error) {
-	row := db.QueryRowContext(context.Background(), "SELECT sqlite_version()")
-
-	var version string
-	if err := row.Scan(&version); err != nil {
-		return "", lazyerrors.Error(err)
-	}
-
-	return version, nil
+	return r, nil
 }
 
 // Close closes the registry.
@@ -373,6 +350,20 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/2760
 	panic("not implemented")
+}
+
+// Version returns SQLite version.
+//
+// If there are no databases in the registry, empty string is returned.
+func (r *Registry) Version(ctx context.Context) (string, error) {
+	row := r.p.GetFirst(ctx).QueryRowContext(context.Background(), "SELECT sqlite_version()")
+
+	var version string
+	if err := row.Scan(&version); err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	return version, nil
 }
 
 // Describe implements prometheus.Collector.

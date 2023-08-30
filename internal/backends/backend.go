@@ -38,7 +38,7 @@ type Backend interface {
 	ListDatabases(context.Context, *ListDatabasesParams) (*ListDatabasesResult, error)
 	DropDatabase(context.Context, *DropDatabaseParams) error
 
-	Info() *Info
+	Info(context.Context) (*Info, error)
 
 	prometheus.Collector
 
@@ -49,7 +49,7 @@ type Backend interface {
 // Info represents information about a backend.
 type Info struct {
 	Name    string
-	Version string
+	Version string // can be empty if the pool is not initialized yet
 }
 
 // backendContract implements Backend interface.
@@ -141,8 +141,8 @@ func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabas
 }
 
 // Info returns information about the backend.
-func (bc *backendContract) Info() *Info {
-	return bc.b.Info()
+func (bc *backendContract) Info(ctx context.Context) (*Info, error) {
+	return bc.b.Info(ctx)
 }
 
 // Describe implements prometheus.Collector.

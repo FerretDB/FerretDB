@@ -24,24 +24,19 @@ import (
 )
 
 // backend implements backends.Backend interface.
-type backend struct {
-	version string
-}
+type backend struct{}
 
 // NewBackendParams represents the parameters of NewBackend function.
 //
 //nolint:vet // for readability
 type NewBackendParams struct {
-	URI     string
-	L       *zap.Logger
-	Version string
+	URI string
+	L   *zap.Logger
 }
 
 // NewBackend creates a new backend for PostgreSQL-compatible database.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	return backends.BackendContract(&backend{
-		version: params.Version,
-	}), nil
+	return backends.BackendContract(&backend{}), nil
 }
 
 // Close implements backends.Backend interface.
@@ -66,7 +61,7 @@ func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabas
 }
 
 // Info implements backends.Backend interface.
-func (b *backend) Info() *backends.Info {
+func (b *backend) Info(ctx context.Context) (*backends.Info, error) {
 	panic("not implemented")
 }
 

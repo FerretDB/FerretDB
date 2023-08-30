@@ -87,7 +87,11 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		state := h.StateProvider.Get()
 
 		info := version.Get()
-		backend := h.b.Info()
+
+		backend, err := h.b.Info(ctx)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 
 		startupWarnings := []string{
 			fmt.Sprintf("Powered by FerretDB %s and %s %s.", info.Version, backend.Name, backend.Version),
