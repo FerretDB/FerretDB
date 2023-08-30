@@ -132,12 +132,15 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 		return nil, lazyerrors.Error(err)
 	}
 
-	// Count and Size of tables exclude sqlite internal tables and FerretDB meta table,
-	// see https://www.sqlite.org/schematab.html.
+	// Count, size and cells of tables exclude sqlite internal tables and FerretDB meta table.
+	// It uses number of cells of btree pages to approximate row count, it returns 0 upon overflow pages.
+	// See https://www.sqlite.org/schematab.html and
+	// also https://www.sqlite.org/dbstat.html.
 	q = `
 		SELECT
 		    COUNT(s.name)             AS CountTables,
-			COALESCE(SUM(d.pgsize),0) AS SizeTables
+			COALESCE(SUM(d.pgsize),0) AS SizeTables,
+			COALESCE(SUM(d.ncell),0)  AS CountCells
 		FROM sqlite_schema AS s
 			LEFT JOIN dbstat AS d ON d.name = s.tbl_name
 		WHERE s.type = 'table' AND s.name NOT LIKE :reserved AND s.name <> :metadata`
@@ -149,11 +152,12 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 	if err = d.QueryRowContext(ctx, q, args...).Scan(
 		&stats.CountCollections,
 		&stats.SizeCollections,
+		&stats.CountObjects,
 	); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// Count and Size of indexes exclude sqlite internal indexes.
+	// Count and size of indexes exclude sqlite internal indexes.
 	q = `
 		SELECT
 			COUNT(s.name)             AS CountIndexes,
@@ -169,22 +173,6 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 		&stats.CountIndexes,
 		&stats.SizeIndexes,
 	); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	q = `
-		SELECT COUNT(*)
-		FROM (
-			SELECT name
-			FROM sqlite_schema
-			WHERE type = 'table' AND name NOT LIKE :reserved AND name <> :metadata
-		     )`
-
-	args = []any{
-		sql.Named("reserved", metadata.ReservedTablePrefix+"%"),
-		sql.Named("metadata", metadata.MetadataTableName),
-	}
-	if err = d.QueryRowContext(ctx, q, args...).Scan(&stats.CountObjects); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
