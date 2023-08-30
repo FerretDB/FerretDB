@@ -37,7 +37,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	command := document.Command()
 
-	dbParam, err := common.GetRequiredParam[string](document, "$db")
+	dbName, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
 		return nil, err
 	}
@@ -51,10 +51,10 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 	}
 
-	db, err := h.b.Database(dbParam)
+	db, err := h.b.Database(dbName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid database specified '%s'", dbParam)
+			msg := fmt.Sprintf("Invalid database specified '%s'", dbName)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
 		}
 
@@ -68,7 +68,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	pairs := []any{
-		"db", db,
+		"db", dbName,
 		"collections", stats.CountCollections,
 		// TODO https://github.com/FerretDB/FerretDB/issues/176
 		"views", int32(0),
