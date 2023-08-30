@@ -95,6 +95,8 @@ func (a *Array) Set(index int, value any) error {
 
 // Append appends given values to the array.
 func (a *Array) Append(values ...any) {
+	a.checkFrozen()
+
 	if a == nil {
 		panic("types.Array.Append: nil array")
 	}
