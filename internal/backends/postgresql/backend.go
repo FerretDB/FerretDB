@@ -67,10 +67,7 @@ func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabas
 
 // Info implements backends.Backend interface.
 func (b *backend) Info() *backends.Info {
-	return &backends.Info{
-		Name:    "PostgreSQL",
-		Version: b.version,
-	}
+	panic("not implemented")
 }
 
 // Describe implements prometheus.Collector.

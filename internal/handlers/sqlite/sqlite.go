@@ -48,24 +48,12 @@ type Handler struct {
 	cursors *cursor.Registry
 }
 
-// Backend represents backend type.
-type Backend string
-
-const (
-	// PostgreSQL represents PostgreSQL backend.
-	PostgreSQL Backend = "postgresql"
-
-	// SQLite represents SQLite backend.
-	SQLite Backend = "sqlite"
-)
-
 // NewOpts represents handler configuration.
 //
 //nolint:vet // for readability
 type NewOpts struct {
-	Backend Backend
+	Backend string
 	URI     string
-	Version string
 
 	L             *zap.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
@@ -81,17 +69,15 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	var err error
 
 	switch opts.Backend {
-	case PostgreSQL:
+	case "postgresql":
 		b, err = postgresql.NewBackend(&postgresql.NewBackendParams{
-			URI:     opts.URI,
-			L:       opts.L,
-			Version: opts.Version,
+			URI: opts.URI,
+			L:   opts.L,
 		})
-	case SQLite:
+	case "sqlite":
 		b, err = sqlite.NewBackend(&sqlite.NewBackendParams{
-			URI:     opts.URI,
-			L:       opts.L,
-			Version: opts.Version,
+			URI: opts.URI,
+			L:   opts.L,
 		})
 	default:
 		panic("unknown backend: " + opts.Backend)

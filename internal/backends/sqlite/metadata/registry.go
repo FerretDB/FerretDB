@@ -65,10 +65,12 @@ type Registry struct {
 }
 
 // NewRegistry creates a registry for SQLite databases in the directory specified by SQLite URI.
-func NewRegistry(u string, l *zap.Logger) (*Registry, error) {
+//
+// As the second return value, it returns the version of SQLite.
+func NewRegistry(u string, l *zap.Logger) (*Registry, string, error) {
 	p, initDBs, err := pool.New(u, l)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	r := &Registry{
@@ -77,14 +79,35 @@ func NewRegistry(u string, l *zap.Logger) (*Registry, error) {
 		colls: map[string]map[string]*Collection{},
 	}
 
+	var ver string
 	for name, db := range initDBs {
 		if err = r.initCollections(context.Background(), name, db); err != nil {
 			r.Close()
-			return nil, lazyerrors.Error(err)
+			return nil, "", lazyerrors.Error(err)
+		}
+
+		// query version for the first DB only
+		if ver == "" {
+			if ver, err = version(db); err != nil {
+				r.Close()
+				return nil, "", lazyerrors.Error(err)
+			}
 		}
 	}
 
-	return r, nil
+	return r, ver, nil
+}
+
+// version returns SQLite version.
+func version(db *fsql.DB) (string, error) {
+	row := db.QueryRowContext(context.Background(), "SELECT sqlite_version()")
+
+	var version string
+	if err := row.Scan(&version); err != nil {
+		return "", lazyerrors.Error(err)
+	}
+
+	return version, nil
 }
 
 // Close closes the registry.

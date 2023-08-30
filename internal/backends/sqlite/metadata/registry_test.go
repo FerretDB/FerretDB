@@ -71,8 +71,10 @@ func TestCreateDrop(t *testing.T) {
 	t.Parallel()
 	ctx := testutil.Ctx(t)
 
-	r, err := NewRegistry("file:./?mode=memory", testutil.Logger(t))
+	r, version, err := NewRegistry("file:./?mode=memory", testutil.Logger(t))
 	require.NoError(t, err)
+	require.Equal(t, "3.35.5", version)
+
 	t.Cleanup(r.Close)
 
 	dbName := t.Name()
@@ -100,7 +102,7 @@ func TestCreateDropStress(t *testing.T) {
 		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
 	} {
 		t.Run(testName, func(t *testing.T) {
-			r, err := NewRegistry(uri, testutil.Logger(t))
+			r, _, err := NewRegistry(uri, testutil.Logger(t))
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 
@@ -139,7 +141,7 @@ func TestCreateSameStress(t *testing.T) {
 		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
 	} {
 		t.Run(testName, func(t *testing.T) {
-			r, err := NewRegistry(uri, testutil.Logger(t))
+			r, _, err := NewRegistry(uri, testutil.Logger(t))
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 
@@ -203,7 +205,7 @@ func TestDropSameStress(t *testing.T) {
 		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
 	} {
 		t.Run(testName, func(t *testing.T) {
-			r, err := NewRegistry(uri, testutil.Logger(t))
+			r, _, err := NewRegistry(uri, testutil.Logger(t))
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 
@@ -252,7 +254,7 @@ func TestCreateDropSameStress(t *testing.T) {
 		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
 	} {
 		t.Run(testName, func(t *testing.T) {
-			r, err := NewRegistry(uri, testutil.Logger(t))
+			r, _, err := NewRegistry(uri, testutil.Logger(t))
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 

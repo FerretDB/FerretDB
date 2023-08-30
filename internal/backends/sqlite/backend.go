@@ -27,28 +27,27 @@ import (
 // backend implements backends.Backend interface.
 type backend struct {
 	r       *metadata.Registry
-	version string // FIXME: set when connect?
+	version string
 }
 
 // NewBackendParams represents the parameters of NewBackend function.
 //
 //nolint:vet // for readability
 type NewBackendParams struct {
-	URI     string
-	L       *zap.Logger
-	Version string
+	URI string
+	L   *zap.Logger
 }
 
 // NewBackend creates a new SQLite backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	r, err := metadata.NewRegistry(params.URI, params.L)
+	r, version, err := metadata.NewRegistry(params.URI, params.L)
 	if err != nil {
 		return nil, err
 	}
 
 	return backends.BackendContract(&backend{
 		r:       r,
-		version: params.Version,
+		version: version,
 	}), nil
 }
 

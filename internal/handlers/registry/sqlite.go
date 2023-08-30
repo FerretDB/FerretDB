@@ -25,7 +25,7 @@ func init() {
 		opts.Logger.Warn("SQLite backend is in beta.")
 
 		handlerOpts := &sqlite.NewOpts{
-			Backend: sqlite.SQLite,
+			Backend: "sqlite",
 			URI:     opts.SQLiteURL,
 
 			L:             opts.Logger.Named("sqlite"),
