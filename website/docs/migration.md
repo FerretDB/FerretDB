@@ -103,28 +103,33 @@ You would do the following:
 
 Continuing with the same example above, we can further examine the diff output.
 
-1. Run FerretDB in `diff-proxy` mode: `bin/task run-proxy`.
+1. Run FerretDB in `diff-proxy` mode.
+
+   ```sh
+   me@foobar:~/FerretDB$ bin/task run-proxy
+   ```
+
 2. Re-run the query.
 
-```js
-test> db.posts.aggregate(
-...   [
-...     { $sort: { date: 1, author: 1 } },
-...     {
-...       $group:
-...         {
-...           _id: "$author",
-...           firstPost: { $first: "$date" }
-...         }
-...     }
-...   ]
-... );
-[
-  { _id: 'Alice', firstPost: ISODate("2023-08-20T10:33:23.134Z") },
-  { _id: 'Bob', firstPost: ISODate("2023-08-28T10:33:23.134Z") }
-]
-test>
-```
+   ```js
+   test> db.posts.aggregate(
+   ...   [
+   ...     { $sort: { date: 1, author: 1 } },
+   ...     {
+   ...       $group:
+   ...         {
+   ...           _id: "$author",
+   ...           firstPost: { $first: "$date" }
+   ...         }
+   ...     }
+   ...   ]
+   ... );
+   [
+     { _id: 'Alice', firstPost: ISODate("2023-08-20T10:33:23.134Z") },
+     { _id: 'Bob', firstPost: ISODate("2023-08-28T10:33:23.134Z") }
+   ]
+   test>
+   ```
 
 In the diff output below we have discovered that the query cannot be serviced by our application because the `$first` accumulator operator is not implemented in FerretDB.
 
