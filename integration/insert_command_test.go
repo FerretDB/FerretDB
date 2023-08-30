@@ -62,8 +62,7 @@ func TestInsertCommandErrors(tt *testing.T) {
 				Message: `E11000 duplicate key error collection: ` +
 					`TestInsertCommandErrors-InsertDuplicateKey.TestInsertCommandErrors-InsertDuplicateKey index: _id_ dup key: { _id: "double" }`,
 			},
-			altMessage:     "E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKey.TestInsertCommandErrors-InsertDuplicateKey",
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3183",
+			altMessage: "E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKey.TestInsertCommandErrors-InsertDuplicateKey",
 		},
 		"InsertDuplicateKeyOrdered": {
 			toInsert: []any{
@@ -77,8 +76,7 @@ func TestInsertCommandErrors(tt *testing.T) {
 				Message: `E11000 duplicate key error collection: ` +
 					`TestInsertCommandErrors-InsertDuplicateKeyOrdered.TestInsertCommandErrors-InsertDuplicateKeyOrdered index: _id_ dup key: { _id: "double" }`,
 			},
-			altMessage:     `E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKeyOrdered.TestInsertCommandErrors-InsertDuplicateKeyOrdered`,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3183",
+			altMessage: `E11000 duplicate key error collection: TestInsertCommandErrors-InsertDuplicateKeyOrdered.TestInsertCommandErrors-InsertDuplicateKeyOrdered`,
 		},
 		"InsertArray": {
 			toInsert: []any{
