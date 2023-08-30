@@ -139,8 +139,8 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 	q = `
 		SELECT
 		    COUNT(s.name)             AS CountTables,
-			COALESCE(SUM(d.pgsize),0) AS SizeTables,
-			COALESCE(SUM(d.ncell),0)  AS CountCells
+		    COALESCE(SUM(d.pgsize),0) AS SizeTables,
+		    COALESCE(SUM(d.ncell),0)  AS CountCells
 		FROM sqlite_schema AS s
 			LEFT JOIN dbstat AS d ON d.name = s.tbl_name
 		WHERE s.type = 'table' AND s.name NOT LIKE :reserved AND s.name <> :metadata`
