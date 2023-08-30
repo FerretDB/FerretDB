@@ -27,7 +27,7 @@ me@foobar:~/FerretDB$ bin/task env-up
 # in another terminal run the debug build which runs in diff-normal mode by default
 me@foobar:~/FerretDB$ bin/task run
 ```
-1. Note that because we are running in `diff-normal` mode the error returned from FerretDB will be sent to the client, which, in most cases doesn't require further inspection of the diff output.
+1. Please note that due to running in `diff-normal` mode, any error returned from FerretDB will be transmitted to the client. In the majority of cases, this does not necessitate additional scrutiny of the diff output. Nevertheless, if FerretDB does not handle the error, additional inspection becomes necessary.
 
 ```sh
 me@foobar:~/FerretDB$ mongosh --quiet
@@ -184,5 +184,33 @@ Body diff:
 ```
 
 ### Response metrics
+
+Metrics are captured and written to standard output (`stdout`) upon exiting in [Debug builds](https://pkg.go.dev/github.com/FerretDB/FerretDB@v1.8.0/build/version#hdr-Debug_builds). This is a useful way to quickly determine what commands are not implemented for the client requests sent by your application.
+
+```sh
+# we ran task run-proxy and then sent an interrupt ctrl+c after some time
+^Ctask: Signal received: "interrupt"
+# HELP ferretdb_client_requests_total Total number of requests.
+# TYPE ferretdb_client_requests_total counter
+ferretdb_client_requests_total{command="aggregate",opcode="OP_MSG"} 105
+ferretdb_client_requests_total{command="find",opcode="OP_MSG"} 398
+ferretdb_client_requests_total{command="findAndModify",opcode="OP_MSG"} 6
+ferretdb_client_requests_total{command="hello",opcode="OP_MSG"} 4
+ferretdb_client_requests_total{command="insert",opcode="OP_MSG"} 10
+ferretdb_client_requests_total{command="ismaster",opcode="OP_MSG"} 17
+ferretdb_client_requests_total{command="unknown",opcode="OP_QUERY"} 28
+ferretdb_client_requests_total{command="update",opcode="OP_MSG"} 59
+# HELP ferretdb_client_responses_total Total number of responses.
+# TYPE ferretdb_client_responses_total counter
+ferretdb_client_responses_total{argument="$first (accumulator)",command="aggregate",opcode="OP_MSG",result="NotImplemented"} 18
+ferretdb_client_responses_total{argument="fields",command="findAndModify",opcode="OP_MSG",result="NotImplemented"} 6
+ferretdb_client_responses_total{argument="unknown",command="aggregate",opcode="OP_MSG",result="ok"} 87
+ferretdb_client_responses_total{argument="unknown",command="find",opcode="OP_MSG",result="ok"} 398
+ferretdb_client_responses_total{argument="unknown",command="hello",opcode="OP_MSG",result="ok"} 4
+ferretdb_client_responses_total{argument="unknown",command="insert",opcode="OP_MSG",result="ok"} 10
+ferretdb_client_responses_total{argument="unknown",command="ismaster",opcode="OP_MSG",result="ok"} 17
+ferretdb_client_responses_total{argument="unknown",command="unknown",opcode="OP_REPLY",result="ok"} 28
+ferretdb_client_responses_total{argument="unknown",command="update",opcode="OP_MSG",result="ok"} 59
+```
 
 ### Other tools
