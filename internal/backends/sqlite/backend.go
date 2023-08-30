@@ -26,15 +26,17 @@ import (
 
 // backend implements backends.Backend interface.
 type backend struct {
-	r *metadata.Registry
+	r       *metadata.Registry
+	version string // FIXME: set when connect?
 }
 
 // NewBackendParams represents the parameters of NewBackend function.
 //
 //nolint:vet // for readability
 type NewBackendParams struct {
-	URI string
-	L   *zap.Logger
+	URI     string
+	L       *zap.Logger
+	Version string
 }
 
 // NewBackend creates a new SQLite backend.
@@ -45,7 +47,8 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 	}
 
 	return backends.BackendContract(&backend{
-		r: r,
+		r:       r,
+		version: params.Version,
 	}), nil
 }
 
@@ -82,6 +85,14 @@ func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabas
 	}
 
 	return nil
+}
+
+// Info implements backends.Backend interface.
+func (b *backend) Info() *backends.Info {
+	return &backends.Info{
+		Name:    "SQLite",
+		Version: b.version,
+	}
 }
 
 // Describe implements prometheus.Collector.
