@@ -93,8 +93,12 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, lazyerrors.Error(err)
 		}
 
+		if backend.Version != "" {
+			backend.Version = " " + backend.Version // to format startup warnings
+		}
+
 		startupWarnings := []string{
-			fmt.Sprintf("Powered by FerretDB %s and %s %s.", info.Version, backend.Name, backend.Version),
+			fmt.Sprintf("Powered by FerretDB %s and %s%s.", info.Version, backend.Name, backend.Version),
 			"Please star us on GitHub: https://github.com/FerretDB/FerretDB.",
 		}
 
