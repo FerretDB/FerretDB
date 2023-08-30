@@ -234,9 +234,11 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &backends.ExplainResult{
-		Iter: newQueryIterator(ctx, rows),
-	}, nil
+	for rows.Next() {
+		rows.Scan()
+	}
+
+	return &backends.ExplainResult{}, nil
 
 }
 
