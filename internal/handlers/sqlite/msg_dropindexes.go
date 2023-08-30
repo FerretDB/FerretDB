@@ -23,5 +23,6 @@ import (
 
 // MsgDropIndexes implements HandlerInterface.
 func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/3287
 	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }

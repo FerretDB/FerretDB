@@ -35,7 +35,7 @@ type Collection interface {
 	Query(context.Context, *QueryParams) (*QueryResult, error)
 	InsertAll(context.Context, *InsertAllParams) (*InsertAllResult, error)
 	Update(context.Context, *UpdateParams) (*UpdateResult, error)
-	Delete(context.Context, *DeleteParams) (*DeleteResult, error)
+	DeleteAll(context.Context, *DeleteAllParams) (*DeleteAllResult, error)
 	Explain(context.Context, *ExplainParams) (*ExplainResult, error)
 }
 
@@ -98,11 +98,16 @@ type InsertAllResult struct{}
 // and the first encountered error should be returned.
 //
 // All documents are expected to be valid and include _id fields.
+// They will be frozen.
 //
 // Both database and collection may or may not exist; they should be created automatically if needed.
 // TODO https://github.com/FerretDB/FerretDB/issues/3069
 func (cc *collectionContract) InsertAll(ctx context.Context, params *InsertAllParams) (*InsertAllResult, error) {
 	defer observability.FuncCall(ctx)()
+
+	for _, doc := range params.Docs {
+		doc.Freeze()
+	}
 
 	res, err := cc.c.InsertAll(ctx, params)
 	checkError(err, ErrorCodeInsertDuplicateID)
@@ -134,24 +139,29 @@ func (cc *collectionContract) Update(ctx context.Context, params *UpdateParams) 
 	return res, err
 }
 
-// DeleteParams represents the parameters of Collection.Delete method.
-type DeleteParams struct {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3085
+// DeleteAllParams represents the parameters of Collection.Delete method.
+type DeleteAllParams struct {
 	IDs []any
 }
 
-// DeleteResult represents the results of Collection.Delete method.
-type DeleteResult struct {
+// DeleteAllResult represents the results of Collection.Delete method.
+type DeleteAllResult struct {
 	Deleted int64
 }
 
-// Delete deletes documents in collection.
+// DeleteAll deletes documents in collection.
+//
+// Passed IDs may contain duplicates or point to non-existing documents.
+//
+// The operation should be atomic.
+// If some documents cannot be deleted, the operation should be rolled back,
+// and the first encountered error should be returned.
 //
 // Database or collection may not exist; that's not an error.
-func (cc *collectionContract) Delete(ctx context.Context, params *DeleteParams) (*DeleteResult, error) {
+func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllParams) (*DeleteAllResult, error) {
 	defer observability.FuncCall(ctx)()
 
-	res, err := cc.c.Delete(ctx, params)
+	res, err := cc.c.DeleteAll(ctx, params)
 	checkError(err)
 
 	return res, err

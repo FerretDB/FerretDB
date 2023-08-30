@@ -147,7 +147,7 @@ func execDelete(ctx context.Context, coll backends.Collection, filter *types.Doc
 		return 0, nil
 	}
 
-	deleteRes, err := coll.Delete(ctx, &backends.DeleteParams{IDs: ids})
+	deleteRes, err := coll.DeleteAll(ctx, &backends.DeleteAllParams{IDs: ids})
 	if err != nil {
 		return 0, err
 	}

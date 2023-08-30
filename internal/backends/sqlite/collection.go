@@ -171,16 +171,16 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 	return &res, nil
 }
 
-// Delete implements backends.Collection interface.
-func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) (*backends.DeleteResult, error) {
+// DeleteAll implements backends.Collection interface.
+func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllParams) (*backends.DeleteAllResult, error) {
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
-		return &backends.DeleteResult{Deleted: 0}, nil
+		return &backends.DeleteAllResult{Deleted: 0}, nil
 	}
 
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
-		return &backends.DeleteResult{Deleted: 0}, nil
+		return &backends.DeleteAllResult{Deleted: 0}, nil
 	}
 
 	q := fmt.Sprintf(`DELETE FROM %q WHERE %s = ?`, meta.TableName, metadata.IDColumn)
@@ -203,7 +203,7 @@ func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) 
 		deleted += rowsAffected
 	}
 
-	return &backends.DeleteResult{
+	return &backends.DeleteAllResult{
 		Deleted: deleted,
 	}, nil
 }
