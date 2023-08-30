@@ -16,6 +16,7 @@ package sqlite
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
@@ -131,7 +132,7 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 		return nil, lazyerrors.Error(err)
 	}
 
-	// Count and Size of tables exclude sqlite internal tables and FerretDB meta table.
+	// Count and Size of tables exclude sqlite internal tables and FerretDB meta table,
 	// see https://www.sqlite.org/schematab.html.
 	q = `
 		SELECT
@@ -139,24 +140,32 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 			COALESCE(SUM(d.pgsize),0) AS SizeTables
 		FROM sqlite_schema AS s
 			LEFT JOIN dbstat AS d ON d.name = s.tbl_name
-		WHERE s.type = 'table' AND s.name NOT LIKE 'sqlite_%' AND s.name NOT LIKE '_ferretdb_collections%'`
+		WHERE s.type = 'table' AND s.name NOT LIKE :reserved AND s.name <> :metadata`
 
-	if err = d.QueryRowContext(ctx, q).Scan(
+	args := []any{
+		sql.Named("reserved", metadata.ReservedTablePrefix+"%"),
+		sql.Named("metadata", metadata.MetadataTableName),
+	}
+	if err = d.QueryRowContext(ctx, q, args...).Scan(
 		&stats.CountCollections,
 		&stats.SizeCollections,
 	); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
+	// Count and Size of indexes exclude sqlite internal indexes.
 	q = `
 		SELECT
-		    COUNT(s.name)             AS CountIndexes,
+			COUNT(s.name)             AS CountIndexes,
 			COALESCE(SUM(d.pgsize),0) AS SizeIndexes
 		FROM sqlite_schema AS s
 			LEFT JOIN dbstat AS d ON d.name = s.tbl_name
-		WHERE s.type = 'index'`
+		WHERE s.type = 'index' AND s.name NOT LIKE :reserved`
 
-	if err = d.QueryRowContext(ctx, q).Scan(
+	args = []any{
+		sql.Named("reserved", metadata.ReservedTablePrefix+"%"),
+	}
+	if err = d.QueryRowContext(ctx, q, args...).Scan(
 		&stats.CountIndexes,
 		&stats.SizeIndexes,
 	); err != nil {
@@ -166,12 +175,16 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 	q = `
 		SELECT COUNT(*)
 		FROM (
-		    	SELECT name
-		    	FROM sqlite_schema
-		    	WHERE type ='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_ferretdb_collections%'
+			SELECT name
+			FROM sqlite_schema
+			WHERE type = 'table' AND name NOT LIKE :reserved AND name <> :metadata
 		     )`
 
-	if err = d.QueryRowContext(ctx, q).Scan(&stats.CountObjects); err != nil {
+	args = []any{
+		sql.Named("reserved", metadata.ReservedTablePrefix+"%"),
+		sql.Named("metadata", metadata.MetadataTableName),
+	}
+	if err = d.QueryRowContext(ctx, q, args...).Scan(&stats.CountObjects); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

@@ -34,12 +34,12 @@ import (
 )
 
 const (
-	// This prefix is reserved by SQLite for internal use,
+	// ReservedTablePrefix is reserved by SQLite for internal use,
 	// see https://www.sqlite.org/lang_createtable.html.
-	reservedTablePrefix = "sqlite_"
+	ReservedTablePrefix = "sqlite_"
 
-	// SQLite table name where FerretDB metadata is stored.
-	metadataTableName = "_ferretdb_collections"
+	// MetadataTableName is SQLite table name where FerretDB metadata is stored.
+	MetadataTableName = "_ferretdb_collections"
 )
 
 // Parts of Prometheus metric names.
@@ -94,7 +94,7 @@ func (r *Registry) Close() {
 
 // initCollections loads collections metadata from the database during initialization.
 func (r *Registry) initCollections(ctx context.Context, dbName string, db *fsql.DB) error {
-	rows, err := db.QueryContext(ctx, fmt.Sprintf("SELECT name, table_name, settings FROM %q", metadataTableName))
+	rows, err := db.QueryContext(ctx, fmt.Sprintf("SELECT name, table_name, settings FROM %q", MetadataTableName))
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -155,7 +155,7 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, dbName string) (*fsq
 			"table_name TEXT NOT NULL UNIQUE CHECK(table_name != ''), "+
 			"settings TEXT NOT NULL CHECK(settings != '')"+
 			") STRICT",
-		metadataTableName,
+		MetadataTableName,
 	)
 	if _, err = db.ExecContext(ctx, q); err != nil {
 		r.databaseDrop(ctx, dbName)
@@ -250,7 +250,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2760
 
 	tableName := fmt.Sprintf("%s_%08x", strings.ToLower(collectionName), s)
-	if strings.HasPrefix(tableName, reservedTablePrefix) {
+	if strings.HasPrefix(tableName, ReservedTablePrefix) {
 		tableName = "_" + tableName
 	}
 
@@ -272,7 +272,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 		Settings:  "{}",
 	}
 
-	q = fmt.Sprintf("INSERT INTO %q (name, table_name, settings) VALUES (?, ?, ?)", metadataTableName)
+	q = fmt.Sprintf("INSERT INTO %q (name, table_name, settings) VALUES (?, ?, ?)", MetadataTableName)
 	if _, err = db.ExecContext(ctx, q, c.Name, c.TableName, c.Settings); err != nil {
 		_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
 		return false, lazyerrors.Error(err)
@@ -328,7 +328,7 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 		return false, nil
 	}
 
-	q := fmt.Sprintf("DELETE FROM %q WHERE name = ?", metadataTableName)
+	q := fmt.Sprintf("DELETE FROM %q WHERE name = ?", MetadataTableName)
 	if _, err := db.ExecContext(ctx, q, collectionName); err != nil {
 		return false, lazyerrors.Error(err)
 	}
