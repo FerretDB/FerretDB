@@ -101,6 +101,11 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 	panic("not implemented")
 }
 
+// Stats implements backends.Database interface.
+func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*backends.StatsResult, error) {
+	panic("not implemented")
+}
+
 // check interfaces
 var (
 	_ backends.Database = (*database)(nil)

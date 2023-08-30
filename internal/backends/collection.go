@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
@@ -34,7 +33,7 @@ import (
 // See collectionContract and its methods for additional details.
 type Collection interface {
 	Query(context.Context, *QueryParams) (*QueryResult, error)
-	Insert(context.Context, *InsertParams) (*InsertResult, error)
+	InsertAll(context.Context, *InsertAllParams) (*InsertAllResult, error)
 	Update(context.Context, *UpdateParams) (*UpdateResult, error)
 	Delete(context.Context, *DeleteParams) (*DeleteResult, error)
 	Explain(context.Context, *ExplainParams) (*ExplainResult, error)
@@ -84,34 +83,36 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 	return res, err
 }
 
-// InsertParams represents the parameters of Collection.Insert method.
-type InsertParams struct {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2750
-	// that should be types.DocumentIterator
-	Iter iterator.Interface[int, any]
+// InsertAllParams represents the parameters of Collection.InsertAll method.
+type InsertAllParams struct {
+	Docs []*types.Document
 }
 
-// InsertResult represents the results of Collection.Insert method.
-type InsertResult struct {
-	Inserted int64
-}
+// InsertAllResult represents the results of Collection.InsertAll method.
+type InsertAllResult struct{}
 
-// Insert inserts documents into the collection.
+// InsertAll inserts all or none documents into the collection.
+//
+// The operation should be atomic.
+// If some documents cannot be inserted, the operation should be rolled back,
+// and the first encountered error should be returned.
+//
+// All documents are expected to be valid and include _id fields.
 //
 // Both database and collection may or may not exist; they should be created automatically if needed.
 // TODO https://github.com/FerretDB/FerretDB/issues/3069
-func (cc *collectionContract) Insert(ctx context.Context, params *InsertParams) (*InsertResult, error) {
+func (cc *collectionContract) InsertAll(ctx context.Context, params *InsertAllParams) (*InsertAllResult, error) {
 	defer observability.FuncCall(ctx)()
 
-	res, err := cc.c.Insert(ctx, params)
-	checkError(err)
+	res, err := cc.c.InsertAll(ctx, params)
+	checkError(err, ErrorCodeInsertDuplicateID)
 
 	return res, err
 }
 
 // UpdateParams represents the parameters of Collection.Update method.
 type UpdateParams struct {
-	// that should be types.DocumentIterator
+	// that should be []*types.Document
 	// TODO https://github.com/FerretDB/FerretDB/issues/3079
 	Docs *types.Array
 }
