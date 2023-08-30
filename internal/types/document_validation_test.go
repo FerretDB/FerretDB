@@ -137,7 +137,7 @@ func TestDocumentValidateData(t *testing.T) {
 					return
 				}
 
-				ve, ok := err.(*ValidationError)
+				ve, ok := err.(*ValidationError) //nolint:errorlint // only *ValidationError could be returned
 				require.True(t, ok)
 				assert.Equal(t, tc.reason, ve.reason)
 			})
