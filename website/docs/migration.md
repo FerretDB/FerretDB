@@ -21,6 +21,7 @@ You can manually test your application or use integration tests, among other met
 As an example, let us say that your application performs some complex query and you'd like to test it in `diff-normal` mode. You would do the following:
 
 1. Start the environment and run FerretDB.
+
 ```sh
 # in a terminal run env-up to start the environment
 me@foobar:~/FerretDB$ bin/task env-up
