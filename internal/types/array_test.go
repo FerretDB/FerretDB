@@ -65,6 +65,18 @@ func TestArray(t *testing.T) {
 		assert.Equal(t, Null, value)
 	})
 
+	t.Run("Freeze", func(t *testing.T) {
+		t.Parallel()
+
+		a := must.NotFail(NewArray(int32(42)))
+
+		a.Freeze()
+
+		assert.PanicsWithValue(t, "array is frozen and can't be modified", func() {
+			a.Append(int32(13))
+		})
+	})
+
 	t.Run("DeepCopy", func(t *testing.T) {
 		t.Parallel()
 
