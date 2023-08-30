@@ -69,6 +69,9 @@ func NewPool(ctx context.Context, uri string, logger *zap.Logger, p *state.Provi
 			return lazyerrors.Error(err)
 		}
 
+		// After moving pg to the new architecture, we should stop storing the version in the state,
+		// but use backend.Info instead.
+		// TODO https://github.com/FerretDB/FerretDB/issues/3228
 		if err := p.Update(func(s *state.State) { s.HandlerVersion = v }); err != nil {
 			logger.Error("pgdb.Pool.AfterConnect: failed to update state", zap.Error(err))
 		}
