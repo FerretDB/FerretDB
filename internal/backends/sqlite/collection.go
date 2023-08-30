@@ -216,14 +216,14 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
 		return &backends.ExplainResult{
-			// TODO
+			QueryPlanner: must.NotFail(types.NewDocument()),
 		}, nil
 	}
 
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
 		return &backends.ExplainResult{
-			//TODO
+			QueryPlanner: must.NotFail(types.NewDocument()),
 		}, nil
 	}
 
@@ -234,12 +234,23 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return nil, lazyerrors.Error(err)
 	}
 
-	for rows.Next() {
-		rows.Scan()
+	queryPlan, err := types.NewArray()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
-	return &backends.ExplainResult{}, nil
+	for rows.Next() {
+		var planRow string
+		if err := rows.Scan(&planRow); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 
+		queryPlan.Append(planRow)
+	}
+
+	return &backends.ExplainResult{
+		QueryPlanner: must.NotFail(types.NewDocument("Plan", queryPlan)),
+	}, nil
 }
 
 // check interfaces
