@@ -1,5 +1,5 @@
-sidebar_position: 1
-
+---
+sidebar_position: 3
 ---
 
 # Migrating from MongoDB to FerretDB
@@ -8,7 +8,8 @@ To ensure a smooth and successful migration from MongoDB, we offer several metho
 
 ## Operation modes
 
-We support different operation modes, by default FerretDB will always run on `normal` mode. In this mode all client requests are processed *only* by FerretDB and returned to the client.
+We support different operation modes, by default FerretDB will always run on `normal` mode.
+In this mode all client requests are processed _only_ by FerretDB and returned to the client.
 
 You can set modes using either the `--mode` flag or the `FERRETDB_MODE` variable, accepting values such as `normal`, `proxy`, `diff-normal`, and `diff-proxy`.
 
@@ -16,9 +17,11 @@ You can set modes using either the `--mode` flag or the `FERRETDB_MODE` variable
 
 `diff-normal` mode acts a proxy and will forward client requests to another MongoDB-compatible database, and will log the difference between them.
 
-You can manually test your application or use integration tests, among other methods. Afterward, you can inspect the differential output for errors or inconsistencies between responses that require your attention.
+You can manually test your application or use integration tests, among other methods.
+Afterward, you can inspect the differential output for errors or inconsistencies between responses that require your attention.
 
-As an example, let us say that your application performs some complex query and you'd like to test it in `diff-normal` mode. You would do the following:
+As an example, let us say that your application performs some complex query and you'd like to test it in `diff-normal` mode.
+You would do the following:
 
 1. Start the environment and run FerretDB.
 
@@ -28,10 +31,17 @@ me@foobar:~/FerretDB$ bin/task env-up
 # in another terminal run the debug build which runs in diff-normal mode by default
 me@foobar:~/FerretDB$ bin/task run
 ```
-1. Please note that due to running in `diff-normal` mode, any error returned from FerretDB will be transmitted to the client. In the majority of cases, this does not necessitate additional scrutiny of the diff output. Nevertheless, if FerretDB does not handle the error, additional inspection becomes necessary.
+
+Please note that due to running in `diff-normal` mode, any error returned from FerretDB will be transmitted to the client.
+In the majority of cases, this does not necessitate additional scrutiny of the diff output.
+Nevertheless, if FerretDB does not handle the error, additional inspection becomes necessary.
 
 ```sh
+# run mongosh
 me@foobar:~/FerretDB$ mongosh --quiet
+```
+```js
+// insert some documents
 test> db.posts.insertMany([
 ...   {
 ...     title: 'title A',
@@ -81,7 +91,7 @@ test> db.posts.aggregate(
 ...   ]
 ... );
 MongoServerError: $group accumulator "$first" is not implemented yet
-test> 
+test>
 ```
 
 ### Manual and automated testing with `diff-proxy` mode
@@ -90,15 +100,10 @@ test>
 
 Continuing with the same example above, we can further examine the diff output.
 
-1. Run FerretDB in `diff-proxy` mode.
+1. Run FerretDB in `diff-proxy` mode: `bin/task run-proxy`.
+2. Re-run the query.
 
-```sh
-me@foobar:~/FerretDB$ bin/task run-proxy
-```
-
-2. Run the same query again.
-
-```sh
+```js
 test> db.posts.aggregate(
 ...   [
 ...     { $sort: { date: 1, author: 1 } },
@@ -186,7 +191,8 @@ Body diff:
 
 ### Response metrics
 
-Metrics are captured and written to standard output (`stdout`) upon exiting in [Debug builds](https://pkg.go.dev/github.com/FerretDB/FerretDB@v1.8.0/build/version#hdr-Debug_builds). This is a useful way to quickly determine what commands are not implemented for the client requests sent by your application.
+Metrics are captured and written to standard output (`stdout`) upon exiting in [Debug builds](https://pkg.go.dev/github.com/FerretDB/FerretDB@v1.8.0/build/version#hdr-Debug_builds).
+This is a useful way to quickly determine what commands are not implemented for the client requests sent by your application.
 
 ```sh
 # we ran task run-proxy and then sent an interrupt ctrl+c after some time
@@ -216,7 +222,11 @@ ferretdb_client_responses_total{argument="unknown",command="update",opcode="OP_M
 
 ### Other tools
 
-We also have a fork of the Amazon DocumentDB Compatibility Tool [here](https://github.com/FerretDB/amazon-documentdb-tools/tree/master/compat-tool). The tool examines files to identify queries that use unsupported operators in FerretDB. Please note that this tool is not highly accurate and may generate inaccurate reports, as it does not parse query syntax with contextual information about the originating command. For example, an unsupported operator might appear within a `find` or `aggregate` command, which the tool does not differentiate. Note that we also mark operators as unsupported if they are not supported in *all* commands, which could result in false negatives.
+We also have a fork of the Amazon DocumentDB Compatibility Tool [here](https://github.com/FerretDB/amazon-documentdb-tools/tree/master/compat-tool).
+The tool examines files to identify queries that use unsupported operators in FerretDB.
+Please note that this tool is not highly accurate and may generate inaccurate reports, as it does not parse query syntax with contextual information about the originating command.
+For example, an unsupported operator might appear within a `find` or `aggregate` command, which the tool does not differentiate.
+Note that we also mark operators as unsupported if they are not supported in _all_ commands, which could result in false negatives.
 
 Running the tool to check FerretDB compatibility:
 
