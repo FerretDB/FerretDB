@@ -16,9 +16,9 @@ You can set modes using either the `--mode` flag or the `FERRETDB_MODE` variable
 
 `diff-normal` mode acts a proxy and will forward client requests to another MongoDB-compatible database, and will log the difference between them.
 
-You could manually test your application and then inspect the diff output if any errors occurred or for inconsistencies between responses that warrant your attention.
+You can manually test your application or use integration tests, among other methods. Afterward, you can inspect the differential output for errors or inconsistencies between responses that require your attention.
 
-As an example, let us say that your application performs some complex query and you'd like to test it in this mode. You would do the following:
+As an example, let us say that your application performs some complex query and you'd like to test it in `diff-normal` mode. You would do the following:
 
 1. Start the environment and run FerretDB.
 ```sh
@@ -27,7 +27,7 @@ me@foobar:~/FerretDB$ bin/task env-up
 # in another terminal run the debug build which runs in diff-normal mode by default
 me@foobar:~/FerretDB$ bin/task run
 ```
-2. Note that because we are running in `diff-normal` mode the error returned from FerretDB will be sent to the client, which, in most cases doesn't require further inspection of the diff output.
+1. Note that because we are running in `diff-normal` mode the error returned from FerretDB will be sent to the client, which, in most cases doesn't require further inspection of the diff output.
 
 ```sh
 me@foobar:~/FerretDB$ mongosh --quiet
@@ -87,7 +87,7 @@ test>
 
 `diff-proxy` mode will forward client requests to a MongoDB-compatible database, but return the proxy responses to the client, and will log the difference between them.
 
-Using the same example above we could further inspect the diff output.
+Continuing with the same example above, we can further examine the diff output.
 
 1. Run FerretDB in `diff-proxy` mode.
 
@@ -117,7 +117,7 @@ test> db.posts.aggregate(
 test>
 ```
 
-In the diff output below we can see that the `$first` accumulator operator it not implemented in FerretDB.
+In the diff output below we have discovered that the query cannot be serviced by our application because the `$first` accumulator operator it not implemented in FerretDB.
 
 ```sh
 2023-08-29T13:25:09.048+0200	WARN	// 127.0.0.1:33522 -> 127.0.0.1:27017 	clientconn/conn.go:360	Header diff:
