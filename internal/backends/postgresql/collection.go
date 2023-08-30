@@ -40,7 +40,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 }
 
 // Insert implements backends.Collection interface.
-func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) (*backends.InsertResult, error) {
+func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
 	panic("not implemented")
 }
 
