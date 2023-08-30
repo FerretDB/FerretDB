@@ -215,7 +215,7 @@ ferretdb_client_responses_total{argument="unknown",command="update",opcode="OP_M
 
 ### Other tools
 
-We also have a fork of the Amazon DocumentDB Compatibility Tool [here](https://github.com/FerretDB/amazon-documentdb-tools/tree/master/compat-tool). The tool examines files to identify queries that use unsupported operators in FerretDB. Please note that this tool is not highly accurate and may generate inaccurate reports, as it does not parse query syntax with contextual information about the originating command. For example, an unsupported operator might appear within a `find` or `aggregate` command, which the tool does not differentiate. Note, that we also mark operators as unsupported if they are not supported in *all* commands, which could result false negatives.
+We also have a fork of the Amazon DocumentDB Compatibility Tool [here](https://github.com/FerretDB/amazon-documentdb-tools/tree/master/compat-tool). The tool examines files to identify queries that use unsupported operators in FerretDB. Please note that this tool is not highly accurate and may generate inaccurate reports, as it does not parse query syntax with contextual information about the originating command. For example, an unsupported operator might appear within a `find` or `aggregate` command, which the tool does not differentiate. Note that we also mark operators as unsupported if they are not supported in *all* commands, which could result in false negatives.
 
 Running the tool to check FerretDB compatibility:
 
