@@ -34,7 +34,7 @@ You would do the following:
 
 2. Run `mongosh` and insert some documents.
 
-   Please note that due to running in `diff-normal` mode, any error returned from FerretDB will be transmitted to the client.
+   Please note that due to running in `diff-normal` mode, any error returned from FerretDB will be transmitted to the client, allowing us to promptly identify the issue.
    In the majority of cases, this does not necessitate additional scrutiny of the diff output.
    Nevertheless, if FerretDB does not handle the error, additional inspection becomes necessary.
 
