@@ -112,15 +112,15 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 		return stats, nil
 	}
 
-	// Call ANALYZE to update statistics, the actual statistics are needed to estimate the number of rows in all tables,
+	// Call ANALYZE to update statistics of tables and indexes,
 	// see https://www.sqlite.org/lang_analyze.html.
 	q := `ANALYZE`
 	if _, err := d.ExecContext(ctx, q); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// Total size is the disk space used by the database.
-	// See https://www.sqlite.org/dbstat.html.
+	// Total size is the disk space used by the database,
+	// see https://www.sqlite.org/dbstat.html.
 	q = `
 		SELECT
 			SUM(pgsize)
@@ -131,6 +131,8 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 		return nil, lazyerrors.Error(err)
 	}
 
+	// Count and Size of tables exclude sqlite internal tables and FerretDB meta table.
+	// see https://www.sqlite.org/schematab.html.
 	q = `
 		SELECT
 		    COUNT(s.name)             AS CountTables,
@@ -139,7 +141,10 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 			LEFT JOIN dbstat AS d ON d.name = s.tbl_name
 		WHERE s.type = 'table' AND s.name NOT LIKE 'sqlite_%' AND s.name NOT LIKE '_ferretdb_collections%'`
 
-	if err = d.QueryRowContext(ctx, q).Scan(&stats.CountCollections, &stats.SizeCollections); err != nil {
+	if err = d.QueryRowContext(ctx, q).Scan(
+		&stats.CountCollections,
+		&stats.SizeCollections,
+	); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -151,21 +156,26 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 			LEFT JOIN dbstat AS d ON d.name = s.tbl_name
 		WHERE s.type = 'index'`
 
-	if err = d.QueryRowContext(ctx, q).Scan(&stats.CountIndexes, &stats.SizeIndexes); err != nil {
+	if err = d.QueryRowContext(ctx, q).Scan(
+		&stats.CountIndexes,
+		&stats.SizeIndexes,
+	); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	q = `SELECT COUNT(*)
-		FROM
-		    SELECT name
-		    FROM sqlite_schema
-			WHERE type ='table' AND name NOT LIKE 'sqlite_%'`
+	q = `
+		SELECT COUNT(*)
+		FROM (
+		    	SELECT name
+		    	FROM sqlite_schema
+		    	WHERE type ='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_ferretdb_collections%'
+		     )`
 
 	if err = d.QueryRowContext(ctx, q).Scan(&stats.CountObjects); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	return nil, nil
+	return stats, nil
 }
 
 // check interfaces
