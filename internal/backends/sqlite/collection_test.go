@@ -28,8 +28,12 @@ func TestInsert(t *testing.T) {
 	b, err := NewBackend(&NewBackendParams{URI: "file:./?mode=memory", L: testutil.Logger(t)})
 	require.NoError(t, err)
 
+	defer b.Close()
+
 	db, err := b.Database(testutil.DatabaseName(t))
 	require.NoError(t, err)
+
+	defer db.Close()
 
 	c, err := db.Collection(testutil.CollectionName(t))
 	require.NoError(t, err)
