@@ -309,7 +309,12 @@ func TestVersion(t *testing.T) {
 
 	dbName := t.Name()
 
-	// database must exist, so version can be queried
+	// trying to get the version while database does not exist
+	version, err := r.Version(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "", version)
+
+	// database exists, so version can be queried
 	db, err := r.DatabaseGetOrCreate(ctx, dbName)
 	require.NoError(t, err)
 	require.NotNil(t, db)
@@ -318,7 +323,7 @@ func TestVersion(t *testing.T) {
 		r.DatabaseDrop(ctx, dbName)
 	})
 
-	version, err := r.Version(ctx)
+	version, err = r.Version(ctx)
 	require.NoError(t, err)
 	assert.Equal(t, "3.41.2", version)
 }
