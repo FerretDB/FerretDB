@@ -11,7 +11,7 @@ To ensure a smooth and successful migration from MongoDB, we offer several metho
 We support different operation modes, by default FerretDB will always run on `normal` mode.
 In this mode all client requests are processed _only_ by FerretDB and returned to the client.
 
-You can set modes using either the `--mode` flag or the `FERRETDB_MODE` variable, accepting values such as `normal`, `proxy`, `diff-normal`, and `diff-proxy`.
+You can set modes using either the `--mode` flag or the `FERRETDB_MODE` environment variable, accepting values such as `normal`, `proxy`, `diff-normal`, and `diff-proxy`.
 
 ### Manual and automated testing with `diff-normal` mode
 
@@ -25,7 +25,7 @@ You would do the following:
 
 1. Start the environment and run FerretDB.
 
-   ```sh
+   ```bash
    # in a terminal run env-up to start the environment
    me@foobar:~/FerretDB$ bin/task env-up
    # in another terminal run the debug build which runs in diff-normal mode by default
@@ -38,7 +38,7 @@ You would do the following:
    In the majority of cases, this does not necessitate additional scrutiny of the diff output.
    Nevertheless, if FerretDB does not handle the error, additional inspection becomes necessary.
 
-   ```sh
+   ```bash
    # run mongosh
    me@foobar:~/FerretDB$ mongosh --quiet
    ```
@@ -105,7 +105,7 @@ Continuing with the same example above, we can further examine the diff output.
 
 1. Run FerretDB in `diff-proxy` mode.
 
-   ```sh
+   ```bash
    me@foobar:~/FerretDB$ bin/task run-proxy
    ```
 
@@ -133,7 +133,7 @@ Continuing with the same example above, we can further examine the diff output.
 
 In the diff output below we have discovered that the query cannot be serviced by our application because the `$first` accumulator operator is not implemented in FerretDB.
 
-```sh
+```bash
 2023-08-29T13:25:09.048+0200  WARN  // 127.0.0.1:33522 -> 127.0.0.1:27017  clientconn/conn.go:360 Header diff:
 --- res header
 +++ proxy header
@@ -202,7 +202,7 @@ Body diff:
 Metrics are captured and written to standard output (`stdout`) upon exiting in [Debug builds](https://pkg.go.dev/github.com/FerretDB/FerretDB@v1.8.0/build/version#hdr-Debug_builds).
 This is a useful way to quickly determine what commands are not implemented for the client requests sent by your application.
 
-```sh
+```bash
 # we ran task run-proxy and then sent an interrupt ctrl+c after some time
 ^Ctask: Signal received: "interrupt"
 # HELP ferretdb_client_requests_total Total number of requests.
@@ -238,7 +238,7 @@ Note that we also mark operators as unsupported if they are not supported in _al
 
 Running the tool to check FerretDB compatibility:
 
-```sh
+```bash
 me@foobar:~$ git clone https://github.com/FerretDB/amazon-documentdb-tools.git && cd amazon-documentdb-tools/compat-tool
 me@foobar:~amazon-documentdb-tools/compat-tool$ python3 compat.py --directory=/path/to/myapp --version=FerretDB
 ```
