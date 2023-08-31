@@ -47,8 +47,12 @@ func (a *Array) compositeType() {}
 
 // Freeze prevents array from further modifications.
 // Any methods that would modify the array will panic.
+//
+// It is safe to call Freeze multiple times.
 func (a *Array) Freeze() {
-	a.frozen = true
+	if a != nil {
+		a.frozen = true
+	}
 }
 
 // checkFrozen panics if array is frozen.

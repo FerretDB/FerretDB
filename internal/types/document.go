@@ -123,8 +123,12 @@ func (*Document) compositeType() {}
 
 // Freeze prevents document from further modifications.
 // Any methods that would modify the document will panic.
+//
+// It is safe to call Freeze multiple times.
 func (d *Document) Freeze() {
-	d.frozen = true
+	if d != nil {
+		d.frozen = true
+	}
 }
 
 // checkFrozen panics if document is frozen.

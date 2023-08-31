@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	sqlite3 "modernc.org/sqlite"
 	sqlite3lib "modernc.org/sqlite/lib"
@@ -160,51 +161,51 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 			return nil, lazyerrors.Error(err)
 		}
 
-		rowsAffected, err := r.RowsAffected()
+		ra, err := r.RowsAffected()
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		res.Updated += rowsAffected
+		res.Updated += int32(ra)
 	}
 
 	return &res, nil
 }
 
-// Delete implements backends.Collection interface.
-func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) (*backends.DeleteResult, error) {
+// DeleteAll implements backends.Collection interface.
+func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllParams) (*backends.DeleteAllResult, error) {
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
-		return &backends.DeleteResult{Deleted: 0}, nil
+		return &backends.DeleteAllResult{Deleted: 0}, nil
 	}
 
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
-		return &backends.DeleteResult{Deleted: 0}, nil
+		return &backends.DeleteAllResult{Deleted: 0}, nil
 	}
 
-	q := fmt.Sprintf(`DELETE FROM %q WHERE %s = ?`, meta.TableName, metadata.IDColumn)
+	placeholders := make([]string, len(params.IDs))
+	args := make([]any, len(params.IDs))
 
-	var deleted int64
-
-	for _, id := range params.IDs {
-		idArg := string(must.NotFail(sjson.MarshalSingleValue(id)))
-
-		res, err := db.ExecContext(ctx, q, idArg)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		rowsAffected, err := res.RowsAffected()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		deleted += rowsAffected
+	for i, id := range params.IDs {
+		placeholders[i] = "?"
+		args[i] = string(must.NotFail(sjson.MarshalSingleValue(id)))
 	}
 
-	return &backends.DeleteResult{
-		Deleted: deleted,
+	q := fmt.Sprintf(`DELETE FROM %q WHERE %s IN (%s)`, meta.TableName, metadata.IDColumn, strings.Join(placeholders, ", "))
+
+	res, err := db.ExecContext(ctx, q, args...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	ra, err := res.RowsAffected()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &backends.DeleteAllResult{
+		Deleted: int32(ra),
 	}, nil
 }
 
