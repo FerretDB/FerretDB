@@ -16,6 +16,8 @@ package sqlite
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
@@ -112,10 +114,17 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 		return stats, nil
 	}
 
+	list, err := db.r.CollectionList(ctx, db.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	stats.CountCollections = int64(len(list))
+
 	// Call ANALYZE to update statistics of tables and indexes,
 	// see https://www.sqlite.org/lang_analyze.html.
 	q := `ANALYZE`
-	if _, err := d.ExecContext(ctx, q); err != nil {
+	if _, err = d.ExecContext(ctx, q); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -126,43 +135,49 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 			SUM(pgsize)
 		FROM dbstat WHERE aggregate = TRUE`
 
-	err := d.QueryRowContext(ctx, q).Scan(&stats.SizeTotal)
+	err = d.QueryRowContext(ctx, q).Scan(&stats.SizeTotal)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// Count, size and cells of tables exclude sqlite internal tables and FerretDB meta table.
-	// It uses number of cells to approximate total row count.
-	// See https://www.sqlite.org/schematab.html and
-	// also https://www.sqlite.org/fileformat.html.
-	q = `
-		SELECT
-		    COUNT(s.name)             AS CountTables,
-		    COALESCE(SUM(d.pgsize),0) AS SizeTables,
-		    COALESCE(SUM(d.ncell),0)  AS CountCells
-		FROM sqlite_schema AS s
-			LEFT JOIN dbstat AS d ON d.name = s.tbl_name
-		WHERE s.type = 'table' AND s.name NOT LIKE ? AND s.name <> ?`
+	placeholders := make([]string, len(list))
+	args := make([]any, len(list))
 
-	args := []any{metadata.ReservedTablePrefix + "%", metadata.MetadataTableName}
+	for i, c := range list {
+		placeholders[i] = "?"
+		args[i] = c.TableName
+	}
+
+	// Use number of cells to approximate total row count,
+	// see https://www.sqlite.org/fileformat.html.
+	q = fmt.Sprintf(`
+		SELECT
+		    SUM(pgsize) AS SizeTables,
+		    SUM(ncell)  AS CountCells
+		FROM dbstat
+		WHERE name IN (%s) AND aggregate = TRUE`,
+		strings.Join(placeholders, ", "),
+	)
+
 	if err = d.QueryRowContext(ctx, q, args...).Scan(
-		&stats.CountCollections,
 		&stats.SizeCollections,
 		&stats.CountObjects,
 	); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// Count and size of indexes exclude sqlite internal indexes.
-	q = `
+	// Use sqlite_schema table to get indexes of each tables,
+	// see https://www.sqlite.org/schematab.html.
+	q = fmt.Sprintf(`
 		SELECT
 			COUNT(s.name)             AS CountIndexes,
 			COALESCE(SUM(d.pgsize),0) AS SizeIndexes
 		FROM sqlite_schema AS s
 			LEFT JOIN dbstat AS d ON d.name = s.tbl_name
-		WHERE s.type = 'index' AND s.name NOT LIKE ?`
+		WHERE s.type = 'index' AND s.tbl_name IN (%s)`,
+		strings.Join(placeholders, ", "),
+	)
 
-	args = []any{metadata.ReservedTablePrefix + "%"}
 	if err = d.QueryRowContext(ctx, q, args...).Scan(
 		&stats.CountIndexes,
 		&stats.SizeIndexes,
