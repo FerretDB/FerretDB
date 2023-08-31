@@ -242,12 +242,21 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	for rows.Next() {
-		var planRow string
-		if err := rows.Scan(&planRow); err != nil {
+		var id int32
+		var parent int32
+		var notused int32
+		var detail string
+
+		if err := rows.Scan(&id, &parent, &notused, &detail); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		queryPlan.Append(planRow)
+		queryPlan.Append(types.NewDocument(
+			"id", id,
+			"parent", parent,
+			"notused", notused,
+			"detail", detail,
+		))
 	}
 
 	return &backends.ExplainResult{
