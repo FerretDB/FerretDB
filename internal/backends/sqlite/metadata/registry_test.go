@@ -319,9 +319,12 @@ func TestVersion(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, db)
 
-	t.Cleanup(func() {
-		r.DatabaseDrop(ctx, dbName)
-	})
+	version, err = r.Version(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "3.41.2", version)
+
+	// no databases available, but the version should be returned because it's stored in the registry
+	r.DatabaseDrop(ctx, dbName)
 
 	version, err = r.Version(ctx)
 	require.NoError(t, err)
