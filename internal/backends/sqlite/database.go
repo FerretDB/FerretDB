@@ -16,7 +16,6 @@ package sqlite
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
@@ -133,9 +132,9 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 	}
 
 	// Count, size and cells of tables exclude sqlite internal tables and FerretDB meta table.
-	// It uses number of cells of btree pages to approximate row count, it returns 0 upon overflow pages.
+	// It uses number of cells to approximate total row count.
 	// See https://www.sqlite.org/schematab.html and
-	// also https://www.sqlite.org/dbstat.html.
+	// also https://www.sqlite.org/fileformat.html.
 	q = `
 		SELECT
 		    COUNT(s.name)             AS CountTables,
@@ -143,12 +142,9 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 		    COALESCE(SUM(d.ncell),0)  AS CountCells
 		FROM sqlite_schema AS s
 			LEFT JOIN dbstat AS d ON d.name = s.tbl_name
-		WHERE s.type = 'table' AND s.name NOT LIKE :reserved AND s.name <> :metadata`
+		WHERE s.type = 'table' AND s.name NOT LIKE ? AND s.name <> ?`
 
-	args := []any{
-		sql.Named("reserved", metadata.ReservedTablePrefix+"%"),
-		sql.Named("metadata", metadata.MetadataTableName),
-	}
+	args := []any{metadata.ReservedTablePrefix + "%", metadata.MetadataTableName}
 	if err = d.QueryRowContext(ctx, q, args...).Scan(
 		&stats.CountCollections,
 		&stats.SizeCollections,
@@ -164,11 +160,9 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 			COALESCE(SUM(d.pgsize),0) AS SizeIndexes
 		FROM sqlite_schema AS s
 			LEFT JOIN dbstat AS d ON d.name = s.tbl_name
-		WHERE s.type = 'index' AND s.name NOT LIKE :reserved`
+		WHERE s.type = 'index' AND s.name NOT LIKE ?`
 
-	args = []any{
-		sql.Named("reserved", metadata.ReservedTablePrefix+"%"),
-	}
+	args = []any{metadata.ReservedTablePrefix + "%"}
 	if err = d.QueryRowContext(ctx, q, args...).Scan(
 		&stats.CountIndexes,
 		&stats.SizeIndexes,

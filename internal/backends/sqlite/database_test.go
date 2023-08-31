@@ -35,6 +35,10 @@ func TestStats(t *testing.T) {
 	dbName := t.Name()
 	db := newDatabase(r, dbName)
 
+	t.Cleanup(func() {
+		db.Close()
+	})
+
 	var res *backends.StatsResult
 
 	t.Run("NonExistingDatabase", func(t *testing.T) {
