@@ -34,7 +34,7 @@ import (
 type Collection interface {
 	Query(context.Context, *QueryParams) (*QueryResult, error)
 	InsertAll(context.Context, *InsertAllParams) (*InsertAllResult, error)
-	Update(context.Context, *UpdateParams) (*UpdateResult, error)
+	UpdateAll(context.Context, *UpdateAllParams) (*UpdateAllResult, error)
 	DeleteAll(context.Context, *DeleteAllParams) (*DeleteAllResult, error)
 	Explain(context.Context, *ExplainParams) (*ExplainResult, error)
 }
@@ -115,25 +115,25 @@ func (cc *collectionContract) InsertAll(ctx context.Context, params *InsertAllPa
 	return res, err
 }
 
-// UpdateParams represents the parameters of Collection.Update method.
-type UpdateParams struct {
+// UpdateAllParams represents the parameters of Collection.Update method.
+type UpdateAllParams struct {
 	// that should be []*types.Document
 	// TODO https://github.com/FerretDB/FerretDB/issues/3079
 	Docs *types.Array
 }
 
-// UpdateResult represents the results of Collection.Update method.
-type UpdateResult struct {
+// UpdateAllResult represents the results of Collection.Update method.
+type UpdateAllResult struct {
 	Updated int32
 }
 
-// Update updates documents in collection.
+// UpdateAll updates documents in collection.
 //
 // Database or collection may not exist; that's not an error.
-func (cc *collectionContract) Update(ctx context.Context, params *UpdateParams) (*UpdateResult, error) {
+func (cc *collectionContract) UpdateAll(ctx context.Context, params *UpdateAllParams) (*UpdateAllResult, error) {
 	defer observability.FuncCall(ctx)()
 
-	res, err := cc.c.Update(ctx, params)
+	res, err := cc.c.UpdateAll(ctx, params)
 	checkError(err)
 
 	return res, err

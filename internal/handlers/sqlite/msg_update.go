@@ -214,7 +214,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 				continue
 			}
 
-			updateRes, err := c.Update(ctx, &backends.UpdateParams{Docs: must.NotFail(types.NewArray(doc))})
+			updateRes, err := c.UpdateAll(ctx, &backends.UpdateAllParams{Docs: must.NotFail(types.NewArray(doc))})
 			if err != nil {
 				return 0, 0, nil, lazyerrors.Error(err)
 			}
