@@ -234,6 +234,8 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return nil, lazyerrors.Error(err)
 	}
 
+	defer rows.Close()
+
 	queryPlan, err := types.NewArray()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
