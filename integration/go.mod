@@ -11,16 +11,16 @@ require (
 	github.com/prometheus/client_golang v1.16.0
 	github.com/stretchr/testify v1.8.4
 	go.mongodb.org/mongo-driver v1.12.1
-	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.42.0
-	go.opentelemetry.io/otel v1.16.0
-	go.opentelemetry.io/otel/exporters/jaeger v1.16.0
-	go.opentelemetry.io/otel/sdk v1.16.0
+	go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo v0.43.0
+	go.opentelemetry.io/otel v1.17.0
+	go.opentelemetry.io/otel/exporters/jaeger v1.17.0
+	go.opentelemetry.io/otel/sdk v1.17.0
 	go.uber.org/zap v1.25.0
 	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63
 )
 
 require (
-	github.com/SAP/go-hdb v1.4.2 // indirect
+	github.com/SAP/go-hdb v1.4.3 // indirect
 	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
@@ -51,8 +51,8 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
-	go.opentelemetry.io/otel/metric v1.16.0 // indirect
-	go.opentelemetry.io/otel/trace v1.16.0 // indirect
+	go.opentelemetry.io/otel/metric v1.17.0 // indirect
+	go.opentelemetry.io/otel/trace v1.17.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/crypto v0.12.0 // indirect
 	golang.org/x/mod v0.12.0 // indirect

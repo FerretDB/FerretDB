@@ -32,6 +32,9 @@ import (
 )
 
 // notImplemented returns error for stub command handlers.
+//
+// Remove it.
+// TODO https://github.com/FerretDB/FerretDB/issues/3069
 func notImplemented(command string) error {
 	return commonerrors.NewCommandErrorMsg(
 		commonerrors.ErrNotImplemented,
