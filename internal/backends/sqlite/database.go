@@ -56,9 +56,9 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 	}
 
 	res := make([]backends.CollectionInfo, len(list))
-	for i, name := range list {
+	for i, c := range list {
 		res[i] = backends.CollectionInfo{
-			Name: name,
+			Name: c.Name,
 		}
 	}
 
