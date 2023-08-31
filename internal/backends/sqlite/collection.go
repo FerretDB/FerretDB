@@ -249,7 +249,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 			return nil, lazyerrors.Error(err)
 		}
 
-		queryPlan.Append(fmt.Sprintf("id=%d parent=%d notused=%d detail=%s\n", id, parent, notused, detail))
+		queryPlan.Append(fmt.Sprintf("id=%d parent=%d notused=%d detail=%s", id, parent, notused, detail))
 	}
 
 	return &backends.ExplainResult{
