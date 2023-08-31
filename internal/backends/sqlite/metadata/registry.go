@@ -214,8 +214,11 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 	}
 
 	r.rw.RLock()
+
 	res := maps.Values(r.colls[dbName])
+
 	r.rw.RUnlock()
+
 	sort.Slice(res, func(i, j int) bool { return res[i].Name < res[j].Name })
 	return res, nil
 }
