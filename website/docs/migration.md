@@ -8,14 +8,12 @@ To ensure a smooth and successful migration from MongoDB, we offer several metho
 
 ## Operation modes
 
-We support different operation modes, by default FerretDB will always run on `normal` mode.
-In this mode all client requests are processed _only_ by FerretDB and returned to the client.
-
-You can set modes using either the `--mode` flag or the `FERRETDB_MODE` environment variable, accepting values such as `normal`, `proxy`, `diff-normal`, and `diff-proxy`.
+We offer multiple operation modes which help facilitate the testing of your application by enabling FerretDB to act as a proxy.
+For more details, refer to the [official documentation](configuration/operation-modes/).
 
 ### Manual and automated testing with `diff-normal` mode
 
-`diff-normal` mode acts a proxy and will forward client requests to another MongoDB-compatible database, and will log the difference between them.
+For details on how to install FerretDB, refer to the [quickstart guide](quickstart-guide/).
 
 You can manually test your application or use integration tests, among other methods.
 Afterward, you can inspect the differential output for errors or inconsistencies between responses that require your attention.
@@ -23,117 +21,92 @@ Afterward, you can inspect the differential output for errors or inconsistencies
 As an example, let us say that your application performs some complex query and you'd like to test it in `diff-normal` mode.
 You would do the following:
 
-1. Start the environment and run FerretDB.
-
-   ```bash
-   # in a terminal run env-up to start the environment
-   me@foobar:~/FerretDB$ bin/task env-up
-   # in another terminal run the debug build which runs in diff-normal mode by default
-   me@foobar:~/FerretDB$ bin/task run
-   ```
-
+1. Start FerretDB in `diff-normal` mode.
+   This can be achieved by using the `--mode` flag or by setting the `FERRETDB_MODE` environment variable.
 2. Run `mongosh` and insert some documents.
 
    Please note that due to running in `diff-normal` mode, any error returned from FerretDB will be transmitted to the client, allowing us to promptly identify the issue.
    In the majority of cases, this does not necessitate additional scrutiny of the diff output.
    Nevertheless, if FerretDB does not handle the error, additional inspection becomes necessary.
 
-   ```bash
+   ```sh
    # run mongosh
-   me@foobar:~/FerretDB$ mongosh --quiet
+   $ mongosh
    ```
 
    ```js
    // insert some documents
-   test> db.posts.insertMany([
-   ...   {
-   ...     title: 'title A',
-   ...     body: 'some content',
-   ...     author: 'Bob',
-   ...     date: ISODate("2023-08-29T10:33:23.134Z"),
-   ...   },
-   ...   {
-   ...     title: 'another title',
-   ...     body: 'some content',
-   ...     author: 'Bob',
-   ...     date: ISODate("2023-08-28T10:33:23.134Z"),
-   ...   },
-   ...   {
-   ...     title: 'title B',
-   ...     body: 'some content',
-   ...     author: 'Alice',
-   ...     date: ISODate("2023-08-20T10:33:23.134Z"),
-   ...   },
-   ...   {
-   ...     title: 'some other title',
-   ...     body: 'some content',
-   ...     author: 'Alice',
-   ...     date: ISODate("2023-08-21T10:33:23.134Z"),
-   ...   },
-   ... ]);
-   {
-     acknowledged: true,
-     insertedIds: {
-       '0': ObjectId("64edcfc975dd10e7bfb36add"),
-       '1': ObjectId("64edcfc975dd10e7bfb36ade"),
-       '2': ObjectId("64edcfc975dd10e7bfb36adf"),
-       '3': ObjectId("64edcfc975dd10e7bfb36ae0")
+   db.posts.insertMany([
+     {
+       title: 'title A',
+       body: 'some content',
+       author: 'Bob',
+       date: ISODate('2023-08-29T10:33:23.134Z')
+     },
+     {
+       title: 'another title',
+       body: 'some content',
+       author: 'Bob',
+       date: ISODate('2023-08-28T10:33:23.134Z')
+     },
+     {
+       title: 'title B',
+       body: 'some content',
+       author: 'Alice',
+       date: ISODate('2023-08-20T10:33:23.134Z')
+     },
+     {
+       title: 'some other title',
+       body: 'some content',
+       author: 'Alice',
+       date: ISODate('2023-08-21T10:33:23.134Z')
      }
-   }
-   test> // run a query to fetch the first post from each author sorted by date and author
-   test> db.posts.aggregate(
-   ...   [
-   ...     { $sort: { date: 1, author: 1 } },
-   ...     {
-   ...       $group:
-   ...         {
-   ...           _id: "$author",
-   ...           firstPost: { $first: "$date" }
-   ...         }
-   ...     }
-   ...   ]
-   ... );
+   ])
+
+   // run a query to fetch the first post from each author sorted by date and author
+   db.posts.aggregate([
+     { $sort: { date: 1, author: 1 } },
+     {
+       $group: {
+         _id: '$author',
+         firstPost: { $first: '$date' }
+       }
+     }
+   ])
+   ```
+
+   The below error is immediately returned.
+
+   ```sh
    MongoServerError: $group accumulator "$first" is not implemented yet
-   test>
    ```
 
 ### Manual and automated testing with `diff-proxy` mode
 
-`diff-proxy` mode will forward client requests to a MongoDB-compatible database, but return the proxy responses to the client, and will log the difference between them.
-
 Continuing with the same example above, we can further examine the diff output.
 
 1. Run FerretDB in `diff-proxy` mode.
-
-   ```bash
-   me@foobar:~/FerretDB$ bin/task run-proxy
-   ```
-
+   This can again be achieved by using the `--mode` flag or by setting the `FERRETDB_MODE` environment variable as already shown.
 2. Re-run the query.
 
    ```js
-   test> db.posts.aggregate(
-   ...   [
-   ...     { $sort: { date: 1, author: 1 } },
-   ...     {
-   ...       $group:
-   ...         {
-   ...           _id: "$author",
-   ...           firstPost: { $first: "$date" }
-   ...         }
-   ...     }
-   ...   ]
-   ... );
-   [
-     { _id: 'Alice', firstPost: ISODate("2023-08-20T10:33:23.134Z") },
-     { _id: 'Bob', firstPost: ISODate("2023-08-28T10:33:23.134Z") }
-   ]
-   test>
+   db.posts.aggregate([
+     { $sort: { date: 1, author: 1 } },
+     {
+       $group: {
+         _id: '$author',
+         firstPost: { $first: '$date' }
+       }
+     }
+   ])
+   // the query was handled by MongoDB, so the following documents are returned:
+   // { _id: 'Alice', firstPost: ISODate("2023-08-20T10:33:23.134Z") }
+   // { _id: 'Bob', firstPost: ISODate("2023-08-28T10:33:23.134Z") }
    ```
 
-In the diff output below we have discovered that the query cannot be serviced by our application because the `$first` accumulator operator is not implemented in FerretDB.
+In the diff output below, however, we have discovered that the query cannot be serviced by our application because the `$first` accumulator operator is not implemented in FerretDB.
 
-```bash
+```diff
 2023-08-29T13:25:09.048+0200  WARN  // 127.0.0.1:33522 -> 127.0.0.1:27017  clientconn/conn.go:360 Header diff:
 --- res header
 +++ proxy header
@@ -202,9 +175,7 @@ Body diff:
 Metrics are captured and written to standard output (`stdout`) upon exiting in [Debug builds](https://pkg.go.dev/github.com/FerretDB/FerretDB@v1.8.0/build/version#hdr-Debug_builds).
 This is a useful way to quickly determine what commands are not implemented for the client requests sent by your application.
 
-```bash
-# we ran task run-proxy and then sent an interrupt ctrl+c after some time
-^Ctask: Signal received: "interrupt"
+```sh
 # HELP ferretdb_client_requests_total Total number of requests.
 # TYPE ferretdb_client_requests_total counter
 ferretdb_client_requests_total{command="aggregate",opcode="OP_MSG"} 105
@@ -238,7 +209,8 @@ Note that we also mark operators as unsupported if they are not supported in _al
 
 Running the tool to check FerretDB compatibility:
 
-```bash
-me@foobar:~$ git clone https://github.com/FerretDB/amazon-documentdb-tools.git && cd amazon-documentdb-tools/compat-tool
-me@foobar:~amazon-documentdb-tools/compat-tool$ python3 compat.py --directory=/path/to/myapp --version=FerretDB
+```sh
+# clone the repository and run the compat-tool
+$ git clone https://github.com/FerretDB/amazon-documentdb-tools.git && cd amazon-documentdb-tools/compat-tool
+$ python3 compat.py --directory=/path/to/myapp --version=FerretDB
 ```
