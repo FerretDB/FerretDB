@@ -367,7 +367,7 @@ func (r *Registry) Version(ctx context.Context) (string, error) {
 		return "", nil
 	}
 
-	row := db.QueryRowContext(context.Background(), "SELECT sqlite_version()")
+	row := db.QueryRowContext(ctx, "SELECT sqlite_version()")
 	if err := row.Scan(&r.version); err != nil {
 		return "", lazyerrors.Error(err)
 	}
