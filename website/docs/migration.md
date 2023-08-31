@@ -73,12 +73,8 @@ You would do the following:
        }
      }
    ])
-   ```
-
-   The below error is immediately returned.
-
-   ```sh
-   MongoServerError: $group accumulator "$first" is not implemented yet
+   // the below error is returned to the client:
+   // MongoServerError: $group accumulator "$first" is not implemented yet
    ```
 
 ### Manual and automated testing with `diff-proxy` mode
