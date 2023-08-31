@@ -34,7 +34,7 @@ func TestCreateDrop(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(p.Close)
 
-	dbName := t.Name()
+	dbName := testutil.DatabaseName(t)
 
 	db := p.GetExisting(ctx, dbName)
 	require.Nil(t, db)
@@ -139,12 +139,15 @@ func TestDefaults(t *testing.T) {
 
 	p, _, err := New("file:./", testutil.Logger(t))
 	require.NoError(t, err)
+
+	dbName := testutil.DatabaseName(t)
+
 	t.Cleanup(func() {
-		p.Drop(ctx, t.Name())
+		p.Drop(ctx, dbName)
 		p.Close()
 	})
 
-	db, _, err := p.GetOrCreate(ctx, t.Name())
+	db, _, err := p.GetOrCreate(ctx, dbName)
 	require.NoError(t, err)
 
 	rows, err := db.QueryContext(ctx, "PRAGMA compile_options")
