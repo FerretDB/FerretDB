@@ -77,6 +77,8 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		pairs = append(pairs, "avgObjSize", stats.SizeCollections/stats.CountObjects)
 	}
 
+	// MongoDB uses "numbers" that could be int32 or int64,
+	// FerretDB always returns int64 for simplicity.
 	pairs = append(pairs,
 		"dataSize", stats.SizeCollections/scale,
 		"storageSize", stats.SizeCollections/scale,
