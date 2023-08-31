@@ -22,6 +22,8 @@ import (
 )
 
 // UpdateParams represents parameters for the update command.
+//
+//nolint:vet // for readability
 type UpdateParams struct {
 	DB         string   `ferretdb:"$db"`
 	Collection string   `ferretdb:"collection"`
@@ -38,6 +40,8 @@ type UpdateParams struct {
 }
 
 // Update represents a single update operation parameters.
+//
+//nolint:vet // for readability
 type Update struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/2627
 	// get comment from query, e.g. db.collection.UpdateOne({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
