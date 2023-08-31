@@ -67,6 +67,8 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	// MongoDB uses "numbers" that could be int32 or int64,
+	// FerretDB always returns int64 for simplicity.
 	pairs := []any{
 		"db", dbName,
 		"collections", stats.CountCollections,
