@@ -48,7 +48,7 @@ func testCollection(t *testing.T, ctx context.Context, r *Registry, db *fsql.DB,
 
 	list, err := r.CollectionList(ctx, dbName)
 	require.NoError(t, err)
-	require.Contains(t, list, collectionName)
+	require.Contains(t, list, c)
 
 	q := fmt.Sprintf("INSERT INTO %q (%s) VALUES(?)", c.TableName, DefaultColumn)
 	doc := `{"$s": {"p": {"_id": {"t": "int"}}, "$k": ["_id"]}, "_id": 42}`
@@ -180,7 +180,7 @@ func TestCreateSameStress(t *testing.T) {
 
 				list, err := r.CollectionList(ctx, dbName)
 				require.NoError(t, err)
-				require.Contains(t, list, collectionName)
+				require.Contains(t, list, c)
 
 				q := fmt.Sprintf("INSERT INTO %q (%s) VALUES(?)", c.TableName, DefaultColumn)
 				doc := fmt.Sprintf(`{"$s": {"p": {"_id": {"t": "int"}}, "$k": ["_id"]}, "_id": %d}`, id)
