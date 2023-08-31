@@ -79,7 +79,7 @@ You would do the following:
 
 ### Manual and automated testing with `diff-proxy` mode
 
-Continuing with the same example above, we can further examine the diff output.
+Continuing with the same example above, we can further examine the diff output while in `diff-proxy` mode.
 
 1. Run FerretDB in `diff-proxy` mode.
    This can again be achieved by using the `--mode` flag or by setting the `FERRETDB_MODE` environment variable as already shown.
