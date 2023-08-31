@@ -20,6 +20,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
@@ -296,4 +297,28 @@ func TestCreateDropSameStress(t *testing.T) {
 			require.Less(t, int32(1), droppedTotal.Load())
 		})
 	}
+}
+
+func TestVersion(t *testing.T) {
+	t.Parallel()
+	ctx := testutil.Ctx(t)
+
+	r, err := NewRegistry("file:./?mode=memory", testutil.Logger(t))
+	require.NoError(t, err)
+	t.Cleanup(r.Close)
+
+	dbName := t.Name()
+
+	// database must exist, so version can be queried
+	db, err := r.DatabaseGetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+	require.NotNil(t, db)
+
+	t.Cleanup(func() {
+		r.DatabaseDrop(ctx, dbName)
+	})
+
+	version, err := r.Version(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "3.41.2", version)
 }
