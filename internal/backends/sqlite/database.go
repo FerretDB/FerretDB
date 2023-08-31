@@ -124,7 +124,7 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 	q = `
 		SELECT
 			SUM(pgsize)
-		FROM dbstat`
+		FROM dbstat WHERE aggregate = TRUE`
 
 	err := d.QueryRowContext(ctx, q).Scan(&stats.SizeTotal)
 	if err != nil {
