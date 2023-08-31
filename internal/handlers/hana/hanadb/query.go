@@ -15,6 +15,7 @@
 package hanadb
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"fmt"
@@ -26,6 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
+	"github.com/SAP/go-hdb/driver"
 )
 
 // QueryParams represents options/parameters used for SQL query/statement.
@@ -37,7 +39,7 @@ type QueryParams struct {
 // queryIterator implements iterator.Interface to fetch documents from the database.
 type queryIterator struct {
 	ctx       context.Context
-	unmarshal func(b []byte) (*types.Document, error) // defaults to sjson.Unmarshal
+	unmarshal func(data []byte) (*types.Document, error)
 
 	m    sync.Mutex
 	rows *sql.Rows
@@ -96,12 +98,27 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, iterator.ErrIteratorDone
 	}
 
-	var b []byte
-	if err := iter.rows.Scan(&b); err != nil {
+	b := new(bytes.Buffer)
+	lob := new(driver.Lob)
+	lob.SetWriter(b)
+
+	if err := iter.rows.Scan(lob); err != nil {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	doc, err := iter.unmarshal(b)
+	// log.Println("####################################################")
+	// log.Println("Row = ", b.String())
+	// log.Println("####################################################")
+
+	//sch := fmt.Sprintf("{\"$s\":%s}", b.Bytes())
+
+	// log.Println("####################################################")
+	// log.Println("Row = ", sch)
+	// log.Println("####################################################")
+
+	//doc, err := iter.unmarshal([]byte(sch))
+
+	doc, err := iter.unmarshal(b.Bytes())
 	if err != nil {
 		return unused, nil, lazyerrors.Error(err)
 	}
