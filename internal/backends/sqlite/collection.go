@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	sqlite3 "modernc.org/sqlite"
 	sqlite3lib "modernc.org/sqlite/lib"
@@ -160,12 +161,12 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 			return nil, lazyerrors.Error(err)
 		}
 
-		rowsAffected, err := r.RowsAffected()
+		ra, err := r.RowsAffected()
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		res.Updated += rowsAffected
+		res.Updated += int32(ra)
 	}
 
 	return &res, nil
@@ -183,28 +184,28 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 		return &backends.DeleteAllResult{Deleted: 0}, nil
 	}
 
-	q := fmt.Sprintf(`DELETE FROM %q WHERE %s = ?`, meta.TableName, metadata.IDColumn)
+	placeholders := make([]string, len(params.IDs))
+	args := make([]any, len(params.IDs))
 
-	var deleted int64
+	for i, id := range params.IDs {
+		placeholders[i] = "?"
+		args[i] = string(must.NotFail(sjson.MarshalSingleValue(id)))
+	}
 
-	for _, id := range params.IDs {
-		idArg := string(must.NotFail(sjson.MarshalSingleValue(id)))
+	q := fmt.Sprintf(`DELETE FROM %q WHERE %s IN (%s)`, meta.TableName, metadata.IDColumn, strings.Join(placeholders, ", "))
 
-		res, err := db.ExecContext(ctx, q, idArg)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+	res, err := db.ExecContext(ctx, q, args...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-		rowsAffected, err := res.RowsAffected()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		deleted += rowsAffected
+	ra, err := res.RowsAffected()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	return &backends.DeleteAllResult{
-		Deleted: deleted,
+		Deleted: int32(ra),
 	}, nil
 }
 

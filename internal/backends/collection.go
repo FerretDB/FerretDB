@@ -124,7 +124,7 @@ type UpdateParams struct {
 
 // UpdateResult represents the results of Collection.Update method.
 type UpdateResult struct {
-	Updated int64
+	Updated int32
 }
 
 // Update updates documents in collection.
@@ -146,7 +146,7 @@ type DeleteAllParams struct {
 
 // DeleteAllResult represents the results of Collection.Delete method.
 type DeleteAllResult struct {
-	Deleted int64
+	Deleted int32
 }
 
 // DeleteAll deletes documents in collection.

@@ -50,7 +50,9 @@ func (a *Array) compositeType() {}
 //
 // It is safe to call Freeze multiple times.
 func (a *Array) Freeze() {
-	a.frozen = true
+	if a != nil {
+		a.frozen = true
+	}
 }
 
 // checkFrozen panics if array is frozen.
