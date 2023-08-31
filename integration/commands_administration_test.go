@@ -675,11 +675,9 @@ func TestCommandsAdministrationBuildInfoFerretdbExtensions(t *testing.T) {
 	assert.NotEmpty(t, aggregationStagesArray)
 }
 
-func TestCommandsAdministrationCollStatsEmpty(tt *testing.T) {
-	tt.Parallel()
-	ctx, collection := setup.Setup(tt)
-
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3259")
+func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"collStats", collection.Name()}}
@@ -699,10 +697,9 @@ func TestCommandsAdministrationCollStatsEmpty(tt *testing.T) {
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 }
 
-func TestCommandsAdministrationCollStats(tt *testing.T) {
-	tt.Parallel()
+func TestCommandsAdministrationCollStats(t *testing.T) {
+	t.Parallel()
 
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3259")
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
@@ -732,10 +729,8 @@ func TestCommandsAdministrationCollStats(tt *testing.T) {
 	assert.InDelta(t, 32_000, must.NotFail(doc.Get("totalSize")), 30_000)
 }
 
-func TestCommandsAdministrationCollStatsWithScale(tt *testing.T) {
-	tt.Parallel()
-
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3259")
+func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
+	t.Parallel()
 
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 

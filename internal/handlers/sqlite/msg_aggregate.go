@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"os"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -54,9 +55,9 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		"allowDiskUse", "bypassDocumentValidation", "readConcern", "hint", "comment", "writeConcern",
 	)
 
-	var db string
+	var dbName string
 
-	if db, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	if dbName, err = common.GetRequiredParam[string](document, "$dbName"); err != nil {
 		return nil, err
 	}
 
@@ -78,18 +79,18 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		)
 	}
 
-	dbPool, err := h.b.Database(db)
+	db, err := h.b.Database(dbName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", db, collection)
+			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
 		}
 
 		return nil, lazyerrors.Error(err)
 	}
-	defer dbPool.Close()
+	defer db.Close()
 
-	c, err := dbPool.Collection(collection)
+	c, err := db.Collection(collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", collection)
@@ -258,20 +259,18 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var iter iterator.Interface[struct{}, *types.Document]
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/2775
-	if len(collStatsDocuments) != len(stagesDocuments) {
-		closer.Close()
+	if len(collStatsDocuments) == len(stagesDocuments) {
+		// TODO https://github.com/FerretDB/FerretDB/issues/3235
+		// TODO https://github.com/FerretDB/FerretDB/issues/3181
+		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{c, stagesDocuments})
+	} else {
+		// TODO https://github.com/FerretDB/FerretDB/issues/2423
+		statistics := stages.GetStatistics(collStatsDocuments)
 
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrNotImplemented,
-			"$collStats is not supported yet",
-			"$collStats (stage)",
-		)
+		iter, err = processStagesStats(ctx, closer, &stagesStatsParams{
+			db, dbName, collection, statistics, collStatsDocuments,
+		})
 	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	// TODO https://github.com/FerretDB/FerretDB/issues/3181
-	iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{c, stagesDocuments})
 
 	if err != nil {
 		closer.Close()
@@ -282,7 +281,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
 		Iter:       iterator.WithClose(iter, closer.Close),
-		DB:         db,
+		DB:         dbName,
 		Collection: collection,
 		Username:   username,
 	})
@@ -313,7 +312,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
 				"id", cursorID,
-				"ns", db+"."+collection,
+				"ns", dbName+"."+collection,
 			)),
 			"ok", float64(1),
 		))},
@@ -339,6 +338,91 @@ func processStagesDocuments(ctx context.Context, closer *iterator.MultiCloser, p
 	closer.Add(queryRes.Iter)
 
 	iter := queryRes.Iter
+
+	for _, s := range p.stages {
+		if iter, err = s.Process(ctx, iter, closer); err != nil {
+			return nil, err
+		}
+	}
+
+	return iter, nil
+}
+
+// stagesStatsParams contains the parameters for processStagesStats.
+type stagesStatsParams struct {
+	db             backends.Database
+	dbName         string
+	collectionName string
+	statistics     map[stages.Statistic]struct{}
+	stages         []aggregations.Stage
+}
+
+// processStagesStats retrieves the statistics from the database and then processes them through the stages.
+//
+// Move $collStats specific logic to its stage.
+// TODO https://github.com/FerretDB/FerretDB/issues/2423
+func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *stagesStatsParams) (types.DocumentsIterator, error) { //nolint:lll // for readability
+	// Clarify what needs to be retrieved from the database and retrieve it.
+	_, hasCount := p.statistics[stages.StatisticCount]
+	_, hasStorage := p.statistics[stages.StatisticStorage]
+
+	var host string
+	var err error
+
+	host, err = os.Hostname()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	doc := must.NotFail(types.NewDocument(
+		"ns", p.dbName+"."+p.collectionName,
+		"host", host,
+		"localTime", time.Now().UTC().Format(time.RFC3339),
+	))
+
+	var collStats *backends.StatsResult
+
+	if hasCount || hasStorage {
+		collStats, err = p.db.Stats(ctx, &backends.StatsParams{Collection: p.collectionName})
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	if hasStorage {
+		var avgObjSize int64
+		if collStats.CountObjects > 0 {
+			avgObjSize = collStats.SizeCollections / collStats.CountObjects
+		}
+
+		doc.Set(
+			"storageStats", must.NotFail(types.NewDocument(
+				"size", collStats.SizeTotal,
+				"count", collStats.CountObjects,
+				"avgObjSize", avgObjSize,
+				"storageSize", collStats.SizeCollections,
+				"freeStorageSize", int64(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"nindexes", collStats.CountIndexes,
+				"indexDetails", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"totalIndexSize", collStats.SizeIndexes,
+				"totalSize", collStats.SizeTotal,
+				"indexSizes", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+			)),
+		)
+	}
+
+	if hasCount {
+		doc.Set(
+			"count", collStats.CountObjects,
+		)
+	}
+
+	// Process the retrieved statistics through the stages.
+	iter := iterator.Values(iterator.ForSlice([]*types.Document{doc}))
+	closer.Add(iter)
 
 	for _, s := range p.stages {
 		if iter, err = s.Process(ctx, iter, closer); err != nil {

@@ -16,6 +16,8 @@ package sqlite
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
@@ -102,8 +104,106 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 }
 
 // Stats implements backends.Database interface.
+//
+// If the database does not exist, it returns *backends.DBStatsResult filled with zeros for all the fields.
 func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*backends.StatsResult, error) {
-	panic("not implemented")
+	stats := new(backends.StatsResult)
+
+	d := db.r.DatabaseGetExisting(ctx, db.name)
+	if d == nil {
+		return stats, nil
+	}
+
+	var list []*metadata.Collection
+	var err error
+
+	singleCollectionStats := params.Collection != ""
+
+	if singleCollectionStats {
+		c := db.r.CollectionGet(ctx, db.name, params.Collection)
+		if c == nil {
+			return stats, nil
+		}
+
+		list = append(list, c)
+	} else {
+		if list, err = db.r.CollectionList(ctx, db.name); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	stats.CountCollections = int64(len(list))
+
+	// Call ANALYZE to update statistics of tables and indexes,
+	// see https://www.sqlite.org/lang_analyze.html.
+	q := `ANALYZE`
+	if _, err = d.ExecContext(ctx, q); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	placeholders := make([]string, len(list))
+	args := make([]any, len(list))
+
+	for i, c := range list {
+		placeholders[i] = "?"
+		args[i] = c.TableName
+	}
+
+	// Use number of cells to approximate total row count,
+	// see https://www.sqlite.org/fileformat.html.
+	q = fmt.Sprintf(`
+		SELECT
+		    SUM(pgsize) AS SizeTables,
+		    SUM(ncell)  AS CountCells
+		FROM dbstat
+		WHERE name IN (%s) AND aggregate = TRUE`,
+		strings.Join(placeholders, ", "),
+	)
+
+	if err = d.QueryRowContext(ctx, q, args...).Scan(
+		&stats.SizeCollections,
+		&stats.CountObjects,
+	); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// Use sqlite_schema table to get indexes of each tables,
+	// see https://www.sqlite.org/schematab.html.
+	q = fmt.Sprintf(`
+		SELECT
+			COUNT(s.name)             AS CountIndexes,
+			COALESCE(SUM(d.pgsize),0) AS SizeIndexes
+		FROM sqlite_schema AS s
+			LEFT JOIN dbstat AS d ON d.name = s.tbl_name
+		WHERE s.type = 'index' AND s.tbl_name IN (%s)`,
+		strings.Join(placeholders, ", "),
+	)
+
+	if err = d.QueryRowContext(ctx, q, args...).Scan(
+		&stats.CountIndexes,
+		&stats.SizeIndexes,
+	); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if singleCollectionStats {
+		stats.SizeTotal = stats.SizeCollections + stats.SizeIndexes
+		return stats, nil
+	}
+
+	// Total size is the disk space used by the database,
+	// see https://www.sqlite.org/dbstat.html.
+	q = `
+		SELECT
+			SUM(pgsize)
+		FROM dbstat WHERE aggregate = TRUE`
+
+	err = d.QueryRowContext(ctx, q).Scan(&stats.SizeTotal)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return stats, nil
 }
 
 // check interfaces
