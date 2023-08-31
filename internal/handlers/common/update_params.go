@@ -21,11 +21,11 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// UpdatesParams represents parameters for the update command.
-type UpdatesParams struct {
-	DB         string         `ferretdb:"$db"`
-	Collection string         `ferretdb:"collection"`
-	Updates    []UpdateParams `ferretdb:"updates"`
+// UpdateParams represents parameters for the update command.
+type UpdateParams struct {
+	DB         string   `ferretdb:"$db"`
+	Collection string   `ferretdb:"collection"`
+	Updates    []Update `ferretdb:"updates"`
 
 	Comment string `ferretdb:"comment,opt"`
 
@@ -37,8 +37,8 @@ type UpdatesParams struct {
 	LSID                     any             `ferretdb:"lsid,ignored"`
 }
 
-// UpdateParams represents a single update operation parameters.
-type UpdateParams struct {
+// Update represents a single update operation parameters.
+type Update struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/2627
 	// get comment from query, e.g. db.collection.UpdateOne({"_id":"string", "$comment: "test"},{$set:{"v":"foo""}})
 	Filter *types.Document `ferretdb:"q,opt"`
@@ -54,8 +54,8 @@ type UpdateParams struct {
 }
 
 // GetUpdateParams returns parameters for update command.
-func GetUpdateParams(document *types.Document, l *zap.Logger) (*UpdatesParams, error) {
-	var params UpdatesParams
+func GetUpdateParams(document *types.Document, l *zap.Logger) (*UpdateParams, error) {
+	var params UpdateParams
 
 	err := commonparams.ExtractParams(document, "update", &params, l)
 	if err != nil {
