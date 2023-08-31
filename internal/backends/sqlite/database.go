@@ -166,24 +166,8 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 		return nil, lazyerrors.Error(err)
 	}
 
-	// Use sqlite_schema table to get indexes of each tables,
-	// see https://www.sqlite.org/schematab.html.
-	q = fmt.Sprintf(`
-		SELECT
-			COUNT(s.name)             AS CountIndexes,
-			COALESCE(SUM(d.pgsize),0) AS SizeIndexes
-		FROM sqlite_schema AS s
-			LEFT JOIN dbstat AS d ON d.name = s.tbl_name
-		WHERE s.type = 'index' AND s.tbl_name IN (%s)`,
-		strings.Join(placeholders, ", "),
-	)
-
-	if err = d.QueryRowContext(ctx, q, args...).Scan(
-		&stats.CountIndexes,
-		&stats.SizeIndexes,
-	); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	// TODO https://github.com/FerretDB/FerretDB/issues/3175
+	stats.CountIndexes, stats.SizeIndexes = 0, 0
 
 	return stats, nil
 }

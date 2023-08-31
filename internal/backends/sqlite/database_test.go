@@ -62,8 +62,6 @@ func TestStats(t *testing.T) {
 		require.NotZero(t, res.SizeTotal)
 		require.NotZero(t, res.CountCollections)
 		require.NotZero(t, res.SizeCollections)
-		require.NotZero(t, res.CountIndexes)
-		require.NotZero(t, res.SizeIndexes)
 		require.Zero(t, res.CountObjects)
 	})
 }
