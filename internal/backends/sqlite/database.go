@@ -16,6 +16,8 @@ package sqlite
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
@@ -102,8 +104,72 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 }
 
 // Stats implements backends.Database interface.
+//
+// If the database does not exist, it returns *backends.DBStatsResult filled with zeros for all the fields.
 func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*backends.StatsResult, error) {
-	panic("not implemented")
+	stats := new(backends.StatsResult)
+
+	d := db.r.DatabaseGetExisting(ctx, db.name)
+	if d == nil {
+		return stats, nil
+	}
+
+	list, err := db.r.CollectionList(ctx, db.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	stats.CountCollections = int64(len(list))
+
+	// Call ANALYZE to update statistics of tables and indexes,
+	// see https://www.sqlite.org/lang_analyze.html.
+	q := `ANALYZE`
+	if _, err = d.ExecContext(ctx, q); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// Total size is the disk space used by the database,
+	// see https://www.sqlite.org/dbstat.html.
+	q = `
+		SELECT
+			SUM(pgsize)
+		FROM dbstat WHERE aggregate = TRUE`
+
+	err = d.QueryRowContext(ctx, q).Scan(&stats.SizeTotal)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	placeholders := make([]string, len(list))
+	args := make([]any, len(list))
+
+	for i, c := range list {
+		placeholders[i] = "?"
+		args[i] = c.TableName
+	}
+
+	// Use number of cells to approximate total row count,
+	// see https://www.sqlite.org/fileformat.html.
+	q = fmt.Sprintf(`
+		SELECT
+		    SUM(pgsize) AS SizeTables,
+		    SUM(ncell)  AS CountCells
+		FROM dbstat
+		WHERE name IN (%s) AND aggregate = TRUE`,
+		strings.Join(placeholders, ", "),
+	)
+
+	if err = d.QueryRowContext(ctx, q, args...).Scan(
+		&stats.SizeCollections,
+		&stats.CountObjects,
+	); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3175
+	stats.CountIndexes, stats.SizeIndexes = 0, 0
+
+	return stats, nil
 }
 
 // check interfaces
