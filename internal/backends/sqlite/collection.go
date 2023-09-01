@@ -245,6 +245,10 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		var notused int32
 		var detail string
 
+		// SQLite query plan can be interpreted as a tree.
+		// Each row of query plan represents a node of this tree,
+		// it contains node id, parent id, auxiliary integer field, and a description.
+		// See https://www.sqlite.org/eqp.html for further details.
 		if err := rows.Scan(&id, &parent, &notused, &detail); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
