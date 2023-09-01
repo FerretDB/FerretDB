@@ -127,27 +127,6 @@ func (r *Registry) DatabaseList(ctx context.Context) []string {
 	return r.p.List(ctx)
 }
 
-// DatabaseSize returns the size of the database in bytes.
-//
-// If database does not exist, 0 is returned.
-func (r *Registry) DatabaseSize(ctx context.Context, dbName string) (int64, error) {
-	defer observability.FuncCall(ctx)()
-
-	db := r.p.GetExisting(ctx, dbName)
-	if db == nil {
-		return 0, nil
-	}
-
-	row := db.QueryRowContext(ctx, "SELECT page_count * page_size FROM pragma_page_count(), pragma_page_size()")
-
-	var size int64
-	if err := row.Scan(&size); err != nil {
-		return 0, lazyerrors.Error(err)
-	}
-
-	return size, nil
-}
-
 // DatabaseGetExisting returns a connection to existing database or nil if it doesn't exist.
 func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) *fsql.DB {
 	defer observability.FuncCall(ctx)()
