@@ -208,6 +208,11 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	panic("not implemented")
 }
 
+// Stats implements backends.Collection interface.
+func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
+	panic("not implemented")
+}
+
 // check interfaces
 var (
 	_ backends.Collection = (*collection)(nil)
