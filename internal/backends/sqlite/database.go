@@ -31,6 +31,14 @@ type database struct {
 	name string
 }
 
+// stats represents information about statistics of tables and indexes.
+type stats struct {
+	countRows    int64
+	countIndexes int64
+	sizeIndexes  int64
+	sizeTables   int64
+}
+
 // newDatabase creates a new Database.
 func newDatabase(r *metadata.Registry, name string) backends.Database {
 	return backends.DatabaseContract(&database{
@@ -108,11 +116,9 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 //
 // If the database does not exist, it returns *backends.DatabaseStatsResult filled with zeros for all the fields.
 func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsParams) (*backends.DatabaseStatsResult, error) {
-	res := new(backends.DatabaseStatsResult)
-
 	d := db.r.DatabaseGetExisting(ctx, db.name)
 	if d == nil {
-		return res, nil
+		return new(backends.DatabaseStatsResult), nil
 	}
 
 	list, err := db.r.CollectionList(ctx, db.name)
@@ -120,31 +126,35 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := getStats(ctx, d, list)
+	stats, err := relationStats(ctx, d, list)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	res.SizeTotal = stats.totalSize
-	res.SizeCollections = stats.sizeTables
-	res.CountObjects = stats.rows
-	res.SizeIndexes = stats.sizeIndexes
-	res.CountIndexes = stats.countIndexes
-	res.CountCollections = int64(len(list))
+	// Total size is the disk space used by the database,
+	// see https://www.sqlite.org/dbstat.html.
+	q := `
+		SELECT
+			SUM(pgsize)
+		FROM dbstat WHERE aggregate = TRUE`
 
-	return res, nil
+	var totalSize int64
+	if err = d.QueryRowContext(ctx, q).Scan(&totalSize); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &backends.DatabaseStatsResult{
+		CountCollections: int64(len(list)),
+		CountObjects:     stats.countRows,
+		CountIndexes:     stats.countIndexes,
+		SizeTotal:        totalSize,
+		SizeIndexes:      stats.sizeIndexes,
+		SizeCollections:  stats.sizeTables,
+	}, nil
 }
 
-type collectionStats struct {
-	totalSize    int64
-	sizeTables   int64
-	rows         int64
-	countIndexes int64
-	sizeIndexes  int64
-}
-
-// If the database does not exist, it returns *backends.DatabaseStatsResult filled with zeros for all the fields.
-func getStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection) (*collectionStats, error) {
+// relationStats returns statistics about tables and countRows for the given list of collections.
+func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection) (*stats, error) {
 	var err error
 
 	// Call ANALYZE to update statistics of tables and indexes,
@@ -162,10 +172,8 @@ func getStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection) (*c
 		args[i] = c.TableName
 	}
 
-	stats := new(collectionStats)
-
 	// Use number of cells to approximate total row count,
-	// see https://www.sqlite.org/fileformat.html.
+	// see https://www.sqlite.org/dbstat.html and https://www.sqlite.org/fileformat.html.
 	q = fmt.Sprintf(`
 		SELECT
 		    SUM(pgsize) AS SizeTables,
@@ -175,32 +183,16 @@ func getStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection) (*c
 		strings.Join(placeholders, ", "),
 	)
 
+	stats := new(stats)
 	if err = db.QueryRowContext(ctx, q, args...).Scan(
 		&stats.sizeTables,
-		&stats.rows,
+		&stats.countRows,
 	); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3293
 	stats.countIndexes, stats.sizeIndexes = 0, 0
-
-	if len(list) == 1 {
-		stats.totalSize = stats.sizeTables + stats.sizeIndexes
-		return stats, nil
-	}
-
-	// Total size is the disk space used by the database,
-	// see https://www.sqlite.org/dbstat.html.
-	q = `
-		SELECT
-			SUM(pgsize)
-		FROM dbstat WHERE aggregate = TRUE`
-
-	err = db.QueryRowContext(ctx, q).Scan(&stats.totalSize)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
 
 	return stats, nil
 }

@@ -210,11 +210,9 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 // Stats implements backends.Collection interface.
 func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
-	res := new(backends.CollectionStatsResult)
-
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
-		return res, nil
+		return new(backends.CollectionStatsResult), nil
 	}
 
 	coll := c.r.CollectionGet(ctx, c.dbName, c.name)
@@ -222,18 +220,18 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		return nil, backends.NewError(backends.ErrorCodeCollectionDoesNotExist, lazyerrors.Errorf("no collection %q", c.name))
 	}
 
-	stats, err := getStats(ctx, db, []*metadata.Collection{coll})
+	stats, err := relationStats(ctx, db, []*metadata.Collection{coll})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	res.SizeTotal = stats.totalSize
-	res.CountObjects = stats.rows
-	res.SizeCollection = stats.sizeTables
-	res.CountIndexes = stats.countIndexes
-	res.SizeIndexes = stats.sizeIndexes
-
-	return res, nil
+	return &backends.CollectionStatsResult{
+		CountObjects:   stats.countRows,
+		CountIndexes:   stats.countIndexes,
+		SizeTotal:      stats.sizeTables + stats.sizeIndexes,
+		SizeIndexes:    stats.sizeIndexes,
+		SizeCollection: stats.sizeTables,
+	}, nil
 }
 
 // check interfaces

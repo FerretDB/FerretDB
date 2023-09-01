@@ -69,9 +69,9 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	// handle collection-agnostic pipelines ({aggregate: 1})
 	// TODO https://github.com/FerretDB/FerretDB/issues/1890
 	var ok bool
-	var collection string
+	var collectionName string
 
-	if collection, ok = collectionParam.(string); !ok {
+	if collectionName, ok = collectionParam.(string); !ok {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrFailedToParse,
 			"Invalid command format: the 'aggregate' field must specify a collection name or 1",
@@ -82,7 +82,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	db, err := h.b.Database(dbName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection)
+			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collectionName)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
 		}
 
@@ -90,10 +90,10 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 	defer db.Close()
 
-	c, err := db.Collection(collection)
+	c, err := db.Collection(collectionName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid collection name: %s", collection)
+			msg := fmt.Sprintf("Invalid collectionName name: %s", collectionName)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
 		}
 
@@ -268,7 +268,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		statistics := stages.GetStatistics(collStatsDocuments)
 
 		iter, err = processStagesStats(ctx, closer, &stagesStatsParams{
-			c, dbName, collection, statistics, collStatsDocuments,
+			c, dbName, collectionName, statistics, collStatsDocuments,
 		})
 	}
 
@@ -282,7 +282,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
 		Iter:       iterator.WithClose(iter, closer.Close),
 		DB:         dbName,
-		Collection: collection,
+		Collection: collectionName,
 		Username:   username,
 	})
 
@@ -312,7 +312,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
 				"id", cursorID,
-				"ns", dbName+"."+collection,
+				"ns", dbName+"."+collectionName,
 			)),
 			"ok", float64(1),
 		))},
