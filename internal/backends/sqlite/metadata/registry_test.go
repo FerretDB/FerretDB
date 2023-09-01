@@ -85,6 +85,9 @@ func TestCreateDrop(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, db)
 
+	state := sp.Get()
+	require.Equal(t, "3.41.2", state.HandlerVersion)
+
 	t.Cleanup(func() {
 		r.DatabaseDrop(ctx, dbName)
 	})
