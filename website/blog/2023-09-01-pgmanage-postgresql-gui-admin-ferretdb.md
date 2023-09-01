@@ -14,7 +14,7 @@ One of the biggest advantages of using [FerretDB](https://www.ferretdb.io/) – 
 
 <!--truncate-->
 
-PgManage is a product offering from [CommandPrompt, Inc.](https://www.commandprompt.com/) that provides an open source GUI management platform for Postgres.
+PgManage is a product offering from [CommandPrompt, Inc.](https://www.commandprompt.com/) that provides an open source GUI management platform for Postgres, and while it is still under development, there's a lot to like!
 It is able to query and manage several database management systems including PostgreSQL, MySQL, SQLite, and Oracle.
 It builds on the great work previously done on [OmniDB (now inactive)](https://github.com/OmniDB/OmniDB) to provide an interface for managing queries, monitoring databases, server configurations, and more.
 
