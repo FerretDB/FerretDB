@@ -384,6 +384,14 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 
 	if hasCount || hasStorage {
 		collStats, err = p.c.Stats(ctx, new(backends.CollectionStatsParams))
+		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrNamespaceNotFound,
+				fmt.Sprintf("ns not found: %s.%s", p.dbName, p.collectionName),
+				"aggregate",
+			)
+		}
+
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

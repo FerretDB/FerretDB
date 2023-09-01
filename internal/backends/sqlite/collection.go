@@ -219,7 +219,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 
 	coll := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if coll == nil {
-		return res, nil
+		return nil, backends.NewError(backends.ErrorCodeCollectionDoesNotExist, lazyerrors.Errorf("no collection %q", c.name))
 	}
 
 	stats, err := getStats(ctx, db, []*metadata.Collection{coll})

@@ -218,7 +218,7 @@ func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStats
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.Stats(ctx, params)
-	checkError(err)
+	checkError(err, ErrorCodeCollectionDoesNotExist)
 
 	return res, err
 }
