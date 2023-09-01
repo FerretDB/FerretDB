@@ -203,7 +203,7 @@ type DatabaseStatsResult struct {
 
 // Stats returns statistics about the database.
 //
-// Database may not exist; that's not an error.
+// Database may not exist; that's not an error, it returns *backends.DatabaseStatsResult filled with zeros for all the fields.
 func (dbc *databaseContract) Stats(ctx context.Context, params *DatabaseStatsParams) (*DatabaseStatsResult, error) {
 	defer observability.FuncCall(ctx)()
 

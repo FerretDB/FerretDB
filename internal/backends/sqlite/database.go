@@ -104,8 +104,6 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 }
 
 // Stats implements backends.Database interface.
-//
-// If the database does not exist, it returns *backends.DatabaseStatsResult filled with zeros for all the fields.
 func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsParams) (*backends.DatabaseStatsResult, error) {
 	stats := new(backends.DatabaseStatsResult)
 
