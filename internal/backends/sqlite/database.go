@@ -153,7 +153,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	}, nil
 }
 
-// relationStats returns statistics about tables and countRows for the given list of collections.
+// relationStats returns statistics about tables and indexes for the given collections.
 func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection) (*stats, error) {
 	var err error
 

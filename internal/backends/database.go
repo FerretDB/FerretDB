@@ -202,8 +202,6 @@ type DatabaseStatsResult struct {
 }
 
 // Stats returns statistics about the database.
-// If collection is specified in *StatsParams.Collection, it returns statistics of only that collection.
-// Otherwise, it returns statistics of the entire database.
 //
 // Database may not exist; that's not an error.
 func (dbc *databaseContract) Stats(ctx context.Context, params *DatabaseStatsParams) (*DatabaseStatsResult, error) {

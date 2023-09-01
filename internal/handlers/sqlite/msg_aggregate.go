@@ -69,9 +69,9 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	// handle collection-agnostic pipelines ({aggregate: 1})
 	// TODO https://github.com/FerretDB/FerretDB/issues/1890
 	var ok bool
-	var collectionName string
+	var cName string
 
-	if collectionName, ok = collectionParam.(string); !ok {
+	if cName, ok = collectionParam.(string); !ok {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrFailedToParse,
 			"Invalid command format: the 'aggregate' field must specify a collection name or 1",
@@ -82,7 +82,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	db, err := h.b.Database(dbName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collectionName)
+			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, cName)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
 		}
 
@@ -90,10 +90,10 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 	defer db.Close()
 
-	c, err := db.Collection(collectionName)
+	c, err := db.Collection(cName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid collection name: %s", collectionName)
+			msg := fmt.Sprintf("Invalid collection name: %s", cName)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
 		}
 
@@ -268,7 +268,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		statistics := stages.GetStatistics(collStatsDocuments)
 
 		iter, err = processStagesStats(ctx, closer, &stagesStatsParams{
-			c, dbName, collectionName, statistics, collStatsDocuments,
+			c, dbName, cName, statistics, collStatsDocuments,
 		})
 	}
 
@@ -282,7 +282,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
 		Iter:       iterator.WithClose(iter, closer.Close),
 		DB:         dbName,
-		Collection: collectionName,
+		Collection: cName,
 		Username:   username,
 	})
 
@@ -312,7 +312,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			"cursor", must.NotFail(types.NewDocument(
 				"firstBatch", firstBatch,
 				"id", cursorID,
-				"ns", dbName+"."+collectionName,
+				"ns", dbName+"."+cName,
 			)),
 			"ok", float64(1),
 		))},
@@ -350,11 +350,11 @@ func processStagesDocuments(ctx context.Context, closer *iterator.MultiCloser, p
 
 // stagesStatsParams contains the parameters for processStagesStats.
 type stagesStatsParams struct {
-	c              backends.Collection
-	dbName         string
-	collectionName string
-	statistics     map[stages.Statistic]struct{}
-	stages         []aggregations.Stage
+	c          backends.Collection
+	dbName     string
+	cName      string
+	statistics map[stages.Statistic]struct{}
+	stages     []aggregations.Stage
 }
 
 // processStagesStats retrieves the statistics from the database and then processes them through the stages.
@@ -375,7 +375,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 	}
 
 	doc := must.NotFail(types.NewDocument(
-		"ns", p.dbName+"."+p.collectionName,
+		"ns", p.dbName+"."+p.cName,
 		"host", host,
 		"localTime", time.Now().UTC().Format(time.RFC3339),
 	))
@@ -387,7 +387,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNamespaceNotFound,
-				fmt.Sprintf("ns not found: %s.%s", p.dbName, p.collectionName),
+				fmt.Sprintf("ns not found: %s.%s", p.dbName, p.cName),
 				"aggregate",
 			)
 		}

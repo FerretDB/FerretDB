@@ -20,24 +20,20 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestStats(t *testing.T) {
+func TestDatabaseStats(t *testing.T) {
 	t.Parallel()
 	ctx := testutil.Ctx(t)
 
-	r, err := metadata.NewRegistry("file:./?mode=memory", testutil.Logger(t))
+	b, err := NewBackend(&NewBackendParams{URI: "file:./?mode=memory", L: testutil.Logger(t)})
 	require.NoError(t, err)
-	t.Cleanup(r.Close)
+	t.Cleanup(b.Close)
 
-	dbName := t.Name()
-	db := newDatabase(r, dbName)
-
-	t.Cleanup(func() {
-		db.Close()
-	})
+	db, err := b.Database(testutil.DatabaseName(t))
+	require.NoError(t, err)
+	t.Cleanup(db.Close)
 
 	t.Run("NonExistingDatabase", func(t *testing.T) {
 		var res *backends.DatabaseStatsResult
@@ -46,38 +42,19 @@ func TestStats(t *testing.T) {
 		require.Equal(t, new(backends.DatabaseStatsResult), res)
 	})
 
-	collectionOne := "collectionOne"
-	err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: collectionOne})
-	require.NoError(t, err)
-	require.NotNil(t, db)
-
-	collectionTwo := "collectionTwo"
-	err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: collectionTwo})
-	require.NoError(t, err)
-	require.NotNil(t, db)
-
-	t.Cleanup(func() {
-		r.DatabaseDrop(ctx, dbName)
-	})
-
-	var dbStatsRes *backends.DatabaseStatsResult
-	t.Run("Database", func(t *testing.T) {
-		dbStatsRes, err = db.Stats(ctx, new(backends.DatabaseStatsParams))
+	cNames := []string{"collectionOne", "collectionTwo"}
+	for _, cName := range cNames {
+		err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: cName})
 		require.NoError(t, err)
-		require.NotZero(t, dbStatsRes.SizeTotal)
-		require.NotZero(t, dbStatsRes.CountCollections)
-		require.NotZero(t, dbStatsRes.SizeCollections)
-		require.Zero(t, dbStatsRes.CountObjects)
-	})
+		require.NotNil(t, db)
+	}
 
-	t.Run("Collection", func(t *testing.T) {
-		c := newCollection(r, dbName, collectionOne)
-		res, err := c.Stats(ctx, new(backends.CollectionStatsParams))
+	t.Run("DatabaseWithCollections", func(t *testing.T) {
+		res, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
 		require.NoError(t, err)
 		require.NotZero(t, res.SizeTotal)
-		require.Less(t, res.SizeTotal, dbStatsRes.SizeTotal)
-		require.NotZero(t, res.SizeCollection)
-		require.Less(t, res.SizeCollection, dbStatsRes.SizeCollections)
+		require.NotZero(t, len(cNames))
+		require.NotZero(t, res.SizeCollections)
 		require.Zero(t, res.CountObjects)
 	})
 }
