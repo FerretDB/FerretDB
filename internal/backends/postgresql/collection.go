@@ -44,8 +44,8 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	panic("not implemented")
 }
 
-// Update implements backends.Collection interface.
-func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) (*backends.UpdateResult, error) {
+// UpdateAll implements backends.Collection interface.
+func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllParams) (*backends.UpdateAllResult, error) {
 	panic("not implemented")
 }
 

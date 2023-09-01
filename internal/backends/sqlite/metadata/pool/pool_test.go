@@ -163,8 +163,9 @@ func TestDefaults(t *testing.T) {
 	}
 	require.NoError(t, rows.Err())
 	require.NoError(t, rows.Close())
-	require.Contains(t, options, "THREADSAFE=1")
-	require.Contains(t, options, "ENABLE_DBSTAT_VTAB")
+
+	require.Contains(t, options, "THREADSAFE=1")       // for it to work with database/sql
+	require.Contains(t, options, "ENABLE_DBSTAT_VTAB") // for dbStats/collStats/etc
 
 	for q, expected := range map[string]string{
 		"SELECT sqlite_version()":   "3.41.2",
