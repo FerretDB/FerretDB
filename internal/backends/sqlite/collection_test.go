@@ -90,5 +90,5 @@ func TestCollectionStats(t *testing.T) {
 	require.Less(t, res.SizeTotal, dbStatsRes.SizeTotal)
 	require.NotZero(t, res.SizeCollection)
 	require.Less(t, res.SizeCollection, dbStatsRes.SizeCollections)
-	require.Equal(t, int64(1), res.CountObjects)
+	require.Equal(t, res.CountObjects, int64(1))
 }

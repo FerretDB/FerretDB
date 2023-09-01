@@ -36,8 +36,7 @@ func TestDatabaseStats(t *testing.T) {
 	t.Cleanup(db.Close)
 
 	t.Run("NonExistingDatabase", func(t *testing.T) {
-		var res *backends.DatabaseStatsResult
-		res, err = db.Stats(ctx, new(backends.DatabaseStatsParams))
+		res, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
 		require.NoError(t, err)
 		require.Equal(t, new(backends.DatabaseStatsResult), res)
 	})
@@ -53,7 +52,7 @@ func TestDatabaseStats(t *testing.T) {
 		res, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
 		require.NoError(t, err)
 		require.NotZero(t, res.SizeTotal)
-		require.NotZero(t, len(cNames))
+		require.Equal(t, res.CountCollections, int64(len(cNames)))
 		require.NotZero(t, res.SizeCollections)
 		require.Zero(t, res.CountObjects)
 	})
