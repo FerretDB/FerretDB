@@ -60,9 +60,9 @@ func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabas
 	panic("not implemented")
 }
 
-// Info implements backends.Backend interface.
-func (b *backend) Info(ctx context.Context) (*backends.Info, error) {
-	panic("not implemented")
+// Name implements backends.Backend interface.
+func (b *backend) Name() string {
+	return "PostgreSQL"
 }
 
 // Describe implements prometheus.Collector.

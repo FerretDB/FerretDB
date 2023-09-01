@@ -38,18 +38,12 @@ type Backend interface {
 	ListDatabases(context.Context, *ListDatabasesParams) (*ListDatabasesResult, error)
 	DropDatabase(context.Context, *DropDatabaseParams) error
 
-	Info(context.Context) (*Info, error)
+	Name() string
 
 	prometheus.Collector
 
 	// There is no interface method to create a database; see package documentation.
 	// TODO https://github.com/FerretDB/FerretDB/issues/3069
-}
-
-// Info represents information about a backend.
-type Info struct {
-	Name    string
-	Version string // can be empty if the pool is not initialized yet
 }
 
 // backendContract implements Backend interface.
@@ -140,9 +134,9 @@ func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabas
 	return err
 }
 
-// Info returns information about the backend.
-func (bc *backendContract) Info(ctx context.Context) (*Info, error) {
-	return bc.b.Info(ctx)
+// Name returns human-readable formatted name of the backend.
+func (bc *backendContract) Name() string {
+	return bc.b.Name()
 }
 
 // Describe implements prometheus.Collector.
