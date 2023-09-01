@@ -64,8 +64,6 @@ type QueryParams struct {
 
 // QueryResult represents the results of Collection.Query method.
 type QueryResult struct {
-	// nothing for now - no pushdowns yet
-	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Iter types.DocumentsIterator
 }
 
