@@ -67,10 +67,11 @@ func isIssueOpen(todoText string) bool {
 		return false
 	}
 	resp, err := http.Get(issueURL)
+
 	if err != nil {
 		return false
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck // we are only reading it
 
 	return resp.StatusCode == http.StatusOK
 }
@@ -82,5 +83,6 @@ func getURL(todoText string) string {
 			return text
 		}
 	}
+
 	return ""
 }
