@@ -61,12 +61,14 @@ func run(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
+// isIssueopen check the issue open or closed
 func isIssueOpen(todoText string) bool {
 	issueURL := getURL(todoText)
 	if issueURL == "" {
 		return false
 	}
 	resp, err := http.Get(issueURL)
+
 	if err != nil {
 		return false
 	}
@@ -75,6 +77,7 @@ func isIssueOpen(todoText string) bool {
 	return resp.StatusCode == http.StatusOK
 }
 
+// extracting url from TODO comment if present
 func getURL(todoText string) string {
 	arrText := strings.Split(todoText, " ")
 	for _, text := range arrText {
