@@ -23,6 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // backend implements backends.Backend interface.
@@ -36,11 +37,12 @@ type backend struct {
 type NewBackendParams struct {
 	URI string
 	L   *zap.Logger
+	P   *state.Provider
 }
 
 // NewBackend creates a new SQLite backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	r, err := metadata.NewRegistry(params.URI, params.L)
+	r, err := metadata.NewRegistry(params.URI, params.L, params.P)
 	if err != nil {
 		return nil, err
 	}
