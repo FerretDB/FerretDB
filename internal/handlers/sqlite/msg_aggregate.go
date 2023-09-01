@@ -57,7 +57,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	var dbName string
 
-	if dbName, err = common.GetRequiredParam[string](document, "$dbName"); err != nil {
+	if dbName, err = common.GetRequiredParam[string](document, "$db"); err != nil {
 		return nil, err
 	}
 

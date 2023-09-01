@@ -182,7 +182,7 @@ func getStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection) (*c
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3175
+	// TODO https://github.com/FerretDB/FerretDB/issues/3293
 	stats.countIndexes, stats.sizeIndexes = 0, 0
 
 	if len(list) == 1 {
