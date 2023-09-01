@@ -21,6 +21,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -105,39 +106,51 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 
 // Stats implements backends.Database interface.
 //
-// If the database does not exist, it returns *backends.StatsResult filled with zeros for all the fields.
-func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*backends.StatsResult, error) {
-	stats := new(backends.StatsResult)
+// If the database does not exist, it returns *backends.DatabaseStatsResult filled with zeros for all the fields.
+func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsParams) (*backends.DatabaseStatsResult, error) {
+	res := new(backends.DatabaseStatsResult)
 
 	d := db.r.DatabaseGetExisting(ctx, db.name)
 	if d == nil {
-		return stats, nil
+		return res, nil
 	}
 
-	var list []*metadata.Collection
+	list, err := db.r.CollectionList(ctx, db.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	stats, err := getStats(ctx, d, list)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res.SizeTotal = stats.totalSize
+	res.SizeCollections = stats.sizeTables
+	res.CountObjects = stats.rows
+	res.SizeIndexes = stats.sizeIndexes
+	res.CountIndexes = stats.countIndexes
+	res.CountCollections = int64(len(list))
+
+	return res, nil
+}
+
+type collectionStats struct {
+	totalSize    int64
+	sizeTables   int64
+	rows         int64
+	countIndexes int64
+	sizeIndexes  int64
+}
+
+// If the database does not exist, it returns *backends.DatabaseStatsResult filled with zeros for all the fields.
+func getStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection) (*collectionStats, error) {
 	var err error
-
-	singleCollectionStats := params.Collection != ""
-
-	if singleCollectionStats {
-		c := db.r.CollectionGet(ctx, db.name, params.Collection)
-		if c == nil {
-			return stats, nil
-		}
-
-		list = append(list, c)
-	} else {
-		if list, err = db.r.CollectionList(ctx, db.name); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-	}
-
-	stats.CountCollections = int64(len(list))
 
 	// Call ANALYZE to update statistics of tables and indexes,
 	// see https://www.sqlite.org/lang_analyze.html.
 	q := `ANALYZE`
-	if _, err = d.ExecContext(ctx, q); err != nil {
+	if _, err = db.ExecContext(ctx, q); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -148,6 +161,8 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 		placeholders[i] = "?"
 		args[i] = c.TableName
 	}
+
+	stats := new(collectionStats)
 
 	// Use number of cells to approximate total row count,
 	// see https://www.sqlite.org/fileformat.html.
@@ -160,18 +175,18 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 		strings.Join(placeholders, ", "),
 	)
 
-	if err = d.QueryRowContext(ctx, q, args...).Scan(
-		&stats.SizeCollections,
-		&stats.CountObjects,
+	if err = db.QueryRowContext(ctx, q, args...).Scan(
+		&stats.sizeTables,
+		&stats.rows,
 	); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3175
-	stats.CountIndexes, stats.SizeIndexes = 0, 0
+	stats.countIndexes, stats.sizeIndexes = 0, 0
 
-	if singleCollectionStats {
-		stats.SizeTotal = stats.SizeCollections + stats.SizeIndexes
+	if len(list) == 1 {
+		stats.totalSize = stats.sizeTables + stats.sizeIndexes
 		return stats, nil
 	}
 
@@ -182,7 +197,7 @@ func (db *database) Stats(ctx context.Context, params *backends.StatsParams) (*b
 			SUM(pgsize)
 		FROM dbstat WHERE aggregate = TRUE`
 
-	err = d.QueryRowContext(ctx, q).Scan(&stats.SizeTotal)
+	err = db.QueryRowContext(ctx, q).Scan(&stats.totalSize)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

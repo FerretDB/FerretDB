@@ -208,6 +208,34 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	panic("not implemented")
 }
 
+// Stats implements backends.Collection interface.
+func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
+	res := new(backends.CollectionStatsResult)
+
+	db := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if db == nil {
+		return res, nil
+	}
+
+	coll := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if coll == nil {
+		return res, nil
+	}
+
+	stats, err := getStats(ctx, db, []*metadata.Collection{coll})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res.SizeTotal = stats.totalSize
+	res.CountObjects = stats.rows
+	res.SizeCollection = stats.sizeTables
+	res.CountIndexes = stats.countIndexes
+	res.SizeIndexes = stats.sizeIndexes
+
+	return res, nil
+}
+
 // check interfaces
 var (
 	_ backends.Collection = (*collection)(nil)

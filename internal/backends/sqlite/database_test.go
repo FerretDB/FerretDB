@@ -40,10 +40,10 @@ func TestStats(t *testing.T) {
 	})
 
 	t.Run("NonExistingDatabase", func(t *testing.T) {
-		var res *backends.StatsResult
-		res, err = db.Stats(ctx, new(backends.StatsParams))
+		var res *backends.DatabaseStatsResult
+		res, err = db.Stats(ctx, new(backends.DatabaseStatsParams))
 		require.NoError(t, err)
-		require.Equal(t, new(backends.StatsResult), res)
+		require.Equal(t, new(backends.DatabaseStatsResult), res)
 	})
 
 	collectionOne := "collectionOne"
@@ -60,9 +60,9 @@ func TestStats(t *testing.T) {
 		r.DatabaseDrop(ctx, dbName)
 	})
 
-	var dbStatsRes *backends.StatsResult
-	t.Run("EmptyCollection", func(t *testing.T) {
-		dbStatsRes, err = db.Stats(ctx, new(backends.StatsParams))
+	var dbStatsRes *backends.DatabaseStatsResult
+	t.Run("Database", func(t *testing.T) {
+		dbStatsRes, err = db.Stats(ctx, new(backends.DatabaseStatsParams))
 		require.NoError(t, err)
 		require.NotZero(t, dbStatsRes.SizeTotal)
 		require.NotZero(t, dbStatsRes.CountCollections)
@@ -70,14 +70,14 @@ func TestStats(t *testing.T) {
 		require.Zero(t, dbStatsRes.CountObjects)
 	})
 
-	t.Run("CollectionOne", func(t *testing.T) {
-		res, err := db.Stats(ctx, &backends.StatsParams{Collection: collectionOne})
+	t.Run("Collection", func(t *testing.T) {
+		c := newCollection(r, dbName, collectionOne)
+		res, err := c.Stats(ctx, new(backends.CollectionStatsParams))
 		require.NoError(t, err)
 		require.NotZero(t, res.SizeTotal)
 		require.Less(t, res.SizeTotal, dbStatsRes.SizeTotal)
-		require.Equal(t, res.CountCollections, int64(1))
-		require.NotZero(t, res.SizeCollections)
-		require.Less(t, res.SizeCollections, dbStatsRes.SizeCollections)
+		require.NotZero(t, res.SizeCollection)
+		require.Less(t, res.SizeCollection, dbStatsRes.SizeCollections)
 		require.Zero(t, res.CountObjects)
 	})
 }

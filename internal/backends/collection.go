@@ -37,6 +37,8 @@ type Collection interface {
 	UpdateAll(context.Context, *UpdateAllParams) (*UpdateAllResult, error)
 	DeleteAll(context.Context, *DeleteAllParams) (*DeleteAllResult, error)
 	Explain(context.Context, *ExplainParams) (*ExplainResult, error)
+
+	Stats(context.Context, *CollectionStatsParams) (*CollectionStatsResult, error)
 }
 
 // collectionContract implements Collection interface.
@@ -194,6 +196,28 @@ func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.Explain(ctx, params)
+	checkError(err)
+
+	return res, err
+}
+
+// CollectionStatsParams represents the parameters of Collection.Stats method.
+type CollectionStatsParams struct{}
+
+// CollectionStatsResult represents the results of Collection.Stats method.
+type CollectionStatsResult struct {
+	CountObjects   int64
+	CountIndexes   int64
+	SizeTotal      int64
+	SizeIndexes    int64
+	SizeCollection int64
+}
+
+// Stats returns statistics about the collection.
+func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStatsParams) (*CollectionStatsResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := cc.c.Stats(ctx, params)
 	checkError(err)
 
 	return res, err

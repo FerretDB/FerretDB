@@ -67,24 +67,34 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 	defer db.Close()
 
-	stats, err := db.Stats(ctx, &backends.StatsParams{Collection: collection})
+	c, err := db.Collection(collection)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid collection name: %s", collection)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
+
+	stats, err := c.Stats(ctx, new(backends.CollectionStatsParams))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	pairs := []any{
 		"ns", dbName + "." + collection,
-		"size", stats.SizeCollections / scale,
+		"size", stats.SizeCollection / scale,
 		"count", stats.CountObjects,
 	}
 
 	// If there are objects in the collection, calculate the average object size.
 	if stats.CountObjects > 0 {
-		pairs = append(pairs, "avgObjSize", stats.SizeCollections/stats.CountObjects)
+		pairs = append(pairs, "avgObjSize", stats.SizeCollection/stats.CountObjects)
 	}
 
 	pairs = append(pairs,
-		"storageSize", stats.SizeCollections/scale,
+		"storageSize", stats.SizeCollection/scale,
 		"nindexes", stats.CountIndexes,
 		"totalIndexSize", stats.SizeIndexes/scale,
 		"totalSize", stats.SizeTotal/scale,

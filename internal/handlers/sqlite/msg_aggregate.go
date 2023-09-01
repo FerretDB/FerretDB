@@ -268,7 +268,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		statistics := stages.GetStatistics(collStatsDocuments)
 
 		iter, err = processStagesStats(ctx, closer, &stagesStatsParams{
-			db, dbName, collection, statistics, collStatsDocuments,
+			c, dbName, collection, statistics, collStatsDocuments,
 		})
 	}
 
@@ -350,7 +350,7 @@ func processStagesDocuments(ctx context.Context, closer *iterator.MultiCloser, p
 
 // stagesStatsParams contains the parameters for processStagesStats.
 type stagesStatsParams struct {
-	db             backends.Database
+	c              backends.Collection
 	dbName         string
 	collectionName string
 	statistics     map[stages.Statistic]struct{}
@@ -380,10 +380,10 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 		"localTime", time.Now().UTC().Format(time.RFC3339),
 	))
 
-	var collStats *backends.StatsResult
+	var collStats *backends.CollectionStatsResult
 
 	if hasCount || hasStorage {
-		collStats, err = p.db.Stats(ctx, &backends.StatsParams{Collection: p.collectionName})
+		collStats, err = p.c.Stats(ctx, new(backends.CollectionStatsParams))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -392,7 +392,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 	if hasStorage {
 		var avgObjSize int64
 		if collStats.CountObjects > 0 {
-			avgObjSize = collStats.SizeCollections / collStats.CountObjects
+			avgObjSize = collStats.SizeCollection / collStats.CountObjects
 		}
 
 		doc.Set(
@@ -400,7 +400,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 				"size", collStats.SizeTotal,
 				"count", collStats.CountObjects,
 				"avgObjSize", avgObjSize,
-				"storageSize", collStats.SizeCollections,
+				"storageSize", collStats.SizeCollection,
 				"freeStorageSize", int64(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
