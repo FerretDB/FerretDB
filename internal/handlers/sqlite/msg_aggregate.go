@@ -93,7 +93,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	c, err := db.Collection(collectionName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid collectionName name: %s", collectionName)
+			msg := fmt.Sprintf("Invalid collection name: %s", collectionName)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
 		}
 
