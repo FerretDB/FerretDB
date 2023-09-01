@@ -17,7 +17,6 @@ package integration
 
 import (
 	"context"
-	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -239,6 +238,8 @@ func AssertMatchesWriteError(t testtb.TB, expected, actual error) {
 
 // AssertMatchesBulkException asserts that both errors are BulkWriteExceptions containing the same number of WriteErrors,
 // and those WriteErrors are equal, except messages (and ignoring the Raw part).
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3290
 func AssertMatchesBulkException(t testtb.TB, expected, actual error) {
 	t.Helper()
 
@@ -247,6 +248,11 @@ func AssertMatchesBulkException(t testtb.TB, expected, actual error) {
 
 	e, ok := expected.(mongo.BulkWriteException) //nolint:errorlint // do not inspect error chain
 	require.Truef(t, ok, "expected is %T, not mongo.BulkWriteException", expected)
+
+	if len(a.WriteErrors) != len(e.WriteErrors) {
+		assert.Equal(t, expected, actual)
+		return
+	}
 
 	for i, we := range a.WriteErrors {
 		expectedWe := e.WriteErrors[i]
@@ -294,7 +300,7 @@ func AssertEqualAltCommandError(t testtb.TB, expected mongo.CommandError, altMes
 
 // AssertEqualAltWriteError asserts that the expected MongoDB error is the same as the actual;
 // the alternative error message may be provided if FerretDB is unable to produce exactly the same text as MongoDB.
-func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessage string, actual error) bool {
+func AssertEqualAltWriteError(t testtb.TB, expected mongo.WriteError, altMessage string, actual error) bool {
 	t.Helper()
 
 	we, ok := actual.(mongo.WriteException)

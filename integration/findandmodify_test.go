@@ -588,10 +588,8 @@ func TestFindAndModifyCommandUpsert(t *testing.T) {
 	}
 }
 
-func TestFindAndModifyCommentMethod(tt *testing.T) {
-	tt.Parallel()
-
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+func TestFindAndModifyCommentMethod(t *testing.T) {
+	t.Parallel()
 
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 

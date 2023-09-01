@@ -30,6 +30,8 @@ type backend struct {
 }
 
 // NewBackendParams represents the parameters of NewBackend function.
+//
+//nolint:vet // for readability
 type NewBackendParams struct {
 	URI string
 	L   *zap.Logger

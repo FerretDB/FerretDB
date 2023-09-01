@@ -48,7 +48,7 @@ func testCollection(t *testing.T, ctx context.Context, r *Registry, db *fsql.DB,
 
 	list, err := r.CollectionList(ctx, dbName)
 	require.NoError(t, err)
-	require.Contains(t, list, collectionName)
+	require.Contains(t, list, c)
 
 	q := fmt.Sprintf("INSERT INTO %q (%s) VALUES(?)", c.TableName, DefaultColumn)
 	doc := `{"$s": {"p": {"_id": {"t": "int"}}, "$k": ["_id"]}, "_id": 42}`
@@ -75,7 +75,7 @@ func TestCreateDrop(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
-	dbName := t.Name()
+	dbName := testutil.DatabaseName(t)
 
 	db, err := r.DatabaseGetOrCreate(ctx, dbName)
 	require.NoError(t, err)
@@ -85,7 +85,7 @@ func TestCreateDrop(t *testing.T) {
 		r.DatabaseDrop(ctx, dbName)
 	})
 
-	collectionName := t.Name()
+	collectionName := testutil.CollectionName(t)
 
 	testCollection(t, ctx, r, db, dbName, collectionName)
 }
@@ -180,7 +180,7 @@ func TestCreateSameStress(t *testing.T) {
 
 				list, err := r.CollectionList(ctx, dbName)
 				require.NoError(t, err)
-				require.Contains(t, list, collectionName)
+				require.Contains(t, list, c)
 
 				q := fmt.Sprintf("INSERT INTO %q (%s) VALUES(?)", c.TableName, DefaultColumn)
 				doc := fmt.Sprintf(`{"$s": {"p": {"_id": {"t": "int"}}, "$k": ["_id"]}, "_id": %d}`, id)

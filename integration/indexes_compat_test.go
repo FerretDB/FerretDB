@@ -39,7 +39,6 @@ func TestListIndexesCompat(tt *testing.T) {
 	for i := range targetCollections {
 		targetCollection := targetCollections[i]
 		compatCollection := compatCollections[i]
-
 		tt.Run(targetCollection.Name(), func(tt *testing.T) {
 			tt.Helper()
 			tt.Parallel()
@@ -244,7 +243,6 @@ func TestCreateIndexesCompat(tt *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-
 				tt.Run(targetCollection.Name(), func(tt *testing.T) {
 					tt.Helper()
 
@@ -388,7 +386,6 @@ func TestDropIndexesCompat(tt *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-
 				tt.Run(targetCollection.Name(), func(tt *testing.T) {
 					tt.Helper()
 

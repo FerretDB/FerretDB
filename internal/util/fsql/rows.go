@@ -28,8 +28,8 @@ type Rows struct {
 	token   *resource.Token
 }
 
-// WrapRows creates new Rows.
-func WrapRows(rows *sql.Rows) *Rows {
+// wrapRows creates new Rows.
+func wrapRows(rows *sql.Rows) *Rows {
 	if rows == nil {
 		return nil
 	}

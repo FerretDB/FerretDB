@@ -193,7 +193,7 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 
 			tt.Parallel()
 
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3261")
 
 			require.NotNil(t, tc.command, "command must not be nil")
 

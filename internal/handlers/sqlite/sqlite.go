@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/postgresql"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
@@ -31,6 +32,9 @@ import (
 )
 
 // notImplemented returns error for stub command handlers.
+//
+// Remove it.
+// TODO https://github.com/FerretDB/FerretDB/issues/3069
 func notImplemented(command string) error {
 	return commonerrors.NewCommandErrorMsg(
 		commonerrors.ErrNotImplemented,
@@ -51,7 +55,8 @@ type Handler struct {
 //
 //nolint:vet // for readability
 type NewOpts struct {
-	URI string
+	Backend string
+	URI     string
 
 	L             *zap.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
@@ -63,10 +68,24 @@ type NewOpts struct {
 
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
-	b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
-		URI: opts.URI,
-		L:   opts.L,
-	})
+	var b backends.Backend
+	var err error
+
+	switch opts.Backend {
+	case "postgresql":
+		b, err = postgresql.NewBackend(&postgresql.NewBackendParams{
+			URI: opts.URI,
+			L:   opts.L,
+		})
+	case "sqlite":
+		b, err = sqlite.NewBackend(&sqlite.NewBackendParams{
+			URI: opts.URI,
+			L:   opts.L,
+		})
+	default:
+		panic("unknown backend: " + opts.Backend)
+	}
+
 	if err != nil {
 		return nil, err
 	}

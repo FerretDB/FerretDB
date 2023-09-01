@@ -212,17 +212,17 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 		"DotNotationNegativeIndex": {
 			update: bson.D{{"$inc", bson.D{{"v.-1", int32(42)}}}},
 		},
-		"DotNotationIndexOutsideArray": {
+		"DotNotatIndexOutOfArray": {
 			update: bson.D{{"$inc", bson.D{{"v.100", int32(42)}}}},
 		},
-		"DotNotationArrayFieldNotExist": {
+		"DotNotatArrayFieldNotExist": {
 			update: bson.D{{"$inc", bson.D{{"v.array.foo", int32(1)}}}},
 			skip:   "TODO: fix namespace error",
 		},
-		"DotNotationArrayFieldExist": {
+		"DotNotatArrFieldExist": {
 			update: bson.D{{"$inc", bson.D{{"v.array.0", int32(1)}}}},
 		},
-		"DotNotationArrayFieldValue": {
+		"DotNotatArrFieldValue": {
 			update: bson.D{{"$inc", bson.D{{"v.0.foo", int32(1)}}}},
 		},
 	}
@@ -959,7 +959,7 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.-1.bar", int32(1)}}}},
 			resultType: emptyResult,
 		},
-		"DotNotationIndexOutOfArr": {
+		"DotNotatIndexOutOfArr": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.100.bar", int32(1)}}}},
 			resultType: emptyResult,
 		},
@@ -1194,7 +1194,7 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 			update:     bson.D{{"$mul", bson.D{{"v..", int32(45)}}}},
 			resultType: emptyResult,
 		},
-		"DotNotationIndexExceedsArrayLength": {
+		"DotNotatIndexOverArrayLen": {
 			update: bson.D{{"$mul", bson.D{{"v.100.bar", int32(45)}}}},
 		},
 		"DotNotationFieldNumericName": {

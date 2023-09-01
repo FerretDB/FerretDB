@@ -482,7 +482,14 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			}))
 			resBody = &res
 
-			result = protoErr.Code().String()
+			switch protoErr := protoErr.(type) {
+			case *commonerrors.CommandError:
+				result = protoErr.Code().String()
+			case *commonerrors.WriteErrors:
+				result = "write-error"
+			default:
+				panic(fmt.Errorf("unexpected error type %T", protoErr))
+			}
 
 			if info := protoErr.Info(); info != nil {
 				argument = info.Argument

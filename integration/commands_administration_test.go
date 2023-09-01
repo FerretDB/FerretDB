@@ -141,7 +141,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 func TestCommandsAdministrationListDatabases(tt *testing.T) {
 	tt.Parallel()
 
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3260")
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	db := collection.Database()
@@ -679,7 +679,7 @@ func TestCommandsAdministrationCollStatsEmpty(tt *testing.T) {
 	tt.Parallel()
 	ctx, collection := setup.Setup(tt)
 
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3259")
 
 	var actual bson.D
 	command := bson.D{{"collStats", collection.Name()}}
@@ -702,7 +702,7 @@ func TestCommandsAdministrationCollStatsEmpty(tt *testing.T) {
 func TestCommandsAdministrationCollStats(tt *testing.T) {
 	tt.Parallel()
 
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3259")
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
@@ -735,7 +735,7 @@ func TestCommandsAdministrationCollStats(tt *testing.T) {
 func TestCommandsAdministrationCollStatsWithScale(tt *testing.T) {
 	tt.Parallel()
 
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3259")
 
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
@@ -852,10 +852,9 @@ func TestCommandsAdministrationDataSizeErrors(tt *testing.T) {
 	}
 }
 
-func TestCommandsAdministrationDBStats(tt *testing.T) {
-	tt.Parallel()
+func TestCommandsAdministrationDBStats(t *testing.T) {
+	t.Parallel()
 
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
@@ -884,10 +883,9 @@ func TestCommandsAdministrationDBStats(tt *testing.T) {
 	// https://github.com/FerretDB/FerretDB/issues/727
 }
 
-func TestCommandsAdministrationDBStatsEmpty(tt *testing.T) {
-	tt.Parallel()
+func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
+	t.Parallel()
 
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
 	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
@@ -909,10 +907,9 @@ func TestCommandsAdministrationDBStatsEmpty(tt *testing.T) {
 	// https://github.com/FerretDB/FerretDB/issues/727
 }
 
-func TestCommandsAdministrationDBStatsWithScale(tt *testing.T) {
-	tt.Parallel()
+func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
+	t.Parallel()
 
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
@@ -934,10 +931,9 @@ func TestCommandsAdministrationDBStatsWithScale(tt *testing.T) {
 	// https://github.com/FerretDB/FerretDB/issues/727
 }
 
-func TestCommandsAdministrationDBStatsEmptyWithScale(tt *testing.T) {
-	tt.Parallel()
+func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
+	t.Parallel()
 
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
 	ctx, collection := setup.Setup(t)
 
 	var actual bson.D

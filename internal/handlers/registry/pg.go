@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+//go:build !ferretdb_newpg
+
 package registry
 
 import (
@@ -19,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 )
 
-// init registers "pg" handler.
+// init registers old "pg" handler.
 func init() {
 	registry["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
 		handlerOpts := &pg.NewOpts{
