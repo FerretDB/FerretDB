@@ -69,18 +69,30 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 	res := &backends.ListDatabasesResult{
 		Databases: make([]backends.DatabaseInfo, len(list)),
 	}
-	for i, db := range list {
-		var size int64
-		var err error
 
-		if size, err = b.r.DatabaseSize(ctx, db); err != nil {
+	for i, dbName := range list {
+		d := b.r.DatabaseGetExisting(ctx, dbName)
+		if d == nil {
+			continue
+		}
+
+		db, err := b.Database(dbName)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		stats, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+		if err != nil {
+			db.Close()
 			return nil, lazyerrors.Error(err)
 		}
 
 		res.Databases[i] = backends.DatabaseInfo{
-			Name: db,
-			Size: size,
+			Name: dbName,
+			Size: stats.SizeTotal,
 		}
+
+		db.Close()
 	}
 
 	return res, nil
