@@ -27,8 +27,10 @@
 //  2. Backend objects are stateful.
 //     Database objects are almost stateless but should be Close()'d to avoid connection leaks.
 //     Collection objects are fully stateless.
-//  3. Contexts are per-operation and should not be stored.
-//  4. Errors returned by methods could be nil, [*Error], or some other opaque error type.
+//  3. The Backend maintains the list of databases and collections.
+//     It is recommended that it does so by not querying the information_schema or equivalent often.
+//  4. Contexts are per-operation and should not be stored.
+//  5. Errors returned by methods could be nil, [*Error], or some other opaque error type.
 //     *Error values can't be wrapped or be present anywhere in the error chain.
 //     Contracts enforce *Error codes; they are not documented in the code comments
 //     but are visible in the contract's code (to avoid duplication).

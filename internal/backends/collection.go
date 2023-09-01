@@ -34,7 +34,7 @@ import (
 type Collection interface {
 	Query(context.Context, *QueryParams) (*QueryResult, error)
 	InsertAll(context.Context, *InsertAllParams) (*InsertAllResult, error)
-	Update(context.Context, *UpdateParams) (*UpdateResult, error)
+	UpdateAll(context.Context, *UpdateAllParams) (*UpdateAllResult, error)
 	DeleteAll(context.Context, *DeleteAllParams) (*DeleteAllResult, error)
 	Explain(context.Context, *ExplainParams) (*ExplainResult, error)
 }
@@ -91,7 +91,7 @@ type InsertAllParams struct {
 // InsertAllResult represents the results of Collection.InsertAll method.
 type InsertAllResult struct{}
 
-// InsertAll inserts all or none documents into the collection.
+// InsertAll inserts documents into the collection.
 //
 // The operation should be atomic.
 // If some documents cannot be inserted, the operation should be rolled back,
@@ -115,25 +115,34 @@ func (cc *collectionContract) InsertAll(ctx context.Context, params *InsertAllPa
 	return res, err
 }
 
-// UpdateParams represents the parameters of Collection.Update method.
-type UpdateParams struct {
-	// that should be []*types.Document
-	// TODO https://github.com/FerretDB/FerretDB/issues/3079
-	Docs *types.Array
+// UpdateAllParams represents the parameters of Collection.Update method.
+type UpdateAllParams struct {
+	Docs []*types.Document
 }
 
-// UpdateResult represents the results of Collection.Update method.
-type UpdateResult struct {
+// UpdateAllResult represents the results of Collection.Update method.
+type UpdateAllResult struct {
 	Updated int32
 }
 
-// Update updates documents in collection.
+// UpdateAll updates documents in collection.
+//
+// The operation should be atomic.
+// If some documents cannot be updated, the operation should be rolled back,
+// and the first encountered error should be returned.
+//
+// All documents are expected to be valid and include _id fields.
+// They will be frozen.
 //
 // Database or collection may not exist; that's not an error.
-func (cc *collectionContract) Update(ctx context.Context, params *UpdateParams) (*UpdateResult, error) {
+func (cc *collectionContract) UpdateAll(ctx context.Context, params *UpdateAllParams) (*UpdateAllResult, error) {
 	defer observability.FuncCall(ctx)()
 
-	res, err := cc.c.Update(ctx, params)
+	for _, doc := range params.Docs {
+		doc.Freeze()
+	}
+
+	res, err := cc.c.UpdateAll(ctx, params)
 	checkError(err)
 
 	return res, err
