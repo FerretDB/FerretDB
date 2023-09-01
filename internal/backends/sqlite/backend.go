@@ -71,11 +71,6 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 	}
 
 	for i, dbName := range list {
-		d := b.r.DatabaseGetExisting(ctx, dbName)
-		if d == nil {
-			continue
-		}
-
 		db, err := b.Database(dbName)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
