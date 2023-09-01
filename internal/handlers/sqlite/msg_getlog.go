@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.uber.org/zap"
@@ -88,17 +89,19 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		info := version.Get()
 
+		// it may be empty if no connection was established yet
+		hv, _, _ := strings.Cut(state.HandlerVersion, " ")
+		if hv != "" {
+			hv = " " + hv
+		}
+
 		backend, err := h.b.Info(ctx)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		if backend.Version != "" {
-			backend.Version = " " + backend.Version // to format startup warnings
-		}
-
 		startupWarnings := []string{
-			fmt.Sprintf("Powered by FerretDB %s and %s%s.", info.Version, backend.Name, backend.Version),
+			fmt.Sprintf("Powered by FerretDB %s and %s%s.", info.Version, backend.Name, hv),
 			"Please star us on GitHub: https://github.com/FerretDB/FerretDB.",
 		}
 
