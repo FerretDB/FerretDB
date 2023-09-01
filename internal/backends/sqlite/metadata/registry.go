@@ -56,8 +56,6 @@ type Registry struct {
 	p *pool.Pool
 	l *zap.Logger
 
-	version string // SQLite version
-
 	// rw protects colls but also acts like a global lock for the whole registry.
 	// The latter effectively replaces transactions (see the sqlite backend description for more info).
 	// One global lock should be replaced by more granular locks – one per database or even one per collection.
@@ -353,27 +351,6 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/2760
 	panic("not implemented")
-}
-
-// Version returns SQLite version.
-//
-// If there are no databases in the registry, empty string is returned.
-func (r *Registry) Version(ctx context.Context) (string, error) {
-	if r.version != "" {
-		return r.version, nil
-	}
-
-	db := r.p.GetFirst(ctx)
-	if db == nil {
-		return "", nil
-	}
-
-	row := db.QueryRowContext(ctx, "SELECT sqlite_version()")
-	if err := row.Scan(&r.version); err != nil {
-		return "", lazyerrors.Error(err)
-	}
-
-	return r.version, nil
 }
 
 // Describe implements prometheus.Collector.

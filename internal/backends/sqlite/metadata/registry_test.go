@@ -20,7 +20,6 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
@@ -313,39 +312,4 @@ func TestCreateDropSameStress(t *testing.T) {
 			require.Less(t, int32(1), droppedTotal.Load())
 		})
 	}
-}
-
-func TestVersion(t *testing.T) {
-	t.Parallel()
-	ctx := testutil.Ctx(t)
-
-	sp, err := state.NewProvider("")
-	require.NoError(t, err)
-
-	r, err := NewRegistry("file:./?mode=memory", testutil.Logger(t), sp)
-	require.NoError(t, err)
-	t.Cleanup(r.Close)
-
-	dbName := t.Name()
-
-	// trying to get the version while database does not exist
-	version, err := r.Version(ctx)
-	require.NoError(t, err)
-	assert.Equal(t, "", version)
-
-	// database exists, so version can be queried
-	db, err := r.DatabaseGetOrCreate(ctx, dbName)
-	require.NoError(t, err)
-	require.NotNil(t, db)
-
-	version, err = r.Version(ctx)
-	require.NoError(t, err)
-	assert.Equal(t, "3.41.2", version)
-
-	// no databases available, but the version should be returned because it's stored in the registry
-	r.DatabaseDrop(ctx, dbName)
-
-	version, err = r.Version(ctx)
-	require.NoError(t, err)
-	assert.Equal(t, "3.41.2", version)
 }
