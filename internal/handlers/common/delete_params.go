@@ -22,6 +22,8 @@ import (
 )
 
 // DeleteParams represents parameters for the delete command.
+//
+//nolint:vet // for readability
 type DeleteParams struct {
 	DB         string `ferretdb:"$db"`
 	Collection string `ferretdb:"collection"`
@@ -37,6 +39,8 @@ type DeleteParams struct {
 }
 
 // Delete represents single delete operation parameters.
+//
+//nolint:vet // for readability
 type Delete struct {
 	Filter  *types.Document `ferretdb:"q"`
 	Limited bool            `ferretdb:"limit,zeroOrOneAsBool"`

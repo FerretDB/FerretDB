@@ -71,7 +71,7 @@ type Pool struct {
 // so no validation is needed.
 // One exception is very long full path names for the filesystem,
 // but we don't check it.
-func openDB(name, uri string, singleConn bool, l *zap.Logger, sp *state.Provider) (*fsql.DB, error) {
+func openDB(name, uri string, memory bool, l *zap.Logger, sp *state.Provider) (*fsql.DB, error) {
 	db, err := sql.Open("sqlite", uri)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -80,8 +80,10 @@ func openDB(name, uri string, singleConn bool, l *zap.Logger, sp *state.Provider
 	db.SetConnMaxIdleTime(0)
 	db.SetConnMaxLifetime(0)
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/2755
-	if singleConn {
+	// Each connection to in-memory database uses its own database.
+	// See https://www.sqlite.org/inmemorydb.html.
+	// We don't want that.
+	if memory {
 		db.SetMaxIdleConns(1)
 		db.SetMaxOpenConns(1)
 	}
@@ -140,7 +142,7 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, map[string]*fsql.D
 
 		p.l.Debug("Opening existing database.", zap.String("name", name), zap.String("uri", uri))
 
-		db, err := openDB(name, uri, p.singleConn(), l, p.sp)
+		db, err := openDB(name, uri, p.memory(), l, p.sp)
 		if err != nil {
 			p.Close()
 			return nil, nil, lazyerrors.Error(err)
@@ -155,13 +157,6 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, map[string]*fsql.D
 // memory returns true if the pool is for the in-memory database.
 func (p *Pool) memory() bool {
 	return p.uri.Query().Get("mode") == "memory"
-}
-
-// singleConn returns true if pool size must be limited to a single connection.
-func (p *Pool) singleConn() bool {
-	// https://www.sqlite.org/inmemorydb.html
-	// TODO https://github.com/FerretDB/FerretDB/issues/2755
-	return p.memory()
 }
 
 // databaseName returns database name for given database file path.
@@ -250,7 +245,7 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, er
 	}
 
 	uri := p.databaseURI(name)
-	db, err := openDB(name, uri, p.singleConn(), p.l, p.sp)
+	db, err := openDB(name, uri, p.memory(), p.l, p.sp)
 	if err != nil {
 		return nil, false, lazyerrors.Errorf("%s: %w", uri, err)
 	}
