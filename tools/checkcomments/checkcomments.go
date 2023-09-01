@@ -67,7 +67,6 @@ func isIssueOpen(todoText string) bool {
 		return false
 	}
 	resp, err := http.Get(issueURL)
-
 	if err != nil {
 		return false
 	}
