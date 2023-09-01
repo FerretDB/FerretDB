@@ -37,7 +37,6 @@ type Collection interface {
 	UpdateAll(context.Context, *UpdateAllParams) (*UpdateAllResult, error)
 	DeleteAll(context.Context, *DeleteAllParams) (*DeleteAllResult, error)
 	Explain(context.Context, *ExplainParams) (*ExplainResult, error)
-
 	Stats(context.Context, *CollectionStatsParams) (*CollectionStatsResult, error)
 }
 
@@ -214,6 +213,9 @@ type CollectionStatsResult struct {
 }
 
 // Stats returns statistics about the collection.
+//
+// Database or collection may not exist; that's not an error.
+// Zero-filled *CollectionStatsResult is returned in that case.
 func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStatsParams) (*CollectionStatsResult, error) {
 	defer observability.FuncCall(ctx)()
 

@@ -40,7 +40,6 @@ type Database interface {
 	CreateCollection(context.Context, *CreateCollectionParams) error
 	DropCollection(context.Context, *DropCollectionParams) error
 	RenameCollection(context.Context, *RenameCollectionParams) error
-
 	Stats(context.Context, *DatabaseStatsParams) (*DatabaseStatsResult, error)
 }
 
@@ -203,7 +202,8 @@ type DatabaseStatsResult struct {
 
 // Stats returns statistics about the database.
 //
-// Database may not exist; that's not an error, it returns *backends.DatabaseStatsResult filled with zeros for all the fields.
+// Database may not exist; that's not an error.
+// Zero-filled *DatabaseStatsResult is returned in that case.
 func (dbc *databaseContract) Stats(ctx context.Context, params *DatabaseStatsParams) (*DatabaseStatsResult, error) {
 	defer observability.FuncCall(ctx)()
 
