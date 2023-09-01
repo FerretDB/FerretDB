@@ -25,13 +25,10 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// TestDocumentValidateData covers ValidateData method.
-// Proper testing of validation requires integration tests,
-// see https://github.com/FerretDB/dance/tree/main/tests/diff for more examples.
 func TestDocumentValidateData(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Validate", func(t *testing.T) {
+	t.Run("ValidateData", func(t *testing.T) {
 		t.Parallel()
 
 		testcase := map[string]struct {
@@ -39,13 +36,12 @@ func TestDocumentValidateData(t *testing.T) {
 			reason error
 		}{
 			"Valid": {
-				doc:    must.NotFail(NewDocument("_id", "1", "foo", "bar")),
-				reason: nil,
+				doc: must.NotFail(NewDocument("_id", "1", "foo", "bar")),
 			},
 			"ValidDollar": {
-				doc:    must.NotFail(NewDocument("_id", "1", "_$eq", "whatever")),
-				reason: nil,
+				doc: must.NotFail(NewDocument("_id", "1", "_$eq", "whatever")),
 			},
+
 			"KeyIsNotUTF8": {
 				doc:    must.NotFail(NewDocument("\xf4\x90\x80\x80", "bar")),
 				reason: errors.New(`invalid key: "\xf4\x90\x80\x80" (not a valid UTF-8 string)`),
@@ -62,6 +58,7 @@ func TestDocumentValidateData(t *testing.T) {
 				doc:    must.NotFail(NewDocument("_id", "1", "foo", "bar", "foo", "baz")),
 				reason: errors.New(`invalid key: "foo" (duplicate keys are not allowed)`),
 			},
+
 			"PositiveInfinity": {
 				doc:    must.NotFail(NewDocument("v", math.Inf(1))),
 				reason: errors.New(`invalid value: { "v": +Inf } (infinity values are not allowed)`),
@@ -70,18 +67,36 @@ func TestDocumentValidateData(t *testing.T) {
 				doc:    must.NotFail(NewDocument("v", math.Inf(-1))),
 				reason: errors.New(`invalid value: { "v": -Inf } (infinity values are not allowed)`),
 			},
+
 			"NoID": {
 				doc:    must.NotFail(NewDocument("foo", "bar")),
 				reason: errors.New(`invalid document: document must contain '_id' field`),
 			},
 			"Array": {
-				doc:    must.NotFail(NewDocument("_id", &Array{[]any{"foo", "bar"}})),
+				doc:    must.NotFail(NewDocument("_id", must.NotFail(NewArray("foo", "bar")))),
+				reason: errors.New("The '_id' value cannot be of type array"),
+			},
+			"ArrayValid": {
+				doc: must.NotFail(NewDocument(
+					"_id", 1,
+					"v", must.NotFail(NewDocument("_id", must.NotFail(NewArray("foo", "bar")))),
+				)),
+				// TODO https://github.com/FerretDB/FerretDB/issues/2804
 				reason: errors.New("The '_id' value cannot be of type array"),
 			},
 			"Regex": {
 				doc:    must.NotFail(NewDocument("_id", Regex{Pattern: "regex$"})),
 				reason: errors.New("The '_id' value cannot be of type regex"),
 			},
+			"RegexValid": {
+				doc: must.NotFail(NewDocument(
+					"_id", 1,
+					"v", must.NotFail(NewDocument("_id", Regex{Pattern: "regex$"})),
+				)),
+				// TODO https://github.com/FerretDB/FerretDB/issues/2804
+				reason: errors.New("The '_id' value cannot be of type regex"),
+			},
+
 			"NestedArray": {
 				doc: must.NotFail(NewDocument(
 					"_id", "1",
@@ -119,11 +134,12 @@ func TestDocumentValidateData(t *testing.T) {
 				err := tc.doc.ValidateData()
 				if tc.reason == nil {
 					assert.NoError(t, err)
-				} else {
-					var ve *ValidationError
-					require.True(t, errors.As(err, &ve))
-					assert.Equal(t, tc.reason, ve.reason)
+					return
 				}
+
+				ve, ok := err.(*ValidationError) //nolint:errorlint // only *ValidationError could be returned
+				require.True(t, ok)
+				assert.Equal(t, tc.reason, ve.reason)
 			})
 		}
 	})

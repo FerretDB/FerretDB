@@ -226,7 +226,7 @@ func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
 // CollectionList returns a sorted list of collections in the database.
 //
 // If database does not exist, no error is returned.
-func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]string, error) {
+func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collection, error) {
 	defer observability.FuncCall(ctx)()
 
 	db := r.p.GetExisting(ctx, dbName)
@@ -236,11 +236,11 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]string,
 
 	r.rw.RLock()
 
-	res := maps.Keys(r.colls[dbName])
+	res := maps.Values(r.colls[dbName])
 
 	r.rw.RUnlock()
 
-	sort.Strings(res)
+	sort.Slice(res, func(i, j int) bool { return res[i].Name < res[j].Name })
 	return res, nil
 }
 

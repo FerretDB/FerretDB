@@ -25,7 +25,8 @@ import (
 //
 // Zero value is a valid empty array.
 type Array struct {
-	s []any
+	s      []any
+	frozen bool
 }
 
 // MakeArray creates an empty array with set capacity.
@@ -44,7 +45,24 @@ func NewArray(values ...any) (*Array, error) {
 
 func (a *Array) compositeType() {}
 
-// DeepCopy returns a deep copy of this Array.
+// Freeze prevents array from further modifications.
+// Any methods that would modify the array will panic.
+//
+// It is safe to call Freeze multiple times.
+func (a *Array) Freeze() {
+	if a != nil {
+		a.frozen = true
+	}
+}
+
+// checkFrozen panics if array is frozen.
+func (a *Array) checkFrozen() {
+	if a.frozen {
+		panic("array is frozen and can't be modified")
+	}
+}
+
+// DeepCopy returns an unfrozen deep copy of this Array.
 func (a *Array) DeepCopy() *Array {
 	if a == nil {
 		panic("types.Array.DeepCopy: nil array")
@@ -83,6 +101,8 @@ func (a *Array) GetByPath(path Path) (any, error) {
 
 // Set sets the value at the given index.
 func (a *Array) Set(index int, value any) error {
+	a.checkFrozen()
+
 	if l := a.Len(); index < 0 || index >= l {
 		return fmt.Errorf("types.Array.Set: index %d is out of bounds [0-%d)", index, l)
 	}
@@ -93,6 +113,8 @@ func (a *Array) Set(index int, value any) error {
 
 // Append appends given values to the array.
 func (a *Array) Append(values ...any) {
+	a.checkFrozen()
+
 	if a == nil {
 		panic("types.Array.Append: nil array")
 	}
@@ -107,6 +129,8 @@ func (a *Array) Append(values ...any) {
 
 // RemoveByPath removes (cuts) value by path, doing nothing if path points to nothing.
 func (a *Array) RemoveByPath(path Path) {
+	a.checkFrozen()
+
 	removeByPath(a, path)
 }
 
@@ -212,6 +236,8 @@ func (a *Array) ContainsAll(b *Array) bool {
 
 // Remove removes the value at the given index.
 func (a *Array) Remove(index int) {
+	a.checkFrozen()
+
 	if l := a.Len(); index < 0 || index >= l {
 		panic("types.Array.Remove: index is out of bounds")
 	}
