@@ -17,7 +17,7 @@
 // PostgreSQL schemas are mapped to FerretDB databases.
 //
 // It should be used only by the metadata package.
-package pool
+package metadata
 
 import (
 	"context"

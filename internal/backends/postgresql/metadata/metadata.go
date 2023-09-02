@@ -14,10 +14,3 @@
 
 // Package metadata provides access to databases and collections information.
 package metadata
-
-// Collection represents collection metadata.
-type Collection struct {
-	Name      string
-	TableName string
-	Settings  string
-}
