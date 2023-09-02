@@ -138,12 +138,6 @@ func setDefaultValues(values url.Values) {
 	//
 	// TODO https://github.com/FerretDB/FerretDB/issues/43
 	values.Set("timezone", "UTC")
-
-	// Set (and overwrite) it in debug builds to ensure that all identifiers in code are fully-qualified.
-	// Don't do it in non-debug builds because it makes using tools like PgBouncer harder.
-	if debugbuild.Enabled {
-		values.Set("search_path", "")
-	}
 }
 
 // simplifySetting simplifies PostgreSQL setting value for comparison.
