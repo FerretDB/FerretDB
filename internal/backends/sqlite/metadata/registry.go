@@ -180,7 +180,7 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsq
 // Returned boolean value indicates whether the database was dropped.
 //
 // It does not hold the lock.
-func (r *Registry) databaseDrop(ctx context.Context, dbName string) bool {
+func (r *Registry) databaseDrop(ctx context.Context, dbName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	delete(r.colls, dbName)
@@ -191,7 +191,7 @@ func (r *Registry) databaseDrop(ctx context.Context, dbName string) bool {
 // DatabaseDrop drops the database.
 //
 // Returned boolean value indicates whether the database was dropped.
-func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
+func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	r.rw.Lock()

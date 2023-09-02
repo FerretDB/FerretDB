@@ -245,32 +245,39 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, er
 // It does nothing if the database does not exist.
 //
 // Returned boolean value indicates whether the database was removed.
-func (p *Pool) Drop(ctx context.Context, name string) bool {
+func (p *Pool) Drop(ctx context.Context, name string) (bool, error) {
 	defer observability.FuncCall(ctx)()
+
+	db := p.GetExisting(ctx, name)
+	if db == nil {
+		return false, nil
+	}
 
 	p.rw.Lock()
 	defer p.rw.Unlock()
 
+	// it might have been dropped by a concurrent call
 	db, ok := p.dbs[name]
 	if !ok {
-		return false
+		return false, nil
 	}
 
 	if err := db.Close(); err != nil {
-		p.l.Warn("Failed to close database connection.", zap.String("name", name), zap.Error(err))
+		return false, lazyerrors.Errorf("%s: %w", p.databaseURI(name), err)
 	}
 
 	delete(p.dbs, name)
 
 	if f := p.databaseFile(name); f != "" {
 		if err := os.Remove(f); err != nil {
+			// don't return error because the database is already removed from p.dbs
 			p.l.Warn("Failed to remove database file.", zap.String("file", f), zap.String("name", name), zap.Error(err))
 		}
 	}
 
 	p.l.Debug("Database dropped.", zap.String("name", name))
 
-	return true
+	return true, nil
 }
 
 // Describe implements prometheus.Collector.
@@ -286,7 +293,7 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, subsystem, "databases"),
-			"The current number of database in the pool.",
+			"The current number of databases in the pool.",
 			nil, nil,
 		),
 		prometheus.GaugeValue,

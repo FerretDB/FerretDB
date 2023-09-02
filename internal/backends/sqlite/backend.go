@@ -77,7 +77,11 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	if dropped := b.r.DatabaseDrop(ctx, params.Name); !dropped {
+	dropped, err := b.r.DatabaseDrop(ctx, params.Name)
+	if err != nil {
+		return err
+	}
+	if !dropped {
 		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, nil)
 	}
 

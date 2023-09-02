@@ -63,10 +63,12 @@ func TestCreateDrop(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "memory", res)
 
-	dropped := p.Drop(ctx, dbName)
+	dropped, err := p.Drop(ctx, dbName)
+	require.NoError(t, err)
 	require.True(t, dropped)
 
-	dropped = p.Drop(ctx, dbName)
+	dropped, err = p.Drop(ctx, dbName)
+	require.NoError(t, err)
 	require.False(t, dropped)
 
 	db = p.GetExisting(ctx, dbName)
@@ -120,10 +122,12 @@ func TestCreateDropStress(t *testing.T) {
 				_, err = db.ExecContext(ctx, "CREATE TABLE test (id INT) STRICT")
 				require.NoError(t, err)
 
-				dropped := p.Drop(ctx, dbName)
+				dropped, err := p.Drop(ctx, dbName)
+				require.NoError(t, err)
 				require.True(t, dropped)
 
-				dropped = p.Drop(ctx, dbName)
+				dropped, err = p.Drop(ctx, dbName)
+				require.NoError(t, err)
 				require.False(t, dropped)
 
 				db = p.GetExisting(ctx, dbName)
