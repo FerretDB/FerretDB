@@ -15,19 +15,6 @@
 // Package metadata provides access to databases and collections information.
 package metadata
 
-// Collection will probably have a method for getting column name / SQLite path expression for the given document field
-// once we implement field extraction.
-// IDColumn probably should go away.
-// TODO https://github.com/FerretDB/FerretDB/issues/226
-
-const (
-	// IDColumn is a SQLite path expression for _id field.
-	IDColumn = "_ferretdb_sjson->'$._id'"
-
-	// DefaultColumn is a column name for all fields expect _id.
-	DefaultColumn = "_ferretdb_sjson"
-)
-
 // Collection represents collection metadata.
 type Collection struct {
 	Name      string
