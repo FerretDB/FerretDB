@@ -12,10 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pool provides access to SQLite databases and their connections.
-//
-// It should be used only by the metadata package.
-package pool
+package metadata
 
 import (
 	"context"
@@ -43,16 +40,12 @@ import (
 // filenameExtension represents SQLite database filename extension.
 const filenameExtension = ".sqlite"
 
-// Parts of Prometheus metric names.
-const (
-	namespace = "ferretdb"
-	subsystem = "sqlite_pool"
-)
-
-// Pool provides access to SQLite databases and their connections.
+// pool provides access to SQLite databases and their connections.
+//
+// Only exported methods should be used by the [Registry].
 //
 //nolint:vet // for readability
-type Pool struct {
+type pool struct {
 	uri *url.URL
 	l   *zap.Logger
 
@@ -93,13 +86,13 @@ func openDB(name, uri string, memory bool, l *zap.Logger) (*fsql.DB, error) {
 	return fsql.WrapDB(db, name, l), nil
 }
 
-// New creates a pool for SQLite databases in the directory specified by SQLite URI.
+// newPool creates a pool for SQLite databases in the directory specified by SQLite URI.
 //
 // All databases are opened on creation.
 //
 // The returned map is the initial set of existing databases.
 // It should not be modified.
-func New(u string, l *zap.Logger) (*Pool, map[string]*fsql.DB, error) {
+func newPool(u string, l *zap.Logger) (*pool, map[string]*fsql.DB, error) {
 	uri, err := parseURI(u)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to parse SQLite URI %q: %s", u, err)
@@ -110,7 +103,7 @@ func New(u string, l *zap.Logger) (*Pool, map[string]*fsql.DB, error) {
 		return nil, nil, lazyerrors.Error(err)
 	}
 
-	p := &Pool{
+	p := &pool{
 		uri:   uri,
 		l:     l,
 		dbs:   make(map[string]*fsql.DB, len(matches)),
@@ -138,17 +131,17 @@ func New(u string, l *zap.Logger) (*Pool, map[string]*fsql.DB, error) {
 }
 
 // memory returns true if the pool is for the in-memory database.
-func (p *Pool) memory() bool {
+func (p *pool) memory() bool {
 	return p.uri.Query().Get("mode") == "memory"
 }
 
 // databaseName returns database name for given database file path.
-func (p *Pool) databaseName(databaseFile string) string {
+func (p *pool) databaseName(databaseFile string) string {
 	return strings.TrimSuffix(filepath.Base(databaseFile), filenameExtension)
 }
 
 // databaseURI returns SQLite URI for the given database name.
-func (p *Pool) databaseURI(databaseName string) string {
+func (p *pool) databaseURI(databaseName string) string {
 	dbURI := *p.uri
 	dbURI.Path = path.Join(dbURI.Path, databaseName+filenameExtension)
 	dbURI.Opaque = dbURI.Path
@@ -158,7 +151,7 @@ func (p *Pool) databaseURI(databaseName string) string {
 
 // databaseFile returns database file path for the given database name,
 // or empty string for in-memory database.
-func (p *Pool) databaseFile(databaseName string) string {
+func (p *pool) databaseFile(databaseName string) string {
 	if p.memory() {
 		return ""
 	}
@@ -167,7 +160,7 @@ func (p *Pool) databaseFile(databaseName string) string {
 }
 
 // Close closes all databases in the pool and frees all resources.
-func (p *Pool) Close() {
+func (p *pool) Close() {
 	p.rw.Lock()
 	defer p.rw.Unlock()
 
@@ -181,7 +174,7 @@ func (p *Pool) Close() {
 }
 
 // List returns a sorted list of database names in the pool.
-func (p *Pool) List(ctx context.Context) []string {
+func (p *pool) List(ctx context.Context) []string {
 	defer observability.FuncCall(ctx)()
 
 	p.rw.RLock()
@@ -194,7 +187,7 @@ func (p *Pool) List(ctx context.Context) []string {
 }
 
 // GetExisting returns an existing database by valid name, or nil.
-func (p *Pool) GetExisting(ctx context.Context, name string) *fsql.DB {
+func (p *pool) GetExisting(ctx context.Context, name string) *fsql.DB {
 	defer observability.FuncCall(ctx)()
 
 	p.rw.RLock()
@@ -211,7 +204,7 @@ func (p *Pool) GetExisting(ctx context.Context, name string) *fsql.DB {
 // GetOrCreate returns an existing database by valid name, or creates a new one.
 //
 // Returned boolean value indicates whether the database was created.
-func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, error) {
+func (p *pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	db := p.GetExisting(ctx, name)
@@ -245,7 +238,7 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, er
 // It does nothing if the database does not exist.
 //
 // Returned boolean value indicates whether the database was removed.
-func (p *Pool) Drop(ctx context.Context, name string) (bool, error) {
+func (p *pool) Drop(ctx context.Context, name string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	db := p.GetExisting(ctx, name)
@@ -281,12 +274,12 @@ func (p *Pool) Drop(ctx context.Context, name string) (bool, error) {
 }
 
 // Describe implements prometheus.Collector.
-func (p *Pool) Describe(ch chan<- *prometheus.Desc) {
+func (p *pool) Describe(ch chan<- *prometheus.Desc) {
 	prometheus.DescribeByCollect(p, ch)
 }
 
 // Collect implements prometheus.Collector.
-func (p *Pool) Collect(ch chan<- prometheus.Metric) {
+func (p *pool) Collect(ch chan<- prometheus.Metric) {
 	p.rw.RLock()
 	defer p.rw.RUnlock()
 
@@ -307,5 +300,5 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 
 // check interfaces
 var (
-	_ prometheus.Collector = (*Pool)(nil)
+	_ prometheus.Collector = (*pool)(nil)
 )

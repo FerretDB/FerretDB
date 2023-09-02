@@ -26,7 +26,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
-	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -52,7 +51,7 @@ const (
 //
 // Exported methods are safe for concurrent use. Unexported methods are not.
 type Registry struct {
-	p *pool.Pool
+	p *pool
 	l *zap.Logger
 
 	// rw protects colls but also acts like a global lock for the whole registry.
@@ -66,7 +65,7 @@ type Registry struct {
 
 // NewRegistry creates a registry for SQLite databases in the directory specified by SQLite URI.
 func NewRegistry(u string, l *zap.Logger) (*Registry, error) {
-	p, initDBs, err := pool.New(u, l)
+	p, initDBs, err := newPool(u, l)
 	if err != nil {
 		return nil, err
 	}
@@ -197,9 +196,7 @@ func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) (bool, error
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	delete(r.colls, dbName)
-
-	return r.p.Drop(ctx, dbName)
+	return r.databaseDrop(ctx, dbName)
 }
 
 // CollectionList returns a sorted list of collections in the database.

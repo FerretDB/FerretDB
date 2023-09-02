@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pool
+package metadata
 
 import (
 	"fmt"
@@ -25,12 +25,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
 )
 
-func TestCreateDrop(t *testing.T) {
+func TestPoolCreateDrop(t *testing.T) {
 	t.Parallel()
 	ctx := testutil.Ctx(t)
 
 	// that also tests that query parameters are preserved by using non-writable directory
-	p, _, err := New("file:/?mode=memory&_pragma=journal_mode(wal)", testutil.Logger(t))
+	p, _, err := newPool("file:/?mode=memory&_pragma=journal_mode(wal)", testutil.Logger(t))
 	require.NoError(t, err)
 	t.Cleanup(p.Close)
 
@@ -75,7 +75,7 @@ func TestCreateDrop(t *testing.T) {
 	require.Nil(t, db)
 }
 
-func TestCreateDropStress(t *testing.T) {
+func TestPoolCreateDropStress(t *testing.T) {
 	ctx := testutil.Ctx(t)
 
 	for testName, uri := range map[string]string{
@@ -85,7 +85,7 @@ func TestCreateDropStress(t *testing.T) {
 		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
 	} {
 		t.Run(testName, func(t *testing.T) {
-			p, _, err := New(uri, testutil.Logger(t))
+			p, _, err := newPool(uri, testutil.Logger(t))
 			require.NoError(t, err)
 			t.Cleanup(p.Close)
 
@@ -137,11 +137,11 @@ func TestCreateDropStress(t *testing.T) {
 	}
 }
 
-func TestDefaults(t *testing.T) {
+func TestPoolDefaults(t *testing.T) {
 	t.Parallel()
 	ctx := testutil.Ctx(t)
 
-	p, _, err := New("file:./", testutil.Logger(t))
+	p, _, err := newPool("file:./", testutil.Logger(t))
 	require.NoError(t, err)
 
 	dbName := testutil.DatabaseName(t)
