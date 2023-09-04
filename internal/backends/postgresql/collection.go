@@ -39,7 +39,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	panic("not implemented")
 }
 
-// Insert implements backends.Collection interface.
+// InsertAll implements backends.Collection interface.
 func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
 	panic("not implemented")
 }
@@ -56,6 +56,11 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 
 // Explain implements backends.Collection interface.
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
+	panic("not implemented")
+}
+
+// Stats implements backends.Collection interface.
+func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
 	panic("not implemented")
 }
 
