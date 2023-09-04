@@ -63,7 +63,10 @@ func TestCollectionStats(t *testing.T) {
 	t.Parallel()
 	ctx := testutil.Ctx(t)
 
-	b, err := NewBackend(&NewBackendParams{URI: "file:./?mode=memory", L: testutil.Logger(t)})
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	b, err := NewBackend(&NewBackendParams{URI: "file:./?mode=memory", L: testutil.Logger(t), P: sp})
 	require.NoError(t, err)
 	t.Cleanup(b.Close)
 
