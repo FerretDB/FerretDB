@@ -25,6 +25,11 @@ type collection struct {
 	c backends.Collection
 }
 
+// newCollection creates a new collection that wraps the given collection.
+func newCollection(c backends.Collection) backends.Collection {
+	return &collection{c: c}
+}
+
 // Query implements backends.Collection interface.
 func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*backends.QueryResult, error) {
 	return c.c.Query(ctx, params)

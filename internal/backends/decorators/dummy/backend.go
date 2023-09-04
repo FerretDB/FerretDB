@@ -30,6 +30,11 @@ type backend struct {
 	b backends.Backend
 }
 
+// NewBackend creates a new backend that wraps the given backend.
+func NewBackend(b backends.Backend) backends.Backend {
+	return &backend{b: b}
+}
+
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
 	b.b.Close()
@@ -37,7 +42,12 @@ func (b *backend) Close() {
 
 // Database implements backends.Backend interface.
 func (b *backend) Database(name string) (backends.Database, error) {
-	return b.b.Database(name)
+	db, err := b.b.Database(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return newDatabase(db), nil
 }
 
 // ListDatabases implements backends.Backend interface.

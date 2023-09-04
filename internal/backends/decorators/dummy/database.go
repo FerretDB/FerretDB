@@ -25,6 +25,11 @@ type database struct {
 	db backends.Database
 }
 
+// newDatabase creates a new database that wraps the given database.
+func newDatabase(db backends.Database) backends.Database {
+	return &database{db: db}
+}
+
 // Close implements backends.Database interface.
 func (db *database) Close() {
 	db.db.Close()
@@ -32,7 +37,12 @@ func (db *database) Close() {
 
 // Collection implements backends.Database interface.
 func (db *database) Collection(name string) (backends.Collection, error) {
-	return db.db.Collection(name)
+	c, err := db.db.Collection(name)
+	if err != nil {
+		return nil, err
+	}
+
+	return newCollection(c), nil
 }
 
 // ListCollections implements backends.Database interface.
