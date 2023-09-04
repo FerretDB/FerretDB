@@ -9,11 +9,11 @@ To ensure a smooth and successful migration from MongoDB, we offer several metho
 ## Operation modes
 
 We offer multiple operation modes which help facilitate the testing of your application by enabling FerretDB to act as a proxy.
-For more details, refer to the [official documentation](/configuration/operation-modes.md).
+For more details, refer to the [official documentation](./configuration/operation-modes.md).
 
 ### Manual and automated testing with `diff-normal` mode
 
-For details on how to install FerretDB, refer to the [quickstart guide](/quickstart-guide/).
+For details on how to install FerretDB, refer to the [quickstart guide](./quickstart-guide/).
 
 You can manually test your application or use integration tests, among other methods.
 Afterward, you can inspect the differential output for errors or inconsistencies between responses that require your attention.
@@ -22,8 +22,9 @@ As an example, let us say that your application performs some complex query and 
 You would do the following:
 
 1. Start FerretDB in `diff-normal` mode.
-   This can be achieved by using the `--mode` flag or by setting the `FERRETDB_MODE` environment variable.
+   This can be achieved by using the `--mode` [flag](./configuration/flags.md) or by setting the `FERRETDB_MODE` environment variable.
 2. Run `mongosh` and insert some documents.
+3. Run a query to fetch the first post from each author sorted by date and author.
 
    Please note that due to running in `diff-normal` mode, any error returned from FerretDB will be transmitted to the client, allowing us to promptly identify the issue.
    In the majority of cases, this does not necessitate additional scrutiny of the diff output.
@@ -63,7 +64,7 @@ You would do the following:
      }
    ])
 
-   // run a query to fetch the first post from each author sorted by date and author
+   // run a query
    db.posts.aggregate([
      { $sort: { date: 1, author: 1 } },
      {
@@ -82,7 +83,7 @@ You would do the following:
 Continuing with the same example above, we can further examine the diff output while in `diff-proxy` mode.
 
 1. Run FerretDB in `diff-proxy` mode.
-   This can again be achieved by using the `--mode` flag or by setting the `FERRETDB_MODE` environment variable as already shown.
+   This can again be achieved by using the `--mode` [flag](./configuration/flags.md) or by setting the `FERRETDB_MODE` environment variable as already shown.
 2. Re-run the query.
 
    ```js
