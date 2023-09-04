@@ -20,51 +20,37 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestStats(t *testing.T) {
+func TestDatabaseStats(t *testing.T) {
 	t.Parallel()
 	ctx := testutil.Ctx(t)
 
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	r, err := metadata.NewRegistry("file:./?mode=memory", testutil.Logger(t), sp)
+	b, err := NewBackend(&NewBackendParams{URI: "file:./?mode=memory", L: testutil.Logger(t), P: sp})
 	require.NoError(t, err)
-	t.Cleanup(r.Close)
+	t.Cleanup(b.Close)
 
-	dbName := t.Name()
-	db := newDatabase(r, dbName)
+	db, err := b.Database(testutil.DatabaseName(t))
+	require.NoError(t, err)
+	t.Cleanup(db.Close)
 
-	t.Cleanup(func() {
-		db.Close()
-	})
-
-	var res *backends.DatabaseStatsResult
-
-	t.Run("NonExistingDatabase", func(t *testing.T) {
-		res, err = db.Stats(ctx, new(backends.DatabaseStatsParams))
+	cNames := []string{"collectionOne", "collectionTwo"}
+	for _, cName := range cNames {
+		err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: cName})
 		require.NoError(t, err)
-		require.Equal(t, new(backends.DatabaseStatsResult), res)
-	})
+		require.NotNil(t, db)
+	}
 
-	collectionName := t.Name()
-	err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: collectionName})
-	require.NoError(t, err)
-	require.NotNil(t, db)
-
-	t.Cleanup(func() {
-		r.DatabaseDrop(ctx, dbName)
-	})
-
-	t.Run("EmptyCollection", func(t *testing.T) {
-		res, err = db.Stats(ctx, new(backends.DatabaseStatsParams))
+	t.Run("DatabaseWithCollections", func(t *testing.T) {
+		res, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
 		require.NoError(t, err)
 		require.NotZero(t, res.SizeTotal)
-		require.NotZero(t, res.CountCollections)
+		require.Equal(t, res.CountCollections, int64(len(cNames)))
 		require.NotZero(t, res.SizeCollections)
 		require.Zero(t, res.CountObjects)
 	})

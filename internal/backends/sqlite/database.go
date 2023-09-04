@@ -21,6 +21,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -28,6 +29,14 @@ import (
 type database struct {
 	r    *metadata.Registry
 	name string
+}
+
+// stats represents information about statistics of tables and indexes.
+type stats struct {
+	countRows    int64
+	countIndexes int64
+	sizeIndexes  int64
+	sizeTables   int64
 }
 
 // newDatabase creates a new Database.
@@ -109,7 +118,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 
 	d := db.r.DatabaseGetExisting(ctx, db.name)
 	if d == nil {
-		return stats, nil
+		return nil, backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, lazyerrors.Errorf("no database %s", db.name))
 	}
 
 	list, err := db.r.CollectionList(ctx, db.name)
@@ -117,24 +126,41 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats.CountCollections = int64(len(list))
-
-	// Call ANALYZE to update statistics of tables and indexes,
-	// see https://www.sqlite.org/lang_analyze.html.
-	q := `ANALYZE`
-	if _, err = d.ExecContext(ctx, q); err != nil {
+	stats, err := relationStats(ctx, d, list)
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	// Total size is the disk space used by the database,
 	// see https://www.sqlite.org/dbstat.html.
-	q = `
+	q := `
 		SELECT
 			SUM(pgsize)
 		FROM dbstat WHERE aggregate = TRUE`
 
-	err = d.QueryRowContext(ctx, q).Scan(&stats.SizeTotal)
-	if err != nil {
+	var totalSize int64
+	if err = d.QueryRowContext(ctx, q).Scan(&totalSize); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &backends.DatabaseStatsResult{
+		CountCollections: int64(len(list)),
+		CountObjects:     stats.countRows,
+		CountIndexes:     stats.countIndexes,
+		SizeTotal:        totalSize,
+		SizeIndexes:      stats.sizeIndexes,
+		SizeCollections:  stats.sizeTables,
+	}, nil
+}
+
+// relationStats returns statistics about tables and indexes for the given collections.
+func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection) (*stats, error) {
+	var err error
+
+	// Call ANALYZE to update statistics of tables and indexes,
+	// see https://www.sqlite.org/lang_analyze.html.
+	q := `ANALYZE`
+	if _, err = db.ExecContext(ctx, q); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -147,7 +173,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	}
 
 	// Use number of cells to approximate total row count,
-	// see https://www.sqlite.org/fileformat.html.
+	// see https://www.sqlite.org/dbstat.html and https://www.sqlite.org/fileformat.html.
 	q = fmt.Sprintf(`
 		SELECT
 		    SUM(pgsize) AS SizeTables,
@@ -157,15 +183,16 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		strings.Join(placeholders, ", "),
 	)
 
-	if err = d.QueryRowContext(ctx, q, args...).Scan(
-		&stats.SizeCollections,
-		&stats.CountObjects,
+	stats := new(stats)
+	if err = db.QueryRowContext(ctx, q, args...).Scan(
+		&stats.sizeTables,
+		&stats.countRows,
 	); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3176
-	stats.CountIndexes, stats.SizeIndexes = 0, 0
+	// TODO https://github.com/FerretDB/FerretDB/issues/3293
+	stats.countIndexes, stats.sizeIndexes = 0, 0
 
 	return stats, nil
 }

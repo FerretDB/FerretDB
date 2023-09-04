@@ -258,7 +258,34 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 // Stats implements backends.Collection interface.
 func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
-	panic("not implemented")
+	db := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if db == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeDatabaseDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	coll := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if coll == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	stats, err := relationStats(ctx, db, []*metadata.Collection{coll})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &backends.CollectionStatsResult{
+		CountObjects:   stats.countRows,
+		CountIndexes:   stats.countIndexes,
+		SizeTotal:      stats.sizeTables + stats.sizeIndexes,
+		SizeIndexes:    stats.sizeIndexes,
+		SizeCollection: stats.sizeTables,
+	}, nil
 }
 
 // ListIndexes implements backends.Collection interface.
