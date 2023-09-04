@@ -212,12 +212,18 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
-		return new(backends.CollectionStatsResult), nil
+		return nil, backends.NewError(
+			backends.ErrorCodeDatabaseDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
 	}
 
 	coll := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if coll == nil {
-		return nil, backends.NewError(backends.ErrorCodeCollectionDoesNotExist, lazyerrors.Errorf("no collection %q", c.name))
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
 	}
 
 	stats, err := relationStats(ctx, db, []*metadata.Collection{coll})
