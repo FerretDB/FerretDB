@@ -260,6 +260,11 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 	panic("not implemented")
 }
 
+// ListIndexes implements backends.Collection interface.
+func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
+	panic("not implemented")
+}
+
 // check interfaces
 var (
 	_ backends.Collection = (*collection)(nil)

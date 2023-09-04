@@ -39,6 +39,8 @@ type Collection interface {
 	Explain(context.Context, *ExplainParams) (*ExplainResult, error)
 
 	Stats(context.Context, *CollectionStatsParams) (*CollectionStatsResult, error)
+
+	ListIndexes(context.Context, *ListIndexesParams) (*ListIndexesResult, error)
 }
 
 // collectionContract implements Collection interface.
@@ -219,6 +221,40 @@ func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStats
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.Stats(ctx, params)
+	checkError(err)
+
+	return res, err
+}
+
+// ListIndexesParams represents the parameters of Database.ListIndexes method.
+type ListIndexesParams struct{}
+
+// ListIndexesResult represents the results of Database.ListIndexesResult method.
+type ListIndexesResult struct {
+	Indexes []IndexInfo
+}
+
+// IndexInfo represents information about a single index.
+type IndexInfo struct {
+	Name   string
+	Key    IndexKey
+	Unique *bool
+}
+
+// IndexKey is a list of "field name + sort order" pairs.
+type IndexKey []IndexKeyPair
+
+// IndexKeyPair consists of a field name and a sort order that are part of the index.
+type IndexKeyPair struct {
+	Field string
+	Order types.SortType
+}
+
+// ListIndexes returns information about indexes in the database.
+func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndexesParams) (*ListIndexesResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := cc.c.ListIndexes(ctx, params)
 	checkError(err)
 
 	return res, err

@@ -23,7 +23,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -41,39 +40,38 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	command := document.Command()
 
-	common.Ignored(document, h.L, "comment", "cursor")
-
-	var dbName string
-	if dbName, err = common.GetRequiredParam[string](document, "$db"); err != nil {
+	dbName, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
 		return nil, err
 	}
 
-	var collectionParam any
-	if collectionParam, err = document.Get(command); err != nil {
+	collection, err := common.GetRequiredParam[string](document, command)
+	if err != nil {
 		return nil, err
-	}
-
-	collName, ok := collectionParam.(string)
-	if !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", commonparams.AliasFromType(collectionParam)),
-			command,
-		)
 	}
 
 	db, err := h.b.Database(dbName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid database specified '%s'", dbName)
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, command)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
 		}
 
 		return nil, lazyerrors.Error(err)
 	}
 	defer db.Close()
 
-	res, err := db.ListIndexes(ctx, nil)
+	c, err := db.Collection(collection)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid collection name: %s", collection)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
+
+	res, err := c.ListIndexes(ctx, nil)
 
 	switch {
 	case err == nil:
@@ -81,7 +79,7 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	case errors.Is(err, pgdb.ErrTableNotExist):
 		return nil, commonerrors.NewCommandErrorMsg(
 			commonerrors.ErrNamespaceNotFound,
-			fmt.Sprintf("ns does not exist: %s.%s", dbName, collName),
+			fmt.Sprintf("ns does not exist: %s.%s", dbName, collection),
 		)
 	default:
 		return nil, lazyerrors.Error(err)
@@ -115,7 +113,7 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(
 				"id", int64(0),
-				"ns", fmt.Sprintf("%s.%s", dbName, collName),
+				"ns", fmt.Sprintf("%s.%s", dbName, collection),
 				"firstBatch", firstBatch,
 			)),
 			"ok", float64(1),
