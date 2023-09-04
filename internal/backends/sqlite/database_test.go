@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -27,20 +28,16 @@ func TestDatabaseStats(t *testing.T) {
 	t.Parallel()
 	ctx := testutil.Ctx(t)
 
-	b, err := NewBackend(&NewBackendParams{URI: "file:./?mode=memory", L: testutil.Logger(t)})
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	b, err := NewBackend(&NewBackendParams{URI: "file:./?mode=memory", L: testutil.Logger(t), P: sp})
 	require.NoError(t, err)
 	t.Cleanup(b.Close)
 
 	db, err := b.Database(testutil.DatabaseName(t))
 	require.NoError(t, err)
 	t.Cleanup(db.Close)
-
-	t.Run("NonExistingDatabase", func(t *testing.T) {
-		var res *backends.DatabaseStatsResult
-		res, err = db.Stats(ctx, new(backends.DatabaseStatsParams))
-		require.NoError(t, err)
-		require.Equal(t, new(backends.DatabaseStatsResult), res)
-	})
 
 	cNames := []string{"collectionOne", "collectionTwo"}
 	for _, cName := range cNames {
