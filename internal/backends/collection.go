@@ -41,6 +41,7 @@ type Collection interface {
 	Stats(context.Context, *CollectionStatsParams) (*CollectionStatsResult, error)
 
 	ListIndexes(context.Context, *ListIndexesParams) (*ListIndexesResult, error)
+	CreateIndexes(context.Context, *CreateIndexesParams) error
 }
 
 // collectionContract implements Collection interface.
@@ -260,6 +261,28 @@ func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndex
 	checkError(err)
 
 	return res, err
+}
+
+// CreateIndexesParams represents the parameters of Database.CreateIndexes method.
+type CreateIndexesParams struct {
+	Indexes []IndexInfo
+}
+
+// CreateIndexes creates indexes for the collection.
+//
+// Database or collection may not exist; that's not an error.
+func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateIndexesParams) error {
+	defer observability.FuncCall(ctx)()
+
+	// FIXME
+	// err := validateIndexes(params)
+	// if err == nil {
+	err := cc.c.CreateIndexes(ctx, params)
+	//}
+
+	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionAlreadyExists)
+
+	return err
 }
 
 // check interfaces
