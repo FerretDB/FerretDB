@@ -93,17 +93,16 @@ func openDB(name, uri string, memory bool, l *zap.Logger, sp *state.Provider) (*
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err := sp.Update(func(s *state.State) {
-		if s.HandlerVersion != "" {
-			return
+	if sp.Get().HandlerVersion != "" {
+		err := sp.Update(func(s *state.State) {
+			row := db.QueryRowContext(context.Background(), "SELECT sqlite_version()")
+			if err := row.Scan(&s.HandlerVersion); err != nil {
+				l.Error("sqlite.metadata.pool.openDB: failed to query SQLite version", zap.Error(err))
+			}
+		})
+		if err != nil {
+			l.Error("sqlite.metadata.pool.openDB: failed to update state", zap.Error(err))
 		}
-
-		row := db.QueryRowContext(context.Background(), "SELECT sqlite_version()")
-		if err := row.Scan(&s.HandlerVersion); err != nil {
-			l.Error("sqlite.metadata.pool.openDB: failed to query SQLite version", zap.Error(err))
-		}
-	}); err != nil {
-		l.Error("sqlite.metadata.pool.openDB: failed to update state", zap.Error(err))
 	}
 
 	return fsql.WrapDB(db, name, l), nil
