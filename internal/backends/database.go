@@ -17,6 +17,8 @@ package backends
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/types"
+
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
@@ -42,6 +44,8 @@ type Database interface {
 	RenameCollection(context.Context, *RenameCollectionParams) error
 
 	Stats(context.Context, *DatabaseStatsParams) (*DatabaseStatsResult, error)
+
+	ListIndexes(context.Context, *ListIndexesParams) (*ListIndexesResult, error)
 }
 
 // databaseContract implements Database interface.
@@ -211,6 +215,30 @@ func (dbc *databaseContract) Stats(ctx context.Context, params *DatabaseStatsPar
 	checkError(err)
 
 	return res, err
+}
+
+// ListIndexesParams represents the parameters of Database.ListIndexes method.
+type ListIndexesParams struct{}
+
+// ListIndexesResult represents the results of Database.ListIndexesResult method.
+type ListIndexesResult struct {
+	Indexes []IndexInfo
+}
+
+// IndexInfo represents information about a single index.
+type IndexInfo struct {
+	Name   string
+	Key    IndexKey
+	Unique *bool
+}
+
+// IndexKey is a list of "field name + sort order" pairs.
+type IndexKey []IndexKeyPair
+
+// IndexKeyPair consists of a field name and a sort order that are part of the index.
+type IndexKeyPair struct {
+	Field string
+	Order types.SortType
 }
 
 // check interfaces
