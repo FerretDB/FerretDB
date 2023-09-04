@@ -93,7 +93,7 @@ func openDB(name, uri string, memory bool, l *zap.Logger, sp *state.Provider) (*
 		return nil, lazyerrors.Error(err)
 	}
 
-	if sp.Get().HandlerVersion != "" {
+	if sp.Get().HandlerVersion == "" {
 		err := sp.Update(func(s *state.State) {
 			row := db.QueryRowContext(context.Background(), "SELECT sqlite_version()")
 			if err := row.Scan(&s.HandlerVersion); err != nil {
