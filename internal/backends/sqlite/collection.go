@@ -26,6 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -75,7 +76,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}, nil
 }
 
-// Insert implements backends.Collection interface.
+// InsertAll implements backends.Collection interface.
 func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
 	if _, err := c.r.CollectionCreate(ctx, c.dbName, c.name); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -204,8 +205,54 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 
 // Explain implements backends.Collection interface.
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3050
-	panic("not implemented")
+	db := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if db == nil {
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
+	}
+
+	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if meta == nil {
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
+	}
+
+	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`, metadata.DefaultColumn, meta.TableName)
+
+	rows, err := db.QueryContext(ctx, q)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	defer rows.Close()
+
+	queryPlan, err := types.NewArray()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	for rows.Next() {
+		var id int32
+		var parent int32
+		var notused int32
+		var detail string
+
+		// SQLite query plan can be interpreted as a tree.
+		// Each row of query plan represents a node of this tree,
+		// it contains node id, parent id, auxiliary integer field, and a description.
+		// See https://www.sqlite.org/eqp.html for further details.
+		if err := rows.Scan(&id, &parent, &notused, &detail); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		queryPlan.Append(fmt.Sprintf("id=%d parent=%d notused=%d detail=%s", id, parent, notused, detail))
+	}
+
+	return &backends.ExplainResult{
+		QueryPlanner: must.NotFail(types.NewDocument("Plan", queryPlan)),
+	}, nil
 }
 
 // Stats implements backends.Collection interface.
