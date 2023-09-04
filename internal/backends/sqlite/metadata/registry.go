@@ -31,6 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 const (
@@ -65,8 +66,8 @@ type Registry struct {
 }
 
 // NewRegistry creates a registry for SQLite databases in the directory specified by SQLite URI.
-func NewRegistry(u string, l *zap.Logger) (*Registry, error) {
-	p, initDBs, err := pool.New(u, l)
+func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error) {
+	p, initDBs, err := pool.New(u, l, sp)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +206,7 @@ func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
 // CollectionList returns a sorted list of collections in the database.
 //
 // If database does not exist, no error is returned.
-func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]string, error) {
+func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collection, error) {
 	defer observability.FuncCall(ctx)()
 
 	db := r.p.GetExisting(ctx, dbName)
@@ -215,11 +216,11 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]string,
 
 	r.rw.RLock()
 
-	res := maps.Keys(r.colls[dbName])
+	res := maps.Values(r.colls[dbName])
 
 	r.rw.RUnlock()
 
-	sort.Strings(res)
+	sort.Slice(res, func(i, j int) bool { return res[i].Name < res[j].Name })
 	return res, nil
 }
 

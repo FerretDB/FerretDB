@@ -27,9 +27,9 @@ import (
 )
 
 // SetFreeMonitoring is a part of common implementation of the setFreeMonitoring command.
-func SetFreeMonitoring(_ context.Context, msg *wire.OpMsg, provider *state.Provider) (*wire.OpMsg, error) {
-	if provider == nil {
-		panic("provider cannot be equal to nil")
+func SetFreeMonitoring(_ context.Context, msg *wire.OpMsg, sp *state.Provider) (*wire.OpMsg, error) {
+	if sp == nil {
+		panic("state provider is required")
 	}
 
 	document, err := msg.Document()
@@ -61,7 +61,7 @@ func SetFreeMonitoring(_ context.Context, msg *wire.OpMsg, provider *state.Provi
 		)
 	}
 
-	if provider.Get().TelemetryLocked {
+	if sp.Get().TelemetryLocked {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrFreeMonitoringDisabled,
 			"Free Monitoring has been disabled via the command-line and/or config file",
@@ -69,7 +69,7 @@ func SetFreeMonitoring(_ context.Context, msg *wire.OpMsg, provider *state.Provi
 		)
 	}
 
-	if err := provider.Update(func(s *state.State) {
+	if err := sp.Update(func(s *state.State) {
 		if telemetryState {
 			s.EnableTelemetry()
 		} else {

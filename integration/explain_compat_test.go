@@ -149,13 +149,11 @@ func TestExplainCompatError(t *testing.T) {
 			pipeline: bson.A{1},
 		},
 		"Count": {
-			command:        "count",
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3050",
+			command: "count",
 		},
 		"Find": {
-			command:        "find",
-			filter:         bson.D{{"v", int32(42)}},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3050",
+			command: "find",
+			filter:  bson.D{{"v", int32(42)}},
 		},
 		"InvalidCommandGetLog": {
 			command: "create",

@@ -92,7 +92,6 @@ func TestAggregateCompatCollStats(tt *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-
 				tt.Run(targetCollection.Name(), func(tt *testing.T) {
 					tt.Helper()
 
