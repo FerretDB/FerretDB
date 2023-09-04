@@ -50,7 +50,7 @@ func (b *backend) Database(name string) (backends.Database, error) {
 		return nil, err
 	}
 
-	return newDatabase(db, b.l), nil
+	return newDatabase(db, name, b.l), nil
 }
 
 // ListDatabases implements backends.Backend interface.

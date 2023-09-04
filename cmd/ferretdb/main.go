@@ -78,9 +78,11 @@ var cli struct {
 	Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.io."`
 
 	Test struct {
-		RecordsDir            string `default:"" help:"Experimental: directory for record files."`
-		DisableFilterPushdown bool   `default:"false" help:"Experimental: disable filter pushdown."`
-		EnableSortPushdown    bool   `default:"false" help:"Experimental: enable sort pushdown."`
+		RecordsDir string `default:"" help:"Experimental: directory for record files."`
+
+		DisableFilterPushdown bool `default:"false" help:"Experimental: disable filter pushdown."`
+		EnableSortPushdown    bool `default:"false" help:"Experimental: enable sort pushdown."`
+		EnableOplog           bool `default:"false" help:"Experimental: enable OpLog." hidden:""`
 
 		//nolint:lll // for readability
 		Telemetry struct {
@@ -361,6 +363,7 @@ func run() {
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
 			EnableSortPushdown:    cli.Test.EnableSortPushdown,
+			EnableOplog:           cli.Test.EnableOplog,
 		},
 	})
 	if err != nil {

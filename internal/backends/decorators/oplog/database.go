@@ -24,15 +24,17 @@ import (
 
 // database implements backends.Database interface by delegating all methods to the wrapped database.
 type database struct {
-	db backends.Database
-	l  *zap.Logger
+	db   backends.Database
+	name string
+	l    *zap.Logger
 }
 
 // newDatabase creates a new database that wraps the given database.
-func newDatabase(db backends.Database, l *zap.Logger) backends.Database {
+func newDatabase(db backends.Database, name string, l *zap.Logger) backends.Database {
 	return &database{
-		db: db,
-		l:  l,
+		db:   db,
+		name: name,
+		l:    l,
 	}
 }
 

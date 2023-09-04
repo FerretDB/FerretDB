@@ -56,10 +56,15 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 		oplogDocs := make([]*types.Document, len(params.Docs))
 		for i, doc := range params.Docs {
 			oplogDoc, err := types.NewDocument(
+				"_id", types.NewObjectID(), // TODO
 				"ts", types.NextTimestamp(time.Now()),
+				"ns", c.db.name+"."+c.name,
 				"op", "i",
 				"o", doc,
 			)
+			if err == nil {
+				err = oplogDoc.ValidateData()
+			}
 			if err != nil {
 				c.db.l.Error("Failed to create oplog document", zap.Error(err))
 				return res, nil
@@ -105,7 +110,42 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 	}
 
 	if c.name != "oplog" {
-		// TODO
+		oplogDocs := make([]*types.Document, len(params.IDs))
+		for i, id := range params.IDs {
+			idDoc, err := types.NewDocument("_id", id)
+			if err != nil {
+				c.db.l.Error("Failed to create oplog _id document", zap.Error(err))
+				return res, nil
+			}
+
+			oplogDoc, err := types.NewDocument(
+				"_id", types.NewObjectID(), // TODO
+				"ts", types.NextTimestamp(time.Now()),
+				"ns", c.db.name+"."+c.name,
+				"op", "d",
+				"o", idDoc,
+			)
+			if err == nil {
+				err = oplogDoc.ValidateData()
+			}
+			if err != nil {
+				c.db.l.Error("Failed to create oplog document", zap.Error(err))
+				return res, nil
+			}
+
+			oplogDocs[i] = oplogDoc
+		}
+
+		oplogC, err := c.db.Collection("oplog")
+		if err == nil {
+			_, err = oplogC.InsertAll(ctx, &backends.InsertAllParams{
+				Docs: oplogDocs,
+			})
+		}
+		if err != nil {
+			c.db.l.Error("Failed to insert oplog documents", zap.Error(err))
+			return res, nil
+		}
 	}
 
 	return res, nil
