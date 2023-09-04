@@ -169,7 +169,7 @@ Body diff:
 
 ### Response metrics
 
-Metrics are captured and written to standard output (`stdout`) upon exiting in [Debug builds](https://pkg.go.dev/github.com/FerretDB/FerretDB@v1.8.0/build/version#hdr-Debug_builds).
+Metrics are captured and written to standard output (`stdout`) upon exiting in [Debug builds](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version#hdr-Debug_builds).
 This is a useful way to quickly determine what commands are not implemented for the client requests sent by your application.
 
 ```text
