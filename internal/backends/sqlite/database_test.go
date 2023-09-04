@@ -21,6 +21,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -28,7 +29,10 @@ func TestStats(t *testing.T) {
 	t.Parallel()
 	ctx := testutil.Ctx(t)
 
-	r, err := metadata.NewRegistry("file:./?mode=memory", testutil.Logger(t))
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	r, err := metadata.NewRegistry("file:./?mode=memory", testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
