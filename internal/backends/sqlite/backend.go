@@ -22,6 +22,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // backend implements backends.Backend interface.
@@ -35,11 +36,16 @@ type backend struct {
 type NewBackendParams struct {
 	URI string
 	L   *zap.Logger
+	P   *state.Provider
 }
 
 // NewBackend creates a new SQLite backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	r, err := metadata.NewRegistry(params.URI, params.L)
+	if params.P == nil {
+		panic("state provider is required but not set")
+	}
+
+	r, err := metadata.NewRegistry(params.URI, params.L, params.P)
 	if err != nil {
 		return nil, err
 	}
@@ -82,6 +88,11 @@ func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabas
 	}
 
 	return nil
+}
+
+// Name implements backends.Backend interface.
+func (b *backend) Name() string {
+	return "SQLite"
 }
 
 // Describe implements prometheus.Collector.
