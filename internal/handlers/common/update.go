@@ -793,7 +793,8 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 		var docValue any
 
 		// $bit sets the field if it does not exist then does bit operation using 0 and operand value.
-		if !doc.HasByPath(path) {
+		hasKey := doc.HasByPath(path)
+		if !hasKey {
 			docValue = int32(0)
 		} else {
 			docValue, err = doc.GetByPath(path)
@@ -831,7 +832,7 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 					return false, newUpdateError(commonerrors.ErrUnsuitableValueType, err.Error(), command)
 				}
 
-				if docValue == bitOpResult {
+				if docValue == bitOpResult && hasKey {
 					continue
 				}
 
