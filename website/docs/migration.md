@@ -9,7 +9,7 @@ To ensure a smooth and successful migration from MongoDB, we offer several metho
 ## Operation modes
 
 We offer multiple operation modes which help facilitate the testing of your application by enabling FerretDB to act as a proxy.
-For more details, refer to the [official documentation](./configuration/operation-modes.md).
+For more details, refer to the [official documentation](configuration/operation-modes.md).
 
 ### Manual and automated testing with `diff-normal` mode
 
@@ -22,7 +22,7 @@ As an example, let us say that your application performs some complex query and 
 You would do the following:
 
 1. Start FerretDB in `diff-normal` mode.
-   This can be achieved by using the `--mode` [flag](./configuration/flags.md) or by setting the `FERRETDB_MODE` environment variable.
+   This can be achieved by using the `--mode` [flag](configuration/flags.md) or by setting the `FERRETDB_MODE` environment variable.
 2. Run `mongosh` and insert some documents.
 3. Run a query to fetch the first post from each author sorted by date and author.
 
@@ -64,7 +64,7 @@ You would do the following:
      }
    ])
 
-   // run a query
+   // run the query
    db.posts.aggregate([
      { $sort: { date: 1, author: 1 } },
      {
@@ -83,7 +83,7 @@ You would do the following:
 Continuing with the same example above, we can further examine the diff output while in `diff-proxy` mode.
 
 1. Run FerretDB in `diff-proxy` mode.
-   This can again be achieved by using the `--mode` [flag](./configuration/flags.md) or by setting the `FERRETDB_MODE` environment variable as already shown.
+   This can again be achieved by using the `--mode` [flag](configuration/flags.md) or by setting the `FERRETDB_MODE` environment variable as already shown.
 2. Re-run the query.
 
    ```js
@@ -171,6 +171,9 @@ Body diff:
 
 Metrics are captured and written to standard output (`stdout`) upon exiting in [Debug builds](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version#hdr-Debug_builds).
 This is a useful way to quickly determine what commands are not implemented for the client requests sent by your application.
+In the metrics provided below, we can observe that the `$first` accumulator operator was invoked 18 times within the aggregate command, and the `findAndModify` command was executed 6 times with a `fields` projection document.
+Both of these operations resulted in `result="NotImplemented"`.
+To address this issue, it's essential to carefully inspect any result that lacks an `ok` value.
 
 ```text
 # HELP ferretdb_client_requests_total Total number of requests.
