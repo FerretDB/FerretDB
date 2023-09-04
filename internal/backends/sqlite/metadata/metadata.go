@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package metadata provides access to SQLite databases and collections information.
+// Package metadata provides access to databases and collections information.
 package metadata
 
 // Collection will probably have a method for getting column name / SQLite path expression for the given document field
