@@ -1211,10 +1211,32 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 func TestUpdateFieldCompatBit(t *testing.T) {
 	t.Parallel()
 
+	//providers := shareddata.AllProviders().
+	//	Remove(shareddata.OverflowVergeDoubles, shareddata.Scalars)
+
 	testCases := map[string]updateCompatTestCase{
 		"EmptyUpdateOperand": {
 			update:     bson.D{{"$bit", bson.D{}}},
 			resultType: emptyResult,
+		},
+		"DuplicateKeys": {
+			update: bson.D{{"$bit", bson.D{
+				{"v", bson.D{{"and", int32(1)}}},
+				{"v", bson.D{{"or", int32(1)}}}}},
+			},
+			resultType: emptyResult,
+		},
+		"Int32": {
+			update: bson.D{{"$bit", bson.D{
+				{"v", bson.D{{"and", int32(1)}}}}},
+			},
+			//providers: providers,
+		},
+		"Int64": {
+			update: bson.D{{"$bit", bson.D{
+				{"v", bson.D{{"or", int64(11)}}},
+			}}},
+			//providers: providers,
 		},
 	}
 

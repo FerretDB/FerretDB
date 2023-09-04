@@ -758,18 +758,28 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 	var changed bool
 
 	bitDoc := updateV.(*types.Document)
-
 	for _, bitKey := range bitDoc.Keys() {
 		bitValue := must.NotFail(bitDoc.Get(bitKey))
 
 		nestedDoc, ok := bitValue.(*types.Document)
 		if !ok {
 			return false, newUpdateError(
-				commonerrors.ErrTypeMismatch,
+				commonerrors.ErrBadValue,
 				fmt.Sprintf(
-					`The $bit modifier is incompatible with a %s. `+
-						`You must pass in an embedded document: {$bit: {field: {and/or/xor: #} }}`,
+					`The $bit modifier is not compatible with a %s. `+
+						`You must pass in an embedded document: {$bit: {field: {and/or/xor: #}}`,
 					commonparams.AliasFromType(bitValue),
+				),
+				command,
+			)
+		}
+
+		if nestedDoc.Len() == 0 {
+			return false, newUpdateError(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf(
+					"You must pass in at least one bitwise operation. "+
+						`The format is: {$bit: {field: {and/or/xor: #}}`,
 				),
 				command,
 			)
@@ -780,31 +790,33 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 			return false, lazyerrors.Error(err)
 		}
 
-		// $bit ignores fields that does not exist
+		var docValue any
+
+		// $bit sets the field if it does not exist then does bit operation using 0 and operand value.
 		if !doc.HasByPath(path) {
-			continue
-		}
+			docValue = int32(0)
+		} else {
+			docValue, err = doc.GetByPath(path)
+			if err != nil {
+				return false, lazyerrors.Error(err)
+			}
 
-		docValue, err := doc.GetByPath(path)
-		if err != nil {
-			return false, err
-		}
-
-		// $bit operations can only be performed on integer(int32/int64) fields
-		switch docValue.(type) {
-		case int32, int64:
-		default:
-			return false, newUpdateError(
-				commonerrors.ErrBadValue,
-				fmt.Sprintf(
-					`Cannot apply $bit to a value of non-integral type.`+
-						`_id: %s has the field %s of non-integer type %s`,
-					types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
-					bitKey,
-					commonparams.AliasFromType(docValue),
-				),
-				command,
-			)
+			// $bit operations can only be performed on integer(int32/int64) fields
+			switch docValue.(type) {
+			case int32, int64:
+			default:
+				return false, newUpdateError(
+					commonerrors.ErrBadValue,
+					fmt.Sprintf(
+						`Cannot apply $bit to a value of non-integral type.`+
+							`_id: %s has the field %s of non-integer type %s`,
+						types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
+						bitKey,
+						commonparams.AliasFromType(docValue),
+					),
+					command,
+				)
+			}
 		}
 
 		for _, bitOp := range nestedDoc.Keys() {
@@ -816,7 +828,7 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 			switch {
 			case err == nil:
 				if err = doc.SetByPath(path, bitOpResult); err != nil {
-					return false, lazyerrors.Error(err)
+					return false, newUpdateError(commonerrors.ErrUnsuitableValueType, err.Error(), command)
 				}
 
 				if docValue == bitOpResult {
@@ -832,10 +844,10 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 					commonerrors.ErrBadValue,
 					fmt.Sprintf(
 						`The $bit modifier field must be an Integer(32/64 bit); a `+
-							`'%s' is not supported here: {%s: %#v}`,
+							`'%s' is not supported here: {%s: %s}`,
 						commonparams.AliasFromType(bitOpValue),
 						bitOp,
-						bitOpValue,
+						types.FormatAnyValue(bitOpValue),
 					),
 					command,
 				)
@@ -845,10 +857,10 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 					commonerrors.ErrBadValue,
 					fmt.Sprintf(
 						`The $bit modifier field must be an Integer(32/64 bit); a `+
-							`'%s' is not supported here: {%s: %+v}`,
+							`'%s' is not supported here: {%s: %s}`,
 						commonparams.AliasFromType(docValue),
 						bitOp,
-						docValue,
+						types.FormatAnyValue(docValue),
 					),
 					command,
 				)
