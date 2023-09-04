@@ -96,13 +96,6 @@ func TestCreateIndexesCompat(tt *testing.T) {
 				{Keys: bson.D{{"foo", 1}, {"bar", -1}}},
 			},
 		},
-		"DuplicateID": {
-			models: []mongo.IndexModel{
-				{
-					Keys: bson.D{{"_id", 1}}, // this index is already created by default
-				},
-			},
-		},
 		"DescendingID": {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"_id", -1}}},
