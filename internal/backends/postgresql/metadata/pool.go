@@ -46,10 +46,10 @@ const (
 	subsystem = "postgresql_pool"
 )
 
-// Pool provides access to PostgreSQL database and schemas.
+// pool provides access to PostgreSQL database and schemas.
 //
 //nolint:vet // for readability
-type Pool struct {
+type pool struct {
 	p *pgxpool.Pool
 	l *zap.Logger
 
@@ -59,7 +59,7 @@ type Pool struct {
 	token *resource.Token
 }
 
-func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, error) {
+func newPool(u string, l *zap.Logger, sp *state.Provider) (*pool, error) {
 	uri, err := url.Parse(u)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -145,7 +145,7 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, error) {
 
 	slices.Sort(schemas)
 
-	res := &Pool{
+	res := &pool{
 		p:       p,
 		l:       l,
 		schemas: schemas,
@@ -158,14 +158,14 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, error) {
 }
 
 // Close frees all resources.
-func (p *Pool) Close() {
+func (p *pool) Close() {
 	p.p.Close()
 	p.p = nil
 	resource.Untrack(p, p.token)
 }
 
 // List returns a sorted list of FerretDB database names.
-func (p *Pool) List(ctx context.Context) []string {
+func (p *pool) List(ctx context.Context) []string {
 	defer observability.FuncCall(ctx)()
 
 	p.rw.RLock()
@@ -175,7 +175,7 @@ func (p *Pool) List(ctx context.Context) []string {
 }
 
 // GetExisting returns an existing FerretDB database by valid name, or nil.
-func (p *Pool) GetExisting(ctx context.Context, name string) bool {
+func (p *pool) GetExisting(ctx context.Context, name string) bool {
 	defer observability.FuncCall(ctx)()
 
 	p.rw.RLock()
@@ -189,7 +189,7 @@ func (p *Pool) GetExisting(ctx context.Context, name string) bool {
 // GetOrCreate returns an existing FerretDB database by valid name, or creates a new one.
 //
 // Returned boolean value indicates whether the FerretDB database was created.
-func (p *Pool) GetOrCreate(ctx context.Context, name string) (bool, error) {
+func (p *pool) GetOrCreate(ctx context.Context, name string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	if p.GetExisting(ctx, name) {
@@ -219,7 +219,7 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (bool, error) {
 // It does nothing if the FerretDB database does not exist.
 //
 // Returned boolean value indicates whether the FerretDB database was removed.
-func (p *Pool) Drop(ctx context.Context, name string) (bool, error) {
+func (p *pool) Drop(ctx context.Context, name string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	if !p.GetExisting(ctx, name) {
@@ -245,12 +245,12 @@ func (p *Pool) Drop(ctx context.Context, name string) (bool, error) {
 }
 
 // Describe implements prometheus.Collector.
-func (p *Pool) Describe(ch chan<- *prometheus.Desc) {
+func (p *pool) Describe(ch chan<- *prometheus.Desc) {
 	prometheus.DescribeByCollect(p, ch)
 }
 
 // Collect implements prometheus.Collector.
-func (p *Pool) Collect(ch chan<- prometheus.Metric) {
+func (p *pool) Collect(ch chan<- prometheus.Metric) {
 	p.rw.RLock()
 	defer p.rw.RUnlock()
 
@@ -267,5 +267,5 @@ func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 
 // check interfaces
 var (
-	_ prometheus.Collector = (*Pool)(nil)
+	_ prometheus.Collector = (*pool)(nil)
 )
