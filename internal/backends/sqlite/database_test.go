@@ -21,6 +21,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
@@ -28,7 +29,10 @@ func TestStats(t *testing.T) {
 	t.Parallel()
 	ctx := testutil.Ctx(t)
 
-	r, err := metadata.NewRegistry("file:./?mode=memory", testutil.Logger(t))
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	r, err := metadata.NewRegistry("file:./?mode=memory", testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
@@ -39,12 +43,12 @@ func TestStats(t *testing.T) {
 		db.Close()
 	})
 
-	var res *backends.StatsResult
+	var res *backends.DatabaseStatsResult
 
 	t.Run("NonExistingDatabase", func(t *testing.T) {
-		res, err = db.Stats(ctx, new(backends.StatsParams))
+		res, err = db.Stats(ctx, new(backends.DatabaseStatsParams))
 		require.NoError(t, err)
-		require.Equal(t, new(backends.StatsResult), res)
+		require.Equal(t, new(backends.DatabaseStatsResult), res)
 	})
 
 	collectionName := t.Name()
@@ -57,7 +61,7 @@ func TestStats(t *testing.T) {
 	})
 
 	t.Run("EmptyCollection", func(t *testing.T) {
-		res, err = db.Stats(ctx, new(backends.StatsParams))
+		res, err = db.Stats(ctx, new(backends.DatabaseStatsParams))
 		require.NoError(t, err)
 		require.NotZero(t, res.SizeTotal)
 		require.NotZero(t, res.CountCollections)

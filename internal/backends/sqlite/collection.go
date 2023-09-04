@@ -26,9 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -77,7 +75,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}, nil
 }
 
-// Insert implements backends.Collection interface.
+// InsertAll implements backends.Collection interface.
 func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
 	if _, err := c.r.CollectionCreate(ctx, c.dbName, c.name); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -118,14 +116,14 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	return new(backends.InsertAllResult), nil
 }
 
-// Update implements backends.Collection interface.
-func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) (*backends.UpdateResult, error) {
+// UpdateAll implements backends.Collection interface.
+func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllParams) (*backends.UpdateAllResult, error) {
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
 		return nil, lazyerrors.Errorf("no database %q", c.dbName)
 	}
 
-	var res backends.UpdateResult
+	var res backends.UpdateAllResult
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
 		return &res, nil
@@ -133,40 +131,35 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 
 	q := fmt.Sprintf(`UPDATE %q SET %s = ? WHERE %s = ?`, meta.TableName, metadata.DefaultColumn, metadata.IDColumn)
 
-	iter := params.Docs.Iterator()
-	defer iter.Close()
+	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
+		for _, doc := range params.Docs {
+			b, err := sjson.Marshal(doc)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
 
-	for {
-		_, d, err := iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
+			id, _ := doc.Get("_id")
+			must.NotBeZero(id)
+
+			arg := string(must.NotFail(sjson.MarshalSingleValue(id)))
+
+			r, err := tx.ExecContext(ctx, q, string(b), arg)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			ra, err := r.RowsAffected()
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			res.Updated += int32(ra)
 		}
 
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		doc, ok := d.(*types.Document)
-		if !ok {
-			panic(fmt.Sprintf("expected document, got %T", d))
-		}
-
-		id, _ := doc.Get("_id")
-		must.NotBeZero(id)
-		docArg := string(must.NotFail(sjson.Marshal(doc)))
-		idArg := string(must.NotFail(sjson.MarshalSingleValue(id)))
-
-		r, err := db.ExecContext(ctx, q, docArg, idArg)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		ra, err := r.RowsAffected()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		res.Updated += int32(ra)
+		return nil
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	return &res, nil
@@ -212,6 +205,11 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 // Explain implements backends.Collection interface.
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3050
+	panic("not implemented")
+}
+
+// Stats implements backends.Collection interface.
+func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
 	panic("not implemented")
 }
 
