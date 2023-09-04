@@ -13,7 +13,7 @@ For more details, refer to the [official documentation](./configuration/operatio
 
 ### Manual and automated testing with `diff-normal` mode
 
-For details on how to install FerretDB, refer to the [quickstart guide](./quickstart-guide/).
+For details on how to install FerretDB, refer to the [quickstart guide](../quickstart-guide/).
 
 You can manually test your application or use integration tests, among other methods.
 Afterward, you can inspect the differential output for errors or inconsistencies between responses that require your attention.
