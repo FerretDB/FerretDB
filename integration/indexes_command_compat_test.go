@@ -120,7 +120,7 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 			tt.Helper()
 			tt.Parallel()
 
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3175")
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3176")
 
 			indexesDoc := bson.D{}
 

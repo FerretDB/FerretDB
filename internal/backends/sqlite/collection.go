@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/AlekSi/pointer"
 	sqlite3 "modernc.org/sqlite"
 	sqlite3lib "modernc.org/sqlite/lib"
 
@@ -262,7 +263,32 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 
 // ListIndexes implements backends.Collection interface.
 func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
-	panic("not implemented")
+	db := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if db == nil {
+		return &backends.ListIndexesResult{}, nil
+	}
+
+	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if meta == nil {
+		return &backends.ListIndexesResult{}, nil
+	}
+
+	// only one index is supported at the moment - _id
+	// TODO https://github.com/FerretDB/FerretDB/issues/3176
+	return &backends.ListIndexesResult{
+		Indexes: []backends.IndexInfo{
+			{
+				Unique: pointer.ToBool(true),
+				Name:   "_id_",
+				Key: []backends.IndexKeyPair{
+					{
+						Field: "_id",
+						Order: 1,
+					},
+				},
+			},
+		},
+	}, nil
 }
 
 // check interfaces

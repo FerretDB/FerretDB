@@ -164,7 +164,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3175
+	// TODO https://github.com/FerretDB/FerretDB/issues/3176
 	stats.CountIndexes, stats.SizeIndexes = 0, 0
 
 	return stats, nil
