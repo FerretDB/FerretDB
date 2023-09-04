@@ -78,10 +78,10 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	// closer accumulates all things that should be closed / canceled.
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
+	defer closer.Close()
 
 	queryRes, err := c.Query(ctx, nil)
 	if err != nil {
-		closer.Close()
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -91,8 +91,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	iter, err = common.SortIterator(iter, closer, params.Sort)
 	if err != nil {
-		closer.Close()
-
 		var pathErr *types.PathError
 		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -176,7 +174,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		))
 
 		if updateExisting != nil {
-			lastError.Set("updatedExisting", &updateExisting)
+			lastError.Set("updatedExisting", *updateExisting)
 		}
 
 		if insertedID != nil {
@@ -238,7 +236,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	))
 
 	if updateExisting != nil {
-		lastError.Set("updatedExisting", &updateExisting)
+		lastError.Set("updatedExisting", *updateExisting)
 	}
 
 	var reply wire.OpMsg
