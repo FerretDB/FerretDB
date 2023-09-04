@@ -16,17 +16,13 @@ package sqlite
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -72,16 +68,7 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 
 	res, err := c.ListIndexes(ctx, nil)
-
-	switch {
-	case err == nil:
-		// do nothing
-	case errors.Is(err, pgdb.ErrTableNotExist):
-		return nil, commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrNamespaceNotFound,
-			fmt.Sprintf("ns does not exist: %s.%s", dbName, collection),
-		)
-	default:
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

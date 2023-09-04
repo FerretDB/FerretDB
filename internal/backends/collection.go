@@ -236,9 +236,9 @@ type ListIndexesResult struct {
 
 // IndexInfo represents information about a single index.
 type IndexInfo struct {
+	Unique *bool
 	Name   string
 	Key    IndexKey
-	Unique *bool
 }
 
 // IndexKey is a list of "field name + sort order" pairs.
