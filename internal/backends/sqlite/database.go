@@ -116,7 +116,7 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsParams) (*backends.DatabaseStatsResult, error) {
 	d := db.r.DatabaseGetExisting(ctx, db.name)
 	if d == nil {
-		return new(backends.DatabaseStatsResult), nil
+		return nil, backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, lazyerrors.Errorf("no database %s", db.name))
 	}
 
 	list, err := db.r.CollectionList(ctx, db.name)
