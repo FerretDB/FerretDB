@@ -553,7 +553,7 @@ func TestUpdateFieldErrors(t *testing.T) {
 			err: &mongo.WriteError{
 				Code: 2,
 				Message: "Cannot apply $bit to a value of non-integral type." +
-					"_id: \"array-documents-nested\" has the field v.0.foo of non-integer type array",
+					"_id: \"array-documents-nested\" has the field foo of non-integer type array",
 			},
 		},
 		"BitIncompatibleOperatorValue": {
