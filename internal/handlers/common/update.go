@@ -797,6 +797,11 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 		if !hasKey {
 			docValue = int32(0)
 		} else {
+			k := bitKey
+			if path.Len() > 1 {
+				k = path.Suffix()
+			}
+
 			docValue, err = doc.GetByPath(path)
 			if err != nil {
 				return false, lazyerrors.Error(err)
@@ -812,7 +817,7 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 						`Cannot apply $bit to a value of non-integral type.`+
 							`_id: %s has the field %s of non-integer type %s`,
 						types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
-						bitKey,
+						k,
 						commonparams.AliasFromType(docValue),
 					),
 					command,
