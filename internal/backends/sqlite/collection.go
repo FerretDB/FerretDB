@@ -265,12 +265,12 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
-		return &backends.ListIndexesResult{}, nil
+		return new(backends.ListIndexesResult), nil
 	}
 
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
-		return &backends.ListIndexesResult{}, nil
+		return new(backends.ListIndexesResult), nil
 	}
 
 	// only one index is supported at the moment - _id

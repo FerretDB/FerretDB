@@ -39,6 +39,7 @@ func TestListIndexesCompat(t *testing.T) {
 	for i := range targetCollections {
 		targetCollection := targetCollections[i]
 		compatCollection := compatCollections[i]
+
 		t.Run(targetCollection.Name(), func(t *testing.T) {
 			t.Helper()
 			t.Parallel()
@@ -297,7 +298,7 @@ func TestCreateIndexesCompat(tt *testing.T) {
 				})
 			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3175
+			// TODO https://github.com/FerretDB/FerretDB/issues/3176
 			if setup.IsSQLite(tt) {
 				return
 			}
@@ -387,7 +388,7 @@ func TestDropIndexesCompat(tt *testing.T) {
 				tt.Run(targetCollection.Name(), func(tt *testing.T) {
 					tt.Helper()
 
-					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3175")
+					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3176")
 
 					if tc.toCreate != nil {
 						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.toCreate)
@@ -435,7 +436,7 @@ func TestDropIndexesCompat(tt *testing.T) {
 				})
 			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3175
+			// TODO https://github.com/FerretDB/FerretDB/issues/3176
 			if setup.IsSQLite(tt) {
 				return
 			}
@@ -528,7 +529,7 @@ func TestCreateIndexesCompatUnique(tt *testing.T) {
 			tt.Helper()
 			tt.Parallel()
 
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3175")
+			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3176")
 
 			res := setup.SetupCompatWithOpts(t,
 				&setup.SetupCompatOpts{

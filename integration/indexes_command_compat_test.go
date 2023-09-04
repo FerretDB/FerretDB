@@ -378,7 +378,7 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 				tt.Run(targetCollection.Name(), func(tt *testing.T) {
 					tt.Helper()
 
-					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3175")
+					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3287")
 
 					if tc.toCreate != nil {
 						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.toCreate)
@@ -465,7 +465,7 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 				})
 			}
 
-			// https://github.com/FerretDB/FerretDB/issues/3175
+			// https://github.com/FerretDB/FerretDB/issues/3287
 			if setup.IsSQLite(tt) {
 				return
 			}
