@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
@@ -34,10 +33,12 @@ import (
 // See collectionContract and its methods for additional details.
 type Collection interface {
 	Query(context.Context, *QueryParams) (*QueryResult, error)
-	Insert(context.Context, *InsertParams) (*InsertResult, error)
-	Update(context.Context, *UpdateParams) (*UpdateResult, error)
-	Delete(context.Context, *DeleteParams) (*DeleteResult, error)
+	InsertAll(context.Context, *InsertAllParams) (*InsertAllResult, error)
+	UpdateAll(context.Context, *UpdateAllParams) (*UpdateAllResult, error)
+	DeleteAll(context.Context, *DeleteAllParams) (*DeleteAllResult, error)
 	Explain(context.Context, *ExplainParams) (*ExplainResult, error)
+
+	Stats(context.Context, *CollectionStatsParams) (*CollectionStatsResult, error)
 }
 
 // collectionContract implements Collection interface.
@@ -84,73 +85,94 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 	return res, err
 }
 
-// InsertParams represents the parameters of Collection.Insert method.
-type InsertParams struct {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2750
-	// that should be types.DocumentIterator
-	Iter iterator.Interface[int, any]
+// InsertAllParams represents the parameters of Collection.InsertAll method.
+type InsertAllParams struct {
+	Docs []*types.Document
 }
 
-// InsertResult represents the results of Collection.Insert method.
-type InsertResult struct {
-	Inserted int64
-}
+// InsertAllResult represents the results of Collection.InsertAll method.
+type InsertAllResult struct{}
 
-// Insert inserts documents into the collection.
+// InsertAll inserts documents into the collection.
+//
+// The operation should be atomic.
+// If some documents cannot be inserted, the operation should be rolled back,
+// and the first encountered error should be returned.
+//
+// All documents are expected to be valid and include _id fields.
+// They will be frozen.
 //
 // Both database and collection may or may not exist; they should be created automatically if needed.
 // TODO https://github.com/FerretDB/FerretDB/issues/3069
-func (cc *collectionContract) Insert(ctx context.Context, params *InsertParams) (*InsertResult, error) {
+func (cc *collectionContract) InsertAll(ctx context.Context, params *InsertAllParams) (*InsertAllResult, error) {
 	defer observability.FuncCall(ctx)()
 
-	res, err := cc.c.Insert(ctx, params)
-	checkError(err)
+	for _, doc := range params.Docs {
+		doc.Freeze()
+	}
+
+	res, err := cc.c.InsertAll(ctx, params)
+	checkError(err, ErrorCodeInsertDuplicateID)
 
 	return res, err
 }
 
-// UpdateParams represents the parameters of Collection.Update method.
-type UpdateParams struct {
-	// that should be types.DocumentIterator
-	// TODO https://github.com/FerretDB/FerretDB/issues/3079
-	Docs *types.Array
+// UpdateAllParams represents the parameters of Collection.Update method.
+type UpdateAllParams struct {
+	Docs []*types.Document
 }
 
-// UpdateResult represents the results of Collection.Update method.
-type UpdateResult struct {
-	Updated int64
+// UpdateAllResult represents the results of Collection.Update method.
+type UpdateAllResult struct {
+	Updated int32
 }
 
-// Update updates documents in collection.
+// UpdateAll updates documents in collection.
+//
+// The operation should be atomic.
+// If some documents cannot be updated, the operation should be rolled back,
+// and the first encountered error should be returned.
+//
+// All documents are expected to be valid and include _id fields.
+// They will be frozen.
 //
 // Database or collection may not exist; that's not an error.
-func (cc *collectionContract) Update(ctx context.Context, params *UpdateParams) (*UpdateResult, error) {
+func (cc *collectionContract) UpdateAll(ctx context.Context, params *UpdateAllParams) (*UpdateAllResult, error) {
 	defer observability.FuncCall(ctx)()
 
-	res, err := cc.c.Update(ctx, params)
+	for _, doc := range params.Docs {
+		doc.Freeze()
+	}
+
+	res, err := cc.c.UpdateAll(ctx, params)
 	checkError(err)
 
 	return res, err
 }
 
-// DeleteParams represents the parameters of Collection.Delete method.
-type DeleteParams struct {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3085
+// DeleteAllParams represents the parameters of Collection.Delete method.
+type DeleteAllParams struct {
 	IDs []any
 }
 
-// DeleteResult represents the results of Collection.Delete method.
-type DeleteResult struct {
-	Deleted int64
+// DeleteAllResult represents the results of Collection.Delete method.
+type DeleteAllResult struct {
+	Deleted int32
 }
 
-// Delete deletes documents in collection.
+// DeleteAll deletes documents in collection.
+//
+// Passed IDs may contain duplicates or point to non-existing documents.
+//
+// The operation should be atomic.
+// If some documents cannot be deleted, the operation should be rolled back,
+// and the first encountered error should be returned.
 //
 // Database or collection may not exist; that's not an error.
-func (cc *collectionContract) Delete(ctx context.Context, params *DeleteParams) (*DeleteResult, error) {
+func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllParams) (*DeleteAllResult, error) {
 	defer observability.FuncCall(ctx)()
 
-	res, err := cc.c.Delete(ctx, params)
+	res, err := cc.c.DeleteAll(ctx, params)
 	checkError(err)
 
 	return res, err
@@ -165,6 +187,7 @@ type ExplainParams struct {
 // ExplainResult represents the results of Collection.Explain method.
 type ExplainResult struct {
 	QueryPlanner *types.Document
+	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 }
 
 // Explain return a backend-specific execution plan for the given query.
@@ -175,6 +198,28 @@ func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams
 
 	res, err := cc.c.Explain(ctx, params)
 	checkError(err)
+
+	return res, err
+}
+
+// CollectionStatsParams represents the parameters of Collection.Stats method.
+type CollectionStatsParams struct{}
+
+// CollectionStatsResult represents the results of Collection.Stats method.
+type CollectionStatsResult struct {
+	CountObjects   int64
+	CountIndexes   int64
+	SizeTotal      int64
+	SizeIndexes    int64
+	SizeCollection int64
+}
+
+// Stats returns statistics about the collection.
+func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStatsParams) (*CollectionStatsResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := cc.c.Stats(ctx, params)
+	checkError(err, ErrorCodeDatabaseDoesNotExist, ErrorCodeCollectionDoesNotExist)
 
 	return res, err
 }

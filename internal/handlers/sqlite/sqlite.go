@@ -32,6 +32,9 @@ import (
 )
 
 // notImplemented returns error for stub command handlers.
+//
+// Remove it.
+// TODO https://github.com/FerretDB/FerretDB/issues/3069
 func notImplemented(command string) error {
 	return commonerrors.NewCommandErrorMsg(
 		commonerrors.ErrNotImplemented,
@@ -78,6 +81,7 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 		b, err = sqlite.NewBackend(&sqlite.NewBackendParams{
 			URI: opts.URI,
 			L:   opts.L,
+			P:   opts.StateProvider,
 		})
 	default:
 		panic("unknown backend: " + opts.Backend)

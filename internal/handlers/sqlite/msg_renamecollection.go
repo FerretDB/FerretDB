@@ -23,5 +23,6 @@ import (
 
 // MsgRenameCollection implements HandlerInterface.
 func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/2760
 	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }

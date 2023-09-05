@@ -3,7 +3,7 @@ slug: deploy-run-ferretdb-leafcloud
 title: 'How to Deploy and Run FerretDB on Leafcloud'
 authors: [alex]
 description: >
-  In this how-to guide, we’ll be showing you how to configure, deploy, and run FerretDB on [Leafcloud](https://www.leaf.cloud/), using the power of Kubernetes and the PostgreSQL Operator.
+  In this how-to guide, we'll be showing you how to configure, deploy, and run FerretDB on [Leafcloud](https://www.leaf.cloud/), using the power of Kubernetes and the PostgreSQL Operator.
 image: /img/blog/ferretdb-leafcloud.jpg
 tags: [compatible applications, tutorial, cloud]
 ---
