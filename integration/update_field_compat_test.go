@@ -1243,10 +1243,20 @@ func TestUpdateFieldCompatBit(t *testing.T) {
 			}}},
 		},
 		"Int64Min": {
-			update: bson.D{{"$bit", bson.D{{"v", bson.D{{"and", math.MinInt64}}}}}},
+			update: bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", math.MinInt64}}}}}},
 		},
 		"Int64Max": {
 			update: bson.D{{"$bit", bson.D{{"v", bson.D{{"and", math.MaxInt64}}}}}},
+		},
+		"Int64MaxUnderflow": {
+			update: bson.D{{"$bit", bson.D{{"v", bson.D{{"or", -math.MaxInt64}}}}}},
+		},
+		"Int64MaxOverflow": {
+			update: bson.D{{"$bit", bson.D{{"v", bson.D{{"or", math.MaxInt64}}}}}},
+		},
+		"Double": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"and", float64(1)}}}}}},
+			resultType: emptyResult,
 		},
 		"String": {
 			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"and", "string"}}}}}},
