@@ -31,6 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 const (
@@ -65,8 +66,8 @@ type Registry struct {
 }
 
 // NewRegistry creates a registry for SQLite databases in the directory specified by SQLite URI.
-func NewRegistry(u string, l *zap.Logger) (*Registry, error) {
-	p, initDBs, err := pool.New(u, l)
+func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error) {
+	p, initDBs, err := pool.New(u, l, sp)
 	if err != nil {
 		return nil, err
 	}

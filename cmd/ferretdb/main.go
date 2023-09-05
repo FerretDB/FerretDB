@@ -184,12 +184,12 @@ func setupState() *state.Provider {
 		log.Fatalf("Failed to get path for state file: %s.", err)
 	}
 
-	p, err := state.NewProvider(f)
+	sp, err := state.NewProvider(f)
 	if err != nil {
 		log.Fatalf("Failed to create state provider: %s.", err)
 	}
 
-	return p
+	return sp
 }
 
 // setupMetrics setups Prometheus metrics registerer with some metrics.

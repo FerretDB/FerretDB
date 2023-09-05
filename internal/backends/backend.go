@@ -38,6 +38,8 @@ type Backend interface {
 	ListDatabases(context.Context, *ListDatabasesParams) (*ListDatabasesResult, error)
 	DropDatabase(context.Context, *DropDatabaseParams) error
 
+	Name() string
+
 	prometheus.Collector
 
 	// There is no interface method to create a database; see package documentation.
@@ -130,6 +132,11 @@ func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabas
 	checkError(err, ErrorCodeDatabaseNameIsInvalid, ErrorCodeDatabaseDoesNotExist)
 
 	return err
+}
+
+// Name returns human-readable formatted name of the backend.
+func (bc *backendContract) Name() string {
+	return bc.b.Name()
 }
 
 // Describe implements prometheus.Collector.
