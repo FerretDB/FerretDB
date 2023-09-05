@@ -257,7 +257,7 @@ func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndex
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.ListIndexes(ctx, params)
-	checkError(err)
+	checkError(err, ErrorCodeDatabaseDoesNotExist, ErrorCodeCollectionDoesNotExist)
 
 	return res, err
 }

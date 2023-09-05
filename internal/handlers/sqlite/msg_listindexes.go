@@ -68,6 +68,16 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 
 	res, err := c.ListIndexes(ctx, nil)
+	if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) ||
+		backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
+		msg := fmt.Sprintf("ns does not exist: %s.%s", dbName, collection)
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNamespaceNotFound, msg, document.Command())
+	}
+
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -82,7 +92,7 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		}
 
 		indexDoc := must.NotFail(types.NewDocument(
-			"v", int32(2), // for compatiblity, the meaning of this field is not documented
+			"v", int32(2), // for compatibility, the meaning of this field is not documented
 			"key", indexKey,
 			"name", index.Name,
 		))
