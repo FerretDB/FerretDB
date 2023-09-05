@@ -174,8 +174,10 @@ func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 
 	var buf bytes.Buffer
 	var retry int64
+
 	for ctx.Err() == nil {
 		buf.Reset()
+
 		err := runCommand("docker", args, &buf, logger)
 		if err == nil {
 			break
