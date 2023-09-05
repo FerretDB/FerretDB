@@ -161,24 +161,50 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 	return setupAnyPostgres(ctx, logger.Named("postgres_secured"), "postgres://username:password@127.0.0.1:5433/ferretdb")
 }
 
-// setup runs all setup commands.
-func setup(ctx context.Context, logger *zap.SugaredLogger) error {
-	go debug.RunHandler(ctx, "127.0.0.1:8089", prometheus.DefaultRegisterer, logger.Named("debug").Desugar())
-
-	if err := setupPostgres(ctx, logger); err != nil {
-		return err
-	}
-
-	if err := setupPostgresSecured(ctx, logger); err != nil {
-		return err
-	}
-
+// setupMongodb configures `mongodb` container.
+func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 	if err := waitForPort(ctx, logger.Named("mongodb"), 47017); err != nil {
 		return err
 	}
 
-	if err := waitForPort(ctx, logger.Named("mongodb_secure"), 47018); err != nil {
-		return err
+	var buf bytes.Buffer
+	args := []string{"compose", "exec", "-T", "mongodb", "mongosh", "--eval", "'rs.initiate()'"}
+
+	var retry int64
+	for ctx.Err() == nil {
+		buf.Reset()
+		err := runCommand("docker", args, &buf, logger)
+		if err == nil {
+			break
+		}
+
+		logger.Infof("%s:\n%s", err, buf.String())
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	return ctx.Err()
+}
+
+// setupMongodbSecured configures `mongodb_secured` container.
+func setupMongodbSecured(ctx context.Context, logger *zap.SugaredLogger) error {
+	return waitForPort(ctx, logger.Named("mongodb_secured"), 47018)
+}
+
+// setup runs all setup commands.
+func setup(ctx context.Context, logger *zap.SugaredLogger) error {
+	go debug.RunHandler(ctx, "127.0.0.1:8089", prometheus.DefaultRegisterer, logger.Named("debug").Desugar())
+
+	for _, f := range []func(context.Context, *zap.SugaredLogger) error{
+		setupPostgres,
+		setupPostgresSecured,
+		setupMongodb,
+		setupMongodbSecured,
+	} {
+		if err := f(ctx, logger); err != nil {
+			return err
+		}
 	}
 
 	logger.Info("Done.")
@@ -198,7 +224,7 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s failed: %s", strings.Join(args, " "), err)
+		return fmt.Errorf("%s failed: %s", strings.Join(cmd.Args, " "), err)
 	}
 
 	return nil
