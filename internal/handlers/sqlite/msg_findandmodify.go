@@ -30,7 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// findAndModifyResult represents information about modified document.
+// findAndModifyResult represents information about modification made.
 type findAndModifyResult struct {
 	updateExisting any
 	upserted       any
@@ -94,9 +94,13 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 }
 
 // findAndModifyDocument finds and modifies a single document.
+// Upon finding a document, if `remove` flag is set that document is removed,
+// otherwise it updates the document applying operators if any.
+// When no document is found, a document is inserted if `upsert` flag is set.
 func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.FindAndModifyParams) (*findAndModifyResult, error) {
 	db, err := h.b.Database(params.DB)
 	if err != nil {
+		// TODO https://github.com/FerretDB/FerretDB/issues/3306
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "findAndModify")
@@ -108,6 +112,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 
 	c, err := db.Collection(params.Collection)
 	if err != nil {
+		// TODO https://github.com/FerretDB/FerretDB/issues/3306
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "findAndModify")
@@ -118,6 +123,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 
 	cancel := func() {}
 	if params.MaxTimeMS != 0 {
+		// TODO https://github.com/FerretDB/FerretDB/issues/3306
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
 	}
 
@@ -151,10 +157,9 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 	// findAndModify modifies a single document
 	iter = common.LimitIterator(iter, closer, 1)
 
-	writeErrors := types.MakeArray(0)
-
 	_, v, err := iter.Next()
 	if errors.Is(err, iterator.ErrIteratorDone) {
+		// iterator did not find any document, upsert inserts a document, otherwise nothing to do
 		if params.Remove {
 			return &findAndModifyResult{
 				modified: int32(0),
@@ -174,6 +179,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 		if params.HasUpdateOperators {
 			doc = must.NotFail(types.NewDocument())
 			if _, err = common.UpdateDocument("findAndModify", doc, params.Update); err != nil {
+				// TODO https://github.com/FerretDB/FerretDB/issues/3306
 				return nil, err
 			}
 		}
@@ -190,6 +196,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 				var hasOp bool
 
 				if hasOp, err = common.HasQueryOperator(idDoc); err != nil {
+					// TODO https://github.com/FerretDB/FerretDB/issues/3306
 					return nil, err
 				}
 
@@ -201,7 +208,11 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 			doc.Set("_id", upserted)
 		}
 
+		writeErrors := types.MakeArray(0)
+
+		// ValidateData also moves _id field to the first index
 		if err = doc.ValidateData(); err != nil {
+			// TODO https://github.com/FerretDB/FerretDB/issues/3306
 			var we *writeError
 
 			if we, err = handleValidationError(err); err != nil {
@@ -215,6 +226,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 			Docs: []*types.Document{doc},
 		}); err != nil {
 			if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
+				// TODO https://github.com/FerretDB/FerretDB/issues/3306
 				we := &writeError{
 					index:  int32(0),
 					code:   commonerrors.ErrDuplicateKeyInsert,
@@ -238,6 +250,10 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 			value:          value,
 			writeErrors:    writeErrors,
 		}, nil
+	}
+
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	if params.Remove {
@@ -282,7 +298,11 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 		)
 	}
 
+	writeErrors := types.MakeArray(0)
+
+	// ValidateData also moves _id field to the first index
 	if err = doc.ValidateData(); err != nil {
+		// TODO https://github.com/FerretDB/FerretDB/issues/3306
 		var we *writeError
 
 		if we, err = handleValidationError(err); err != nil {
