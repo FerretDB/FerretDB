@@ -144,28 +144,33 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					}
 				}
 
-				docWithID := must.NotFail(types.NewDocument("_id", insertID))
+				doc.Set("_id", insertID)
+			}
 
-				iter := doc.Iterator()
-				defer iter.Close()
+			if err = doc.ValidateData(); err != nil {
+				var ve *types.ValidationError
 
-				for {
-					var k string
-					var fieldV any
-
-					k, fieldV, err = iter.Next()
-					if errors.Is(err, iterator.ErrIteratorDone) {
-						break
-					}
-
-					if err != nil {
-						return nil, lazyerrors.Error(err)
-					}
-
-					docWithID.Set(k, fieldV)
+				if !errors.As(err, &ve) {
+					return nil, lazyerrors.Error(err)
 				}
 
-				doc = docWithID
+				var code commonerrors.ErrorCode
+
+				switch ve.Code() {
+				case types.ErrValidation, types.ErrIDNotFound:
+					code = commonerrors.ErrBadValue
+				case types.ErrWrongIDType:
+					code = commonerrors.ErrInvalidID
+				default:
+					panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
+				}
+
+				we := &writeError{
+					index:  int32(0),
+					code:   code,
+					errmsg: ve.Error(),
+				}
+				writeErrors.Append(we.Document())
 			}
 
 			if _, err = c.InsertAll(ctx, &backends.InsertAllParams{
@@ -248,26 +253,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		id := must.NotFail(v.Get("_id"))
 		updateID, _ := doc.Get("_id")
 		if updateID == nil {
-			docWithID := must.NotFail(types.NewDocument("_id", id))
-
-			iter := doc.Iterator()
-			defer iter.Close()
-			for {
-				var k string
-				var fieldV any
-
-				k, fieldV, err = iter.Next()
-				if errors.Is(err, iterator.ErrIteratorDone) {
-					break
-				}
-				if err != nil {
-					return nil, lazyerrors.Error(err)
-				}
-
-				docWithID.Set(k, fieldV)
-			}
-
-			doc = docWithID
+			doc.Set("_id", id)
 		}
 
 		if updateID != nil && updateID != id {
@@ -281,6 +267,32 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				),
 				"findAndModify",
 			)
+		}
+
+		if err = doc.ValidateData(); err != nil {
+			var ve *types.ValidationError
+
+			if !errors.As(err, &ve) {
+				return nil, lazyerrors.Error(err)
+			}
+
+			var code commonerrors.ErrorCode
+
+			switch ve.Code() {
+			case types.ErrValidation, types.ErrIDNotFound:
+				code = commonerrors.ErrBadValue
+			case types.ErrWrongIDType:
+				code = commonerrors.ErrInvalidID
+			default:
+				panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
+			}
+
+			we := &writeError{
+				index:  int32(0),
+				code:   code,
+				errmsg: ve.Error(),
+			}
+			writeErrors.Append(we.Document())
 		}
 
 		updateRes, err := c.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{doc}})
