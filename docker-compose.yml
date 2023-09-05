@@ -54,7 +54,7 @@ services:
     container_name: ferretdb_mongodb
     command: --config /etc/mongodb.conf
     ports:
-      - 47017:27017
+      - 47017:47017
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -71,7 +71,7 @@ services:
     container_name: ferretdb_mongodb_secured
     command: --config /etc/mongodb.conf
     ports:
-      - 47018:27017
+      - 47018:47018
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:

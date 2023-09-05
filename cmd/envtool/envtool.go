@@ -168,7 +168,8 @@ func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 	}
 
 	var buf bytes.Buffer
-	args := []string{"compose", "exec", "-T", "mongodb", "mongosh", "--eval", "'rs.initiate()'"}
+	rsInit := `'rs.initiate({_id: "mongodb-rs", members: [{_id: 0, host: "localhost:47017" }]})'`
+	args := []string{"compose", "exec", "-T", "mongodb", "mongosh", "--port=47017", "--eval", rsInit}
 
 	var retry int64
 	for ctx.Err() == nil {
