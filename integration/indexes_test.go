@@ -36,11 +36,9 @@ func TestListIndexesNonExistentNS(t *testing.T) {
 	})
 	ctx, collection := s.Ctx, s.Collection
 
-	// calling this doesn't return an error!
-	//_, err := collection.Database().Collection("nonexistent").Indexes().List(ctx)
-	// todo what is cur???
-	// require.Nil(t, cur)
-
+	// Calling driver's method collection.Database().Collection("nonexistent").Indexes().List(ctx)
+	// doesn't return an error for non-existent namespaces.
+	// So that we should use RunCommand to check the behaviour.
 	res := collection.Database().RunCommand(ctx, bson.D{{"listIndexes", "nonexistentColl"}})
 	err := res.Err()
 
@@ -48,6 +46,17 @@ func TestListIndexesNonExistentNS(t *testing.T) {
 		Code:    26,
 		Name:    "NamespaceNotFound",
 		Message: "ns does not exist: TestListIndexesNonExistentNS.nonexistentColl",
+	}, err)
+
+	// Drop database and check that the error is correct.
+	require.NoError(t, collection.Database().Drop(ctx))
+	res = collection.Database().RunCommand(ctx, bson.D{{"listIndexes", collection.Name()}})
+	err = res.Err()
+
+	AssertEqualCommandError(t, mongo.CommandError{
+		Code:    26,
+		Name:    "NamespaceNotFound",
+		Message: "ns does not exist: TestListIndexesNonExistentNS." + collection.Name(),
 	}, err)
 }
 
