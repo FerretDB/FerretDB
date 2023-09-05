@@ -108,8 +108,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	var modified int32
 	var updateExisting *bool
-	var insertedID any
-	var value any
+	var id, value any
 	writeErrors := types.MakeArray(0)
 
 	_, v, err := iter.Next()
@@ -125,22 +124,42 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				}
 			}
 
-			insertedID, err = params.Query.Get("_id")
-			if err != nil {
-				insertedID = types.NewObjectID()
-			}
-
-			idDoc, ok := insertedID.(*types.Document)
-			if ok {
-				var hasOp bool
-
-				if hasOp, err = common.HasQueryOperator(idDoc); err != nil {
-					return nil, err
+			if !doc.Has("_id") {
+				id, err = params.Query.Get("_id")
+				if err != nil {
+					id = types.NewObjectID()
 				}
 
-				if hasOp {
-					insertedID = types.NewObjectID()
+				idDoc, ok := id.(*types.Document)
+				if ok {
+					var hasOp bool
+
+					if hasOp, err = common.HasQueryOperator(idDoc); err != nil {
+						return nil, err
+					}
+
+					if hasOp {
+						id = types.NewObjectID()
+					}
 				}
+
+				docWithID := must.NotFail(types.NewDocument("_id", id))
+
+				iter := doc.Iterator()
+				defer iter.Close()
+				for {
+					k, v, err := iter.Next()
+					if errors.Is(err, iterator.ErrIteratorDone) {
+						break
+					}
+					if err != nil {
+						return nil, lazyerrors.Error(err)
+					}
+
+					docWithID.Set(k, v)
+				}
+
+				doc = docWithID
 			}
 
 			if _, err = c.InsertAll(ctx, &backends.InsertAllParams{
@@ -177,8 +196,8 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			lastError.Set("updatedExisting", *updateExisting)
 		}
 
-		if insertedID != nil {
-			lastError.Set("upserted", &insertedID)
+		if id != nil {
+			lastError.Set("upserted", id)
 		}
 
 		res := must.NotFail(types.NewDocument(
@@ -199,6 +218,8 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 		return &reply, nil
 	}
+
+	value = v
 
 	if params.Remove {
 		delRes, err := c.DeleteAll(ctx, &backends.DeleteAllParams{IDs: []any{must.NotFail(v.Get("_id"))}})
@@ -227,6 +248,10 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return nil, lazyerrors.Error(err)
 		}
 
+		if params.ReturnNewDocument {
+			value = doc
+		}
+
 		modified = updateRes.Updated
 		updateExisting = pointer.ToBool(true)
 	}
@@ -243,7 +268,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"lastErrorObject", lastError,
-			"value", v,
+			"value", value,
 			"ok", float64(1),
 		))},
 	}))
