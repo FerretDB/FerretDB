@@ -26,7 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-// TestListIndexesNonExistentNS tests that the listIndexes command returns a particular error
+// TestListIndexesCommandNonExistentNS tests that the listIndexes command returns a particular error
 // when the namespace (either database or collection) does not exist.
 func TestListIndexesCommandNonExistentNS(t *testing.T) {
 	t.Parallel()
