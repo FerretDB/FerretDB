@@ -42,22 +42,24 @@ func TestListIndexesCommandNonExistentNS(t *testing.T) {
 	res := collection.Database().RunCommand(ctx, bson.D{{"listIndexes", "nonexistentColl"}})
 	err := res.Err()
 
-	AssertEqualCommandError(t, mongo.CommandError{
+	expected := mongo.CommandError{
 		Code:    26,
 		Name:    "NamespaceNotFound",
 		Message: "ns does not exist: TestListIndexesNonExistentNS.nonexistentColl",
-	}, err)
+	}
+	AssertEqualCommandError(t, expected, err)
 
 	// Drop database and check that the error is correct.
 	require.NoError(t, collection.Database().Drop(ctx))
 	res = collection.Database().RunCommand(ctx, bson.D{{"listIndexes", collection.Name()}})
 	err = res.Err()
 
-	AssertEqualCommandError(t, mongo.CommandError{
+	expected = mongo.CommandError{
 		Code:    26,
 		Name:    "NamespaceNotFound",
 		Message: "ns does not exist: TestListIndexesNonExistentNS." + collection.Name(),
-	}, err)
+	}
+	AssertEqualCommandError(t, expected, err)
 }
 
 func TestDropIndexesCommandErrors(tt *testing.T) {
