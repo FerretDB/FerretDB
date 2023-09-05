@@ -233,14 +233,29 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		doc := params.Update
 		if params.HasUpdateOperators {
 			doc = v.DeepCopy()
+			if _, err := common.UpdateDocument(document.Command(), doc, params.Update); err != nil {
+				return nil, err
+			}
 		}
 
 		if !doc.Has("_id") {
-			doc.Set("_id", must.NotFail(v.Get("_id")))
-		}
+			docWithID := must.NotFail(types.NewDocument("_id", must.NotFail(v.Get("_id"))))
 
-		if _, err := common.UpdateDocument(document.Command(), doc, params.Update); err != nil {
-			return nil, err
+			iter := doc.Iterator()
+			defer iter.Close()
+			for {
+				k, v, err := iter.Next()
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+
+				docWithID.Set(k, v)
+			}
+
+			doc = docWithID
 		}
 
 		updateRes, err := c.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{doc}})
