@@ -94,7 +94,7 @@ func convert(t testtb.TB, v any) any {
 	case int32:
 		return v
 	case primitive.Timestamp:
-		return types.NewTimestamp(time.Unix(int64(v.T), 0), uint32(v.I))
+		return types.NewTimestamp(time.Unix(int64(v.T), 0), v.I)
 	case int64:
 		return v
 	default:
