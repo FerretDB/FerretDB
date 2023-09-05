@@ -100,7 +100,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.FindAndModifyParams) (*findAndModifyResult, error) {
 	db, err := h.b.Database(params.DB)
 	if err != nil {
-		// TODO https://github.com/FerretDB/FerretDB/issues/3306
+		// TODO https://github.com/FerretDB/FerretDB/issues/2168
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "findAndModify")
@@ -112,7 +112,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 
 	c, err := db.Collection(params.Collection)
 	if err != nil {
-		// TODO https://github.com/FerretDB/FerretDB/issues/3306
+		// TODO https://github.com/FerretDB/FerretDB/issues/2168
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "findAndModify")
@@ -123,7 +123,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 
 	cancel := func() {}
 	if params.MaxTimeMS != 0 {
-		// TODO https://github.com/FerretDB/FerretDB/issues/3306
+		// TODO https://github.com/FerretDB/FerretDB/issues/2168
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
 	}
 
@@ -179,7 +179,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 		if params.HasUpdateOperators {
 			doc = must.NotFail(types.NewDocument())
 			if _, err = common.UpdateDocument("findAndModify", doc, params.Update); err != nil {
-				// TODO https://github.com/FerretDB/FerretDB/issues/3306
+				// TODO https://github.com/FerretDB/FerretDB/issues/2168
 				return nil, err
 			}
 		}
@@ -196,7 +196,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 				var hasOp bool
 
 				if hasOp, err = common.HasQueryOperator(idDoc); err != nil {
-					// TODO https://github.com/FerretDB/FerretDB/issues/3306
+					// TODO https://github.com/FerretDB/FerretDB/issues/2168
 					return nil, err
 				}
 
@@ -212,7 +212,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 
 		// ValidateData also moves _id field to the first index
 		if err = doc.ValidateData(); err != nil {
-			// TODO https://github.com/FerretDB/FerretDB/issues/3306
+			// TODO https://github.com/FerretDB/FerretDB/issues/2168
 			var we *writeError
 
 			if we, err = handleValidationError(err); err != nil {
@@ -226,7 +226,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 			Docs: []*types.Document{doc},
 		}); err != nil {
 			if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
-				// TODO https://github.com/FerretDB/FerretDB/issues/3306
+				// TODO https://github.com/FerretDB/FerretDB/issues/2168
 				we := &writeError{
 					index:  int32(0),
 					code:   commonerrors.ErrDuplicateKeyInsert,
@@ -302,7 +302,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 
 	// ValidateData also moves _id field to the first index
 	if err = doc.ValidateData(); err != nil {
-		// TODO https://github.com/FerretDB/FerretDB/issues/3306
+		// TODO https://github.com/FerretDB/FerretDB/issues/2168
 		var we *writeError
 
 		if we, err = handleValidationError(err); err != nil {
