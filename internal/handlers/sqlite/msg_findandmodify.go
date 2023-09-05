@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/AlekSi/pointer"
-
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -31,6 +29,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
+
+// findAndModifyResult represents information about modified document.
+type findAndModifyResult struct {
+	updateExisting any
+	upserted       any
+	value          any
+	writeErrors    *types.Array
+	modified       int32
+}
 
 // MsgFindAndModify implements HandlerInterface.
 func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
@@ -50,11 +57,52 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		}
 	}
 
+	res, err := h.findAndModifyDocument(ctx, params)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	lastError := must.NotFail(types.NewDocument(
+		"n", res.modified,
+	))
+
+	if res.updateExisting != nil {
+		lastError.Set("updatedExisting", res.updateExisting)
+	}
+
+	if res.upserted != nil {
+		lastError.Set("upserted", res.upserted)
+	}
+
+	resDoc := must.NotFail(types.NewDocument(
+		"lastErrorObject", lastError,
+		"value", res.value,
+	))
+
+	if res.writeErrors.Len() > 0 {
+		resDoc.Set("writeErrors", res.writeErrors)
+	}
+
+	resDoc.Set("ok", float64(1))
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{resDoc},
+	}))
+
+	return &reply, nil
+}
+
+// findAndModifyDocument finds and modifies a single document.
+func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.FindAndModifyParams) (*findAndModifyResult, error) {
+	var modified int32
+	var updateExisting, upserted, value any
+
 	db, err := h.b.Database(params.DB)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "findAndModify")
 		}
 
 		return nil, lazyerrors.Error(err)
@@ -65,7 +113,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "findAndModify")
 		}
 
 		return nil, lazyerrors.Error(err)
@@ -96,7 +144,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrPathContainsEmptyElement,
 				"FieldPath field names may not be empty strings.",
-				document.Command(),
+				"findAndModify",
 			)
 		}
 
@@ -106,9 +154,6 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	// findAndModify modifies a single document
 	iter = common.LimitIterator(iter, closer, 1)
 
-	var modified int32
-	var updateExisting *bool
-	var insertID, value any
 	writeErrors := types.MakeArray(0)
 
 	_, v, err := iter.Next()
@@ -124,14 +169,14 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				}
 			}
 
-			insertID, _ = doc.Get("_id")
-			if insertID == nil {
-				insertID, err = params.Query.Get("_id")
+			upserted, _ = doc.Get("_id")
+			if upserted == nil {
+				upserted, err = params.Query.Get("_id")
 				if err != nil {
-					insertID = types.NewObjectID()
+					upserted = types.NewObjectID()
 				}
 
-				idDoc, ok := insertID.(*types.Document)
+				idDoc, ok := upserted.(*types.Document)
 				if ok {
 					var hasOp bool
 
@@ -140,36 +185,20 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					}
 
 					if hasOp {
-						insertID = types.NewObjectID()
+						upserted = types.NewObjectID()
 					}
 				}
 
-				doc.Set("_id", insertID)
+				doc.Set("_id", upserted)
 			}
 
 			if err = doc.ValidateData(); err != nil {
-				var ve *types.ValidationError
+				var we *writeError
 
-				if !errors.As(err, &ve) {
-					return nil, lazyerrors.Error(err)
+				if we, err = handleValidationError(err); err != nil {
+					return nil, err
 				}
 
-				var code commonerrors.ErrorCode
-
-				switch ve.Code() {
-				case types.ErrValidation, types.ErrIDNotFound:
-					code = commonerrors.ErrBadValue
-				case types.ErrWrongIDType:
-					code = commonerrors.ErrInvalidID
-				default:
-					panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
-				}
-
-				we := &writeError{
-					index:  int32(0),
-					code:   code,
-					errmsg: ve.Error(),
-				}
 				writeErrors.Append(we.Document())
 			}
 
@@ -196,38 +225,16 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		}
 
 		if !params.Remove {
-			updateExisting = pointer.ToBool(false)
+			updateExisting = false
 		}
 
-		lastError := must.NotFail(types.NewDocument(
-			"n", modified,
-		))
-
-		if updateExisting != nil {
-			lastError.Set("updatedExisting", *updateExisting)
-		}
-
-		if insertID != nil {
-			lastError.Set("upserted", insertID)
-		}
-
-		res := must.NotFail(types.NewDocument(
-			"lastErrorObject", lastError,
-			"value", value,
-		))
-
-		if writeErrors.Len() > 0 {
-			res.Set("writeErrors", writeErrors)
-		}
-
-		res.Set("ok", float64(1))
-
-		var reply wire.OpMsg
-		must.NoError(reply.SetSections(wire.OpMsgSection{
-			Documents: []*types.Document{res},
-		}))
-
-		return &reply, nil
+		return &findAndModifyResult{
+			modified:       modified,
+			updateExisting: updateExisting,
+			upserted:       upserted,
+			value:          value,
+			writeErrors:    writeErrors,
+		}, nil
 	}
 
 	value = v
@@ -245,7 +252,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		doc := params.Update
 		if params.HasUpdateOperators {
 			doc = v.DeepCopy()
-			if _, err = common.UpdateDocument(document.Command(), doc, params.Update); err != nil {
+			if _, err = common.UpdateDocument("findAndModify", doc, params.Update); err != nil {
 				return nil, err
 			}
 		}
@@ -270,28 +277,12 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		}
 
 		if err = doc.ValidateData(); err != nil {
-			var ve *types.ValidationError
+			var we *writeError
 
-			if !errors.As(err, &ve) {
-				return nil, lazyerrors.Error(err)
+			if we, err = handleValidationError(err); err != nil {
+				return nil, err
 			}
 
-			var code commonerrors.ErrorCode
-
-			switch ve.Code() {
-			case types.ErrValidation, types.ErrIDNotFound:
-				code = commonerrors.ErrBadValue
-			case types.ErrWrongIDType:
-				code = commonerrors.ErrInvalidID
-			default:
-				panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
-			}
-
-			we := &writeError{
-				index:  int32(0),
-				code:   code,
-				errmsg: ve.Error(),
-			}
 			writeErrors.Append(we.Document())
 		}
 
@@ -305,25 +296,40 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		}
 
 		modified = updateRes.Updated
-		updateExisting = pointer.ToBool(true)
+		updateExisting = true
 	}
 
-	lastError := must.NotFail(types.NewDocument(
-		"n", modified,
-	))
+	return &findAndModifyResult{
+		modified:       modified,
+		updateExisting: updateExisting,
+		upserted:       upserted,
+		value:          value,
+		writeErrors:    writeErrors,
+	}, nil
+}
 
-	if updateExisting != nil {
-		lastError.Set("updatedExisting", *updateExisting)
+// handleValidationError checks validation error code and returns *writeError.
+func handleValidationError(err error) (*writeError, error) {
+	var ve *types.ValidationError
+
+	if !errors.As(err, &ve) {
+		return nil, lazyerrors.Error(err)
 	}
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"lastErrorObject", lastError,
-			"value", value,
-			"ok", float64(1),
-		))},
-	}))
+	var code commonerrors.ErrorCode
 
-	return &reply, nil
+	switch ve.Code() {
+	case types.ErrValidation, types.ErrIDNotFound:
+		code = commonerrors.ErrBadValue
+	case types.ErrWrongIDType:
+		code = commonerrors.ErrInvalidID
+	default:
+		panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
+	}
+
+	return &writeError{
+		index:  int32(0),
+		code:   code,
+		errmsg: ve.Error(),
+	}, nil
 }
