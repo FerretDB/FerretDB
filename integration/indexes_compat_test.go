@@ -72,6 +72,36 @@ func TestListIndexesCompat(t *testing.T) {
 			assert.Equal(t, compatSpec, targetSpec)
 		})
 	}
+
+	// Test listIndexes for non-existent database.
+	t.Run("NonExistentDB", func(t *testing.T) {
+		t.Helper()
+		t.Parallel()
+
+		targetCollection := targetCollections[0]
+		compatCollection := compatCollections[0]
+
+		require.NoError(t, targetCollection.Database().Drop(ctx))
+		require.NoError(t, compatCollection.Database().Drop(ctx))
+
+		targetCursor, targetErr := targetCollection.Indexes().List(ctx)
+		compatCursor, compatErr := compatCollection.Indexes().List(ctx)
+
+		if targetCursor != nil {
+			defer targetCursor.Close(ctx)
+		}
+		if compatCursor != nil {
+			defer compatCursor.Close(ctx)
+		}
+
+		require.NoError(t, targetErr)
+		require.NoError(t, compatErr)
+
+		targetRes := FetchAll(t, ctx, targetCursor)
+		compatRes := FetchAll(t, ctx, compatCursor)
+
+		assert.Equal(t, compatRes, targetRes)
+	})
 }
 
 func TestCreateIndexesCompat(tt *testing.T) {

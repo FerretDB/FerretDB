@@ -82,7 +82,7 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		}
 
 		indexDoc := must.NotFail(types.NewDocument(
-			"v", int32(2),
+			"v", int32(2), // for compatiblity, the meaning of this field is not documented
 			"key", indexKey,
 			"name", index.Name,
 		))
