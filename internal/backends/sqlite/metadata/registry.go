@@ -287,6 +287,20 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 	return true, nil
 }
 
+// collectionGet returns collection metadata.
+//
+// If database or collection does not exist, nil is returned.
+//
+// It does not hold the lock.
+func (r *Registry) collectionGet(dbName, collectionName string) *Collection {
+	colls := r.colls[dbName]
+	if colls == nil {
+		return nil
+	}
+
+	return colls[collectionName]
+}
+
 // CollectionGet returns collection metadata.
 //
 // If database or collection does not exist, nil is returned.
@@ -296,12 +310,7 @@ func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName str
 	r.rw.RLock()
 	defer r.rw.RUnlock()
 
-	colls := r.colls[dbName]
-	if colls == nil {
-		return nil
-	}
-
-	return colls[collectionName]
+	return r.collectionGet(dbName, collectionName)
 }
 
 // CollectionDrop drops a collection in the database.
@@ -351,6 +360,47 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/2760
 	panic("not implemented")
+}
+
+// IndexCreate creates an index in the collection.
+//
+// It does not hold the lock.
+func (r *Registry) indexCreate(ctx context.Context, dbName, collectionName string) error {
+	_, err := r.CollectionCreate(ctx, dbName, collectionName)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	c := r.collectionGet(dbName, collectionName)
+
+	//pkName := tableName + "_id"
+	//q = fmt.Sprintf("CREATE UNIQUE INDEX %q ON %q (%s)", pkName, tableName, IDColumn)
+	//if _, err = db.ExecContext(ctx, q); err != nil {
+	//	_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
+	//	return lazyerrors.Error(err)
+	//}
+
+	// c.Settings  - add index
+
+	// UPDATE settings ....
+	//q = fmt.Sprintf("INSERT INTO %q (name, table_name, settings) VALUES (?, ?, ?)", metadataTableName)
+	//if _, err = db.ExecContext(ctx, q, c.Name, c.TableName, c.Settings); err != nil {
+	//	_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
+	//	return lazyerrors.Error(err)
+	//}
+
+	r.colls[dbName][collectionName] = c
+	return nil
+}
+
+// IndexCreate creates an index in the collection.
+func (r *Registry) IndexCreate(ctx context.Context, dbName, collectionName string) error {
+	defer observability.FuncCall(ctx)()
+
+	r.rw.RLock()
+	defer r.rw.RUnlock()
+
+	return r.indexCreate(ctx, dbName, collectionName)
 }
 
 // Describe implements prometheus.Collector.
