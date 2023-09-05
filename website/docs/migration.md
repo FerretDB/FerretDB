@@ -9,7 +9,7 @@ To ensure a smooth and successful migration from MongoDB, we offer several metho
 ## Operation modes
 
 We offer multiple operation modes which help facilitate the testing of your application by enabling FerretDB to act as a proxy.
-For more details, refer to the [official documentation](configuration/operation-modes.md).
+For more details, refer to the [operation modes](configuration/operation-modes.md).
 
 ### Manual and automated testing with `diff-normal` mode
 
