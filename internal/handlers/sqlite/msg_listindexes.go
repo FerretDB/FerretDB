@@ -78,10 +78,6 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
 	firstBatch := types.MakeArray(len(res.Indexes))
 
 	for _, index := range res.Indexes {
