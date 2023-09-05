@@ -17,6 +17,7 @@ package backends
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
@@ -232,23 +233,7 @@ type ListIndexesParams struct{}
 
 // ListIndexesResult represents the results of Database.ListIndexesResult method.
 type ListIndexesResult struct {
-	Indexes []IndexInfo
-}
-
-// IndexInfo represents information about a single index.
-type IndexInfo struct {
-	Unique *bool
-	Name   string
-	Key    IndexKey
-}
-
-// IndexKey is a list of "field name + sort order" pairs.
-type IndexKey []IndexKeyPair
-
-// IndexKeyPair consists of a field name and a sort order that are part of the index.
-type IndexKeyPair struct {
-	Field string
-	Order types.SortType
+	Indexes []metadata.IndexInfo
 }
 
 // ListIndexes returns information about indexes in the database.
@@ -266,7 +251,7 @@ func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndex
 
 // CreateIndexesParams represents the parameters of Database.CreateIndexes method.
 type CreateIndexesParams struct {
-	Indexes []IndexInfo
+	Indexes []metadata.IndexInfo
 }
 
 // CreateIndexes creates indexes for the collection.

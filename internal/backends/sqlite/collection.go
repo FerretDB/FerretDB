@@ -309,11 +309,11 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 	// only one index is supported at the moment - _id
 	// TODO https://github.com/FerretDB/FerretDB/issues/3176
 	return &backends.ListIndexesResult{
-		Indexes: []backends.IndexInfo{
+		Indexes: []metadata.IndexInfo{
 			{
 				Unique: pointer.ToBool(true),
 				Name:   "_id_",
-				Key: []backends.IndexKeyPair{
+				Key: []metadata.IndexKeyPair{
 					{
 						Field: "_id",
 						Order: 1,
@@ -326,7 +326,7 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 
 // CreateIndexes implements backends.Collection interface.
 func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateIndexesParams) error {
-	panic("not implemented")
+	return c.r.IndexesCreate(ctx, c.dbName, c.name, params.Indexes...)
 }
 
 // check interfaces

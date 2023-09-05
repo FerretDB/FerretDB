@@ -362,45 +362,50 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 	panic("not implemented")
 }
 
-// IndexCreate creates an index in the collection.
+// indexesCreate creates an index in the collection.
 //
 // It does not hold the lock.
-func (r *Registry) indexCreate(ctx context.Context, dbName, collectionName string) error {
+func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName string, indexes ...IndexInfo) error {
 	_, err := r.CollectionCreate(ctx, dbName, collectionName)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	db, err := r.databaseGetOrCreate(ctx, dbName)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
 	c := r.collectionGet(dbName, collectionName)
 
-	//pkName := tableName + "_id"
-	//q = fmt.Sprintf("CREATE UNIQUE INDEX %q ON %q (%s)", pkName, tableName, IDColumn)
+	//for _, index := range indexes {
+	//indexName := c.TableName + index.Name
+	//q = fmt.Sprintf("CREATE UNIQUE INDEX %q ON %q (%s)", pkName, c.TableName, IDColumn)
 	//if _, err = db.ExecContext(ctx, q); err != nil {
 	//	_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
 	//	return lazyerrors.Error(err)
 	//}
 
 	// c.Settings  - add index
-
-	// UPDATE settings ....
-	//q = fmt.Sprintf("INSERT INTO %q (name, table_name, settings) VALUES (?, ?, ?)", metadataTableName)
-	//if _, err = db.ExecContext(ctx, q, c.Name, c.TableName, c.Settings); err != nil {
-	//	_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
-	//	return lazyerrors.Error(err)
 	//}
+
+	q := fmt.Sprintf("UPDATE %q SET settings=?", metadataTableName)
+	if _, err = db.ExecContext(ctx, q, c.Settings); err != nil {
+		return lazyerrors.Error(err)
+	}
 
 	r.colls[dbName][collectionName] = c
 	return nil
 }
 
-// IndexCreate creates an index in the collection.
-func (r *Registry) IndexCreate(ctx context.Context, dbName, collectionName string) error {
+// IndexesCreate creates an index in the collection.
+func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName string, indexes ...IndexInfo) error {
 	defer observability.FuncCall(ctx)()
 
 	r.rw.RLock()
 	defer r.rw.RUnlock()
 
-	return r.indexCreate(ctx, dbName, collectionName)
+	return r.indexesCreate(ctx, dbName, collectionName, indexes...)
 }
 
 // Describe implements prometheus.Collector.

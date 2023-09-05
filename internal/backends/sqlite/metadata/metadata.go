@@ -15,6 +15,10 @@
 // Package metadata provides access to databases and collections information.
 package metadata
 
+import (
+	"github.com/FerretDB/FerretDB/internal/types"
+)
+
 // Collection will probably have a method for getting column name / SQLite path expression for the given document field
 // once we implement field extraction.
 // IDColumn probably should go away.
@@ -32,5 +36,26 @@ const (
 type Collection struct {
 	Name      string
 	TableName string
-	Settings  string
+	Settings  string // json-encoded CollectionSettings
+}
+
+// CollectionSettings represents collection settings model.
+type CollectionSettings struct {
+	Indexes []IndexInfo
+}
+
+// IndexInfo represents information about a single index.
+type IndexInfo struct {
+	Unique *bool
+	Name   string
+	Key    IndexKey
+}
+
+// IndexKey is a list of "field name + sort order" pairs.
+type IndexKey []IndexKeyPair
+
+// IndexKeyPair consists of a field name and a sort order that are part of the index.
+type IndexKeyPair struct {
+	Field string
+	Order types.SortType
 }
