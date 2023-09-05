@@ -45,7 +45,7 @@ func TestListIndexesCommandNonExistentNS(t *testing.T) {
 	expected := mongo.CommandError{
 		Code:    26,
 		Name:    "NamespaceNotFound",
-		Message: "ns does not exist: TestListIndexesNonExistentNS.nonexistentColl",
+		Message: "ns does not exist: " + collection.Database().Name() + ".nonexistentColl",
 	}
 	AssertEqualCommandError(t, expected, err)
 
@@ -57,7 +57,7 @@ func TestListIndexesCommandNonExistentNS(t *testing.T) {
 	expected = mongo.CommandError{
 		Code:    26,
 		Name:    "NamespaceNotFound",
-		Message: "ns does not exist: TestListIndexesNonExistentNS." + collection.Name(),
+		Message: "ns does not exist: " + collection.Database().Name() + "." + collection.Name(),
 	}
 	AssertEqualCommandError(t, expected, err)
 }
