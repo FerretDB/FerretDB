@@ -108,7 +108,7 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	var modified int32
 	var updateExisting *bool
-	var id, value any
+	var insertID, value any
 	writeErrors := types.MakeArray(0)
 
 	_, v, err := iter.Next()
@@ -124,13 +124,14 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 				}
 			}
 
-			if !doc.Has("_id") {
-				id, err = params.Query.Get("_id")
+			insertID, _ = doc.Get("_id")
+			if insertID == nil {
+				insertID, err = params.Query.Get("_id")
 				if err != nil {
-					id = types.NewObjectID()
+					insertID = types.NewObjectID()
 				}
 
-				idDoc, ok := id.(*types.Document)
+				idDoc, ok := insertID.(*types.Document)
 				if ok {
 					var hasOp bool
 
@@ -139,24 +140,29 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					}
 
 					if hasOp {
-						id = types.NewObjectID()
+						insertID = types.NewObjectID()
 					}
 				}
 
-				docWithID := must.NotFail(types.NewDocument("_id", id))
+				docWithID := must.NotFail(types.NewDocument("_id", insertID))
 
 				iter := doc.Iterator()
 				defer iter.Close()
+
 				for {
-					k, v, err := iter.Next()
+					var k string
+					var fieldV any
+
+					k, fieldV, err = iter.Next()
 					if errors.Is(err, iterator.ErrIteratorDone) {
 						break
 					}
+
 					if err != nil {
 						return nil, lazyerrors.Error(err)
 					}
 
-					docWithID.Set(k, v)
+					docWithID.Set(k, fieldV)
 				}
 
 				doc = docWithID
@@ -196,8 +202,8 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 			lastError.Set("updatedExisting", *updateExisting)
 		}
 
-		if id != nil {
-			lastError.Set("upserted", id)
+		if insertID != nil {
+			lastError.Set("upserted", insertID)
 		}
 
 		res := must.NotFail(types.NewDocument(
@@ -222,8 +228,9 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 	value = v
 
 	if params.Remove {
-		delRes, err := c.DeleteAll(ctx, &backends.DeleteAllParams{IDs: []any{must.NotFail(v.Get("_id"))}})
-		if err != nil {
+		var delRes *backends.DeleteAllResult
+
+		if delRes, err = c.DeleteAll(ctx, &backends.DeleteAllParams{IDs: []any{must.NotFail(v.Get("_id"))}}); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
@@ -233,18 +240,23 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 		doc := params.Update
 		if params.HasUpdateOperators {
 			doc = v.DeepCopy()
-			if _, err := common.UpdateDocument(document.Command(), doc, params.Update); err != nil {
+			if _, err = common.UpdateDocument(document.Command(), doc, params.Update); err != nil {
 				return nil, err
 			}
 		}
 
-		if !doc.Has("_id") {
-			docWithID := must.NotFail(types.NewDocument("_id", must.NotFail(v.Get("_id"))))
+		id := must.NotFail(v.Get("_id"))
+		updateID, _ := doc.Get("_id")
+		if updateID == nil {
+			docWithID := must.NotFail(types.NewDocument("_id", id))
 
 			iter := doc.Iterator()
 			defer iter.Close()
 			for {
-				k, v, err := iter.Next()
+				var k string
+				var fieldV any
+
+				k, fieldV, err = iter.Next()
 				if errors.Is(err, iterator.ErrIteratorDone) {
 					break
 				}
@@ -252,10 +264,23 @@ func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.
 					return nil, lazyerrors.Error(err)
 				}
 
-				docWithID.Set(k, v)
+				docWithID.Set(k, fieldV)
 			}
 
 			doc = docWithID
+		}
+
+		if updateID != nil && updateID != id {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrImmutableField,
+				fmt.Sprintf(
+					`Plan executor error during findAndModify :: caused `+
+						`by :: After applying the update, the (immutable) field `+
+						`'_id' was found to have been altered to _id: "%s"`,
+					updateID,
+				),
+				"findAndModify",
+			)
 		}
 
 		updateRes, err := c.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{doc}})
