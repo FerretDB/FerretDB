@@ -187,6 +187,7 @@ type ExplainParams struct {
 // ExplainResult represents the results of Collection.Explain method.
 type ExplainResult struct {
 	QueryPlanner *types.Document
+	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 }
 
 // Explain return a backend-specific execution plan for the given query.
@@ -218,7 +219,7 @@ func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStats
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.Stats(ctx, params)
-	checkError(err)
+	checkError(err, ErrorCodeDatabaseDoesNotExist, ErrorCodeCollectionDoesNotExist)
 
 	return res, err
 }

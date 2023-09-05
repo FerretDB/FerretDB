@@ -94,7 +94,7 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		return err
 	}
 
-	p, err := state.NewProvider("")
+	sp, err := state.NewProvider("")
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 
 	var retry int64
 	for ctx.Err() == nil {
-		if pgPool, err = pgdb.NewPool(ctx, uri, logger.Desugar(), p); err == nil {
+		if pgPool, err = pgdb.NewPool(ctx, uri, logger.Desugar(), sp); err == nil {
 			break
 		}
 

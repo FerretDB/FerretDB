@@ -675,11 +675,9 @@ func TestCommandsAdministrationBuildInfoFerretdbExtensions(t *testing.T) {
 	assert.NotEmpty(t, aggregationStagesArray)
 }
 
-func TestCommandsAdministrationCollStatsEmpty(tt *testing.T) {
-	tt.Parallel()
-	ctx, collection := setup.Setup(tt)
-
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3259")
+func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
 	command := bson.D{{"collStats", collection.Name()}}
@@ -699,10 +697,9 @@ func TestCommandsAdministrationCollStatsEmpty(tt *testing.T) {
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 }
 
-func TestCommandsAdministrationCollStats(tt *testing.T) {
-	tt.Parallel()
+func TestCommandsAdministrationCollStats(t *testing.T) {
+	t.Parallel()
 
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3259")
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
@@ -727,15 +724,16 @@ func TestCommandsAdministrationCollStats(tt *testing.T) {
 	assert.InDelta(t, 40_000, must.NotFail(doc.Get("size")), 39_900)
 	assert.InDelta(t, 2_400, must.NotFail(doc.Get("avgObjSize")), 2_370)
 	assert.InDelta(t, 40_000, must.NotFail(doc.Get("storageSize")), 39_900)
-	assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
-	assert.InDelta(t, 12_000, must.NotFail(doc.Get("totalIndexSize")), 11_000)
+	t.Run("Indexes", func(tt *testing.T) {
+		t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3293")
+		assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
+		assert.InDelta(t, 12_000, must.NotFail(doc.Get("totalIndexSize")), 11_000)
+	})
 	assert.InDelta(t, 32_000, must.NotFail(doc.Get("totalSize")), 30_000)
 }
 
-func TestCommandsAdministrationCollStatsWithScale(tt *testing.T) {
-	tt.Parallel()
-
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3259")
+func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
+	t.Parallel()
 
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
@@ -755,8 +753,11 @@ func TestCommandsAdministrationCollStatsWithScale(tt *testing.T) {
 	assert.InDelta(t, 16, must.NotFail(doc.Get("size")), 16)
 	assert.InDelta(t, 2_400, must.NotFail(doc.Get("avgObjSize")), 2_370)
 	assert.InDelta(t, 24, must.NotFail(doc.Get("storageSize")), 24)
-	assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
-	assert.InDelta(t, 8, must.NotFail(doc.Get("totalIndexSize")), 8)
+	t.Run("Indexes", func(tt *testing.T) {
+		t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3293")
+		assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
+		assert.InDelta(t, 8, must.NotFail(doc.Get("totalIndexSize")), 8)
+	})
 	assert.InDelta(t, 24, must.NotFail(doc.Get("totalSize")), 24)
 }
 
