@@ -292,12 +292,18 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
-		return new(backends.ListIndexesResult), nil
+		return nil, backends.NewError(
+			backends.ErrorCodeDatabaseDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
 	}
 
-	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
-	if meta == nil {
-		return new(backends.ListIndexesResult), nil
+	coll := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if coll == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
 	}
 
 	// only one index is supported at the moment - _id

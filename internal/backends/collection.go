@@ -253,12 +253,13 @@ type IndexKeyPair struct {
 
 // ListIndexes returns information about indexes in the database.
 //
-// Database or collection may not exist; that's not an error.
+// If database does not exist it returns ErrorCodeDatabaseDoesNotExist.
+// If collection does not exist it returns ErrorCodeCollectionDoesNotExist.
 func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndexesParams) (*ListIndexesResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.ListIndexes(ctx, params)
-	checkError(err)
+	checkError(err, ErrorCodeDatabaseDoesNotExist, ErrorCodeCollectionDoesNotExist)
 
 	return res, err
 }
