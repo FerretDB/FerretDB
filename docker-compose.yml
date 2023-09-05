@@ -52,7 +52,7 @@ services:
       context: ./build/deps
       dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
     container_name: ferretdb_mongodb
-    command: --config /etc/mongod.conf
+    command: --config /etc/mongodb.conf
     ports:
       - 47017:27017
     extra_hosts:
@@ -62,14 +62,14 @@ services:
       - TZ=Asia/Kathmandu
     volumes:
       - ./build/certs:/etc/certs
-      - ./build/mongod.conf:/etc/mongod.conf
+      - ./build/mongodb.conf:/etc/mongodb.conf
 
   mongodb_secured:
     build:
       context: ./build/deps
       dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
     container_name: ferretdb_mongodb_secured
-    command: --config /etc/mongod.conf
+    command: --config /etc/mongodb.conf
     ports:
       - 47018:27017
     extra_hosts:
@@ -81,7 +81,7 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=password
     volumes:
       - ./build/certs:/etc/certs
-      - ./build/mongod_secured.conf:/etc/mongod.conf
+      - ./build/mongodb_secured.conf:/etc/mongodb.conf
 
   # for test scripts
   legacy-mongo-shell:
