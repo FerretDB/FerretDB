@@ -25,14 +25,18 @@ type Timestamp uint64
 // timestampCounter is a process-wide timestamp counter.
 var timestampCounter atomic.Uint32
 
+// NewTimestamp returns the timestamp for the given time and counter values.
+func NewTimestamp(t time.Time, c uint32) Timestamp {
+	return Timestamp((uint64(t.Unix()) << 32) | uint64(c))
+}
+
 // NextTimestamp returns the next timestamp for the given time value.
 func NextTimestamp(t time.Time) Timestamp {
 	// Technically, that should be a counter within a second, not a process-wide,
 	// but that's good enough for us.
-	c := uint64(timestampCounter.Add(1))
+	c := timestampCounter.Add(1)
 
-	sec := uint64(t.Unix())
-	return Timestamp((sec << 32) | c)
+	return NewTimestamp(t, c)
 }
 
 // Time returns timestamp's time component.
