@@ -18,6 +18,7 @@ package metadata
 import (
 	"database/sql"
 	"database/sql/driver"
+	"encoding/json"
 )
 
 // Collection will probably have a method for getting column name / SQLite path expression for the given document field
@@ -40,35 +41,52 @@ type Collection struct {
 	Settings  Settings
 }
 
+// Settings represents collection settings.
 type Settings struct {
-	Indexes []IndexInfo
-}
-
-func (s Settings) Value() (driver.Value, error) {
-
-}
-
-func (s *Settings) Scan(...) error {
-
-}
-
-var _ driver.Valuer = Settings{}
-var _ sql.Scanner = (*Settings)(nil)
-
-// CollectionSettings represents collection settings model.
-type CollectionSettings struct {
-	Indexes []IndexInfo
+	Indexes []IndexInfo `json:"indexes"`
 }
 
 // IndexInfo represents information about a single index.
 type IndexInfo struct {
-	Name   string
-	Key    []IndexKeyPair
-	Unique bool
+	Name   string         `json:"name"`
+	Key    []IndexKeyPair `json:"key"`
+	Unique bool           `json:"unique"`
 }
 
 // IndexKeyPair consists of a field name and a sort order that are part of the index.
 type IndexKeyPair struct {
-	Field      string
-	Descending bool
+	Field      string `json:"field"`
+	Descending bool   `json:"descending"`
 }
+
+// Value implements driver.Valuer interface.
+func (s Settings) Value() (driver.Value, error) {
+	res, err := json.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+
+	return string(res), nil
+}
+
+// Scan implements sql.Scanner interface.
+func (s *Settings) Scan(src any) error {
+	switch src := src.(type) {
+	case nil:
+		*s = Settings{}
+	case []byte:
+		return json.Unmarshal(src, s)
+	case string:
+		return json.Unmarshal([]byte(src), s)
+	default:
+		panic("can't scan collection settings")
+	}
+
+	return nil
+}
+
+// check interfaces
+var (
+	_ driver.Valuer = Settings{}
+	_ sql.Scanner   = (*Settings)(nil)
+)
