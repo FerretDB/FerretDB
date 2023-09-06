@@ -80,24 +80,15 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
-	elapses := time.Since(started)
-
-	addEstimate := true
-
-	var pairs []any
-	if addEstimate {
-		pairs = append(pairs, "estimate", false)
-	}
-	pairs = append(pairs,
-		"size", stats.SizeTotal,
-		"numObjects", stats.CountObjects,
-		"millis", int32(elapses.Milliseconds()),
-		"ok", float64(1),
-	)
-
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(pairs...))},
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"estimate", false,
+			"size", stats.SizeTotal,
+			"numObjects", stats.CountObjects,
+			"millis", int32(time.Since(started).Milliseconds()),
+			"ok", float64(1),
+		))},
 	}))
 
 	return &reply, nil
