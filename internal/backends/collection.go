@@ -226,10 +226,10 @@ func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStats
 	return res, err
 }
 
-// ListIndexesParams represents the parameters of Database.ListIndexes method.
+// ListIndexesParams represents the parameters of Collection.ListIndexes method.
 type ListIndexesParams struct{}
 
-// ListIndexesResult represents the results of Database.ListIndexesResult method.
+// ListIndexesResult represents the results of Collection.ListIndexesResult method.
 type ListIndexesResult struct {
 	Indexes []IndexInfo
 }
