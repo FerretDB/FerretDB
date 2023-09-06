@@ -17,7 +17,6 @@ package backends
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
@@ -42,7 +41,6 @@ type Collection interface {
 	Stats(context.Context, *CollectionStatsParams) (*CollectionStatsResult, error)
 
 	ListIndexes(context.Context, *ListIndexesParams) (*ListIndexesResult, error)
-	CreateIndexes(context.Context, *CreateIndexesParams) error
 }
 
 // collectionContract implements Collection interface.
@@ -228,54 +226,48 @@ func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStats
 	return res, err
 }
 
-// ListIndexesParams represents the parameters of Database.ListIndexes method.
+// ListIndexesParams represents the parameters of Collection.ListIndexes method.
 type ListIndexesParams struct{}
 
-// ListIndexesResult represents the results of Database.ListIndexesResult method.
+// ListIndexesResult represents the results of Collection.ListIndexesResult method.
 type ListIndexesResult struct {
-	Indexes []metadata.IndexInfo
+	Indexes []IndexInfo
 }
+
+// IndexInfo represents information about a single index.
+type IndexInfo struct {
+	Name   string
+	Key    []IndexKeyPair
+	Unique bool
+}
+
+// IndexKeyPair consists of a field name and a sort order that are part of the index.
+type IndexKeyPair struct {
+	Field string
+	Order IndexOrder
+}
+
+// IndexOrder represents the sort order of the index.
+type IndexOrder int32 // int32 to match the wire protocol
+
+const (
+	// IndexOrderAsc represents ascending sort order.
+	IndexOrderAsc IndexOrder = 1
+
+	// IndexOrderDesc represents descending sort order.
+	IndexOrderDesc IndexOrder = -1
+)
 
 // ListIndexes returns information about indexes in the database.
 //
-// If database does not exist it returns ErrorCodeDatabaseDoesNotExist.
-// If collection does not exist it returns ErrorCodeCollectionDoesNotExist.
+// If database or collection does not exist it returns ErrorCodeDatabaseDoesNotExist.
 func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndexesParams) (*ListIndexesResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.ListIndexes(ctx, params)
-	checkError(err, ErrorCodeDatabaseDoesNotExist, ErrorCodeCollectionDoesNotExist)
+	checkError(err, ErrorCodeDatabaseDoesNotExist)
 
 	return res, err
-}
-
-// CreateIndexesParams represents the parameters of Collection.CreateIndexes method.
-type CreateIndexesParams struct {
-	Indexes []metadata.IndexInfo
-}
-
-// CreateIndexesResult represents the results of Collection.CreateIndexes method.
-type CreateIndexesResult struct {
-}
-
-// CreateIndexes creates indexes for the collection.
-//
-// The operation should be atomic.
-// If some indexes cannot be created, the operation should be rolled back,
-// and the first encountered error should be returned.
-//
-// Database or collection may not exist; that's not an error.
-func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateIndexesParams) error {
-	defer observability.FuncCall(ctx)()
-
-	// err := validateIndexes(params)
-	// if err == nil {
-	err := cc.c.CreateIndexes(ctx, params)
-	//}
-
-	//checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionAlreadyExists)
-
-	return err
 }
 
 // check interfaces

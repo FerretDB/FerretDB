@@ -299,8 +299,10 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 
 	coll := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if coll == nil {
+		// It enough to return ErrorCodeDatabaseDoesNotExist:
+		// the handler returns ns error, no need to distinguish between database and collection errors.
 		return nil, backends.NewError(
-			backends.ErrorCodeCollectionDoesNotExist,
+			backends.ErrorCodeDatabaseDoesNotExist,
 			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
 		)
 	}
@@ -315,7 +317,7 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 				Key: []metadata.IndexKeyPair{
 					{
 						Field: "_id",
-						Order: 1,
+						Order: backends.IndexOrderAsc,
 					},
 				},
 			},

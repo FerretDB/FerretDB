@@ -68,13 +68,12 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	}
 
 	res, err := c.ListIndexes(ctx, nil)
-	if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) ||
-		backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
-		msg := fmt.Sprintf("ns does not exist: %s.%s", dbName, collection)
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNamespaceNotFound, msg, document.Command())
-	}
-
 	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
+			msg := fmt.Sprintf("ns does not exist: %s.%s", dbName, collection)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNamespaceNotFound, msg, document.Command())
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 
