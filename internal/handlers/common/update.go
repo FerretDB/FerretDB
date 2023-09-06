@@ -785,29 +785,21 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 			)
 		}
 
-		path, err := types.NewPathFromString(bitKey)
-		if err != nil {
-			return false, lazyerrors.Error(err)
-		}
+		// bitKey has valid path, checked in ValidateUpdateOperators
+		path := must.NotFail(types.NewPathFromString(bitKey))
 
-		var docValue any
+		// $bit sets the field if it does not exist by applying bitwise operat on 0 and operand value.
+		var docValue any = int32(0)
 
-		// $bit sets the field if it does not exist, then does bit operation using 0 and operand value.
 		hasPath := doc.HasByPath(path)
-		if !hasPath {
-			docValue = int32(0)
-		} else {
-			docValue, err = doc.GetByPath(path)
-			if err != nil {
-				return false, lazyerrors.Error(err)
-			}
+		if hasPath {
+			docValue = must.NotFail(doc.GetByPath(path))
 		}
 
 		for _, bitOp := range nestedDoc.Keys() {
 			bitOpValue := must.NotFail(nestedDoc.Get(bitOp))
 
-			var bitOpResult any
-			bitOpResult, err = performBitLogic(bitOp, bitOpValue, docValue)
+			bitOpResult, err := performBitLogic(bitOp, bitOpValue, docValue)
 
 			switch {
 			case err == nil:

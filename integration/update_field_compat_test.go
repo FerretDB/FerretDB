@@ -1290,6 +1290,14 @@ func TestUpdateFieldCompatBit(t *testing.T) {
 			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", primitive.Timestamp{T: 42, I: 13}}}}}}},
 			resultType: emptyResult,
 		},
+		"Object": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", bson.D{{"foo", int32(42)}}}}}}}},
+			resultType: emptyResult,
+		},
+		"Array": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", bson.A{int32(42)}}}}}}},
+			resultType: emptyResult,
+		},
 		"NonExistent": {
 			update: bson.D{{"$bit", bson.D{{"non-existent", bson.D{{"xor", int32(1)}}}}}},
 		},
