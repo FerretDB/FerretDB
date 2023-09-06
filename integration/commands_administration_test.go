@@ -764,10 +764,9 @@ func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 func TestCommandsAdministrationDataSize(t *testing.T) {
 	t.Parallel()
 
-	t.Run("Existing", func(tt *testing.T) {
-		tt.Parallel()
+	t.Run("Existing", func(t *testing.T) {
+		t.Parallel()
 
-		t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
 		ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 		var actual bson.D
@@ -782,10 +781,9 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 		assert.InDelta(t, 200, must.NotFail(doc.Get("millis")), 200)
 	})
 
-	t.Run("NonExistent", func(tt *testing.T) {
-		tt.Parallel()
+	t.Run("NonExistent", func(t *testing.T) {
+		t.Parallel()
 
-		t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
 		ctx, collection := setup.Setup(t)
 
 		var actual bson.D
@@ -801,10 +799,10 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 	})
 }
 
-func TestCommandsAdministrationDataSizeErrors(tt *testing.T) {
-	tt.Parallel()
+func TestCommandsAdministrationDataSizeErrors(t *testing.T) {
+	t.Parallel()
 
-	ctx, collection := setup.Setup(tt, shareddata.DocumentsStrings)
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		command bson.D // required, command to run
@@ -832,14 +830,12 @@ func TestCommandsAdministrationDataSizeErrors(tt *testing.T) {
 	} {
 		name, tc := name, tc
 
-		tt.Run(name, func(tt *testing.T) {
+		t.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
 				tt.Skip(tc.skip)
 			}
 
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
+			t.Parallel()
 
 			require.NotNil(t, tc.command, "command must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
