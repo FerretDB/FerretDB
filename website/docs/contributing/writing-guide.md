@@ -52,10 +52,6 @@ Examples:
 
 To link to file in a subdirectory, prefix with `./` to go down one directory level.
 
-- `[file in a subdirectory](./writing-guide.md)`
-
-To link to a file in the same directory, use the file name.
-
 - `[file in the same directory](writing-guide.md)`
 
 To link to a file in a parent directory, prefix with `../` to go up one directory level.
