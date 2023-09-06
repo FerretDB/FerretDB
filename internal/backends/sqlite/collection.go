@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/AlekSi/pointer"
 	sqlite3 "modernc.org/sqlite"
 	sqlite3lib "modernc.org/sqlite/lib"
 
@@ -313,7 +312,7 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 	return &backends.ListIndexesResult{
 		Indexes: []backends.IndexInfo{
 			{
-				Unique: pointer.ToBool(true),
+				Unique: true,
 				Name:   "_id_",
 				Key: []backends.IndexKeyPair{
 					{
