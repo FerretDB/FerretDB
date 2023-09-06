@@ -62,6 +62,11 @@ func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabas
 	return b.b.DropDatabase(ctx, params)
 }
 
+// ServerStatus implements backends.Backend interface.
+func (b *backend) ServerStatus(ctx context.Context, params *backends.ServerStatusParams) (*backends.ServerStatusResult, error) {
+	return b.b.ServerStatus(ctx, params)
+}
+
 // Name implements backends.Backend interface.
 func (b *backend) Name() string {
 	return b.b.Name()

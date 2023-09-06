@@ -27,16 +27,16 @@ import (
 // collection implements backends.Collection interface by adding OpLog functionality to the wrapped collection.
 type collection struct {
 	c    backends.Collection
-	name string
 	db   *database
+	name string
 }
 
 // newCollection creates a new collection that wraps the given collection.
 func newCollection(c backends.Collection, name string, db *database) backends.Collection {
 	return &collection{
 		c:    c,
-		name: name,
 		db:   db,
+		name: name,
 	}
 }
 
@@ -54,6 +54,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 	if c.name != "oplog" {
 		oplogDocs := make([]*types.Document, len(params.Docs))
+
 		for i, doc := range params.Docs {
 			oplogDoc, err := types.NewDocument(
 				"_id", types.NewObjectID(), // TODO
@@ -65,6 +66,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 			if err == nil {
 				err = oplogDoc.ValidateData()
 			}
+
 			if err != nil {
 				c.db.l.Error("Failed to create oplog document", zap.Error(err))
 				return res, nil
@@ -79,6 +81,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 				Docs: oplogDocs,
 			})
 		}
+
 		if err != nil {
 			c.db.l.Error("Failed to insert oplog documents", zap.Error(err))
 			return res, nil
@@ -97,6 +100,7 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 
 	if c.name != "oplog" {
 		// TODO
+		_ = res
 	}
 
 	return res, nil
@@ -111,6 +115,7 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 
 	if c.name != "oplog" {
 		oplogDocs := make([]*types.Document, len(params.IDs))
+
 		for i, id := range params.IDs {
 			idDoc, err := types.NewDocument("_id", id)
 			if err != nil {
@@ -128,6 +133,7 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 			if err == nil {
 				err = oplogDoc.ValidateData()
 			}
+
 			if err != nil {
 				c.db.l.Error("Failed to create oplog document", zap.Error(err))
 				return res, nil
@@ -142,6 +148,7 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 				Docs: oplogDocs,
 			})
 		}
+
 		if err != nil {
 			c.db.l.Error("Failed to insert oplog documents", zap.Error(err))
 			return res, nil
