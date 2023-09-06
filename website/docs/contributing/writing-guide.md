@@ -58,7 +58,7 @@ To link to a file in a parent directory, prefix with `../` to go up one director
 
 - `[file in a parent directory](../telemetry.md)`
 
-To link to file in a subdirectory, Specify the file path along with its respective directory or directories, such as: `subdirectory/file.md`.
+To link to file in a subdirectory, specify the file path along with its respective directory or directories, such as: `subdirectory/file.md`.
 
 ## Images
 
