@@ -104,7 +104,8 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			"numObjects", stats.CountObjects,
 			"millis", int32(time.Since(started).Milliseconds()),
 			"ok", float64(1),
-		))}}))
+		))},
+	}))
 
 	return &reply, nil
 }
