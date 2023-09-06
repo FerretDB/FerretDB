@@ -36,6 +36,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
@@ -1077,10 +1078,12 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 	for name, tc := range map[string]struct {
 		command        bson.D // required, command to run
 		expectedStatus string // optional
+		skipForMongoDB string // optional, skip test for MongoDB backend with a specific reason
 	}{
 		"Enable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
 			expectedStatus: "enabled",
+			skipForMongoDB: "MongoDB decommissioned enabling free monitoring",
 		},
 		"Disable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
@@ -1090,6 +1093,10 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 		name, tc := name, tc
 
 		t.Run(name, func(t *testing.T) {
+			if tc.skipForMongoDB != "" {
+				setup.SkipForMongoDB(t, tc.skipForMongoDB)
+			}
+
 			require.NotNil(t, tc.command, "command must not be nil")
 
 			res := s.Collection.Database().RunCommand(s.Ctx, tc.command)
@@ -1210,20 +1217,25 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		t.Parallel()
 
-		var actual bson.D
+		var a bson.D
 		err := collection.Database().RunCommand(ctx, bson.D{
 			{"killCursors", collection.Name()},
 			{"cursors", bson.A{}},
-		}).Decode(&actual)
+		}).Decode(&a)
 		require.NoError(t, err)
-		expected := bson.D{
+
+		actual := ConvertDocument(t, a)
+		actual.Remove("$clusterTime")
+		actual.Remove("operationTime")
+
+		expected := ConvertDocument(t, bson.D{
 			{"cursorsKilled", bson.A{}},
 			{"cursorsNotFound", bson.A{}},
 			{"cursorsAlive", bson.A{}},
 			{"cursorsUnknown", bson.A{}},
 			{"ok", float64(1)},
-		}
-		AssertEqualDocuments(t, expected, actual)
+		})
+		testutil.AssertEqual(t, expected, actual)
 	})
 
 	t.Run("WrongType", func(t *testing.T) {
@@ -1234,11 +1246,12 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 		require.True(t, c.Next(ctx))
 		defer c.Close(ctx)
 
-		var actual bson.D
+		var a bson.D
 		err = collection.Database().RunCommand(ctx, bson.D{
 			{"killCursors", collection.Name()},
 			{"cursors", bson.A{c.ID(), int32(100500)}},
-		}).Decode(&actual)
+		}).Decode(&a)
+
 		expectedErr := mongo.CommandError{
 			Code:    14,
 			Name:    "TypeMismatch",
@@ -1258,20 +1271,25 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 		require.True(t, c.Next(ctx))
 		defer c.Close(ctx)
 
-		var actual bson.D
+		var a bson.D
 		err = collection.Database().RunCommand(ctx, bson.D{
 			{"killCursors", collection.Name()},
 			{"cursors", bson.A{c.ID()}},
-		}).Decode(&actual)
+		}).Decode(&a)
 		require.NoError(t, err)
-		expected := bson.D{
+
+		actual := ConvertDocument(t, a)
+		actual.Remove("$clusterTime")
+		actual.Remove("operationTime")
+
+		expected := ConvertDocument(t, bson.D{
 			{"cursorsKilled", bson.A{c.ID()}},
 			{"cursorsNotFound", bson.A{}},
 			{"cursorsAlive", bson.A{}},
 			{"cursorsUnknown", bson.A{}},
 			{"ok", float64(1)},
-		}
-		AssertEqualDocuments(t, expected, actual)
+		})
+		testutil.AssertEqual(t, expected, actual)
 
 		assert.False(t, c.Next(ctx))
 		expectedErr := mongo.CommandError{
@@ -1289,20 +1307,25 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 		require.True(t, c.Next(ctx))
 		defer c.Close(ctx)
 
-		var actual bson.D
+		var a bson.D
 		err = collection.Database().RunCommand(ctx, bson.D{
 			{"killCursors", collection.Name()},
 			{"cursors", bson.A{c.ID(), int64(100500)}},
-		}).Decode(&actual)
+		}).Decode(&a)
 		require.NoError(t, err)
-		expected := bson.D{
+
+		actual := ConvertDocument(t, a)
+		actual.Remove("$clusterTime")
+		actual.Remove("operationTime")
+
+		expected := ConvertDocument(t, bson.D{
 			{"cursorsKilled", bson.A{c.ID()}},
 			{"cursorsNotFound", bson.A{int64(100500)}},
 			{"cursorsAlive", bson.A{}},
 			{"cursorsUnknown", bson.A{}},
 			{"ok", float64(1)},
-		}
-		AssertEqualDocuments(t, expected, actual)
+		})
+		testutil.AssertEqual(t, expected, actual)
 
 		assert.False(t, c.Next(ctx))
 		expectedErr := mongo.CommandError{
