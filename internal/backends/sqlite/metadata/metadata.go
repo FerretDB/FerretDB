@@ -60,14 +60,6 @@ type CollectionSettings struct {
 	Indexes []IndexInfo
 }
 
-// ListIndexesParams represents the parameters of Database.ListIndexes method.
-type ListIndexesParams struct{}
-
-// ListIndexesResult represents the results of Database.ListIndexesResult method.
-type ListIndexesResult struct {
-	Indexes []IndexInfo
-}
-
 // IndexInfo represents information about a single index.
 type IndexInfo struct {
 	Name   string
@@ -77,17 +69,6 @@ type IndexInfo struct {
 
 // IndexKeyPair consists of a field name and a sort order that are part of the index.
 type IndexKeyPair struct {
-	Field string
-	Order IndexOrder
+	Field      string
+	Descending bool
 }
-
-// IndexOrder represents the sort order of the index.
-type IndexOrder int32 // int32 to match the wire protocol
-
-const (
-	// IndexOrderAsc represents ascending sort order.
-	IndexOrderAsc IndexOrder = 1
-
-	// IndexOrderDesc represents descending sort order.
-	IndexOrderDesc IndexOrder = -1
-)
