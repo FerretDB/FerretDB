@@ -229,7 +229,7 @@ func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStats
 // ListIndexesParams represents the parameters of Collection.ListIndexes method.
 type ListIndexesParams struct{}
 
-// ListIndexesResult represents the results of Collection.ListIndexesResult method.
+// ListIndexesResult represents the results of Collection.ListIndexes method.
 type ListIndexesResult struct {
 	Indexes []IndexInfo
 }
