@@ -238,27 +238,34 @@ type ListIndexesResult struct {
 type IndexInfo struct {
 	Unique *bool
 	Name   string
-	Key    IndexKey
+	Key    []IndexKeyPair
 }
-
-// IndexKey is a list of "field name + sort order" pairs.
-type IndexKey []IndexKeyPair
 
 // IndexKeyPair consists of a field name and a sort order that are part of the index.
 type IndexKeyPair struct {
 	Field string
-	Order types.SortType
+	Order IndexOrder
 }
+
+// IndexOrder represents the sort order of the index.
+type IndexOrder int32 // int32 to match the wire protocol
+
+const (
+	// IndexOrderAsc represents ascending sort order.
+	IndexOrderAsc IndexOrder = 1
+
+	// IndexOrderDesc represents descending sort order.
+	IndexOrderDesc IndexOrder = -1
+)
 
 // ListIndexes returns information about indexes in the database.
 //
-// If database does not exist it returns ErrorCodeDatabaseDoesNotExist.
-// If collection does not exist it returns ErrorCodeCollectionDoesNotExist.
+// If database or collection does not exist it returns ErrorCodeDatabaseDoesNotExist.
 func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndexesParams) (*ListIndexesResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.ListIndexes(ctx, params)
-	checkError(err, ErrorCodeDatabaseDoesNotExist, ErrorCodeCollectionDoesNotExist)
+	checkError(err, ErrorCodeDatabaseDoesNotExist)
 
 	return res, err
 }
