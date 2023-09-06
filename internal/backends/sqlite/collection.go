@@ -292,17 +292,15 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
 		return nil, backends.NewError(
-			backends.ErrorCodeDatabaseDoesNotExist,
+			backends.ErrorCodeCollectionDoesNotExist,
 			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
 		)
 	}
 
 	coll := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if coll == nil {
-		// It enough to return ErrorCodeDatabaseDoesNotExist:
-		// the handler returns ns error, no need to distinguish between database and collection errors.
 		return nil, backends.NewError(
-			backends.ErrorCodeDatabaseDoesNotExist,
+			backends.ErrorCodeCollectionDoesNotExist,
 			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
 		)
 	}
@@ -310,24 +308,14 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 	// only one index is supported at the moment - _id
 	// TODO https://github.com/FerretDB/FerretDB/issues/3176
 	return &backends.ListIndexesResult{
-		Indexes: []metadata.IndexInfo{
+		Indexes: []backends.IndexInfo{
 			{
 				Unique: true,
 				Name:   "_id_",
-				Key: []metadata.IndexKeyPair{
-					{
-						Field: "_id",
-						Order: backends.IndexOrderAsc,
-					},
-				},
+				Key:    []backends.IndexKeyPair{{Field: "_id"}},
 			},
 		},
 	}, nil
-}
-
-// CreateIndexes implements backends.Collection interface.
-func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateIndexesParams) error {
-	return c.r.IndexesCreate(ctx, c.dbName, c.name, params.Indexes...)
 }
 
 // check interfaces

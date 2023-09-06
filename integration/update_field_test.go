@@ -509,6 +509,82 @@ func TestUpdateFieldErrors(t *testing.T) {
 				Message: "The update path 'v.' contains an empty field name, which is not allowed.",
 			},
 		},
+		"BitUnsupportedOperator": {
+			id: "int32",
+			update: bson.D{
+				{"$bit", bson.D{{"v", bson.D{{"not", 1}}}}},
+			},
+			err: &mongo.WriteError{
+				Code: 2,
+				Message: "The $bit modifier only supports 'and', 'or', and 'xor', not 'not' " +
+					"which is an unknown operator: {not: 1}",
+			},
+			provider: shareddata.Int32s,
+		},
+		"BitEmptyFieldPath": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$bit", bson.D{{"v.", bson.D{{"and", 1}}}}}},
+			err: &mongo.WriteError{
+				Code:    56,
+				Message: "The update path 'v.' contains an empty field name, which is not allowed.",
+			},
+		},
+		"BitEmptyOperation": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$bit", bson.D{{"v", bson.D{}}}}},
+			err: &mongo.WriteError{
+				Code: 2,
+				Message: "You must pass in at least one bitwise operation. " +
+					"The format is: {$bit: {field: {and/or/xor: #}}",
+			},
+		},
+		"BitUnsuitableValue": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$bit", bson.D{{"v.foo", bson.D{{"or", 1}}}}}},
+			err: &mongo.WriteError{
+				Code: 28,
+				Message: "Cannot create field 'foo' in element " +
+					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			},
+		},
+		"BitNonIntegralDocValue": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$bit", bson.D{{"v.0.foo", bson.D{{"and", 1}}}}}},
+			err: &mongo.WriteError{
+				Code: 2,
+				Message: "Cannot apply $bit to a value of non-integral type." +
+					"_id: \"array-documents-nested\" has the field foo of non-integer type array",
+			},
+		},
+		"BitIncompatibleOperatorValue": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$bit", "string"}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type string instead. " +
+					"For example: {$mod: {<field>: ...}} not {$bit: \"string\"}",
+			},
+		},
+		"BitEmbeddedDocBadValue": {
+			id:     "int32",
+			update: bson.D{{"$bit", bson.D{{"test", "and"}}}},
+			err: &mongo.WriteError{
+				Code: 2,
+				Message: "The $bit modifier is not compatible with a string. " +
+					"You must pass in an embedded document: {$bit: {field: {and/or/xor: #}}",
+			},
+			provider: shareddata.Int32s,
+		},
+		"BitNonIntegralOperand": {
+			id:     "int32",
+			update: bson.D{{"$bit", bson.D{{"v", bson.D{{"and", "test"}}}}}},
+			err: &mongo.WriteError{
+				Code: 2,
+				Message: "The $bit modifier field must be an Integer(32/64 bit); " +
+					"a 'string' is not supported here: {and: \"test\"}",
+			},
+			provider: shareddata.Int32s,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

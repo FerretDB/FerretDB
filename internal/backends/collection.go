@@ -229,7 +229,7 @@ func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStats
 // ListIndexesParams represents the parameters of Collection.ListIndexes method.
 type ListIndexesParams struct{}
 
-// ListIndexesResult represents the results of Collection.ListIndexesResult method.
+// ListIndexesResult represents the results of Collection.ListIndexes method.
 type ListIndexesResult struct {
 	Indexes []IndexInfo
 }
@@ -243,29 +243,19 @@ type IndexInfo struct {
 
 // IndexKeyPair consists of a field name and a sort order that are part of the index.
 type IndexKeyPair struct {
-	Field string
-	Order IndexOrder
+	Field      string
+	Descending bool
 }
 
-// IndexOrder represents the sort order of the index.
-type IndexOrder int32 // int32 to match the wire protocol
-
-const (
-	// IndexOrderAsc represents ascending sort order.
-	IndexOrderAsc IndexOrder = 1
-
-	// IndexOrderDesc represents descending sort order.
-	IndexOrderDesc IndexOrder = -1
-)
-
 // ListIndexes returns information about indexes in the database.
-//
-// If database or collection does not exist it returns ErrorCodeDatabaseDoesNotExist.
 func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndexesParams) (*ListIndexesResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.ListIndexes(ctx, params)
-	checkError(err, ErrorCodeDatabaseDoesNotExist)
+
+	// ErrorCodeCollectionDoesNotExist is enough for both cases when database or collection does not exist
+	// as the handler will return the same namespace-related error in both cases.
+	checkError(err, ErrorCodeCollectionDoesNotExist)
 
 	return res, err
 }
