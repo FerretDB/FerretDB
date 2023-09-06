@@ -82,7 +82,7 @@ var cli struct {
 
 		DisableFilterPushdown bool `default:"false" help:"Experimental: disable filter pushdown."`
 		EnableSortPushdown    bool `default:"false" help:"Experimental: enable sort pushdown."`
-		EnableOplog           bool `default:"false" help:"Experimental: enable OpLog." hidden:""`
+		EnableOplog           bool `default:"false" help:"Experimental: enable OpLog."            hidden:""`
 
 		//nolint:lll // for readability
 		Telemetry struct {
