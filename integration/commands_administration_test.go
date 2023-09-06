@@ -830,9 +830,9 @@ func TestCommandsAdministrationDataSizeErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 
-		t.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
 			t.Parallel()
