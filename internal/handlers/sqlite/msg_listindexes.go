@@ -94,8 +94,8 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		))
 
 		// only non-default unique indexes should have unique field in the response
-		if index.Unique != nil && *index.Unique && index.Name != "_id_" {
-			indexDoc.Set("unique", *index.Unique)
+		if index.Unique && index.Name != "_id_" {
+			indexDoc.Set("unique", index.Unique)
 		}
 
 		firstBatch.Append(indexDoc)

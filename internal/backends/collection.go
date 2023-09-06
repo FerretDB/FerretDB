@@ -260,7 +260,6 @@ type CreateIndexesParams struct {
 func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateIndexesParams) error {
 	defer observability.FuncCall(ctx)()
 
-	// FIXME
 	// err := validateIndexes(params)
 	// if err == nil {
 	err := cc.c.CreateIndexes(ctx, params)

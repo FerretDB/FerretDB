@@ -395,6 +395,7 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 	}
 
 	r.colls[dbName][collectionName] = c
+
 	return nil
 }
 
