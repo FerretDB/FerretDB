@@ -314,12 +314,7 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 			{
 				Unique: true,
 				Name:   "_id_",
-				Key: []backends.IndexKeyPair{
-					{
-						Field: "_id",
-						Order: backends.IndexOrderAsc,
-					},
-				},
+				Key:    []backends.IndexKeyPair{{Field: "_id"}},
 			},
 		},
 	}, nil

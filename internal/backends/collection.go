@@ -243,20 +243,9 @@ type IndexInfo struct {
 
 // IndexKeyPair consists of a field name and a sort order that are part of the index.
 type IndexKeyPair struct {
-	Field string
+	Field      string
 	Descending bool
 }
-
-// IndexOrder represents the sort order of the index.
-type IndexOrder int32 // int32 to match the wire protocol
-
-const (
-	// IndexOrderAsc represents ascending sort order.
-	IndexOrderAsc IndexOrder = 1
-
-	// IndexOrderDesc represents descending sort order.
-	IndexOrderDesc IndexOrder = -1
-)
 
 // ListIndexes returns information about indexes in the database.
 //

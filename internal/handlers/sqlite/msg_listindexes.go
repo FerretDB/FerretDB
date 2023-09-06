@@ -83,7 +83,12 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		indexKey := must.NotFail(types.NewDocument())
 
 		for _, key := range index.Key {
-			indexKey.Set(key.Field, int32(key.Order))
+			order := int32(1)
+			if key.Descending {
+				order = -1
+			}
+
+			indexKey.Set(key.Field, order)
 		}
 
 		indexDoc := must.NotFail(types.NewDocument(
