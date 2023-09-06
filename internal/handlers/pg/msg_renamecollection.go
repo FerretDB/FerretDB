@@ -18,8 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
-
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/exp/slices"
 
@@ -84,16 +82,12 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		)
 	}
 
-	db, collectionFrom, err := splitNamespace(namespaceFrom)
+	db, collectionFrom, err := commonparams.SplitNamespace(namespaceFrom, command)
 	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrInvalidNamespace,
-			fmt.Sprintf("Invalid namespace specified '%s'", namespaceFrom),
-			command,
-		)
+		return nil, err
 	}
 
-	dbTo, collectionTo, err := splitNamespace(namespaceTo)
+	dbTo, collectionTo, err := commonparams.SplitNamespace(namespaceTo, command)
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrInvalidNamespace,
@@ -170,15 +164,4 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	}))
 
 	return &reply, nil
-}
-
-// splitNamespace returns the database and collection name from a given namespace in format "database.collection".
-func splitNamespace(namespace string) (string, string, error) {
-	parts := strings.Split(namespace, ".")
-
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return "", "", errors.New("invalid namespace")
-	}
-
-	return parts[0], parts[1], nil
 }
