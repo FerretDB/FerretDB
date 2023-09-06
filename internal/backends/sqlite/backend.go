@@ -22,6 +22,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -88,6 +89,24 @@ func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabas
 	}
 
 	return nil
+}
+
+// Stats implements backends.Backend interface.
+func (b *backend) Stats(ctx context.Context, params *backends.ServerStatsParams) (*backends.ServerStatsResult, error) {
+	dbs := b.r.DatabaseList(ctx)
+
+	res := new(backends.ServerStatsResult)
+
+	for _, dbName := range dbs {
+		cs, err := b.r.CollectionList(ctx, dbName)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res.CountCollections += int64(len(cs))
+	}
+
+	return res, nil
 }
 
 // Name implements backends.Backend interface.

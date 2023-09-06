@@ -38,6 +38,8 @@ type Backend interface {
 	ListDatabases(context.Context, *ListDatabasesParams) (*ListDatabasesResult, error)
 	DropDatabase(context.Context, *DropDatabaseParams) error
 
+	Stats(context.Context, *ServerStatsParams) (*ServerStatsResult, error)
+
 	Name() string
 
 	prometheus.Collector
@@ -132,6 +134,24 @@ func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabas
 	checkError(err, ErrorCodeDatabaseNameIsInvalid, ErrorCodeDatabaseDoesNotExist)
 
 	return err
+}
+
+// ServerStatsParams represents the parameters of Backend.Stats method.
+type ServerStatsParams struct{}
+
+// ServerStatsResult represents the results of Backend.Stats method.
+type ServerStatsResult struct {
+	CountCollections int64
+}
+
+// Stats returns statistics about the server.
+func (bc *backendContract) Stats(ctx context.Context, params *ServerStatsParams) (*ServerStatsResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := bc.b.Stats(ctx, params)
+	checkError(err)
+
+	return res, err
 }
 
 // Name returns human-readable formatted name of the backend.

@@ -60,6 +60,11 @@ func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabas
 	panic("not implemented")
 }
 
+// Stats implements backends.Backend interface.
+func (b *backend) Stats(ctx context.Context, params *backends.ServerStatsParams) (*backends.ServerStatsResult, error) {
+	panic("not implemented")
+}
+
 // Name implements backends.Backend interface.
 func (b *backend) Name() string {
 	return "PostgreSQL"
