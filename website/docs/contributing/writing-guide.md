@@ -46,17 +46,19 @@ Use sentence case for headers: `### Some header with URL`, not `### Some Header 
 Please use markdown file paths for links, not URL paths,
 because it works for both editors/IDEs (Ctrl/⌘+click works) and Docusaurus.
 Always add `.md` extension to the file paths.
-Use relative paths for links to files in the same directory or in a parent directory.
+Use relative paths for links to files in the same directory, in a sub-directory, or in a parent directory.
 
 Examples:
 
-To link to file in a subdirectory, prefix with `./` to go down one directory level.
+To link to a file in the same directory, use the file name.
 
 - `[file in the same directory](writing-guide.md)`
 
 To link to a file in a parent directory, prefix with `../` to go up one directory level.
 
 - `[file in a parent directory](../telemetry.md)`
+
+To link to file in a subdirectory, Specify the file path along with its respective directory or directories, such as: `subdirectory/file.md`.
 
 ## Images
 
