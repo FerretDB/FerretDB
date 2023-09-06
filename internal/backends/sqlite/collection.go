@@ -292,17 +292,15 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
 		return nil, backends.NewError(
-			backends.ErrorCodeDatabaseDoesNotExist,
+			backends.ErrorCodeCollectionDoesNotExist,
 			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
 		)
 	}
 
 	coll := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if coll == nil {
-		// It enough to return ErrorCodeDatabaseDoesNotExist:
-		// the handler returns ns error, no need to distinguish between database and collection errors.
 		return nil, backends.NewError(
-			backends.ErrorCodeDatabaseDoesNotExist,
+			backends.ErrorCodeCollectionDoesNotExist,
 			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
 		)
 	}
