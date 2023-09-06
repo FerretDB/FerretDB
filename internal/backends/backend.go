@@ -38,7 +38,7 @@ type Backend interface {
 	ListDatabases(context.Context, *ListDatabasesParams) (*ListDatabasesResult, error)
 	DropDatabase(context.Context, *DropDatabaseParams) error
 
-	Stats(context.Context, *ServerStatsParams) (*ServerStatsResult, error)
+	ServerStatus(context.Context, *ServerStatusParams) (*ServerStatusResult, error)
 
 	Name() string
 
@@ -136,19 +136,19 @@ func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabas
 	return err
 }
 
-// ServerStatsParams represents the parameters of Backend.Stats method.
-type ServerStatsParams struct{}
+// ServerStatusParams represents the parameters of Backend.ServerStatus method.
+type ServerStatusParams struct{}
 
-// ServerStatsResult represents the results of Backend.Stats method.
-type ServerStatsResult struct {
+// ServerStatusResult represents the results of Backend.ServerStatus method.
+type ServerStatusResult struct {
 	CountCollections int64
 }
 
-// Stats returns statistics about the server.
-func (bc *backendContract) Stats(ctx context.Context, params *ServerStatsParams) (*ServerStatsResult, error) {
+// ServerStatus returns status about the server.
+func (bc *backendContract) ServerStatus(ctx context.Context, params *ServerStatusParams) (*ServerStatusResult, error) {
 	defer observability.FuncCall(ctx)()
 
-	res, err := bc.b.Stats(ctx, params)
+	res, err := bc.b.ServerStatus(ctx, params)
 	checkError(err)
 
 	return res, err

@@ -60,8 +60,8 @@ func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabas
 	panic("not implemented")
 }
 
-// Stats implements backends.Backend interface.
-func (b *backend) Stats(ctx context.Context, params *backends.ServerStatsParams) (*backends.ServerStatsResult, error) {
+// ServerStatus implements backends.Backend interface.
+func (b *backend) ServerStatus(ctx context.Context, params *backends.ServerStatusParams) (*backends.ServerStatusResult, error) {
 	panic("not implemented")
 }
 

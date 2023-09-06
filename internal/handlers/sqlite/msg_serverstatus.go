@@ -32,7 +32,7 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := h.b.Stats(ctx, new(backends.ServerStatsParams))
+	stats, err := h.b.ServerStatus(ctx, new(backends.ServerStatusParams))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

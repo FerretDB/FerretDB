@@ -91,11 +91,11 @@ func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabas
 	return nil
 }
 
-// Stats implements backends.Backend interface.
-func (b *backend) Stats(ctx context.Context, params *backends.ServerStatsParams) (*backends.ServerStatsResult, error) {
+// ServerStatus implements backends.Backend interface.
+func (b *backend) ServerStatus(ctx context.Context, params *backends.ServerStatusParams) (*backends.ServerStatusResult, error) {
 	dbs := b.r.DatabaseList(ctx)
 
-	res := new(backends.ServerStatsResult)
+	res := new(backends.ServerStatusResult)
 
 	for _, dbName := range dbs {
 		cs, err := b.r.CollectionList(ctx, dbName)
