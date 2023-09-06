@@ -244,7 +244,7 @@ type IndexInfo struct {
 // IndexKeyPair consists of a field name and a sort order that are part of the index.
 type IndexKeyPair struct {
 	Field string
-	Order IndexOrder
+	Descending bool
 }
 
 // IndexOrder represents the sort order of the index.
