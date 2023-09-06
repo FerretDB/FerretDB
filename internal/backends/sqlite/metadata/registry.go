@@ -198,9 +198,7 @@ func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	delete(r.colls, dbName)
-
-	return r.p.Drop(ctx, dbName)
+	return r.databaseDrop(ctx, dbName)
 }
 
 // CollectionList returns a sorted list of collections in the database.

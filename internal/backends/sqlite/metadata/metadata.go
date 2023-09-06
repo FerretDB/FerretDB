@@ -15,6 +15,11 @@
 // Package metadata provides access to databases and collections information.
 package metadata
 
+import (
+	"database/sql"
+	"database/sql/driver"
+)
+
 // Collection will probably have a method for getting column name / SQLite path expression for the given document field
 // once we implement field extraction.
 // IDColumn probably should go away.
@@ -32,8 +37,23 @@ const (
 type Collection struct {
 	Name      string
 	TableName string
-	Settings  string // json-encoded CollectionSettings
+	Settings  Settings
 }
+
+type Settings struct {
+	Indexes []IndexInfo
+}
+
+func (s Settings) Value() (driver.Value, error) {
+
+}
+
+func (s *Settings) Scan(...) error {
+
+}
+
+var _ driver.Valuer = Settings{}
+var _ sql.Scanner = (*Settings)(nil)
 
 // CollectionSettings represents collection settings model.
 type CollectionSettings struct {

@@ -249,12 +249,20 @@ func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndex
 	return res, err
 }
 
-// CreateIndexesParams represents the parameters of Database.CreateIndexes method.
+// CreateIndexesParams represents the parameters of Collection.CreateIndexes method.
 type CreateIndexesParams struct {
 	Indexes []metadata.IndexInfo
 }
 
+// CreateIndexesResult represents the results of Collection.CreateIndexes method.
+type CreateIndexesResult struct {
+}
+
 // CreateIndexes creates indexes for the collection.
+//
+// The operation should be atomic.
+// If some indexes cannot be created, the operation should be rolled back,
+// and the first encountered error should be returned.
 //
 // Database or collection may not exist; that's not an error.
 func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateIndexesParams) error {
@@ -265,7 +273,7 @@ func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateI
 	err := cc.c.CreateIndexes(ctx, params)
 	//}
 
-	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionAlreadyExists)
+	//checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionAlreadyExists)
 
 	return err
 }
