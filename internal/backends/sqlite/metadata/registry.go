@@ -222,16 +222,13 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 	return res, nil
 }
 
-// CollectionCreate creates a collection in the database.
+// collectionCreate creates a collection in the database.
 //
 // Returned boolean value indicates whether the collection was created.
 // If collection already exists, (false, nil) is returned.
-func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
-	defer observability.FuncCall(ctx)()
-
-	r.rw.Lock()
-	defer r.rw.Unlock()
-
+//
+// It does not hold the lock.
+func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
 	db, err := r.databaseGetOrCreate(ctx, dbName)
 	if err != nil {
 		return false, lazyerrors.Error(err)
@@ -283,6 +280,19 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 	r.colls[dbName][collectionName] = c
 
 	return true, nil
+}
+
+// CollectionCreate creates a collection in the database.
+//
+// Returned boolean value indicates whether the collection was created.
+// If collection already exists, (false, nil) is returned.
+func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
+	defer observability.FuncCall(ctx)()
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	return r.collectionCreate(ctx, dbName, collectionName)
 }
 
 // collectionGet returns collection metadata.
@@ -364,7 +374,7 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 //
 // It does not hold the lock.
 func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
-	_, err := r.CollectionCreate(ctx, dbName, collectionName)
+	_, err := r.collectionCreate(ctx, dbName, collectionName)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

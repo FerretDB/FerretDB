@@ -133,7 +133,7 @@ func processIndexesArray(command string, indexesArray *types.Array) (*backends.C
 	defer iter.Close()
 
 	params := backends.CreateIndexesParams{
-		Indexes: make([]backends.IndexInfo, 0, indexesArray.Len()),
+		Indexes: make([]backends.IndexInfo, indexesArray.Len()),
 	}
 
 	for {
