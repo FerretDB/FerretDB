@@ -17,8 +17,6 @@ package backends
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
@@ -38,8 +36,6 @@ type Database interface {
 	CreateCollection(context.Context, *CreateCollectionParams) error
 	DropCollection(context.Context, *DropCollectionParams) error
 	RenameCollection(context.Context, *RenameCollectionParams) error
-
-	Ping(ctx context.Context) error
 
 	Stats(context.Context, *DatabaseStatsParams) (*DatabaseStatsResult, error)
 }
@@ -169,18 +165,6 @@ func (dbc *databaseContract) RenameCollection(ctx context.Context, params *Renam
 	}
 
 	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist)
-
-	return err
-}
-
-// Ping checks that database connection is alive and authenticated.
-func (dbc *databaseContract) Ping(ctx context.Context) error {
-	// to both check that conninfo is present in the context (which is important for that method)
-	// and to make doc.go render the link correctly
-	must.NotBeZero(conninfo.Get(ctx))
-
-	err := dbc.db.Ping(ctx)
-	checkError(err)
 
 	return err
 }

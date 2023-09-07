@@ -49,7 +49,7 @@ func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = db.Ping(ctx); err != nil {
+	if _, err := db.ListCollections(ctx, nil); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
