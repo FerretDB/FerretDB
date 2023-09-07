@@ -31,6 +31,15 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
+	dbName, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
+		return nil, err
+	}
+
+	// dbName is either "admin" or "$external" there,
+	// we can't use it to query the database
+	_ = dbName
+
 	if err = common.SASLStart(ctx, document); err != nil {
 		return nil, lazyerrors.Error(err)
 	}

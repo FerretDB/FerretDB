@@ -38,11 +38,6 @@ func newDatabase(db backends.Database, name string, l *zap.Logger) backends.Data
 	}
 }
 
-// Ping implements backends.Database interface.
-func (db *database) Ping(ctx context.Context) error {
-	return db.db.Ping(ctx)
-}
-
 // Collection implements backends.Database interface.
 func (db *database) Collection(name string) (backends.Collection, error) {
 	c, err := db.db.Collection(name)

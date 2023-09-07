@@ -30,6 +30,7 @@
 //     It is recommended that it does so by not querying the information_schema or equivalent often.
 //  4. Contexts are per-operation and should not be stored.
 //     Contexts contain [conninfo.ConnInfo] values with authentication information.
+//     FIXME ^
 //  5. Errors returned by methods could be nil, [*Error], or some other opaque error type.
 //     *Error values can't be wrapped or be present anywhere in the error chain.
 //     Contracts enforce error codes; they are not documented in the code comments
