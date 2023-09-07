@@ -50,7 +50,7 @@ Use relative paths for links to files in the same directory, in a sub-directory,
 
 Examples:
 
--To link to a file in the same directory, use the file name.
+To link to a file in the same directory, use the file name.
 
 - `[file in the same directory](writing-guide.md)`
 
