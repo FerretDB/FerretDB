@@ -54,6 +54,15 @@ func (db *database) Close() {
 
 // Ping implements backends.Database interface.
 func (db *database) Ping(ctx context.Context) error {
+	d := db.r.DatabaseGetExisting(ctx, db.name)
+	if d == nil {
+		return lazyerrors.Errorf("no database %s", db.name)
+	}
+
+	if err := d.QueryRowContext(ctx, `SELECT 1`).Err(); err != nil {
+		return lazyerrors.Error(err)
+	}
+
 	return nil
 }
 
