@@ -17,9 +17,8 @@ package backends
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
@@ -301,7 +300,7 @@ type CreateIndexesResult struct{}
 func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateIndexesParams) (*CreateIndexesResult, error) {
 	defer observability.FuncCall(ctx)()
 
-	existingIndexes, err := cc.c.ListIndexes(ctx, &ListIndexesParams{})
+	existingIndexes, err := cc.c.ListIndexes(ctx, new(ListIndexesParams))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

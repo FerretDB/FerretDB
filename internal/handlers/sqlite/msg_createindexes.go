@@ -120,8 +120,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 				commonerrors.ErrCannotCreateIndex,
 				fmt.Sprintf(
 					"Error in specification %s :: caused by :: index name cannot be empty",
-					"",
-					// fixme types.FormatAnyValue(indexDoc),
+					"", // invalidIdx.Name,
 				),
 				command,
 			)
@@ -129,14 +128,14 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		case backends.ErrorCodeIs(err, backends.ErrorCodeIndexAlreadyExists):
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrIndexAlreadyExists,
-				fmt.Sprintf("Identical index already exists: %s", ""), // fixme existing.Name),
+				fmt.Sprintf("Identical index already exists: %s", "" /*invalidIdx.Name*/),
 				command,
 			)
 
 		case backends.ErrorCodeIs(err, backends.ErrorCodeIndexOptionsConflict):
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrIndexOptionsConflict,
-				fmt.Sprintf("Index already exists with a different name: %s", ""), // fixme existing.Name),
+				fmt.Sprintf("Index already exists with a different name: %s", "" /*invalidIdx.Name*/),
 				command,
 			)
 
@@ -148,9 +147,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 					"cause conflicts. Please refer to our documentation. "+
 					"Requested index: %s, "+
 					"existing index: %s",
-					"", "",
-				// fixme	types.FormatAnyValue(indexDoc),
-				// fixme	types.FormatAnyValue(doc),
+					"", "", // invalidIdx.Name,
 				),
 				command,
 			)
