@@ -17,6 +17,7 @@ package backends
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
@@ -41,6 +42,7 @@ type Collection interface {
 	Stats(context.Context, *CollectionStatsParams) (*CollectionStatsResult, error)
 
 	ListIndexes(context.Context, *ListIndexesParams) (*ListIndexesResult, error)
+	CreateIndexes(context.Context, *CreateIndexesParams) (*CreateIndexesResult, error)
 }
 
 // collectionContract implements Collection interface.
@@ -256,6 +258,33 @@ func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndex
 	// ErrorCodeCollectionDoesNotExist is enough for both cases when database or collection does not exist
 	// as the handler will return the same namespace-related error in both cases.
 	checkError(err, ErrorCodeCollectionDoesNotExist)
+
+	return res, err
+}
+
+// CreateIndexesParams represents the parameters of Collection.CreateIndexes method.
+type CreateIndexesParams struct {
+	Indexes []metadata.IndexInfo
+}
+
+// CreateIndexesResult represents the results of Collection.CreateIndexes method.
+type CreateIndexesResult struct{}
+
+// CreateIndexes creates indexes for the collection.
+//
+// The operation should be atomic.
+// If some indexes cannot be created, the operation should be rolled back,
+// and the first encountered error should be returned.
+//
+// Database or collection may not exist; that's not an error.
+func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateIndexesParams) (*CreateIndexesResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	// The params need to be validated before index creation.
+	// TODO https://github.com/FerretDB/FerretDB/issues/3320
+	res, err := cc.c.CreateIndexes(ctx, params)
+
+	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionAlreadyExists)
 
 	return res, err
 }

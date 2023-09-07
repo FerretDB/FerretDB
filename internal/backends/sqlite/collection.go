@@ -318,6 +318,16 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 	}, nil
 }
 
+// CreateIndexes implements backends.Collection interface.
+func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) { //nolint:lll // for readability
+	err := c.r.IndexesCreate(ctx, c.dbName, c.name, params.Indexes...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return new(backends.CreateIndexesResult), nil
+}
+
 // check interfaces
 var (
 	_ backends.Collection = (*collection)(nil)

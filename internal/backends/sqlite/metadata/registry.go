@@ -268,7 +268,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 	c := &Collection{
 		Name:      collectionName,
 		TableName: tableName,
-		Settings:  "{}",
+		Settings:  Settings{Indexes: nil},
 	}
 
 	q = fmt.Sprintf("INSERT INTO %q (name, table_name, settings) VALUES (?, ?, ?)", metadataTableName)

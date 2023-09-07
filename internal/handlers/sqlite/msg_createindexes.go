@@ -16,14 +16,6 @@ package sqlite
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
-
-	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -32,7 +24,7 @@ import (
 
 // MsgCreateIndexes implements HandlerInterface.
 func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	document, err := msg.Document()
+	/*document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -133,7 +125,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
+	*/
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
