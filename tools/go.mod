@@ -11,6 +11,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/oauth2 v0.12.0
 	golang.org/x/perf v0.0.0-20230906145419-e9dd5d2713ed
+	golang.org/x/pkgsite v0.0.0-20230906220414-042f53b2a62a
 	golang.org/x/tools v0.13.0
 	golang.org/x/vuln v1.0.1
 	mvdan.cc/gofumpt v0.5.0
@@ -25,6 +26,7 @@ require (
 	github.com/ProtonMail/go-crypto v0.0.0-20230626094100-7e9e0395ebec // indirect
 	github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794 // indirect
 	github.com/acomagu/bufpipe v1.0.4 // indirect
+	github.com/aymerick/douceur v0.2.0 // indirect
 	github.com/blakesmith/ar v0.0.0-20190502131153-809d4375e1fb // indirect
 	github.com/caarlos0/go-version v0.1.1 // indirect
 	github.com/cavaliergopher/cpio v1.0.1 // indirect
@@ -47,10 +49,13 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/licensecheck v0.3.1 // indirect
 	github.com/google/rpmpack v0.5.0 // indirect
+	github.com/google/safehtml v0.0.3-0.20211026203422-d6f0e11a5516 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/goreleaser/chglog v0.5.0 // indirect
 	github.com/goreleaser/fileglob v1.3.0 // indirect
+	github.com/gorilla/css v1.0.0 // indirect
 	github.com/huandu/xstrings v1.3.3 // indirect
 	github.com/iancoleman/orderedmap v0.0.0-20190318233801-ac98e3ecb4b0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
@@ -65,6 +70,7 @@ require (
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-zglob v0.0.4 // indirect
+	github.com/microcosm-cc/bluemonday v1.0.16 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -86,6 +92,7 @@ require (
 	github.com/ulikunitz/xz v0.5.11 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/yuin/goldmark v1.4.13 // indirect
+	github.com/yuin/goldmark-emoji v1.0.1 // indirect
 	gitlab.com/digitalxero/go-conventional-commit v1.0.7 // indirect
 	golang.org/x/crypto v0.13.0 // indirect
 	golang.org/x/exp v0.0.0-20230212135524-a684f29349b6 // indirect
@@ -94,6 +101,7 @@ require (
 	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/term v0.12.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
