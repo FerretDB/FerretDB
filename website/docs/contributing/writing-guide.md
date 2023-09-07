@@ -50,7 +50,7 @@ Use relative paths for links to files in the same directory, in a sub-directory,
 
 Examples:
 
-To link to a file in the same directory, use the file name.
+-To link to a file in the same directory, use the file name.
 
 - `[file in the same directory](writing-guide.md)`
 
@@ -59,6 +59,10 @@ To link to a file in a parent directory, prefix with `../` to go up one director
 - `[file in a parent directory](../telemetry.md)`
 
 To link to file in a subdirectory, specify the file path along with its respective directory or directories, such as: `subdirectory/file.md`.
+
+To link to a directory or category, prefix the directory name with `/category/`.
+
+- `[configuration directory](/category/configuration/)`
 
 ## Images
 
