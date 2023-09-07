@@ -180,7 +180,6 @@ func (dbc *databaseContract) Ping(ctx context.Context) error {
 	must.NotBeZero(conninfo.Get(ctx))
 
 	err := dbc.db.Ping(ctx)
-
 	checkError(err)
 
 	return err
