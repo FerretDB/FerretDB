@@ -376,19 +376,47 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 
 	c := r.collectionGet(dbName, collectionName)
 
-	//for _, index := range indexes {
-	//indexName := c.TableName + index.Name
-	//q = fmt.Sprintf("CREATE UNIQUE INDEX %q ON %q (%s)", pkName, c.TableName, IDColumn)
-	//if _, err = db.ExecContext(ctx, q); err != nil {
-	//	_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
-	//	return lazyerrors.Error(err)
-	//}
+	err = db.InTransaction(ctx, func(tx *fsql.Tx) error {
+		for _, index := range indexes {
+			q := "CREATE "
 
-	// c.Settings  - add index
-	//}
+			if index.Unique {
+				q += "UNIQUE "
+			}
 
-	q := fmt.Sprintf("UPDATE %q SET settings=?", metadataTableName)
-	if _, err = db.ExecContext(ctx, q, c.Settings); err != nil {
+			q += "INDEX %q ON %q (%s)"
+
+			columns := make([]string, len(index.Key))
+			for i, key := range index.Key {
+				// replace with proper validation
+				// TODO https://github.com/FerretDB/FerretDB/issues/3320
+				if strings.ContainsAny(key.Field, " '") {
+					return lazyerrors.New("field name is not valid")
+				}
+
+				columns[i] = fmt.Sprintf("%s->'$%s'", DefaultColumn, key.Field)
+				if key.Descending {
+					columns[i] += " DESC"
+				}
+			}
+
+			q = fmt.Sprintf(q, c.TableName+index.Name, c.TableName, strings.Join(columns, ", "))
+
+			if _, err = db.ExecContext(ctx, q); err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			c.Settings.Indexes = append(c.Settings.Indexes, index)
+		}
+
+		q := fmt.Sprintf("UPDATE %q SET settings=?", metadataTableName)
+		if _, err = db.ExecContext(ctx, q, c.Settings); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		return nil
+	})
+	if err != nil {
 		return lazyerrors.Error(err)
 	}
 
