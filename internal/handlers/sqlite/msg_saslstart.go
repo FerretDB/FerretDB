@@ -16,11 +16,8 @@ package sqlite
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -34,27 +31,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	dbName, err := common.GetRequiredParam[string](document, "$db")
-	if err != nil {
-		return nil, err
-	}
-
-	db, err := h.b.Database(dbName)
-	if err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid namespace specified '%s'", dbName)
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "ping")
-		}
-
-		return nil, lazyerrors.Error(err)
-	}
-
 	if err = common.SASLStart(ctx, document); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	if err = db.Ping(ctx); err != nil {
-		// TODO return better error for authentication problems
 		return nil, lazyerrors.Error(err)
 	}
 
