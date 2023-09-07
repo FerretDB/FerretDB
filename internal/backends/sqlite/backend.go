@@ -83,8 +83,14 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 		}
 
 		stats, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
+			stats = new(backends.DatabaseStatsResult)
+			err = nil
+		}
+
+		db.Close()
+
 		if err != nil {
-			db.Close()
 			return nil, lazyerrors.Error(err)
 		}
 
@@ -92,8 +98,6 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 			Name: dbName,
 			Size: stats.SizeTotal,
 		}
-
-		db.Close()
 	}
 
 	return res, nil
