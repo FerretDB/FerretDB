@@ -52,6 +52,11 @@ func (db *database) Close() {
 	// nothing
 }
 
+// Ping implements backends.Database interface.
+func (db *database) Ping(ctx context.Context) error {
+	return nil
+}
+
 // Collection implements backends.Database interface.
 func (db *database) Collection(name string) (backends.Collection, error) {
 	return newCollection(db.r, db.name, name), nil

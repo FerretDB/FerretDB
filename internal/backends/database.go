@@ -35,6 +35,8 @@ type Database interface {
 	// TODO remove?
 	Close()
 
+	Ping(ctx context.Context) error
+
 	Collection(string) (Collection, error)
 	ListCollections(context.Context, *ListCollectionsParams) (*ListCollectionsResult, error)
 	CreateCollection(context.Context, *CreateCollectionParams) error
@@ -72,6 +74,14 @@ func (dbc *databaseContract) Close() {
 	dbc.db.Close()
 
 	resource.Untrack(dbc, dbc.token)
+}
+
+func (dbc *databaseContract) Ping(ctx context.Context) error {
+	err := dbc.db.Ping(ctx)
+
+	checkError(err)
+
+	return err
 }
 
 // Collection returns a Collection instance for the given valid name.

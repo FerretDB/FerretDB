@@ -50,7 +50,7 @@ func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 	defer db.Close()
 
-	if _, err := db.ListCollections(ctx, nil); err != nil {
+	if err = db.Ping(ctx); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

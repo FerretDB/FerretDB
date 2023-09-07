@@ -54,7 +54,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, err := db.ListCollections(ctx, nil); err != nil {
+	if err = db.Ping(ctx); err != nil {
 		// TODO return better error for authentication problems
 		return nil, lazyerrors.Error(err)
 	}
