@@ -17,6 +17,8 @@ package backends
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
@@ -76,7 +78,10 @@ func (dbc *databaseContract) Close() {
 	resource.Untrack(dbc, dbc.token)
 }
 
+// Ping checks that database connection is alive and authenticated.
 func (dbc *databaseContract) Ping(ctx context.Context) error {
+	must.NotBeZero(conninfo.Get(ctx))
+
 	err := dbc.db.Ping(ctx)
 
 	checkError(err)

@@ -21,6 +21,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -54,6 +55,8 @@ func (db *database) Close() {
 
 // Ping implements backends.Database interface.
 func (db *database) Ping(ctx context.Context) error {
+	conninfo.Get(ctx)
+
 	d := db.r.DatabaseGetExisting(ctx, db.name)
 	if d == nil {
 		return lazyerrors.Errorf("no database %s", db.name)
