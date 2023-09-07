@@ -321,7 +321,7 @@ func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateI
 	checkError(
 		err,
 
-		ErrorCodeIndexAlreadyExists,
+		ErrorCodeIndexNameIsEmpty,
 		ErrorCodeIndexAlreadyExists,
 		ErrorCodeIndexOptionsConflict,
 		ErrorCodeIndexKeySpecsConflict,
