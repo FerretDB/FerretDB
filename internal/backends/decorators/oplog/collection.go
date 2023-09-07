@@ -22,6 +22,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
 // collection implements backends.Collection interface by adding OpLog functionality to the wrapped collection.
@@ -47,6 +48,8 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 // InsertAll implements backends.Collection interface.
 func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
+	defer observability.FuncCall(ctx)()
+
 	res, err := c.c.InsertAll(ctx, params)
 	if err != nil {
 		return nil, err
@@ -93,6 +96,8 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 // UpdateAll implements backends.Collection interface.
 func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllParams) (*backends.UpdateAllResult, error) {
+	defer observability.FuncCall(ctx)()
+
 	res, err := c.c.UpdateAll(ctx, params)
 	if err != nil {
 		return nil, err
@@ -108,6 +113,8 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 
 // DeleteAll implements backends.Collection interface.
 func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllParams) (*backends.DeleteAllResult, error) {
+	defer observability.FuncCall(ctx)()
+
 	res, err := c.c.DeleteAll(ctx, params)
 	if err != nil {
 		return nil, err
@@ -166,6 +173,11 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 // Stats implements backends.Collection interface.
 func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
 	return c.c.Stats(ctx, params)
+}
+
+// ListIndexes implements backends.Collection interface.
+func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
+	return c.c.ListIndexes(ctx, params)
 }
 
 // check interfaces

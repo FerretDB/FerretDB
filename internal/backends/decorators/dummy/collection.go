@@ -60,6 +60,11 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 	return c.c.Stats(ctx, params)
 }
 
+// ListIndexes implements backends.Collection interface.
+func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
+	return c.c.ListIndexes(ctx, params)
+}
+
 // check interfaces
 var (
 	_ backends.Collection = (*collection)(nil)
