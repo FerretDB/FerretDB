@@ -443,8 +443,8 @@ func (r *Registry) indexesCreate(ctx context.Context, db *fsql.DB, c *Collection
 func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
 	defer observability.FuncCall(ctx)()
 
-	r.rw.RLock()
-	defer r.rw.RUnlock()
+	r.rw.Lock()
+	defer r.rw.Unlock()
 
 	_, err := r.collectionCreate(ctx, dbName, collectionName)
 	if err != nil {
