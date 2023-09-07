@@ -17,37 +17,36 @@ package backends
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
-	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
 // Database is a generic interface for all backends for accessing databases.
 //
-// Database object is expected to be mostly stateless and temporary;
+// Database object is expected to be stateless and temporary;
 // all state should be in the Backend that created this Database instance.
-// Handler can create and destroy Database objects on the fly (but it should Close() them).
-// Creating a Database object does not imply the creating of the database itself.
+// Handler can create and destroy Database objects on the fly.
+// Creating a Database object does not imply the creation of the database.
 //
 // Database methods should be thread-safe.
 //
 // See databaseContract and its methods for additional details.
 type Database interface {
-	// TODO remove?
-	Close()
-
 	Collection(string) (Collection, error)
 	ListCollections(context.Context, *ListCollectionsParams) (*ListCollectionsResult, error)
 	CreateCollection(context.Context, *CreateCollectionParams) error
 	DropCollection(context.Context, *DropCollectionParams) error
 	RenameCollection(context.Context, *RenameCollectionParams) error
 
+	Ping(ctx context.Context) error
+
 	Stats(context.Context, *DatabaseStatsParams) (*DatabaseStatsResult, error)
 }
 
 // databaseContract implements Database interface.
 type databaseContract struct {
-	db    Database
-	token *resource.Token
+	db Database
 }
 
 // DatabaseContract wraps Database and enforces its contract.
@@ -57,21 +56,9 @@ type databaseContract struct {
 //
 // See databaseContract and its methods for additional details.
 func DatabaseContract(db Database) Database {
-	dbc := &databaseContract{
-		db:    db,
-		token: resource.NewToken(),
+	return &databaseContract{
+		db: db,
 	}
-	resource.Track(dbc, dbc.token)
-
-	return dbc
-}
-
-// Close marks this Database instance as not being used anymore.
-// The implementation may close an associated database connection, decrease a reference counter, etc.
-func (dbc *databaseContract) Close() {
-	dbc.db.Close()
-
-	resource.Untrack(dbc, dbc.token)
 }
 
 // Collection returns a Collection instance for the given valid name.
@@ -144,7 +131,7 @@ type DropCollectionParams struct {
 
 // DropCollection drops existing collection with valid name in the database.
 //
-// The errors for non-existing database and non-existing collection are the same (TODO?).
+// The errors for non-existing database and non-existing collection are the same.
 func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCollectionParams) error {
 	defer observability.FuncCall(ctx)()
 
@@ -153,7 +140,7 @@ func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCol
 		err = dbc.db.DropCollection(ctx, params)
 	}
 
-	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist) // TODO: ErrorCodeDatabaseDoesNotExist ?
+	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist)
 
 	return err
 }
@@ -167,7 +154,7 @@ type RenameCollectionParams struct {
 // RenameCollection renames existing collection in the database.
 // Both old and new names should be valid.
 //
-// The errors for non-existing database and non-existing collection are the same (TODO?).
+// The errors for non-existing database and non-existing collection are the same.
 func (dbc *databaseContract) RenameCollection(ctx context.Context, params *RenameCollectionParams) error {
 	defer observability.FuncCall(ctx)()
 
@@ -181,7 +168,19 @@ func (dbc *databaseContract) RenameCollection(ctx context.Context, params *Renam
 		err = dbc.db.RenameCollection(ctx, params)
 	}
 
-	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist) // TODO: ErrorCodeDatabaseDoesNotExist ?
+	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist)
+
+	return err
+}
+
+// Ping checks that database connection is alive and authenticated.
+func (dbc *databaseContract) Ping(ctx context.Context) error {
+	// to both check that conninfo is present in the context (which is important for that method)
+	// and to make doc.go render the link correctly
+	must.NotBeZero(conninfo.Get(ctx))
+
+	err := dbc.db.Ping(ctx)
+	checkError(err)
 
 	return err
 }

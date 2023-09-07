@@ -30,9 +30,9 @@ func newDatabase(db backends.Database) backends.Database {
 	return &database{db: db}
 }
 
-// Close implements backends.Database interface.
-func (db *database) Close() {
-	db.db.Close()
+// Ping implements backends.Database interface.
+func (db *database) Ping(ctx context.Context) error {
+	return db.db.Ping(ctx)
 }
 
 // Collection implements backends.Database interface.

@@ -24,16 +24,17 @@
 //     On the other hand, the logic of `ordered` `insert`s is only present in the handler.
 //     If some backend supports the same semantics as MongoDB, we will likely add a separate option method,
 //     and the handler would use that before falling back to the previous behavior.
-//  2. Backend objects are stateful.
-//     Database objects are almost stateless but should be Close()'d to avoid connection leaks.
-//     Collection objects are fully stateless.
-//  3. The Backend maintains the list of databases and collections.
+//  2. [Backend] objects are stateful.
+//     [Database] and [Collection] objects are stateless.
+//  3. Backends maintain the list of databases and collections.
 //     It is recommended that it does so by not querying the information_schema or equivalent often.
 //  4. Contexts are per-operation and should not be stored.
+//     Contexts contain [conninfo.ConnInfo] values with authentication information.
 //  5. Errors returned by methods could be nil, [*Error], or some other opaque error type.
 //     *Error values can't be wrapped or be present anywhere in the error chain.
-//     Contracts enforce *Error codes; they are not documented in the code comments
+//     Contracts enforce error codes; they are not documented in the code comments
 //     but are visible in the contract's code (to avoid duplication).
+//     Methods should return different error codes only if the difference is important for the handler.
 //
 // Update, expand, etc.
 // TODO https://github.com/FerretDB/FerretDB/issues/3069

@@ -21,6 +21,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -47,9 +48,20 @@ func newDatabase(r *metadata.Registry, name string) backends.Database {
 	})
 }
 
-// Close implements backends.Database interface.
-func (db *database) Close() {
-	// nothing
+// Ping implements backends.Database interface.
+func (db *database) Ping(ctx context.Context) error {
+	conninfo.Get(ctx)
+
+	d := db.r.DatabaseGetExisting(ctx, db.name)
+	if d == nil {
+		return lazyerrors.Errorf("no database %s", db.name)
+	}
+
+	if err := d.QueryRowContext(ctx, `SELECT 1`).Err(); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
 }
 
 // Collection implements backends.Database interface.
