@@ -275,7 +275,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 		var se *sqlite3.Error
 
 		// When a table already exists, SQLite error code sqlite3lib.SQLITE_ERROR returned is too generic.
-		// So we also check that error message contains `already exists` test.
+		// So we also check that error message contains `already exists` text.
 		// The se.Error() looks like `SQL logic error: table "XXX" already exists (1)`.
 		// See also https://www.sqlite.org/rescode.html#error.
 		if errors.As(err, &se) && se.Code() == sqlite3lib.SQLITE_ERROR && strings.Contains(se.Error(), "already exists") {
