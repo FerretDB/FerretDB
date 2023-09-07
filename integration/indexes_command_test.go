@@ -26,6 +26,42 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
+// TestListIndexesCommandNonExistentNS tests that the listIndexes command returns a particular error
+// when the namespace (either database or collection) does not exist.
+func TestListIndexesCommandNonExistentNS(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		Providers: []shareddata.Provider{shareddata.Composites},
+	})
+	ctx, collection := s.Ctx, s.Collection
+
+	// Calling driver's method collection.Database().Collection("nonexistent").Indexes().List(ctx)
+	// doesn't return an error for non-existent namespaces.
+	// So that we should use RunCommand to check the behaviour.
+	res := collection.Database().RunCommand(ctx, bson.D{{"listIndexes", "nonexistentColl"}})
+	err := res.Err()
+
+	expected := mongo.CommandError{
+		Code:    26,
+		Name:    "NamespaceNotFound",
+		Message: "ns does not exist: " + collection.Database().Name() + ".nonexistentColl",
+	}
+	AssertEqualCommandError(t, expected, err)
+
+	// Drop database and check that the error is correct.
+	require.NoError(t, collection.Database().Drop(ctx))
+	res = collection.Database().RunCommand(ctx, bson.D{{"listIndexes", collection.Name()}})
+	err = res.Err()
+
+	expected = mongo.CommandError{
+		Code:    26,
+		Name:    "NamespaceNotFound",
+		Message: "ns does not exist: " + collection.Database().Name() + "." + collection.Name(),
+	}
+	AssertEqualCommandError(t, expected, err)
+}
+
 func TestDropIndexesCommandErrors(tt *testing.T) {
 	tt.Parallel()
 

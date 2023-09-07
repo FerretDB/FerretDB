@@ -116,7 +116,7 @@ The following operators and modifiers are available in the `update` and `findAnd
 |                   | `$position` | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/829) |
 |                   | `$slice`    | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/830) |
 |                   | `$sort`     | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/831) |
-|                   | `$bit`      | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/821) |
+|                   | `$bit`      | ✅️    |                                                          |
 
 ### Projection Operators
 
