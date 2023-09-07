@@ -16,6 +16,7 @@ package sqlite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -108,8 +109,21 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2760
-	panic("not implemented")
+	_, err := db.r.CollectionRename(ctx, db.name, params.OldName, params.NewName)
+
+	switch {
+	case err == nil:
+	case errors.Is(err, metadata.ErrDatabaseDoesNotExist):
+		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, err)
+	case errors.Is(err, metadata.ErrCollectionDoesNotExist):
+		return backends.NewError(backends.ErrorCodeCollectionDoesNotExist, err)
+	case errors.Is(err, metadata.ErrCollectionAlreadyExists):
+		return backends.NewError(backends.ErrorCodeCollectionAlreadyExists, err)
+	default:
+		return lazyerrors.Error(err)
+	}
+
+	return nil
 }
 
 // Stats implements backends.Database interface.

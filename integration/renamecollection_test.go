@@ -27,9 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
 )
 
-func TestRenameCollectionStress(tt *testing.T) {
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2760")
-
+func TestRenameCollectionStress(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 	db := collection.Database()
 

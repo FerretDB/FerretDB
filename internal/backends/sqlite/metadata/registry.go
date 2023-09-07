@@ -16,6 +16,7 @@ package metadata
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"sort"
@@ -25,6 +26,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
+	sqlite3 "modernc.org/sqlite"
+	sqlite3lib "modernc.org/sqlite/lib"
 
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
@@ -47,6 +50,17 @@ const (
 const (
 	namespace = "ferretdb"
 	subsystem = "sqlite_metadata"
+)
+
+var (
+	// ErrDatabaseDoesNotExist indicates that collection does not exist.
+	ErrDatabaseDoesNotExist = fmt.Errorf("database does not exist")
+
+	// ErrCollectionDoesNotExist indicates that collection does not exist.
+	ErrCollectionDoesNotExist = fmt.Errorf("collection does not exist")
+
+	// ErrCollectionAlreadyExists indicates that collection already exists.
+	ErrCollectionAlreadyExists = fmt.Errorf("collection already exists")
 )
 
 // Registry provides access to SQLite databases and collections information.
@@ -244,24 +258,40 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 		return false, nil
 	}
 
+	var i int
+	var tableName string
 	h := fnv.New32a()
-	must.NotFail(h.Write([]byte(collectionName)))
-	s := h.Sum32()
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/2760
+	for {
+		must.NotFail(h.Write([]byte(fmt.Sprintf("%s%d", collectionName, i))))
+		s := h.Sum32()
 
-	tableName := fmt.Sprintf("%s_%08x", strings.ToLower(collectionName), s)
-	if strings.HasPrefix(tableName, reservedTablePrefix) {
-		tableName = "_" + tableName
-	}
+		tableName = fmt.Sprintf("%s_%08x", strings.ToLower(collectionName), s)
+		if strings.HasPrefix(tableName, reservedTablePrefix) {
+			tableName = "_" + tableName
+		}
 
-	q := fmt.Sprintf("CREATE TABLE %[1]q (%[2]s TEXT NOT NULL CHECK(%[2]s != '')) STRICT", tableName, DefaultColumn)
-	if _, err = db.ExecContext(ctx, q); err != nil {
-		return false, lazyerrors.Error(err)
+		q := fmt.Sprintf("CREATE TABLE %[1]q (%[2]s TEXT NOT NULL CHECK(%[2]s != '')) STRICT", tableName, DefaultColumn)
+		_, err = db.ExecContext(ctx, q)
+
+		var se *sqlite3.Error
+		if errors.As(err, &se) && se.Code() == sqlite3lib.SQLITE_ERROR {
+			i++
+
+			h.Reset()
+
+			continue
+		}
+
+		if err != nil {
+			return false, lazyerrors.Error(err)
+		}
+
+		break
 	}
 
 	pkName := tableName + "_id"
-	q = fmt.Sprintf("CREATE UNIQUE INDEX %q ON %q (%s)", pkName, tableName, IDColumn)
+	q := fmt.Sprintf("CREATE UNIQUE INDEX %q ON %q (%s)", pkName, tableName, IDColumn)
 	if _, err = db.ExecContext(ctx, q); err != nil {
 		_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
 		return false, lazyerrors.Error(err)
@@ -349,8 +379,47 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 // Returned boolean value indicates whether the collection was renamed.
 // If database or collection did not exist, (false, nil) is returned.
 func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2760
-	panic("not implemented")
+	defer observability.FuncCall(ctx)()
+
+	db := r.p.GetExisting(ctx, dbName)
+	if db == nil {
+		return false, ErrDatabaseDoesNotExist
+	}
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	colls := r.colls[dbName]
+	if colls == nil {
+		return false, ErrDatabaseDoesNotExist
+	}
+
+	cOld := colls[oldCollectionName]
+	if cOld == nil {
+		return false, ErrCollectionDoesNotExist
+	}
+
+	cNew := colls[newCollectionName]
+	if cNew != nil {
+		return false, ErrCollectionAlreadyExists
+	}
+
+	cNew = &Collection{
+		Name:      newCollectionName,
+		TableName: cOld.TableName,
+		Settings:  cOld.Settings,
+	}
+
+	q := fmt.Sprintf(`UPDATE %q SET name = ? WHERE table_name = ?`, metadataTableName)
+	if _, err := db.ExecContext(ctx, q, cNew.Name, cNew.TableName); err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	r.colls[dbName][newCollectionName] = cNew
+
+	delete(r.colls[dbName], oldCollectionName)
+
+	return true, nil
 }
 
 // Describe implements prometheus.Collector.
