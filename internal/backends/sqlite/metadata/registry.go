@@ -53,7 +53,7 @@ const (
 )
 
 var (
-	// ErrDatabaseDoesNotExist indicates that collection does not exist.
+	// ErrDatabaseDoesNotExist indicates that database does not exist.
 	ErrDatabaseDoesNotExist = fmt.Errorf("database does not exist")
 
 	// ErrCollectionDoesNotExist indicates that collection does not exist.
@@ -258,16 +258,12 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 		return false, nil
 	}
 
-	var i int
 	var tableName string
 	h := fnv.New32a()
+	must.NotFail(h.Write([]byte(collectionName)))
+	s := h.Sum32()
 
 	for {
-		// a new hash is generated each iteration of loop to create a new tableName
-		// if table name already exists
-		must.NotFail(h.Write([]byte(fmt.Sprintf("%s%d", collectionName, i))))
-		s := h.Sum32()
-
 		tableName = fmt.Sprintf("%s_%08x", strings.ToLower(collectionName), s)
 		if strings.HasPrefix(tableName, reservedTablePrefix) {
 			tableName = "_" + tableName
@@ -283,9 +279,8 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 		// The se.Error() looks like `SQL logic error: table "XXX" already exists (1)`.
 		// See also https://www.sqlite.org/rescode.html#error.
 		if errors.As(err, &se) && se.Code() == sqlite3lib.SQLITE_ERROR && strings.Contains(se.Error(), "already exists") {
-			i++
-
-			h.Reset()
+			// table already exists, generate a new table name by incrementing the hash
+			s++
 
 			continue
 		}
@@ -382,6 +377,8 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 }
 
 // CollectionRename renames a collection in the database.
+//
+// The collection name is update, but it keeps the original table name.
 func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) error {
 	defer observability.FuncCall(ctx)()
 
