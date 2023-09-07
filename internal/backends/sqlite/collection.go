@@ -287,6 +287,37 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 	}, nil
 }
 
+// ListIndexes implements backends.Collection interface.
+func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
+	db := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if db == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	coll := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if coll == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	// only one index is supported at the moment - _id
+	// TODO https://github.com/FerretDB/FerretDB/issues/3176
+	return &backends.ListIndexesResult{
+		Indexes: []backends.IndexInfo{
+			{
+				Unique: true,
+				Name:   "_id_",
+				Key:    []backends.IndexKeyPair{{Field: "_id"}},
+			},
+		},
+	}, nil
+}
+
 // check interfaces
 var (
 	_ backends.Collection = (*collection)(nil)
