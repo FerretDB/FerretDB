@@ -1262,9 +1262,50 @@ func TestUpdateFieldCompatBit(t *testing.T) {
 			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"and", "string"}}}}}},
 			resultType: emptyResult,
 		},
+		"Binary": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"and", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}}}},
+			resultType: emptyResult,
+		},
+		"ObjectID": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"or", primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11}}}}}}},
+			resultType: emptyResult,
+		},
+		"Bool": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"or", true}}}}}},
+			resultType: emptyResult,
+		},
+		"DateTime": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"or", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}}}}}},
+			resultType: emptyResult,
+		},
 		"Nil": {
 			update:     bson.D{{"$bit", bson.D{{"and", nil}}}},
 			resultType: emptyResult,
+		},
+		"Regex": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", primitive.Regex{Pattern: "foo", Options: "i"}}}}}}},
+			resultType: emptyResult,
+		},
+		"Timestamp": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", primitive.Timestamp{T: 42, I: 13}}}}}}},
+			resultType: emptyResult,
+		},
+		"Object": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", bson.D{{"foo", int32(42)}}}}}}}},
+			resultType: emptyResult,
+		},
+		"Array": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", bson.A{int32(42)}}}}}}},
+			resultType: emptyResult,
+		},
+		"NonExistent": {
+			update: bson.D{{"$bit", bson.D{{"non-existent", bson.D{{"xor", int32(1)}}}}}},
+		},
+		"DotNotation": {
+			update: bson.D{{"$bit", bson.D{{"v.foo", bson.D{{"xor", int32(1)}}}}}},
+		},
+		"DotNotationArray": {
+			update: bson.D{{"$bit", bson.D{{"v.0", bson.D{{"xor", int32(1)}}}}}},
 		},
 		"DotNotationMissingField": {
 			update:     bson.D{{"$bit", bson.D{{"v..", int32(1)}}}},
