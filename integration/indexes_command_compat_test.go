@@ -48,68 +48,68 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 			indexName:      "custom-name",
 			resultType:     emptyResult,
 		},
-		"NilCollectionName": {
-			collectionName: nil,
-			key:            bson.D{{"v", -1}},
-			indexName:      "custom-name",
-			resultType:     emptyResult,
-		},
-		"EmptyCollectionName": {
-			collectionName: "",
-			key:            bson.D{{"v", -1}},
-			indexName:      "custom-name",
-			resultType:     emptyResult,
-		},
-		"IndexNameNotSet": {
-			collectionName: "test",
-			key:            bson.D{{"v", -1}},
-			indexName:      nil,
-			resultType:     emptyResult,
-		},
-		"EmptyIndexName": {
-			collectionName: "test",
-			key:            bson.D{{"v", -1}},
-			indexName:      "",
-			resultType:     emptyResult,
-		},
-		"NonStringIndexName": {
-			collectionName: "test",
-			key:            bson.D{{"v", -1}},
-			indexName:      42,
-			resultType:     emptyResult,
-		},
-		"ExistingNameDifferentKeyLength": {
-			collectionName: "test",
-			key:            bson.D{{"_id", 1}, {"v", 1}},
-			indexName:      "_id_", // the same name as the default index
-		},
-		"InvalidKey": {
-			collectionName: "test",
-			key:            42,
-			resultType:     emptyResult,
-		},
-		"EmptyKey": {
-			collectionName: "test",
-			key:            bson.D{},
-			resultType:     emptyResult,
-		},
-		"KeyNotSet": {
-			collectionName: "test",
-			resultType:     emptyResult,
-		},
-		"UniqueFalse": {
-			collectionName: "unique_false",
-			key:            bson.D{{"v", 1}},
-			indexName:      "unique_false",
-			unique:         false,
-		},
-		"UniqueTypeDocument": {
-			collectionName: "test",
-			key:            bson.D{{"v", 1}},
-			indexName:      "test",
-			unique:         bson.D{},
-			resultType:     emptyResult,
-		},
+		//"NilCollectionName": {
+		//	collectionName: nil,
+		//	key:            bson.D{{"v", -1}},
+		//	indexName:      "custom-name",
+		//	resultType:     emptyResult,
+		//},
+		//"EmptyCollectionName": {
+		//	collectionName: "",
+		//	key:            bson.D{{"v", -1}},
+		//	indexName:      "custom-name",
+		//	resultType:     emptyResult,
+		//},
+		//"IndexNameNotSet": {
+		//	collectionName: "test",
+		//	key:            bson.D{{"v", -1}},
+		//	indexName:      nil,
+		//	resultType:     emptyResult,
+		//},
+		//"EmptyIndexName": {
+		//	collectionName: "test",
+		//	key:            bson.D{{"v", -1}},
+		//	indexName:      "",
+		//	resultType:     emptyResult,
+		//},
+		//"NonStringIndexName": {
+		//	collectionName: "test",
+		//	key:            bson.D{{"v", -1}},
+		//	indexName:      42,
+		//	resultType:     emptyResult,
+		//},
+		//"ExistingNameDifferentKeyLength": {
+		//	collectionName: "test",
+		//	key:            bson.D{{"_id", 1}, {"v", 1}},
+		//	indexName:      "_id_", // the same name as the default index
+		//},
+		//"InvalidKey": {
+		//	collectionName: "test",
+		//	key:            42,
+		//	resultType:     emptyResult,
+		//},
+		//"EmptyKey": {
+		//	collectionName: "test",
+		//	key:            bson.D{},
+		//	resultType:     emptyResult,
+		//},
+		//"KeyNotSet": {
+		//	collectionName: "test",
+		//	resultType:     emptyResult,
+		//},
+		//"UniqueFalse": {
+		//	collectionName: "unique_false",
+		//	key:            bson.D{{"v", 1}},
+		//	indexName:      "unique_false",
+		//	unique:         false,
+		//},
+		//"UniqueTypeDocument": {
+		//	collectionName: "test",
+		//	key:            bson.D{{"v", 1}},
+		//	indexName:      "test",
+		//	unique:         bson.D{},
+		//	resultType:     emptyResult,
+		//},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

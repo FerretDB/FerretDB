@@ -288,7 +288,12 @@ type CreateIndexesParams struct {
 }
 
 // CreateIndexesResult represents the results of Collection.CreateIndexes method.
-type CreateIndexesResult struct{}
+type CreateIndexesResult struct {
+	Note              string
+	NumIndexesBefore  int32
+	NumIndexesAfter   int32
+	CollectionCreated bool
+}
 
 // CreateIndexes creates indexes for the collection.
 //
@@ -305,7 +310,7 @@ func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateI
 		if ErrorCodeIs(err, ErrorCodeCollectionDoesNotExist) {
 			// If the collection doesn't exist, it's not a problem,
 			// it just means that there are now existing indexes.
-			existingIndexes = &ListIndexesResult{Indexes: make([]IndexInfo, 0)}
+			existingIndexes = &ListIndexesResult{Indexes: []IndexInfo{}}
 		} else {
 			return nil, lazyerrors.Error(err)
 		}
@@ -329,6 +334,25 @@ func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateI
 	res, err := cc.c.CreateIndexes(ctx, params)
 
 	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionAlreadyExists)
+
+	indexesAfterCreation, err := cc.c.ListIndexes(ctx, new(ListIndexesParams))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res.NumIndexesBefore = int32(len(existingIndexes.Indexes))
+	if res.NumIndexesBefore == 0 {
+		res.CollectionCreated = true
+
+		// For compatibility with MongoDB: if the collection didn't exist before, NumIndexesBefore should be 1.
+		res.NumIndexesBefore = 1
+	}
+
+	res.NumIndexesAfter = int32(len(indexesAfterCreation.Indexes))
+
+	if len(existingIndexes.Indexes) == len(indexesAfterCreation.Indexes) {
+		res.Note = "all indexes already exist"
+	}
 
 	return res, err
 }

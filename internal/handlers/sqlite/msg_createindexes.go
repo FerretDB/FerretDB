@@ -112,7 +112,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	_, err = c.CreateIndexes(ctx, params)
+	res, err := c.CreateIndexes(ctx, params)
 	if err != nil {
 		switch {
 		case backends.ErrorCodeIs(err, backends.ErrorCodeIndexNameIsEmpty):
@@ -156,11 +156,24 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, lazyerrors.Error(err)
 	}
 
+	resp := new(types.Document)
+
+	resp.Set("numIndexesBefore", res.NumIndexesBefore)
+	resp.Set("numIndexesAfter", res.NumIndexesAfter)
+
+	if res.Note != "" {
+		resp.Set("note", res.Note)
+	}
+
+	if res.NumIndexesBefore != res.NumIndexesAfter {
+		resp.Set("createdCollectionAutomatically", res.CollectionCreated)
+	}
+
+	resp.Set("ok", float64(1))
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"ok", float64(1),
-		))},
+		Documents: []*types.Document{resp},
 	}))
 
 	return &reply, nil

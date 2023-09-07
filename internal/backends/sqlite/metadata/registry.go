@@ -380,7 +380,21 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 func (r *Registry) indexesCreate(ctx context.Context, db *fsql.DB, c *Collection, indexes []IndexInfo) error {
 	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
 		for _, index := range indexes {
-			q := "CREATE "
+			// check if index already exists
+			q := `SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type= 'index' and tbl_name = ? and name = ?)`
+			row := tx.QueryRowContext(ctx, q, c.TableName, c.TableName+index.Name)
+
+			var exists bool
+			err := row.Scan(&exists)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			if exists {
+				continue
+			}
+
+			q = "CREATE "
 
 			if index.Unique {
 				q += "UNIQUE "

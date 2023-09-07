@@ -89,6 +89,11 @@ func validateIndexes(exitingIndexes, newIndexes []IndexInfo) error {
 			keyEqual := existing.Key.Equal(index.Key)
 
 			if keyEqual && existing.Name == index.Name {
+				if existing.Unique == index.Unique {
+					// Indexes are equal, we don't need to create a new one, but we don't need to return an error.
+					continue
+				}
+
 				return NewError(ErrorCodeIndexAlreadyExists, nil)
 			}
 
