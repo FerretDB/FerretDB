@@ -255,17 +255,21 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 		return false, lazyerrors.Error(err)
 	}
 
-	pkName := tableName + "_id"
-	q = fmt.Sprintf("CREATE UNIQUE INDEX %q ON %q (%s)", pkName, tableName, IDColumn)
-	if _, err = db.ExecContext(ctx, q); err != nil {
-		_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
-		return false, lazyerrors.Error(err)
-	}
-
 	c := &Collection{
 		Name:      collectionName,
 		TableName: tableName,
 		Settings:  Settings{Indexes: nil},
+	}
+
+	idIndex := IndexInfo{
+		Name:   "_id_",
+		Key:    []IndexKeyPair{{Field: "_id"}},
+		Unique: true,
+	}
+
+	err = r.indexesCreate(ctx, db, c, []IndexInfo{idIndex})
+	if err != nil {
+		return false, lazyerrors.Error(err)
 	}
 
 	q = fmt.Sprintf("INSERT INTO %q (name, table_name, settings) VALUES (?, ?, ?)", metadataTableName)
@@ -373,20 +377,8 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 // indexesCreate creates an index in the collection.
 //
 // It does not hold the lock.
-func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
-	_, err := r.collectionCreate(ctx, dbName, collectionName)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	db, err := r.databaseGetOrCreate(ctx, dbName)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	c := r.collectionGet(dbName, collectionName)
-
-	err = db.InTransaction(ctx, func(tx *fsql.Tx) error {
+func (r *Registry) indexesCreate(ctx context.Context, db *fsql.DB, c *Collection, indexes []IndexInfo) error {
+	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
 		for _, index := range indexes {
 			q := "CREATE "
 
@@ -404,7 +396,7 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 					return lazyerrors.New("field name is not valid")
 				}
 
-				columns[i] = fmt.Sprintf("%s->'$%s'", DefaultColumn, key.Field)
+				columns[i] = fmt.Sprintf("%s->'$.%s'", DefaultColumn, key.Field)
 				if key.Descending {
 					columns[i] += " DESC"
 				}
@@ -412,7 +404,7 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 
 			q = fmt.Sprintf(q, c.TableName+index.Name, c.TableName, strings.Join(columns, ", "))
 
-			if _, err = db.ExecContext(ctx, q); err != nil {
+			if _, err := db.ExecContext(ctx, q); err != nil {
 				return lazyerrors.Error(err)
 			}
 
@@ -420,7 +412,7 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 		}
 
 		q := fmt.Sprintf("UPDATE %q SET settings=?", metadataTableName)
-		if _, err = db.ExecContext(ctx, q, c.Settings); err != nil {
+		if _, err := db.ExecContext(ctx, q, c.Settings); err != nil {
 			return lazyerrors.Error(err)
 		}
 
@@ -429,8 +421,6 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
-
-	r.colls[dbName][collectionName] = c
 
 	return nil
 }
@@ -442,7 +432,26 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 	r.rw.RLock()
 	defer r.rw.RUnlock()
 
-	return r.indexesCreate(ctx, dbName, collectionName, indexes)
+	_, err := r.collectionCreate(ctx, dbName, collectionName)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	db, err := r.databaseGetOrCreate(ctx, dbName)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	c := r.CollectionGet(ctx, dbName, collectionName)
+
+	err = r.indexesCreate(ctx, db, c, indexes)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	r.colls[dbName][collectionName] = c
+
+	return nil
 }
 
 // Describe implements prometheus.Collector.
