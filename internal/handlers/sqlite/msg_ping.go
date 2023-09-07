@@ -49,10 +49,9 @@ func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	_ = db
-	// if err = db.Ping(ctx); err != nil {
-	// 	return nil, lazyerrors.Error(err)
-	// }
+	if _, err := db.ListCollections(ctx, nil); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
