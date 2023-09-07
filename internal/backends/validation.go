@@ -74,3 +74,33 @@ func validateCollectionName(name string) error {
 
 	return nil
 }
+
+// validateIndexes checks that indexes are valid for FerretDB.
+func validateIndexes(exitingIndexes, newIndexes []IndexInfo) error {
+	for _, index := range newIndexes {
+		if index.Name == "" {
+			return NewError(ErrorCodeIndexNameIsEmpty, nil)
+		}
+
+		// Validation needs to be extended (e.g. to check that index names don't contain illegal symbols, see the issue).
+		// TODO https://github.com/FerretDB/FerretDB/issues/3320
+
+		for _, existing := range exitingIndexes {
+			keyEqual := existing.Key.Equal(index.Key)
+
+			if keyEqual && existing.Name == index.Name {
+				return NewError(ErrorCodeIndexAlreadyExists, nil)
+			}
+
+			if keyEqual {
+				return NewError(ErrorCodeIndexOptionsConflict, nil)
+			}
+
+			if existing.Name == index.Name {
+				return NewError(ErrorCodeIndexKeySpecsConflict, nil)
+			}
+		}
+	}
+
+	return nil
+}

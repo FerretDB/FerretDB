@@ -17,6 +17,8 @@ package backends
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
@@ -238,8 +240,28 @@ type ListIndexesResult struct {
 // IndexInfo represents information about a single index.
 type IndexInfo struct {
 	Name   string
-	Key    []IndexKeyPair
+	Key    IndexKey
 	Unique bool
+}
+
+// IndexKey is a list of field name + sort order pairs.
+//
+// It exists as a separate type to make it easier to compare index keys.
+type IndexKey []IndexKeyPair
+
+// Equal returns true if the given index key is equal to the current one.
+func (k IndexKey) Equal(v IndexKey) bool {
+	if len(k) != len(v) {
+		return false
+	}
+
+	for i := range k {
+		if k[i] != v[i] {
+			return false
+		}
+	}
+
+	return true
 }
 
 // IndexKeyPair consists of a field name and a sort order that are part of the index.
@@ -279,8 +301,26 @@ type CreateIndexesResult struct{}
 func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateIndexesParams) (*CreateIndexesResult, error) {
 	defer observability.FuncCall(ctx)()
 
-	// The params need to be validated before index creation.
-	// TODO https://github.com/FerretDB/FerretDB/issues/3320
+	existingIndexes, err := cc.c.ListIndexes(ctx, &ListIndexesParams{})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	err = validateIndexes(existingIndexes.Indexes, params.Indexes)
+
+	checkError(
+		err,
+
+		ErrorCodeIndexAlreadyExists,
+		ErrorCodeIndexAlreadyExists,
+		ErrorCodeIndexOptionsConflict,
+		ErrorCodeIndexKeySpecsConflict,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
 	res, err := cc.c.CreateIndexes(ctx, params)
 
 	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionAlreadyExists)
