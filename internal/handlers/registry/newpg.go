@@ -35,6 +35,8 @@ func init() {
 			StateProvider: opts.StateProvider,
 
 			DisableFilterPushdown: opts.DisableFilterPushdown,
+			EnableSortPushdown:    opts.EnableSortPushdown,
+			EnableOplog:           opts.EnableOplog,
 		}
 
 		return sqlite.New(handlerOpts)
