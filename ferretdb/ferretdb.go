@@ -95,14 +95,14 @@ func New(config *Config) (*FerretDB, error) {
 		return nil, errors.New("Listener TCP, Unix and TLS are empty")
 	}
 
-	p, err := state.NewProvider("")
+	sp, err := state.NewProvider("")
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct handler: %s", err)
 	}
 
 	// Telemetry reporter is not created or running anyway,
 	// but disable telemetry explicitly to disable confusing startupWarnings.
-	err = p.Update(func(s *state.State) {
+	err = sp.Update(func(s *state.State) {
 		s.DisableTelemetry()
 		s.TelemetryLocked = true
 	})
@@ -115,7 +115,7 @@ func New(config *Config) (*FerretDB, error) {
 	h, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
 		Logger:        logger,
 		ConnMetrics:   metrics.ConnMetrics,
-		StateProvider: p,
+		StateProvider: sp,
 
 		PostgreSQLURL: config.PostgreSQLURL,
 

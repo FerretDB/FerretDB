@@ -38,6 +38,10 @@ type Backend interface {
 	ListDatabases(context.Context, *ListDatabasesParams) (*ListDatabasesResult, error)
 	DropDatabase(context.Context, *DropDatabaseParams) error
 
+	ServerStatus(context.Context, *ServerStatusParams) (*ServerStatusResult, error)
+
+	Name() string
+
 	prometheus.Collector
 
 	// There is no interface method to create a database; see package documentation.
@@ -130,6 +134,29 @@ func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabas
 	checkError(err, ErrorCodeDatabaseNameIsInvalid, ErrorCodeDatabaseDoesNotExist)
 
 	return err
+}
+
+// ServerStatusParams represents the parameters of Backend.ServerStatus method.
+type ServerStatusParams struct{}
+
+// ServerStatusResult represents the results of Backend.ServerStatus method.
+type ServerStatusResult struct {
+	CountCollections int64
+}
+
+// ServerStatus returns status about the server.
+func (bc *backendContract) ServerStatus(ctx context.Context, params *ServerStatusParams) (*ServerStatusResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := bc.b.ServerStatus(ctx, params)
+	checkError(err)
+
+	return res, err
+}
+
+// Name returns human-readable formatted name of the backend.
+func (bc *backendContract) Name() string {
+	return bc.b.Name()
 }
 
 // Describe implements prometheus.Collector.

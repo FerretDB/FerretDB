@@ -34,14 +34,14 @@ func getPool(ctx context.Context, tb testtb.TB) *Pool {
 
 	logger := testutil.Logger(tb)
 
-	p, err := state.NewProvider("")
+	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
 
-	pool, err := NewPool(ctx, testutil.PostgreSQLURL(tb, nil), logger, p)
+	p, err := NewPool(ctx, testutil.PostgreSQLURL(tb, nil), logger, sp)
 	require.NoError(tb, err)
-	tb.Cleanup(pool.Close)
+	tb.Cleanup(p.Close)
 
-	return pool
+	return p
 }
 
 // setupDatabase ensures that test-specific FerretDB database / PostgreSQL schema does not exist

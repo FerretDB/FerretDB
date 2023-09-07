@@ -17,6 +17,7 @@ package sqlite
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -31,8 +32,13 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 		return nil, lazyerrors.Error(err)
 	}
 
+	stats, err := h.b.ServerStatus(ctx, new(backends.ServerStatusParams))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	res.Set("catalogStats", must.NotFail(types.NewDocument(
-		"collections", int32(0), // TODO https://github.com/FerretDB/FerretDB/issues/2775
+		"collections", stats.CountCollections,
 		"capped", int32(0),
 		"clustered", int32(0),
 		"timeseries", int32(0),
