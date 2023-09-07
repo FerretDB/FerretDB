@@ -431,8 +431,6 @@ func (d *Document) isKeyDuplicate(targetKey string) bool {
 // moveIDToTheFirstIndex sets the _id field of the document at the first position.
 // If the _id field is not present, it does nothing.
 func (d *Document) moveIDToTheFirstIndex() {
-	d.checkFrozen()
-
 	if !d.Has("_id") {
 		return
 	}
@@ -449,6 +447,8 @@ func (d *Document) moveIDToTheFirstIndex() {
 			break
 		}
 	}
+
+	d.checkFrozen()
 
 	d.fields = slices.Insert(d.fields, 0, field{key: d.fields[idIdx].key, value: d.fields[idIdx].value})
 

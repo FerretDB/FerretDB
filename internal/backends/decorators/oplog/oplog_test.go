@@ -12,14 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Keep both old and new styles of build tags.
+package oplog
 
-//go:build !go1.21
-// +build !go1.21
+import "testing"
 
-package tools
-
-// The version of Go used in `go generate` command is old - we know that from the build tags above.
-// Let the user know.
-
-//go:generate go run check.go -old
+func TestDummy(t *testing.T) {
+	// we need at least one test per package to correctly calculate coverage
+}
