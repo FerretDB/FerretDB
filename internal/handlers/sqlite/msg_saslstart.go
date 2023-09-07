@@ -48,7 +48,6 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		return nil, lazyerrors.Error(err)
 	}
-	defer db.Close()
 
 	if err = common.SASLStart(ctx, document); err != nil {
 		return nil, lazyerrors.Error(err)

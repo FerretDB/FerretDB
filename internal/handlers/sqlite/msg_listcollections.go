@@ -64,7 +64,6 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 
 		return nil, lazyerrors.Error(err)
 	}
-	defer db.Close()
 
 	res, err := db.ListCollections(ctx, nil)
 	if err != nil {

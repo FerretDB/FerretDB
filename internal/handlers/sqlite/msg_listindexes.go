@@ -55,7 +55,6 @@ func (h *Handler) MsgListIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 
 		return nil, lazyerrors.Error(err)
 	}
-	defer db.Close()
 
 	c, err := db.Collection(collection)
 	if err != nil {

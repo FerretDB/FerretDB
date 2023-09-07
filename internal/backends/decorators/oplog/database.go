@@ -38,11 +38,6 @@ func newDatabase(db backends.Database, name string, l *zap.Logger) backends.Data
 	}
 }
 
-// Close implements backends.Database interface.
-func (db *database) Close() {
-	db.db.Close()
-}
-
 // Ping implements backends.Database interface.
 func (db *database) Ping(ctx context.Context) error {
 	return db.db.Ping(ctx)

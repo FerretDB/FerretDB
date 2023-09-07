@@ -48,11 +48,6 @@ func newDatabase(r *metadata.Registry, name string) backends.Database {
 	})
 }
 
-// Close implements backends.Database interface.
-func (db *database) Close() {
-	// nothing
-}
-
 // Ping implements backends.Database interface.
 func (db *database) Ping(ctx context.Context) error {
 	conninfo.Get(ctx)

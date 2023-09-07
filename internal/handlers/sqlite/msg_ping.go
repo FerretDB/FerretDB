@@ -48,7 +48,6 @@ func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 		return nil, lazyerrors.Error(err)
 	}
-	defer db.Close()
 
 	if err = db.Ping(ctx); err != nil {
 		return nil, lazyerrors.Error(err)
