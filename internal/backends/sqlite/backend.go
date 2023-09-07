@@ -88,9 +88,8 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 			err = nil
 		}
 
-		db.Close()
-
 		if err != nil {
+			db.Close()
 			return nil, lazyerrors.Error(err)
 		}
 
@@ -98,6 +97,8 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 			Name: dbName,
 			Size: stats.SizeTotal,
 		}
+
+		db.Close()
 	}
 
 	return res, nil
