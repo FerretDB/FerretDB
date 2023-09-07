@@ -1,5 +1,8 @@
 FROM mongo:6.0.9
 
+# If you encounter an "unknown instruction" error there,
+# please update Docker to the latest version.
+
 # see https://github.com/docker-library/mongo/issues/475
 RUN <<EOF
 set -ex
