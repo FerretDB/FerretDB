@@ -263,6 +263,8 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 	h := fnv.New32a()
 
 	for {
+		// a new hash is generated each iteration of loop to create a new tableName
+		// if table name already exists
 		must.NotFail(h.Write([]byte(fmt.Sprintf("%s%d", collectionName, i))))
 		s := h.Sum32()
 
@@ -275,7 +277,12 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 		_, err = db.ExecContext(ctx, q)
 
 		var se *sqlite3.Error
-		if errors.As(err, &se) && se.Code() == sqlite3lib.SQLITE_ERROR {
+
+		// When a table already exists, SQLite error code sqlite3lib.SQLITE_ERROR returned is too generic.
+		// So we also check that error message contains `already exists` test.
+		// The se.Error() looks like `SQL logic error: table "XXX" already exists (1)`.
+		// See also https://www.sqlite.org/rescode.html#error.
+		if errors.As(err, &se) && se.Code() == sqlite3lib.SQLITE_ERROR && strings.Contains(se.Error(), "already exists") {
 			i++
 
 			h.Reset()
@@ -375,15 +382,12 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 }
 
 // CollectionRename renames a collection in the database.
-//
-// Returned boolean value indicates whether the collection was renamed.
-// If database or collection did not exist, (false, nil) is returned.
-func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
+func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) error {
 	defer observability.FuncCall(ctx)()
 
 	db := r.p.GetExisting(ctx, dbName)
 	if db == nil {
-		return false, ErrDatabaseDoesNotExist
+		return ErrDatabaseDoesNotExist
 	}
 
 	r.rw.Lock()
@@ -391,17 +395,17 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 
 	colls := r.colls[dbName]
 	if colls == nil {
-		return false, ErrDatabaseDoesNotExist
+		return ErrDatabaseDoesNotExist
 	}
 
 	cOld := colls[oldCollectionName]
 	if cOld == nil {
-		return false, ErrCollectionDoesNotExist
+		return ErrCollectionDoesNotExist
 	}
 
 	cNew := colls[newCollectionName]
 	if cNew != nil {
-		return false, ErrCollectionAlreadyExists
+		return ErrCollectionAlreadyExists
 	}
 
 	cNew = &Collection{
@@ -412,14 +416,14 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 
 	q := fmt.Sprintf(`UPDATE %q SET name = ? WHERE table_name = ?`, metadataTableName)
 	if _, err := db.ExecContext(ctx, q, cNew.Name, cNew.TableName); err != nil {
-		return false, lazyerrors.Error(err)
+		return lazyerrors.Error(err)
 	}
 
 	r.colls[dbName][newCollectionName] = cNew
 
 	delete(r.colls[dbName], oldCollectionName)
 
-	return true, nil
+	return nil
 }
 
 // Describe implements prometheus.Collector.
