@@ -309,7 +309,7 @@ func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateI
 	if err != nil {
 		if ErrorCodeIs(err, ErrorCodeCollectionDoesNotExist) {
 			// If the collection doesn't exist, it's not a problem,
-			// it just means that there are now existing indexes.
+			// it just means that there are no existing indexes.
 			existingIndexes = &ListIndexesResult{Indexes: []IndexInfo{}}
 		} else {
 			return nil, lazyerrors.Error(err)
@@ -333,7 +333,11 @@ func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateI
 
 	res, err := cc.c.CreateIndexes(ctx, params)
 
-	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionAlreadyExists)
+	checkError(err, ErrorCodeCollectionNameIsInvalid)
+
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	indexesAfterCreation, err := cc.c.ListIndexes(ctx, new(ListIndexesParams))
 	if err != nil {
