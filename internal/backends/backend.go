@@ -19,8 +19,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
@@ -29,7 +27,6 @@ import (
 //
 // Backend object is expected to be stateful and wrap database connection(s).
 // Handler can create one Backend or multiple Backends with different authentication credentials.
-// FIXME ^
 //
 // Backend(s) methods can be called by multiple client connections / command handlers concurrently.
 // They should be thread-safe.
@@ -96,10 +93,6 @@ type StatusResult struct {
 // Status returns backend's status.
 func (bc *backendContract) Status(ctx context.Context, params *StatusParams) (*StatusResult, error) {
 	defer observability.FuncCall(ctx)()
-
-	// to both check that conninfo is present in the context (which is important for that method)
-	// and to make doc.go render the link correctly
-	must.NotBeZero(conninfo.Get(ctx))
 
 	res, err := bc.b.Status(ctx, params)
 	checkError(err)
