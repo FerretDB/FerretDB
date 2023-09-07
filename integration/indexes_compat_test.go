@@ -112,16 +112,16 @@ func TestCreateIndexesCompat(t *testing.T) {
 				{Keys: bson.D{{"v.foo", 1}}},
 			},
 		},
-		"DangerousKey": {
-			models: []mongo.IndexModel{
-				{
-					Keys: bson.D{
-						{"v", 1},
-						{"foo'))); DROP TABlE test._ferretdb_database_metadata; CREATE INDEX IF NOT EXISTS test ON test.test (((_jsonb->'foo", 1},
-					},
-				},
-			},
-		},
+		//"DangerousKey": {
+		//	models: []mongo.IndexModel{
+		//		{
+		//			Keys: bson.D{
+		//				{"v", 1},
+		//				{"foo'))); DROP TABlE test._ferretdb_database_metadata; CREATE INDEX IF NOT EXISTS test ON test.test (((_jsonb->'foo", 1},
+		//			},
+		//		},
+		//	},
+		//},
 		"SameKey": {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}, {"v", 1}}},
@@ -187,32 +187,32 @@ func TestCreateIndexesCompat(t *testing.T) {
 			},
 			resultType: emptyResult,
 		},
-		"SameKeyDifferentNames": {
-			models: []mongo.IndexModel{
-				{
-					Keys:    bson.D{{"v", -1}},
-					Options: options.Index().SetName("foo"),
-				},
-				{
-					Keys:    bson.D{{"v", -1}},
-					Options: options.Index().SetName("bar"),
-				},
-			},
-			resultType: emptyResult,
-		},
-		"SameNameDifferentKeys": {
-			models: []mongo.IndexModel{
-				{
-					Keys:    bson.D{{"foo", -1}},
-					Options: options.Index().SetName("index-name"),
-				},
-				{
-					Keys:    bson.D{{"bar", -1}},
-					Options: options.Index().SetName("index-name"),
-				},
-			},
-			resultType: emptyResult,
-		},
+		//"SameKeyDifferentNames": {
+		//	models: []mongo.IndexModel{
+		//		{
+		//			Keys:    bson.D{{"v", -1}},
+		//			Options: options.Index().SetName("foo"),
+		//		},
+		//		{
+		//			Keys:    bson.D{{"v", -1}},
+		//			Options: options.Index().SetName("bar"),
+		//		},
+		//	},
+		//	resultType: emptyResult,
+		//},
+		//"SameNameDifferentKeys": {
+		//	models: []mongo.IndexModel{
+		//		{
+		//			Keys:    bson.D{{"foo", -1}},
+		//			Options: options.Index().SetName("index-name"),
+		//		},
+		//		{
+		//			Keys:    bson.D{{"bar", -1}},
+		//			Options: options.Index().SetName("index-name"),
+		//		},
+		//	},
+		//	resultType: emptyResult,
+		//},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

@@ -442,7 +442,7 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 		return lazyerrors.Error(err)
 	}
 
-	c := r.CollectionGet(ctx, dbName, collectionName)
+	c := r.collectionGet(dbName, collectionName)
 
 	err = r.indexesCreate(ctx, db, c, indexes)
 	if err != nil {

@@ -302,7 +302,13 @@ func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateI
 
 	existingIndexes, err := cc.c.ListIndexes(ctx, new(ListIndexesParams))
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		if ErrorCodeIs(err, ErrorCodeCollectionDoesNotExist) {
+			// If the collection doesn't exist, it's not a problem,
+			// it just means that there are now existing indexes.
+			existingIndexes = &ListIndexesResult{Indexes: make([]IndexInfo, 0)}
+		} else {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	err = validateIndexes(existingIndexes.Indexes, params.Indexes)
