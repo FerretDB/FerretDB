@@ -17,7 +17,6 @@ package backends
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
@@ -264,7 +263,7 @@ func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndex
 
 // CreateIndexesParams represents the parameters of Collection.CreateIndexes method.
 type CreateIndexesParams struct {
-	Indexes []metadata.IndexInfo
+	Indexes []IndexInfo
 }
 
 // CreateIndexesResult represents the results of Collection.CreateIndexes method.

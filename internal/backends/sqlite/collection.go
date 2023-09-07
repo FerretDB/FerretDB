@@ -320,7 +320,23 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 
 // CreateIndexes implements backends.Collection interface.
 func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) { //nolint:lll // for readability
-	err := c.r.IndexesCreate(ctx, c.dbName, c.name, params.Indexes...)
+	indexes := make([]metadata.IndexInfo, len(params.Indexes))
+	for i, index := range params.Indexes {
+		indexes[i] = metadata.IndexInfo{
+			Name:   index.Name,
+			Unique: index.Unique,
+			Key:    make([]metadata.IndexKeyPair, len(index.Key)),
+		}
+
+		for j, key := range index.Key {
+			indexes[i].Key[j] = metadata.IndexKeyPair{
+				Field:      key.Field,
+				Descending: key.Descending,
+			}
+		}
+	}
+
+	err := c.r.IndexesCreate(ctx, c.dbName, c.name, indexes)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

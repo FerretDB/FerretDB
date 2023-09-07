@@ -363,7 +363,7 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 // indexesCreate creates an index in the collection.
 //
 // It does not hold the lock.
-func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName string, indexes ...IndexInfo) error {
+func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
 	_, err := r.CollectionCreate(ctx, dbName, collectionName)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -398,13 +398,13 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 }
 
 // IndexesCreate creates an index in the collection.
-func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName string, indexes ...IndexInfo) error {
+func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
 	defer observability.FuncCall(ctx)()
 
 	r.rw.RLock()
 	defer r.rw.RUnlock()
 
-	return r.indexesCreate(ctx, dbName, collectionName, indexes...)
+	return r.indexesCreate(ctx, dbName, collectionName, indexes)
 }
 
 // Describe implements prometheus.Collector.
