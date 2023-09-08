@@ -248,13 +248,12 @@ type IndexKeyPair struct {
 }
 
 // ListIndexes returns information about indexes in the database.
+//
+// The errors for non-existing database and non-existing collection are the same.
 func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndexesParams) (*ListIndexesResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.ListIndexes(ctx, params)
-
-	// ErrorCodeCollectionDoesNotExist is enough for both cases when database or collection does not exist
-	// as the handler will return the same namespace-related error in both cases.
 	checkError(err, ErrorCodeCollectionDoesNotExist)
 
 	return res, err

@@ -43,6 +43,16 @@ func (b *backend) Close() {
 	b.b.Close()
 }
 
+// Name implements backends.Backend interface.
+func (b *backend) Name() string {
+	return b.b.Name()
+}
+
+// Status implements backends.Backend interface.
+func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
+	return b.b.Status(ctx, params)
+}
+
 // Database implements backends.Backend interface.
 func (b *backend) Database(name string) (backends.Database, error) {
 	db, err := b.b.Database(name)
@@ -63,16 +73,6 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
 	return b.b.DropDatabase(ctx, params)
-}
-
-// ServerStatus implements backends.Backend interface.
-func (b *backend) ServerStatus(ctx context.Context, params *backends.ServerStatusParams) (*backends.ServerStatusResult, error) {
-	return b.b.ServerStatus(ctx, params)
-}
-
-// Name implements backends.Backend interface.
-func (b *backend) Name() string {
-	return b.b.Name()
 }
 
 // Describe implements prometheus.Collector.
