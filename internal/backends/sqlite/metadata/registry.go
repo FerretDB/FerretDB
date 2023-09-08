@@ -404,12 +404,6 @@ func (r *Registry) indexesCreate(ctx context.Context, db *fsql.DB, c *Collection
 
 			columns := make([]string, len(index.Key))
 			for i, key := range index.Key {
-				// replace with proper validation
-				// TODO https://github.com/FerretDB/FerretDB/issues/3320
-				if strings.ContainsAny(key.Field, " '") {
-					return lazyerrors.New("field name is not valid")
-				}
-
 				columns[i] = fmt.Sprintf("%s->'$.%s'", DefaultColumn, key.Field)
 				if key.Descending {
 					columns[i] += " DESC"
