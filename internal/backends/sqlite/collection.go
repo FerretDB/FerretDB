@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	sqlite3 "modernc.org/sqlite"
 	sqlite3lib "modernc.org/sqlite/lib"
@@ -28,6 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -64,9 +66,43 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	q := fmt.Sprintf(`SELECT %s FROM %q`, metadata.DefaultColumn, meta.TableName)
+	var filter string
+	var args []any
 
-	rows, err := db.QueryContext(ctx, q)
+	iter := params.Filter.Iterator()
+	defer iter.Close()
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return nil, lazyerrors.Error(err)
+		}
+
+		if k != "_id" {
+			// TODO https://github.com/FerretDB/FerretDB/issues/3235
+			continue
+		}
+
+		var supported bool
+		if filter, supported = eq(v); supported {
+			args = []any{k, v}
+
+			break
+		}
+	}
+
+	var whereClaus string
+	if filter != "" {
+		whereClaus = ` WHERE ` + filter + ` `
+	}
+
+	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClaus, metadata.DefaultColumn, meta.TableName)
+
+	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -74,6 +110,19 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	return &backends.QueryResult{
 		Iter: newQueryIterator(ctx, rows),
 	}, nil
+}
+
+// eq returns filter and boolean indicating if filter for `v` is supported.
+func eq(v any) (string, bool) {
+	switch v := v.(type) {
+	case *types.Document, *types.Array, float64, string, types.Binary, bool, time.Time,
+		types.NullType, types.Regex, int32, types.Timestamp, int64:
+		return "", false
+	case types.ObjectID:
+		return `_jsonb->? @> ?`, true
+	default:
+		panic(fmt.Sprintf("Unexpected type of value: %v", v))
+	}
 }
 
 // InsertAll implements backends.Collection interface.
