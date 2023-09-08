@@ -17,6 +17,8 @@ package integration
 import (
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -213,17 +215,18 @@ func TestDropIndexesCommandErrors(tt *testing.T) {
 	}
 }
 
-func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
-	t.Parallel()
+func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
+	tt.Parallel()
 
 	for name, tc := range map[string]struct {
 		indexes        any  // optional
 		missingIndexes bool // optional, if set indexes must be nil
 		noProvider     bool // if set, no provider is added.
 
-		err        *mongo.CommandError // required, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		err            *mongo.CommandError // required, expected error from MongoDB
+		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
+		skip           string              // optional, skip test with a specified reason
+		failsForSQLite string              // optional, if set, the case is expected to fail for SQLite due to given issue}
 	}{
 		"EmptyIndexes": {
 			indexes: bson.A{},
@@ -301,20 +304,21 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 					`The 'name' field is a required property of an index specification`,
 			},
 		},
-		//"EmptyName": {
-		//	indexes: bson.A{
-		//		bson.D{
-		//			{"key", bson.D{{"v", -1}}},
-		//			{"name", ""},
-		//		},
-		//	},
-		//	err: &mongo.CommandError{
-		//		Code:    67,
-		//		Name:    "CannotCreateIndex",
-		//		Message: `Error in specification { key: { v: -1 }, name: "", v: 2 } :: caused by :: index name cannot be empty`,
-		//	},
-		//	altMessage: `Error in specification { key: { v: -1 }, name: "" } :: caused by :: index name cannot be empty`,
-		//},
+		"EmptyName": {
+			indexes: bson.A{
+				bson.D{
+					{"key", bson.D{{"v", -1}}},
+					{"name", ""},
+				},
+			},
+			err: &mongo.CommandError{
+				Code:    67,
+				Name:    "CannotCreateIndex",
+				Message: `Error in specification { key: { v: -1 }, name: "", v: 2 } :: caused by :: index name cannot be empty`,
+			},
+			altMessage:     `Error in specification { key: { v: -1 }, name: "" } :: caused by :: index name cannot be empty`,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
+		},
 		"MissingKey": {
 			indexes: bson.A{
 				bson.D{},
@@ -325,69 +329,72 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				Message: `Error in specification {} :: caused by :: The 'key' field is a required property of an index specification`,
 			},
 		},
-		//"IdenticalIndex": {
-		//	indexes: bson.A{
-		//		bson.D{
-		//			{"key", bson.D{{"v", 1}}},
-		//			{"name", "v_1"},
-		//		},
-		//		bson.D{
-		//			{"key", bson.D{{"v", 1}}},
-		//			{"name", "v_1"},
-		//		},
-		//	},
-		//	noProvider: true,
-		//	err: &mongo.CommandError{
-		//		Code:    68,
-		//		Name:    "IndexAlreadyExists",
-		//		Message: `Identical index already exists: v_1`,
-		//	},
-		//},
-		//"SameName": {
-		//	indexes: bson.A{
-		//		bson.D{
-		//			{"key", bson.D{{"foo", -1}}},
-		//			{"name", "index-name"},
-		//		},
-		//		bson.D{
-		//			{"key", bson.D{{"bar", -1}}},
-		//			{"name", "index-name"},
-		//		},
-		//	},
-		//	noProvider: true,
-		//	err: &mongo.CommandError{
-		//		Code: 86,
-		//		Name: "IndexKeySpecsConflict",
-		//		Message: "An existing index has the same name as the requested index. " +
-		//			"When index names are not specified, they are auto generated and can " +
-		//			"cause conflicts. Please refer to our documentation. " +
-		//			"Requested index: { v: 2, key: { bar: -1 }, name: \"index-name\" }, " +
-		//			"existing index: { v: 2, key: { foo: -1 }, name: \"index-name\" }",
-		//	},
-		//	altMessage: "An existing index has the same name as the requested index. " +
-		//		"When index names are not specified, they are auto generated and can " +
-		//		"cause conflicts. Please refer to our documentation. " +
-		//		"Requested index: { key: { bar: -1 }, name: \"index-name\" }, " +
-		//		"existing index: { key: { foo: -1 }, name: \"index-name\" }",
-		//},
-		//"SameIndex": {
-		//	indexes: bson.A{
-		//		bson.D{
-		//			{"key", bson.D{{"v", -1}}},
-		//			{"name", "foo"},
-		//		},
-		//		bson.D{
-		//			{"key", bson.D{{"v", -1}}},
-		//			{"name", "bar"},
-		//		},
-		//	},
-		//	noProvider: true,
-		//	err: &mongo.CommandError{
-		//		Code:    85,
-		//		Name:    "IndexOptionsConflict",
-		//		Message: "Index already exists with a different name: foo",
-		//	},
-		//},
+		"IdenticalIndex": {
+			indexes: bson.A{
+				bson.D{
+					{"key", bson.D{{"v", 1}}},
+					{"name", "v_1"},
+				},
+				bson.D{
+					{"key", bson.D{{"v", 1}}},
+					{"name", "v_1"},
+				},
+			},
+			noProvider: true,
+			err: &mongo.CommandError{
+				Code:    68,
+				Name:    "IndexAlreadyExists",
+				Message: `Identical index already exists: v_1`,
+			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
+		},
+		"SameName": {
+			indexes: bson.A{
+				bson.D{
+					{"key", bson.D{{"foo", -1}}},
+					{"name", "index-name"},
+				},
+				bson.D{
+					{"key", bson.D{{"bar", -1}}},
+					{"name", "index-name"},
+				},
+			},
+			noProvider: true,
+			err: &mongo.CommandError{
+				Code: 86,
+				Name: "IndexKeySpecsConflict",
+				Message: "An existing index has the same name as the requested index. " +
+					"When index names are not specified, they are auto generated and can " +
+					"cause conflicts. Please refer to our documentation. " +
+					"Requested index: { v: 2, key: { bar: -1 }, name: \"index-name\" }, " +
+					"existing index: { v: 2, key: { foo: -1 }, name: \"index-name\" }",
+			},
+			altMessage: "An existing index has the same name as the requested index. " +
+				"When index names are not specified, they are auto generated and can " +
+				"cause conflicts. Please refer to our documentation. " +
+				"Requested index: { key: { bar: -1 }, name: \"index-name\" }, " +
+				"existing index: { key: { foo: -1 }, name: \"index-name\" }",
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
+		},
+		"SameIndex": {
+			indexes: bson.A{
+				bson.D{
+					{"key", bson.D{{"v", -1}}},
+					{"name", "foo"},
+				},
+				bson.D{
+					{"key", bson.D{{"v", -1}}},
+					{"name", "bar"},
+				},
+			},
+			noProvider: true,
+			err: &mongo.CommandError{
+				Code:    85,
+				Name:    "IndexOptionsConflict",
+				Message: "Index already exists with a different name: foo",
+			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
+		},
 		"UniqueTypeDocument": {
 			indexes: bson.A{
 				bson.D{
@@ -407,12 +414,17 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		tt.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			var t testtb.TB = tt
+			if tc.failsForSQLite != "" {
+				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+			}
 
 			if tc.missingIndexes {
 				require.Nil(t, tc.indexes, "indexes must be nil if missingIndexes is true")
@@ -424,7 +436,7 @@ func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
 				providers = append(providers, shareddata.ArrayDocuments)
 			}
 
-			ctx, collection := setup.Setup(t, providers...)
+			ctx, collection := setup.Setup(tt, providers...)
 
 			var rest bson.D
 
