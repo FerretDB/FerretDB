@@ -315,17 +315,6 @@ func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateI
 		}
 	}
 
-	err = validateIndexes(existingIndexes.Indexes, params.Indexes)
-
-	checkError(
-		err,
-
-		ErrorCodeIndexNameIsEmpty,
-		ErrorCodeIndexAlreadyExists,
-		ErrorCodeIndexOptionsConflict,
-		ErrorCodeIndexKeySpecsConflict,
-	)
-
 	if err != nil {
 		return nil, err
 	}

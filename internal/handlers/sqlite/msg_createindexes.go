@@ -119,53 +119,6 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	res, err := c.CreateIndexes(ctx, params)
 	if err != nil {
-		switch {
-		case backends.ErrorCodeIs(err, backends.ErrorCodeIndexNameIsEmpty):
-			// invalid index must be mentioned in the response
-			// TODO https://github.com/FerretDB/FerretDB/issues/3320
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrCannotCreateIndex,
-				fmt.Sprintf(
-					"Error in specification %s :: caused by :: index name cannot be empty",
-					"invalidIdx.Name",
-				),
-				command,
-			)
-
-		case backends.ErrorCodeIs(err, backends.ErrorCodeIndexAlreadyExists):
-			// invalid index must be mentioned in the response
-			// TODO https://github.com/FerretDB/FerretDB/issues/3320
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrIndexAlreadyExists,
-				fmt.Sprintf("Identical index already exists: %s", "invalidIdx.Name"),
-				command,
-			)
-
-		case backends.ErrorCodeIs(err, backends.ErrorCodeIndexOptionsConflict):
-			// invalid index must be mentioned in the response
-			// TODO https://github.com/FerretDB/FerretDB/issues/3320
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrIndexOptionsConflict,
-				fmt.Sprintf("Index already exists with a different name: %s", "invalidIdx.Name"),
-				command,
-			)
-
-		case backends.ErrorCodeIs(err, backends.ErrorCodeIndexKeySpecsConflict):
-			// invalid index must be mentioned in the response
-			// TODO https://github.com/FerretDB/FerretDB/issues/3320
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrIndexKeySpecsConflict,
-				fmt.Sprintf("An existing index has the same name as the requested index. "+
-					"When index names are not specified, they are auto generated and can "+
-					"cause conflicts. Please refer to our documentation. "+
-					"Requested index: %s, "+
-					"existing index: %s",
-					"", "",
-				),
-				command,
-			)
-		}
-
 		return nil, lazyerrors.Error(err)
 	}
 
