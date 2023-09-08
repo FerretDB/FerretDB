@@ -38,8 +38,6 @@ func TestInsert(t *testing.T) {
 	db, err := b.Database(testutil.DatabaseName(t))
 	require.NoError(t, err)
 
-	defer db.Close()
-
 	c, err := db.Collection(testutil.CollectionName(t))
 	require.NoError(t, err)
 
@@ -72,7 +70,6 @@ func TestCollectionStats(t *testing.T) {
 
 	db, err := b.Database(testutil.DatabaseName(t))
 	require.NoError(t, err)
-	t.Cleanup(db.Close)
 
 	cNames := []string{"collectionOne", "collectionTwo"}
 	for _, cName := range cNames {

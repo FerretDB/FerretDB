@@ -108,7 +108,6 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 
 		return nil, lazyerrors.Error(err)
 	}
-	defer db.Close()
 
 	c, err := db.Collection(params.Collection)
 	if err != nil {

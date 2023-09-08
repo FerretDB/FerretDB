@@ -115,7 +115,6 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 
 		return nil, lazyerrors.Error(err)
 	}
-	defer db.Close()
 
 	err = db.RenameCollection(ctx, &backends.RenameCollectionParams{
 		OldName: oldCName,
