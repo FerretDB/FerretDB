@@ -164,8 +164,7 @@ func (dbc *databaseContract) RenameCollection(ctx context.Context, params *Renam
 		err = dbc.db.RenameCollection(ctx, params)
 	}
 
-	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist)
-
+	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist, ErrorCodeCollectionAlreadyExists)
 	return err
 }
 
