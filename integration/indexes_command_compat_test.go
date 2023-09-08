@@ -43,7 +43,7 @@ func TestCreateIndexesCommandCompat(tt *testing.T) {
 		resultType     compatTestCaseResultType // defaults to nonEmptyResult
 
 		skip           string // optional, skip test with a specified reason
-		failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue}
+		failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"InvalidCollectionName": {
 			collectionName: 42,

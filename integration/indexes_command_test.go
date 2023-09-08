@@ -225,7 +225,7 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 		err            *mongo.CommandError // required, expected error from MongoDB
 		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
 		skip           string              // optional, skip test with a specified reason
-		failsForSQLite string              // optional, if set, the case is expected to fail for SQLite due to given issue}
+		failsForSQLite string              // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"EmptyIndexes": {
 			indexes: bson.A{},
