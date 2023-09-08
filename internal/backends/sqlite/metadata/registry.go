@@ -22,6 +22,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
@@ -445,9 +447,9 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 		return lazyerrors.Error(err)
 	}
 
-	db, err := r.databaseGetOrCreate(ctx, dbName)
-	if err != nil {
-		return lazyerrors.Error(err)
+	db := r.DatabaseGetExisting(ctx, dbName)
+	if db == nil {
+		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, nil)
 	}
 
 	c := r.collectionGet(dbName, collectionName)
