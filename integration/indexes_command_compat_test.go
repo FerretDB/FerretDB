@@ -24,13 +24,14 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // TestCreateIndexesCommandCompat tests specific behavior for index creation that can be only provided through RunCommand.
-func TestCreateIndexesCommandCompat(t *testing.T) {
-	t.Parallel()
+func TestCreateIndexesCommandCompat(tt *testing.T) {
+	tt.Parallel()
 
-	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+	ctx, targetCollections, compatCollections := setup.SetupCompat(tt)
 	targetCollection := targetCollections[0]
 	compatCollection := compatCollections[0]
 
@@ -40,7 +41,9 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 		key            any
 		unique         any
 		resultType     compatTestCaseResultType // defaults to nonEmptyResult
-		skip           string                   // optional, skip test with a specified reason
+
+		skip           string // optional, skip test with a specified reason
+		failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue}
 	}{
 		"InvalidCollectionName": {
 			collectionName: 42,
@@ -78,11 +81,12 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 			indexName:      42,
 			resultType:     emptyResult,
 		},
-		//"ExistingNameDifferentKeyLength": {
-		//	collectionName: "test",
-		//	key:            bson.D{{"_id", 1}, {"v", 1}},
-		//	indexName:      "_id_", // the same name as the default index
-		//},
+		"ExistingNameDifferentKeyLength": {
+			collectionName: "test",
+			key:            bson.D{{"_id", 1}, {"v", 1}},
+			indexName:      "_id_", // the same name as the default index
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
+		},
 		"InvalidKey": {
 			collectionName: "test",
 			key:            42,
@@ -112,13 +116,18 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		tt.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Helper()
-			t.Parallel()
+			tt.Helper()
+			tt.Parallel()
+
+			var t testtb.TB = tt
+			if tc.failsForSQLite != "" {
+				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+			}
 
 			indexesDoc := bson.D{}
 
