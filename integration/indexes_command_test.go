@@ -449,8 +449,8 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 	}
 }
 
-func TestCreateIndexesCommandInvalidCollection(tt *testing.T) {
-	tt.Parallel()
+func TestCreateIndexesCommandInvalidCollection(t *testing.T) {
+	t.Parallel()
 
 	for name, tc := range map[string]struct {
 		collectionName any
@@ -505,14 +505,12 @@ func TestCreateIndexesCommandInvalidCollection(tt *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3183")
+			t.Parallel()
 
 			provider := shareddata.ArrayDocuments // one provider is enough to check for errors
 			ctx, collection := setup.Setup(t, provider)

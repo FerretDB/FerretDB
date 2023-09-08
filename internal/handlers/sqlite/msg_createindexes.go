@@ -52,8 +52,11 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	db, err := h.b.Database(dbName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid database specified '%s'", dbName)
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrInvalidNamespace,
+				fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection),
+				command,
+			)
 		}
 
 		return nil, lazyerrors.Error(err)
@@ -63,8 +66,11 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	c, err := db.Collection(collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid collection name: %s", collection)
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrInvalidNamespace,
+				fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection),
+				command,
+			)
 		}
 
 		return nil, lazyerrors.Error(err)
