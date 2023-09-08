@@ -34,13 +34,13 @@ import (
 // See backendContract and its methods for additional details.
 type Backend interface {
 	Close()
+
+	Name() string
+	Status(context.Context, *StatusParams) (*StatusResult, error)
+
 	Database(string) (Database, error)
 	ListDatabases(context.Context, *ListDatabasesParams) (*ListDatabasesResult, error)
 	DropDatabase(context.Context, *DropDatabaseParams) error
-
-	ServerStatus(context.Context, *ServerStatusParams) (*ServerStatusResult, error)
-
-	Name() string
 
 	prometheus.Collector
 
@@ -77,6 +77,29 @@ func (bc *backendContract) Close() {
 	resource.Untrack(bc, bc.token)
 }
 
+// Name returns human-readable formatted name of the backend.
+func (bc *backendContract) Name() string {
+	return bc.b.Name()
+}
+
+// StatusParams represents the parameters of Backend.Status method.
+type StatusParams struct{}
+
+// StatusResult represents the results of Backend.Status method.
+type StatusResult struct {
+	CountCollections int64
+}
+
+// Status returns backend's status.
+func (bc *backendContract) Status(ctx context.Context, params *StatusParams) (*StatusResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := bc.b.Status(ctx, params)
+	checkError(err)
+
+	return res, err
+}
+
 // Database returns a Database instance for the given valid name.
 //
 // The database does not need to exist.
@@ -107,7 +130,7 @@ type DatabaseInfo struct {
 	Size int64
 }
 
-// ListDatabases returns a Database instance for given parameters.
+// ListDatabases returns a list of databases.
 func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDatabasesParams) (*ListDatabasesResult, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -134,29 +157,6 @@ func (bc *backendContract) DropDatabase(ctx context.Context, params *DropDatabas
 	checkError(err, ErrorCodeDatabaseNameIsInvalid, ErrorCodeDatabaseDoesNotExist)
 
 	return err
-}
-
-// ServerStatusParams represents the parameters of Backend.ServerStatus method.
-type ServerStatusParams struct{}
-
-// ServerStatusResult represents the results of Backend.ServerStatus method.
-type ServerStatusResult struct {
-	CountCollections int64
-}
-
-// ServerStatus returns status about the server.
-func (bc *backendContract) ServerStatus(ctx context.Context, params *ServerStatusParams) (*ServerStatusResult, error) {
-	defer observability.FuncCall(ctx)()
-
-	res, err := bc.b.ServerStatus(ctx, params)
-	checkError(err)
-
-	return res, err
-}
-
-// Name returns human-readable formatted name of the backend.
-func (bc *backendContract) Name() string {
-	return bc.b.Name()
 }
 
 // Describe implements prometheus.Collector.

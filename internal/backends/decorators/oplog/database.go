@@ -38,11 +38,6 @@ func newDatabase(db backends.Database, name string, l *zap.Logger) backends.Data
 	}
 }
 
-// Close implements backends.Database interface.
-func (db *database) Close() {
-	db.db.Close()
-}
-
 // Collection implements backends.Database interface.
 func (db *database) Collection(name string) (backends.Collection, error) {
 	c, err := db.db.Collection(name)
