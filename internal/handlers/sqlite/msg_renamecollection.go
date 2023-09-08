@@ -125,12 +125,6 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	switch {
 	case err == nil:
 	// do nothing
-	case backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist):
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrNamespaceNotFound,
-			fmt.Sprintf("Database %s does not exist or is drop pending", oldDBName),
-			command,
-		)
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionAlreadyExists):
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNamespaceExists,

@@ -16,7 +16,6 @@ package sqlite
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -109,18 +108,28 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
-	err := db.r.CollectionRename(ctx, db.name, params.OldName, params.NewName)
+	// old collection does not exist must error must be checked before new collection already exists error
+	if c := db.r.CollectionGet(ctx, db.name, params.OldName); c == nil {
+		return backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", db.name, params.OldName),
+		)
+	}
 
-	switch {
-	case err == nil:
-	case errors.Is(err, metadata.ErrDatabaseDoesNotExist):
-		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, err)
-	case errors.Is(err, metadata.ErrCollectionDoesNotExist):
-		return backends.NewError(backends.ErrorCodeCollectionDoesNotExist, err)
-	case errors.Is(err, metadata.ErrCollectionAlreadyExists):
-		return backends.NewError(backends.ErrorCodeCollectionAlreadyExists, err)
-	default:
+	if c := db.r.CollectionGet(ctx, db.name, params.NewName); c != nil {
+		return backends.NewError(
+			backends.ErrorCodeCollectionAlreadyExists,
+			lazyerrors.Errorf("already exists %s.%s", db.name, params.NewName),
+		)
+	}
+
+	renamed, err := db.r.CollectionRename(ctx, db.name, params.OldName, params.NewName)
+	if err != nil {
 		return lazyerrors.Error(err)
+	}
+
+	if !renamed {
+		return backends.NewError(backends.ErrorCodeCollectionDoesNotExist, err)
 	}
 
 	return nil

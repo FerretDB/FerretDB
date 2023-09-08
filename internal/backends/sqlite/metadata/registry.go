@@ -52,17 +52,6 @@ const (
 	subsystem = "sqlite_metadata"
 )
 
-var (
-	// ErrDatabaseDoesNotExist indicates that database does not exist.
-	ErrDatabaseDoesNotExist = fmt.Errorf("database does not exist")
-
-	// ErrCollectionDoesNotExist indicates that collection does not exist.
-	ErrCollectionDoesNotExist = fmt.Errorf("collection does not exist")
-
-	// ErrCollectionAlreadyExists indicates that collection already exists.
-	ErrCollectionAlreadyExists = fmt.Errorf("collection already exists")
-)
-
 // Registry provides access to SQLite databases and collections information.
 //
 // Exported methods are safe for concurrent use. Unexported methods are not.
@@ -378,13 +367,16 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 
 // CollectionRename renames a collection in the database.
 //
-// The collection name is update, but it keeps the original table name.
-func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) error {
+// The collection name is update, but original table name is kept.
+//
+// Returned boolean value indicates whether the collection was renamed.
+// If database or collection did not exist, (false, nil) is returned.
+func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	db := r.p.GetExisting(ctx, dbName)
 	if db == nil {
-		return ErrDatabaseDoesNotExist
+		return false, nil
 	}
 
 	r.rw.Lock()
@@ -392,35 +384,39 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 
 	colls := r.colls[dbName]
 	if colls == nil {
-		return ErrDatabaseDoesNotExist
+		return false, nil
 	}
 
 	cOld := colls[oldCollectionName]
 	if cOld == nil {
-		return ErrCollectionDoesNotExist
+		return false, nil
 	}
 
-	cNew := colls[newCollectionName]
-	if cNew != nil {
-		return ErrCollectionAlreadyExists
+	q := fmt.Sprintf(`UPDATE %q SET name = ? WHERE table_name = ?`, metadataTableName)
+
+	res, err := db.ExecContext(ctx, q, newCollectionName, cOld.TableName)
+	if err != nil {
+		return false, lazyerrors.Error(err)
 	}
 
-	cNew = &Collection{
+	ra, err := res.RowsAffected()
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	if ra == 0 {
+		return false, nil
+	}
+
+	r.colls[dbName][newCollectionName] = &Collection{
 		Name:      newCollectionName,
 		TableName: cOld.TableName,
 		Settings:  cOld.Settings,
 	}
 
-	q := fmt.Sprintf(`UPDATE %q SET name = ? WHERE table_name = ?`, metadataTableName)
-	if _, err := db.ExecContext(ctx, q, cNew.Name, cNew.TableName); err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	r.colls[dbName][newCollectionName] = cNew
-
 	delete(r.colls[dbName], oldCollectionName)
 
-	return nil
+	return true, nil
 }
 
 // Describe implements prometheus.Collector.
