@@ -117,23 +117,12 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	res, err := c.CreateIndexes(ctx, params)
+	_, err = c.CreateIndexes(ctx, params)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	resp := new(types.Document)
-
-	resp.Set("numIndexesBefore", res.NumIndexesBefore)
-	resp.Set("numIndexesAfter", res.NumIndexesAfter)
-
-	if res.Note != "" {
-		resp.Set("note", res.Note)
-	}
-
-	if res.NumIndexesBefore != res.NumIndexesAfter {
-		resp.Set("createdCollectionAutomatically", res.CollectionCreated)
-	}
 
 	resp.Set("ok", float64(1))
 
