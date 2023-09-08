@@ -16,3 +16,52 @@
 //
 // It should be used only by the metadata package.
 package pool
+
+import (
+	"sync"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/util/resource"
+	"github.com/FerretDB/FerretDB/internal/util/state"
+)
+
+// Pool provides access to PostgreSQL connections.
+type Pool struct {
+	u  string
+	l  *zap.Logger
+	sp *state.Provider
+
+	token *resource.Token
+
+	rw    sync.RWMutex
+	pools map[string]*pgxpool.Pool
+}
+
+func New(u string, l *zap.Logger, sp *state.Provider) *Pool {
+	p := &Pool{
+		u:     u,
+		l:     l,
+		sp:    sp,
+		token: resource.NewToken(),
+		pools: make(map[string]*pgxpool.Pool),
+	}
+
+	resource.Track(p, p.token)
+
+	return p
+}
+
+func (p *Pool) Close() {
+	p.rw.Lock()
+	defer p.rw.Unlock()
+
+	for _, pool := range p.pools {
+		pool.Close()
+	}
+
+	p.pools = nil
+
+	resource.Untrack(p, p.token)
+}
