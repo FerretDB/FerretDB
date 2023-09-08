@@ -108,7 +108,7 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
-	// old collection does not exist must error must be checked before new collection already exists error
+	// old collection does not exist must be checked before new collection already exists
 	if c := db.r.CollectionGet(ctx, db.name, params.OldName); c == nil {
 		return backends.NewError(
 			backends.ErrorCodeCollectionDoesNotExist,

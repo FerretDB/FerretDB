@@ -183,7 +183,6 @@ func (dbc *databaseContract) RenameCollection(ctx context.Context, params *Renam
 
 	checkError(
 		err,
-		ErrorCodeDatabaseDoesNotExist,
 		ErrorCodeCollectionNameIsInvalid,
 		ErrorCodeCollectionDoesNotExist,
 		ErrorCodeCollectionAlreadyExists,
