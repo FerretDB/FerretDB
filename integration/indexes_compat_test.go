@@ -350,6 +350,8 @@ func TestDropIndexesCompat(tt *testing.T) {
 			},
 			dropIndexName: "v_-1",
 		},
+		// We need to figure out why these test cases pass even if there is no implementation for dropIndexes
+		// TODO https://github.com/FerretDB/FerretDB/issues/3287
 		//"AsteriskWithDropOne": {
 		//	toCreate: []mongo.IndexModel{
 		//		{Keys: bson.D{{"v", -1}}},
