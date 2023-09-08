@@ -230,7 +230,7 @@ tasks:
         -target-backend=ferretdb-hana
         {{.TEST_UNIX_SOCKET_FLAG}}
         -hana-url=$FERRETDB_HANA_URL
-        -compat-url=mongodb://127.0.0.1:47017/
+        -compat-url='mongodb://127.0.0.1:47017/'
     vars:
       SHARD_RUN:
         sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
@@ -242,7 +242,7 @@ tasks:
       - >
         go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-mongodb.txt .
-        -target-url=mongodb://127.0.0.1:47017/
+        -target-url='mongodb://127.0.0.1:47017/'
         -target-backend=mongodb
     vars:
       SHARD_RUN:
@@ -314,6 +314,7 @@ tasks:
         --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
         --test-disable-filter-pushdown
+        --test-enable-oplog
 
   # set FERRETDB_HANA_URL environment variable to use it
   run-hana:
@@ -372,6 +373,7 @@ tasks:
         --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
         --test-disable-filter-pushdown
+        --test-enable-oplog
 
   lint:
     desc: "Run linters"
@@ -407,11 +409,9 @@ tasks:
       - bin/task{{exeExt}} -d integration integration-security
 
   godocs:
-    desc: "Serve godoc documentation"
+    desc: "Serve Go code documentation"
     cmds:
-      - cmd: open http://127.0.0.1:6060/pkg/github.com/FerretDB/FerretDB/?m=all
-        ignore_error: true # open might not work on that platform
-      - bin/godoc{{exeExt}} -http=127.0.0.1:6060
+      - bin/pkgsite{{exeExt}} -http=127.0.0.1:6060 -open
 
   psql:
     desc: "Run psql"

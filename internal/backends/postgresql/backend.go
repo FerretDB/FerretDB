@@ -43,6 +43,16 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 func (b *backend) Close() {
 }
 
+// Name implements backends.Backend interface.
+func (b *backend) Name() string {
+	return "PostgreSQL"
+}
+
+// Status implements backends.Backend interface.
+func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
+	panic("not implemented")
+}
+
 // Database implements backends.Backend interface.
 func (b *backend) Database(name string) (backends.Database, error) {
 	return newDatabase(name), nil
@@ -58,11 +68,6 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
 	panic("not implemented")
-}
-
-// Name implements backends.Backend interface.
-func (b *backend) Name() string {
-	return "PostgreSQL"
 }
 
 // Describe implements prometheus.Collector.

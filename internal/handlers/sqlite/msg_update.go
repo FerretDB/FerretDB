@@ -82,7 +82,6 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdateParam
 
 		return 0, 0, nil, lazyerrors.Error(err)
 	}
-	defer db.Close()
 
 	err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: params.Collection})
 

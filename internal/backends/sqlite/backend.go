@@ -22,6 +22,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -60,6 +61,29 @@ func (b *backend) Close() {
 	b.r.Close()
 }
 
+// Name implements backends.Backend interface.
+func (b *backend) Name() string {
+	return "SQLite"
+}
+
+// Status implements backends.Backend interface.
+func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
+	dbs := b.r.DatabaseList(ctx)
+
+	var res backends.StatusResult
+
+	for _, dbName := range dbs {
+		cs, err := b.r.CollectionList(ctx, dbName)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res.CountCollections += int64(len(cs))
+	}
+
+	return &res, nil
+}
+
 // Database implements backends.Backend interface.
 func (b *backend) Database(name string) (backends.Database, error) {
 	return newDatabase(b.r, name), nil
@@ -88,11 +112,6 @@ func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabas
 	}
 
 	return nil
-}
-
-// Name implements backends.Backend interface.
-func (b *backend) Name() string {
-	return "SQLite"
 }
 
 // Describe implements prometheus.Collector.

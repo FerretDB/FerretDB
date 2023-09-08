@@ -39,6 +39,8 @@ type Collection interface {
 	Explain(context.Context, *ExplainParams) (*ExplainResult, error)
 
 	Stats(context.Context, *CollectionStatsParams) (*CollectionStatsResult, error)
+
+	ListIndexes(context.Context, *ListIndexesParams) (*ListIndexesResult, error)
 }
 
 // collectionContract implements Collection interface.
@@ -220,6 +222,39 @@ func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStats
 
 	res, err := cc.c.Stats(ctx, params)
 	checkError(err, ErrorCodeDatabaseDoesNotExist, ErrorCodeCollectionDoesNotExist)
+
+	return res, err
+}
+
+// ListIndexesParams represents the parameters of Collection.ListIndexes method.
+type ListIndexesParams struct{}
+
+// ListIndexesResult represents the results of Collection.ListIndexes method.
+type ListIndexesResult struct {
+	Indexes []IndexInfo
+}
+
+// IndexInfo represents information about a single index.
+type IndexInfo struct {
+	Name   string
+	Key    []IndexKeyPair
+	Unique bool
+}
+
+// IndexKeyPair consists of a field name and a sort order that are part of the index.
+type IndexKeyPair struct {
+	Field      string
+	Descending bool
+}
+
+// ListIndexes returns information about indexes in the database.
+//
+// The errors for non-existing database and non-existing collection are the same.
+func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndexesParams) (*ListIndexesResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := cc.c.ListIndexes(ctx, params)
+	checkError(err, ErrorCodeCollectionDoesNotExist)
 
 	return res, err
 }

@@ -22,6 +22,7 @@
 //     FerretDB often could use more granular locks - for example, per collection.
 //  2. Explicit transaction retries and [SQLITE_BUSY] handling should be avoided - see above.
 //     Additionally, SQLite retries automatically with the [busy_timeout] parameter we set by default, which should be enough.
+//  3. Metadata is heavily cached to avoid most queries and transactions.
 //
 // [transaction]: https://www.sqlite.org/lang_transaction.html
 // [concurrent transactions]: https://www.sqlite.org/cgi/src/doc/begin-concurrent/doc/begin_concurrent.md
