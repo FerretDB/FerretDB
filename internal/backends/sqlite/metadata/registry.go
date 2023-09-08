@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -380,21 +381,21 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 func (r *Registry) indexesCreate(ctx context.Context, db *fsql.DB, c *Collection, indexes []IndexInfo) error {
 	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
 		for _, index := range indexes {
-			// check if index already exists
-			q := `SELECT EXISTS (SELECT 1 FROM sqlite_master WHERE type= 'index' and tbl_name = ? and name = ?)`
-			row := tx.QueryRowContext(ctx, q, c.TableName, c.TableName+index.Name)
+			// if the index already exists, it is just ignored
+			exists := false
 
-			var exists bool
-			err := row.Scan(&exists)
-			if err != nil {
-				return lazyerrors.Error(err)
+			for _, existingIndex := range c.Settings.Indexes {
+				if index.Name == existingIndex.Name {
+					exists = true
+					break
+				}
 			}
 
 			if exists {
 				continue
 			}
 
-			q = "CREATE "
+			q := "CREATE "
 
 			if index.Unique {
 				q += "UNIQUE "
@@ -445,9 +446,9 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 		return lazyerrors.Error(err)
 	}
 
-	db, err := r.databaseGetOrCreate(ctx, dbName)
-	if err != nil {
-		return lazyerrors.Error(err)
+	db := r.DatabaseGetExisting(ctx, dbName)
+	if db == nil {
+		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, nil)
 	}
 
 	c := r.collectionGet(dbName, collectionName)

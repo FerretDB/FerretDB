@@ -240,28 +240,8 @@ type ListIndexesResult struct {
 // IndexInfo represents information about a single index.
 type IndexInfo struct {
 	Name   string
-	Key    IndexKey
+	Key    []IndexKeyPair
 	Unique bool
-}
-
-// IndexKey is a list of field name + sort order pairs.
-//
-// It exists as a separate type to make it easier to compare index keys.
-type IndexKey []IndexKeyPair
-
-// Equal returns true if the given index key is equal to the current one.
-func (k IndexKey) Equal(v IndexKey) bool {
-	if len(k) != len(v) {
-		return false
-	}
-
-	for i := range k {
-		if k[i] != v[i] {
-			return false
-		}
-	}
-
-	return true
 }
 
 // IndexKeyPair consists of a field name and a sort order that are part of the index.
@@ -288,12 +268,7 @@ type CreateIndexesParams struct {
 }
 
 // CreateIndexesResult represents the results of Collection.CreateIndexes method.
-type CreateIndexesResult struct {
-	Note              string
-	NumIndexesBefore  int32
-	NumIndexesAfter   int32
-	CollectionCreated bool
-}
+type CreateIndexesResult struct{}
 
 // CreateIndexes creates indexes for the collection.
 //
@@ -305,57 +280,12 @@ type CreateIndexesResult struct {
 func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateIndexesParams) (*CreateIndexesResult, error) {
 	defer observability.FuncCall(ctx)()
 
-	existingIndexes, err := cc.c.ListIndexes(ctx, new(ListIndexesParams))
-	if err != nil {
-		if ErrorCodeIs(err, ErrorCodeCollectionDoesNotExist) {
-			// If the collection doesn't exist, it's not a problem,
-			// it just means that there are no existing indexes.
-			existingIndexes = &ListIndexesResult{Indexes: []IndexInfo{}}
-		} else {
-			return nil, lazyerrors.Error(err)
-		}
-	}
-
-	err = validateIndexes(existingIndexes.Indexes, params.Indexes)
-
-	checkError(
-		err,
-
-		ErrorCodeIndexNameIsEmpty,
-		ErrorCodeIndexAlreadyExists,
-		ErrorCodeIndexOptionsConflict,
-		ErrorCodeIndexKeySpecsConflict,
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
 	res, err := cc.c.CreateIndexes(ctx, params)
 
 	checkError(err, ErrorCodeCollectionNameIsInvalid)
 
 	if err != nil {
 		return nil, lazyerrors.Error(err)
-	}
-
-	indexesAfterCreation, err := cc.c.ListIndexes(ctx, new(ListIndexesParams))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	res.NumIndexesBefore = int32(len(existingIndexes.Indexes))
-	if res.NumIndexesBefore == 0 {
-		res.CollectionCreated = true
-
-		// For compatibility with MongoDB: if the collection didn't exist before, NumIndexesBefore should be 1.
-		res.NumIndexesBefore = 1
-	}
-
-	res.NumIndexesAfter = int32(len(indexesAfterCreation.Indexes))
-
-	if len(existingIndexes.Indexes) == len(indexesAfterCreation.Indexes) {
-		res.Note = "all indexes already exist"
 	}
 
 	return res, err

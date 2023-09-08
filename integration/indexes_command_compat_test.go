@@ -43,7 +43,7 @@ func TestCreateIndexesCommandCompat(tt *testing.T) {
 		resultType     compatTestCaseResultType // defaults to nonEmptyResult
 
 		skip           string // optional, skip test with a specified reason
-		failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue}
+		failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"InvalidCollectionName": {
 			collectionName: 42,
@@ -74,6 +74,7 @@ func TestCreateIndexesCommandCompat(tt *testing.T) {
 			key:            bson.D{{"v", -1}},
 			indexName:      "",
 			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 		"NonStringIndexName": {
 			collectionName: "test",
@@ -106,6 +107,7 @@ func TestCreateIndexesCommandCompat(tt *testing.T) {
 			key:            bson.D{{"v", 1}},
 			indexName:      "unique_false",
 			unique:         false,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 		"UniqueTypeDocument": {
 			collectionName: "test",
@@ -205,8 +207,10 @@ func TestCreateIndexesCommandCompat(tt *testing.T) {
 // TestCreateIndexesCommandCompatCheckFields check that the response contains response's fields
 // such as numIndexBefore, numIndexAfter, createdCollectionAutomatically
 // contain the correct values.
-func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
-	t.Parallel()
+func TestCreateIndexesCommandCompatCheckFields(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3331")
 
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 	targetCollection := targetCollections[0]
