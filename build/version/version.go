@@ -16,7 +16,7 @@
 //
 // # Required files
 //
-// The following generated text files may be present in this (build/version) directory during building:
+// The following generated text files may be present in this (`build/version`) directory during building:
 //   - version.txt (required) contains information about the FerretDB version in a format
 //     similar to `git describe` output: `v<major>.<minor>.<patch>`.
 //   - commit.txt (optional) contains information about the source git commit.

@@ -47,11 +47,6 @@ func newDatabase(r *metadata.Registry, name string) backends.Database {
 	})
 }
 
-// Close implements backends.Database interface.
-func (db *database) Close() {
-	// nothing
-}
-
 // Collection implements backends.Database interface.
 func (db *database) Collection(name string) (backends.Collection, error) {
 	return newCollection(db.r, db.name, name), nil
@@ -108,8 +103,31 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2760
-	panic("not implemented")
+	// non-existent old collection must be checked before existence of new collection check
+	if c := db.r.CollectionGet(ctx, db.name, params.OldName); c == nil {
+		return backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", db.name, params.OldName),
+		)
+	}
+
+	if c := db.r.CollectionGet(ctx, db.name, params.NewName); c != nil {
+		return backends.NewError(
+			backends.ErrorCodeCollectionAlreadyExists,
+			lazyerrors.Errorf("already exists %s.%s", db.name, params.NewName),
+		)
+	}
+
+	renamed, err := db.r.CollectionRename(ctx, db.name, params.OldName, params.NewName)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !renamed {
+		return backends.NewError(backends.ErrorCodeCollectionDoesNotExist, err)
+	}
+
+	return nil
 }
 
 // Stats implements backends.Database interface.
