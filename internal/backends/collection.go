@@ -295,7 +295,10 @@ func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateI
 type DropIndexesParams struct{}
 
 // DropIndexesResult represents the results of Collection.DropIndexes method.
-type DropIndexesResult struct{}
+type DropIndexesResult struct {
+	NIndexesWas int32
+	Msg         string
+}
 
 // DropIndexes drops indexes for the collection.
 //
