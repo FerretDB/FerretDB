@@ -36,7 +36,9 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	// dbName is either "admin" or "$external" there,
+	// TODO https://github.com/FerretDB/FerretDB/issues/3008
+
+	// database name is either "$external" or "admin"
 	// we can't use it to query the database
 	_ = dbName
 
