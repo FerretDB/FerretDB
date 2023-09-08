@@ -98,8 +98,27 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 	res := &backends.ListDatabasesResult{
 		Databases: make([]backends.DatabaseInfo, len(list)),
 	}
-	for i, db := range list {
-		res.Databases[i] = backends.DatabaseInfo{Name: db}
+
+	for i, dbName := range list {
+		db, err := b.Database(dbName)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		stats, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
+			stats = new(backends.DatabaseStatsResult)
+			err = nil
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res.Databases[i] = backends.DatabaseInfo{
+			Name: dbName,
+			Size: stats.SizeTotal,
+		}
 	}
 
 	return res, nil
