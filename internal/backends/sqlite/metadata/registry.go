@@ -16,7 +16,6 @@ package metadata
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"hash/fnv"
 	"sort"
@@ -26,8 +25,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
-	sqlite3 "modernc.org/sqlite"
-	sqlite3lib "modernc.org/sqlite/lib"
 
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
@@ -247,10 +244,11 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 		return false, nil
 	}
 
-	var tableName string
 	h := fnv.New32a()
 	must.NotFail(h.Write([]byte(collectionName)))
 	s := h.Sum32()
+
+	var tableName string
 
 	for {
 		tableName = fmt.Sprintf("%s_%08x", strings.ToLower(collectionName), s)
@@ -258,31 +256,30 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 			tableName = "_" + tableName
 		}
 
-		q := fmt.Sprintf("CREATE TABLE %[1]q (%[2]s TEXT NOT NULL CHECK(%[2]s != '')) STRICT", tableName, DefaultColumn)
-		_, err = db.ExecContext(ctx, q)
+		var exists bool
 
-		var se *sqlite3.Error
-
-		// When a table already exists, SQLite error code sqlite3lib.SQLITE_ERROR returned is too generic.
-		// So we also check that error message contains `already exists` text.
-		// The se.Error() looks like `SQL logic error: table "XXX" already exists (1)`.
-		// See also https://www.sqlite.org/rescode.html#error.
-		if errors.As(err, &se) && se.Code() == sqlite3lib.SQLITE_ERROR && strings.Contains(se.Error(), "already exists") {
-			// table already exists, generate a new table name by incrementing the hash
-			s++
-
-			continue
+		for _, c := range colls {
+			if c.TableName == tableName {
+				exists = true
+			}
 		}
 
-		if err != nil {
-			return false, lazyerrors.Error(err)
+		if exists {
+			// table already exists, generate a new table name by incrementing the hash
+			s++
+			continue
 		}
 
 		break
 	}
 
+	q := fmt.Sprintf("CREATE TABLE %[1]q (%[2]s TEXT NOT NULL CHECK(%[2]s != '')) STRICT", tableName, DefaultColumn)
+	if _, err = db.ExecContext(ctx, q); err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
 	pkName := tableName + "_id"
-	q := fmt.Sprintf("CREATE UNIQUE INDEX %q ON %q (%s)", pkName, tableName, IDColumn)
+	q = fmt.Sprintf("CREATE UNIQUE INDEX %q ON %q (%s)", pkName, tableName, IDColumn)
 	if _, err = db.ExecContext(ctx, q); err != nil {
 		_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
 		return false, lazyerrors.Error(err)
