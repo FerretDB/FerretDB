@@ -61,7 +61,6 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 		return nil, lazyerrors.Error(err)
 	}
-	defer db.Close()
 
 	c, err := db.Collection(collection)
 	if err != nil {
