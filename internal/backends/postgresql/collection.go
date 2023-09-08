@@ -74,6 +74,11 @@ func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateI
 	panic("not implemented")
 }
 
+// DropIndexes implements backends.Collection interface.
+func (c *collection) DropIndexes(context.Context, *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
+	panic("not implemented")
+}
+
 // check interfaces
 var (
 	_ backends.Collection = (*collection)(nil)
