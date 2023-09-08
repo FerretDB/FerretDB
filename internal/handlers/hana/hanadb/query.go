@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -62,7 +61,7 @@ func (hanaPool *Pool) QueryDocuments(ctx context.Context, qp *QueryParams) (type
 
 	iter := &queryIterator{
 		ctx:       ctx,
-		unmarshal: sjson.Unmarshal,
+		unmarshal: Unmarshal,
 		rows:      rows,
 		token:     resource.NewToken(),
 	}

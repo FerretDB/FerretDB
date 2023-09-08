@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -50,8 +49,7 @@ func (hanaPool *Pool) InsertOne(ctx context.Context, qp *QueryParams, doc *types
 func (hanaPool *Pool) insert(ctx context.Context, qp *QueryParams, doc *types.Document) error {
 	sqlStmt := fmt.Sprintf("insert into %q.%q values($1)", qp.DB, qp.Collection)
 
-	// sjson.MarshalSingleValue can be used because the Hana insert json format is just a json string
-	_, err := hanaPool.ExecContext(ctx, sqlStmt, must.NotFail(sjson.MarshalSingleValue(doc)))
+	_, err := hanaPool.ExecContext(ctx, sqlStmt, must.NotFail(Marshal(doc)))
 
 	return getHanaErrorIfExists(err)
 }

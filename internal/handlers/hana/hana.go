@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
+	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/hana/hanadb"
@@ -39,6 +40,7 @@ func notImplemented(command string) error {
 type Handler struct {
 	pools map[string]*hanadb.Pool
 	*NewOpts
+	cursors *cursor.Registry
 
 	// accessed by DBPool(ctx)
 	rw sync.RWMutex
