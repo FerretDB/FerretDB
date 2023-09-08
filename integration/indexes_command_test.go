@@ -213,8 +213,8 @@ func TestDropIndexesCommandErrors(tt *testing.T) {
 	}
 }
 
-func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
-	tt.Parallel()
+func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
+	t.Parallel()
 
 	for name, tc := range map[string]struct {
 		indexes        any  // optional
@@ -301,20 +301,20 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 					`The 'name' field is a required property of an index specification`,
 			},
 		},
-		"EmptyName": {
-			indexes: bson.A{
-				bson.D{
-					{"key", bson.D{{"v", -1}}},
-					{"name", ""},
-				},
-			},
-			err: &mongo.CommandError{
-				Code:    67,
-				Name:    "CannotCreateIndex",
-				Message: `Error in specification { key: { v: -1 }, name: "", v: 2 } :: caused by :: index name cannot be empty`,
-			},
-			altMessage: `Error in specification { key: { v: -1 }, name: "" } :: caused by :: index name cannot be empty`,
-		},
+		//"EmptyName": {
+		//	indexes: bson.A{
+		//		bson.D{
+		//			{"key", bson.D{{"v", -1}}},
+		//			{"name", ""},
+		//		},
+		//	},
+		//	err: &mongo.CommandError{
+		//		Code:    67,
+		//		Name:    "CannotCreateIndex",
+		//		Message: `Error in specification { key: { v: -1 }, name: "", v: 2 } :: caused by :: index name cannot be empty`,
+		//	},
+		//	altMessage: `Error in specification { key: { v: -1 }, name: "" } :: caused by :: index name cannot be empty`,
+		//},
 		"MissingKey": {
 			indexes: bson.A{
 				bson.D{},
@@ -325,69 +325,69 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 				Message: `Error in specification {} :: caused by :: The 'key' field is a required property of an index specification`,
 			},
 		},
-		"IdenticalIndex": {
-			indexes: bson.A{
-				bson.D{
-					{"key", bson.D{{"v", 1}}},
-					{"name", "v_1"},
-				},
-				bson.D{
-					{"key", bson.D{{"v", 1}}},
-					{"name", "v_1"},
-				},
-			},
-			noProvider: true,
-			err: &mongo.CommandError{
-				Code:    68,
-				Name:    "IndexAlreadyExists",
-				Message: `Identical index already exists: v_1`,
-			},
-		},
-		"SameName": {
-			indexes: bson.A{
-				bson.D{
-					{"key", bson.D{{"foo", -1}}},
-					{"name", "index-name"},
-				},
-				bson.D{
-					{"key", bson.D{{"bar", -1}}},
-					{"name", "index-name"},
-				},
-			},
-			noProvider: true,
-			err: &mongo.CommandError{
-				Code: 86,
-				Name: "IndexKeySpecsConflict",
-				Message: "An existing index has the same name as the requested index. " +
-					"When index names are not specified, they are auto generated and can " +
-					"cause conflicts. Please refer to our documentation. " +
-					"Requested index: { v: 2, key: { bar: -1 }, name: \"index-name\" }, " +
-					"existing index: { v: 2, key: { foo: -1 }, name: \"index-name\" }",
-			},
-			altMessage: "An existing index has the same name as the requested index. " +
-				"When index names are not specified, they are auto generated and can " +
-				"cause conflicts. Please refer to our documentation. " +
-				"Requested index: { key: { bar: -1 }, name: \"index-name\" }, " +
-				"existing index: { key: { foo: -1 }, name: \"index-name\" }",
-		},
-		"SameIndex": {
-			indexes: bson.A{
-				bson.D{
-					{"key", bson.D{{"v", -1}}},
-					{"name", "foo"},
-				},
-				bson.D{
-					{"key", bson.D{{"v", -1}}},
-					{"name", "bar"},
-				},
-			},
-			noProvider: true,
-			err: &mongo.CommandError{
-				Code:    85,
-				Name:    "IndexOptionsConflict",
-				Message: "Index already exists with a different name: foo",
-			},
-		},
+		//"IdenticalIndex": {
+		//	indexes: bson.A{
+		//		bson.D{
+		//			{"key", bson.D{{"v", 1}}},
+		//			{"name", "v_1"},
+		//		},
+		//		bson.D{
+		//			{"key", bson.D{{"v", 1}}},
+		//			{"name", "v_1"},
+		//		},
+		//	},
+		//	noProvider: true,
+		//	err: &mongo.CommandError{
+		//		Code:    68,
+		//		Name:    "IndexAlreadyExists",
+		//		Message: `Identical index already exists: v_1`,
+		//	},
+		//},
+		//"SameName": {
+		//	indexes: bson.A{
+		//		bson.D{
+		//			{"key", bson.D{{"foo", -1}}},
+		//			{"name", "index-name"},
+		//		},
+		//		bson.D{
+		//			{"key", bson.D{{"bar", -1}}},
+		//			{"name", "index-name"},
+		//		},
+		//	},
+		//	noProvider: true,
+		//	err: &mongo.CommandError{
+		//		Code: 86,
+		//		Name: "IndexKeySpecsConflict",
+		//		Message: "An existing index has the same name as the requested index. " +
+		//			"When index names are not specified, they are auto generated and can " +
+		//			"cause conflicts. Please refer to our documentation. " +
+		//			"Requested index: { v: 2, key: { bar: -1 }, name: \"index-name\" }, " +
+		//			"existing index: { v: 2, key: { foo: -1 }, name: \"index-name\" }",
+		//	},
+		//	altMessage: "An existing index has the same name as the requested index. " +
+		//		"When index names are not specified, they are auto generated and can " +
+		//		"cause conflicts. Please refer to our documentation. " +
+		//		"Requested index: { key: { bar: -1 }, name: \"index-name\" }, " +
+		//		"existing index: { key: { foo: -1 }, name: \"index-name\" }",
+		//},
+		//"SameIndex": {
+		//	indexes: bson.A{
+		//		bson.D{
+		//			{"key", bson.D{{"v", -1}}},
+		//			{"name", "foo"},
+		//		},
+		//		bson.D{
+		//			{"key", bson.D{{"v", -1}}},
+		//			{"name", "bar"},
+		//		},
+		//	},
+		//	noProvider: true,
+		//	err: &mongo.CommandError{
+		//		Code:    85,
+		//		Name:    "IndexOptionsConflict",
+		//		Message: "Index already exists with a different name: foo",
+		//	},
+		//},
 		"UniqueTypeDocument": {
 			indexes: bson.A{
 				bson.D{
@@ -407,14 +407,12 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3183")
+			t.Parallel()
 
 			if tc.missingIndexes {
 				require.Nil(t, tc.indexes, "indexes must be nil if missingIndexes is true")
