@@ -185,6 +185,11 @@ func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateI
 	return c.c.CreateIndexes(ctx, params)
 }
 
+// DropIndexes implements backends.Collection interface.
+func (c *collection) DropIndexes(context.Context, *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
+	return c.c.DropIndexes(context.Background(), nil)
+}
+
 // check interfaces
 var (
 	_ backends.Collection = (*collection)(nil)

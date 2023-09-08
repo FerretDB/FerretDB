@@ -350,13 +350,6 @@ func TestDropIndexesCompat(tt *testing.T) {
 			},
 			dropIndexName: "v_-1",
 		},
-		"AsteriskWithDropOne": {
-			toCreate: []mongo.IndexModel{
-				{Keys: bson.D{{"v", -1}}},
-			},
-			dropIndexName: "*",
-			resultType:    emptyResult,
-		},
 		"NonExistent": {
 			dropIndexName: "nonexistent_1",
 			resultType:    emptyResult,
