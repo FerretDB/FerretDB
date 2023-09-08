@@ -25,6 +25,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
@@ -249,6 +250,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 	s := h.Sum32()
 
 	var tableName string
+	list := maps.Values(colls)
 
 	for {
 		tableName = fmt.Sprintf("%s_%08x", strings.ToLower(collectionName), s)
@@ -256,21 +258,12 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 			tableName = "_" + tableName
 		}
 
-		var exists bool
-
-		for _, c := range colls {
-			if c.TableName == tableName {
-				exists = true
-			}
+		if !slices.ContainsFunc(list, func(c *Collection) bool { return c.TableName == tableName }) {
+			break
 		}
 
-		if exists {
-			// table already exists, generate a new table name by incrementing the hash
-			s++
-			continue
-		}
-
-		break
+		// table already exists, generate a new table name by incrementing the hash
+		s++
 	}
 
 	q := fmt.Sprintf("CREATE TABLE %[1]q (%[2]s TEXT NOT NULL CHECK(%[2]s != '')) STRICT", tableName, DefaultColumn)
@@ -391,18 +384,8 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 
 	q := fmt.Sprintf(`UPDATE %q SET name = ? WHERE table_name = ?`, metadataTableName)
 
-	res, err := db.ExecContext(ctx, q, newCollectionName, cOld.TableName)
-	if err != nil {
+	if _, err := db.ExecContext(ctx, q, newCollectionName, cOld.TableName); err != nil {
 		return false, lazyerrors.Error(err)
-	}
-
-	ra, err := res.RowsAffected()
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
-	if ra == 0 {
-		return false, nil
 	}
 
 	r.colls[dbName][newCollectionName] = &Collection{
