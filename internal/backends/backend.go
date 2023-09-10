@@ -93,6 +93,10 @@ type StatusResult struct {
 }
 
 // Status returns backend's status.
+//
+// This method should also be used to check that the backend is alive,
+// connection can be established and authenticated.
+// For that reason, the implementation should not return only cached results.
 func (bc *backendContract) Status(ctx context.Context, params *StatusParams) (*StatusResult, error) {
 	defer observability.FuncCall(ctx)()
 

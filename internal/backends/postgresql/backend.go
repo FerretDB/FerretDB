@@ -26,7 +26,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
-
 // backend implements backends.Backend interface.
 type backend struct {
 	r *metadata.Registry

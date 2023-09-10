@@ -39,8 +39,7 @@ func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	db, err := h.b.Database(dbName)
-	if err != nil {
+	if _, err = h.b.Database(dbName); err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid namespace specified '%s'", dbName)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "ping")
@@ -49,7 +48,7 @@ func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	if _, err := db.ListCollections(ctx, nil); err != nil {
+	if _, err = h.b.Status(ctx, nil); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

@@ -68,6 +68,10 @@ func (b *backend) Name() string {
 
 // Status implements backends.Backend interface.
 func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
+	// since authentication is not supported yet, and there is no way to not establish an SQLite "connection",
+	// there is no need to use conninfo
+	// TODO https://github.com/FerretDB/FerretDB/issues/3008
+
 	dbs := b.r.DatabaseList(ctx)
 
 	var res backends.StatusResult
