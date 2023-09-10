@@ -58,7 +58,7 @@ type Registry struct {
 	l *zap.Logger
 
 	// rw protects colls but also acts like a global lock for the whole registry.
-	// The latter effectively replaces transactions (see the sqlite backend description for more info).
+	// The latter effectively replaces transactions (see the sqlite backend package description for more info).
 	// One global lock should be replaced by more granular locks – one per database or even one per collection.
 	// But that requires some redesign.
 	// TODO https://github.com/FerretDB/FerretDB/issues/2755

@@ -16,7 +16,6 @@ package pool
 
 import (
 	"context"
-	"net/url"
 	"strings"
 	"time"
 
@@ -37,17 +36,10 @@ var (
 	locales = []string{"POSIX", "C", "C.UTF8", "en_US.UTF8"}
 )
 
-func openDB(u string, l *zap.Logger, sp *state.Provider) (*pgxpool.Pool, error) {
-	uri, err := url.Parse(u)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	values := uri.Query()
-	setDefaultValues(values)
-	uri.RawQuery = values.Encode()
-
-	config, err := pgxpool.ParseConfig(uri.String())
+// openDB creates a pool of connections to PostgreSQL database
+// and check that it works (authentication passes, settings are okay).
+func openDB(uri string, l *zap.Logger, sp *state.Provider) (*pgxpool.Pool, error) {
+	config, err := pgxpool.ParseConfig(uri)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -75,13 +67,16 @@ func openDB(u string, l *zap.Logger, sp *state.Provider) (*pgxpool.Pool, error) 
 
 	// TODO port logging, tracing
 
-	ctx, cancel := context.WithTimeout(context.TODO(), 2*time.Second)
-	defer cancel()
+	// see https://github.com/jackc/pgx/issues/1726#issuecomment-1711612138
+	ctx := context.TODO()
 
-	p, err := pgxpool.NewWithConfig(context.TODO(), config)
+	p, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 
 	if checkConnection(ctx, p) != nil {
 		p.Close()
@@ -96,6 +91,7 @@ func simplify(v string) string {
 	return strings.ToLower(strings.ReplaceAll(v, "-", ""))
 }
 
+// checkConnection checks that connection works and PostgreSQL settings are what we expect.
 func checkConnection(ctx context.Context, p *pgxpool.Pool) error {
 	rows, err := p.Query(ctx, "SHOW ALL")
 	if err != nil {

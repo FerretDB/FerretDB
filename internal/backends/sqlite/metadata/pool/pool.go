@@ -24,13 +24,13 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -54,13 +54,12 @@ const (
 type Pool struct {
 	uri *url.URL
 	l   *zap.Logger
+	sp  *state.Provider
 
 	rw  sync.RWMutex
 	dbs map[string]*fsql.DB
 
 	token *resource.Token
-
-	sp *state.Provider
 }
 
 // New creates a pool for SQLite databases in the directory specified by SQLite URI.
@@ -83,9 +82,9 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, map[string]*fsql.D
 	p := &Pool{
 		uri:   uri,
 		l:     l,
+		sp:    sp,
 		dbs:   make(map[string]*fsql.DB, len(matches)),
 		token: resource.NewToken(),
-		sp:    sp,
 	}
 
 	resource.Track(p, p.token)
@@ -159,7 +158,7 @@ func (p *Pool) List(ctx context.Context) []string {
 	defer p.rw.RUnlock()
 
 	res := maps.Keys(p.dbs)
-	slices.Sort(res)
+	sort.Strings(res)
 
 	return res
 }
