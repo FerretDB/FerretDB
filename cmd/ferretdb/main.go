@@ -84,6 +84,8 @@ var cli struct {
 		EnableSortPushdown    bool `default:"false" help:"Experimental: enable sort pushdown."`
 		EnableOplog           bool `default:"false" help:"Experimental: enable OpLog."            hidden:""`
 
+		UseNewPG bool `default:"false" help:"Experimental: use new PostgreSQL backend." hidden:""`
+
 		//nolint:lll // for readability
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.io/" help:"Experimental: telemetry: reporting URL."`
@@ -364,6 +366,8 @@ func run() {
 			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
 			EnableSortPushdown:    cli.Test.EnableSortPushdown,
 			EnableOplog:           cli.Test.EnableOplog,
+
+			UseNewPG: cli.Test.UseNewPG,
 		},
 	})
 	if err != nil {
