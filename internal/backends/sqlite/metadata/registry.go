@@ -25,6 +25,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata/pool"
@@ -58,7 +59,7 @@ type Registry struct {
 	l *zap.Logger
 
 	// rw protects colls but also acts like a global lock for the whole registry.
-	// The latter effectively replaces transactions (see the sqlite backend description for more info).
+	// The latter effectively replaces transactions (see the sqlite backend package description for more info).
 	// One global lock should be replaced by more granular locks – one per database or even one per collection.
 	// But that requires some redesign.
 	// TODO https://github.com/FerretDB/FerretDB/issues/2755
@@ -244,11 +245,21 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 	must.NotFail(h.Write([]byte(collectionName)))
 	s := h.Sum32()
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/2760
+	var tableName string
+	list := maps.Values(colls)
 
-	tableName := fmt.Sprintf("%s_%08x", strings.ToLower(collectionName), s)
-	if strings.HasPrefix(tableName, reservedTablePrefix) {
-		tableName = "_" + tableName
+	for {
+		tableName = fmt.Sprintf("%s_%08x", strings.ToLower(collectionName), s)
+		if strings.HasPrefix(tableName, reservedTablePrefix) {
+			tableName = "_" + tableName
+		}
+
+		if !slices.ContainsFunc(list, func(c *Collection) bool { return c.TableName == tableName }) {
+			break
+		}
+
+		// table already exists, generate a new table name by incrementing the hash
+		s++
 	}
 
 	q := fmt.Sprintf("CREATE TABLE %[1]q (%[2]s TEXT NOT NULL CHECK(%[2]s != '')) STRICT", tableName, DefaultColumn)
@@ -368,11 +379,46 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 
 // CollectionRename renames a collection in the database.
 //
+// The collection name is update, but original table name is kept.
+//
 // Returned boolean value indicates whether the collection was renamed.
 // If database or collection did not exist, (false, nil) is returned.
 func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2760
-	panic("not implemented")
+	defer observability.FuncCall(ctx)()
+
+	db := r.p.GetExisting(ctx, dbName)
+	if db == nil {
+		return false, nil
+	}
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	colls := r.colls[dbName]
+	if colls == nil {
+		return false, nil
+	}
+
+	cOld := colls[oldCollectionName]
+	if cOld == nil {
+		return false, nil
+	}
+
+	q := fmt.Sprintf(`UPDATE %q SET name = ? WHERE table_name = ?`, metadataTableName)
+
+	if _, err := db.ExecContext(ctx, q, newCollectionName, cOld.TableName); err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	r.colls[dbName][newCollectionName] = &Collection{
+		Name:      newCollectionName,
+		TableName: cOld.TableName,
+		Settings:  cOld.Settings,
+	}
+
+	delete(r.colls[dbName], oldCollectionName)
+
+	return true, nil
 }
 
 // indexesCreate creates an index in the collection.

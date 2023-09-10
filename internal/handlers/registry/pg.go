@@ -12,18 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !ferretdb_newpg
-
 package registry
 
 import (
 	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg"
+	"github.com/FerretDB/FerretDB/internal/handlers/sqlite"
 )
 
-// init registers old "pg" handler.
+// init registers "pg" handler.
 func init() {
 	registry["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
+		if opts.UseNewPG {
+			opts.Logger.Warn("New PostgreSQL backend is in alpha.")
+
+			handlerOpts := &sqlite.NewOpts{
+				Backend: "postgresql",
+				URI:     opts.PostgreSQLURL,
+
+				L:             opts.Logger.Named("postgresql"),
+				ConnMetrics:   opts.ConnMetrics,
+				StateProvider: opts.StateProvider,
+
+				DisableFilterPushdown: opts.DisableFilterPushdown,
+				EnableSortPushdown:    opts.EnableSortPushdown,
+				EnableOplog:           opts.EnableOplog,
+			}
+
+			return sqlite.New(handlerOpts)
+		}
+
 		handlerOpts := &pg.NewOpts{
 			PostgreSQLURL: opts.PostgreSQLURL,
 
