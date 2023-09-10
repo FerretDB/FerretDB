@@ -23,7 +23,7 @@ import (
 
 // Collection is a generic interface for all backends for accessing collection.
 //
-// Collection object is expected to be stateless and temporary;
+// Collection object should be stateless and temporary;
 // all state should be in the Backend that created Database instance that created this Collection instance.
 // Handler can create and destroy Collection objects on the fly.
 // Creating a Collection object does not imply the creation of the database or collection.

@@ -69,9 +69,9 @@ Additionally:
 - `timezone` is always set to "UTC";
 - `search_path` is set to the empty string in debug builds only.
 
-### SQLite (beta)
+### SQLite
 
-[SQLite backend](../understanding-ferretdb.md#sqlite-beta) can be enabled by
+[SQLite backend](../understanding-ferretdb.md#sqlite) can be enabled by
 `--handler=sqlite` flag or `FERRETDB_HANDLER=sqlite` environment variable.
 
 | Flag           | Description                                 | Environment Variable  | Default Value |

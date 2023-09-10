@@ -12,19 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package metadata
+package pool
 
 import "net/url"
 
 // setDefaultValue sets default query parameters.
 //
 // Keep it in sync with docs.
-//
-//nolint:unused // for now
 func setDefaultValues(values url.Values) {
+	// the default is too low
 	if !values.Has("pool_max_conns") {
-		// the default is too low
 		values.Set("pool_max_conns", "50")
+	}
+
+	// to avoid the need to close unused pools ourselves
+	if values.Has("pool_max_conn_idle_time") {
+		values.Set("pool_max_conn_idle_time", "1m")
 	}
 
 	values.Set("application_name", "FerretDB")

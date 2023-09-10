@@ -21,10 +21,15 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // backend implements backends.Backend interface.
-type backend struct{}
+type backend struct {
+	r *metadata.Registry
+}
 
 // NewBackendParams represents the parameters of NewBackend function.
 //
@@ -32,11 +37,23 @@ type backend struct{}
 type NewBackendParams struct {
 	URI string
 	L   *zap.Logger
+	P   *state.Provider
 }
 
 // NewBackend creates a new backend for PostgreSQL-compatible database.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	return backends.BackendContract(new(backend)), nil
+	if params.P == nil {
+		panic("state provider is required but not set")
+	}
+
+	r, err := metadata.NewRegistry(params.URI, params.L, params.P)
+	if err != nil {
+		return nil, err
+	}
+
+	return backends.BackendContract(&backend{
+		r: r,
+	}), nil
 }
 
 // Close implements backends.Backend interface.
@@ -62,7 +79,38 @@ func (b *backend) Database(name string) (backends.Database, error) {
 //
 //nolint:lll // for readability
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
-	panic("not implemented")
+	list, err := b.r.DatabaseList(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &backends.ListDatabasesResult{
+		Databases: make([]backends.DatabaseInfo, len(list)),
+	}
+
+	for i, dbName := range list {
+		db, err := b.Database(dbName)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		stats, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
+			stats = new(backends.DatabaseStatsResult)
+			err = nil
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res.Databases[i] = backends.DatabaseInfo{
+			Name: dbName,
+			Size: stats.SizeTotal,
+		}
+	}
+
+	return res, nil
 }
 
 // DropDatabase implements backends.Backend interface.

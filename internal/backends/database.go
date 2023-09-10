@@ -22,7 +22,7 @@ import (
 
 // Database is a generic interface for all backends for accessing databases.
 //
-// Database object is expected to be stateless and temporary;
+// Database object should be stateless and temporary;
 // all state should be in the Backend that created this Database instance.
 // Handler can create and destroy Database objects on the fly.
 // Creating a Database object does not imply the creation of the database.
@@ -164,8 +164,7 @@ func (dbc *databaseContract) RenameCollection(ctx context.Context, params *Renam
 		err = dbc.db.RenameCollection(ctx, params)
 	}
 
-	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist)
-
+	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist, ErrorCodeCollectionAlreadyExists)
 	return err
 }
 
