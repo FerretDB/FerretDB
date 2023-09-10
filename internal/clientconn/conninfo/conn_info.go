@@ -17,9 +17,6 @@ package conninfo
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"reflect"
 	"sync"
 
 	"github.com/FerretDB/FerretDB/internal/util/resource"
@@ -41,34 +38,7 @@ type ConnInfo struct {
 	username string
 	password string
 
-	clientMetadata ClientMetadata
-}
-
-type ClientMetadata struct {
-	K           []string    `json:"$k"`
-	Application Application `json:"application"`
-	Driver      Driver      `json:"driver"`
-	Platform    string      `json:"platform"`
-	Os          Os          `json:"os"`
-}
-
-type Application struct {
-	K    []string `json:"$k"`
-	Name string   `json:"name"`
-}
-
-type Driver struct {
-	K       []string `json:"$k"`
-	Name    string   `json:"name"`
-	Version string   `json:"version"`
-}
-
-type Os struct {
-	K            []string `json:"$k"`
-	Name         string   `json:"name"`
-	Architecture string   `json:"architecture"`
-	Version      string   `json:"version"`
-	Type         string   `json:"type"`
+	ClientMetadataPresence bool
 }
 
 // NewConnInfo return a new ConnInfo.
@@ -103,25 +73,12 @@ func (connInfo *ConnInfo) SetAuth(username, password string) {
 	connInfo.password = password
 }
 
-// SetClientMetadata sets the client metadata.
-func (connInfo *ConnInfo) SetClientMetadata(metadata any) error {
+// SetClientMetadata sets the client metadata presence.
+func (connInfo *ConnInfo) SetClientMetadataPresence() {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()
 
-	metadataBytes, ok := metadata.(string)
-	if !ok {
-		return errors.New("failed converting the client's metadata")
-	}
-
-	if err := json.Unmarshal([]byte(metadataBytes), &connInfo.clientMetadata); err != nil {
-		return err
-	}
-	return nil
-}
-
-// IsClientMetadataSet checks if the client metadata is set.
-func (connInfo *ConnInfo) IsClientMetadataSet() bool {
-	return !reflect.DeepEqual(connInfo.clientMetadata, ClientMetadata{})
+	connInfo.ClientMetadataPresence = true
 }
 
 // WithConnInfo returns a new context with the given ConnInfo.

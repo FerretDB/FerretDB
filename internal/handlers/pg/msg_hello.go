@@ -26,7 +26,12 @@ import (
 
 // MsgHello implements HandlerInterface.
 func (h *Handler) MsgHello(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	if err := common.CheckClientMetadata(msg); err != nil {
+	doc, err := msg.Document()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := common.CheckClientMetadata(ctx, doc); err != nil {
 		return nil, err
 	}
 
