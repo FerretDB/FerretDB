@@ -41,6 +41,7 @@ type Collection interface {
 	Stats(context.Context, *CollectionStatsParams) (*CollectionStatsResult, error)
 
 	ListIndexes(context.Context, *ListIndexesParams) (*ListIndexesResult, error)
+	CreateIndexes(context.Context, *CreateIndexesParams) (*CreateIndexesResult, error)
 }
 
 // collectionContract implements Collection interface.
@@ -256,6 +257,30 @@ func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndex
 
 	res, err := cc.c.ListIndexes(ctx, params)
 	checkError(err, ErrorCodeCollectionDoesNotExist)
+
+	return res, err
+}
+
+// CreateIndexesParams represents the parameters of Collection.CreateIndexes method.
+type CreateIndexesParams struct {
+	Indexes []IndexInfo
+}
+
+// CreateIndexesResult represents the results of Collection.CreateIndexes method.
+type CreateIndexesResult struct{}
+
+// CreateIndexes creates indexes for the collection.
+//
+// The operation should be atomic.
+// If some indexes cannot be created, the operation should be rolled back,
+// and the first encountered error should be returned.
+//
+// Database or collection may not exist; that's not an error.
+func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateIndexesParams) (*CreateIndexesResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := cc.c.CreateIndexes(ctx, params)
+	checkError(err)
 
 	return res, err
 }
