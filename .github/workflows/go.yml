@@ -41,7 +41,7 @@ jobs:
         if: false
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -91,7 +91,7 @@ jobs:
         if: false
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -191,7 +191,7 @@ jobs:
         if: false
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -289,7 +289,7 @@ jobs:
         if: false
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -335,7 +335,7 @@ jobs:
         if: false
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for `golangci-lint run --new` to work
           lfs: false # LFS is used only by website
@@ -366,7 +366,7 @@ jobs:
         if: false
 
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: source
           fetch-depth: 0 # for `git describe` to work
@@ -384,7 +384,7 @@ jobs:
       # Use deploy key instead of Personal Access Token (PAT) to limit access to one repository.
       # If secrets are not available (for example, for a pull request from a fork), GITHUB_TOKEN PAT is used automatically.
       - name: Checkout collected fuzz corpus
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: FerretDB/fuzz-corpus
           ssh-key: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
