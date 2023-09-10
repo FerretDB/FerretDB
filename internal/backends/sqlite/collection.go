@@ -333,8 +333,8 @@ func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateI
 	for i, index := range params.Indexes {
 		indexes[i] = metadata.IndexInfo{
 			Name:   index.Name,
-			Unique: index.Unique,
 			Key:    make([]metadata.IndexKeyPair, len(index.Key)),
+			Unique: index.Unique,
 		}
 
 		for j, key := range index.Key {

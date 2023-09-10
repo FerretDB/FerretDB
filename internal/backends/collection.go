@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
@@ -280,12 +279,7 @@ func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateI
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.CreateIndexes(ctx, params)
-
-	checkError(err, ErrorCodeCollectionNameIsInvalid)
-
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	checkError(err)
 
 	return res, err
 }

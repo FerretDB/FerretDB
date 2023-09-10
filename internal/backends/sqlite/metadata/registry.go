@@ -210,7 +210,7 @@ func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
 func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collection, error) {
 	defer observability.FuncCall(ctx)()
 
-	db := r.p.GetExisting(ctx, dbName)
+	db := r.DatabaseGetExisting(ctx, dbName)
 	if db == nil {
 		return nil, nil
 	}
@@ -229,6 +229,7 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 }
 
 // collectionCreate creates a collection in the database.
+// Database will be created automatically if needed.
 //
 // Returned boolean value indicates whether the collection was created.
 // If collection already exists, (false, nil) is returned.
@@ -301,6 +302,7 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 }
 
 // CollectionCreate creates a collection in the database.
+// Database will be created automatically if needed.
 //
 // Returned boolean value indicates whether the collection was created.
 // If collection already exists, (false, nil) is returned.
@@ -350,7 +352,7 @@ func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName str
 func (r *Registry) collectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	db := r.p.GetExisting(ctx, dbName)
+	db := r.DatabaseGetExisting(ctx, dbName)
 	if db == nil {
 		return false, nil
 	}
@@ -397,7 +399,7 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	db := r.p.GetExisting(ctx, dbName)
+	db := r.DatabaseGetExisting(ctx, dbName)
 	if db == nil {
 		return false, nil
 	}
@@ -430,14 +432,19 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
 	defer observability.FuncCall(ctx)()
 
-	c := r.collectionGet(dbName, collectionName)
-	if c == nil {
-		return lazyerrors.Errorf("no database %q or collection %q", dbName, collectionName)
+	_, err := r.collectionCreate(ctx, dbName, collectionName)
+	if err != nil {
+		return lazyerrors.Error(err)
 	}
 
-	db := r.p.GetExisting(ctx, dbName)
+	db := r.DatabaseGetExisting(ctx, dbName)
 	if db == nil {
-		return lazyerrors.Errorf("no database %q", dbName)
+		panic("database does not exist")
+	}
+
+	c := r.collectionGet(dbName, collectionName)
+	if c == nil {
+		panic("collection does not exist")
 	}
 
 	created := make([]string, 0, len(indexes))
@@ -500,18 +507,20 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 //
 // Non-existing indexes are ignored (TODO?).
 //
+// If database or collection does not exist, nil is returned (TODO?).
+//
 // It does not hold the lock.
 func (r *Registry) indexesDrop(ctx context.Context, dbName, collectionName string, indexNames []string) error {
 	defer observability.FuncCall(ctx)()
 
 	c := r.collectionGet(dbName, collectionName)
 	if c == nil {
-		return lazyerrors.Errorf("no database %q or collection %q", dbName, collectionName)
+		return nil
 	}
 
-	db := r.p.GetExisting(ctx, dbName)
+	db := r.DatabaseGetExisting(ctx, dbName)
 	if db == nil {
-		return lazyerrors.Errorf("no database %q", dbName)
+		return nil
 	}
 
 	for _, name := range indexNames {
