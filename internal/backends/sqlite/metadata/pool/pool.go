@@ -170,12 +170,7 @@ func (p *Pool) GetExisting(ctx context.Context, name string) *fsql.DB {
 	p.rw.RLock()
 	defer p.rw.RUnlock()
 
-	db := p.dbs[name]
-	if db == nil {
-		return nil
-	}
-
-	return db
+	return p.dbs[name]
 }
 
 // GetOrCreate returns an existing database by valid name, or creates a new one.
