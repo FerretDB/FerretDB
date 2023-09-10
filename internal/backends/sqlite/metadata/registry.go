@@ -27,7 +27,6 @@ import (
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -97,6 +96,8 @@ func (r *Registry) Close() {
 
 // initCollections loads collections metadata from the database during initialization.
 func (r *Registry) initCollections(ctx context.Context, dbName string, db *fsql.DB) error {
+	defer observability.FuncCall(ctx)()
+
 	rows, err := db.QueryContext(ctx, fmt.Sprintf("SELECT name, table_name, settings FROM %q", metadataTableName))
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -203,7 +204,7 @@ func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
 	return r.databaseDrop(ctx, dbName)
 }
 
-// CollectionList returns a sorted list of collections in the database.
+// CollectionList returns a sorted copy of collections in the database.
 //
 // If database does not exist, no error is returned.
 func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collection, error) {
@@ -216,7 +217,10 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 
 	r.rw.RLock()
 
-	res := maps.Values(r.colls[dbName])
+	res := make([]*Collection, 0, len(r.colls[dbName]))
+	for _, c := range r.colls[dbName] {
+		res = append(res, c.deepCopy())
+	}
 
 	r.rw.RUnlock()
 
@@ -231,6 +235,8 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 //
 // It does not hold the lock.
 func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
+	defer observability.FuncCall(ctx)()
+
 	db, err := r.databaseGetOrCreate(ctx, dbName)
 	if err != nil {
 		return false, lazyerrors.Error(err)
@@ -267,25 +273,8 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 		return false, lazyerrors.Error(err)
 	}
 
-	c := &Collection{
-		Name:      collectionName,
-		TableName: tableName,
-		Settings:  Settings{Indexes: nil},
-	}
-
-	idIndex := IndexInfo{
-		Name:   "_id_",
-		Key:    []IndexKeyPair{{Field: "_id"}},
-		Unique: true,
-	}
-
-	err = r.indexesCreate(ctx, db, c, []IndexInfo{idIndex})
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
 	q = fmt.Sprintf("INSERT INTO %q (name, table_name, settings) VALUES (?, ?, ?)", metadataTableName)
-	if _, err = db.ExecContext(ctx, q, c.Name, c.TableName, c.Settings); err != nil {
+	if _, err = db.ExecContext(ctx, q, collectionName, tableName, "{}"); err != nil {
 		_, _ = db.ExecContext(ctx, fmt.Sprintf("DROP TABLE %q", tableName))
 		return false, lazyerrors.Error(err)
 	}
@@ -293,7 +282,20 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 	if r.colls[dbName] == nil {
 		r.colls[dbName] = map[string]*Collection{}
 	}
-	r.colls[dbName][collectionName] = c
+	r.colls[dbName][collectionName] = &Collection{
+		Name:      collectionName,
+		TableName: tableName,
+	}
+
+	err = r.indexesCreate(ctx, dbName, collectionName, []IndexInfo{{
+		Name:   "_id_",
+		Key:    []IndexKeyPair{{Field: "_id"}},
+		Unique: true,
+	}})
+	if err != nil {
+		_, _ = r.collectionDrop(ctx, dbName, collectionName)
+		return false, lazyerrors.Error(err)
+	}
 
 	return true, nil
 }
@@ -311,7 +313,8 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 	return r.collectionCreate(ctx, dbName, collectionName)
 }
 
-// collectionGet returns collection metadata.
+// collectionGet returns a copy of collection metadata.
+// It can be safely modified by a caller.
 //
 // If database or collection does not exist, nil is returned.
 //
@@ -322,10 +325,11 @@ func (r *Registry) collectionGet(dbName, collectionName string) *Collection {
 		return nil
 	}
 
-	return colls[collectionName]
+	return colls[collectionName].deepCopy()
 }
 
-// CollectionGet returns collection metadata.
+// CollectionGet returns a copy of collection metadata.
+// It can be safely modified by a caller.
 //
 // If database or collection does not exist, nil is returned.
 func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName string) *Collection {
@@ -337,11 +341,13 @@ func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName str
 	return r.collectionGet(dbName, collectionName)
 }
 
-// CollectionDrop drops a collection in the database.
+// collectionDrop drops a collection in the database.
 //
 // Returned boolean value indicates whether the collection was dropped.
 // If database or collection did not exist, (false, nil) is returned.
-func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
+//
+// It does not hold the lock.
+func (r *Registry) collectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	db := r.p.GetExisting(ctx, dbName)
@@ -349,15 +355,7 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 		return false, nil
 	}
 
-	r.rw.Lock()
-	defer r.rw.Unlock()
-
-	colls := r.colls[dbName]
-	if colls == nil {
-		return false, nil
-	}
-
-	c := colls[collectionName]
+	c := r.collectionGet(dbName, collectionName)
 	if c == nil {
 		return false, nil
 	}
@@ -377,6 +375,19 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 	return true, nil
 }
 
+// CollectionDrop drops a collection in the database.
+//
+// Returned boolean value indicates whether the collection was dropped.
+// If database or collection did not exist, (false, nil) is returned.
+func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
+	defer observability.FuncCall(ctx)()
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	return r.collectionDrop(ctx, dbName, collectionName)
+}
+
 // CollectionRename renames a collection in the database.
 //
 // The collection name is update, but original table name is kept.
@@ -394,114 +405,127 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	colls := r.colls[dbName]
-	if colls == nil {
-		return false, nil
-	}
-
-	cOld := colls[oldCollectionName]
-	if cOld == nil {
+	c := r.collectionGet(dbName, oldCollectionName)
+	if c == nil {
 		return false, nil
 	}
 
 	q := fmt.Sprintf(`UPDATE %q SET name = ? WHERE table_name = ?`, metadataTableName)
-
-	if _, err := db.ExecContext(ctx, q, newCollectionName, cOld.TableName); err != nil {
+	if _, err := db.ExecContext(ctx, q, newCollectionName, c.TableName); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	r.colls[dbName][newCollectionName] = &Collection{
-		Name:      newCollectionName,
-		TableName: cOld.TableName,
-		Settings:  cOld.Settings,
-	}
-
+	c.Name = newCollectionName
+	r.colls[dbName][newCollectionName] = c
 	delete(r.colls[dbName], oldCollectionName)
 
 	return true, nil
 }
 
-// indexesCreate creates an index in the collection.
+// indexesCreate creates indexes in the collection.
+//
+// Existing indexes with given names are ignored (TODO?).
 //
 // It does not hold the lock.
-func (r *Registry) indexesCreate(ctx context.Context, db *fsql.DB, c *Collection, indexes []IndexInfo) error {
-	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
-		for _, index := range indexes {
-			// if the index already exists, it is just ignored
-			exists := false
+func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
+	defer observability.FuncCall(ctx)()
 
-			for _, existingIndex := range c.Settings.Indexes {
-				if index.Name == existingIndex.Name {
-					exists = true
-					break
-				}
-			}
+	c := r.collectionGet(dbName, collectionName)
+	if c == nil {
+		return lazyerrors.Errorf("no database %q or collection %q", dbName, collectionName)
+	}
 
-			if exists {
-				continue
-			}
+	db := r.p.GetExisting(ctx, dbName)
+	if db == nil {
+		return lazyerrors.Errorf("no database %q", dbName)
+	}
 
-			q := "CREATE "
+	created := make([]string, 0, len(indexes))
 
-			if index.Unique {
-				q += "UNIQUE "
-			}
-
-			q += "INDEX %q ON %q (%s)"
-
-			columns := make([]string, len(index.Key))
-			for i, key := range index.Key {
-				columns[i] = fmt.Sprintf("%s->'$.%s'", DefaultColumn, key.Field)
-				if key.Descending {
-					columns[i] += " DESC"
-				}
-			}
-
-			q = fmt.Sprintf(q, c.TableName+index.Name, c.TableName, strings.Join(columns, ", "))
-
-			if _, err := db.ExecContext(ctx, q); err != nil {
-				return lazyerrors.Error(err)
-			}
-
-			c.Settings.Indexes = append(c.Settings.Indexes, index)
+	for _, index := range indexes {
+		if slices.ContainsFunc(c.Settings.Indexes, func(i IndexInfo) bool { return index.Name == i.Name }) {
+			continue
 		}
 
-		q := fmt.Sprintf("UPDATE %q SET settings=?", metadataTableName)
-		if _, err := db.ExecContext(ctx, q, c.Settings); err != nil {
+		q := "CREATE "
+
+		if index.Unique {
+			q += "UNIQUE "
+		}
+
+		q += "INDEX %q ON %q (%s)"
+
+		columns := make([]string, len(index.Key))
+		for i, key := range index.Key {
+			columns[i] = fmt.Sprintf("%s->'$.%s'", DefaultColumn, key.Field)
+			if key.Descending {
+				columns[i] += " DESC"
+			}
+		}
+
+		q = fmt.Sprintf(q, c.TableName+"_"+index.Name, c.TableName, strings.Join(columns, ", "))
+		if _, err := db.ExecContext(ctx, q); err != nil {
+			_ = r.indexesDrop(ctx, dbName, collectionName, created)
 			return lazyerrors.Error(err)
 		}
 
-		return nil
-	})
-	if err != nil {
+		created = append(created, index.Name)
+		c.Settings.Indexes = append(c.Settings.Indexes, index)
+	}
+
+	q := fmt.Sprintf("UPDATE %q SET settings = ?", metadataTableName)
+	if _, err := db.ExecContext(ctx, q, c.Settings); err != nil {
+		_ = r.indexesDrop(ctx, dbName, collectionName, created)
 		return lazyerrors.Error(err)
 	}
+
+	r.colls[dbName][collectionName] = c
 
 	return nil
 }
 
-// IndexesCreate creates an index in the collection.
+// IndexesCreate creates indexes in the collection.
+//
+// Existing indexes with given names are ignored (TODO?).
 func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
 	defer observability.FuncCall(ctx)()
 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	_, err := r.collectionCreate(ctx, dbName, collectionName)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
+	return r.indexesCreate(ctx, dbName, collectionName, indexes)
+}
 
-	db := r.DatabaseGetExisting(ctx, dbName)
-	if db == nil {
-		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, nil)
-	}
+// indexesDrop remove given connection's indexes.
+//
+// Non-existing indexes are ignored (TODO?).
+//
+// It does not hold the lock.
+func (r *Registry) indexesDrop(ctx context.Context, dbName, collectionName string, indexNames []string) error {
+	defer observability.FuncCall(ctx)()
 
 	c := r.collectionGet(dbName, collectionName)
+	if c == nil {
+		return lazyerrors.Errorf("no database %q or collection %q", dbName, collectionName)
+	}
 
-	err = r.indexesCreate(ctx, db, c, indexes)
-	if err != nil {
-		return lazyerrors.Error(err)
+	db := r.p.GetExisting(ctx, dbName)
+	if db == nil {
+		return lazyerrors.Errorf("no database %q", dbName)
+	}
+
+	for _, name := range indexNames {
+		i := slices.IndexFunc(c.Settings.Indexes, func(i IndexInfo) bool { return name == i.Name })
+		if i < 0 {
+			continue
+		}
+
+		q := fmt.Sprintf("DROP INDEX %q", c.TableName+"_"+name)
+		if _, err := db.ExecContext(ctx, q); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		c.Settings.Indexes = slices.Delete(c.Settings.Indexes, i, i+1)
 	}
 
 	r.colls[dbName][collectionName] = c
