@@ -74,7 +74,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		if v != nil {
 			if id, ok := v.(types.ObjectID); ok {
 				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-				args = []any{must.NotFail(sjson.MarshalSingleValue(id))}
+				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
 			}
 		}
 	}
@@ -157,7 +157,7 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 			id, _ := doc.Get("_id")
 			must.NotBeZero(id)
 
-			arg := must.NotFail(sjson.MarshalSingleValue(id))
+			arg := string(must.NotFail(sjson.MarshalSingleValue(id)))
 
 			r, err := tx.ExecContext(ctx, q, string(b), arg)
 			if err != nil {
@@ -198,7 +198,7 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 
 	for i, id := range params.IDs {
 		placeholders[i] = "?"
-		args[i] = must.NotFail(sjson.MarshalSingleValue(id))
+		args[i] = string(must.NotFail(sjson.MarshalSingleValue(id)))
 	}
 
 	q := fmt.Sprintf(`DELETE FROM %q WHERE %s IN (%s)`, meta.TableName, metadata.IDColumn, strings.Join(placeholders, ", "))
@@ -246,7 +246,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 			if id, ok := v.(types.ObjectID); ok {
 				queryPushdown = true
 				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-				args = []any{must.NotFail(sjson.MarshalSingleValue(id))}
+				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
 			}
 		}
 	}
