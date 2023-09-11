@@ -40,6 +40,8 @@ const (
 	ErrorCodeCollectionAlreadyExists
 
 	ErrorCodeInsertDuplicateID
+
+	ErrorCodeIndexDoesNotExist
 )
 
 // Error represents a backend error returned by all Backend, Database and Collection methods.

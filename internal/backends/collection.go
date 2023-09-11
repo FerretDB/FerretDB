@@ -301,7 +301,10 @@ type DropIndexesResult struct{}
 // If some indexes cannot be dropped, the operation should be rolled back,
 // and the first encountered error should be returned.
 func (cc *collectionContract) DropIndexes(ctx context.Context, params *DropIndexesParams) (*DropIndexesResult, error) {
-	return cc.c.DropIndexes(ctx, params)
+	res, err := cc.c.DropIndexes(ctx, params)
+	checkError(err, ErrorCodeIndexDoesNotExist)
+
+	return res, err
 }
 
 // check interfaces

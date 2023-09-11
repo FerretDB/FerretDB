@@ -59,11 +59,6 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	if db == nil {
-		msg := fmt.Sprintf("ns not found %s.%s", dbName, collection)
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNamespaceNotFound, msg, command)
-	}
-
 	c, err := db.Collection(collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
@@ -74,11 +69,6 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	if c == nil {
-		msg := fmt.Sprintf("ns not found %s.%s", dbName, collection)
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNamespaceNotFound, msg, command)
-	}
-
 	options, err := processDropIndexOptions(command, document)
 	if err != nil {
 		return nil, err
@@ -86,11 +76,20 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	indexesBeforeDrop, err := c.ListIndexes(ctx, nil)
 	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
+			msg := fmt.Sprintf("ns '%s.%s' not found", dbName, collection)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNamespaceNotFound, msg, command)
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 
 	_, err = c.DropIndexes(ctx, options)
 	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeIndexDoesNotExist) {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexNotFound, "", command)
+		}
+
 		return nil, lazyerrors.Error(err)
 	}
 

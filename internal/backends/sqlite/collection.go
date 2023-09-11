@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"strings"
 
+	"golang.org/x/exp/slices"
+
 	sqlite3 "modernc.org/sqlite"
 	sqlite3lib "modernc.org/sqlite/lib"
 
@@ -362,6 +364,20 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 		err = c.r.IndexesDropAll(ctx, c.dbName, c.name)
 
 	case len(params.Indexes) > 0:
+		list, err := c.ListIndexes(ctx, nil)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		for _, index := range params.Indexes {
+			if !slices.ContainsFunc(list.Indexes, func(i backends.IndexInfo) bool { return index == i.Name }) {
+				return nil, backends.NewError(
+					backends.ErrorCodeIndexDoesNotExist,
+					lazyerrors.Errorf("index %q does not exist", index),
+				)
+			}
+		}
+
 		err = c.r.IndexesDropByNames(ctx, c.dbName, c.name, params.Indexes)
 
 	case len(params.Spec) > 0:
