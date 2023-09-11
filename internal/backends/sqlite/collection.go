@@ -69,15 +69,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	// that logic should exist in one place
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	if params != nil && params.Filter.Len() == 1 {
-		v, _ := params.Filter.Get("_id")
-		if v != nil {
-			if id, ok := v.(types.ObjectID); ok {
-				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
-			}
-		}
-	}
+	whereClause, args = prepareWhereClause(params)
 
 	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
 
@@ -89,6 +81,20 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	return &backends.QueryResult{
 		Iter: newQueryIterator(ctx, rows),
 	}, nil
+}
+
+func prepareWhereClause(params *backends.QueryParams) (whereClause string, args []any) {
+	if params != nil && params.Filter.Len() == 1 {
+		v, _ := params.Filter.Get("_id")
+		if v != nil {
+			if id, ok := v.(types.ObjectID); ok {
+				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
+			}
+		}
+	}
+
+	return
 }
 
 // InsertAll implements backends.Collection interface.
