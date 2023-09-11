@@ -61,7 +61,12 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, lazyerrors.Error(err)
 	}
 
-	queryRes, err := c.Query(ctx, nil)
+	var qp backends.QueryParams
+	if !h.DisableFilterPushdown {
+		qp.Filter = params.Filter
+	}
+
+	queryRes, err := c.Query(ctx, &qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

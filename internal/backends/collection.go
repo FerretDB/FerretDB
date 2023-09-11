@@ -64,8 +64,8 @@ func CollectionContract(c Collection) Collection {
 
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
-	// nothing for now - no pushdowns yet
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
+	Filter *types.Document
 }
 
 // QueryResult represents the results of Collection.Query method.
@@ -184,14 +184,15 @@ func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllPa
 
 // ExplainParams represents the parameters of Collection.Explain method.
 type ExplainParams struct {
-	// nothing for now - no pushdowns yet
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
+	Filter *types.Document
 }
 
 // ExplainResult represents the results of Collection.Explain method.
 type ExplainResult struct {
 	QueryPlanner *types.Document
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
+	QueryPushdown bool
 }
 
 // Explain return a backend-specific execution plan for the given query.

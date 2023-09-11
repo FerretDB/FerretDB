@@ -63,8 +63,13 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	closer := iterator.NewMultiCloser()
 	defer closer.Close()
 
+	var qp backends.QueryParams
+	if !h.DisableFilterPushdown {
+		qp.Filter = params.Filter
+	}
+
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	queryRes, err := c.Query(ctx, nil)
+	queryRes, err := c.Query(ctx, &qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

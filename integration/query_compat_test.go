@@ -32,14 +32,15 @@ import (
 
 // queryCompatTestCase describes query compatibility test case.
 type queryCompatTestCase struct {
-	filter         bson.D                   // required
-	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
-	optSkip        *int64                   // defaults to nil to leave unset
-	limit          *int64                   // defaults to nil to leave unset
-	batchSize      *int32                   // defaults to nil to leave unset
-	projection     bson.D                   // nil for leaving projection unset
-	resultType     compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown bool                     // defaults to false
+	filter               bson.D                   // required
+	sort                 bson.D                   // defaults to `bson.D{{"_id", 1}}`
+	optSkip              *int64                   // defaults to nil to leave unset
+	limit                *int64                   // defaults to nil to leave unset
+	batchSize            *int32                   // defaults to nil to leave unset
+	projection           bson.D                   // nil for leaving projection unset
+	resultType           compatTestCaseResultType // defaults to nonEmptyResult
+	resultPushdown       bool                     // defaults to false
+	resultPushdownSQLite bool                     // TODO https://github.com/FerretDB/FerretDB/issues/3235
 
 	skipIDCheck bool   // skip check collected IDs, use it when no ids returned from query
 	skip        string // skip test for all handlers, must have issue number mentioned
@@ -124,13 +125,21 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 					var explainRes bson.D
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
 
+					resultPushdown := tc.resultPushdown
+					if setup.IsSQLite(t) {
+						// TODO https://github.com/FerretDB/FerretDB/issues/3235
+						resultPushdown = tc.resultPushdownSQLite
+					}
+
 					var msg string
 					if setup.IsPushdownDisabled() {
-						tc.resultPushdown = false
+						resultPushdown = false
 						msg = "Query pushdown is disabled, but target resulted with pushdown"
 					}
 
-					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"], msg)
+					doc := ConvertDocument(t, explainRes)
+					pushdown, _ := doc.Get("pushdown")
+					assert.Equal(t, resultPushdown, pushdown, msg)
 
 					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
 					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
@@ -199,9 +208,15 @@ func TestQueryCompatFilter(t *testing.T) {
 			filter:         bson.D{{"_id", "string"}},
 			resultPushdown: true,
 		},
+		"IDNilObjectID": {
+			filter:               bson.D{{"_id", primitive.NilObjectID}},
+			resultPushdown:       true,
+			resultPushdownSQLite: true,
+		},
 		"IDObjectID": {
-			filter:         bson.D{{"_id", primitive.NilObjectID}},
-			resultPushdown: true,
+			filter:               bson.D{{"_id", primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11}}},
+			resultPushdown:       true,
+			resultPushdownSQLite: true,
 		},
 		"ObjectID": {
 			filter:         bson.D{{"v", primitive.NilObjectID}},
