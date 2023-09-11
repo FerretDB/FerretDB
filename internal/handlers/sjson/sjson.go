@@ -374,3 +374,28 @@ func MarshalSingleValue(v any) ([]byte, error) {
 
 	return b, nil
 }
+
+// ScalarValue lalala.
+func ScalarValue(v any) any {
+	switch v := toSJSON(v).(type) {
+	case *documentType:
+		panic(fmt.Sprintf("%T is not a scalar value", v))
+	case *arrayType:
+		panic(fmt.Sprintf("%T is not a scalar value", v))
+
+	case *doubleType:
+	case *stringType:
+	case *binaryType:
+	case *objectIDType:
+		return v.jsonValue()
+	case *boolType:
+	case *dateTimeType:
+	case *nullType:
+	case *regexType:
+	case *int32Type:
+	case *timestampType:
+	case *int64Type:
+	}
+
+	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
+}

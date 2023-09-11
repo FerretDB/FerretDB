@@ -74,7 +74,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		if v != nil {
 			if id, ok := v.(types.ObjectID); ok {
 				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
+				args = []any{sjson.ScalarValue(id)}
 			}
 		}
 	}
@@ -246,7 +246,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 			if id, ok := v.(types.ObjectID); ok {
 				queryPushdown = true
 				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
+				args = []any{sjson.ScalarValue(id)}
 			}
 		}
 	}

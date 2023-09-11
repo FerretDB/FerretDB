@@ -62,9 +62,14 @@ func (obj *objectIDType) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// jsonValue lalala.
+func (obj *objectIDType) jsonValue() any {
+	return hex.EncodeToString(obj[:])
+}
+
 // MarshalJSON implements sjsontype interface.
 func (obj *objectIDType) MarshalJSON() ([]byte, error) {
-	res, err := json.Marshal(hex.EncodeToString(obj[:]))
+	res, err := json.Marshal(obj.jsonValue())
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
