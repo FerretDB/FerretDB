@@ -208,8 +208,9 @@ func TestQueryCompatFilter(t *testing.T) {
 			resultPushdown: true,
 		},
 		"IDObjectID": {
-			filter:         bson.D{{"_id", primitive.NilObjectID}},
-			resultPushdown: true,
+			filter:               bson.D{{"_id", primitive.NilObjectID}},
+			resultPushdown:       true,
+			resultPushdownSQLite: true,
 		},
 		"ObjectID": {
 			filter:         bson.D{{"v", primitive.NilObjectID}},

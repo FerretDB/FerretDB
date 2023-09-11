@@ -36,9 +36,10 @@ type aggregateStagesCompatTestCase struct {
 	pipeline bson.A         // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
 	maxTime  *time.Duration // optional, leave nil for unset maxTime
 
-	resultType     compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown bool                     // defaults to false
-	skip           string                   // skip test for all handlers, must have issue number mentioned
+	resultType           compatTestCaseResultType // defaults to nonEmptyResult
+	resultPushdown       bool                     // defaults to false
+	resultPushdownSQLite bool                     // defaults to false
+	skip                 string                   // skip test for all handlers, must have issue number mentioned
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -111,13 +112,20 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 					var explainRes bson.D
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainCommand).Decode(&explainRes))
 
+					resultPushdown := tc.resultPushdown
+					if setup.IsSQLite(t) {
+						resultPushdown = tc.resultPushdownSQLite
+					}
+
 					var msg string
 					if setup.IsPushdownDisabled() {
-						tc.resultPushdown = false
+						resultPushdown = false
 						msg = "Query pushdown is disabled, but target resulted with pushdown"
 					}
 
-					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"], msg)
+					doc := ConvertDocument(t, explainRes)
+					pushdown, _ := doc.Get("pushdown")
+					assert.Equal(t, resultPushdown, pushdown, msg)
 
 					targetCursor, targetErr := targetCollection.Aggregate(ctx, pipeline, opts)
 					compatCursor, compatErr := compatCollection.Aggregate(ctx, pipeline, opts)
