@@ -186,7 +186,7 @@ tasks:
     deps:
       - test-integration-pg
       - test-integration-mongodb
-      # no test-integration-sqlite yet
+      - test-integration-sqlite
       # no test-integration-hana
 
   test-integration-pg:
