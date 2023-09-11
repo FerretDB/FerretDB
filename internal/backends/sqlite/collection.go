@@ -120,7 +120,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 
 		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
 			filters = append(filters, fmt.Sprintf(`%s = ?`, queryPath))
-			args = append(args, v)
+			args = append(args, must.NotFail(sjson.MarshalSingleValue(v)))
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
