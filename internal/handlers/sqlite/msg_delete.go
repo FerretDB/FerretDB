@@ -65,7 +65,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	writeErrors := types.MakeArray(0)
 
 	for i, p := range params.Deletes {
-		d, err := execDelete(ctx, c, &p)
+		d, err := h.execDelete(ctx, c, &p)
 
 		deleted += d
 
@@ -113,8 +113,13 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 //
 // It returns a number of deleted documents or error.
 // The error is either a (wrapped) *commonerrors.CommandError or something fatal.
-func execDelete(ctx context.Context, c backends.Collection, p *common.Delete) (int32, error) {
-	q, err := c.Query(ctx, nil)
+func (h *Handler) execDelete(ctx context.Context, c backends.Collection, p *common.Delete) (int32, error) {
+	var qp backends.QueryParams
+	if !h.DisableFilterPushdown {
+		qp.Filter = p.Filter
+	}
+
+	q, err := c.Query(ctx, &qp)
 	if err != nil {
 		return 0, lazyerrors.Error(err)
 	}
