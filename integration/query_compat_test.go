@@ -32,14 +32,15 @@ import (
 
 // queryCompatTestCase describes query compatibility test case.
 type queryCompatTestCase struct {
-	filter         bson.D                   // required
-	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
-	optSkip        *int64                   // defaults to nil to leave unset
-	limit          *int64                   // defaults to nil to leave unset
-	batchSize      *int32                   // defaults to nil to leave unset
-	projection     bson.D                   // nil for leaving projection unset
-	resultType     compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown bool                     // defaults to false
+	filter               bson.D                   // required
+	sort                 bson.D                   // defaults to `bson.D{{"_id", 1}}`
+	optSkip              *int64                   // defaults to nil to leave unset
+	limit                *int64                   // defaults to nil to leave unset
+	batchSize            *int32                   // defaults to nil to leave unset
+	projection           bson.D                   // nil for leaving projection unset
+	resultType           compatTestCaseResultType // defaults to nonEmptyResult
+	resultPushdown       bool                     // defaults to false
+	resultPushdownSQLite bool                     // defaults to false
 
 	skipIDCheck bool   // skip check collected IDs, use it when no ids returned from query
 	skip        string // skip test for all handlers, must have issue number mentioned
@@ -124,13 +125,20 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 					var explainRes bson.D
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
 
+					resultPushdown := tc.resultPushdown
+					if setup.IsSQLite(t) {
+						resultPushdown = tc.resultPushdownSQLite
+					}
+
 					var msg string
 					if setup.IsPushdownDisabled() {
-						tc.resultPushdown = false
+						resultPushdown = false
 						msg = "Query pushdown is disabled, but target resulted with pushdown"
 					}
 
-					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"], msg)
+					doc := ConvertDocument(t, explainRes)
+					pushdown, _ := doc.Get("pushdown")
+					assert.Equal(t, resultPushdown, pushdown, msg)
 
 					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
 					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)

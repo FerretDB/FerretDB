@@ -67,11 +67,13 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	var whereClaus string
 	var arg any
 
-	v, _ := params.Filter.Get("_id")
-	if v != nil {
-		if id, ok := v.(types.ObjectID); ok {
-			whereClaus = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-			arg = string(must.NotFail(sjson.MarshalSingleValue(id)))
+	if params != nil && params.Filter != nil {
+		v, _ := params.Filter.Get("_id")
+		if v != nil {
+			if id, ok := v.(types.ObjectID); ok {
+				whereClaus = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+				arg = string(must.NotFail(sjson.MarshalSingleValue(id)))
+			}
 		}
 	}
 
@@ -230,9 +232,24 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}, nil
 	}
 
-	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`, metadata.DefaultColumn, meta.TableName)
+	var queryPushdown bool
+	var whereClaus string
+	var arg any
 
-	rows, err := db.QueryContext(ctx, q)
+	if params != nil && params.Filter != nil {
+		v, _ := params.Filter.Get("_id")
+		if v != nil {
+			if id, ok := v.(types.ObjectID); ok {
+				queryPushdown = true
+				whereClaus = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+				arg = string(must.NotFail(sjson.MarshalSingleValue(id)))
+			}
+		}
+	}
+
+	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`+whereClaus, metadata.DefaultColumn, meta.TableName)
+
+	rows, err := db.QueryContext(ctx, q, arg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -262,7 +279,8 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	return &backends.ExplainResult{
-		QueryPlanner: must.NotFail(types.NewDocument("Plan", queryPlan)),
+		QueryPlanner:  must.NotFail(types.NewDocument("Plan", queryPlan)),
+		QueryPushdown: queryPushdown,
 	}, nil
 }
 

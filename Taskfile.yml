@@ -313,7 +313,6 @@ tasks:
         --handler=sqlite
         --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
-        --test-disable-filter-pushdown
         --test-enable-oplog
 
   # set FERRETDB_HANA_URL environment variable to use it
