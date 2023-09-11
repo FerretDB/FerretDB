@@ -293,10 +293,7 @@ type DropIndexesParams struct {
 }
 
 // DropIndexesResult represents the results of Collection.DropIndexes method.
-type DropIndexesResult struct {
-	NIndexesWas int32
-	Msg         string
-}
+type DropIndexesResult struct{}
 
 // DropIndexes drops indexes for the collection.
 //

@@ -292,7 +292,7 @@ func TestCreateIndexesCommandCompatCheckFields(tt *testing.T) {
 }
 
 func TestDropIndexesCommandCompat(t *testing.T) {
-	tt.Parallel()
+	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		toCreate []mongo.IndexModel // optional, if set, create the given indexes before drop is called

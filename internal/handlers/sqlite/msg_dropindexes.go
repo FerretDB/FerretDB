@@ -84,17 +84,22 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, err
 	}
 
-	res, err := c.DropIndexes(ctx, options)
+	indexesBeforeDrop, err := c.ListIndexes(ctx, nil)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	_, err = c.DropIndexes(ctx, options)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	replyDoc := must.NotFail(types.NewDocument(
-		"nIndexesWas", res.NIndexesWas,
+		"nIndexesWas", int32(len(indexesBeforeDrop.Indexes)),
 	))
 
-	if res.Msg != "" {
-		replyDoc.Set("msg", res.Msg)
+	if options.DropAll {
+		replyDoc.Set("msg", "non-_id indexes dropped for collection")
 	}
 
 	replyDoc.Set(

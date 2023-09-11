@@ -365,7 +365,14 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 		err = c.r.IndexesDropByNames(ctx, c.dbName, c.name, params.Indexes)
 
 	case len(params.Spec) > 0:
-		//
+		spec := make([]metadata.IndexKeyPair, len(params.Spec))
+		for i, key := range params.Spec {
+			spec[i] = metadata.IndexKeyPair{
+				Field:      key.Field,
+				Descending: key.Descending,
+			}
+		}
+		err = c.r.IndexesDropBySpec(ctx, c.dbName, c.name, spec)
 
 	default:
 		panic("dropIndexes params are not set correctly")
