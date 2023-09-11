@@ -23,7 +23,7 @@ import (
 
 // Collection is a generic interface for all backends for accessing collection.
 //
-// Collection object is expected to be stateless and temporary;
+// Collection object should be stateless and temporary;
 // all state should be in the Backend that created Database instance that created this Collection instance.
 // Handler can create and destroy Collection objects on the fly.
 // Creating a Collection object does not imply the creation of the database or collection.
@@ -41,6 +41,7 @@ type Collection interface {
 	Stats(context.Context, *CollectionStatsParams) (*CollectionStatsResult, error)
 
 	ListIndexes(context.Context, *ListIndexesParams) (*ListIndexesResult, error)
+	CreateIndexes(context.Context, *CreateIndexesParams) (*CreateIndexesResult, error)
 }
 
 // collectionContract implements Collection interface.
@@ -248,14 +249,37 @@ type IndexKeyPair struct {
 }
 
 // ListIndexes returns information about indexes in the database.
+//
+// The errors for non-existing database and non-existing collection are the same.
 func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndexesParams) (*ListIndexesResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.ListIndexes(ctx, params)
-
-	// ErrorCodeCollectionDoesNotExist is enough for both cases when database or collection does not exist
-	// as the handler will return the same namespace-related error in both cases.
 	checkError(err, ErrorCodeCollectionDoesNotExist)
+
+	return res, err
+}
+
+// CreateIndexesParams represents the parameters of Collection.CreateIndexes method.
+type CreateIndexesParams struct {
+	Indexes []IndexInfo
+}
+
+// CreateIndexesResult represents the results of Collection.CreateIndexes method.
+type CreateIndexesResult struct{}
+
+// CreateIndexes creates indexes for the collection.
+//
+// The operation should be atomic.
+// If some indexes cannot be created, the operation should be rolled back,
+// and the first encountered error should be returned.
+//
+// Database or collection may not exist; that's not an error.
+func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateIndexesParams) (*CreateIndexesResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := cc.c.CreateIndexes(ctx, params)
+	checkError(err)
 
 	return res, err
 }

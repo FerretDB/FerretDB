@@ -14,9 +14,8 @@
 
 // Package ferretdb provides embeddable FerretDB implementation.
 //
-// See [build/version package documentation] for information about Go build tags that affect this package.
-//
-// [build/version package documentation]: https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version
+// See [github.com/FerretDB/FerretDB/build/version] package documentation
+// for information about Go build tags that affect this package.
 package ferretdb
 
 import (

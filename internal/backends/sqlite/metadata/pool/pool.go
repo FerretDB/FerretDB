@@ -19,20 +19,18 @@ package pool
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
-	_ "modernc.org/sqlite" // register database/sql driver
 
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -56,56 +54,12 @@ const (
 type Pool struct {
 	uri *url.URL
 	l   *zap.Logger
+	sp  *state.Provider
 
 	rw  sync.RWMutex
 	dbs map[string]*fsql.DB
 
 	token *resource.Token
-
-	sp *state.Provider
-}
-
-// openDB opens existing database or creates a new one.
-//
-// All valid FerretDB database names are valid SQLite database names / file names,
-// so no validation is needed.
-// One exception is very long full path names for the filesystem,
-// but we don't check it.
-func openDB(name, uri string, memory bool, l *zap.Logger, sp *state.Provider) (*fsql.DB, error) {
-	db, err := sql.Open("sqlite", uri)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	db.SetConnMaxIdleTime(0)
-	db.SetConnMaxLifetime(0)
-
-	// Each connection to in-memory database uses its own database.
-	// See https://www.sqlite.org/inmemorydb.html.
-	// We don't want that.
-	if memory {
-		db.SetMaxIdleConns(1)
-		db.SetMaxOpenConns(1)
-	}
-
-	if err = db.Ping(); err != nil {
-		_ = db.Close()
-		return nil, lazyerrors.Error(err)
-	}
-
-	if sp.Get().HandlerVersion == "" {
-		err := sp.Update(func(s *state.State) {
-			row := db.QueryRowContext(context.Background(), "SELECT sqlite_version()")
-			if err := row.Scan(&s.HandlerVersion); err != nil {
-				l.Error("sqlite.metadata.pool.openDB: failed to query SQLite version", zap.Error(err))
-			}
-		})
-		if err != nil {
-			l.Error("sqlite.metadata.pool.openDB: failed to update state", zap.Error(err))
-		}
-	}
-
-	return fsql.WrapDB(db, name, l), nil
 }
 
 // New creates a pool for SQLite databases in the directory specified by SQLite URI.
@@ -128,9 +82,9 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, map[string]*fsql.D
 	p := &Pool{
 		uri:   uri,
 		l:     l,
+		sp:    sp,
 		dbs:   make(map[string]*fsql.DB, len(matches)),
 		token: resource.NewToken(),
-		sp:    sp,
 	}
 
 	resource.Track(p, p.token)
@@ -204,7 +158,7 @@ func (p *Pool) List(ctx context.Context) []string {
 	defer p.rw.RUnlock()
 
 	res := maps.Keys(p.dbs)
-	slices.Sort(res)
+	sort.Strings(res)
 
 	return res
 }
@@ -216,12 +170,7 @@ func (p *Pool) GetExisting(ctx context.Context, name string) *fsql.DB {
 	p.rw.RLock()
 	defer p.rw.RUnlock()
 
-	db := p.dbs[name]
-	if db == nil {
-		return nil
-	}
-
-	return db
+	return p.dbs[name]
 }
 
 // GetOrCreate returns an existing database by valid name, or creates a new one.

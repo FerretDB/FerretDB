@@ -305,17 +305,52 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 		)
 	}
 
-	// only one index is supported at the moment - _id
-	// TODO https://github.com/FerretDB/FerretDB/issues/3176
-	return &backends.ListIndexesResult{
-		Indexes: []backends.IndexInfo{
-			{
-				Unique: true,
-				Name:   "_id_",
-				Key:    []backends.IndexKeyPair{{Field: "_id"}},
-			},
-		},
-	}, nil
+	res := backends.ListIndexesResult{
+		Indexes: make([]backends.IndexInfo, len(coll.Settings.Indexes)),
+	}
+
+	for i, index := range coll.Settings.Indexes {
+		res.Indexes[i] = backends.IndexInfo{
+			Name:   index.Name,
+			Unique: index.Unique,
+			Key:    make([]backends.IndexKeyPair, len(index.Key)),
+		}
+
+		for j, key := range index.Key {
+			res.Indexes[i].Key[j] = backends.IndexKeyPair{
+				Field:      key.Field,
+				Descending: key.Descending,
+			}
+		}
+	}
+
+	return &res, nil
+}
+
+// CreateIndexes implements backends.Collection interface.
+func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) { //nolint:lll // for readability
+	indexes := make([]metadata.IndexInfo, len(params.Indexes))
+	for i, index := range params.Indexes {
+		indexes[i] = metadata.IndexInfo{
+			Name:   index.Name,
+			Key:    make([]metadata.IndexKeyPair, len(index.Key)),
+			Unique: index.Unique,
+		}
+
+		for j, key := range index.Key {
+			indexes[i].Key[j] = metadata.IndexKeyPair{
+				Field:      key.Field,
+				Descending: key.Descending,
+			}
+		}
+	}
+
+	err := c.r.IndexesCreate(ctx, c.dbName, c.name, indexes)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return new(backends.CreateIndexesResult), nil
 }
 
 // check interfaces

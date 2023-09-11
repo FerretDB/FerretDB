@@ -16,7 +16,7 @@
 //
 // # Required files
 //
-// The following generated text files may be present in this (build/version) directory during building:
+// The following generated text files may be present in this (`build/version`) directory during building:
 //   - version.txt (required) contains information about the FerretDB version in a format
 //     similar to `git describe` output: `v<major>.<minor>.<patch>`.
 //   - commit.txt (optional) contains information about the source git commit.
@@ -30,7 +30,6 @@
 //
 //	ferretdb_debug - enables debug build (see below; implied by builds with race detector)
 //	ferretdb_hana  - enables Hana backend (alpha)
-//	ferretdb_newpg - replaces PostgreSQL backend with a new version (alpha)
 //
 // # Debug builds
 //

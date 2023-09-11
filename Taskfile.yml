@@ -409,11 +409,9 @@ tasks:
       - bin/task{{exeExt}} -d integration integration-security
 
   godocs:
-    desc: "Serve godoc documentation"
+    desc: "Serve Go code documentation"
     cmds:
-      - cmd: open http://127.0.0.1:6060/pkg/github.com/FerretDB/FerretDB/?m=all
-        ignore_error: true # open might not work on that platform
-      - bin/godoc{{exeExt}} -http=127.0.0.1:6060
+      - bin/pkgsite{{exeExt}} -http=127.0.0.1:6060 -open
 
   psql:
     desc: "Run psql"
