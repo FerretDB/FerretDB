@@ -125,17 +125,23 @@ func processDropIndexOptions(command string, doc *types.Document) (*backends.Dro
 	switch v := v.(type) {
 	case *types.Document:
 		// Index specification (key) is provided to drop a specific index.
-		//	var indexKey []backends.IndexKeyPair
+		var indexKey []backends.IndexKeyPair
 
-		//	indexKey, err = processIndexKey(v)
-		//	if err != nil {
-		//		return nil, lazyerrors.Error(err)
-		//	}
+		indexKey, err = processIndexKey(command, v)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		params.Spec = indexKey
+		return &params, nil
+
 	case *types.Array:
 		// List of index names is provided to drop multiple indexes.
 		iter := v.Iterator()
 
 		defer iter.Close() // it's safe to defer here as the iterators reads everything
+
+		params.Indexes = make([]string, 0, v.Len())
 
 		for {
 			var val any
@@ -161,12 +167,19 @@ func processDropIndexOptions(command string, doc *types.Document) (*backends.Dro
 					command,
 				)
 			}
+
+			params.Indexes = append(params.Indexes, index)
 		}
+
 	case string:
 		if v == "*" {
 			// Drop all indexes except the _id index.
+			params.DropAll = true
+			return &params, nil
 		}
 
+		params.Indexes = []string{v}
+		return &params, nil
 	}
 
 	return nil, commonerrors.NewCommandErrorMsgWithArgument(
