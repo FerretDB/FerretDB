@@ -65,19 +65,19 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}
 
 	var whereClaus string
-	var args []any
+	var arg any
 
 	v, _ := params.Filter.Get("_id")
 	if v != nil {
 		if id, ok := v.(types.ObjectID); ok {
 			whereClaus = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-			args = []any{"_id", id}
+			arg = must.NotFail(sjson.MarshalSingleValue(id))
 		}
 	}
 
 	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClaus, metadata.DefaultColumn, meta.TableName)
 
-	rows, err := db.QueryContext(ctx, q, args...)
+	rows, err := db.QueryContext(ctx, q, arg)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
