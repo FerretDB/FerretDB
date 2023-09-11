@@ -71,7 +71,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	if v != nil {
 		if id, ok := v.(types.ObjectID); ok {
 			whereClaus = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-			arg = must.NotFail(sjson.MarshalSingleValue(id))
+			arg = string(must.NotFail(sjson.MarshalSingleValue(id)))
 		}
 	}
 
