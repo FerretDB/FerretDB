@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	sqlite3 "modernc.org/sqlite"
 	sqlite3lib "modernc.org/sqlite/lib"
@@ -101,21 +102,40 @@ func prepareWhereClause(params *backends.QueryParams) (string, []any, error) {
 			break
 		}
 
+		queryPath := metadata.DefaultColumn + "->" + k
+		if k == "_id" {
+			queryPath = metadata.IDColumn
+		}
+
+		// TODO ignore $comment?
+
+		switch v := v.(type) {
+		case *types.Document:
+		case *types.Array, types.Binary, types.NullType, types.Regex, types.Timestamp:
+			// type not supported for pushdown
+
+		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
+			whereClause = fmt.Sprintf(` WHERE %s = ?`, queryPath)
+			args = []any{}
+
+		default:
+			panic(fmt.Sprintf("Unexpected type of value: %v", v))
+		}
+
 		if err != nil {
 			return "", nil, lazyerrors.Error(err)
 		}
-
 	}
 
-	if params != nil && params.Filter.Len() == 1 {
-		v, _ := params.Filter.Get("_id")
-		if v != nil {
-			if id, ok := v.(types.ObjectID); ok {
-				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
-			}
-		}
-	}
+	//if params != nil && params.Filter.Len() == 1 {
+	//	v, _ := params.Filter.Get("_id")
+	//	if v != nil {
+	//		if id, ok := v.(types.ObjectID); ok {
+	//			whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+	//			args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
+	//		}
+	//	}
+	//}
 
 	return whereClause, args, nil
 }
