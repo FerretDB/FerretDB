@@ -354,8 +354,24 @@ func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateI
 }
 
 // DropIndexes implements backends.Collection interface.
-func (c *collection) DropIndexes(context.Context, *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
-	panic("not implemented")
+func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
+	var err error
+
+	switch {
+	case params.DropAll:
+		err = c.r.IndexesDropAll(ctx, c.dbName, c.name)
+
+	case len(params.Indexes) > 0:
+		err = c.r.IndexesDropByNames(ctx, c.dbName, c.name, params.Indexes)
+
+	case len(params.Spec) > 0:
+		//
+
+	default:
+		panic("dropIndexes params are not set correctly")
+	}
+
+	return nil, err
 }
 
 // check interfaces
