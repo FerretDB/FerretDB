@@ -366,15 +366,14 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 	case len(params.Indexes) > 0:
 		var list *backends.ListIndexesResult
 		list, err = c.ListIndexes(ctx, nil)
+
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
 		for _, index := range params.Indexes {
 			if index == "_id_" {
-				return nil, backends.NewError(
-					backends.ErrorCodeIndexInvalidOptions,
-					nil)
+				return nil, backends.NewError(backends.ErrorCodeIndexInvalidOptions, nil)
 			}
 
 			if !slices.ContainsFunc(list.Indexes, func(i backends.IndexInfo) bool { return index == i.Name }) {
@@ -398,6 +397,7 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 		}
 
 		var list *backends.ListIndexesResult
+
 		list, err = c.ListIndexes(ctx, nil)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
@@ -417,6 +417,7 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 			return true
 		}) {
 			spec := make([]string, len(params.Spec))
+
 			for i, key := range params.Spec {
 				order := 1
 				if key.Descending {

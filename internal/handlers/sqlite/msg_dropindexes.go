@@ -92,7 +92,9 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		}
 
 		if backends.ErrorCodeIs(err, backends.ErrorCodeIndexInvalidOptions) {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidOptions, "cannot drop _id index", command)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrInvalidOptions, "cannot drop _id index", command,
+			)
 		}
 
 		return nil, lazyerrors.Error(err)
@@ -142,6 +144,7 @@ func processDropIndexOptions(command string, doc *types.Document) (*backends.Dro
 		}
 
 		params.Spec = indexKey
+
 		return &params, nil
 
 	case *types.Array:
@@ -188,6 +191,7 @@ func processDropIndexOptions(command string, doc *types.Document) (*backends.Dro
 		}
 
 		params.Indexes = []string{v}
+
 		return &params, nil
 	}
 

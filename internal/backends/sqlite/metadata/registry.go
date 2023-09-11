@@ -542,6 +542,7 @@ func (r *Registry) indexesDropByNames(ctx context.Context, dbName, collectionNam
 	return nil
 }
 
+// IndexesDropByNames remove given connection's indexes but their names.
 func (r *Registry) IndexesDropByNames(ctx context.Context, dbName, collectionName string, indexes []string) error {
 	defer observability.FuncCall(ctx)()
 
@@ -551,6 +552,7 @@ func (r *Registry) IndexesDropByNames(ctx context.Context, dbName, collectionNam
 	return r.indexesDropByNames(ctx, dbName, collectionName, indexes)
 }
 
+// IndexesDropBySpec removes index with given specification.
 func (r *Registry) IndexesDropBySpec(ctx context.Context, dbName, collectionName string, spec []IndexKeyPair) error {
 	defer observability.FuncCall(ctx)()
 
@@ -568,6 +570,7 @@ func (r *Registry) IndexesDropBySpec(ctx context.Context, dbName, collectionName
 	}
 
 	var name string
+
 	for _, idx := range r.colls[dbName][collectionName].Settings.Indexes {
 		if slices.Equal(idx.Key, spec) {
 			name = idx.Name

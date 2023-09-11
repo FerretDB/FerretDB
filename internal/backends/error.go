@@ -97,6 +97,7 @@ func (err *Error) Error() string {
 	return fmt.Sprintf("%s: %v", err.code, err.err)
 }
 
+// ErrorArgument returns the argument to be passed to the handler.
 func ErrorArgument(err error) any {
 	e, ok := err.(*Error) //nolint:errorlint // do not inspect error chain
 	if !ok {
