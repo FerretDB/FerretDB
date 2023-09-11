@@ -19,14 +19,16 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
 // Backend is a generic interface for all backends for accessing them.
 //
-// Backend object is expected to be stateful and wrap database connection(s).
-// Handler can create one Backend or multiple Backends with different authentication credentials.
+// Backend object should be stateful and wrap database connection(s).
+// Handler uses only one long-lived Backend object.
 //
 // Backend(s) methods can be called by multiple client connections / command handlers concurrently.
 // They should be thread-safe.
@@ -34,6 +36,10 @@ import (
 // See backendContract and its methods for additional details.
 type Backend interface {
 	Close()
+
+	Name() string
+	Status(context.Context, *StatusParams) (*StatusResult, error)
+
 	Database(string) (Database, error)
 	ListDatabases(context.Context, *ListDatabasesParams) (*ListDatabasesResult, error)
 	DropDatabase(context.Context, *DropDatabaseParams) error
@@ -73,6 +79,37 @@ func (bc *backendContract) Close() {
 	resource.Untrack(bc, bc.token)
 }
 
+// Name returns human-readable formatted name of the backend.
+func (bc *backendContract) Name() string {
+	return bc.b.Name()
+}
+
+// StatusParams represents the parameters of Backend.Status method.
+type StatusParams struct{}
+
+// StatusResult represents the results of Backend.Status method.
+type StatusResult struct {
+	CountCollections int64
+}
+
+// Status returns backend's status.
+//
+// This method should also be used to check that the backend is alive,
+// connection can be established and authenticated.
+// For that reason, the implementation should not return only cached results.
+func (bc *backendContract) Status(ctx context.Context, params *StatusParams) (*StatusResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	// to both check that conninfo is present (which is important for that method),
+	// and to render doc.go correctly
+	must.NotBeZero(conninfo.Get(ctx))
+
+	res, err := bc.b.Status(ctx, params)
+	checkError(err)
+
+	return res, err
+}
+
 // Database returns a Database instance for the given valid name.
 //
 // The database does not need to exist.
@@ -103,7 +140,7 @@ type DatabaseInfo struct {
 	Size int64
 }
 
-// ListDatabases returns a Database instance for given parameters.
+// ListDatabases returns a list of databases.
 func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDatabasesParams) (*ListDatabasesResult, error) {
 	defer observability.FuncCall(ctx)()
 

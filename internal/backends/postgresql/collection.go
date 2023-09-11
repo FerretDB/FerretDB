@@ -39,23 +39,38 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	panic("not implemented")
 }
 
-// Insert implements backends.Collection interface.
-func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) (*backends.InsertResult, error) {
+// InsertAll implements backends.Collection interface.
+func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
 	panic("not implemented")
 }
 
-// Update implements backends.Collection interface.
-func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) (*backends.UpdateResult, error) {
+// UpdateAll implements backends.Collection interface.
+func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllParams) (*backends.UpdateAllResult, error) {
 	panic("not implemented")
 }
 
-// Delete implements backends.Collection interface.
-func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) (*backends.DeleteResult, error) {
+// DeleteAll implements backends.Collection interface.
+func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllParams) (*backends.DeleteAllResult, error) {
 	panic("not implemented")
 }
 
 // Explain implements backends.Collection interface.
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
+	panic("not implemented")
+}
+
+// Stats implements backends.Collection interface.
+func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
+	panic("not implemented")
+}
+
+// ListIndexes implements backends.Collection interface.
+func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
+	panic("not implemented")
+}
+
+// CreateIndexes implements backends.Collection interface.
+func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) { //nolint:lll // for readability
 	panic("not implemented")
 }
 

@@ -23,53 +23,45 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestAggregateCompatCollStats(tt *testing.T) {
 	tt.Parallel()
 
 	for name, tc := range map[string]struct {
-		skip           string                   // skip test for all handlers, must have issue number mentioned
-		collStats      bson.D                   // required
-		resultType     compatTestCaseResultType // defaults to nonEmptyResult
-		failsForSQLite string                   // non-empty value expects test to fail for SQLite backend
+		skip       string                   // skip test for all handlers, must have issue number mentioned
+		collStats  bson.D                   // required
+		resultType compatTestCaseResultType // defaults to nonEmptyResult
 	}{
 		"NilCollStats": {
 			collStats:  nil,
 			resultType: emptyResult,
 		},
 		"EmptyCollStats": {
-			collStats:      bson.D{},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3259",
+			collStats: bson.D{},
 		},
 		"Count": {
-			collStats:      bson.D{{"count", bson.D{}}},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3259",
+			collStats: bson.D{{"count", bson.D{}}},
 		},
 		"StorageStats": {
-			collStats:      bson.D{{"storageStats", bson.D{}}},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3259",
+			collStats: bson.D{{"storageStats", bson.D{}}},
 		},
 		"StorageStatsWithScale": {
-			collStats:      bson.D{{"storageStats", bson.D{{"scale", 1000}}}},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3259",
+			collStats: bson.D{{"storageStats", bson.D{{"scale", 1000}}}},
 		},
 		"StorageStatsNegativeScale": {
 			collStats:  bson.D{{"storageStats", bson.D{{"scale", -1000}}}},
 			resultType: emptyResult,
 		},
 		"StorageStatsFloatScale": {
-			collStats:      bson.D{{"storageStats", bson.D{{"scale", 42.42}}}},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3259",
+			collStats: bson.D{{"storageStats", bson.D{{"scale", 42.42}}}},
 		},
 		"StorageStatsInvalidScale": {
 			collStats:  bson.D{{"storageStats", bson.D{{"scale", "invalid"}}}},
 			resultType: emptyResult,
 		},
 		"CountAndStorageStats": {
-			collStats:      bson.D{{"count", bson.D{}}, {"storageStats", bson.D{}}},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3259",
+			collStats: bson.D{{"count", bson.D{}}, {"storageStats", bson.D{}}},
 		},
 	} {
 		name, tc := name, tc
@@ -92,14 +84,8 @@ func TestAggregateCompatCollStats(tt *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-
-				tt.Run(targetCollection.Name(), func(tt *testing.T) {
-					tt.Helper()
-
-					var t testtb.TB = tt
-					if tc.failsForSQLite != "" {
-						t = setup.FailsForSQLite(tt, tc.failsForSQLite)
-					}
+				tt.Run(targetCollection.Name(), func(t *testing.T) {
+					t.Helper()
 
 					command := bson.A{bson.D{{"$collStats", tc.collStats}}}
 
@@ -144,11 +130,6 @@ func TestAggregateCompatCollStats(tt *testing.T) {
 					// Check the returned values when possible
 					// TODO https://github.com/FerretDB/FerretDB/issues/2349
 				})
-			}
-
-			// TODO https://github.com/FerretDB/FerretDB/issues/3259
-			if setup.IsSQLite(tt) {
-				return
 			}
 
 			switch tc.resultType {

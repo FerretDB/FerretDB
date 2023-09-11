@@ -34,7 +34,7 @@ type explainCompatTestCase struct {
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 
 	skip           string // skip test for all handlers, must have issue number mentioned
-	failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue}
+	failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue
 }
 
 // testExplainCompatError tests explain compatibility test cases.
@@ -149,13 +149,11 @@ func TestExplainCompatError(t *testing.T) {
 			pipeline: bson.A{1},
 		},
 		"Count": {
-			command:        "count",
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3050",
+			command: "count",
 		},
 		"Find": {
-			command:        "find",
-			filter:         bson.D{{"v", int32(42)}},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3050",
+			command: "find",
+			filter:  bson.D{{"v", int32(42)}},
 		},
 		"InvalidCommandGetLog": {
 			command: "create",

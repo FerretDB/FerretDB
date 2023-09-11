@@ -1,7 +1,7 @@
 ---
 slug: mangodb-overwhelming-enthusiasm-for-truly-open-source-mongodb-replacement
 title: Overwhelming enthusiasm for Truly Open Source MongoDB Replacement
-author: Peter Farkas
+authors: [peter]
 description: Earlier this week, we unveiled our vision for MangoDB, the Truly Open Source MongoDB Replacement, which allows developers to use the powerful MongoDB interface while storing data in PostgreSQL.
 image: /img/blog/home-img.jpg
 tags: [open source, document databases, mongodb compatible, community]

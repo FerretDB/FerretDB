@@ -16,16 +16,39 @@ package sqlite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
+
+// writeError represents a single write error details.
+//
+// Find a better place for this struct.
+// TODO https://github.com/FerretDB/FerretDB/issues/3263
+type writeError struct {
+	// the order of fields is weird to make the struct smaller due to alignment
+
+	errmsg string
+	index  int32
+	code   commonerrors.ErrorCode
+}
+
+// Document returns a document representation of the write error.
+func (we *writeError) Document() *types.Document {
+	return must.NotFail(types.NewDocument(
+		"index", we.index,
+		"code", int32(we.code),
+		"errmsg", we.errmsg,
+	))
+}
 
 // MsgInsert implements HandlerInterface.
 func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
@@ -36,7 +59,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	params, err := common.GetInsertParams(document, h.L)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	db, err := h.b.Database(params.DB)
@@ -48,7 +71,6 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		return nil, lazyerrors.Error(err)
 	}
-	defer db.Close()
 
 	c, err := db.Collection(params.Collection)
 	if err != nil {
@@ -60,36 +82,101 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter := params.Docs.Iterator()
-	defer iter.Close()
+	docsIter := params.Docs.Iterator()
+	defer docsIter.Close()
 
-	res, err := c.Insert(ctx, &backends.InsertParams{
-		Iter: iter,
-	})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	var inserted int32
+	writeErrors := types.MakeArray(0)
+
+	for {
+		i, d, err := docsIter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		doc := d.(*types.Document)
+
+		if !doc.Has("_id") {
+			doc.Set("_id", types.NewObjectID())
+		}
+
+		if err = doc.ValidateData(); err != nil {
+			var ve *types.ValidationError
+
+			if !errors.As(err, &ve) {
+				return nil, lazyerrors.Error(err)
+			}
+
+			var code commonerrors.ErrorCode
+
+			switch ve.Code() {
+			case types.ErrValidation, types.ErrIDNotFound:
+				code = commonerrors.ErrBadValue
+			case types.ErrWrongIDType:
+				code = commonerrors.ErrInvalidID
+			default:
+				panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
+			}
+
+			we := &writeError{
+				index:  int32(i),
+				code:   code,
+				errmsg: ve.Error(),
+			}
+			writeErrors.Append(we.Document())
+
+			if params.Ordered {
+				break
+			}
+
+			continue
+		}
+
+		// use bigger batches on a happy path, downgrade to one-document batches on error
+		// TODO https://github.com/FerretDB/FerretDB/issues/3271
+
+		_, err = c.InsertAll(ctx, &backends.InsertAllParams{
+			Docs: []*types.Document{doc},
+		})
+		if err != nil {
+			if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
+				we := &writeError{
+					index:  int32(i),
+					code:   commonerrors.ErrDuplicateKeyInsert,
+					errmsg: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
+				}
+				writeErrors.Append(we.Document())
+
+				if params.Ordered {
+					break
+				}
+
+				continue
+			}
+
+			return nil, lazyerrors.Error(err)
+		}
+
+		inserted++
 	}
 
-	replyDoc := must.NotFail(types.NewDocument(
-		"n", int32(res.Inserted),
-		"ok", float64(1),
+	res := must.NotFail(types.NewDocument(
+		"n", inserted,
 	))
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/2750
-	//
-	// if len(res.Errors) > 0 {
-	// 	var errs *commonerrors.WriteErrors
-	//
-	// 	for i := 0; i < len(res.Errors); i++ {
-	// 		errs.Append(err, int32(i))
-	// 	}
-	//
-	// 	replyDoc = errs.Document()
-	// }
+	if writeErrors.Len() > 0 {
+		res.Set("writeErrors", writeErrors)
+	}
+
+	res.Set("ok", float64(1))
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{replyDoc},
+		Documents: []*types.Document{res},
 	}))
 
 	return &reply, nil

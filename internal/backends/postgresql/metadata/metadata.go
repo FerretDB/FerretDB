@@ -12,10 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sqlite
+// Package metadata provides access to databases and collections information.
+package metadata
 
-import "testing"
+import "github.com/FerretDB/FerretDB/internal/types"
 
-func TestDummy(t *testing.T) {
-	// we need at least one test per package to correctly calculate coverage
+// Collection represents collection metadata.
+type Collection struct {
+	Name      string
+	TableName string
+	// TODO indexes, etc.
+}
+
+// Marshal returns [*types.Document] for that collection.
+func (c *Collection) Marshal() *types.Document {
+	panic("not implemented")
+}
+
+// Unmarshal sets collection metadata from [*types.Document].
+func (c *Collection) Unmarshal(doc *types.Document) error {
+	panic("not implemented")
 }

@@ -57,6 +57,9 @@ type NewHandlerOpts struct {
 type TestOpts struct {
 	DisableFilterPushdown bool
 	EnableSortPushdown    bool
+	EnableOplog           bool
+
+	UseNewPG bool
 }
 
 // NewHandler constructs a new handler.

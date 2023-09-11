@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/decorators/oplog"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
@@ -32,6 +33,9 @@ import (
 )
 
 // notImplemented returns error for stub command handlers.
+//
+// Remove it.
+// TODO https://github.com/FerretDB/FerretDB/issues/3069
 func notImplemented(command string) error {
 	return commonerrors.NewCommandErrorMsg(
 		commonerrors.ErrNotImplemented,
@@ -61,6 +65,8 @@ type NewOpts struct {
 
 	// test options
 	DisableFilterPushdown bool
+	EnableSortPushdown    bool
+	EnableOplog           bool
 }
 
 // New returns a new handler.
@@ -78,7 +84,13 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 		b, err = sqlite.NewBackend(&sqlite.NewBackendParams{
 			URI: opts.URI,
 			L:   opts.L,
+			P:   opts.StateProvider,
 		})
+
+		if opts.EnableOplog {
+			b = oplog.NewBackend(b, opts.L.Named("oplog"))
+		}
+
 	default:
 		panic("unknown backend: " + opts.Backend)
 	}

@@ -94,7 +94,7 @@ func convert(t testtb.TB, v any) any {
 	case int32:
 		return v
 	case primitive.Timestamp:
-		return types.NewTimestamp(time.Unix(int64(v.T), 0), uint32(v.I))
+		return types.NewTimestamp(time.Unix(int64(v.T), 0), v.I)
 	case int64:
 		return v
 	default:
@@ -238,6 +238,8 @@ func AssertMatchesWriteError(t testtb.TB, expected, actual error) {
 
 // AssertMatchesBulkException asserts that both errors are BulkWriteExceptions containing the same number of WriteErrors,
 // and those WriteErrors are equal, except messages (and ignoring the Raw part).
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3290
 func AssertMatchesBulkException(t testtb.TB, expected, actual error) {
 	t.Helper()
 
@@ -246,6 +248,11 @@ func AssertMatchesBulkException(t testtb.TB, expected, actual error) {
 
 	e, ok := expected.(mongo.BulkWriteException) //nolint:errorlint // do not inspect error chain
 	require.Truef(t, ok, "expected is %T, not mongo.BulkWriteException", expected)
+
+	if len(a.WriteErrors) != len(e.WriteErrors) {
+		assert.Equal(t, expected, actual)
+		return
+	}
 
 	for i, we := range a.WriteErrors {
 		expectedWe := e.WriteErrors[i]

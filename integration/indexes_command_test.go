@@ -24,7 +24,44 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
+
+// TestListIndexesCommandNonExistentNS tests that the listIndexes command returns a particular error
+// when the namespace (either database or collection) does not exist.
+func TestListIndexesCommandNonExistentNS(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		Providers: []shareddata.Provider{shareddata.Composites},
+	})
+	ctx, collection := s.Ctx, s.Collection
+
+	// Calling driver's method collection.Database().Collection("nonexistent").Indexes().List(ctx)
+	// doesn't return an error for non-existent namespaces.
+	// So that we should use RunCommand to check the behaviour.
+	res := collection.Database().RunCommand(ctx, bson.D{{"listIndexes", "nonexistentColl"}})
+	err := res.Err()
+
+	expected := mongo.CommandError{
+		Code:    26,
+		Name:    "NamespaceNotFound",
+		Message: "ns does not exist: " + collection.Database().Name() + ".nonexistentColl",
+	}
+	AssertEqualCommandError(t, expected, err)
+
+	// Drop database and check that the error is correct.
+	require.NoError(t, collection.Database().Drop(ctx))
+	res = collection.Database().RunCommand(ctx, bson.D{{"listIndexes", collection.Name()}})
+	err = res.Err()
+
+	expected = mongo.CommandError{
+		Code:    26,
+		Name:    "NamespaceNotFound",
+		Message: "ns does not exist: " + collection.Database().Name() + "." + collection.Name(),
+	}
+	AssertEqualCommandError(t, expected, err)
+}
 
 func TestDropIndexesCommandErrors(tt *testing.T) {
 	tt.Parallel()
@@ -187,7 +224,9 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 
 		err        *mongo.CommandError // required, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+
+		skip           string // optional, skip test with a specified reason
+		failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"EmptyIndexes": {
 			indexes: bson.A{},
@@ -277,7 +316,8 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 				Name:    "CannotCreateIndex",
 				Message: `Error in specification { key: { v: -1 }, name: "", v: 2 } :: caused by :: index name cannot be empty`,
 			},
-			altMessage: `Error in specification { key: { v: -1 }, name: "" } :: caused by :: index name cannot be empty`,
+			altMessage:     `Error in specification { key: { v: -1 }, name: "" } :: caused by :: index name cannot be empty`,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 		"MissingKey": {
 			indexes: bson.A{
@@ -306,6 +346,7 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 				Name:    "IndexAlreadyExists",
 				Message: `Identical index already exists: v_1`,
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 		"SameName": {
 			indexes: bson.A{
@@ -333,6 +374,7 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 				"cause conflicts. Please refer to our documentation. " +
 				"Requested index: { key: { bar: -1 }, name: \"index-name\" }, " +
 				"existing index: { key: { foo: -1 }, name: \"index-name\" }",
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 		"SameIndex": {
 			indexes: bson.A{
@@ -351,6 +393,7 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 				Name:    "IndexOptionsConflict",
 				Message: "Index already exists with a different name: foo",
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 		"UniqueTypeDocument": {
 			indexes: bson.A{
@@ -378,7 +421,10 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 
 			tt.Parallel()
 
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3183")
+			var t testtb.TB = tt
+			if tc.failsForSQLite != "" {
+				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+			}
 
 			if tc.missingIndexes {
 				require.Nil(t, tc.indexes, "indexes must be nil if missingIndexes is true")
@@ -390,7 +436,7 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 				providers = append(providers, shareddata.ArrayDocuments)
 			}
 
-			ctx, collection := setup.Setup(t, providers...)
+			ctx, collection := setup.Setup(tt, providers...)
 
 			var rest bson.D
 
@@ -413,8 +459,8 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 	}
 }
 
-func TestCreateIndexesCommandInvalidCollection(tt *testing.T) {
-	tt.Parallel()
+func TestCreateIndexesCommandInvalidCollection(t *testing.T) {
+	t.Parallel()
 
 	for name, tc := range map[string]struct {
 		collectionName any
@@ -469,14 +515,12 @@ func TestCreateIndexesCommandInvalidCollection(tt *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3183")
+			t.Parallel()
 
 			provider := shareddata.ArrayDocuments // one provider is enough to check for errors
 			ctx, collection := setup.Setup(t, provider)

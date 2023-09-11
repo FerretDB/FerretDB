@@ -32,11 +32,6 @@ func newDatabase(name string) backends.Database {
 	})
 }
 
-// Close implements backends.Database interface.
-func (db *database) Close() {
-	// nothing
-}
-
 // Collection implements backends.Database interface.
 func (db *database) Collection(name string) (backends.Collection, error) {
 	return newCollection(db.name, name), nil
@@ -61,6 +56,11 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
+	panic("not implemented")
+}
+
+// Stats implements backends.Database interface.
+func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsParams) (*backends.DatabaseStatsResult, error) {
 	panic("not implemented")
 }
 

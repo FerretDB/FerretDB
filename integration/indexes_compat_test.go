@@ -25,12 +25,13 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-func TestListIndexesCompat(tt *testing.T) {
-	tt.Parallel()
+func TestListIndexesCompat(t *testing.T) {
+	t.Parallel()
 
-	s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 		Providers:                shareddata.AllProviders(),
 		AddNonExistentCollection: true,
 	})
@@ -40,11 +41,9 @@ func TestListIndexesCompat(tt *testing.T) {
 		targetCollection := targetCollections[i]
 		compatCollection := compatCollections[i]
 
-		tt.Run(targetCollection.Name(), func(tt *testing.T) {
-			tt.Helper()
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3175")
+		t.Run(targetCollection.Name(), func(t *testing.T) {
+			t.Helper()
+			t.Parallel()
 
 			targetCursor, targetErr := targetCollection.Indexes().List(ctx)
 			compatCursor, compatErr := compatCollection.Indexes().List(ctx)
@@ -82,7 +81,9 @@ func TestCreateIndexesCompat(tt *testing.T) {
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		models     []mongo.IndexModel
 		resultType compatTestCaseResultType // defaults to nonEmptyResult
-		skip       string                   // optional, skip test with a specified reason
+
+		skip           string // optional, skip test with a specified reason
+		failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"Empty": {
 			models:     []mongo.IndexModel{},
@@ -96,13 +97,6 @@ func TestCreateIndexesCompat(tt *testing.T) {
 		"SingleIndexMultiField": {
 			models: []mongo.IndexModel{
 				{Keys: bson.D{{"foo", 1}, {"bar", -1}}},
-			},
-		},
-		"DuplicateID": {
-			models: []mongo.IndexModel{
-				{
-					Keys: bson.D{{"_id", 1}}, // this index is already created by default
-				},
 			},
 		},
 		"DescendingID": {
@@ -130,6 +124,7 @@ func TestCreateIndexesCompat(tt *testing.T) {
 					},
 				},
 			},
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 		"SameKey": {
 			models: []mongo.IndexModel{
@@ -207,7 +202,8 @@ func TestCreateIndexesCompat(tt *testing.T) {
 					Options: options.Index().SetName("bar"),
 				},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 		"SameNameDifferentKeys": {
 			models: []mongo.IndexModel{
@@ -220,7 +216,8 @@ func TestCreateIndexesCompat(tt *testing.T) {
 					Options: options.Index().SetName("index-name"),
 				},
 			},
-			resultType: emptyResult,
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 	} {
 		name, tc := name, tc
@@ -244,11 +241,13 @@ func TestCreateIndexesCompat(tt *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-
 				tt.Run(targetCollection.Name(), func(tt *testing.T) {
 					tt.Helper()
 
-					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3175")
+					var t testtb.TB = tt
+					if tc.failsForSQLite != "" {
+						t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+					}
 
 					targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
 					compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
@@ -301,8 +300,7 @@ func TestCreateIndexesCompat(tt *testing.T) {
 				})
 			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3175
-			if setup.IsSQLite(tt) {
+			if tc.failsForSQLite != "" {
 				return
 			}
 
@@ -352,13 +350,6 @@ func TestDropIndexesCompat(tt *testing.T) {
 			},
 			dropIndexName: "v_-1",
 		},
-		"AsteriskWithDropOne": {
-			toCreate: []mongo.IndexModel{
-				{Keys: bson.D{{"v", -1}}},
-			},
-			dropIndexName: "*",
-			resultType:    emptyResult,
-		},
 		"NonExistent": {
 			dropIndexName: "nonexistent_1",
 			resultType:    emptyResult,
@@ -388,11 +379,10 @@ func TestDropIndexesCompat(tt *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-
 				tt.Run(targetCollection.Name(), func(tt *testing.T) {
 					tt.Helper()
 
-					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3175")
+					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3287")
 
 					if tc.toCreate != nil {
 						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.toCreate)
@@ -440,7 +430,7 @@ func TestDropIndexesCompat(tt *testing.T) {
 				})
 			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3175
+			// TODO https://github.com/FerretDB/FerretDB/issues/3287
 			if setup.IsSQLite(tt) {
 				return
 			}
@@ -457,8 +447,8 @@ func TestDropIndexesCompat(tt *testing.T) {
 	}
 }
 
-func TestCreateIndexesCompatUnique(tt *testing.T) {
-	tt.Parallel()
+func TestCreateIndexesCompatUnique(t *testing.T) {
+	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		models    []mongo.IndexModel // required, index to create
@@ -525,15 +515,13 @@ func TestCreateIndexesCompatUnique(tt *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Helper()
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3175")
+			t.Helper()
+			t.Parallel()
 
 			res := setup.SetupCompatWithOpts(t,
 				&setup.SetupCompatOpts{

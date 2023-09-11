@@ -17,11 +17,14 @@ package sqlite
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgCollMod implements HandlerInterface.
 func (h *Handler) MsgCollMod(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	return nil, commonerrors.NewCommandErrorMsg(
+		commonerrors.ErrNotImplemented,
+		"`collMod` command is not implemented yet",
+	)
 }

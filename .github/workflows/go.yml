@@ -20,6 +20,7 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
+  GOTOOLCHAIN: local
 
 jobs:
   short-test:
@@ -231,7 +232,7 @@ jobs:
         with:
           token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
           files: ./integration/integration-${{ matrix.task }}.txt
-          flags: integration,${{ matrix.task }},shard-${{ matrix.shard_index }}
+          flags: integration,${{ matrix.task }}-${{ matrix.shard_index }}
           fail_ci_if_error: true
           verbose: true
 
