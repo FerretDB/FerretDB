@@ -87,7 +87,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	_, err = c.DropIndexes(ctx, options)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeIndexDoesNotExist) {
-			msg := fmt.Sprintf("index not found with name [%s]", backends.ErrorArgument(err))
+			msg := fmt.Sprintf("%s", backends.ErrorArgument(err))
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexNotFound, msg, command)
 		}
 

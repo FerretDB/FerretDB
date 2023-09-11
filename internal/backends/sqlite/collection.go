@@ -382,7 +382,7 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 				return nil, backends.NewErrorWithArgument(
 					backends.ErrorCodeIndexDoesNotExist,
 					lazyerrors.Errorf("index %q does not exist", index),
-					index,
+					fmt.Sprintf("index not found with name [%s]", index),
 				)
 			}
 
@@ -396,6 +396,42 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 			return nil, backends.NewError(
 				backends.ErrorCodeIndexInvalidOptions,
 				nil,
+			)
+		}
+
+		var list *backends.ListIndexesResult
+		list, err = c.ListIndexes(ctx, nil)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if !slices.ContainsFunc(list.Indexes, func(i backends.IndexInfo) bool {
+			if len(i.Key) != len(params.Spec) {
+				return false
+			}
+
+			for j, key := range i.Key {
+				if key.Field != params.Spec[j].Field || key.Descending != params.Spec[j].Descending {
+					return false
+				}
+			}
+
+			return true
+		}) {
+			spec := make([]string, len(params.Spec))
+			for i, key := range params.Spec {
+				order := 1
+				if key.Descending {
+					order = -1
+				}
+
+				spec[i] = fmt.Sprintf("%s: %d", key.Field, order)
+			}
+
+			return nil, backends.NewErrorWithArgument(
+				backends.ErrorCodeIndexDoesNotExist,
+				nil,
+				fmt.Sprintf("can't find index with key: { %s }", strings.Join(spec, ", ")),
 			)
 		}
 

@@ -63,8 +63,8 @@ func TestListIndexesCommandNonExistentNS(t *testing.T) {
 	AssertEqualCommandError(t, expected, err)
 }
 
-func TestDropIndexesCommandErrors(tt *testing.T) {
-	tt.Parallel()
+func TestDropIndexesCommandErrors(t *testing.T) {
+	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		toCreate []mongo.IndexModel // optional, if set, create the given indexes before drop is called
@@ -169,14 +169,12 @@ func TestDropIndexesCommandErrors(tt *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3183")
+			t.Parallel()
 
 			if tc.command != nil {
 				require.Nil(t, tc.toDrop, "toDrop must be nil when using command")
