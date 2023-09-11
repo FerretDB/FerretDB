@@ -17,11 +17,11 @@ package hana
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgGetMore implements handlers.Interface.
 func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	return common.GetMore(ctx, msg, h.cursors)
 }

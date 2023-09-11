@@ -63,6 +63,7 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	h := &Handler{
 		NewOpts: opts,
 		pools:   make(map[string]*hanadb.Pool, 1),
+		cursors: cursor.NewRegistry(opts.L.Named("cursors")),
 	}
 
 	return h, nil
@@ -72,6 +73,8 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 func (h *Handler) Close() {
 	h.rw.Lock()
 	defer h.rw.Unlock()
+
+	h.cursors.Close()
 
 	for k, p := range h.pools {
 		p.Close()

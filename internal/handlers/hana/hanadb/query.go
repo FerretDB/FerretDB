@@ -53,7 +53,6 @@ func (hanaPool *Pool) QueryDocuments(ctx context.Context, qp *QueryParams) (type
 	// Todo: build correct SQL here
 
 	sqlStmt := fmt.Sprintf("SELECT * FROM %q.%q", qp.DB, qp.Collection)
-
 	rows, err := hanaPool.QueryContext(ctx, sqlStmt)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -80,21 +79,25 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 	defer iter.m.Unlock()
 
 	var unused struct{}
+	// ignore context error, if any, if iterator is already closed
+	if iter.rows == nil {
+		return unused, nil, iterator.ErrIteratorDone
+	}
 
 	if err := context.Cause(iter.ctx); err != nil {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
 	if !iter.rows.Next() {
-		if err := iter.rows.Err(); err != nil {
-			return unused, nil, lazyerrors.Error(err)
-		}
+		err := iter.rows.Err()
 
-		// to avoid context cancellation changing the next `Next()` error
-		// from `iterator.ErrIteratorDone` to `context.Canceled`
 		iter.close()
 
-		return unused, nil, iterator.ErrIteratorDone
+		if err == nil {
+			err = iterator.ErrIteratorDone
+		}
+
+		return unused, nil, lazyerrors.Error(err)
 	}
 
 	b := new(bytes.Buffer)
@@ -104,18 +107,6 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 	if err := iter.rows.Scan(lob); err != nil {
 		return unused, nil, lazyerrors.Error(err)
 	}
-
-	// log.Println("####################################################")
-	// log.Println("Row = ", b.String())
-	// log.Println("####################################################")
-
-	//sch := fmt.Sprintf("{\"$s\":%s}", b.Bytes())
-
-	// log.Println("####################################################")
-	// log.Println("Row = ", sch)
-	// log.Println("####################################################")
-
-	//doc, err := iter.unmarshal([]byte(sch))
 
 	doc, err := iter.unmarshal(b.Bytes())
 	if err != nil {
