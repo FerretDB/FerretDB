@@ -102,7 +102,8 @@ func prepareWhereClause(params *backends.QueryParams) (string, []any, error) {
 			break
 		}
 
-		queryPath := metadata.DefaultColumn + "->" + k
+		queryPath := fmt.Sprintf("%s->'$.%s'", metadata.DefaultColumn, k)
+
 		if k == "_id" {
 			queryPath = metadata.IDColumn
 		}
@@ -116,7 +117,7 @@ func prepareWhereClause(params *backends.QueryParams) (string, []any, error) {
 
 		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
 			whereClause = fmt.Sprintf(` WHERE %s = ?`, queryPath)
-			args = []any{}
+			args = append(args, v)
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
