@@ -833,13 +833,14 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 		sort    bson.D // optional, nil to leave sort unset
 		optSkip *int64 // optional, nil to leave optSkip unset
 
-		len            int                 // expected length of results
-		queryPushdown  bool                // optional, set true for expected pushdown for query
-		limitPushdown  bool                // optional, set true for expected pushdown for limit
-		err            *mongo.CommandError // optional, expected error from MongoDB
-		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
-		skip           string              // optional, skip test with a specified reason
-		failsForSQLite string              // optional, if set, the case is expected to fail for SQLite due to given issue
+		len                 int                 // expected length of results
+		queryPushdown       bool                // optional, set true for expected pushdown for query
+		queryPushdownSQLite bool                // optional, set true for expected SQLite pushdown for query
+		limitPushdown       bool                // optional, set true for expected pushdown for limit
+		err                 *mongo.CommandError // optional, expected error from MongoDB
+		altMessage          string              // optional, alternative error message for FerretDB, ignored if empty
+		skip                string              // optional, skip test with a specified reason
+		failsForSQLite      string              // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"Simple": {
 			limit:          1,
@@ -1004,8 +1005,13 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 					msg = "Sort pushdown is disabled, but target resulted with limitPushdown"
 				}
 
+				resultPushdown := tc.queryPushdown
+				if setup.IsSQLite(t) {
+					resultPushdown = tc.queryPushdownSQLite
+				}
+
 				if setup.IsPushdownDisabled() {
-					tc.queryPushdown = false
+					resultPushdown = false
 					msg = "Query pushdown is disabled, but target resulted with pushdown"
 				}
 
@@ -1014,7 +1020,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				assert.Equal(t, tc.limitPushdown, limitPushdown, msg)
 
 				queryPushdown, _ := ConvertDocument(t, res).Get("pushdown")
-				assert.Equal(t, tc.queryPushdown, queryPushdown, msg)
+				assert.Equal(t, resultPushdown, queryPushdown, msg)
 			})
 
 			t.Run("Find", func(t *testing.T) {
