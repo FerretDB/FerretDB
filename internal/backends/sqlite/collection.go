@@ -391,7 +391,8 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 		err = c.r.IndexesDropByNames(ctx, c.dbName, c.name, params.Indexes)
 
 	case len(params.Spec) > 0:
-		if len(params.Spec) == 1 && params.Spec[0].Field == "_id" {
+		// default index {_id: 1} can't be dropped
+		if len(params.Spec) == 1 && params.Spec[0].Field == "_id" && !params.Spec[0].Descending {
 			return nil, backends.NewError(
 				backends.ErrorCodeIndexInvalidOptions,
 				nil,
