@@ -52,7 +52,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	db, err := h.b.Database(dbName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid database specified '%s'", dbName)
+			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, command)
 		}
 
@@ -62,7 +62,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	c, err := db.Collection(collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid collection name: %s", collection)
+			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, command)
 		}
 
@@ -87,7 +87,8 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	_, err = c.DropIndexes(ctx, options)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeIndexDoesNotExist) {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexNotFound, "index not found with name", command)
+			msg := fmt.Sprintf("index not found with name [%s]", backends.ErrorArgument(err))
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexNotFound, msg, command)
 		}
 
 		if backends.ErrorCodeIs(err, backends.ErrorCodeIndexInvalidOptions) {

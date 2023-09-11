@@ -357,6 +357,7 @@ func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateI
 
 // DropIndexes implements backends.Collection interface.
 func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
+	var res backends.DropIndexesResult
 	var err error
 
 	switch {
@@ -364,7 +365,8 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 		err = c.r.IndexesDropAll(ctx, c.dbName, c.name)
 
 	case len(params.Indexes) > 0:
-		list, err := c.ListIndexes(ctx, nil)
+		var list *backends.ListIndexesResult
+		list, err = c.ListIndexes(ctx, nil)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -377,9 +379,10 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 			}
 
 			if !slices.ContainsFunc(list.Indexes, func(i backends.IndexInfo) bool { return index == i.Name }) {
-				return nil, backends.NewError(
+				return nil, backends.NewErrorWithArgument(
 					backends.ErrorCodeIndexDoesNotExist,
 					lazyerrors.Errorf("index %q does not exist", index),
+					index,
 				)
 			}
 
@@ -409,7 +412,11 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 		panic("dropIndexes params are not set correctly")
 	}
 
-	return nil, err
+	if err != nil {
+		return nil, err
+	}
+
+	return &res, nil
 }
 
 // check interfaces
