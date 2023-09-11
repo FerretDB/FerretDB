@@ -35,7 +35,7 @@ const (
 	DefaultColumn = "_ferretdb_sjson"
 
 	// IDColumn is a SQLite path expression for _id field.
-	IDColumn = DefaultColumn + "->>'$._id'"
+	IDColumn = DefaultColumn + "->'$._id'"
 )
 
 // Collection represents collection metadata.
