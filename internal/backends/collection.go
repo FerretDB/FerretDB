@@ -302,7 +302,7 @@ type DropIndexesResult struct{}
 // and the first encountered error should be returned.
 func (cc *collectionContract) DropIndexes(ctx context.Context, params *DropIndexesParams) (*DropIndexesResult, error) {
 	res, err := cc.c.DropIndexes(ctx, params)
-	checkError(err, ErrorCodeIndexDoesNotExist)
+	checkError(err, ErrorCodeIndexDoesNotExist, ErrorCodeIndexInvalidOptions)
 
 	return res, err
 }

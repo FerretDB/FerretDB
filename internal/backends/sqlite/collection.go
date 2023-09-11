@@ -370,17 +370,31 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 		}
 
 		for _, index := range params.Indexes {
+			if index == "_id_" {
+				return nil, backends.NewError(
+					backends.ErrorCodeIndexInvalidOptions,
+					nil)
+			}
+
 			if !slices.ContainsFunc(list.Indexes, func(i backends.IndexInfo) bool { return index == i.Name }) {
 				return nil, backends.NewError(
 					backends.ErrorCodeIndexDoesNotExist,
 					lazyerrors.Errorf("index %q does not exist", index),
 				)
 			}
+
 		}
 
 		err = c.r.IndexesDropByNames(ctx, c.dbName, c.name, params.Indexes)
 
 	case len(params.Spec) > 0:
+		if len(params.Spec) == 1 && params.Spec[0].Field == "_id" {
+			return nil, backends.NewError(
+				backends.ErrorCodeIndexInvalidOptions,
+				nil,
+			)
+		}
+
 		spec := make([]metadata.IndexKeyPair, len(params.Spec))
 		for i, key := range params.Spec {
 			spec[i] = metadata.IndexKeyPair{
@@ -388,6 +402,7 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 				Descending: key.Descending,
 			}
 		}
+
 		err = c.r.IndexesDropBySpec(ctx, c.dbName, c.name, spec)
 
 	default:

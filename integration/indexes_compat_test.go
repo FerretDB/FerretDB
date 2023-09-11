@@ -316,8 +316,8 @@ func TestCreateIndexesCompat(tt *testing.T) {
 	}
 }
 
-func TestDropIndexesCompat(tt *testing.T) {
-	tt.Parallel()
+func TestDropIndexesCompat(t *testing.T) {
+	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		dropIndexName string                   // name of a single index to drop
@@ -360,16 +360,16 @@ func TestDropIndexesCompat(tt *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
-			tt.Helper()
-			tt.Parallel()
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
+			t.Parallel()
 
 			if tc.dropAll {
-				require.Empty(tt, tc.dropIndexName, "index name must be empty when dropping all indexes")
+				require.Empty(t, tc.dropIndexName, "index name must be empty when dropping all indexes")
 			}
 
 			// It's enough to use a single provider for drop indexes test as indexes work the same for different collections.
-			s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
+			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 				Providers:                []shareddata.Provider{shareddata.Composites},
 				AddNonExistentCollection: true,
 			})
@@ -379,10 +379,8 @@ func TestDropIndexesCompat(tt *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				tt.Run(targetCollection.Name(), func(tt *testing.T) {
-					tt.Helper()
-
-					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3287")
+				t.Run(targetCollection.Name(), func(t *testing.T) {
+					t.Helper()
 
 					if tc.toCreate != nil {
 						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.toCreate)
@@ -430,18 +428,13 @@ func TestDropIndexesCompat(tt *testing.T) {
 				})
 			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3287
-			if setup.IsSQLite(tt) {
-				return
-			}
-
 			switch tc.resultType {
 			case nonEmptyResult:
-				require.True(tt, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+				require.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
 			case emptyResult:
-				require.False(tt, nonEmptyResults, "expected empty results (no documents should be modified)")
+				require.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
-				tt.Fatalf("unknown result type %v", tc.resultType)
+				t.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}

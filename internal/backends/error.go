@@ -42,6 +42,7 @@ const (
 	ErrorCodeInsertDuplicateID
 
 	ErrorCodeIndexDoesNotExist
+	ErrorCodeIndexInvalidOptions
 )
 
 // Error represents a backend error returned by all Backend, Database and Collection methods.
