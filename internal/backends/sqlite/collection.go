@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"golang.org/x/exp/slices"
-
 	sqlite3 "modernc.org/sqlite"
 	sqlite3lib "modernc.org/sqlite/lib"
 
@@ -385,7 +384,6 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 					fmt.Sprintf("index not found with name [%s]", index),
 				)
 			}
-
 		}
 
 		err = c.r.IndexesDropByNames(ctx, c.dbName, c.name, params.Indexes)

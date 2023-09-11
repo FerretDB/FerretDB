@@ -472,11 +472,6 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 				})
 			}
 
-			// https://github.com/FerretDB/FerretDB/issues/3287
-			if setup.IsSQLite(t) {
-				return
-			}
-
 			switch tc.resultType {
 			case nonEmptyResult:
 				require.True(t, nonEmptyResults, "expected non-empty results (some indexes should be deleted)")
