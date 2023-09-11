@@ -38,7 +38,7 @@ type aggregateStagesCompatTestCase struct {
 
 	resultType           compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown       bool                     // defaults to false
-	resultPushdownSQLite bool                     // defaults to false
+	resultPushdownSQLite bool                     // TODO https://github.com/FerretDB/FerretDB/issues/3235
 	skip                 string                   // skip test for all handlers, must have issue number mentioned
 }
 
@@ -114,6 +114,7 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 
 					resultPushdown := tc.resultPushdown
 					if setup.IsSQLite(t) {
+						// TODO https://github.com/FerretDB/FerretDB/issues/3235
 						resultPushdown = tc.resultPushdownSQLite
 					}
 

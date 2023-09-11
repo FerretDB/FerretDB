@@ -67,7 +67,9 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	var whereClause string
 	var args []any
 
-	if params != nil && params.Filter != nil {
+	// that logic should exist in one place
+	// TODO https://github.com/FerretDB/FerretDB/issues/3235
+	if params != nil && params.Filter.Len() == 1 {
 		v, _ := params.Filter.Get("_id")
 		if v != nil {
 			if id, ok := v.(types.ObjectID); ok {
@@ -236,7 +238,9 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	var whereClause string
 	var args []any
 
-	if params != nil && params.Filter != nil {
+	// that logic should exist in one place
+	// TODO https://github.com/FerretDB/FerretDB/issues/3235
+	if params != nil && params.Filter.Len() == 1 {
 		v, _ := params.Filter.Get("_id")
 		if v != nil {
 			if id, ok := v.(types.ObjectID); ok {

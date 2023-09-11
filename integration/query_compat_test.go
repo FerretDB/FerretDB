@@ -40,7 +40,7 @@ type queryCompatTestCase struct {
 	projection           bson.D                   // nil for leaving projection unset
 	resultType           compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown       bool                     // defaults to false
-	resultPushdownSQLite bool                     // defaults to false
+	resultPushdownSQLite bool                     // TODO https://github.com/FerretDB/FerretDB/issues/3235
 
 	skipIDCheck bool   // skip check collected IDs, use it when no ids returned from query
 	skip        string // skip test for all handlers, must have issue number mentioned
@@ -127,6 +127,7 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 
 					resultPushdown := tc.resultPushdown
 					if setup.IsSQLite(t) {
+						// TODO https://github.com/FerretDB/FerretDB/issues/3235
 						resultPushdown = tc.resultPushdownSQLite
 					}
 

@@ -835,7 +835,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 
 		len                 int                 // expected length of results
 		queryPushdown       bool                // optional, set true for expected pushdown for query
-		queryPushdownSQLite bool                // optional, set true for expected SQLite pushdown for query
+		queryPushdownSQLite bool                // TODO https://github.com/FerretDB/FerretDB/issues/3235
 		limitPushdown       bool                // optional, set true for expected pushdown for limit
 		err                 *mongo.CommandError // optional, expected error from MongoDB
 		altMessage          string              // optional, alternative error message for FerretDB, ignored if empty
@@ -1007,6 +1007,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 
 				resultPushdown := tc.queryPushdown
 				if setup.IsSQLite(t) {
+					// TODO https://github.com/FerretDB/FerretDB/issues/3235
 					resultPushdown = tc.queryPushdownSQLite
 				}
 
