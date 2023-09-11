@@ -542,6 +542,44 @@ func (r *Registry) indexesDrop(ctx context.Context, dbName, collectionName strin
 	return nil
 }
 
+// IndexesDropAll drops all indexes in the collection except for the _id_ index.
+func (r *Registry) IndexesDropAll(ctx context.Context, dbName, collectionName string) error {
+	defer observability.FuncCall(ctx)()
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	db := r.DatabaseGetExisting(ctx, dbName)
+	if db == nil {
+		// Database existence is checked in the handler.
+		panic("database does not exist")
+	}
+
+	c := r.collectionGet(dbName, collectionName)
+	if c == nil {
+		// Collection existence is checked in the handler.
+		panic("collection does not exist")
+	}
+
+	remainingIndexes := make([]IndexInfo, 0, 1)
+
+	for _, index := range r.colls[dbName][collectionName].Settings.Indexes {
+		if index.Name == "_id_" {
+			remainingIndexes = append(remainingIndexes, index)
+			continue
+		}
+
+		q := fmt.Sprintf("DROP INDEX %q", c.TableName+"_"+index.Name)
+		if _, err := db.ExecContext(ctx, q); err != nil {
+			return lazyerrors.Error(err)
+		}
+	}
+
+	c.Settings.Indexes = remainingIndexes
+
+	return nil
+}
+
 // Describe implements prometheus.Collector.
 func (r *Registry) Describe(ch chan<- *prometheus.Desc) {
 	prometheus.DescribeByCollect(r, ch)
