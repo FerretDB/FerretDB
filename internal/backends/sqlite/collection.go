@@ -28,6 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -83,7 +84,29 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}, nil
 }
 
-func prepareWhereClause(params *backends.QueryParams) (whereClause string, args []any) {
+func prepareWhereClause(params *backends.QueryParams) (string, []any, error) {
+	if params == nil || params.Filter == nil { // TODO can params.Filter be nil?
+		return "", []any{}, nil
+	}
+
+	iter := params.Filter.Iterator()
+	defer iter.Close()
+
+	var whereClause string
+	var args []any
+
+	for {
+		k, v, err := iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return "", nil, lazyerrors.Error(err)
+		}
+
+	}
+
 	if params != nil && params.Filter.Len() == 1 {
 		v, _ := params.Filter.Get("_id")
 		if v != nil {
@@ -94,7 +117,7 @@ func prepareWhereClause(params *backends.QueryParams) (whereClause string, args 
 		}
 	}
 
-	return
+	return whereClause, args, nil
 }
 
 // InsertAll implements backends.Collection interface.
