@@ -300,6 +300,8 @@ type DropIndexesResult struct{}
 // The operation should be atomic.
 // If some indexes cannot be dropped, the operation should be rolled back,
 // and the first encountered error should be returned.
+//
+// Database or collection may not exist; that's not an error.
 func (cc *collectionContract) DropIndexes(ctx context.Context, params *DropIndexesParams) (*DropIndexesResult, error) {
 	res, err := cc.c.DropIndexes(ctx, params)
 	checkError(err, ErrorCodeIndexDoesNotExist, ErrorCodeIndexInvalidOptions)

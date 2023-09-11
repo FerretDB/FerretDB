@@ -590,14 +590,12 @@ func (r *Registry) IndexesDropAll(ctx context.Context, dbName, collectionName st
 
 	db := r.DatabaseGetExisting(ctx, dbName)
 	if db == nil {
-		// Database existence is checked in the handler.
-		panic("database does not exist")
+		return nil
 	}
 
 	c := r.collectionGet(dbName, collectionName)
 	if c == nil {
-		// Collection existence is checked in the handler.
-		panic("collection does not exist")
+		return nil
 	}
 
 	indexesToDelete := make([]string, 0, len(c.Settings.Indexes)-1)
