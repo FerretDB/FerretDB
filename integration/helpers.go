@@ -401,6 +401,8 @@ func CollectKeys(t testtb.TB, doc bson.D) []string {
 
 // FetchAll fetches all documents from the cursor, closing it.
 func FetchAll(t testtb.TB, ctx context.Context, cursor *mongo.Cursor) []bson.D {
+	t.Helper()
+
 	var res []bson.D
 	err := cursor.All(ctx, &res)
 	require.NoError(t, cursor.Close(ctx))
@@ -408,13 +410,22 @@ func FetchAll(t testtb.TB, ctx context.Context, cursor *mongo.Cursor) []bson.D {
 	return res
 }
 
-// FindAll returns all documents from the given collection sorted by _id.
-func FindAll(t testtb.TB, ctx context.Context, collection *mongo.Collection) []bson.D {
+// FilterAll returns filtered documented from the given collection sorted by _id.
+func FilterAll(t testtb.TB, ctx context.Context, collection *mongo.Collection, filter bson.D) []bson.D {
+	t.Helper()
+
 	opts := options.Find().SetSort(bson.D{{"_id", 1}})
-	cursor, err := collection.Find(ctx, bson.D{}, opts)
+	cursor, err := collection.Find(ctx, filter, opts)
 	require.NoError(t, err)
 
 	return FetchAll(t, ctx, cursor)
+}
+
+// FindAll returns all documents from the given collection sorted by _id.
+func FindAll(t testtb.TB, ctx context.Context, collection *mongo.Collection) []bson.D {
+	t.Helper()
+
+	return FilterAll(t, ctx, collection, bson.D{})
 }
 
 // generateDocuments generates documents with _id ranging from startID to endID.
