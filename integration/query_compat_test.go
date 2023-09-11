@@ -204,6 +204,14 @@ func TestQueryCompatFilter(t *testing.T) {
 		"Empty": {
 			filter: bson.D{},
 		},
+		"String": {
+			filter:         bson.D{{"v", "foo"}},
+			resultPushdown: true,
+		},
+		"Int32": {
+			filter:         bson.D{{"v", int32(42)}},
+			resultPushdown: true,
+		},
 		"IDString": {
 			filter:         bson.D{{"_id", "string"}},
 			resultPushdown: true,
