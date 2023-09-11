@@ -66,12 +66,11 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	var whereClause string
-	var args []any
-
-	// that logic should exist in one place
-	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	whereClause, args = prepareWhereClause(params)
+	// what if params is nil?
+	whereClause, args, err := prepareWhereClause(params.Filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
 
@@ -85,15 +84,15 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}, nil
 }
 
-func prepareWhereClause(params *backends.QueryParams) (string, []any, error) {
-	if params == nil || params.Filter == nil { // TODO can params.Filter be nil?
+func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
+	if filterDoc == nil {
 		return "", []any{}, nil
 	}
 
-	iter := params.Filter.Iterator()
+	iter := filterDoc.Iterator()
 	defer iter.Close()
 
-	var whereClause string
+	var filters []string
 	var args []any
 
 	for {
@@ -110,33 +109,28 @@ func prepareWhereClause(params *backends.QueryParams) (string, []any, error) {
 
 		// TODO ignore $comment?
 
+		if err != nil {
+			return "", nil, lazyerrors.Error(err)
+		}
+
 		switch v := v.(type) {
 		case *types.Document:
 		case *types.Array, types.Binary, types.NullType, types.Regex, types.Timestamp:
 			// type not supported for pushdown
 
 		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
-			whereClause = fmt.Sprintf(` WHERE %s = ?`, queryPath)
+			filters = append(filters, fmt.Sprintf(`%s = ?`, queryPath))
 			args = append(args, v)
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
 		}
-
-		if err != nil {
-			return "", nil, lazyerrors.Error(err)
-		}
 	}
 
-	//if params != nil && params.Filter.Len() == 1 {
-	//	v, _ := params.Filter.Get("_id")
-	//	if v != nil {
-	//		if id, ok := v.(types.ObjectID); ok {
-	//			whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-	//			args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
-	//		}
-	//	}
-	//}
+	var whereClause string
+	if len(filters) > 0 {
+		whereClause = ` WHERE ` + strings.Join(filters, " AND ")
+	}
 
 	return whereClause, args, nil
 }
@@ -288,17 +282,10 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	var whereClause string
 	var args []any
 
-	// that logic should exist in one place
-	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	if params != nil && params.Filter.Len() == 1 {
-		v, _ := params.Filter.Get("_id")
-		if v != nil {
-			if id, ok := v.(types.ObjectID); ok {
-				queryPushdown = true
-				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
-			}
-		}
+	// what if params is nil?
+	whereClause, args, err := prepareWhereClause(params.Filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
