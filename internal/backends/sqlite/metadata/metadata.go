@@ -32,7 +32,7 @@ import (
 
 const (
 	// IDColumn is a SQLite path expression for _id field.
-	IDColumn = "_ferretdb_sjson->'$._id'"
+	IDColumn = "_ferretdb_sjson->>'$._id'"
 
 	// DefaultColumn is a column name for all fields expect _id.
 	DefaultColumn = "_ferretdb_sjson"
