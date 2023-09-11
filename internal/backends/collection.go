@@ -63,7 +63,6 @@ func CollectionContract(c Collection) Collection {
 
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
-	// nothing for now - no pushdowns yet
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Filter *types.Document
 }
