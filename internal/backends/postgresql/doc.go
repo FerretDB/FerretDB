@@ -13,4 +13,8 @@
 // limitations under the License.
 
 // Package postgresql provides backend for PostgreSQL and compatible databases.
+//
+// # Design principles
+//
+//  1. Metadata is heavily cached to avoid most queries and transactions.
 package postgresql

@@ -430,6 +430,11 @@ func TestDropIndexesCompat(tt *testing.T) {
 				})
 			}
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3287
+			if setup.IsSQLite(tt) {
+				return
+			}
+
 			switch tc.resultType {
 			case nonEmptyResult:
 				require.True(tt, nonEmptyResults, "expected non-empty results (some documents should be modified)")

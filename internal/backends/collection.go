@@ -18,13 +18,12 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
 // Collection is a generic interface for all backends for accessing collection.
 //
-// Collection object is expected to be stateless and temporary;
+// Collection object should be stateless and temporary;
 // all state should be in the Backend that created Database instance that created this Collection instance.
 // Handler can create and destroy Collection objects on the fly.
 // Creating a Collection object does not imply the creation of the database or collection.
@@ -281,12 +280,7 @@ func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateI
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.CreateIndexes(ctx, params)
-
-	checkError(err, ErrorCodeCollectionNameIsInvalid)
-
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	checkError(err)
 
 	return res, err
 }
