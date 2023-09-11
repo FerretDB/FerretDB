@@ -66,6 +66,11 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
+	var qp backends.QueryParams
+	if !h.DisableFilterPushdown {
+		qp.Filter = params.Filter
+	}
+
 	cancel := func() {}
 	if params.MaxTimeMS != 0 {
 		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).
@@ -76,7 +81,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	// closer accumulates all things that should be closed / canceled.
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
 
-	queryRes, err := c.Query(ctx, nil)
+	queryRes, err := c.Query(ctx, &qp)
 	if err != nil {
 		closer.Close()
 		return nil, lazyerrors.Error(err)
