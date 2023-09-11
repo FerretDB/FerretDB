@@ -64,22 +64,22 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	var whereClaus string
-	var arg any
+	var whereClause string
+	var args []any
 
 	if params != nil && params.Filter != nil {
 		v, _ := params.Filter.Get("_id")
 		if v != nil {
 			if id, ok := v.(types.ObjectID); ok {
-				whereClaus = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-				arg = string(must.NotFail(sjson.MarshalSingleValue(id)))
+				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
 			}
 		}
 	}
 
-	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClaus, metadata.DefaultColumn, meta.TableName)
+	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
 
-	rows, err := db.QueryContext(ctx, q, arg)
+	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -233,23 +233,23 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	var queryPushdown bool
-	var whereClaus string
-	var arg any
+	var whereClause string
+	var args []any
 
 	if params != nil && params.Filter != nil {
 		v, _ := params.Filter.Get("_id")
 		if v != nil {
 			if id, ok := v.(types.ObjectID); ok {
 				queryPushdown = true
-				whereClaus = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-				arg = string(must.NotFail(sjson.MarshalSingleValue(id)))
+				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
 			}
 		}
 	}
 
-	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`+whereClaus, metadata.DefaultColumn, meta.TableName)
+	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
 
-	rows, err := db.QueryContext(ctx, q, arg)
+	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
