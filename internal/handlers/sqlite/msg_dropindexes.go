@@ -119,7 +119,8 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	return &reply, nil
 }
 
-// processDropIndexOptions parses index doc and returns backends.DropIndexesParams.
+// processDropIndexOptions parses index doc and returns the list of indexes to delete
+// and true if a flag to drop all indexes except _id_ was set.
 func processDropIndexOptions(command string, v any, existing []backends.IndexInfo) ([]string, bool, error) { //nolint:lll // for readability
 	switch v := v.(type) {
 	case *types.Document:
