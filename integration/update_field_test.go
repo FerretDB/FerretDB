@@ -132,6 +132,54 @@ func TestUpdateFieldSetIDDoc(t *testing.T) {
 	AssertEqualDocumentsSlice(t, expected, FindAll(t, ctx, collection))
 }
 
+func TestUpdateFieldSetIDDifferentTypes(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	_, err := collection.InsertOne(ctx, bson.D{
+		{"_id", int64(1)},
+		{"v", "foo2"},
+	})
+	require.NoError(t, err)
+
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", int32(1)},
+		{"v", "foo1"},
+	})
+	require.NoError(t, err)
+
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", float32(1)},
+		{"v", "foo3"},
+	})
+	require.NoError(t, err)
+
+	res, err := collection.UpdateByID(
+		ctx,
+		int32(1),
+		bson.D{{"$set", bson.D{{"v", "boo"}}}},
+	)
+	require.NoError(t, err)
+	assert.Equal(t, &mongo.UpdateResult{MatchedCount: 1, ModifiedCount: 1}, res)
+
+	expected := []bson.D{
+		{
+			{"_id", int64(1)},
+			{"v", "foo2"},
+		},
+		{
+			{"_id", int32(1)},
+			{"v", "boo"},
+		},
+		{
+			{"_id", float32(1)},
+			{"v", "foo3"},
+		},
+	}
+	AssertEqualDocumentsSlice(t, expected, FindAll(t, ctx, collection))
+}
+
 func TestUpdateFieldSetUpdateManyUpsert(t *testing.T) {
 	t.Parallel()
 
