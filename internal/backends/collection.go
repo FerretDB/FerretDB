@@ -288,9 +288,7 @@ func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateI
 
 // DropIndexesParams represents the parameters of Collection.DropIndexes method.
 type DropIndexesParams struct {
-	Indexes []string       // Index names to drop.
-	Spec    []IndexKeyPair // Single index to drop.
-	DropAll bool           // Drop all indexes except for _id_.
+	Indexes []string // Index names to drop.
 }
 
 // DropIndexesResult represents the results of Collection.DropIndexes method.

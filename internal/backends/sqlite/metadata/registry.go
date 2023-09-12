@@ -472,7 +472,7 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 
 		q = fmt.Sprintf(q, c.TableName+"_"+index.Name, c.TableName, strings.Join(columns, ", "))
 		if _, err := db.ExecContext(ctx, q); err != nil {
-			_ = r.indexesDropByNames(ctx, dbName, collectionName, created)
+			_ = r.indexesDrop(ctx, dbName, collectionName, created)
 			return lazyerrors.Error(err)
 		}
 
@@ -482,7 +482,7 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 
 	q := fmt.Sprintf("UPDATE %q SET settings = ?", metadataTableName)
 	if _, err := db.ExecContext(ctx, q, c.Settings); err != nil {
-		_ = r.indexesDropByNames(ctx, dbName, collectionName, created)
+		_ = r.indexesDrop(ctx, dbName, collectionName, created)
 		return lazyerrors.Error(err)
 	}
 
@@ -510,7 +510,7 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 // If database or collection does not exist, nil is returned (TODO?).
 //
 // It does not hold the lock.
-func (r *Registry) indexesDropByNames(ctx context.Context, dbName, collectionName string, indexNames []string) error {
+func (r *Registry) indexesDrop(ctx context.Context, dbName, collectionName string, indexNames []string) error {
 	defer observability.FuncCall(ctx)()
 
 	c := r.collectionGet(dbName, collectionName)
@@ -542,73 +542,14 @@ func (r *Registry) indexesDropByNames(ctx context.Context, dbName, collectionNam
 	return nil
 }
 
-// IndexesDropByNames remove given connection's indexes but their names.
-func (r *Registry) IndexesDropByNames(ctx context.Context, dbName, collectionName string, indexes []string) error {
+// IndexesDrop drops all indexes in the collection except for the _id_ index.
+func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName string, toDrop []string) error {
 	defer observability.FuncCall(ctx)()
 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	return r.indexesDropByNames(ctx, dbName, collectionName, indexes)
-}
-
-// IndexesDropBySpec removes index with given specification.
-func (r *Registry) IndexesDropBySpec(ctx context.Context, dbName, collectionName string, spec []IndexKeyPair) error {
-	defer observability.FuncCall(ctx)()
-
-	r.rw.Lock()
-	defer r.rw.Unlock()
-
-	c := r.collectionGet(dbName, collectionName)
-	if c == nil {
-		return nil
-	}
-
-	db := r.DatabaseGetExisting(ctx, dbName)
-	if db == nil {
-		return nil
-	}
-
-	var name string
-
-	for _, idx := range r.colls[dbName][collectionName].Settings.Indexes {
-		if slices.Equal(idx.Key, spec) {
-			name = idx.Name
-			break
-		}
-	}
-
-	return r.indexesDropByNames(ctx, dbName, collectionName, []string{name})
-}
-
-// IndexesDropAll drops all indexes in the collection except for the _id_ index.
-func (r *Registry) IndexesDropAll(ctx context.Context, dbName, collectionName string) error {
-	defer observability.FuncCall(ctx)()
-
-	r.rw.Lock()
-	defer r.rw.Unlock()
-
-	db := r.DatabaseGetExisting(ctx, dbName)
-	if db == nil {
-		return nil
-	}
-
-	c := r.collectionGet(dbName, collectionName)
-	if c == nil {
-		return nil
-	}
-
-	indexesToDelete := make([]string, 0, len(c.Settings.Indexes)-1)
-
-	for _, index := range r.colls[dbName][collectionName].Settings.Indexes {
-		if index.Name == "_id_" {
-			continue
-		}
-
-		indexesToDelete = append(indexesToDelete, index.Name)
-	}
-
-	return r.indexesDropByNames(ctx, dbName, collectionName, indexesToDelete)
+	return r.indexesDrop(ctx, dbName, collectionName, toDrop)
 }
 
 // Describe implements prometheus.Collector.

@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"strings"
 
-	"golang.org/x/exp/slices"
 	sqlite3 "modernc.org/sqlite"
 	sqlite3lib "modernc.org/sqlite/lib"
 
@@ -389,72 +388,12 @@ func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateI
 
 // DropIndexes implements backends.Collection interface.
 func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
-	var res backends.DropIndexesResult
-	var err error
-
-	switch {
-	case params.DropAll:
-		err = c.r.IndexesDropAll(ctx, c.dbName, c.name)
-
-	case len(params.Indexes) > 0:
-		var list *backends.ListIndexesResult
-		list, err = c.ListIndexes(ctx, nil)
-
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		for _, index := range params.Indexes {
-			if !slices.ContainsFunc(list.Indexes, func(i backends.IndexInfo) bool { return index == i.Name }) {
-				return nil, lazyerrors.Errorf("index %q does not exist", index)
-			}
-		}
-
-		err = c.r.IndexesDropByNames(ctx, c.dbName, c.name, params.Indexes)
-
-	case len(params.Spec) > 0:
-		var list *backends.ListIndexesResult
-
-		list, err = c.ListIndexes(ctx, nil)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		if !slices.ContainsFunc(list.Indexes, func(i backends.IndexInfo) bool {
-			if len(i.Key) != len(params.Spec) {
-				return false
-			}
-
-			for j, key := range i.Key {
-				if key.Field != params.Spec[j].Field || key.Descending != params.Spec[j].Descending {
-					return false
-				}
-			}
-
-			return true
-		}) {
-			return nil, lazyerrors.Errorf("can't find index")
-		}
-
-		spec := make([]metadata.IndexKeyPair, len(params.Spec))
-		for i, key := range params.Spec {
-			spec[i] = metadata.IndexKeyPair{
-				Field:      key.Field,
-				Descending: key.Descending,
-			}
-		}
-
-		err = c.r.IndexesDropBySpec(ctx, c.dbName, c.name, spec)
-
-	default:
-		panic("dropIndexes params are not set correctly")
-	}
-
+	err := c.r.IndexesDrop(ctx, c.dbName, c.name, params.Indexes)
 	if err != nil {
 		return nil, err
 	}
 
-	return &res, nil
+	return new(backends.DropIndexesResult), nil
 }
 
 // check interfaces

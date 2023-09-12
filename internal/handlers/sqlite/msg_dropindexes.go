@@ -69,12 +69,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	options, err := processDropIndexOptions(command, document)
-	if err != nil {
-		return nil, err
-	}
-
-	indexesBeforeDrop, err := c.ListIndexes(ctx, nil)
+	beforeDrop, err := c.ListIndexes(ctx, nil)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 			msg := fmt.Sprintf("ns not found %s.%s", dbName, collection)
@@ -84,16 +79,21 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	_, err = c.DropIndexes(ctx, options)
+	toDrop, err := processDropIndexOptions(command, document, beforeDrop.Indexes)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = c.DropIndexes(ctx, &backends.DropIndexesParams{Indexes: toDrop})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	replyDoc := must.NotFail(types.NewDocument(
-		"nIndexesWas", int32(len(indexesBeforeDrop.Indexes)),
+		"nIndexesWas", int32(len(beforeDrop.Indexes)),
 	))
 
-	if options.DropAll {
+	if len(beforeDrop.Indexes) == len(toDrop)+1 {
 		replyDoc.Set("msg", "non-_id indexes dropped for collection")
 	}
 
@@ -110,9 +110,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 }
 
 // processDropIndexOptions parses index doc and returns backends.DropIndexesParams.
-func processDropIndexOptions(command string, doc *types.Document) (*backends.DropIndexesParams, error) { //nolint:lll // for readability
-	var params backends.DropIndexesParams
-
+func processDropIndexOptions(command string, doc *types.Document, existing []backends.IndexInfo) ([]string, error) { //nolint:lll // for readability
 	v, err := doc.Get("index")
 	if err != nil {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
@@ -125,16 +123,29 @@ func processDropIndexOptions(command string, doc *types.Document) (*backends.Dro
 	switch v := v.(type) {
 	case *types.Document:
 		// Index specification (key) is provided to drop a specific index.
-		var indexKey []backends.IndexKeyPair
+		var spec []backends.IndexKeyPair
 
-		indexKey, err = processIndexKey(command, v)
+		spec, err = processIndexKey(command, v)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		params.Spec = indexKey
+		if len(spec) == 1 && spec[0].Field == "_id" && !spec[0].Descending {
+			msg := "cannot drop _id index"
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexOptionsConflict, msg, command)
+		}
 
-		return &params, nil
+		for _, index := range existing {
+			for i, key := range index.Key {
+				if key.Field == spec[i].Field && key.Descending == spec[i].Descending {
+					return []string{index.Name}, nil
+				}
+			}
+		}
+
+		msg := fmt.Sprintf("index not found with key: %v", spec)
+
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexNotFound, msg, command)
 
 	case *types.Array:
 		// List of index names is provided to drop multiple indexes.
@@ -142,7 +153,7 @@ func processDropIndexOptions(command string, doc *types.Document) (*backends.Dro
 
 		defer iter.Close() // it's safe to defer here as the iterators reads everything
 
-		params.Indexes = make([]string, 0, v.Len())
+		toDrop := make([]string, 0, v.Len())
 
 		for {
 			var val any
@@ -152,7 +163,7 @@ func processDropIndexOptions(command string, doc *types.Document) (*backends.Dro
 			case err == nil:
 				// do nothing
 			case errors.Is(err, iterator.ErrIteratorDone):
-				return &params, nil
+				return toDrop, nil
 			default:
 				return nil, lazyerrors.Error(err)
 			}
@@ -169,19 +180,26 @@ func processDropIndexOptions(command string, doc *types.Document) (*backends.Dro
 				)
 			}
 
-			params.Indexes = append(params.Indexes, index)
+			toDrop = append(toDrop, index)
 		}
 
 	case string:
 		if v == "*" {
+			toDrop := make([]string, len(existing)-1)
+
 			// Drop all indexes except the _id index.
-			params.DropAll = true
-			return &params, nil
+			for i, index := range existing {
+				if index.Name == "_id_" {
+					continue
+				}
+
+				toDrop[i] = index.Name
+			}
+
+			return toDrop, nil
 		}
 
-		params.Indexes = []string{v}
-
-		return &params, nil
+		return []string{v}, nil
 	}
 
 	return nil, commonerrors.NewCommandErrorMsgWithArgument(
