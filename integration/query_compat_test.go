@@ -126,10 +126,10 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
 
 					resultPushdown := tc.resultPushdown
-					if setup.IsSQLite(t) {
-						// TODO https://github.com/FerretDB/FerretDB/issues/3235
-						resultPushdown = tc.resultPushdownSQLite
-					}
+					//if setup.IsSQLite(t) {
+					//	// TODO https://github.com/FerretDB/FerretDB/issues/3235
+					//	resultPushdown = tc.resultPushdownSQLite
+					//}
 
 					var msg string
 					if setup.IsPushdownDisabled() {
