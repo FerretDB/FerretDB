@@ -118,7 +118,6 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 
 // Process implements Stage interface.
 func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
-
 	groupedDocuments, err := g.groupDocuments(iter)
 	if err != nil {
 		return nil, err
@@ -231,7 +230,6 @@ func (g *group) groupDocuments(iter types.DocumentsIterator) ([]groupedDocuments
 	var m groupMap
 
 	for {
-
 		_, doc, err := iter.Next()
 		if errors.Is(err, iterator.ErrIteratorDone) {
 			break
