@@ -302,7 +302,12 @@ type DropIndexesResult struct{}
 //
 // Database or collection may not exist; that's not an error.
 func (cc *collectionContract) DropIndexes(ctx context.Context, params *DropIndexesParams) (*DropIndexesResult, error) {
-	return cc.c.DropIndexes(ctx, params)
+	defer observability.FuncCall(ctx)()
+
+	res, err := cc.c.DropIndexes(ctx, params)
+	checkError(err)
+
+	return res, err
 }
 
 // check interfaces
