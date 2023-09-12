@@ -66,10 +66,15 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	// what if params is nil?
-	whereClause, args, err := prepareWhereClause(params.Filter)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	var whereClause string
+	var args []any
+	var err error
+
+	if params != nil {
+		whereClause, args, err = prepareWhereClause(params.Filter)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
@@ -281,15 +286,18 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}, nil
 	}
 
-	var queryPushdown bool
 	var whereClause string
 	var args []any
+	var err error
 
-	// what if params is nil?
-	whereClause, args, err := prepareWhereClause(params.Filter)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+	if params != nil {
+		whereClause, args, err = prepareWhereClause(params.Filter)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
+
+	queryPushdown := whereClause != ""
 
 	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
 
