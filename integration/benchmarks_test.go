@@ -84,17 +84,25 @@ func BenchmarkQuerySmallDocuments(b *testing.B) {
 func BenchmarkReplaceSettingsDocument(b *testing.B) {
 	ctx, collection := setup.Setup(b)
 
+	n := 100
 	iter := shareddata.BenchmarkSettingsDocuments.NewIterator()
-	_, doc, err := iter.Next()
+	docs, err := iterator.ConsumeValuesN(iter, n)
 	iter.Close()
 
 	require.NoError(b, err)
+
+	insertDocs := make([]any, len(docs))
+	for i := range insertDocs {
+		insertDocs[i] = docs[i]
+	}
+
+	_, err = collection.InsertMany(ctx, insertDocs)
+	require.NoError(b, err)
+
+	doc := docs[0]
 	require.Equal(b, "_id", doc[0].Key)
 	require.NotEmpty(b, doc[0].Value)
 	require.NotZero(b, doc[1].Value)
-
-	_, err = collection.InsertOne(ctx, doc)
-	require.NoError(b, err)
 
 	b.Run("Replace", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
