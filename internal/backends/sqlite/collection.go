@@ -101,7 +101,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			break
 		}
 
-		queryPath := fmt.Sprintf("%s->'$.%s'", metadata.DefaultColumn, k)
+		queryPath := fmt.Sprintf("%s->'$.\"%s\"'", metadata.DefaultColumn, k)
 
 		if k == "_id" {
 			queryPath = metadata.IDColumn
