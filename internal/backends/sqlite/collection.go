@@ -107,7 +107,10 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			queryPath = metadata.IDColumn
 		}
 
-		// TODO ignore $comment?
+		// don't pushdown $comment, it's attached to query in handlers
+		if strings.HasPrefix(k, "$") {
+			continue
+		}
 
 		if err != nil {
 			return "", nil, lazyerrors.Error(err)
