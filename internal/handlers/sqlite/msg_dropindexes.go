@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -69,6 +70,15 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
+	indexValue, err := document.Get("index")
+	if err != nil {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrMissingField,
+			"BSON field 'dropIndexes.index' is missing but a required field",
+			command,
+		)
+	}
+
 	beforeDrop, err := c.ListIndexes(ctx, nil)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
@@ -79,7 +89,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		return nil, lazyerrors.Error(err)
 	}
 
-	toDrop, err := processDropIndexOptions(command, document, beforeDrop.Indexes)
+	toDrop, dropAll, err := processDropIndexOptions(command, indexValue, beforeDrop.Indexes)
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +103,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		"nIndexesWas", int32(len(beforeDrop.Indexes)),
 	))
 
-	if len(beforeDrop.Indexes) == len(toDrop)+1 {
+	if dropAll {
 		replyDoc.Set("msg", "non-_id indexes dropped for collection")
 	}
 
@@ -110,42 +120,45 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 }
 
 // processDropIndexOptions parses index doc and returns backends.DropIndexesParams.
-func processDropIndexOptions(command string, doc *types.Document, existing []backends.IndexInfo) ([]string, error) { //nolint:lll // for readability
-	v, err := doc.Get("index")
-	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrMissingField,
-			"BSON field 'dropIndexes.index' is missing but a required field",
-			command,
-		)
-	}
-
+func processDropIndexOptions(command string, v any, existing []backends.IndexInfo) ([]string, bool, error) { //nolint:lll // for readability
 	switch v := v.(type) {
 	case *types.Document:
 		// Index specification (key) is provided to drop a specific index.
 		var spec []backends.IndexKeyPair
 
-		spec, err = processIndexKey(command, v)
+		spec, err := processIndexKey(command, v)
 		if err != nil {
-			return nil, lazyerrors.Error(err)
+			return nil, false, lazyerrors.Error(err)
 		}
 
 		if len(spec) == 1 && spec[0].Field == "_id" && !spec[0].Descending {
-			msg := "cannot drop _id index"
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexOptionsConflict, msg, command)
+			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrInvalidOptions, "cannot drop _id index", command,
+			)
 		}
 
 		for _, index := range existing {
 			for i, key := range index.Key {
 				if key.Field == spec[i].Field && key.Descending == spec[i].Descending {
-					return []string{index.Name}, nil
+					return []string{index.Name}, false, nil
 				}
 			}
 		}
 
-		msg := fmt.Sprintf("index not found with key: %v", spec)
+		formattedSpec := make([]string, len(spec))
 
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexNotFound, msg, command)
+		for i, key := range spec {
+			order := 1
+			if key.Descending {
+				order = -1
+			}
+
+			formattedSpec[i] = fmt.Sprintf("%s: %d", key.Field, order)
+		}
+
+		msg := fmt.Sprintf("can't find index with key: { %v }", strings.Join(formattedSpec, ", "))
+
+		return nil, false, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexNotFound, msg, command)
 
 	case *types.Array:
 		// List of index names is provided to drop multiple indexes.
@@ -157,20 +170,19 @@ func processDropIndexOptions(command string, doc *types.Document, existing []bac
 
 		for {
 			var val any
-			_, val, err = iter.Next()
 
-			switch {
-			case err == nil:
-				// do nothing
-			case errors.Is(err, iterator.ErrIteratorDone):
-				return toDrop, nil
-			default:
-				return nil, lazyerrors.Error(err)
+			_, val, err := iter.Next()
+			if err != nil {
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					return toDrop, false, nil
+				}
+
+				return nil, false, lazyerrors.Error(err)
 			}
 
 			index, ok := val.(string)
 			if !ok {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrTypeMismatch,
 					fmt.Sprintf(
 						"BSON field 'dropIndexes.index' is the wrong type '%s', expected types '[string, object]'",
@@ -180,29 +192,46 @@ func processDropIndexOptions(command string, doc *types.Document, existing []bac
 				)
 			}
 
-			toDrop = append(toDrop, index)
+			var found bool
+
+			for _, existingIndex := range existing {
+				if index == existingIndex.Name {
+					toDrop = append(toDrop, index)
+					found = true
+
+					break
+				}
+			}
+
+			if !found {
+				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrIndexNotFound,
+					fmt.Sprintf("index not found with name [%s]", index),
+					command,
+				)
+			}
 		}
 
 	case string:
 		if v == "*" {
-			toDrop := make([]string, len(existing)-1)
+			toDrop := make([]string, 0, len(existing))
 
 			// Drop all indexes except the _id index.
-			for i, index := range existing {
+			for _, index := range existing {
 				if index.Name == "_id_" {
 					continue
 				}
 
-				toDrop[i] = index.Name
+				toDrop = append(toDrop, index.Name)
 			}
 
-			return toDrop, nil
+			return toDrop, true, nil
 		}
 
-		return []string{v}, nil
+		return []string{v}, false, nil
 	}
 
-	return nil, commonerrors.NewCommandErrorMsgWithArgument(
+	return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 		commonerrors.ErrTypeMismatch,
 		fmt.Sprintf(
 			"BSON field 'dropIndexes.index' is the wrong type '%s', expected types '[string, object]'",

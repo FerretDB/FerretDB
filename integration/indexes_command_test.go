@@ -97,14 +97,14 @@ func TestDropIndexesCommandErrors(t *testing.T) {
 			},
 			altMessage: `BSON field 'dropIndexes.index' is the wrong type 'array', expected types '[string, object]'`,
 		},
-		//"NonExistentMultipleIndexes": {
-		//	err: &mongo.CommandError{
-		//		Code:    27,
-		//		Name:    "IndexNotFound",
-		//		Message: "index not found with name [non-existent]",
-		//	},
-		//	toDrop: bson.A{"non-existent", "invalid"},
-		//},
+		"NonExistentMultipleIndexes": {
+			err: &mongo.CommandError{
+				Code:    27,
+				Name:    "IndexNotFound",
+				Message: "index not found with name [non-existent]",
+			},
+			toDrop: bson.A{"non-existent", "invalid"},
+		},
 		"InvalidMultipleIndexType": {
 			toDrop: bson.A{1},
 			err: &mongo.CommandError{
@@ -122,22 +122,22 @@ func TestDropIndexesCommandErrors(t *testing.T) {
 				Message: "can't find index with key: { invalid: \"invalid\" }",
 			},
 		},
-		//"NonExistentKey": {
-		//	toDrop: bson.D{{"non-existent", 1}},
-		//	err: &mongo.CommandError{
-		//		Code:    27,
-		//		Name:    "IndexNotFound",
-		//		Message: "can't find index with key: { non-existent: 1 }",
-		//	},
-		//},
-		//"DocumentIndexID": {
-		//	toDrop: bson.D{{"_id", 1}},
-		//	err: &mongo.CommandError{
-		//		Code:    72,
-		//		Name:    "InvalidOptions",
-		//		Message: "cannot drop _id index",
-		//	},
-		//},
+		"NonExistentKey": {
+			toDrop: bson.D{{"non-existent", 1}},
+			err: &mongo.CommandError{
+				Code:    27,
+				Name:    "IndexNotFound",
+				Message: "can't find index with key: { non-existent: 1 }",
+			},
+		},
+		"DocumentIndexID": {
+			toDrop: bson.D{{"_id", 1}},
+			err: &mongo.CommandError{
+				Code:    72,
+				Name:    "InvalidOptions",
+				Message: "cannot drop _id index",
+			},
+		},
 		"MissingIndexField": {
 			command: bson.D{
 				{"dropIndexes", "collection"},
@@ -148,25 +148,25 @@ func TestDropIndexesCommandErrors(t *testing.T) {
 				Message: "BSON field 'dropIndexes.index' is missing but a required field",
 			},
 		},
-		//"NonExistentDescendingID": {
-		//	toDrop: bson.D{{"_id", -1}},
-		//	err: &mongo.CommandError{
-		//		Code:    27,
-		//		Name:    "IndexNotFound",
-		//		Message: "can't find index with key: { _id: -1 }",
-		//	},
-		//},
-		//"NonExistentMultipleKeyIndex": {
-		//	toDrop: bson.D{
-		//		{"non-existent1", -1},
-		//		{"non-existent2", -1},
-		//	},
-		//	err: &mongo.CommandError{
-		//		Code:    27,
-		//		Name:    "IndexNotFound",
-		//		Message: "can't find index with key: { non-existent1: -1, non-existent2: -1 }",
-		//	},
-		//},
+		"NonExistentDescendingID": {
+			toDrop: bson.D{{"_id", -1}},
+			err: &mongo.CommandError{
+				Code:    27,
+				Name:    "IndexNotFound",
+				Message: "can't find index with key: { _id: -1 }",
+			},
+		},
+		"NonExistentMultipleKeyIndex": {
+			toDrop: bson.D{
+				{"non-existent1", -1},
+				{"non-existent2", -1},
+			},
+			err: &mongo.CommandError{
+				Code:    27,
+				Name:    "IndexNotFound",
+				Message: "can't find index with key: { non-existent1: -1, non-existent2: -1 }",
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
