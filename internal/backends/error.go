@@ -48,8 +48,6 @@ type Error struct {
 	// It may be nil.
 	err error
 
-	arg any
-
 	code ErrorCode
 }
 
@@ -67,21 +65,6 @@ func NewError(code ErrorCode, err error) *Error {
 	}
 }
 
-// NewErrorWithArgument creates a new backend error with argument to be passed to the handler.
-//
-// Code must not be 0. Err may be nil.
-func NewErrorWithArgument(code ErrorCode, err error, arg any) *Error {
-	if code == 0 {
-		panic("backends.NewError: code must not be 0")
-	}
-
-	return &Error{
-		code: code,
-		err:  err,
-		arg:  arg,
-	}
-}
-
 // Code returns the error code.
 func (err *Error) Code() ErrorCode {
 	return err.code
@@ -92,16 +75,6 @@ func (err *Error) Code() ErrorCode {
 // Error implements error interface.
 func (err *Error) Error() string {
 	return fmt.Sprintf("%s: %v", err.code, err.err)
-}
-
-// ErrorArgument returns the argument to be passed to the handler.
-func ErrorArgument(err error) any {
-	e, ok := err.(*Error) //nolint:errorlint // do not inspect error chain
-	if !ok {
-		return false
-	}
-
-	return e.arg
 }
 
 // ErrorCodeIs returns true if err is *Error with one of the given error codes.
