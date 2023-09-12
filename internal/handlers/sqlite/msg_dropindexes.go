@@ -228,6 +228,12 @@ func processDropIndexOptions(command string, v any, existing []backends.IndexInf
 			return toDrop, true, nil
 		}
 
+		if v == "_id_" {
+			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrInvalidOptions, "cannot drop _id index", command,
+			)
+		}
+
 		return []string{v}, false, nil
 	}
 

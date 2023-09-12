@@ -340,7 +340,6 @@ func TestDropIndexesCompat(tt *testing.T) {
 		"ID": {
 			dropIndexName: "_id_",
 			resultType:    emptyResult,
-			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/3342",
 		},
 		"AscendingValue": {
 			toCreate: []mongo.IndexModel{
@@ -357,12 +356,12 @@ func TestDropIndexesCompat(tt *testing.T) {
 		"NonExistent": {
 			dropIndexName: "nonexistent_1",
 			resultType:    emptyResult,
-			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/3342",
+			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 		"Empty": {
 			dropIndexName: "",
 			resultType:    emptyResult,
-			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/3342",
+			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 	} {
 		name, tc := name, tc
