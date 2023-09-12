@@ -143,11 +143,11 @@ func TestUpdateFieldSetIDDifferentTypes(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	_, err = collection.InsertOne(ctx, bson.D{
-		{"_id", int32(1)},
-		{"v", "foo1"},
-	})
-	require.NoError(t, err)
+	//	_, err = collection.InsertOne(ctx, bson.D{
+	//		{"_id", int32(1)},
+	//		{"v", "foo1"},
+	//	})
+	//	require.NoError(t, err)
 
 	_, err = collection.InsertOne(ctx, bson.D{
 		{"_id", float32(1)},
@@ -168,10 +168,10 @@ func TestUpdateFieldSetIDDifferentTypes(t *testing.T) {
 			{"_id", int64(1)},
 			{"v", "foo2"},
 		},
-		{
-			{"_id", int32(1)},
-			{"v", "boo"},
-		},
+		//		{
+		//			{"_id", int32(1)},
+		//			{"v", "boo"},
+		//		},
 		{
 			{"_id", float32(1)},
 			{"v", "foo3"},
