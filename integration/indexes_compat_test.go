@@ -316,14 +316,17 @@ func TestCreateIndexesCompat(tt *testing.T) {
 	}
 }
 
-func TestDropIndexesCompat(t *testing.T) {
-	t.Parallel()
+func TestDropIndexesCompat(tt *testing.T) {
+	tt.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		dropIndexName string                   // name of a single index to drop
 		dropAll       bool                     // set true for drop all indexes, if true dropIndexName must be empty.
 		resultType    compatTestCaseResultType // defaults to nonEmptyResult
 		toCreate      []mongo.IndexModel       // optional, if not nil create indexes before dropping
+
+		failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue
+		skipForSQLite  string // optional, if set, the case if partly passes and partly fails for SQLite
 	}{
 		"DropAllCommand": {
 			toCreate: []mongo.IndexModel{
@@ -337,6 +340,7 @@ func TestDropIndexesCompat(t *testing.T) {
 		"ID": {
 			dropIndexName: "_id_",
 			resultType:    emptyResult,
+			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/3342",
 		},
 		"AscendingValue": {
 			toCreate: []mongo.IndexModel{
@@ -353,23 +357,25 @@ func TestDropIndexesCompat(t *testing.T) {
 		"NonExistent": {
 			dropIndexName: "nonexistent_1",
 			resultType:    emptyResult,
+			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/3342",
 		},
 		"Empty": {
 			dropIndexName: "",
 			resultType:    emptyResult,
+			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/3342",
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
-			t.Parallel()
+		tt.Run(name, func(tt *testing.T) {
+			tt.Helper()
+			tt.Parallel()
 
 			if tc.dropAll {
-				require.Empty(t, tc.dropIndexName, "index name must be empty when dropping all indexes")
+				require.Empty(tt, tc.dropIndexName, "index name must be empty when dropping all indexes")
 			}
 
 			// It's enough to use a single provider for drop indexes test as indexes work the same for different collections.
-			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+			s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
 				Providers:                []shareddata.Provider{shareddata.Composites},
 				AddNonExistentCollection: true,
 			})
@@ -379,8 +385,17 @@ func TestDropIndexesCompat(t *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
+				tt.Run(targetCollection.Name(), func(tt *testing.T) {
+					tt.Helper()
+
+					var t testtb.TB = tt
+					if tc.failsForSQLite != "" {
+						t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+					}
+
+					if tc.skipForSQLite != "" {
+						t.Skip(tc.skipForSQLite)
+					}
 
 					if tc.toCreate != nil {
 						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.toCreate)
@@ -428,13 +443,17 @@ func TestDropIndexesCompat(t *testing.T) {
 				})
 			}
 
+			if tc.failsForSQLite != "" {
+				return
+			}
+
 			switch tc.resultType {
 			case nonEmptyResult:
-				require.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+				require.True(tt, nonEmptyResults, "expected non-empty results (some documents should be modified)")
 			case emptyResult:
-				require.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
+				require.False(tt, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+				tt.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}

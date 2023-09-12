@@ -304,10 +304,7 @@ type DropIndexesResult struct{}
 //
 // Database or collection may not exist; that's not an error.
 func (cc *collectionContract) DropIndexes(ctx context.Context, params *DropIndexesParams) (*DropIndexesResult, error) {
-	res, err := cc.c.DropIndexes(ctx, params)
-	checkError(err, ErrorCodeIndexDoesNotExist, ErrorCodeIndexInvalidOptions)
-
-	return res, err
+	return cc.c.DropIndexes(ctx, params)
 }
 
 // check interfaces

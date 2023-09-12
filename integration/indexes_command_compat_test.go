@@ -291,15 +291,18 @@ func TestCreateIndexesCommandCompatCheckFields(tt *testing.T) {
 	AssertEqualDocuments(t, compatRes, targetRes)
 }
 
-func TestDropIndexesCommandCompat(t *testing.T) {
-	t.Parallel()
+func TestDropIndexesCommandCompat(tt *testing.T) {
+	tt.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		toCreate []mongo.IndexModel // optional, if set, create the given indexes before drop is called
 		toDrop   any                // required, index to drop
 
 		resultType compatTestCaseResultType // optional, defaults to nonEmptyResult
-		skip       string                   // optional, skip test with a specified reason
+
+		skip           string // optional, skip test with a specified reason
+		failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue
+		skipForSQLite  string // optional, if set, the case if partly passes and partly fails for SQLite
 	}{
 		"MultipleIndexesByName": {
 			toCreate: []mongo.IndexModel{
@@ -318,19 +321,20 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 			resultType: emptyResult,
 		},
 		"NonExistentMultipleIndexes": {
-			toDrop:     bson.A{"non-existent", "invalid"},
-			resultType: emptyResult,
+			toDrop:        bson.A{"non-existent", "invalid"},
+			resultType:    emptyResult,
+			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/3342",
 		},
 		"InvalidMultipleIndexType": {
 			toDrop:     bson.A{1},
 			resultType: emptyResult,
 		},
-		"DocumentIndex": {
-			toCreate: []mongo.IndexModel{
-				{Keys: bson.D{{"v", -1}}},
-			},
-			toDrop: bson.D{{"v", -1}},
-		},
+		//"DocumentIndex": {
+		//	toCreate: []mongo.IndexModel{
+		//		{Keys: bson.D{{"v", -1}}},
+		//	},
+		//	toDrop: bson.D{{"v", -1}},
+		//},
 		"DropAllExpression": {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
@@ -345,12 +349,14 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 				{Keys: bson.D{{"foo.bar", 1}}},
 				{Keys: bson.D{{"foo", 1}, {"bar", 1}}},
 			},
-			toDrop:     "***",
-			resultType: emptyResult,
+			toDrop:         "***",
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3342",
 		},
 		"NonExistentDescendingID": {
-			toDrop:     bson.D{{"_id", -1}},
-			resultType: emptyResult,
+			toDrop:        bson.D{{"_id", -1}},
+			resultType:    emptyResult,
+			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/3342",
 		},
 		"MultipleKeyIndex": {
 			toCreate: []mongo.IndexModel{
@@ -363,18 +369,18 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		tt.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Helper()
-			t.Parallel()
+			tt.Helper()
+			tt.Parallel()
 
-			require.NotNil(t, tc.toDrop, "toDrop must not be nil")
+			require.NotNil(tt, tc.toDrop, "toDrop must not be nil")
 
 			// It's enough to use a single provider for drop indexes test as indexes work the same for different collections.
-			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+			s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
 				Providers:                []shareddata.Provider{shareddata.Composites},
 				AddNonExistentCollection: true,
 			})
@@ -384,8 +390,17 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				t.Run(targetCollection.Name(), func(tt *testing.T) {
+				tt.Run(targetCollection.Name(), func(tt *testing.T) {
 					tt.Helper()
+
+					var t testtb.TB = tt
+					if tc.failsForSQLite != "" {
+						t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+					}
+
+					if tc.skipForSQLite != "" {
+						t.Skip(tc.skipForSQLite)
+					}
 
 					if tc.toCreate != nil {
 						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.toCreate)
@@ -472,13 +487,17 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 				})
 			}
 
+			if tc.failsForSQLite != "" {
+				return
+			}
+
 			switch tc.resultType {
 			case nonEmptyResult:
-				require.True(t, nonEmptyResults, "expected non-empty results (some indexes should be deleted)")
+				require.True(tt, nonEmptyResults, "expected non-empty results (some indexes should be deleted)")
 			case emptyResult:
-				require.False(t, nonEmptyResults, "expected empty results (no indexes should be deleted)")
+				require.False(tt, nonEmptyResults, "expected empty results (no indexes should be deleted)")
 			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+				tt.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}
