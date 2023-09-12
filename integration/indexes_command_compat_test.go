@@ -304,14 +304,14 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 		failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue
 		skipForSQLite  string // optional, if set, the case if partly passes and partly fails for SQLite
 	}{
-		//"MultipleIndexesByName": {
-		//	toCreate: []mongo.IndexModel{
-		//		{Keys: bson.D{{"v", -1}}},
-		//		{Keys: bson.D{{"v", 1}, {"foo", 1}}},
-		//		{Keys: bson.D{{"v.foo", -1}}},
-		//	},
-		//	toDrop: bson.A{"v_-1", "v_1_foo_1"},
-		//},
+		"MultipleIndexesByName": {
+			toCreate: []mongo.IndexModel{
+				{Keys: bson.D{{"v", -1}}},
+				{Keys: bson.D{{"v", 1}, {"foo", 1}}},
+				{Keys: bson.D{{"v.foo", -1}}},
+			},
+			toDrop: bson.A{"v_-1", "v_1_foo_1"},
+		},
 		"MultipleIndexesByKey": {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
@@ -324,16 +324,17 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 			toDrop:     bson.A{"non-existent", "invalid"},
 			resultType: emptyResult,
 		},
-		//"InvalidMultipleIndexType": {
-		//	toDrop:     bson.A{1},
-		//	resultType: emptyResult,
-		//},
-		//"DocumentIndex": {
-		//	toCreate: []mongo.IndexModel{
-		//		{Keys: bson.D{{"v", -1}}},
-		//	},
-		//	toDrop: bson.D{{"v", -1}},
-		//},
+		"InvalidMultipleIndexType": {
+			toDrop:        bson.A{1},
+			resultType:    emptyResult,
+			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
+		},
+		"DocumentIndex": {
+			toCreate: []mongo.IndexModel{
+				{Keys: bson.D{{"v", -1}}},
+			},
+			toDrop: bson.D{{"v", -1}},
+		},
 		"DropAllExpression": {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
@@ -350,7 +351,7 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 			},
 			toDrop:         "***",
 			resultType:     emptyResult,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3342",
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 		"NonExistentDescendingID": {
 			toDrop:     bson.D{{"_id", -1}},
