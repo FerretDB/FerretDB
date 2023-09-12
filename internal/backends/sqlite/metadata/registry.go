@@ -503,7 +503,7 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 	return r.indexesCreate(ctx, dbName, collectionName, indexes)
 }
 
-// IndexesDropByNames remove given connection's indexes.
+// indexesDrop remove given connection's indexes.
 //
 // Non-existing indexes are ignored (TODO?).
 //
