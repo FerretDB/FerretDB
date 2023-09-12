@@ -542,7 +542,7 @@ func (r *Registry) indexesDrop(ctx context.Context, dbName, collectionName strin
 	return nil
 }
 
-// IndexesDrop drops all indexes in the collection except for the _id_ index.
+// IndexesDrop drops provided indexes for the given collection.
 func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName string, toDrop []string) error {
 	defer observability.FuncCall(ctx)()
 
