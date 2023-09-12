@@ -87,6 +87,51 @@ func TestUpdateFieldSet(t *testing.T) {
 	}
 }
 
+// TestUpdateFieldSetIDDoc checks that the order of fields in the _id document matters.
+func TestUpdateFieldSetIDDoc(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	_, err := collection.InsertOne(ctx, bson.D{
+		{"_id", bson.D{{"a", int32(1)}, {"z", int32(2)}}},
+		{"v", int32(1)},
+	})
+	require.NoError(t, err)
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
+		{"v", int32(2)},
+	})
+	require.NoError(t, err)
+
+	res, err := collection.UpdateByID(
+		ctx,
+		bson.D{{"a", int32(3)}, {"z", int32(4)}},
+		bson.D{{"$set", bson.D{{"v", int32(3)}}}},
+	)
+	require.NoError(t, err)
+	assert.Equal(t, &mongo.UpdateResult{MatchedCount: 1, ModifiedCount: 1}, res)
+
+	expected := []bson.D{{
+		{"_id", bson.D{{"a", int32(1)}, {"z", int32(2)}}},
+		{"v", int32(1)},
+	}, {
+		{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
+		{"v", int32(3)},
+	}}
+	AssertEqualDocumentsSlice(t, expected, FindAll(t, ctx, collection))
+
+	res, err = collection.UpdateByID(
+		ctx,
+		bson.D{{"z", int32(4)}, {"a", int32(3)}},
+		bson.D{{"$set", bson.D{{"v", int32(4)}}}},
+	)
+	require.NoError(t, err)
+	assert.Equal(t, new(mongo.UpdateResult), res)
+
+	AssertEqualDocumentsSlice(t, expected, FindAll(t, ctx, collection))
+}
+
 func TestUpdateFieldSetUpdateManyUpsert(t *testing.T) {
 	t.Parallel()
 
