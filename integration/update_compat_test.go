@@ -42,8 +42,7 @@ type updateCompatTestCase struct {
 	resultType  compatTestCaseResultType // defaults to nonEmptyResult
 	providers   []shareddata.Provider    // defaults to shareddata.AllProviders()
 
-	skip          string // skips test if non-empty
-	skipForSQLite string // optional, if set, the case is skipped for SQLite due to given issue
+	skip string // skips test if non-empty
 }
 
 // testUpdateCompat tests update compatibility test cases.
@@ -57,10 +56,6 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 
 			if tc.skip != "" {
 				t.Skip(tc.skip)
-			}
-
-			if tc.skipForSQLite != "" {
-				t.Skip(tc.skipForSQLite)
 			}
 
 			t.Parallel()
