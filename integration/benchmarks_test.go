@@ -98,7 +98,7 @@ func BenchmarkReplaceSettingsDocument(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 			doc[1].Value = i + 1
 
-			res, err := collection.ReplaceOne(ctx, bson.D{}, doc)
+			res, err := collection.ReplaceOne(ctx, bson.D{{"_id", doc[0].Value}}, doc)
 			require.NoError(b, err)
 			require.Equal(b, int64(1), res.MatchedCount)
 			require.Equal(b, int64(1), res.ModifiedCount)
