@@ -643,9 +643,8 @@ func TestMutatingClientMetadata(t *testing.T) {
 	db := collection.Database()
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
-		command    bson.D
-		err        *mongo.CommandError
-		altMessage string
+		command bson.D
+		err     *mongo.CommandError
 	}{
 		"NoMetadataHello": {
 			command: bson.D{
