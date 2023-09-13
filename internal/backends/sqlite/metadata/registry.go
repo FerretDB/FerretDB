@@ -542,6 +542,16 @@ func (r *Registry) indexesDrop(ctx context.Context, dbName, collectionName strin
 	return nil
 }
 
+// IndexesDrop drops provided indexes for the given collection.
+func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName string, toDrop []string) error {
+	defer observability.FuncCall(ctx)()
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	return r.indexesDrop(ctx, dbName, collectionName, toDrop)
+}
+
 // Describe implements prometheus.Collector.
 func (r *Registry) Describe(ch chan<- *prometheus.Desc) {
 	prometheus.DescribeByCollect(r, ch)
