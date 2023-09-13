@@ -139,10 +139,17 @@ func processDropIndexOptions(command string, v any, existing []backends.IndexInf
 		}
 
 		for _, index := range existing {
+			matches := true
+
 			for i, key := range index.Key {
-				if key.Field == spec[i].Field && key.Descending == spec[i].Descending {
-					return []string{index.Name}, false, nil
+				if key.Field != spec[i].Field || key.Descending != spec[i].Descending {
+					matches = false
+					break
 				}
+			}
+
+			if matches {
+				return []string{index.Name}, false, nil
 			}
 		}
 

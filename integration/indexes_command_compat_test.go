@@ -335,6 +335,13 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 			},
 			toDrop: bson.D{{"v", -1}},
 		},
+		"SimilarIndexes": {
+			toCreate: []mongo.IndexModel{
+				{Keys: bson.D{{"v", 1}, {"foo", 1}}},
+				{Keys: bson.D{{"v", 1}, {"bar", 1}}},
+			},
+			toDrop: bson.D{{"v", 1}, {"bar", 1}},
+		},
 		"DropAllExpression": {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
