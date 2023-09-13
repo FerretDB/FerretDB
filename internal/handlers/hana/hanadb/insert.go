@@ -49,7 +49,7 @@ func (hanaPool *Pool) InsertOne(ctx context.Context, qp *QueryParams, doc *types
 func (hanaPool *Pool) insert(ctx context.Context, qp *QueryParams, doc *types.Document) error {
 	sqlStmt := fmt.Sprintf("insert into %q.%q values($1)", qp.DB, qp.Collection)
 
-	_, err := hanaPool.ExecContext(ctx, sqlStmt, must.NotFail(Marshal(doc)))
+	_, err := hanaPool.ExecContext(ctx, sqlStmt, must.NotFail(marshal(doc)))
 
 	return getHanaErrorIfExists(err)
 }

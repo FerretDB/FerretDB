@@ -21,20 +21,16 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-func Marshal(doc *types.Document) ([]byte, error) {
+func marshal(doc *types.Document) ([]byte, error) {
 	bdoc, err := sjson.Marshal(doc)
 
 	if err != nil {
-
 		return nil, err
-
 	}
 
 	return bytes.Replace(bdoc, []byte("$"), []byte("%%DollarSign%%"), -1), nil
 }
 
-func Unmarshal(data []byte) (*types.Document, error) {
-
+func unmarshal(data []byte) (*types.Document, error) {
 	return sjson.Unmarshal(bytes.Replace(data, []byte("%%DollarSign%%"), []byte("$"), -1))
-
 }

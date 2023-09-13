@@ -21,12 +21,13 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/SAP/go-hdb/driver"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
-	"github.com/SAP/go-hdb/driver"
 )
 
 // QueryParams represents options/parameters used for SQL query/statement.
@@ -37,13 +38,11 @@ type QueryParams struct {
 
 // queryIterator implements iterator.Interface to fetch documents from the database.
 type queryIterator struct {
-	ctx       context.Context
+	rows      *sql.Rows
+	token     *resource.Token
 	unmarshal func(data []byte) (*types.Document, error)
-
-	m    sync.Mutex
-	rows *sql.Rows
-
-	token *resource.Token
+	ctx       context.Context
+	m         sync.Mutex
 }
 
 // QueryDocuments returns an queryIterator to fetch documents for given SQLParams.
@@ -54,13 +53,14 @@ func (hanaPool *Pool) QueryDocuments(ctx context.Context, qp *QueryParams) (type
 
 	sqlStmt := fmt.Sprintf("SELECT * FROM %q.%q", qp.DB, qp.Collection)
 	rows, err := hanaPool.QueryContext(ctx, sqlStmt)
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	iter := &queryIterator{
 		ctx:       ctx,
-		unmarshal: Unmarshal,
+		unmarshal: unmarshal,
 		rows:      rows,
 		token:     resource.NewToken(),
 	}
