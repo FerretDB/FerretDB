@@ -82,24 +82,14 @@ func BenchmarkQuerySmallDocuments(b *testing.B) {
 }
 
 func BenchmarkReplaceSettingsDocument(b *testing.B) {
-	ctx, collection := setup.Setup(b)
+	s := setup.SetupWithOpts(b, &setup.SetupOpts{
+		BenchmarkProvider: shareddata.BenchmarkSettingsDocuments,
+	})
+	ctx, collection := s.Ctx, s.Collection
 
-	n := 100
-	iter := shareddata.BenchmarkSettingsDocuments.NewIterator()
-	docs, err := iterator.ConsumeValuesN(iter, n)
-	iter.Close()
-
+	var doc bson.D
+	err := collection.FindOne(ctx, bson.D{{"_id", bson.D{{"$exists", true}}}}).Decode(&doc)
 	require.NoError(b, err)
-
-	insertDocs := make([]any, len(docs))
-	for i := range insertDocs {
-		insertDocs[i] = docs[i]
-	}
-
-	_, err = collection.InsertMany(ctx, insertDocs)
-	require.NoError(b, err)
-
-	doc := docs[0]
 	require.Equal(b, "_id", doc[0].Key)
 	require.NotEmpty(b, doc[0].Value)
 	require.NotZero(b, doc[1].Value)
