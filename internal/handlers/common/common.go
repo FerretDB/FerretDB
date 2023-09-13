@@ -15,15 +15,6 @@
 // Package common provides common code for all handlers.
 package common
 
-import (
-	"context"
-	"errors"
-
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-)
-
 const (
 	// MinWireVersion is the minimal supported wire protocol version.
 	MinWireVersion = int32(0) // needed for some apps and drivers
@@ -31,29 +22,3 @@ const (
 	// MaxWireVersion is the maximal supported wire protocol version.
 	MaxWireVersion = int32(17)
 )
-
-// CheckClientMetadata checks if the message does not contain client metadata.
-func CheckClientMetadata(ctx context.Context, doc *types.Document) error {
-	if !doc.Has("client") {
-		return nil
-	}
-
-	clientMetadata, err := doc.Get("client")
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	connInfo := conninfo.Get(ctx)
-
-	// check if the client's metadata was not set before
-	if clientMetadata != nil && connInfo.ClientMetadataPresence {
-		return lazyerrors.Error(errors.New("The client metadata document may only be sent in the first hello"))
-	}
-
-	// set the client's metadata for the first request
-	if clientMetadata != nil && !connInfo.ClientMetadataPresence {
-		connInfo.SetClientMetadataPresence()
-	}
-
-	return nil
-}
