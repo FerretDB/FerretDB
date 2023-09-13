@@ -200,6 +200,12 @@ func processDropIndexOptions(command string, v any, existing []backends.IndexInf
 				)
 			}
 
+			if index == "_id_" {
+				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrInvalidOptions, "cannot drop _id index", command,
+				)
+			}
+
 			var found bool
 
 			for _, existingIndex := range existing {
