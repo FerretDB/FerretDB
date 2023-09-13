@@ -77,7 +77,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}
 	}
 
-	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+	q := fmt.Sprintf(`SELECT DISTINCT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
 
 	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
@@ -108,6 +108,8 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 
 		queryPath := fmt.Sprintf("%s->'$.\"%s\"'", metadata.DefaultColumn, k)
 
+		// select distinct _ferretdb_sjson from values_34474c3b join json_each(values_34474c3b._ferretdb_sjson->'$."v"') where value = 1;
+
 		if k == "_id" {
 			queryPath = metadata.IDColumn
 		}
@@ -127,7 +129,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			// type not supported for pushdown
 
 		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
-			filters = append(filters, fmt.Sprintf(`%s = ?`, queryPath))
+			filters = append(filters, fmt.Sprintf(`%s @> ?`, queryPath))
 			args = append(args, string(must.NotFail(sjson.MarshalSingleValue(v))))
 
 		default:
