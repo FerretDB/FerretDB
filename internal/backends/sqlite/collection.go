@@ -77,7 +77,11 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}
 	}
 
-	q := fmt.Sprintf(`SELECT DISTINCT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+
+	if whereClause != "" {
+		q = fmt.Sprintf(`SELECT DISTINCT %s FROM %q JOIN json_each(values_34474c3b._ferretdb_sjson->'$."v"')`+whereClause, metadata.DefaultColumn, meta.TableName)
+	}
 
 	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
