@@ -173,13 +173,46 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, dbName string) (*pgx
 // DatabaseDrop drops the database.
 //
 // Returned boolean value indicates whether the database was dropped.
-func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
+func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	panic("not implemented")
+	return r.databaseDrop(ctx, dbName)
+}
+
+// DatabaseDrop drops the database.
+//
+// Returned boolean value indicates whether the database was dropped.
+//
+// It does not hold the lock.
+func (r *Registry) databaseDrop(ctx context.Context, dbName string) (bool, error) {
+	defer observability.FuncCall(ctx)()
+
+	p, err := r.DatabaseGetExisting(ctx, dbName)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	if p == nil {
+		return false, nil
+	}
+
+	p, err = r.getPool(ctx)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	q := fmt.Sprintf(`DROP SCHEMA %s CASCADE`, pgx.Identifier{dbName}.Sanitize())
+
+	if _, err := p.Exec(ctx, q); err == nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	delete(r.colls, dbName)
+
+	return true, nil
 }
 
 // CollectionList returns a sorted copy of collections in the database.
