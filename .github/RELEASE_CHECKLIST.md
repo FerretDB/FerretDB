@@ -10,6 +10,7 @@
    - Ensure that "This section should be empty" section does not exist.
    - Add "All closed issues and pull requests" and "All commits", remove "Full Changelog".
    - Tweak spacing, headers levels.
+   - Sort items within sections according to importance and/or alphabetically.
 6. Update CHANGELOG.md with the same release notes:
    - Check spacing, header levels.
    - Run `task docs-fmt`.
