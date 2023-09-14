@@ -180,16 +180,24 @@ func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection
 		return nil, lazyerrors.Error(err)
 	}
 
-	placeholders := make([]string, len(list))
-	args := make([]any, len(list))
+	tablesPlaceholders := make([]string, len(list))
+	tablesArgs := make([]any, len(list))
+
+	indexesPlaceholders := make([]string, 0, len(list))
+	indexesArgs := make([]any, 0, len(list))
 
 	var indexes int64
 
 	for i, c := range list {
-		placeholders[i] = "?"
-		args[i] = c.TableName
+		tablesPlaceholders[i] = "?"
+		tablesArgs[i] = c.TableName
 
 		indexes += int64(len(c.Settings.Indexes))
+
+		for _, index := range c.Settings.Indexes {
+			indexesPlaceholders = append(indexesPlaceholders, "?")
+			indexesArgs = append(indexesArgs, c.TableName+"_"+index.Name)
+		}
 	}
 
 	// Use number of cells to approximate total row count,
@@ -200,11 +208,11 @@ func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection
 		    SUM(ncell)  AS CountCells
 		FROM dbstat
 		WHERE name IN (%s) AND aggregate = TRUE`,
-		strings.Join(placeholders, ", "),
+		strings.Join(tablesPlaceholders, ", "),
 	)
 
 	stats := new(stats)
-	if err = db.QueryRowContext(ctx, q, args...).Scan(
+	if err = db.QueryRowContext(ctx, q, tablesArgs...).Scan(
 		&stats.sizeTables,
 		&stats.countRows,
 	); err != nil {
@@ -212,7 +220,20 @@ func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection
 	}
 
 	stats.countIndexes = indexes
-	stats.sizeIndexes = 0
+
+	q = fmt.Sprintf(`
+		SELECT
+		    SUM(pgsize) AS SizeIndexes
+		FROM dbstat
+		WHERE name IN (%s) AND aggregate = TRUE`,
+		strings.Join(indexesPlaceholders, ", "),
+	)
+
+	if err = db.QueryRowContext(ctx, q, indexesArgs...).Scan(
+		&stats.sizeIndexes,
+	); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	return stats, nil
 }
