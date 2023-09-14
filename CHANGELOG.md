@@ -2,7 +2,7 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
-## [v1.10.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.10.0) (2023-09-14)
+## [v1.10.1](https://github.com/FerretDB/FerretDB/releases/tag/v1.10.1) (2023-09-14)
 
 ### What's Changed
 
@@ -27,7 +27,6 @@ on par with our PostgreSQL backend, and fully supported!
 - Support `_id` implicit filter for `ObjectID` in SQLite by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3330
 - Support `$bit` bitwise update operator by @adetunjii in https://github.com/FerretDB/FerretDB/pull/3266
 - Support `ordered` `insert`s for SQLite by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3223
-- Build Docker images for `arm/v6` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3357
 
 ### Enhancements 🛠
 
@@ -76,7 +75,7 @@ on par with our PostgreSQL backend, and fully supported!
 - @athkishore made their first contribution in https://github.com/FerretDB/FerretDB/pull/3289
 
 [All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/51?closed=1).
-[All commits](https://github.com/FerretDB/FerretDB/compare/v1.9.0...v1.10.0).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.9.0...v1.10.1).
 
 ## [v1.9.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.9.0) (2023-08-28)
 
