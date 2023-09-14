@@ -150,7 +150,7 @@ func TestInsertIDDifferentTypes(t *testing.T) {
 	})
 
 	AssertEqualWriteError(t, mongo.WriteError{
-		Message: "E11000 duplicate key error collection: TestUpdateFieldSetIDDifferentTypes.TestUpdateFieldSetIDDifferentTypes index: _id_ dup key: { _id: 1 }",
+		Message: "E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes index: _id_ dup key: { _id: 1 }",
 		Code:    11000,
 	}, err)
 
@@ -160,7 +160,7 @@ func TestInsertIDDifferentTypes(t *testing.T) {
 	})
 
 	AssertEqualWriteError(t, mongo.WriteError{
-		Message: "E11000 duplicate key error collection: TestUpdateFieldSetIDDifferentTypes.TestUpdateFieldSetIDDifferentTypes index: _id_ dup key: { _id: 1.0 }",
+		Message: "E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes index: _id_ dup key: { _id: 1.0 }",
 		Code:    11000,
 	}, err)
 }
