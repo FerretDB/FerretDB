@@ -77,6 +77,8 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}
 	}
 
+	//whereClause = ""
+
 	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
 
 	//if whereClause != "" {
@@ -159,12 +161,19 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			}
 		case *types.Array, types.Binary, types.NullType, types.Regex, types.Timestamp:
 			// type not supported for pushdown
+			continue
 
-		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
+		case float64, int32, int64, time.Time:
 			subquery := fmt.Sprintf(`(SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
 
 			filters = append(filters, subquery)
 			args = append(args, v)
+
+		case string, types.ObjectID, bool:
+			subquery := fmt.Sprintf(`(SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
+
+			filters = append(filters, subquery)
+			args = append(args, string(must.NotFail(sjson.MarshalSingleValue(v))))
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
