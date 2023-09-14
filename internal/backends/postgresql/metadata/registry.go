@@ -17,7 +17,10 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
+	"slices"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
@@ -27,9 +30,19 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/state"
+)
+
+const (
+	// Reserved prefix for database and collection names.
+	reservedPrefix = "_ferretdb_"
+
+	// PostgreSQL table name where FerretDB metadata is stored.
+	metadataTableName = reservedPrefix + "database_metadata"
 )
 
 // Registry provides access to PostgreSQL databases and collections information.
@@ -165,6 +178,17 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, dbName string) (*pgx
 		return nil, lazyerrors.Error(err)
 	}
 
+	q = fmt.Sprintf(
+		`CREATE TABLE IF NOT EXISTS %s (%s jsonb)`,
+		pgx.Identifier{dbName, metadataTableName}.Sanitize(),
+		DefaultColumn,
+	)
+
+	if _, err = p.Exec(ctx, q); err != nil {
+		r.databaseDrop(ctx, dbName)
+		return nil, lazyerrors.Error(err)
+	}
+
 	r.colls[dbName] = map[string]*Collection{}
 
 	return p, nil
@@ -255,7 +279,77 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	panic("not implemented")
+	return r.collectionCreate(ctx, dbName, collectionName)
+}
+
+// collectionCreate creates a collection in the database.
+// Database will be created automatically if needed.
+//
+// Returned boolean value indicates whether the collection was created.
+// If collection already exists, (false, nil) is returned.
+//
+// It does not hold the lock.
+func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
+	defer observability.FuncCall(ctx)()
+
+	p, err := r.databaseGetOrCreate(ctx, dbName)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	colls := r.colls[dbName]
+	if colls != nil && colls[collectionName] != nil {
+		return false, nil
+	}
+
+	h := fnv.New32a()
+	must.NotFail(h.Write([]byte(collectionName)))
+	s := h.Sum32()
+
+	var tableName string
+	list := maps.Values(colls)
+
+	for {
+		tableName = fmt.Sprintf("%s_%08x", strings.ToLower(collectionName), s)
+		if strings.HasPrefix(tableName, reservedPrefix) {
+			tableName = "_" + tableName
+		}
+
+		if !slices.ContainsFunc(list, func(c *Collection) bool { return c.TableName == tableName }) {
+			break
+		}
+
+		// table already exists, generate a new table name by incrementing the hash
+		s++
+	}
+
+	q := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (%s jsonb)`, pgx.Identifier{dbName, tableName}.Sanitize(), DefaultColumn)
+	if _, err = p.Exec(ctx, q); err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	c := &Collection{
+		Name:      collectionName,
+		TableName: tableName,
+	}
+
+	b, err := sjson.Marshal(c.Marshal())
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	q = fmt.Sprintf("INSERT INTO %s (%s) VALUES (?)", metadataTableName, DefaultColumn)
+	if _, err = p.Exec(ctx, q, string(b)); err != nil {
+		_, _ = p.Exec(ctx, fmt.Sprintf("DROP TABLE %s", pgx.Identifier{dbName, tableName}.Sanitize()))
+		return false, lazyerrors.Error(err)
+	}
+
+	if r.colls[dbName] == nil {
+		r.colls[dbName] = map[string]*Collection{}
+	}
+	r.colls[dbName][collectionName] = c
+
+	return true, nil
 }
 
 // CollectionGet returns a copy of collection metadata.
