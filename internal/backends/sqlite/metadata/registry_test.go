@@ -340,7 +340,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 
 	collectionName := testutil.CollectionName(t)
 
-	indexes := []IndexInfo{
+	toCreate := []IndexInfo{
 		{
 			Name: "index_non_unique",
 			Key: []IndexKeyPair{
@@ -366,14 +366,12 @@ func TestIndexesCreateDrop(t *testing.T) {
 		},
 	}
 
-	err = r.IndexesCreate(ctx, dbName, collectionName, indexes)
+	err = r.IndexesCreate(ctx, dbName, collectionName, toCreate)
 	require.NoError(t, err)
 
 	collection := r.CollectionGet(ctx, dbName, collectionName)
 
 	t.Run("NonUniqueIndex", func(t *testing.T) {
-		t.Parallel()
-
 		indexName := collection.TableName + "_index_non_unique"
 		q := fmt.Sprintf("SELECT sql FROM sqlite_master WHERE type = 'index' AND name = '%s'", indexName)
 		row := db.QueryRowContext(ctx, q)
@@ -389,8 +387,6 @@ func TestIndexesCreateDrop(t *testing.T) {
 	})
 
 	t.Run("UniqueIndex", func(t *testing.T) {
-		t.Parallel()
-
 		indexName := collection.TableName + "_index_unique"
 		q := fmt.Sprintf("SELECT sql FROM sqlite_master WHERE type = 'index' AND name = '%s'", indexName)
 		row := db.QueryRowContext(ctx, q)
@@ -406,11 +402,9 @@ func TestIndexesCreateDrop(t *testing.T) {
 	})
 
 	t.Run("DefaultIndex", func(t *testing.T) {
-		t.Parallel()
-
 		indexName := collection.TableName + "__id_"
-		q := fmt.Sprintf("SELECT sql FROM sqlite_master WHERE type = 'index' AND name = '%s'", indexName)
-		row := db.QueryRowContext(ctx, q)
+		q := "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = ?"
+		row := db.QueryRowContext(ctx, q, indexName)
 
 		var sql string
 		require.NoError(t, row.Scan(&sql))
@@ -420,5 +414,18 @@ func TestIndexesCreateDrop(t *testing.T) {
 			indexName, collection.TableName,
 		)
 		require.Equal(t, expected, sql)
+	})
+
+	t.Run("DropIndexes", func(t *testing.T) {
+		toDrop := []string{"index_non_unique", "index_unique"}
+		err = r.IndexesDrop(ctx, dbName, collectionName, toDrop)
+		require.NoError(t, err)
+
+		q := "SELECT count(*) FROM sqlite_master WHERE type = 'index' AND tbl_name = ?"
+		row := db.QueryRowContext(ctx, q, collection.TableName)
+
+		var count int
+		require.NoError(t, row.Scan(&count))
+		require.Equal(t, 1, count) // only default index
 	})
 }
