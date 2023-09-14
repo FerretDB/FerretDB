@@ -163,17 +163,18 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			// type not supported for pushdown
 			continue
 
-		case float64, int32, int64, time.Time:
+		case float64, int32, int64, time.Time, string, bool:
 			subquery := fmt.Sprintf(`(SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
 
 			filters = append(filters, subquery)
 			args = append(args, v)
 
-		case string, types.ObjectID, bool:
+		case types.ObjectID:
 			subquery := fmt.Sprintf(`(SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
 
 			filters = append(filters, subquery)
-			args = append(args, string(must.NotFail(sjson.MarshalSingleValue(v))))
+
+			str := string(must.NotFail(sjson.MarshalSingleValue(v)))
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
