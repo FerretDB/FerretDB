@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.21.1-1 AS development-build
+FROM ghcr.io/ferretdb/golang:1.21.1-2 AS development-build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -38,11 +38,12 @@ RUN --mount=type=cache,target=/cache \
 ENV GOPROXY https://proxy.golang.org
 
 ENV CGO_ENABLED=1
-ENV GOARM=7
 
 # do not raise it without providing a v1 build because v2+ is problematic
 # for some virtualization platforms and older hardware
 ENV GOAMD64=v1
+
+# leave GOARM unset for autodetection
 
 # TODO https://github.com/FerretDB/FerretDB/issues/2170
 # That command could be run only once by using a separate stage;
