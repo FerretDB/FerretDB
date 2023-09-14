@@ -509,7 +509,7 @@ tasks:
       - task: docker-build
         vars:
           FILE: development
-          PLATFORM: linux/amd64,linux/arm64,linux/arm/v6,linux/arm/v7
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
           OUTPUT: type=image,push=true
 
   # TODO https://github.com/FerretDB/FerretDB/issues/2212
@@ -519,7 +519,7 @@ tasks:
       - task: docker-build
         vars:
           FILE: production
-          PLATFORM: linux/amd64,linux/arm64,linux/arm/v6,linux/arm/v7
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
           OUTPUT: type=image,push=true
 
   packages:
