@@ -316,3 +316,57 @@ func TestCreateDropSameStress(t *testing.T) {
 		})
 	}
 }
+
+func TestIndexesCreate(t *testing.T) {
+	t.Parallel()
+	ctx := testutil.Ctx(t)
+
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	r, err := NewRegistry("file:./?mode=memory", testutil.Logger(t), sp)
+	require.NoError(t, err)
+	t.Cleanup(r.Close)
+
+	dbName := testutil.DatabaseName(t)
+
+	db, err := r.DatabaseGetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+	require.NotNil(t, db)
+
+	t.Cleanup(func() {
+		r.DatabaseDrop(ctx, dbName)
+	})
+
+	collectionName := testutil.CollectionName(t)
+
+	indexes := []IndexInfo{
+		{
+			Name: "index1",
+			Key: []IndexKeyPair{
+				{
+					Field:      "field1",
+					Descending: false,
+				},
+				{
+					Field:      "field2",
+					Descending: true,
+				},
+			},
+		},
+	}
+
+	err = r.IndexesCreate(ctx, dbName, collectionName, indexes)
+	require.NoError(t, err)
+
+	q := fmt.Sprintf("PRAGMA index_info(%s_%s)", collectionName, "index1")
+	rows, err := db.QueryContext(ctx, q)
+	require.NoError(t, err)
+	defer rows.Close()
+
+	for rows.Next() {
+		err = rows.Scan( /*TODO*/ )
+		require.NoError(t, err)
+		indexInfo = append(indexInfo, info)
+	}
+}
