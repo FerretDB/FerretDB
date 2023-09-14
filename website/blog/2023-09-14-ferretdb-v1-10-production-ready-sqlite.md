@@ -18,11 +18,12 @@ With it, the SQLite backend support is officially out of beta, on par with our P
 In the past two weeks, we added support for many missing commands and features,
 including aggregation pipelines, indexes, query explains, and collection renaming.
 Please refer to the [full release notes](https://github.com/FerretDB/FerretDB/releases/tag/v1.10.1) for details.
+
 There are still opportunities for improvement, such as support for more [query pushdowns](https://docs.ferretdb.io/pushdown/),
 but they will not break the compatibility.
-You can start to use the SQLite backend in production now!
-It is ideal if you need a MongoDB-compatible database that does need high performance but could work in environments
-[where MongoDB can't](https://github.com/FerretDB/FerretDB/discussions/1266) and without a separate process.
+You can start using the SQLite backend in production now!
+It is ideal if you need a MongoDB-compatible database that could work in environments
+[where MongoDB can't](https://github.com/FerretDB/FerretDB/discussions/1266).
 
 You may wonder how we made such huge progress after a few relatively quiet releases.
 That's because we worked on the new FerretDB architecture in the background, and the new SQLite backend is the first part of it.
@@ -63,7 +64,7 @@ So we settled on this architecture:
 
 ![FerretDB with SQLite architecture](/img/blog/new-arch/image4.png)
 
-The common backend interface is relatively small to make it easy to add new backends.
+The common backend interface is relatively small and makes it easy to add new backends.
 For example, there is a single method that backends should implement to insert given documents.
 The code for processing ordered and unordered insertions is written once in the command handler;
 there is no need to repeat that logic for every backend.
@@ -72,7 +73,7 @@ there could be a separate optional method that could be implemented.
 Then the command handler could check if that method is implemented by the current backend and use it.
 
 That architecture also allows us to add optional functionality to all backends at once.
-For example, there is already a _very early_ prototype of the OpLog functionality.
+For example, there is already a _very early_ prototype of the "OpLog" functionality.
 It works by wrapping `insert`, `update`, and `delete` methods of any backend and inserting documents
 into operation log collection when wrapped methods succeed.
 The more advanced backend-specific methods of implementing that functionality could be implemented if needed.
@@ -94,5 +95,5 @@ After that, we will start working on bringing that prototype to production.
 Working on a feature like that will be much easier for us with more backends getting it «for free» with less code to maintain.
 And for you, that means more features delivered faster!
 
-You can always see what else we planned in our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1).
+You can always see what else we have planned in our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1).
 FIXME contributors, hiring
