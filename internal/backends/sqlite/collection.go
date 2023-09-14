@@ -137,7 +137,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			// type not supported for pushdown
 
 		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
-			subquery := fmt.Sprintf(`(SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath)
+			subquery := fmt.Sprintf(`(SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
 
 			filters = append(filters, subquery)
 			args = append(args, v)
