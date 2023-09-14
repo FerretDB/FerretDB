@@ -4,11 +4,11 @@ title: FerretDB v1.10 – Production-ready SQLite support and more
 authors: [aleksi]
 description: >
   We are happy to announce the full support for the SQLite backend and discuss our new architecture.
-image: /img/blog/post-cover-image.jpg # FIXME
+image: /img/blog/ferretdb-v1.10.png
 tags: [release]
 ---
 
-<!-- FIXME banner image -->
+![FerretDB v1.10 – Production-ready SQLite support and more](/img/blog/ferretdb-v1.10.png)
 
 We just released the new version of FerretDB – v1.10, which is [available in the usual places](https://docs.ferretdb.io/quickstart-guide/).
 With it, the SQLite backend support is officially out of beta, on par with our PostgreSQL backend, and fully supported.
