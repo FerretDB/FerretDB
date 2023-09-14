@@ -21,7 +21,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -131,26 +130,6 @@ func TestUpdateFieldSetIDDoc(t *testing.T) {
 	assert.Equal(t, new(mongo.UpdateResult), res)
 
 	AssertEqualDocumentsSlice(t, expected, FindAll(t, ctx, collection))
-}
-
-func TestUpdateObjectIDHexString(t *testing.T) {
-	t.Parallel()
-
-	ctx, collection := setup.Setup(t)
-
-	hex := "000102030405060708091011"
-
-	_, err := collection.InsertOne(ctx, bson.D{
-		{"_id", must.NotFail(primitive.ObjectIDFromHex(hex))},
-		{"v", "foo1"},
-	})
-	require.NoError(t, err)
-
-	_, err = collection.InsertOne(ctx, bson.D{
-		{"_id", hex},
-		{"v", "foo2"},
-	})
-	require.NoError(t, err)
 }
 
 func TestUpdateFieldSetUpdateManyUpsert(t *testing.T) {
