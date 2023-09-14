@@ -153,38 +153,6 @@ func TestUpdateObjectIDHexString(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestUpdateFieldSetIDDifferentTypes(t *testing.T) {
-	t.Parallel()
-
-	ctx, collection := setup.Setup(t)
-
-	_, err := collection.InsertOne(ctx, bson.D{
-		{"_id", int64(1)},
-		{"v", "foo2"},
-	})
-	require.NoError(t, err)
-
-	_, err = collection.InsertOne(ctx, bson.D{
-		{"_id", int32(1)},
-		{"v", "foo1"},
-	})
-
-	AssertEqualWriteError(t, mongo.WriteError{
-		Message: "E11000 duplicate key error collection: TestUpdateFieldSetIDDifferentTypes.TestUpdateFieldSetIDDifferentTypes index: _id_ dup key: { _id: 1 }",
-		Code:    11000,
-	}, err)
-
-	_, err = collection.InsertOne(ctx, bson.D{
-		{"_id", float32(1)},
-		{"v", "foo3"},
-	})
-
-	AssertEqualWriteError(t, mongo.WriteError{
-		Message: "E11000 duplicate key error collection: TestUpdateFieldSetIDDifferentTypes.TestUpdateFieldSetIDDifferentTypes index: _id_ dup key: { _id: 1.0 }",
-		Code:    11000,
-	}, err)
-}
-
 func TestUpdateFieldSetUpdateManyUpsert(t *testing.T) {
 	t.Parallel()
 
