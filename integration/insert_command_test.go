@@ -149,18 +149,22 @@ func TestInsertIDDifferentTypes(t *testing.T) {
 		{"v", "foo1"},
 	})
 
-	AssertEqualWriteError(t, mongo.WriteError{
+	AssertEqualAltWriteError(t, mongo.WriteError{
 		Message: "E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes index: _id_ dup key: { _id: 1 }",
 		Code:    11000,
-	}, err)
+	},
+		"E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes",
+		err)
 
 	_, err = collection.InsertOne(ctx, bson.D{
 		{"_id", float32(1)},
 		{"v", "foo3"},
 	})
 
-	AssertEqualWriteError(t, mongo.WriteError{
+	AssertEqualAltWriteError(t, mongo.WriteError{
 		Message: "E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes index: _id_ dup key: { _id: 1.0 }",
 		Code:    11000,
-	}, err)
+	},
+		"E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes",
+		err)
 }
