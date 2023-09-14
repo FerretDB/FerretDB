@@ -96,4 +96,4 @@ Working on a feature like that will be much easier for us with more backends get
 And for you, that means more features delivered faster!
 
 You can always see what else we have planned in our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1).
-FIXME contributors, hiring
+And if you want to contribute – [you are more than welcome](https://docs.ferretdb.io/#community)!
