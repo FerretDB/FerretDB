@@ -110,13 +110,11 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			break
 		}
 
+		if err != nil {
+			return "", nil, lazyerrors.Error(err)
+		}
+
 		queryPath := fmt.Sprintf("%s->'$.\"%s\"'", metadata.DefaultColumn, k)
-
-		// select distinct _ferretdb_sjson from values_34474c3b join json_each(values_34474c3b._ferretdb_sjson->'$."v"') where value = 1;
-
-		// SELECT * FROM values_34474c3b WHERE
-		// (select value from json_each("values_34474c3b"."_ferretdb_sjson"->'$."v"') where value = 1 ) AND
-		// (select value from json_each("values_34474c3b"."_ferretdb_sjson"->'$."v"') where value = 2 )
 
 		if k == "_id" {
 			queryPath = metadata.IDColumn
@@ -127,8 +125,24 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			continue
 		}
 
-		if err != nil {
-			return "", nil, lazyerrors.Error(err)
+		path, err := types.NewPathFromString(k)
+
+		var pe *types.PathError
+
+		switch {
+		case err == nil:
+			// Handle dot notation.
+			// TODO https://github.com/FerretDB/FerretDB/issues/2069
+			if path.Len() > 1 {
+				continue
+			}
+		case errors.As(err, &pe):
+			// ignore empty key error, otherwise return error
+			if pe.Code() != types.ErrPathElementEmpty {
+				return "", nil, lazyerrors.Error(err)
+			}
+		default:
+			panic("Invalid error type: PathError expected")
 		}
 
 		switch v := v.(type) {
