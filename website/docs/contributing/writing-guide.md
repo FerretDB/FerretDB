@@ -60,6 +60,10 @@ To link to a file in a parent directory, prefix with `../` to go up one director
 
 To link to file in a subdirectory, specify the file path along with its respective directory or directories, such as: `subdirectory/file.md`.
 
+To link to a directory or category, prefix the directory name with `/category/`.
+
+- `[configuration directory](/category/configuration/)`
+
 ## Images
 
 Please store all images under `blog` or `docs` in the `static/img` folder.
