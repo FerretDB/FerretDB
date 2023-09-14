@@ -183,9 +183,13 @@ func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection
 	placeholders := make([]string, len(list))
 	args := make([]any, len(list))
 
+	var indexes int64
+
 	for i, c := range list {
 		placeholders[i] = "?"
 		args[i] = c.TableName
+
+		indexes += int64(len(c.Settings.Indexes))
 	}
 
 	// Use number of cells to approximate total row count,
@@ -207,8 +211,8 @@ func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3293
-	stats.countIndexes, stats.sizeIndexes = 0, 0
+	stats.countIndexes = indexes
+	stats.sizeIndexes = 0
 
 	return stats, nil
 }
