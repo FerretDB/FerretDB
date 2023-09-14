@@ -16,16 +16,17 @@ package metadata
 
 import (
 	"context"
+	"fmt"
 	"sort"
 	"sync"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -107,20 +108,66 @@ func (r *Registry) DatabaseList(ctx context.Context) ([]string, error) {
 }
 
 // DatabaseGetExisting returns a connection to existing database or nil if it doesn't exist.
-func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) *fsql.DB {
+//
+// If the user is not authenticated, it returns error.
+func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) (*pgxpool.Pool, error) {
 	defer observability.FuncCall(ctx)()
 
-	panic("not implemented")
+	r.rw.RLock()
+	defer r.rw.RUnlock()
+
+	p, err := r.getPool(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	dbs := r.colls[dbName]
+	if dbs == nil {
+		p.Close()
+		return nil, nil
+	}
+
+	return p, nil
 }
 
 // DatabaseGetOrCreate returns a connection to existing database or newly created database.
-func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsql.DB, error) {
+func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*pgxpool.Pool, error) {
 	defer observability.FuncCall(ctx)()
 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	panic("not implemented")
+	return r.databaseGetOrCreate(ctx, dbName)
+}
+
+// databaseGetOrCreate returns a connection to existing database or newly created database.
+//
+// The dbName must be a validated database name.
+//
+// It does not hold the lock.
+func (r *Registry) databaseGetOrCreate(ctx context.Context, dbName string) (*pgxpool.Pool, error) {
+	defer observability.FuncCall(ctx)()
+
+	if p, err := r.DatabaseGetExisting(ctx, dbName); err != nil {
+		return nil, lazyerrors.Error(err)
+	} else if p != nil {
+		return p, nil
+	}
+
+	p, err := r.getPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	q := fmt.Sprintf(`CREATE SCHEMA IF NOT EXISTS %s`, pgx.Identifier{dbName}.Sanitize())
+
+	if _, err = p.Exec(ctx, q); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	r.colls[dbName] = map[string]*Collection{}
+
+	return p, nil
 }
 
 // DatabaseDrop drops the database.
@@ -141,7 +188,11 @@ func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
 func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collection, error) {
 	defer observability.FuncCall(ctx)()
 
-	db := r.DatabaseGetExisting(ctx, dbName)
+	db, err := r.DatabaseGetExisting(ctx, dbName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	if db == nil {
 		return nil, nil
 	}
@@ -209,7 +260,11 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	db := r.DatabaseGetExisting(ctx, dbName)
+	db, err := r.DatabaseGetExisting(ctx, dbName)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
 	if db == nil {
 		return false, nil
 	}
