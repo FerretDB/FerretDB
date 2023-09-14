@@ -110,7 +110,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			break
 		}
 
-		//queryPath := fmt.Sprintf("%s->'$.\"%s\"'", metadata.DefaultColumn, k)
+		queryPath := fmt.Sprintf("%s->'$.\"%s\"'", metadata.DefaultColumn, k)
 
 		// select distinct _ferretdb_sjson from values_34474c3b join json_each(values_34474c3b._ferretdb_sjson->'$."v"') where value = 1;
 
@@ -119,7 +119,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 		// (select value from json_each("values_34474c3b"."_ferretdb_sjson"->'$."v"') where value = 2 )
 
 		if k == "_id" {
-			//queryPath = metadata.IDColumn
+			queryPath = metadata.IDColumn
 		}
 
 		// don't pushdown $comment, it's attached to query in handlers
@@ -137,7 +137,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			// type not supported for pushdown
 
 		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
-			subquery := fmt.Sprintf(`(SELECT value FROM json_each("values_34474c3b"."_ferretdb_sjson"->'$."v"') WHERE value = ?)`)
+			subquery := fmt.Sprintf(`(SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath)
 
 			filters = append(filters, subquery)
 			args = append(args, v)
