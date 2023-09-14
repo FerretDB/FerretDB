@@ -154,7 +154,8 @@ func TestInsertIDDifferentTypes(t *testing.T) {
 		Code:    11000,
 	},
 		"E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes",
-		err)
+		err,
+	)
 
 	_, err = collection.InsertOne(ctx, bson.D{
 		{"_id", float32(1)},
@@ -166,5 +167,6 @@ func TestInsertIDDifferentTypes(t *testing.T) {
 		Code:    11000,
 	},
 		"E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes",
-		err)
+		err,
+	)
 }
