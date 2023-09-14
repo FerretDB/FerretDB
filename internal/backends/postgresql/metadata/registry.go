@@ -25,6 +25,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -103,4 +104,140 @@ func (r *Registry) DatabaseList(ctx context.Context) ([]string, error) {
 	sort.Strings(res)
 
 	return res, nil
+}
+
+// DatabaseGetExisting returns a connection to existing database or nil if it doesn't exist.
+func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) *fsql.DB {
+	defer observability.FuncCall(ctx)()
+
+	panic("not implemented")
+}
+
+// DatabaseGetOrCreate returns a connection to existing database or newly created database.
+func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsql.DB, error) {
+	defer observability.FuncCall(ctx)()
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	panic("not implemented")
+}
+
+// DatabaseDrop drops the database.
+//
+// Returned boolean value indicates whether the database was dropped.
+func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
+	defer observability.FuncCall(ctx)()
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	panic("not implemented")
+}
+
+// CollectionList returns a sorted copy of collections in the database.
+//
+// If database does not exist, no error is returned.
+func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collection, error) {
+	defer observability.FuncCall(ctx)()
+
+	db := r.DatabaseGetExisting(ctx, dbName)
+	if db == nil {
+		return nil, nil
+	}
+
+	r.rw.RLock()
+
+	res := make([]*Collection, 0, len(r.colls[dbName]))
+	for _, c := range r.colls[dbName] {
+		res = append(res, c.deepCopy())
+	}
+
+	r.rw.RUnlock()
+
+	sort.Slice(res, func(i, j int) bool { return res[i].Name < res[j].Name })
+
+	return res, nil
+}
+
+// CollectionCreate creates a collection in the database.
+// Database will be created automatically if needed.
+//
+// Returned boolean value indicates whether the collection was created.
+// If collection already exists, (false, nil) is returned.
+func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
+	defer observability.FuncCall(ctx)()
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	panic("not implemented")
+}
+
+// CollectionGet returns a copy of collection metadata.
+// It can be safely modified by a caller.
+//
+// If database or collection does not exist, nil is returned.
+func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName string) *Collection {
+	defer observability.FuncCall(ctx)()
+
+	r.rw.RLock()
+	defer r.rw.RUnlock()
+
+	panic("not implemented")
+}
+
+// CollectionDrop drops a collection in the database.
+//
+// Returned boolean value indicates whether the collection was dropped.
+// If database or collection did not exist, (false, nil) is returned.
+func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
+	defer observability.FuncCall(ctx)()
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	panic("not implemented")
+}
+
+// CollectionRename renames a collection in the database.
+//
+// The collection name is update, but original table name is kept.
+//
+// Returned boolean value indicates whether the collection was renamed.
+// If database or collection did not exist, (false, nil) is returned.
+func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
+	defer observability.FuncCall(ctx)()
+
+	db := r.DatabaseGetExisting(ctx, dbName)
+	if db == nil {
+		return false, nil
+	}
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	panic("not implemented")
+}
+
+// IndexesCreate creates indexes in the collection.
+//
+// Existing indexes with given names are ignored (TODO?).
+func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
+	defer observability.FuncCall(ctx)()
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	panic("not implemented")
+}
+
+// IndexesDrop drops provided indexes for the given collection.
+func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName string, toDrop []string) error {
+	defer observability.FuncCall(ctx)()
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	panic("not implemented")
 }

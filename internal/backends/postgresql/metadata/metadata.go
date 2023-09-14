@@ -15,13 +15,64 @@
 // Package metadata provides access to databases and collections information.
 package metadata
 
-import "github.com/FerretDB/FerretDB/internal/types"
+import (
+	"slices"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+)
 
 // Collection represents collection metadata.
 type Collection struct {
-	Name      string
-	TableName string
-	// TODO indexes, etc.
+	Name      string `json:"_id"`
+	TableName string `json:"table"`
+	Settings
+}
+
+// deepCopy returns a deep copy.
+func (c *Collection) deepCopy() *Collection {
+	if c == nil {
+		return nil
+	}
+
+	return &Collection{
+		Name:      c.Name,
+		TableName: c.TableName,
+		Settings:  c.Settings.deepCopy(),
+	}
+}
+
+// Settings represents collection settings.
+type Settings struct {
+	Indexes []IndexInfo `json:"indexes"`
+}
+
+// IndexInfo represents information about a single index.
+type IndexInfo struct {
+	Name   string         `json:"name"`
+	Key    []IndexKeyPair `json:"key"`
+	Unique bool           `json:"unique"`
+}
+
+// IndexKeyPair consists of a field name and a sort order that are part of the index.
+type IndexKeyPair struct {
+	// TODO
+}
+
+// deepCopy returns a deep copy.
+func (s Settings) deepCopy() Settings {
+	indexes := make([]IndexInfo, len(s.Indexes))
+
+	for i, index := range s.Indexes {
+		indexes[i] = IndexInfo{
+			Name:   index.Name,
+			Key:    slices.Clone(index.Key),
+			Unique: index.Unique,
+		}
+	}
+
+	return Settings{
+		Indexes: indexes,
+	}
 }
 
 // Marshal returns [*types.Document] for that collection.
