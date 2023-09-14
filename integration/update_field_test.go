@@ -139,6 +139,7 @@ func TestUpdateObjectIDHexString(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 
 	hex := "000102030405060708091011"
+
 	_, err := collection.InsertOne(ctx, bson.D{
 		{"_id", must.NotFail(primitive.ObjectIDFromHex(hex))},
 		{"v", "foo1"},
@@ -167,37 +168,21 @@ func TestUpdateFieldSetIDDifferentTypes(t *testing.T) {
 		{"_id", int32(1)},
 		{"v", "foo1"},
 	})
-	require.NoError(t, err)
+
+	AssertEqualWriteError(t, mongo.WriteError{
+		Message: "E11000 duplicate key error collection: TestUpdateFieldSetIDDifferentTypes.TestUpdateFieldSetIDDifferentTypes index: _id_ dup key: { _id: 1 }",
+		Code:    11000,
+	}, err)
 
 	_, err = collection.InsertOne(ctx, bson.D{
 		{"_id", float32(1)},
 		{"v", "foo3"},
 	})
-	require.NoError(t, err)
 
-	res, err := collection.UpdateByID(
-		ctx,
-		int32(1),
-		bson.D{{"$set", bson.D{{"v", "boo"}}}},
-	)
-	require.NoError(t, err)
-	assert.Equal(t, &mongo.UpdateResult{MatchedCount: 1, ModifiedCount: 1}, res)
-
-	expected := []bson.D{
-		{
-			{"_id", int64(1)},
-			{"v", "foo2"},
-		},
-		//		{
-		//			{"_id", int32(1)},
-		//			{"v", "boo"},
-		//		},
-		{
-			{"_id", float32(1)},
-			{"v", "foo3"},
-		},
-	}
-	AssertEqualDocumentsSlice(t, expected, FindAll(t, ctx, collection))
+	AssertEqualWriteError(t, mongo.WriteError{
+		Message: "E11000 duplicate key error collection: TestUpdateFieldSetIDDifferentTypes.TestUpdateFieldSetIDDifferentTypes index: _id_ dup key: { _id: 1.0 }",
+		Code:    11000,
+	}, err)
 }
 
 func TestUpdateFieldSetUpdateManyUpsert(t *testing.T) {
