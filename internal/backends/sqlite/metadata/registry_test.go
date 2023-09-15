@@ -416,6 +416,14 @@ func TestIndexesCreateDrop(t *testing.T) {
 		require.Equal(t, expected, sql)
 	})
 
+	t.Run("CheckSettingsAfterCreation", func(t *testing.T) {
+		err := r.initCollections(ctx, dbName, db)
+		require.NoError(t, err)
+
+		collection := r.CollectionGet(ctx, dbName, collectionName)
+		require.Equal(t, 3, len(collection.Settings.Indexes))
+	})
+
 	t.Run("DropIndexes", func(t *testing.T) {
 		toDrop := []string{"index_non_unique", "index_unique"}
 		err = r.IndexesDrop(ctx, dbName, collectionName, toDrop)
@@ -427,5 +435,13 @@ func TestIndexesCreateDrop(t *testing.T) {
 		var count int
 		require.NoError(t, row.Scan(&count))
 		require.Equal(t, 1, count) // only default index
+	})
+
+	t.Run("CheckSettingsAfterDrop", func(t *testing.T) {
+		err := r.initCollections(ctx, dbName, db)
+		require.NoError(t, err)
+
+		collection := r.CollectionGet(ctx, dbName, collectionName)
+		require.Equal(t, 1, len(collection.Settings.Indexes))
 	})
 }
