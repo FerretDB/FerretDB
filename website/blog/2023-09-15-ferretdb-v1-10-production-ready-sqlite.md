@@ -82,18 +82,22 @@ That leads us to the discussion of the FerretDB future.
 
 ## The future
 
-We will continue working on the SQLite backend, improving performance and compatibility.
-We will continue working on the soon-to-be-only commands handler module.
-And we just started working on the new PostgreSQL backend:
+With the new backend architecture, it is now easier to contribute to FerretDB, and features can be added faster.
+This means that moving forward, it will be possible to make FerretDB compatible with MongoDB workloads
+much easier than before.
+And the resulting code will be easier to maintain as well.
+
+In the coming weeks, we will be migrating our PostgreSQL backend onto the new architecture
+and releasing it without breaking changes.
+Our aim is to deliver all of these improvements without needing to migrate your data.
 
 ![New FerretDB architecture](/img/blog/2023-09-15/image5.png)
 
-We don't plan to introduce any breaking changes there.
-Soon you will be able to update FerretDB to the latest version that will use the same data layout in PostgreSQL,
-but under the hood, the new backend code will be working.
-After that, we will start working on bringing that prototype to production.
-Working on a feature like that will be much easier for us with more backends getting it «for free» with less code to maintain.
-And for you, that means more features delivered faster!
+Additionally, adding support for MySQL has been
+[one of the most popular feature requests](https://github.com/FerretDB/FerretDB/discussions/50) to date.
+While our focus will remain on SQLite and PostgreSQL for now, with the new architecture in place,
+we are counting on the open-source [community](https://docs.ferretdb.io/#community) to help us
+create support for MySQL and other backends.
 
 You can always see what else we have planned in our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1).
-And if you want to contribute – [you are more than welcome](https://docs.ferretdb.io/#community)!
+And if you want to contribute – [you are more than welcome](https://docs.ferretdb.io/contributing/)!
