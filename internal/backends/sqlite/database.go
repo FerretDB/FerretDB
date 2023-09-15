@@ -142,7 +142,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := calculateStats(ctx, d, list)
+	stats, err := collectionsStats(ctx, d, list)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -168,8 +168,8 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	}, nil
 }
 
-// calculateStats calculates statistics about tables and indexes for the given collections.
-func calculateStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection) (*stats, error) {
+// collectionsStats returns statistics about tables and indexes for the given collections.
+func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection) (*stats, error) {
 	var err error
 
 	// Call ANALYZE to update statistics of tables and indexes,
