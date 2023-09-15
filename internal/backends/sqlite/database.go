@@ -189,8 +189,7 @@ func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection
 	}
 
 	q = fmt.Sprintf(`
-		SELECT
-		    SUM(pgsize) AS SizeTables
+		SELECT SUM(pgsize) AS SizeTables
 		FROM dbstat
 		WHERE name IN (%s) AND aggregate = TRUE`,
 		strings.Join(placeholders, ", "),
@@ -207,8 +206,7 @@ func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection
 	// excluding `internal` and `overflow` pagetype used by SQLite.
 	// See https://www.sqlite.org/dbstat.html and https://www.sqlite.org/fileformat.html.
 	q = fmt.Sprintf(`
-		SELECT
-		    SUM(ncell)  AS CountCells
+		SELECT SUM(ncell) AS CountCells
 		FROM dbstat
 		WHERE name IN (%s) AND pagetype = 'leaf'`,
 		strings.Join(placeholders, ", "),
