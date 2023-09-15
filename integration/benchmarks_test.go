@@ -20,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -105,13 +106,14 @@ func BenchmarkReplaceSettingsDocument(b *testing.B) {
 	require.NotEmpty(b, doc[0].Value)
 	require.NotZero(b, doc[1].Value)
 
-	filter := bson.D{{"_id", doc[0].Value}}
-
 	b.Run("Replace", func(b *testing.B) {
+		filter := bson.D{{"_id", doc[0].Value}}
+		var res *mongo.UpdateResult
+
 		for i := 0; i < b.N; i++ {
 			doc[1].Value = int64(i + 1)
 
-			res, err := collection.ReplaceOne(ctx, filter, doc)
+			res, err = collection.ReplaceOne(ctx, filter, doc)
 			require.NoError(b, err)
 			require.Equal(b, int64(1), res.MatchedCount)
 			require.Equal(b, int64(1), res.ModifiedCount)
