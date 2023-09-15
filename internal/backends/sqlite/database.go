@@ -142,7 +142,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := relationStats(ctx, d, list)
+	stats, err := calculateStats(ctx, d, list)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -150,8 +150,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	// Total size is the disk space used by the database,
 	// see https://www.sqlite.org/dbstat.html.
 	q := `
-		SELECT
-			SUM(pgsize)
+		SELECT SUM(pgsize)
 		FROM dbstat WHERE aggregate = TRUE`
 
 	var totalSize int64
@@ -169,8 +168,8 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	}, nil
 }
 
-// relationStats returns statistics about tables and indexes for the given collections.
-func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection) (*stats, error) {
+// calculateStats calculates statistics about tables and indexes for the given collections.
+func calculateStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection) (*stats, error) {
 	var err error
 
 	// Call ANALYZE to update statistics of tables and indexes,
@@ -180,35 +179,27 @@ func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection
 		return nil, lazyerrors.Error(err)
 	}
 
-	tablesPlaceholders := make([]string, len(list))
-	tablesArgs := make([]any, len(list))
-
-	indexesPlaceholders := make([]string, 0, len(list))
-	indexesArgs := make([]any, 0, len(list))
+	placeholders := make([]string, len(list))
+	args := make([]any, len(list))
 
 	var indexes int64
 
 	for i, c := range list {
-		tablesPlaceholders[i] = "?"
-		tablesArgs[i] = c.TableName
+		placeholders[i] = "?"
+		args[i] = c.TableName
 
 		indexes += int64(len(c.Settings.Indexes))
-
-		for _, index := range c.Settings.Indexes {
-			indexesPlaceholders = append(indexesPlaceholders, "?")
-			indexesArgs = append(indexesArgs, c.TableName+"_"+index.Name)
-		}
 	}
 
 	q = fmt.Sprintf(`
-		SELECT SUM(pgsize) AS SizeTables
+		SELECT SUM(pgsize)
 		FROM dbstat
 		WHERE name IN (%s) AND aggregate = TRUE`,
-		strings.Join(tablesPlaceholders, ", "),
+		strings.Join(placeholders, ", "),
 	)
 
 	stats := new(stats)
-	if err = db.QueryRowContext(ctx, q, tablesArgs...).Scan(
+	if err = db.QueryRowContext(ctx, q, args...).Scan(
 		&stats.sizeTables,
 	); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -218,7 +209,7 @@ func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection
 	// excluding `internal` and `overflow` pagetype used by SQLite.
 	// See https://www.sqlite.org/dbstat.html and https://www.sqlite.org/fileformat.html.
 	q = fmt.Sprintf(`
-		SELECT SUM(ncell) AS CountCells
+		SELECT SUM(ncell)
 		FROM dbstat
 		WHERE name IN (%s) AND pagetype = 'leaf'`,
 		strings.Join(placeholders, ", "),
@@ -232,15 +223,24 @@ func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection
 
 	stats.countIndexes = indexes
 
+	placeholders = make([]string, 0, indexes)
+	args = make([]any, 0, indexes)
+
+	for _, c := range list {
+		for _, index := range c.Settings.Indexes {
+			placeholders = append(placeholders, "?")
+			args = append(args, c.TableName+"_"+index.Name)
+		}
+	}
+
 	q = fmt.Sprintf(`
-		SELECT
-		    SUM(pgsize) AS SizeIndexes
+		SELECT SUM(pgsize)
 		FROM dbstat
 		WHERE name IN (%s) AND aggregate = TRUE`,
-		strings.Join(indexesPlaceholders, ", "),
+		strings.Join(placeholders, ", "),
 	)
 
-	if err = db.QueryRowContext(ctx, q, indexesArgs...).Scan(
+	if err = db.QueryRowContext(ctx, q, args...).Scan(
 		&stats.sizeIndexes,
 	); err != nil {
 		return nil, lazyerrors.Error(err)
