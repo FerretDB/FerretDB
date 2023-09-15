@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
 
-func BenchmarkQuerySmallDocuments(b *testing.B) {
+func BenchmarkFind(b *testing.B) {
 	provider := shareddata.BenchmarkSmallDocuments
 
 	b.Run(provider.Name(), func(b *testing.B) {
@@ -82,9 +82,11 @@ func BenchmarkQuerySmallDocuments(b *testing.B) {
 	})
 }
 
-func BenchmarkReplaceSettingsDocument(b *testing.B) {
+func BenchmarkReplaceOne(b *testing.B) {
+	provider := shareddata.BenchmarkSettingsDocuments
+
 	s := setup.SetupWithOpts(b, &setup.SetupOpts{
-		BenchmarkProvider: shareddata.BenchmarkSettingsDocuments,
+		BenchmarkProvider: provider,
 	})
 	ctx, collection := s.Ctx, s.Collection
 
@@ -106,7 +108,7 @@ func BenchmarkReplaceSettingsDocument(b *testing.B) {
 	require.NotEmpty(b, doc[0].Value)
 	require.NotZero(b, doc[1].Value)
 
-	b.Run("Replace", func(b *testing.B) {
+	b.Run(provider.Name(), func(b *testing.B) {
 		filter := bson.D{{"_id", doc[0].Value}}
 		var res *mongo.UpdateResult
 
