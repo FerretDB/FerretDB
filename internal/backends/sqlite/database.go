@@ -200,12 +200,8 @@ func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection
 		}
 	}
 
-	// Use number of cells to approximate total row count,
-	// see https://www.sqlite.org/dbstat.html and https://www.sqlite.org/fileformat.html.
 	q = fmt.Sprintf(`
-		SELECT
-		    SUM(pgsize) AS SizeTables,
-		    SUM(ncell)  AS CountCells
+		SELECT SUM(pgsize) AS SizeTables
 		FROM dbstat
 		WHERE name IN (%s) AND aggregate = TRUE`,
 		strings.Join(tablesPlaceholders, ", "),
@@ -214,6 +210,21 @@ func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection
 	stats := new(stats)
 	if err = db.QueryRowContext(ctx, q, tablesArgs...).Scan(
 		&stats.sizeTables,
+	); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// Use number of cells to approximate total row count,
+	// excluding `internal` and `overflow` pagetype used by SQLite.
+	// See https://www.sqlite.org/dbstat.html and https://www.sqlite.org/fileformat.html.
+	q = fmt.Sprintf(`
+		SELECT SUM(ncell) AS CountCells
+		FROM dbstat
+		WHERE name IN (%s) AND pagetype = 'leaf'`,
+		strings.Join(placeholders, ", "),
+	)
+
+	if err = db.QueryRowContext(ctx, q, args...).Scan(
 		&stats.countRows,
 	); err != nil {
 		return nil, lazyerrors.Error(err)

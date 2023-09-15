@@ -54,7 +54,8 @@ For example, you can follow the following steps:
    - Delete ferretdb database (repeat step 4)
    - Restore `ferretdb` PostgreSQL db from the dump we created on the step 2: `psql -h 127.0.0.1 -p 5432 -U username ferretdb -f ferretdb.sql`
    - Start ferretdb 0.7.1
-     :::
+
+:::
 
 In this blog post, we'll be sharing detailed information about the FerretDB beta release (0.8.0).
 
