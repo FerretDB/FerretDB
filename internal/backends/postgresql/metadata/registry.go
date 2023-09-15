@@ -444,7 +444,36 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	panic("not implemented")
+	p, err := r.DatabaseGetExisting(ctx, dbName)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	if p == nil {
+		return false, nil
+	}
+
+	c := r.collectionGet(dbName, oldCollectionName)
+	if c == nil {
+		return false, nil
+	}
+
+	c.Name = newCollectionName
+
+	b, err := sjson.Marshal(c.Marshal())
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	q := fmt.Sprintf(`UPDATE %s SET %s = ? WHERE %s = ?`, metadataTableName, DefaultColumn, IDColumn)
+	if _, err := p.Exec(ctx, q, string(b), oldCollectionName); err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	r.colls[dbName][newCollectionName] = c
+	delete(r.colls[dbName], oldCollectionName)
+
+	return true, nil
 }
 
 // IndexesCreate creates indexes in the collection.
