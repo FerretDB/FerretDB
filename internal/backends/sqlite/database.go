@@ -151,7 +151,8 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	// see https://www.sqlite.org/dbstat.html.
 	q := `
 		SELECT SUM(pgsize)
-		FROM dbstat WHERE aggregate = TRUE`
+		FROM dbstat 
+		WHERE aggregate = TRUE`
 
 	var totalSize int64
 	if err = d.QueryRowContext(ctx, q).Scan(&totalSize); err != nil {
@@ -199,9 +200,7 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 	)
 
 	stats := new(stats)
-	if err = db.QueryRowContext(ctx, q, args...).Scan(
-		&stats.sizeTables,
-	); err != nil {
+	if err = db.QueryRowContext(ctx, q, args...).Scan(&stats.sizeTables); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -215,9 +214,7 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 		strings.Join(placeholders, ", "),
 	)
 
-	if err = db.QueryRowContext(ctx, q, args...).Scan(
-		&stats.countRows,
-	); err != nil {
+	if err = db.QueryRowContext(ctx, q, args...).Scan(&stats.countRows); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -240,9 +237,7 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 		strings.Join(placeholders, ", "),
 	)
 
-	if err = db.QueryRowContext(ctx, q, args...).Scan(
-		&stats.sizeIndexes,
-	); err != nil {
+	if err = db.QueryRowContext(ctx, q, args...).Scan(&stats.sizeIndexes); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
