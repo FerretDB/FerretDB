@@ -537,6 +537,11 @@ func (r *Registry) indexesDrop(ctx context.Context, dbName, collectionName strin
 		c.Settings.Indexes = slices.Delete(c.Settings.Indexes, i, i+1)
 	}
 
+	q := fmt.Sprintf("UPDATE %q SET settings = ?", metadataTableName)
+	if _, err := db.ExecContext(ctx, q, c.Settings); err != nil {
+		return lazyerrors.Error(err)
+	}
+
 	r.colls[dbName][collectionName] = c
 
 	return nil
