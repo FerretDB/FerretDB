@@ -35,7 +35,7 @@ When FerretDB (née MangoDB) was [first released](2021-11-05-mangodb-overwhelmin
 it supported a single PostgreSQL backend.
 The simplified version of the architecture looked like this:
 
-![Old MangoDB architecture](/img/blog/new-arch/image1.png)
+![Old MangoDB architecture](/img/blog/2023-09-15/image1.png)
 
 The protocol handling module was (and still is) responsible for handling client connections, MongoDB wire protocol,
 and BSON documents encoding/decoding.
@@ -44,14 +44,14 @@ The commands handling module was responsible for handling protocol commands such
 Over time, we understood that there is some common code between command handlers.
 We extracted a part responsible for accessing PostgreSQL and running queries into the backend package:
 
-![Old FerretDB architecture](/img/blog/new-arch/image2.png)
+![Old FerretDB architecture](/img/blog/2023-09-15/image2.png)
 
 When we added another backend, we could not figure out if there was a common interface for different storages as they were so different.
 So we decided to make another commands handling module that was similar in things like command parameters extraction
 but very different in the way it interacted with storage.
 Similar parts were extracted into a set of common packages:
 
-![FerretDB with Tigris architecture](/img/blog/new-arch/image3.png)
+![FerretDB with Tigris architecture](/img/blog/2023-09-15/image3.png)
 
 Over time the common part grew, but we still had very different backend packages.
 When we decided to add SQLite support, we wanted to revisit our previous decisions –
@@ -62,7 +62,7 @@ At the same time, we had a lot of practical knowledge of how FerretDB is used wi
 what is important and what is not, and what problems the current backend has and how to avoid them.
 So we settled on this architecture:
 
-![FerretDB with SQLite architecture](/img/blog/new-arch/image4.png)
+![FerretDB with SQLite architecture](/img/blog/2023-09-15/image4.png)
 
 The common backend interface is relatively small and makes it easy to add new backends.
 For example, there is a single method that backends should implement to insert given documents.
@@ -86,7 +86,7 @@ We will continue working on the SQLite backend, improving performance and compat
 We will continue working on the soon-to-be-only commands handler module.
 And we just started working on the new PostgreSQL backend:
 
-![New FerretDB architecture](/img/blog/new-arch/image5.png)
+![New FerretDB architecture](/img/blog/2023-09-15/image5.png)
 
 We don't plan to introduce any breaking changes there.
 Soon you will be able to update FerretDB to the latest version that will use the same data layout in PostgreSQL,
