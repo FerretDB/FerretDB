@@ -42,6 +42,7 @@ type Collection interface {
 
 	ListIndexes(context.Context, *ListIndexesParams) (*ListIndexesResult, error)
 	CreateIndexes(context.Context, *CreateIndexesParams) (*CreateIndexesResult, error)
+	DropIndexes(context.Context, *DropIndexesParams) (*DropIndexesResult, error)
 }
 
 // collectionContract implements Collection interface.
@@ -280,6 +281,30 @@ func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateI
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.CreateIndexes(ctx, params)
+	checkError(err)
+
+	return res, err
+}
+
+// DropIndexesParams represents the parameters of Collection.DropIndexes method.
+type DropIndexesParams struct {
+	Indexes []string
+}
+
+// DropIndexesResult represents the results of Collection.DropIndexes method.
+type DropIndexesResult struct{}
+
+// DropIndexes drops indexes for the collection.
+//
+// The operation should be atomic.
+// If some indexes cannot be dropped, the operation should be rolled back,
+// and the first encountered error should be returned.
+//
+// Database or collection may not exist; that's not an error.
+func (cc *collectionContract) DropIndexes(ctx context.Context, params *DropIndexesParams) (*DropIndexesResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := cc.c.DropIndexes(ctx, params)
 	checkError(err)
 
 	return res, err

@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.21.1-1 AS all-in-one-build
+FROM ghcr.io/ferretdb/golang:1.21.1-2 AS all-in-one-build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -38,11 +38,12 @@ RUN --mount=type=cache,target=/cache \
 ENV GOPROXY https://proxy.golang.org
 
 ENV CGO_ENABLED=1
-ENV GOARM=7
 
 # do not raise it without providing a v1 build because v2+ is problematic
 # for some virtualization platforms and older hardware
 ENV GOAMD64=v1
+
+# leave GOARM unset for autodetection
 
 # TODO https://github.com/FerretDB/FerretDB/issues/2170
 # That command could be run only once by using a separate stage;
@@ -54,6 +55,7 @@ RUN --mount=type=cache,target=/cache \
 #
 # Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
 # (and that happens on GitHub-hosted Actions runners).
+# Also disable it on arm/v6 and arm/v7 because it is not supported there.
 RUN --mount=type=cache,target=/cache <<EOF
 set -ex
 
