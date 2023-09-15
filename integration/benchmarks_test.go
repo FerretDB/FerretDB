@@ -87,22 +87,42 @@ func BenchmarkReplaceSettingsDocument(b *testing.B) {
 	})
 	ctx, collection := s.Ctx, s.Collection
 
-	var doc bson.D
-	err := collection.FindOne(ctx, bson.D{{"_id", bson.D{{"$exists", true}}}}).Decode(&doc)
+	// use the last document by the natural order to make non-pushdown path slower
+
+	cursor, err := collection.Find(ctx, bson.D{})
 	require.NoError(b, err)
+
+	var lastRaw bson.Raw
+	for cursor.Next(ctx) {
+		lastRaw = cursor.Current
+	}
+	require.NoError(b, cursor.Err())
+	require.NoError(b, cursor.Close(ctx))
+
+	var doc bson.D
+	require.NoError(b, bson.Unmarshal(lastRaw, &doc))
 	require.Equal(b, "_id", doc[0].Key)
 	require.NotEmpty(b, doc[0].Value)
 	require.NotZero(b, doc[1].Value)
 
+	filter := bson.D{{"_id", doc[0].Value}}
+
 	b.Run("Replace", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			doc[1].Value = i + 1
+			doc[1].Value = int64(i + 1)
 
-			res, err := collection.ReplaceOne(ctx, bson.D{{"_id", doc[0].Value}}, doc)
+			res, err := collection.ReplaceOne(ctx, filter, doc)
 			require.NoError(b, err)
 			require.Equal(b, int64(1), res.MatchedCount)
 			require.Equal(b, int64(1), res.ModifiedCount)
 		}
+
+		b.StopTimer()
+
+		var actual bson.D
+		err = collection.FindOne(ctx, filter).Decode(&actual)
+		require.NoError(b, err)
+		AssertEqualDocuments(b, doc, actual)
 	})
 }
 
