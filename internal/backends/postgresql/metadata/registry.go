@@ -362,7 +362,22 @@ func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName str
 	r.rw.RLock()
 	defer r.rw.RUnlock()
 
-	panic("not implemented")
+	return r.collectionGet(dbName, collectionName)
+}
+
+// collectionGet returns a copy of collection metadata.
+// It can be safely modified by a caller.
+//
+// If database or collection does not exist, nil is returned.
+//
+// It does not hold the lock.
+func (r *Registry) collectionGet(dbName, collectionName string) *Collection {
+	colls := r.colls[dbName]
+	if colls == nil {
+		return nil
+	}
+
+	return colls[collectionName].deepCopy()
 }
 
 // CollectionDrop drops a collection in the database.
