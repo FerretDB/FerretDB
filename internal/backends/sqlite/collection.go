@@ -16,6 +16,7 @@ package sqlite
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -163,18 +164,21 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			// type not supported for pushdown
 			continue
 
-		case float64, int32, int64, time.Time, string, bool:
-			subquery := fmt.Sprintf(`(SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
+		case float64, int32, int64, time.Time, bool, string:
+			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
 
 			filters = append(filters, subquery)
 			args = append(args, v)
 
 		case types.ObjectID:
-			subquery := fmt.Sprintf(`(SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
+			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
 
 			filters = append(filters, subquery)
 
-			str := string(must.NotFail(sjson.MarshalSingleValue(v)))
+			// TODO ???
+			str := hex.EncodeToString(v[:])
+
+			args = append(args, str)
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
