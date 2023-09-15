@@ -14,7 +14,7 @@ tags: [tag1, tag2]
 draft: true
 ---
 
-![Image alt description](/img/blog/banner-image.jpg) <!---Please add the path for the image banner (i.e. /img/blog/banner-image.png).-->
+![Image alt description](/img/blog/banner-image.jpg) <!--Please add the path for the image banner (i.e. /img/blog/banner-image.png).-->
 
 Leave a space before starting article.
 Please write a short summary of the article here.
