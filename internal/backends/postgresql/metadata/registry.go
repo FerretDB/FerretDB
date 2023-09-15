@@ -557,7 +557,7 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 		)
 
 		if _, err := p.Exec(ctx, q, args...); err != nil {
-			// TODO drop index
+			_ = r.indexesDrop(ctx, dbName, collectionName, created)
 			return lazyerrors.Error(err)
 		}
 
@@ -572,8 +572,7 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 
 	q := fmt.Sprintf(`UPDATE %s SET %s = ? WHERE %s = ?`, metadataTableName, DefaultColumn, IDColumn)
 	if _, err := p.Exec(ctx, q, string(b), collectionName); err != nil {
-		// todo drop index
-		_ = created
+		_ = r.indexesDrop(ctx, dbName, collectionName, created)
 		return lazyerrors.Error(err)
 	}
 
@@ -589,5 +588,58 @@ func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName strin
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	panic("not implemented")
+	return r.indexesDrop(ctx, dbName, collectionName, toDrop)
+}
+
+// indexesDrop remove given connection's indexes.
+//
+// Non-existing indexes are ignored (TODO?).
+//
+// If database or collection does not exist, nil is returned (TODO?).
+//
+// It does not hold the lock.
+func (r *Registry) indexesDrop(ctx context.Context, dbName, collectionName string, indexNames []string) error {
+	defer observability.FuncCall(ctx)()
+
+	p, err := r.DatabaseGetExisting(ctx, dbName)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if p == nil {
+		return nil
+	}
+
+	c := r.collectionGet(dbName, collectionName)
+	if c == nil {
+		return nil
+	}
+
+	for _, name := range indexNames {
+		i := slices.IndexFunc(c.Settings.Indexes, func(i IndexInfo) bool { return name == i.Name })
+		if i < 0 {
+			continue
+		}
+
+		q := fmt.Sprintf(`DROP INDEX %s`, pgx.Identifier{dbName, name}.Sanitize())
+		if _, err := p.Exec(ctx, q); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		c.Settings.Indexes = slices.Delete(c.Settings.Indexes, i, i+1)
+	}
+
+	b, err := sjson.Marshal(c.Marshal())
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	q := fmt.Sprintf(`UPDATE %s SET %s = ? WHERE %s = ?`, metadataTableName, DefaultColumn, IDColumn)
+	if _, err := p.Exec(ctx, q, string(b), collectionName); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	r.colls[dbName][collectionName] = c
+
+	return nil
 }
