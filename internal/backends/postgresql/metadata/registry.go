@@ -390,7 +390,46 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	panic("not implemented")
+	return r.collectionDrop(ctx, dbName, collectionName)
+}
+
+// collectionDrop drops a collection in the database.
+//
+// Returned boolean value indicates whether the collection was dropped.
+// If database or collection did not exist, (false, nil) is returned.
+//
+// It does not hold the lock.
+func (r *Registry) collectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
+	defer observability.FuncCall(ctx)()
+
+	p, err := r.DatabaseGetExisting(ctx, dbName)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	if p == nil {
+		return false, nil
+	}
+
+	c := r.collectionGet(dbName, collectionName)
+	if c == nil {
+		return false, nil
+	}
+
+	q := fmt.Sprintf(`DELETE FROM %s WHERE %s = ?`, metadataTableName, IDColumn)
+	if _, err := p.Exec(ctx, q, c.Name); err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/811
+	q = fmt.Sprintf(`DROP TABLE IF EXISTS %s CASCADE` + pgx.Identifier{dbName, c.TableName}.Sanitize())
+	if _, err = p.Exec(ctx, q); err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	delete(r.colls[dbName], collectionName)
+
+	return true, nil
 }
 
 // CollectionRename renames a collection in the database.
@@ -401,15 +440,6 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 // If database or collection did not exist, (false, nil) is returned.
 func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
-
-	db, err := r.DatabaseGetExisting(ctx, dbName)
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
-	if db == nil {
-		return false, nil
-	}
 
 	r.rw.Lock()
 	defer r.rw.Unlock()

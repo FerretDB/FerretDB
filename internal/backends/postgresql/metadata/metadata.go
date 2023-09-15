@@ -29,6 +29,9 @@ import (
 const (
 	// DefaultColumn is a column name for all fields.
 	DefaultColumn = "_jsonb"
+
+	// IDColumn is a PostgreSQL path expression for _id field.
+	IDColumn = DefaultColumn + "->'_id'"
 )
 
 // Collection represents collection metadata.
