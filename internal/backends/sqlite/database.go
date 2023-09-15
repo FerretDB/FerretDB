@@ -195,7 +195,7 @@ func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection
 		    SUM(pgsize) AS SizeTables,
 		    SUM(ncell)  AS CountCells
 		FROM dbstat
-		WHERE name IN (%s) AND aggregate = TRUE`,
+		WHERE name IN (%s) AND pagetype <> 'internal'`,
 		strings.Join(placeholders, ", "),
 	)
 
