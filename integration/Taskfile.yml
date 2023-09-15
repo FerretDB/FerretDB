@@ -6,7 +6,7 @@ vars:
   BENCH_NAME: .
   BENCH_COUNT: 10
   BENCH_TIME: 5s
-  BENCH_DOCS: 0
+  BENCH_DOCS: 1000
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   BUILD_TAGS:
 
