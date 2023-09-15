@@ -762,7 +762,7 @@ func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 }
 
 // TestCommandsAdministrationCollStatsCount adds large number of documents and checks
-// approximation used by backends returns correct count of documents from collStats.
+// approximation used by backends returns the correct count of documents from collStats.
 func TestCommandsAdministrationCollStatsCount(t *testing.T) {
 	t.Parallel()
 
