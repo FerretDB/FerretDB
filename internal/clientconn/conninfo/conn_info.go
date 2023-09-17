@@ -34,9 +34,9 @@ type ConnInfo struct {
 
 	token *resource.Token
 
-	rw       sync.RWMutex
-	username string
-	password string
+	rw                     sync.RWMutex
+	username               string
+	password               string
 	clientMetadataPresence bool
 }
 
@@ -72,12 +72,20 @@ func (connInfo *ConnInfo) SetAuth(username, password string) {
 	connInfo.password = password
 }
 
+// ClientMetadataPresence returns stored client metadata presence.
+func (connInfo *ConnInfo) ClientMetadataPresence() bool {
+	connInfo.rw.Lock()
+	defer connInfo.rw.Unlock()
+
+	return connInfo.clientMetadataPresence
+}
+
 // SetClientMetadata sets the client metadata presence.
 func (connInfo *ConnInfo) SetClientMetadataPresence() {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()
 
-	connInfo.ClientMetadataPresence = true
+	connInfo.clientMetadataPresence = true
 }
 
 // WithConnInfo returns a new context with the given ConnInfo.

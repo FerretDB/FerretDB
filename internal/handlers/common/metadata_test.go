@@ -113,11 +113,11 @@ func TestCheckClientMetadata(t *testing.T) {
 				}
 
 				if test.document == clientMetadataDocument {
-					assert.True(t, connInfo.ClientMetadataPresence)
+					assert.True(t, connInfo.ClientMetadataPresence())
 				}
 
 				if name == "2xNoClientMetadata" || name == "NoClientMetadata" {
-					assert.False(t, connInfo.ClientMetadataPresence)
+					assert.False(t, connInfo.ClientMetadataPresence())
 				}
 
 				assert.NoError(t, err)
