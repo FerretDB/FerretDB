@@ -102,6 +102,7 @@ func TestCheckClientMetadata(t *testing.T) {
 
 			ctx := context.Background()
 			connInfo := conninfo.NewConnInfo()
+			defer connInfo.Close()
 			ctx = conninfo.WithConnInfo(ctx, connInfo)
 
 			for _, test := range tc {
