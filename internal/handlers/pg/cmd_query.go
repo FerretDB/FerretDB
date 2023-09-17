@@ -33,16 +33,16 @@ import (
 
 // CmdQuery implements HandlerInterface.
 func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
-	if err := common.CheckClientMetadata(ctx, query.Query); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
 	cmd := query.Query.Command()
 	collection := query.FullCollectionName
 
 	// both are valid and are allowed to be run against any database as we don't support authorization yet
 	if (cmd == "ismaster" || cmd == "isMaster") && strings.HasSuffix(collection, ".$cmd") {
 		return common.IsMaster()
+	}
+
+	if err := common.CheckClientMetadata(ctx, query.Query); err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	// defaults to the database name if supplied on the connection string or $external
