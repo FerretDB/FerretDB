@@ -37,8 +37,7 @@ type ConnInfo struct {
 	rw       sync.RWMutex
 	username string
 	password string
-
-	ClientMetadataPresence bool
+	clientMetadataPresence bool
 }
 
 // NewConnInfo return a new ConnInfo.
