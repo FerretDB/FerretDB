@@ -80,7 +80,7 @@ func (connInfo *ConnInfo) ClientMetadataPresence() bool {
 	return connInfo.clientMetadataPresence
 }
 
-// SetClientMetadata sets the client metadata presence.
+// SetClientMetadataPresence sets the client metadata presence.
 func (connInfo *ConnInfo) SetClientMetadataPresence() {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()
