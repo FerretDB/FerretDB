@@ -33,7 +33,9 @@ import (
 
 // CmdQuery implements HandlerInterface.
 func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
-	common.CheckClientMetadata(ctx, query.Query)
+	if err := common.CheckClientMetadata(ctx, query.Query); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	cmd := query.Query.Command()
 	collection := query.FullCollectionName
