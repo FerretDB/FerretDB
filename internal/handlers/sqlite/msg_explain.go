@@ -78,7 +78,12 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	res, err := coll.Explain(ctx, new(backends.ExplainParams))
+	var qp backends.ExplainParams
+	if !h.DisableFilterPushdown {
+		qp.Filter = params.Filter
+	}
+
+	res, err := coll.Explain(ctx, &qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -93,7 +98,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 			// our extensions
 			// TODO https://github.com/FerretDB/FerretDB/issues/3235
-			"pushdown", false,
+			"pushdown", res.QueryPushdown,
 			"sortingPushdown", false,
 			"limitPushdown", false,
 

@@ -103,8 +103,31 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2760
-	panic("not implemented")
+	// non-existent old collection must be checked before existence of new collection check
+	if c := db.r.CollectionGet(ctx, db.name, params.OldName); c == nil {
+		return backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", db.name, params.OldName),
+		)
+	}
+
+	if c := db.r.CollectionGet(ctx, db.name, params.NewName); c != nil {
+		return backends.NewError(
+			backends.ErrorCodeCollectionAlreadyExists,
+			lazyerrors.Errorf("already exists %s.%s", db.name, params.NewName),
+		)
+	}
+
+	renamed, err := db.r.CollectionRename(ctx, db.name, params.OldName, params.NewName)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !renamed {
+		return backends.NewError(backends.ErrorCodeCollectionDoesNotExist, err)
+	}
+
+	return nil
 }
 
 // Stats implements backends.Database interface.
@@ -165,12 +188,8 @@ func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection
 		args[i] = c.TableName
 	}
 
-	// Use number of cells to approximate total row count,
-	// see https://www.sqlite.org/dbstat.html and https://www.sqlite.org/fileformat.html.
 	q = fmt.Sprintf(`
-		SELECT
-		    SUM(pgsize) AS SizeTables,
-		    SUM(ncell)  AS CountCells
+		SELECT SUM(pgsize) AS SizeTables
 		FROM dbstat
 		WHERE name IN (%s) AND aggregate = TRUE`,
 		strings.Join(placeholders, ", "),
@@ -179,6 +198,21 @@ func relationStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection
 	stats := new(stats)
 	if err = db.QueryRowContext(ctx, q, args...).Scan(
 		&stats.sizeTables,
+	); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// Use number of cells to approximate total row count,
+	// excluding `internal` and `overflow` pagetype used by SQLite.
+	// See https://www.sqlite.org/dbstat.html and https://www.sqlite.org/fileformat.html.
+	q = fmt.Sprintf(`
+		SELECT SUM(ncell) AS CountCells
+		FROM dbstat
+		WHERE name IN (%s) AND pagetype = 'leaf'`,
+		strings.Join(placeholders, ", "),
+	)
+
+	if err = db.QueryRowContext(ctx, q, args...).Scan(
 		&stats.countRows,
 	); err != nil {
 		return nil, lazyerrors.Error(err)

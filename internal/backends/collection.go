@@ -23,7 +23,7 @@ import (
 
 // Collection is a generic interface for all backends for accessing collection.
 //
-// Collection object is expected to be stateless and temporary;
+// Collection object should be stateless and temporary;
 // all state should be in the Backend that created Database instance that created this Collection instance.
 // Handler can create and destroy Collection objects on the fly.
 // Creating a Collection object does not imply the creation of the database or collection.
@@ -41,6 +41,8 @@ type Collection interface {
 	Stats(context.Context, *CollectionStatsParams) (*CollectionStatsResult, error)
 
 	ListIndexes(context.Context, *ListIndexesParams) (*ListIndexesResult, error)
+	CreateIndexes(context.Context, *CreateIndexesParams) (*CreateIndexesResult, error)
+	DropIndexes(context.Context, *DropIndexesParams) (*DropIndexesResult, error)
 }
 
 // collectionContract implements Collection interface.
@@ -62,8 +64,8 @@ func CollectionContract(c Collection) Collection {
 
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
-	// nothing for now - no pushdowns yet
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
+	Filter *types.Document
 }
 
 // QueryResult represents the results of Collection.Query method.
@@ -182,14 +184,15 @@ func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllPa
 
 // ExplainParams represents the parameters of Collection.Explain method.
 type ExplainParams struct {
-	// nothing for now - no pushdowns yet
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
+	Filter *types.Document
 }
 
 // ExplainResult represents the results of Collection.Explain method.
 type ExplainResult struct {
 	QueryPlanner *types.Document
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
+	QueryPushdown bool
 }
 
 // Explain return a backend-specific execution plan for the given query.
@@ -255,6 +258,54 @@ func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndex
 
 	res, err := cc.c.ListIndexes(ctx, params)
 	checkError(err, ErrorCodeCollectionDoesNotExist)
+
+	return res, err
+}
+
+// CreateIndexesParams represents the parameters of Collection.CreateIndexes method.
+type CreateIndexesParams struct {
+	Indexes []IndexInfo
+}
+
+// CreateIndexesResult represents the results of Collection.CreateIndexes method.
+type CreateIndexesResult struct{}
+
+// CreateIndexes creates indexes for the collection.
+//
+// The operation should be atomic.
+// If some indexes cannot be created, the operation should be rolled back,
+// and the first encountered error should be returned.
+//
+// Database or collection may not exist; that's not an error.
+func (cc *collectionContract) CreateIndexes(ctx context.Context, params *CreateIndexesParams) (*CreateIndexesResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := cc.c.CreateIndexes(ctx, params)
+	checkError(err)
+
+	return res, err
+}
+
+// DropIndexesParams represents the parameters of Collection.DropIndexes method.
+type DropIndexesParams struct {
+	Indexes []string
+}
+
+// DropIndexesResult represents the results of Collection.DropIndexes method.
+type DropIndexesResult struct{}
+
+// DropIndexes drops indexes for the collection.
+//
+// The operation should be atomic.
+// If some indexes cannot be dropped, the operation should be rolled back,
+// and the first encountered error should be returned.
+//
+// Database or collection may not exist; that's not an error.
+func (cc *collectionContract) DropIndexes(ctx context.Context, params *DropIndexesParams) (*DropIndexesResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := cc.c.DropIndexes(ctx, params)
+	checkError(err)
 
 	return res, err
 }

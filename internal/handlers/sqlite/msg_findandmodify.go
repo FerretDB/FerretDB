@@ -130,7 +130,12 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
 	defer closer.Close()
 
-	queryRes, err := c.Query(ctx, nil)
+	var qp backends.QueryParams
+	if !h.DisableFilterPushdown {
+		qp.Filter = params.Query
+	}
+
+	queryRes, err := c.Query(ctx, &qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

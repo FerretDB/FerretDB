@@ -68,6 +68,10 @@ func (b *backend) Name() string {
 
 // Status implements backends.Backend interface.
 func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
+	// since authentication is not supported yet, and there is no way to not establish an SQLite "connection",
+	// there is no need to use conninfo
+	// TODO https://github.com/FerretDB/FerretDB/issues/3008
+
 	dbs := b.r.DatabaseList(ctx)
 
 	var res backends.StatusResult
@@ -98,8 +102,27 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 	res := &backends.ListDatabasesResult{
 		Databases: make([]backends.DatabaseInfo, len(list)),
 	}
-	for i, db := range list {
-		res.Databases[i] = backends.DatabaseInfo{Name: db}
+
+	for i, dbName := range list {
+		db, err := b.Database(dbName)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		stats, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
+			stats = new(backends.DatabaseStatsResult)
+			err = nil
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res.Databases[i] = backends.DatabaseInfo{
+			Name: dbName,
+			Size: stats.SizeTotal,
+		}
 	}
 
 	return res, nil

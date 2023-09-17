@@ -28,20 +28,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
-
-// notImplemented returns error for stub command handlers.
-//
-// Remove it.
-// TODO https://github.com/FerretDB/FerretDB/issues/3069
-func notImplemented(command string) error {
-	return commonerrors.NewCommandErrorMsg(
-		commonerrors.ErrNotImplemented,
-		"I'm a stub, not a real handler for "+command,
-	)
-}
 
 // Handler implements handlers.Interface.
 type Handler struct {

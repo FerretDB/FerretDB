@@ -65,6 +65,16 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 	return c.c.ListIndexes(ctx, params)
 }
 
+// CreateIndexes implements backends.Collection interface.
+func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) { //nolint:lll // for readability
+	return c.c.CreateIndexes(ctx, params)
+}
+
+// DropIndexes implements backends.Collection interface.
+func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
+	return c.c.DropIndexes(ctx, params)
+}
+
 // check interfaces
 var (
 	_ backends.Collection = (*collection)(nil)

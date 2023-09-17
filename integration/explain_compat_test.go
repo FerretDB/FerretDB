@@ -34,7 +34,7 @@ type explainCompatTestCase struct {
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 
 	skip           string // skip test for all handlers, must have issue number mentioned
-	failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue}
+	failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue
 }
 
 // testExplainCompatError tests explain compatibility test cases.

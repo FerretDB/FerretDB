@@ -186,7 +186,7 @@ tasks:
     deps:
       - test-integration-pg
       - test-integration-mongodb
-      # no test-integration-sqlite yet
+      - test-integration-sqlite
       # no test-integration-hana
 
   test-integration-pg:
@@ -215,7 +215,6 @@ tasks:
         -sqlite-url=file:../tmp/sqlite-tests/
         -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-        -disable-filter-pushdown
     vars:
       SHARD_RUN:
         sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
@@ -313,7 +312,6 @@ tasks:
         --handler=sqlite
         --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
-        --test-disable-filter-pushdown
         --test-enable-oplog
 
   # set FERRETDB_HANA_URL environment variable to use it
@@ -372,7 +370,6 @@ tasks:
         --handler=sqlite
         --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
-        --test-disable-filter-pushdown
         --test-enable-oplog
 
   lint:
@@ -502,7 +499,7 @@ tasks:
       - task: docker-build
         vars:
           FILE: all-in-one
-          PLATFORM: linux/amd64,linux/arm64 # no mongosh for arm/v7
+          PLATFORM: linux/amd64,linux/arm64 # no mongosh for arm/v6 and arm/v7
           OUTPUT: type=image,push=true
 
   # TODO https://github.com/FerretDB/FerretDB/issues/2212

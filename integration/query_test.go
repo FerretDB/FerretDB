@@ -833,13 +833,14 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 		sort    bson.D // optional, nil to leave sort unset
 		optSkip *int64 // optional, nil to leave optSkip unset
 
-		len            int                 // expected length of results
-		queryPushdown  bool                // optional, set true for expected pushdown for query
-		limitPushdown  bool                // optional, set true for expected pushdown for limit
-		err            *mongo.CommandError // optional, expected error from MongoDB
-		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
-		skip           string              // optional, skip test with a specified reason
-		failsForSQLite string              // optional, if set, the case is expected to fail for SQLite due to given issue
+		len                 int                 // expected length of results
+		queryPushdown       bool                // optional, set true for expected pushdown for query
+		queryPushdownSQLite bool                // TODO https://github.com/FerretDB/FerretDB/issues/3235
+		limitPushdown       bool                // optional, set true for expected pushdown for limit
+		err                 *mongo.CommandError // optional, expected error from MongoDB
+		altMessage          string              // optional, alternative error message for FerretDB, ignored if empty
+		skip                string              // optional, skip test with a specified reason
+		failsForSQLite      string              // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"Simple": {
 			limit:          1,
@@ -1004,8 +1005,14 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 					msg = "Sort pushdown is disabled, but target resulted with limitPushdown"
 				}
 
+				resultPushdown := tc.queryPushdown
+				if setup.IsSQLite(t) {
+					// TODO https://github.com/FerretDB/FerretDB/issues/3235
+					resultPushdown = tc.queryPushdownSQLite
+				}
+
 				if setup.IsPushdownDisabled() {
-					tc.queryPushdown = false
+					resultPushdown = false
 					msg = "Query pushdown is disabled, but target resulted with pushdown"
 				}
 
@@ -1014,7 +1021,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				assert.Equal(t, tc.limitPushdown, limitPushdown, msg)
 
 				queryPushdown, _ := ConvertDocument(t, res).Get("pushdown")
-				assert.Equal(t, tc.queryPushdown, queryPushdown, msg)
+				assert.Equal(t, resultPushdown, queryPushdown, msg)
 			})
 
 			t.Run("Find", func(t *testing.T) {
@@ -1036,4 +1043,33 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			})
 		})
 	}
+}
+
+// TestQueryIDDoc checks that the order of fields in the _id document matters.
+func TestQueryIDDoc(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	_, err := collection.InsertOne(ctx, bson.D{
+		{"_id", bson.D{{"a", int32(1)}, {"z", int32(2)}}},
+		{"v", int32(1)},
+	})
+	require.NoError(t, err)
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
+		{"v", int32(2)},
+	})
+	require.NoError(t, err)
+
+	expected := []bson.D{{
+		{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
+		{"v", int32(2)},
+	}}
+	actual := FilterAll(t, ctx, collection, bson.D{{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}}})
+	AssertEqualDocumentsSlice(t, expected, actual)
+
+	expected = []bson.D{}
+	actual = FilterAll(t, ctx, collection, bson.D{{"_id", bson.D{{"z", int32(4)}, {"a", int32(3)}}}})
+	AssertEqualDocumentsSlice(t, expected, actual)
 }

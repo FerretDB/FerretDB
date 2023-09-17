@@ -1,7 +1,7 @@
 ---
 slug: ferretdb-beta-version-authentication
 title: FerretDB v0.8.0 - The Beta Version
-author: Alexander Fashakin
+authors: [alex]
 description: The FerretDB beta version (v.0.8.0) includes exciting new features, including authentication for PostgreSQL, `$min` operator support, and much more.
 image: /img/blog/FerretDB-is-now-Beta.-1-980x551.png
 tags: [release]
@@ -54,7 +54,8 @@ For example, you can follow the following steps:
    - Delete ferretdb database (repeat step 4)
    - Restore `ferretdb` PostgreSQL db from the dump we created on the step 2: `psql -h 127.0.0.1 -p 5432 -U username ferretdb -f ferretdb.sql`
    - Start ferretdb 0.7.1
-     :::
+
+:::
 
 In this blog post, we'll be sharing detailed information about the FerretDB beta release (0.8.0).
 

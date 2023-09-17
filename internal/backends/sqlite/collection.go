@@ -64,9 +64,24 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	q := fmt.Sprintf(`SELECT %s FROM %q`, metadata.DefaultColumn, meta.TableName)
+	var whereClause string
+	var args []any
 
-	rows, err := db.QueryContext(ctx, q)
+	// that logic should exist in one place
+	// TODO https://github.com/FerretDB/FerretDB/issues/3235
+	if params != nil && params.Filter.Len() == 1 {
+		v, _ := params.Filter.Get("_id")
+		if v != nil {
+			if id, ok := v.(types.ObjectID); ok {
+				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
+			}
+		}
+	}
+
+	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+
+	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -219,9 +234,26 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}, nil
 	}
 
-	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`, metadata.DefaultColumn, meta.TableName)
+	var queryPushdown bool
+	var whereClause string
+	var args []any
 
-	rows, err := db.QueryContext(ctx, q)
+	// that logic should exist in one place
+	// TODO https://github.com/FerretDB/FerretDB/issues/3235
+	if params != nil && params.Filter.Len() == 1 {
+		v, _ := params.Filter.Get("_id")
+		if v != nil {
+			if id, ok := v.(types.ObjectID); ok {
+				queryPushdown = true
+				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
+			}
+		}
+	}
+
+	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+
+	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -251,7 +283,8 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	return &backends.ExplainResult{
-		QueryPlanner: must.NotFail(types.NewDocument("Plan", queryPlan)),
+		QueryPlanner:  must.NotFail(types.NewDocument("Plan", queryPlan)),
+		QueryPushdown: queryPushdown,
 	}, nil
 }
 
@@ -305,17 +338,62 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 		)
 	}
 
-	// only one index is supported at the moment - _id
-	// TODO https://github.com/FerretDB/FerretDB/issues/3176
-	return &backends.ListIndexesResult{
-		Indexes: []backends.IndexInfo{
-			{
-				Unique: true,
-				Name:   "_id_",
-				Key:    []backends.IndexKeyPair{{Field: "_id"}},
-			},
-		},
-	}, nil
+	res := backends.ListIndexesResult{
+		Indexes: make([]backends.IndexInfo, len(coll.Settings.Indexes)),
+	}
+
+	for i, index := range coll.Settings.Indexes {
+		res.Indexes[i] = backends.IndexInfo{
+			Name:   index.Name,
+			Unique: index.Unique,
+			Key:    make([]backends.IndexKeyPair, len(index.Key)),
+		}
+
+		for j, key := range index.Key {
+			res.Indexes[i].Key[j] = backends.IndexKeyPair{
+				Field:      key.Field,
+				Descending: key.Descending,
+			}
+		}
+	}
+
+	return &res, nil
+}
+
+// CreateIndexes implements backends.Collection interface.
+func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) { //nolint:lll // for readability
+	indexes := make([]metadata.IndexInfo, len(params.Indexes))
+	for i, index := range params.Indexes {
+		indexes[i] = metadata.IndexInfo{
+			Name:   index.Name,
+			Key:    make([]metadata.IndexKeyPair, len(index.Key)),
+			Unique: index.Unique,
+		}
+
+		for j, key := range index.Key {
+			indexes[i].Key[j] = metadata.IndexKeyPair{
+				Field:      key.Field,
+				Descending: key.Descending,
+			}
+		}
+	}
+
+	err := c.r.IndexesCreate(ctx, c.dbName, c.name, indexes)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return new(backends.CreateIndexesResult), nil
+}
+
+// DropIndexes implements backends.Collection interface.
+func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
+	err := c.r.IndexesDrop(ctx, c.dbName, c.name, params.Indexes)
+	if err != nil {
+		return nil, err
+	}
+
+	return new(backends.DropIndexesResult), nil
 }
 
 // check interfaces

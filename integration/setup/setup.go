@@ -62,6 +62,8 @@ var (
 	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
 	enableSortPushdownF    = flag.Bool("enable-sort-pushdown", false, "enable sort pushdown")
 	enableOplogF           = flag.Bool("enable-oplog", false, "enable OpLog")
+
+	useNewPGF = flag.Bool("use-new-pg", false, "use new PostgreSQL backend")
 )
 
 // Other globals.
