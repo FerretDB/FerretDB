@@ -16,17 +16,17 @@ package setup
 
 import (
 	"context"
-	"net/http"
 	"os"
 	"runtime"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/jaeger"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	oteltrace "go.opentelemetry.io/otel/sdk/trace"
-	otelsemconv "go.opentelemetry.io/otel/semconv/v1.17.0"
+	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 
@@ -40,8 +40,8 @@ import (
 // listenerMetrics are shared between tests.
 var listenerMetrics = connmetrics.NewListenerMetrics()
 
-// jaegerExporter is a shared Jaeger exporter for tests.
-var jaegerExporter *jaeger.Exporter
+// exporter is a shared OTLP http exporter for tests.
+var exporter *otlptrace.Exporter
 
 // Startup initializes things that should be initialized only once.
 func Startup() {
@@ -62,6 +62,10 @@ func Startup() {
 	defer cancel()
 
 	// do basic flags validation earlier, before all tests
+
+	if *benchDocsF <= 0 {
+		zap.S().Fatal("-bench-docs must be > 0.")
+	}
 
 	for _, p := range shareddata.AllBenchmarkProviders() {
 		if g, ok := p.(shareddata.BenchmarkGenerator); ok {
@@ -103,16 +107,15 @@ func Startup() {
 		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
 	}
 
-	// avoid OTEL_EXPORTER_JAEGER_XXX environment variables effects
-	jaegerExporter = must.NotFail(jaeger.New(jaeger.WithCollectorEndpoint(
-		jaeger.WithEndpoint("http://127.0.0.1:14268/api/traces"),
-		jaeger.WithUsername(""),
-		jaeger.WithPassword(""),
-		jaeger.WithHTTPClient(http.DefaultClient),
-	)))
+	exporter = must.NotFail(otlptracehttp.New(ctx,
+		otlptracehttp.WithEndpoint("127.0.0.1:4318"),
+		otlptracehttp.WithInsecure(),
+	))
 
 	tp := oteltrace.NewTracerProvider(
-		oteltrace.WithBatcher(jaegerExporter),
+		oteltrace.WithSpanProcessor(
+			oteltrace.NewBatchSpanProcessor(exporter),
+		),
 		oteltrace.WithSampler(oteltrace.AlwaysSample()),
 		oteltrace.WithResource(resource.NewSchemaless(
 			otelsemconv.ServiceNameKey.String("FerretDB"),
@@ -127,7 +130,7 @@ func Shutdown() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	must.NoError(jaegerExporter.Shutdown(ctx))
+	must.NoError(exporter.Shutdown(ctx))
 
 	// to increase a chance of resource finalizers to spot problems
 	runtime.GC()
