@@ -19,6 +19,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -199,7 +200,13 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
 
 			filters = append(filters, subquery)
-			args = append(args, v.UnixMilli())
+			val := v.UnixMilli()
+
+			// It cannot be either string/slice of bytes but the number
+			val2 := string(must.NotFail(sjson.MarshalSingleValue(v)))
+			log.Println(val)
+
+			args = append(args, val2)
 
 		case int32, bool, string:
 			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
