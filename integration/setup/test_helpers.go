@@ -61,7 +61,7 @@ func FailsForFerretDB(tb testtb.TB, reason string) testtb.TB {
 func FailsForSQLite(tb testtb.TB, reason string) testtb.TB {
 	tb.Helper()
 
-	if *targetBackendF == "ferretdb-sqlite" {
+	if IsSQLite(tb) {
 		return testfail.Expected(tb, reason)
 	}
 
