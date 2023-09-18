@@ -314,8 +314,7 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 				Name:    "CannotCreateIndex",
 				Message: `Error in specification { key: { v: -1 }, name: "", v: 2 } :: caused by :: index name cannot be empty`,
 			},
-			altMessage:     `Error in specification { key: { v: -1 }, name: "" } :: caused by :: index name cannot be empty`,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
+			altMessage: `Error in specification { key: { v: -1 }, name: "" } :: caused by :: index name cannot be empty`,
 		},
 		"MissingKey": {
 			indexes: bson.A{
