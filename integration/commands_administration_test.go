@@ -761,6 +761,27 @@ func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 	assert.InDelta(t, 24, must.NotFail(doc.Get("totalSize")), 24)
 }
 
+// TestCommandsAdministrationCollStatsCount adds large number of documents and checks
+// approximation used by backends returns the correct count of documents from collStats.
+func TestCommandsAdministrationCollStatsCount(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	var n int32 = 1000
+	docs, _ := generateDocuments(0, n)
+	_, err := collection.InsertMany(ctx, docs)
+	require.NoError(t, err)
+
+	var actual bson.D
+	command := bson.D{{"collStats", collection.Name()}}
+	err = collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+	assert.EqualValues(t, n, must.NotFail(doc.Get("count")))
+}
+
 func TestCommandsAdministrationDataSize(t *testing.T) {
 	t.Parallel()
 

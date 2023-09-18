@@ -344,7 +344,7 @@ This and earlier versions of FerretDB with Tigris support will still be availabl
 - Tweak contributing guidelines by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2886
 - Add handler's metrics registration by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2895
 - Clean-up some code and comments by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2904
-- Fix cancelation signals propagation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2908
+- Fix cancellation signals propagation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2908
 - Bump deps, add permissions monitoring by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2930
 - Fix integration tests after bumping deps by @noisersup in https://github.com/FerretDB/FerretDB/pull/2934
 - Update benchmark to use cursors by @AlekSi in https://github.com/FerretDB/FerretDB/pull/2932
