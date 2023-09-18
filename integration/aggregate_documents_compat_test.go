@@ -36,10 +36,9 @@ type aggregateStagesCompatTestCase struct {
 	pipeline bson.A         // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
 	maxTime  *time.Duration // optional, leave nil for unset maxTime
 
-	resultType           compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown       bool                     // defaults to false
-	resultPushdownSQLite bool                     // TODO https://github.com/FerretDB/FerretDB/issues/3235
-	skip                 string                   // skip test for all handlers, must have issue number mentioned
+	resultType     compatTestCaseResultType // defaults to nonEmptyResult
+	resultPushdown ResultPushdown           // defaults to false
+	skip           string                   // skip test for all handlers, must have issue number mentioned
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -113,14 +112,10 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainCommand).Decode(&explainRes))
 
 					resultPushdown := tc.resultPushdown
-					if setup.IsSQLite(t) {
-						// TODO https://github.com/FerretDB/FerretDB/issues/3235
-						resultPushdown = tc.resultPushdownSQLite
-					}
 
 					var msg string
 					if setup.IsPushdownDisabled() {
-						resultPushdown = false
+						resultPushdown = NoPushdown
 						msg = "Query pushdown is disabled, but target resulted with pushdown"
 					}
 

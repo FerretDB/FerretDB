@@ -46,6 +46,10 @@ func (res ResultPushdown) Add(item ResultPushdown) ResultPushdown {
 }
 
 func (res ResultPushdown) PushdownExpected(t testtb.TB) bool {
+	if setup.IsPushdownDisabled() {
+		res = NoPushdown
+	}
+
 	switch {
 	case setup.IsSQLite(t):
 		return res&SQLitePushdown == SQLitePushdown
@@ -153,10 +157,6 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
 
 					resultPushdown := tc.resultPushdown
-					//if setup.IsSQLite(t) {
-					//	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-					//	resultPushdown = tc.resultPushdownSQLite
-					//}
 
 					var msg string
 					if setup.IsPushdownDisabled() {
