@@ -36,6 +36,7 @@ func CheckClientMetadata(ctx context.Context, doc *types.Document) error {
 	}
 
 	connInfo := conninfo.Get(ctx)
+	defer connInfo.Close()
 
 	// check if the client's metadata was not set before
 	if clientMetadata != nil && connInfo.ClientMetadataPresence() {
