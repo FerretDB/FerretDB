@@ -37,7 +37,13 @@ const (
 	NoPushdown     ResultPushdown = 0
 	PgPushdown     ResultPushdown = 1
 	SQLitePushdown ResultPushdown = 2
+
+	AllPushdown ResultPushdown = PgPushdown + SQLitePushdown
 )
+
+func (res ResultPushdown) Add(item ResultPushdown) ResultPushdown {
+	return res + item
+}
 
 func (res ResultPushdown) PushdownExpected(t testtb.TB) bool {
 	switch {
@@ -54,15 +60,14 @@ func (res ResultPushdown) PushdownExpected(t testtb.TB) bool {
 
 // queryCompatTestCase describes query compatibility test case.
 type queryCompatTestCase struct {
-	filter               bson.D                   // required
-	sort                 bson.D                   // defaults to `bson.D{{"_id", 1}}`
-	optSkip              *int64                   // defaults to nil to leave unset
-	limit                *int64                   // defaults to nil to leave unset
-	batchSize            *int32                   // defaults to nil to leave unset
-	projection           bson.D                   // nil for leaving projection unset
-	resultType           compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown       ResultPushdown           // defaults to false
-	resultPushdownSQLite bool                     // TODO https://github.com/FerretDB/FerretDB/issues/3235
+	filter         bson.D                   // required
+	sort           bson.D                   // defaults to `bson.D{{"_id", 1}}`
+	optSkip        *int64                   // defaults to nil to leave unset
+	limit          *int64                   // defaults to nil to leave unset
+	batchSize      *int32                   // defaults to nil to leave unset
+	projection     bson.D                   // nil for leaving projection unset
+	resultType     compatTestCaseResultType // defaults to nonEmptyResult
+	resultPushdown ResultPushdown           // defaults to false
 
 	skipIDCheck bool   // skip check collected IDs, use it when no ids returned from query
 	skip        string // skip test for all handlers, must have issue number mentioned
@@ -228,29 +233,27 @@ func TestQueryCompatFilter(t *testing.T) {
 		},
 		"String": {
 			filter:         bson.D{{"v", "foo"}},
-			resultPushdown: true,
+			resultPushdown: PgPushdown,
 		},
 		"Int32": {
 			filter:         bson.D{{"v", int32(42)}},
-			resultPushdown: true,
+			resultPushdown: PgPushdown,
 		},
 		"IDString": {
 			filter:         bson.D{{"_id", "string"}},
-			resultPushdown: true,
+			resultPushdown: PgPushdown,
 		},
 		"IDNilObjectID": {
-			filter:               bson.D{{"_id", primitive.NilObjectID}},
-			resultPushdown:       true,
-			resultPushdownSQLite: true,
+			filter:         bson.D{{"_id", primitive.NilObjectID}},
+			resultPushdown: AllPushdown,
 		},
 		"IDObjectID": {
-			filter:               bson.D{{"_id", primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11}}},
-			resultPushdown:       true,
-			resultPushdownSQLite: true,
+			filter:         bson.D{{"_id", primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11}}},
+			resultPushdown: AllPushdown,
 		},
 		"ObjectID": {
 			filter:         bson.D{{"v", primitive.NilObjectID}},
-			resultPushdown: true,
+			resultPushdown: PgPushdown,
 		},
 		"UnknownFilterOperator": {
 			filter:     bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}},
