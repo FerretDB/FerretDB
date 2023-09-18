@@ -63,6 +63,10 @@ func Startup() {
 
 	// do basic flags validation earlier, before all tests
 
+	if *benchDocsF <= 0 {
+		zap.S().Fatal("-bench-docs must be > 0.")
+	}
+
 	for _, p := range shareddata.AllBenchmarkProviders() {
 		if g, ok := p.(shareddata.BenchmarkGenerator); ok {
 			g.Init(*benchDocsF)
