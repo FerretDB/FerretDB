@@ -902,7 +902,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			filter:        bson.D{{"v", bson.D{{"foo", nil}}}},
 			limit:         3,
 			len:           1,
-			queryPushdown: PgPushdown,
+			queryPushdown: NoPushdown,
 			limitPushdown: false,
 		},
 		"Sort": {
