@@ -164,7 +164,26 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			// type not supported for pushdown
 			continue
 
-		case float64, int32, int64, time.Time, bool, string:
+		case float64:
+			var sql string
+			switch {
+			case v > types.MaxSafeDouble:
+				sql = ` > ?`
+				v = types.MaxSafeDouble
+
+			case v < -types.MaxSafeDouble:
+				sql = ` < ?`
+				v = -types.MaxSafeDouble
+			default:
+				// don't change the default eq query
+			}
+
+			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value %s)`, queryPath, sql) // TODO sanitize the key
+
+			filters = append(filters, subquery)
+			args = append(args, v)
+
+		case int32, int64, time.Time, bool, string:
 			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
 
 			filters = append(filters, subquery)
