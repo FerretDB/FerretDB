@@ -251,7 +251,7 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 		"Eq": {
 			filter:         bson.D{{"v", bson.D{{"$eq", 45.5}}}},
 			projection:     bson.D{{"v.$", true}},
-			resultPushdown: AllPushdown,
+			resultPushdown: PgPushdown,
 		},
 		"Gt": {
 			filter:     bson.D{{"v", bson.D{{"$gt", 42}}}},

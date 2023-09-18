@@ -149,18 +149,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 		}
 
 		switch v := v.(type) {
-		case *types.Document:
-			switch k {
-			case "$eq":
-				subquery := fmt.Sprintf(`(SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
-
-				filters = append(filters, subquery)
-				args = append(args, must.NotFail(v.Get("$eq")))
-
-			default:
-				continue
-			}
-		case *types.Array, types.Binary, types.NullType, types.Regex, types.Timestamp:
+		case *types.Array, *types.Document, types.Binary, types.NullType, types.Regex, types.Timestamp:
 			// type not supported for pushdown
 			continue
 

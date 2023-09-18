@@ -833,14 +833,13 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 		sort    bson.D // optional, nil to leave sort unset
 		optSkip *int64 // optional, nil to leave optSkip unset
 
-		len                 int                 // expected length of results
-		queryPushdown       bool                // optional, set true for expected pushdown for query
-		queryPushdownSQLite bool                // TODO https://github.com/FerretDB/FerretDB/issues/3235
-		limitPushdown       bool                // optional, set true for expected pushdown for limit
-		err                 *mongo.CommandError // optional, expected error from MongoDB
-		altMessage          string              // optional, alternative error message for FerretDB, ignored if empty
-		skip                string              // optional, skip test with a specified reason
-		failsForSQLite      string              // optional, if set, the case is expected to fail for SQLite due to given issue
+		len            int                 // expected length of results
+		queryPushdown  ResultPushdown      // optional, set true for expected pushdown for query
+		limitPushdown  bool                // optional, set true for expected pushdown for limit
+		err            *mongo.CommandError // optional, expected error from MongoDB
+		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
+		skip           string              // optional, skip test with a specified reason
+		failsForSQLite string              // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"Simple": {
 			limit:          1,
@@ -881,7 +880,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			filter:        bson.D{{"_id", "array"}},
 			limit:         3,
 			len:           1,
-			queryPushdown: true,
+			queryPushdown: AllPushdown,
 			limitPushdown: false,
 		},
 		"ValueFilter": {
@@ -889,28 +888,28 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           3,
-			queryPushdown: true,
+			queryPushdown: AllPushdown,
 			limitPushdown: false,
 		},
 		"DotNotationFilter": {
 			filter:        bson.D{{"v.foo", 42}},
 			limit:         3,
 			len:           3,
-			queryPushdown: false,
+			queryPushdown: AllPushdown,
 			limitPushdown: false,
 		},
 		"ObjectFilter": {
 			filter:        bson.D{{"v", bson.D{{"foo", nil}}}},
 			limit:         3,
 			len:           1,
-			queryPushdown: false,
+			queryPushdown: AllPushdown,
 			limitPushdown: false,
 		},
 		"Sort": {
 			sort:          bson.D{{"_id", 1}},
 			limit:         2,
 			len:           2,
-			queryPushdown: false,
+			queryPushdown: NoPushdown,
 			limitPushdown: true,
 		},
 		"IDFilterSort": {
@@ -918,7 +917,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           1,
-			queryPushdown: true,
+			queryPushdown: AllPushdown,
 			limitPushdown: false,
 		},
 		"ValueFilterSort": {
@@ -926,7 +925,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           3,
-			queryPushdown: true,
+			queryPushdown: AllPushdown,
 			limitPushdown: false,
 		},
 		"DotNotationFilterSort": {
@@ -934,7 +933,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           3,
-			queryPushdown: false,
+			queryPushdown: AllPushdown,
 			limitPushdown: false,
 		},
 		"ObjectFilterSort": {
@@ -942,7 +941,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           1,
-			queryPushdown: false,
+			queryPushdown: AllPushdown,
 			limitPushdown: false,
 		},
 		"Skip": {
@@ -1006,13 +1005,9 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				}
 
 				resultPushdown := tc.queryPushdown
-				if setup.IsSQLite(t) {
-					// TODO https://github.com/FerretDB/FerretDB/issues/3235
-					resultPushdown = tc.queryPushdownSQLite
-				}
 
 				if setup.IsPushdownDisabled() {
-					resultPushdown = false
+					resultPushdown = NoPushdown
 					msg = "Query pushdown is disabled, but target resulted with pushdown"
 				}
 
@@ -1021,7 +1016,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				assert.Equal(t, tc.limitPushdown, limitPushdown, msg)
 
 				queryPushdown, _ := ConvertDocument(t, res).Get("pushdown")
-				assert.Equal(t, resultPushdown, queryPushdown, msg)
+				assert.Equal(t, resultPushdown.PushdownExpected(t), queryPushdown, msg)
 			})
 
 			t.Run("Find", func(t *testing.T) {
