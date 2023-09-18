@@ -233,15 +233,15 @@ func TestQueryCompatFilter(t *testing.T) {
 		},
 		"String": {
 			filter:         bson.D{{"v", "foo"}},
-			resultPushdown: PgPushdown,
+			resultPushdown: AllPushdown,
 		},
 		"Int32": {
 			filter:         bson.D{{"v", int32(42)}},
-			resultPushdown: PgPushdown,
+			resultPushdown: AllPushdown,
 		},
 		"IDString": {
 			filter:         bson.D{{"_id", "string"}},
-			resultPushdown: PgPushdown,
+			resultPushdown: AllPushdown,
 		},
 		"IDNilObjectID": {
 			filter:         bson.D{{"_id", primitive.NilObjectID}},
@@ -253,7 +253,7 @@ func TestQueryCompatFilter(t *testing.T) {
 		},
 		"ObjectID": {
 			filter:         bson.D{{"v", primitive.NilObjectID}},
-			resultPushdown: PgPushdown,
+			resultPushdown: AllPushdown,
 		},
 		"UnknownFilterOperator": {
 			filter:     bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}},
