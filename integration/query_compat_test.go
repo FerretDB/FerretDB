@@ -28,7 +28,29 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
+
+type ResultPushdown uint8
+
+const (
+	NoPushdown     ResultPushdown = 0
+	PgPushdown     ResultPushdown = 1
+	SQLitePushdown ResultPushdown = 2
+)
+
+func (res ResultPushdown) PushdownExpected(t testtb.TB) bool {
+	switch {
+	case setup.IsSQLite(t):
+		return res&SQLitePushdown == SQLitePushdown
+	case setup.IsPostgres(t):
+		return res&PgPushdown == PgPushdown
+	case setup.IsMongoDB(t):
+		return false
+	default:
+		panic("Invalid ResultPushdown")
+	}
+}
 
 // queryCompatTestCase describes query compatibility test case.
 type queryCompatTestCase struct {
@@ -39,7 +61,7 @@ type queryCompatTestCase struct {
 	batchSize            *int32                   // defaults to nil to leave unset
 	projection           bson.D                   // nil for leaving projection unset
 	resultType           compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown       bool                     // defaults to false
+	resultPushdown       ResultPushdown           // defaults to false
 	resultPushdownSQLite bool                     // TODO https://github.com/FerretDB/FerretDB/issues/3235
 
 	skipIDCheck bool   // skip check collected IDs, use it when no ids returned from query
@@ -133,13 +155,13 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 
 					var msg string
 					if setup.IsPushdownDisabled() {
-						resultPushdown = false
+						resultPushdown = NoPushdown
 						msg = "Query pushdown is disabled, but target resulted with pushdown"
 					}
 
 					doc := ConvertDocument(t, explainRes)
 					pushdown, _ := doc.Get("pushdown")
-					assert.Equal(t, resultPushdown, pushdown, msg)
+					assert.Equal(t, resultPushdown.PushdownExpected(t), pushdown, msg)
 
 					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
 					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)

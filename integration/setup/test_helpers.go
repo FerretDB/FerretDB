@@ -35,6 +35,13 @@ func IsSQLite(tb testtb.TB) bool {
 	return *targetBackendF == "ferretdb-sqlite"
 }
 
+// IsPostgres returns true if the current test is running for pg handler.
+//
+// This function should not be used lightly.
+func IsPostgres(tb testtb.TB) bool {
+	return *targetBackendF == "ferretdb-pg"
+}
+
 // FailsForFerretDB return testtb.TB that expects test to fail for FerretDB and pass for MongoDB.
 //
 // This function should not be used lightly and always with an issue URL.
