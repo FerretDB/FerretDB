@@ -206,7 +206,13 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			filters = append(filters, subquery)
 			args = append(args, v)
 
-		case int32, time.Time, bool, string:
+		case time.Time:
+			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
+
+			filters = append(filters, subquery)
+			args = append(args, v.UnixMilli())
+
+		case int32, bool, string:
 			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
 
 			filters = append(filters, subquery)
