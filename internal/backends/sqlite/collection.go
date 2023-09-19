@@ -195,10 +195,13 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			args = append(args, v)
 
 		case types.ObjectID, time.Time, int32, bool, string:
-			subquery := fmt.Sprintf(`EXISTS (SELECT json FROM json_each(%v) WHERE json = ?)`, queryPath) // TODO sanitize the key
+			// json = ? handles all of the values as json objects so it's easy to compare them even after Marshaling to string
+			// the only limitation is the fact that while executing json_each it treats arrays as whole objects so we cannot access internals of them
+			subquery := fmt.Sprintf(`EXISTS (SELECT json FROM json_each(%v) WHERE json = ? OR value = ?)`, queryPath) // TODO sanitize the key
 
 			filters = append(filters, subquery)
 			args = append(args, string(must.NotFail(sjson.MarshalSingleValue(v))))
+			args = append(args, v)
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
