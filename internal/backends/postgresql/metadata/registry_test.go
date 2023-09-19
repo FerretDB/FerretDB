@@ -313,6 +313,84 @@ func TestCreateDropSameStress(t *testing.T) {
 	require.Less(t, int32(1), droppedTotal.Load())
 }
 
+func TestCheckDatabaseUpdated(t *testing.T) {
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+	connInfo := conninfo.NewConnInfo()
+	t.Cleanup(connInfo.Close)
+	ctx = conninfo.WithConnInfo(ctx, connInfo)
+
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	u := "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1"
+	r, err := NewRegistry(u, testutil.Logger(t), sp)
+	require.NoError(t, err)
+	t.Cleanup(r.Close)
+
+	dbName := testutil.DatabaseName(t)
+	db, err := r.DatabaseGetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+	require.NotNil(t, db)
+
+	t.Cleanup(func() {
+		_, _ = r.DatabaseDrop(ctx, dbName)
+	})
+
+	t.Run("CheckDatabaseCreate", func(t *testing.T) {
+		err = r.initCollections(ctx, dbName, db)
+		require.NoError(t, err)
+
+		var dbPool *pgxpool.Pool
+		dbPool, err = r.DatabaseGetExisting(ctx, dbName)
+		require.NoError(t, err)
+		require.NotNil(t, dbPool)
+	})
+
+	collectionName := testutil.CollectionName(t)
+	created, err := r.CollectionCreate(ctx, dbName, collectionName)
+	require.NoError(t, err)
+	require.True(t, created)
+
+	t.Run("CheckCollectionCreated", func(t *testing.T) {
+		metadataCollection, err := r.CollectionGet(ctx, dbName, collectionName)
+		require.NoError(t, err)
+		require.NotNil(t, metadataCollection)
+		require.Equal(t, collectionName, metadataCollection.Name)
+
+		err = r.initCollections(ctx, dbName, db)
+		require.NoError(t, err)
+
+		dbCollection, err := r.CollectionGet(ctx, dbName, collectionName)
+		require.NoError(t, err)
+		require.Equal(t, metadataCollection, dbCollection)
+	})
+
+	t.Run("CheckCollectionDropped", func(t *testing.T) {
+		dropped, err := r.CollectionDrop(ctx, dbName, collectionName)
+		require.NoError(t, err)
+		require.True(t, dropped)
+
+		err = r.initCollections(ctx, dbName, db)
+		require.NoError(t, err)
+
+		dbCollection, err := r.CollectionGet(ctx, dbName, collectionName)
+		require.NoError(t, err)
+		require.Nil(t, dbCollection)
+	})
+
+	t.Run("CheckDatabaseDropped", func(t *testing.T) {
+		dropped, err := r.DatabaseDrop(ctx, dbName)
+		require.NoError(t, err)
+		require.True(t, dropped)
+
+		err = r.initCollections(ctx, dbName, db)
+		require.Error(t, err)
+		require.ErrorContains(t, err, "relation \"TestCheckDatabaseUpdated._ferretdb_database_metadata\" does not exist")
+	})
+}
+
 func TestRenameCollection(t *testing.T) {
 	t.Parallel()
 
@@ -345,7 +423,27 @@ func TestRenameCollection(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, created)
 
-	renamed, err := r.CollectionRename(ctx, dbName, oldCollectionName, newCollectionName)
+	oldCollection, err := r.CollectionGet(ctx, dbName, oldCollectionName)
 	require.NoError(t, err)
-	require.True(t, renamed)
+
+	t.Run("CollectionRename", func(t *testing.T) {
+		var renamed bool
+		renamed, err = r.CollectionRename(ctx, dbName, oldCollectionName, newCollectionName)
+		require.NoError(t, err)
+		require.True(t, renamed)
+	})
+
+	t.Run("CheckCollectionRenamed", func(t *testing.T) {
+		err = r.initCollections(ctx, dbName, db)
+		require.NoError(t, err)
+
+		expected := &Collection{
+			Name:      newCollectionName,
+			TableName: oldCollection.TableName,
+		}
+
+		actual, err := r.CollectionGet(ctx, dbName, newCollectionName)
+		require.NoError(t, err)
+		require.Equal(t, expected, actual)
+	})
 }

@@ -31,6 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
@@ -80,12 +81,131 @@ func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error)
 		colls: map[string]map[string]*Collection{},
 	}
 
+	connInfo := conninfo.NewConnInfo()
+	defer connInfo.Close()
+
+	ctx := conninfo.WithConnInfo(context.Background(), connInfo)
+
+	dbPool, err := r.getPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	dbs, err := r.initDBs(ctx, dbPool)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	for _, dbName := range dbs {
+		if err = r.initCollections(ctx, dbName, dbPool); err != nil {
+			r.Close()
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
 	return r, nil
 }
 
 // Close closes the registry.
 func (r *Registry) Close() {
 	r.p.Close()
+}
+
+// initDBs returns a list of database names using schema information.
+// It fetches existing schema (excluding ones reserved for postgresql),
+// then finds and returns schema that contains ferretdb metadata table.
+func (r *Registry) initDBs(ctx context.Context, p *pgxpool.Pool) ([]string, error) {
+	// schema names with pg_ prefix are reserved for postgresql hence excluded,
+	// a collection cannot be created in a database with pg_ prefix
+	q := `
+			SELECT schema_name
+			FROM information_schema.schemata
+			WHERE schema_name NOT LIKE 'pg_%';`
+
+	rows, err := p.Query(ctx, q)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+	defer rows.Close()
+
+	var dbs []string
+
+	for rows.Next() {
+		var dbName string
+		if err = rows.Scan(&dbName); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		// schema created by postgresql (such as `public`) can be used as ferretdb database,
+		// but if it does not contain ferretdb metadata table, it is not used by ferretdb
+		q := `SELECT EXISTS (
+					SELECT 1
+					FROM information_schema.columns
+					WHERE table_schema = $1 AND table_name = $2
+				)`
+
+		var exists bool
+		if err = p.QueryRow(ctx, q, dbName, metadataTableName).Scan(&exists); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if exists {
+			dbs = append(dbs, dbName)
+		}
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return dbs, nil
+}
+
+// initCollections loads collections metadata from the database during initialization.
+func (r *Registry) initCollections(ctx context.Context, dbName string, p *pgxpool.Pool) error {
+	defer observability.FuncCall(ctx)()
+
+	q := fmt.Sprintf(
+		`SELECT %s FROM %s`,
+		DefaultColumn,
+		pgx.Identifier{dbName, metadataTableName}.Sanitize(),
+	)
+
+	rows, err := p.Query(ctx, q)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+	defer rows.Close()
+
+	colls := map[string]*Collection{}
+
+	for rows.Next() {
+		var b []byte
+		if err = rows.Scan(&b); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		var doc *types.Document
+
+		if doc, err = sjson.Unmarshal(b); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		var c Collection
+		if err = c.Unmarshal(doc); err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		colls[c.Name] = &c
+	}
+
+	if err = rows.Err(); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	r.colls[dbName] = colls
+
+	return nil
 }
 
 // getPool returns a pool of connections to PostgreSQL database

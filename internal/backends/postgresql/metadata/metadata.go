@@ -30,8 +30,9 @@ const (
 
 // Collection represents collection metadata.
 type Collection struct {
-	Name      string `json:"_id"`
-	TableName string `json:"table"`
+	Name      string
+	TableName string
+	// TODO indexes, etc.
 }
 
 // deepCopy returns a deep copy.
