@@ -174,7 +174,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value %s)`, queryPath, sql) // TODO sanitize the key
 
 			filters = append(filters, subquery)
-			args = append(args, v)
+			args = append(args, GetValue(v))
 
 		case float64:
 			var sql string
@@ -193,7 +193,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value %s)`, queryPath, sql) // TODO sanitize the key
 
 			filters = append(filters, subquery)
-			args = append(args, v)
+			args = append(args, GetValue(v))
 
 		case types.ObjectID, time.Time, int32, bool, string:
 			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
