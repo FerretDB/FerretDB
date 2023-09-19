@@ -180,7 +180,10 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, dbName string) (*pgx
 		return nil, lazyerrors.Error(err)
 	}
 
-	q := fmt.Sprintf(`CREATE SCHEMA IF NOT EXISTS %s`, pgx.Identifier{dbName}.Sanitize())
+	q := fmt.Sprintf(
+		`CREATE SCHEMA IF NOT EXISTS %s`,
+		pgx.Identifier{dbName}.Sanitize(),
+	)
 
 	if _, err = p.Exec(ctx, q); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -236,7 +239,10 @@ func (r *Registry) databaseDrop(ctx context.Context, dbName string) (bool, error
 		return false, lazyerrors.Error(err)
 	}
 
-	q := fmt.Sprintf(`DROP SCHEMA %s CASCADE`, pgx.Identifier{dbName}.Sanitize())
+	q := fmt.Sprintf(
+		`DROP SCHEMA %s CASCADE`,
+		pgx.Identifier{dbName}.Sanitize(),
+	)
 
 	if _, err := p.Exec(ctx, q); err == nil {
 		return false, lazyerrors.Error(err)
@@ -331,7 +337,12 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 		s++
 	}
 
-	q := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (%s jsonb)`, pgx.Identifier{dbName, tableName}.Sanitize(), DefaultColumn)
+	q := fmt.Sprintf(
+		`CREATE TABLE IF NOT EXISTS %s (%s jsonb)`,
+		pgx.Identifier{dbName, tableName}.Sanitize(),
+		DefaultColumn,
+	)
+
 	if _, err = p.Exec(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -352,9 +363,15 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 	// create PG index for table name
 	// TODO https://github.com/FerretDB/FerretDB/issues/3375
 
-	q = fmt.Sprintf(`INSERT INTO %s (%s) VALUES ($1)`, pgx.Identifier{dbName, metadataTableName}.Sanitize(), DefaultColumn)
+	q = fmt.Sprintf(
+		`INSERT INTO %s (%s) VALUES ($1)`,
+		pgx.Identifier{dbName, metadataTableName}.Sanitize(),
+		DefaultColumn,
+	)
+
 	if _, err = p.Exec(ctx, q, string(b)); err != nil {
-		_, _ = p.Exec(ctx, fmt.Sprintf("DROP TABLE %s", pgx.Identifier{dbName, tableName}.Sanitize()))
+		q = fmt.Sprintf(`DROP TABLE %s`, pgx.Identifier{dbName, tableName}.Sanitize())
+		_, _ = p.Exec(ctx, q)
 		return false, lazyerrors.Error(err)
 	}
 
@@ -431,7 +448,11 @@ func (r *Registry) collectionDrop(ctx context.Context, dbName, collectionName st
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/811
-	q := fmt.Sprintf(`DROP TABLE IF EXISTS %s CASCADE`, pgx.Identifier{dbName, c.TableName}.Sanitize())
+	q := fmt.Sprintf(
+		`DROP TABLE IF EXISTS %s CASCADE`,
+		pgx.Identifier{dbName, c.TableName}.Sanitize(),
+	)
+
 	if _, err = p.Exec(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -441,7 +462,12 @@ func (r *Registry) collectionDrop(ctx context.Context, dbName, collectionName st
 		return false, lazyerrors.Error(err)
 	}
 
-	q = fmt.Sprintf(`DELETE FROM %s WHERE %s IN ($1)`, pgx.Identifier{dbName, metadataTableName}.Sanitize(), IDColumn)
+	q = fmt.Sprintf(
+		`DELETE FROM %s WHERE %s IN ($1)`,
+		pgx.Identifier{dbName, metadataTableName}.Sanitize(),
+		IDColumn,
+	)
+
 	if _, err := p.Exec(ctx, q, arg); err != nil {
 		// the table has been dropped but metadata related to the table is out of sync
 		return false, lazyerrors.Error(err)
@@ -485,8 +511,19 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 		return false, lazyerrors.Error(err)
 	}
 
-	q := fmt.Sprintf(`UPDATE %s SET %s = ? WHERE %s = ?`, metadataTableName, DefaultColumn, IDColumn)
-	if _, err := p.Exec(ctx, q, string(b), oldCollectionName); err != nil {
+	arg, err := sjson.MarshalSingleValue(oldCollectionName)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	q := fmt.Sprintf(
+		`UPDATE %s SET %s = ? WHERE %s = ?`,
+		pgx.Identifier{dbName, metadataTableName}.Sanitize(),
+		DefaultColumn,
+		IDColumn,
+	)
+
+	if _, err := p.Exec(ctx, q, string(b), arg); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
