@@ -195,19 +195,11 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			filters = append(filters, subquery)
 			args = append(args, v)
 
-		case time.Time:
-			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
+		case time.Time, int32, bool, string:
+			subquery := fmt.Sprintf(`EXISTS (SELECT json FROM json_each(%v) WHERE json = ?)`, queryPath) // TODO sanitize the key
 
 			filters = append(filters, subquery)
-			val := v.UnixMilli()
-
-			args = append(args, val)
-
-		case int32, bool, string:
-			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
-
-			filters = append(filters, subquery)
-			args = append(args, v)
+			args = append(args, string(must.NotFail(sjson.MarshalSingleValue(v))))
 
 		case types.ObjectID:
 			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
