@@ -78,13 +78,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}
 	}
 
-	//whereClause = ""
-
 	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
-
-	//if whereClause != "" {
-	//	q = fmt.Sprintf(`SELECT %s FROM %q JOIN json_each(values_34474c3b._ferretdb_sjson->'$."v"')`+whereClause, metadata.DefaultColumn, meta.TableName)
-	//}
 
 	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
@@ -96,6 +90,8 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}, nil
 }
 
+// prepareWhereClause adds WHERE clause with filters given in the document.
+// It returns the WHERE clause and the SQLite arguments.
 func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 	if filterDoc == nil {
 		return "", []any{}, nil
@@ -174,7 +170,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value %s)`, queryPath, sql) // TODO sanitize the key
 
 			filters = append(filters, subquery)
-			args = append(args, GetValue(v))
+			args = append(args, parseValue(v))
 
 		case float64:
 			var sql string
@@ -193,13 +189,13 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value %s)`, queryPath, sql) // TODO sanitize the key
 
 			filters = append(filters, subquery)
-			args = append(args, GetValue(v))
+			args = append(args, parseValue(v))
 
 		case types.ObjectID, time.Time, int32, bool, string:
 			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
 
 			filters = append(filters, subquery)
-			args = append(args, GetValue(v))
+			args = append(args, parseValue(v))
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
@@ -214,21 +210,17 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 	return whereClause, args, nil
 }
 
-func GetValue(v any) any {
+// parseValue parses the provided value to be used in SQLite query.
+func parseValue(v any) any {
 	switch v := v.(type) {
 	case time.Time:
 		return v.UnixMilli()
-
 	case int64, float64, int32, bool, string:
 		return v
-
 	case types.ObjectID:
 		return hex.EncodeToString(v[:])
-
-	case *types.Array, *types.Document, types.Binary, types.NullType, types.Regex, types.Timestamp:
-		panic(1)
 	default:
-		panic(1)
+		panic(fmt.Sprintf("Unexpected type of value: %v", v))
 	}
 }
 
