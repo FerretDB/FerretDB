@@ -196,7 +196,7 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, dbName string) (*pgx
 	)
 
 	if _, err = p.Exec(ctx, q); err != nil {
-		r.databaseDrop(ctx, dbName)
+		_, _ = r.databaseDrop(ctx, dbName)
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -244,7 +244,7 @@ func (r *Registry) databaseDrop(ctx context.Context, dbName string) (bool, error
 		pgx.Identifier{dbName}.Sanitize(),
 	)
 
-	if _, err := p.Exec(ctx, q); err == nil {
+	if _, err := p.Exec(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
@@ -372,6 +372,7 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 	if _, err = p.Exec(ctx, q, string(b)); err != nil {
 		q = fmt.Sprintf(`DROP TABLE %s`, pgx.Identifier{dbName, tableName}.Sanitize())
 		_, _ = p.Exec(ctx, q)
+
 		return false, lazyerrors.Error(err)
 	}
 

@@ -17,6 +17,7 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
@@ -26,6 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
 )
 
 // testCollection creates, tests, and drops an unique collection in existing database.
@@ -81,7 +83,8 @@ func TestCreateDrop(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	r, err := NewRegistry("postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1", testutil.Logger(t), sp)
+	u := "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1"
+	r, err := NewRegistry(u, testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
@@ -91,7 +94,51 @@ func TestCreateDrop(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, db)
 
+	t.Cleanup(func() {
+		_, _ = r.DatabaseDrop(ctx, dbName)
+	})
+
 	collectionName := testutil.CollectionName(t)
 
 	testCollection(t, ctx, r, db, dbName, collectionName)
+}
+
+func TestCreateDropStress(t *testing.T) {
+	ctx := testutil.Ctx(t)
+
+	connInfo := conninfo.NewConnInfo()
+	t.Cleanup(connInfo.Close)
+
+	ctx = conninfo.WithConnInfo(ctx, connInfo)
+
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	u := "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1"
+	r, err := NewRegistry(u, testutil.Logger(t), sp)
+	require.NoError(t, err)
+	t.Cleanup(r.Close)
+
+	dbName := testutil.DatabaseName(t)
+	_, err = r.DatabaseDrop(ctx, dbName)
+	require.NoError(t, err)
+
+	db, err := r.DatabaseGetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+	require.NotNil(t, db)
+
+	t.Cleanup(func() {
+		_, _ = r.DatabaseDrop(ctx, dbName)
+	})
+
+	var i atomic.Int32
+
+	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+		collectionName := fmt.Sprintf("collection_%03d", i.Add(1))
+
+		ready <- struct{}{}
+		<-start
+
+		testCollection(t, ctx, r, db, dbName, collectionName)
+	})
 }
