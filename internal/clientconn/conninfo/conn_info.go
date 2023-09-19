@@ -18,8 +18,6 @@ package conninfo
 import (
 	"context"
 	"sync"
-
-	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
 // contextKey is a named unexported type for the safe use of context.WithValue.
@@ -32,27 +30,15 @@ var connInfoKey = contextKey{}
 type ConnInfo struct {
 	PeerAddr string
 
-	token *resource.Token
-
 	rw                     sync.RWMutex
 	username               string
 	password               string
 	clientMetadataPresence bool
 }
 
-// NewConnInfo return a new ConnInfo.
-func NewConnInfo() *ConnInfo {
-	connInfo := &ConnInfo{
-		token: resource.NewToken(),
-	}
-	resource.Track(connInfo, connInfo.token)
-
-	return connInfo
-}
-
-// Close frees resources.
-func (connInfo *ConnInfo) Close() {
-	resource.Untrack(connInfo, connInfo.token)
+// New returns a new ConnInfo.
+func New() *ConnInfo {
+	return new(ConnInfo)
 }
 
 // Auth returns stored username and password.
@@ -88,8 +74,8 @@ func (connInfo *ConnInfo) SetClientMetadataPresence() {
 	connInfo.clientMetadataPresence = true
 }
 
-// WithConnInfo returns a new context with the given ConnInfo.
-func WithConnInfo(ctx context.Context, connInfo *ConnInfo) context.Context {
+// Ctx returns a derived context with the given ConnInfo.
+func Ctx(ctx context.Context, connInfo *ConnInfo) context.Context {
 	return context.WithValue(ctx, connInfoKey, connInfo)
 }
 
