@@ -219,14 +219,16 @@ func GetValue(v any) any {
 	case time.Time:
 		return v.UnixMilli()
 
-	case int32, bool, string:
+	case int64, float64, int32, bool, string:
 		return v
 
 	case types.ObjectID:
 		return hex.EncodeToString(v[:])
 
+	case *types.Array, *types.Document, types.Binary, types.NullType, types.Regex, types.Timestamp:
+		panic(1)
 	default:
-		return nil
+		panic(1)
 	}
 }
 
