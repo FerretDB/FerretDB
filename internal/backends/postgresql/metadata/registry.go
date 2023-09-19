@@ -81,10 +81,8 @@ func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error)
 		colls: map[string]map[string]*Collection{},
 	}
 
-	connInfo := conninfo.NewConnInfo()
-	defer connInfo.Close()
-
-	ctx := conninfo.WithConnInfo(context.Background(), connInfo)
+	connInfo := conninfo.New()
+	ctx := conninfo.Ctx(context.Background(), connInfo)
 
 	dbPool, err := r.getPool(ctx)
 	if err != nil {

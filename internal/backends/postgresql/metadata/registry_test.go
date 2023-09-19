@@ -80,10 +80,8 @@ func testCollection(t *testing.T, ctx context.Context, r *Registry, db *pgxpool.
 func TestCreateDrop(t *testing.T) {
 	t.Parallel()
 
-	ctx := testutil.Ctx(t)
-	connInfo := conninfo.NewConnInfo()
-	t.Cleanup(connInfo.Close)
-	ctx = conninfo.WithConnInfo(ctx, connInfo)
+	connInfo := conninfo.New()
+	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
@@ -107,10 +105,8 @@ func TestCreateDrop(t *testing.T) {
 }
 
 func TestCreateDropStress(t *testing.T) {
-	ctx := testutil.Ctx(t)
-	connInfo := conninfo.NewConnInfo()
-	t.Cleanup(connInfo.Close)
-	ctx = conninfo.WithConnInfo(ctx, connInfo)
+	connInfo := conninfo.New()
+	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
@@ -145,10 +141,8 @@ func TestCreateDropStress(t *testing.T) {
 }
 
 func TestCreateSameStress(t *testing.T) {
-	ctx := testutil.Ctx(t)
-	connInfo := conninfo.NewConnInfo()
-	t.Cleanup(connInfo.Close)
-	ctx = conninfo.WithConnInfo(ctx, connInfo)
+	connInfo := conninfo.New()
+	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
@@ -213,10 +207,8 @@ func TestCreateSameStress(t *testing.T) {
 }
 
 func TestDropSameStress(t *testing.T) {
-	ctx := testutil.Ctx(t)
-	connInfo := conninfo.NewConnInfo()
-	t.Cleanup(connInfo.Close)
-	ctx = conninfo.WithConnInfo(ctx, connInfo)
+	connInfo := conninfo.New()
+	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
@@ -260,10 +252,8 @@ func TestDropSameStress(t *testing.T) {
 }
 
 func TestCreateDropSameStress(t *testing.T) {
-	ctx := testutil.Ctx(t)
-	connInfo := conninfo.NewConnInfo()
-	t.Cleanup(connInfo.Close)
-	ctx = conninfo.WithConnInfo(ctx, connInfo)
+	connInfo := conninfo.New()
+	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
@@ -316,10 +306,8 @@ func TestCreateDropSameStress(t *testing.T) {
 func TestCheckDatabaseUpdated(t *testing.T) {
 	t.Parallel()
 
-	ctx := testutil.Ctx(t)
-	connInfo := conninfo.NewConnInfo()
-	t.Cleanup(connInfo.Close)
-	ctx = conninfo.WithConnInfo(ctx, connInfo)
+	connInfo := conninfo.New()
+	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
@@ -394,10 +382,8 @@ func TestCheckDatabaseUpdated(t *testing.T) {
 func TestRenameCollection(t *testing.T) {
 	t.Parallel()
 
-	ctx := testutil.Ctx(t)
-	connInfo := conninfo.NewConnInfo()
-	t.Cleanup(connInfo.Close)
-	ctx = conninfo.WithConnInfo(ctx, connInfo)
+	connInfo := conninfo.New()
+	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
