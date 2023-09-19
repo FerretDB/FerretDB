@@ -101,8 +101,8 @@ func TestCheckClientMetadata(t *testing.T) {
 			t.Parallel()
 
 			ctx := context.Background()
-			connInfo := conninfo.NewConnInfo()
-			ctx = conninfo.WithConnInfo(ctx, connInfo)
+			connInfo := conninfo.New()
+			ctx = conninfo.Ctx(ctx, connInfo)
 
 			for _, test := range tc {
 				err := CheckClientMetadata(ctx, test.document)
