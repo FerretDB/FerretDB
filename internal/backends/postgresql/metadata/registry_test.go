@@ -142,3 +142,68 @@ func TestCreateDropStress(t *testing.T) {
 		testCollection(t, ctx, r, db, dbName, collectionName)
 	})
 }
+
+func TestCreateSameStress(t *testing.T) {
+	ctx := testutil.Ctx(t)
+
+	connInfo := conninfo.NewConnInfo()
+	t.Cleanup(connInfo.Close)
+
+	ctx = conninfo.WithConnInfo(ctx, connInfo)
+
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	u := "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1"
+	r, err := NewRegistry(u, testutil.Logger(t), sp)
+	require.NoError(t, err)
+	t.Cleanup(r.Close)
+
+	dbName := testutil.DatabaseName(t)
+	_, err = r.DatabaseDrop(ctx, dbName)
+	require.NoError(t, err)
+
+	db, err := r.DatabaseGetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+	require.NotNil(t, db)
+
+	t.Cleanup(func() {
+		_, _ = r.DatabaseDrop(ctx, dbName)
+	})
+
+	collectionName := "collection"
+
+	var i, createdTotal atomic.Int32
+
+	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+		id := i.Add(1)
+
+		ready <- struct{}{}
+		<-start
+
+		created, err := r.CollectionCreate(ctx, dbName, collectionName)
+		require.NoError(t, err)
+		if created {
+			createdTotal.Add(1)
+		}
+
+		created, err = r.CollectionCreate(ctx, dbName, collectionName)
+		require.NoError(t, err)
+		require.False(t, created)
+
+		c := r.CollectionGet(ctx, dbName, collectionName)
+		require.NotNil(t, c)
+		require.Equal(t, collectionName, c.Name)
+
+		list, err := r.CollectionList(ctx, dbName)
+		require.NoError(t, err)
+		require.Contains(t, list, c)
+
+		q := fmt.Sprintf("INSERT INTO %s (%s) VALUES($1)", pgx.Identifier{dbName, c.TableName}.Sanitize(), DefaultColumn)
+		doc := fmt.Sprintf(`{"$s": {"p": {"_id": {"t": "int"}}, "$k": ["_id"]}, "_id": %d}`, id)
+		_, err = db.Exec(ctx, q, doc)
+		require.NoError(t, err)
+	})
+
+	require.Equal(t, int32(1), createdTotal.Load())
+}
