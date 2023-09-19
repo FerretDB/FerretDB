@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
 
@@ -50,7 +51,7 @@ func testCollection(t *testing.T, ctx context.Context, r *Registry, db *pgxpool.
 	require.NoError(t, err)
 	require.Contains(t, list, c)
 
-	q := fmt.Sprintf("INSERT INTO %q (%s) VALUES(?)", c.TableName, DefaultColumn)
+	q := fmt.Sprintf(`INSERT INTO %s (%s) VALUES($1)`, pgx.Identifier{dbName, c.TableName}.Sanitize(), DefaultColumn)
 	doc := `{"$s": {"p": {"_id": {"t": "int"}}, "$k": ["_id"]}, "_id": 42}`
 	_, err = db.Exec(ctx, q, doc)
 	require.NoError(t, err)
@@ -89,13 +90,6 @@ func TestCreateDrop(t *testing.T) {
 	db, err := r.DatabaseGetOrCreate(ctx, dbName)
 	require.NoError(t, err)
 	require.NotNil(t, db)
-
-	state := sp.Get()
-	require.Equal(t, "3.41.2", state.HandlerVersion)
-
-	t.Cleanup(func() {
-		r.DatabaseDrop(ctx, dbName)
-	})
 
 	collectionName := testutil.CollectionName(t)
 

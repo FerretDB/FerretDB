@@ -145,7 +145,6 @@ func (r *Registry) databaseGetExisting(ctx context.Context, dbName string) (*pgx
 
 	dbs := r.colls[dbName]
 	if dbs == nil {
-		p.Close()
 		return nil, nil
 	}
 
@@ -347,7 +346,13 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 		return false, lazyerrors.Error(err)
 	}
 
-	q = fmt.Sprintf("INSERT INTO %s (%s) VALUES (?)", metadataTableName, DefaultColumn)
+	// create PG index for collection name
+	// TODO https://github.com/FerretDB/FerretDB/issues/3375
+
+	// create PG index for table name
+	// TODO https://github.com/FerretDB/FerretDB/issues/3375
+
+	q = fmt.Sprintf(`INSERT INTO %s (%s) VALUES ($1)`, pgx.Identifier{dbName, metadataTableName}.Sanitize(), DefaultColumn)
 	if _, err = p.Exec(ctx, q, string(b)); err != nil {
 		_, _ = p.Exec(ctx, fmt.Sprintf("DROP TABLE %s", pgx.Identifier{dbName, tableName}.Sanitize()))
 		return false, lazyerrors.Error(err)
@@ -425,14 +430,20 @@ func (r *Registry) collectionDrop(ctx context.Context, dbName, collectionName st
 		return false, nil
 	}
 
-	q := fmt.Sprintf(`DELETE FROM %s WHERE %s = ?`, metadataTableName, IDColumn)
-	if _, err := p.Exec(ctx, q, c.Name); err != nil {
+	// TODO https://github.com/FerretDB/FerretDB/issues/811
+	q := fmt.Sprintf(`DROP TABLE IF EXISTS %s CASCADE`, pgx.Identifier{dbName, c.TableName}.Sanitize())
+	if _, err = p.Exec(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/811
-	q = fmt.Sprintf(`DROP TABLE IF EXISTS %s CASCADE` + pgx.Identifier{dbName, c.TableName}.Sanitize())
-	if _, err = p.Exec(ctx, q); err != nil {
+	arg, err := sjson.MarshalSingleValue(c.Name)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	q = fmt.Sprintf(`DELETE FROM %s WHERE %s IN ($1)`, pgx.Identifier{dbName, metadataTableName}.Sanitize(), IDColumn)
+	if _, err := p.Exec(ctx, q, arg); err != nil {
+		// the table has been dropped but metadata related to the table is out of sync
 		return false, lazyerrors.Error(err)
 	}
 
@@ -645,6 +656,7 @@ func (r *Registry) indexesDrop(ctx context.Context, dbName, collectionName strin
 
 	q := fmt.Sprintf(`UPDATE %s SET %s = ? WHERE %s = ?`, metadataTableName, DefaultColumn, IDColumn)
 	if _, err := p.Exec(ctx, q, string(b), collectionName); err != nil {
+		// indexes has been dropped, but metadata related to dropped indexes is out of sync
 		return lazyerrors.Error(err)
 	}
 
