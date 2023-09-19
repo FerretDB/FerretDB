@@ -207,3 +207,110 @@ func TestCreateSameStress(t *testing.T) {
 
 	require.Equal(t, int32(1), createdTotal.Load())
 }
+
+func TestDropSameStress(t *testing.T) {
+	ctx := testutil.Ctx(t)
+
+	connInfo := conninfo.NewConnInfo()
+	t.Cleanup(connInfo.Close)
+
+	ctx = conninfo.WithConnInfo(ctx, connInfo)
+
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	u := "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1"
+	r, err := NewRegistry(u, testutil.Logger(t), sp)
+	require.NoError(t, err)
+	t.Cleanup(r.Close)
+
+	dbName := testutil.DatabaseName(t)
+	_, err = r.DatabaseDrop(ctx, dbName)
+	require.NoError(t, err)
+
+	db, err := r.DatabaseGetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+	require.NotNil(t, db)
+
+	t.Cleanup(func() {
+		_, _ = r.DatabaseDrop(ctx, dbName)
+	})
+
+	collectionName := "collection"
+
+	created, err := r.CollectionCreate(ctx, dbName, collectionName)
+	require.NoError(t, err)
+	require.True(t, created)
+
+	var droppedTotal atomic.Int32
+
+	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+		ready <- struct{}{}
+		<-start
+
+		dropped, err := r.CollectionDrop(ctx, dbName, collectionName)
+		require.NoError(t, err)
+		if dropped {
+			droppedTotal.Add(1)
+		}
+	})
+
+	require.Equal(t, int32(1), droppedTotal.Load())
+}
+
+func TestCreateDropSameStress(t *testing.T) {
+	ctx := testutil.Ctx(t)
+
+	connInfo := conninfo.NewConnInfo()
+	t.Cleanup(connInfo.Close)
+
+	ctx = conninfo.WithConnInfo(ctx, connInfo)
+
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	u := "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1"
+	r, err := NewRegistry(u, testutil.Logger(t), sp)
+	require.NoError(t, err)
+	t.Cleanup(r.Close)
+
+	dbName := testutil.DatabaseName(t)
+	_, err = r.DatabaseDrop(ctx, dbName)
+	require.NoError(t, err)
+
+	db, err := r.DatabaseGetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+	require.NotNil(t, db)
+
+	t.Cleanup(func() {
+		_, _ = r.DatabaseDrop(ctx, dbName)
+	})
+
+	collectionName := "collection"
+
+	var i, createdTotal, droppedTotal atomic.Int32
+
+	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+		id := i.Add(1)
+
+		ready <- struct{}{}
+		<-start
+
+		if id%2 == 0 {
+			created, err := r.CollectionCreate(ctx, dbName, collectionName)
+			require.NoError(t, err)
+			if created {
+				createdTotal.Add(1)
+			}
+		} else {
+			dropped, err := r.CollectionDrop(ctx, dbName, collectionName)
+			require.NoError(t, err)
+			if dropped {
+				droppedTotal.Add(1)
+			}
+		}
+	})
+
+	require.Less(t, int32(1), createdTotal.Load())
+	require.Less(t, int32(1), droppedTotal.Load())
+}
