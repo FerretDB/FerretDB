@@ -312,3 +312,40 @@ func TestCreateDropSameStress(t *testing.T) {
 	require.Less(t, int32(1), createdTotal.Load())
 	require.Less(t, int32(1), droppedTotal.Load())
 }
+
+func TestRenameCollection(t *testing.T) {
+	t.Parallel()
+
+	ctx := testutil.Ctx(t)
+	connInfo := conninfo.NewConnInfo()
+	t.Cleanup(connInfo.Close)
+	ctx = conninfo.WithConnInfo(ctx, connInfo)
+
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	u := "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1"
+	r, err := NewRegistry(u, testutil.Logger(t), sp)
+	require.NoError(t, err)
+	t.Cleanup(r.Close)
+
+	dbName := testutil.DatabaseName(t)
+	db, err := r.DatabaseGetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+	require.NotNil(t, db)
+
+	t.Cleanup(func() {
+		_, _ = r.DatabaseDrop(ctx, dbName)
+	})
+
+	oldCollectionName := testutil.CollectionName(t)
+	newCollectionName := "new"
+
+	created, err := r.CollectionCreate(ctx, dbName, oldCollectionName)
+	require.NoError(t, err)
+	require.True(t, created)
+
+	renamed, err := r.CollectionRename(ctx, dbName, oldCollectionName, newCollectionName)
+	require.NoError(t, err)
+	require.True(t, renamed)
+}

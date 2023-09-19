@@ -550,7 +550,7 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 	}
 
 	q := fmt.Sprintf(
-		`UPDATE %s SET %s = ? WHERE %s = ?`,
+		`UPDATE %s SET %s = $1 WHERE %s = $2`,
 		pgx.Identifier{dbName, metadataTableName}.Sanitize(),
 		DefaultColumn,
 		IDColumn,
