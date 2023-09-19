@@ -220,7 +220,7 @@ func GetValue(v any) any {
 		return v.UnixMilli()
 
 	case int32, bool, string:
-		return string(must.NotFail(sjson.MarshalSingleValue(v)))
+		return v
 
 	case types.ObjectID:
 		return hex.EncodeToString(v[:])
