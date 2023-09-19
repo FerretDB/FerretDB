@@ -116,9 +116,9 @@ func (r *Registry) initDBs(ctx context.Context, p *pgxpool.Pool) ([]string, erro
 	// schema names with pg_ prefix are reserved for postgresql hence excluded,
 	// a collection cannot be created in a database with pg_ prefix
 	q := `
-			SELECT schema_name
-			FROM information_schema.schemata
-			WHERE schema_name NOT LIKE 'pg_%';`
+		SELECT schema_name
+		FROM information_schema.schemata
+		WHERE schema_name NOT LIKE 'pg_%'`
 
 	rows, err := p.Query(ctx, q)
 	if err != nil {
@@ -134,12 +134,13 @@ func (r *Registry) initDBs(ctx context.Context, p *pgxpool.Pool) ([]string, erro
 			return nil, lazyerrors.Error(err)
 		}
 
-		// schema created by postgresql (such as `public`) can be used as ferretdb database,
-		// but if it does not contain ferretdb metadata table, it is not used by ferretdb
+		// schema created by postgresql (such as `public`) can be used as
+		// a ferretdb database, but if it does not contain ferretdb metadata table,
+		// it is not used by ferretdb
 		q := `SELECT EXISTS (
-					SELECT 1
-					FROM information_schema.columns
-					WHERE table_schema = $1 AND table_name = $2
+				SELECT 1
+				FROM information_schema.columns
+				WHERE table_schema = $1 AND table_name = $2
 				)`
 
 		var exists bool
