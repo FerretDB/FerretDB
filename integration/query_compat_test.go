@@ -28,39 +28,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
-
-type ResultPushdown uint8
-
-const (
-	NoPushdown     ResultPushdown = 0
-	PgPushdown     ResultPushdown = 1
-	SQLitePushdown ResultPushdown = 2
-
-	AllPushdown ResultPushdown = PgPushdown + SQLitePushdown
-)
-
-func (res ResultPushdown) Add(item ResultPushdown) ResultPushdown {
-	return res + item
-}
-
-func (res ResultPushdown) PushdownExpected(t testtb.TB) bool {
-	if setup.IsPushdownDisabled() {
-		res = NoPushdown
-	}
-
-	switch {
-	case setup.IsSQLite(t):
-		return res&SQLitePushdown == SQLitePushdown
-	case setup.IsPostgres(t):
-		return res&PgPushdown == PgPushdown
-	case setup.IsMongoDB(t):
-		return false
-	default:
-		panic("Invalid ResultPushdown")
-	}
-}
 
 // queryCompatTestCase describes query compatibility test case.
 type queryCompatTestCase struct {
