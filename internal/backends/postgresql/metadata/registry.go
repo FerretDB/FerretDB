@@ -126,25 +126,23 @@ func (r *Registry) DatabaseList(ctx context.Context) ([]string, error) {
 func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) (*pgxpool.Pool, error) {
 	defer observability.FuncCall(ctx)()
 
+	p, err := r.getPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	r.rw.RLock()
 	defer r.rw.RUnlock()
 
-	return r.databaseGetExisting(ctx, dbName)
+	return r.databaseGetExisting(ctx, p, dbName)
 }
 
 // databaseGetExisting returns a connection to existing database or nil if it doesn't exist.
 //
-// If the user is not authenticated, it returns error.
-//
 // It does not hold the lock.
-func (r *Registry) databaseGetExisting(ctx context.Context, dbName string) (*pgxpool.Pool, error) {
-	p, err := r.getPool(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	dbs := r.colls[dbName]
-	if dbs == nil {
+func (r *Registry) databaseGetExisting(ctx context.Context, p *pgxpool.Pool, dbName string) (*pgxpool.Pool, error) {
+	db := r.colls[dbName]
+	if db == nil {
 		return nil, nil
 	}
 
@@ -152,13 +150,20 @@ func (r *Registry) databaseGetExisting(ctx context.Context, dbName string) (*pgx
 }
 
 // DatabaseGetOrCreate returns a connection to existing database or newly created database.
+//
+// If the user is not authenticated, it returns error.
 func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*pgxpool.Pool, error) {
 	defer observability.FuncCall(ctx)()
+
+	p, err := r.getPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	return r.databaseGetOrCreate(ctx, dbName)
+	return r.databaseGetOrCreate(ctx, p, dbName)
 }
 
 // databaseGetOrCreate returns a connection to existing database or newly created database.
@@ -166,18 +171,16 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*pgx
 // The dbName must be a validated database name.
 //
 // It does not hold the lock.
-func (r *Registry) databaseGetOrCreate(ctx context.Context, dbName string) (*pgxpool.Pool, error) {
+func (r *Registry) databaseGetOrCreate(ctx context.Context, p *pgxpool.Pool, dbName string) (*pgxpool.Pool, error) {
 	defer observability.FuncCall(ctx)()
 
-	if p, err := r.databaseGetExisting(ctx, dbName); err != nil {
-		return nil, lazyerrors.Error(err)
-	} else if p != nil {
-		return p, nil
-	}
-
-	p, err := r.getPool(ctx)
+	db, err := r.databaseGetExisting(ctx, p, dbName)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if db != nil {
+		return db, nil
 	}
 
 	q := fmt.Sprintf(
@@ -196,7 +199,7 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, dbName string) (*pgx
 	)
 
 	if _, err = p.Exec(ctx, q); err != nil {
-		_, _ = r.databaseDrop(ctx, dbName)
+		_, _ = r.databaseDrop(ctx, p, dbName)
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -208,13 +211,20 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, dbName string) (*pgx
 // DatabaseDrop drops the database.
 //
 // Returned boolean value indicates whether the database was dropped.
+//
+// If the user is not authenticated, it returns error.
 func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
+
+	p, err := r.getPool(ctx)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	return r.databaseDrop(ctx, dbName)
+	return r.databaseDrop(ctx, p, dbName)
 }
 
 // DatabaseDrop drops the database.
@@ -222,21 +232,16 @@ func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) (bool, error
 // Returned boolean value indicates whether the database was dropped.
 //
 // It does not hold the lock.
-func (r *Registry) databaseDrop(ctx context.Context, dbName string) (bool, error) {
+func (r *Registry) databaseDrop(ctx context.Context, p *pgxpool.Pool, dbName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	p, err := r.databaseGetExisting(ctx, dbName)
+	db, err := r.databaseGetExisting(ctx, p, dbName)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	if p == nil {
+	if db == nil {
 		return false, nil
-	}
-
-	p, err = r.getPool(ctx)
-	if err != nil {
-		return false, lazyerrors.Error(err)
 	}
 
 	q := fmt.Sprintf(
@@ -287,13 +292,20 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 //
 // Returned boolean value indicates whether the collection was created.
 // If collection already exists, (false, nil) is returned.
+//
+// If the user is not authenticated, it returns error.
 func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
+
+	p, err := r.getPool(ctx)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	return r.collectionCreate(ctx, dbName, collectionName)
+	return r.collectionCreate(ctx, p, dbName, collectionName)
 }
 
 // collectionCreate creates a collection in the database.
@@ -303,10 +315,10 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 // If collection already exists, (false, nil) is returned.
 //
 // It does not hold the lock.
-func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
+func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName, collectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	p, err := r.databaseGetOrCreate(ctx, dbName)
+	p, err := r.databaseGetOrCreate(ctx, p, dbName)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -388,13 +400,19 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 // It can be safely modified by a caller.
 //
 // If database or collection does not exist, nil is returned.
-func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName string) *Collection {
+//
+// If the user is not authenticated, it returns error.
+func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName string) (*Collection, error) {
 	defer observability.FuncCall(ctx)()
+
+	if _, err := r.getPool(ctx); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	r.rw.RLock()
 	defer r.rw.RUnlock()
 
-	return r.collectionGet(dbName, collectionName)
+	return r.collectionGet(dbName, collectionName), nil
 }
 
 // collectionGet returns a copy of collection metadata.
@@ -416,13 +434,20 @@ func (r *Registry) collectionGet(dbName, collectionName string) *Collection {
 //
 // Returned boolean value indicates whether the collection was dropped.
 // If database or collection did not exist, (false, nil) is returned.
+//
+// If the user is not authenticated, it returns error.
 func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
+
+	p, err := r.getPool(ctx)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	return r.collectionDrop(ctx, dbName, collectionName)
+	return r.collectionDrop(ctx, p, dbName, collectionName)
 }
 
 // collectionDrop drops a collection in the database.
@@ -431,15 +456,15 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 // If database or collection did not exist, (false, nil) is returned.
 //
 // It does not hold the lock.
-func (r *Registry) collectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
+func (r *Registry) collectionDrop(ctx context.Context, p *pgxpool.Pool, dbName, collectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	p, err := r.databaseGetExisting(ctx, dbName)
+	db, err := r.databaseGetExisting(ctx, p, dbName)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	if p == nil {
+	if db == nil {
 		return false, nil
 	}
 
@@ -485,18 +510,25 @@ func (r *Registry) collectionDrop(ctx context.Context, dbName, collectionName st
 //
 // Returned boolean value indicates whether the collection was renamed.
 // If database or collection did not exist, (false, nil) is returned.
+//
+// If the user is not authenticated, it returns error.
 func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	r.rw.Lock()
-	defer r.rw.Unlock()
-
-	p, err := r.databaseGetExisting(ctx, dbName)
+	p, err := r.getPool(ctx)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
-	if p == nil {
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	db, err := r.databaseGetExisting(ctx, p, dbName)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	if db == nil {
 		return false, nil
 	}
 

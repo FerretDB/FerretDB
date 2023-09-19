@@ -34,7 +34,8 @@ import (
 func testCollection(t *testing.T, ctx context.Context, r *Registry, db *pgxpool.Pool, dbName, collectionName string) {
 	t.Helper()
 
-	c := r.CollectionGet(ctx, dbName, collectionName)
+	c, err := r.CollectionGet(ctx, dbName, collectionName)
+	require.NoError(t, err)
 	require.Nil(t, c)
 
 	created, err := r.CollectionCreate(ctx, dbName, collectionName)
@@ -45,7 +46,8 @@ func testCollection(t *testing.T, ctx context.Context, r *Registry, db *pgxpool.
 	require.NoError(t, err)
 	require.False(t, created)
 
-	c = r.CollectionGet(ctx, dbName, collectionName)
+	c, err = r.CollectionGet(ctx, dbName, collectionName)
+	require.NoError(t, err)
 	require.NotNil(t, c)
 	require.Equal(t, collectionName, c.Name)
 
@@ -53,7 +55,11 @@ func testCollection(t *testing.T, ctx context.Context, r *Registry, db *pgxpool.
 	require.NoError(t, err)
 	require.Contains(t, list, c)
 
-	q := fmt.Sprintf(`INSERT INTO %s (%s) VALUES($1)`, pgx.Identifier{dbName, c.TableName}.Sanitize(), DefaultColumn)
+	q := fmt.Sprintf(
+		`INSERT INTO %s (%s) VALUES($1)`,
+		pgx.Identifier{dbName, c.TableName}.Sanitize(),
+		DefaultColumn,
+	)
 	doc := `{"$s": {"p": {"_id": {"t": "int"}}, "$k": ["_id"]}, "_id": 42}`
 	_, err = db.Exec(ctx, q, doc)
 	require.NoError(t, err)
@@ -66,7 +72,8 @@ func testCollection(t *testing.T, ctx context.Context, r *Registry, db *pgxpool.
 	require.NoError(t, err)
 	require.False(t, dropped)
 
-	c = r.CollectionGet(ctx, dbName, collectionName)
+	c, err = r.CollectionGet(ctx, dbName, collectionName)
+	require.NoError(t, err)
 	require.Nil(t, c)
 }
 
@@ -74,10 +81,8 @@ func TestCreateDrop(t *testing.T) {
 	t.Parallel()
 
 	ctx := testutil.Ctx(t)
-
 	connInfo := conninfo.NewConnInfo()
 	t.Cleanup(connInfo.Close)
-
 	ctx = conninfo.WithConnInfo(ctx, connInfo)
 
 	sp, err := state.NewProvider("")
@@ -89,7 +94,6 @@ func TestCreateDrop(t *testing.T) {
 	t.Cleanup(r.Close)
 
 	dbName := testutil.DatabaseName(t)
-
 	db, err := r.DatabaseGetOrCreate(ctx, dbName)
 	require.NoError(t, err)
 	require.NotNil(t, db)
@@ -99,16 +103,13 @@ func TestCreateDrop(t *testing.T) {
 	})
 
 	collectionName := testutil.CollectionName(t)
-
 	testCollection(t, ctx, r, db, dbName, collectionName)
 }
 
 func TestCreateDropStress(t *testing.T) {
 	ctx := testutil.Ctx(t)
-
 	connInfo := conninfo.NewConnInfo()
 	t.Cleanup(connInfo.Close)
-
 	ctx = conninfo.WithConnInfo(ctx, connInfo)
 
 	sp, err := state.NewProvider("")
@@ -145,10 +146,8 @@ func TestCreateDropStress(t *testing.T) {
 
 func TestCreateSameStress(t *testing.T) {
 	ctx := testutil.Ctx(t)
-
 	connInfo := conninfo.NewConnInfo()
 	t.Cleanup(connInfo.Close)
-
 	ctx = conninfo.WithConnInfo(ctx, connInfo)
 
 	sp, err := state.NewProvider("")
@@ -171,7 +170,7 @@ func TestCreateSameStress(t *testing.T) {
 		_, _ = r.DatabaseDrop(ctx, dbName)
 	})
 
-	collectionName := "collection"
+	collectionName := testutil.CollectionName(t)
 
 	var i, createdTotal atomic.Int32
 
@@ -191,7 +190,8 @@ func TestCreateSameStress(t *testing.T) {
 		require.NoError(t, err)
 		require.False(t, created)
 
-		c := r.CollectionGet(ctx, dbName, collectionName)
+		c, err := r.CollectionGet(ctx, dbName, collectionName)
+		require.NoError(t, err)
 		require.NotNil(t, c)
 		require.Equal(t, collectionName, c.Name)
 
@@ -199,7 +199,11 @@ func TestCreateSameStress(t *testing.T) {
 		require.NoError(t, err)
 		require.Contains(t, list, c)
 
-		q := fmt.Sprintf("INSERT INTO %s (%s) VALUES($1)", pgx.Identifier{dbName, c.TableName}.Sanitize(), DefaultColumn)
+		q := fmt.Sprintf(
+			"INSERT INTO %s (%s) VALUES($1)",
+			pgx.Identifier{dbName, c.TableName}.Sanitize(),
+			DefaultColumn,
+		)
 		doc := fmt.Sprintf(`{"$s": {"p": {"_id": {"t": "int"}}, "$k": ["_id"]}, "_id": %d}`, id)
 		_, err = db.Exec(ctx, q, doc)
 		require.NoError(t, err)
@@ -210,10 +214,8 @@ func TestCreateSameStress(t *testing.T) {
 
 func TestDropSameStress(t *testing.T) {
 	ctx := testutil.Ctx(t)
-
 	connInfo := conninfo.NewConnInfo()
 	t.Cleanup(connInfo.Close)
-
 	ctx = conninfo.WithConnInfo(ctx, connInfo)
 
 	sp, err := state.NewProvider("")
@@ -236,8 +238,7 @@ func TestDropSameStress(t *testing.T) {
 		_, _ = r.DatabaseDrop(ctx, dbName)
 	})
 
-	collectionName := "collection"
-
+	collectionName := testutil.CollectionName(t)
 	created, err := r.CollectionCreate(ctx, dbName, collectionName)
 	require.NoError(t, err)
 	require.True(t, created)
@@ -260,10 +261,8 @@ func TestDropSameStress(t *testing.T) {
 
 func TestCreateDropSameStress(t *testing.T) {
 	ctx := testutil.Ctx(t)
-
 	connInfo := conninfo.NewConnInfo()
 	t.Cleanup(connInfo.Close)
-
 	ctx = conninfo.WithConnInfo(ctx, connInfo)
 
 	sp, err := state.NewProvider("")
@@ -286,8 +285,7 @@ func TestCreateDropSameStress(t *testing.T) {
 		_, _ = r.DatabaseDrop(ctx, dbName)
 	})
 
-	collectionName := "collection"
-
+	collectionName := testutil.CollectionName(t)
 	var i, createdTotal, droppedTotal atomic.Int32
 
 	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
