@@ -134,13 +134,6 @@ func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) (*pgx
 	r.rw.RLock()
 	defer r.rw.RUnlock()
 
-	return r.databaseGetExisting(ctx, p, dbName)
-}
-
-// databaseGetExisting returns a connection to existing database or nil if it doesn't exist.
-//
-// It does not hold the lock.
-func (r *Registry) databaseGetExisting(ctx context.Context, p *pgxpool.Pool, dbName string) (*pgxpool.Pool, error) {
 	db := r.colls[dbName]
 	if db == nil {
 		return nil, nil
@@ -174,13 +167,9 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*pgx
 func (r *Registry) databaseGetOrCreate(ctx context.Context, p *pgxpool.Pool, dbName string) (*pgxpool.Pool, error) {
 	defer observability.FuncCall(ctx)()
 
-	db, err := r.databaseGetExisting(ctx, p, dbName)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
+	db := r.colls[dbName]
 	if db != nil {
-		return db, nil
+		return p, nil
 	}
 
 	q := fmt.Sprintf(
@@ -188,6 +177,7 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *pgxpool.Pool, dbN
 		pgx.Identifier{dbName}.Sanitize(),
 	)
 
+	var err error
 	if _, err = p.Exec(ctx, q); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -235,11 +225,7 @@ func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) (bool, error
 func (r *Registry) databaseDrop(ctx context.Context, p *pgxpool.Pool, dbName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	db, err := r.databaseGetExisting(ctx, p, dbName)
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
+	db := r.colls[dbName]
 	if db == nil {
 		return false, nil
 	}
@@ -318,7 +304,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName, collectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	p, err := r.databaseGetOrCreate(ctx, p, dbName)
+	_, err := r.databaseGetOrCreate(ctx, p, dbName)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -459,11 +445,7 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 func (r *Registry) collectionDrop(ctx context.Context, p *pgxpool.Pool, dbName, collectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	db, err := r.databaseGetExisting(ctx, p, dbName)
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
+	db := r.colls[dbName]
 	if db == nil {
 		return false, nil
 	}
@@ -479,6 +461,7 @@ func (r *Registry) collectionDrop(ctx context.Context, p *pgxpool.Pool, dbName, 
 		pgx.Identifier{dbName, c.TableName}.Sanitize(),
 	)
 
+	var err error
 	if _, err = p.Exec(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -523,11 +506,7 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	db, err := r.databaseGetExisting(ctx, p, dbName)
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
+	db := r.colls[dbName]
 	if db == nil {
 		return false, nil
 	}
