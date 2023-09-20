@@ -118,11 +118,13 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 		// change in the future.
 		queryPath := metadata.IDColumn
 
+		var keyArgs []any
+
 		if k != "_id" {
 			// To use parameters inside of SQLite json path the parameter token ("?")
 			// needs to be concatenated to path with || operator.
 			queryPath = fmt.Sprintf("%s->('$.' || ? )", metadata.DefaultColumn)
-			args = append(args, k)
+			keyArgs = append(keyArgs, k)
 		}
 
 		// don't pushdown $comment
@@ -173,8 +175,9 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			}
 
 			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value %s)`, queryPath, comparison)
-
 			filters = append(filters, subquery)
+
+			args = append(args, keyArgs...)
 			args = append(args, parseValue(v))
 
 		case float64:
@@ -192,14 +195,16 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			}
 
 			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value %s)`, queryPath, comparison)
-
 			filters = append(filters, subquery)
+
+			args = append(args, keyArgs...)
 			args = append(args, parseValue(v))
 
 		case types.ObjectID, time.Time, int32, bool, string:
 			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath)
-
 			filters = append(filters, subquery)
+
+			args = append(args, keyArgs...)
 			args = append(args, parseValue(v))
 
 		default:
