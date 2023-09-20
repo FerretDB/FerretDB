@@ -113,10 +113,11 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			return "", nil, lazyerrors.Error(err)
 		}
 
-		queryPath := fmt.Sprintf("%s->'$.\"%s\"'", metadata.DefaultColumn, k)
+		queryPath := metadata.IDColumn
 
-		if k == "_id" {
-			queryPath = metadata.IDColumn
+		if k != "_id" {
+			queryPath = fmt.Sprintf("%s->('$.' || ? )", metadata.DefaultColumn)
+			args = append(args, k)
 		}
 
 		// don't pushdown $comment, it's attached to query in handlers
@@ -192,17 +193,14 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			args = append(args, parseValue(v))
 
 		case types.ObjectID, time.Time, int32, bool, string:
-			//			queryPath := fmt.Sprintf("%s->'$.\"?\"'", metadata.DefaultColumn)
-
 			if k == "_id" {
 				queryPath = metadata.IDColumn
 			}
 
-			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%s->('$.' || ? )) WHERE value = ?)`, metadata.DefaultColumn) // TODO sanitize the key
+			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
 
 			filters = append(filters, subquery)
-
-			args = append(args, k, parseValue(v))
+			args = append(args, parseValue(v))
 
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
