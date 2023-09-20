@@ -101,6 +101,10 @@ func createDatabase(t *testing.T, ctx context.Context) (r *Registry, db *pgxpool
 }
 
 func TestCreateDrop(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	t.Parallel()
 
 	connInfo := conninfo.New()
@@ -112,6 +116,10 @@ func TestCreateDrop(t *testing.T) {
 }
 
 func TestCreateDropStress(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	connInfo := conninfo.New()
 	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
@@ -134,6 +142,10 @@ func TestCreateDropStress(t *testing.T) {
 }
 
 func TestCreateSameStress(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	connInfo := conninfo.New()
 	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
@@ -181,6 +193,10 @@ func TestCreateSameStress(t *testing.T) {
 }
 
 func TestDropSameStress(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	connInfo := conninfo.New()
 	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
@@ -207,6 +223,10 @@ func TestDropSameStress(t *testing.T) {
 }
 
 func TestCreateDropSameStress(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	connInfo := conninfo.New()
 	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
@@ -240,6 +260,10 @@ func TestCreateDropSameStress(t *testing.T) {
 }
 
 func TestCheckDatabaseUpdated(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	t.Parallel()
 
 	connInfo := conninfo.New()
@@ -303,6 +327,10 @@ func TestCheckDatabaseUpdated(t *testing.T) {
 }
 
 func TestRenameCollection(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	t.Parallel()
 
 	connInfo := conninfo.New()
