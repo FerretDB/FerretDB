@@ -160,7 +160,7 @@ jobs:
           git diff --exit-code
 
   integration:
-    name: Integration ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
+    name: Integration ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }} (pushdown=${{ matrix.pushdown || true }})
     runs-on:
       group: paid
     timeout-minutes: 20
@@ -168,7 +168,7 @@ jobs:
     # Do not run this job in parallel for any PR change or branch push
     # to save some resources.
     concurrency:
-      group: ${{ github.workflow }}-integration-${{ matrix.name }}-${{ matrix.shard_index }}-${{ github.head_ref || github.ref_name }}
+      group: ${{ github.workflow }}-integration-${{ matrix.name }}-${{ matrix.shard_index }}-${{ matrix.pushdown || true }}-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: true
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
@@ -187,9 +187,9 @@ jobs:
 
           # move that to cron-only workflow
           # TODO https://github.com/FerretDB/FerretDB/issues/3126
-          - { name: "SQLite", task: "sqlite", shard_index: 1, shard_total: 3, disable_filter_pushdown: true }
-          - { name: "SQLite", task: "sqlite", shard_index: 2, shard_total: 3, disable_filter_pushdown: true }
-          - { name: "SQLite", task: "sqlite", shard_index: 3, shard_total: 3, disable_filter_pushdown: true }
+          - { name: "SQLite", task: "sqlite", shard_index: 1, shard_total: 3, pushdown: true }
+          - { name: "SQLite", task: "sqlite", shard_index: 2, shard_total: 3, pushdown: true }
+          - { name: "SQLite", task: "sqlite", shard_index: 3, shard_total: 3, pushdown: true }
 
     steps:
       - name: Setup permissions monitoring
@@ -220,12 +220,12 @@ jobs:
       - name: Wait for and setup environment
         run: bin/task env-setup
 
-      - name: Run ${{ matrix.name }} tests (${{ matrix.shard_index }}/${{ matrix.shard_total }})
+      - name: Run ${{ matrix.name }} tests (${{ matrix.shard_index }}/${{ matrix.shard_total }}, pushdown=${{ matrix.pushdown || true }})
         run: >
           bin/task test-integration-${{ matrix.task }}
           SHARD_INDEX=${{ matrix.shard_index }}
           SHARD_TOTAL=${{ matrix.shard_total }}
-          DISABLE_FILTER_PUSHDOWN=${{ matrix.disable_filter_pushdown || false }}
+          DISABLE_FILTER_PUSHDOWN=${{ !matrix.pushdown || true }}
         env:
           GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
 
