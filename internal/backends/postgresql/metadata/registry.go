@@ -171,9 +171,6 @@ func (r *Registry) initDBs(ctx context.Context, p *pgxpool.Pool) ([]string, erro
 func (r *Registry) initCollections(ctx context.Context, dbName string, p *pgxpool.Pool) error {
 	defer observability.FuncCall(ctx)()
 
-	r.rw.Lock()
-	defer r.rw.Unlock()
-
 	q := fmt.Sprintf(
 		`SELECT %s FROM %s`,
 		DefaultColumn,
@@ -233,6 +230,8 @@ func (r *Registry) getPool(ctx context.Context) (*pgxpool.Pool, error) {
 }
 
 // DatabaseList returns a sorted list of existing databases.
+//
+// If the user is not authenticated, [getPool] returns error.
 func (r *Registry) DatabaseList(ctx context.Context) ([]string, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -251,7 +250,7 @@ func (r *Registry) DatabaseList(ctx context.Context) ([]string, error) {
 
 // DatabaseGetExisting returns a connection to existing database or nil if it doesn't exist.
 //
-// If the user is not authenticated, it returns error.
+// If the user is not authenticated, [getPool] returns error.
 func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) (*pgxpool.Pool, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -275,7 +274,7 @@ func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) (*pgx
 //
 // The dbName must be a validated database name.
 //
-// If the user is not authenticated, it returns error.
+// If the user is not authenticated, [getPool] returns error.
 func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*pgxpool.Pool, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -334,7 +333,7 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *pgxpool.Pool, dbN
 // Returned boolean value indicates whether the database was dropped.
 // If database does not exist, (false, nil) is returned.
 //
-// If the user is not authenticated, it returns error.
+// If the user is not authenticated, [getPool] returns error.
 func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -380,6 +379,8 @@ func (r *Registry) databaseDrop(ctx context.Context, p *pgxpool.Pool, dbName str
 // CollectionList returns a sorted copy of collections in the database.
 //
 // If database does not exist, no error is returned.
+//
+// If the user is not authenticated, [DatabaseGetExisting] returns error.
 func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collection, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -412,7 +413,7 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 // Returned boolean value indicates whether the collection was created.
 // If collection already exists, (false, nil) is returned.
 //
-// If the user is not authenticated, it returns error.
+// If the user is not authenticated, [getPool] returns error.
 func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -520,7 +521,7 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 //
 // If database or collection does not exist, nil is returned.
 //
-// If the user is not authenticated, it returns error.
+// If the user is not authenticated, [getPool] returns error.
 func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName string) (*Collection, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -554,7 +555,7 @@ func (r *Registry) collectionGet(dbName, collectionName string) *Collection {
 // Returned boolean value indicates whether the collection was dropped.
 // If database or collection did not exist, (false, nil) is returned.
 //
-// If the user is not authenticated, it returns error.
+// If the user is not authenticated, [getPool] returns error.
 func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -627,7 +628,7 @@ func (r *Registry) collectionDrop(ctx context.Context, p *pgxpool.Pool, dbName, 
 // Returned boolean value indicates whether the collection was renamed.
 // If database or collection did not exist, (false, nil) is returned.
 //
-// If the user is not authenticated, it returns error.
+// If the user is not authenticated, [getPool] returns error.
 func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
