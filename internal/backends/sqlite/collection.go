@@ -115,14 +115,15 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 
 		// queryPath stores the path that is used in SQLite to access specific key
 		// if the key is _id we use our predifined path, as the handling of _id may
-		// change in the future.
+		// change in the future
 		queryPath := metadata.IDColumn
 
+		// keyArgs store the optional parameters used to query the key
 		var keyArgs []any
 
 		if k != "_id" {
 			// To use parameters inside of SQLite json path the parameter token ("?")
-			// needs to be concatenated to path with || operator.
+			// needs to be concatenated to path with || operator
 			queryPath = fmt.Sprintf("%s->('$.' || ? )", metadata.DefaultColumn)
 			keyArgs = append(keyArgs, k)
 		}
@@ -161,7 +162,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 
 			var comparison string
 
-			// If value cannot be safe double, fetch all numbers out of the safe range.
+			// If value cannot be safe double, fetch all numbers out of the safe range
 			switch {
 			case v > maxSafeDouble:
 				comparison = ` > ?`
