@@ -70,6 +70,14 @@ func TestDocument(t *testing.T) {
 		assert.EqualError(t, err, `types.NewDocument: invalid key type: int`)
 	})
 
+	t.Run("Invalid", func(t *testing.T) {
+		t.Parallel()
+
+		assert.Panics(t, func() {
+			_, _ = NewDocument("foo", 42)
+		})
+	})
+
 	t.Run("Freeze", func(t *testing.T) {
 		t.Parallel()
 
