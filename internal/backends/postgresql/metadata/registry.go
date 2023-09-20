@@ -86,11 +86,13 @@ func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error)
 
 	dbPool, err := r.getPool(ctx)
 	if err != nil {
+		r.Close()
 		return nil, lazyerrors.Error(err)
 	}
 
 	dbs, err := r.initDBs(ctx, dbPool)
 	if err != nil {
+		r.Close()
 		return nil, lazyerrors.Error(err)
 	}
 
