@@ -128,7 +128,7 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 
 					var msg string
 					if setup.IsPushdownDisabled() {
-						resultPushdown = NoPushdown
+						resultPushdown = noPushdown
 						msg = "Query pushdown is disabled, but target resulted with pushdown"
 					}
 
@@ -201,27 +201,27 @@ func TestQueryCompatFilter(t *testing.T) {
 		},
 		"String": {
 			filter:         bson.D{{"v", "foo"}},
-			resultPushdown: AllPushdown,
+			resultPushdown: allPushdown,
 		},
 		"Int32": {
 			filter:         bson.D{{"v", int32(42)}},
-			resultPushdown: AllPushdown,
+			resultPushdown: allPushdown,
 		},
 		"IDString": {
 			filter:         bson.D{{"_id", "string"}},
-			resultPushdown: AllPushdown,
+			resultPushdown: allPushdown,
 		},
 		"IDNilObjectID": {
 			filter:         bson.D{{"_id", primitive.NilObjectID}},
-			resultPushdown: AllPushdown,
+			resultPushdown: allPushdown,
 		},
 		"IDObjectID": {
 			filter:         bson.D{{"_id", primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11}}},
-			resultPushdown: AllPushdown,
+			resultPushdown: allPushdown,
 		},
 		"ObjectID": {
 			filter:         bson.D{{"v", primitive.NilObjectID}},
-			resultPushdown: AllPushdown,
+			resultPushdown: allPushdown,
 		},
 		"UnknownFilterOperator": {
 			filter:     bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}},

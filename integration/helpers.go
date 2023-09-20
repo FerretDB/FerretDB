@@ -463,24 +463,24 @@ func createNestedDocument(n int, arr bool) any {
 type ResultPushdown uint8
 
 const (
-	NoPushdown     ResultPushdown = 0
-	PgPushdown     ResultPushdown = 1
-	SQLitePushdown ResultPushdown = 2
+	noPushdown     ResultPushdown = 0
+	pgPushdown     ResultPushdown = 1
+	sqlitePushdown ResultPushdown = 2
 
-	AllPushdown ResultPushdown = PgPushdown + SQLitePushdown
+	allPushdown ResultPushdown = pgPushdown + sqlitePushdown
 )
 
 // PushdownExpected returns true if the pushdown is expected for currently running backend.
 func (res ResultPushdown) PushdownExpected(t testtb.TB) bool {
 	if setup.IsPushdownDisabled() {
-		res = NoPushdown
+		res = noPushdown
 	}
 
 	switch {
 	case setup.IsSQLite(t):
-		return res&SQLitePushdown == SQLitePushdown
+		return res&sqlitePushdown == sqlitePushdown
 	case setup.IsPostgres(t):
-		return res&PgPushdown == PgPushdown
+		return res&pgPushdown == pgPushdown
 	case setup.IsMongoDB(t):
 		return false
 	default:

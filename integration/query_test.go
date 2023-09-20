@@ -880,7 +880,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			filter:        bson.D{{"_id", "array"}},
 			limit:         3,
 			len:           1,
-			queryPushdown: AllPushdown,
+			queryPushdown: allPushdown,
 			limitPushdown: false,
 		},
 		"ValueFilter": {
@@ -888,28 +888,28 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           3,
-			queryPushdown: AllPushdown,
+			queryPushdown: allPushdown,
 			limitPushdown: false,
 		},
 		"DotNotationFilter": {
 			filter:        bson.D{{"v.foo", 42}},
 			limit:         3,
 			len:           3,
-			queryPushdown: NoPushdown,
+			queryPushdown: noPushdown,
 			limitPushdown: false,
 		},
 		"ObjectFilter": {
 			filter:        bson.D{{"v", bson.D{{"foo", nil}}}},
 			limit:         3,
 			len:           1,
-			queryPushdown: NoPushdown,
+			queryPushdown: noPushdown,
 			limitPushdown: false,
 		},
 		"Sort": {
 			sort:          bson.D{{"_id", 1}},
 			limit:         2,
 			len:           2,
-			queryPushdown: NoPushdown,
+			queryPushdown: noPushdown,
 			limitPushdown: true,
 		},
 		"IDFilterSort": {
@@ -917,7 +917,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           1,
-			queryPushdown: AllPushdown,
+			queryPushdown: allPushdown,
 			limitPushdown: false,
 		},
 		"ValueFilterSort": {
@@ -925,7 +925,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           3,
-			queryPushdown: AllPushdown,
+			queryPushdown: allPushdown,
 			limitPushdown: false,
 		},
 		"DotNotationFilterSort": {
@@ -933,7 +933,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           3,
-			queryPushdown: NoPushdown,
+			queryPushdown: noPushdown,
 			limitPushdown: false,
 		},
 		"ObjectFilterSort": {
@@ -941,7 +941,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           1,
-			queryPushdown: NoPushdown,
+			queryPushdown: noPushdown,
 			limitPushdown: false,
 		},
 		"Skip": {
@@ -1007,7 +1007,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				resultPushdown := tc.queryPushdown
 
 				if setup.IsPushdownDisabled() {
-					resultPushdown = NoPushdown
+					resultPushdown = noPushdown
 					msg = "Query pushdown is disabled, but target resulted with pushdown"
 				}
 

@@ -116,7 +116,7 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 					var msg string
 					// TODO move the msg logic into the PushdownExpected()
 					if setup.IsPushdownDisabled() {
-						resultPushdown = NoPushdown
+						resultPushdown = noPushdown
 						msg = "Query pushdown is disabled, but target resulted with pushdown"
 					}
 
@@ -330,7 +330,7 @@ func TestAggregateCompatStages(t *testing.T) {
 				bson.D{{"$count", "v"}},
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
-			resultPushdown: PgPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"CountAndMatch": {
 			pipeline: bson.A{
@@ -991,7 +991,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 				bson.D{{"$limit", 1}},
 			},
-			resultPushdown: PgPushdown, // $sort and $match are first two stages
+			resultPushdown: pgPushdown, // $sort and $match are first two stages
 		},
 		"BeforeMatch": {
 			pipeline: bson.A{
@@ -1006,7 +1006,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 				bson.D{{"$limit", 100}},
 			},
-			resultPushdown: PgPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"NoSortBeforeMatch": {
 			pipeline: bson.A{
@@ -1251,19 +1251,19 @@ func TestAggregateCompatMatch(t *testing.T) {
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"ID": {
 			pipeline:       bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
-			resultPushdown: PgPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Int": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", 42}}}},
 			},
-			resultPushdown: PgPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"String": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 			},
-			resultPushdown: PgPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Document": {
 			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"foo", int32(42)}}}}}}},
@@ -1573,7 +1573,7 @@ func TestAggregateCompatSkip(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 				bson.D{{"$skip", int32(1)}},
 			},
-			resultPushdown: PgPushdown, // $match after $sort can be pushed down
+			resultPushdown: pgPushdown, // $match after $sort can be pushed down
 		},
 		"BeforeMatch": {
 			pipeline: bson.A{
