@@ -458,16 +458,17 @@ func createNestedDocument(n int, arr bool) any {
 }
 
 // ResultPushdown stores the information about expected pushdown results for a single or multiple backends.
-// For example if both pg and SQlite backends are expected to pushdown, the `PgPushdown + SQLitePushdown` operation
+// For example if both pg and SQlite backends are expected to pushdown, the `pgPushdown + sqlitePushdown` operation
 // can be used.
 type ResultPushdown uint8
 
 const (
-	noPushdown     ResultPushdown = 0
-	pgPushdown     ResultPushdown = 1
-	sqlitePushdown ResultPushdown = 2
+	noPushdown     ResultPushdown = 0 // 0000 0000
+	pgPushdown     ResultPushdown = 1 // 0000 0001
+	sqlitePushdown ResultPushdown = 2 // 0000 0010
 
-	allPushdown ResultPushdown = pgPushdown + sqlitePushdown
+	// allPushdown expects all backends to result in pushdown
+	allPushdown ResultPushdown = 0xFF // 1111 1111
 )
 
 // PushdownExpected returns true if the pushdown is expected for currently running backend.
@@ -484,6 +485,6 @@ func (res ResultPushdown) PushdownExpected(t testtb.TB) bool {
 	case setup.IsMongoDB(t):
 		return false
 	default:
-		panic("Invalid ResultPushdown")
+		panic("Unknown backend")
 	}
 }
