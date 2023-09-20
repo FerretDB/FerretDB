@@ -124,7 +124,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 		if k != "_id" {
 			// To use parameters inside of SQLite json path the parameter token ("?")
 			// needs to be concatenated to path with || operator
-			queryPath = fmt.Sprintf("%s->('$.' || ? )", metadata.DefaultColumn)
+			queryPath = fmt.Sprintf(`%s->('$."' || ? || '"' )`, metadata.DefaultColumn)
 			keyArgs = append(keyArgs, k)
 		}
 
