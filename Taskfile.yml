@@ -8,6 +8,7 @@ env:
 vars:
   SHARD_INDEX: 1
   SHARD_TOTAL: 1
+  DISABLE_FILTER_PUSHDOWN: false
   TEST_RUN: ""
   TEST_TIMEOUT: 35m
   BENCH_TIME: 5s
@@ -205,7 +206,7 @@ tasks:
         sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
 
   test-integration-sqlite:
-    desc: "Run integration tests for `sqlite` handler"
+    desc: "Run integration tests for `sqlite` backend"
     dir: integration
     cmds:
       - >
@@ -215,6 +216,7 @@ tasks:
         -sqlite-url=file:../tmp/sqlite-tests/
         -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
     vars:
       SHARD_RUN:
         sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
