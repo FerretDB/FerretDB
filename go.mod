@@ -6,7 +6,7 @@ toolchain go1.21.1
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/SAP/go-hdb v1.4.6
+	github.com/SAP/go-hdb v1.5.2
 	github.com/alecthomas/kong v0.8.0
 	github.com/google/uuid v1.3.1
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
@@ -19,15 +19,14 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/otel v1.18.0
 	go.opentelemetry.io/otel/trace v1.18.0
-	go.uber.org/zap v1.25.0
-	golang.org/x/crypto v0.12.0 // indirect; always use @latest
+	go.uber.org/zap v1.26.0
+	golang.org/x/crypto v0.13.0 // indirect; always use @latest
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 	golang.org/x/sys v0.12.0
 	modernc.org/sqlite v1.25.0
 )
 
 require (
-	github.com/benbjohnson/clock v1.3.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
