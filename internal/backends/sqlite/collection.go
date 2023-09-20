@@ -153,14 +153,43 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 		}
 
 		switch v := v.(type) {
-		case *types.Array, *types.Document, types.Binary, types.NullType, types.Regex, types.Timestamp:
+		case *types.Document, *types.Array, types.Binary, types.NullType, types.Regex, types.Timestamp:
 			// type not supported for pushdown
 			continue
 
-		case int64:
-			maxSafeDouble := int64(types.MaxSafeDouble)
-
+		case float64:
 			var comparison string
+
+			switch {
+			case v > types.MaxSafeDouble:
+				comparison = ` > ?`
+				v = types.MaxSafeDouble
+
+			case v < -types.MaxSafeDouble:
+				comparison = ` < ?`
+				v = -types.MaxSafeDouble
+			default:
+				// don't change the default eq query
+			}
+
+			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value %s)`, queryPath, comparison)
+			filters = append(filters, subquery)
+
+			// TODO https://github.com/FerretDB/FerretDB/issues/3386
+			args = append(args, keyArgs...)
+			args = append(args, parseValue(v))
+
+		case types.ObjectID, time.Time, string, bool, int32:
+			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath)
+			filters = append(filters, subquery)
+
+			// TODO https://github.com/FerretDB/FerretDB/issues/3386
+			args = append(args, keyArgs...)
+			args = append(args, parseValue(v))
+
+		case int64:
+			var comparison string
+			maxSafeDouble := int64(types.MaxSafeDouble)
 
 			// If value cannot be safe double, fetch all numbers out of the safe range
 			switch {
@@ -183,35 +212,6 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			args = append(args, keyArgs...)
 			args = append(args, parseValue(v))
 
-		case float64:
-			var comparison string
-			switch {
-			case v > types.MaxSafeDouble:
-				comparison = ` > ?`
-				v = types.MaxSafeDouble
-
-			case v < -types.MaxSafeDouble:
-				comparison = ` < ?`
-				v = -types.MaxSafeDouble
-			default:
-				// don't change the default eq query
-			}
-
-			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value %s)`, queryPath, comparison)
-			filters = append(filters, subquery)
-
-			// TODO https://github.com/FerretDB/FerretDB/issues/3386
-			args = append(args, keyArgs...)
-			args = append(args, parseValue(v))
-
-		case types.ObjectID, time.Time, int32, bool, string:
-			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath)
-			filters = append(filters, subquery)
-
-			// TODO https://github.com/FerretDB/FerretDB/issues/3386
-			args = append(args, keyArgs...)
-			args = append(args, parseValue(v))
-
 		default:
 			panic(fmt.Sprintf("Unexpected type of value: %v", v))
 		}
@@ -228,12 +228,12 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 // parseValue parses the provided value to be used in SQLite query.
 func parseValue(v any) any {
 	switch v := v.(type) {
-	case time.Time:
-		return v.UnixMilli()
-	case int64, float64, int32, bool, string:
+	case float64, string, bool, int32, int64:
 		return v
 	case types.ObjectID:
 		return hex.EncodeToString(v[:])
+	case time.Time:
+		return v.UnixMilli()
 	default:
 		panic(fmt.Sprintf("Unexpected type of value: %v", v))
 	}
