@@ -228,7 +228,8 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 // parseValue parses the provided value to be used in SQLite query.
 func parseValue(v any) any {
 	switch v := v.(type) {
-	case float64, string, bool, int32, int64:
+	case *types.Document, *types.Array, float64, types.Binary, string,
+		bool, types.NullType, types.Regex, int32, types.Timestamp, int64:
 		return v
 	case types.ObjectID:
 		return hex.EncodeToString(v[:])
