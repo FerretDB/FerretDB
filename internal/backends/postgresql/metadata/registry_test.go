@@ -100,6 +100,51 @@ func createDatabase(t *testing.T, ctx context.Context) (r *Registry, db *pgxpool
 	return r, db, dbName
 }
 
+func TestAuthenticate(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
+	connInfo := conninfo.New()
+	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
+
+	for name, tc := range map[string]struct {
+		uri string
+		err bool
+	}{
+		"Auth": {
+			uri: "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1",
+			err: false,
+		},
+		"NoAuth": {
+			uri: "postgres://127.0.0.1:5432/ferretdb?pool_min_conns=1",
+			err: true,
+		},
+		"NonExistingUser": {
+			uri: "postgres://wrong-user:wrong-password@127.0.0.1:5432/ferretdb?pool_min_conns=1",
+			err: true,
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			sp, err := state.NewProvider("")
+			require.NoError(t, err)
+
+			r, err := NewRegistry(tc.uri, testutil.Logger(t), sp)
+			require.NoError(t, err)
+			t.Cleanup(r.Close)
+
+			_, err = r.getPool(ctx)
+			if tc.err {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestCreateDrop(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping in -short mode")

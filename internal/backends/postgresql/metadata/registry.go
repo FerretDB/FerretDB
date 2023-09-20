@@ -76,35 +76,8 @@ func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error)
 	}
 
 	r := &Registry{
-		p:     p,
-		l:     l,
-		colls: map[string]map[string]*Collection{},
-	}
-
-	// use defer to close registry upon error to avoid forgetting
-	defer func() {
-		if err != nil {
-			r.Close()
-		}
-	}()
-
-	connInfo := conninfo.New()
-	ctx := conninfo.Ctx(context.Background(), connInfo)
-
-	dbPool, err := r.getPool(ctx)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	dbNames, err := r.initDBs(ctx, dbPool)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	for _, dbName := range dbNames {
-		if err = r.initCollections(ctx, dbName, dbPool); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		p: p,
+		l: l,
 	}
 
 	return r, nil
@@ -113,6 +86,41 @@ func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error)
 // Close closes the registry.
 func (r *Registry) Close() {
 	r.p.Close()
+}
+
+// loadMetadataIfNotLoaded loads metadata from the database if metadata has not been loaded yet.
+// It acquires write lock to load metadata if loading metadata is required,
+// because it is called from all exported functions of registry.
+func (r *Registry) loadMetadataIfNotLoaded(ctx context.Context, p *pgxpool.Pool) error {
+	if r.metadataLoaded() {
+		return nil
+	}
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	dbNames, err := r.initDBs(ctx, p)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	r.colls = map[string]map[string]*Collection{}
+	for _, dbName := range dbNames {
+		if err = r.initCollections(ctx, dbName, p); err != nil {
+			return lazyerrors.Error(err)
+		}
+	}
+
+	return nil
+}
+
+// metadataLoaded returns true if metadata is initialized.
+// It acquires read lock to check metadata hasn't been loaded.
+func (r *Registry) metadataLoaded() bool {
+	r.rw.RLock()
+	defer r.rw.RUnlock()
+
+	return r.colls != nil
 }
 
 // initDBs returns a list of database names using schema information.
@@ -235,7 +243,12 @@ func (r *Registry) getPool(ctx context.Context) (*pgxpool.Pool, error) {
 func (r *Registry) DatabaseList(ctx context.Context) ([]string, error) {
 	defer observability.FuncCall(ctx)()
 
-	if _, err := r.getPool(ctx); err != nil {
+	p, err := r.getPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if err = r.loadMetadataIfNotLoaded(ctx, p); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -256,6 +269,10 @@ func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) (*pgx
 
 	p, err := r.getPool(ctx)
 	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if err = r.loadMetadataIfNotLoaded(ctx, p); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -280,6 +297,10 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*pgx
 
 	p, err := r.getPool(ctx)
 	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if err = r.loadMetadataIfNotLoaded(ctx, p); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -342,6 +363,10 @@ func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) (bool, error
 		return false, lazyerrors.Error(err)
 	}
 
+	if err = r.loadMetadataIfNotLoaded(ctx, p); err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
@@ -384,8 +409,12 @@ func (r *Registry) databaseDrop(ctx context.Context, p *pgxpool.Pool, dbName str
 func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collection, error) {
 	defer observability.FuncCall(ctx)()
 
-	_, err := r.getPool(ctx)
+	p, err := r.getPool(ctx)
 	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if err = r.loadMetadataIfNotLoaded(ctx, p); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -419,6 +448,10 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 
 	p, err := r.getPool(ctx)
 	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	if err = r.loadMetadataIfNotLoaded(ctx, p); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
@@ -525,7 +558,12 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName string) (*Collection, error) {
 	defer observability.FuncCall(ctx)()
 
-	if _, err := r.getPool(ctx); err != nil {
+	p, err := r.getPool(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if err = r.loadMetadataIfNotLoaded(ctx, p); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -561,6 +599,10 @@ func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName st
 
 	p, err := r.getPool(ctx)
 	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	if err = r.loadMetadataIfNotLoaded(ctx, p); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
@@ -633,6 +675,10 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 
 	p, err := r.getPool(ctx)
 	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	if err = r.loadMetadataIfNotLoaded(ctx, p); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
