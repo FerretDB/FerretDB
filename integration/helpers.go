@@ -457,22 +457,22 @@ func createNestedDocument(n int, arr bool) any {
 	return bson.D{{"v", child}}
 }
 
-// ResultPushdown stores the information about expected pushdown results for a single or multiple backends.
+// resultPushdown stores the information about expected pushdown results for a single or multiple backends.
 // For example if both pg and SQlite backends are expected to pushdown, the `pgPushdown + sqlitePushdown` operation
 // can be used.
-type ResultPushdown uint8
+type resultPushdown uint8
 
 const (
-	noPushdown     ResultPushdown = 0 // 0000 0000
-	pgPushdown     ResultPushdown = 1 // 0000 0001
-	sqlitePushdown ResultPushdown = 2 // 0000 0010
+	noPushdown     resultPushdown = 0 // 0000 0000
+	pgPushdown     resultPushdown = 1 // 0000 0001
+	sqlitePushdown resultPushdown = 2 // 0000 0010
 
 	// allPushdown expects all backends to result in pushdown
-	allPushdown ResultPushdown = 0xFF // 1111 1111
+	allPushdown resultPushdown = 0xFF // 1111 1111
 )
 
 // PushdownExpected returns true if the pushdown is expected for currently running backend.
-func (res ResultPushdown) PushdownExpected(t testtb.TB) bool {
+func (res resultPushdown) PushdownExpected(t testtb.TB) bool {
 	if setup.IsPushdownDisabled() {
 		res = noPushdown
 	}

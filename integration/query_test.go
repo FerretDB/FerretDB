@@ -834,7 +834,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 		optSkip *int64 // optional, nil to leave optSkip unset
 
 		len            int                 // expected length of results
-		queryPushdown  ResultPushdown      // optional, set true for expected pushdown for query
+		queryPushdown  resultPushdown      // optional, set true for expected pushdown for query
 		limitPushdown  bool                // optional, set true for expected pushdown for limit
 		err            *mongo.CommandError // optional, expected error from MongoDB
 		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
