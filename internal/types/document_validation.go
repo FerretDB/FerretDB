@@ -140,7 +140,7 @@ func (d *Document) ValidateData() error {
 					))
 				case float64:
 					if item == 0 && math.Signbit(item) {
-						value.Set(i, math.Copysign(0, +1))
+						must.NoError(value.Set(i, math.Copysign(0, +1)))
 					}
 				}
 			}
