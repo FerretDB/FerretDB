@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# Migrate from MongoDB to FerretDB
+# Migrating from MongoDB
 
 Before you begin this section of the migration process, go through the pre-migration process so as to ensure a successful migration from MongoDB to FerretDB:
 
