@@ -113,14 +113,19 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			return "", nil, lazyerrors.Error(err)
 		}
 
+		// queryPath stores the path that is used in SQLite to access specific key
+		// if the key is _id we use our predifined path, as the handling of _id may
+		// change in the future.
 		queryPath := metadata.IDColumn
 
 		if k != "_id" {
+			// To use parameters inside of SQLite json path the parameter token ("?")
+			// needs to be concatenated to path with || operator.
 			queryPath = fmt.Sprintf("%s->('$.' || ? )", metadata.DefaultColumn)
 			args = append(args, k)
 		}
 
-		// don't pushdown $comment, it's attached to query in handlers
+		// don't pushdown $comment
 		if strings.HasPrefix(k, "$") {
 			continue
 		}
@@ -131,7 +136,6 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 
 		switch {
 		case err == nil:
-			// Handle dot notation.
 			// TODO https://github.com/FerretDB/FerretDB/issues/2069
 			if path.Len() > 1 {
 				continue
@@ -153,51 +157,47 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 		case int64:
 			maxSafeDouble := int64(types.MaxSafeDouble)
 
-			var sql string
+			var comparison string
 
 			// If value cannot be safe double, fetch all numbers out of the safe range.
 			switch {
 			case v > maxSafeDouble:
-				sql = ` > ?`
+				comparison = ` > ?`
 				v = maxSafeDouble
 
 			case v < -maxSafeDouble:
-				sql = `< ?`
+				comparison = `< ?`
 				v = -maxSafeDouble
 			default:
 				// don't change the default eq query
 			}
 
-			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value %s)`, queryPath, sql) // TODO sanitize the key
+			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value %s)`, queryPath, comparison)
 
 			filters = append(filters, subquery)
 			args = append(args, parseValue(v))
 
 		case float64:
-			var sql string
+			var comparison string
 			switch {
 			case v > types.MaxSafeDouble:
-				sql = ` > ?`
+				comparison = ` > ?`
 				v = types.MaxSafeDouble
 
 			case v < -types.MaxSafeDouble:
-				sql = ` < ?`
+				comparison = ` < ?`
 				v = -types.MaxSafeDouble
 			default:
 				// don't change the default eq query
 			}
 
-			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value %s)`, queryPath, sql) // TODO sanitize the key
+			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value %s)`, queryPath, comparison)
 
 			filters = append(filters, subquery)
 			args = append(args, parseValue(v))
 
 		case types.ObjectID, time.Time, int32, bool, string:
-			if k == "_id" {
-				queryPath = metadata.IDColumn
-			}
-
-			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath) // TODO sanitize the key
+			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath)
 
 			filters = append(filters, subquery)
 			args = append(args, parseValue(v))
