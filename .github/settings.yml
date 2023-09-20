@@ -29,10 +29,13 @@ labels:
     description: Issues about OpLog
   - name: area/params
     color: "#FBCA04"
-    description: Issues about parameters extraction
+    description: Issues about command parameters extraction
   - name: area/pushdown
     color: "#83F7BA"
     description: Issues about query pushdown
+  - name: area/types
+    color: "#0354F4"
+    description: Issues about data types, BSON, etc
 
   # backend
   - name: backend/pg
@@ -92,6 +95,10 @@ labels:
   - name: good first issue
     color: "#5319E7"
     description: Good issues for new external contributors
+
+  - name: hacktoberfest
+    color: "#FEFBA2"
+    description: Good issues for Hacktoberfest
 
   - name: help wanted
     color: "#006B75"
