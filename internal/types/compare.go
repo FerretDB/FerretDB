@@ -45,6 +45,9 @@ const (
 //
 // Compare and contrast with test helpers in testutil package.
 func Compare(docValue, filterValue any) CompareResult {
+	assertType(docValue)
+	assertType(filterValue)
+
 	if docValue == nil {
 		panic("compare: docValue is nil")
 	}
@@ -98,6 +101,9 @@ func CompareForAggregation(docValue, filterValue any) CompareResult {
 
 // compareScalars compares BSON scalar values.
 func compareScalars(v1, v2 any) CompareResult {
+	assertType(v1)
+	assertType(v2)
+
 	if !isScalar(v1) || !isScalar(v2) {
 		return compareTypeOrder(v1, v2)
 	}
@@ -362,6 +368,8 @@ func compareDocuments(a, b *Document) CompareResult {
 
 // compareArray compares array to any value.
 func compareArray(as *Array, b any) CompareResult {
+	assertType(b)
+
 	if bs, ok := b.(*Array); ok {
 		return compareArrays(as, bs)
 	}
