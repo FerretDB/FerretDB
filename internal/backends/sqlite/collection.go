@@ -175,9 +175,11 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 				// don't change the default eq query
 			}
 
+			// json_each returns top level json values, and the contents of arrays if any
 			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value %s)`, queryPath, comparison)
 			filters = append(filters, subquery)
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3386
 			args = append(args, keyArgs...)
 			args = append(args, parseValue(v))
 
@@ -198,6 +200,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value %s)`, queryPath, comparison)
 			filters = append(filters, subquery)
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3386
 			args = append(args, keyArgs...)
 			args = append(args, parseValue(v))
 
@@ -205,6 +208,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath)
 			filters = append(filters, subquery)
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3386
 			args = append(args, keyArgs...)
 			args = append(args, parseValue(v))
 
