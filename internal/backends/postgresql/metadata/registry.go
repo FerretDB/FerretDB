@@ -96,12 +96,12 @@ func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error)
 		return nil, lazyerrors.Error(err)
 	}
 
-	dbs, err := r.initDBs(ctx, dbPool)
+	dbNames, err := r.initDBs(ctx, dbPool)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	for _, dbName := range dbs {
+	for _, dbName := range dbNames {
 		if err = r.initCollections(ctx, dbName, dbPool); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -132,7 +132,11 @@ func (r *Registry) initDBs(ctx context.Context, p *pgxpool.Pool) ([]string, erro
 	}
 	defer rows.Close()
 
-	var dbs []string
+	if err = rows.Err(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var dbNames []string
 
 	for rows.Next() {
 		var dbName string
@@ -144,11 +148,11 @@ func (r *Registry) initDBs(ctx context.Context, p *pgxpool.Pool) ([]string, erro
 		// a ferretdb database, but if it does not contain ferretdb metadata table,
 		// it is not used by ferretdb
 		q := `
-		SELECT EXISTS (
-			SELECT 1
-			FROM information_schema.columns
-			WHERE table_schema = $1 AND table_name = $2
-			)`
+			SELECT EXISTS (
+				SELECT 1
+				FROM information_schema.columns
+				WHERE table_schema = $1 AND table_name = $2
+				)`
 
 		var exists bool
 		if err = p.QueryRow(ctx, q, dbName, metadataTableName).Scan(&exists); err != nil {
@@ -156,20 +160,19 @@ func (r *Registry) initDBs(ctx context.Context, p *pgxpool.Pool) ([]string, erro
 		}
 
 		if exists {
-			dbs = append(dbs, dbName)
+			dbNames = append(dbNames, dbName)
 		}
 	}
 
-	if err = rows.Err(); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return dbs, nil
+	return dbNames, nil
 }
 
 // initCollections loads collections metadata from the database during initialization.
 func (r *Registry) initCollections(ctx context.Context, dbName string, p *pgxpool.Pool) error {
 	defer observability.FuncCall(ctx)()
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
 
 	q := fmt.Sprintf(
 		`SELECT %s FROM %s`,
@@ -270,6 +273,8 @@ func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) (*pgx
 
 // DatabaseGetOrCreate returns a connection to existing database or newly created database.
 //
+// The dbName must be a validated database name.
+//
 // If the user is not authenticated, it returns error.
 func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*pgxpool.Pool, error) {
 	defer observability.FuncCall(ctx)()
@@ -327,6 +332,7 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *pgxpool.Pool, dbN
 // DatabaseDrop drops the database.
 //
 // Returned boolean value indicates whether the database was dropped.
+// If database does not exist, (false, nil) is returned.
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) (bool, error) {
@@ -346,6 +352,7 @@ func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) (bool, error
 // DatabaseDrop drops the database.
 //
 // Returned boolean value indicates whether the database was dropped.
+// If database does not exist, (false, nil) is returned.
 //
 // It does not hold the lock.
 func (r *Registry) databaseDrop(ctx context.Context, p *pgxpool.Pool, dbName string) (bool, error) {
