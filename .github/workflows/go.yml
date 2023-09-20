@@ -162,7 +162,7 @@ jobs:
   integration:
     name: >
       Integration ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
-      (no-pushdown=${{ matrix.disable_filter_pushdown || false }})
+      (pushdown=${{ !(matrix.disable_filter_pushdown || false) }})
     runs-on:
       group: paid
     timeout-minutes: 20
@@ -224,7 +224,7 @@ jobs:
 
       - name: >
           Run ${{ matrix.name }} tests
-          (${{ matrix.shard_index }}/${{ matrix.shard_total }}, no-pushdown=${{ matrix.disable_filter_pushdown || false }})
+          (${{ matrix.shard_index }}/${{ matrix.shard_total }}, pushdown=${{ !(matrix.disable_filter_pushdown || false) }})
         run: >
           bin/task test-integration-${{ matrix.task }}
           SHARD_INDEX=${{ matrix.shard_index }}
