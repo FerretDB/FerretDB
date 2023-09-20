@@ -81,24 +81,28 @@ func NewRegistry(u string, l *zap.Logger, sp *state.Provider) (*Registry, error)
 		colls: map[string]map[string]*Collection{},
 	}
 
+	// use defer to close registry upon error to avoid forgetting
+	defer func() {
+		if err != nil {
+			r.Close()
+		}
+	}()
+
 	connInfo := conninfo.New()
 	ctx := conninfo.Ctx(context.Background(), connInfo)
 
 	dbPool, err := r.getPool(ctx)
 	if err != nil {
-		r.Close()
 		return nil, lazyerrors.Error(err)
 	}
 
 	dbs, err := r.initDBs(ctx, dbPool)
 	if err != nil {
-		r.Close()
 		return nil, lazyerrors.Error(err)
 	}
 
 	for _, dbName := range dbs {
 		if err = r.initCollections(ctx, dbName, dbPool); err != nil {
-			r.Close()
 			return nil, lazyerrors.Error(err)
 		}
 	}
