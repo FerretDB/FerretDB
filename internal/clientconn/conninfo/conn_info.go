@@ -61,7 +61,7 @@ func (connInfo *ConnInfo) SetAuth(username, password string) {
 // ClientMetadataPresence returns stored client metadata presence.
 func (connInfo *ConnInfo) ClientMetadataPresence() bool {
 	connInfo.rw.RLock()
-	defer connInfo.rw.Unlock()
+	defer connInfo.rw.RUnlock()
 
 	return connInfo.clientMetadataPresence
 }
