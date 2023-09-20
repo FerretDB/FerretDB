@@ -571,7 +571,7 @@ tasks:
   fmt-yaml:
     desc: "Format YAML files"
     cmds:
-      - docker compose run --rm prettier --write --parser=yaml "**/*.yml"
+      - docker compose run --rm prettier --write --parser=yaml --print-width=120 "**/*.yml"
 
   docs:
     desc: "Format, lint and build documentation"
