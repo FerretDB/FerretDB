@@ -380,27 +380,27 @@ func (r *Registry) databaseDrop(ctx context.Context, p *pgxpool.Pool, dbName str
 //
 // If database does not exist, no error is returned.
 //
-// If the user is not authenticated, [DatabaseGetExisting] returns error.
+// If the user is not authenticated, [getPool] returns error.
 func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collection, error) {
 	defer observability.FuncCall(ctx)()
 
-	db, err := r.DatabaseGetExisting(ctx, dbName)
+	_, err := r.getPool(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
+	r.rw.RLock()
+	defer r.rw.RUnlock()
+
+	db := r.colls[dbName]
 	if db == nil {
 		return nil, nil
 	}
-
-	r.rw.RLock()
 
 	res := make([]*Collection, 0, len(r.colls[dbName]))
 	for _, c := range r.colls[dbName] {
 		res = append(res, c.deepCopy())
 	}
-
-	r.rw.RUnlock()
 
 	sort.Slice(res, func(i, j int) bool { return res[i].Name < res[j].Name })
 
@@ -469,16 +469,6 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 		s++
 	}
 
-	q := fmt.Sprintf(
-		`CREATE TABLE IF NOT EXISTS %s (%s jsonb)`,
-		pgx.Identifier{dbName, tableName}.Sanitize(),
-		DefaultColumn,
-	)
-
-	if _, err = p.Exec(ctx, q); err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
 	c := &Collection{
 		Name:      collectionName,
 		TableName: tableName,
@@ -486,6 +476,16 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 
 	b, err := sjson.Marshal(c.Marshal())
 	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
+	q := fmt.Sprintf(
+		`CREATE TABLE IF NOT EXISTS %s (%s jsonb)`,
+		pgx.Identifier{dbName, tableName}.Sanitize(),
+		DefaultColumn,
+	)
+
+	if _, err = p.Exec(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
@@ -589,19 +589,18 @@ func (r *Registry) collectionDrop(ctx context.Context, p *pgxpool.Pool, dbName, 
 		return false, nil
 	}
 
+	arg, err := sjson.MarshalSingleValue(c.Name)
+	if err != nil {
+		return false, lazyerrors.Error(err)
+	}
+
 	// TODO https://github.com/FerretDB/FerretDB/issues/811
 	q := fmt.Sprintf(
 		`DROP TABLE IF EXISTS %s CASCADE`,
 		pgx.Identifier{dbName, c.TableName}.Sanitize(),
 	)
 
-	var err error
 	if _, err = p.Exec(ctx, q); err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
-	arg, err := sjson.MarshalSingleValue(c.Name)
-	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
 
