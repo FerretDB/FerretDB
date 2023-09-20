@@ -137,11 +137,12 @@ func (r *Registry) initDBs(ctx context.Context, p *pgxpool.Pool) ([]string, erro
 		// schema created by postgresql (such as `public`) can be used as
 		// a ferretdb database, but if it does not contain ferretdb metadata table,
 		// it is not used by ferretdb
-		q := `SELECT EXISTS (
-				SELECT 1
-				FROM information_schema.columns
-				WHERE table_schema = $1 AND table_name = $2
-				)`
+		q := `
+		SELECT EXISTS (
+			SELECT 1
+			FROM information_schema.columns
+			WHERE table_schema = $1 AND table_name = $2
+			)`
 
 		var exists bool
 		if err = p.QueryRow(ctx, q, dbName, metadataTableName).Scan(&exists); err != nil {

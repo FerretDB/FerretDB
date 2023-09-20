@@ -77,22 +77,19 @@ func testCollection(t *testing.T, ctx context.Context, r *Registry, db *pgxpool.
 	require.Nil(t, c)
 }
 
-func TestCreateDrop(t *testing.T) {
-	t.Parallel()
-
-	connInfo := conninfo.New()
-	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
-
+// createDatabase creates a new provider and registry required for creating a database and
+// returns registry, db pool and created database name.
+func createDatabase(t *testing.T, ctx context.Context) (r *Registry, db *pgxpool.Pool, dbName string) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
 	u := "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1"
-	r, err := NewRegistry(u, testutil.Logger(t), sp)
+	r, err = NewRegistry(u, testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
-	dbName := testutil.DatabaseName(t)
-	db, err := r.DatabaseGetOrCreate(ctx, dbName)
+	dbName = testutil.DatabaseName(t)
+	db, err = r.DatabaseGetOrCreate(ctx, dbName)
 	require.NoError(t, err)
 	require.NotNil(t, db)
 
@@ -100,6 +97,16 @@ func TestCreateDrop(t *testing.T) {
 		_, _ = r.DatabaseDrop(ctx, dbName)
 	})
 
+	return r, db, dbName
+}
+
+func TestCreateDrop(t *testing.T) {
+	t.Parallel()
+
+	connInfo := conninfo.New()
+	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
+
+	r, db, dbName := createDatabase(t, ctx)
 	collectionName := testutil.CollectionName(t)
 	testCollection(t, ctx, r, db, dbName, collectionName)
 }
@@ -108,21 +115,7 @@ func TestCreateDropStress(t *testing.T) {
 	connInfo := conninfo.New()
 	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
-	sp, err := state.NewProvider("")
-	require.NoError(t, err)
-
-	u := "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1"
-	r, err := NewRegistry(u, testutil.Logger(t), sp)
-	require.NoError(t, err)
-	t.Cleanup(r.Close)
-
-	dbName := testutil.DatabaseName(t)
-	_, err = r.DatabaseDrop(ctx, dbName)
-	require.NoError(t, err)
-
-	db, err := r.DatabaseGetOrCreate(ctx, dbName)
-	require.NoError(t, err)
-	require.NotNil(t, db)
+	r, db, dbName := createDatabase(t, ctx)
 
 	t.Cleanup(func() {
 		_, _ = r.DatabaseDrop(ctx, dbName)
@@ -144,26 +137,7 @@ func TestCreateSameStress(t *testing.T) {
 	connInfo := conninfo.New()
 	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
-	sp, err := state.NewProvider("")
-	require.NoError(t, err)
-
-	u := "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1"
-	r, err := NewRegistry(u, testutil.Logger(t), sp)
-	require.NoError(t, err)
-	t.Cleanup(r.Close)
-
-	dbName := testutil.DatabaseName(t)
-	_, err = r.DatabaseDrop(ctx, dbName)
-	require.NoError(t, err)
-
-	db, err := r.DatabaseGetOrCreate(ctx, dbName)
-	require.NoError(t, err)
-	require.NotNil(t, db)
-
-	t.Cleanup(func() {
-		_, _ = r.DatabaseDrop(ctx, dbName)
-	})
-
+	r, db, dbName := createDatabase(t, ctx)
 	collectionName := testutil.CollectionName(t)
 
 	var i, createdTotal atomic.Int32
@@ -210,26 +184,7 @@ func TestDropSameStress(t *testing.T) {
 	connInfo := conninfo.New()
 	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
-	sp, err := state.NewProvider("")
-	require.NoError(t, err)
-
-	u := "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1"
-	r, err := NewRegistry(u, testutil.Logger(t), sp)
-	require.NoError(t, err)
-	t.Cleanup(r.Close)
-
-	dbName := testutil.DatabaseName(t)
-	_, err = r.DatabaseDrop(ctx, dbName)
-	require.NoError(t, err)
-
-	db, err := r.DatabaseGetOrCreate(ctx, dbName)
-	require.NoError(t, err)
-	require.NotNil(t, db)
-
-	t.Cleanup(func() {
-		_, _ = r.DatabaseDrop(ctx, dbName)
-	})
-
+	r, _, dbName := createDatabase(t, ctx)
 	collectionName := testutil.CollectionName(t)
 	created, err := r.CollectionCreate(ctx, dbName, collectionName)
 	require.NoError(t, err)
@@ -255,26 +210,7 @@ func TestCreateDropSameStress(t *testing.T) {
 	connInfo := conninfo.New()
 	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
-	sp, err := state.NewProvider("")
-	require.NoError(t, err)
-
-	u := "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1"
-	r, err := NewRegistry(u, testutil.Logger(t), sp)
-	require.NoError(t, err)
-	t.Cleanup(r.Close)
-
-	dbName := testutil.DatabaseName(t)
-	_, err = r.DatabaseDrop(ctx, dbName)
-	require.NoError(t, err)
-
-	db, err := r.DatabaseGetOrCreate(ctx, dbName)
-	require.NoError(t, err)
-	require.NotNil(t, db)
-
-	t.Cleanup(func() {
-		_, _ = r.DatabaseDrop(ctx, dbName)
-	})
-
+	r, _, dbName := createDatabase(t, ctx)
 	collectionName := testutil.CollectionName(t)
 	var i, createdTotal, droppedTotal atomic.Int32
 
@@ -309,22 +245,9 @@ func TestCheckDatabaseUpdated(t *testing.T) {
 	connInfo := conninfo.New()
 	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
-	sp, err := state.NewProvider("")
-	require.NoError(t, err)
+	r, db, dbName := createDatabase(t, ctx)
 
-	u := "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1"
-	r, err := NewRegistry(u, testutil.Logger(t), sp)
-	require.NoError(t, err)
-	t.Cleanup(r.Close)
-
-	dbName := testutil.DatabaseName(t)
-	db, err := r.DatabaseGetOrCreate(ctx, dbName)
-	require.NoError(t, err)
-	require.NotNil(t, db)
-
-	t.Cleanup(func() {
-		_, _ = r.DatabaseDrop(ctx, dbName)
-	})
+	var err error
 
 	t.Run("CheckDatabaseCreate", func(t *testing.T) {
 		err = r.initCollections(ctx, dbName, db)
@@ -385,22 +308,7 @@ func TestRenameCollection(t *testing.T) {
 	connInfo := conninfo.New()
 	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
-	sp, err := state.NewProvider("")
-	require.NoError(t, err)
-
-	u := "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1"
-	r, err := NewRegistry(u, testutil.Logger(t), sp)
-	require.NoError(t, err)
-	t.Cleanup(r.Close)
-
-	dbName := testutil.DatabaseName(t)
-	db, err := r.DatabaseGetOrCreate(ctx, dbName)
-	require.NoError(t, err)
-	require.NotNil(t, db)
-
-	t.Cleanup(func() {
-		_, _ = r.DatabaseDrop(ctx, dbName)
-	})
+	r, db, dbName := createDatabase(t, ctx)
 
 	oldCollectionName := testutil.CollectionName(t)
 	newCollectionName := "new"
