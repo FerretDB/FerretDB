@@ -102,9 +102,9 @@ func (d *Document) ValidateData() error {
 
 		value := values[i]
 
-		switch v := value.(type) {
+		switch value := value.(type) {
 		case *Document:
-			err := v.ValidateData()
+			err := value.ValidateData()
 			if err != nil {
 				var vErr *ValidationError
 
@@ -119,8 +119,8 @@ func (d *Document) ValidateData() error {
 				return newValidationError(ErrWrongIDType, fmt.Errorf("The '_id' value cannot be of type array"))
 			}
 
-			for i := 0; i < v.Len(); i++ {
-				item := must.NotFail(v.Get(i))
+			for i := 0; i < value.Len(); i++ {
+				item := must.NotFail(value.Get(i))
 
 				switch item := item.(type) {
 				case *Document:
@@ -136,22 +136,22 @@ func (d *Document) ValidateData() error {
 					}
 				case *Array:
 					return newValidationError(ErrValidation, fmt.Errorf(
-						"invalid value: { %q: %v } (nested arrays are not supported)", key, FormatAnyValue(v),
+						"invalid value: { %q: %v } (nested arrays are not supported)", key, FormatAnyValue(value),
 					))
 				case float64:
 					if item == 0 && math.Signbit(item) {
-						v.Set(i, math.Copysign(0, +1))
+						value.Set(i, math.Copysign(0, +1))
 					}
 				}
 			}
 		case float64:
-			if math.IsInf(v, 0) {
+			if math.IsInf(value, 0) {
 				return newValidationError(
-					ErrValidation, fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, v),
+					ErrValidation, fmt.Errorf("invalid value: { %q: %f } (infinity values are not allowed)", key, value),
 				)
 			}
 
-			if v == 0 && math.Signbit(v) {
+			if value == 0 && math.Signbit(value) {
 				d.Set(key, math.Copysign(0, +1))
 			}
 		case Regex:

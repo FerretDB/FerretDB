@@ -48,13 +48,6 @@ func Compare(docValue, filterValue any) CompareResult {
 	assertType(docValue)
 	assertType(filterValue)
 
-	if docValue == nil {
-		panic("compare: docValue is nil")
-	}
-	if filterValue == nil {
-		panic("compare: filterValue is nil")
-	}
-
 	switch docValue := docValue.(type) {
 	case *Document:
 		if filterDoc, ok := filterValue.(*Document); ok {
@@ -73,13 +66,8 @@ func Compare(docValue, filterValue any) CompareResult {
 // an array and non array would not result in Equal.
 // This is specially used for aggregation grouping comparison.
 func CompareForAggregation(docValue, filterValue any) CompareResult {
-	if docValue == nil {
-		panic("compare: docValue is nil")
-	}
-
-	if filterValue == nil {
-		panic("compare: filterValue is nil")
-	}
+	assertType(docValue)
+	assertType(filterValue)
 
 	switch docValue := docValue.(type) {
 	case *Document:

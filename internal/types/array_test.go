@@ -54,7 +54,7 @@ func TestArray(t *testing.T) {
 		t.Parallel()
 
 		assert.Panics(t, func() {
-			NewArray(42)
+			_, _ = NewArray(42)
 		})
 	})
 
