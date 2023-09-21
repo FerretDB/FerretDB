@@ -15,7 +15,18 @@
 // Package metadata provides access to databases and collections information.
 package metadata
 
-import "github.com/FerretDB/FerretDB/internal/types"
+import (
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+)
+
+const (
+	// DefaultColumn is a column name for all fields.
+	DefaultColumn = "_jsonb"
+
+	// IDColumn is a PostgreSQL path expression for _id field.
+	IDColumn = DefaultColumn + "->'_id'"
+)
 
 // Collection represents collection metadata.
 type Collection struct {
@@ -24,12 +35,30 @@ type Collection struct {
 	// TODO indexes, etc.
 }
 
+// deepCopy returns a deep copy.
+func (c *Collection) deepCopy() *Collection {
+	if c == nil {
+		return nil
+	}
+
+	return &Collection{
+		Name:      c.Name,
+		TableName: c.TableName,
+	}
+}
+
 // Marshal returns [*types.Document] for that collection.
 func (c *Collection) Marshal() *types.Document {
-	panic("not implemented")
+	return must.NotFail(types.NewDocument(
+		"_id", c.Name,
+		"table", c.TableName,
+	))
 }
 
 // Unmarshal sets collection metadata from [*types.Document].
 func (c *Collection) Unmarshal(doc *types.Document) error {
-	panic("not implemented")
+	c.Name = must.NotFail(doc.Get("_id")).(string)
+	c.TableName = must.NotFail(doc.Get("table")).(string)
+
+	return nil
 }
