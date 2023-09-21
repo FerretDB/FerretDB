@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package backends provides common interfaces and code for all backend implementations.
+// Package backends provides common interfaces ([Backend], [Database], and [Collection])
+// and code for all backend implementations.
 //
 // # Design principles
 //
