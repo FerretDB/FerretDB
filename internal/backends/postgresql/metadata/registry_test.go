@@ -100,7 +100,7 @@ func createDatabase(t *testing.T, ctx context.Context) (r *Registry, db *pgxpool
 	return r, db, dbName
 }
 
-func TestAuthenticate(t *testing.T) {
+func TestCheckAuth(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping in -short mode")
 	}
@@ -110,19 +110,19 @@ func TestAuthenticate(t *testing.T) {
 
 	for name, tc := range map[string]struct {
 		uri string
-		err bool
+		err string
 	}{
 		"Auth": {
 			uri: "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1",
-			err: false,
+			err: "",
 		},
 		"NoAuth": {
 			uri: "postgres://127.0.0.1:5432/ferretdb?pool_min_conns=1",
-			err: true,
+			err: "failed to connect to `host=127.0.0.1 user=", // username is the current user running the test
 		},
 		"NonExistingUser": {
 			uri: "postgres://wrong-user:wrong-password@127.0.0.1:5432/ferretdb?pool_min_conns=1",
-			err: true,
+			err: "failed to connect to `host=127.0.0.1 user=wrong-user database=ferretdb`",
 		},
 	} {
 		name, tc := name, tc
@@ -134,9 +134,9 @@ func TestAuthenticate(t *testing.T) {
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 
-			_, err = r.getPool(ctx)
-			if tc.err {
-				require.Error(t, err)
+			_, err = r.CheckAuth(ctx)
+			if tc.err != "" {
+				require.ErrorContains(t, err, tc.err)
 				return
 			}
 
