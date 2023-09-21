@@ -172,7 +172,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 				// don't change the default eq query
 			}
 
-			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value %s)`, queryPath, comparison)
+			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%s) WHERE value %s)`, queryPath, comparison)
 			filters = append(filters, subquery)
 
 			// TODO https://github.com/FerretDB/FerretDB/issues/3386
@@ -180,7 +180,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			args = append(args, parseValue(v))
 
 		case types.ObjectID, time.Time, string, bool, int32:
-			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value = ?)`, queryPath)
+			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%s) WHERE value = ?)`, queryPath)
 			filters = append(filters, subquery)
 
 			// TODO https://github.com/FerretDB/FerretDB/issues/3386
@@ -206,7 +206,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 
 			// json_each returns top level json values, and the contents of arrays if any
 			// https://www.sqlite.org/json1.html#jeach
-			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value %s)`, queryPath, comparison)
+			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%s) WHERE value %s)`, queryPath, comparison)
 			filters = append(filters, subquery)
 
 			// TODO https://github.com/FerretDB/FerretDB/issues/3386
