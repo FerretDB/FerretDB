@@ -16,12 +16,12 @@ jobs:
   integration:
     # job name must be uniqie; make it unique and nice
     name: >
-      ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
+      ${{ matrix.task }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
       (filter=${{ matrix.disable_filter_pushdown }}, sort=${{ matrix.enable_sort_pushdown }})
 
     # To avoid conflict with go.yml.
     concurrency:
-      group: ${{ github.workflow }}-integration-${{ matrix.name }}-${{ matrix.shard_index }}-${{ matrix.disable_filter_pushdown }}-${{ matrix.enable_sort_pushdown }}-${{ github.head_ref || github.ref_name }}
+      group: ${{ github.workflow }}-integration-${{ matrix.task }}-${{ matrix.shard_index }}-${{ matrix.disable_filter_pushdown }}-${{ matrix.enable_sort_pushdown }}-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: true
 
     strategy:
