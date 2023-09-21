@@ -48,13 +48,13 @@ const (
 
 // Registry provides access to PostgreSQL databases and collections information.
 //
-// Exported methods are safe for concurrent use. Unexported methods are not.
+// Exported methods and [getPool] are safe for concurrent use. Other unexported methods are not.
 //
-// All methods should call [checkAuthAndLoadMetadataIfEmpty] to check authentication.
+// All methods should call [getPool] to check authentication.
 // There is no authorization yet – if username/password combination is correct,
 // all databases and collections are visible as far as Registry is concerned.
 //
-// Registry metadata is loaded upon first call by client, using conninfo in the context of the client.
+// Registry metadata is loaded upon first call by client, using [conninfo] in the context of the client.
 //
 //nolint:vet // for readability
 type Registry struct {
@@ -90,7 +90,7 @@ func (r *Registry) Close() {
 	r.p.Close()
 }
 
-// checkAuthAndLoadMetadataIfEmpty returns a pool of connections to PostgreSQL database
+// getPool returns a pool of connections to PostgreSQL database
 // for the username/password combination in the context using [conninfo].
 //
 // It loads metadata if it hasn't been loaded from the database yet.
@@ -99,8 +99,10 @@ func (r *Registry) Close() {
 // to load metadata, so it is safe for concurrent use.
 //
 // All methods should use this method to check authentication and load metadata.
-func (r *Registry) checkAuthAndLoadMetadataIfEmpty(ctx context.Context) (*pgxpool.Pool, error) {
-	p, err := r.getPool(ctx)
+func (r *Registry) getPool(ctx context.Context) (*pgxpool.Pool, error) {
+	username, password := conninfo.Get(ctx).Auth()
+
+	p, err := r.p.Get(username, password)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -120,7 +122,7 @@ func (r *Registry) checkAuthAndLoadMetadataIfEmpty(ctx context.Context) (*pgxpoo
 		return nil, lazyerrors.Error(err)
 	}
 
-	r.colls = map[string]map[string]*Collection{}
+	r.colls = make(map[string]map[string]*Collection, len(dbNames))
 	for _, dbName := range dbNames {
 		if err = r.initCollections(ctx, dbName, p); err != nil {
 			return nil, lazyerrors.Error(err)
@@ -131,8 +133,8 @@ func (r *Registry) checkAuthAndLoadMetadataIfEmpty(ctx context.Context) (*pgxpoo
 }
 
 // initDBs returns a list of database names using schema information.
-// It fetches existing schema (excluding ones reserved for postgresql),
-// then finds and returns schema that contains ferretdb metadata table.
+// It fetches existing schema (excluding ones reserved for PostgreSQL),
+// then finds and returns schema that contains FerretDB metadata table.
 func (r *Registry) initDBs(ctx context.Context, p *pgxpool.Pool) ([]string, error) {
 	// schema names with pg_ prefix are reserved for postgresql hence excluded,
 	// a collection cannot be created in a database with pg_ prefix
@@ -159,9 +161,9 @@ func (r *Registry) initDBs(ctx context.Context, p *pgxpool.Pool) ([]string, erro
 			return nil, lazyerrors.Error(err)
 		}
 
-		// schema created by postgresql (such as `public`) can be used as
-		// a ferretdb database, but if it does not contain ferretdb metadata table,
-		// it is not used by ferretdb
+		// schema created by PostgreSQL (such as `public`) can be used as
+		// a FerretDB database, but if it does not contain FerretDB metadata table,
+		// it is not used by FerretDB
 		q := `
 			SELECT EXISTS (
 				SELECT 1
@@ -229,26 +231,13 @@ func (r *Registry) initCollections(ctx context.Context, dbName string, p *pgxpoo
 	return nil
 }
 
-// getPool returns a pool of connections to PostgreSQL database
-// for the username/password combination in the context using [conninfo].
-func (r *Registry) getPool(ctx context.Context) (*pgxpool.Pool, error) {
-	username, password := conninfo.Get(ctx).Auth()
-
-	p, err := r.p.Get(username, password)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return p, nil
-}
-
 // DatabaseList returns a sorted list of existing databases.
 //
 // If the user is not authenticated, it returns error.
 func (r *Registry) DatabaseList(ctx context.Context) ([]string, error) {
 	defer observability.FuncCall(ctx)()
 
-	_, err := r.checkAuthAndLoadMetadataIfEmpty(ctx)
+	_, err := r.getPool(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -268,7 +257,7 @@ func (r *Registry) DatabaseList(ctx context.Context) ([]string, error) {
 func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) (*pgxpool.Pool, error) {
 	defer observability.FuncCall(ctx)()
 
-	p, err := r.checkAuthAndLoadMetadataIfEmpty(ctx)
+	p, err := r.getPool(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -292,7 +281,7 @@ func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) (*pgx
 func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*pgxpool.Pool, error) {
 	defer observability.FuncCall(ctx)()
 
-	p, err := r.checkAuthAndLoadMetadataIfEmpty(ctx)
+	p, err := r.getPool(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -351,7 +340,7 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *pgxpool.Pool, dbN
 func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	p, err := r.checkAuthAndLoadMetadataIfEmpty(ctx)
+	p, err := r.getPool(ctx)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -398,7 +387,7 @@ func (r *Registry) databaseDrop(ctx context.Context, p *pgxpool.Pool, dbName str
 func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collection, error) {
 	defer observability.FuncCall(ctx)()
 
-	if _, err := r.checkAuthAndLoadMetadataIfEmpty(ctx); err != nil {
+	if _, err := r.getPool(ctx); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -430,7 +419,7 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	p, err := r.checkAuthAndLoadMetadataIfEmpty(ctx)
+	p, err := r.getPool(ctx)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -538,7 +527,7 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName string) (*Collection, error) {
 	defer observability.FuncCall(ctx)()
 
-	if _, err := r.checkAuthAndLoadMetadataIfEmpty(ctx); err != nil {
+	if _, err := r.getPool(ctx); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -572,7 +561,7 @@ func (r *Registry) collectionGet(dbName, collectionName string) *Collection {
 func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	p, err := r.checkAuthAndLoadMetadataIfEmpty(ctx)
+	p, err := r.getPool(ctx)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -644,7 +633,7 @@ func (r *Registry) collectionDrop(ctx context.Context, p *pgxpool.Pool, dbName, 
 func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	p, err := r.checkAuthAndLoadMetadataIfEmpty(ctx)
+	p, err := r.getPool(ctx)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}

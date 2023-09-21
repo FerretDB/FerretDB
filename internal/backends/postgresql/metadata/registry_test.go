@@ -134,7 +134,7 @@ func TestCheckAuth(t *testing.T) {
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
 
-			_, err = r.checkAuthAndLoadMetadataIfEmpty(ctx)
+			_, err = r.getPool(ctx)
 			if tc.err != "" {
 				require.ErrorContains(t, err, tc.err)
 				return
