@@ -16,9 +16,12 @@ package sqlite
 
 import (
 	"context"
+	"database/sql/driver"
+	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
+	sqlite3 "modernc.org/sqlite"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
@@ -50,6 +53,25 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	sqlite3.MustRegisterDeterministicScalarFunction("test_func", 0, func(ctx *sqlite3.FunctionContext, args []driver.Value) (driver.Value, error) {
+		if len(args) != 2 {
+			return nil, fmt.Errorf("Expected 2 args!! >:(")
+		}
+
+		var n1, n2 int
+		var ok bool
+
+		if n1, ok = args[0].(int); !ok {
+			return nil, fmt.Errorf("wrong type... (╯°□°)╯︵ ┻━┻")
+		}
+
+		if n2, ok = args[1].(int); !ok {
+			return nil, fmt.Errorf("wrong type... (╯°□°)╯︵ ┻━┻")
+		}
+
+		return n1 + n2, nil
+	})
 
 	return backends.BackendContract(&backend{
 		r: r,
