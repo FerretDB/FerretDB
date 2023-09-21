@@ -49,9 +49,8 @@ func SetByPath[T types.CompositeTypeInterface](tb testtb.TB, comp T, value any, 
 		last := i == l-1
 		switch c := next.(type) {
 		case *types.Document:
-			var err error
-			next, err = c.Get(p)
-			require.NoError(tb, err)
+			next, _ = c.Get(p)
+			require.NotNil(tb, next)
 
 			if last {
 				c.Set(p, value)
