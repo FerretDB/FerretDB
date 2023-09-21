@@ -467,7 +467,7 @@ const (
 	pgPushdown     resultPushdown = 1 // 0000 0001
 	sqlitePushdown resultPushdown = 2 // 0000 0010
 
-	// Expects all backends to result in pushdown
+	// Expects all backends to result in pushdown.
 	allPushdown resultPushdown = 0xFF // 1111 1111
 )
 
