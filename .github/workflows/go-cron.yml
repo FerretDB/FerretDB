@@ -1,5 +1,5 @@
 ---
-name: Baz
+name: Go Cron
 on:
   schedule:
     - cron: "12 0 * * *"
@@ -13,10 +13,13 @@ env:
   GOTOOLCHAIN: local
 
 jobs:
-  cron-integration:
-    name: >
-      Quux ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
-      (pushdown=${{ !(matrix.disable_filter_pushdown || false) }})
+  integration:
+    name: Integration
+
+    # To avoid conflict with go.yml.
+    concurrency:
+      group: ${{ github.workflow }}-integration-${{ matrix.name }}-${{ matrix.shard_index }}-${{ matrix.disable_filter_pushdown || false }}-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
 
     strategy:
       fail-fast: false
