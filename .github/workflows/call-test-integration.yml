@@ -28,7 +28,7 @@ env:
 
 jobs:
   test-integration:
-    name: Run
+    # name: Run
 
     # FIXME
     runs-on: ubuntu-22.04

@@ -161,7 +161,7 @@ jobs:
 
   integration:
     name: >
-      Integration ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
+      ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
       (pushdown=${{ !(matrix.disable_filter_pushdown || false) }})
 
     # Do not run this job in parallel for any PR change or branch push
