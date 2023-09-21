@@ -37,7 +37,7 @@ type aggregateStagesCompatTestCase struct {
 	maxTime  *time.Duration // optional, leave nil for unset maxTime
 
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown resultPushdown           // defaults to false
+	resultPushdown resultPushdown           // defaults to NoPushdown
 	skip           string                   // skip test for all handlers, must have issue number mentioned
 }
 
@@ -114,7 +114,7 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 					resultPushdown := tc.resultPushdown
 
 					var msg string
-					// TODO move the msg logic into the PushdownExpected()
+					// TODO https://github.com/FerretDB/FerretDB/issues/3386
 					if setup.IsPushdownDisabled() {
 						resultPushdown = noPushdown
 						msg = "Query pushdown is disabled, but target resulted with pushdown"

@@ -205,6 +205,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			}
 
 			// json_each returns top level json values, and the contents of arrays if any
+			// https://www.sqlite.org/json1.html#jeach
 			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%v) WHERE value %s)`, queryPath, comparison)
 			filters = append(filters, subquery)
 
