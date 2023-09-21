@@ -1,5 +1,4 @@
 ---
-name: Foo
 on:
   workflow_call:
     inputs:
@@ -28,10 +27,8 @@ env:
   GOTOOLCHAIN: local
 
 jobs:
-  integration:
-    name: >
-      Bar ${{ inputs.name }} ${{ inputs.shard_index }}/${{ inputs.shard_total }}
-      (pushdown=${{ !inputs.disable_filter_pushdown }})
+  test-integration:
+    name: Run
 
     # FIXME
     runs-on: ubuntu-22.04
