@@ -1,5 +1,5 @@
 ---
-name: Go Integration
+name: Foo
 on:
   workflow_call:
     inputs:
@@ -30,7 +30,7 @@ env:
 jobs:
   integration:
     name: >
-      Integration ${{ inputs.name }} ${{ inputs.shard_index }}/${{ inputs.shard_total }}
+      Bar ${{ inputs.name }} ${{ inputs.shard_index }}/${{ inputs.shard_total }}
       (pushdown=${{ !inputs.disable_filter_pushdown }})
 
     # FIXME
@@ -39,12 +39,6 @@ jobs:
     #   group: paid
 
     timeout-minutes: 20
-
-    # Do not run this job in parallel for any PR change or branch push
-    # to save some resources.
-    concurrency:
-      group: ${{ github.workflow }}-integration-${{ inputs.name }}-${{ inputs.shard_index }}-${{ inputs.disable_filter_pushdown }}-${{ github.head_ref || github.ref_name }}
-      cancel-in-progress: true
 
     steps:
       - name: Setup permissions monitoring

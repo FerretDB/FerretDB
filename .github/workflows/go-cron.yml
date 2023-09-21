@@ -1,5 +1,5 @@
 ---
-name: Go Cron
+name: Baz
 on:
   schedule:
     - cron: "12 0 * * *"
@@ -15,14 +15,8 @@ env:
 jobs:
   cron-integration:
     name: >
-      Cron Integration ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
+      Quux ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
       (pushdown=${{ !(matrix.disable_filter_pushdown || false) }})
-
-    # Do not run this job in parallel for any PR change or branch push
-    # to save some resources.
-    concurrency:
-      group: ${{ github.workflow }}-cron-integration-${{ matrix.name }}-${{ matrix.shard_index }}-${{ matrix.disable_filter_pushdown || false }}-${{ github.head_ref || github.ref_name }}
-      cancel-in-progress: true
 
     strategy:
       fail-fast: false
