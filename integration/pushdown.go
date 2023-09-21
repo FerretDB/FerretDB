@@ -11,9 +11,9 @@ import (
 type resultPushdown uint8
 
 const (
-	noPushdown     resultPushdown = 0 // 0000 0000
-	pgPushdown     resultPushdown = 1 // 0000 0001
-	sqlitePushdown resultPushdown = 2 // 0000 0010
+	noPushdown     resultPushdown = 1 << iota // 0000 0000
+	pgPushdown                                // 0000 0001
+	sqlitePushdown                            // 0000 0010
 
 	// Expects all backends to result in pushdown.
 	allPushdown resultPushdown = 0xff // 1111 1111
