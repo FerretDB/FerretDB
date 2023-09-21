@@ -50,7 +50,7 @@ const (
 //
 // Exported methods are safe for concurrent use. Unexported methods are not.
 //
-// All methods should call [CheckAuth] to check authentication.
+// All methods should call [CheckAuthAndLoadMetadataIfEmpty] to check authentication.
 // There is no authorization yet – if username/password combination is correct,
 // all databases and collections are visible as far as Registry is concerned.
 //
@@ -90,13 +90,13 @@ func (r *Registry) Close() {
 	r.p.Close()
 }
 
-// CheckAuth returns a pool of connections to PostgreSQL database
+// CheckAuthAndLoadMetadataIfEmpty returns a pool of connections to PostgreSQL database
 // for the username/password combination in the context using [conninfo].
 //
 // It loads metadata if it hasn't been loaded from the database yet.
 //
 // All methods should use this method to check authentication and load metadata.
-func (r *Registry) CheckAuth(ctx context.Context) (*pgxpool.Pool, error) {
+func (r *Registry) CheckAuthAndLoadMetadataIfEmpty(ctx context.Context) (*pgxpool.Pool, error) {
 	p, err := r.getPool(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -254,7 +254,7 @@ func (r *Registry) getPool(ctx context.Context) (*pgxpool.Pool, error) {
 func (r *Registry) DatabaseList(ctx context.Context) ([]string, error) {
 	defer observability.FuncCall(ctx)()
 
-	_, err := r.CheckAuth(ctx)
+	_, err := r.CheckAuthAndLoadMetadataIfEmpty(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -274,7 +274,7 @@ func (r *Registry) DatabaseList(ctx context.Context) ([]string, error) {
 func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) (*pgxpool.Pool, error) {
 	defer observability.FuncCall(ctx)()
 
-	p, err := r.CheckAuth(ctx)
+	p, err := r.CheckAuthAndLoadMetadataIfEmpty(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -298,7 +298,7 @@ func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) (*pgx
 func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*pgxpool.Pool, error) {
 	defer observability.FuncCall(ctx)()
 
-	p, err := r.CheckAuth(ctx)
+	p, err := r.CheckAuthAndLoadMetadataIfEmpty(ctx)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -357,7 +357,7 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *pgxpool.Pool, dbN
 func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	p, err := r.CheckAuth(ctx)
+	p, err := r.CheckAuthAndLoadMetadataIfEmpty(ctx)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -404,7 +404,7 @@ func (r *Registry) databaseDrop(ctx context.Context, p *pgxpool.Pool, dbName str
 func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collection, error) {
 	defer observability.FuncCall(ctx)()
 
-	if _, err := r.CheckAuth(ctx); err != nil {
+	if _, err := r.CheckAuthAndLoadMetadataIfEmpty(ctx); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -436,7 +436,7 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	p, err := r.CheckAuth(ctx)
+	p, err := r.CheckAuthAndLoadMetadataIfEmpty(ctx)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -544,7 +544,7 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName string) (*Collection, error) {
 	defer observability.FuncCall(ctx)()
 
-	if _, err := r.CheckAuth(ctx); err != nil {
+	if _, err := r.CheckAuthAndLoadMetadataIfEmpty(ctx); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -578,7 +578,7 @@ func (r *Registry) collectionGet(dbName, collectionName string) *Collection {
 func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	p, err := r.CheckAuth(ctx)
+	p, err := r.CheckAuthAndLoadMetadataIfEmpty(ctx)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -650,7 +650,7 @@ func (r *Registry) collectionDrop(ctx context.Context, p *pgxpool.Pool, dbName, 
 func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionName, newCollectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	p, err := r.CheckAuth(ctx)
+	p, err := r.CheckAuthAndLoadMetadataIfEmpty(ctx)
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
