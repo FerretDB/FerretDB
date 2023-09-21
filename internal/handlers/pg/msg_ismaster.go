@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -30,7 +31,7 @@ func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	}
 
 	if err := common.CheckClientMetadata(ctx, doc); err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	var reply wire.OpMsg

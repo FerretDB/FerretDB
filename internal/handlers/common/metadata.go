@@ -36,16 +36,16 @@ func CheckClientMetadata(ctx context.Context, doc *types.Document) error {
 	}
 
 	connInfo := conninfo.Get(ctx)
+	clientMetadataPresence := connInfo.ClientMetadataPresence()
 
 	// check if the client's metadata was not set before
-	if clientMetadata != nil && connInfo.ClientMetadataPresence() {
-		return commonerrors.NewCommandErrorMsg(commonerrors.ErrClientMetadataCannotBeMutated,
-			"The client metadata document may only be sent in the first hello",
-		)
+	if clientMetadata != nil && clientMetadataPresence {
+		msg := "The client metadata document may only be sent in the first hello"
+		return commonerrors.NewCommandErrorMsg(commonerrors.ErrClientMetadataCannotBeMutated, msg)
 	}
 
 	// set the client's metadata for the first request
-	if clientMetadata != nil && !connInfo.ClientMetadataPresence() {
+	if clientMetadata != nil && !clientMetadataPresence {
 		connInfo.SetClientMetadataPresence()
 	}
 
