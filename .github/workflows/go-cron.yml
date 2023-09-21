@@ -1,0 +1,41 @@
+---
+name: Go Cron
+on:
+  schedule:
+    - cron: "12 0 * * *"
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org
+  GOTOOLCHAIN: local
+
+jobs:
+  cron-integration:
+    name: >
+      Cron Integration ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
+      (pushdown=${{ !(matrix.disable_filter_pushdown || false) }})
+
+    # Do not run this job in parallel for any PR change or branch push
+    # to save some resources.
+    concurrency:
+      group: ${{ github.workflow }}-cron-integration-${{ matrix.name }}-${{ matrix.shard_index }}-${{ matrix.disable_filter_pushdown || false }}-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "SQLite", task: "sqlite", shard_index: 1, shard_total: 3, disable_filter_pushdown: true }
+          - { name: "SQLite", task: "sqlite", shard_index: 2, shard_total: 3, disable_filter_pushdown: true }
+          - { name: "SQLite", task: "sqlite", shard_index: 3, shard_total: 3, disable_filter_pushdown: true }
+
+    uses: ./.github/workflows/go-integration.yml
+    with:
+      name: ${{ matrix.name }}
+      task: ${{ matrix.task }}
+      shard_index: ${{ matrix.shard_index }}
+      shard_total: ${{ matrix.shard_total }}
+      disable_filter_pushdown: ${{ matrix.disable_filter_pushdown || false }}
