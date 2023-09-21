@@ -161,14 +161,12 @@ jobs:
 
   integration:
     # job name must be uniqie; make it unique and nice
-    name: >
-      ${{ matrix.task }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
-      (filter=${{ !matrix.disable_filter_pushdown }}, sort=${{ matrix.enable_sort_pushdown }})
+    name: ${{ matrix.task }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
 
     # Do not run this job in parallel for any PR change or branch push
     # to save some resources.
     concurrency:
-      group: ${{ github.workflow }}-integration-${{ matrix.task }}-${{ matrix.shard_index }}-${{ matrix.disable_filter_pushdown }}-${{ matrix.enable_sort_pushdown }}-${{ github.head_ref || github.ref_name }}
+      group: ${{ github.workflow }}-integration-${{ matrix.task }}-${{ matrix.shard_index }}-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: true
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
@@ -176,21 +174,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [pg, sqlite, postgresql]
+        task: [pg, postgresql, sqlite]
         shard_index: [1, 2, 3]
         shard_total: [3]
-        disable_filter_pushdown: [false]
-        enable_sort_pushdown: [false]
         include:
-          - { task: "mongodb", shard_index: 1, shard_total: 1, disable_filter_pushdown: false, enable_sort_pushdown: false }
+          - { task: "mongodb", shard_index: 1, shard_total: 1 }
 
     uses: ./.github/workflows/call-test-integration.yml
     with:
       task: ${{ matrix.task }}
       shard_index: ${{ matrix.shard_index }}
       shard_total: ${{ matrix.shard_total }}
-      disable_filter_pushdown: ${{ matrix.disable_filter_pushdown }}
-      enable_sort_pushdown: ${{ matrix.enable_sort_pushdown }}
 
   # https://github.com/lemurheavy/coveralls-public/issues/1636
   submit-coveralls:

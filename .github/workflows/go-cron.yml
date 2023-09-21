@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [pg, sqlite, postgresql]
+        task: [pg, postgresql, sqlite]
         shard_index: [1, 2, 3]
         shard_total: [3]
         disable_filter_pushdown: [false, true]

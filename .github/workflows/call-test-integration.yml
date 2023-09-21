@@ -12,11 +12,13 @@ on:
         required: true
         type: number
       disable_filter_pushdown:
-        required: true
+        required: false
         type: boolean
+        default: false
       enable_sort_pushdown:
-        required: true
+        required: false
         type: boolean
+        default: false
 
 env:
   GOPATH: /home/runner/go
