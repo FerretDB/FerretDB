@@ -306,7 +306,7 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *pgxpool.Pool, dbN
 	}
 
 	q := fmt.Sprintf(
-		`CREATE SCHEMA IF NOT EXISTS %s`,
+		`CREATE SCHEMA %s`,
 		pgx.Identifier{dbName}.Sanitize(),
 	)
 
@@ -316,7 +316,7 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *pgxpool.Pool, dbN
 	}
 
 	q = fmt.Sprintf(
-		`CREATE TABLE IF NOT EXISTS %s (%s jsonb)`,
+		`CREATE TABLE %s (%s jsonb)`,
 		pgx.Identifier{dbName, metadataTableName}.Sanitize(),
 		DefaultColumn,
 	)
@@ -482,7 +482,7 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 	}
 
 	q := fmt.Sprintf(
-		`CREATE TABLE IF NOT EXISTS %s (%s jsonb)`,
+		`CREATE TABLE %s (%s jsonb)`,
 		pgx.Identifier{dbName, tableName}.Sanitize(),
 		DefaultColumn,
 	)
@@ -598,7 +598,7 @@ func (r *Registry) collectionDrop(ctx context.Context, p *pgxpool.Pool, dbName, 
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/811
 	q := fmt.Sprintf(
-		`DROP TABLE IF EXISTS %s CASCADE`,
+		`DROP TABLE %s CASCADE`,
 		pgx.Identifier{dbName, c.TableName}.Sanitize(),
 	)
 
