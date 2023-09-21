@@ -1,5 +1,4 @@
 ---
-run-name: call-test-integration-run-name
 on:
   workflow_call:
     inputs:
@@ -29,9 +28,7 @@ env:
 
 jobs:
   test-integration:
-    name: >
-      ${{ inputs.name }} ${{ inputs.shard_index }}/${{ inputs.shard_total }}
-      (pushdown=${{ !inputs.disable_filter_pushdown }})
+    name: ""
 
     # FIXME
     runs-on: ubuntu-22.04

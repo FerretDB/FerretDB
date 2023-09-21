@@ -14,7 +14,10 @@ env:
 
 jobs:
   integration:
-    name: Integration
+    # job name must be uniqie; make it unique and nice
+    name: >
+      ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
+      (pushdown=${{ !(matrix.disable_filter_pushdown || false) }})
 
     # To avoid conflict with go.yml.
     concurrency:

@@ -1,6 +1,5 @@
 ---
 name: Go
-run-name: Go run-name
 on:
   pull_request:
     types:
@@ -161,7 +160,10 @@ jobs:
           git diff --exit-code
 
   integration:
-    name: Integration
+    # job name must be uniqie; make it unique and nice
+    name: >
+      ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
+      (pushdown=${{ !(matrix.disable_filter_pushdown || false) }})
 
     # Do not run this job in parallel for any PR change or branch push
     # to save some resources.
