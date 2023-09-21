@@ -39,7 +39,7 @@ type queryCompatTestCase struct {
 	batchSize      *int32                   // defaults to nil to leave unset
 	projection     bson.D                   // nil for leaving projection unset
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown resultPushdown           // defaults to false
+	resultPushdown resultPushdown           // defaults to noPushdown
 
 	skipIDCheck bool   // skip check collected IDs, use it when no ids returned from query
 	skip        string // skip test for all handlers, must have issue number mentioned

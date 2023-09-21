@@ -37,7 +37,7 @@ type aggregateStagesCompatTestCase struct {
 	maxTime  *time.Duration // optional, leave nil for unset maxTime
 
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown resultPushdown           // defaults to NoPushdown
+	resultPushdown resultPushdown           // defaults to noPushdown
 	skip           string                   // skip test for all handlers, must have issue number mentioned
 }
 
