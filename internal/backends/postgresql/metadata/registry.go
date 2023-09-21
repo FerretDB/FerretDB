@@ -54,7 +54,7 @@ const (
 // There is no authorization yet – if username/password combination is correct,
 // all databases and collections are visible as far as Registry is concerned.
 //
-// Registry metadata is loaded upon first call by client, using conninfo in the context of that client.
+// Registry metadata is loaded upon first call by client, using conninfo in the context of the client.
 //
 //nolint:vet // for readability
 type Registry struct {
@@ -94,6 +94,9 @@ func (r *Registry) Close() {
 // for the username/password combination in the context using [conninfo].
 //
 // It loads metadata if it hasn't been loaded from the database yet.
+//
+// It acquires read lock to check metadata, if metadata is empty it acquires write lock
+// to load metadata, so it is safe for concurrent use.
 //
 // All methods should use this method to check authentication and load metadata.
 func (r *Registry) checkAuthAndLoadMetadataIfEmpty(ctx context.Context) (*pgxpool.Pool, error) {
