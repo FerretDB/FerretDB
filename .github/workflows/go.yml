@@ -163,12 +163,12 @@ jobs:
     # job name must be uniqie; make it unique and nice
     name: >
       ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
-      (pushdown=${{ !(matrix.disable_filter_pushdown || false) }})
+      (filter=${{ !matrix.disable_filter_pushdown }}, sort=${{ matrix.enable_sort_pushdown }})
 
     # Do not run this job in parallel for any PR change or branch push
     # to save some resources.
     concurrency:
-      group: ${{ github.workflow }}-integration-${{ matrix.name }}-${{ matrix.shard_index }}-${{ matrix.disable_filter_pushdown || false }}-${{ github.head_ref || github.ref_name }}
+      group: ${{ github.workflow }}-integration-${{ matrix.name }}-${{ matrix.shard_index }}-${{ matrix.disable_filter_pushdown }}-${{ matrix.enable_sort_pushdown }}-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: true
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
@@ -176,17 +176,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        shard_index: [1, 2, 3]
+        shard_total: [3]
+        disable_filter_pushdown: [false]
+        enable_sort_pushdown: [false]
         include:
-          - { name: "MongoDB", task: "mongodb", shard_index: 1, shard_total: 1 }
-          - { name: "Pg", task: "pg", shard_index: 1, shard_total: 3 }
-          - { name: "Pg", task: "pg", shard_index: 2, shard_total: 3 }
-          - { name: "Pg", task: "pg", shard_index: 3, shard_total: 3 }
-          - { name: "PostgreSQL", task: "postgresql", shard_index: 1, shard_total: 3 }
-          - { name: "PostgreSQL", task: "postgresql", shard_index: 2, shard_total: 3 }
-          - { name: "PostgreSQL", task: "postgresql", shard_index: 3, shard_total: 3 }
-          - { name: "SQLite", task: "sqlite", shard_index: 1, shard_total: 3 }
-          - { name: "SQLite", task: "sqlite", shard_index: 2, shard_total: 3 }
-          - { name: "SQLite", task: "sqlite", shard_index: 3, shard_total: 3 }
+          - { name: "PostgreSQL", task: "postgresql" }
+          - { name: "SQLite", task: "sqlite" }
+          - { name: "MongoDB", task: "mongodb", shard_index: 1, shard_total: 1, disable_filter_pushdown: false, enable_sort_pushdown: false }
 
     uses: ./.github/workflows/call-test-integration.yml
     with:
@@ -194,7 +191,8 @@ jobs:
       task: ${{ matrix.task }}
       shard_index: ${{ matrix.shard_index }}
       shard_total: ${{ matrix.shard_total }}
-      disable_filter_pushdown: ${{ matrix.disable_filter_pushdown || false }}
+      disable_filter_pushdown: ${{ matrix.disable_filter_pushdown }}
+      enable_sort_pushdown: ${{ matrix.enable_sort_pushdown }}
 
   # https://github.com/lemurheavy/coveralls-public/issues/1636
   submit-coveralls:
