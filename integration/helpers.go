@@ -468,7 +468,7 @@ const (
 	sqlitePushdown resultPushdown = 2 // 0000 0010
 
 	// Expects all backends to result in pushdown.
-	allPushdown resultPushdown = 0xFF // 1111 1111
+	allPushdown resultPushdown = 0xff // 1111 1111
 )
 
 // PushdownExpected returns true if the pushdown is expected for currently running backend.
