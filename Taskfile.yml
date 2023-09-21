@@ -203,6 +203,8 @@ tasks:
         -target-tls
         -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50&search_path='
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
+        -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
     vars:
       SHARD_RUN:
         sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}

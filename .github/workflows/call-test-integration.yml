@@ -2,9 +2,6 @@
 on:
   workflow_call:
     inputs:
-      name:
-        required: true
-        type: string
       task:
         required: true
         type: string
@@ -71,7 +68,7 @@ jobs:
         run: bin/task env-setup
 
       - name: >
-          Run ${{ inputs.name }} tests
+          Run ${{ inputs.task }} tests
           (${{ inputs.shard_index }}/${{ inputs.shard_total }},
           filter=${{ !inputs.disable_filter_pushdown }}, sort=${{ inputs.enable_sort_pushdown }})
         run: >

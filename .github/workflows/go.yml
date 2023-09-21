@@ -176,18 +176,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        task: [pg, sqlite, postgresql]
         shard_index: [1, 2, 3]
         shard_total: [3]
         disable_filter_pushdown: [false]
         enable_sort_pushdown: [false]
         include:
-          - { name: "PostgreSQL", task: "postgresql" }
-          - { name: "SQLite", task: "sqlite" }
-          - { name: "MongoDB", task: "mongodb", shard_index: 1, shard_total: 1, disable_filter_pushdown: false, enable_sort_pushdown: false }
+          - { task: "mongodb", shard_index: 1, shard_total: 1, disable_filter_pushdown: false, enable_sort_pushdown: false }
 
     uses: ./.github/workflows/call-test-integration.yml
     with:
-      name: ${{ matrix.name }}
       task: ${{ matrix.task }}
       shard_index: ${{ matrix.shard_index }}
       shard_total: ${{ matrix.shard_total }}
