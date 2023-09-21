@@ -163,8 +163,12 @@ jobs:
     name: >
       Integration ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
       (pushdown=${{ !(matrix.disable_filter_pushdown || false) }})
-    runs-on:
-      group: paid
+
+    # FIXME
+    runs-on: ubuntu-22.04
+    # runs-on:
+    #   group: paid
+
     timeout-minutes: 20
 
     # Do not run this job in parallel for any PR change or branch push
