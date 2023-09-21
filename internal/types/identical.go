@@ -25,6 +25,9 @@ import (
 // Identical returns true if a and b are the same type
 // and has the same value.
 func Identical(a, b any) bool {
+	assertType(a)
+	assertType(b)
+
 	switch a := a.(type) {
 	case *Document:
 		b, ok := b.(*Document)
