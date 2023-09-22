@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -122,7 +121,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	return &reply, nil
 }
 
-// processDropIndexOptions parses index doc and returns the list of indexes to delete
+// processDropIndexOptions parses and validates index doc and returns the list of indexes to delete
 // and true if a flag to drop all indexes except _id_ was set.
 func processDropIndexOptions(command, ns string, v any, existing []backends.IndexInfo) ([]string, bool, error) { //nolint:lll // for readability
 	switch v := v.(type) {
@@ -162,18 +161,7 @@ func processDropIndexOptions(command, ns string, v any, existing []backends.Inde
 			}
 		}
 
-		formattedSpec := make([]string, len(spec))
-
-		for i, key := range spec {
-			order := 1
-			if key.Descending {
-				order = -1
-			}
-
-			formattedSpec[i] = fmt.Sprintf("%s: %d", key.Field, order)
-		}
-
-		msg := fmt.Sprintf("can't find index with key: { %v }", strings.Join(formattedSpec, ", "))
+		msg := fmt.Sprintf("can't find index with key: { %v }", formatIndexKey(spec))
 
 		return nil, false, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexNotFound, msg, command)
 

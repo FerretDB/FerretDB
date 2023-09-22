@@ -120,12 +120,13 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	createCollection := false
 
-	existing, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
+	beforeCreate, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
 	if err != nil {
 		switch {
 		case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
-			// If the namespace doesn't exist, we just don't need to compare new indexes with existing ones.
-			existing = &backends.ListIndexesResult{
+			// If the namespace doesn't exist, we just don't need to compare new indexes with existing ones,
+			// the namespace will be created when indexes are created.
+			beforeCreate = &backends.ListIndexesResult{
 				Indexes: []backends.IndexInfo{},
 			}
 			createCollection = true
@@ -135,14 +136,14 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		}
 	}
 
-	numIndexesBefore := len(existing.Indexes)
+	numIndexesBefore := len(beforeCreate.Indexes)
 
 	// for compatibility
 	if numIndexesBefore == 0 {
 		numIndexesBefore = 1
 	}
 
-	if err = validateIndexesForCreation(command, existing.Indexes, toCreate); err != nil {
+	if err = validateIndexesForCreation(command, beforeCreate.Indexes, toCreate); err != nil {
 		return nil, err
 	}
 
@@ -436,6 +437,7 @@ func processIndexKey(command string, keyDoc *types.Document) ([]backends.IndexKe
 	}
 }
 
+// formatIndexKey formats the given index key to a string.
 func formatIndexKey(key []backends.IndexKeyPair) string {
 	res := make([]string, len(key))
 
@@ -451,6 +453,7 @@ func formatIndexKey(key []backends.IndexKeyPair) string {
 	return strings.Join(res, ", ")
 }
 
+// validateIndexesForCreation validates the given list of indexes to create against the existing ones.
 func validateIndexesForCreation(command string, existing, toCreate []backends.IndexInfo) error {
 	for i, newIdx := range toCreate {
 		newKey := formatIndexKey(newIdx.Key)
