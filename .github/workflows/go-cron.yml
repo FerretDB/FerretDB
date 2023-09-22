@@ -14,7 +14,7 @@ env:
 
 jobs:
   integration:
-    # job name must be uniqie; make it unique and nice
+    # job name must be unique; make it unique and nice
     name: >
       ${{ matrix.task }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
       (filter=${{ matrix.disable_filter_pushdown }}, sort=${{ matrix.enable_sort_pushdown }})

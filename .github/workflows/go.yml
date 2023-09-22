@@ -160,7 +160,7 @@ jobs:
           git diff --exit-code
 
   integration:
-    # job name must be uniqie; make it unique and nice
+    # job name must be unique; make it unique and nice
     name: ${{ matrix.task }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
 
     # Do not run this job in parallel for any PR change or branch push
