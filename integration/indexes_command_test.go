@@ -24,7 +24,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // TestListIndexesCommandNonExistentNS tests that the listIndexes command returns a particular error
@@ -212,8 +211,8 @@ func TestDropIndexesCommandErrors(t *testing.T) {
 	}
 }
 
-func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
-	tt.Parallel()
+func TestCreateIndexesCommandInvalidSpec(t *testing.T) {
+	t.Parallel()
 
 	for name, tc := range map[string]struct {
 		indexes        any  // optional
@@ -407,14 +406,12 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
-
-			var t testtb.TB = tt
+			t.Parallel()
 
 			if tc.missingIndexes {
 				require.Nil(t, tc.indexes, "indexes must be nil if missingIndexes is true")
@@ -426,7 +423,7 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 				providers = append(providers, shareddata.ArrayDocuments)
 			}
 
-			ctx, collection := setup.Setup(tt, providers...)
+			ctx, collection := setup.Setup(t, providers...)
 
 			var rest bson.D
 

@@ -118,6 +118,8 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
+	createCollection := false
+
 	existing, err := c.ListIndexes(ctx, &backends.ListIndexesParams{})
 	if err != nil {
 		switch {
@@ -126,10 +128,18 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 			existing = &backends.ListIndexesResult{
 				Indexes: []backends.IndexInfo{},
 			}
+			createCollection = true
 
 		default:
 			return nil, lazyerrors.Error(err)
 		}
+	}
+
+	numIndexesBefore := len(existing.Indexes)
+
+	// for compatibility
+	if numIndexesBefore == 0 {
+		numIndexesBefore = 1
 	}
 
 	if err = validateIndexesForCreation(command, existing.Indexes, toCreate); err != nil {
@@ -142,6 +152,13 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	resp := new(types.Document)
+
+	resp.Set("numIndexesBefore", int32(numIndexesBefore))
+	resp.Set("numIndexesAfter", int32(numIndexesBefore+len(toCreate)))
+
+	if createCollection {
+		resp.Set("createdCollectionAutomatically", true)
+	}
 
 	resp.Set("ok", float64(1))
 
