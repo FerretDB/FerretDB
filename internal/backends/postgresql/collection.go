@@ -65,7 +65,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3416
+	// TODO https://github.com/FerretDB/FerretDB/issues/3414
 	q := fmt.Sprintf(
 		`SELECT %s FROM %s`,
 		metadata.DefaultColumn,
