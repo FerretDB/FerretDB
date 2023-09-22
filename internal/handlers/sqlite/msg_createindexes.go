@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -112,12 +113,30 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		)
 	}
 
-	params, err := processIndexesArray(command, idxArr)
+	toCreate, err := processIndexesArray(command, idxArr)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = c.CreateIndexes(ctx, params)
+	existing, err := c.ListIndexes(ctx, &backends.ListIndexesParams{})
+	if err != nil {
+		switch {
+		// if the collection does not exist, we just don't need to compare new indexes with existing ones
+		case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
+			existing = &backends.ListIndexesResult{
+				Indexes: []backends.IndexInfo{},
+			}
+
+		default:
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	if err = validateIndexesForCreation(command, existing.Indexes, toCreate); err != nil {
+		return nil, err
+	}
+
+	_, err = c.CreateIndexes(ctx, &backends.CreateIndexesParams{Indexes: toCreate})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -135,13 +154,11 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 }
 
 // processIndexesArray processes the given array of indexes and returns a backends.CreateIndexesParams.
-func processIndexesArray(command string, indexesArray *types.Array) (*backends.CreateIndexesParams, error) {
+func processIndexesArray(command string, indexesArray *types.Array) ([]backends.IndexInfo, error) {
 	iter := indexesArray.Iterator()
 	defer iter.Close()
 
-	params := backends.CreateIndexesParams{
-		Indexes: make([]backends.IndexInfo, indexesArray.Len()),
-	}
+	res := make([]backends.IndexInfo, indexesArray.Len())
 
 	for {
 		var key, val any
@@ -151,7 +168,7 @@ func processIndexesArray(command string, indexesArray *types.Array) (*backends.C
 		case err == nil:
 			// do nothing
 		case errors.Is(err, iterator.ErrIteratorDone):
-			return &params, nil
+			return res, nil
 		default:
 			return nil, lazyerrors.Error(err)
 		}
@@ -174,7 +191,7 @@ func processIndexesArray(command string, indexesArray *types.Array) (*backends.C
 			return nil, err
 		}
 
-		params.Indexes[key.(int)] = *indexInfo
+		res[key.(int)] = *indexInfo
 	}
 }
 
@@ -400,4 +417,48 @@ func processIndexKey(command string, keyDoc *types.Document) ([]backends.IndexKe
 			Descending: descending,
 		})
 	}
+}
+
+func validateIndexesForCreation(command string, existing, toCreate []backends.IndexInfo) error {
+	for _, newIdx := range toCreate {
+		for _, existingIdx := range existing {
+			if newIdx.Name == existingIdx.Name {
+				newFields := make([]string, len(newIdx.Key))
+
+				for i, key := range newIdx.Key {
+					order := "1"
+					if key.Descending {
+						order = "-1"
+					}
+
+					newFields[i] = key.Field + ": " + order
+				}
+
+				existingFields := make([]string, len(existingIdx.Key))
+
+				for i, key := range existingIdx.Key {
+					order := "1"
+					if key.Descending {
+						order = "-1"
+					}
+
+					existingFields[i] = key.Field + ": " + order
+				}
+
+				msg := fmt.Sprintf(
+					"An existing index has the same name as the requested index."+
+						" When index names are not specified, they are auto generated and can cause conflicts."+
+						" Please refer to our documentation. Requested index: { key: { %s }, name: %q },"+
+						" existing index: { key: { %s }, name: %q }",
+					strings.Join(newFields, ", "), newIdx.Name, strings.Join(existingFields, ", "), existingIdx.Name)
+
+				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexKeySpecsConflict, msg, command)
+			}
+		}
+
+		// new index is added to the list of existing, so if there are duplicates, they will be caught
+		existing = append(existing, newIdx)
+	}
+
+	return nil
 }

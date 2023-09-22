@@ -223,8 +223,7 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 		err        *mongo.CommandError // required, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 
-		skip           string // optional, skip test with a specified reason
-		failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue
+		skip string // optional, skip test with a specified reason
 	}{
 		"EmptyIndexes": {
 			indexes: bson.A{},
@@ -343,7 +342,6 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 				Name:    "IndexAlreadyExists",
 				Message: `Identical index already exists: v_1`,
 			},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 		"SameName": {
 			indexes: bson.A{
@@ -371,7 +369,6 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 				"cause conflicts. Please refer to our documentation. " +
 				"Requested index: { key: { bar: -1 }, name: \"index-name\" }, " +
 				"existing index: { key: { foo: -1 }, name: \"index-name\" }",
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 		"SameIndex": {
 			indexes: bson.A{
@@ -390,7 +387,6 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 				Name:    "IndexOptionsConflict",
 				Message: "Index already exists with a different name: foo",
 			},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 		"UniqueTypeDocument": {
 			indexes: bson.A{
@@ -419,9 +415,6 @@ func TestCreateIndexesCommandInvalidSpec(tt *testing.T) {
 			tt.Parallel()
 
 			var t testtb.TB = tt
-			if tc.failsForSQLite != "" {
-				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
-			}
 
 			if tc.missingIndexes {
 				require.Nil(t, tc.indexes, "indexes must be nil if missingIndexes is true")
