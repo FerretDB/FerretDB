@@ -248,7 +248,17 @@ func processDropIndexOptions(command string, v any, existing []backends.IndexInf
 			)
 		}
 
-		return []string{v}, false, nil
+		for _, existingIndex := range existing {
+			if v == existingIndex.Name {
+				return []string{v}, false, nil
+			}
+		}
+
+		return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrIndexNotFound,
+			fmt.Sprintf("index not found with name [%s]", v),
+			command,
+		)
 	}
 
 	return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
