@@ -473,6 +473,8 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 			q += "UNIQUE "
 		}
 
+		// Find a better way to sanitize identifiers.
+		// TODO https://github.com/FerretDB/FerretDB/issues/3418
 		q += "INDEX %q ON %q (%s)"
 
 		columns := make([]string, len(index.Key))
