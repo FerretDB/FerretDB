@@ -22,6 +22,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
@@ -303,7 +305,7 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 	}
 
 	err = r.indexesCreate(ctx, dbName, collectionName, []IndexInfo{{
-		Name:   "_id_",
+		Name:   backends.DefaultIndexName,
 		Key:    []IndexKeyPair{{Field: "_id"}},
 		Unique: true,
 	}})

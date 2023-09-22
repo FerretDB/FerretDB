@@ -463,7 +463,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 			return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrCannotCreateIndex, msg, command)
 		}
 
-		if newIdx.Name == "_id_" && newKey != "_id: 1" {
+		if newIdx.Name == backends.DefaultIndexName && newKey != "_id: 1" {
 			msg := fmt.Sprintf(
 				"The index name '_id_' is reserved for the _id index, which must have key pattern {_id: 1},"+
 					" found key: { %s }",
@@ -479,6 +479,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 				msg := fmt.Sprintf(
 					"Identical index already exists: %s", newIdx.Name,
 				)
+
 				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexAlreadyExists, msg, command)
 			}
 

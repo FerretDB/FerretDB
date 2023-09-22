@@ -209,15 +209,15 @@ func processDropIndexOptions(command, ns string, v any, existing []backends.Inde
 				)
 			}
 
-			if index == "_id_" {
-				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrInvalidOptions, "cannot drop _id index", command,
-				)
-			}
-
 			if len(existing) == 0 {
 				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrNamespaceNotFound, fmt.Sprintf("ns not found %s", ns), command,
+				)
+			}
+
+			if index == backends.DefaultIndexName {
+				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrInvalidOptions, "cannot drop _id index", command,
 				)
 			}
 
@@ -247,7 +247,7 @@ func processDropIndexOptions(command, ns string, v any, existing []backends.Inde
 
 			// Drop all indexes except the _id index.
 			for _, index := range existing {
-				if index.Name == "_id_" {
+				if index.Name == backends.DefaultIndexName {
 					continue
 				}
 
@@ -257,15 +257,15 @@ func processDropIndexOptions(command, ns string, v any, existing []backends.Inde
 			return toDrop, true, nil
 		}
 
-		if v == "_id_" {
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrInvalidOptions, "cannot drop _id index", command,
-			)
-		}
-
 		if len(existing) == 0 {
 			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNamespaceNotFound, fmt.Sprintf("ns not found %s", ns), command,
+			)
+		}
+
+		if v == backends.DefaultIndexName {
+			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrInvalidOptions, "cannot drop _id index", command,
 			)
 		}
 

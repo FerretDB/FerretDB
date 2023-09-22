@@ -124,7 +124,7 @@ func TestCreateIndexesCompat(tt *testing.T) {
 					},
 				},
 			},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3418",
 		},
 		"SameKey": {
 			models: []mongo.IndexModel{
@@ -322,8 +322,6 @@ func TestDropIndexesCompat(t *testing.T) {
 		dropAll       bool                     // set true for drop all indexes, if true dropIndexName must be empty.
 		resultType    compatTestCaseResultType // defaults to nonEmptyResult
 		toCreate      []mongo.IndexModel       // optional, if not nil create indexes before dropping
-
-		skipForSQLite string // optional, if set, the case if partly passes and partly fails for SQLite
 	}{
 		"DropAllCommand": {
 			toCreate: []mongo.IndexModel{
@@ -353,12 +351,10 @@ func TestDropIndexesCompat(t *testing.T) {
 		"NonExistent": {
 			dropIndexName: "nonexistent_1",
 			resultType:    emptyResult,
-			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 		"Empty": {
 			dropIndexName: "",
 			resultType:    emptyResult,
-			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 	} {
 		name, tc := name, tc
@@ -383,10 +379,6 @@ func TestDropIndexesCompat(t *testing.T) {
 				compatCollection := compatCollections[i]
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
-
-					if tc.skipForSQLite != "" {
-						t.Skip(tc.skipForSQLite)
-					}
 
 					if tc.toCreate != nil {
 						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.toCreate)

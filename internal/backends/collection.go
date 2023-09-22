@@ -21,6 +21,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
+// DefaultIndexName is a name of the default index.
+const DefaultIndexName = "_id_"
+
 // Collection is a generic interface for all backends for accessing collection.
 //
 // Collection object should be stateless and temporary;
