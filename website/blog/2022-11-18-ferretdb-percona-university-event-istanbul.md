@@ -1,7 +1,7 @@
 ---
 slug: ferretdb-percona-university-event-istanbul
 title: FerretDB at Percona University in Istanbul
-author: Peter Farkas
+authors: [peter]
 description: We were really excited to join Percona University Istanbul last weekend, an event which was sponsored by FerretDB and HostedPMM.
 image: /img/blog/BSS-1319-1024x684.jpg
 tags: [open source, events, community]

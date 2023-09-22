@@ -299,7 +299,10 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 		toDrop   any                // required, index to drop
 
 		resultType compatTestCaseResultType // optional, defaults to nonEmptyResult
-		skip       string                   // optional, skip test with a specified reason
+
+		skip           string // optional, skip test with a specified reason
+		failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue
+		skipForSQLite  string // optional, if set, the case if partly passes and partly fails for SQLite
 	}{
 		"MultipleIndexesByName": {
 			toCreate: []mongo.IndexModel{
@@ -321,15 +324,30 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 			toDrop:     bson.A{"non-existent", "invalid"},
 			resultType: emptyResult,
 		},
-		"InvalidMultipleIndexType": {
-			toDrop:     bson.A{1},
+		"MultipleIndexesWithDefault": {
+			toCreate: []mongo.IndexModel{
+				{Keys: bson.D{{"v", 1}}},
+			},
+			toDrop:     bson.A{"v_1", "_id_"},
 			resultType: emptyResult,
+		},
+		"InvalidMultipleIndexType": {
+			toDrop:        bson.A{1},
+			resultType:    emptyResult,
+			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 		"DocumentIndex": {
 			toCreate: []mongo.IndexModel{
 				{Keys: bson.D{{"v", -1}}},
 			},
 			toDrop: bson.D{{"v", -1}},
+		},
+		"SimilarIndexes": {
+			toCreate: []mongo.IndexModel{
+				{Keys: bson.D{{"v", 1}, {"foo", 1}}},
+				{Keys: bson.D{{"v", 1}, {"bar", 1}}},
+			},
+			toDrop: bson.D{{"v", 1}, {"bar", 1}},
 		},
 		"DropAllExpression": {
 			toCreate: []mongo.IndexModel{
@@ -345,8 +363,9 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 				{Keys: bson.D{{"foo.bar", 1}}},
 				{Keys: bson.D{{"foo", 1}, {"bar", 1}}},
 			},
-			toDrop:     "***",
-			resultType: emptyResult,
+			toDrop:         "***",
+			resultType:     emptyResult,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 		"NonExistentDescendingID": {
 			toDrop:     bson.D{{"_id", -1}},
@@ -387,7 +406,14 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 				tt.Run(targetCollection.Name(), func(tt *testing.T) {
 					tt.Helper()
 
-					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3287")
+					var t testtb.TB = tt
+					if tc.failsForSQLite != "" {
+						t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+					}
+
+					if tc.skipForSQLite != "" {
+						t.Skip(tc.skipForSQLite)
+					}
 
 					if tc.toCreate != nil {
 						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.toCreate)
@@ -474,8 +500,7 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 				})
 			}
 
-			// https://github.com/FerretDB/FerretDB/issues/3287
-			if setup.IsSQLite(tt) {
+			if tc.failsForSQLite != "" {
 				return
 			}
 

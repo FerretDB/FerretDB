@@ -28,20 +28,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
-
-// notImplemented returns error for stub command handlers.
-//
-// Remove it.
-// TODO https://github.com/FerretDB/FerretDB/issues/3069
-func notImplemented(command string) error {
-	return commonerrors.NewCommandErrorMsg(
-		commonerrors.ErrNotImplemented,
-		"I'm a stub, not a real handler for "+command,
-	)
-}
 
 // Handler implements handlers.Interface.
 type Handler struct {
@@ -79,6 +67,7 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 		b, err = postgresql.NewBackend(&postgresql.NewBackendParams{
 			URI: opts.URI,
 			L:   opts.L,
+			P:   opts.StateProvider,
 		})
 	case "sqlite":
 		b, err = sqlite.NewBackend(&sqlite.NewBackendParams{
@@ -86,17 +75,16 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 			L:   opts.L,
 			P:   opts.StateProvider,
 		})
-
-		if opts.EnableOplog {
-			b = oplog.NewBackend(b, opts.L.Named("oplog"))
-		}
-
 	default:
 		panic("unknown backend: " + opts.Backend)
 	}
 
 	if err != nil {
 		return nil, err
+	}
+
+	if opts.EnableOplog {
+		b = oplog.NewBackend(b, opts.L.Named("oplog"))
 	}
 
 	return &Handler{

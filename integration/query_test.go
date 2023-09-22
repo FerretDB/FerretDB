@@ -1039,3 +1039,32 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 		})
 	}
 }
+
+// TestQueryIDDoc checks that the order of fields in the _id document matters.
+func TestQueryIDDoc(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	_, err := collection.InsertOne(ctx, bson.D{
+		{"_id", bson.D{{"a", int32(1)}, {"z", int32(2)}}},
+		{"v", int32(1)},
+	})
+	require.NoError(t, err)
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
+		{"v", int32(2)},
+	})
+	require.NoError(t, err)
+
+	expected := []bson.D{{
+		{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
+		{"v", int32(2)},
+	}}
+	actual := FilterAll(t, ctx, collection, bson.D{{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}}})
+	AssertEqualDocumentsSlice(t, expected, actual)
+
+	expected = []bson.D{}
+	actual = FilterAll(t, ctx, collection, bson.D{{"_id", bson.D{{"z", int32(4)}, {"a", int32(3)}}}})
+	AssertEqualDocumentsSlice(t, expected, actual)
+}

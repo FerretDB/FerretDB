@@ -138,6 +138,16 @@ func (r *Registry) DatabaseGetExisting(ctx context.Context, dbName string) *fsql
 	return r.p.GetExisting(ctx, dbName)
 }
 
+// DatabaseGetOrCreate returns a connection to existing database or newly created database.
+func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsql.DB, error) {
+	defer observability.FuncCall(ctx)()
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	return r.databaseGetOrCreate(ctx, dbName)
+}
+
 // databaseGetOrCreate returns a connection to existing database or newly created database.
 //
 // It does not hold the lock.
@@ -169,14 +179,16 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, dbName string) (*fsq
 	return db, nil
 }
 
-// DatabaseGetOrCreate returns a connection to existing database or newly created database.
-func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsql.DB, error) {
+// DatabaseDrop drops the database.
+//
+// Returned boolean value indicates whether the database was dropped.
+func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
 	defer observability.FuncCall(ctx)()
 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	return r.databaseGetOrCreate(ctx, dbName)
+	return r.databaseDrop(ctx, dbName)
 }
 
 // databaseDrop drops the database.
@@ -190,18 +202,6 @@ func (r *Registry) databaseDrop(ctx context.Context, dbName string) bool {
 	delete(r.colls, dbName)
 
 	return r.p.Drop(ctx, dbName)
-}
-
-// DatabaseDrop drops the database.
-//
-// Returned boolean value indicates whether the database was dropped.
-func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) bool {
-	defer observability.FuncCall(ctx)()
-
-	r.rw.Lock()
-	defer r.rw.Unlock()
-
-	return r.databaseDrop(ctx, dbName)
 }
 
 // CollectionList returns a sorted copy of collections in the database.
@@ -226,6 +226,20 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 
 	sort.Slice(res, func(i, j int) bool { return res[i].Name < res[j].Name })
 	return res, nil
+}
+
+// CollectionCreate creates a collection in the database.
+// Database will be created automatically if needed.
+//
+// Returned boolean value indicates whether the collection was created.
+// If collection already exists, (false, nil) is returned.
+func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
+	defer observability.FuncCall(ctx)()
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	return r.collectionCreate(ctx, dbName, collectionName)
 }
 
 // collectionCreate creates a collection in the database.
@@ -301,18 +315,17 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 	return true, nil
 }
 
-// CollectionCreate creates a collection in the database.
-// Database will be created automatically if needed.
+// CollectionGet returns a copy of collection metadata.
+// It can be safely modified by a caller.
 //
-// Returned boolean value indicates whether the collection was created.
-// If collection already exists, (false, nil) is returned.
-func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
+// If database or collection does not exist, nil is returned.
+func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName string) *Collection {
 	defer observability.FuncCall(ctx)()
 
-	r.rw.Lock()
-	defer r.rw.Unlock()
+	r.rw.RLock()
+	defer r.rw.RUnlock()
 
-	return r.collectionCreate(ctx, dbName, collectionName)
+	return r.collectionGet(dbName, collectionName)
 }
 
 // collectionGet returns a copy of collection metadata.
@@ -330,17 +343,17 @@ func (r *Registry) collectionGet(dbName, collectionName string) *Collection {
 	return colls[collectionName].deepCopy()
 }
 
-// CollectionGet returns a copy of collection metadata.
-// It can be safely modified by a caller.
+// CollectionDrop drops a collection in the database.
 //
-// If database or collection does not exist, nil is returned.
-func (r *Registry) CollectionGet(ctx context.Context, dbName, collectionName string) *Collection {
+// Returned boolean value indicates whether the collection was dropped.
+// If database or collection did not exist, (false, nil) is returned.
+func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
-	r.rw.RLock()
-	defer r.rw.RUnlock()
+	r.rw.Lock()
+	defer r.rw.Unlock()
 
-	return r.collectionGet(dbName, collectionName)
+	return r.collectionDrop(ctx, dbName, collectionName)
 }
 
 // collectionDrop drops a collection in the database.
@@ -377,19 +390,6 @@ func (r *Registry) collectionDrop(ctx context.Context, dbName, collectionName st
 	return true, nil
 }
 
-// CollectionDrop drops a collection in the database.
-//
-// Returned boolean value indicates whether the collection was dropped.
-// If database or collection did not exist, (false, nil) is returned.
-func (r *Registry) CollectionDrop(ctx context.Context, dbName, collectionName string) (bool, error) {
-	defer observability.FuncCall(ctx)()
-
-	r.rw.Lock()
-	defer r.rw.Unlock()
-
-	return r.collectionDrop(ctx, dbName, collectionName)
-}
-
 // CollectionRename renames a collection in the database.
 //
 // The collection name is update, but original table name is kept.
@@ -422,6 +422,18 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 	delete(r.colls[dbName], oldCollectionName)
 
 	return true, nil
+}
+
+// IndexesCreate creates indexes in the collection.
+//
+// Existing indexes with given names are ignored (TODO?).
+func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
+	defer observability.FuncCall(ctx)()
+
+	r.rw.Lock()
+	defer r.rw.Unlock()
+
+	return r.indexesCreate(ctx, dbName, collectionName, indexes)
 }
 
 // indexesCreate creates indexes in the collection.
@@ -491,16 +503,14 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 	return nil
 }
 
-// IndexesCreate creates indexes in the collection.
-//
-// Existing indexes with given names are ignored (TODO?).
-func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
+// IndexesDrop drops provided indexes for the given collection.
+func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName string, toDrop []string) error {
 	defer observability.FuncCall(ctx)()
 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	return r.indexesCreate(ctx, dbName, collectionName, indexes)
+	return r.indexesDrop(ctx, dbName, collectionName, toDrop)
 }
 
 // indexesDrop remove given connection's indexes.
@@ -535,6 +545,11 @@ func (r *Registry) indexesDrop(ctx context.Context, dbName, collectionName strin
 		}
 
 		c.Settings.Indexes = slices.Delete(c.Settings.Indexes, i, i+1)
+	}
+
+	q := fmt.Sprintf("UPDATE %q SET settings = ?", metadataTableName)
+	if _, err := db.ExecContext(ctx, q, c.Settings); err != nil {
+		return lazyerrors.Error(err)
 	}
 
 	r.colls[dbName][collectionName] = c

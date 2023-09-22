@@ -452,7 +452,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		)
 	}
 
-	stats, err := relationStats(ctx, db, []*metadata.Collection{coll})
+	stats, err := collectionsStats(ctx, db, []*metadata.Collection{coll})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -530,6 +530,16 @@ func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateI
 	}
 
 	return new(backends.CreateIndexesResult), nil
+}
+
+// DropIndexes implements backends.Collection interface.
+func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
+	err := c.r.IndexesDrop(ctx, c.dbName, c.name, params.Indexes)
+	if err != nil {
+		return nil, err
+	}
+
+	return new(backends.DropIndexesResult), nil
 }
 
 // check interfaces

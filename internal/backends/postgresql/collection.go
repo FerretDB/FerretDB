@@ -41,37 +41,50 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 // InsertAll implements backends.Collection interface.
 func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
-	panic("not implemented")
+	// TODO https://github.com/FerretDB/FerretDB/issues/3395
+	return new(backends.InsertAllResult), nil
 }
 
 // UpdateAll implements backends.Collection interface.
 func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllParams) (*backends.UpdateAllResult, error) {
-	panic("not implemented")
+	// TODO https://github.com/FerretDB/FerretDB/issues/3391
+	return new(backends.UpdateAllResult), nil
 }
 
 // DeleteAll implements backends.Collection interface.
 func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllParams) (*backends.DeleteAllResult, error) {
-	panic("not implemented")
+	// TODO https://github.com/FerretDB/FerretDB/issues/3400
+	return new(backends.DeleteAllResult), nil
 }
 
 // Explain implements backends.Collection interface.
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
-	panic("not implemented")
+	// TODO https://github.com/FerretDB/FerretDB/issues/3389
+	return new(backends.ExplainResult), nil
 }
 
 // Stats implements backends.Collection interface.
 func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
-	panic("not implemented")
+	// TODO https://github.com/FerretDB/FerretDB/issues/3398
+	return new(backends.CollectionStatsResult), nil
 }
 
 // ListIndexes implements backends.Collection interface.
 func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
-	panic("not implemented")
+	// TODO https://github.com/FerretDB/FerretDB/issues/3394
+	return new(backends.ListIndexesResult), nil
 }
 
 // CreateIndexes implements backends.Collection interface.
 func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) { //nolint:lll // for readability
-	panic("not implemented")
+	// TODO https://github.com/FerretDB/FerretDB/issues/3399
+	return new(backends.CreateIndexesResult), nil
+}
+
+// DropIndexes implements backends.Collection interface.
+func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/3397
+	return new(backends.DropIndexesResult), nil
 }
 
 // check interfaces

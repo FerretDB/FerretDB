@@ -8,6 +8,8 @@ env:
 vars:
   SHARD_INDEX: 1
   SHARD_TOTAL: 1
+  DISABLE_FILTER_PUSHDOWN: false
+  ENABLE_SORT_PUSHDOWN: false
   TEST_RUN: ""
   TEST_TIMEOUT: 35m
   BENCH_TIME: 5s
@@ -186,7 +188,8 @@ tasks:
     deps:
       - test-integration-pg
       - test-integration-mongodb
-      # no test-integration-sqlite yet
+      - test-integration-sqlite
+      # no test-integration-postgresql yet
       # no test-integration-hana
 
   test-integration-pg:
@@ -200,12 +203,32 @@ tasks:
         -target-tls
         -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50&search_path='
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
+        -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
+    vars:
+      SHARD_RUN:
+        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
+
+  test-integration-postgresql:
+    desc: "Run integration tests for new `postgresql` backend"
+    dir: integration
+    cmds:
+      - >
+        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
+        -coverprofile=integration-postgresql.txt
+        -target-backend=ferretdb-postgresql
+        -target-tls
+        -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50&search_path='
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -use-new-pg
+        -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
+        -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
     vars:
       SHARD_RUN:
         sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
 
   test-integration-sqlite:
-    desc: "Run integration tests for `sqlite` handler"
+    desc: "Run integration tests for `sqlite` backend"
     dir: integration
     cmds:
       - >
@@ -215,6 +238,8 @@ tasks:
         -sqlite-url=file:../tmp/sqlite-tests/
         -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
+        -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
     vars:
       SHARD_RUN:
         sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
@@ -499,7 +524,7 @@ tasks:
       - task: docker-build
         vars:
           FILE: all-in-one
-          PLATFORM: linux/amd64,linux/arm64 # no mongosh for arm/v7
+          PLATFORM: linux/amd64,linux/arm64 # no mongosh for arm/v6 and arm/v7
           OUTPUT: type=image,push=true
 
   # TODO https://github.com/FerretDB/FerretDB/issues/2212
@@ -569,7 +594,7 @@ tasks:
   fmt-yaml:
     desc: "Format YAML files"
     cmds:
-      - docker compose run --rm prettier --write --parser=yaml "**/*.yml"
+      - docker compose run --rm prettier --write --parser=yaml --print-width=120 "**/*.yml"
 
   docs:
     desc: "Format, lint and build documentation"

@@ -134,14 +134,12 @@ func (c *conn) run(ctx context.Context) (err error) {
 		cancel(lazyerrors.Errorf("run exits: %w", err))
 	}()
 
-	connInfo := conninfo.NewConnInfo()
-	defer connInfo.Close()
-
+	connInfo := conninfo.New()
 	if c.netConn.RemoteAddr().Network() != "unix" {
 		connInfo.PeerAddr = c.netConn.RemoteAddr().String()
 	}
 
-	ctx = conninfo.WithConnInfo(ctx, connInfo)
+	ctx = conninfo.Ctx(ctx, connInfo)
 
 	done := make(chan struct{})
 

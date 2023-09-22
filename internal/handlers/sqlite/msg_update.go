@@ -44,14 +44,31 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2612
 	_ = params.Ordered
 
+	var we *writeError
+
 	matched, modified, upserted, err := h.updateDocument(ctx, params)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		switch {
+		case backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID):
+			// TODO https://github.com/FerretDB/FerretDB/issues/3263
+			we = &writeError{
+				index:  int32(0),
+				code:   commonerrors.ErrDuplicateKeyInsert,
+				errmsg: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
+			}
+
+		default:
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	res := must.NotFail(types.NewDocument(
 		"n", matched,
 	))
+
+	if we != nil {
+		res.Set("writeErrors", must.NotFail(types.NewArray(we.Document())))
+	}
 
 	if upserted.Len() != 0 {
 		res.Set("upserted", upserted)
