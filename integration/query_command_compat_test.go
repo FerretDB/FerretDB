@@ -107,7 +107,9 @@ func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompa
 						msg = "Query pushdown is disabled, but target resulted with pushdown"
 					}
 
-					assert.Equal(t, tc.resultPushdown.PushdownExpected(t), explainRes.Map()["pushdown"], msg)
+					doc := ConvertDocument(t, explainRes)
+					pushdown, _ := doc.Get("pushdown")
+					assert.Equal(t, tc.resultPushdown.PushdownExpected(t), pushdown, msg)
 
 					targetCommand := append(
 						bson.D{
