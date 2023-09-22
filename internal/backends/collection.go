@@ -113,7 +113,6 @@ type InsertAllResult struct{}
 // They will be frozen.
 //
 // Both database and collection may or may not exist; they should be created automatically if needed.
-// TODO https://github.com/FerretDB/FerretDB/issues/3069
 func (cc *collectionContract) InsertAll(ctx context.Context, params *InsertAllParams) (*InsertAllResult, error) {
 	defer observability.FuncCall(ctx)()
 

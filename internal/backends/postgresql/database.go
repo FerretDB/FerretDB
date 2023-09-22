@@ -44,27 +44,32 @@ func (db *database) Collection(name string) (backends.Collection, error) {
 //
 //nolint:lll // for readability
 func (db *database) ListCollections(ctx context.Context, params *backends.ListCollectionsParams) (*backends.ListCollectionsResult, error) {
-	panic("not implemented")
+	// TODO https://github.com/FerretDB/FerretDB/issues/3406
+	return new(backends.ListCollectionsResult), nil
 }
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	panic("not implemented")
+	// TODO https://github.com/FerretDB/FerretDB/issues/3406
+	return nil
 }
 
 // DropCollection implements backends.Database interface.
 func (db *database) DropCollection(ctx context.Context, params *backends.DropCollectionParams) error {
-	panic("not implemented")
+	// TODO https://github.com/FerretDB/FerretDB/issues/3406
+	return nil
 }
 
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
-	panic("not implemented")
+	// TODO https://github.com/FerretDB/FerretDB/issues/3393
+	return nil
 }
 
 // Stats implements backends.Database interface.
 func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsParams) (*backends.DatabaseStatsResult, error) {
-	panic("not implemented")
+	// TODO https://github.com/FerretDB/FerretDB/issues/3402
+	return new(backends.DatabaseStatsResult), nil
 }
 
 // check interfaces

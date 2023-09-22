@@ -67,6 +67,7 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 		b, err = postgresql.NewBackend(&postgresql.NewBackendParams{
 			URI: opts.URI,
 			L:   opts.L,
+			P:   opts.StateProvider,
 		})
 	case "sqlite":
 		b, err = sqlite.NewBackend(&sqlite.NewBackendParams{
@@ -74,17 +75,16 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 			L:   opts.L,
 			P:   opts.StateProvider,
 		})
-
-		if opts.EnableOplog {
-			b = oplog.NewBackend(b, opts.L.Named("oplog"))
-		}
-
 	default:
 		panic("unknown backend: " + opts.Backend)
 	}
 
 	if err != nil {
 		return nil, err
+	}
+
+	if opts.EnableOplog {
+		b = oplog.NewBackend(b, opts.L.Named("oplog"))
 	}
 
 	return &Handler{
