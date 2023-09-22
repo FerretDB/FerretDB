@@ -349,6 +349,11 @@ func init() {
 	must.BeTrue(-doubleMaxPrec != -doubleMaxPrec-1)
 	must.BeTrue(-doubleMaxPrec-1 == -doubleMaxPrec-2)
 
+	must.BeTrue(int64(-doubleMaxPrec) != int64(-doubleMaxPrec-1))
+	must.BeTrue(int64(-doubleMaxPrec-1) == int64(-doubleMaxPrec-2))
+
+	must.BeTrue(-doubleMaxPrec != -doubleMaxPrec-1)
+
 	must.BeTrue(doubleMaxOverflow > float64(math.MaxInt64))
 	must.BeTrue(doubleMinOverflow < float64(math.MinInt64))
 
