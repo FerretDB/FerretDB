@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package backends provides common interfaces and code for all backend implementations.
+// Package backends provides common interfaces ([Backend], [Database], and [Collection])
+// and code for all backend implementations.
 //
 // # Design principles
 //
@@ -35,7 +36,4 @@
 //     Contracts enforce error codes; they are not documented in the code comments
 //     but are visible in the contract's code (to avoid duplication).
 //     Methods should return different error codes only if the difference is important for the handler.
-//
-// Update, expand, etc.
-// TODO https://github.com/FerretDB/FerretDB/issues/3069
 package backends

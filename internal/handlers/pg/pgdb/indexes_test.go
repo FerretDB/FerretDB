@@ -126,7 +126,7 @@ func TestCreateIndexIfNotExists(t *testing.T) {
 			}
 
 			expectedIndexDef += fmt.Sprintf(
-				" INDEX %s ON \"%s\".%s USING btree (%s)",
+				" INDEX %s ON %q.%s USING btree (%s)",
 				pgIndexName, databaseName, tableName, tc.expectedDefinition,
 			)
 			assert.Equal(t, expectedIndexDef, indexDef)
