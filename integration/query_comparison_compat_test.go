@@ -118,6 +118,56 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			resultPushdown: allPushdown,
 		},
 
+		"Float64PrecMax": {
+			filter:         bson.D{{"v", float64(1 << 53)}},
+			resultPushdown: allPushdown,
+		},
+		"Float64PrecMaxPlusOne": {
+			filter:         bson.D{{"v", float64(1<<53 + 1)}},
+			resultPushdown: allPushdown,
+		},
+		"Float64PrecMaxMinusOne": {
+			filter:         bson.D{{"v", float64(1<<53 - 1)}},
+			resultPushdown: allPushdown,
+		},
+		"Float64PrecMin": {
+			filter:         bson.D{{"v", -float64(1<<53 - 1)}},
+			resultPushdown: allPushdown,
+		},
+		"Float64PrecMinPlus": {
+			filter:         bson.D{{"v", -float64(1<<53-1) + 1}},
+			resultPushdown: allPushdown,
+		},
+		"Float64PrecMinMinus": {
+			filter:         bson.D{{"v", -float64(1<<53-1) - 1}},
+			resultPushdown: allPushdown,
+		},
+
+		"Int64PrecMax": {
+			filter:         bson.D{{"v", int64(1 << 53)}},
+			resultPushdown: allPushdown,
+		},
+		"Int64PrecMaxPlusOne": {
+			filter:         bson.D{{"v", int64(1<<53 + 1)}},
+			resultPushdown: allPushdown,
+		},
+		"Int64PrecMaxMinusOne": {
+			filter:         bson.D{{"v", int64(1<<53 - 1)}},
+			resultPushdown: allPushdown,
+		},
+		"Int64PrecMin": {
+			filter:         bson.D{{"v", -int64(1<<53 - 1)}},
+			resultPushdown: allPushdown,
+		},
+		"Int64PrecMinPlus": {
+			filter:         bson.D{{"v", -int64(1<<53-1) + 1}},
+			resultPushdown: allPushdown,
+		},
+		"Int64PrecMinMinus": {
+			filter:         bson.D{{"v", -int64(1<<53-1) - 1}},
+			resultPushdown: allPushdown,
+		},
+
 		"Int64Big": {
 			filter:         bson.D{{"v", int64(1 << 61)}},
 			resultPushdown: allPushdown,
