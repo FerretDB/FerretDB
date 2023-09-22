@@ -202,8 +202,7 @@ func TestCreateIndexesCompat(tt *testing.T) {
 					Options: options.Index().SetName("bar"),
 				},
 			},
-			resultType:     emptyResult,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
+			resultType: emptyResult,
 		},
 		"SameNameDifferentKeys": {
 			models: []mongo.IndexModel{
@@ -216,8 +215,7 @@ func TestCreateIndexesCompat(tt *testing.T) {
 					Options: options.Index().SetName("index-name"),
 				},
 			},
-			resultType:     emptyResult,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
+			resultType: emptyResult,
 		},
 	} {
 		name, tc := name, tc
