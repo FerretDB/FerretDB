@@ -51,9 +51,9 @@ const config = {
           blogSidebarTitle: 'All posts',
           blogSidebarCount: 'ALL',
           feedOptions: {
-            type: 'rss', // or whichever feed types you prefer
+            type: 'all',
             title: 'The FerretDB Blog',
-            description: 'Welcome to the FerretDB blog- The truly open source replacement for MongoDB',
+            description: 'Welcome to the FerretDB blog - The truly open source replacement for MongoDB',
             copyright: `Copyright © ${new Date().getFullYear()} FerretDB, Inc.`,
             createFeedItems: async (params) => {
               const {
