@@ -16,6 +16,7 @@ package sqlite
 
 import (
 	"context"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"strings"
@@ -31,6 +32,27 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
+
+func init() {
+	sqlite3.MustRegisterDeterministicScalarFunction("test_func", 2, func(ctx *sqlite3.FunctionContext, args []driver.Value) (driver.Value, error) {
+		if len(args) != 2 {
+			return nil, fmt.Errorf("Expected 2 args!! >:(")
+		}
+
+		var n1, n2 int
+		var ok bool
+
+		if n1, ok = args[0].(int); !ok {
+			return nil, fmt.Errorf("wrong type... (╯°□°)╯︵ ┻━┻ (%v,%T)", args[0], args[0])
+		}
+
+		if n2, ok = args[1].(int); !ok {
+			return nil, fmt.Errorf("wrong type... (╯°□°)╯︵ ┻━┻(%T)", n2)
+		}
+
+		return n1 + n2, nil
+	})
+}
 
 // collection implements backends.Collection interface.
 type collection struct {
@@ -64,7 +86,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	var whereClause string
+	//var whereClause string
 	var args []any
 
 	// that logic should exist in one place
@@ -73,13 +95,15 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		v, _ := params.Filter.Get("_id")
 		if v != nil {
 			if id, ok := v.(types.ObjectID); ok {
-				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+				//whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
 				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
 			}
 		}
 	}
 
-	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+	//q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+
+	q := fmt.Sprintf(`SELECT test_func('1', '2')`)
 
 	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
