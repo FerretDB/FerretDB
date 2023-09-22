@@ -452,7 +452,7 @@ func formatIndexKey(key []backends.IndexKeyPair) string {
 }
 
 func validateIndexesForCreation(command string, existing, toCreate []backends.IndexInfo) error {
-	for _, newIdx := range toCreate {
+	for i, newIdx := range toCreate {
 		newKey := formatIndexKey(newIdx.Key)
 
 		if newIdx.Name == "" {
@@ -474,15 +474,26 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 			return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, command)
 		}
 
-		for _, existingIdx := range existing {
-			existingKey := formatIndexKey(existingIdx.Key)
+		// Check for duplicates within the list of indexes to create.
+		for j := i + 1; j < len(toCreate); j++ {
+			dupeKey := formatIndexKey(toCreate[j].Key)
 
-			if newIdx.Name == existingIdx.Name && newKey == existingKey {
+			if newIdx.Name == toCreate[j].Name && newKey == dupeKey {
 				msg := fmt.Sprintf(
 					"Identical index already exists: %s", newIdx.Name,
 				)
 
 				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexAlreadyExists, msg, command)
+			}
+		}
+
+		// Check for conflicts with existing indexes.
+		for _, existingIdx := range existing {
+			existingKey := formatIndexKey(existingIdx.Key)
+
+			if newIdx.Name == existingIdx.Name && newKey == existingKey {
+				// Fully identical indexes are allowed.
+				break
 			}
 
 			if newIdx.Name == existingIdx.Name {
@@ -502,9 +513,6 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexOptionsConflict, msg, command)
 			}
 		}
-
-		// new index is added to the list of existing, so if there are duplicates across new indexes, they will be caught
-		existing = append(existing, newIdx)
 	}
 
 	return nil
