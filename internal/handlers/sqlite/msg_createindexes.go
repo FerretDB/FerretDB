@@ -463,6 +463,15 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 			return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrCannotCreateIndex, msg, command)
 		}
 
+		if newIdx.Name == "_id_" && newKey != "_id: 1" {
+			msg := fmt.Sprintf(
+				"The index name '_id_' is reserved for the _id index, which must have key pattern {_id: 1},"+
+					" found key: { %s }",
+				newKey,
+			)
+			return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, command)
+		}
+
 		for _, existingIdx := range existing {
 			existingKey := formatIndexKey(existingIdx.Key)
 
