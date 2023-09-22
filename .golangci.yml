@@ -40,6 +40,7 @@ linters-settings:
         files:
           - $all
           - "!**/internal/backends/sqlite/*.go"
+          - "!**/internal/backends/postgresql/*.go"
           - "!**/internal/backends/postgresql/metadata/*.go"
           - "!**/internal/handlers/pg/pgdb/*.go"
           - "!**/internal/handlers/hana/hanadb/*.go"

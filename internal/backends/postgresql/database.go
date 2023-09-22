@@ -18,23 +18,26 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 )
 
 // database implements backends.Database interface.
 type database struct {
+	r    *metadata.Registry
 	name string
 }
 
 // newDatabase creates a new Database.
-func newDatabase(name string) backends.Database {
+func newDatabase(r *metadata.Registry, name string) backends.Database {
 	return backends.DatabaseContract(&database{
+		r:    r,
 		name: name,
 	})
 }
 
 // Collection implements backends.Database interface.
 func (db *database) Collection(name string) (backends.Collection, error) {
-	return newCollection(db.name, name), nil
+	return newCollection(db.r, db.name, name), nil
 }
 
 // ListCollections implements backends.Database interface.
