@@ -123,8 +123,8 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	existing, err := c.ListIndexes(ctx, &backends.ListIndexesParams{})
 	if err != nil {
 		switch {
-		// if the collection does not exist, we just don't need to compare new indexes with existing ones
 		case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
+			// If the namespace doesn't exist, we just don't need to compare new indexes with existing ones.
 			existing = &backends.ListIndexesResult{
 				Indexes: []backends.IndexInfo{},
 			}
