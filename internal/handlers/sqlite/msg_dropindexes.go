@@ -85,7 +85,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 		case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
 			// If the namespace doesn't exist, it's an error, but it's less prior than invalid index spec,
 			// so it is handled inside processDropIndexOptions.
-			beforeDrop = &backends.ListIndexesResult{Indexes: make([]backends.IndexInfo, 0)}
+			beforeDrop = &backends.ListIndexesResult{Indexes: []backends.IndexInfo{}}
 
 		default:
 			return nil, lazyerrors.Error(err)

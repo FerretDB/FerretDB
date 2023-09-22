@@ -120,7 +120,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	createCollection := false
 
-	existing, err := c.ListIndexes(ctx, &backends.ListIndexesParams{})
+	existing, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
 	if err != nil {
 		switch {
 		case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
@@ -460,6 +460,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 				"Error in specification { key: { %s }, name: %q, v: 2 } :: caused by :: index name cannot be empty",
 				newKey, newIdx.Name,
 			)
+
 			return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrCannotCreateIndex, msg, command)
 		}
 
@@ -469,6 +470,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 					" found key: { %s }",
 				newKey,
 			)
+
 			return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, command)
 		}
 
@@ -491,6 +493,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 						" existing index: { key: { %s }, name: %q }",
 					newKey, newIdx.Name, existingKey, existingIdx.Name,
 				)
+
 				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexKeySpecsConflict, msg, command)
 			}
 
