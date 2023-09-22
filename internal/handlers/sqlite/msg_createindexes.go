@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"strings"
 
-	"golang.org/x/exp/slices"
-
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -421,30 +419,35 @@ func processIndexKey(command string, keyDoc *types.Document) ([]backends.IndexKe
 	}
 }
 
+func formatIndexKey(key []backends.IndexKeyPair) string {
+	res := make([]string, len(key))
+
+	for i, pair := range key {
+		order := "1"
+		if pair.Descending {
+			order = "-1"
+		}
+
+		res[i] = pair.Field + ": " + order
+	}
+
+	return strings.Join(res, ", ")
+}
+
 func validateIndexesForCreation(command string, existing, toCreate []backends.IndexInfo) error {
 	for _, newIdx := range toCreate {
+		newKey := formatIndexKey(newIdx.Key)
+
+		if newIdx.Name == "" {
+			msg := fmt.Sprintf(
+				"Error in specification { key: { %s }, name: %q, v: 2 } :: caused by :: index name cannot be empty",
+				newKey, newIdx.Name,
+			)
+			return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrCannotCreateIndex, msg, command)
+		}
+
 		for _, existingIdx := range existing {
-			newFields := make([]string, len(newIdx.Key))
-
-			for i, key := range newIdx.Key {
-				order := "1"
-				if key.Descending {
-					order = "-1"
-				}
-
-				newFields[i] = key.Field + ": " + order
-			}
-
-			existingFields := make([]string, len(existingIdx.Key))
-
-			for i, key := range existingIdx.Key {
-				order := "1"
-				if key.Descending {
-					order = "-1"
-				}
-
-				existingFields[i] = key.Field + ": " + order
-			}
+			existingKey := formatIndexKey(existingIdx.Key)
 
 			if newIdx.Name == existingIdx.Name {
 				msg := fmt.Sprintf(
@@ -452,12 +455,12 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 						" When index names are not specified, they are auto generated and can cause conflicts."+
 						" Please refer to our documentation. Requested index: { key: { %s }, name: %q },"+
 						" existing index: { key: { %s }, name: %q }",
-					strings.Join(newFields, ", "), newIdx.Name, strings.Join(existingFields, ", "), existingIdx.Name,
+					newKey, newIdx.Name, existingKey, existingIdx.Name,
 				)
 				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexKeySpecsConflict, msg, command)
 			}
 
-			if slices.Equal(newFields, existingFields) {
+			if newKey == existingKey {
 				msg := fmt.Sprintf("Index already exists with a different name: %s", existingIdx.Name)
 				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexOptionsConflict, msg, command)
 			}
