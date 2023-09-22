@@ -16,19 +16,26 @@ package postgresql
 
 import (
 	"context"
+	"fmt"
+
+	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // collection implements backends.Collection interface.
 type collection struct {
+	r      *metadata.Registry
 	dbName string
 	name   string
 }
 
 // newCollection creates a new Collection.
-func newCollection(dbName, name string) backends.Collection {
+func newCollection(r *metadata.Registry, dbName, name string) backends.Collection {
 	return backends.CollectionContract(&collection{
+		r:      r,
 		dbName: dbName,
 		name:   name,
 	})
@@ -36,7 +43,43 @@ func newCollection(dbName, name string) backends.Collection {
 
 // Query implements backends.Collection interface.
 func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*backends.QueryResult, error) {
-	panic("not implemented")
+	p, err := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if p == nil {
+		return &backends.QueryResult{
+			Iter: newQueryIterator(ctx, nil),
+		}, nil
+	}
+
+	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if meta == nil {
+		return &backends.QueryResult{
+			Iter: newQueryIterator(ctx, nil),
+		}, nil
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3414
+	q := fmt.Sprintf(
+		`SELECT %s FROM %s`,
+		metadata.DefaultColumn,
+		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
+	)
+
+	rows, err := p.Query(ctx, q)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &backends.QueryResult{
+		Iter: newQueryIterator(ctx, rows),
+	}, nil
 }
 
 // InsertAll implements backends.Collection interface.
