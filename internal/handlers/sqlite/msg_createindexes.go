@@ -478,15 +478,34 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 		}
 
 		// Check for duplicates within the list of indexes to create.
-		for j := i + 1; j < len(toCreate); j++ {
-			dupeKey := formatIndexKey(toCreate[j].Key)
+		for j := i - 1; j >= 0; j-- {
+			prevKey := formatIndexKey(toCreate[j].Key)
+			prevName := toCreate[j].Name
 
-			if newIdx.Name == toCreate[j].Name && newKey == dupeKey {
-				msg := fmt.Sprintf(
-					"Identical index already exists: %s", newIdx.Name,
-				)
+			if prevName == newIdx.Name && prevKey == newKey {
+				msg := fmt.Sprintf("Identical index already exists: %s", prevName)
 
 				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexAlreadyExists, msg, command)
+			}
+
+			if newIdx.Name == prevName {
+				msg := fmt.Sprintf(
+					"An existing index has the same name as the requested index."+
+						" When index names are not specified, they are auto generated and can cause conflicts."+
+						" Please refer to our documentation. Requested index: { key: { %s }, name: %q },"+
+						" existing index: { key: { %s }, name: %q }",
+					newKey, newIdx.Name, prevKey, prevName,
+				)
+
+				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexKeySpecsConflict, msg, command)
+			}
+
+			if newKey == prevKey {
+				msg := fmt.Sprintf(
+					"Index already exists with a different name: %s", prevName,
+				)
+
+				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexOptionsConflict, msg, command)
 			}
 		}
 
