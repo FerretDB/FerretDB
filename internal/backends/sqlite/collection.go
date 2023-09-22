@@ -169,7 +169,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 				comparison = ` < ?`
 				v = -types.MaxSafeDouble
 			default:
-				//TODO
+				// TODO
 				// don't change the default eq query
 			}
 
