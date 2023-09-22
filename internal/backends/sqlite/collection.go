@@ -158,7 +158,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			continue
 
 		case float64:
-			var comparison string
+			comparison := ` = ?`
 
 			switch {
 			case v > types.MaxSafeDouble:
@@ -169,7 +169,6 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 				comparison = ` < ?`
 				v = -types.MaxSafeDouble
 			default:
-				// TODO
 				// don't change the default eq query
 			}
 
