@@ -50,6 +50,26 @@ const config = {
 
           blogSidebarTitle: 'All posts',
           blogSidebarCount: 'ALL',
+          feedOptions: {
+            type: 'rss', // or whichever feed types you prefer
+            title: 'The FerretDB Blog',
+            description: 'Welcome to the FerretDB blog- The truly open source replacement for MongoDB',
+            copyright: `Copyright © ${new Date().getFullYear()} FerretDB, Inc.`,
+            createFeedItems: async (params) => {
+              const {
+                  blogPosts,
+              } = params;
+
+              return blogPosts.slice(0, 10).map(post => ({
+                  title: post.metadata.title,
+                  link: post.metadata.frontMatter.link,
+                  // appending the siteUrl to the img src as a workaround for the relative paths used for images
+                  image: `https://blog.ferretdb.io${post.metadata.frontMatter.image}`,
+                  date: post.metadata.date,
+                  description: post.metadata.description,
+                  }));
+            },
+          },
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
