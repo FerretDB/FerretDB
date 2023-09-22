@@ -25,6 +25,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
@@ -679,3 +680,18 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 
 	return true, nil
 }
+
+// Describe implements prometheus.Collector.
+func (r *Registry) Describe(ch chan<- *prometheus.Desc) {
+	prometheus.DescribeByCollect(r, ch)
+}
+
+// Collect implements prometheus.Collector.
+func (r *Registry) Collect(ch chan<- prometheus.Metric) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/3392
+}
+
+// check interfaces
+var (
+	_ prometheus.Collector = (*Registry)(nil)
+)

@@ -32,7 +32,7 @@ const (
 type Collection struct {
 	Name      string
 	TableName string
-	// TODO indexes, etc.
+	// TODO https://github.com/FerretDB/FerretDB/issues/3375
 }
 
 // deepCopy returns a deep copy.
