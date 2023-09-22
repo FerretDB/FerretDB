@@ -72,7 +72,7 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 
 // Database implements backends.Backend interface.
 func (b *backend) Database(name string) (backends.Database, error) {
-	return newDatabase(name), nil
+	return newDatabase(b.r, name), nil
 }
 
 // ListDatabases implements backends.Backend interface.
