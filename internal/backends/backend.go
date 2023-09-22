@@ -47,7 +47,6 @@ type Backend interface {
 	prometheus.Collector
 
 	// There is no interface method to create a database; see package documentation.
-	// TODO https://github.com/FerretDB/FerretDB/issues/3069
 }
 
 // backendContract implements Backend interface.

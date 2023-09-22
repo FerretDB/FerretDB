@@ -78,7 +78,7 @@ func openDB(uri string, l *zap.Logger, sp *state.Provider) (*pgxpool.Pool, error
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	if checkConnection(ctx, p) != nil {
+	if err = checkConnection(ctx, p); err != nil {
 		p.Close()
 		return nil, lazyerrors.Error(err)
 	}

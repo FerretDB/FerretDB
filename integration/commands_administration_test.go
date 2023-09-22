@@ -724,11 +724,8 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.InDelta(t, 40_000, must.NotFail(doc.Get("size")), 39_900)
 	assert.InDelta(t, 2_400, must.NotFail(doc.Get("avgObjSize")), 2_370)
 	assert.InDelta(t, 40_000, must.NotFail(doc.Get("storageSize")), 39_900)
-	t.Run("Indexes", func(tt *testing.T) {
-		t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3293")
-		assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
-		assert.InDelta(t, 12_000, must.NotFail(doc.Get("totalIndexSize")), 11_000)
-	})
+	assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
+	assert.InDelta(t, 12_000, must.NotFail(doc.Get("totalIndexSize")), 11_000)
 	assert.InDelta(t, 32_000, must.NotFail(doc.Get("totalSize")), 30_000)
 }
 
@@ -753,12 +750,30 @@ func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 	assert.InDelta(t, 16, must.NotFail(doc.Get("size")), 16)
 	assert.InDelta(t, 2_400, must.NotFail(doc.Get("avgObjSize")), 2_370)
 	assert.InDelta(t, 24, must.NotFail(doc.Get("storageSize")), 24)
-	t.Run("Indexes", func(tt *testing.T) {
-		t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3293")
-		assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
-		assert.InDelta(t, 8, must.NotFail(doc.Get("totalIndexSize")), 8)
-	})
+	assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
+	assert.InDelta(t, 8, must.NotFail(doc.Get("totalIndexSize")), 8)
 	assert.InDelta(t, 24, must.NotFail(doc.Get("totalSize")), 24)
+}
+
+// TestCommandsAdministrationCollStatsCount adds large number of documents and checks
+// approximation used by backends returns the correct count of documents from collStats.
+func TestCommandsAdministrationCollStatsCount(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	var n int32 = 1000
+	docs, _ := generateDocuments(0, n)
+	_, err := collection.InsertMany(ctx, docs)
+	require.NoError(t, err)
+
+	var actual bson.D
+	command := bson.D{{"collStats", collection.Name()}}
+	err = collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+	assert.EqualValues(t, n, must.NotFail(doc.Get("count")))
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {

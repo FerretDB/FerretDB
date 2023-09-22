@@ -316,3 +316,132 @@ func TestCreateDropSameStress(t *testing.T) {
 		})
 	}
 }
+
+func TestIndexesCreateDrop(t *testing.T) {
+	t.Parallel()
+	ctx := testutil.Ctx(t)
+
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	r, err := NewRegistry("file:./?mode=memory", testutil.Logger(t), sp)
+	require.NoError(t, err)
+	t.Cleanup(r.Close)
+
+	dbName := testutil.DatabaseName(t)
+
+	db, err := r.DatabaseGetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+	require.NotNil(t, db)
+
+	t.Cleanup(func() {
+		r.DatabaseDrop(ctx, dbName)
+	})
+
+	collectionName := testutil.CollectionName(t)
+
+	toCreate := []IndexInfo{
+		{
+			Name: "index_non_unique",
+			Key: []IndexKeyPair{
+				{
+					Field:      "f1",
+					Descending: false,
+				},
+				{
+					Field:      "f2",
+					Descending: true,
+				},
+			},
+		},
+		{
+			Name: "index_unique",
+			Key: []IndexKeyPair{
+				{
+					Field:      "foo",
+					Descending: false,
+				},
+			},
+			Unique: true,
+		},
+	}
+
+	err = r.IndexesCreate(ctx, dbName, collectionName, toCreate)
+	require.NoError(t, err)
+
+	collection := r.CollectionGet(ctx, dbName, collectionName)
+
+	t.Run("NonUniqueIndex", func(t *testing.T) {
+		indexName := collection.TableName + "_index_non_unique"
+		q := fmt.Sprintf("SELECT sql FROM sqlite_master WHERE type = 'index' AND name = '%s'", indexName)
+		row := db.QueryRowContext(ctx, q)
+
+		var sql string
+		require.NoError(t, row.Scan(&sql))
+
+		expected := fmt.Sprintf(
+			`CREATE INDEX "%s" ON "%s" (_ferretdb_sjson->'$.f1', _ferretdb_sjson->'$.f2' DESC)`,
+			indexName, collection.TableName,
+		)
+		require.Equal(t, expected, sql)
+	})
+
+	t.Run("UniqueIndex", func(t *testing.T) {
+		indexName := collection.TableName + "_index_unique"
+		q := fmt.Sprintf("SELECT sql FROM sqlite_master WHERE type = 'index' AND name = '%s'", indexName)
+		row := db.QueryRowContext(ctx, q)
+
+		var sql string
+		require.NoError(t, row.Scan(&sql))
+
+		expected := fmt.Sprintf(
+			`CREATE UNIQUE INDEX "%s" ON "%s" (_ferretdb_sjson->'$.foo')`,
+			indexName, collection.TableName,
+		)
+		require.Equal(t, expected, sql)
+	})
+
+	t.Run("DefaultIndex", func(t *testing.T) {
+		indexName := collection.TableName + "__id_"
+		q := "SELECT sql FROM sqlite_master WHERE type = 'index' AND name = ?"
+		row := db.QueryRowContext(ctx, q, indexName)
+
+		var sql string
+		require.NoError(t, row.Scan(&sql))
+
+		expected := fmt.Sprintf(
+			`CREATE UNIQUE INDEX "%s" ON "%s" (_ferretdb_sjson->'$._id')`,
+			indexName, collection.TableName,
+		)
+		require.Equal(t, expected, sql)
+	})
+
+	t.Run("CheckSettingsAfterCreation", func(t *testing.T) {
+		err = r.initCollections(ctx, dbName, db)
+		require.NoError(t, err)
+
+		collection = r.CollectionGet(ctx, dbName, collectionName)
+		require.Equal(t, 3, len(collection.Settings.Indexes))
+	})
+
+	t.Run("DropIndexes", func(t *testing.T) {
+		toDrop := []string{"index_non_unique", "index_unique"}
+		err = r.IndexesDrop(ctx, dbName, collectionName, toDrop)
+		require.NoError(t, err)
+
+		q := "SELECT count(*) FROM sqlite_master WHERE type = 'index' AND tbl_name = ?"
+		row := db.QueryRowContext(ctx, q, collection.TableName)
+
+		var count int
+		require.NoError(t, row.Scan(&count))
+		require.Equal(t, 1, count) // only default index
+	})
+
+	t.Run("CheckSettingsAfterDrop", func(t *testing.T) {
+		err = r.initCollections(ctx, dbName, db)
+		require.NoError(t, err)
+
+		collection = r.CollectionGet(ctx, dbName, collectionName)
+		require.Equal(t, 1, len(collection.Settings.Indexes))
+	})
+}

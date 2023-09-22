@@ -306,7 +306,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		)
 	}
 
-	stats, err := relationStats(ctx, db, []*metadata.Collection{coll})
+	stats, err := collectionsStats(ctx, db, []*metadata.Collection{coll})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
