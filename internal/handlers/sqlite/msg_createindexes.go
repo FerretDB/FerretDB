@@ -449,6 +449,13 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 		for _, existingIdx := range existing {
 			existingKey := formatIndexKey(existingIdx.Key)
 
+			if newIdx.Name == existingIdx.Name && newKey == existingKey {
+				msg := fmt.Sprintf(
+					"Identical index already exists: %s", newIdx.Name,
+				)
+				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexAlreadyExists, msg, command)
+			}
+
 			if newIdx.Name == existingIdx.Name {
 				msg := fmt.Sprintf(
 					"An existing index has the same name as the requested index."+
@@ -466,7 +473,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 			}
 		}
 
-		// new index is added to the list of existing, so if there are duplicates, they will be caught
+		// new index is added to the list of existing, so if there are duplicates across new indexes, they will be caught
 		existing = append(existing, newIdx)
 	}
 
