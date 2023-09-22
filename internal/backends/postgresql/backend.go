@@ -58,6 +58,7 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
+	b.r.Close()
 }
 
 // Name implements backends.Backend interface.
