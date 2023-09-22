@@ -65,18 +65,12 @@ func CollectionContract(c Collection) Collection {
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	Filter  *types.Document
-	Sort    *types.Document
-	Limit   int64
-	Comment string
+	Filter *types.Document
 }
 
 // QueryResult represents the results of Collection.Query method.
 type QueryResult struct {
-	Iter           types.DocumentsIterator
-	FilterPushdown bool
-	SortPushdown   bool
-	LimitPushdown  bool
+	Iter types.DocumentsIterator
 }
 
 // Query executes a query against the collection.
@@ -113,6 +107,7 @@ type InsertAllResult struct{}
 // They will be frozen.
 //
 // Both database and collection may or may not exist; they should be created automatically if needed.
+// TODO https://github.com/FerretDB/FerretDB/issues/3069
 func (cc *collectionContract) InsertAll(ctx context.Context, params *InsertAllParams) (*InsertAllResult, error) {
 	defer observability.FuncCall(ctx)()
 

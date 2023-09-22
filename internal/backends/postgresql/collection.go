@@ -65,46 +65,19 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	var placeholder Placeholder
-	var whereClause string
-	var args []any
-
-	if params.Filter.Len() == 1 {
-		if whereClause, args, err = prepareWhereClause(&placeholder, params.Filter); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-	}
-
-	var orderByClause string
-
-	if params.Sort != nil {
-		var sortArgs []any
-
-		orderByClause, sortArgs, err = prepareOrderByClause(&placeholder, params.Sort)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		args = append(args, sortArgs...)
-	}
-
 	q := fmt.Sprintf(
-		`SELECT %s FROM %s %s %s`,
+		`SELECT %s FROM %s`,
 		metadata.DefaultColumn,
 		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
-		whereClause,
-		orderByClause,
 	)
 
-	rows, err := p.Query(ctx, q, args...)
+	rows, err := p.Query(ctx, q)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	return &backends.QueryResult{
-		Iter:           newQueryIterator(ctx, rows),
-		FilterPushdown: whereClause != "",
-		SortPushdown:   orderByClause != "",
+		Iter: newQueryIterator(ctx, rows),
 	}, nil
 }
 

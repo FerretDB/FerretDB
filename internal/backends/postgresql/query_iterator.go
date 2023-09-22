@@ -38,7 +38,7 @@ type queryIterator struct {
 	m     sync.Mutex
 }
 
-// newQueryIterator returns a new queryIterator for the given *sql.Rows.
+// newQueryIterator returns a new queryIterator for the given Rows.
 //
 // Iterator's Close method closes rows.
 // They are also closed by the Next method on any error, including context cancellation,
