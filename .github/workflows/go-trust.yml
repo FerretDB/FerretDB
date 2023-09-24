@@ -28,8 +28,7 @@ env:
 jobs:
   integration:
     name: Integration ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
-    runs-on:
-      group: paid
+    runs-on: 4-cores
     timeout-minutes: 20
 
     # Do not run this job in parallel for any PR change or branch push

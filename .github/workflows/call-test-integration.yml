@@ -32,10 +32,7 @@ jobs:
   test-integration:
     # make it short to fit in GitHub UI; all parameters are already in the caller's name
     name: Run
-
-    runs-on:
-      group: paid
-
+    runs-on: 4-cores
     timeout-minutes: 20
 
     steps:
