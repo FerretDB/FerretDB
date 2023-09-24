@@ -106,7 +106,6 @@ type CreateCollectionParams struct {
 // CreateCollection creates a new collection with valid name in the database; it should not already exist.
 //
 // Database may or may not exist; it should be created automatically if needed.
-// TODO https://github.com/FerretDB/FerretDB/issues/3069
 func (dbc *databaseContract) CreateCollection(ctx context.Context, params *CreateCollectionParams) error {
 	defer observability.FuncCall(ctx)()
 

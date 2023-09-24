@@ -58,6 +58,7 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
+	b.r.Close()
 }
 
 // Name implements backends.Backend interface.
@@ -67,12 +68,13 @@ func (b *backend) Name() string {
 
 // Status implements backends.Backend interface.
 func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
-	panic("not implemented")
+	// TODO https://github.com/FerretDB/FerretDB/issues/3404
+	return new(backends.StatusResult), nil
 }
 
 // Database implements backends.Backend interface.
 func (b *backend) Database(name string) (backends.Database, error) {
-	return newDatabase(name), nil
+	return newDatabase(b.r, name), nil
 }
 
 // ListDatabases implements backends.Backend interface.
@@ -115,17 +117,18 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	panic("not implemented")
+	// TODO https://github.com/FerretDB/FerretDB/issues/3404
+	return nil
 }
 
 // Describe implements prometheus.Collector.
 func (b *backend) Describe(ch chan<- *prometheus.Desc) {
-	panic("not implemented")
+	b.r.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (b *backend) Collect(ch chan<- prometheus.Metric) {
-	panic("not implemented")
+	b.r.Collect(ch)
 }
 
 // check interfaces

@@ -289,7 +289,7 @@ func processIndex(command string, indexDoc *types.Document) (*backends.IndexInfo
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrTypeMismatch,
 					fmt.Sprintf(
-						"Error in specification { key: %s, name: \"%s\", unique: %s } "+
+						"Error in specification { key: %s, name: %q, unique: %s } "+
 							":: caused by :: "+
 							"The field 'unique' has value unique: %[3]s, which is not convertible to bool",
 						types.FormatAnyValue(must.NotFail(indexDoc.Get("key"))),
@@ -303,7 +303,7 @@ func processIndex(command string, indexDoc *types.Document) (*backends.IndexInfo
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrInvalidIndexSpecificationOption,
 					fmt.Sprintf("The field 'unique' is not valid for an _id index specification. "+
-						"Specification: { key: %s, name: \"%s\", unique: true, v: 2 }",
+						"Specification: { key: %s, name: %q, unique: true, v: 2 }",
 						types.FormatAnyValue(must.NotFail(indexDoc.Get("key"))), index.Name,
 					),
 					command,
@@ -375,7 +375,7 @@ func processIndexKey(command string, keyDoc *types.Document) ([]backends.IndexKe
 		if orderParam, err = commonparams.GetWholeNumberParam(order); err != nil {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrIndexNotFound,
-				fmt.Sprintf("can't find index with key: { %s: \"%s\" }", field, order),
+				fmt.Sprintf("can't find index with key: { %s: %q }", field, order),
 				command,
 			)
 		}
