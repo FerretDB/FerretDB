@@ -492,12 +492,6 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 		return false, lazyerrors.Error(err)
 	}
 
-	// create PG index for collection name
-	// TODO https://github.com/FerretDB/FerretDB/issues/3375
-
-	// create PG index for table name
-	// TODO https://github.com/FerretDB/FerretDB/issues/3375
-
 	q = fmt.Sprintf(
 		`INSERT INTO %s (%s) VALUES ($1)`,
 		pgx.Identifier{dbName, metadataTableName}.Sanitize(),
@@ -515,6 +509,12 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 		r.colls[dbName] = map[string]*Collection{}
 	}
 	r.colls[dbName][collectionName] = c
+
+	// create PG index for collection name
+	// TODO https://github.com/FerretDB/FerretDB/issues/3375
+
+	// create PG index for table name
+	// TODO https://github.com/FerretDB/FerretDB/issues/3375
 
 	return true, nil
 }
