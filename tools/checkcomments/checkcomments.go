@@ -16,10 +16,16 @@
 package main
 
 import (
-	"net/http"
+	"context"
+	"fmt"
+	"log"
+	"os"
 	"regexp"
+	"strconv"
 	"strings"
 
+	"github.com/google/go-github/github"
+	"golang.org/x/oauth2"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
@@ -67,14 +73,34 @@ func isIssueOpen(todoText string) bool {
 	if issueURL == "" {
 		return false
 	}
-	resp, err := http.Get(issueURL)
 
-	if err != nil {
+	token := os.Getenv("GITHUB_TOKEN")
+	if token == "" {
+		log.Fatalf("%s is not set.", token)
 		return false
 	}
-	defer resp.Body.Close() //nolint:errcheck // we are only reading it
 
-	return resp.StatusCode == http.StatusOK
+	ctx := context.Background()
+	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	))
+
+	client := github.NewClient(httpClient)
+
+	owner := "owner"
+	repo := "https://github.com/FerretDB/FerretDB"
+	issueNumber, err := getIssueNumber(issueURL)
+	if err != nil {
+		log.Fatalf("error in getting issue number: %s", err.Error())
+		return false
+	}
+	issue, _, err := client.Issues.Get(ctx, owner, repo, issueNumber)
+	if err != nil {
+		log.Fatalf("error in getting status of issue: %s for issue: %s", err.Error(), issueURL)
+		return false
+	}
+
+	return issue.GetState() == "open"
 }
 
 // extracting url from TODO comment if present
@@ -87,4 +113,20 @@ func getURL(todoText string) string {
 	}
 
 	return ""
+}
+
+// get the issue number from  issue url
+func getIssueNumber(todoText string) (int, error) {
+	pattern := `\/issues\/(\d+)`
+	re := regexp.MustCompile(pattern)
+	match := re.FindStringSubmatch(todoText)
+	if len(match) >= 2 {
+		issueNumberStr := match[1]
+		issueNumber, err := strconv.Atoi(issueNumberStr)
+		if err != nil {
+			return 0, err
+		}
+		return issueNumber, nil
+	}
+	return 0, fmt.Errorf("invalid issue url: %s", todoText)
 }
