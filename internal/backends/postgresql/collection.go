@@ -102,7 +102,6 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 
 // Explain implements backends.Collection interface.
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3389
 	return new(backends.ExplainResult), nil
 }
 
