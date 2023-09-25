@@ -77,7 +77,7 @@ jobs:
         with:
           fetch-depth: 0
           lfs: false
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
 
       # for version.txt on push tags; see https://github.com/actions/checkout/issues/290
       - name: Fetch annotated tags
