@@ -1,0 +1,115 @@
+---
+on:
+  workflow_call:
+    inputs:
+      task:
+        required: true
+        type: string
+      shard_index:
+        required: true
+        type: number
+      shard_total:
+        required: true
+        type: number
+      disable_filter_pushdown:
+        required: false
+        type: boolean
+        default: false
+      enable_sort_pushdown:
+        required: false
+        type: boolean
+        default: false
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org
+  GOTOOLCHAIN: local
+
+jobs:
+  test-integration:
+    # make it short to fit in GitHub UI; all parameters are already in the caller's name
+    name: Run
+
+    runs-on:
+      group: paid
+
+    timeout-minutes: 20
+
+    steps:
+      - name: Setup permissions monitoring
+        uses: GitHubSecurityLab/actions-permissions/monitor@v1
+        if: false
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # for `git describe` to work
+          lfs: false # LFS is used only by website
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+        with:
+          cache-key: integration
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Start environment
+        run: bin/task env-up-detach
+
+      - name: Run init
+        run: bin/task init
+
+      - name: Wait for and setup environment
+        run: bin/task env-setup
+
+      - name: >
+          Run ${{ inputs.task }} tests
+          (${{ inputs.shard_index }}/${{ inputs.shard_total }},
+          filter=${{ !inputs.disable_filter_pushdown }}, sort=${{ inputs.enable_sort_pushdown }})
+        run: >
+          bin/task test-integration-${{ inputs.task }}
+          SHARD_INDEX=${{ inputs.shard_index }}
+          SHARD_TOTAL=${{ inputs.shard_total }}
+          DISABLE_FILTER_PUSHDOWN=${{ inputs.disable_filter_pushdown }}
+          ENABLE_SORT_PUSHDOWN=${{ inputs.enable_sort_pushdown }}
+        env:
+          GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
+
+      # The token is not required but should make uploads more stable.
+      # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
+      #
+      # Unfortunately, it seems that tokenless uploads fail too often.
+      # See https://github.com/codecov/codecov-action/issues/837.
+      #
+      # We also can't use ${{ vars.CODECOV_TOKEN }}: https://github.com/orgs/community/discussions/44322
+      - name: Upload coverage information to codecov
+        if: always()
+        uses: codecov/codecov-action@v3
+        with:
+          token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
+          files: ./integration/integration-${{ inputs.task }}.txt
+          flags: integration,${{ inputs.task }}-${{ inputs.shard_index }},filter-${{ !inputs.disable_filter_pushdown }},sort-${{ inputs.enable_sort_pushdown }}
+          fail_ci_if_error: true
+          verbose: true
+
+      - name: Upload coverage information to coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          file: ./integration/integration-${{ inputs.task }}.txt
+          flag-name: integration-${{ inputs.task }}-${{ inputs.shard_index }}-filter-${{ !inputs.disable_filter_pushdown }}-sort-${{ inputs.enable_sort_pushdown }}
+          parallel: true
+
+      # we don't want them on CI
+      - name: Clean test and fuzz caches
+        if: always()
+        run: go clean -testcache -fuzzcache
+
+      - name: Check dirty
+        run: |
+          git status
+          git diff --exit-code

@@ -8,5 +8,11 @@ alex:
 peter:
   name: Peter Farkas
   title: Co-Founder, CEO
-  url: https://www.linkedin.com/in/peter-farkas-2aa9b348
+  url: https://www.linkedin.com/in/farkasp/
   image_url: https://github.com/ptrfarkas.png
+
+aleksi:
+  name: Alexey Palazhchenko
+  title: Co-Founder, CTO
+  url: https://www.linkedin.com/in/alexeypalazhchenko/
+  image_url: https://github.com/AlekSi.png

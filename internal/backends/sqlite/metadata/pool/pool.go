@@ -19,25 +19,24 @@ package pool
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
-	_ "modernc.org/sqlite" // register database/sql driver
 
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // filenameExtension represents SQLite database filename extension.
@@ -55,40 +54,12 @@ const (
 type Pool struct {
 	uri *url.URL
 	l   *zap.Logger
+	sp  *state.Provider
 
 	rw  sync.RWMutex
 	dbs map[string]*fsql.DB
 
 	token *resource.Token
-}
-
-// openDB opens existing database or creates a new one.
-//
-// All valid FerretDB database names are valid SQLite database names / file names,
-// so no validation is needed.
-// One exception is very long full path names for the filesystem,
-// but we don't check it.
-func openDB(name, uri string, singleConn bool, l *zap.Logger) (*fsql.DB, error) {
-	db, err := sql.Open("sqlite", uri)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	db.SetConnMaxIdleTime(0)
-	db.SetConnMaxLifetime(0)
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/2755
-	if singleConn {
-		db.SetMaxIdleConns(1)
-		db.SetMaxOpenConns(1)
-	}
-
-	if err = db.Ping(); err != nil {
-		_ = db.Close()
-		return nil, lazyerrors.Error(err)
-	}
-
-	return fsql.WrapDB(db, name, l), nil
 }
 
 // New creates a pool for SQLite databases in the directory specified by SQLite URI.
@@ -97,7 +68,7 @@ func openDB(name, uri string, singleConn bool, l *zap.Logger) (*fsql.DB, error) 
 //
 // The returned map is the initial set of existing databases.
 // It should not be modified.
-func New(u string, l *zap.Logger) (*Pool, map[string]*fsql.DB, error) {
+func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, map[string]*fsql.DB, error) {
 	uri, err := parseURI(u)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to parse SQLite URI %q: %s", u, err)
@@ -111,6 +82,7 @@ func New(u string, l *zap.Logger) (*Pool, map[string]*fsql.DB, error) {
 	p := &Pool{
 		uri:   uri,
 		l:     l,
+		sp:    sp,
 		dbs:   make(map[string]*fsql.DB, len(matches)),
 		token: resource.NewToken(),
 	}
@@ -123,7 +95,7 @@ func New(u string, l *zap.Logger) (*Pool, map[string]*fsql.DB, error) {
 
 		p.l.Debug("Opening existing database.", zap.String("name", name), zap.String("uri", uri))
 
-		db, err := openDB(name, uri, p.singleConn(), l)
+		db, err := openDB(name, uri, p.memory(), l, p.sp)
 		if err != nil {
 			p.Close()
 			return nil, nil, lazyerrors.Error(err)
@@ -138,13 +110,6 @@ func New(u string, l *zap.Logger) (*Pool, map[string]*fsql.DB, error) {
 // memory returns true if the pool is for the in-memory database.
 func (p *Pool) memory() bool {
 	return p.uri.Query().Get("mode") == "memory"
-}
-
-// singleConn returns true if pool size must be limited to a single connection.
-func (p *Pool) singleConn() bool {
-	// https://www.sqlite.org/inmemorydb.html
-	// TODO https://github.com/FerretDB/FerretDB/issues/2755
-	return p.memory()
 }
 
 // databaseName returns database name for given database file path.
@@ -193,7 +158,7 @@ func (p *Pool) List(ctx context.Context) []string {
 	defer p.rw.RUnlock()
 
 	res := maps.Keys(p.dbs)
-	slices.Sort(res)
+	sort.Strings(res)
 
 	return res
 }
@@ -205,12 +170,7 @@ func (p *Pool) GetExisting(ctx context.Context, name string) *fsql.DB {
 	p.rw.RLock()
 	defer p.rw.RUnlock()
 
-	db := p.dbs[name]
-	if db == nil {
-		return nil
-	}
-
-	return db
+	return p.dbs[name]
 }
 
 // GetOrCreate returns an existing database by valid name, or creates a new one.
@@ -233,7 +193,7 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, er
 	}
 
 	uri := p.databaseURI(name)
-	db, err := openDB(name, uri, p.singleConn(), p.l)
+	db, err := openDB(name, uri, p.memory(), p.l, p.sp)
 	if err != nil {
 		return nil, false, lazyerrors.Errorf("%s: %w", uri, err)
 	}

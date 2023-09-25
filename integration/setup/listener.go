@@ -148,6 +148,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 
 		dir, err := filepath.Abs(u.Opaque)
 		require.NoError(tb, err)
+		require.NoError(tb, os.RemoveAll(dir))
 		require.NoError(tb, os.MkdirAll(dir, 0o777))
 
 		tb.Cleanup(func() {
@@ -175,6 +176,9 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown: *disableFilterPushdownF,
 			EnableSortPushdown:    *enableSortPushdownF,
+			EnableOplog:           *enableOplogF,
+
+			UseNewPG: *useNewPGF,
 		},
 	}
 	h, err := registry.NewHandler(handler, handlerOpts)

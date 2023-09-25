@@ -52,9 +52,9 @@ services:
       context: ./build/deps
       dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
     container_name: ferretdb_mongodb
-    command: --config /etc/mongod.conf
+    command: --config /etc/mongodb.conf
     ports:
-      - 47017:27017
+      - 47017:47017
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -62,16 +62,16 @@ services:
       - TZ=Asia/Kathmandu
     volumes:
       - ./build/certs:/etc/certs
-      - ./build/mongod.conf:/etc/mongod.conf
+      - ./build/mongodb.conf:/etc/mongodb.conf
 
   mongodb_secured:
     build:
       context: ./build/deps
       dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
     container_name: ferretdb_mongodb_secured
-    command: --config /etc/mongod.conf
+    command: --config /etc/mongodb.conf
     ports:
-      - 47018:27017
+      - 47018:47018
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -81,7 +81,7 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=password
     volumes:
       - ./build/certs:/etc/certs
-      - ./build/mongod_secured.conf:/etc/mongod.conf
+      - ./build/mongodb_secured.conf:/etc/mongodb.conf
 
   # for test scripts
   legacy-mongo-shell:
@@ -103,9 +103,11 @@ services:
       context: ./build/deps
       dockerfile: jaeger.Dockerfile
     container_name: ferretdb_jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
     ports:
       - 16686:16686 # UI on http://127.0.0.1:16686/
-      - 14268:14268 # to receive spans from clients
+      - 4318:4318 # to recieve spans from OTLP
 
   trivy:
     build:

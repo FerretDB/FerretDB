@@ -22,8 +22,6 @@ import (
 // init registers "sqlite" handler.
 func init() {
 	registry["sqlite"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		opts.Logger.Warn("SQLite backend is in beta.")
-
 		handlerOpts := &sqlite.NewOpts{
 			Backend: "sqlite",
 			URI:     opts.SQLiteURL,
@@ -33,6 +31,8 @@ func init() {
 			StateProvider: opts.StateProvider,
 
 			DisableFilterPushdown: opts.DisableFilterPushdown,
+			EnableSortPushdown:    opts.EnableSortPushdown,
+			EnableOplog:           opts.EnableOplog,
 		}
 
 		return sqlite.New(handlerOpts)

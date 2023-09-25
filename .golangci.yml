@@ -40,6 +40,8 @@ linters-settings:
         files:
           - $all
           - "!**/internal/backends/sqlite/*.go"
+          - "!**/internal/backends/postgresql/*.go"
+          - "!**/internal/backends/postgresql/metadata/*.go"
           - "!**/internal/handlers/pg/pgdb/*.go"
           - "!**/internal/handlers/hana/hanadb/*.go"
         deny:
@@ -118,8 +120,10 @@ linters-settings:
         alias: dto
       - pkg: github.com/jackc/pgx-zap
         alias: zapadapter
+      - pkg: modernc.org/sqlite
+        alias: sqlite3
       - pkg: modernc.org/sqlite/lib
-        alias: sqlitelib
+        alias: sqlite3lib
   # ineffassign
   lll:
     line-length: 130

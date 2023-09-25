@@ -53,7 +53,7 @@ var (
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
 
-	benchDocsF = flag.Int("bench-docs", 0, "benchmarks: number of documents to generate per iteration")
+	benchDocsF = flag.Int("bench-docs", 1000, "benchmarks: number of documents to generate per iteration")
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
@@ -61,6 +61,9 @@ var (
 
 	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
 	enableSortPushdownF    = flag.Bool("enable-sort-pushdown", false, "enable sort pushdown")
+	enableOplogF           = flag.Bool("enable-oplog", false, "enable OpLog")
+
+	useNewPGF = flag.Bool("use-new-pg", false, "use new PostgreSQL backend")
 )
 
 // Other globals.

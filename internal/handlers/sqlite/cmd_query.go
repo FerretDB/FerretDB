@@ -37,10 +37,11 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3008
-	// defaults to the database name if supplied on the connection string or $external
+
+	// database name typically is either "$external" or "admin"
+
 	if cmd == "saslStart" && strings.HasSuffix(collection, ".$cmd") {
 		var emptyPayload types.Binary
-
 		return &wire.OpReply{
 			NumberReturned: 1,
 			Documents: []*types.Document{must.NotFail(types.NewDocument(

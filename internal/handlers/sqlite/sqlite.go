@@ -22,22 +22,14 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/decorators/oplog"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
-
-// notImplemented returns error for stub command handlers.
-func notImplemented(command string) error {
-	return commonerrors.NewCommandErrorMsg(
-		commonerrors.ErrNotImplemented,
-		"I'm a stub, not a real handler for "+command,
-	)
-}
 
 // Handler implements handlers.Interface.
 type Handler struct {
@@ -61,6 +53,8 @@ type NewOpts struct {
 
 	// test options
 	DisableFilterPushdown bool
+	EnableSortPushdown    bool
+	EnableOplog           bool
 }
 
 // New returns a new handler.
@@ -73,11 +67,13 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 		b, err = postgresql.NewBackend(&postgresql.NewBackendParams{
 			URI: opts.URI,
 			L:   opts.L,
+			P:   opts.StateProvider,
 		})
 	case "sqlite":
 		b, err = sqlite.NewBackend(&sqlite.NewBackendParams{
 			URI: opts.URI,
 			L:   opts.L,
+			P:   opts.StateProvider,
 		})
 	default:
 		panic("unknown backend: " + opts.Backend)
@@ -85,6 +81,10 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 
 	if err != nil {
 		return nil, err
+	}
+
+	if opts.EnableOplog {
+		b = oplog.NewBackend(b, opts.L.Named("oplog"))
 	}
 
 	return &Handler{

@@ -21,6 +21,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
 )
@@ -29,12 +30,15 @@ func TestCreateDrop(t *testing.T) {
 	t.Parallel()
 	ctx := testutil.Ctx(t)
 
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
 	// that also tests that query parameters are preserved by using non-writable directory
-	p, _, err := New("file:/?mode=memory&_pragma=journal_mode(wal)", testutil.Logger(t))
+	p, _, err := New("file:/?mode=memory&_pragma=journal_mode(wal)", testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(p.Close)
 
-	dbName := t.Name()
+	dbName := testutil.DatabaseName(t)
 
 	db := p.GetExisting(ctx, dbName)
 	require.Nil(t, db)
@@ -76,6 +80,9 @@ func TestCreateDrop(t *testing.T) {
 func TestCreateDropStress(t *testing.T) {
 	ctx := testutil.Ctx(t)
 
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
 	for testName, uri := range map[string]string{
 		"file":             "file:./",
 		"file-immediate":   "file:./?_txlock=immediate",
@@ -83,7 +90,7 @@ func TestCreateDropStress(t *testing.T) {
 		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
 	} {
 		t.Run(testName, func(t *testing.T) {
-			p, _, err := New(uri, testutil.Logger(t))
+			p, _, err := New(uri, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(p.Close)
 
@@ -137,14 +144,20 @@ func TestDefaults(t *testing.T) {
 	t.Parallel()
 	ctx := testutil.Ctx(t)
 
-	p, _, err := New("file:./", testutil.Logger(t))
+	sp, err := state.NewProvider("")
 	require.NoError(t, err)
+
+	p, _, err := New("file:./", testutil.Logger(t), sp)
+	require.NoError(t, err)
+
+	dbName := testutil.DatabaseName(t)
+
 	t.Cleanup(func() {
-		p.Drop(ctx, t.Name())
+		p.Drop(ctx, dbName)
 		p.Close()
 	})
 
-	db, _, err := p.GetOrCreate(ctx, t.Name())
+	db, _, err := p.GetOrCreate(ctx, dbName)
 	require.NoError(t, err)
 
 	rows, err := db.QueryContext(ctx, "PRAGMA compile_options")
@@ -160,7 +173,9 @@ func TestDefaults(t *testing.T) {
 	}
 	require.NoError(t, rows.Err())
 	require.NoError(t, rows.Close())
-	require.Contains(t, options, "THREADSAFE=1")
+
+	require.Contains(t, options, "THREADSAFE=1")       // for it to work with database/sql
+	require.Contains(t, options, "ENABLE_DBSTAT_VTAB") // for dbStats/collStats/etc
 
 	for q, expected := range map[string]string{
 		"SELECT sqlite_version()":   "3.41.2",
