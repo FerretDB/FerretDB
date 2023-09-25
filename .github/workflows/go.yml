@@ -180,7 +180,7 @@ jobs:
         include:
           - { task: "mongodb", shard_index: 1, shard_total: 1 }
 
-    uses: ./.github/workflows/call-test-integration.yml
+    uses: ./.github/workflows/_integration.yml
     with:
       task: ${{ matrix.task }}
       shard_index: ${{ matrix.shard_index }}

@@ -1,4 +1,5 @@
 ---
+name: Integration # visible at https://github.com/FerretDB/FerretDB/actions
 on:
   workflow_call:
     inputs:
@@ -29,7 +30,7 @@ env:
   GOTOOLCHAIN: local
 
 jobs:
-  test-integration:
+  run:
     # make it short to fit in GitHub UI; all parameters are already in the caller's name
     name: Run
     runs-on: 4-cores

@@ -33,7 +33,7 @@ jobs:
         disable_filter_pushdown: [false, true]
         enable_sort_pushdown: [false, true]
 
-    uses: ./.github/workflows/call-test-integration.yml
+    uses: ./.github/workflows/_integration.yml
     with:
       task: ${{ matrix.task }}
       shard_index: ${{ matrix.shard_index }}
