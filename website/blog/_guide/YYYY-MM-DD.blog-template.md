@@ -2,7 +2,7 @@
 slug: url-slug-of-post # the URL slug of the blog post with dashes instead of spaces
 title: This is the title of the FerretDB Blog post
 author: Firstname Lastname
-author_url: #  to website or GitHub account
+author_url: #  link to website or GitHub account
 author_image_url: # link to author profile image (optional – please remove this line if you don't want to use an author image. See below for more info)
 description: >
   This is a short description of a FerretDB blog post.
@@ -36,7 +36,7 @@ All images for this blog post - including the banner image - should be stored in
 
 For partner blog posts that involve testing FerretDB with another application, store related images in the same folder (even for multiple blog posts on the same product), as `/img/blog/partner-name/image.png`.
 
-For other non-partner blog posts, store related blog post images in a folder using the published date as the folder name, for example, `/img/blog/2022-12-29/image.png`.
+For non-partner blog posts, store related blog post images in a folder using the published date as the folder name, for example, `/img/blog/2022-12-29/image.png`.
 
 Regular blog authors and engineers can be added to `authors.yml`.
 When the author information is present in `authors.yml`, fill the unique author name in the frontmatter as (`authors: [name1 name2]`).
