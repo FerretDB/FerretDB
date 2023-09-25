@@ -1,19 +1,19 @@
 ---
 slug: how-to-contribute-to-open-source-2022
-title: 'Hacktoberfest: How to be a Successful Open Source Contributor In 2022'
+title: 'Hacktoberfest: How to be a Successful Open Source Contributor'
 author: Elena Grahovac
-description: Contributing to open source might seem daunting, but you can start your tech journey during Hacktoberfest 2022.
+description: Contributing to open source might seem daunting, but you can start your tech journey during Hacktoberfest 2023.
 image: /img/blog/hacktoberfest.jpg
 tags: [open source, hacktoberfest, community]
 ---
 
-Contributing to open source might seem daunting, but you can start your tech journey during Hacktoberfest 2022.
-
 ![Hacktoberfest at FerretDB](/img/blog/hacktoberfest.jpg)
+
+Contributing to open source might seem daunting, but you can start your tech journey during **Hacktoberfest 2023**.
 
 <!--truncate-->
 
-October is here, and for all the open-source enthusiasts, it opens another Hacktoberfest chapter.
+October is here again, and for all the open-source enthusiasts, it opens another Hacktoberfest chapter.
 
 The idea of Hacktoberfest is to encourage everyone, especially beginners, to contribute to projects that are dear to their hearts.
 Initially, it was mostly associated with developers, but in principle, all contributors – designers, technical writers, analysts, etc. – are welcome.
@@ -27,7 +27,7 @@ This is how the members of the open source community encourage new tech enthusia
 This year, registration starts on September 26.
 To participate, you need to send at least four open-sourced pull requests on GitHub or Gitlab between October 1st and October 31st, and those pull requests need to be accepted by the repository owners.
 
-The first 40,000 participants who complete Hacktoberfest can receive one of two prizes: a tree planted in their name or the Hacktoberfest 2022 t-shirt.
+The participants who complete Hacktoberfest can receive one of these prizes: a tree planted in their name, a unique digital reward, or even a Hacktoberfest t-shirt.
 
 ## Why you should participate in Hacktoberfest open-source projects
 
@@ -35,13 +35,14 @@ Of course, Hacktoberfest is not about receiving a free t-shirt.
 The main idea is to help new contributors get more involved and make the open-source movement a stronger force.
 It helps to discover exciting projects in the tech space, learn new things, and also connect to other open source enthusiasts worldwide.
 
-Even though it might sound as if Hacktoberfest only caters to developers, everyone can take part in it!
-Designers, writers, and tech advocates can contribute too.
-This year, Hacktoberfest organizers [offer some tips](https://hacktoberfest.com/about/#low-or-non-code) on how low-code or non-code contributors can participate in the event.
+**Even though it might sound as if Hacktoberfest only caters to developers, everyone can take part in it!**
+**Designers, writers, and tech advocates can contribute too.**
 
-At FerretDB, we love the idea of celebrating open source.
-As more and more companies switch to proprietary licenses disguised as open-source, celebrating open-source presents another opportunity to demonstrate its immense benefits.
+At FerretDB, we love the idea of celebrating open source, which is why we are on a mission to provide the truly open source alternative to MongoDB.
+As more and more companies switch to proprietary licenses which are disguised as open-source, celebrating open-source presents another opportunity to demonstrate its immense benefits.
 Read more on [the dangers that these licenses pose to open-source](https://blog.ferretdb.io/open-source-is-in-danger/).
+
+As a company, we would love to help you through your first steps in the open-source world, either as a developer, designer, or writer – there's no shortage to the ways you can contribute to open-source.
 
 Besides being an opportunity to take baby steps into the tech world, contributors can hone their skills as they contribute to the interesting open-source projects that appeal to them.
 
@@ -71,7 +72,7 @@ It's essential to find some "low-hanging fruit" that will give you inspiration f
 On GitHub, it might make sense to look for "good-first-issue" labels.
 Usually, issues that are marked with such a label don't require special knowledge about the project.
 
-There is one more tradition here, in October, some open source projects mark their issues with the "[hacktoberfest](https://github.com/search?q=label%3Ahacktoberfest&type=issues)" label, and such issues are often suitable for first-time contributors.
+There is one more tradition here, in October, some open source projects mark their issues with the [`hacktoberfest`](https://github.com/search?q=label%3Ahacktoberfest&type=issues) label, and such issues are often suitable for first-time contributors.
 
 At FerretDB, we are preparing for Hacktoberfest too!
 So, if you are looking for something to contribute to, take a look at the good first issues in our [FerretDB](https://github.com/FerretDB/FerretDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) and [github-actions](https://github.com/FerretDB/github-actions/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) repositories.
@@ -92,8 +93,16 @@ Don't hesitate to join us!
 You can find details in our [README](https://github.com/ferretdb/ferretdb#community).
 
 By the way, the contributing guidelines or documentation might be the most suitable for first-time contributors!
-Do you see a typo, a mistake, or something that doesn't look clear?
+
+We have several good first issues that you can start with.
+For example, you could implement the [`$first` accumulator](https://github.com/FerretDB/FerretDB/issues/2128), [improve embedded package documentation](https://github.com/FerretDB/FerretDB/issues/2326), or [fix linter issues](https://github.com/FerretDB/FerretDB/issues/2733).
+You could also try your hands at [updating glossary list with more details](https://github.com/FerretDB/FerretDB/issues/3427), [update aggregation section to cover `$unset` and `$project` commands](https://github.com/FerretDB/FerretDB/issues/3428), and more.
+Since new issues are always popping up, there are no limits to what you can contribute to.
+
+_Do you see a typo, a mistake, or something that doesn't look clear?_
+
 Such contributions could be as tiny as [a one-line change](https://github.com/FerretDB/FerretDB/pull/1141).
+So, if you find something you're interested in working on, even if it's not labeled as a good first issue, you can still go ahead to contribute.
 Help the project owners with such improvements, and they will be grateful!
 
 ### 4. Fork and clone an open-source repository
@@ -144,7 +153,7 @@ Congratulations!
 ## Start your open-source contribution with FerretDB
 
 At FerretDB, we welcome all the open source contributors!
-From feature implementations to fixing typos in our documentation - we value everything!
+From feature implementations to fixing typos in our documentation - we value _everything_!
 
 Whether it's for Hacktoberfest or otherwise, you are welcome to take a look at [FerretDB projects](https://github.com/FerretDB/) and find something that interests you.
 To simplify the process, we prepared the [contributing guidelines](https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md) to help you find something to work on, set up the development environment, prepare a pull request and pass code review.
