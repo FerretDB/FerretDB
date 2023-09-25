@@ -16,13 +16,18 @@ package postgresql
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // collection implements backends.Collection interface.
@@ -102,6 +107,66 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 
 // Explain implements backends.Collection interface.
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
+	var res backends.ExplainResult
+
+	db, err := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if db == nil {
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
+	}
+	// TODO handle err
+
+	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if meta == nil {
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
+	}
+	// TODO handle err
+
+	var iter types.DocumentsIterator
+	iter, res, err = buildIterator(ctx, tx, &iteratorParams{
+		schema:    qp.DB,
+		table:     table,
+		comment:   qp.Comment,
+		explain:   qp.Explain,
+		filter:    qp.Filter,
+		sort:      qp.Sort,
+		limit:     qp.Limit,
+		unmarshal: unmarshalExplain,
+	})
+	if err != nil {
+		return nil, res, lazyerrors.Error(err)
+	}
+
+	defer iter.Close()
+
+	_, plan, err := iter.Next()
+
+	switch {
+	case errors.Is(err, iterator.ErrIteratorDone):
+		return nil, res, lazyerrors.Error(errors.New("no rows returned from EXPLAIN"))
+	case err != nil:
+		return nil, res, lazyerrors.Error(err)
+	}
+
+	return plan, res, nil
+}
+
+// unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.
+// EXPLAIN result is not sjson, so it cannot be unmarshalled by sjson.Unmarshal.
+func unmarshalExplain(b []byte) (*types.Document, error) {
+	var plans []map[string]any
+	if err := json.Unmarshal(b, &plans); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if len(plans) == 0 {
+		return nil, lazyerrors.Error(errors.New("no execution plan returned"))
+	}
+
+	return convertJSON(plans[0]).(*types.Document), nil
 	return new(backends.ExplainResult), nil
 }
 
