@@ -188,7 +188,7 @@ func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
 			args = append(args, parseValue(v))
 
 		case int64:
-			var comparison string
+			comparison := ` = ?`
 			maxSafeDouble := int64(types.MaxSafeDouble)
 
 			// If value cannot be safe double, fetch all numbers out of the safe range
