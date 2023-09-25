@@ -49,7 +49,7 @@ jobs:
         with:
           fetch-depth: 0 # for wrangler to work
           lfs: true
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
 
       # for Wrangler / Cloudflare Pages on pull_request_target
       - name: Name branch
@@ -118,7 +118,7 @@ jobs:
         with:
           fetch-depth: 0 # for wrangler to work
           lfs: true
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
 
       # for Wrangler / Cloudflare Pages on pull_request_target
       - name: Name branch

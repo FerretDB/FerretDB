@@ -24,6 +24,9 @@ labels:
   - name: area/indexes
     color: "#006B75"
     description: Issues about indexes
+  - name: area/observability
+    color: "#E04D33"
+    description: Issues about metrics, logs, traces, pprof, etc
   - name: area/oplog
     color: "#09D521"
     description: Issues about OpLog
@@ -44,6 +47,9 @@ labels:
   - name: backend/sqlite
     color: "#2C8FCA"
     description: Issues about SQLite backend
+  - name: backend/hana
+    color: "#2D6AB1"
+    description: Issues about SAP HANA backend
 
   # blog
   - name: blog/engineering
