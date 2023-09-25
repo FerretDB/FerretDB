@@ -187,10 +187,10 @@ tasks:
     desc: "Run integration tests for several backends in parallel"
     deps:
       - test-integration-pg
-      - test-integration-mongodb
       - test-integration-sqlite
       # no test-integration-postgresql yet
       # no test-integration-hana
+      - test-integration-mongodb
 
   test-integration-pg:
     desc: "Run integration tests for `pg` handler"

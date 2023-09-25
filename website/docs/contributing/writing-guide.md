@@ -67,9 +67,11 @@ To link to a directory or category, prefix the directory name with `/category/`.
 ## Images
 
 Please store all images under `blog` or `docs` in the `static/img` folder.
+
 Also, you can collate images for a specific blog post inside a single folder.
-Name the folder appropriately using the `YYYY-MM-DD` format.
-For example, a typical path for an image will be `/img/blog/2023-01-01/ferretdb-image.jpg`
+For partner blog posts, store related images in the same folder, as `/img/blog/partner-name/image.png`.
+
+Otherwise, name the folder appropriately using the `YYYY-MM-DD` format, for example, a typical path for an image will be `/img/blog/2023-01-01/ferretdb-image.jpg`.
 
 ### Alt text
 

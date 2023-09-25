@@ -47,6 +47,12 @@ const (
 	metadataTableName = reservedPrefix + "database_metadata"
 )
 
+// Parts of Prometheus metric names.
+const (
+	namespace = "ferretdb"
+	subsystem = "postgresql_metadata"
+)
+
 // Registry provides access to PostgreSQL databases and collections information.
 //
 // Exported methods and [getPool] are safe for concurrent use. Other unexported methods are not.
@@ -688,7 +694,33 @@ func (r *Registry) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements prometheus.Collector.
 func (r *Registry) Collect(ch chan<- prometheus.Metric) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3392
+	r.p.Collect(ch)
+
+	r.rw.RLock()
+	defer r.rw.RUnlock()
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "databases"),
+			"The current number of database in the registry.",
+			nil, nil,
+		),
+		prometheus.GaugeValue,
+		float64(len(r.colls)),
+	)
+
+	for db, colls := range r.colls {
+		ch <- prometheus.MustNewConstMetric(
+			prometheus.NewDesc(
+				prometheus.BuildFQName(namespace, subsystem, "collections"),
+				"The current number of collections in the registry.",
+				[]string{"db"}, nil,
+			),
+			prometheus.GaugeValue,
+			float64(len(colls)),
+			db,
+		)
+	}
 }
 
 // check interfaces
