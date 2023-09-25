@@ -216,7 +216,7 @@ tasks:
       - >
         go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-postgresql.txt
-        -target-backend=ferretdb-postgresql
+        -target-backend=ferretdb-pg
         -target-tls
         -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50&search_path='
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
