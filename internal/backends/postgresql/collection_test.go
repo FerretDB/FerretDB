@@ -59,7 +59,7 @@ func TestInsert(t *testing.T) {
 		Docs: []*types.Document{doc},
 	})
 	require.NoError(t, err)
-	// TODO https://github.com/FerretDB/FerretDB/issues/3399
+	// TODO https://github.com/FerretDB/FerretDB/issues/3375
 	//_, err = c.InsertAll(ctx, &backends.InsertAllParams{
 	//	Docs: []*types.Document{doc},
 	//})
