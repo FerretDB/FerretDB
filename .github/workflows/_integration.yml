@@ -26,7 +26,7 @@ on:
       checkout_ref:
         required: false
         type: string
-        default: ''
+        default: ""
     secrets:
       FERRETDB_HANA_URL:
         required: false
