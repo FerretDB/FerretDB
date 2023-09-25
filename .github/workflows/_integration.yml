@@ -48,6 +48,11 @@ jobs:
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
         if: false
 
+      - name: Dump github context
+        run: echo "$GITHUB_CONTEXT"
+        env:
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
+
       - name: Checkout code
         uses: actions/checkout@v3
         with:
