@@ -42,7 +42,7 @@ At FerretDB, we love the idea of celebrating open source, which is why we are on
 As more and more companies switch to proprietary licenses which are disguised as open-source, celebrating open-source presents another opportunity to demonstrate its immense benefits.
 Read more on [the dangers that these licenses pose to open-source](https://blog.ferretdb.io/open-source-is-in-danger/).
 
-As a company, we would love to help you through your first steps in the open-source world, either as a developer, designer, or writer – there's no shortage to the ways you can contribute to open-source.
+We would love to help you through your first steps in the open-source world, either as a developer, designer, or writer – there's no shortage to the ways you can contribute to open-source.
 
 Besides being an opportunity to take baby steps into the tech world, contributors can hone their skills as they contribute to the interesting open-source projects that appeal to them.
 
