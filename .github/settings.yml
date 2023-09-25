@@ -26,7 +26,7 @@ labels:
     description: Issues about indexes
   - name: area/observability
     color: "#E04D33"
-    description: Issues about metrics, logs, traces
+    description: Issues about metrics, logs, traces, pprof, etc
   - name: area/oplog
     color: "#09D521"
     description: Issues about OpLog
