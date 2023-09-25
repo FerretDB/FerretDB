@@ -27,6 +27,10 @@ import (
 )
 
 func TestInsert(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
