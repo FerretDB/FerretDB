@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -74,12 +73,7 @@ func isIssueOpen(todoText string) bool {
 		return false
 	}
 
-	token := os.Getenv("GITHUB_TOKEN")
-	if token == "" {
-		log.Fatalf("%s is not set.", token)
-		return false
-	}
-
+	token := ""
 	ctx := context.Background()
 	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
