@@ -1,7 +1,7 @@
 ---
 # Integration tests that need access to secrets.
 
-name: Go trusted
+name: Go Trusted
 on:
   pull_request_target:
     types:
