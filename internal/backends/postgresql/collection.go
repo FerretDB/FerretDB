@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 
@@ -127,10 +128,9 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	var iter types.DocumentsIterator
 	iter, res, err = buildIterator(ctx, tx, &iteratorParams{
-		schema:    qp.DB,
-		table:     table,
-		comment:   qp.Comment,
-		explain:   qp.Explain,
+		schema:    c.dbName,
+		table:     meta.TableName,
+		explain:   params.Filter,
 		filter:    qp.Filter,
 		sort:      qp.Sort,
 		limit:     qp.Limit,
@@ -152,6 +152,84 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	return plan, res, nil
+}
+
+// iteratorParams contains parameters for building an iterator.
+type iteratorParams struct {
+	schema    string
+	table     string
+	comment   string
+	explain   bool
+	filter    *types.Document
+	sort      *types.Document
+	limit     int64
+	forUpdate bool                                    // if SELECT FOR UPDATE is needed.
+	unmarshal func(b []byte) (*types.Document, error) // if set, iterator uses unmarshal to convert row to *types.Document.
+}
+
+// buildIterator returns an iterator to fetch documents for given iteratorParams.
+func buildIterator(ctx context.Context, tx pgx.Tx, p *iteratorParams) (types.DocumentsIterator, QueryResults, error) {
+	var query string
+	var res QueryResults
+
+	if p.explain {
+		query = `EXPLAIN (VERBOSE true, FORMAT JSON) `
+	}
+
+	query += `SELECT _jsonb `
+
+	if c := p.comment; c != "" {
+		// prevent SQL injections
+		c = strings.ReplaceAll(c, "/*", "/ *")
+		c = strings.ReplaceAll(c, "*/", "* /")
+
+		query += `/* ` + c + ` */ `
+	}
+
+	query += ` FROM ` + pgx.Identifier{p.schema, p.table}.Sanitize()
+
+	var placeholder Placeholder
+
+	where, args, err := prepareWhereClause(&placeholder, p.filter)
+	if err != nil {
+		return nil, res, lazyerrors.Error(err)
+	}
+
+	res.FilterPushdown = where != ""
+
+	query += where
+
+	if p.forUpdate {
+		query += ` FOR UPDATE`
+	}
+
+	if p.sort != nil {
+		var sort string
+		var sortArgs []any
+
+		sort, sortArgs, err = prepareOrderByClause(&placeholder, p.sort)
+		if err != nil {
+			return nil, res, lazyerrors.Error(err)
+		}
+
+		query += sort
+		args = append(args, sortArgs...)
+
+		res.SortPushdown = sort != ""
+	}
+
+	if p.limit != 0 {
+		query += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
+		args = append(args, p.limit)
+		res.LimitPushdown = true
+	}
+
+	rows, err := tx.Query(ctx, query, args...)
+	if err != nil {
+		return nil, res, lazyerrors.Error(err)
+	}
+
+	return newIterator(ctx, rows, p), res, nil
 }
 
 // unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.
