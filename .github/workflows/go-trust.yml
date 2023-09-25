@@ -50,35 +50,15 @@ jobs:
         shard_index: [1, 2, 3]
         shard_total: [3]
 
+    # Do not submit to coveralls because it can't handle parallel workflows:
+    # https://github.com/lemurheavy/coveralls-public/issues/1636#issuecomment-1529460515
+
     uses: ./.github/workflows/_integration.yml
     with:
       task: ${{ matrix.task }}
       shard_index: ${{ matrix.shard_index }}
       shard_total: ${{ matrix.shard_total }}
       checkout_ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.merge_commit_sha || ''}}
+      coveralls: false
     secrets:
       FERRETDB_HANA_URL: ${{ secrets.FERRETDB_HANA_URL }}
-
-  # https://github.com/lemurheavy/coveralls-public/issues/1636
-  submit-coveralls:
-    name: Submit final coveralls report
-    runs-on: ubuntu-22.04
-
-    needs: [integration]
-    if: >
-      always() &&
-      github.event_name != 'pull_request_target' ||
-      (
-        contains(github.event.pull_request.labels.*.name, 'trust') &&
-        !contains(github.event.pull_request.labels.*.name, 'not ready')
-      )
-
-    steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
-      - name: Submit coveralls
-        uses: coverallsapp/github-action@v2
-        with:
-          parallel-finished: true

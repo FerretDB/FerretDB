@@ -24,6 +24,10 @@ on:
         required: false
         type: string
         default: ''
+      coveralls:
+        required: false
+        type: boolean
+        default: false
     secrets:
       FERRETDB_HANA_URL:
         required: false
@@ -117,6 +121,7 @@ jobs:
           verbose: true
 
       - name: Upload coverage information to coveralls
+        if: always() && inputs.coveralls
         uses: coverallsapp/github-action@v2
         with:
           file: ./integration/integration-${{ inputs.task }}.txt

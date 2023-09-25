@@ -185,6 +185,7 @@ jobs:
       task: ${{ matrix.task }}
       shard_index: ${{ matrix.shard_index }}
       shard_total: ${{ matrix.shard_total }}
+      coveralls: true
 
   # https://github.com/lemurheavy/coveralls-public/issues/1636
   submit-coveralls:
