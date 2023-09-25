@@ -52,7 +52,6 @@ jobs:
 
     # Do not submit to coveralls because it can't handle parallel workflows:
     # https://github.com/lemurheavy/coveralls-public/issues/1636#issuecomment-1529460515
-
     uses: ./.github/workflows/_integration.yml
     with:
       task: ${{ matrix.task }}

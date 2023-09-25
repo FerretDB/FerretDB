@@ -12,6 +12,9 @@ on:
       shard_total:
         required: true
         type: number
+      coveralls:
+        required: true
+        type: boolean
       disable_filter_pushdown:
         required: false
         type: boolean
@@ -24,10 +27,6 @@ on:
         required: false
         type: string
         default: ''
-      coveralls:
-        required: false
-        type: boolean
-        default: false
     secrets:
       FERRETDB_HANA_URL:
         required: false

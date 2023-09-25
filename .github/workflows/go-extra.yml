@@ -35,6 +35,8 @@ jobs:
         disable_filter_pushdown: [false, true]
         enable_sort_pushdown: [false, true]
 
+    # Do not submit to coveralls because it can't handle parallel workflows:
+    # https://github.com/lemurheavy/coveralls-public/issues/1636#issuecomment-1529460515
     uses: ./.github/workflows/_integration.yml
     with:
       task: ${{ matrix.task }}
@@ -42,3 +44,4 @@ jobs:
       shard_total: ${{ matrix.shard_total }}
       disable_filter_pushdown: ${{ matrix.disable_filter_pushdown }}
       enable_sort_pushdown: ${{ matrix.enable_sort_pushdown }}
+      coveralls: false
