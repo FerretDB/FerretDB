@@ -67,10 +67,11 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	if c == nil {
 		return backends.NewError(
 			backends.ErrorCodeCollectionDoesNotExist,
-			lazyerrors.Errorf("no ns %s.%s", db.name, params.OldName),
+			lazyerrors.Errorf("old database %q or collection %q does not exist", db.name, params.OldName),
 		)
 	}
 
@@ -78,10 +79,11 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
+
 	if c != nil {
 		return backends.NewError(
 			backends.ErrorCodeCollectionAlreadyExists,
-			lazyerrors.Errorf("already exists %s.%s", db.name, params.NewName),
+			lazyerrors.Errorf("new database %q and collection %q already exists", db.name, params.OldName),
 		)
 	}
 
