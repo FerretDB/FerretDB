@@ -42,7 +42,8 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 		unique         any
 		resultType     compatTestCaseResultType // defaults to nonEmptyResult
 
-		skip string // optional, skip test with a specified reason
+		skip         string // optional, skip test with a specified reason
+		skipForOldPG string // optional, skip test for the old PG backend with a specified reason
 	}{
 		"InvalidCollectionName": {
 			collectionName: 42,
@@ -83,7 +84,8 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 		"ExistingNameDifferentKeyLength": {
 			collectionName: "test",
 			key:            bson.D{{"_id", 1}, {"v", 1}},
-			indexName:      "_id_", // the same name as the default index
+			indexName:      "_id_",                                             // the same name as the default index
+			skipForOldPG:   "https://github.com/FerretDB/FerretDB/issues/3435", // old PG handler doesn't validate this case correctly
 		},
 		"InvalidKey": {
 			collectionName: "test",
@@ -117,6 +119,10 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
+			}
+
+			if tc.skipForOldPG != "" {
+				t.Skipf("skipping for the old Postgres backend: %s", tc.skipForOldPG)
 			}
 
 			t.Helper()
