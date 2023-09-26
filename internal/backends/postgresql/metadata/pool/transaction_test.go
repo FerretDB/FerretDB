@@ -48,22 +48,26 @@ func TestInTransaction(t *testing.T) {
 	p, err := pp.Get(username, password)
 	require.NoError(t, err)
 
-	_, err = p.Exec(ctx, "DROP TABLE IF EXISTS test_transaction; CREATE TABLE test_transaction(s TEXT);")
+	_, err = p.Exec(ctx, `DROP TABLE IF EXISTS t_test; CREATE TABLE t_test(s TEXT);`)
 	require.NoError(t, err)
+
+	defer func() {
+		_, _ = p.Exec(ctx, `DROP TABLE IF EXISTS t_test`)
+	}()
 
 	t.Run("Commit", func(t *testing.T) {
 		ctx = conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 
 		v := testutil.CollectionName(t)
 		err = InTransaction(ctx, p, func(tx pgx.Tx) error {
-			_, err = tx.Exec(ctx, "INSERT INTO test_transaction(s) VALUES ($1)", v)
+			_, err = tx.Exec(ctx, `INSERT INTO t_test(s) VALUES ($1)`, v)
 			require.NoError(t, err)
 			return nil
 		})
 		require.NoError(t, err)
 
 		var res string
-		err = p.QueryRow(ctx, "SELECT s FROM test_transaction WHERE s = $1", v).Scan(&res)
+		err = p.QueryRow(ctx, `SELECT s FROM t_test WHERE s = $1`, v).Scan(&res)
 		require.NoError(t, err)
 		require.Equal(t, v, res)
 	})
@@ -73,14 +77,14 @@ func TestInTransaction(t *testing.T) {
 
 		v := testutil.CollectionName(t)
 		err = InTransaction(ctx, p, func(tx pgx.Tx) error {
-			_, err = tx.Exec(ctx, "INSERT INTO test_transaction(s) VALUES ($1)", v)
+			_, err = tx.Exec(ctx, `INSERT INTO t_test(s) VALUES ($1)`, v)
 			require.NoError(t, err)
 			return errors.New("boom")
 		})
 		require.Error(t, err)
 
 		var res string
-		err = p.QueryRow(ctx, "SELECT s FROM test_transaction WHERE s = $1", v).Scan(&res)
+		err = p.QueryRow(ctx, `SELECT s FROM t_test WHERE s = $1`, v).Scan(&res)
 		require.ErrorContains(t, err, "no rows in result set")
 	})
 
@@ -92,7 +96,7 @@ func TestInTransaction(t *testing.T) {
 
 		v := testutil.CollectionName(t)
 		err = InTransaction(ctx, p, func(tx pgx.Tx) error {
-			_, err = tx.Exec(ctx, "INSERT INTO test_transaction(s) VALUES ($1)", v)
+			_, err = tx.Exec(ctx, `INSERT INTO t_test(s) VALUES ($1)`, v)
 			require.NoError(t, err)
 
 			cancel()
@@ -102,7 +106,7 @@ func TestInTransaction(t *testing.T) {
 		require.Error(t, err)
 
 		var res string
-		err = p.QueryRow(context.WithoutCancel(ctx), "SELECT s FROM test_transaction WHERE s = $1", v).Scan(&res)
+		err = p.QueryRow(context.WithoutCancel(ctx), `SELECT s FROM t_test WHERE s = $1`, v).Scan(&res)
 		require.ErrorContains(t, err, "no rows in result set")
 	})
 
@@ -112,7 +116,7 @@ func TestInTransaction(t *testing.T) {
 		v := testutil.CollectionName(t)
 		assert.Panics(t, func() {
 			err = InTransaction(ctx, p, func(tx pgx.Tx) error {
-				_, err = tx.Exec(ctx, "INSERT INTO test_transaction(s) VALUES ($1)", v)
+				_, err = tx.Exec(ctx, `INSERT INTO t_test(s) VALUES ($1)`, v)
 				require.NoError(t, err)
 
 				panic("boom")
@@ -121,7 +125,7 @@ func TestInTransaction(t *testing.T) {
 		})
 
 		var res string
-		err = p.QueryRow(ctx, "SELECT s FROM test_transaction WHERE s = $1", v).Scan(&res)
+		err = p.QueryRow(ctx, `SELECT s FROM t_test WHERE s = $1`, v).Scan(&res)
 		require.ErrorContains(t, err, "no rows in result set")
 	})
 }
