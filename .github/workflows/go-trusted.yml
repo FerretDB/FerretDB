@@ -57,7 +57,7 @@ jobs:
       task: ${{ matrix.task }}
       shard_index: ${{ matrix.shard_index }}
       shard_total: ${{ matrix.shard_total }}
-      checkout_ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.merge_commit_sha || ''}}
+      checkout_ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || ''}}
       coveralls: false
     secrets:
       FERRETDB_HANA_URL: ${{ secrets.FERRETDB_HANA_URL }}
