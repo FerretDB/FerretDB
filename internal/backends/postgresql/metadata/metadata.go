@@ -16,7 +16,12 @@
 package metadata
 
 import (
+	"errors"
+
 	"golang.org/x/exp/slices"
+
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -67,9 +72,14 @@ func (c *Collection) Unmarshal(doc *types.Document) error {
 	c.Name = must.NotFail(doc.Get("_id")).(string)
 	c.TableName = must.NotFail(doc.Get("table")).(string)
 
-	var settings Settings
-	must.NoError(settings.Unmarshal(must.NotFail(doc.Get("settings")).(*types.Document)))
-	c.Settings = settings
+	if doc.Has("settings") {
+		var settings Settings
+		must.NoError(settings.Unmarshal(must.NotFail(doc.Get("settings")).(*types.Document)))
+		c.Settings = settings
+	} else {
+		// If settings are not present, we initialize them with empty indexes to avoid potential nil pointers.
+		c.Settings = Settings{Indexes: []IndexInfo{}}
+	}
 
 	return nil
 }
@@ -98,14 +108,15 @@ func (s Settings) deepCopy() Settings {
 
 // Marshal returns [*types.Document] for settings.
 func (s Settings) Marshal() *types.Document {
-	indexes := make([]*types.Document, len(s.Indexes))
+	indexes := types.MakeArray(len(s.Indexes))
 
 	for i, index := range s.Indexes {
-		indexes[i] = must.NotFail(types.NewDocument(
+		must.NoError(indexes.Set(i, must.NotFail(types.NewDocument(
 			"name", index.Name,
+			"dbindex", index.DBIndex,
 			"key", index.Key,
 			"unique", index.Unique,
-		))
+		))))
 	}
 
 	return must.NotFail(types.NewDocument(
@@ -115,15 +126,30 @@ func (s Settings) Marshal() *types.Document {
 
 // Unmarshal sets settings from [*types.Document].
 func (s *Settings) Unmarshal(doc *types.Document) error {
-	indexes := must.NotFail(doc.Get("indexes")).([]*types.Document)
+	indexes := must.NotFail(doc.Get("indexes")).(*types.Array)
 
-	s.Indexes = make([]IndexInfo, len(indexes))
+	s.Indexes = make([]IndexInfo, indexes.Len())
 
-	for i, index := range indexes {
+	iter := indexes.Iterator()
+	defer iter.Close()
+
+	for {
+		i, v, err := iter.Next()
+		if errors.Is(err, iterator.ErrIteratorDone) {
+			break
+		}
+
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		doc := v.(*types.Document)
+
 		s.Indexes[i] = IndexInfo{
-			Name:   must.NotFail(index.Get("name")).(string),
-			Key:    must.NotFail(index.Get("key")).([]IndexKeyPair),
-			Unique: must.NotFail(index.Get("unique")).(bool),
+			Name:    must.NotFail(doc.Get("name")).(string),
+			DBIndex: must.NotFail(doc.Get("dbindex")).(string),
+			Key:     must.NotFail(doc.Get("key")).([]IndexKeyPair),
+			Unique:  must.NotFail(doc.Get("unique")).(bool),
 		}
 	}
 
@@ -132,9 +158,10 @@ func (s *Settings) Unmarshal(doc *types.Document) error {
 
 // IndexInfo represents information about a single index.
 type IndexInfo struct {
-	Name   string         `json:"name"`
-	Key    []IndexKeyPair `json:"key"`
-	Unique bool           `json:"unique"`
+	Name    string         `json:"name"`
+	DBIndex string         `json:"dbindex"` // how the index is created in the DB, like TableName for Collection
+	Key     []IndexKeyPair `json:"key"`
+	Unique  bool           `json:"unique"`
 }
 
 // IndexKeyPair consists of a field name and a sort order that are part of the index.
