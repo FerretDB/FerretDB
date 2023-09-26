@@ -83,7 +83,7 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 	if c != nil {
 		return backends.NewError(
 			backends.ErrorCodeCollectionAlreadyExists,
-			lazyerrors.Errorf("new database %q and collection %q already exists", db.name, params.OldName),
+			lazyerrors.Errorf("new database %q and collection %q already exists", db.name, params.NewName),
 		)
 	}
 
