@@ -47,16 +47,16 @@ func TestRenameCollectionCompat(t *testing.T) {
 	targetDBConnect := targetCollection.Database().Client().Database("admin")
 	compatDBConnect := compatCollection.Database().Client().Database("admin")
 
-	nsFrom := dbName + "." + cName
-	nsTo := dbName + ".newCollection"
+	from := dbName + "." + cName
+	to := dbName + ".newCollection"
 
 	var targetRes bson.D
-	targetCommand := bson.D{{"renameCollection", nsFrom}, {"to", nsTo}}
+	targetCommand := bson.D{{"renameCollection", from}, {"to", to}}
 	targetErr := targetDBConnect.RunCommand(ctx, targetCommand).Decode(&targetRes)
 	require.NoError(t, targetErr, "compat error; target returned no error")
 
 	var compatRes bson.D
-	compatCommand := bson.D{{"renameCollection", nsFrom}, {"to", nsTo}}
+	compatCommand := bson.D{{"renameCollection", from}, {"to", to}}
 	compatErr := compatDBConnect.RunCommand(ctx, compatCommand).Decode(&compatRes)
 	require.NoError(t, compatErr, "compat error; target returned no error")
 
@@ -86,20 +86,20 @@ func TestRenameCollectionCompat(t *testing.T) {
 	assert.ElementsMatch(t, targetNames, compatNames)
 
 	// Rename one more time
-	targetCommand = bson.D{{"renameCollection", nsFrom}, {"to", nsTo + "_new"}}
+	targetCommand = bson.D{{"renameCollection", from}, {"to", to + "_new"}}
 	targetErr = targetDBConnect.RunCommand(ctx, targetCommand).Decode(&targetRes)
 	require.NoError(t, targetErr)
 
-	compatCommand = bson.D{{"renameCollection", nsFrom}, {"to", nsTo + "_new"}}
+	compatCommand = bson.D{{"renameCollection", from}, {"to", to + "_new"}}
 	compatErr = compatDBConnect.RunCommand(ctx, compatCommand).Decode(&compatRes)
 	require.NoError(t, compatErr)
 
 	// Rename back
-	targetCommand = bson.D{{"renameCollection", nsTo + "_new"}, {"to", nsFrom}}
+	targetCommand = bson.D{{"renameCollection", to + "_new"}, {"to", from}}
 	targetErr = targetDBConnect.RunCommand(ctx, targetCommand).Decode(&targetRes)
 	require.NoError(t, targetErr)
 
-	compatCommand = bson.D{{"renameCollection", nsTo + "_new"}, {"to", nsFrom}}
+	compatCommand = bson.D{{"renameCollection", to + "_new"}, {"to", from}}
 	compatErr = compatDBConnect.RunCommand(ctx, compatCommand).Decode(&compatRes)
 	require.NoError(t, compatErr)
 
@@ -138,72 +138,72 @@ func TestRenameCollectionCompatErrors(t *testing.T) {
 	compatDBConnect := compatCollection.Database().Client().Database("admin")
 
 	for name, tc := range map[string]struct {
-		nsFrom any
-		nsTo   any
+		from any
+		to   any
 	}{
 		"NilFrom": {
-			nsFrom: nil,
-			nsTo:   dbName + ".newCollection",
+			from: nil,
+			to:   dbName + ".newCollection",
 		},
 		"NilTo": {
-			nsFrom: dbName + "." + cName,
-			nsTo:   nil,
+			from: dbName + "." + cName,
+			to:   nil,
 		},
 		"BadTypeFrom": {
-			nsFrom: int32(42),
-			nsTo:   dbName + ".newCollection",
+			from: int32(42),
+			to:   dbName + ".newCollection",
 		},
 		"BadTypeTo": {
-			nsFrom: dbName + "." + cName,
-			nsTo:   int32(42),
+			from: dbName + "." + cName,
+			to:   int32(42),
 		},
 		"EmptyFrom": {
-			nsFrom: "",
-			nsTo:   dbName + ".newCollection",
+			from: "",
+			to:   dbName + ".newCollection",
 		},
 		"EmptyTo": {
-			nsFrom: dbName + "." + cName,
-			nsTo:   "",
+			from: dbName + "." + cName,
+			to:   "",
 		},
 		"EmptyDBFrom": {
-			nsFrom: "." + cName,
-			nsTo:   dbName + ".newCollection",
+			from: "." + cName,
+			to:   dbName + ".newCollection",
 		},
 		"EmptyDBTo": {
-			nsFrom: dbName + "." + cName,
-			nsTo:   ".newCollection",
+			from: dbName + "." + cName,
+			to:   ".newCollection",
 		},
 		"EmptyCollectionFrom": {
-			nsFrom: dbName + ".",
-			nsTo:   dbName + ".newCollection",
+			from: dbName + ".",
+			to:   dbName + ".newCollection",
 		},
 		"EmptyCollectionTo": {
-			nsFrom: dbName + "." + cName,
-			nsTo:   dbName + ".",
+			from: dbName + "." + cName,
+			to:   dbName + ".",
 		},
 		"NonExistentDB": {
-			nsFrom: "nonExistentDB." + cName,
-			nsTo:   "nonExistentDB.newCollection",
+			from: "nonExistentDB." + cName,
+			to:   "nonExistentDB.newCollection",
 		},
 		"NonExistentCollectionFrom": {
-			nsFrom: dbName + ".nonExistentCollection",
-			nsTo:   dbName + ".newCollection",
+			from: dbName + ".nonExistentCollection",
+			to:   dbName + ".newCollection",
 		},
 		"CollectionToAlreadyExists": {
-			nsFrom: dbName + "." + cName,
-			nsTo:   dbName + "." + cExistingName,
+			from: dbName + "." + cName,
+			to:   dbName + "." + cExistingName,
 		},
 		"SameNamespace": {
-			nsFrom: dbName + "." + cName,
-			nsTo:   dbName + "." + cName,
+			from: dbName + "." + cName,
+			to:   dbName + "." + cName,
 		},
 		"InvalidNameTo": {
-			nsFrom: dbName + "." + cName,
-			nsTo:   dbName + ".new$Collection",
+			from: dbName + "." + cName,
+			to:   dbName + ".new$Collection",
 		},
 		"LongNameTo": {
-			nsFrom: dbName + "." + cName,
-			nsTo:   dbName + "." + strings.Repeat("aB", 150),
+			from: dbName + "." + cName,
+			to:   dbName + "." + strings.Repeat("aB", 150),
 		},
 	} {
 		name, tc := name, tc
@@ -214,11 +214,11 @@ func TestRenameCollectionCompatErrors(t *testing.T) {
 			t.Parallel()
 
 			var targetRes bson.D
-			targetCommand := bson.D{{"renameCollection", tc.nsFrom}, {"to", tc.nsTo}}
+			targetCommand := bson.D{{"renameCollection", tc.from}, {"to", tc.to}}
 			targetErr := targetDBConnect.RunCommand(ctx, targetCommand).Decode(&targetRes)
 
 			var compatRes bson.D
-			compatCommand := bson.D{{"renameCollection", tc.nsFrom}, {"to", tc.nsTo}}
+			compatCommand := bson.D{{"renameCollection", tc.from}, {"to", tc.to}}
 			compatErr := compatDBConnect.RunCommand(ctx, compatCommand).Decode(&compatRes)
 
 			t.Logf("Target error: %v", targetErr)
