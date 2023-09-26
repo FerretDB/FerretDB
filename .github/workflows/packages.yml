@@ -64,6 +64,7 @@ jobs:
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
         if: false
 
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         if: github.event_name != 'pull_request_target'
         uses: actions/checkout@v3
@@ -71,13 +72,14 @@ jobs:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
 
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout pull request code
         if: github.event_name == 'pull_request_target'
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
           lfs: false
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ github.event.pull_request.head.sha }}
 
       # for version.txt on push tags; see https://github.com/actions/checkout/issues/290
       - name: Fetch annotated tags
