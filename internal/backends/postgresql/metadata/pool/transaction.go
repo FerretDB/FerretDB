@@ -55,7 +55,8 @@ func InTransaction(ctx context.Context, p *pgxpool.Pool, f func(tx pgx.Tx) error
 			err = lazyerrors.Errorf("transaction was not committed")
 		}
 
-		_ = pgTx.Rollback(ctx)
+		// ensure rollback even if context is canceled
+		_ = pgTx.Rollback(context.WithoutCancel(ctx))
 	}()
 
 	if err = f(pgTx); err != nil {
