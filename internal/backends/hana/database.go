@@ -12,97 +12,48 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package postgresql
+package hana
 
 import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// database implements backends.Database interface.
-type database struct {
-	r    *metadata.Registry
-	name string
-}
-
-// newDatabase creates a new Database.
-func newDatabase(r *metadata.Registry, name string) backends.Database {
-	return backends.DatabaseContract(&database{
-		r:    r,
-		name: name,
-	})
-}
+// database implements backends.Database.
+type database struct{}
 
 // Collection implements backends.Database interface.
 func (db *database) Collection(name string) (backends.Collection, error) {
-	return newCollection(db.r, db.name, name), nil
+	return nil, lazyerrors.New("not implemented yet")
 }
 
 // ListCollections implements backends.Database interface.
 //
 //nolint:lll // for readability
 func (db *database) ListCollections(ctx context.Context, params *backends.ListCollectionsParams) (*backends.ListCollectionsResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3406
-	return new(backends.ListCollectionsResult), nil
+	return nil, lazyerrors.New("not implemented yet")
 }
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3406
-	return nil
+	return lazyerrors.New("not implemented yet")
 }
 
 // DropCollection implements backends.Database interface.
 func (db *database) DropCollection(ctx context.Context, params *backends.DropCollectionParams) error {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3406
-	return nil
+	return lazyerrors.New("not implemented yet")
 }
 
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
-	c, err := db.r.CollectionGet(ctx, db.name, params.OldName)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	if c == nil {
-		return backends.NewError(
-			backends.ErrorCodeCollectionDoesNotExist,
-			lazyerrors.Errorf("old database %q or collection %q does not exist", db.name, params.OldName),
-		)
-	}
-
-	c, err = db.r.CollectionGet(ctx, db.name, params.NewName)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	if c != nil {
-		return backends.NewError(
-			backends.ErrorCodeCollectionAlreadyExists,
-			lazyerrors.Errorf("new database %q and collection %q already exists", db.name, params.NewName),
-		)
-	}
-
-	renamed, err := db.r.CollectionRename(ctx, db.name, params.OldName, params.NewName)
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
-	if !renamed {
-		return backends.NewError(backends.ErrorCodeCollectionDoesNotExist, err)
-	}
-
-	return nil
+	return lazyerrors.New("not implemented yet")
 }
 
 // Stats implements backends.Database interface.
 func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsParams) (*backends.DatabaseStatsResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3402
-	return new(backends.DatabaseStatsResult), nil
+	return nil, lazyerrors.New("not implemented yet")
 }
 
 // check interfaces

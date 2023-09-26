@@ -17,7 +17,6 @@ vars:
   FUZZ_CORPUS: ../fuzz-corpus
   TESTJS_PORT: 27017
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
-  TEST_UNIX_SOCKET_FLAG: -target-unix-socket={{ne OS "windows"}}
   BUILD_TAGS: ferretdb_debug,ferretdb_hana
   SERVICES: postgres postgres_secured mongodb mongodb_secured jaeger
 
@@ -252,9 +251,12 @@ tasks:
         go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
         -coverprofile=integration-hana.txt .
         -target-backend=ferretdb-hana
-        {{.TEST_UNIX_SOCKET_FLAG}}
+        -target-tls
         -hana-url=$FERRETDB_HANA_URL
-        -compat-url='mongodb://127.0.0.1:47017/'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -use-new-hana
+        -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
+        -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
     vars:
       SHARD_RUN:
         sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
@@ -315,6 +317,7 @@ tasks:
     desc: "Run FerretDB with `pg` handler"
     deps: [build-host]
     cmds:
+      # TODO --use-new-pg
       - >
         bin/ferretdb{{exeExt}}
         --listen-addr=:27017
@@ -344,6 +347,7 @@ tasks:
     desc: "Run FerretDB with `hana` handler"
     deps: [build-host]
     cmds:
+      # TODO --use-new-hana
       - >
         bin/ferretdb{{exeExt}}
         --listen-addr=:27017
@@ -356,6 +360,7 @@ tasks:
     desc: "Run FerretDB with `pg` handler (TLS, auth required)"
     deps: [build-host]
     cmds:
+      # TODO --use-new-pg
       - >
         bin/ferretdb{{exeExt}}
         --listen-addr=''
@@ -373,6 +378,7 @@ tasks:
     desc: "Run FerretDB in diff-proxy mode"
     deps: [build-host]
     cmds:
+      # TODO --use-new-pg
       - >
         bin/ferretdb{{exeExt}}
         --listen-addr=:27017
