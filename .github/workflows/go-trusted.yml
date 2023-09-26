@@ -47,8 +47,8 @@ jobs:
       fail-fast: false
       matrix:
         task: [hana]
-        shard_index: [1, 2, 3]
-        shard_total: [3]
+        shard_index: [1]
+        shard_total: [1]
 
     # Do not submit to coveralls because it can't handle parallel workflows:
     # https://github.com/lemurheavy/coveralls-public/issues/1636#issuecomment-1529460515

@@ -63,7 +63,8 @@ var (
 	enableSortPushdownF    = flag.Bool("enable-sort-pushdown", false, "enable sort pushdown")
 	enableOplogF           = flag.Bool("enable-oplog", false, "enable OpLog")
 
-	useNewPGF = flag.Bool("use-new-pg", false, "use new PostgreSQL backend")
+	useNewPgF   = flag.Bool("use-new-pg", false, "use new PostgreSQL backend")
+	useNewHanaF = flag.Bool("use-new-hana", false, "use new SAP HANA backend")
 )
 
 // Other globals.
