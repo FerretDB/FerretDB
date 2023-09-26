@@ -103,7 +103,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 		return nil, lazyerrors.Error(err)
 	}
 
-	err = pool.InTransaction(ctx, p, func(tx *pgx.Tx) error {
+	err = pool.InTransaction(ctx, p, func(tx pgx.Tx) error {
 		for _, doc := range params.Docs {
 			var b []byte
 			b, err = sjson.Marshal(doc)
@@ -119,7 +119,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 				metadata.DefaultColumn,
 			)
 
-			if _, err = p.Exec(ctx, q, string(b)); err != nil {
+			if _, err = tx.Exec(ctx, q, string(b)); err != nil {
 				var pgErr *pgconn.PgError
 				if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 					return backends.NewError(backends.ErrorCodeInsertDuplicateID, err)

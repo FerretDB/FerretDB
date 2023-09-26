@@ -27,7 +27,7 @@ import (
 // InTransaction uses pool p and wraps the given function f in a transaction.
 //
 // If f returns an error or context is canceled, the transaction is rolled back.
-func InTransaction(ctx context.Context, p *pgxpool.Pool, f func(tx *pgx.Tx) error) (err error) {
+func InTransaction(ctx context.Context, p *pgxpool.Pool, f func(tx pgx.Tx) error) (err error) {
 	defer observability.FuncCall(ctx)()
 
 	var pgTx pgx.Tx
@@ -58,7 +58,7 @@ func InTransaction(ctx context.Context, p *pgxpool.Pool, f func(tx *pgx.Tx) erro
 		_ = pgTx.Rollback(ctx)
 	}()
 
-	if err = f(&pgTx); err != nil {
+	if err = f(pgTx); err != nil {
 		// do not wrap f's error because the caller depends on it in some cases
 		return
 	}
