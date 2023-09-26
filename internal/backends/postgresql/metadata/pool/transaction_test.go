@@ -51,9 +51,9 @@ func TestInTransaction(t *testing.T) {
 	_, err = p.Exec(ctx, `DROP TABLE IF EXISTS t_test; CREATE TABLE t_test(s TEXT);`)
 	require.NoError(t, err)
 
-	defer func() {
+	t.Cleanup(func() {
 		_, _ = p.Exec(ctx, `DROP TABLE IF EXISTS t_test`)
-	}()
+	})
 
 	t.Run("Commit", func(t *testing.T) {
 		ctx = conninfo.Ctx(testutil.Ctx(t), conninfo.New())
