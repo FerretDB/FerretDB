@@ -29,10 +29,13 @@ const (
 )
 
 // Collection represents collection metadata.
+//
+// Collection value should be immutable to avoid data races.
+// Use [deepCopy] to replace the whole value instead of modifying fields of existing value.
 type Collection struct {
 	Name      string
 	TableName string
-	// TODO https://github.com/FerretDB/FerretDB/issues/3375
+	Settings  Settings
 }
 
 // deepCopy returns a deep copy.
@@ -44,6 +47,7 @@ func (c *Collection) deepCopy() *Collection {
 	return &Collection{
 		Name:      c.Name,
 		TableName: c.TableName,
+		Settings:  c.Settings.deepCopy(),
 	}
 }
 
@@ -61,4 +65,26 @@ func (c *Collection) Unmarshal(doc *types.Document) error {
 	c.TableName = must.NotFail(doc.Get("table")).(string)
 
 	return nil
+}
+
+// Settings represents collection settings.
+type Settings struct {
+	Indexes []IndexInfo `json:"indexes"`
+}
+
+// deepCopy returns a deep copy.
+func (s Settings) deepCopy() Settings {
+	indexes := make([]IndexInfo, len(s.Indexes))
+
+	for i, index := range s.Indexes {
+		indexes[i] = IndexInfo{
+			Name:   index.Name,
+			Key:    slices.Clone(index.Key),
+			Unique: index.Unique,
+		}
+	}
+
+	return Settings{
+		Indexes: indexes,
+	}
 }
