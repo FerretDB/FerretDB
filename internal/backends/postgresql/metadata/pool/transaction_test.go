@@ -29,6 +29,10 @@ import (
 )
 
 func TestInTransaction(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	// do not run parallel, there is something weird about context canceling and parallel test
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 	username, password := conninfo.Get(ctx).Auth()
