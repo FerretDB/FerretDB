@@ -122,7 +122,7 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 			}
 
 			if tc.skipForOldPg != "" {
-				t.Skipf("skipping for the old Postgres backend: %s", tc.skipForOldPg)
+				setup.SkipForOldPg(t, tc.skipForOldPg)
 			}
 
 			t.Helper()

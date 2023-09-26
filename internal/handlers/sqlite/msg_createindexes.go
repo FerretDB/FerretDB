@@ -477,7 +477,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 			return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, command)
 		}
 
-		// Check for duplicates within the list of indexes to create.
+		// Iterate backwards to check if the current index is a duplicate of any other index provided in the list earlier.
 		for j := i - 1; j >= 0; j-- {
 			otherKey := formatIndexKey(toCreate[j].Key)
 			otherName := toCreate[j].Name

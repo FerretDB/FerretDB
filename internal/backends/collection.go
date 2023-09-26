@@ -21,7 +21,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
-// DefaultIndexName is a name of the default index.
+// DefaultIndexName is a name of the index that is created when a collection is created.
+// This index defines document's primary key.
 const DefaultIndexName = "_id_"
 
 // Collection is a generic interface for all backends for accessing collection.
