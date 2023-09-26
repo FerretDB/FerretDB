@@ -16,6 +16,8 @@
 package metadata
 
 import (
+	"golang.org/x/exp/slices"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -56,6 +58,7 @@ func (c *Collection) Marshal() *types.Document {
 	return must.NotFail(types.NewDocument(
 		"_id", c.Name,
 		"table", c.TableName,
+		"settings", c.Settings.Marshal(),
 	))
 }
 
@@ -63,6 +66,10 @@ func (c *Collection) Marshal() *types.Document {
 func (c *Collection) Unmarshal(doc *types.Document) error {
 	c.Name = must.NotFail(doc.Get("_id")).(string)
 	c.TableName = must.NotFail(doc.Get("table")).(string)
+
+	var settings Settings
+	must.NoError(settings.Unmarshal(must.NotFail(doc.Get("settings")).(*types.Document)))
+	c.Settings = settings
 
 	return nil
 }
@@ -87,4 +94,51 @@ func (s Settings) deepCopy() Settings {
 	return Settings{
 		Indexes: indexes,
 	}
+}
+
+// Marshal returns [*types.Document] for settings.
+func (s Settings) Marshal() *types.Document {
+	indexes := make([]*types.Document, len(s.Indexes))
+
+	for i, index := range s.Indexes {
+		indexes[i] = must.NotFail(types.NewDocument(
+			"name", index.Name,
+			"key", index.Key,
+			"unique", index.Unique,
+		))
+	}
+
+	return must.NotFail(types.NewDocument(
+		"indexes", indexes,
+	))
+}
+
+// Unmarshal sets settings from [*types.Document].
+func (s *Settings) Unmarshal(doc *types.Document) error {
+	indexes := must.NotFail(doc.Get("indexes")).([]*types.Document)
+
+	s.Indexes = make([]IndexInfo, len(indexes))
+
+	for i, index := range indexes {
+		s.Indexes[i] = IndexInfo{
+			Name:   must.NotFail(index.Get("name")).(string),
+			Key:    must.NotFail(index.Get("key")).([]IndexKeyPair),
+			Unique: must.NotFail(index.Get("unique")).(bool),
+		}
+	}
+
+	return nil
+}
+
+// IndexInfo represents information about a single index.
+type IndexInfo struct {
+	Name   string         `json:"name"`
+	Key    []IndexKeyPair `json:"key"`
+	Unique bool           `json:"unique"`
+}
+
+// IndexKeyPair consists of a field name and a sort order that are part of the index.
+type IndexKeyPair struct {
+	Field      string `json:"field"`
+	Descending bool   `json:"descending"`
 }
