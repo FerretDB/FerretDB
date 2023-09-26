@@ -84,7 +84,8 @@ var cli struct {
 		EnableSortPushdown    bool `default:"false" help:"Experimental: enable sort pushdown."`
 		EnableOplog           bool `default:"false" help:"Experimental: enable OpLog."            hidden:""`
 
-		UseNewPG bool `default:"false" help:"Experimental: use new PostgreSQL backend." hidden:""`
+		UseNewPG   bool `default:"false" help:"Experimental: use new PostgreSQL backend." hidden:""`
+		UseNewHana bool `default:"false" help:"Experimental: use new SAP HANA backend."   hidden:""`
 
 		//nolint:lll // for readability
 		Telemetry struct {
@@ -367,7 +368,8 @@ func run() {
 			EnableSortPushdown:    cli.Test.EnableSortPushdown,
 			EnableOplog:           cli.Test.EnableOplog,
 
-			UseNewPG: cli.Test.UseNewPG,
+			UseNewPG:   cli.Test.UseNewPG,
+			UseNewHana: cli.Test.UseNewHana,
 		},
 	})
 	if err != nil {
