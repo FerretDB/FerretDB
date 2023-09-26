@@ -16,7 +16,9 @@ We just released FerretDB v1.11.0, which includes several improvements for the S
 
 This comes on the back of our previous release, which included full support for the SQLite backend as well as the new FerretDB architecture ([see here for more](https://blog.ferretdb.io/ferretdb-v1-10-production-ready-sqlite/)).
 
-The feedback from the community on the SQLite backend has been very positive, and we really appreciate all the support from every corner.
+We've continued work on moving the PostgreSQL backend to the new architecture, which should make it easier to add new features much faster.
+
+Besides, the feedback from the community on the SQLite backend has been very positive, and we really appreciate all the support from every corner.
 We are committed to providing more features for FerretDB and resolving any issues you might encounter.
 And in this release, we've addressed some of these bugs, and also provided a helpful guide for migrating data from MongoDB to FerretDB.
 
@@ -39,8 +41,6 @@ We've created a pre-migration guide that should help you prepare and test your a
 [See them here](https://docs.ferretdb.io/category/migrating-to-ferretdb/).
 
 ## Other changes
-
-We've continued work on moving the PostgreSQL backend to the new architecture, which should make it easier to add new features much faster.
 
 For other changes in this release, please [check out our release notes](https://github.com/FerretDB/FerretDB/releases/tag/v1.11.0).
 
