@@ -171,7 +171,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	return &reply, nil
 }
 
-// processIndexesArray processes the given array of indexes and returns a backends.CreateIndexesParams.
+// processIndexesArray processes the given array of indexes and returns a slice of backends.IndexInfo elements.
 func processIndexesArray(command string, indexesArray *types.Array) ([]backends.IndexInfo, error) {
 	iter := indexesArray.Iterator()
 	defer iter.Close()
@@ -479,30 +479,30 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 
 		// Check for duplicates within the list of indexes to create.
 		for j := i - 1; j >= 0; j-- {
-			prevKey := formatIndexKey(toCreate[j].Key)
-			prevName := toCreate[j].Name
+			otherKey := formatIndexKey(toCreate[j].Key)
+			otherName := toCreate[j].Name
 
-			if prevName == newIdx.Name && prevKey == newKey {
-				msg := fmt.Sprintf("Identical index already exists: %s", prevName)
+			if otherName == newIdx.Name && otherKey == newKey {
+				msg := fmt.Sprintf("Identical index already exists: %s", otherName)
 
 				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexAlreadyExists, msg, command)
 			}
 
-			if newIdx.Name == prevName {
+			if newIdx.Name == otherName {
 				msg := fmt.Sprintf(
 					"An existing index has the same name as the requested index."+
 						" When index names are not specified, they are auto generated and can cause conflicts."+
 						" Please refer to our documentation. Requested index: { key: { %s }, name: %q },"+
 						" existing index: { key: { %s }, name: %q }",
-					newKey, newIdx.Name, prevKey, prevName,
+					newKey, newIdx.Name, otherKey, otherName,
 				)
 
 				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexKeySpecsConflict, msg, command)
 			}
 
-			if newKey == prevKey {
+			if newKey == otherKey {
 				msg := fmt.Sprintf(
-					"Index already exists with a different name: %s", prevName,
+					"Index already exists with a different name: %s", otherName,
 				)
 
 				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexOptionsConflict, msg, command)
