@@ -1,4 +1,5 @@
 ---
+name: Integration # visible at https://github.com/FerretDB/FerretDB/actions
 on:
   workflow_call:
     inputs:
@@ -11,6 +12,9 @@ on:
       shard_total:
         required: true
         type: number
+      coveralls:
+        required: true
+        type: boolean
       disable_filter_pushdown:
         required: false
         type: boolean
@@ -19,6 +23,13 @@ on:
         required: false
         type: boolean
         default: false
+      checkout_ref:
+        required: false
+        type: string
+        default: ""
+    secrets:
+      FERRETDB_HANA_URL:
+        required: false
 
 env:
   GOPATH: /home/runner/go
@@ -29,13 +40,10 @@ env:
   GOTOOLCHAIN: local
 
 jobs:
-  test-integration:
+  run:
     # make it short to fit in GitHub UI; all parameters are already in the caller's name
     name: Run
-
-    runs-on:
-      group: paid
-
+    runs-on: 4-cores
     timeout-minutes: 20
 
     steps:
@@ -43,11 +51,24 @@ jobs:
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
         if: false
 
+      - name: Dump github context
+        run: echo "$GITHUB_CONTEXT"
+        env:
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
+
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
+          ref: ${{ inputs.checkout_ref }}
+
+      # for branch.txt on pull_request_target; `main` is already checked out on push / schedule
+      - name: Name branch
+        if: github.event_name == 'pull_request_target'
+        env:
+          BRANCH: ${{ github.head_ref }} # see https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
+        run: git checkout -b $BRANCH
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
@@ -79,6 +100,7 @@ jobs:
           ENABLE_SORT_PUSHDOWN=${{ inputs.enable_sort_pushdown }}
         env:
           GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
+          FERRETDB_HANA_URL: ${{ secrets.FERRETDB_HANA_URL }}
 
       # The token is not required but should make uploads more stable.
       # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
@@ -98,6 +120,7 @@ jobs:
           verbose: true
 
       - name: Upload coverage information to coveralls
+        if: always() && inputs.coveralls
         uses: coverallsapp/github-action@v2
         with:
           file: ./integration/integration-${{ inputs.task }}.txt
