@@ -119,7 +119,8 @@ func TestInTransaction(t *testing.T) {
 				_, err = tx.Exec(ctx, `INSERT INTO t_test(s) VALUES ($1)`, v)
 				require.NoError(t, err)
 
-				panic("boom")
+				//nolint:vet // need it for testing
+				panic(nil)
 			})
 			require.ErrorContains(t, err, "no rows in result set")
 		})

@@ -26,7 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestInsert(t *testing.T) {
+func TestInsertAll(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping in -short mode")
 	}
@@ -42,7 +42,7 @@ func TestInsert(t *testing.T) {
 	b, err := NewBackend(&params)
 	require.NoError(t, err)
 
-	defer b.Close()
+	t.Cleanup(b.Close)
 
 	db, err := b.Database(testutil.DatabaseName(t))
 	require.NoError(t, err)
