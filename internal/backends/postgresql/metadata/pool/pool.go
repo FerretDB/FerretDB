@@ -40,7 +40,7 @@ const (
 //
 //nolint:vet // for readability
 type Pool struct {
-	baseURI *url.URL
+	baseURI url.URL
 	l       *zap.Logger
 	sp      *state.Provider
 
@@ -62,7 +62,7 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, error) {
 	baseURI.RawQuery = values.Encode()
 
 	p := &Pool{
-		baseURI: baseURI,
+		baseURI: *baseURI,
 		l:       l,
 		sp:      sp,
 		pools:   map[string]*pgxpool.Pool{},
