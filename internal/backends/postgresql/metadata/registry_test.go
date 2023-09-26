@@ -150,7 +150,9 @@ func TestCreateDrop(t *testing.T) {
 		t.Skip("skipping in -short mode")
 	}
 
-	t.Parallel()
+	// Do not run parallel, `initDBs()` searches all schema with ferretdb metadata table and
+	// including schema created by other tests that can be deleted before `initCollections()`
+	// is called would cause pg relation does not exist error.
 
 	connInfo := conninfo.New()
 	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
@@ -309,7 +311,9 @@ func TestCheckDatabaseUpdated(t *testing.T) {
 		t.Skip("skipping in -short mode")
 	}
 
-	t.Parallel()
+	// Do not run parallel, `initDBs()` searches all schema with ferretdb metadata table and
+	// including schema created by other tests that can be deleted before `initCollections()`
+	// is called would cause pg relation does not exist error.
 
 	connInfo := conninfo.New()
 	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
@@ -376,7 +380,9 @@ func TestRenameCollection(t *testing.T) {
 		t.Skip("skipping in -short mode")
 	}
 
-	t.Parallel()
+	// Do not run parallel, `initDBs()` searches all schema with ferretdb metadata table and
+	// including schema created by other tests that can be deleted before `initCollections()`
+	// is called would cause pg relation does not exist error.
 
 	connInfo := conninfo.New()
 	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
