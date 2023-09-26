@@ -92,7 +92,6 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
-	// non-existent old collection must be checked before existence of new collection check
 	if c := db.r.CollectionGet(ctx, db.name, params.OldName); c == nil {
 		return backends.NewError(
 			backends.ErrorCodeCollectionDoesNotExist,
@@ -140,7 +139,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	// see https://www.sqlite.org/dbstat.html.
 	q := `
 		SELECT SUM(pgsize)
-		FROM dbstat 
+		FROM dbstat
 		WHERE aggregate = TRUE`
 
 	var totalSize int64
