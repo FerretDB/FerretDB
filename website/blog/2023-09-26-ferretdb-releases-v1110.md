@@ -1,10 +1,10 @@
 ---
 slug: ferretdb-releases-v1110
-title: FerretDB releases v1.11.0 We’ve released FerretDB v1.11.0!
+title: FerretDB releases v1.11.0
 authors: [alex]
 description: >
   We just released FerretDB v1.11.0, which includes several improvements for the SQLite backend.
-image: /img/blog/ferretdb-v1.11.0.png
+image: /img/blog/ferretdb-v1.11.jpg
 tags: [release]
 ---
 
