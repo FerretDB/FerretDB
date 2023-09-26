@@ -1,7 +1,7 @@
 ---
 # Integration tests that need access to secrets.
 
-name: Go trusted
+name: Go Trusted
 on:
   pull_request_target:
     types:
@@ -47,8 +47,8 @@ jobs:
       fail-fast: false
       matrix:
         task: [hana]
-        shard_index: [1, 2, 3]
-        shard_total: [3]
+        shard_index: [1]
+        shard_total: [1]
 
     # Do not submit to coveralls because it can't handle parallel workflows:
     # https://github.com/lemurheavy/coveralls-public/issues/1636#issuecomment-1529460515
@@ -57,7 +57,7 @@ jobs:
       task: ${{ matrix.task }}
       shard_index: ${{ matrix.shard_index }}
       shard_total: ${{ matrix.shard_total }}
-      checkout_ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.merge_commit_sha || ''}}
+      checkout_ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || ''}}
       coveralls: false
     secrets:
       FERRETDB_HANA_URL: ${{ secrets.FERRETDB_HANA_URL }}
