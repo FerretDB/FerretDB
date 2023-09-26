@@ -746,7 +746,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 			q += "UNIQUE "
 		}
 
-		q += "INDEX %q ON %q (%s)"
+		q += "INDEX %s ON %s (%s)"
 
 		columns := make([]string, len(index.Key))
 		for i, key := range index.Key {
@@ -766,7 +766,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 			}
 		}
 
-		q = fmt.Sprintf(q, pgx.Identifier{dbName, c.TableName}.Sanitize(), index.DBIndex, strings.Join(columns, ", "))
+		q = fmt.Sprintf(q, pgx.Identifier{index.DBIndex}.Sanitize(), pgx.Identifier{dbName, c.TableName}.Sanitize(), strings.Join(columns, ", "))
 
 		if _, err = p.Exec(ctx, q); err != nil {
 			_ = r.indexesDrop(ctx, p, dbName, collectionName, created)

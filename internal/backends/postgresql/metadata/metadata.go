@@ -110,13 +110,22 @@ func (s Settings) deepCopy() Settings {
 func (s Settings) Marshal() *types.Document {
 	indexes := types.MakeArray(len(s.Indexes))
 
-	for i, index := range s.Indexes {
-		must.NoError(indexes.Set(i, must.NotFail(types.NewDocument(
+	for _, index := range s.Indexes {
+		key := types.MakeArray(len(index.Key))
+
+		for _, pair := range index.Key {
+			key.Append(must.NotFail(types.NewDocument(
+				"field", pair.Field,
+				"descending", pair.Descending,
+			)))
+		}
+
+		indexes.Append(must.NotFail(types.NewDocument(
 			"name", index.Name,
 			"dbindex", index.DBIndex,
-			"key", index.Key,
+			"key", key,
 			"unique", index.Unique,
-		))))
+		)))
 	}
 
 	return must.NotFail(types.NewDocument(
