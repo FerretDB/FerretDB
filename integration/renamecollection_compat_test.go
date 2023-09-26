@@ -38,17 +38,18 @@ func TestRenameCollectionCompat(t *testing.T) {
 
 	targetDB := targetCollection.Database()
 	compatDB := compatCollection.Database()
-	dbName := targetDB.Name()
-	cName := targetCollection.Name()
 
 	require.Equal(t, compatDB.Name(), targetDB.Name())
+	dbName := targetDB.Name()
+
 	require.Equal(t, compatCollection.Name(), targetCollection.Name())
+	cName := targetCollection.Name()
+
+	to := dbName + ".newCollection"
+	from := dbName + "." + cName
 
 	targetDBConnect := targetCollection.Database().Client().Database("admin")
 	compatDBConnect := compatCollection.Database().Client().Database("admin")
-
-	from := dbName + "." + cName
-	to := dbName + ".newCollection"
 
 	var targetRes bson.D
 	targetCommand := bson.D{{"renameCollection", from}, {"to", to}}
@@ -70,10 +71,10 @@ func TestRenameCollectionCompat(t *testing.T) {
 	assert.ElementsMatch(t, targetNames, compatNames)
 
 	// Recreation of collection with the old name must be possible
-	err = targetDB.CreateCollection(ctx, targetCollection.Name())
+	err = targetDB.CreateCollection(ctx, cName)
 	require.NoError(t, err)
 
-	err = compatDB.CreateCollection(ctx, compatCollection.Name())
+	err = compatDB.CreateCollection(ctx, cName)
 	require.NoError(t, err)
 
 	// Collection lists after recreation must be the same
@@ -126,13 +127,15 @@ func TestRenameCollectionCompatErrors(t *testing.T) {
 
 	targetDB := targetCollection.Database()
 	compatDB := compatCollection.Database()
-	dbName := targetDB.Name()
-	cName := targetCollection.Name()
-	cExistingName := targetCollectionExists.Name()
 
 	require.Equal(t, compatDB.Name(), targetDB.Name())
+	dbName := targetDB.Name()
+
 	require.Equal(t, compatCollection.Name(), targetCollection.Name())
+	cName := targetCollection.Name()
+
 	require.Equal(t, compatCollectionExists.Name(), targetCollectionExists.Name())
+	cExistingName := targetCollectionExists.Name()
 
 	targetDBConnect := targetCollection.Database().Client().Database("admin")
 	compatDBConnect := compatCollection.Database().Client().Database("admin")
