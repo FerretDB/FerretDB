@@ -45,8 +45,12 @@ func TestInTransaction(t *testing.T) {
 	pp, err := New(u, testutil.Logger(t), sp)
 	require.NoError(t, err)
 
+	t.Cleanup(pp.Close)
+
 	p, err := pp.Get(username, password)
 	require.NoError(t, err)
+
+	t.Cleanup(p.Close)
 
 	_, err = p.Exec(ctx, `DROP TABLE IF EXISTS t_test; CREATE TABLE t_test(s TEXT);`)
 	require.NoError(t, err)
