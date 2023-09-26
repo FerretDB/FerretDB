@@ -17,12 +17,15 @@ package postgresql
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // collection implements backends.Collection interface.
@@ -96,8 +99,47 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 
 // DeleteAll implements backends.Collection interface.
 func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllParams) (*backends.DeleteAllResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3400
-	return new(backends.DeleteAllResult), nil
+	p, err := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if p == nil {
+		return &backends.DeleteAllResult{Deleted: 0}, nil
+	}
+
+	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if meta == nil {
+		return &backends.DeleteAllResult{Deleted: 0}, nil
+	}
+
+	var placeholder metadata.Placeholder
+	placeholders := make([]string, len(params.IDs))
+	args := make([]any, len(params.IDs))
+
+	for i, id := range params.IDs {
+		placeholders[i] = placeholder.Next()
+		args[i] = string(must.NotFail(sjson.MarshalSingleValue(id)))
+	}
+
+	q := fmt.Sprintf(`DELETE FROM %s WHERE %s IN (%s)`,
+		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
+		metadata.IDColumn,
+		strings.Join(placeholders, ", "),
+	)
+
+	res, err := p.Exec(ctx, q, args...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &backends.DeleteAllResult{
+		Deleted: int32(res.RowsAffected()),
+	}, nil
 }
 
 // Explain implements backends.Collection interface.
