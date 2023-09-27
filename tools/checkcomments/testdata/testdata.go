@@ -16,6 +16,8 @@
 package testdata
 
 func testCorrect() {
+	// below issue url will be changed to https://api.github.com/repos/FerretDB/FerretDB/issues/2733
+	// and checked issue open or closed.
 	// TODO https://github.com/FerretDB/FerretDB/issues/2733
 }
 

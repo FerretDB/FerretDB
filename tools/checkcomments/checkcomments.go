@@ -66,7 +66,7 @@ func run(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
-// isIssueopen check the issue open or closed
+// isIssueopen check the issue open or closed.
 func isIssueOpen(todoText string) bool {
 	issueURL := getURL(todoText)
 	if issueURL == "" {
@@ -97,7 +97,7 @@ func isIssueOpen(todoText string) bool {
 	return issue.GetState() == "open"
 }
 
-// extracting url from TODO comment if present
+// extracting url from TODO comment if present.
 func getURL(todoText string) string {
 	arrText := strings.Split(todoText, " ")
 	for _, text := range arrText {
@@ -106,6 +106,7 @@ func getURL(todoText string) string {
 			if len(parts) >= 5 {
 				issueNumber := parts[6]
 				apiURL := fmt.Sprintf("https://api.github.com/repos/FerretDB/FerretDB/issues/%s", issueNumber)
+
 				return apiURL
 			}
 		}
@@ -114,18 +115,21 @@ func getURL(todoText string) string {
 	return ""
 }
 
-// get the issue number from  issue url
+// get the issue number from  issue url.
 func getIssueNumber(todoText string) (int, error) {
 	pattern := `\/issues\/(\d+)`
 	re := regexp.MustCompile(pattern)
 	match := re.FindStringSubmatch(todoText)
+
 	if len(match) >= 2 {
 		issueNumberStr := match[1]
 		issueNumber, err := strconv.Atoi(issueNumberStr)
 		if err != nil {
 			return 0, err
 		}
+
 		return issueNumber, nil
 	}
+
 	return 0, fmt.Errorf("invalid issue url: %s", todoText)
 }
