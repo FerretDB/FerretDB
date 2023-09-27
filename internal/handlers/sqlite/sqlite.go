@@ -23,6 +23,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/decorators/oplog"
+	"github.com/FerretDB/FerretDB/internal/backends/hana"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
@@ -71,6 +72,12 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 		})
 	case "sqlite":
 		b, err = sqlite.NewBackend(&sqlite.NewBackendParams{
+			URI: opts.URI,
+			L:   opts.L,
+			P:   opts.StateProvider,
+		})
+	case "hana":
+		b, err = hana.NewBackend(&hana.NewBackendParams{
 			URI: opts.URI,
 			L:   opts.L,
 			P:   opts.StateProvider,

@@ -24,8 +24,6 @@ import (
 func init() {
 	registry["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
 		if opts.UseNewPG {
-			opts.Logger.Warn("New PostgreSQL backend is in alpha.")
-
 			handlerOpts := &sqlite.NewOpts{
 				Backend: "postgresql",
 				URI:     opts.PostgreSQLURL,

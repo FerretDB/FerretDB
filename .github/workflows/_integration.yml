@@ -56,8 +56,9 @@ jobs:
         env:
           GITHUB_CONTEXT: ${{ toJSON(github) }}
 
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
