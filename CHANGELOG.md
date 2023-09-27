@@ -2,6 +2,44 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.11.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.11.0) (2023-09-25)
+
+### Fixed Bugs 🐛
+
+- Fix `collStats` to return correct count of documents for `SQLite` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3363
+- Fix metadata updates for `dropIndexes` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/3358
+
+### Enhancements 🛠
+
+- Return statistics of indexes for `collStats` and `dbStats` for SQLite backend by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/3361
+
+### Documentation 📄
+
+- Improve blog format by @Fashander in https://github.com/FerretDB/FerretDB/pull/3359
+- Add a blog post for v1.10 by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3346
+- Add docs for migrating to MongoDB from FerretDB by @Fashander in https://github.com/FerretDB/FerretDB/pull/3374
+- Mention SQLite in docs by @ptrfarkas in https://github.com/FerretDB/FerretDB/pull/3408
+
+### Other Changes 🤖
+
+- Add test for inserting different data types by @noisersup in https://github.com/FerretDB/FerretDB/pull/3345
+- Recreate test directory by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3364
+- Use consistent spelling by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3365
+- Use filter and insert more documents in `BenchmarkReplaceSettingsDocument` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3343
+- Replace deprecated Jaeger exporter by @adetunjii in https://github.com/FerretDB/FerretDB/pull/3368
+- Remove the need to close `conninfo` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3376
+- Add small tweaks by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3377
+- Add CI configuration for SQLite without pushdown by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3381
+- Enforce valid `types` usage by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3384
+- Reorder codebase in SQLite registry by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3382
+- Store `PostgreSQL` metadata by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3356
+- Add `TODO`s by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3412
+- Run new PostgreSQL backend tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3407
+- Implement `Query` in new `PostgreSQL` backend by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3411
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/52?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.10.1...v1.11.0).
+
 ## [v1.10.1](https://github.com/FerretDB/FerretDB/releases/tag/v1.10.1) (2023-09-14)
 
 ### What's Changed

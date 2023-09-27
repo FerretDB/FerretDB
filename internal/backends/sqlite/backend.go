@@ -40,12 +40,8 @@ type NewBackendParams struct {
 	P   *state.Provider
 }
 
-// NewBackend creates a new SQLite backend.
+// NewBackend creates a new backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	if params.P == nil {
-		panic("state provider is required but not set")
-	}
-
 	r, err := metadata.NewRegistry(params.URI, params.L, params.P)
 	if err != nil {
 		return nil, err
