@@ -235,7 +235,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		)
 	case errors.Is(err, pgdb.ErrIndexNameAlreadyExist):
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
+			commonerrors.ErrIndexKeySpecsConflict,
 			"One of the specified indexes already exists with a different key",
 			document.Command(),
 		)
