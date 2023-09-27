@@ -246,25 +246,25 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 		"IDInt32": {
 			filter:         bson.D{{"_id", int32(1)}},
 			resultType:     emptyResult,
-			resultPushdown: pgPushdown,
+			resultPushdown: allPushdown,
 		},
 		"IDInt64": {
 			filter:         bson.D{{"_id", int64(1)}},
 			resultType:     emptyResult,
-			resultPushdown: pgPushdown,
+			resultPushdown: allPushdown,
 		},
 		"IDDouble": {
 			filter:         bson.D{{"_id", 4.2}},
 			resultType:     emptyResult,
-			resultPushdown: pgPushdown,
+			resultPushdown: allPushdown,
 		},
 		"IDString": {
 			filter:         bson.D{{"_id", "string"}},
-			resultPushdown: pgPushdown,
+			resultPushdown: allPushdown,
 		},
 		"IDObjectID": {
 			filter:         bson.D{{"_id", primitive.NilObjectID}},
-			resultPushdown: pgPushdown,
+			resultPushdown: allPushdown,
 		},
 		"ValueNull": {
 			filter: bson.D{{"v", nil}},
