@@ -17,6 +17,7 @@ package pool
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
@@ -52,11 +53,13 @@ func TestInTransaction(t *testing.T) {
 
 	t.Cleanup(p.Close)
 
-	_, err = p.Exec(ctx, `DROP TABLE IF EXISTS t_test; CREATE TABLE t_test(s TEXT);`)
+	tableName := t.Name()
+	_, err = p.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %[1]s; CREATE TABLE %[1]s(s TEXT);`, tableName))
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		_, _ = p.Exec(ctx, `DROP TABLE IF EXISTS t_test`)
+		_, err = p.Exec(context.WithoutCancel(ctx), fmt.Sprintf(`DROP TABLE %s`, tableName))
+		require.NoError(t, err)
 	})
 
 	t.Run("Commit", func(t *testing.T) {
@@ -64,14 +67,14 @@ func TestInTransaction(t *testing.T) {
 
 		v := testutil.CollectionName(t)
 		err = InTransaction(ctx, p, func(tx pgx.Tx) error {
-			_, err = tx.Exec(ctx, `INSERT INTO t_test(s) VALUES ($1)`, v)
+			_, err = tx.Exec(ctx, fmt.Sprintf(`INSERT INTO %s(s) VALUES ($1)`, tableName), v)
 			require.NoError(t, err)
 			return nil
 		})
 		require.NoError(t, err)
 
 		var res string
-		err = p.QueryRow(ctx, `SELECT s FROM t_test WHERE s = $1`, v).Scan(&res)
+		err = p.QueryRow(ctx, fmt.Sprintf(`SELECT s FROM %s WHERE s = $1`, tableName), v).Scan(&res)
 		require.NoError(t, err)
 		require.Equal(t, v, res)
 	})
@@ -81,15 +84,15 @@ func TestInTransaction(t *testing.T) {
 
 		v := testutil.CollectionName(t)
 		err = InTransaction(ctx, p, func(tx pgx.Tx) error {
-			_, err = tx.Exec(ctx, `INSERT INTO t_test(s) VALUES ($1)`, v)
+			_, err = tx.Exec(ctx, fmt.Sprintf(`INSERT INTO %s(s) VALUES ($1)`, tableName), v)
 			require.NoError(t, err)
 			return errors.New("boom")
 		})
 		require.Error(t, err)
 
 		var res string
-		err = p.QueryRow(ctx, `SELECT s FROM t_test WHERE s = $1`, v).Scan(&res)
-		require.ErrorContains(t, err, "no rows in result set")
+		err = p.QueryRow(ctx, fmt.Sprintf(`SELECT s FROM %s WHERE s = $1`, tableName), v).Scan(&res)
+		require.Equal(t, pgx.ErrNoRows, err)
 	})
 
 	t.Run("ContextCancelRollback", func(t *testing.T) {
@@ -100,7 +103,7 @@ func TestInTransaction(t *testing.T) {
 
 		v := testutil.CollectionName(t)
 		err = InTransaction(ctx, p, func(tx pgx.Tx) error {
-			_, err = tx.Exec(ctx, `INSERT INTO t_test(s) VALUES ($1)`, v)
+			_, err = tx.Exec(ctx, fmt.Sprintf(`INSERT INTO %s(s) VALUES ($1)`, tableName), v)
 			require.NoError(t, err)
 
 			cancel()
@@ -110,8 +113,8 @@ func TestInTransaction(t *testing.T) {
 		require.Error(t, err)
 
 		var res string
-		err = p.QueryRow(context.WithoutCancel(ctx), `SELECT s FROM t_test WHERE s = $1`, v).Scan(&res)
-		require.ErrorContains(t, err, "no rows in result set")
+		err = p.QueryRow(context.WithoutCancel(ctx), fmt.Sprintf(`SELECT s FROM %s WHERE s = $1`, tableName), v).Scan(&res)
+		require.Equal(t, pgx.ErrNoRows, err)
 	})
 
 	t.Run("Panic", func(t *testing.T) {
@@ -120,17 +123,17 @@ func TestInTransaction(t *testing.T) {
 		v := testutil.CollectionName(t)
 		assert.Panics(t, func() {
 			err = InTransaction(ctx, p, func(tx pgx.Tx) error {
-				_, err = tx.Exec(ctx, `INSERT INTO t_test(s) VALUES ($1)`, v)
+				_, err = tx.Exec(ctx, fmt.Sprintf(`INSERT INTO %s(s) VALUES ($1)`, tableName), v)
 				require.NoError(t, err)
 
 				//nolint:vet // need it for testing
 				panic(nil)
 			})
-			require.ErrorContains(t, err, "no rows in result set")
+			require.Equal(t, pgx.ErrNoRows, err)
 		})
 
 		var res string
-		err = p.QueryRow(ctx, `SELECT s FROM t_test WHERE s = $1`, v).Scan(&res)
-		require.ErrorContains(t, err, "no rows in result set")
+		err = p.QueryRow(ctx, fmt.Sprintf(`SELECT s FROM %s WHERE s = $1`, tableName), v).Scan(&res)
+		require.Equal(t, pgx.ErrNoRows, err)
 	})
 }
