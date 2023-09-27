@@ -16,6 +16,7 @@ package integration
 
 import (
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
@@ -25,13 +26,23 @@ import (
 type resultPushdown uint8
 
 const (
-	noPushdown     resultPushdown = 1 << iota // 0000 0000
-	pgPushdown                                // 0000 0001
+	// List of supported backends.
+	pgPushdown     resultPushdown = 1 << iota // 0000 0001
 	sqlitePushdown                            // 0000 0010
+
+	// No pushdown expected.
+	noPushdown resultPushdown = 0 // 0000 0000
 
 	// Expects all backends to result in pushdown.
 	allPushdown resultPushdown = 0xff // 1111 1111
 )
+
+func init() {
+	must.BeTrue(noPushdown == 0b00000000)
+	must.BeTrue(pgPushdown == 0b00000001)
+	must.BeTrue(sqlitePushdown == 0b00000010)
+	must.BeTrue(allPushdown == 0b11111111)
+}
 
 // PushdownExpected returns true if the pushdown is expected for currently running backend.
 func (res resultPushdown) PushdownExpected(t testtb.TB) bool {
