@@ -58,7 +58,7 @@ func TestCreateDrop(t *testing.T) {
 
 	require.Contains(t, p.List(ctx), dbName)
 
-	_, err = db.ExecContext(ctx, "CREATE TABLE test (id INT) STRICT")
+	_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE TABLE %q (id INT) STRICT", t.Name()))
 	require.NoError(t, err)
 
 	// journal_mode is silently ignored for mode=memory
@@ -124,7 +124,7 @@ func TestCreateDropStress(t *testing.T) {
 
 				require.Contains(t, p.List(ctx), dbName)
 
-				_, err = db.ExecContext(ctx, "CREATE TABLE test (id INT) STRICT")
+				_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE TABLE %q (id INT) STRICT", t.Name()))
 				require.NoError(t, err)
 
 				dropped := p.Drop(ctx, dbName)
