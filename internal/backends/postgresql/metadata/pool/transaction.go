@@ -14,8 +14,25 @@
 
 package pool
 
-import "testing"
+import (
+	"context"
 
-func TestDummy(t *testing.T) {
-	// we need at least one test per package to correctly calculate coverage
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/FerretDB/FerretDB/internal/util/observability"
+)
+
+// InTransaction uses pool p and wraps the given function f in a transaction.
+//
+// If f returns an error or context is canceled, the transaction is rolled back.
+func InTransaction(ctx context.Context, p *pgxpool.Pool, f func(tx pgx.Tx) error) error {
+	defer observability.FuncCall(ctx)()
+
+	if err := pgx.BeginFunc(ctx, p, f); err != nil {
+		// do not wrap error because the caller of f depends on it in some cases
+		return err
+	}
+
+	return nil
 }
