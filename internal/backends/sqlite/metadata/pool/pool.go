@@ -52,7 +52,7 @@ const (
 //
 //nolint:vet // for readability
 type Pool struct {
-	uri *url.URL
+	uri url.URL
 	l   *zap.Logger
 	sp  *state.Provider
 
@@ -80,7 +80,7 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, map[string]*fsql.D
 	}
 
 	p := &Pool{
-		uri:   uri,
+		uri:   *uri,
 		l:     l,
 		sp:    sp,
 		dbs:   make(map[string]*fsql.DB, len(matches)),
@@ -119,7 +119,7 @@ func (p *Pool) databaseName(databaseFile string) string {
 
 // databaseURI returns SQLite URI for the given database name.
 func (p *Pool) databaseURI(databaseName string) string {
-	dbURI := *p.uri
+	dbURI := p.uri
 	dbURI.Path = path.Join(dbURI.Path, databaseName+filenameExtension)
 	dbURI.Opaque = dbURI.Path
 

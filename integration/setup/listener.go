@@ -178,7 +178,8 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 			EnableSortPushdown:    *enableSortPushdownF,
 			EnableOplog:           *enableOplogF,
 
-			UseNewPG: *useNewPGF,
+			UseNewPG:   *useNewPgF,
+			UseNewHana: *useNewHanaF,
 		},
 	}
 	h, err := registry.NewHandler(handler, handlerOpts)
