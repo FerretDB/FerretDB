@@ -16,11 +16,9 @@ package sqlite
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	sqlite3 "modernc.org/sqlite"
 	sqlite3lib "modernc.org/sqlite/lib"
@@ -30,7 +28,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -69,12 +66,16 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	var whereClause string
 	var args []any
-	var err error
 
-	if params != nil {
-		whereClause, args, err = prepareWhereClause(params.Filter)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
+	// that logic should exist in one place
+	// TODO https://github.com/FerretDB/FerretDB/issues/3235
+	if params != nil && params.Filter.Len() == 1 {
+		v, _ := params.Filter.Get("_id")
+		if v != nil {
+			if id, ok := v.(types.ObjectID); ok {
+				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
+			}
 		}
 	}
 
@@ -88,157 +89,6 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	return &backends.QueryResult{
 		Iter: newQueryIterator(ctx, rows),
 	}, nil
-}
-
-// prepareWhereClause adds WHERE clause with filters given in the document.
-// It returns the WHERE clause and the SQLite arguments.
-func prepareWhereClause(filterDoc *types.Document) (string, []any, error) {
-	if filterDoc == nil {
-		return "", []any{}, nil
-	}
-
-	iter := filterDoc.Iterator()
-	defer iter.Close()
-
-	var filters []string
-	var args []any
-
-	for {
-		k, v, err := iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
-		}
-
-		if err != nil {
-			return "", nil, lazyerrors.Error(err)
-		}
-
-		// queryPath stores the path that is used in SQLite to access specific key
-		// if the key is _id we use our predifined path, as the handling of _id may
-		// change in the future
-		queryPath := metadata.IDColumn
-
-		// keyArgs store the optional parameters used to query the key
-		var keyArgs []any
-
-		if k != "_id" {
-			// To use parameters inside of SQLite json path the parameter token ("?")
-			// needs to be concatenated to path with || operator
-			queryPath = fmt.Sprintf(`%s->('$."' || ? || '"' )`, metadata.DefaultColumn)
-			keyArgs = append(keyArgs, k)
-		}
-
-		// don't pushdown $comment
-		if strings.HasPrefix(k, "$") {
-			continue
-		}
-
-		path, err := types.NewPathFromString(k)
-
-		var pe *types.PathError
-
-		switch {
-		case err == nil:
-			// TODO https://github.com/FerretDB/FerretDB/issues/2069
-			if path.Len() > 1 {
-				continue
-			}
-		case errors.As(err, &pe):
-			// ignore empty key error, otherwise return error
-			if pe.Code() != types.ErrPathElementEmpty {
-				return "", nil, lazyerrors.Error(err)
-			}
-		default:
-			panic("Invalid error type: PathError expected")
-		}
-
-		switch v := v.(type) {
-		case *types.Document, *types.Array, types.Binary, types.NullType, types.Regex, types.Timestamp:
-			// type not supported for pushdown
-			continue
-
-		case float64:
-			comparison := ` = ?`
-
-			switch {
-			case v > types.MaxSafeDouble:
-				comparison = ` > ?`
-				v = types.MaxSafeDouble
-
-			case v < -types.MaxSafeDouble:
-				comparison = ` < ?`
-				v = -types.MaxSafeDouble
-			default:
-				// don't change the default eq query
-			}
-
-			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%s) WHERE value %s)`, queryPath, comparison)
-			filters = append(filters, subquery)
-
-			// TODO https://github.com/FerretDB/FerretDB/issues/3386
-			args = append(args, keyArgs...)
-			args = append(args, parseValue(v))
-
-		case types.ObjectID, time.Time, string, bool, int32:
-			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%s) WHERE value = ?)`, queryPath)
-			filters = append(filters, subquery)
-
-			// TODO https://github.com/FerretDB/FerretDB/issues/3386
-			args = append(args, keyArgs...)
-			args = append(args, parseValue(v))
-
-		case int64:
-			comparison := ` = ?`
-			maxSafeDouble := int64(types.MaxSafeDouble)
-
-			// If value cannot be safe double, fetch all numbers out of the safe range
-			switch {
-			case v > maxSafeDouble:
-				comparison = ` > ?`
-				v = maxSafeDouble
-
-			case v < -maxSafeDouble:
-				comparison = `< ?`
-				v = -maxSafeDouble
-			default:
-				// don't change the default eq query
-			}
-
-			// json_each returns top level json values, and the contents of arrays if any
-			// https://www.sqlite.org/json1.html#jeach
-			subquery := fmt.Sprintf(`EXISTS (SELECT value FROM json_each(%s) WHERE value %s)`, queryPath, comparison)
-			filters = append(filters, subquery)
-
-			// TODO https://github.com/FerretDB/FerretDB/issues/3386
-			args = append(args, keyArgs...)
-			args = append(args, parseValue(v))
-
-		default:
-			panic(fmt.Sprintf("Unexpected type of value: %v", v))
-		}
-	}
-
-	var whereClause string
-	if len(filters) > 0 {
-		whereClause = ` WHERE ` + strings.Join(filters, " AND ")
-	}
-
-	return whereClause, args, nil
-}
-
-// parseValue parses the provided value to be used in SQLite query.
-func parseValue(v any) any {
-	switch v := v.(type) {
-	case *types.Document, *types.Array, float64, types.Binary, string,
-		bool, types.NullType, types.Regex, int32, types.Timestamp, int64:
-		return v
-	case types.ObjectID:
-		return hex.EncodeToString(v[:])
-	case time.Time:
-		return v.UnixMilli()
-	default:
-		panic(fmt.Sprintf("Unexpected type of value: %v", v))
-	}
 }
 
 // InsertAll implements backends.Collection interface.
@@ -384,18 +234,22 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}, nil
 	}
 
+	var queryPushdown bool
 	var whereClause string
 	var args []any
-	var err error
 
-	if params != nil {
-		whereClause, args, err = prepareWhereClause(params.Filter)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
+	// that logic should exist in one place
+	// TODO https://github.com/FerretDB/FerretDB/issues/3235
+	if params != nil && params.Filter.Len() == 1 {
+		v, _ := params.Filter.Get("_id")
+		if v != nil {
+			if id, ok := v.(types.ObjectID); ok {
+				queryPushdown = true
+				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
+			}
 		}
 	}
-
-	queryPushdown := whereClause != ""
 
 	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
 
