@@ -880,7 +880,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			filter:        bson.D{{"_id", "array"}},
 			limit:         3,
 			len:           1,
-			queryPushdown: allPushdown,
+			queryPushdown: pgPushdown,
 			limitPushdown: false,
 		},
 		"ValueFilter": {
@@ -888,7 +888,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           3,
-			queryPushdown: allPushdown,
+			queryPushdown: pgPushdown,
 			limitPushdown: false,
 		},
 		"DotNotationFilter": {
@@ -917,7 +917,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           1,
-			queryPushdown: allPushdown,
+			queryPushdown: pgPushdown,
 			limitPushdown: false,
 		},
 		"ValueFilterSort": {
@@ -925,7 +925,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           3,
-			queryPushdown: allPushdown,
+			queryPushdown: pgPushdown,
 			limitPushdown: false,
 		},
 		"DotNotationFilterSort": {

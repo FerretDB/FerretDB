@@ -235,17 +235,17 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 			// e.g. missing {v: <val>} in the filter.
 			filter:         bson.D{{"_id", "array"}},
 			projection:     bson.D{{"v.$", true}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Implicit": {
 			filter:         bson.D{{"v", float64(42)}},
 			projection:     bson.D{{"v.$", true}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"ImplicitNoMatch": {
 			filter:         bson.D{{"v", "non-existent"}},
 			projection:     bson.D{{"v.$", true}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 			resultType:     emptyResult,
 		},
 		"Eq": {
@@ -273,12 +273,12 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 		"ImplicitDotNotation": {
 			filter:         bson.D{{"v", float64(42)}},
 			projection:     bson.D{{"v.foo.$", true}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"ImplicitDotNoMatch": {
 			filter:         bson.D{{"v", "non-existent"}},
 			projection:     bson.D{{"v.foo.$", true}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 			resultType:     emptyResult,
 		},
 		"GtDotNotation": {
@@ -299,7 +299,7 @@ func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
 				{"v", bson.D{{"$gt", 41}}},
 			},
 			projection:     bson.D{{"v.$", true}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"TwoFilter": {
 			filter: bson.D{

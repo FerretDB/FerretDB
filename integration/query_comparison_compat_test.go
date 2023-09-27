@@ -67,147 +67,147 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 		},
 		"Int32": {
 			filter:         bson.D{{"v", int32(42)}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Int64": {
 			filter:         bson.D{{"v", int64(42)}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Double": {
 			filter:         bson.D{{"v", 42.13}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"DoubleMax": {
 			filter:         bson.D{{"v", math.MaxFloat64}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"DoubleSmallest": {
 			filter:         bson.D{{"v", math.SmallestNonzeroFloat64}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"DoubleBig": {
 			filter:         bson.D{{"v", float64(1 << 61)}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"DoubleBigPlus": {
 			filter:         bson.D{{"v", float64((1 << 61) + 1)}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"DoubleBigMinus": {
 			filter:         bson.D{{"v", float64((1 << 61) - 1)}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"DoubleNegBig": {
 			filter:         bson.D{{"v", -float64(1 << 61)}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"DoubleNegBigPlus": {
 			filter:         bson.D{{"v", -float64(1<<61) + 1}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"DoubleNegBigMinus": {
 			filter:         bson.D{{"v", -float64(1<<61) - 1}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Int64Max": {
 			filter:         bson.D{{"v", int64(math.MaxInt64)}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Int64Min": {
 			filter:         bson.D{{"v", int64(math.MinInt64)}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 
 		"Float64PrecMax": {
 			filter:         bson.D{{"v", float64(1 << 53)}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Float64PrecMaxPlusOne": {
 			filter:         bson.D{{"v", float64(1<<53 + 1)}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Float64PrecMaxMinusOne": {
 			filter:         bson.D{{"v", float64(1<<53 - 1)}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Float64PrecMin": {
 			filter:         bson.D{{"v", -float64(1<<53 - 1)}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Float64PrecMinPlus": {
 			filter:         bson.D{{"v", -float64(1<<53-1) + 1}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Float64PrecMinMinus": {
 			filter:         bson.D{{"v", -float64(1<<53-1) - 1}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 
 		"Int64PrecMax": {
 			filter:         bson.D{{"v", int64(1 << 53)}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Int64PrecMaxPlusOne": {
 			filter:         bson.D{{"v", int64(1<<53 + 1)}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Int64PrecMaxMinusOne": {
 			filter:         bson.D{{"v", int64(1<<53 - 1)}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Int64PrecMin": {
 			filter:         bson.D{{"v", -int64(1<<53 - 1)}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Int64PrecMinPlus": {
 			filter:         bson.D{{"v", -int64(1<<53-1) + 1}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Int64PrecMinMinus": {
 			filter:         bson.D{{"v", -int64(1<<53-1) - 1}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 
 		"Int64Big": {
 			filter:         bson.D{{"v", int64(1 << 61)}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Int64BigPlus": {
 			filter:         bson.D{{"v", int64(1<<61) + 1}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Int64BigMinus": {
 			filter:         bson.D{{"v", int64(1<<61) - 1}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Int64NegBig": {
 			filter:         bson.D{{"v", -int64(1 << 61)}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Int64NegBigPlus": {
 			filter:         bson.D{{"v", -int64(1<<61) + 1}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Int64NegBigMinus": {
 			filter:         bson.D{{"v", -int64(1<<61) - 1}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 
 		"String": {
 			filter:         bson.D{{"v", "foo"}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"StringInt": {
 			filter:         bson.D{{"v", "42"}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"StringDouble": {
 			filter:         bson.D{{"v", "42.13"}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"StringEmpty": {
 			filter:         bson.D{{"v", ""}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Binary": {
 			filter: bson.D{{"v", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}},
@@ -217,27 +217,27 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 		},
 		"BoolFalse": {
 			filter:         bson.D{{"v", false}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"BoolTrue": {
 			filter:         bson.D{{"v", true}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"Datetime": {
 			filter:         bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(2021, 11, 1, 10, 18, 42, 123000000, time.UTC))}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"DatetimeEpoch": {
 			filter:         bson.D{{"v", primitive.NewDateTimeFromTime(time.Unix(0, 0))}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"DatetimeYearMin": {
 			filter:         bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(0, 1, 1, 0, 0, 0, 0, time.UTC))}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"DatetimeYearMax": {
 			filter:         bson.D{{"v", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"IDNull": {
 			filter:     bson.D{{"_id", nil}},
@@ -246,25 +246,25 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 		"IDInt32": {
 			filter:         bson.D{{"_id", int32(1)}},
 			resultType:     emptyResult,
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"IDInt64": {
 			filter:         bson.D{{"_id", int64(1)}},
 			resultType:     emptyResult,
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"IDDouble": {
 			filter:         bson.D{{"_id", 4.2}},
 			resultType:     emptyResult,
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"IDString": {
 			filter:         bson.D{{"_id", "string"}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"IDObjectID": {
 			filter:         bson.D{{"_id", primitive.NilObjectID}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"ValueNull": {
 			filter: bson.D{{"v", nil}},
@@ -274,7 +274,7 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 		},
 		"ValueNumber": {
 			filter:         bson.D{{"v", 42}},
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 		"ValueRegex": {
 			filter: bson.D{{"v", primitive.Regex{Pattern: "^fo"}}},
@@ -283,7 +283,7 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 		"EmptyKey": {
 			filter:         bson.D{{"", "foo"}},
 			resultType:     emptyResult,
-			resultPushdown: allPushdown,
+			resultPushdown: pgPushdown,
 		},
 	}
 
