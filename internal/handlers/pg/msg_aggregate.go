@@ -362,7 +362,7 @@ func processStagesDocuments(ctx context.Context, closer *iterator.MultiCloser, p
 	closer.Add(iterator.CloserFunc(func() {
 		// It does not matter if we commit or rollback the read transaction,
 		// but we should close it.
-		// ctx could be cancelled already.
+		// ctx could be canceled already.
 		_ = keepTx.Rollback(context.Background())
 	}))
 

@@ -21,6 +21,7 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
+  GOTOOLCHAIN: local
 
 jobs:
   blog-preview:
@@ -43,8 +44,9 @@ jobs:
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
         if: false
 
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for wrangler to work
           lfs: true
@@ -112,12 +114,13 @@ jobs:
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
         if: false
 
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for wrangler to work
           lfs: true
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha }} # TODO https://github.com/FerretDB/github-actions/issues/211
 
       # for Wrangler / Cloudflare Pages on pull_request_target
       - name: Name branch

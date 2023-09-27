@@ -112,6 +112,7 @@ func NewDocument(pairs ...any) (*Document, error) {
 		}
 
 		value := pairs[i+1]
+		assertType(value)
 
 		doc.fields = append(doc.fields, field{key: key, value: value})
 	}
@@ -123,8 +124,12 @@ func (*Document) compositeType() {}
 
 // Freeze prevents document from further modifications.
 // Any methods that would modify the document will panic.
+//
+// It is safe to call Freeze multiple times.
 func (d *Document) Freeze() {
-	d.frozen = true
+	if d != nil {
+		d.frozen = true
+	}
 }
 
 // checkFrozen panics if document is frozen.
@@ -139,6 +144,7 @@ func (d *Document) DeepCopy() *Document {
 	if d == nil {
 		panic("types.Document.DeepCopy: nil document")
 	}
+
 	return deepCopy(d).(*Document)
 }
 
@@ -286,6 +292,7 @@ func (d *Document) Get(key string) (any, error) {
 //
 // As a special case, _id always becomes the first key.
 func (d *Document) Set(key string, value any) {
+	assertType(value)
 	d.checkFrozen()
 
 	if d.isKeyDuplicate(key) {
@@ -339,6 +346,7 @@ func (d *Document) GetByPath(path Path) (any, error) {
 // The Document type will be used to create these parts.
 // If multiple fields match the path it panics.
 func (d *Document) SetByPath(path Path, value any) error {
+	assertType(value)
 	d.checkFrozen()
 
 	if path.Len() == 1 {
@@ -427,8 +435,6 @@ func (d *Document) isKeyDuplicate(targetKey string) bool {
 // moveIDToTheFirstIndex sets the _id field of the document at the first position.
 // If the _id field is not present, it does nothing.
 func (d *Document) moveIDToTheFirstIndex() {
-	d.checkFrozen()
-
 	if !d.Has("_id") {
 		return
 	}
@@ -445,6 +451,8 @@ func (d *Document) moveIDToTheFirstIndex() {
 			break
 		}
 	}
+
+	d.checkFrozen()
 
 	d.fields = slices.Insert(d.fields, 0, field{key: d.fields[idIdx].key, value: d.fields[idIdx].value})
 

@@ -87,7 +87,6 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		return nil, lazyerrors.Error(err)
 	}
-	defer db.Close()
 
 	err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
 		Name: collectionName,

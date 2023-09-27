@@ -67,7 +67,7 @@ linters-settings:
     alias:
       - pkg: github.com/prometheus/client_model/go
         alias: dto
-      - pkg: go.opentelemetry.io/otel/semconv/v1.17.0
+      - pkg: go.opentelemetry.io/otel/semconv/v1.21.0
         alias: otelsemconv
       - pkg: go.opentelemetry.io/otel/sdk/trace
         alias: oteltrace

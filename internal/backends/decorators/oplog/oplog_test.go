@@ -12,5 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package postgresql provides backend for PostgreSQL and compatible databases.
-package postgresql
+package oplog
+
+import "testing"
+
+func TestDummy(t *testing.T) {
+	// we need at least one test per package to correctly calculate coverage
+}

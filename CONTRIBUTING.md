@@ -30,7 +30,7 @@ On macOS and Windows, [Docker Desktop](https://www.docker.com/products/docker-de
 On Windows, it should be [configured to use WSL 2](https://docs.docker.com/desktop/windows/wsl/) without any distro;
 all commands should be run on the host.
 
-You will need Go 1.20 or later on the host.
+You will need Go 1.21 or later on the host.
 If your package manager doesn't provide it yet,
 please install it from [go.dev](https://go.dev/dl/).
 
@@ -212,7 +212,8 @@ If, on the other hand, you see code that is inconsistent without apparent reason
 please improve it as you work on it.
 
 Our code follows most of the standard Go conventions,
-documented on [CodeReviewComments wiki page](https://github.com/golang/go/wiki/CodeReviewComments).
+documented on [CodeReviewComments wiki page](https://github.com/golang/go/wiki/CodeReviewComments)
+and some other pages such as [Spelling](https://github.com/golang/go/wiki/Spelling).
 Some of our idiosyncrasies:
 
 1. We use type switches over BSON types in many places in our code.

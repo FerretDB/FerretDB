@@ -35,9 +35,10 @@ func TestDocument(t *testing.T) {
 		assert.Nil(t, doc.Keys())
 		assert.Equal(t, "", doc.Command())
 
-		value, err := doc.Get("foo")
-		assert.Error(t, err)
+		value, _ := doc.Get("foo")
 		assert.Nil(t, value)
+
+		doc.Freeze()
 	})
 
 	t.Run("ZeroValues", func(t *testing.T) {
@@ -52,10 +53,11 @@ func TestDocument(t *testing.T) {
 		assert.Equal(t, "", doc.Command())
 
 		doc.Set("foo", Null)
-		value, err := doc.Get("foo")
-		assert.NoError(t, err)
+		value, _ := doc.Get("foo")
 		assert.Equal(t, Null, value)
 		assert.Equal(t, "foo", doc.Command())
+
+		doc.Freeze()
 	})
 
 	t.Run("NewDocument", func(t *testing.T) {
@@ -64,6 +66,14 @@ func TestDocument(t *testing.T) {
 		doc, err := NewDocument(42, 42)
 		assert.Nil(t, doc)
 		assert.EqualError(t, err, `types.NewDocument: invalid key type: int`)
+	})
+
+	t.Run("Invalid", func(t *testing.T) {
+		t.Parallel()
+
+		assert.Panics(t, func() {
+			_, _ = NewDocument("foo", 42)
+		})
 	})
 
 	t.Run("Freeze", func(t *testing.T) {

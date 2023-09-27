@@ -1,0 +1,47 @@
+---
+# Integration tests for extra configuration.
+
+name: Go Extra
+on:
+  schedule:
+    - cron: "12 1 * * *" # after Go workflow to reuse "Setup Go" cache
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org
+  GOTOOLCHAIN: local
+
+jobs:
+  integration:
+    # job name must be unique; make it unique and nice
+    name: >
+      ${{ matrix.task }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
+      (filter=${{ matrix.disable_filter_pushdown }}, sort=${{ matrix.enable_sort_pushdown }})
+
+    # To avoid conflict with go.yml.
+    concurrency:
+      group: ${{ github.workflow }}-integration-${{ matrix.task }}-${{ matrix.shard_index }}-${{ matrix.disable_filter_pushdown }}-${{ matrix.enable_sort_pushdown }}-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
+
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [pg, postgresql, sqlite]
+        shard_index: [1, 2, 3]
+        shard_total: [3]
+        disable_filter_pushdown: [false, true]
+        enable_sort_pushdown: [false, true]
+
+    # Do not submit to coveralls because it can't handle parallel workflows:
+    # https://github.com/lemurheavy/coveralls-public/issues/1636#issuecomment-1529460515
+    uses: ./.github/workflows/_integration.yml
+    with:
+      task: ${{ matrix.task }}
+      shard_index: ${{ matrix.shard_index }}
+      shard_total: ${{ matrix.shard_total }}
+      disable_filter_pushdown: ${{ matrix.disable_filter_pushdown }}
+      enable_sort_pushdown: ${{ matrix.enable_sort_pushdown }}
+      coveralls: false
