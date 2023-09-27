@@ -18,23 +18,27 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // database implements backends.Database interface.
 type database struct {
+	r    *metadata.Registry
 	name string
 }
 
 // newDatabase creates a new Database.
-func newDatabase(name string) backends.Database {
+func newDatabase(r *metadata.Registry, name string) backends.Database {
 	return backends.DatabaseContract(&database{
+		r:    r,
 		name: name,
 	})
 }
 
 // Collection implements backends.Database interface.
 func (db *database) Collection(name string) (backends.Collection, error) {
-	return newCollection(db.name, name), nil
+	return newCollection(db.r, db.name, name), nil
 }
 
 // ListCollections implements backends.Database interface.
@@ -59,7 +63,39 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3393
+	c, err := db.r.CollectionGet(ctx, db.name, params.OldName)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if c == nil {
+		return backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("old database %q or collection %q does not exist", db.name, params.OldName),
+		)
+	}
+
+	c, err = db.r.CollectionGet(ctx, db.name, params.NewName)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if c != nil {
+		return backends.NewError(
+			backends.ErrorCodeCollectionAlreadyExists,
+			lazyerrors.Errorf("new database %q and collection %q already exists", db.name, params.NewName),
+		)
+	}
+
+	renamed, err := db.r.CollectionRename(ctx, db.name, params.OldName, params.NewName)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !renamed {
+		return backends.NewError(backends.ErrorCodeCollectionDoesNotExist, err)
+	}
+
 	return nil
 }
 

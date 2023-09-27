@@ -40,12 +40,8 @@ type NewBackendParams struct {
 	P   *state.Provider
 }
 
-// NewBackend creates a new backend for PostgreSQL-compatible database.
+// NewBackend creates a new backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	if params.P == nil {
-		panic("state provider is required but not set")
-	}
-
 	r, err := metadata.NewRegistry(params.URI, params.L, params.P)
 	if err != nil {
 		return nil, err
@@ -58,6 +54,7 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
+	b.r.Close()
 }
 
 // Name implements backends.Backend interface.
@@ -73,7 +70,7 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 
 // Database implements backends.Backend interface.
 func (b *backend) Database(name string) (backends.Database, error) {
-	return newDatabase(name), nil
+	return newDatabase(b.r, name), nil
 }
 
 // ListDatabases implements backends.Backend interface.
