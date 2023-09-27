@@ -59,7 +59,8 @@ type TestOpts struct {
 	EnableSortPushdown    bool
 	EnableOplog           bool
 
-	UseNewPG bool
+	UseNewPG   bool
+	UseNewHana bool
 }
 
 // NewHandler constructs a new handler.
