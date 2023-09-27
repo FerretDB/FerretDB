@@ -22,7 +22,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -34,11 +33,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 	// both are valid and are allowed to be run against any database as we don't support authorization yet
 	if (cmd == "ismaster" || cmd == "isMaster") && strings.HasSuffix(collection, ".$cmd") {
-		return common.IsMaster()
-	}
-
-	if err := common.CheckClientMetadata(ctx, query.Query); err != nil {
-		return nil, lazyerrors.Error(err)
+		return common.IsMaster(ctx, query)
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3008
