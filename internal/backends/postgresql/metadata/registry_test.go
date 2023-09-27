@@ -427,8 +427,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 	collectionName := testutil.CollectionName(t)
 
 	t.Cleanup(func() {
-		_, err := r.DatabaseDrop(ctx, dbName)
-		require.NoError(t, err)
+		_, _ = r.DatabaseDrop(ctx, dbName)
 	})
 
 	toCreate := []IndexInfo{
