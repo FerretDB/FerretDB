@@ -45,6 +45,9 @@ const (
 
 	// PostgreSQL table name where FerretDB metadata is stored.
 	metadataTableName = reservedPrefix + "database_metadata"
+
+	// PostgreSQL max table name length.
+	maxTableNameLength = 63
 )
 
 // Parts of Prometheus metric names.
@@ -465,10 +468,18 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 	list := maps.Values(colls)
 
 	for {
-		tableName = fmt.Sprintf("%s_%08x", strings.ToLower(collectionName), s)
+		tableName = strings.ToLower(collectionName)
 		if strings.HasPrefix(tableName, reservedPrefix) {
 			tableName = "_" + tableName
 		}
+
+		l := len(tableName)
+		if l > maxTableNameLength {
+			// trim table name to fit maxTableNameLength, `_%08x` takes up 9 chars
+			l = maxTableNameLength - 9
+		}
+
+		tableName = fmt.Sprintf("%s_%08x", tableName[0:l], s)
 
 		if !slices.ContainsFunc(list, func(c *Collection) bool { return c.TableName == tableName }) {
 			break
