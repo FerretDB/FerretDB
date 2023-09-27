@@ -98,6 +98,7 @@ func TestInTransaction(t *testing.T) {
 		var res string
 		err = p.QueryRow(ctx, fmt.Sprintf(`SELECT s FROM %s WHERE s = $1`, tableName), v).Scan(&res)
 		require.Equal(t, pgx.ErrNoRows, err)
+		require.Empty(t, res)
 	})
 
 	t.Run("ContextCancelRollback", func(t *testing.T) {
@@ -122,6 +123,7 @@ func TestInTransaction(t *testing.T) {
 		var res string
 		err = p.QueryRow(context.WithoutCancel(ctx), fmt.Sprintf(`SELECT s FROM %s WHERE s = $1`, tableName), v).Scan(&res)
 		require.Equal(t, pgx.ErrNoRows, err)
+		require.Empty(t, res)
 	})
 
 	t.Run("Panic", func(t *testing.T) {
@@ -144,5 +146,6 @@ func TestInTransaction(t *testing.T) {
 		var res string
 		err = p.QueryRow(ctx, fmt.Sprintf(`SELECT s FROM %s WHERE s = $1`, tableName), v).Scan(&res)
 		require.Equal(t, pgx.ErrNoRows, err)
+		require.Empty(t, res)
 	})
 }
