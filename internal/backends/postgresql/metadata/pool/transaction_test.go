@@ -67,6 +67,7 @@ func TestInTransaction(t *testing.T) {
 		t.Parallel()
 
 		ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New()) // create new instance of ctx to avoid using canceled ctx
+		err := err                                           // avoid data race
 
 		v := testutil.CollectionName(t)
 		err = InTransaction(ctx, p, func(tx pgx.Tx) error {
@@ -86,6 +87,7 @@ func TestInTransaction(t *testing.T) {
 		t.Parallel()
 
 		ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New()) // create new instance of ctx to avoid using canceled ctx
+		err := err                                           // avoid data race
 
 		v := testutil.CollectionName(t)
 		err = InTransaction(ctx, p, func(tx pgx.Tx) error {
@@ -105,6 +107,7 @@ func TestInTransaction(t *testing.T) {
 		t.Parallel()
 
 		ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New()) // create new instance of ctx to avoid using canceled ctx
+		err := err                                           // avoid data race
 
 		var cancel func()
 		ctx, cancel = context.WithCancel(ctx)
@@ -130,6 +133,7 @@ func TestInTransaction(t *testing.T) {
 		t.Parallel()
 
 		ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New()) // create new instance of ctx to avoid using canceled ctx
+		err := err                                           // avoid data race
 
 		v := testutil.CollectionName(t)
 		assert.Panics(t, func() {
