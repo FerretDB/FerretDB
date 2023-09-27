@@ -333,6 +333,27 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *pgxpool.Pool, dbN
 		return nil, lazyerrors.Error(err)
 	}
 
+	q = fmt.Sprintf(
+		`CREATE UNIQUE INDEX %s ON %s (((%s)))`,
+		pgx.Identifier{metadataTableName + "_id_idx"}.Sanitize(),
+		pgx.Identifier{dbName, metadataTableName}.Sanitize(),
+		IDColumn,
+	)
+	if _, err = p.Exec(ctx, q); err != nil {
+		_, _ = r.databaseDrop(ctx, p, dbName)
+		return nil, lazyerrors.Error(err)
+	}
+	q = fmt.Sprintf(
+		`CREATE UNIQUE INDEX %s ON %s (((%s->'table')))`,
+		pgx.Identifier{metadataTableName + "_table_idx"}.Sanitize(),
+		pgx.Identifier{dbName, metadataTableName}.Sanitize(),
+		DefaultColumn,
+	)
+	if _, err = p.Exec(ctx, q); err != nil {
+		_, _ = r.databaseDrop(ctx, p, dbName)
+		return nil, lazyerrors.Error(err)
+	}
+
 	r.colls[dbName] = map[string]*Collection{}
 
 	return p, nil
@@ -746,7 +767,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 		must.NotFail(h.Write([]byte(index.Name)))
 		s := h.Sum32()
 		dbIndex := fmt.Sprintf("%s_%08x", strings.ToLower(index.Name), s)
-		index.DBIndex = dbIndex
+		index.TableIndexName = dbIndex
 
 		q := "CREATE "
 
@@ -774,7 +795,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 			}
 		}
 
-		q = fmt.Sprintf(q, pgx.Identifier{index.DBIndex}.Sanitize(), pgx.Identifier{dbName, c.TableName}.Sanitize(), strings.Join(columns, ", "))
+		q = fmt.Sprintf(q, pgx.Identifier{index.TableIndexName}.Sanitize(), pgx.Identifier{dbName, c.TableName}.Sanitize(), strings.Join(columns, ", "))
 
 		if _, err = p.Exec(ctx, q); err != nil {
 			_ = r.indexesDrop(ctx, p, dbName, collectionName, created)
@@ -847,7 +868,7 @@ func (r *Registry) indexesDrop(ctx context.Context, p *pgxpool.Pool, dbName, col
 			continue
 		}
 
-		q := fmt.Sprintf("DROP INDEX %s", pgx.Identifier{dbName, c.Settings.Indexes[i].DBIndex}.Sanitize())
+		q := fmt.Sprintf("DROP INDEX %s", pgx.Identifier{dbName, c.Settings.Indexes[i].TableIndexName}.Sanitize())
 		if _, err := p.Exec(ctx, q); err != nil {
 			return lazyerrors.Error(err)
 		}

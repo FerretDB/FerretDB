@@ -20,6 +20,8 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
@@ -570,5 +572,36 @@ func TestIndexesCreateDrop(t *testing.T) {
 		collection, err = r.CollectionGet(ctx, dbName, collectionName)
 		require.NoError(t, err)
 		require.Equal(t, 1, len(collection.Settings.Indexes))
+	})
+
+	t.Run("MetadataIndexes", func(t *testing.T) {
+		t.Parallel()
+
+		var sql string
+		err = db.QueryRow(
+			ctx,
+			"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+			dbName, metadataTableName, metadataTableName+"_id_idx",
+		).Scan(&sql)
+		require.NoError(t, err)
+
+		expected := fmt.Sprintf(
+			`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> '_id'::text)))`,
+			metadataTableName+"_id_idx", dbName, metadataTableName,
+		)
+		require.Equal(t, expected, sql)
+
+		err = db.QueryRow(
+			ctx,
+			"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+			dbName, metadataTableName, metadataTableName+"_table_idx",
+		).Scan(&sql)
+		assert.NoError(t, err)
+
+		expected = fmt.Sprintf(
+			`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> 'table'::text)))`,
+			metadataTableName+"_id_idx", dbName, metadataTableName,
+		)
+		assert.Equal(t, expected, sql)
 	})
 }

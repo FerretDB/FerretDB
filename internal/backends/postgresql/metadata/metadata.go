@@ -121,7 +121,7 @@ func (s Settings) Marshal() *types.Document {
 
 		indexes.Append(must.NotFail(types.NewDocument(
 			"name", index.Name,
-			"dbindex", index.DBIndex,
+			"dbindex", index.TableIndexName,
 			"key", key,
 			"unique", index.Unique,
 		)))
@@ -154,10 +154,10 @@ func (s *Settings) Unmarshal(doc *types.Document) error {
 		doc := v.(*types.Document)
 
 		s.Indexes[i] = IndexInfo{
-			Name:    must.NotFail(doc.Get("name")).(string),
-			DBIndex: must.NotFail(doc.Get("dbindex")).(string),
-			Key:     must.NotFail(doc.Get("key")).([]IndexKeyPair),
-			Unique:  must.NotFail(doc.Get("unique")).(bool),
+			Name:           must.NotFail(doc.Get("name")).(string),
+			TableIndexName: must.NotFail(doc.Get("dbindex")).(string),
+			Key:            must.NotFail(doc.Get("key")).([]IndexKeyPair),
+			Unique:         must.NotFail(doc.Get("unique")).(bool),
 		}
 	}
 
@@ -166,10 +166,10 @@ func (s *Settings) Unmarshal(doc *types.Document) error {
 
 // IndexInfo represents information about a single index.
 type IndexInfo struct {
-	Name    string         `json:"name"`
-	DBIndex string         `json:"dbindex"` // how the index is created in the DB, like TableName for Collection
-	Key     []IndexKeyPair `json:"key"`
-	Unique  bool           `json:"unique"`
+	Name           string         `json:"name"`
+	TableIndexName string         `json:"pgindex"` // how the index is created in the DB, like TableName for Collection
+	Key            []IndexKeyPair `json:"key"`
+	Unique         bool           `json:"unique"`
 }
 
 // IndexKeyPair consists of a field name and a sort order that are part of the index.
