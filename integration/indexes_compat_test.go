@@ -17,6 +17,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -124,7 +125,7 @@ func TestCreateIndexesCompat(tt *testing.T) {
 					},
 				},
 			},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3418",
 		},
 		"SameKey": {
 			models: []mongo.IndexModel{
@@ -202,8 +203,7 @@ func TestCreateIndexesCompat(tt *testing.T) {
 					Options: options.Index().SetName("bar"),
 				},
 			},
-			resultType:     emptyResult,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
+			resultType: emptyResult,
 		},
 		"SameNameDifferentKeys": {
 			models: []mongo.IndexModel{
@@ -216,8 +216,7 @@ func TestCreateIndexesCompat(tt *testing.T) {
 					Options: options.Index().SetName("index-name"),
 				},
 			},
-			resultType:     emptyResult,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
+			resultType: emptyResult,
 		},
 	} {
 		name, tc := name, tc
@@ -324,8 +323,6 @@ func TestDropIndexesCompat(t *testing.T) {
 		dropAll       bool                     // set true for drop all indexes, if true dropIndexName must be empty.
 		resultType    compatTestCaseResultType // defaults to nonEmptyResult
 		toCreate      []mongo.IndexModel       // optional, if not nil create indexes before dropping
-
-		skipForSQLite string // optional, if set, the case if partly passes and partly fails for SQLite
 	}{
 		"DropAllCommand": {
 			toCreate: []mongo.IndexModel{
@@ -355,12 +352,10 @@ func TestDropIndexesCompat(t *testing.T) {
 		"NonExistent": {
 			dropIndexName: "nonexistent_1",
 			resultType:    emptyResult,
-			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 		"Empty": {
 			dropIndexName: "",
 			resultType:    emptyResult,
-			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/3320",
 		},
 	} {
 		name, tc := name, tc
@@ -385,10 +380,6 @@ func TestDropIndexesCompat(t *testing.T) {
 				compatCollection := compatCollections[i]
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
-
-					if tc.skipForSQLite != "" {
-						t.Skip(tc.skipForSQLite)
-					}
 
 					if tc.toCreate != nil {
 						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.toCreate)
@@ -581,6 +572,82 @@ func TestCreateIndexesCompatUnique(t *testing.T) {
 			}
 
 			require.NoError(t, compatErr, "compat error; target returned no error")
+		})
+	}
+}
+
+func TestCreateIndexesCompatDuplicates(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // for readability
+		models     []mongo.IndexModel       // normal indexes to create
+		duplicates []mongo.IndexModel       // duplicates to attempt to create
+		resultType compatTestCaseResultType // defaults to nonEmptyResult
+	}{
+		"DuplicateByName": {
+			models: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"foo", 1}}},
+			},
+			duplicates: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"bar", 1}}},
+			},
+			resultType: emptyResult,
+		},
+		"DuplicateByKey": {
+			models: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"foo", 1}}},
+			},
+			duplicates: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_not_foo")}, Keys: bson.D{{"foo", 1}}},
+			},
+			resultType: emptyResult,
+		},
+		"FullyIdentical": {
+			models: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"foo", 1}}},
+			},
+			duplicates: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"foo", 1}}},
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
+			t.Parallel()
+
+			res := setup.SetupCompatWithOpts(t,
+				&setup.SetupCompatOpts{
+					Providers: []shareddata.Provider{shareddata.Int32s},
+				})
+
+			ctx, targetCollections, compatCollections := res.Ctx, res.TargetCollections, res.CompatCollections
+
+			targetCollection := targetCollections[0]
+			compatCollection := compatCollections[0]
+
+			targetRes, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.models)
+			compatRes, compatErr := compatCollection.Indexes().CreateMany(ctx, tc.models)
+
+			require.NoError(t, compatErr)
+			require.NoError(t, targetErr)
+			require.Equal(t, compatRes, targetRes)
+
+			targetRes, targetErr = targetCollection.Indexes().CreateMany(ctx, tc.duplicates)
+			compatRes, compatErr = compatCollection.Indexes().CreateMany(ctx, tc.duplicates)
+
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
+
+				return
+			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
+
+			assert.Equal(t, compatRes, targetRes)
 		})
 	}
 }

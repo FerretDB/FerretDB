@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -112,17 +113,53 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		)
 	}
 
-	params, err := processIndexesArray(command, idxArr)
+	toCreate, err := processIndexesArray(command, idxArr)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = c.CreateIndexes(ctx, params)
+	createCollection := false
+
+	beforeCreate, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
+	if err != nil {
+		switch {
+		case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
+			// If the namespace doesn't exist, we just don't need to compare new indexes with existing ones,
+			// the namespace will be created when indexes are created.
+			beforeCreate = &backends.ListIndexesResult{
+				Indexes: []backends.IndexInfo{},
+			}
+			createCollection = true
+
+		default:
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	numIndexesBefore := len(beforeCreate.Indexes)
+
+	// for compatibility
+	if numIndexesBefore == 0 {
+		numIndexesBefore = 1
+	}
+
+	if err = validateIndexesForCreation(command, beforeCreate.Indexes, toCreate); err != nil {
+		return nil, err
+	}
+
+	_, err = c.CreateIndexes(ctx, &backends.CreateIndexesParams{Indexes: toCreate})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	resp := new(types.Document)
+
+	resp.Set("numIndexesBefore", int32(numIndexesBefore))
+	resp.Set("numIndexesAfter", int32(numIndexesBefore+len(toCreate)))
+
+	if createCollection {
+		resp.Set("createdCollectionAutomatically", true)
+	}
 
 	resp.Set("ok", float64(1))
 
@@ -134,14 +171,12 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	return &reply, nil
 }
 
-// processIndexesArray processes the given array of indexes and returns a backends.CreateIndexesParams.
-func processIndexesArray(command string, indexesArray *types.Array) (*backends.CreateIndexesParams, error) {
+// processIndexesArray processes the given array of indexes and returns a slice of backends.IndexInfo elements.
+func processIndexesArray(command string, indexesArray *types.Array) ([]backends.IndexInfo, error) {
 	iter := indexesArray.Iterator()
 	defer iter.Close()
 
-	params := backends.CreateIndexesParams{
-		Indexes: make([]backends.IndexInfo, indexesArray.Len()),
-	}
+	res := make([]backends.IndexInfo, indexesArray.Len())
 
 	for {
 		var key, val any
@@ -151,7 +186,7 @@ func processIndexesArray(command string, indexesArray *types.Array) (*backends.C
 		case err == nil:
 			// do nothing
 		case errors.Is(err, iterator.ErrIteratorDone):
-			return &params, nil
+			return res, nil
 		default:
 			return nil, lazyerrors.Error(err)
 		}
@@ -174,7 +209,7 @@ func processIndexesArray(command string, indexesArray *types.Array) (*backends.C
 			return nil, err
 		}
 
-		params.Indexes[key.(int)] = *indexInfo
+		res[key.(int)] = *indexInfo
 	}
 }
 
@@ -400,4 +435,107 @@ func processIndexKey(command string, keyDoc *types.Document) ([]backends.IndexKe
 			Descending: descending,
 		})
 	}
+}
+
+// formatIndexKey formats the given index key to a string.
+func formatIndexKey(key []backends.IndexKeyPair) string {
+	res := make([]string, len(key))
+
+	for i, pair := range key {
+		order := "1"
+		if pair.Descending {
+			order = "-1"
+		}
+
+		res[i] = pair.Field + ": " + order
+	}
+
+	return strings.Join(res, ", ")
+}
+
+// validateIndexesForCreation validates the given list of indexes to create against the existing ones.
+func validateIndexesForCreation(command string, existing, toCreate []backends.IndexInfo) error {
+	for i, newIdx := range toCreate {
+		newKey := formatIndexKey(newIdx.Key)
+
+		if newIdx.Name == "" {
+			msg := fmt.Sprintf(
+				"Error in specification { key: { %s }, name: %q, v: 2 } :: caused by :: index name cannot be empty",
+				newKey, newIdx.Name,
+			)
+
+			return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrCannotCreateIndex, msg, command)
+		}
+
+		if newIdx.Name == backends.DefaultIndexName && newKey != "_id: 1" {
+			msg := fmt.Sprintf(
+				"The index name '_id_' is reserved for the _id index, which must have key pattern {_id: 1},"+
+					" found key: { %s }",
+				newKey,
+			)
+
+			return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, command)
+		}
+
+		// Iterate backwards to check if the current index is a duplicate of any other index provided in the list earlier.
+		for j := i - 1; j >= 0; j-- {
+			otherKey := formatIndexKey(toCreate[j].Key)
+			otherName := toCreate[j].Name
+
+			if otherName == newIdx.Name && otherKey == newKey {
+				msg := fmt.Sprintf("Identical index already exists: %s", otherName)
+
+				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexAlreadyExists, msg, command)
+			}
+
+			if newIdx.Name == otherName {
+				msg := fmt.Sprintf(
+					"An existing index has the same name as the requested index."+
+						" When index names are not specified, they are auto generated and can cause conflicts."+
+						" Please refer to our documentation. Requested index: { key: { %s }, name: %q },"+
+						" existing index: { key: { %s }, name: %q }",
+					newKey, newIdx.Name, otherKey, otherName,
+				)
+
+				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexKeySpecsConflict, msg, command)
+			}
+
+			if newKey == otherKey {
+				msg := fmt.Sprintf(
+					"Index already exists with a different name: %s", otherName,
+				)
+
+				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexOptionsConflict, msg, command)
+			}
+		}
+
+		// Check for conflicts with existing indexes.
+		for _, existingIdx := range existing {
+			existingKey := formatIndexKey(existingIdx.Key)
+
+			if newIdx.Name == existingIdx.Name && newKey == existingKey {
+				// Fully identical indexes are allowed.
+				break
+			}
+
+			if newIdx.Name == existingIdx.Name {
+				msg := fmt.Sprintf(
+					"An existing index has the same name as the requested index."+
+						" When index names are not specified, they are auto generated and can cause conflicts."+
+						" Please refer to our documentation. Requested index: { key: { %s }, name: %q },"+
+						" existing index: { key: { %s }, name: %q }",
+					newKey, newIdx.Name, existingKey, existingIdx.Name,
+				)
+
+				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexKeySpecsConflict, msg, command)
+			}
+
+			if newKey == existingKey {
+				msg := fmt.Sprintf("Index already exists with a different name: %s", existingIdx.Name)
+				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexOptionsConflict, msg, command)
+			}
+		}
+	}
+
+	return nil
 }
