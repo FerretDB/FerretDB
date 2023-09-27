@@ -30,10 +30,10 @@ var connInfoKey = contextKey{}
 type ConnInfo struct {
 	PeerAddr string
 
-	rw                     sync.RWMutex
-	username               string
-	password               string
-	clientMetadataPresence bool
+	rw           sync.RWMutex
+	username     string
+	password     string
+	metadataRecv bool
 }
 
 // New returns a new ConnInfo.
@@ -58,20 +58,20 @@ func (connInfo *ConnInfo) SetAuth(username, password string) {
 	connInfo.password = password
 }
 
-// ClientMetadataPresence returns stored client metadata presence.
-func (connInfo *ConnInfo) ClientMetadataPresence() bool {
+// MetadataRecv returns whatever client metadata was received already.
+func (connInfo *ConnInfo) MetadataRecv() bool {
 	connInfo.rw.RLock()
 	defer connInfo.rw.RUnlock()
 
-	return connInfo.clientMetadataPresence
+	return connInfo.metadataRecv
 }
 
-// SetClientMetadataPresence sets the client metadata presence.
-func (connInfo *ConnInfo) SetClientMetadataPresence() {
+// MetadataRecv marks client metadata as received.
+func (connInfo *ConnInfo) SetMetadataRecv() {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()
 
-	connInfo.clientMetadataPresence = true
+	connInfo.metadataRecv = true
 }
 
 // Ctx returns a derived context with the given ConnInfo.

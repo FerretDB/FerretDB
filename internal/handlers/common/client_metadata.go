@@ -21,33 +21,23 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// CheckClientMetadata checks if the message does not contain client metadata.
+// CheckClientMetadata checks if the message does not contain client metadata after it was received already.
 func CheckClientMetadata(ctx context.Context, doc *types.Document) error {
-	if !doc.Has("client") {
+	c, _ := doc.Get("client")
+	if c == nil {
 		return nil
 	}
 
-	clientMetadata, err := doc.Get("client")
-	if err != nil {
-		return lazyerrors.Error(err)
-	}
-
 	connInfo := conninfo.Get(ctx)
-	clientMetadataPresence := connInfo.ClientMetadataPresence()
-
-	// check if the client's metadata was not set before
-	if clientMetadata != nil && clientMetadataPresence {
-		msg := "The client metadata document may only be sent in the first hello"
-		return commonerrors.NewCommandErrorMsg(commonerrors.ErrClientMetadataCannotBeMutated, msg)
+	if connInfo.MetadataRecv() {
+		return commonerrors.NewCommandErrorMsg(
+			commonerrors.ErrClientMetadataCannotBeMutated,
+			"The client metadata document may only be sent in the first hello",
+		)
 	}
 
-	// set the client's metadata for the first request
-	if clientMetadata != nil && !clientMetadataPresence {
-		connInfo.SetClientMetadataPresence()
-	}
-
+	connInfo.SetMetadataRecv()
 	return nil
 }

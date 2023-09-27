@@ -22,12 +22,15 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-var (
-	clientMetadataDocument = must.NotFail(types.NewDocument(
+func TestCheckClientMetadata(t *testing.T) {
+	t.Parallel()
+
+	metadata := must.NotFail(types.NewDocument(
 		"client", must.NotFail(types.NewDocument(
 			"driver", must.NotFail(types.NewDocument(
 				"name", "nodejs",
@@ -46,53 +49,40 @@ var (
 		)),
 	))
 
-	noClientMetadataDocument = must.NotFail(types.NewDocument())
-)
-
-func TestCheckClientMetadata(t *testing.T) {
-	t.Parallel()
+	empty := must.NotFail(types.NewDocument())
 
 	for name, tc := range map[string][]struct { //nolint:vet // used for test only
 		document *types.Document
-		errMsg   string
+		err      error
+		recv     bool
 	}{
-		"NoClientMetadata": {{
-			document: noClientMetadataDocument,
-		}},
-		"ClientMetadataDocument": {{
-			document: clientMetadataDocument,
-		}},
+		"NoClientMetadata": {
+			{document: empty},
+		},
+		"ClientMetadataDocument": {
+			{document: metadata, recv: true},
+		},
 		"ClientMetadataDocumentAndNoClientMetadata": {
-			{
-				document: clientMetadataDocument,
-			},
-			{
-				document: noClientMetadataDocument,
-			},
+			{document: metadata, recv: true},
+			{document: empty, recv: true},
 		},
 		"NoClientMetadataAndClientMetadataDocument": {
-			{
-				document: noClientMetadataDocument,
-			},
-			{
-				document: clientMetadataDocument,
-			},
+			{document: empty},
+			{document: metadata, recv: true},
 		},
 		"2xNoClientMetadata": {
-			{
-				document: noClientMetadataDocument,
-			},
-			{
-				document: noClientMetadataDocument,
-			},
+			{document: empty},
+			{document: empty},
 		},
 		"2xClientMetadataDocument": {
+			{document: metadata, recv: true},
 			{
-				document: clientMetadataDocument,
-			},
-			{
-				document: clientMetadataDocument,
-				errMsg:   "ClientMetadataCannotBeMutated (186): The client metadata document may only be sent in the first hello",
+				document: metadata,
+				err: commonerrors.NewCommandErrorMsg(
+					commonerrors.ErrClientMetadataCannotBeMutated,
+					"The client metadata document may only be sent in the first hello",
+				),
+				recv: true,
 			},
 		},
 	} {
@@ -100,27 +90,13 @@ func TestCheckClientMetadata(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			ctx := context.Background()
 			connInfo := conninfo.New()
-			ctx = conninfo.Ctx(ctx, connInfo)
+			ctx := conninfo.Ctx(context.Background(), connInfo)
 
 			for _, test := range tc {
 				err := CheckClientMetadata(ctx, test.document)
-
-				if test.errMsg != "" {
-					assert.EqualError(t, err, test.errMsg)
-					return
-				}
-
-				if test.document == clientMetadataDocument {
-					assert.True(t, connInfo.ClientMetadataPresence())
-				}
-
-				if name == "2xNoClientMetadata" || name == "NoClientMetadata" {
-					assert.False(t, connInfo.ClientMetadataPresence())
-				}
-
-				assert.NoError(t, err)
+				assert.Equal(t, test.err, err)
+				assert.Equal(t, test.recv, connInfo.MetadataRecv())
 			}
 		})
 	}
