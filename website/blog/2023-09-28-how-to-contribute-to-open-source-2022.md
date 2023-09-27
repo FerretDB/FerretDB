@@ -25,7 +25,7 @@ This is how the members of the open source community encourage new tech enthusia
 
 [Hacktoberfest](https://hacktoberfest.com/) is an annual online event celebrating the open source movement.
 This year, registration starts on September 26.
-To participate, you need to send at least four open-sourced pull requests on GitHub or Gitlab between October 1st and October 31st, for projects that indicate they are looking for Hacktoberfest contributions (`hacktoberfest` labels), and those pull requests need to be accepted by the repository owners.
+To participate, you need to send at least four open-sourced pull requests on GitHub or Gitlab between September 26th and October 31st, for projects that indicate they are looking for Hacktoberfest contributions (`hacktoberfest` topics), and those pull requests need to be accepted by the repository owners.
 
 The participants who complete Hacktoberfest can receive one of these prizes: a tree planted in their name or a unique digital reward.
 
@@ -75,7 +75,7 @@ Usually, issues that are marked with such a label don't require special knowledg
 There is one more tradition here, in October, some open source projects mark their issues with the [`hacktoberfest`](https://github.com/search?q=label%3Ahacktoberfest&type=issues) label, and such issues are often suitable for first-time contributors.
 
 At FerretDB, we are preparing for Hacktoberfest too!
-So, if you are looking for something to contribute to, take a look at the good first issues in our [FerretDB](https://github.com/FerretDB/FerretDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) and [github-actions](https://github.com/FerretDB/github-actions/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) repositories.
+So, if you are looking for something to contribute to, take a look at the good first issues in our [FerretDB](https://github.com/FerretDB/FerretDB/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) repository.
 
 ### 3. Select a good first issue and read the contribution guidelines
 
@@ -95,8 +95,8 @@ You can find details in our [README](https://github.com/ferretdb/ferretdb#commun
 By the way, the contributing guidelines or documentation might be the most suitable for first-time contributors!
 
 We have several good first issues that you can start with.
-For example, you could implement the [`$first` accumulator](https://github.com/FerretDB/FerretDB/issues/2128), [improve embedded package documentation](https://github.com/FerretDB/FerretDB/issues/2326), or [fix linter issues](https://github.com/FerretDB/FerretDB/issues/2733).
-You could also try your hands at [updating glossary list with more details](https://github.com/FerretDB/FerretDB/issues/3427), [update aggregation section to cover `$unset` and `$project` commands](https://github.com/FerretDB/FerretDB/issues/3428), and more.
+For example, you could implement the [`$first` accumulator](https://github.com/FerretDB/FerretDB/issues/2128) or [improve embedded package documentation](https://github.com/FerretDB/FerretDB/issues/2326).
+You could also try your hands at [updating glossary list with more details](https://github.com/FerretDB/FerretDB/issues/3445).
 Since new issues are always popping up, there are no limits to what you can contribute to.
 
 _Do you see a typo, a mistake, or something that doesn't look clear?_
