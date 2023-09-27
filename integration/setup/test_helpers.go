@@ -25,7 +25,7 @@ import (
 //
 // This function should not be used lightly.
 func IsPostgres(tb testtb.TB) bool {
-	return *targetBackendF == "ferretdb-pg"
+	return *targetBackendF == "ferretdb-pg" && *useNewPgF
 }
 
 // IsOldPg returns true if the current test is running for old PostgreSQL handler.
