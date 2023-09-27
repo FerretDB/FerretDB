@@ -52,22 +52,23 @@ const config = {
           blogSidebarCount: 'ALL',
           feedOptions: {
             type: 'all',
-            title: 'The FerretDB Blog',
-            description: 'Welcome to the FerretDB blog - The truly open source replacement for MongoDB',
-            copyright: `Copyright © ${new Date().getFullYear()} FerretDB, Inc.`,
+            title: 'FerretDB Blog',
+            description: 'A truly Open Source MongoDB alternative',
+            copyright: `Copyright © ${new Date().getFullYear()} FerretDB Inc.`,
+
+            // override to add images; see https://github.com/facebook/docusaurus/discussions/8321#discussioncomment-7016367
             createFeedItems: async (params) => {
               const {
-                  blogPosts,
+                blogPosts,
               } = params;
 
               return blogPosts.slice(0, 10).map(post => ({
-                  title: post.metadata.title,
-                  link: post.metadata.frontMatter.link,
-                  // appending the siteUrl to the img src as a workaround for the relative paths used for images
-                  image: `https://blog.ferretdb.io${post.metadata.frontMatter.image}`,
-                  date: post.metadata.date,
-                  description: post.metadata.description,
-                  }));
+                title: post.metadata.title,
+                link: post.metadata.frontMatter.link,
+                image: `${config.url}${post.metadata.frontMatter.image}`,
+                date: post.metadata.date,
+                description: post.metadata.description,
+              }));
             },
           },
         },
@@ -86,7 +87,7 @@ const config = {
         logo: {
           alt: 'FerretDB Logo',
           src: 'img/logo-dark.jpg',
-          srcDark:'img/logo-light.png'
+          srcDark: 'img/logo-light.png'
         },
         items: [
           {
