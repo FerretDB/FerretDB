@@ -473,13 +473,13 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 			tableName = "_" + tableName
 		}
 
-		l := len(tableName)
-		if l > maxTableNameLength {
-			// trim table name to fit maxTableNameLength, `_%08x` takes up 9 chars
-			l = maxTableNameLength - 9
+		suffixHash := fmt.Sprintf("_%08x", s)
+		if len(tableName) > maxTableNameLength-len(suffixHash) {
+			// trim table name to fit in maxTableNameLength
+			tableName = tableName[0 : maxTableNameLength-len(suffixHash)]
 		}
 
-		tableName = fmt.Sprintf("%s_%08x", tableName[0:l], s)
+		tableName = fmt.Sprintf("%s%s", tableName, suffixHash)
 
 		if !slices.ContainsFunc(list, func(c *Collection) bool { return c.TableName == tableName }) {
 			break
