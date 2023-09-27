@@ -476,69 +476,69 @@ func TestIndexesCreateDrop(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("NonUniqueIndex", func(t *testing.T) {
-		dbIndex := "index_non_unique_13064d07"
+		tableIndexName := "index_non_unique_13064d07"
 		var sql string
 		err = db.QueryRow(
 			ctx,
 			"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
-			dbName, collection.TableName, dbIndex,
+			dbName, collection.TableName, tableIndexName,
 		).Scan(&sql)
 		require.NoError(t, err)
 
 		expected := fmt.Sprintf(
 			`CREATE INDEX %s ON %q.%s USING btree (((_jsonb -> 'f1'::text)), ((_jsonb -> 'f2'::text)) DESC)`,
-			dbIndex, dbName, collection.TableName,
+			tableIndexName, dbName, collection.TableName,
 		)
 		require.Equal(t, expected, sql)
 	})
 
 	t.Run("UniqueIndex", func(t *testing.T) {
-		dbIndex := "index_unique_d29d5863"
+		tableIndexName := "index_unique_d29d5863"
 		var sql string
 		err = db.QueryRow(
 			ctx,
 			"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
-			dbName, collection.TableName, dbIndex,
+			dbName, collection.TableName, tableIndexName,
 		).Scan(&sql)
 		require.NoError(t, err)
 
 		expected := fmt.Sprintf(
 			`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> 'foo'::text)))`,
-			dbIndex, dbName, collection.TableName,
+			tableIndexName, dbName, collection.TableName,
 		)
 		require.Equal(t, expected, sql)
 	})
 
 	t.Run("NestedFields", func(t *testing.T) {
-		dbIndex := "nested_fields_21fa0586"
+		tableIndexName := "nested_fields_21fa0586"
 		var sql string
 		err = db.QueryRow(
 			ctx,
 			"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
-			dbName, collection.TableName, dbIndex,
+			dbName, collection.TableName, tableIndexName,
 		).Scan(&sql)
 		require.NoError(t, err)
 
 		expected := fmt.Sprintf(
 			`CREATE INDEX %s ON %q.%s USING btree ((((_jsonb -> 'foo'::text) -> 'bar'::text)), (((_jsonb -> 'foo'::text) -> 'baz'::text)) DESC)`,
-			dbIndex, dbName, collection.TableName,
+			tableIndexName, dbName, collection.TableName,
 		)
 		require.Equal(t, expected, sql)
 	})
 
 	t.Run("DefaultIndex", func(t *testing.T) {
-		dbIndex := "_id__67399184"
+		tableIndexName := "_id__67399184"
 		var sql string
 		err = db.QueryRow(
 			ctx,
 			"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
-			dbName, collection.TableName, dbIndex,
+			dbName, collection.TableName, tableIndexName,
 		).Scan(&sql)
 		require.NoError(t, err)
 
 		expected := fmt.Sprintf(
 			`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> '_id'::text)))`,
-			dbIndex, dbName, collection.TableName,
+			tableIndexName, dbName, collection.TableName,
 		)
 		require.Equal(t, expected, sql)
 	})
@@ -549,11 +549,11 @@ func TestIndexesCreateDrop(t *testing.T) {
 
 		collection, err = r.CollectionGet(ctx, dbName, collectionName)
 		require.NoError(t, err)
-		require.Equal(t, 3, len(collection.Settings.Indexes))
+		require.Equal(t, 4, len(collection.Settings.Indexes))
 	})
 
 	t.Run("DropIndexes", func(t *testing.T) {
-		toDrop := []string{"index_non_unique", "index_unique"}
+		toDrop := []string{"index_non_unique", "nested_fields"}
 		err = r.IndexesDrop(ctx, dbName, collectionName, toDrop)
 		require.NoError(t, err)
 
@@ -571,7 +571,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 
 		collection, err = r.CollectionGet(ctx, dbName, collectionName)
 		require.NoError(t, err)
-		require.Equal(t, 1, len(collection.Settings.Indexes))
+		require.Equal(t, 2, len(collection.Settings.Indexes))
 	})
 
 	t.Run("MetadataIndexes", func(t *testing.T) {
@@ -600,7 +600,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 
 		expected = fmt.Sprintf(
 			`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> 'table'::text)))`,
-			metadataTableName+"_id_idx", dbName, metadataTableName,
+			metadataTableName+"_table_idx", dbName, metadataTableName,
 		)
 		assert.Equal(t, expected, sql)
 	})

@@ -121,7 +121,7 @@ func (s Settings) Marshal() *types.Document {
 
 		indexes.Append(must.NotFail(types.NewDocument(
 			"name", index.Name,
-			"dbindex", index.TableIndexName,
+			"pgindex", index.TableIndexName,
 			"key", key,
 			"unique", index.Unique,
 		)))
@@ -153,10 +153,32 @@ func (s *Settings) Unmarshal(doc *types.Document) error {
 
 		doc := v.(*types.Document)
 
+		key := make([]IndexKeyPair, doc.Len())
+		keyIter := must.NotFail(doc.Get("key")).(*types.Array).Iterator()
+		defer keyIter.Close()
+
+		for {
+			j, el, err := keyIter.Next()
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			eldoc := el.(*types.Document)
+
+			key[j] = IndexKeyPair{
+				Field:      must.NotFail(eldoc.Get("field")).(string),
+				Descending: must.NotFail(eldoc.Get("descending")).(bool),
+			}
+		}
+
 		s.Indexes[i] = IndexInfo{
 			Name:           must.NotFail(doc.Get("name")).(string),
-			TableIndexName: must.NotFail(doc.Get("dbindex")).(string),
-			Key:            must.NotFail(doc.Get("key")).([]IndexKeyPair),
+			TableIndexName: must.NotFail(doc.Get("pgindex")).(string),
+			Key:            key,
 			Unique:         must.NotFail(doc.Get("unique")).(bool),
 		}
 	}

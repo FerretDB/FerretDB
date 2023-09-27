@@ -766,8 +766,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 		h := fnv.New32a()
 		must.NotFail(h.Write([]byte(index.Name)))
 		s := h.Sum32()
-		dbIndex := fmt.Sprintf("%s_%08x", strings.ToLower(index.Name), s)
-		index.TableIndexName = dbIndex
+		index.TableIndexName = fmt.Sprintf("%s_%08x", strings.ToLower(index.Name), s)
 
 		q := "CREATE "
 
