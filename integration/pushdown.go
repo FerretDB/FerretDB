@@ -51,10 +51,10 @@ func (res resultPushdown) PushdownExpected(t testtb.TB) bool {
 	}
 
 	switch {
-	case setup.IsSQLite(t):
-		return res&sqlitePushdown == sqlitePushdown
 	case setup.IsPostgres(t):
 		return res&pgPushdown == pgPushdown
+	case setup.IsSQLite(t):
+		return res&sqlitePushdown == sqlitePushdown
 	case setup.IsMongoDB(t):
 		return false
 	default:
