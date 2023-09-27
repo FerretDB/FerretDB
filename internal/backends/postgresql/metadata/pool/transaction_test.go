@@ -59,7 +59,7 @@ func TestInTransaction(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Cleanup(func() {
-		_, err = p.Exec(context.WithoutCancel(ctx), fmt.Sprintf(`DROP TABLE %s`, tableName))
+		_, err = p.Exec(ctx, fmt.Sprintf(`DROP TABLE %s`, tableName))
 		require.NoError(t, err)
 	})
 
