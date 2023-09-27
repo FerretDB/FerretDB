@@ -102,7 +102,12 @@ func getURL(todoText string) string {
 	arrText := strings.Split(todoText, " ")
 	for _, text := range arrText {
 		if strings.Contains(text, "https://") {
-			return text
+			parts := strings.Split(text, "/")
+			if len(parts) >= 5 {
+				issueNumber := parts[6]
+				apiURL := fmt.Sprintf("https://api.github.com/repos/FerretDB/FerretDB/issues/%s", issueNumber)
+				return apiURL
+			}
 		}
 	}
 
