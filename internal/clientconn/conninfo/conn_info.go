@@ -66,7 +66,7 @@ func (connInfo *ConnInfo) MetadataRecv() bool {
 	return connInfo.metadataRecv
 }
 
-// MetadataRecv marks client metadata as received.
+// SetMetadataRecv marks client metadata as received.
 func (connInfo *ConnInfo) SetMetadataRecv() {
 	connInfo.rw.Lock()
 	defer connInfo.rw.Unlock()

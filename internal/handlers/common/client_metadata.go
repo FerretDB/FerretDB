@@ -39,5 +39,6 @@ func CheckClientMetadata(ctx context.Context, doc *types.Document) error {
 	}
 
 	connInfo.SetMetadataRecv()
+
 	return nil
 }
