@@ -23,7 +23,7 @@ const config = {
     locales: ['en'],
   },
 
-  scripts: [{src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io"}],
+  scripts: [{ src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io" }],
 
   plugins: [
     [
@@ -60,15 +60,22 @@ const config = {
             createFeedItems: async (params) => {
               const {
                 blogPosts,
+                defaultCreateFeedItems,
+                siteConfig,
+                outDir
               } = params;
 
-              return blogPosts.slice(0, 10).map(post => ({
-                title: post.metadata.title,
-                link: post.metadata.frontMatter.link,
-                image: `${config.url}${post.metadata.frontMatter.image}`,
-                date: post.metadata.date,
-                description: post.metadata.description,
-              }));
+              const allFeedItems = await defaultCreateFeedItems({
+                blogPosts: blogPosts.slice(0, 10),
+                siteConfig: siteConfig,
+                outDir: outDir
+              });
+
+              return allFeedItems.map((item, index) => ({
+                ...item,
+                image: `${config.url}${blogPosts[index].metadata.frontMatter.image}`,
+              }))
+
             },
           },
         },
