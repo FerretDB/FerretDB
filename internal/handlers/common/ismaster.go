@@ -25,8 +25,8 @@ import (
 )
 
 // IsMaster is a common implementation of the isMaster command used by deprecated OP_QUERY message.
-func IsMaster(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
-	if err := CheckClientMetadata(ctx, query.Query); err != nil {
+func IsMaster(ctx context.Context, query *types.Document) (*wire.OpReply, error) {
+	if err := CheckClientMetadata(ctx, query); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

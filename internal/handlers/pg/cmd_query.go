@@ -38,7 +38,7 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 
 	// both are valid and are allowed to be run against any database as we don't support authorization yet
 	if (cmd == "ismaster" || cmd == "isMaster") && strings.HasSuffix(collection, ".$cmd") {
-		return common.IsMaster(ctx, query)
+		return common.IsMaster(ctx, query.Query)
 	}
 
 	// defaults to the database name if supplied on the connection string or $external
