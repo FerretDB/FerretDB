@@ -51,7 +51,7 @@ func (res resultPushdown) PushdownExpected(t testtb.TB) bool {
 	}
 
 	switch {
-	case setup.IsPostgres(t):
+	case setup.IsPostgres(t) || setup.IsOldPg(t):
 		return res&pgPushdown == pgPushdown
 	case setup.IsSQLite(t):
 		return res&sqlitePushdown == sqlitePushdown
