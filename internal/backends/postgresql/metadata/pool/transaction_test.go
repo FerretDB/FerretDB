@@ -34,7 +34,8 @@ func TestInTransaction(t *testing.T) {
 		t.Skip("skipping in -short mode")
 	}
 
-	// do not run parallel, there is something weird about context canceling and parallel test
+	t.Parallel()
+
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 	username, password := conninfo.Get(ctx).Auth()
 
@@ -63,7 +64,9 @@ func TestInTransaction(t *testing.T) {
 	})
 
 	t.Run("Commit", func(t *testing.T) {
-		ctx = conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+		t.Parallel()
+
+		ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New()) // create new instance of ctx to avoid using canceled ctx
 
 		v := testutil.CollectionName(t)
 		err = InTransaction(ctx, p, func(tx pgx.Tx) error {
@@ -80,7 +83,9 @@ func TestInTransaction(t *testing.T) {
 	})
 
 	t.Run("Rollback", func(t *testing.T) {
-		ctx = conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+		t.Parallel()
+
+		ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New()) // create new instance of ctx to avoid using canceled ctx
 
 		v := testutil.CollectionName(t)
 		err = InTransaction(ctx, p, func(tx pgx.Tx) error {
@@ -96,7 +101,9 @@ func TestInTransaction(t *testing.T) {
 	})
 
 	t.Run("ContextCancelRollback", func(t *testing.T) {
-		ctx = conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+		t.Parallel()
+
+		ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New()) // create new instance of ctx to avoid using canceled ctx
 
 		var cancel func()
 		ctx, cancel = context.WithCancel(ctx)
@@ -118,7 +125,9 @@ func TestInTransaction(t *testing.T) {
 	})
 
 	t.Run("Panic", func(t *testing.T) {
-		ctx = conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+		t.Parallel()
+
+		ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New()) // create new instance of ctx to avoid using canceled ctx
 
 		v := testutil.CollectionName(t)
 		assert.Panics(t, func() {
