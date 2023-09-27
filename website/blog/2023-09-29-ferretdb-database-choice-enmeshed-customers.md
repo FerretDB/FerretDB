@@ -22,6 +22,9 @@ tags: [open source, community, document databases, compatible applications]
 
 Modern times require modern solutions.
 Every area of our lives can be enhanced by applications supporting us each day.
+
+<!--truncate-->
+
 However, when building the application, you cannot predict all use cases, and you have to constantly improve your work based on customers' feedback.
 When we're talking about application design, it's important to avoid vendor lock-ins that may cause issues for customers in the future.
 
@@ -84,4 +87,4 @@ FerretDB allows you to use MongoDB drivers seamlessly with PostgreSQL as the dat
 Use all tools, drivers, UIs, and the same query language and stay open-source.
 Our mission is to enable the open-source community and developers to reap the benefits of an easy-to-use document database while avoiding vendor lock-in and faux pen licenses.
 
-We are not affiliated, associated, authorized, endorsed by, or in any way officially connected with MongoDB Inc., or any of its subsidiaries or its affiliates.
+**We are not affiliated, associated, authorized, endorsed by, or in any way officially connected with MongoDB Inc., or any of its subsidiaries or its affiliates.**
