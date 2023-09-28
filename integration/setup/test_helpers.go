@@ -21,11 +21,19 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-// IsMongoDB returns true if the current test is running for MongoDB.
+// IsPostgres returns true if the current test is running for pg handler.
 //
 // This function should not be used lightly.
-func IsMongoDB(tb testtb.TB) bool {
-	return *targetBackendF == "mongodb"
+func IsPostgres(tb testtb.TB) bool {
+	return *targetBackendF == "ferretdb-pg" && *useNewPgF
+}
+
+// IsOldPg returns true if the current test is running for old PostgreSQL handler.
+//
+// This function should not be used lightly and should be removed when a new PG handler is in place.
+// TODO https://github.com/FerretDB/FerretDB/issues/3435
+func IsOldPg(tb testtb.TB) bool {
+	return *targetBackendF == "ferretdb-pg" && !*useNewPgF
 }
 
 // IsSQLite returns true if the current test is running for SQLite.
@@ -35,12 +43,11 @@ func IsSQLite(tb testtb.TB) bool {
 	return *targetBackendF == "ferretdb-sqlite"
 }
 
-// IsOldPg returns true if the current test is running for old PostgreSQL handler.
+// IsMongoDB returns true if the current test is running for MongoDB.
 //
-// This function should not be used lightly and should be removed when a new PG handler is in place.
-// TODO https://github.com/FerretDB/FerretDB/issues/3435
-func IsOldPg(tb testtb.TB) bool {
-	return *targetBackendF == "ferretdb-pg" && !*useNewPgF
+// This function should not be used lightly.
+func IsMongoDB(tb testtb.TB) bool {
+	return *targetBackendF == "mongodb"
 }
 
 // FailsForFerretDB return testtb.TB that expects test to fail for FerretDB and pass for MongoDB.
@@ -62,7 +69,7 @@ func FailsForFerretDB(tb testtb.TB, reason string) testtb.TB {
 func FailsForSQLite(tb testtb.TB, reason string) testtb.TB {
 	tb.Helper()
 
-	if *targetBackendF == "ferretdb-sqlite" {
+	if IsSQLite(tb) {
 		return testfail.Expected(tb, reason)
 	}
 

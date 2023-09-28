@@ -340,31 +340,23 @@ func TestIndexesCreateDrop(t *testing.T) {
 
 	collectionName := testutil.CollectionName(t)
 
-	toCreate := []IndexInfo{
-		{
-			Name: "index_non_unique",
-			Key: []IndexKeyPair{
-				{
-					Field:      "f1",
-					Descending: false,
-				},
-				{
-					Field:      "f2",
-					Descending: true,
-				},
-			},
-		},
-		{
-			Name: "index_unique",
-			Key: []IndexKeyPair{
-				{
-					Field:      "foo",
-					Descending: false,
-				},
-			},
-			Unique: true,
-		},
-	}
+	toCreate := []IndexInfo{{
+		Name: "index_non_unique",
+		Key: []IndexKeyPair{{
+			Field:      "f1",
+			Descending: false,
+		}, {
+			Field:      "f2",
+			Descending: true,
+		}},
+	}, {
+		Name: "index_unique",
+		Key: []IndexKeyPair{{
+			Field:      "foo",
+			Descending: false,
+		}},
+		Unique: true,
+	}}
 
 	err = r.IndexesCreate(ctx, dbName, collectionName, toCreate)
 	require.NoError(t, err)
