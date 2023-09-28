@@ -124,12 +124,12 @@ func (query *OpQuery) MarshalBinary() ([]byte, error) {
 		return nil, err
 	}
 
-	if err := bson.MustConvertDocument(query.Query).WriteTo(bufw); err != nil {
+	if err := must.NotFail(bson.ConvertDocument(query.Query)).WriteTo(bufw); err != nil {
 		return nil, err
 	}
 
 	if query.ReturnFieldsSelector != nil {
-		if err := bson.MustConvertDocument(query.ReturnFieldsSelector).WriteTo(bufw); err != nil {
+		if err := must.NotFail(bson.ConvertDocument(query.ReturnFieldsSelector)).WriteTo(bufw); err != nil {
 			return nil, err
 		}
 	}
