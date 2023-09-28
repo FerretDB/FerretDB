@@ -94,9 +94,10 @@ func (s Settings) deepCopy() Settings {
 
 	for i, index := range s.Indexes {
 		indexes[i] = IndexInfo{
-			Name:   index.Name,
-			Key:    slices.Clone(index.Key),
-			Unique: index.Unique,
+			Name:           index.Name,
+			TableIndexName: index.TableIndexName,
+			Key:            slices.Clone(index.Key),
+			Unique:         index.Unique,
 		}
 	}
 
