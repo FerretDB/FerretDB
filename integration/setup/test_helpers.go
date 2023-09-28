@@ -35,6 +35,14 @@ func IsSQLite(tb testtb.TB) bool {
 	return *targetBackendF == "ferretdb-sqlite"
 }
 
+// IsOldPg returns true if the current test is running for old PostgreSQL handler.
+//
+// This function should not be used lightly and should be removed when a new PG handler is in place.
+// TODO https://github.com/FerretDB/FerretDB/issues/3435
+func IsOldPg(tb testtb.TB) bool {
+	return *targetBackendF == "ferretdb-pg" && !*useNewPgF
+}
+
 // FailsForFerretDB return testtb.TB that expects test to fail for FerretDB and pass for MongoDB.
 //
 // This function should not be used lightly and always with an issue URL.
@@ -71,6 +79,21 @@ func SkipForMongoDB(tb testtb.TB, reason string) {
 		require.NotEmpty(tb, reason, "reason must not be empty")
 
 		tb.Skipf("Skipping for MongoDB: %s.", reason)
+	}
+}
+
+// SkipForOldPg skips the current test for the old PG handler.
+//
+// This function should not be used lightly and always with an reason provided.
+// It should be removed when a new PG handler is in place.
+// TODO https://github.com/FerretDB/FerretDB/issues/3435
+func SkipForOldPg(tb testtb.TB, reason string) {
+	tb.Helper()
+
+	if IsOldPg(tb) {
+		require.NotEmpty(tb, reason, "reason must not be empty")
+
+		tb.Skipf("Skipping for old PostgreSQL handler: %s.", reason)
 	}
 }
 
