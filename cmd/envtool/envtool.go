@@ -223,10 +223,11 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 		return err
 	}
 	cmd := exec.Command(bin, args...)
-	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
 	cmd.Stdout = stdout
 	cmd.Stderr = os.Stderr
+
+	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("%s failed: %s", strings.Join(cmd.Args, " "), err)
@@ -351,6 +352,8 @@ func packageVersion(w io.Writer, file string) error {
 
 // cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
+//
+//nolint:vet // for readability
 var cli struct {
 	Debug bool `help:"Enable debug mode."`
 
@@ -371,10 +374,13 @@ var cli struct {
 	} `cmd:""`
 
 	Tests struct {
-		Shard struct {
-			Index uint `help:"Shard index, starting from 1" required:""`
-			Total uint `help:"Total number of shards"       required:""`
-		} `cmd:"" help:"Print sharded integration tests."`
+		Run struct {
+			ShardIndex uint   `help:"Shard index, starting from 1."`
+			ShardTotal uint   `help:"Total number of shards."`
+			Run        string `help:"Run only tests matching the regexp."`
+
+			Args []string `arg:"" help:"Other arguments and flags for 'go test'." passthrough:""`
+		} `cmd:"" help:"Run tests."`
 	} `cmd:""`
 
 	Fuzz struct {
@@ -388,7 +394,7 @@ var cli struct {
 func main() {
 	kongCtx := kong.Parse(&cli)
 
-	// always enable debug logging on CI
+	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
 	if t, _ := strconv.ParseBool(os.Getenv("CI")); t {
 		cli.Debug = true
 	}
@@ -404,21 +410,27 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 
+	cmd := kongCtx.Command()
+	logger.Debugf("Command: %q", cmd)
+
 	var err error
 
-	switch cmd := kongCtx.Command(); cmd {
+	switch cmd {
 	case "setup":
 		err = setup(ctx, logger)
+
+	case "package-version":
+		err = packageVersion(os.Stdout, versionFile)
+
 	case "shell mkdir <path>":
 		err = shellMkDir(cli.Shell.Mkdir.Paths...)
 	case "shell rmdir <path>":
 		err = shellRmDir(cli.Shell.Rmdir.Paths...)
 	case "shell read <path>":
 		err = shellRead(os.Stdout, cli.Shell.Read.Paths...)
-	case "package-version":
-		err = packageVersion(os.Stdout, versionFile)
-	case "tests shard":
-		err = testsShard(os.Stdout, cli.Tests.Shard.Index, cli.Tests.Shard.Total)
+
+	case "tests run <args>":
+		err = testsRun(os.Stdout, cli.Tests.Run.ShardIndex, cli.Tests.Run.ShardTotal, cli.Tests.Run.Run, cli.Tests.Run.Args)
 
 	case "fuzz corpus <src> <dst>":
 		var seedCorpus, generatedCorpus string
@@ -464,7 +476,9 @@ func main() {
 	}
 
 	if err != nil {
-		printDiagnosticData(err, logger)
+		if cmd == "setup" {
+			printDiagnosticData(err, logger)
+		}
 		os.Exit(1)
 	}
 }
