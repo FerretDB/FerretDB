@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/postgresql"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -37,21 +38,20 @@ func testBackends(t *testing.T) []backends.Backend {
 
 	var res []backends.Backend
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3228
-	// {
-	// 	p, err := state.NewProvider("")
-	// 	require.NoError(t, err)
+	{
+		p, err := state.NewProvider("")
+		require.NoError(t, err)
 
-	// 	b, err := postgresql.NewBackend(&postgresql.NewBackendParams{
-	// 		URI: "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1",
-	// 		L:   l.Named("postgresql"),
-	// 		P:   p,
-	// 	})
-	// 	require.NoError(t, err)
-	// 	t.Cleanup(b.Close)
+		b, err := postgresql.NewBackend(&postgresql.NewBackendParams{
+			URI: "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1",
+			L:   l.Named("postgresql"),
+			P:   p,
+		})
+		require.NoError(t, err)
+		t.Cleanup(b.Close)
 
-	// 	res = append(res, b)
-	// }
+		res = append(res, b)
+	}
 
 	{
 		p, err := state.NewProvider("")
