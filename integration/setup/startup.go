@@ -19,6 +19,7 @@ import (
 	"errors"
 	"os"
 	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -59,7 +60,7 @@ func Startup() {
 	logging.Setup(zap.DebugLevel, "")
 
 	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
-	if os.Getenv("RUNNER_DEBUG") == "1" {
+	if t, _ := strconv.ParseBool(os.Getenv("RUNNER_DEBUG")); t {
 		zap.S().Info("Enabling setup debug logging on GitHub Actions.")
 		*debugSetupF = true
 	}
