@@ -164,7 +164,7 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 
 	q := fmt.Sprintf(
 		`UPDATE %s SET %s = $1 WHERE %s = $2`,
-		pgx.Identifier{c.dbName, meta.TableName},
+		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
 		metadata.DefaultColumn,
 		metadata.IDColumn,
 	)
@@ -179,10 +179,10 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 			id, _ := doc.Get("_id")
 			must.NotBeZero(id)
 
-			arg := string(must.NotFail(sjson.MarshalSingleValue(id)))
+			arg := must.NotFail(sjson.MarshalSingleValue(id))
 
 			var tag pgconn.CommandTag
-			if tag, err = tx.Exec(ctx, q, string(b), arg); err != nil {
+			if tag, err = tx.Exec(ctx, q, b, arg); err != nil {
 				return lazyerrors.Error(err)
 			}
 
