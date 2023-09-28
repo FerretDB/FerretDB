@@ -1,11 +1,10 @@
 ---
 slug: new-release-ferretdb-0-4-0
 title: 'New release: FerretDB 0.4.0!'
-author: Peter Farkas
-description: We are happy to announce that FerretDB’s newest 0.4.0 release is now available on GitHub with some exciting new features and fixes in it.
+authors: [peter]
+description: We are happy to announce that FerretDB's newest 0.4.0 release is now available on GitHub with some exciting new features and fixes in it.
 image: /img/blog/4ferrets.webp
 tags: [release]
-date: 2022-06-28
 ---
 
 We are happy to announce that [FerretDB's newest 0.4.0 release is now available on GitHub,](https://github.com/FerretDB/FerretDB/releases/tag/v0.4.0) with some exciting new features and fixes in it.

@@ -237,7 +237,7 @@ func TestFindAndModifyCompatUpdate(t *testing.T) {
 	testFindAndModifyCompat(t, testCases)
 }
 
-func TestFindAndModifyCompatUpdateDotNotation(t *testing.T) {
+func TestFindAndModifyCompatDotNotation(t *testing.T) {
 	testCases := map[string]findAndModifyCompatTestCase{
 		"Conflict": {
 			command: bson.D{
@@ -355,17 +355,17 @@ func TestFindAndModifyCompatUpdateSet(t *testing.T) {
 	testFindAndModifyCompat(t, testCases)
 }
 
-func TestFindAndModifyCompatUpdateUnset(t *testing.T) {
+func TestFindAndModifyCompatUnset(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]findAndModifyCompatTestCase{
-		"NonExistentExistsTrue": {
+		"NonExistentExistsT": {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", true}}}}},
 				{"update", bson.D{{"$unset", bson.D{{"v", ""}}}}},
 			},
 		},
-		"NonExistentExistsFalse": {
+		"NonExistentExistsF": {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", false}}}}},
 				{"update", bson.D{{"$unset", bson.D{{"v", ""}}}}},
@@ -484,7 +484,8 @@ func TestFindAndModifyCompatUpdateRename(t *testing.T) {
 
 // TestFindAndModifyCompatSort tests how various sort orders are handled.
 //
-// TODO Add more tests for sort: https://github.com/FerretDB/FerretDB/issues/2168
+// Add more tests for sort.
+// TODO https://github.com/FerretDB/FerretDB/issues/2168
 func TestFindAndModifyCompatSort(t *testing.T) {
 	t.Parallel()
 
@@ -543,7 +544,7 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"new", true},
 			},
 		},
-		"UpsertNoSuchReplaceDocument": {
+		"UpsertNoReplaceDocument": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "no-such-doc"}}},
 				{"update", bson.D{{"v", 43.13}}},
@@ -582,6 +583,13 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 			},
 		},
 		"UpdateID": {
+			command: bson.D{
+				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
+				{"upsert", true},
+				{"update", bson.D{{"_id", "int32"}, {"v", "replaced"}}},
+			},
+		},
+		"UpdateDifferentID": {
 			command: bson.D{
 				{"query", bson.D{{"_id", bson.D{{"$exists", true}}}}},
 				{"upsert", true},
@@ -690,7 +698,7 @@ func TestFindAndModifyCompatUpsertUnset(t *testing.T) {
 	t.Parallel()
 
 	testCases := map[string]findAndModifyCompatTestCase{
-		"NonExistentExistsTrue": {
+		"NonExistentExistsT": {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", true}}}}},
 				{"upsert", true},
@@ -700,7 +708,7 @@ func TestFindAndModifyCompatUpsertUnset(t *testing.T) {
 				}},
 			},
 		},
-		"NonExistentExistsFalse": {
+		"NonExistentExistsF": {
 			command: bson.D{
 				{"query", bson.D{{"non-existent", bson.D{{"$exists", false}}}}},
 				{"upsert", true},

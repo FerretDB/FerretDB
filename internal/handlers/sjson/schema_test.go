@@ -98,7 +98,7 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 						{"t": "object", "$s": {
 							"p": {
 								"arr": {"t": "array", "i": [
-									{"t": "int"}, 
+									{"t": "int"},
 									{"t": "timestamp"}
 								]},
 								"bar": {"t": "null"},
@@ -164,13 +164,13 @@ func TestSchemaMarshalUnmarshal(t *testing.T) {
 			json: `{
 				"p": {
 					"obj": {"t": "object", "$s": {
-						"p": {	
+						"p": {
 							"arr": {"t": "array", "i": [
 								{"t": "object", "$s": {}}, {"t": "object", "$s": {
 									"p": {"foo": {"t": "array", "i":[]}}, "$k": ["foo"]
 								}}
 							]},
-							"empty-arr": {"t": "array", "i":[]}				
+							"empty-arr": {"t": "array", "i":[]}
 						},
 						"$k": ["arr", "empty-arr"]
 					}}

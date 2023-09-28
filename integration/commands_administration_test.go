@@ -36,6 +36,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestCommandsAdministrationCreateDropList(t *testing.T) {
@@ -140,6 +141,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 
 func TestCommandsAdministrationListDatabases(t *testing.T) {
 	t.Parallel()
+
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	db := collection.Database()
@@ -697,6 +699,7 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 
 func TestCommandsAdministrationCollStats(t *testing.T) {
 	t.Parallel()
+
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
@@ -708,7 +711,9 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 
 	// Values are returned as "numbers" that could be int32 or int64.
 	// FerretDB always returns int64 for simplicity.
-	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
+	//
+	// Set better expected results.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1771
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 	assert.EqualValues(t, 6, must.NotFail(doc.Get("count"))) // // Number of documents in DocumentsStrings
 	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
@@ -726,6 +731,7 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 
 func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 	t.Parallel()
+
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
@@ -733,7 +739,8 @@ func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
 	require.NoError(t, err)
 
-	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
+	// Set better expected results.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1771
 	doc := ConvertDocument(t, actual)
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 	assert.EqualValues(t, 6, must.NotFail(doc.Get("count"))) // Number of documents in DocumentsStrings
@@ -748,11 +755,33 @@ func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 	assert.InDelta(t, 24, must.NotFail(doc.Get("totalSize")), 24)
 }
 
+// TestCommandsAdministrationCollStatsCount adds large number of documents and checks
+// approximation used by backends returns the correct count of documents from collStats.
+func TestCommandsAdministrationCollStatsCount(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	var n int32 = 1000
+	docs, _ := generateDocuments(0, n)
+	_, err := collection.InsertMany(ctx, docs)
+	require.NoError(t, err)
+
+	var actual bson.D
+	command := bson.D{{"collStats", collection.Name()}}
+	err = collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+	assert.EqualValues(t, n, must.NotFail(doc.Get("count")))
+}
+
 func TestCommandsAdministrationDataSize(t *testing.T) {
 	t.Parallel()
 
 	t.Run("Existing", func(t *testing.T) {
 		t.Parallel()
+
 		ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 		var actual bson.D
@@ -769,6 +798,7 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 
 	t.Run("NonExistent", func(t *testing.T) {
 		t.Parallel()
+
 		ctx, collection := setup.Setup(t)
 
 		var actual bson.D
@@ -803,7 +833,6 @@ func TestCommandsAdministrationDataSizeErrors(t *testing.T) {
 				Name:    "InvalidNamespace",
 				Message: "Invalid namespace specified 'invalid'",
 			},
-			altMessage: "Invalid namespace specified 'invalid'",
 		},
 		"InvalidNamespaceTypeDocument": {
 			command: bson.D{{"dataSize", bson.D{}}},
@@ -837,6 +866,7 @@ func TestCommandsAdministrationDataSizeErrors(t *testing.T) {
 
 func TestCommandsAdministrationDBStats(t *testing.T) {
 	t.Parallel()
+
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
@@ -846,7 +876,9 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 
 	// Values are returned as "numbers" that could be int32 or int64.
 	// FerretDB always returns int64 for simplicity.
-	// TODO Set better expected results https://github.com/FerretDB/FerretDB/issues/1771
+	//
+	// Set better expected results.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1771
 	doc := ConvertDocument(t, actual)
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
 	assert.EqualValues(t, 1, doc.Remove("collections"))
@@ -865,6 +897,7 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 
 func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 	t.Parallel()
+
 	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
@@ -876,7 +909,7 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 
 	assert.Equal(t, float64(1), doc.Remove("ok"))
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
-	assert.EqualValues(t, float64(1), doc.Remove("scaleFactor")) // TODO use assert.Equal https://github.com/FerretDB/FerretDB/issues/727
+	assert.EqualValues(t, float64(1), doc.Remove("scaleFactor")) // https://github.com/FerretDB/FerretDB/issues/727
 
 	assert.InDelta(t, 1, doc.Remove("collections"), 1)
 	assert.InDelta(t, 35500, doc.Remove("dataSize"), 35500)
@@ -888,6 +921,7 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 
 func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 	t.Parallel()
+
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	var actual bson.D
@@ -911,6 +945,7 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 
 func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 	t.Parallel()
+
 	ctx, collection := setup.Setup(t)
 
 	var actual bson.D
@@ -922,7 +957,7 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 
 	assert.Equal(t, float64(1), doc.Remove("ok"))
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
-	assert.EqualValues(t, float64(1000), doc.Remove("scaleFactor")) // TODO use assert.Equal https://github.com/FerretDB/FerretDB/issues/727
+	assert.EqualValues(t, float64(1000), doc.Remove("scaleFactor")) // TODO https://github.com/FerretDB/FerretDB/issues/727
 
 	assert.InDelta(t, 1, doc.Remove("collections"), 1)
 	assert.InDelta(t, 35500, doc.Remove("dataSize"), 35500)
@@ -1053,10 +1088,12 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 	for name, tc := range map[string]struct {
 		command        bson.D // required, command to run
 		expectedStatus string // optional
+		skipForMongoDB string // optional, skip test for MongoDB backend with a specific reason
 	}{
 		"Enable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
 			expectedStatus: "enabled",
+			skipForMongoDB: "MongoDB decommissioned enabling free monitoring",
 		},
 		"Disable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
@@ -1066,6 +1103,10 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 		name, tc := name, tc
 
 		t.Run(name, func(t *testing.T) {
+			if tc.skipForMongoDB != "" {
+				setup.SkipForMongoDB(t, tc.skipForMongoDB)
+			}
+
 			require.NotNil(t, tc.command, "command must not be nil")
 
 			res := s.Collection.Database().RunCommand(s.Ctx, tc.command)
@@ -1186,20 +1227,25 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		t.Parallel()
 
-		var actual bson.D
+		var a bson.D
 		err := collection.Database().RunCommand(ctx, bson.D{
 			{"killCursors", collection.Name()},
 			{"cursors", bson.A{}},
-		}).Decode(&actual)
+		}).Decode(&a)
 		require.NoError(t, err)
-		expected := bson.D{
+
+		actual := ConvertDocument(t, a)
+		actual.Remove("$clusterTime")
+		actual.Remove("operationTime")
+
+		expected := ConvertDocument(t, bson.D{
 			{"cursorsKilled", bson.A{}},
 			{"cursorsNotFound", bson.A{}},
 			{"cursorsAlive", bson.A{}},
 			{"cursorsUnknown", bson.A{}},
 			{"ok", float64(1)},
-		}
-		AssertEqualDocuments(t, expected, actual)
+		})
+		testutil.AssertEqual(t, expected, actual)
 	})
 
 	t.Run("WrongType", func(t *testing.T) {
@@ -1210,11 +1256,12 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 		require.True(t, c.Next(ctx))
 		defer c.Close(ctx)
 
-		var actual bson.D
+		var a bson.D
 		err = collection.Database().RunCommand(ctx, bson.D{
 			{"killCursors", collection.Name()},
 			{"cursors", bson.A{c.ID(), int32(100500)}},
-		}).Decode(&actual)
+		}).Decode(&a)
+
 		expectedErr := mongo.CommandError{
 			Code:    14,
 			Name:    "TypeMismatch",
@@ -1234,20 +1281,25 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 		require.True(t, c.Next(ctx))
 		defer c.Close(ctx)
 
-		var actual bson.D
+		var a bson.D
 		err = collection.Database().RunCommand(ctx, bson.D{
 			{"killCursors", collection.Name()},
 			{"cursors", bson.A{c.ID()}},
-		}).Decode(&actual)
+		}).Decode(&a)
 		require.NoError(t, err)
-		expected := bson.D{
+
+		actual := ConvertDocument(t, a)
+		actual.Remove("$clusterTime")
+		actual.Remove("operationTime")
+
+		expected := ConvertDocument(t, bson.D{
 			{"cursorsKilled", bson.A{c.ID()}},
 			{"cursorsNotFound", bson.A{}},
 			{"cursorsAlive", bson.A{}},
 			{"cursorsUnknown", bson.A{}},
 			{"ok", float64(1)},
-		}
-		AssertEqualDocuments(t, expected, actual)
+		})
+		testutil.AssertEqual(t, expected, actual)
 
 		assert.False(t, c.Next(ctx))
 		expectedErr := mongo.CommandError{
@@ -1265,20 +1317,25 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 		require.True(t, c.Next(ctx))
 		defer c.Close(ctx)
 
-		var actual bson.D
+		var a bson.D
 		err = collection.Database().RunCommand(ctx, bson.D{
 			{"killCursors", collection.Name()},
 			{"cursors", bson.A{c.ID(), int64(100500)}},
-		}).Decode(&actual)
+		}).Decode(&a)
 		require.NoError(t, err)
-		expected := bson.D{
+
+		actual := ConvertDocument(t, a)
+		actual.Remove("$clusterTime")
+		actual.Remove("operationTime")
+
+		expected := ConvertDocument(t, bson.D{
 			{"cursorsKilled", bson.A{c.ID()}},
 			{"cursorsNotFound", bson.A{int64(100500)}},
 			{"cursorsAlive", bson.A{}},
 			{"cursorsUnknown", bson.A{}},
 			{"ok", float64(1)},
-		}
-		AssertEqualDocuments(t, expected, actual)
+		})
+		testutil.AssertEqual(t, expected, actual)
 
 		assert.False(t, c.Next(ctx))
 		expectedErr := mongo.CommandError{

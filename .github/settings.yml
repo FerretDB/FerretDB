@@ -1,0 +1,136 @@
+---
+# https://github.com/repository-settings/app
+
+repository:
+  allow_squash_merge: true
+  allow_merge_commit: false
+  allow_rebase_merge: false
+  delete_branch_on_merge: true
+  enable_automated_security_fixes: true
+  enable_vulnerability_alerts: true
+
+# https://docs.github.com/en/rest/issues/labels
+labels:
+  # area
+  - name: area/aggregations
+    color: "#5319E7"
+    description: Issues about aggregation pipelines
+  - name: area/cursors
+    color: "#D93F0B"
+    description: Issues about cursors
+  - name: area/fuzz
+    color: "#D4C5F9"
+    description: Issues about fuzzing and smithing
+  - name: area/indexes
+    color: "#006B75"
+    description: Issues about indexes
+  - name: area/observability
+    color: "#E04D33"
+    description: Issues about metrics, logs, traces, pprof, etc
+  - name: area/oplog
+    color: "#09D521"
+    description: Issues about OpLog
+  - name: area/params
+    color: "#FBCA04"
+    description: Issues about command parameters extraction
+  - name: area/pushdown
+    color: "#83F7BA"
+    description: Issues about query pushdown
+  - name: area/types
+    color: "#0354F4"
+    description: Issues about data types, BSON, etc
+
+  # backend
+  - name: backend/pg
+    color: "#305C83"
+    description: Issues about PostgreSQL backend
+  - name: backend/sqlite
+    color: "#2C8FCA"
+    description: Issues about SQLite backend
+  - name: backend/hana
+    color: "#2D6AB1"
+    description: Issues about SAP HANA backend
+
+  # blog
+  - name: blog/engineering
+    color: "#FEF2C0"
+    description: Engineering blog posts
+  - name: blog/marketing
+    color: "#80D0C9"
+    description: Marketing (and releases) blog posts
+
+  # code
+  - name: code/bug
+    color: "#CC0000"
+    description: Some user-visible feature works incorrectly
+  - name: code/bug-regression
+    color: "#FF0000"
+    description: Some user-visible feature works incorrectly, but worked before
+  - name: code/chore
+    color: "#E99695"
+    description: Code maintenance improvements
+  - name: code/enhancement
+    color: "#FBCA04"
+    description: Some user-visible feature could work better
+  - name: code/feature
+    color: "#0E8A16"
+    description: Some user-visible feature is not implemented yet
+
+  # the rest sorted alphabetically
+
+  - name: badly estimated
+    color: "#FF3333"
+    description: Scope, difficulty and/or clarify were different
+
+  - name: conflict
+    color: "#FF0000"
+    description: PRs that have merge conflicts
+
+  - name: deps
+    color: "#D4C5F9"
+    description: PRs that update dependencies
+
+  - name: do not merge
+    color: "#0052CC"
+    description: PRs that should not be merged
+
+  - name: documentation
+    color: "#0052CC"
+    description: Something user-visible is badly or not documented
+
+  - name: good first issue
+    color: "#5319E7"
+    description: Good issues for new external contributors
+
+  - name: hacktoberfest
+    color: "#FEFBA2"
+    description: Good issues for Hacktoberfest
+
+  - name: help wanted
+    color: "#006B75"
+    description: Issues that require extra attention
+
+  - name: not ready
+    color: "#000000"
+    description: Issues that are not ready to be worked on; PRs that should skip CI
+
+  - name: packages
+    color: "#9B022C"
+    description: PRs that should build packages
+
+  - name: project
+    color: "#E99695"
+    description: Project maintenance
+
+  # https://hacktoberfest.com/participation/#spam
+  - name: spam
+    color: "#C5DEF5"
+    description: Spam issues and PRs
+
+  - name: trust
+    color: "#00FF00"
+    description: PRs that can access Actions secrets
+
+  - name: use-git-lfs
+    color: "#FF0000"
+    description: PRs that add large files without Git LFS

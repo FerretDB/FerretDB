@@ -42,9 +42,9 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 }
 
 func TestCommandsAuthenticationLogoutTLS(t *testing.T) {
-	t.Parallel()
-
 	setup.SkipForMongoDB(t, "tls is not enabled for mongodb backend")
+
+	t.Parallel()
 
 	ctx, collection := setup.Setup(t)
 	db := collection.Database()

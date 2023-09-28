@@ -16,32 +16,27 @@ package pg
 
 import (
 	"context"
-	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
-	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgIsMaster implements HandlerInterface.
 func (h *Handler) MsgIsMaster(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	doc, err := msg.Document()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := common.CheckClientMetadata(ctx, doc); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"ismaster", true, // only lowercase
-			// topologyVersion
-			"maxBsonObjectSize", int32(types.MaxDocumentLen),
-			"maxMessageSizeBytes", int32(wire.MaxMsgLen),
-			"maxWriteBatchSize", int32(100000),
-			"localTime", time.Now(),
-			// logicalSessionTimeoutMinutes
-			"connectionId", int32(42),
-			"minWireVersion", common.MinWireVersion,
-			"maxWireVersion", common.MaxWireVersion,
-			"readOnly", false,
-			"ok", float64(1),
-		))},
+		Documents: common.IsMasterDocuments(),
 	}))
 
 	return &reply, nil

@@ -17,10 +17,8 @@ package commonerrors
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -116,6 +114,9 @@ const (
 	// ErrInvalidPipelineOperator indicates that provided aggregation operator is invalid.
 	ErrInvalidPipelineOperator = ErrorCode(168) // InvalidPipelineOperator
 
+	// ErrClientMetadataCannotBeMutated indicates that client metadata cannot be mutated.
+	ErrClientMetadataCannotBeMutated = ErrorCode(186) // ClientMetadataCannotBeMutated
+
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 
@@ -158,8 +159,14 @@ const (
 	// ErrSortMissingKey indicates sort stage is missing sort key.
 	ErrSortMissingKey = ErrorCode(15976) // Location15976
 
+	// ErrGroupDuplicateFieldName indicates that duplicate field name is specified.
+	ErrGroupDuplicateFieldName = ErrorCode(16406) // Location16406
+
 	// ErrStageUnwindWrongType indicates $unwind stage argument has unexpected type.
 	ErrStageUnwindWrongType = ErrorCode(15981) // Location15981
+
+	// ErrExpressionWrongLenOfFields indicates that aggregation expression has too much fields.
+	ErrExpressionWrongLenOfFields = ErrorCode(15983) // Location15983
 
 	// ErrPathContainsEmptyElement indicates that the path contains an empty element.
 	ErrPathContainsEmptyElement = ErrorCode(15998) // Location15998
@@ -316,14 +323,13 @@ type ErrInfo struct {
 
 // ProtoErr represents protocol error type.
 type ProtoErr interface {
+	// Error returns error representation for logging and debugging.
 	error
-	// Unwrap returns unwrapped error.
-	Unwrap() error
-	// Code returns ErrorCode.
-	Code() ErrorCode
-	// Document returns *types.Document.
+
+	// Document returns error representation for returning to the client.
 	Document() *types.Document
-	// Info returns *ErrInfo.
+
+	// Info returns additional error information, or nil.
 	Info() *ErrInfo
 }
 
@@ -356,22 +362,4 @@ func ProtocolError(err error) ProtoErr {
 
 	//nolint:errorlint // only *CommandError could be returned
 	return NewCommandError(errInternalError, err).(*CommandError)
-}
-
-// CheckError checks error type and returns properly translated error.
-func CheckError(err error) error {
-	var ve *types.ValidationError
-
-	if !errors.As(err, &ve) {
-		return lazyerrors.Error(err)
-	}
-
-	switch ve.Code() {
-	case types.ErrValidation, types.ErrIDNotFound:
-		return NewCommandErrorMsg(ErrBadValue, ve.Error())
-	case types.ErrWrongIDType:
-		return NewWriteErrorMsg(ErrInvalidID, ve.Error())
-	default:
-		panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
-	}
 }

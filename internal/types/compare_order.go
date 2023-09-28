@@ -26,7 +26,8 @@ import (
 // compareTypeOrderResult represents the comparison order of data types.
 type compareTypeOrderResult uint8
 
-// TODO: handle sorting for documentDataType and arrayDataType; https://github.com/FerretDB/FerretDB/issues/457
+// handle sorting for documentDataType and arrayDataType
+// TODO https://github.com/FerretDB/FerretDB/issues/457
 const (
 	_ compareTypeOrderResult = iota
 	nullDataType
@@ -44,7 +45,11 @@ const (
 )
 
 // detectDataType returns a sequence for build-in type.
+//
+// It panics if the value is not a valid BSON type.
 func detectDataType(value any) compareTypeOrderResult {
+	assertType(value)
+
 	switch value := value.(type) {
 	case *Document:
 		return documentDataType

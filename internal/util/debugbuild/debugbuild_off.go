@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !(ferretdb_debug || ferretdb_testcover || race)
+//go:build !(ferretdb_debug || race)
 
 package debugbuild
 
 // Enabled is false if that's not a debug build.
 //
-// See build/version package documentation for more details.
+// See [build/version] package documentation for more details.
 //
 // It is a constant to allow the compiler to optimize away the code.
 const Enabled = false

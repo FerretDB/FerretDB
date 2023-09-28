@@ -30,7 +30,7 @@ On macOS and Windows, [Docker Desktop](https://www.docker.com/products/docker-de
 On Windows, it should be [configured to use WSL 2](https://docs.docker.com/desktop/windows/wsl/) without any distro;
 all commands should be run on the host.
 
-You will need Go 1.20 or later on the host.
+You will need Go 1.21 or later on the host.
 If your package manager doesn't provide it yet,
 please install it from [go.dev](https://go.dev/dl/).
 
@@ -42,9 +42,7 @@ Finally, you will also need [git-lfs](https://git-lfs.github.com) installed and 
 ### Making a working copy
 
 Fork the [FerretDB repository on GitHub](https://github.com/FerretDB/FerretDB/fork).
-To have all the tags in the repository and what they point to, copy all branches by removing checkmark for `copy the main branch only` before forking.
-
-After forking FerretDB on GitHub, you can clone the repository and add upstream repository as a remote:
+After that, you can clone the repository and add the upstream repository as a remote:
 
 ```sh
 git clone git@github.com:<YOUR_GITHUB_USERNAME>/FerretDB.git
@@ -52,6 +50,9 @@ cd FerretDB
 git remote add upstream https://github.com/FerretDB/FerretDB.git
 git fetch --all --tags
 ```
+
+The last command would fetch all Git tags from our repository that GitHub won't copy to fork by default.
+`git describe` command uses them to determine the FerretDB version during the build process.
 
 To run development commands, you should first install the [`task`](https://taskfile.dev/) tool.
 You can do this by changing the directory to `tools` (`cd tools`) and running `go generate -x`.
@@ -84,7 +85,7 @@ The result will be saved as `bin/ferretdb`.
 With `task` installed (see above), you may do the following:
 
 1. Start the development environment with `task env-up`.
-2. Run all tests in another terminal window with `task test`.
+2. Run all tests in another terminal window with `task test` (see [below](#running-tests)).
 3. Start FerretDB with `task run`.
    This will start it in a development mode where all requests are handled by FerretDB, but also routed to MongoDB.
    The differences in response are then logged and the FerretDB response is sent back to the client.
@@ -210,8 +211,9 @@ but please also tell us about it, so we can improve all of it.
 If, on the other hand, you see code that is inconsistent without apparent reason (or comment),
 please improve it as you work on it.
 
-Our code most of the standard Go conventions,
-documented on [CodeReviewComments wiki page](https://github.com/golang/go/wiki/CodeReviewComments).
+Our code follows most of the standard Go conventions,
+documented on [CodeReviewComments wiki page](https://github.com/golang/go/wiki/CodeReviewComments)
+and some other pages such as [Spelling](https://github.com/golang/go/wiki/Spelling).
 Some of our idiosyncrasies:
 
 1. We use type switches over BSON types in many places in our code.
@@ -252,6 +254,14 @@ In most cases, they should be used instead of (deprecated) `bson.D.Map()`,
 The bar for adding new helpers is very high.
 Please check all existing ones.
 
+If there's a need to use any large number to test corner cases,
+we create constants for them with explanation what do they represent, and refer to them.
+For example:
+
+```go
+const doubleMaxPrec = float64(1<<53 - 1) // 9007199254740991.0:    largest double values that could be represented as integer exactly
+```
+
 #### Integration tests naming guidelines
 
 1. Test names should include the name of the command being tested.
@@ -281,16 +291,19 @@ Please check all existing ones.
 
 Before submitting a pull request, please make sure that:
 
-1. Tests are added or updated for new functionality or fixed bugs.
+1. Your changes are committed to a [new branch](https://docs.github.com/en/get-started/quickstart/github-flow)
+   created from the [current state](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)
+   of our main branch.
+2. Tests are added or updated for new functionality or fixed bugs.
    Typical test cases include:
    - happy paths;
    - dot notation for existing and non-existent paths;
    - edge cases for invalid or unexpected values or types.
-2. Comments are added or updated for all new or changed code.
+3. Comments are added or updated for all new or changed code.
    Please add missing comments for all (both exported and unexported)
    new and changed top-level declarations (`package`, `var`, `const`, `func`, `type`).
    Please also check that formatting is correct in the `task godocs` output.
-3. `task all` passes.
+4. `task all` passes.
 
 #### Submitting PR
 
@@ -355,5 +368,8 @@ With `task` installed (see above), you may do the following:
 
 Before submitting a pull request, please make sure that:
 
-1. Documentation is formatted, linted, and built with `task docs`.
-2. Documentation is written according to our [writing guide](https://docs.ferretdb.io/contributing/writing-guide/).
+1. Your changes are committed to a [new branch](https://docs.github.com/en/get-started/quickstart/github-flow)
+   created from the [current state](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)
+   of our main branch.
+2. Documentation is formatted, linted, and built with `task docs`.
+3. Documentation is written according to our [writing guide](https://docs.ferretdb.io/contributing/writing-guide/).

@@ -55,29 +55,7 @@ func NewPool(ctx context.Context, uri string, logger *zap.Logger, p *state.Provi
 	}
 
 	values := u.Query()
-
-	if !values.Has("pool_max_conns") {
-		// the default is too low
-		values.Set("pool_max_conns", "50")
-	}
-
-	values.Set("application_name", "FerretDB")
-
-	// That only affects text protocol; pgx mostly uses a binary one.
-	// See:
-	//   - https://github.com/jackc/pgx/issues/520
-	//   - https://github.com/jackc/pgx/issues/789
-	//   - https://github.com/jackc/pgx/issues/863
-	//
-	// TODO https://github.com/FerretDB/FerretDB/issues/43
-	values.Set("timezone", "UTC")
-
-	// Set (and overwrite) it in debug builds to ensure that all identifiers in code are fully-qualified.
-	// Don't do it in non-debug builds because it makes using tools like PgBouncer harder.
-	if debugbuild.Enabled {
-		values.Set("search_path", "")
-	}
-
+	setDefaultValues(values)
 	u.RawQuery = values.Encode()
 
 	config, err := pgxpool.ParseConfig(u.String())
@@ -87,12 +65,16 @@ func NewPool(ctx context.Context, uri string, logger *zap.Logger, p *state.Provi
 
 	config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
 		var v string
-		if err := conn.QueryRow(ctx, `SHOW server_version`).Scan(&v); err != nil {
+		var err error //nolint:vet // to avoid capturing the outer variable
+
+		if err = conn.QueryRow(ctx, `SHOW server_version`).Scan(&v); err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		if err := p.Update(func(s *state.State) { s.HandlerVersion = v }); err != nil {
-			logger.Error("pgdb.Pool.AfterConnect: failed to update state", zap.Error(err))
+		if p.Get().HandlerVersion != v {
+			if err = p.Update(func(s *state.State) { s.HandlerVersion = v }); err != nil {
+				logger.Error("pgdb.Pool.AfterConnect: failed to update state", zap.Error(err))
+			}
 		}
 
 		return nil
@@ -139,6 +121,27 @@ func NewPool(ctx context.Context, uri string, logger *zap.Logger, p *state.Provi
 // It blocks until all connections are closed.
 func (pgPool *Pool) Close() {
 	pgPool.p.Close()
+}
+
+// setDefaultValue sets default query parameters.
+//
+// Keep it in sync with docs.
+func setDefaultValues(values url.Values) {
+	if !values.Has("pool_max_conns") {
+		// the default is too low
+		values.Set("pool_max_conns", "50")
+	}
+
+	values.Set("application_name", "FerretDB")
+
+	// That only affects text protocol; pgx mostly uses a binary one.
+	// See:
+	//   - https://github.com/jackc/pgx/issues/520
+	//   - https://github.com/jackc/pgx/issues/789
+	//   - https://github.com/jackc/pgx/issues/863
+	//
+	// TODO https://github.com/FerretDB/FerretDB/issues/43
+	values.Set("timezone", "UTC")
 }
 
 // simplifySetting simplifies PostgreSQL setting value for comparison.

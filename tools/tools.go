@@ -14,8 +14,8 @@
 
 // Keep both old and new styles of build tags.
 
-//go:build go1.20
-// +build go1.20
+//go:build go1.21
+// +build go1.21
 
 package tools
 
@@ -24,9 +24,8 @@ import (
 	_ "github.com/go-task/task/v3/cmd/task"
 	_ "github.com/goreleaser/nfpm/v2/cmd/nfpm"
 	_ "github.com/quasilyte/go-consistent"
-	_ "github.com/reviewdog/reviewdog/cmd/reviewdog"
 	_ "golang.org/x/perf/cmd/benchstat"
-	_ "golang.org/x/tools/cmd/godoc"
+	_ "golang.org/x/pkgsite/cmd/pkgsite"
 	_ "golang.org/x/tools/cmd/goimports"
 	_ "golang.org/x/tools/cmd/stringer"
 	_ "golang.org/x/vuln/cmd/govulncheck"
@@ -34,7 +33,7 @@ import (
 )
 
 // Check that `go` in $PATH have the right version.
-// Catches problems like `/some/path/go generate` invocations where `/some/path/go` is 1.20+
+// Catches problems like `/some/path/go generate` invocations where `/some/path/go` is 1.21+
 // (that's checked by the build tags above), but just `go` in $PATH (typically something like `/usr/bin/go`)
 // is an earlier version.
 
@@ -42,14 +41,14 @@ import (
 
 //go:generate go build -v -o ../bin/ ./checkdocs
 //go:generate go build -v -o ../bin/ ./checkswitch
+//go:generate go build -v -o ../bin/ ./checkcomments
 
 //go:generate go build -v -o ../bin/ github.com/BurntSushi/go-sumtype
 //go:generate go build -v -o ../bin/ github.com/go-task/task/v3/cmd/task
 //go:generate go build -v -o ../bin/ github.com/goreleaser/nfpm/v2/cmd/nfpm
 //go:generate go build -v -o ../bin/ github.com/quasilyte/go-consistent
-//go:generate go build -v -o ../bin/ github.com/reviewdog/reviewdog/cmd/reviewdog
 //go:generate go build -v -o ../bin/ golang.org/x/perf/cmd/benchstat
-//go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/godoc
+//go:generate go build -v -o ../bin/ golang.org/x/pkgsite/cmd/pkgsite
 //go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/goimports
 //go:generate go build -v -o ../bin/ golang.org/x/tools/cmd/stringer
 //go:generate go build -v -o ../bin/ golang.org/x/vuln/cmd/govulncheck

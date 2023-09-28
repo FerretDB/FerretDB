@@ -17,8 +17,10 @@ package sqlite
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -44,8 +46,30 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	username, _ := conninfo.Get(ctx).Auth()
 
-	db := h.b.Database(params.DB)
-	defer db.Close()
+	db, err := h.b.Database(params.DB)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "find")
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
+
+	c, err := db.Collection(params.Collection)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "find")
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
+
+	var qp backends.QueryParams
+	if !h.DisableFilterPushdown {
+		qp.Filter = params.Filter
+	}
 
 	cancel := func() {}
 	if params.MaxTimeMS != 0 {
@@ -57,7 +81,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	// closer accumulates all things that should be closed / canceled.
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
 
-	queryRes, err := db.Collection(params.Collection).Query(ctx, nil)
+	queryRes, err := c.Query(ctx, &qp)
 	if err != nil {
 		closer.Close()
 		return nil, lazyerrors.Error(err)
@@ -71,8 +95,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	if err != nil {
 		closer.Close()
 
-		var pathErr *types.DocumentPathError
-		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrDocumentPathEmptyKey {
+		var pathErr *types.PathError
+		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrPathContainsEmptyElement,
 				"Empty field names in path are not allowed",
@@ -116,7 +140,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	if params.SingleBatch || firstBatch.Len() < int(params.BatchSize) {
-		// TODO: support tailable cursors https://github.com/FerretDB/FerretDB/issues/2283
+		// support tailable cursors
+		// TODO https://github.com/FerretDB/FerretDB/issues/2283
 
 		// let the client know that there are no more results
 		cursorID = 0

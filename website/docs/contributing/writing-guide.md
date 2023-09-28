@@ -1,6 +1,6 @@
 ---
 sidebar_position: 99
-draft: true
+unlisted: true # linked from CONTRIBUTING.md
 ---
 
 # Writing guide
@@ -28,8 +28,8 @@ for file names, directory names, and slugs because URL paths typically use dashe
 
 Ensure that the file name/URL path matches the title of the page.
 For example, if the title of your page is "Getting Started", then the file name/URL path should also be "getting-started" to maintain consistency.
-It is recommended to omit the `slug` field from the front matter, since the file name is used by default as the URL path.
-Only use the `slug` field in some special cases, such as when creating custom or external links, or for backward compatibility with existing links.
+The `slug` field should be the same as the file name.
+Only use a different `slug` field in some special cases, such as for backward compatibility with existing links.
 
 ## Sidebar position
 
@@ -46,17 +46,32 @@ Use sentence case for headers: `### Some header with URL`, not `### Some Header 
 Please use markdown file paths for links, not URL paths,
 because it works for both editors/IDEs (Ctrl/⌘+click works) and Docusaurus.
 Always add `.md` extension to the file paths.
+Use relative paths for links to files in the same directory, in a sub-directory, or in a parent directory.
+
 Examples:
 
-- [file in the same directory](writing-guide.md)
-- [file in a parent directory](../telemetry.md)
+To link to a file in the same directory, use the file name.
+
+- `[file in the same directory](writing-guide.md)`
+
+To link to a file in a parent directory, prefix with `../` to go up one directory level.
+
+- `[file in a parent directory](../telemetry.md)`
+
+To link to file in a subdirectory, specify the file path along with its respective directory or directories, such as: `subdirectory/file.md`.
+
+To link to a directory or category, prefix the directory name with `/category/`.
+
+- `[configuration directory](/category/configuration/)`
 
 ## Images
 
 Please store all images under `blog` or `docs` in the `static/img` folder.
+
 Also, you can collate images for a specific blog post inside a single folder.
-Name the folder appropriately using the `YYYY-MM-DD` format.
-For example, a typical path for an image will be `/img/blog/2023-01-01/ferretdb-image.jpg`
+For partner blog posts, store related images in the same folder, as `/img/blog/partner-name/image.png`.
+
+Otherwise, name the folder appropriately using the `YYYY-MM-DD` format, for example, a typical path for an image will be `/img/blog/2023-01-01/ferretdb-image.jpg`.
 
 ### Alt text
 

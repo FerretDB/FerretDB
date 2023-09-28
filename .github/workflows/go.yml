@@ -20,6 +20,7 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
+  GOTOOLCHAIN: local
 
 jobs:
   short-test:
@@ -39,8 +40,9 @@ jobs:
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
         if: false
 
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -89,8 +91,9 @@ jobs:
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
         if: false
 
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -159,15 +162,13 @@ jobs:
           git diff --exit-code
 
   integration:
-    name: Integration ${{ matrix.name }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
-    runs-on:
-      group: paid
-    timeout-minutes: 20
+    # job name must be unique; make it unique and nice
+    name: ${{ matrix.task }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
 
     # Do not run this job in parallel for any PR change or branch push
     # to save some resources.
     concurrency:
-      group: ${{ github.workflow }}-integration-${{ matrix.name }}-${{ matrix.shard_index }}-${{ github.head_ref || github.ref_name }}
+      group: ${{ github.workflow }}-integration-${{ matrix.task }}-${{ matrix.shard_index }}-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: true
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
@@ -175,82 +176,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        task: [pg, postgresql, sqlite]
+        shard_index: [1, 2, 3]
+        shard_total: [3]
         include:
-          - { name: "MongoDB", task: "mongodb", shard_index: 1, shard_total: 1 }
-          - { name: "PostgreSQL", task: "pg", shard_index: 1, shard_total: 3 }
-          - { name: "PostgreSQL", task: "pg", shard_index: 2, shard_total: 3 }
-          - { name: "PostgreSQL", task: "pg", shard_index: 3, shard_total: 3 }
-          - { name: "SQLite", task: "sqlite", shard_index: 1, shard_total: 3 }
-          - { name: "SQLite", task: "sqlite", shard_index: 2, shard_total: 3 }
-          - { name: "SQLite", task: "sqlite", shard_index: 3, shard_total: 3 }
+          - { task: "mongodb", shard_index: 1, shard_total: 1 }
 
-    steps:
-      - name: Setup permissions monitoring
-        uses: GitHubSecurityLab/actions-permissions/monitor@v1
-        if: false
-
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0 # for `git describe` to work
-          lfs: false # LFS is used only by website
-
-      - name: Setup Go
-        uses: FerretDB/github-actions/setup-go@main
-        with:
-          cache-key: integration
-
-      - name: Install Task
-        run: go generate -x
-        working-directory: tools
-
-      - name: Start environment
-        run: bin/task env-up-detach
-
-      - name: Run init
-        run: bin/task init
-
-      - name: Wait for and setup environment
-        run: bin/task env-setup
-
-      - name: Run ${{ matrix.name }} tests (${{ matrix.shard_index }}/${{ matrix.shard_total }})
-        run: bin/task test-integration-${{ matrix.task }} SHARD_INDEX=${{ matrix.shard_index }} SHARD_TOTAL=${{ matrix.shard_total }}
-        env:
-          GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
-
-      # The token is not required but should make uploads more stable.
-      # If secrets are unavailable (for example, for a pull request from a fork), it fallbacks to the tokenless uploads.
-      #
-      # Unfortunately, it seems that tokenless uploads fail too often.
-      # See https://github.com/codecov/codecov-action/issues/837.
-      #
-      # We also can't use ${{ vars.CODECOV_TOKEN }}: https://github.com/orgs/community/discussions/44322
-      - name: Upload coverage information to codecov
-        if: always()
-        uses: codecov/codecov-action@v3
-        with:
-          token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
-          files: ./integration/integration-${{ matrix.task }}.txt
-          flags: integration,${{ matrix.task }},shard-${{ matrix.shard_index }}
-          fail_ci_if_error: true
-          verbose: true
-
-      - name: Upload coverage information to coveralls
-        uses: coverallsapp/github-action@v2
-        with:
-          file: ./integration/integration-${{ matrix.task }}.txt
-          flag-name: integration-${{ matrix.task }}-${{ matrix.shard_index }}
-          parallel: true
-
-      # we don't want them on CI
-      - name: Clean test and fuzz caches
-        if: always()
-        run: go clean -testcache -fuzzcache
-
-      - name: Check dirty
-        run: |
-          git status
-          git diff --exit-code
+    uses: ./.github/workflows/_integration.yml
+    with:
+      task: ${{ matrix.task }}
+      shard_index: ${{ matrix.shard_index }}
+      shard_total: ${{ matrix.shard_total }}
+      coveralls: true
 
   # https://github.com/lemurheavy/coveralls-public/issues/1636
   submit-coveralls:
@@ -287,8 +224,9 @@ jobs:
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
         if: false
 
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -333,8 +271,9 @@ jobs:
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
         if: false
 
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for `golangci-lint run --new` to work
           lfs: false # LFS is used only by website
@@ -364,8 +303,9 @@ jobs:
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
         if: false
 
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           path: source
           fetch-depth: 0 # for `git describe` to work
@@ -380,10 +320,12 @@ jobs:
         run: go generate -x
         working-directory: source/tools
 
+      # TODO https://github.com/FerretDB/github-actions/issues/211
+
       # Use deploy key instead of Personal Access Token (PAT) to limit access to one repository.
       # If secrets are not available (for example, for a pull request from a fork), GITHUB_TOKEN PAT is used automatically.
       - name: Checkout collected fuzz corpus
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: FerretDB/fuzz-corpus
           ssh-key: ${{ secrets.FUZZ_CORPUS_DEPLOY_KEY }}
@@ -421,9 +363,7 @@ jobs:
 
       - name: Collect corpus
         if: always()
-        run: |
-          bin/task fuzz-corpus
-          go run ./cmd/fuzztool corpus seed ../fuzz-corpus
+        run: bin/task fuzz-corpus
         working-directory: source
 
       # `secrets` are not supported in `if`, so we have to do this trick with environment variable:

@@ -36,9 +36,7 @@ func TestDistinctCommandErrors(t *testing.T) {
 		collName any // optional, defaults to coll.Name()
 		filter   any // required
 
-		err        *mongo.CommandError // optional, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		err *mongo.CommandError
 	}{
 		"StringFilter": {
 			command: "a",
@@ -48,7 +46,6 @@ func TestDistinctCommandErrors(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'distinct.query' is the wrong type 'string', expected type 'object'",
 			},
-			altMessage: "BSON field 'distinct.query' is the wrong type 'string', expected type 'object'",
 		},
 		"EmptyCollection": {
 			command:  "a",
@@ -100,14 +97,11 @@ func TestDistinctCommandErrors(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			require.NotNil(t, tc.command, "command must not be nil")
 			require.NotNil(t, tc.filter, "filter must not be nil")
+			require.NotNil(t, tc.err, "err must not be nil")
 
 			var collName any = collection.Name()
 			if tc.collName != nil {
@@ -118,14 +112,9 @@ func TestDistinctCommandErrors(t *testing.T) {
 
 			var res bson.D
 			err := collection.Database().RunCommand(ctx, command).Decode(res)
-			if tc.err != nil {
-				assert.Nil(t, res)
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 
-				return
-			}
-
-			require.NoError(t, err)
+			assert.Nil(t, res)
+			AssertEqualCommandError(t, *tc.err, err)
 		})
 	}
 }

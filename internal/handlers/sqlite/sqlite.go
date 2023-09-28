@@ -22,21 +22,15 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/decorators/oplog"
+	"github.com/FerretDB/FerretDB/internal/backends/hana"
+	"github.com/FerretDB/FerretDB/internal/backends/postgresql"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
-
-// notImplemented returns error for stub command handlers.
-func notImplemented(command string) error {
-	return commonerrors.NewCommandErrorMsg(
-		commonerrors.ErrNotImplemented,
-		"I'm a stub, not a real handler for "+command,
-	)
-}
 
 // Handler implements handlers.Interface.
 type Handler struct {
@@ -51,7 +45,8 @@ type Handler struct {
 //
 //nolint:vet // for readability
 type NewOpts struct {
-	URI string
+	Backend string
+	URI     string
 
 	L             *zap.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
@@ -59,16 +54,44 @@ type NewOpts struct {
 
 	// test options
 	DisableFilterPushdown bool
+	EnableSortPushdown    bool
+	EnableOplog           bool
 }
 
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
-	b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
-		URI: opts.URI,
-		L:   opts.L,
-	})
+	var b backends.Backend
+	var err error
+
+	switch opts.Backend {
+	case "postgresql":
+		b, err = postgresql.NewBackend(&postgresql.NewBackendParams{
+			URI: opts.URI,
+			L:   opts.L,
+			P:   opts.StateProvider,
+		})
+	case "sqlite":
+		b, err = sqlite.NewBackend(&sqlite.NewBackendParams{
+			URI: opts.URI,
+			L:   opts.L,
+			P:   opts.StateProvider,
+		})
+	case "hana":
+		b, err = hana.NewBackend(&hana.NewBackendParams{
+			URI: opts.URI,
+			L:   opts.L,
+			P:   opts.StateProvider,
+		})
+	default:
+		panic("unknown backend: " + opts.Backend)
+	}
+
 	if err != nil {
 		return nil, err
+	}
+
+	if opts.EnableOplog {
+		b = oplog.NewBackend(b, opts.L.Named("oplog"))
 	}
 
 	return &Handler{
@@ -86,11 +109,13 @@ func (h *Handler) Close() {
 
 // Describe implements handlers.Interface.
 func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
+	h.b.Describe(ch)
 	h.cursors.Describe(ch)
 }
 
 // Collect implements handlers.Interface.
 func (h *Handler) Collect(ch chan<- prometheus.Metric) {
+	h.b.Collect(ch)
 	h.cursors.Collect(ch)
 }
 

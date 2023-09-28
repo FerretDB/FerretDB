@@ -23,7 +23,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 )
 
-//go:generate ../../bin/stringer -type ErrorCode
+//go:generate ../../bin/stringer -linecomment -type ErrorCode
 
 // ErrorCode represent a backend error code.
 type ErrorCode int
@@ -32,17 +32,20 @@ type ErrorCode int
 const (
 	_ ErrorCode = iota
 
+	ErrorCodeDatabaseNameIsInvalid
 	ErrorCodeDatabaseDoesNotExist
 
+	ErrorCodeCollectionNameIsInvalid
 	ErrorCodeCollectionDoesNotExist
 	ErrorCodeCollectionAlreadyExists
-	ErrorCodeCollectionNameIsInvalid
+
+	ErrorCodeInsertDuplicateID
 )
 
 // Error represents a backend error returned by all Backend, Database and Collection methods.
 type Error struct {
-	// this internal error can't be accessed by the caller;
-	// it may be nil
+	// This internal error can't be accessed by the caller; it exists only for debugging.
+	// It may be nil.
 	err error
 
 	code ErrorCode
@@ -75,6 +78,8 @@ func (err *Error) Error() string {
 }
 
 // ErrorCodeIs returns true if err is *Error with one of the given error codes.
+//
+// At least one error code must be given.
 func ErrorCodeIs(err error, code ErrorCode, codes ...ErrorCode) bool {
 	e, ok := err.(*Error) //nolint:errorlint // do not inspect error chain
 	if !ok {

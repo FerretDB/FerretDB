@@ -26,6 +26,7 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
+  GOTOOLCHAIN: local
 
 jobs:
   build:
@@ -40,8 +41,9 @@ jobs:
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
         if: false
 
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           lfs: true
 

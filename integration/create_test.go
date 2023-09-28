@@ -234,14 +234,10 @@ func TestCreateStressSameCollection(t *testing.T) {
 	require.Len(t, colls, 1)
 
 	// check that the collection was created, and we can query it
-	t.Run("check_stress", func(t *testing.T) {
-		t.Parallel()
-
-		var doc bson.D
-		err := db.Collection(collName).FindOne(ctx, bson.D{{"_id", "foo_1"}}).Decode(&doc)
-		require.NoError(t, err)
-		require.Equal(t, bson.D{{"_id", "foo_1"}, {"v", "bar"}}, doc)
-	})
+	var doc bson.D
+	err = db.Collection(collName).FindOne(ctx, bson.D{{"_id", "foo_1"}}).Decode(&doc)
+	require.NoError(t, err)
+	require.Equal(t, bson.D{{"_id", "foo_1"}, {"v", "bar"}}, doc)
 
 	require.Equal(t, int32(1), created.Load(), "Only one attempt to create a collection should succeed")
 }

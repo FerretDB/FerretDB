@@ -17,11 +17,13 @@ package sqlite
 import (
 	"context"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
-	_ "modernc.org/sqlite"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // backend implements backends.Backend interface.
@@ -30,14 +32,17 @@ type backend struct {
 }
 
 // NewBackendParams represents the parameters of NewBackend function.
+//
+//nolint:vet // for readability
 type NewBackendParams struct {
 	URI string
 	L   *zap.Logger
+	P   *state.Provider
 }
 
-// NewBackend creates a new SQLite backend.
+// NewBackend creates a new backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	r, err := metadata.NewRegistry(params.URI, params.L.Named("metadata"))
+	r, err := metadata.NewRegistry(params.URI, params.L, params.P)
 	if err != nil {
 		return nil, err
 	}
@@ -52,9 +57,36 @@ func (b *backend) Close() {
 	b.r.Close()
 }
 
+// Name implements backends.Backend interface.
+func (b *backend) Name() string {
+	return "SQLite"
+}
+
+// Status implements backends.Backend interface.
+func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
+	// since authentication is not supported yet, and there is no way to not establish an SQLite "connection",
+	// there is no need to use conninfo
+	// TODO https://github.com/FerretDB/FerretDB/issues/3008
+
+	dbs := b.r.DatabaseList(ctx)
+
+	var res backends.StatusResult
+
+	for _, dbName := range dbs {
+		cs, err := b.r.CollectionList(ctx, dbName)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res.CountCollections += int64(len(cs))
+	}
+
+	return &res, nil
+}
+
 // Database implements backends.Backend interface.
-func (b *backend) Database(name string) backends.Database {
-	return newDatabase(b.r, name)
+func (b *backend) Database(name string) (backends.Database, error) {
+	return newDatabase(b.r, name), nil
 }
 
 // ListDatabases implements backends.Backend interface.
@@ -66,8 +98,27 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 	res := &backends.ListDatabasesResult{
 		Databases: make([]backends.DatabaseInfo, len(list)),
 	}
-	for i, db := range list {
-		res.Databases[i] = backends.DatabaseInfo{Name: db}
+
+	for i, dbName := range list {
+		db, err := b.Database(dbName)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		stats, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
+			stats = new(backends.DatabaseStatsResult)
+			err = nil
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res.Databases[i] = backends.DatabaseInfo{
+			Name: dbName,
+			Size: stats.SizeTotal,
+		}
 	}
 
 	return res, nil
@@ -80,6 +131,16 @@ func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabas
 	}
 
 	return nil
+}
+
+// Describe implements prometheus.Collector.
+func (b *backend) Describe(ch chan<- *prometheus.Desc) {
+	b.r.Describe(ch)
+}
+
+// Collect implements prometheus.Collector.
+func (b *backend) Collect(ch chan<- prometheus.Metric) {
+	b.r.Collect(ch)
 }
 
 // check interfaces

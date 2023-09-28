@@ -26,6 +26,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -93,7 +94,7 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		return err
 	}
 
-	p, err := state.NewProvider("")
+	sp, err := state.NewProvider("")
 	if err != nil {
 		return err
 	}
@@ -102,7 +103,7 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 
 	var retry int64
 	for ctx.Err() == nil {
-		if pgPool, err = pgdb.NewPool(ctx, uri, logger.Desugar(), p); err == nil {
+		if pgPool, err = pgdb.NewPool(ctx, uri, logger.Desugar(), sp); err == nil {
 			break
 		}
 
@@ -160,24 +161,55 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 	return setupAnyPostgres(ctx, logger.Named("postgres_secured"), "postgres://username:password@127.0.0.1:5433/ferretdb")
 }
 
-// setup runs all setup commands.
-func setup(ctx context.Context, logger *zap.SugaredLogger) error {
-	go debug.RunHandler(ctx, "127.0.0.1:8089", prometheus.DefaultRegisterer, logger.Named("debug").Desugar())
-
-	if err := setupPostgres(ctx, logger); err != nil {
-		return err
-	}
-
-	if err := setupPostgresSecured(ctx, logger); err != nil {
-		return err
-	}
-
+// setupMongodb configures `mongodb` container.
+func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 	if err := waitForPort(ctx, logger.Named("mongodb"), 47017); err != nil {
 		return err
 	}
 
-	if err := waitForPort(ctx, logger.Named("mongodb_secure"), 47018); err != nil {
-		return err
+	// TODO https://github.com/FerretDB/FerretDB/issues/3310
+	// eval := `'rs.initiate({_id: "mongodb-rs", members: [{_id: 0, host: "localhost:47017" }]})'`
+	eval := `db.serverStatus()`
+	args := []string{"compose", "exec", "-T", "mongodb", "mongosh", "--port=47017", "--eval", eval}
+
+	var buf bytes.Buffer
+	var retry int64
+
+	for ctx.Err() == nil {
+		buf.Reset()
+
+		err := runCommand("docker", args, &buf, logger)
+		if err == nil {
+			break
+		}
+
+		logger.Infof("%s:\n%s", err, buf.String())
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	return ctx.Err()
+}
+
+// setupMongodbSecured configures `mongodb_secured` container.
+func setupMongodbSecured(ctx context.Context, logger *zap.SugaredLogger) error {
+	return waitForPort(ctx, logger.Named("mongodb_secured"), 47018)
+}
+
+// setup runs all setup commands.
+func setup(ctx context.Context, logger *zap.SugaredLogger) error {
+	go debug.RunHandler(ctx, "127.0.0.1:8089", prometheus.DefaultRegisterer, logger.Named("debug").Desugar())
+
+	for _, f := range []func(context.Context, *zap.SugaredLogger) error{
+		setupPostgres,
+		setupPostgresSecured,
+		setupMongodb,
+		setupMongodbSecured,
+	} {
+		if err := f(ctx, logger); err != nil {
+			return err
+		}
 	}
 
 	logger.Info("Done.")
@@ -197,7 +229,7 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("%s failed: %s", strings.Join(args, " "), err)
+		return fmt.Errorf("%s failed: %s", strings.Join(cmd.Args, " "), err)
 	}
 
 	return nil
@@ -320,8 +352,12 @@ func packageVersion(w io.Writer, file string) error {
 // cli struct represents all command-line commands, fields and flags.
 // It's used for parsing the user input.
 var cli struct {
-	Debug bool     `help:"Enable debug mode."`
+	Debug bool `help:"Enable debug mode."`
+
 	Setup struct{} `cmd:"" help:"Setup development environment."`
+
+	PackageVersion struct{} `cmd:"" help:"Print package version."`
+
 	Shell struct {
 		Mkdir struct {
 			Paths []string `arg:"" name:"path" help:"Paths to create." type:"path"`
@@ -331,14 +367,21 @@ var cli struct {
 		} `cmd:"" help:"Remove directories."`
 		Read struct {
 			Paths []string `arg:"" name:"path" help:"Paths to read." type:"path"`
-		} `cmd:"" help:"read files"`
+		} `cmd:"" help:"Read files."`
 	} `cmd:""`
-	PackageVersion struct{} `cmd:"" help:"Print package version"`
-	Tests          struct {
+
+	Tests struct {
 		Shard struct {
 			Index uint `help:"Shard index, starting from 1" required:""`
 			Total uint `help:"Total number of shards"       required:""`
-		} `cmd:"" help:"Print sharded integration tests"`
+		} `cmd:"" help:"Print sharded integration tests."`
+	} `cmd:""`
+
+	Fuzz struct {
+		Corpus struct {
+			Src string `arg:"" help:"Source, one of: 'seed', 'generated', or collected corpus' directory."`
+			Dst string `arg:"" help:"Destination, one of: 'seed', 'generated', or collected corpus' directory."`
+		} `cmd:"" help:"Sync fuzz corpora."`
 	} `cmd:""`
 }
 
@@ -376,6 +419,46 @@ func main() {
 		err = packageVersion(os.Stdout, versionFile)
 	case "tests shard":
 		err = testsShard(os.Stdout, cli.Tests.Shard.Index, cli.Tests.Shard.Total)
+
+	case "fuzz corpus <src> <dst>":
+		var seedCorpus, generatedCorpus string
+
+		if seedCorpus, err = os.Getwd(); err != nil {
+			logger.Fatal(err)
+		}
+
+		if generatedCorpus, err = fuzzGeneratedCorpus(); err != nil {
+			logger.Fatal(err)
+		}
+
+		var src, dst string
+
+		switch cli.Fuzz.Corpus.Src {
+		case "seed":
+			src = seedCorpus
+		case "generated":
+			src = generatedCorpus
+		default:
+			if src, err = filepath.Abs(cli.Fuzz.Corpus.Src); err != nil {
+				logger.Fatal(err)
+			}
+		}
+
+		switch cli.Fuzz.Corpus.Dst {
+		case "seed":
+			// Because we would need to add `/testdata/fuzz` back, and that's not very easy.
+			logger.Fatal("Copying to seed corpus is not supported.")
+		case "generated":
+			dst = generatedCorpus
+		default:
+			dst, err = filepath.Abs(cli.Fuzz.Corpus.Dst)
+			if err != nil {
+				logger.Fatal(err)
+			}
+		}
+
+		err = fuzzCopyCorpus(src, dst, logger)
+
 	default:
 		err = fmt.Errorf("unknown command: %s", cmd)
 	}

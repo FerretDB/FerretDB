@@ -6,7 +6,7 @@ vars:
   BENCH_NAME: .
   BENCH_COUNT: 10
   BENCH_TIME: 5s
-  BENCH_DOCS: 0
+  BENCH_DOCS: 1000
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   BUILD_TAGS:
 
@@ -27,24 +27,27 @@ tasks:
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
         -target-backend=ferretdb-sqlite
+        -sqlite-url=file:../tmp/sqlite-tests/
       # no hana yet
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
         -target-backend=mongodb
-        -target-url=mongodb://127.0.0.1:47017/
+        -target-url='mongodb://127.0.0.1:47017/'
 
   integration-gen:
     cmds:
       - go generate -x ./...
 
-  integration-lint:
+  lint:
+    desc: "Run linters"
     cmds:
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
       - ../bin/go-consistent{{exeExt}} -pedantic ./...
       - ../bin/go-sumtype{{exeExt}} ./...
       - go vet -vettool=../bin/checkswitch{{exeExt}} ./...
+      - go vet -vettool=../bin/checkcomments{{exeExt}} ./...
 
   integration-security:
     cmds:
@@ -73,7 +76,7 @@ tasks:
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-pg
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
-        -- -disable-filter-pushdown
+        -disable-filter-pushdown
         | tee new-pg.txt
       - ../bin/benchstat{{exeExt}} old-pg.txt new-pg.txt
 
@@ -86,6 +89,7 @@ tasks:
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-sqlite
+        -sqlite-url=file:../tmp/sqlite-tests/
         | tee new-sqlite.txt
       - ../bin/benchstat{{exeExt}} old-sqlite.txt new-sqlite.txt
 
@@ -98,7 +102,8 @@ tasks:
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-sqlite
-        -- -disable-filter-pushdown
+        -sqlite-url=file:../tmp/sqlite-tests/
+        -disable-filter-pushdown
         | tee new-sqlite.txt
       - ../bin/benchstat{{exeExt}} old-sqlite.txt new-sqlite.txt
 
@@ -111,6 +116,6 @@ tasks:
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=mongodb
-        -target-url=mongodb://127.0.0.1:47017/
+        -target-url='mongodb://127.0.0.1:47017/'
         | tee new-mongodb.txt
       - ../bin/benchstat{{exeExt}} old-mongodb.txt new-mongodb.txt

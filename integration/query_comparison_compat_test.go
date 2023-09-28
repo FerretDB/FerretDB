@@ -213,8 +213,9 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 			resultPushdown: true,
 		},
 		"IDObjectID": {
-			filter:         bson.D{{"_id", primitive.NilObjectID}},
-			resultPushdown: true,
+			filter:               bson.D{{"_id", primitive.NilObjectID}},
+			resultPushdown:       true,
+			resultPushdownSQLite: true,
 		},
 		"ValueNull": {
 			filter: bson.D{{"v", nil}},
@@ -1035,6 +1036,9 @@ func TestQueryComparisonCompatLte(t *testing.T) {
 func TestQueryComparisonCompatNin(t *testing.T) {
 	t.Parallel()
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/2291
+	providers := shareddata.AllProviders().Remove(shareddata.ArrayAndDocuments)
+
 	var scalarDataTypesFilter bson.A
 	for _, scalarDataType := range shareddata.Scalars.Docs() {
 		scalarDataTypesFilter = append(scalarDataTypesFilter, scalarDataType.Map()["v"])
@@ -1071,11 +1075,14 @@ func TestQueryComparisonCompatNin(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	testQueryCompatWithProviders(t, providers, testCases)
 }
 
 func TestQueryComparisonCompatIn(t *testing.T) {
 	t.Parallel()
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/2291
+	providers := shareddata.AllProviders().Remove(shareddata.ArrayAndDocuments)
 
 	var scalarDataTypesFilter bson.A
 	for _, scalarDataType := range shareddata.Scalars.Docs() {
@@ -1113,7 +1120,7 @@ func TestQueryComparisonCompatIn(t *testing.T) {
 		},
 	}
 
-	testQueryCompat(t, testCases)
+	testQueryCompatWithProviders(t, providers, testCases)
 }
 
 func TestQueryComparisonCompatNe(t *testing.T) {

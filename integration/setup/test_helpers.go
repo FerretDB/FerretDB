@@ -21,13 +21,35 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
+// IsMongoDB returns true if the current test is running for MongoDB.
+//
+// This function should not be used lightly.
+func IsMongoDB(tb testtb.TB) bool {
+	return *targetBackendF == "mongodb"
+}
+
+// IsSQLite returns true if the current test is running for SQLite.
+//
+// This function should not be used lightly.
+func IsSQLite(tb testtb.TB) bool {
+	return *targetBackendF == "ferretdb-sqlite"
+}
+
+// IsOldPg returns true if the current test is running for old PostgreSQL handler.
+//
+// This function should not be used lightly and should be removed when a new PG handler is in place.
+// TODO https://github.com/FerretDB/FerretDB/issues/3435
+func IsOldPg(tb testtb.TB) bool {
+	return *targetBackendF == "ferretdb-pg" && !*useNewPgF
+}
+
 // FailsForFerretDB return testtb.TB that expects test to fail for FerretDB and pass for MongoDB.
 //
 // This function should not be used lightly and always with an issue URL.
 func FailsForFerretDB(tb testtb.TB, reason string) testtb.TB {
 	tb.Helper()
 
-	if *targetBackendF == "mongodb" {
+	if IsMongoDB(tb) {
 		return tb
 	}
 
@@ -53,14 +75,29 @@ func FailsForSQLite(tb testtb.TB, reason string) testtb.TB {
 func SkipForMongoDB(tb testtb.TB, reason string) {
 	tb.Helper()
 
-	if *targetBackendF == "mongodb" {
+	if IsMongoDB(tb) {
 		require.NotEmpty(tb, reason, "reason must not be empty")
 
 		tb.Skipf("Skipping for MongoDB: %s.", reason)
 	}
 }
 
-// IsPushdownDisabled returns if FerretDB pushdowns are disabled.
+// SkipForOldPg skips the current test for the old PG handler.
+//
+// This function should not be used lightly and always with an reason provided.
+// It should be removed when a new PG handler is in place.
+// TODO https://github.com/FerretDB/FerretDB/issues/3435
+func SkipForOldPg(tb testtb.TB, reason string) {
+	tb.Helper()
+
+	if IsOldPg(tb) {
+		require.NotEmpty(tb, reason, "reason must not be empty")
+
+		tb.Skipf("Skipping for old PostgreSQL handler: %s.", reason)
+	}
+}
+
+// IsPushdownDisabled returns true if FerretDB pushdowns are disabled.
 func IsPushdownDisabled() bool {
 	return *disableFilterPushdownF
 }

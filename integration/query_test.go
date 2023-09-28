@@ -29,6 +29,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestQueryBadFindType(t *testing.T) {
@@ -38,11 +39,8 @@ func TestQueryBadFindType(t *testing.T) {
 	ctx, collection := s.Ctx, s.Collection
 
 	for name, tc := range map[string]struct {
-		value any // optional, used for find value
-
-		err        *mongo.CommandError // required, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		value any
+		err   *mongo.CommandError
 	}{
 		"Document": {
 			value: bson.D{},
@@ -51,7 +49,6 @@ func TestQueryBadFindType(t *testing.T) {
 				Name:    "BadValue",
 				Message: "collection name has invalid type object",
 			},
-			altMessage: "collection name has invalid type object",
 		},
 		"Array": {
 			value: primitive.A{},
@@ -144,24 +141,19 @@ func TestQueryBadFindType(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			require.NotNil(t, tc.err, "err must not be nil")
 
 			cmd := bson.D{
 				{"find", tc.value},
-				{"projection", bson.D{{"v", "some"}}},
 			}
 
 			var res bson.D
 			err := collection.Database().RunCommand(ctx, cmd).Decode(&res)
 
-			assert.Nil(t, res)
-			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			require.Nil(t, res)
+			AssertEqualCommandError(t, *tc.err, err)
 		})
 	}
 }
@@ -831,7 +823,8 @@ func TestQueryCommandSingleBatch(t *testing.T) {
 func TestQueryCommandLimitPushDown(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{Providers: []shareddata.Provider{shareddata.Int32s}})
+	// must use a collection of documents which does not support query pushdown to test limit pushdown
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{Providers: []shareddata.Provider{shareddata.Composites}})
 	ctx, collection := s.Ctx, s.Collection
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
@@ -840,60 +833,117 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 		sort    bson.D // optional, nil to leave sort unset
 		optSkip *int64 // optional, nil to leave optSkip unset
 
-		len           int                 // expected length of results
-		limitPushdown bool                // optional, set true for expected pushdown for limit
-		err           *mongo.CommandError // optional, expected error from MongoDB
-		altMessage    string              // optional, alternative error message for FerretDB, ignored if empty
-		skip          string              // optional, skip test with a specified reason
+		len                 int                 // expected length of results
+		queryPushdown       bool                // optional, set true for expected pushdown for query
+		queryPushdownSQLite bool                // TODO https://github.com/FerretDB/FerretDB/issues/3235
+		limitPushdown       bool                // optional, set true for expected pushdown for limit
+		err                 *mongo.CommandError // optional, expected error from MongoDB
+		altMessage          string              // optional, alternative error message for FerretDB, ignored if empty
+		skip                string              // optional, skip test with a specified reason
+		failsForSQLite      string              // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"Simple": {
-			limit:         1,
-			len:           1,
-			limitPushdown: true,
+			limit:          1,
+			len:            1,
+			limitPushdown:  true,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
 		},
 		"AlmostAll": {
-			limit:         int64(len(shareddata.Int32s.Docs()) - 1),
-			len:           len(shareddata.Int32s.Docs()) - 1,
-			limitPushdown: true,
+			limit:          int64(len(shareddata.Composites.Docs()) - 1),
+			len:            len(shareddata.Composites.Docs()) - 1,
+			limitPushdown:  true,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
 		},
 		"All": {
-			limit:         int64(len(shareddata.Int32s.Docs())),
-			len:           len(shareddata.Int32s.Docs()),
-			limitPushdown: true,
+			limit:          int64(len(shareddata.Composites.Docs())),
+			len:            len(shareddata.Composites.Docs()),
+			limitPushdown:  true,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
 		},
 		"More": {
-			limit:         int64(len(shareddata.Int32s.Docs()) + 1),
-			len:           len(shareddata.Int32s.Docs()),
-			limitPushdown: true,
+			limit:          int64(len(shareddata.Composites.Docs()) + 1),
+			len:            len(shareddata.Composites.Docs()),
+			limitPushdown:  true,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
 		},
 		"Big": {
-			limit:         1000,
-			len:           len(shareddata.Int32s.Docs()),
-			limitPushdown: true,
+			limit:          1000,
+			len:            len(shareddata.Composites.Docs()),
+			limitPushdown:  true,
+			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
 		},
 		"Zero": {
 			limit:         0,
-			len:           len(shareddata.Int32s.Docs()),
+			len:           len(shareddata.Composites.Docs()),
 			limitPushdown: false,
 		},
-		"Filter": {
-			filter:        bson.D{{"_id", "int32"}},
+		"IDFilter": {
+			filter:        bson.D{{"_id", "array"}},
 			limit:         3,
 			len:           1,
-			limitPushdown: true,
+			queryPushdown: true,
+			limitPushdown: false,
+		},
+		"ValueFilter": {
+			filter:        bson.D{{"v", 42}},
+			sort:          bson.D{{"_id", 1}},
+			limit:         3,
+			len:           3,
+			queryPushdown: true,
+			limitPushdown: false,
+		},
+		"DotNotationFilter": {
+			filter:        bson.D{{"v.foo", 42}},
+			limit:         3,
+			len:           3,
+			queryPushdown: false,
+			limitPushdown: false,
+		},
+		"ObjectFilter": {
+			filter:        bson.D{{"v", bson.D{{"foo", nil}}}},
+			limit:         3,
+			len:           1,
+			queryPushdown: false,
+			limitPushdown: false,
 		},
 		"Sort": {
 			sort:          bson.D{{"_id", 1}},
 			limit:         2,
 			len:           2,
+			queryPushdown: false,
 			limitPushdown: true,
 		},
-		"FilterSort": {
+		"IDFilterSort": {
+			filter:        bson.D{{"_id", "array"}},
+			sort:          bson.D{{"_id", 1}},
+			limit:         3,
+			len:           1,
+			queryPushdown: true,
+			limitPushdown: false,
+		},
+		"ValueFilterSort": {
 			filter:        bson.D{{"v", 42}},
 			sort:          bson.D{{"_id", 1}},
-			limit:         2,
+			limit:         3,
+			len:           3,
+			queryPushdown: true,
+			limitPushdown: false,
+		},
+		"DotNotationFilterSort": {
+			filter:        bson.D{{"v.foo", 42}},
+			sort:          bson.D{{"_id", 1}},
+			limit:         3,
+			len:           3,
+			queryPushdown: false,
+			limitPushdown: false,
+		},
+		"ObjectFilterSort": {
+			filter:        bson.D{{"v", bson.D{{"foo", nil}}}},
+			sort:          bson.D{{"_id", 1}},
+			limit:         3,
 			len:           1,
-			limitPushdown: true,
+			queryPushdown: false,
+			limitPushdown: false,
 		},
 		"Skip": {
 			optSkip:       pointer.ToInt64(1),
@@ -929,8 +979,13 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				rest...,
 			)
 
-			t.Run("Explain", func(t *testing.T) {
-				setup.SkipForMongoDB(t, "pushdown is FerretDB specific feature")
+			t.Run("Explain", func(tt *testing.T) {
+				setup.SkipForMongoDB(tt, "pushdown is FerretDB specific feature")
+
+				var t testtb.TB = tt
+				if tc.failsForSQLite != "" {
+					t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+				}
 
 				var res bson.D
 				err := collection.Database().RunCommand(ctx, bson.D{{"explain", query}}).Decode(&res)
@@ -944,13 +999,29 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				assert.NoError(t, err)
 
 				var msg string
+
 				if !setup.IsSortPushdownEnabled() && tc.sort != nil {
 					tc.limitPushdown = false
 					msg = "Sort pushdown is disabled, but target resulted with limitPushdown"
 				}
 
-				pushdown, _ := ConvertDocument(t, res).Get("limitPushdown")
-				assert.Equal(t, tc.limitPushdown, pushdown, msg)
+				resultPushdown := tc.queryPushdown
+				if setup.IsSQLite(t) {
+					// TODO https://github.com/FerretDB/FerretDB/issues/3235
+					resultPushdown = tc.queryPushdownSQLite
+				}
+
+				if setup.IsPushdownDisabled() {
+					resultPushdown = false
+					msg = "Query pushdown is disabled, but target resulted with pushdown"
+				}
+
+				doc := ConvertDocument(t, res)
+				limitPushdown, _ := doc.Get("limitPushdown")
+				assert.Equal(t, tc.limitPushdown, limitPushdown, msg)
+
+				queryPushdown, _ := ConvertDocument(t, res).Get("pushdown")
+				assert.Equal(t, resultPushdown, queryPushdown, msg)
 			})
 
 			t.Run("Find", func(t *testing.T) {
@@ -972,4 +1043,33 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			})
 		})
 	}
+}
+
+// TestQueryIDDoc checks that the order of fields in the _id document matters.
+func TestQueryIDDoc(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	_, err := collection.InsertOne(ctx, bson.D{
+		{"_id", bson.D{{"a", int32(1)}, {"z", int32(2)}}},
+		{"v", int32(1)},
+	})
+	require.NoError(t, err)
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
+		{"v", int32(2)},
+	})
+	require.NoError(t, err)
+
+	expected := []bson.D{{
+		{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
+		{"v", int32(2)},
+	}}
+	actual := FilterAll(t, ctx, collection, bson.D{{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}}})
+	AssertEqualDocumentsSlice(t, expected, actual)
+
+	expected = []bson.D{}
+	actual = FilterAll(t, ctx, collection, bson.D{{"_id", bson.D{{"z", int32(4)}, {"a", int32(3)}}}})
+	AssertEqualDocumentsSlice(t, expected, actual)
 }

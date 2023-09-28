@@ -24,19 +24,21 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-func TestInsertCommandErrors(t *testing.T) {
-	t.Parallel()
+func TestInsertCommandErrors(tt *testing.T) {
+	tt.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
 		toInsert []any // required, slice of bson.D to insert
 		ordered  any   // required, sets it to `ordered`
 
-		cerr       *mongo.CommandError // optional, expected command error from MongoDB
-		werr       *mongo.WriteError   // optional, expected write error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		cerr           *mongo.CommandError // optional, expected command error from MongoDB
+		werr           *mongo.WriteError   // optional, expected write error from MongoDB
+		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
+		skip           string              // optional, skip test with a specified reason
+		failsForSQLite string              // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"InsertOrderedInvalid": {
 			toInsert: []any{
@@ -90,12 +92,17 @@ func TestInsertCommandErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		tt.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Parallel()
+			tt.Parallel()
+
+			var t testtb.TB = tt
+			if tc.failsForSQLite != "" {
+				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+			}
 
 			require.NotNil(t, tc.toInsert, "toInsert must not be nil")
 			require.NotNil(t, tc.ordered, "ordered must not be nil")
@@ -124,4 +131,42 @@ func TestInsertCommandErrors(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
+}
+
+func TestInsertIDDifferentTypes(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	_, err := collection.InsertOne(ctx, bson.D{
+		{"_id", int64(1)},
+		{"v", "foo2"},
+	})
+	require.NoError(t, err)
+
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", int32(1)},
+		{"v", "foo1"},
+	})
+
+	AssertEqualAltWriteError(t, mongo.WriteError{
+		Message: "E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes index: _id_ dup key: { _id: 1 }",
+		Code:    11000,
+	},
+		"E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes",
+		err,
+	)
+
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", float32(1)},
+		{"v", "foo3"},
+	})
+
+	AssertEqualAltWriteError(t, mongo.WriteError{
+		Message: "E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes index: _id_ dup key: { _id: 1.0 }",
+		Code:    11000,
+	},
+		"E11000 duplicate key error collection: TestInsertIDDifferentTypes.TestInsertIDDifferentTypes",
+		err,
+	)
 }

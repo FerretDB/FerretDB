@@ -24,6 +24,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // TestCreateIndexesCommandCompat tests specific behavior for index creation that can be only provided through RunCommand.
@@ -40,7 +41,9 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 		key            any
 		unique         any
 		resultType     compatTestCaseResultType // defaults to nonEmptyResult
-		skip           string                   // optional, skip test with a specified reason
+
+		skip         string // optional, skip test with a specified reason
+		skipForOldPg string // optional, skip test for the old PG backend with a specified reason
 	}{
 		"InvalidCollectionName": {
 			collectionName: 42,
@@ -81,7 +84,8 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 		"ExistingNameDifferentKeyLength": {
 			collectionName: "test",
 			key:            bson.D{{"_id", 1}, {"v", 1}},
-			indexName:      "_id_", // the same name as the default index
+			indexName:      "_id_",                                             // the same name as the default index
+			skipForOldPg:   "https://github.com/FerretDB/FerretDB/issues/3435", // old PG handler doesn't validate this case correctly
 		},
 		"InvalidKey": {
 			collectionName: "test",
@@ -115,6 +119,10 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
+			}
+
+			if tc.skipForOldPg != "" {
+				setup.SkipForOldPg(t, tc.skipForOldPg)
 			}
 
 			t.Helper()
@@ -196,8 +204,10 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 // TestCreateIndexesCommandCompatCheckFields check that the response contains response's fields
 // such as numIndexBefore, numIndexAfter, createdCollectionAutomatically
 // contain the correct values.
-func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
-	t.Parallel()
+func TestCreateIndexesCommandCompatCheckFields(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3331")
 
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 	targetCollection := targetCollections[0]
@@ -278,15 +288,16 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 	AssertEqualDocuments(t, compatRes, targetRes)
 }
 
-func TestDropIndexesCommandCompat(t *testing.T) {
-	t.Parallel()
+func TestDropIndexesCommandCompat(tt *testing.T) {
+	tt.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
 		toCreate []mongo.IndexModel // optional, if set, create the given indexes before drop is called
 		toDrop   any                // required, index to drop
 
 		resultType compatTestCaseResultType // optional, defaults to nonEmptyResult
-		skip       string                   // optional, skip test with a specified reason
+
+		skip string // optional, skip test with a specified reason
 	}{
 		"MultipleIndexesByName": {
 			toCreate: []mongo.IndexModel{
@@ -308,6 +319,13 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 			toDrop:     bson.A{"non-existent", "invalid"},
 			resultType: emptyResult,
 		},
+		"MultipleIndexesWithDefault": {
+			toCreate: []mongo.IndexModel{
+				{Keys: bson.D{{"v", 1}}},
+			},
+			toDrop:     bson.A{"v_1", "_id_"},
+			resultType: emptyResult,
+		},
 		"InvalidMultipleIndexType": {
 			toDrop:     bson.A{1},
 			resultType: emptyResult,
@@ -317,6 +335,13 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 				{Keys: bson.D{{"v", -1}}},
 			},
 			toDrop: bson.D{{"v", -1}},
+		},
+		"SimilarIndexes": {
+			toCreate: []mongo.IndexModel{
+				{Keys: bson.D{{"v", 1}, {"foo", 1}}},
+				{Keys: bson.D{{"v", 1}, {"bar", 1}}},
+			},
+			toDrop: bson.D{{"v", 1}, {"bar", 1}},
 		},
 		"DropAllExpression": {
 			toCreate: []mongo.IndexModel{
@@ -350,18 +375,18 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		tt.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Helper()
-			t.Parallel()
+			tt.Helper()
+			tt.Parallel()
 
-			require.NotNil(t, tc.toDrop, "toDrop must not be nil")
+			require.NotNil(tt, tc.toDrop, "toDrop must not be nil")
 
 			// It's enough to use a single provider for drop indexes test as indexes work the same for different collections.
-			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+			s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
 				Providers:                []shareddata.Provider{shareddata.Composites},
 				AddNonExistentCollection: true,
 			})
@@ -371,9 +396,10 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
+				tt.Run(targetCollection.Name(), func(tt *testing.T) {
+					tt.Helper()
 
-				t.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
+					var t testtb.TB = tt
 
 					if tc.toCreate != nil {
 						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.toCreate)
@@ -462,11 +488,11 @@ func TestDropIndexesCommandCompat(t *testing.T) {
 
 			switch tc.resultType {
 			case nonEmptyResult:
-				require.True(t, nonEmptyResults, "expected non-empty results (some indexes should be deleted)")
+				require.True(tt, nonEmptyResults, "expected non-empty results (some indexes should be deleted)")
 			case emptyResult:
-				require.False(t, nonEmptyResults, "expected empty results (no indexes should be deleted)")
+				require.False(tt, nonEmptyResults, "expected empty results (no indexes should be deleted)")
 			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+				tt.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}

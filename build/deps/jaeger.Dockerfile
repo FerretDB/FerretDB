@@ -1,1 +1,1 @@
-FROM jaegertracing/all-in-one:1.47.0
+FROM jaegertracing/all-in-one:1.49.0
