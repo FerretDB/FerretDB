@@ -39,6 +39,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/telemetry"
 )
@@ -263,15 +264,10 @@ func runTelemetryReporter(ctx context.Context, opts *telemetry.NewReporterOpts) 
 
 // dumpMetrics dumps all Prometheus metrics to stderr.
 func dumpMetrics() {
-	mfs, err := prometheus.DefaultGatherer.Gather()
-	if err != nil {
-		panic(err)
-	}
+	mfs := must.NotFail(prometheus.DefaultGatherer.Gather())
 
 	for _, mf := range mfs {
-		if _, err := expfmt.MetricFamilyToText(os.Stderr, mf); err != nil {
-			panic(err)
-		}
+		must.NotFail(expfmt.MetricFamilyToText(os.Stderr, mf))
 	}
 }
 
