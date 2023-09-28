@@ -143,8 +143,59 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 // UpdateAll implements backends.Collection interface.
 func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllParams) (*backends.UpdateAllResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3391
-	return new(backends.UpdateAllResult), nil
+	p, err := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if p == nil {
+		return nil, lazyerrors.Errorf("no database %q", c.dbName)
+	}
+
+	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var res backends.UpdateAllResult
+	if meta == nil {
+		return &res, nil
+	}
+
+	q := fmt.Sprintf(
+		`UPDATE %s SET %s = $1 WHERE %s = $2`,
+		pgx.Identifier{c.dbName, meta.TableName},
+		metadata.DefaultColumn,
+		metadata.IDColumn,
+	)
+
+	err = pool.InTransaction(ctx, p, func(tx pgx.Tx) error {
+		for _, doc := range params.Docs {
+			var b []byte
+			if b, err = sjson.Marshal(doc); err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			id, _ := doc.Get("_id")
+			must.NotBeZero(id)
+
+			arg := string(must.NotFail(sjson.MarshalSingleValue(id)))
+
+			var tag pgconn.CommandTag
+			if tag, err = tx.Exec(ctx, q, string(b), arg); err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			res.Updated += int32(tag.RowsAffected())
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &res, nil
 }
 
 // DeleteAll implements backends.Collection interface.
