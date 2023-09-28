@@ -17,6 +17,7 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -95,7 +96,8 @@ func createDatabase(t *testing.T, ctx context.Context) (r *Registry, db *pgxpool
 	require.NotNil(t, db)
 
 	t.Cleanup(func() {
-		_, _ = r.DatabaseDrop(ctx, dbName)
+		_, err = r.DatabaseDrop(ctx, dbName)
+		require.NoError(t, err)
 	})
 
 	return r, db, dbName
@@ -159,6 +161,34 @@ func TestCreateDrop(t *testing.T) {
 	r, db, dbName := createDatabase(t, ctx)
 	collectionName := testutil.CollectionName(t)
 	testCollection(t, ctx, r, db, dbName, collectionName)
+}
+
+func TestCreateLongCollectionName(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
+	t.Parallel()
+
+	connInfo := conninfo.New()
+	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
+
+	r, _, dbName := createDatabase(t, ctx)
+
+	collectionName := strings.Repeat("a", 63)
+	created, err := r.CollectionCreate(ctx, dbName, collectionName)
+	require.NoError(t, err)
+	require.True(t, created)
+
+	collectionName = strings.Repeat("a", 63)
+	created, err = r.CollectionCreate(ctx, dbName, collectionName)
+	require.NoError(t, err)
+	require.False(t, created)
+
+	collectionName = strings.Repeat("a", 64)
+	created, err = r.CollectionCreate(ctx, dbName, collectionName)
+	require.NoError(t, err)
+	require.True(t, created)
 }
 
 func TestCreateDropStress(t *testing.T) {
