@@ -30,6 +30,7 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
@@ -41,11 +42,8 @@ import (
 )
 
 const (
-	// Reserved prefix for database and collection names.
-	reservedPrefix = "_ferretdb_"
-
 	// PostgreSQL table name where FerretDB metadata is stored.
-	metadataTableName = reservedPrefix + "database_metadata"
+	metadataTableName = backends.ReservedPrefix + "database_metadata"
 
 	// PostgreSQL max table name length.
 	maxTableNameLength = 63
@@ -473,9 +471,6 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 
 	for {
 		tableName = specialCharacters.ReplaceAllString(strings.ToLower(collectionName), "_")
-		if strings.HasPrefix(tableName, reservedPrefix) {
-			tableName = "_" + tableName
-		}
 
 		suffixHash := fmt.Sprintf("_%08x", s)
 		if l := maxTableNameLength - len(suffixHash); len(tableName) > l {
