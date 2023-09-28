@@ -36,10 +36,9 @@ type aggregateStagesCompatTestCase struct {
 	pipeline bson.A         // required, unspecified $sort appends bson.D{{"$sort", bson.D{{"_id", 1}}}} for non empty pipeline.
 	maxTime  *time.Duration // optional, leave nil for unset maxTime
 
-	resultType           compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown       bool                     // defaults to false
-	resultPushdownSQLite bool                     // TODO https://github.com/FerretDB/FerretDB/issues/3235
-	skip                 string                   // skip test for all handlers, must have issue number mentioned
+	resultType     compatTestCaseResultType // defaults to nonEmptyResult
+	resultPushdown resultPushdown           // defaults to noPushdown
+	skip           string                   // skip test for all handlers, must have issue number mentioned
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -113,20 +112,17 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainCommand).Decode(&explainRes))
 
 					resultPushdown := tc.resultPushdown
-					if setup.IsSQLite(t) {
-						// TODO https://github.com/FerretDB/FerretDB/issues/3235
-						resultPushdown = tc.resultPushdownSQLite
-					}
 
 					var msg string
+					// TODO https://github.com/FerretDB/FerretDB/issues/3386
 					if setup.IsPushdownDisabled() {
-						resultPushdown = false
+						resultPushdown = noPushdown
 						msg = "Query pushdown is disabled, but target resulted with pushdown"
 					}
 
 					doc := ConvertDocument(t, explainRes)
 					pushdown, _ := doc.Get("pushdown")
-					assert.Equal(t, resultPushdown, pushdown, msg)
+					assert.Equal(t, resultPushdown.PushdownExpected(t), pushdown, msg)
 
 					targetCursor, targetErr := targetCollection.Aggregate(ctx, pipeline, opts)
 					compatCursor, compatErr := compatCollection.Aggregate(ctx, pipeline, opts)
@@ -334,7 +330,7 @@ func TestAggregateCompatStages(t *testing.T) {
 				bson.D{{"$count", "v"}},
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
 		},
 		"CountAndMatch": {
 			pipeline: bson.A{
@@ -995,7 +991,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 				bson.D{{"$limit", 1}},
 			},
-			resultPushdown: true, // $sort and $match are first two stages
+			resultPushdown: pgPushdown, // $sort and $match are first two stages
 		},
 		"BeforeMatch": {
 			pipeline: bson.A{
@@ -1010,7 +1006,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 				bson.D{{"$limit", 100}},
 			},
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
 		},
 		"NoSortBeforeMatch": {
 			pipeline: bson.A{
@@ -1255,19 +1251,19 @@ func TestAggregateCompatMatch(t *testing.T) {
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"ID": {
 			pipeline:       bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
 		},
 		"Int": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", 42}}}},
 			},
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
 		},
 		"String": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 			},
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
 		},
 		"Document": {
 			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"foo", int32(42)}}}}}}},
@@ -1577,7 +1573,7 @@ func TestAggregateCompatSkip(t *testing.T) {
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 				bson.D{{"$skip", int32(1)}},
 			},
-			resultPushdown: true, // $match after $sort can be pushed down
+			resultPushdown: pgPushdown, // $match after $sort can be pushed down
 		},
 		"BeforeMatch": {
 			pipeline: bson.A{
