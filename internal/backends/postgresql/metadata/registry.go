@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -45,6 +46,9 @@ const (
 
 	// PostgreSQL table name where FerretDB metadata is stored.
 	metadataTableName = reservedPrefix + "database_metadata"
+
+	// PostgreSQL max table name length.
+	maxTableNameLength = 63
 )
 
 // Parts of Prometheus metric names.
@@ -52,6 +56,9 @@ const (
 	namespace = "ferretdb"
 	subsystem = "postgresql_metadata"
 )
+
+// specialCharacters are unsupported characters of PostgreSQL table name that are replaced with `_`.
+var specialCharacters = regexp.MustCompile("[^a-z][^a-z0-9_]*")
 
 // Registry provides access to PostgreSQL databases and collections information.
 //
@@ -465,10 +472,17 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 	list := maps.Values(colls)
 
 	for {
-		tableName = fmt.Sprintf("%s_%08x", strings.ToLower(collectionName), s)
+		tableName = specialCharacters.ReplaceAllString(strings.ToLower(collectionName), "_")
 		if strings.HasPrefix(tableName, reservedPrefix) {
 			tableName = "_" + tableName
 		}
+
+		suffixHash := fmt.Sprintf("_%08x", s)
+		if l := maxTableNameLength - len(suffixHash); len(tableName) > l {
+			tableName = tableName[:l]
+		}
+
+		tableName = fmt.Sprintf("%s%s", tableName, suffixHash)
 
 		if !slices.ContainsFunc(list, func(c *Collection) bool { return c.TableName == tableName }) {
 			break
@@ -498,12 +512,6 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 		return false, lazyerrors.Error(err)
 	}
 
-	// create PG index for collection name
-	// TODO https://github.com/FerretDB/FerretDB/issues/3375
-
-	// create PG index for table name
-	// TODO https://github.com/FerretDB/FerretDB/issues/3375
-
 	q = fmt.Sprintf(
 		`INSERT INTO %s (%s) VALUES ($1)`,
 		pgx.Identifier{dbName, metadataTableName}.Sanitize(),
@@ -521,6 +529,12 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 		r.colls[dbName] = map[string]*Collection{}
 	}
 	r.colls[dbName][collectionName] = c
+
+	// create PG index for collection name
+	// TODO https://github.com/FerretDB/FerretDB/issues/3375
+
+	// create PG index for table name
+	// TODO https://github.com/FerretDB/FerretDB/issues/3375
 
 	return true, nil
 }

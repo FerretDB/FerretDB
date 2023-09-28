@@ -528,6 +528,65 @@ func testUpdateCurrentDateCompat(t *testing.T, testCases map[string]updateCurren
 	}
 }
 
+func TestUpdateCommandCompat(t *testing.T) {
+	_, collection := setup.Setup(t)
+	nonExistentDB := collection.Database().Client().Database("non-existent")
+
+	for name, tc := range map[string]struct {
+		db    *mongo.Database // defaults to targetCollection.Database() and compatCollection.Database()
+		cName string
+	}{
+		"NonExistentDB": {
+			db:    nonExistentDB,
+			cName: "nonExistentCollection",
+		},
+		"NonExistentCollection": {
+			cName: "nonExistentCollection",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
+
+			t.Parallel()
+
+			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+				Providers:                []shareddata.Provider{shareddata.Composites},
+				AddNonExistentCollection: true,
+			})
+			ctx, targetCollection, compatCollection := s.Ctx, s.TargetCollections[0], s.CompatCollections[0]
+
+			targetDB := targetCollection.Database()
+			compatDB := compatCollection.Database()
+			if tc.db != nil {
+				targetDB = tc.db
+				compatDB = tc.db
+			}
+
+			q := bson.D{{"_id", "array"}}
+			command := bson.D{
+				{"update", tc.cName},
+				{"updates", bson.A{bson.D{
+					{"q", q},
+					{"u", bson.D{{"$set", bson.D{{"v", float64(1)}}}}},
+				}}},
+			}
+
+			var targetRes, compatRes bson.D
+			err := targetDB.RunCommand(ctx, command).Decode(&targetRes)
+			require.NoError(t, err)
+
+			err = compatDB.RunCommand(ctx, command).Decode(&compatRes)
+			require.NoError(t, err)
+
+			require.NoError(t, targetCollection.FindOne(ctx, q).Decode(&targetRes))
+			require.NoError(t, compatCollection.FindOne(ctx, q).Decode(&compatRes))
+
+			assert.Equal(t, compatRes, targetRes)
+		})
+	}
+}
+
 func TestUpdateCompat(t *testing.T) {
 	t.Parallel()
 
