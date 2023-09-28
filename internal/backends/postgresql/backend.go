@@ -71,6 +71,8 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 
 	var res backends.StatusResult
 
+	var pingSucceeded bool
+
 	for _, dbName := range dbs {
 		var cs []*metadata.Collection
 
@@ -79,13 +81,11 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 		}
 
 		res.CountCollections += int64(len(cs))
-	}
 
-	if len(dbs) == 0 {
-		return &res, nil
-	}
+		if pingSucceeded {
+			continue
+		}
 
-	for _, dbName := range dbs {
 		p, err := b.r.DatabaseGetExisting(ctx, dbName)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
@@ -98,6 +98,8 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 		if err = p.Ping(ctx); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
+		pingSucceeded = true
 	}
 
 	return &res, nil
