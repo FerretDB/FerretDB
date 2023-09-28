@@ -223,11 +223,10 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 		return err
 	}
 	cmd := exec.Command(bin, args...)
+	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
 	cmd.Stdout = stdout
 	cmd.Stderr = os.Stderr
-
-	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("%s failed: %s", strings.Join(cmd.Args, " "), err)
