@@ -25,7 +25,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func getBackends(t *testing.T) []backends.Backend {
+// testBackends returns all backends configured for testing contracts.
+func testBackends(t *testing.T) []backends.Backend {
 	t.Helper()
 
 	if testing.Short() {
@@ -35,6 +36,22 @@ func getBackends(t *testing.T) []backends.Backend {
 	l := testutil.Logger(t)
 
 	var res []backends.Backend
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3228
+	// {
+	// 	p, err := state.NewProvider("")
+	// 	require.NoError(t, err)
+
+	// 	b, err := postgresql.NewBackend(&postgresql.NewBackendParams{
+	// 		URI: "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1",
+	// 		L:   l.Named("postgresql"),
+	// 		P:   p,
+	// 	})
+	// 	require.NoError(t, err)
+	// 	t.Cleanup(b.Close)
+
+	// 	res = append(res, b)
+	// }
 
 	{
 		p, err := state.NewProvider("")

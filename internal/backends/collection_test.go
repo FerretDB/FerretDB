@@ -22,6 +22,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -30,9 +31,9 @@ import (
 func TestCollectionUpdateAll(t *testing.T) {
 	t.Parallel()
 
-	ctx := testutil.Ctx(t)
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 
-	for _, b := range getBackends(t) {
+	for _, b := range testBackends(t) {
 		b := b
 		t.Run(b.Name(), func(t *testing.T) {
 			t.Parallel()
@@ -60,6 +61,7 @@ func TestCollectionUpdateAll(t *testing.T) {
 				dbRes, err := b.ListDatabases(ctx, nil)
 				require.NoError(t, err)
 				require.NotNil(t, dbRes)
+
 				present := slices.ContainsFunc(dbRes.Databases, func(di backends.DatabaseInfo) bool {
 					return di.Name == dbName
 				})
@@ -68,10 +70,62 @@ func TestCollectionUpdateAll(t *testing.T) {
 				collRes, err := db.ListCollections(ctx, nil)
 				require.NoError(t, err)
 				require.NotNil(t, dbRes)
+
 				present = slices.ContainsFunc(collRes.Collections, func(ci backends.CollectionInfo) bool {
 					return ci.Name == collName
 				})
 				assert.False(t, present)
+			})
+
+			t.Run("CollectionDoesNotExist", func(t *testing.T) {
+				t.Parallel()
+
+				dbName, collName := testutil.DatabaseName(t), testutil.CollectionName(t)
+				otherCollName := collName + "_other"
+
+				db, err := b.Database(dbName)
+				require.NoError(t, err)
+
+				// to create database
+				err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
+					Name: otherCollName,
+				})
+				require.NoError(t, err)
+
+				coll, err := db.Collection(collName)
+				require.NoError(t, err)
+
+				updateRes, err := coll.UpdateAll(ctx, &backends.UpdateAllParams{
+					Docs: []*types.Document{
+						must.NotFail(types.NewDocument("_id", int32(42))),
+					},
+				})
+				assert.NoError(t, err)
+				require.NotNil(t, updateRes)
+				assert.Zero(t, updateRes.Updated)
+
+				dbRes, err := b.ListDatabases(ctx, nil)
+				require.NoError(t, err)
+				require.NotNil(t, dbRes)
+
+				present := slices.ContainsFunc(dbRes.Databases, func(di backends.DatabaseInfo) bool {
+					return di.Name == dbName
+				})
+				assert.True(t, present)
+
+				collRes, err := db.ListCollections(ctx, nil)
+				require.NoError(t, err)
+				require.NotNil(t, dbRes)
+
+				present = slices.ContainsFunc(collRes.Collections, func(ci backends.CollectionInfo) bool {
+					return ci.Name == collName
+				})
+				assert.False(t, present)
+
+				present = slices.ContainsFunc(collRes.Collections, func(ci backends.CollectionInfo) bool {
+					return ci.Name == otherCollName
+				})
+				assert.True(t, present)
 			})
 		})
 	}
