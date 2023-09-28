@@ -148,8 +148,9 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 		return nil, lazyerrors.Error(err)
 	}
 
+	var res backends.UpdateAllResult
 	if p == nil {
-		return nil, lazyerrors.Errorf("no database %q", c.dbName)
+		return &res, nil
 	}
 
 	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
@@ -157,7 +158,6 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 		return nil, lazyerrors.Error(err)
 	}
 
-	var res backends.UpdateAllResult
 	if meta == nil {
 		return &res, nil
 	}
