@@ -45,19 +45,48 @@ func (db *database) Collection(name string) (backends.Collection, error) {
 //
 //nolint:lll // for readability
 func (db *database) ListCollections(ctx context.Context, params *backends.ListCollectionsParams) (*backends.ListCollectionsResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3406
-	return new(backends.ListCollectionsResult), nil
+	list, err := db.r.CollectionList(ctx, db.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res := make([]backends.CollectionInfo, len(list))
+	for i, c := range list {
+		res[i] = backends.CollectionInfo{
+			Name: c.Name,
+		}
+	}
+
+	return &backends.ListCollectionsResult{
+		Collections: res,
+	}, nil
 }
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3406
+	created, err := db.r.CollectionCreate(ctx, db.name, params.Name)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !created {
+		return backends.NewError(backends.ErrorCodeCollectionAlreadyExists, err)
+	}
+
 	return nil
 }
 
 // DropCollection implements backends.Database interface.
 func (db *database) DropCollection(ctx context.Context, params *backends.DropCollectionParams) error {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3406
+	dropped, err := db.r.CollectionDrop(ctx, db.name, params.Name)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !dropped {
+		return backends.NewError(backends.ErrorCodeCollectionDoesNotExist, err)
+	}
+
 	return nil
 }
 
