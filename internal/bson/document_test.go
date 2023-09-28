@@ -26,7 +26,7 @@ import (
 var (
 	handshake1 = testCase{
 		name: "handshake1",
-		v: MustConvertDocument(must.NotFail(types.NewDocument(
+		v: must.NotFail(ConvertDocument(must.NotFail(types.NewDocument(
 			"ismaster", true,
 			"client", must.NotFail(types.NewDocument(
 				"driver", must.NotFail(types.NewDocument(
@@ -46,13 +46,13 @@ var (
 			)),
 			"compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
-		))),
+		)))),
 		b: testutil.MustParseDumpFile("testdata", "handshake1.hex"),
 	}
 
 	handshake2 = testCase{
 		name: "handshake2",
-		v: MustConvertDocument(must.NotFail(types.NewDocument(
+		v: must.NotFail(ConvertDocument(must.NotFail(types.NewDocument(
 			"ismaster", true,
 			"client", must.NotFail(types.NewDocument(
 				"driver", must.NotFail(types.NewDocument(
@@ -72,13 +72,13 @@ var (
 			)),
 			"compression", must.NotFail(types.NewArray("none")),
 			"loadBalanced", false,
-		))),
+		)))),
 		b: testutil.MustParseDumpFile("testdata", "handshake2.hex"),
 	}
 
 	handshake3 = testCase{
 		name: "handshake3",
-		v: MustConvertDocument(must.NotFail(types.NewDocument(
+		v: must.NotFail(ConvertDocument(must.NotFail(types.NewDocument(
 			"buildInfo", int32(1),
 			"lsid", must.NotFail(types.NewDocument(
 				"id", types.Binary{
@@ -90,13 +90,13 @@ var (
 				},
 			)),
 			"$db", "admin",
-		))),
+		)))),
 		b: testutil.MustParseDumpFile("testdata", "handshake3.hex"),
 	}
 
 	handshake4 = testCase{
 		name: "handshake4",
-		v: MustConvertDocument(must.NotFail(types.NewDocument(
+		v: must.NotFail(ConvertDocument(must.NotFail(types.NewDocument(
 			"version", "5.0.0",
 			"gitVersion", "1184f004a99660de6f5e745573419bda8a28c0e9",
 			"modules", must.NotFail(types.NewArray()),
@@ -136,13 +136,13 @@ var (
 			"maxBsonObjectSize", int32(16777216),
 			"storageEngines", must.NotFail(types.NewArray("devnull", "ephemeralForTest", "wiredTiger")),
 			"ok", float64(1),
-		))),
+		)))),
 		b: testutil.MustParseDumpFile("testdata", "handshake4.hex"),
 	}
 
 	all = testCase{
 		name: "all",
-		v: MustConvertDocument(must.NotFail(types.NewDocument(
+		v: must.NotFail(ConvertDocument(must.NotFail(types.NewDocument(
 			"binary", must.NotFail(types.NewArray(
 				types.Binary{Subtype: types.BinaryUser, B: []byte{0x42}},
 				types.Binary{Subtype: types.BinaryGeneric, B: []byte{}},
@@ -158,7 +158,7 @@ var (
 			"objectID", must.NotFail(types.NewArray(types.ObjectID{0x42}, types.ObjectID{})),
 			"string", must.NotFail(types.NewArray("foo", "")),
 			"timestamp", must.NotFail(types.NewArray(types.Timestamp(42), types.Timestamp(0))),
-		))),
+		)))),
 		b: testutil.MustParseDumpFile("testdata", "all.hex"),
 	}
 
@@ -170,10 +170,10 @@ var (
 
 	duplicateKeys = testCase{
 		name: "duplicateKeys",
-		v: MustConvertDocument(must.NotFail(types.NewDocument(
+		v: must.NotFail(ConvertDocument(must.NotFail(types.NewDocument(
 			"", false,
 			"", true,
-		))),
+		)))),
 		b: []byte{
 			0x0b, 0x00, 0x00, 0x00, // document length
 			0x08, 0x00, 0x00, // "": false

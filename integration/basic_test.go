@@ -635,3 +635,67 @@ func TestPingCommand(t *testing.T) {
 		require.Empty(t, actualDatabases.Databases)
 	})
 }
+
+func TestMutatingClientMetadata(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+	db := collection.Database()
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		command bson.D
+		err     *mongo.CommandError
+	}{
+		"NoMetadataHello": {
+			command: bson.D{
+				{"hello", int32(1)},
+			},
+		},
+		"NoMetadataIsMaster": {
+			command: bson.D{
+				{"isMaster", int32(1)},
+			},
+		},
+		"SomeMetadataHello": {
+			command: bson.D{
+				{"hello", int32(1)},
+				{"client", bson.D{{"application", "foobar"}}},
+			},
+			err: &mongo.CommandError{
+				Name:    "ClientMetadataCannotBeMutated",
+				Code:    186,
+				Message: "The client metadata document may only be sent in the first hello",
+			},
+		},
+		"SomeMetadataIsMaster": {
+			command: bson.D{
+				{"isMaster", int32(1)},
+				{"client", bson.D{{"application", "foobar"}}},
+			},
+			err: &mongo.CommandError{
+				Name:    "ClientMetadataCannotBeMutated",
+				Code:    186,
+				Message: "The client metadata document may only be sent in the first hello",
+			},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			res := db.RunCommand(ctx, tc.command)
+
+			if tc.err != nil {
+				err := res.Decode(&res)
+				AssertEqualCommandError(t, *tc.err, err)
+				return
+			}
+
+			var actualRes bson.D
+			err := res.Decode(&actualRes)
+
+			require.NoError(t, err)
+			require.NotNil(t, actualRes)
+		})
+	}
+}
