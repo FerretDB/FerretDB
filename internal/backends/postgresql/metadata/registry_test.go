@@ -556,12 +556,12 @@ func TestIndexesCreateDrop(t *testing.T) {
 		err = r.IndexesDrop(ctx, dbName, collectionName, toDrop)
 		require.NoError(t, err)
 
-		q := "SELECT count(*) FROM sqlite_master WHERE type = 'index' AND tbl_name = ?"
-		row := db.QueryRow(ctx, q, collection.TableName)
+		q := "SELECT count(indexdef) FROM pg_indexes WHERE schemaname = $1 AND tablename = $2"
+		row := db.QueryRow(ctx, q, dbName, collection.TableName)
 
 		var count int
 		require.NoError(t, row.Scan(&count))
-		require.Equal(t, 1, count) // only default index
+		require.Equal(t, 2, count) // only default index and index_unique should be left
 	})
 
 	t.Run("CheckSettingsAfterDrop", func(t *testing.T) {
