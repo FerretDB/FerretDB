@@ -339,16 +339,19 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *pgxpool.Pool, dbN
 		pgx.Identifier{dbName, metadataTableName}.Sanitize(),
 		IDColumn,
 	)
+
 	if _, err = p.Exec(ctx, q); err != nil {
 		_, _ = r.databaseDrop(ctx, p, dbName)
 		return nil, lazyerrors.Error(err)
 	}
+
 	q = fmt.Sprintf(
 		`CREATE UNIQUE INDEX %s ON %s (((%s->'table')))`,
 		pgx.Identifier{metadataTableName + "_table_idx"}.Sanitize(),
 		pgx.Identifier{dbName, metadataTableName}.Sanitize(),
 		DefaultColumn,
 	)
+
 	if _, err = p.Exec(ctx, q); err != nil {
 		_, _ = r.databaseDrop(ctx, p, dbName)
 		return nil, lazyerrors.Error(err)
@@ -778,8 +781,8 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 		q += "INDEX %s ON %s (%s)"
 
 		columns := make([]string, len(index.Key))
-		for i, key := range index.Key {
 
+		for i, key := range index.Key {
 			// if the field is nested (e.g. foo.bar), it needs to be translated to the correct json path (foo -> bar)
 			fs := strings.Split(key.Field, ".")
 			transformedParts := make([]string, len(fs))
@@ -795,7 +798,12 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 			}
 		}
 
-		q = fmt.Sprintf(q, pgx.Identifier{index.TableIndexName}.Sanitize(), pgx.Identifier{dbName, c.TableName}.Sanitize(), strings.Join(columns, ", "))
+		q = fmt.Sprintf(
+			q,
+			pgx.Identifier{index.TableIndexName}.Sanitize(),
+			pgx.Identifier{dbName, c.TableName}.Sanitize(),
+			strings.Join(columns, ", "),
+		)
 
 		if _, err = p.Exec(ctx, q); err != nil {
 			_ = r.indexesDrop(ctx, p, dbName, collectionName, created)

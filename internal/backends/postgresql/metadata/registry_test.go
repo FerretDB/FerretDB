@@ -20,10 +20,9 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
@@ -519,7 +518,8 @@ func TestIndexesCreateDrop(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := fmt.Sprintf(
-			`CREATE INDEX %s ON %q.%s USING btree ((((_jsonb -> 'foo'::text) -> 'bar'::text)), (((_jsonb -> 'foo'::text) -> 'baz'::text)) DESC)`,
+			`CREATE INDEX %s ON %q.%s USING btree`+
+				` ((((_jsonb -> 'foo'::text) -> 'bar'::text)), (((_jsonb -> 'foo'::text) -> 'baz'::text)) DESC)`,
 			tableIndexName, dbName, collection.TableName,
 		)
 		require.Equal(t, expected, sql)
