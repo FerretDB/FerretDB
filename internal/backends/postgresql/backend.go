@@ -85,13 +85,19 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 		return &res, nil
 	}
 
-	p, err := b.r.DatabaseGetExisting(ctx, dbs[0])
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	for _, dbName := range dbs {
+		p, err := b.r.DatabaseGetExisting(ctx, dbName)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 
-	if err = p.Ping(ctx); err != nil {
-		return nil, lazyerrors.Error(err)
+		if p == nil {
+			continue
+		}
+
+		if err = p.Ping(ctx); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	return &res, nil
