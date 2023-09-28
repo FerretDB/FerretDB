@@ -72,12 +72,26 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 	var res backends.StatusResult
 
 	for _, dbName := range dbs {
-		cs, err := b.r.CollectionList(ctx, dbName)
-		if err != nil {
+		var cs []*metadata.Collection
+
+		if cs, err = b.r.CollectionList(ctx, dbName); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
 		res.CountCollections += int64(len(cs))
+	}
+
+	if len(dbs) == 0 {
+		return &res, nil
+	}
+
+	p, err := b.r.DatabaseGetExisting(ctx, dbs[0])
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if err = p.Ping(ctx); err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	return &res, nil
