@@ -64,8 +64,23 @@ func (b *backend) Name() string {
 
 // Status implements backends.Backend interface.
 func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3404
-	return new(backends.StatusResult), nil
+	dbs, err := b.r.DatabaseList(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var res backends.StatusResult
+
+	for _, dbName := range dbs {
+		cs, err := b.r.CollectionList(ctx, dbName)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res.CountCollections += int64(len(cs))
+	}
+
+	return &res, nil
 }
 
 // Database implements backends.Backend interface.
@@ -113,7 +128,15 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3404
+	dropped, err := b.r.DatabaseDrop(ctx, params.Name)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !dropped {
+		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, nil)
+	}
+
 	return nil
 }
 
