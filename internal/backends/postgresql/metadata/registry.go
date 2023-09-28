@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"hash/fnv"
+	"regexp"
 	"slices"
 	"sort"
 	"strings"
@@ -55,6 +56,9 @@ const (
 	namespace = "ferretdb"
 	subsystem = "postgresql_metadata"
 )
+
+// specialCharacters are unsupported characters of PostgreSQL table name that are replaced with `_`.
+var specialCharacters = regexp.MustCompile("[^a-z][^a-z0-9_]*")
 
 // Registry provides access to PostgreSQL databases and collections information.
 //
@@ -468,7 +472,7 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 	list := maps.Values(colls)
 
 	for {
-		tableName = strings.ToLower(collectionName)
+		tableName = strings.ToLower(specialCharacters.ReplaceAllString(collectionName, "_"))
 		if strings.HasPrefix(tableName, reservedPrefix) {
 			tableName = "_" + tableName
 		}
