@@ -65,6 +65,8 @@ var (
 
 	useNewPgF   = flag.Bool("use-new-pg", false, "use new PostgreSQL backend")
 	useNewHanaF = flag.Bool("use-new-hana", false, "use new SAP HANA backend")
+
+	shareServerF = flag.Bool("share-server", true, "make all tests share a single instance of listener/handler/backend")
 )
 
 // Other globals.

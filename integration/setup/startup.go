@@ -16,6 +16,7 @@ package setup
 
 import (
 	"context"
+	"errors"
 	"os"
 	"runtime"
 	"time"
@@ -31,6 +32,7 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -42,6 +44,15 @@ var listenerMetrics = connmetrics.NewListenerMetrics()
 
 // exporter is a shared OTLP http exporter for tests.
 var exporter *otlptrace.Exporter
+
+// listener is a shared client connection listener for tests.
+var listener *clientconn.Listener
+
+// listenerCancelFunc is a shared function to cancel the listener's context.
+var listenerCancelFunc context.CancelFunc
+
+// handlerType represents the type of handler for tests.
+var handlerType string
 
 // Startup initializes things that should be initialized only once.
 func Startup() {
@@ -123,12 +134,42 @@ func Startup() {
 	)
 
 	otel.SetTracerProvider(tp)
+
+	if *shareServerF && *targetURLF == "" {
+		zap.S().Info("listener initialized start", handlerType)
+		var listenerCtx context.Context
+		listenerCtx, listenerCancelFunc = context.WithCancel(context.Background())
+		handlerType, listener = initListener(listenerCtx)
+
+		runDone := make(chan struct{})
+
+		go func() {
+			close(runDone)
+
+			err := listener.Run(listenerCtx)
+			if err == nil || errors.Is(err, context.Canceled) {
+				zap.S().Info("Listener stopped without error")
+			} else {
+				zap.S().Error("Listener stopped", zap.Error(err))
+			}
+		}()
+
+		// ensure that all listener's and handler's logs are written before test ends
+		defer func() {
+			<-runDone
+		}()
+		zap.S().Info("listener initialized end", handlerType)
+	}
 }
 
 // Shutdown cleans up after all tests.
 func Shutdown() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	if *shareServerF && *targetURLF == "" {
+		listenerCancelFunc()
+	}
 
 	must.NoError(exporter.Shutdown(ctx))
 

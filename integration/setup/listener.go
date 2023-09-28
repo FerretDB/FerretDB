@@ -30,26 +30,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/state"
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
-
-// unixSocketPath returns temporary Unix domain socket path for that test.
-func unixSocketPath(tb testtb.TB) string {
-	tb.Helper()
-
-	// do not use tb.TempDir() because generated path is too long on macOS
-	f, err := os.CreateTemp("", "ferretdb-*.sock")
-	require.NoError(tb, err)
-
-	// remove file so listener could create it (and remove it itself on stop)
-	err = f.Close()
-	require.NoError(tb, err)
-	err = os.Remove(f.Name())
-	require.NoError(tb, err)
-
-	return f.Name()
-}
 
 // listenerMongoDBURI builds MongoDB URI for in-process FerretDB.
 func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAuth bool) string {
@@ -101,138 +83,33 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 	defer span.End()
 
 	defer observability.FuncCall(ctx)()
-
-	require.Empty(tb, *targetURLF, "-target-url must be empty for in-process FerretDB")
-
+	var l *clientconn.Listener
 	var handler string
 
-	switch *targetBackendF {
-	case "ferretdb-pg":
-		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for %q", *targetBackendF)
-		require.Empty(tb, *sqliteURLF, "-sqlite-url must be empty for %q", *targetBackendF)
-		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
-		handler = "pg"
+	if *shareServerF {
+		l = listener
+		handler = handlerType
+	} else {
+		handler, l = initListener(ctx)
 
-	case "ferretdb-sqlite":
-		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
-		require.NotEmpty(tb, *sqliteURLF, "-sqlite-url must be set for %q", *targetBackendF)
-		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
-		handler = "sqlite"
+		runDone := make(chan struct{})
 
-	case "ferretdb-hana":
-		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
-		require.Empty(tb, *sqliteURLF, "-sqlite-url must be empty for %q", *targetBackendF)
-		require.NotEmpty(tb, *hanaURLF, "-hana-url must be set for %q", *targetBackendF)
-		handler = "hana"
+		go func() {
+			defer close(runDone)
 
-	case "mongodb":
-		tb.Fatal("can't start in-process MongoDB")
-
-	default:
-		// that should be caught by Startup function
-		panic("not reached")
-	}
-
-	// use per-test directory to prevent handler's/backend's metadata registry
-	// read databases owned by concurrent tests
-	sqliteURL := *sqliteURLF
-	if sqliteURL != "" {
-		u, err := url.Parse(sqliteURL)
-		require.NoError(tb, err)
-
-		require.True(tb, u.Path == "")
-		require.True(tb, u.Opaque != "")
-
-		u.Opaque = path.Join(u.Opaque, testutil.DatabaseName(tb)) + "/"
-		sqliteURL = u.String()
-
-		dir, err := filepath.Abs(u.Opaque)
-		require.NoError(tb, err)
-		require.NoError(tb, os.RemoveAll(dir))
-		require.NoError(tb, os.MkdirAll(dir, 0o777))
-
-		tb.Cleanup(func() {
-			if tb.Failed() {
-				tb.Logf("Keeping %s (%s) for debugging.", dir, sqliteURL)
-				return
+			err := l.Run(ctx)
+			if err == nil || errors.Is(err, context.Canceled) {
+				logger.Info("Listener stopped without error")
+			} else {
+				logger.Error("Listener stopped", zap.Error(err))
 			}
+		}()
 
-			require.NoError(tb, os.RemoveAll(dir))
+		// ensure that all listener's and handler's logs are written before test ends
+		tb.Cleanup(func() {
+			<-runDone
 		})
 	}
-
-	p, err := state.NewProvider("")
-	require.NoError(tb, err)
-
-	handlerOpts := &registry.NewHandlerOpts{
-		Logger:        logger,
-		ConnMetrics:   listenerMetrics.ConnMetrics,
-		StateProvider: p,
-
-		PostgreSQLURL: *postgreSQLURLF,
-		SQLiteURL:     sqliteURL,
-		HANAURL:       *hanaURLF,
-
-		TestOpts: registry.TestOpts{
-			DisableFilterPushdown: *disableFilterPushdownF,
-			EnableSortPushdown:    *enableSortPushdownF,
-			EnableOplog:           *enableOplogF,
-
-			UseNewPG:   *useNewPgF,
-			UseNewHana: *useNewHanaF,
-		},
-	}
-	h, err := registry.NewHandler(handler, handlerOpts)
-	require.NoError(tb, err)
-
-	listenerOpts := clientconn.NewListenerOpts{
-		ProxyAddr:      *targetProxyAddrF,
-		Mode:           clientconn.NormalMode,
-		Metrics:        listenerMetrics,
-		Handler:        h,
-		Logger:         logger,
-		TestRecordsDir: filepath.Join("..", "tmp", "records"),
-	}
-
-	if *targetProxyAddrF != "" {
-		listenerOpts.Mode = clientconn.DiffNormalMode
-	}
-
-	if *targetTLSF && *targetUnixSocketF {
-		tb.Fatal("Both -target-tls and -target-unix-socket are set.")
-	}
-
-	switch {
-	case *targetTLSF:
-		listenerOpts.TLS = "127.0.0.1:0"
-		listenerOpts.TLSCertFile = filepath.Join(CertsRoot, "server-cert.pem")
-		listenerOpts.TLSKeyFile = filepath.Join(CertsRoot, "server-key.pem")
-		listenerOpts.TLSCAFile = filepath.Join(CertsRoot, "rootCA-cert.pem")
-	case *targetUnixSocketF:
-		listenerOpts.Unix = unixSocketPath(tb)
-	default:
-		listenerOpts.TCP = "127.0.0.1:0"
-	}
-
-	l := clientconn.NewListener(&listenerOpts)
-
-	runDone := make(chan struct{})
-
-	go func() {
-		defer close(runDone)
-
-		err := l.Run(ctx)
-		if err == nil || errors.Is(err, context.Canceled) {
-			logger.Info("Listener stopped without error")
-		} else {
-			logger.Error("Listener stopped", zap.Error(err))
-		}
-	}()
-
-	// ensure that all listener's and handler's logs are written before test ends
-	tb.Cleanup(func() {
-		<-runDone
-	})
 
 	var hostPort, unixSocketPath string
 	var tlsAndAuth bool
@@ -252,4 +129,179 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
 
 	return uri
+}
+
+func initListener(ctx context.Context) (string, *clientconn.Listener) {
+	_, span := otel.Tracer("").Start(ctx, "initListener")
+	defer span.End()
+
+	defer observability.FuncCall(ctx)()
+
+	if *targetURLF != "" {
+		zap.S().Fatal("-target-url must be empty for in-process FerretDB")
+	}
+
+	var handler string
+	switch *targetBackendF {
+	case "ferretdb-pg":
+		if *postgreSQLURLF == "" {
+			zap.S().Fatalf("-postgresql-url must be set for %q", *targetBackendF)
+		}
+
+		if *sqliteURLF != "" {
+			zap.S().Fatalf("-sqlite-url must be empty for %q", *targetBackendF)
+		}
+
+		if *hanaURLF != "" {
+			zap.S().Fatalf("-hana-url must be empty for %q", *targetBackendF)
+		}
+
+		handler = "pg"
+
+	case "ferretdb-sqlite":
+		if *postgreSQLURLF != "" {
+			zap.S().Fatalf("-postgresql-url must be empty for %q", *targetBackendF)
+		}
+
+		if *sqliteURLF == "" {
+			zap.S().Fatalf("-sqlite-url must be set for %q", *targetBackendF)
+		}
+
+		if *hanaURLF != "" {
+			zap.S().Fatalf("-hana-url must be empty for %q", *targetBackendF)
+		}
+
+		handler = "sqlite"
+
+	case "ferretdb-hana":
+		if *postgreSQLURLF != "" {
+			zap.S().Fatalf("-postgresql-url must be empty for %q", *targetBackendF)
+		}
+
+		if *sqliteURLF != "" {
+			zap.S().Fatalf("-sqlite-url must be empty for %q", *targetBackendF)
+		}
+
+		if *hanaURLF == "" {
+			zap.S().Fatalf("-hana-url must be set for %q", *targetBackendF)
+		}
+
+		handler = "hana"
+
+	case "mongodb":
+		zap.S().Fatal("can't start in-process MongoDB")
+
+	default:
+		zap.S().Fatal("not reached")
+	}
+
+	// use per-test directory to prevent handler's/backend's metadata registry
+	// read databases owned by concurrent tests
+	sqliteURL := *sqliteURLF
+	if sqliteURL != "" {
+		u, err := url.Parse(sqliteURL)
+		if err != nil {
+			zap.S().Fatal(err)
+		}
+
+		u.Opaque = path.Join(u.Opaque, "test") + "/"
+		sqliteURL = u.String()
+
+		dir, err := filepath.Abs(u.Opaque)
+		if err != nil {
+			zap.S().Fatal(err)
+		}
+
+		if os.RemoveAll(dir) != nil {
+			zap.S().Fatal(err)
+		}
+
+		if os.MkdirAll(dir, 0o777) != nil {
+			zap.S().Fatal(err)
+		}
+
+		defer func() {
+			if os.RemoveAll(dir) != nil {
+				zap.S().Fatal(err)
+			}
+		}()
+	}
+
+	p, err := state.NewProvider("")
+	if err != nil {
+		zap.S().Fatal(err)
+	}
+
+	handlerOpts := &registry.NewHandlerOpts{
+		Logger:        zap.L(),
+		ConnMetrics:   listenerMetrics.ConnMetrics,
+		StateProvider: p,
+
+		PostgreSQLURL: *postgreSQLURLF,
+		SQLiteURL:     sqliteURL,
+		HANAURL:       *hanaURLF,
+
+		TestOpts: registry.TestOpts{
+			DisableFilterPushdown: *disableFilterPushdownF,
+			EnableSortPushdown:    *enableSortPushdownF,
+			EnableOplog:           *enableOplogF,
+
+			UseNewPG:   *useNewPgF,
+			UseNewHana: *useNewHanaF,
+		},
+	}
+
+	h, err := registry.NewHandler(handler, handlerOpts)
+	if err != nil {
+		zap.S().Fatal(err)
+	}
+
+	listenerOpts := clientconn.NewListenerOpts{
+		ProxyAddr:      *targetProxyAddrF,
+		Mode:           clientconn.NormalMode,
+		Metrics:        listenerMetrics,
+		Handler:        h,
+		Logger:         zap.L(),
+		TestRecordsDir: filepath.Join("..", "tmp", "records"),
+	}
+
+	if *targetProxyAddrF != "" {
+		listenerOpts.Mode = clientconn.DiffNormalMode
+	}
+
+	if *targetTLSF && *targetUnixSocketF {
+		zap.S().Fatal("Both -target-tls and -target-unix-socket are set.")
+	}
+
+	switch {
+	case *targetTLSF:
+		listenerOpts.TLS = "127.0.0.1:0"
+		listenerOpts.TLSCertFile = filepath.Join(CertsRoot, "server-cert.pem")
+		listenerOpts.TLSKeyFile = filepath.Join(CertsRoot, "server-key.pem")
+		listenerOpts.TLSCAFile = filepath.Join(CertsRoot, "rootCA-cert.pem")
+	case *targetUnixSocketF:
+		// do not use tb.TempDir() because generated path is too long on macOS
+		f, err := os.CreateTemp("", "ferretdb-*.sock")
+		if err != nil {
+			zap.S().Fatal(err)
+		}
+
+		// remove file so listener could create it (and remove it itself on stop)
+		err = f.Close()
+		if err != nil {
+			zap.S().Fatal(err)
+		}
+
+		err = os.Remove(f.Name())
+		if err != nil {
+			zap.S().Fatal(err)
+		}
+		listenerOpts.Unix = f.Name()
+	default:
+		listenerOpts.TCP = "127.0.0.1:0"
+	}
+
+	l := clientconn.NewListener(&listenerOpts)
+
+	return handler, l
 }
