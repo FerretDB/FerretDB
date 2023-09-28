@@ -39,5 +39,9 @@
 //
 // # Testing
 //
-// FIXME
+// Backends are mainly tested through FerretDB's integration tests.
+// But there are some common tests for all backends that check corner cases in contracts.
+// They also test that all backends adjusted to contract changes.
+//
+// Prefer integration tests when possible.
 package backends
