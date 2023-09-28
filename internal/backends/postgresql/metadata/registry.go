@@ -472,14 +472,14 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 	list := maps.Values(colls)
 
 	for {
-		tableName = strings.ToLower(specialCharacters.ReplaceAllString(collectionName, "_"))
+		tableName = specialCharacters.ReplaceAllString(strings.ToLower(collectionName), "_")
 		if strings.HasPrefix(tableName, reservedPrefix) {
 			tableName = "_" + tableName
 		}
 
 		suffixHash := fmt.Sprintf("_%08x", s)
 		if l := maxTableNameLength - len(suffixHash); len(tableName) > l {
-			tableName = tableName[0:l]
+			tableName = tableName[:l]
 		}
 
 		tableName = fmt.Sprintf("%s%s", tableName, suffixHash)
