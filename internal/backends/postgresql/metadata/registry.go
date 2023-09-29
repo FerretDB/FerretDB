@@ -739,7 +739,7 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 
 // IndexesCreate creates indexes in the collection.
 //
-// Existing indexes with given names are ignored (TODO?).
+// Existing indexes with given names are ignored.
 func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
 	defer observability.FuncCall(ctx)()
 
@@ -756,7 +756,7 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 
 // indexesCreate creates indexes in the collection.
 //
-// Existing indexes with given names are ignored (TODO?).
+// Existing indexes with given names are ignored.
 //
 // It does not hold the lock.
 func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, collectionName string, indexes []IndexInfo) error {
@@ -880,9 +880,9 @@ func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName strin
 
 // indexesDrop remove given connection's indexes.
 //
-// Non-existing indexes are ignored (TODO?).
+// Non-existing indexes are ignored.
 //
-// If database or collection does not exist, nil is returned (TODO?).
+// If database or collection does not exist, nil is returned.
 //
 // It does not hold the lock.
 func (r *Registry) indexesDrop(ctx context.Context, p *pgxpool.Pool, dbName, collectionName string, indexNames []string) error {
