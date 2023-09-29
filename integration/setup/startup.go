@@ -140,7 +140,7 @@ func Startup() {
 		zap.S().Info("listener initialized start", handlerType)
 		var listenerCtx context.Context
 		listenerCtx, listenerCancelFunc = context.WithCancel(context.Background())
-		handlerType, listener = initListener(listenerCtx)
+		handlerType, listener = initListener(listenerCtx, zap.S().Fatalf)
 
 		runDone := make(chan struct{})
 

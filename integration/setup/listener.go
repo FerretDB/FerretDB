@@ -90,7 +90,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		l = listener
 		handler = handlerType
 	} else {
-		handler, l = initListener(ctx)
+		handler, l = initListener(ctx, tb.Fatalf)
 
 		runDone := make(chan struct{})
 
@@ -131,68 +131,68 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 	return uri
 }
 
-func initListener(ctx context.Context) (string, *clientconn.Listener) {
+func initListener(ctx context.Context, fatalf func(format string, args ...any)) (string, *clientconn.Listener) {
 	_, span := otel.Tracer("").Start(ctx, "initListener")
 	defer span.End()
 
 	defer observability.FuncCall(ctx)()
 
 	if *targetURLF != "" {
-		zap.S().Fatal("-target-url must be empty for in-process FerretDB")
+		fatalf("-target-url must be empty for in-process FerretDB")
 	}
 
 	var handler string
 	switch *targetBackendF {
 	case "ferretdb-pg":
 		if *postgreSQLURLF == "" {
-			zap.S().Fatalf("-postgresql-url must be set for %q", *targetBackendF)
+			fatalf("-postgresql-url must be set for %q", *targetBackendF)
 		}
 
 		if *sqliteURLF != "" {
-			zap.S().Fatalf("-sqlite-url must be empty for %q", *targetBackendF)
+			fatalf("-sqlite-url must be empty for %q", *targetBackendF)
 		}
 
 		if *hanaURLF != "" {
-			zap.S().Fatalf("-hana-url must be empty for %q", *targetBackendF)
+			fatalf("-hana-url must be empty for %q", *targetBackendF)
 		}
 
 		handler = "pg"
 
 	case "ferretdb-sqlite":
 		if *postgreSQLURLF != "" {
-			zap.S().Fatalf("-postgresql-url must be empty for %q", *targetBackendF)
+			fatalf("-postgresql-url must be empty for %q", *targetBackendF)
 		}
 
 		if *sqliteURLF == "" {
-			zap.S().Fatalf("-sqlite-url must be set for %q", *targetBackendF)
+			fatalf("-sqlite-url must be set for %q", *targetBackendF)
 		}
 
 		if *hanaURLF != "" {
-			zap.S().Fatalf("-hana-url must be empty for %q", *targetBackendF)
+			fatalf("-hana-url must be empty for %q", *targetBackendF)
 		}
 
 		handler = "sqlite"
 
 	case "ferretdb-hana":
 		if *postgreSQLURLF != "" {
-			zap.S().Fatalf("-postgresql-url must be empty for %q", *targetBackendF)
+			fatalf("-postgresql-url must be empty for %q", *targetBackendF)
 		}
 
 		if *sqliteURLF != "" {
-			zap.S().Fatalf("-sqlite-url must be empty for %q", *targetBackendF)
+			fatalf("-sqlite-url must be empty for %q", *targetBackendF)
 		}
 
 		if *hanaURLF == "" {
-			zap.S().Fatalf("-hana-url must be set for %q", *targetBackendF)
+			fatalf("-hana-url must be set for %q", *targetBackendF)
 		}
 
 		handler = "hana"
 
 	case "mongodb":
-		zap.S().Fatal("can't start in-process MongoDB")
+		fatalf("can't start in-process MongoDB")
 
 	default:
-		zap.S().Fatal("not reached")
+		fatalf("not reached")
 	}
 
 	// use per-test directory to prevent handler's/backend's metadata registry
@@ -201,7 +201,7 @@ func initListener(ctx context.Context) (string, *clientconn.Listener) {
 	if sqliteURL != "" {
 		u, err := url.Parse(sqliteURL)
 		if err != nil {
-			zap.S().Fatal(err)
+			fatalf("error parsing SQLite URL: %v", err)
 		}
 
 		u.Opaque = path.Join(u.Opaque, "test") + "/"
@@ -209,27 +209,27 @@ func initListener(ctx context.Context) (string, *clientconn.Listener) {
 
 		dir, err := filepath.Abs(u.Opaque)
 		if err != nil {
-			zap.S().Fatal(err)
+			fatalf("error getting absolute path: %v", err)
 		}
 
 		if os.RemoveAll(dir) != nil {
-			zap.S().Fatal(err)
+			fatalf("error removing directory: %v", err)
 		}
 
 		if os.MkdirAll(dir, 0o777) != nil {
-			zap.S().Fatal(err)
+			fatalf("error creating directory: %v", err)
 		}
 
 		defer func() {
 			if os.RemoveAll(dir) != nil {
-				zap.S().Fatal(err)
+				fatalf("error removing directory: %v", err)
 			}
 		}()
 	}
 
 	p, err := state.NewProvider("")
 	if err != nil {
-		zap.S().Fatal(err)
+		fatalf("error creating state provider: %v", err)
 	}
 
 	handlerOpts := &registry.NewHandlerOpts{
@@ -253,7 +253,7 @@ func initListener(ctx context.Context) (string, *clientconn.Listener) {
 
 	h, err := registry.NewHandler(handler, handlerOpts)
 	if err != nil {
-		zap.S().Fatal(err)
+		fatalf("error creating handler: %v", err)
 	}
 
 	listenerOpts := clientconn.NewListenerOpts{
@@ -270,7 +270,7 @@ func initListener(ctx context.Context) (string, *clientconn.Listener) {
 	}
 
 	if *targetTLSF && *targetUnixSocketF {
-		zap.S().Fatal("Both -target-tls and -target-unix-socket are set.")
+		fatalf("Both -target-tls and -target-unix-socket are set.")
 	}
 
 	switch {
@@ -283,18 +283,18 @@ func initListener(ctx context.Context) (string, *clientconn.Listener) {
 		// do not use tb.TempDir() because generated path is too long on macOS
 		f, err := os.CreateTemp("", "ferretdb-*.sock")
 		if err != nil {
-			zap.S().Fatal(err)
+			fatalf("error creating Unix socket: %v", err)
 		}
 
 		// remove file so listener could create it (and remove it itself on stop)
 		err = f.Close()
 		if err != nil {
-			zap.S().Fatal(err)
+			fatalf("error closing Unix socket: %v", err)
 		}
 
 		err = os.Remove(f.Name())
 		if err != nil {
-			zap.S().Fatal(err)
+			fatalf("error removing Unix socket: %v", err)
 		}
 		listenerOpts.Unix = f.Name()
 	default:
