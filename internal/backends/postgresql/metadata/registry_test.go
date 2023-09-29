@@ -459,10 +459,6 @@ func TestIndexesCreateDrop(t *testing.T) {
 	r, db, dbName := createDatabase(t, ctx)
 	collectionName := testutil.CollectionName(t)
 
-	t.Cleanup(func() {
-		_, _ = r.DatabaseDrop(ctx, dbName)
-	})
-
 	toCreate := []IndexInfo{
 		{
 			Name: "index_non_unique",
