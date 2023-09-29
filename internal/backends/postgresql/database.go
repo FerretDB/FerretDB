@@ -16,8 +16,6 @@ package postgresql
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
@@ -132,8 +130,6 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 
 // Stats implements backends.Database interface.
 func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsParams) (*backends.DatabaseStatsResult, error) {
-	var res backends.DatabaseStatsResult
-
 	p, err := db.r.DatabaseGetExisting(ctx, db.name)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -147,19 +143,16 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	res.CountCollections = int64(len(list))
 
-	// Call ANALYZE to update statistics, the actual statistics are needed to estimate the number of rows in all tables,
-	// see https://wiki.postgresql.org/wiki/Count_estimate.
-	q := `ANALYZE`
-	if _, err := p.Exec(ctx, q); err != nil {
+	stats, err := collectionsStats(ctx, p, db.name, list)
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	// Total size is the disk space used by all the relations in the given schema, including tables, indexes and TOAST data.
 	// It also includes the size of FerretDB metadata relations.
-	//  See also https://www.postgresql.org/docs/15/functions-admin.html#FUNCTIONS-ADMIN-DBOBJECT
-	q = `
+	// See also https://www.postgresql.org/docs/15/functions-admin.html#FUNCTIONS-ADMIN-DBOBJECT.
+	q := `
 		SELECT
 		    SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))
 		FROM pg_tables
@@ -172,46 +165,14 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		return nil, lazyerrors.Error(err)
 	}
 
-	// If the query gave nil, it means the schema does not exist or empty, no need to check other stats.
-	if schemaSize == nil {
-		return &res, nil
-	}
-
-	res.SizeTotal = *schemaSize
-
-	var placeholder metadata.Placeholder
-	placeholders := make([]string, len(list))
-	args = []any{db.name}
-
-	placeholder.Next()
-
-	for i, c := range list {
-		placeholders[i] = placeholder.Next()
-		args = append(args, c.TableName)
-	}
-
-	// In this query we select all the tables in the given schema, but we exclude FerretDB metadata table (by reserved prefix).
-	q = fmt.Sprintf(`
-		SELECT
-			COUNT(i.indexname)                       AS CountIndexes,
-			COALESCE(SUM(c.reltuples), 0)            AS CountRows,
-			COALESCE(SUM(pg_table_size(c.oid)), 0) 	 AS SizeTables,
-			COALESCE(SUM(pg_indexes_size(c.oid)), 0) AS SizeIndexes
-		FROM pg_tables AS t
-			LEFT JOIN pg_class AS c ON c.relname = t.tablename AND c.relnamespace = quote_ident(t.schemaname)::regnamespace
-			LEFT JOIN pg_indexes AS i ON i.schemaname = t.schemaname AND i.tablename = t.tablename
-		WHERE t.schemaname = $1 AND t.tablename IN (%s)`,
-		strings.Join(placeholders, ", "),
-	)
-
-	row = p.QueryRow(ctx, q, args...)
-	if err := row.Scan(
-		&res.CountIndexes, &res.CountObjects, &res.SizeCollections, &res.SizeIndexes,
-	); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	return &res, nil
+	return &backends.DatabaseStatsResult{
+		CountCollections: int64(len(list)),
+		CountObjects:     stats.countRows,
+		CountIndexes:     stats.countIndexes,
+		SizeTotal:        *schemaSize,
+		SizeIndexes:      stats.sizeIndexes,
+		SizeCollections:  stats.sizeTables,
+	}, nil
 }
 
 // check interfaces
