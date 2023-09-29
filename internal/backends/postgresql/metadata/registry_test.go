@@ -599,9 +599,25 @@ func TestIndexesCreateDrop(t *testing.T) {
 		err = r.initCollections(ctx, dbName, db)
 		require.NoError(t, err)
 
-		collection, err = r.CollectionGet(ctx, dbName, collectionName)
+		refreshedCollection, err := r.CollectionGet(ctx, dbName, collectionName)
 		require.NoError(t, err)
-		require.Equal(t, 4, len(collection.Settings.Indexes))
+
+		require.Equal(t, 4, len(refreshedCollection.Settings.Indexes))
+
+		for _, index := range refreshedCollection.Settings.Indexes {
+			switch {
+			case index.Name == "_id_":
+				assert.Equal(t, 1, len(index.Key))
+			case index.Name == "index_non_unique":
+				assert.Equal(t, 2, len(index.Key))
+			case index.Name == "index_unique":
+				assert.Equal(t, 1, len(index.Key))
+			case index.Name == "nested_fields":
+				assert.Equal(t, 2, len(index.Key))
+			default:
+				t.Errorf("unexpected index: %s", index.Name)
+			}
+		}
 	})
 
 	t.Run("DropIndexes", func(t *testing.T) {

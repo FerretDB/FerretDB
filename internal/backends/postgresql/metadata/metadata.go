@@ -159,8 +159,9 @@ func (s *Settings) Unmarshal(doc *types.Document) error {
 
 		doc := v.(*types.Document)
 
-		key := make([]IndexKeyPair, doc.Len())
-		keyIter := must.NotFail(doc.Get("key")).(*types.Document).Iterator()
+		keyDoc := must.NotFail(doc.Get("key")).(*types.Document)
+		keyIter := keyDoc.Iterator()
+		key := make([]IndexKeyPair, keyDoc.Len())
 
 		defer keyIter.Close()
 
