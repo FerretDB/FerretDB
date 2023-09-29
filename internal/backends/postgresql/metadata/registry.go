@@ -24,6 +24,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/google/uuid"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
@@ -783,38 +785,15 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 			continue
 		}
 
-		h := fnv.New32a()
-		must.NotFail(h.Write([]byte(index.Name)))
-		s := h.Sum32()
+		uuidPart := must.NotFail(uuid.NewRandom()).String()
+		tableNamePart := c.TableName
+		tableNamePartMax := maxIndexNameLength - len(uuidPart) - 5 // 5 is for _ and _idx
 
-		var tableIndexName string
-
-		// To create index in the DB, we truncate the index name to maxIndexNameLength.
-		// If the truncated name is already used, we increment the hash and try again.
-		for {
-			tableIndexName = fmt.Sprintf("%s_%s_idx", strings.ToLower(collectionName), strings.ToLower(index.Name))
-			tableIndexName = specialCharacters.ReplaceAllString(tableIndexName, "_")
-
-			if strings.HasPrefix(tableIndexName, reservedPrefix) {
-				tableIndexName = "_" + tableIndexName
-			}
-
-			suffixHash := fmt.Sprintf("_%08x", s)
-			if l := maxIndexNameLength - len(suffixHash); len(tableIndexName) > l {
-				tableIndexName = tableIndexName[:l]
-			}
-
-			tableIndexName = fmt.Sprintf("%s%s", tableIndexName, suffixHash)
-
-			if !slices.ContainsFunc(c.Settings.Indexes, func(ii IndexInfo) bool { return ii.TableIndexName == tableIndexName }) {
-				break
-			}
-
-			// the given name is already used, generate a new name by incrementing the hash
-			s++
+		if len(tableNamePart) > tableNamePartMax {
+			tableNamePart = tableNamePart[:tableNamePartMax]
 		}
 
-		index.TableIndexName = tableIndexName
+		index.TableIndexName = fmt.Sprintf("%s_%s_idx", tableNamePart, uuidPart)
 
 		q := "CREATE "
 

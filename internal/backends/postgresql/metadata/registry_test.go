@@ -21,6 +21,8 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
@@ -504,7 +506,12 @@ func TestIndexesCreateDrop(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("NonUniqueIndex", func(t *testing.T) {
-		tableIndexName := "index_non_unique_13064d07"
+		i := slices.IndexFunc(collection.Settings.Indexes, func(ii IndexInfo) bool {
+			return ii.Name == "index_non_unique"
+		})
+		require.GreaterOrEqual(t, i, 0)
+		tableIndexName := collection.Settings.Indexes[i].TableIndexName
+
 		var sql string
 		err = db.QueryRow(
 			ctx,
@@ -514,14 +521,19 @@ func TestIndexesCreateDrop(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := fmt.Sprintf(
-			`CREATE INDEX %s ON %q.%s USING btree (((_jsonb -> 'f1'::text)), ((_jsonb -> 'f2'::text)) DESC)`,
+			`CREATE INDEX %q ON %q.%s USING btree (((_jsonb -> 'f1'::text)), ((_jsonb -> 'f2'::text)) DESC)`,
 			tableIndexName, dbName, collection.TableName,
 		)
 		require.Equal(t, expected, sql)
 	})
 
 	t.Run("UniqueIndex", func(t *testing.T) {
-		tableIndexName := "index_unique_d29d5863"
+		i := slices.IndexFunc(collection.Settings.Indexes, func(ii IndexInfo) bool {
+			return ii.Name == "index_unique"
+		})
+		require.GreaterOrEqual(t, i, 0)
+		tableIndexName := collection.Settings.Indexes[i].TableIndexName
+
 		var sql string
 		err = db.QueryRow(
 			ctx,
@@ -531,14 +543,19 @@ func TestIndexesCreateDrop(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := fmt.Sprintf(
-			`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> 'foo'::text)))`,
+			`CREATE UNIQUE INDEX %q ON %q.%s USING btree (((_jsonb -> 'foo'::text)))`,
 			tableIndexName, dbName, collection.TableName,
 		)
 		require.Equal(t, expected, sql)
 	})
 
 	t.Run("NestedFields", func(t *testing.T) {
-		tableIndexName := "nested_fields_21fa0586"
+		i := slices.IndexFunc(collection.Settings.Indexes, func(ii IndexInfo) bool {
+			return ii.Name == "nested_fields"
+		})
+		require.GreaterOrEqual(t, i, 0)
+		tableIndexName := collection.Settings.Indexes[i].TableIndexName
+
 		var sql string
 		err = db.QueryRow(
 			ctx,
@@ -548,7 +565,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := fmt.Sprintf(
-			`CREATE INDEX %s ON %q.%s USING btree`+
+			`CREATE INDEX %q ON %q.%s USING btree`+
 				` ((((_jsonb -> 'foo'::text) -> 'bar'::text)), (((_jsonb -> 'foo'::text) -> 'baz'::text)) DESC)`,
 			tableIndexName, dbName, collection.TableName,
 		)
@@ -556,7 +573,12 @@ func TestIndexesCreateDrop(t *testing.T) {
 	})
 
 	t.Run("DefaultIndex", func(t *testing.T) {
-		tableIndexName := "_id__67399184"
+		i := slices.IndexFunc(collection.Settings.Indexes, func(ii IndexInfo) bool {
+			return ii.Name == "_id_"
+		})
+		require.GreaterOrEqual(t, i, 0)
+		tableIndexName := collection.Settings.Indexes[i].TableIndexName
+
 		var sql string
 		err = db.QueryRow(
 			ctx,
@@ -566,7 +588,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := fmt.Sprintf(
-			`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> '_id'::text)))`,
+			`CREATE UNIQUE INDEX %q ON %q.%s USING btree (((_jsonb -> '_id'::text)))`,
 			tableIndexName, dbName, collection.TableName,
 		)
 		require.Equal(t, expected, sql)
