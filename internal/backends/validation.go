@@ -26,7 +26,7 @@ var databaseNameRe = regexp.MustCompile("^[a-zA-Z0-9_-]{1,63}$")
 // collectionNameRe validates collection names.
 var collectionNameRe = regexp.MustCompile("^[^\\.$\x00][^$\x00]{0,234}$")
 
-// Reserved prefix for database and collection names.
+// ReservedPrefix for names: databases, collections, schemas, tables, indexes, columns, etc.
 const ReservedPrefix = "_ferretdb_"
 
 // validateDatabaseName checks that database name is valid for FerretDB.

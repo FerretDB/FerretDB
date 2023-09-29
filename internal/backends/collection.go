@@ -214,6 +214,8 @@ func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams
 type CollectionStatsParams struct{}
 
 // CollectionStatsResult represents the results of Collection.Stats method.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/2447
 type CollectionStatsResult struct {
 	CountObjects   int64
 	CountIndexes   int64
