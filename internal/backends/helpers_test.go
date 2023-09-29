@@ -15,6 +15,7 @@
 package backends_test // to avoid import cycle
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -69,4 +70,16 @@ func testBackends(t *testing.T) []backends.Backend {
 	}
 
 	return res
+}
+
+// cleanupDatabase drops the database with the given name before and after the test.
+func cleanupDatabase(t *testing.T, ctx context.Context, b backends.Backend, dbName string) {
+	t.Helper()
+
+	p := &backends.DropDatabaseParams{Name: dbName}
+	_ = b.DropDatabase(ctx, p)
+
+	t.Cleanup(func() {
+		_ = b.DropDatabase(ctx, p)
+	})
 }

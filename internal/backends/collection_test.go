@@ -42,6 +42,7 @@ func TestCollectionUpdateAll(t *testing.T) {
 				t.Parallel()
 
 				dbName, collName := testutil.DatabaseName(t), testutil.CollectionName(t)
+				cleanupDatabase(t, ctx, b, dbName)
 
 				db, err := b.Database(dbName)
 				require.NoError(t, err)
@@ -82,6 +83,7 @@ func TestCollectionUpdateAll(t *testing.T) {
 
 				dbName, collName := testutil.DatabaseName(t), testutil.CollectionName(t)
 				otherCollName := collName + "_other"
+				cleanupDatabase(t, ctx, b, dbName)
 
 				db, err := b.Database(dbName)
 				require.NoError(t, err)
