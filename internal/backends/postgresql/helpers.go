@@ -19,9 +19,10 @@ import (
 	"errors"
 	"fmt"
 
+	"golang.org/x/exp/maps"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
-	"golang.org/x/exp/maps"
 )
 
 // unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.
