@@ -98,6 +98,11 @@ func TestCreateDrop(t *testing.T) {
 }
 
 func TestCreateDropStress(t *testing.T) {
+	// Otherwise, the test might fail with "database schema has changed".
+	// That error code is SQLITE_SCHEMA (17).
+	// See https://www.sqlite.org/rescode.html#schema and https://www.sqlite.org/compile.html#max_schema_retry
+	require.Less(t, teststress.NumGoroutines, 50)
+
 	ctx := testutil.Ctx(t)
 
 	sp, err := state.NewProvider("")
@@ -135,11 +140,18 @@ func TestCreateDropStress(t *testing.T) {
 
 				testCollection(t, ctx, r, db, dbName, collectionName)
 			})
+
+			require.Equal(t, int32(teststress.NumGoroutines), i.Load())
 		})
 	}
 }
 
 func TestCreateSameStress(t *testing.T) {
+	// Otherwise, the test might fail with "database schema has changed".
+	// That error code is SQLITE_SCHEMA (17).
+	// See https://www.sqlite.org/rescode.html#schema and https://www.sqlite.org/compile.html#max_schema_retry
+	require.Less(t, teststress.NumGoroutines, 50)
+
 	ctx := testutil.Ctx(t)
 
 	sp, err := state.NewProvider("")
@@ -201,12 +213,18 @@ func TestCreateSameStress(t *testing.T) {
 				require.NoError(t, err)
 			})
 
+			require.Equal(t, int32(teststress.NumGoroutines), i.Load())
 			require.Equal(t, int32(1), createdTotal.Load())
 		})
 	}
 }
 
 func TestDropSameStress(t *testing.T) {
+	// Otherwise, the test might fail with "database schema has changed".
+	// That error code is SQLITE_SCHEMA (17).
+	// See https://www.sqlite.org/rescode.html#schema and https://www.sqlite.org/compile.html#max_schema_retry
+	require.Less(t, teststress.NumGoroutines, 50)
+
 	ctx := testutil.Ctx(t)
 
 	sp, err := state.NewProvider("")
@@ -259,6 +277,11 @@ func TestDropSameStress(t *testing.T) {
 }
 
 func TestCreateDropSameStress(t *testing.T) {
+	// Otherwise, the test might fail with "database schema has changed".
+	// That error code is SQLITE_SCHEMA (17).
+	// See https://www.sqlite.org/rescode.html#schema and https://www.sqlite.org/compile.html#max_schema_retry
+	require.Less(t, teststress.NumGoroutines, 50)
+
 	ctx := testutil.Ctx(t)
 
 	sp, err := state.NewProvider("")
@@ -311,6 +334,7 @@ func TestCreateDropSameStress(t *testing.T) {
 				}
 			})
 
+			require.Equal(t, int32(teststress.NumGoroutines), i.Load())
 			require.Less(t, int32(1), createdTotal.Load())
 			require.Less(t, int32(1), droppedTotal.Load())
 		})
