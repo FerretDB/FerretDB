@@ -149,9 +149,9 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		return nil, lazyerrors.Error(err)
 	}
 
-	// Total size is the disk space used by all the relations in the given schema, including tables, indexes and TOAST data.
-	// It also includes the size of FerretDB metadata relations.
-	// See also https://www.postgresql.org/docs/15/functions-admin.html#FUNCTIONS-ADMIN-DBOBJECT.
+	// Total size is the disk space used by all the relations in the given schema,
+	// including tables, indexes, TOAST data also includes FerretDB metadata relations.
+	// See https://www.postgresql.org/docs/15/functions-admin.html#FUNCTIONS-ADMIN-DBOBJECT.
 	q := `
 		SELECT
 		    SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))
@@ -160,7 +160,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	args := []any{db.name}
 	row := p.QueryRow(ctx, q, args...)
 
-	var schemaSize *int64
+	var schemaSize int64
 	if err := row.Scan(&schemaSize); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -169,7 +169,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		CountCollections: int64(len(list)),
 		CountObjects:     stats.countRows,
 		CountIndexes:     stats.countIndexes,
-		SizeTotal:        *schemaSize,
+		SizeTotal:        schemaSize,
 		SizeIndexes:      stats.sizeIndexes,
 		SizeCollections:  stats.sizeTables,
 	}, nil
