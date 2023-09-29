@@ -46,10 +46,12 @@ func convertJSON(value any) any {
 	case map[string]any:
 		d := types.MakeDocument(len(value))
 		keys := maps.Keys(value)
+
 		for _, k := range keys {
 			v := value[k]
 			d.Set(k, convertJSON(v))
 		}
+
 		return d
 
 	case []any:
@@ -57,6 +59,7 @@ func convertJSON(value any) any {
 		for _, v := range value {
 			a.Append(convertJSON(v))
 		}
+
 		return a
 
 	case nil:
