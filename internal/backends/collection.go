@@ -43,6 +43,7 @@ type Collection interface {
 	Explain(context.Context, *ExplainParams) (*ExplainResult, error)
 
 	Stats(context.Context, *CollectionStatsParams) (*CollectionStatsResult, error)
+	Compact(context.Context, *CompactParams) (*CompactResult, error)
 
 	ListIndexes(context.Context, *ListIndexesParams) (*ListIndexesResult, error)
 	CreateIndexes(context.Context, *CreateIndexesParams) (*CreateIndexesResult, error)
@@ -211,7 +212,9 @@ func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams
 }
 
 // CollectionStatsParams represents the parameters of Collection.Stats method.
-type CollectionStatsParams struct{}
+type CollectionStatsParams struct {
+	Refresh bool
+}
 
 // CollectionStatsResult represents the results of Collection.Stats method.
 //
@@ -230,6 +233,25 @@ func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStats
 
 	res, err := cc.c.Stats(ctx, params)
 	checkError(err, ErrorCodeDatabaseDoesNotExist, ErrorCodeCollectionDoesNotExist)
+
+	return res, err
+}
+
+// CompactParams represents the parameters of Collection.Compact method.
+type CompactParams struct{}
+
+// CompactResult represents the results of Collection.Compact method.
+type CompactResult struct{}
+
+// Compact reduces the disk space collection takes (by defragmenting, removing dead rows, etc)
+// and refreshes its statistics.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3466
+func (cc *collectionContract) Compact(ctx context.Context, params *CompactParams) (*CompactResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := cc.c.Compact(ctx, params)
+	checkError(err) // ErrorCodeDatabaseDoesNotExist, ErrorCodeCollectionDoesNotExist?
 
 	return res, err
 }
