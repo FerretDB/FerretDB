@@ -475,11 +475,7 @@ func includeProjection(path types.Path, curIndex int, source any, projected, fil
 				// in source.
 				var v any
 
-				v, err = arr.Get(i)
-				if err != nil {
-					panic(err)
-				}
-
+				v, _ = arr.Get(i)
 				docVal, ok := v.(*types.Document)
 				if !ok {
 					panic("projected field must be a document")
