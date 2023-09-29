@@ -16,15 +16,21 @@
 package testdata
 
 func testCorrect() {
-	// below issue url will be changed to https://api.github.com/repos/FerretDB/FerretDB/issues/2733
-	// and checked issue open or closed.
-	// TODO https://github.com/FerretDB/FerretDB/issues/2733
+	// TODO https://github.com/FerretDB/FerretDB/issues/2733 // want "valid TODO comment"
 }
 
 func testCorrectForNow() {
-	// TODO no URL
+	// TODO no URL // want "invalid TODO comment because we need https"
 }
 
 func testIncorrect() {
 	// TODO: https://github.com/FerretDB/FerretDB/issues/2733 // want "invalid TODO comment"
+}
+
+func testCorrectButClosedIssue() {
+	// TODO: https://github.com/FerretDB/FerretDB/issues/3341 // want "invalid TODO comment because closed issue"
+}
+
+func testIncorrectCorrect() {
+	// TODO: https://github.com/FerretDB/FerretDB/issues/2733 // want "valid TODO comment open issue"
 }
