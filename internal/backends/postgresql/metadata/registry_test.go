@@ -21,12 +21,11 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"golang.org/x/exp/slices"
-
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -409,7 +408,7 @@ func TestRenameCollection(t *testing.T) {
 		t.Skip("skipping in -short mode")
 	}
 
-	t.Skip("Rename collection doesn't work correctly")
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/3409")
 
 	t.Parallel()
 
@@ -601,7 +600,8 @@ func TestIndexesCreateDrop(t *testing.T) {
 		err = r.initCollections(ctx, dbName, db)
 		require.NoError(t, err)
 
-		refreshedCollection, err := r.CollectionGet(ctx, dbName, collectionName)
+		var refreshedCollection *Collection
+		refreshedCollection, err = r.CollectionGet(ctx, dbName, collectionName)
 		require.NoError(t, err)
 
 		require.Equal(t, 4, len(refreshedCollection.Settings.Indexes))
