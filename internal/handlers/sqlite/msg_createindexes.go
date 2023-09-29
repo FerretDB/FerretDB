@@ -118,8 +118,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	createCollection := false
-
+	var createCollection bool
 	beforeCreate, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
 	if err != nil {
 		switch {
