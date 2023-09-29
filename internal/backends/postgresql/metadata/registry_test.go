@@ -451,6 +451,10 @@ func TestRenameCollection(t *testing.T) {
 }
 
 func TestIndexesCreateDrop(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	t.Parallel()
 
 	connInfo := conninfo.New()
