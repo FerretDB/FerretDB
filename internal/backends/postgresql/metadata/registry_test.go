@@ -624,6 +624,17 @@ func TestIndexesCreateDrop(t *testing.T) {
 		collection, err = r.CollectionGet(ctx, dbName, collectionName)
 		require.NoError(t, err)
 		require.Equal(t, 2, len(collection.Settings.Indexes))
+
+		for _, index := range collection.Settings.Indexes {
+			switch index.Name {
+			case "_id_":
+				assert.Equal(t, 1, len(index.Key))
+			case "index_unique":
+				assert.Equal(t, 1, len(index.Key))
+			default:
+				t.Errorf("unexpected index: %s", index.Name)
+			}
+		}
 	})
 
 	t.Run("MetadataIndexes", func(t *testing.T) {
