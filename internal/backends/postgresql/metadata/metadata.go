@@ -198,14 +198,14 @@ func (s *Settings) Unmarshal(doc *types.Document) error {
 
 // IndexInfo represents information about a single index.
 type IndexInfo struct {
-	Name           string         `json:"name"`
-	TableIndexName string         `json:"pgindex"` // how the index is created in the DB, like TableName for Collection
-	Key            []IndexKeyPair `json:"key"`
-	Unique         bool           `json:"unique"`
+	Name           string
+	TableIndexName string // how the index is created in the DB, like TableName for Collection
+	Key            []IndexKeyPair
+	Unique         bool
 }
 
 // IndexKeyPair consists of a field name and a sort order that are part of the index.
 type IndexKeyPair struct {
-	Field      string `json:"field"`
-	Descending bool   `json:"descending"`
+	Field      string
+	Descending bool
 }
