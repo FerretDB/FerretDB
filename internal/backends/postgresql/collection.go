@@ -58,7 +58,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	if p == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil, nil),
+			Iter: newQueryIterator(ctx, &iteratorParams{}),
 		}, nil
 	}
 
@@ -69,7 +69,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	if meta == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil, nil),
+			Iter: newQueryIterator(ctx, &iteratorParams{}),
 		}, nil
 	}
 
@@ -86,7 +86,9 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}
 
 	return &backends.QueryResult{
-		Iter: newQueryIterator(ctx, rows, nil),
+		Iter: newQueryIterator(ctx, &iteratorParams{
+			rows: rows,
+		}),
 	}, nil
 }
 
@@ -278,7 +280,11 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter := newQueryIterator(ctx, rows, unmarshalExplain)
+	iter := newQueryIterator(ctx, &iteratorParams{
+		rows:      rows,
+		unmarshal: unmarshalExplain,
+	})
+
 	defer iter.Close()
 
 	_, queryPlan, err := iter.Next()

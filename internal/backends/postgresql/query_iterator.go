@@ -40,6 +40,12 @@ type queryIterator struct {
 	m     sync.Mutex
 }
 
+// iteratorParams contains parameters for building an iterator.
+type iteratorParams struct {
+	rows      pgx.Rows
+	unmarshal func(b []byte) (*types.Document, error) // if set, iterator uses unmarshal to convert row to *types.Document.
+}
+
 // newQueryIterator returns a new queryIterator for the given Rows.
 //
 // Iterator's Close method closes rows.
@@ -49,16 +55,16 @@ type queryIterator struct {
 //
 // Nil rows are possible and return already done iterator.
 // It still should be Close'd.
-func newQueryIterator(ctx context.Context, rows pgx.Rows, unmarshal func(b []byte) (*types.Document, error)) types.DocumentsIterator {
-	if unmarshal == nil {
-		unmarshal = sjson.Unmarshal
+func newQueryIterator(ctx context.Context, params *iteratorParams) types.DocumentsIterator {
+	if params.unmarshal == nil {
+		params.unmarshal = sjson.Unmarshal
 	}
 
 	iter := &queryIterator{
 		ctx:       ctx,
-		rows:      rows,
+		rows:      params.rows,
 		token:     resource.NewToken(),
-		unmarshal: unmarshal,
+		unmarshal: params.unmarshal,
 	}
 	resource.Track(iter, iter.token)
 
