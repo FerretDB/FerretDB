@@ -21,6 +21,8 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -57,12 +59,34 @@ func TestDatabaseStats(t *testing.T) {
 		require.NotNil(t, db)
 	}
 
-	t.Run("DatabaseWithCollections", func(t *testing.T) {
+	t.Run("DatabaseWithEmptyCollections", func(t *testing.T) {
 		res, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
 		require.NoError(t, err)
 		require.NotZero(t, res.SizeTotal)
 		require.Equal(t, res.CountCollections, int64(len(cNames)))
 		require.NotZero(t, res.SizeCollections)
 		require.Zero(t, res.CountObjects)
+		require.Zero(t, res.CountIndexes)
+		require.Zero(t, res.SizeIndexes)
+	})
+
+	t.Run("DatabaseWithCollections", func(t *testing.T) {
+		c, err := db.Collection(cNames[0])
+		require.NoError(t, err)
+
+		_, err = c.InsertAll(ctx, &backends.InsertAllParams{
+			Docs: []*types.Document{must.NotFail(types.NewDocument("_id", types.NewObjectID()))},
+		})
+		require.NoError(t, err)
+
+		res, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+		require.NoError(t, err)
+		require.NotZero(t, res.SizeTotal)
+		require.Equal(t, res.CountCollections, int64(len(cNames)))
+		require.NotZero(t, res.SizeCollections)
+		require.Equal(t, int64(1), res.CountObjects)
+		// TODO https://github.com/FerretDB/FerretDB/issues/3394
+		// require.Equal(t, int64(1), res.CountIndexes)
+		// require.NotZero(t, res.SizeIndexes)
 	})
 }

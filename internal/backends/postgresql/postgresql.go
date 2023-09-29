@@ -72,7 +72,6 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 			COALESCE(SUM(pg_indexes_size(c.oid)), 0)
 		FROM pg_tables AS t
 		    LEFT JOIN pg_class AS c ON c.relname = t.tablename AND c.relnamespace = quote_ident(t.schemaname)::regnamespace
-		    LEFT JOIN pg_indexes AS i ON i.schemaname = t.schemaname AND i.tablename = t.tablename
 		WHERE t.schemaname = $1 AND t.tablename IN (%s)`,
 		strings.Join(placeholders, ", "),
 	)
