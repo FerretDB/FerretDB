@@ -16,6 +16,7 @@ package postgresql
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -23,13 +24,13 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -59,7 +60,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	if p == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil),
+			Iter: newQueryIterator(ctx, nil, nil),
 		}, nil
 	}
 
@@ -70,7 +71,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	if meta == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil),
+			Iter: newQueryIterator(ctx, nil, nil),
 		}, nil
 	}
 
@@ -87,7 +88,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}
 
 	return &backends.QueryResult{
-		Iter: newQueryIterator(ctx, rows),
+		Iter: newQueryIterator(ctx, rows, nil),
 	}, nil
 }
 
@@ -279,7 +280,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter := newQueryIterator(ctx, rows)
+	iter := newQueryIterator(ctx, rows, unmarshalExplain)
 	defer iter.Close()
 
 	_, queryPlan, err := iter.Next()
@@ -287,14 +288,59 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return nil, lazyerrors.Error(err)
 	}
 
-	_, _, err = iter.Next()
-	if err != iterator.ErrIteratorDone {
-		return nil, lazyerrors.Errorf("pg explain iterator is not done yet, while it should, (err: %v), expected: %v", err, iterator.ErrIteratorDone)
-	}
+	//	_, _, err = iter.Next()
+	//	if err != iterator.ErrIteratorDone {
+	//		return nil, lazyerrors.Errorf("pg explain iterator is not done yet, while it should, (err: %v), expected: %v", err, iterator.ErrIteratorDone)
+	//	}
 
 	return &backends.ExplainResult{
 		QueryPlanner: must.NotFail(types.NewDocument("Plan", queryPlan)),
 	}, nil
+}
+
+// unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.
+// EXPLAIN result is not sjson, so it cannot be unmarshalled by sjson.Unmarshal.
+func unmarshalExplain(b []byte) (*types.Document, error) {
+	var plans []map[string]any
+	if err := json.Unmarshal(b, &plans); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if len(plans) == 0 {
+		return nil, lazyerrors.Error(errors.New("no execution plan returned"))
+	}
+
+	return convertJSON(plans[0]).(*types.Document), nil
+}
+
+// convertJSON transforms decoded JSON map[string]any value into *types.Document.
+func convertJSON(value any) any {
+	switch value := value.(type) {
+	case map[string]any:
+		d := types.MakeDocument(len(value))
+		keys := maps.Keys(value)
+		for _, k := range keys {
+			v := value[k]
+			d.Set(k, convertJSON(v))
+		}
+		return d
+
+	case []any:
+		a := types.MakeArray(len(value))
+		for _, v := range value {
+			a.Append(convertJSON(v))
+		}
+		return a
+
+	case nil:
+		return types.Null
+
+	case float64, string, bool:
+		return value
+
+	default:
+		panic(fmt.Sprintf("unsupported type: %[1]T (%[1]v)", value))
+	}
 }
 
 // Stats implements backends.Collection interface.

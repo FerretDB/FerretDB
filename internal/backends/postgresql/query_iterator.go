@@ -32,6 +32,8 @@ import (
 type queryIterator struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
+	unmarshal func(b []byte) (*types.Document, error) // defaults to sjson.Unmarshal
+
 	ctx   context.Context
 	rows  pgx.Rows // protected by m
 	token *resource.Token
@@ -47,11 +49,16 @@ type queryIterator struct {
 //
 // Nil rows are possible and return already done iterator.
 // It still should be Close'd.
-func newQueryIterator(ctx context.Context, rows pgx.Rows) types.DocumentsIterator {
+func newQueryIterator(ctx context.Context, rows pgx.Rows, unmarshal func(b []byte) (*types.Document, error)) types.DocumentsIterator {
+	if unmarshal == nil {
+		unmarshal = sjson.Unmarshal
+	}
+
 	iter := &queryIterator{
-		ctx:   ctx,
-		rows:  rows,
-		token: resource.NewToken(),
+		ctx:       ctx,
+		rows:      rows,
+		token:     resource.NewToken(),
+		unmarshal: unmarshal,
 	}
 	resource.Track(iter, iter.token)
 
@@ -95,7 +102,7 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	doc, err := sjson.Unmarshal(b)
+	doc, err := iter.unmarshal(b)
 	if err != nil {
 		iter.close()
 		return unused, nil, lazyerrors.Error(err)

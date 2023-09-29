@@ -69,6 +69,8 @@ func NewHandler(name string, opts *NewHandlerOpts) (handlers.Interface, error) {
 		return nil, fmt.Errorf("opts is nil")
 	}
 
+	opts.UseNewPG = true
+
 	newHandler := registry[name]
 	if newHandler == nil {
 		return nil, fmt.Errorf("unknown handler %q", name)
