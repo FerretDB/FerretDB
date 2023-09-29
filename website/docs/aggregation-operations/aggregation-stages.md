@@ -17,4 +17,3 @@ Aggregation stages are a series of one or more processes in a pipeline that acts
 | `$sort`                      | Sorts and returns all the documents based on a specified order                                        |
 | `$unset` | Specifies `n` number of fields to be removed/excluded from a document         | 
 | `$unwind`                    | Deconstructs and returns a document for every element in an array field                               |
-
