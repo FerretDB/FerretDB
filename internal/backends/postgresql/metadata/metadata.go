@@ -71,14 +71,9 @@ func (c *Collection) Unmarshal(doc *types.Document) error {
 	c.Name = must.NotFail(doc.Get("_id")).(string)
 	c.TableName = must.NotFail(doc.Get("table")).(string)
 
-	if doc.Has("settings") {
-		var settings Settings
-		must.NoError(settings.Unmarshal(must.NotFail(doc.Get("settings")).(*types.Document)))
-		c.Settings = settings
-	} else {
-		// If settings are not present, we initialize them with empty indexes to avoid potential nil pointers.
-		c.Settings = Settings{Indexes: []IndexInfo{}}
-	}
+	var settings Settings
+	must.NoError(settings.Unmarshal(must.NotFail(doc.Get("settings")).(*types.Document)))
+	c.Settings = settings
 
 	return nil
 }
