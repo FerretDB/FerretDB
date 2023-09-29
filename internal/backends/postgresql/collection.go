@@ -28,6 +28,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -245,8 +247,54 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 
 // Explain implements backends.Collection interface.
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3389
-	return new(backends.ExplainResult), nil
+	p, err := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if p == nil {
+		return &backends.ExplainResult{}, nil
+	}
+
+	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if meta == nil {
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3414
+	q := fmt.Sprintf(
+		`EXPLAIN (VERBOSE true, FORMAT JSON) SELECT %s FROM %s`,
+		metadata.DefaultColumn,
+		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
+	)
+
+	rows, err := p.Query(ctx, q)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	iter := newQueryIterator(ctx, rows)
+	defer iter.Close()
+
+	_, queryPlan, err := iter.Next()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	_, _, err = iter.Next()
+	if err != iterator.ErrIteratorDone {
+		return nil, lazyerrors.Errorf("pg explain iterator is not done yet, while it should, (err: %v), expected: %v", err, iterator.ErrIteratorDone)
+	}
+
+	return &backends.ExplainResult{
+		QueryPlanner: must.NotFail(types.NewDocument("Plan", queryPlan)),
+	}, nil
 }
 
 // Stats implements backends.Collection interface.
