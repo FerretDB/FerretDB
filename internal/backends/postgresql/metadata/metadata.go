@@ -111,18 +111,23 @@ func (s Settings) Marshal() *types.Document {
 	indexes := types.MakeArray(len(s.Indexes))
 
 	for _, index := range s.Indexes {
-		key := types.MakeArray(len(index.Key))
+		key := types.MakeDocument(len(index.Key))
 
+		// The format of the index key storing was defined in the early versions of FerretDB,
+		// it's kept for backward compatibility.
 		for _, pair := range index.Key {
-			key.Append(must.NotFail(types.NewDocument(
-				"field", pair.Field,
-				"descending", pair.Descending,
-			)))
+			order := int32(1) // order is set as int32 to be sjson-marshaled correctly
+
+			if pair.Descending {
+				order = -1
+			}
+
+			key.Set(pair.Field, order)
 		}
 
 		indexes.Append(must.NotFail(types.NewDocument(
-			"name", index.Name,
 			"pgindex", index.TableIndexName,
+			"name", index.Name,
 			"key", key,
 			"unique", index.Unique,
 		)))
@@ -155,12 +160,12 @@ func (s *Settings) Unmarshal(doc *types.Document) error {
 		doc := v.(*types.Document)
 
 		key := make([]IndexKeyPair, doc.Len())
-		keyIter := must.NotFail(doc.Get("key")).(*types.Array).Iterator()
+		keyIter := must.NotFail(doc.Get("key")).(*types.Document).Iterator()
 
 		defer keyIter.Close()
 
-		for {
-			j, el, err := keyIter.Next()
+		for j := 0; ; j++ {
+			field, order, err := keyIter.Next()
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				break
 			}
@@ -169,11 +174,14 @@ func (s *Settings) Unmarshal(doc *types.Document) error {
 				return lazyerrors.Error(err)
 			}
 
-			eldoc := el.(*types.Document)
+			descending := false
+			if order.(int32) == -1 {
+				descending = true
+			}
 
 			key[j] = IndexKeyPair{
-				Field:      must.NotFail(eldoc.Get("field")).(string),
-				Descending: must.NotFail(eldoc.Get("descending")).(bool),
+				Field:      field,
+				Descending: descending,
 			}
 		}
 
