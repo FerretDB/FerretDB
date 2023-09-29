@@ -28,7 +28,12 @@ import (
 )
 
 func TestDatabaseStats(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
 	t.Parallel()
+
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 
 	sp, err := state.NewProvider("")
