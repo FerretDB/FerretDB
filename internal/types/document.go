@@ -36,17 +36,17 @@ type document interface {
 // Document represents BSON document: an ordered collection of fields
 // (key/value pairs where key is a string and value is any BSON value).
 //
-// Data documents (that are stored in the backend) have a special RowID property
+// Data documents (that are stored in the backend) have a special RecordID property
 // that is not a field and can't be accessed by most methods.
 // It use used to locate the document in the backend.
 type Document struct {
-	fields []field
-	frozen bool
-	rowID  Timestamp
+	fields   []field
+	frozen   bool
+	recordID Timestamp
 }
 
 // field represents a field in the document.
-// RowID is not a field.
+// RecordID is not a field.
 //
 // The order of field is like that to reduce a pressure on gc a bit, and make vet/fieldalignment linter happy.
 type field struct {
@@ -128,20 +128,20 @@ func NewDocument(pairs ...any) (*Document, error) {
 
 func (*Document) compositeType() {}
 
-// RowID returns the document's RowID (that is 0 by default).
-func (d *Document) RowID() Timestamp {
-	return d.rowID
+// RecordID returns the document's RecordID (that is 0 by default).
+func (d *Document) RecordID() Timestamp {
+	return d.recordID
 }
 
-// SetRowID sets the document's RowID.
-func (d *Document) SetRowID(rowID Timestamp) {
-	d.rowID = rowID
+// SetRecordID sets the document's RecordID.
+func (d *Document) SetRecordID(recordID Timestamp) {
+	d.recordID = recordID
 }
 
 // Freeze prevents document from further field modifications.
 // Any methods that would modify document fields will panic.
 //
-// RowID modification is not prevented.
+// RecordID modification is not prevented.
 //
 // It is safe to call Freeze multiple times.
 func (d *Document) Freeze() {
@@ -158,7 +158,7 @@ func (d *Document) checkFrozen() {
 }
 
 // DeepCopy returns an unfrozen deep copy of this Document.
-// RowID is copied too.
+// RecordID is copied too.
 func (d *Document) DeepCopy() *Document {
 	if d == nil {
 		panic("types.Document.DeepCopy: nil document")
