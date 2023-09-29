@@ -44,7 +44,7 @@ _On the other hand, enmeshed can be easily integrated into existing processes, t
 
 _Our Connector uses MongoDB as its database engine. We received a feature request to support alternatives and started researching. When we found out about FerretDB, we looked at it and absolutely loved the idea behind it. We especially liked the fact that we didn't have to change any of our code, as FerretDB can be used with the same library we use for MongoDB._
 
-_We release enmeshed under the same MIT open source license. Because of our strategic focus and our policy-driven customers, we believe open source applications are the most sustainable form of software development. Therefore, whenever possible, we work with partners who share a similar strategy._
+_We release enmeshed under the MIT open source license. Because of our strategic focus and our policy-driven customers, we believe open source applications are the most sustainable form of software development. Therefore, whenever possible, we work with partners who share a similar strategy._
 
 **What benefits can you see by using enmeshed with FerretDB?**
 
