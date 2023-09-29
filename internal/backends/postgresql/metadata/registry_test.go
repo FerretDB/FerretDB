@@ -615,9 +615,8 @@ func TestIndexesCreateDrop(t *testing.T) {
 		var count int
 		require.NoError(t, row.Scan(&count))
 		require.Equal(t, 2, count) // only default index and index_unique should be left
-	})
 
-	t.Run("CheckSettingsAfterDrop", func(t *testing.T) {
+		// check settings after dropping indexes
 		err = r.initCollections(ctx, dbName, db)
 		require.NoError(t, err)
 
