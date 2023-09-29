@@ -440,6 +440,7 @@ func TestRenameCollection(t *testing.T) {
 		expected := &Collection{
 			Name:      newCollectionName,
 			TableName: oldCollection.TableName,
+			Settings:  oldCollection.Settings,
 		}
 
 		actual, err := r.CollectionGet(ctx, dbName, newCollectionName)

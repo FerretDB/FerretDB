@@ -785,6 +785,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 			continue
 		}
 
+		// indexes must be unique across the whole database, so we add a uuid to the index name
 		uuidPart := must.NotFail(uuid.NewRandom()).String()
 		tableNamePart := c.TableName
 		tableNamePartMax := maxIndexNameLength - len(uuidPart) - 5 // 5 is for _ and _idx
