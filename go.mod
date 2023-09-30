@@ -21,6 +21,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.18.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.13.0 // indirect; always use @latest
+	golang.org/x/crypto/x509roots/fallback v0.0.0-20230928175846-ec07f4e35b9e
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
 	golang.org/x/sys v0.12.0
 	modernc.org/sqlite v1.25.0

@@ -28,18 +28,18 @@ ENV GOPATH /cache/gopath
 ENV GOCACHE /cache/gocache
 ENV GOMODCACHE /cache/gomodcache
 
-# copy cached stdlib builds from the image
+# copy cached stdlib builds from base image
 RUN --mount=type=cache,target=/cache \
-    rsync -a /root/.cache/go-build/ /cache/gocache
+    cp -Rnv /root/.cache/go-build/. /cache/gocache
 
 # remove ",direct"
 ENV GOPROXY https://proxy.golang.org
 
 ENV CGO_ENABLED=0
 
-# do not raise it without providing a v1 build because v2+ is problematic
-# for some virtualization platforms and older hardware
-ENV GOAMD64=v1
+# do not raise it from the default value of v1 without providing a separate v1 build
+# because v2+ is problematic for some virtualization platforms and older hardware
+# ENV GOAMD64=v1
 
 # leave GOARM unset for autodetection
 
@@ -66,17 +66,13 @@ EOF
 
 # final stage
 
-# TODO https://github.com/FerretDB/FerretDB/issues/2179
-# Consider a different base image after https://github.com/golang/go/issues/57792 is done.
-FROM gcr.io/distroless/static-debian11:debug AS production
-
-ARG LABEL_VERSION
-ARG LABEL_COMMIT
+FROM scratch AS production
 
 COPY --from=production-build /src/bin/ferretdb /ferretdb
 
-WORKDIR /
 ENTRYPOINT [ "/ferretdb" ]
+
+WORKDIR /
 EXPOSE 27017 27018 8080
 
 # don't forget to update documentation if you change defaults
@@ -84,6 +80,9 @@ ENV FERRETDB_LISTEN_ADDR=:27017
 # ENV FERRETDB_LISTEN_TLS=:27018
 ENV FERRETDB_DEBUG_ADDR=:8080
 ENV FERRETDB_STATE_DIR=/state
+
+ARG LABEL_VERSION
+ARG LABEL_COMMIT
 
 # TODO https://github.com/FerretDB/FerretDB/issues/2212
 LABEL org.opencontainers.image.description="A truly Open Source MongoDB alternative"
