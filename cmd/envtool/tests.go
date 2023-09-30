@@ -21,14 +21,82 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
+
+type action string
+
+//nolint:godot // false positive for unexported identifiers
+const (
+	// actionRun means the test has started running.
+	actionRun action = "run"
+	// actionPause means the test has been paused.
+	actionPause action = "pause"
+	// actionCont means the test has continued running.
+	actionCont action = "cont"
+	// actionPass means the test passed.
+	actionPass action = "pass"
+	// actionBench means the benchmark printed log output but did not fail.
+	actionBench action = "bench"
+	// actionFail means the test or benchmark failed.
+	actionFail action = "fail"
+	// actionOutput means the test printed output.
+	actionOutput action = "output"
+	// actionSkip means the test was skipped or the package contained no tests.
+	actionSkip action = "skip"
+)
+
+// Status represents the status of a single test.
+type Status string
+
+// Constants representing different test statuses.
+const (
+	Fail    Status = "fail"
+	Skip    Status = "skip"
+	Pass    Status = "pass"
+	Ignore  Status = "ignore"  // for fluky tests
+	Unknown Status = "unknown" // result can't be parsed
+)
+
+// TestResults represents the collection of results from multiple tests.
+type TestResults struct {
+	// Test results by full test name.
+	TestResults map[string]TestResult
+}
+
+// TestResult represents the outcome of a single test.
+type TestResult struct {
+	Status Status
+	Output string
+}
+
+type testEvent struct {
+	Time           time.Time `json:"Time"`
+	Action         action    `json:"Action"`
+	Package        string    `json:"Package"`
+	Test           string    `json:"Test"`
+	Output         string    `json:"Output"`
+	ElapsedSeconds float64   `json:"Elapsed"`
+}
+
+func (te testEvent) Elapsed() time.Duration {
+	return time.Duration(te.ElapsedSeconds * float64(time.Second))
+}
+
+func totalNumberOfTest(input string) int {
+	re := regexp.MustCompile(`-run=\^\((.*?)\)\$`)
+	matches := re.FindStringSubmatch(input)
+	return len(strings.Split(matches[1], "|"))
+
+}
 
 // testsRun runs tests specified by the shard index and total or by the run regex
 // using `go test` with given extra args.
@@ -64,7 +132,7 @@ func testsRun(w io.Writer, index, total uint, run string, args []string) error {
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3055
 
-	args = append([]string{"test", "-run=" + run}, args...)
+	args = append([]string{"test", "-json", "-run=" + run}, args...)
 
 	return runCommand("go", args, w, zap.S())
 }
