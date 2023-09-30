@@ -18,6 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
@@ -160,7 +161,8 @@ func (cc *collectionContract) UpdateAll(ctx context.Context, params *UpdateAllPa
 
 // DeleteAllParams represents the parameters of Collection.Delete method.
 type DeleteAllParams struct {
-	IDs []any
+	IDs       []any
+	RecordIDs []types.Timestamp
 }
 
 // DeleteAllResult represents the results of Collection.Delete method.
@@ -179,6 +181,12 @@ type DeleteAllResult struct {
 // Database or collection may not exist; that's not an error.
 func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllParams) (*DeleteAllResult, error) {
 	defer observability.FuncCall(ctx)()
+
+	if params.IDs == nil {
+		must.BeTrue(params.RecordIDs != nil)
+	} else {
+		must.BeTrue(params.RecordIDs == nil)
+	}
 
 	res, err := cc.c.DeleteAll(ctx, params)
 	checkError(err)
