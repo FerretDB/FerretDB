@@ -19,29 +19,29 @@ ARG LABEL_COMMIT
 RUN test -n "$LABEL_VERSION"
 RUN test -n "$LABEL_COMMIT"
 
-# see .dockerignore
-WORKDIR /src
-COPY . .
-
 # use a single directory for all Go caches to simpliy RUN --mount commands below
 ENV GOPATH /cache/gopath
 ENV GOCACHE /cache/gocache
 ENV GOMODCACHE /cache/gomodcache
 
-# copy cached stdlib builds from base image
-RUN --mount=type=cache,target=/cache \
-    cp -Rnv /root/.cache/go-build/. /cache/gocache
-
 # remove ",direct"
 ENV GOPROXY https://proxy.golang.org
-
-ENV CGO_ENABLED=0
 
 # do not raise it from the default value of v1 without providing a separate v1 build
 # because v2+ is problematic for some virtualization platforms and older hardware
 # ENV GOAMD64=v1
 
 # leave GOARM unset for autodetection
+
+ENV CGO_ENABLED=0
+
+# copy cached stdlib builds from base image
+RUN --mount=type=cache,target=/cache \
+    cp -Rnv /root/.cache/go-build/. /cache/gocache
+
+# see .dockerignore
+WORKDIR /src
+COPY . .
 
 # TODO https://github.com/FerretDB/FerretDB/issues/2170
 # That command could be run only once by using a separate stage;
