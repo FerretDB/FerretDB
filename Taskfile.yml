@@ -561,12 +561,15 @@ tasks:
     cmds:
       - echo 'bin' > build/version/package.txt
       - bin/envtool{{exeExt}} shell rmdir tmp/build
+      - bin/envtool{{exeExt}} shell mkdir tmp/bin
       - task: docker-build
         vars:
           FILE: production
           PLATFORM: linux/amd64,linux/arm64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
           OUTPUT: type=local,dest=tmp/build
-      - mv tmp/build/linux_amd64/ferretdb bin/ferretdb
+      - cp tmp/build/linux_amd64/ferretdb bin/ferretdb
+      - mv tmp/build/linux_amd64/ferretdb tmp/bin/ferretdb-linux-amd64
+      - mv tmp/build/linux_arm64/ferretdb tmp/bin/ferretdb-linux-arm64
 
   docker-local:
     desc: "Build `ferretdb-local` Docker image for the host platform"
