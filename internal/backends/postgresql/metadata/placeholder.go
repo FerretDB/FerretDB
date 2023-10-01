@@ -12,10 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pool
+package metadata
 
-import "testing"
+import "strconv"
 
-func TestDummy(t *testing.T) {
-	// we need at least one test per package to correctly calculate coverage
+// Placeholder stores the number of the relevant placeholder of the query.
+type Placeholder int
+
+// Next increases the identifier value for the next variable in the PostgreSQL query.
+func (p *Placeholder) Next() string {
+	*p++
+	return "$" + strconv.Itoa(int(*p))
 }

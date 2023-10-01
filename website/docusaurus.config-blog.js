@@ -23,7 +23,7 @@ const config = {
     locales: ['en'],
   },
 
-  scripts: [{src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io"}],
+  scripts: [{ src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io" }],
 
   plugins: [
     [
@@ -50,6 +50,34 @@ const config = {
 
           blogSidebarTitle: 'All posts',
           blogSidebarCount: 'ALL',
+          feedOptions: {
+            type: 'all',
+            title: 'FerretDB Blog',
+            description: 'A truly Open Source MongoDB alternative',
+            copyright: `Copyright © ${new Date().getFullYear()} FerretDB Inc.`,
+
+            // override to add images; see https://github.com/facebook/docusaurus/discussions/8321#discussioncomment-7016367
+            createFeedItems: async (params) => {
+              const {
+                blogPosts,
+                defaultCreateFeedItems,
+                siteConfig,
+                outDir
+              } = params;
+
+              const allFeedItems = await defaultCreateFeedItems({
+                blogPosts: blogPosts.slice(0, 10),
+                siteConfig: siteConfig,
+                outDir: outDir
+              });
+
+              return allFeedItems.map((item, index) => ({
+                ...item,
+                image: `${config.url}${blogPosts[index].metadata.frontMatter.image}`,
+              }))
+
+            },
+          },
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
@@ -66,7 +94,7 @@ const config = {
         logo: {
           alt: 'FerretDB Logo',
           src: 'img/logo-dark.jpg',
-          srcDark:'img/logo-light.png'
+          srcDark: 'img/logo-light.png'
         },
         items: [
           {

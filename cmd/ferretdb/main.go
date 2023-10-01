@@ -39,6 +39,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/telemetry"
 )
@@ -84,7 +85,8 @@ var cli struct {
 		EnableSortPushdown    bool `default:"false" help:"Experimental: enable sort pushdown."`
 		EnableOplog           bool `default:"false" help:"Experimental: enable OpLog."            hidden:""`
 
-		UseNewPG bool `default:"false" help:"Experimental: use new PostgreSQL backend." hidden:""`
+		UseNewPG   bool `default:"false" help:"Experimental: use new PostgreSQL backend." hidden:""`
+		UseNewHana bool `default:"false" help:"Experimental: use new SAP HANA backend."   hidden:""`
 
 		//nolint:lll // for readability
 		Telemetry struct {
@@ -262,15 +264,10 @@ func runTelemetryReporter(ctx context.Context, opts *telemetry.NewReporterOpts) 
 
 // dumpMetrics dumps all Prometheus metrics to stderr.
 func dumpMetrics() {
-	mfs, err := prometheus.DefaultGatherer.Gather()
-	if err != nil {
-		panic(err)
-	}
+	mfs := must.NotFail(prometheus.DefaultGatherer.Gather())
 
 	for _, mf := range mfs {
-		if _, err := expfmt.MetricFamilyToText(os.Stderr, mf); err != nil {
-			panic(err)
-		}
+		must.NotFail(expfmt.MetricFamilyToText(os.Stderr, mf))
 	}
 }
 
@@ -367,7 +364,8 @@ func run() {
 			EnableSortPushdown:    cli.Test.EnableSortPushdown,
 			EnableOplog:           cli.Test.EnableOplog,
 
-			UseNewPG: cli.Test.UseNewPG,
+			UseNewPG:   cli.Test.UseNewPG,
+			UseNewHana: cli.Test.UseNewHana,
 		},
 	})
 	if err != nil {

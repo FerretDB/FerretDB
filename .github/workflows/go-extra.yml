@@ -1,8 +1,10 @@
 ---
-name: Go Cron
+# Integration tests for extra configuration.
+
+name: Go Extra
 on:
   schedule:
-    - cron: "12 0 * * *"
+    - cron: "12 1 * * *" # after Go workflow to reuse "Setup Go" cache
 
 env:
   GOPATH: /home/runner/go
@@ -33,10 +35,13 @@ jobs:
         disable_filter_pushdown: [false, true]
         enable_sort_pushdown: [false, true]
 
-    uses: ./.github/workflows/call-test-integration.yml
+    # Do not submit to coveralls because it can't handle parallel workflows:
+    # https://github.com/lemurheavy/coveralls-public/issues/1636#issuecomment-1529460515
+    uses: ./.github/workflows/_integration.yml
     with:
       task: ${{ matrix.task }}
       shard_index: ${{ matrix.shard_index }}
       shard_total: ${{ matrix.shard_total }}
       disable_filter_pushdown: ${{ matrix.disable_filter_pushdown }}
       enable_sort_pushdown: ${{ matrix.enable_sort_pushdown }}
+      coveralls: false

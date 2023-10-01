@@ -27,6 +27,7 @@ import (
 	"golang.org/x/exp/maps"
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -303,7 +304,7 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 	}
 
 	err = r.indexesCreate(ctx, dbName, collectionName, []IndexInfo{{
-		Name:   "_id_",
+		Name:   backends.DefaultIndexName,
 		Key:    []IndexKeyPair{{Field: "_id"}},
 		Unique: true,
 	}})
@@ -472,6 +473,8 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 			q += "UNIQUE "
 		}
 
+		// Find a better way to sanitize identifiers.
+		// TODO https://github.com/FerretDB/FerretDB/issues/3418
 		q += "INDEX %q ON %q (%s)"
 
 		columns := make([]string, len(index.Key))

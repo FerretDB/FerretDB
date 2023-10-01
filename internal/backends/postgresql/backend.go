@@ -40,12 +40,8 @@ type NewBackendParams struct {
 	P   *state.Provider
 }
 
-// NewBackend creates a new backend for PostgreSQL-compatible database.
+// NewBackend creates a new backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	if params.P == nil {
-		panic("state provider is required but not set")
-	}
-
 	r, err := metadata.NewRegistry(params.URI, params.L, params.P)
 	if err != nil {
 		return nil, err
@@ -58,6 +54,7 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
+	b.r.Close()
 }
 
 // Name implements backends.Backend interface.
@@ -67,13 +64,50 @@ func (b *backend) Name() string {
 
 // Status implements backends.Backend interface.
 func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3404
-	return new(backends.StatusResult), nil
+	dbs, err := b.r.DatabaseList(ctx)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var res backends.StatusResult
+
+	var pingSucceeded bool
+
+	for _, dbName := range dbs {
+		var cs []*metadata.Collection
+
+		if cs, err = b.r.CollectionList(ctx, dbName); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res.CountCollections += int64(len(cs))
+
+		if pingSucceeded {
+			continue
+		}
+
+		p, err := b.r.DatabaseGetExisting(ctx, dbName)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		if p == nil {
+			continue
+		}
+
+		if err = p.Ping(ctx); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		pingSucceeded = true
+	}
+
+	return &res, nil
 }
 
 // Database implements backends.Backend interface.
 func (b *backend) Database(name string) (backends.Database, error) {
-	return newDatabase(name), nil
+	return newDatabase(b.r, name), nil
 }
 
 // ListDatabases implements backends.Backend interface.
@@ -116,7 +150,15 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3404
+	dropped, err := b.r.DatabaseDrop(ctx, params.Name)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !dropped {
+		return backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, nil)
+	}
+
 	return nil
 }
 

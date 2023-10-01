@@ -1386,10 +1386,7 @@ func filterFieldValueByTypeCode(fieldValue any, code commonparams.TypeCode) (boo
 	// check types.Array elements for match to given code.
 	if array, ok := fieldValue.(*types.Array); ok && code != commonparams.TypeCodeArray {
 		for i := 0; i < array.Len(); i++ {
-			value, err := array.Get(i)
-			if err != nil {
-				panic(err)
-			}
+			value, _ := array.Get(i)
 
 			// Skip embedded arrays.
 			if _, ok := value.(*types.Array); ok {
