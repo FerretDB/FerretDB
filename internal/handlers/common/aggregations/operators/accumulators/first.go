@@ -28,7 +28,9 @@ import (
 
 // first represents $first aggregation operator.
 type first struct {
-	expression *aggregations.Expression
+	expression  *aggregations.Expression
+	resultFound bool
+	result      any
 }
 
 // newFirst creates a new $first aggregation operator.
@@ -50,6 +52,17 @@ func newFirst(args ...any) (Accumulator, error) {
 		if accumulator.expression, err = aggregations.NewExpression(arg, nil); err != nil {
 			return nil, err
 		}
+	case *types.Array:
+		// No need to iterate over all the documents
+		accumulator.resultFound = true
+		if arg.Len() == 0 {
+			break
+		}
+		var err error
+		accumulator.result, err = arg.Get(0)
+		if err != nil {
+			return nil, err
+		}
 	default:
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrInvalidArg,
@@ -62,6 +75,10 @@ func newFirst(args ...any) (Accumulator, error) {
 
 // Accumulate implements Accumulator interface.
 func (f *first) Accumulate(iter types.DocumentsIterator) (any, error) {
+	if f.resultFound {
+		return f.result, nil
+	}
+
 	var values []any
 
 	for {
