@@ -398,6 +398,37 @@ func TestAggregateCompatCount(t *testing.T) {
 	testAggregateStagesCompat(t, testCases)
 }
 
+func TestAggregateCompatAvg(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"Value": {
+			pipeline: bson.A{bson.D{{"$avg", "v"}}},
+		},
+		"NonExistent": {
+			pipeline: bson.A{bson.D{{"$avg", "nonexistent"}}},
+		},
+		"AvgNonString": {
+			pipeline:   bson.A{bson.D{{"$avg", 1}}},
+			resultType: emptyResult,
+		},
+		"AvgEmpty": {
+			pipeline:   bson.A{bson.D{{"$avg", ""}}},
+			resultType: emptyResult,
+		},
+		"AvgBadValue": {
+			pipeline:   bson.A{bson.D{{"$avg", "v.foo"}}},
+			resultType: emptyResult,
+		},
+		"AvgBadPrefix": {
+			pipeline:   bson.A{bson.D{{"$avg", "$foo"}}},
+			resultType: emptyResult,
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}
+
 func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 	t.Parallel()
 
