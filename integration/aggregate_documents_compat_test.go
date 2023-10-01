@@ -398,6 +398,37 @@ func TestAggregateCompatCount(t *testing.T) {
 	testAggregateStagesCompat(t, testCases)
 }
 
+func TestAggregateCompatFirst(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]aggregateStagesCompatTestCase{
+		"Value": {
+			pipeline: bson.A{bson.D{{"$first", "$v"}}},
+		},
+		"BadValue": {
+			pipeline:   bson.A{bson.D{{"$first", "$v.foo"}}},
+			resultType: emptyResult,
+		},
+		"Missing": {
+			pipeline: bson.A{bson.D{{"$first", "$missing"}}},
+		},
+		"Array": {
+			pipeline: bson.A{bson.D{{"$first", bson.A{"$v"}}}},
+		},
+		"Document": {
+			pipeline: bson.A{bson.D{{"$first", bson.D{{"v", "$v"}}}}},
+		},
+		"String": {
+			pipeline: bson.A{bson.D{{"$first", "v"}}},
+		},
+		"Number": {
+			pipeline: bson.A{bson.D{{"$first", 42}}},
+		},
+	}
+
+	testAggregateStagesCompat(t, testCases)
+}
+
 func TestAggregateCompatGroupDeterministicCollections(t *testing.T) {
 	t.Parallel()
 
