@@ -157,19 +157,10 @@ jobs:
         if: steps.extract.outputs.production_images != ''
         run: bin/task docker-production-push DOCKER_IMAGES=${{ steps.extract.outputs.production_images }}
 
-      # TODO https://github.com/FerretDB/FerretDB/issues/2171
-      - name: Build production release binaries
-        run: bin/task build-release
+      - name: Build production binaries
+        run: bin/task build-production
 
-      - name: Upload ferretdb
-        uses: actions/upload-artifact@v3
-        with:
-          name: ferretdb
-          path: bin/ferretdb
-          retention-days: 1
-          if-no-files-found: error
-
-      - name: Upload production release binaries
+      - name: Upload production binaries
         uses: actions/upload-artifact@v3
         with:
           name: bin
@@ -177,22 +168,33 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-      - name: Build Linux packages
-        run: bin/task packages
+      - name: Build development binaries
+        run: bin/task build-development
 
-      - name: Upload .deb package
+      - name: Upload development binaries
         uses: actions/upload-artifact@v3
         with:
-          name: ferretdb.deb
-          path: tmp/debs/ferretdb.deb
+          name: bin-dev
+          path: tmp/bin-dev/
           retention-days: 1
           if-no-files-found: error
 
-      - name: Upload .rpm package
+      - name: Build Linux packages
+        run: bin/task packages
+
+      - name: Upload .deb packages
         uses: actions/upload-artifact@v3
         with:
-          name: ferretdb.rpm
-          path: tmp/rpms/ferretdb.rpm
+          name: debs
+          path: tmp/debs/
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Upload .rpm packages
+        uses: actions/upload-artifact@v3
+        with:
+          name: rpms
+          path: tmp/rpms/
           retention-days: 1
           if-no-files-found: error
 
