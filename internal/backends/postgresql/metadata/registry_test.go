@@ -441,7 +441,7 @@ func TestRenameCollection(t *testing.T) {
 		expected := &Collection{
 			Name:      newCollectionName,
 			TableName: oldCollection.TableName,
-			Settings:  oldCollection.Settings,
+			Indexes:   oldCollection.Indexes,
 		}
 
 		actual, err := r.CollectionGet(ctx, dbName, newCollectionName)
@@ -508,11 +508,11 @@ func TestIndexesCreateDrop(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("NonUniqueIndex", func(t *testing.T) {
-		i := slices.IndexFunc(collection.Settings.Indexes, func(ii IndexInfo) bool {
+		i := slices.IndexFunc(collection.Indexes, func(ii IndexInfo) bool {
 			return ii.Name == "index_non_unique"
 		})
 		require.GreaterOrEqual(t, i, 0)
-		tableIndexName := collection.Settings.Indexes[i].PgName
+		tableIndexName := collection.Indexes[i].PgIndex
 
 		var sql string
 		err = db.QueryRow(
@@ -530,11 +530,11 @@ func TestIndexesCreateDrop(t *testing.T) {
 	})
 
 	t.Run("UniqueIndex", func(t *testing.T) {
-		i := slices.IndexFunc(collection.Settings.Indexes, func(ii IndexInfo) bool {
+		i := slices.IndexFunc(collection.Indexes, func(ii IndexInfo) bool {
 			return ii.Name == "index_unique"
 		})
 		require.GreaterOrEqual(t, i, 0)
-		tableIndexName := collection.Settings.Indexes[i].PgName
+		tableIndexName := collection.Indexes[i].PgIndex
 
 		var sql string
 		err = db.QueryRow(
@@ -552,11 +552,11 @@ func TestIndexesCreateDrop(t *testing.T) {
 	})
 
 	t.Run("NestedFields", func(t *testing.T) {
-		i := slices.IndexFunc(collection.Settings.Indexes, func(ii IndexInfo) bool {
+		i := slices.IndexFunc(collection.Indexes, func(ii IndexInfo) bool {
 			return ii.Name == "nested_fields"
 		})
 		require.GreaterOrEqual(t, i, 0)
-		tableIndexName := collection.Settings.Indexes[i].PgName
+		tableIndexName := collection.Indexes[i].PgIndex
 
 		var sql string
 		err = db.QueryRow(
@@ -575,11 +575,11 @@ func TestIndexesCreateDrop(t *testing.T) {
 	})
 
 	t.Run("DefaultIndex", func(t *testing.T) {
-		i := slices.IndexFunc(collection.Settings.Indexes, func(ii IndexInfo) bool {
+		i := slices.IndexFunc(collection.Indexes, func(ii IndexInfo) bool {
 			return ii.Name == "_id_"
 		})
 		require.GreaterOrEqual(t, i, 0)
-		tableIndexName := collection.Settings.Indexes[i].PgName
+		tableIndexName := collection.Indexes[i].PgIndex
 
 		var sql string
 		err = db.QueryRow(
@@ -604,9 +604,9 @@ func TestIndexesCreateDrop(t *testing.T) {
 		refreshedCollection, err = r.CollectionGet(ctx, dbName, collectionName)
 		require.NoError(t, err)
 
-		require.Equal(t, 4, len(refreshedCollection.Settings.Indexes))
+		require.Equal(t, 4, len(refreshedCollection.Indexes))
 
-		for _, index := range refreshedCollection.Settings.Indexes {
+		for _, index := range refreshedCollection.Indexes {
 			switch {
 			case index.Name == "_id_":
 				assert.Equal(t, 1, len(index.Key))
@@ -640,9 +640,9 @@ func TestIndexesCreateDrop(t *testing.T) {
 
 		collection, err = r.CollectionGet(ctx, dbName, collectionName)
 		require.NoError(t, err)
-		require.Equal(t, 2, len(collection.Settings.Indexes))
+		require.Equal(t, 2, len(collection.Indexes))
 
-		for _, index := range collection.Settings.Indexes {
+		for _, index := range collection.Indexes {
 			switch index.Name {
 			case "_id_":
 				assert.Equal(t, 1, len(index.Key))

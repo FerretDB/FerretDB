@@ -40,7 +40,7 @@ const (
 type Collection struct {
 	Name      string
 	TableName string
-	Settings  Settings
+	Indexes   Indexes
 }
 
 // deepCopy returns a deep copy.
@@ -52,7 +52,7 @@ func (c *Collection) deepCopy() *Collection {
 	return &Collection{
 		Name:      c.Name,
 		TableName: c.TableName,
-		Settings:  c.Settings.deepCopy(),
+		Indexes:   c.Indexes.deepCopy(),
 	}
 }
 
@@ -70,6 +70,7 @@ func (c Collection) Value() (driver.Value, error) {
 func (c *Collection) Scan(src any) error {
 	var doc *types.Document
 	var err error
+
 	switch src := src.(type) {
 	case nil:
 		*c = Collection{}
@@ -98,7 +99,7 @@ func (c *Collection) marshal() *types.Document {
 	return must.NotFail(types.NewDocument(
 		"_id", c.Name,
 		"table", c.TableName,
-		"settings", c.Settings.marshal(),
+		"indexes", c.Indexes.marshal(),
 	))
 }
 
@@ -106,27 +107,28 @@ func (c *Collection) marshal() *types.Document {
 func (c *Collection) unmarshal(doc *types.Document) error {
 	v, _ := doc.Get("_id")
 	c.Name, _ = v.(string)
+
 	if c.Name == "" {
 		return lazyerrors.New("collection name is empty")
 	}
 
 	v, _ = doc.Get("table")
 	c.TableName, _ = v.(string)
+
 	if c.TableName == "" {
 		return lazyerrors.New("table name is empty")
 	}
 
-	v, _ = doc.Get("settings")
-	s, _ := v.(*types.Document)
-	if s == nil {
-		return lazyerrors.New("settings are empty")
+	v, _ = doc.Get("indexes")
+	i, _ := v.(*types.Array)
+
+	if i == nil {
+		return lazyerrors.New("indexes are empty")
 	}
 
-	c.Settings.unmarshal(doc)
-
-	var settings Settings
-	must.NoError(settings.unmarshal(must.NotFail(doc.Get("settings")).(*types.Document)))
-	c.Settings = settings
+	if err := c.Indexes.unmarshal(i); err != nil {
+		return lazyerrors.Error(err)
+	}
 
 	return nil
 }

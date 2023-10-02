@@ -759,7 +759,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 	created := make([]string, 0, len(indexes))
 
 	for _, index := range indexes {
-		if slices.ContainsFunc(c.Settings.Indexes, func(i IndexInfo) bool { return index.Name == i.Name }) {
+		if slices.ContainsFunc(c.Indexes, func(i IndexInfo) bool { return index.Name == i.Name }) {
 			continue
 		}
 
@@ -772,7 +772,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 			tableNamePart = tableNamePart[:tableNamePartMax]
 		}
 
-		index.PgName = fmt.Sprintf("%s_%s_idx", tableNamePart, uuidPart)
+		index.PgIndex = fmt.Sprintf("%s_%s_idx", tableNamePart, uuidPart)
 
 		q := "CREATE "
 
@@ -802,7 +802,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 
 		q = fmt.Sprintf(
 			q,
-			pgx.Identifier{index.PgName}.Sanitize(),
+			pgx.Identifier{index.PgIndex}.Sanitize(),
 			pgx.Identifier{dbName, c.TableName}.Sanitize(),
 			strings.Join(columns, ", "),
 		)
@@ -813,7 +813,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 		}
 
 		created = append(created, index.Name)
-		c.Settings.Indexes = append(c.Settings.Indexes, index)
+		c.Indexes = append(c.Indexes, index)
 	}
 
 	b, err := sjson.Marshal(c.marshal())
@@ -879,17 +879,17 @@ func (r *Registry) indexesDrop(ctx context.Context, p *pgxpool.Pool, dbName, col
 	}
 
 	for _, name := range indexNames {
-		i := slices.IndexFunc(c.Settings.Indexes, func(i IndexInfo) bool { return name == i.Name })
+		i := slices.IndexFunc(c.Indexes, func(i IndexInfo) bool { return name == i.Name })
 		if i < 0 {
 			continue
 		}
 
-		q := fmt.Sprintf("DROP INDEX %s", pgx.Identifier{dbName, c.Settings.Indexes[i].PgName}.Sanitize())
+		q := fmt.Sprintf("DROP INDEX %s", pgx.Identifier{dbName, c.Indexes[i].PgIndex}.Sanitize())
 		if _, err := p.Exec(ctx, q); err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		c.Settings.Indexes = slices.Delete(c.Settings.Indexes, i, i+1)
+		c.Indexes = slices.Delete(c.Indexes, i, i+1)
 	}
 
 	b, err := sjson.Marshal(c.marshal())
