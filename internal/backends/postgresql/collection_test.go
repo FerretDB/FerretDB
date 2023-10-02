@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -64,4 +65,54 @@ func TestInsertAll(t *testing.T) {
 	//	Docs: []*types.Document{doc},
 	//})
 	//require.True(t, backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID))
+}
+
+func TestCollectionStats(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
+	t.Parallel()
+
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	params := NewBackendParams{
+		URI: "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1",
+		L:   testutil.Logger(t),
+		P:   sp,
+	}
+	b, err := NewBackend(&params)
+	require.NoError(t, err)
+	t.Cleanup(b.Close)
+
+	db, err := b.Database(testutil.DatabaseName(t))
+	require.NoError(t, err)
+
+	cNames := []string{"collectionOne", "collectionTwo"}
+	for _, cName := range cNames {
+		err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: cName})
+		require.NoError(t, err)
+	}
+
+	c, err := db.Collection(cNames[0])
+	require.NoError(t, err)
+
+	_, err = c.InsertAll(ctx, &backends.InsertAllParams{
+		Docs: []*types.Document{must.NotFail(types.NewDocument("_id", types.NewObjectID()))},
+	})
+	require.NoError(t, err)
+
+	dbStatsRes, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+	require.NoError(t, err)
+
+	res, err := c.Stats(ctx, new(backends.CollectionStatsParams))
+	require.NoError(t, err)
+	require.NotZero(t, res.SizeTotal)
+	require.Less(t, res.SizeTotal, dbStatsRes.SizeTotal)
+	require.NotZero(t, res.SizeCollection)
+	require.Less(t, res.SizeCollection, dbStatsRes.SizeCollections)
+	require.Equal(t, res.CountObjects, int64(1))
 }
