@@ -81,7 +81,7 @@ See [our documentation](https://docs.ferretdb.io/quickstart-guide/) for more det
 > **Note**
 >
 > We strongly advise users not to build FerretDB themselves.
-> Instead, use binaries, Docker images, or `.deb`/`.rpm` packages provided by us.
+> Instead, use binaries, Docker images, or packages provided by us.
 
 FerretDB could be built as any other Go program,
 but a few generated files and build tags could affect it.
