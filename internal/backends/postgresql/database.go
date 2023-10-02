@@ -154,7 +154,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	// See https://www.postgresql.org/docs/15/functions-admin.html#FUNCTIONS-ADMIN-DBOBJECT.
 	q := `
 		SELECT
-		    SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))
+			SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))
 		FROM pg_tables
 		WHERE schemaname = $1`
 	args := []any{db.name}
@@ -163,6 +163,10 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	var schemaSize *int64
 	if err := row.Scan(&schemaSize); err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if schemaSize == nil {
+		*schemaSize = 0
 	}
 
 	return &backends.DatabaseStatsResult{
