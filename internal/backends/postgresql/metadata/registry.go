@@ -34,7 +34,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
@@ -221,19 +220,8 @@ func (r *Registry) initCollections(ctx context.Context, dbName string, p *pgxpoo
 	colls := map[string]*Collection{}
 
 	for rows.Next() {
-		var b []byte
-		if err = rows.Scan(&b); err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		var doc *types.Document
-
-		if doc, err = sjson.Unmarshal(b); err != nil {
-			return lazyerrors.Error(err)
-		}
-
 		var c Collection
-		if err = c.Unmarshal(doc); err != nil {
+		if err = rows.Scan(&c); err != nil {
 			return lazyerrors.Error(err)
 		}
 
@@ -525,17 +513,11 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 		TableName: tableName,
 	}
 
-	b, err := sjson.Marshal(c.Marshal())
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
 	q := fmt.Sprintf(
 		`CREATE TABLE %s (%s jsonb)`,
 		pgx.Identifier{dbName, tableName}.Sanitize(),
 		DefaultColumn,
 	)
-
 	if _, err = p.Exec(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -545,8 +527,7 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 		pgx.Identifier{dbName, metadataTableName}.Sanitize(),
 		DefaultColumn,
 	)
-
-	if _, err = p.Exec(ctx, q, string(b)); err != nil {
+	if _, err = p.Exec(ctx, q, c); err != nil {
 		q = fmt.Sprintf(`DROP TABLE %s`, pgx.Identifier{dbName, tableName}.Sanitize())
 		_, _ = p.Exec(ctx, q)
 
@@ -558,15 +539,11 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 	}
 	r.colls[dbName][collectionName] = c
 
-	err = r.indexesCreate(ctx, p, dbName, collectionName,
-		[]IndexInfo{
-			{
-				Name:   "_id_",
-				Key:    []IndexKeyPair{{Field: "_id"}},
-				Unique: true,
-			},
-		},
-	)
+	err = r.indexesCreate(ctx, p, dbName, collectionName, []IndexInfo{{
+		Name:   "_id_",
+		Key:    []IndexKeyPair{{Field: "_id"}},
+		Unique: true,
+	}})
 	if err != nil {
 		_, _ = r.collectionDrop(ctx, p, dbName, collectionName)
 		return false, lazyerrors.Error(err)
@@ -710,7 +687,7 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 
 	c.Name = newCollectionName
 
-	b, err := sjson.Marshal(c.Marshal())
+	b, err := sjson.Marshal(c.marshal())
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -795,7 +772,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 			tableNamePart = tableNamePart[:tableNamePartMax]
 		}
 
-		index.TableIndexName = fmt.Sprintf("%s_%s_idx", tableNamePart, uuidPart)
+		index.PgName = fmt.Sprintf("%s_%s_idx", tableNamePart, uuidPart)
 
 		q := "CREATE "
 
@@ -825,7 +802,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 
 		q = fmt.Sprintf(
 			q,
-			pgx.Identifier{index.TableIndexName}.Sanitize(),
+			pgx.Identifier{index.PgName}.Sanitize(),
 			pgx.Identifier{dbName, c.TableName}.Sanitize(),
 			strings.Join(columns, ", "),
 		)
@@ -839,7 +816,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 		c.Settings.Indexes = append(c.Settings.Indexes, index)
 	}
 
-	b, err := sjson.Marshal(c.Marshal())
+	b, err := sjson.Marshal(c.marshal())
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -907,7 +884,7 @@ func (r *Registry) indexesDrop(ctx context.Context, p *pgxpool.Pool, dbName, col
 			continue
 		}
 
-		q := fmt.Sprintf("DROP INDEX %s", pgx.Identifier{dbName, c.Settings.Indexes[i].TableIndexName}.Sanitize())
+		q := fmt.Sprintf("DROP INDEX %s", pgx.Identifier{dbName, c.Settings.Indexes[i].PgName}.Sanitize())
 		if _, err := p.Exec(ctx, q); err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -915,7 +892,7 @@ func (r *Registry) indexesDrop(ctx context.Context, p *pgxpool.Pool, dbName, col
 		c.Settings.Indexes = slices.Delete(c.Settings.Indexes, i, i+1)
 	}
 
-	b, err := sjson.Marshal(c.Marshal())
+	b, err := sjson.Marshal(c.marshal())
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

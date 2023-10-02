@@ -512,7 +512,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 			return ii.Name == "index_non_unique"
 		})
 		require.GreaterOrEqual(t, i, 0)
-		tableIndexName := collection.Settings.Indexes[i].TableIndexName
+		tableIndexName := collection.Settings.Indexes[i].PgName
 
 		var sql string
 		err = db.QueryRow(
@@ -534,7 +534,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 			return ii.Name == "index_unique"
 		})
 		require.GreaterOrEqual(t, i, 0)
-		tableIndexName := collection.Settings.Indexes[i].TableIndexName
+		tableIndexName := collection.Settings.Indexes[i].PgName
 
 		var sql string
 		err = db.QueryRow(
@@ -556,7 +556,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 			return ii.Name == "nested_fields"
 		})
 		require.GreaterOrEqual(t, i, 0)
-		tableIndexName := collection.Settings.Indexes[i].TableIndexName
+		tableIndexName := collection.Settings.Indexes[i].PgName
 
 		var sql string
 		err = db.QueryRow(
@@ -579,7 +579,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 			return ii.Name == "_id_"
 		})
 		require.GreaterOrEqual(t, i, 0)
-		tableIndexName := collection.Settings.Indexes[i].TableIndexName
+		tableIndexName := collection.Settings.Indexes[i].PgName
 
 		var sql string
 		err = db.QueryRow(

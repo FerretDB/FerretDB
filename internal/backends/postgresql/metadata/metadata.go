@@ -16,12 +16,11 @@
 package metadata
 
 import (
-	"errors"
+	"database/sql"
+	"database/sql/driver"
 
-	"golang.org/x/exp/slices"
-
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -57,151 +56,83 @@ func (c *Collection) deepCopy() *Collection {
 	}
 }
 
-// Marshal returns [*types.Document] for that collection.
-func (c *Collection) Marshal() *types.Document {
+// Value implements driver.Valuer interface.
+func (c Collection) Value() (driver.Value, error) {
+	b, err := sjson.Marshal(c.marshal())
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return b, nil
+}
+
+// Scan implements sql.Scanner interface.
+func (c *Collection) Scan(src any) error {
+	var doc *types.Document
+	var err error
+	switch src := src.(type) {
+	case nil:
+		*c = Collection{}
+		return nil
+	case []byte:
+		doc, err = sjson.Unmarshal(src)
+	case string:
+		doc, err = sjson.Unmarshal([]byte(src))
+	default:
+		panic("can't scan collection")
+	}
+
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if err = c.unmarshal(doc); err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
+}
+
+// marshal returns [*types.Document] for that collection.
+func (c *Collection) marshal() *types.Document {
 	return must.NotFail(types.NewDocument(
 		"_id", c.Name,
 		"table", c.TableName,
-		"settings", c.Settings.Marshal(),
+		"settings", c.Settings.marshal(),
 	))
 }
 
-// Unmarshal sets collection metadata from [*types.Document].
-func (c *Collection) Unmarshal(doc *types.Document) error {
-	c.Name = must.NotFail(doc.Get("_id")).(string)
-	c.TableName = must.NotFail(doc.Get("table")).(string)
+// unmarshal sets collection metadata from [*types.Document].
+func (c *Collection) unmarshal(doc *types.Document) error {
+	v, _ := doc.Get("_id")
+	c.Name, _ = v.(string)
+	if c.Name == "" {
+		return lazyerrors.New("collection name is empty")
+	}
+
+	v, _ = doc.Get("table")
+	c.TableName, _ = v.(string)
+	if c.TableName == "" {
+		return lazyerrors.New("table name is empty")
+	}
+
+	v, _ = doc.Get("settings")
+	s, _ := v.(*types.Document)
+	if s == nil {
+		return lazyerrors.New("settings are empty")
+	}
+
+	c.Settings.unmarshal(doc)
 
 	var settings Settings
-	must.NoError(settings.Unmarshal(must.NotFail(doc.Get("settings")).(*types.Document)))
+	must.NoError(settings.unmarshal(must.NotFail(doc.Get("settings")).(*types.Document)))
 	c.Settings = settings
 
 	return nil
 }
 
-// Settings represents collection settings.
-type Settings struct {
-	Indexes []IndexInfo `json:"indexes"`
-}
-
-// deepCopy returns a deep copy.
-func (s Settings) deepCopy() Settings {
-	indexes := make([]IndexInfo, len(s.Indexes))
-
-	for i, index := range s.Indexes {
-		indexes[i] = IndexInfo{
-			Name:           index.Name,
-			TableIndexName: index.TableIndexName,
-			Key:            slices.Clone(index.Key),
-			Unique:         index.Unique,
-		}
-	}
-
-	return Settings{
-		Indexes: indexes,
-	}
-}
-
-// Marshal returns [*types.Document] for settings.
-func (s Settings) Marshal() *types.Document {
-	indexes := types.MakeArray(len(s.Indexes))
-
-	for _, index := range s.Indexes {
-		key := types.MakeDocument(len(index.Key))
-
-		// The format of the index key storing was defined in the early versions of FerretDB,
-		// it's kept for backward compatibility.
-		for _, pair := range index.Key {
-			order := int32(1) // order is set as int32 to be sjson-marshaled correctly
-
-			if pair.Descending {
-				order = -1
-			}
-
-			key.Set(pair.Field, order)
-		}
-
-		indexes.Append(must.NotFail(types.NewDocument(
-			"pgindex", index.TableIndexName,
-			"name", index.Name,
-			"key", key,
-			"unique", index.Unique,
-		)))
-	}
-
-	return must.NotFail(types.NewDocument(
-		"indexes", indexes,
-	))
-}
-
-// Unmarshal sets settings from [*types.Document].
-func (s *Settings) Unmarshal(doc *types.Document) error {
-	indexes := must.NotFail(doc.Get("indexes")).(*types.Array)
-
-	s.Indexes = make([]IndexInfo, indexes.Len())
-
-	iter := indexes.Iterator()
-	defer iter.Close()
-
-	for {
-		i, v, err := iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
-		}
-
-		if err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		doc := v.(*types.Document)
-
-		keyDoc := must.NotFail(doc.Get("key")).(*types.Document)
-		keyIter := keyDoc.Iterator()
-		key := make([]IndexKeyPair, keyDoc.Len())
-
-		defer keyIter.Close()
-
-		for j := 0; ; j++ {
-			field, order, err := keyIter.Next()
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
-			if err != nil {
-				return lazyerrors.Error(err)
-			}
-
-			descending := false
-			if order.(int32) == -1 {
-				descending = true
-			}
-
-			key[j] = IndexKeyPair{
-				Field:      field,
-				Descending: descending,
-			}
-		}
-
-		s.Indexes[i] = IndexInfo{
-			Name:           must.NotFail(doc.Get("name")).(string),
-			TableIndexName: must.NotFail(doc.Get("pgindex")).(string),
-			Key:            key,
-			Unique:         must.NotFail(doc.Get("unique")).(bool),
-		}
-	}
-
-	return nil
-}
-
-// IndexInfo represents information about a single index.
-type IndexInfo struct {
-	Name           string
-	TableIndexName string // how the index is created in the DB, like TableName for Collection
-	Key            []IndexKeyPair
-	Unique         bool
-}
-
-// IndexKeyPair consists of a field name and a sort order that are part of the index.
-type IndexKeyPair struct {
-	Field      string
-	Descending bool
-}
+// check interfaces
+var (
+	_ driver.Valuer = Collection{}
+	_ sql.Scanner   = (*Collection)(nil)
+)
