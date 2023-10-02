@@ -21,14 +21,14 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"github.com/FerretDB/FerretDB/build/version"
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 )
 
 // Setup initializes logging with a given level.
 func Setup(level zapcore.Level, uuid string) {
 	config := zap.Config{
 		Level:             zap.NewAtomicLevelAt(level),
-		Development:       version.Get().DebugBuild,
+		Development:       debugbuild.Enabled,
 		DisableCaller:     false,
 		DisableStacktrace: false,
 		Sampling:          nil,
