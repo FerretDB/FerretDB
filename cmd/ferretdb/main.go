@@ -31,6 +31,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	_ "golang.org/x/crypto/x509roots/fallback" // register root TLS certificates for production Docker image
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
