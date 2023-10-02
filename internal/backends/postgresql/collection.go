@@ -78,7 +78,16 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
 	)
 
-	rows, err := p.Query(ctx, q)
+	var placeholder Placeholder
+
+	where, args, err := prepareWhereClause(&placeholder, params.Filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	q += where
+
+	rows, err := p.Query(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
