@@ -560,7 +560,7 @@ tasks:
     desc: "Build development debug binaries"
     cmds:
       - echo 'bin-development' > build/version/package.txt
-      - bin/envtool{{exeExt}} shell rmdir tmp
+      - bin/envtool{{exeExt}} shell rmdir tmp/build
       - bin/envtool{{exeExt}} shell mkdir tmp/bin-dev
       - task: docker-build
         vars:
@@ -575,7 +575,7 @@ tasks:
     desc: "Build production non-debug binaries"
     cmds:
       - echo 'bin' > build/version/package.txt
-      - bin/envtool{{exeExt}} shell rmdir tmp
+      - bin/envtool{{exeExt}} shell rmdir tmp/build
       - bin/envtool{{exeExt}} shell mkdir tmp/bin
       - task: docker-build
         vars:
@@ -645,7 +645,7 @@ tasks:
   packages-deb:
     cmds:
       - echo 'deb' > build/version/package.txt
-      - bin/envtool{{exeExt}} shell rmdir tmp
+      - bin/envtool{{exeExt}} shell rmdir tmp/build
       - bin/envtool{{exeExt}} shell mkdir tmp/debs
       - task: docker-build
         vars:
@@ -665,7 +665,7 @@ tasks:
   packages-rpm:
     cmds:
       - echo 'rpm' > build/version/package.txt
-      - bin/envtool{{exeExt}} shell rmdir tmp
+      - bin/envtool{{exeExt}} shell rmdir tmp/build
       - bin/envtool{{exeExt}} shell mkdir tmp/rpms
       - task: docker-build
         vars:
