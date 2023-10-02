@@ -17,6 +17,8 @@ package postgresql
 import (
 	"context"
 
+	"github.com/AlekSi/pointer"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -166,7 +168,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	}
 
 	if schemaSize == nil {
-		*schemaSize = 0
+		schemaSize = pointer.ToInt64(0)
 	}
 
 	return &backends.DatabaseStatsResult{
