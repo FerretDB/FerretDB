@@ -30,7 +30,7 @@
 1. Trim draft release notes.
 2. Wait for the [packages CI build](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml?query=event%3Apush)
    to finish.
-3. Upload the binary and `.deb` and `.rpm` packages to the draft release.
+3. Upload binaries and packages to the draft release.
 4. Check:
    - <https://hub.docker.com/r/ferretdb/ferretdb/tags>
    - <https://hub.docker.com/r/ferretdb/ferretdb-dev/tags>
