@@ -2,6 +2,12 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.12.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.12.0) (TBD)
+
+### XXX Important changes
+
+- Base production images changed.
+
 ## [v1.11.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.11.0) (2023-09-25)
 
 ### Fixed Bugs 🐛
