@@ -130,8 +130,53 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 
 // Stats implements backends.Database interface.
 func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsParams) (*backends.DatabaseStatsResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3402
-	return new(backends.DatabaseStatsResult), nil
+	p, err := db.r.DatabaseGetExisting(ctx, db.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if p == nil {
+		return nil, backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, lazyerrors.Errorf("no database %s", db.name))
+	}
+
+	list, err := db.r.CollectionList(ctx, db.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	stats, err := collectionsStats(ctx, p, db.name, list)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// Total size is the disk space used by all the relations in the given schema,
+	// including tables, indexes, TOAST data also includes FerretDB metadata relations.
+	// See https://www.postgresql.org/docs/15/functions-admin.html#FUNCTIONS-ADMIN-DBOBJECT.
+	q := `
+		SELECT
+			SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))
+		FROM pg_tables
+		WHERE schemaname = $1`
+	args := []any{db.name}
+	row := p.QueryRow(ctx, q, args...)
+
+	var schemaSize *int64
+	if err := row.Scan(&schemaSize); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if schemaSize == nil {
+		*schemaSize = 0
+	}
+
+	return &backends.DatabaseStatsResult{
+		CountCollections: int64(len(list)),
+		CountObjects:     stats.countRows,
+		CountIndexes:     stats.countIndexes,
+		SizeTotal:        *schemaSize,
+		SizeIndexes:      stats.sizeIndexes,
+		SizeCollections:  stats.sizeTables,
+	}, nil
 }
 
 // check interfaces
