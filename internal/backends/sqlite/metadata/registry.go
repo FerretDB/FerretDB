@@ -506,17 +506,21 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 	return nil
 }
 
-// IndexesDrop drops provided indexes for the given collection.
-func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName string, toDrop []string) error {
+// IndexesDrop removes given connection's indexes.
+//
+// Non-existing indexes are ignored.
+//
+// If database or collection does not exist, nil is returned.
+func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName string, indexNames []string) error {
 	defer observability.FuncCall(ctx)()
 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	return r.indexesDrop(ctx, dbName, collectionName, toDrop)
+	return r.indexesDrop(ctx, dbName, collectionName, indexNames)
 }
 
-// indexesDrop remove given connection's indexes.
+// indexesDrop removes given connection's indexes.
 //
 // Non-existing indexes are ignored.
 //

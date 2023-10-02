@@ -740,6 +740,8 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 // IndexesCreate creates indexes in the collection.
 //
 // Existing indexes with given names are ignored.
+//
+// If the user is not authenticated, it returns error.
 func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
 	defer observability.FuncCall(ctx)()
 
@@ -863,8 +865,14 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 	return nil
 }
 
-// IndexesDrop drops provided indexes for the given collection.
-func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName string, toDrop []string) error {
+// IndexesDrop removes given connection's indexes.
+//
+// Non-existing indexes are ignored.
+//
+// If database or collection does not exist, nil is returned.
+//
+// If the user is not authenticated, it returns error.
+func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName string, indexNames []string) error {
 	defer observability.FuncCall(ctx)()
 
 	p, err := r.getPool(ctx)
@@ -875,10 +883,10 @@ func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName strin
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	return r.indexesDrop(ctx, p, dbName, collectionName, toDrop)
+	return r.indexesDrop(ctx, p, dbName, collectionName, indexNames)
 }
 
-// indexesDrop remove given connection's indexes.
+// indexesDrop removes given connection's indexes.
 //
 // Non-existing indexes are ignored.
 //
