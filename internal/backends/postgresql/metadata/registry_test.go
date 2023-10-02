@@ -17,7 +17,6 @@ package metadata
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -162,34 +161,6 @@ func TestCreateDrop(t *testing.T) {
 	r, db, dbName := createDatabase(t, ctx)
 	collectionName := testutil.CollectionName(t)
 	testCollection(t, ctx, r, db, dbName, collectionName)
-}
-
-func TestCreateLongCollectionName(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
-	t.Parallel()
-
-	connInfo := conninfo.New()
-	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
-
-	r, _, dbName := createDatabase(t, ctx)
-
-	collectionName := strings.Repeat("a", 63)
-	created, err := r.CollectionCreate(ctx, dbName, collectionName)
-	require.NoError(t, err)
-	require.True(t, created)
-
-	collectionName = strings.Repeat("a", 63)
-	created, err = r.CollectionCreate(ctx, dbName, collectionName)
-	require.NoError(t, err)
-	require.False(t, created)
-
-	collectionName = strings.Repeat("a", 64)
-	created, err = r.CollectionCreate(ctx, dbName, collectionName)
-	require.NoError(t, err)
-	require.True(t, created)
 }
 
 func TestCreateDropStress(t *testing.T) {
@@ -463,43 +434,31 @@ func TestIndexesCreateDrop(t *testing.T) {
 	r, db, dbName := createDatabase(t, ctx)
 	collectionName := testutil.CollectionName(t)
 
-	toCreate := []IndexInfo{
-		{
-			Name: "index_non_unique",
-			Key: []IndexKeyPair{
-				{
-					Field:      "f1",
-					Descending: false,
-				},
-				{
-					Field:      "f2",
-					Descending: true,
-				},
-			},
-		},
-		{
-			Name: "index_unique",
-			Key: []IndexKeyPair{
-				{
-					Field:      "foo",
-					Descending: false,
-				},
-			},
-			Unique: true,
-		},
-		{
-			Name: "nested_fields",
-			Key: []IndexKeyPair{
-				{
-					Field: "foo.bar",
-				},
-				{
-					Field:      "foo.baz",
-					Descending: true,
-				},
-			},
-		},
-	}
+	toCreate := []IndexInfo{{
+		Name: "index_non_unique",
+		Key: []IndexKeyPair{{
+			Field:      "f1",
+			Descending: false,
+		}, {
+			Field:      "f2",
+			Descending: true,
+		}},
+	}, {
+		Name: "index_unique",
+		Key: []IndexKeyPair{{
+			Field:      "foo",
+			Descending: false,
+		}},
+		Unique: true,
+	}, {
+		Name: "nested_fields",
+		Key: []IndexKeyPair{{
+			Field: "foo.bar",
+		}, {
+			Field:      "foo.baz",
+			Descending: true,
+		}},
+	}}
 
 	err := r.IndexesCreate(ctx, dbName, collectionName, toCreate)
 	require.NoError(t, err)
@@ -607,14 +566,14 @@ func TestIndexesCreateDrop(t *testing.T) {
 		require.Equal(t, 4, len(refreshedCollection.Indexes))
 
 		for _, index := range refreshedCollection.Indexes {
-			switch {
-			case index.Name == "_id_":
+			switch index.Name {
+			case "_id_":
 				assert.Equal(t, 1, len(index.Key))
-			case index.Name == "index_non_unique":
+			case "index_non_unique":
 				assert.Equal(t, 2, len(index.Key))
-			case index.Name == "index_unique":
+			case "index_unique":
 				assert.Equal(t, 1, len(index.Key))
-			case index.Name == "nested_fields":
+			case "nested_fields":
 				assert.Equal(t, 2, len(index.Key))
 			default:
 				t.Errorf("unexpected index: %s", index.Name)

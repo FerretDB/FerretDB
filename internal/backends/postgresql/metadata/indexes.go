@@ -134,5 +134,6 @@ func (s *Indexes) unmarshal(a *types.Array) error {
 	}
 
 	*s = res
+
 	return nil
 }
