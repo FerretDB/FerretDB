@@ -15,6 +15,9 @@ labels:
   - name: area/aggregations
     color: "#5319E7"
     description: Issues about aggregation pipelines
+  - name: area/build
+    color: "#52D58A"
+    description: Issues about builds and CI
   - name: area/cursors
     color: "#D93F0B"
     description: Issues about cursors

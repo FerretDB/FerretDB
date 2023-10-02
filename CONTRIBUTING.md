@@ -7,10 +7,10 @@ Thank you for your interest in making FerretDB better!
 We are interested in all contributions, big or small, in code or documentation.
 But unless you are fixing a very small issue like a typo,
 we kindly ask you first to [create an issue](https://github.com/FerretDB/FerretDB/issues/new/choose),
-to leave a comment on an existing issue if you want to work on it,
-or to [join our Slack chat](./README.md#community) and leave a message for us in the `#dev` channel.
+or leave a comment on an existing issue if you want to work on it.
 This way, you will get help from us and avoid wasted efforts if something can't be worked on right now
 or someone is already working on it.
+You can also [join our Slack chat](./README.md#community) and leave a message for us in the `#dev` channel.
 
 You can find a list of good first issues for contributors [there](https://github.com/FerretDB/FerretDB/contribute).
 Once you have some experience with contributing to FerretDB,
@@ -73,10 +73,10 @@ and download required Docker images with `task env-pull`.
 If something does not work correctly,
 you can reset the environment with `task env-reset`.
 
-### Building a production release binary
+### Building a production release binaries
 
-To build a production release binary, run `task build-release`.
-The result will be saved as `bin/ferretdb`.
+To build a production release binaries, run `task build-release`.
+The results will be saved `tmp/bin`.
 
 ## Contributing code
 
