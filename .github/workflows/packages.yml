@@ -157,7 +157,8 @@ jobs:
         if: steps.extract.outputs.production_images != ''
         run: bin/task docker-production-push DOCKER_IMAGES=${{ steps.extract.outputs.production_images }}
 
-      - name: Build production release binary
+      # TODO https://github.com/FerretDB/FerretDB/issues/2171
+      - name: Build production release binaries
         run: bin/task build-release
 
       - name: Upload ferretdb
@@ -165,6 +166,14 @@ jobs:
         with:
           name: ferretdb
           path: bin/ferretdb
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Upload production release binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: bin
+          path: tmp/bin/
           retention-days: 1
           if-no-files-found: error
 
