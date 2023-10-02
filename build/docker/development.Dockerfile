@@ -77,6 +77,13 @@ bin/ferretdb --version
 EOF
 
 
+# stage for binary only
+
+FROM scratch AS development-binary
+
+COPY --from=development-build /src/bin/ferretdb /ferretdb
+
+
 # final stage
 
 FROM golang:1.21.1 AS development
