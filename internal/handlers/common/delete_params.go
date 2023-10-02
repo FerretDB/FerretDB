@@ -26,7 +26,7 @@ import (
 //nolint:vet // for readability
 type DeleteParams struct {
 	DB         string `ferretdb:"$db"`
-	Collection string `ferretdb:"collection"`
+	Collection string `ferretdb:"delete,collection"`
 
 	Comment string   `ferretdb:"comment,opt"`
 	Deletes []Delete `ferretdb:"deletes,opt"`

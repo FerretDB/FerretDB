@@ -29,7 +29,7 @@ import (
 //nolint:vet // for readability
 type FindParams struct {
 	DB          string          `ferretdb:"$db"`
-	Collection  string          `ferretdb:"collection"`
+	Collection  string          `ferretdb:"find,collection"`
 	Filter      *types.Document `ferretdb:"filter,opt"`
 	Sort        *types.Document `ferretdb:"sort,opt"`
 	Projection  *types.Document `ferretdb:"projection,opt"`

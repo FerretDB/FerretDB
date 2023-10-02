@@ -87,12 +87,6 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 
 		lookup := key
 
-		// If the key is the same as the command name, then it is a collection name.
-		// Depending on the driver, the key may be camel case or lower case for a collection name.
-		if strings.ToLower(key) == strings.ToLower(command) { //nolint:staticcheck // for clarity
-			lookup = "collection"
-		}
-
 		fieldIndex, options, err := lookupFieldTag(lookup, &elem)
 		if err != nil {
 			panic(err)
@@ -161,6 +155,7 @@ type tagOptions struct {
 	wholePositiveNumber bool
 	numericBool         bool
 	zeroOrOneAsBool     bool
+	collection          bool
 }
 
 // lookupFieldTag looks for the tag and returns its options.
@@ -219,6 +214,8 @@ func tagOptionsFromList(optionsList []string) *tagOptions {
 			to.wholePositiveNumber = true
 		case "zeroOrOneAsBool":
 			to.zeroOrOneAsBool = true
+		case "collection":
+			to.collection = true
 		default:
 			panic(fmt.Sprintf("unknown tag option %s", tt))
 		}
@@ -401,17 +398,16 @@ func checkAllRequiredFieldsPopulated(v *reflect.Value, command string, keys []st
 			continue
 		}
 
-		key := optionsList[0]
-		if key == "collection" {
+		if to.collection {
 			if v.Field(i).IsZero() {
 				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace,
 					fmt.Sprintf("Invalid namespace specified '%s.'", v.FieldByName("DB")),
 					command,
 				)
 			}
-
-			key = command
 		}
+
+		key := optionsList[0]
 
 		// Fields with "-" are ignored when parsing parameters.
 		if key == "-" {

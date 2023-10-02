@@ -28,7 +28,7 @@ import (
 func TestParse(t *testing.T) {
 	type allTagsThatPass struct { //nolint:vet // it's a test struct
 		DB           string          `ferretdb:"$db"`
-		Collection   string          `ferretdb:"collection"`
+		Collection   string          `ferretdb:"find,collection"`
 		Filter       *types.Document `ferretdb:"filter,opt"`
 		AllowDiskUse any             `ferretdb:"allowDiskUse,ignored"`
 	}
