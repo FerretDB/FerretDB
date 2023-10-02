@@ -56,6 +56,10 @@ type iteratorParams struct {
 // Nil rows are possible and return already done iterator.
 // It still should be Close'd.
 func newQueryIterator(ctx context.Context, params *iteratorParams) types.DocumentsIterator {
+	if params == nil {
+		params = new(iteratorParams)
+	}
+
 	if params.unmarshal == nil {
 		params.unmarshal = sjson.Unmarshal
 	}
