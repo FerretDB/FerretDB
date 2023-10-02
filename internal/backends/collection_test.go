@@ -143,8 +143,16 @@ func TestCollectionStats(t *testing.T) {
 		t.Run(b.Name(), func(t *testing.T) {
 			t.Parallel()
 
-			db, err := b.Database(testutil.DatabaseName(t))
+			dbName := testutil.DatabaseName(t)
+			db, err := b.Database(dbName)
 			require.NoError(t, err)
+
+			t.Cleanup(func() {
+				err = b.DropDatabase(ctx, &backends.DropDatabaseParams{
+					Name: dbName,
+				})
+				require.NoError(t, err)
+			})
 
 			cNames := []string{"collectionOne", "collectionTwo"}
 			for _, cName := range cNames {
