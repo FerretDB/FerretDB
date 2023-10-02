@@ -160,7 +160,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	args := []any{db.name}
 	row := p.QueryRow(ctx, q, args...)
 
-	var schemaSize int64
+	var schemaSize *int64
 	if err := row.Scan(&schemaSize); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -169,7 +169,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		CountCollections: int64(len(list)),
 		CountObjects:     stats.countRows,
 		CountIndexes:     stats.countIndexes,
-		SizeTotal:        schemaSize,
+		SizeTotal:        *schemaSize,
 		SizeIndexes:      stats.sizeIndexes,
 		SizeCollections:  stats.sizeTables,
 	}, nil
