@@ -545,6 +545,7 @@ tasks:
         --file=build/docker/{{.FILE}}.Dockerfile
         --build-arg=LABEL_VERSION={{.VERSION}}
         --build-arg=LABEL_COMMIT={{.COMMIT}}
+        --target={{.TARGET}}
         {{if .PLATFORM}}--platform={{.PLATFORM}}{{end}}
         {{if .DOCKER_IMAGES}}{{range splitList "," .DOCKER_IMAGES}}--tag={{trim .}} {{end}}{{end}}
         --output={{.OUTPUT}}
@@ -564,6 +565,7 @@ tasks:
       - task: docker-build
         vars:
           FILE: development
+          TARGET: development-binary
           PLATFORM: linux/amd64,linux/arm64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
           OUTPUT: type=local,dest=tmp/build
       - mv tmp/build/linux_amd64/ferretdb tmp/bin-dev/ferretdb-dev-linux-amd64
@@ -578,6 +580,7 @@ tasks:
       - task: docker-build
         vars:
           FILE: production
+          TARGET: production-binary
           PLATFORM: linux/amd64,linux/arm64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
           OUTPUT: type=local,dest=tmp/build
       - mv tmp/build/linux_amd64/ferretdb tmp/bin/ferretdb-linux-amd64
@@ -592,7 +595,7 @@ tasks:
           DOCKER_IMAGES: ferretdb-local
           OUTPUT: type=docker
     requires:
-      vars: [FILE]
+      vars: [FILE, TARGET]
 
   # TODO https://github.com/FerretDB/FerretDB/issues/2212
   docker-all-in-one-push:
@@ -601,6 +604,7 @@ tasks:
       - task: docker-build
         vars:
           FILE: all-in-one
+          TARGET: all-in-one
           PLATFORM: linux/amd64,linux/arm64 # no mongosh for arm/v6 and arm/v7
           OUTPUT: type=image,push=true
     requires:
@@ -613,6 +617,7 @@ tasks:
       - task: docker-build
         vars:
           FILE: development
+          TARGET: development
           PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
           OUTPUT: type=image,push=true
     requires:
@@ -625,6 +630,7 @@ tasks:
       - task: docker-build
         vars:
           FILE: production
+          TARGET: production
           PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
           OUTPUT: type=image,push=true
     requires:
@@ -644,6 +650,7 @@ tasks:
       - task: docker-build
         vars:
           FILE: production
+          TARGET: production-binary
           PLATFORM: linux/amd64,linux/arm64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
           OUTPUT: type=local,dest=tmp/build
       - bin/nfpm{{exeExt}} package --config=build/nfpm-amd64.yml --packager=deb --target=tmp/debs/ferretdb-amd64.deb
@@ -663,6 +670,7 @@ tasks:
       - task: docker-build
         vars:
           FILE: production
+          TARGET: production-binary
           PLATFORM: linux/amd64,linux/arm64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
           OUTPUT: type=local,dest=tmp/build
       - bin/nfpm{{exeExt}} package --config=build/nfpm-amd64.yml --packager=rpm --target=tmp/rpms/ferretdb-amd64.rpm
