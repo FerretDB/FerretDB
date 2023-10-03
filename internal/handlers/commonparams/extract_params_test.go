@@ -73,6 +73,10 @@ func TestParse(t *testing.T) {
 		Collection string `ferretdb:"explain,collection"`
 	}
 
+	type noCollectionTag struct {
+		Collection string `ferretdb:"explain"`
+	}
+
 	tests := map[string]struct { //nolint:vet // it's a test table
 		doc        *types.Document
 		command    string
@@ -333,6 +337,24 @@ func TestParse(t *testing.T) {
 			)),
 			params:  new(collectionTag),
 			wantErr: `collection name has invalid type object`,
+		},
+		"NoCollectionTagDocument": {
+			command: "explain",
+			doc: must.NotFail(types.NewDocument(
+				"explain", must.NotFail(types.NewDocument(
+					"find", "test",
+				)),
+			)),
+			params:  new(noCollectionTag),
+			wantErr: `collection field contains value that is not a collection name`,
+		},
+		"NoCollectionTagString": {
+			command: "explain",
+			doc: must.NotFail(types.NewDocument(
+				"explain", "test",
+			)),
+			params:  new(noCollectionTag),
+			wantErr: `collection field contains value that is not a collection name`,
 		},
 	}
 	for name, tt := range tests {

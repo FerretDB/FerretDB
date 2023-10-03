@@ -43,7 +43,8 @@ import (
 //   - `wholePositiveNumber` - provided value must be of types [int, long] and greater than 0;
 //   - `numericBool` - provided value must be of types [bool, int, long, double] and would be converted to bool;
 //   - `zeroOrOneAsBool` - provided value must be of types [int, long, double] with possible values `0` or `1`.
-//   - `collection` - field value holds the name of the collection and must be of type string.
+//   - `collection` - Collection field value holds the name of the collection and must be of type string. An error is
+//     returned if `collection` tag is not set.
 //
 // It returns command errors with the following codes:
 //   - `ErrFailedToParse` when provided field is not present in passed structure;
@@ -345,6 +346,14 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 
 	if settable != nil {
 		v := reflect.ValueOf(settable)
+
+		if key == command && !o.collection {
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrInvalidNamespace,
+				"collection field contains value that is not a collection name",
+				command,
+			)
+		}
 
 		if v.Type() != fv.Type() {
 			if key == command {
