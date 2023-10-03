@@ -69,6 +69,10 @@ func TestParse(t *testing.T) {
 		Find bool `ferretdb:"f,zeroOrOneAsBool"`
 	}
 
+	type collectionTag struct {
+		Collection string `ferretdb:"explain,collection"`
+	}
+
 	tests := map[string]struct { //nolint:vet // it's a test table
 		doc        *types.Document
 		command    string
@@ -319,6 +323,16 @@ func TestParse(t *testing.T) {
 			)),
 			params:  new(zeroOrOneAsBool),
 			wantErr: `The 'find.f' field must be 0 or 1. Got "true"`,
+		},
+		"CollectionTagWithWrongValue": {
+			command: "explain",
+			doc: must.NotFail(types.NewDocument(
+				"explain", must.NotFail(types.NewDocument(
+					"find", "test",
+				)),
+			)),
+			params:  new(collectionTag),
+			wantErr: `collection name has invalid type object`,
 		},
 	}
 	for name, tt := range tests {

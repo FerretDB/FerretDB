@@ -43,11 +43,7 @@ import (
 //   - `wholePositiveNumber` - provided value must be of types [int, long] and greater than 0;
 //   - `numericBool` - provided value must be of types [bool, int, long, double] and would be converted to bool;
 //   - `zeroOrOneAsBool` - provided value must be of types [int, long, double] with possible values `0` or `1`.
-//
-// Collection field processed in a special way. For the commands that require collection name
-// it is extracted from the command name.
-// If the field could have different types (e.g. `*types.Document` and `*types.Array`) then
-// the field must be of type `any`.
+//   - `collection` - field value holds the name of the collection and must be of type string.
 //
 // It returns command errors with the following codes:
 //   - `ErrFailedToParse` when provided field is not present in passed structure;
