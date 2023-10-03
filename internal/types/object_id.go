@@ -34,7 +34,7 @@ const ObjectIDLen = 12
 
 // NewObjectID returns a new ObjectID.
 func NewObjectID() ObjectID {
-	return newObjectIDTime(time.Now())
+	return newObjectIDTime(time.Now()) // https://github.com/FerretDB/FerretDB/issues/3486
 }
 
 // newObjectIDTime returns a new ObjectID with given time.
