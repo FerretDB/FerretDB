@@ -257,7 +257,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 
 // Compact implements backends.Collection interface.
 func (c *collection) Compact(ctx context.Context, params *backends.CompactParams) (*backends.CompactResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3466
+	// TODO https://github.com/FerretDB/FerretDB/issues/3484
 	return new(backends.CompactResult), nil
 }
 

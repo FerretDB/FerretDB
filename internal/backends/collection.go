@@ -182,11 +182,7 @@ type DeleteAllResult struct {
 func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllParams) (*DeleteAllResult, error) {
 	defer observability.FuncCall(ctx)()
 
-	if params.IDs == nil {
-		must.BeTrue(params.RecordIDs != nil)
-	} else {
-		must.BeTrue(params.RecordIDs == nil)
-	}
+	must.BeTrue((params.IDs == nil) != (params.RecordIDs == nil))
 
 	res, err := cc.c.DeleteAll(ctx, params)
 	checkError(err)
@@ -221,7 +217,7 @@ func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams
 
 // CollectionStatsParams represents the parameters of Collection.Stats method.
 type CollectionStatsParams struct {
-	Refresh bool
+	Refresh bool // TODO https://github.com/FerretDB/FerretDB/issues/3483
 }
 
 // CollectionStatsResult represents the results of Collection.Stats method.
@@ -236,6 +232,8 @@ type CollectionStatsResult struct {
 }
 
 // Stats returns statistics about the collection.
+//
+// If refresh is true, the statistics should be refreshed before returning.
 func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStatsParams) (*CollectionStatsResult, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -246,7 +244,9 @@ func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStats
 }
 
 // CompactParams represents the parameters of Collection.Compact method.
-type CompactParams struct{}
+type CompactParams struct {
+	Full bool
+}
 
 // CompactResult represents the results of Collection.Compact method.
 type CompactResult struct{}
@@ -254,12 +254,13 @@ type CompactResult struct{}
 // Compact reduces the disk space collection takes (by defragmenting, removing dead rows, etc)
 // and refreshes its statistics.
 //
-// TODO https://github.com/FerretDB/FerretDB/issues/3466
+// If full is true, the operation should try to reduce the disk space as much as possible,
+// even if collection or the whole database will be locked for some time.
 func (cc *collectionContract) Compact(ctx context.Context, params *CompactParams) (*CompactResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.Compact(ctx, params)
-	checkError(err) // ErrorCodeDatabaseDoesNotExist, ErrorCodeCollectionDoesNotExist?
+	checkError(err, ErrorCodeDatabaseDoesNotExist, ErrorCodeCollectionDoesNotExist)
 
 	return res, err
 }
