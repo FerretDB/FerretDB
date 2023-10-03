@@ -60,7 +60,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		},
 		"ExcludeInclude": {
 			filter:     bson.D{},
-			projection: bson.D{{"foo", false}, {"bar", true}},
+			projection: bson.D{{"foo", false}, {"_id", false}, {"bar", true}},
 			err: &mongo.CommandError{
 				Code:    31253,
 				Name:    "Location31253",
@@ -69,7 +69,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		},
 		"IncludeExclude": {
 			filter:     bson.D{},
-			projection: bson.D{{"foo", true}, {"bar", false}},
+			projection: bson.D{{"foo", true}, {"_id", false}, {"bar", false}},
 			err: &mongo.CommandError{
 				Code:    31254,
 				Name:    "Location31254",
