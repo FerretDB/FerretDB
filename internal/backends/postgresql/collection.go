@@ -275,19 +275,13 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
 	)
 
-	rows, err := p.Query(ctx, q)
+	var b []byte
+	err = p.QueryRow(ctx, q).Scan(&b)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	iter := newQueryIterator(ctx, &iteratorParams{
-		rows:      rows,
-		unmarshal: unmarshalExplain,
-	})
-
-	defer iter.Close()
-
-	_, queryPlan, err := iter.Next()
+	queryPlan, err := unmarshalExplain(b)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
