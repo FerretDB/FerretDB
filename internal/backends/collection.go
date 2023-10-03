@@ -212,9 +212,7 @@ func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams
 }
 
 // CollectionStatsParams represents the parameters of Collection.Stats method.
-type CollectionStatsParams struct {
-	Refresh bool // TODO https://github.com/FerretDB/FerretDB/issues/3483
-}
+type CollectionStatsParams struct{}
 
 // CollectionStatsResult represents the results of Collection.Stats method.
 //
@@ -228,8 +226,6 @@ type CollectionStatsResult struct {
 }
 
 // Stats returns statistics about the collection.
-//
-// If refresh is true, the statistics should be refreshed before returning.
 func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStatsParams) (*CollectionStatsResult, error) {
 	defer observability.FuncCall(ctx)()
 
