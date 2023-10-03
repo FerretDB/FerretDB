@@ -16,6 +16,7 @@ package backends
 
 import (
 	"context"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -116,7 +117,9 @@ type InsertAllResult struct{}
 func (cc *collectionContract) InsertAll(ctx context.Context, params *InsertAllParams) (*InsertAllResult, error) {
 	defer observability.FuncCall(ctx)()
 
+	now := time.Now()
 	for _, doc := range params.Docs {
+		doc.SetRecordID(types.NextTimestamp(now))
 		doc.Freeze()
 	}
 

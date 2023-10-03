@@ -559,7 +559,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 |                                   | `writeConcern`                 |                           | ⚠️     |                                                           |
 |                                   | `comment`                      |                           | ⚠️     |                                                           |
 | `create`                          |                                |                           | ✅     |                                                           |
-|                                   | `capped`                       |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/75)   |
+|                                   | `capped`                       |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/3458) |
 |                                   | `timeseries`                   |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/177)  |
 |                                   |                                | `timeField`               | ⚠️     |                                                           |
 |                                   |                                | `metaField`               | ⚠️     |                                                           |
@@ -568,8 +568,8 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 |                                   | `clusteredIndex`               |                           | ⚠️     |                                                           |
 |                                   | `changeStreamPreAndPostImages` |                           | ⚠️     |                                                           |
 |                                   | `autoIndexId`                  |                           | ⚠️     | Ignored                                                   |
-|                                   | `size`                         |                           | ⚠️     | Unimplemented                                             |
-|                                   | `max`                          |                           | ⚠️     | Unimplemented                                             |
+|                                   | `size`                         |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/3458) |
+|                                   | `max`                          |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/3458) |
 |                                   | `storageEngine`                |                           | ⚠️     | Ignored                                                   |
 |                                   | `validator`                    |                           | ⚠️     | Not implemented in PostgreSQL                             |
 |                                   | `validationLevel`              |                           | ⚠️     | Unimplemented                                             |
