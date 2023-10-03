@@ -783,49 +783,56 @@ func TestCommandsAdministrationCollStatsSize(t *testing.T) {
 
 	var actual bson.D
 	command := bson.D{{"collStats", collection.Name()}}
-	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
-	require.NoError(t, err)
 
-	doc := ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	countInitial := must.NotFail(doc.Get("count"))
-	sizeInitial := must.NotFail(doc.Get("size"))
-	aveObjSizeInitial := must.NotFail(doc.Get("avgObjSize"))
+	var countInitial, sizeInitial, aveObjSizeInitial any
+	t.Run("SizeInitial", func(t *testing.T) {
+		err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+		require.NoError(t, err)
 
-	// insert documents
-	arr, _ := generateDocuments(0, 100)
-	_, err = collection.InsertMany(ctx, arr)
-	require.NoError(t, err)
+		doc := ConvertDocument(t, actual)
+		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+		countInitial = must.NotFail(doc.Get("count"))
+		sizeInitial = must.NotFail(doc.Get("size"))
+		aveObjSizeInitial = must.NotFail(doc.Get("avgObjSize"))
+	})
 
-	err = collection.Database().RunCommand(ctx, command).Decode(&actual)
-	require.NoError(t, err)
+	var countAfterInsert, sizeAfterInsert, aveObjSizeAfterInsert any
+	t.Run("SizeAfterInsert", func(t *testing.T) {
+		arr, _ := generateDocuments(0, 100)
+		_, err := collection.InsertMany(ctx, arr)
+		require.NoError(t, err)
 
-	doc = ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	countAfterInsert := must.NotFail(doc.Get("count"))
-	sizeAfterInsert := must.NotFail(doc.Get("size"))
-	aveObjSizeAfterInsert := must.NotFail(doc.Get("avgObjSize"))
+		err = collection.Database().RunCommand(ctx, command).Decode(&actual)
+		require.NoError(t, err)
 
-	assert.Greater(t, countAfterInsert, countInitial)
-	assert.Greater(t, sizeAfterInsert, sizeInitial)
-	assert.Greater(t, aveObjSizeInitial, aveObjSizeAfterInsert)
+		doc := ConvertDocument(t, actual)
+		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+		countAfterInsert = must.NotFail(doc.Get("count"))
+		sizeAfterInsert = must.NotFail(doc.Get("size"))
+		aveObjSizeAfterInsert = must.NotFail(doc.Get("avgObjSize"))
 
-	// delete added documents
-	_, err = collection.DeleteMany(ctx, bson.D{{"v", "foo"}})
-	require.NoError(t, err)
+		assert.Greater(t, countAfterInsert, countInitial)
+		assert.Greater(t, sizeAfterInsert, sizeInitial)
+		assert.Greater(t, aveObjSizeInitial, aveObjSizeAfterInsert)
+	})
 
-	err = collection.Database().RunCommand(ctx, command).Decode(&actual)
-	require.NoError(t, err)
+	t.Run("SizeAfterDelete", func(t *testing.T) {
+		_, err := collection.DeleteMany(ctx, bson.D{{"v", "foo"}})
+		require.NoError(t, err)
 
-	doc = ConvertDocument(t, actual)
-	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	countAfterDelete := must.NotFail(doc.Get("count"))
-	sizeAfterDelete := must.NotFail(doc.Get("size"))
-	aveObjSizeAfterDelete := must.NotFail(doc.Get("avgObjSize"))
+		err = collection.Database().RunCommand(ctx, command).Decode(&actual)
+		require.NoError(t, err)
 
-	assert.Equal(t, countInitial, countAfterDelete)
-	assert.Equal(t, sizeInitial, sizeAfterDelete)
-	assert.Equal(t, aveObjSizeInitial, aveObjSizeAfterDelete)
+		doc := ConvertDocument(t, actual)
+		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+		countAfterDelete := must.NotFail(doc.Get("count"))
+		sizeAfterDelete := must.NotFail(doc.Get("size"))
+		aveObjSizeAfterDelete := must.NotFail(doc.Get("avgObjSize"))
+
+		assert.Equal(t, countInitial, countAfterDelete)
+		assert.Equal(t, sizeInitial, sizeAfterDelete)
+		assert.Equal(t, aveObjSizeInitial, aveObjSizeAfterDelete)
+	})
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
