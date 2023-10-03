@@ -32,8 +32,6 @@ import (
 type queryIterator struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
-	unmarshal func(b []byte) (*types.Document, error) // defaults to sjson.Unmarshal
-
 	ctx   context.Context
 	rows  pgx.Rows // protected by m
 	token *resource.Token
@@ -42,8 +40,7 @@ type queryIterator struct {
 
 // iteratorParams contains parameters for building an iterator.
 type iteratorParams struct {
-	rows      pgx.Rows
-	unmarshal func(b []byte) (*types.Document, error) // if set, iterator uses unmarshal to convert row to *types.Document.
+	rows pgx.Rows
 }
 
 // newQueryIterator returns a new queryIterator for the given Rows.
@@ -60,15 +57,10 @@ func newQueryIterator(ctx context.Context, params *iteratorParams) types.Documen
 		params = new(iteratorParams)
 	}
 
-	if params.unmarshal == nil {
-		params.unmarshal = sjson.Unmarshal
-	}
-
 	iter := &queryIterator{
-		ctx:       ctx,
-		rows:      params.rows,
-		token:     resource.NewToken(),
-		unmarshal: params.unmarshal,
+		ctx:   ctx,
+		rows:  params.rows,
+		token: resource.NewToken(),
 	}
 	resource.Track(iter, iter.token)
 
@@ -112,7 +104,7 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	doc, err := iter.unmarshal(b)
+	doc, err := sjson.Unmarshal(b)
 	if err != nil {
 		iter.close()
 		return unused, nil, lazyerrors.Error(err)
