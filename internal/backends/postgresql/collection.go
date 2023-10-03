@@ -86,9 +86,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}
 
 	return &backends.QueryResult{
-		Iter: newQueryIterator(ctx, &iteratorParams{
-			rows: rows,
-		}),
+		Iter: newQueryIterator(ctx, rows),
 	}, nil
 }
 
@@ -277,6 +275,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	var b []byte
 	err = p.QueryRow(ctx, q).Scan(&b)
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

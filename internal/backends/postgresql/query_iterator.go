@@ -38,11 +38,6 @@ type queryIterator struct {
 	m     sync.Mutex
 }
 
-// iteratorParams contains parameters for building an iterator.
-type iteratorParams struct {
-	rows pgx.Rows
-}
-
 // newQueryIterator returns a new queryIterator for the given Rows.
 //
 // Iterator's Close method closes rows.
@@ -52,14 +47,10 @@ type iteratorParams struct {
 //
 // Nil rows are possible and return already done iterator.
 // It still should be Close'd.
-func newQueryIterator(ctx context.Context, params *iteratorParams) types.DocumentsIterator {
-	if params == nil {
-		params = new(iteratorParams)
-	}
-
+func newQueryIterator(ctx context.Context, rows pgx.Rows) types.DocumentsIterator {
 	iter := &queryIterator{
 		ctx:   ctx,
-		rows:  params.rows,
+		rows:  rows,
 		token: resource.NewToken(),
 	}
 	resource.Track(iter, iter.token)
