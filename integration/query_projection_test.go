@@ -60,7 +60,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		},
 		"ExcludeInclude": {
 			filter:     bson.D{},
-			projection: bson.D{{"foo", false}, {"_id", true}, {"bar", true}},
+			projection: bson.D{{"foo", false}, {"bar", true}},
 			err: &mongo.CommandError{
 				Code:    31253,
 				Name:    "Location31253",
@@ -69,7 +69,7 @@ func TestQueryProjectionErrors(t *testing.T) {
 		},
 		"IncludeExclude": {
 			filter:     bson.D{},
-			projection: bson.D{{"foo", true}, {"_id", false}, {"bar", false}},
+			projection: bson.D{{"foo", true}, {"bar", false}},
 			err: &mongo.CommandError{
 				Code:    31254,
 				Name:    "Location31254",
@@ -249,6 +249,38 @@ func TestQueryProjectionErrors(t *testing.T) {
 
 			assert.Nil(t, res)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestQueryProjectionSuccess(t *testing.T) {
+	t.Parallel()
+	ctx, collection := setup.Setup(t, shareddata.Scalars, shareddata.Composites)
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		filter     bson.D // required
+		projection any    // required
+
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"QueryProjection_v": {
+			filter:     bson.D{},
+			projection: bson.D{{"v", true}, {"_id", false}},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.filter, "filter should be set")
+			require.NotNil(t, tc.projection, "projection should be set")
+
+			res, err := collection.Find(ctx, tc.filter, options.Find().SetProjection(tc.projection))
+			defer res.Close(ctx)
+			assert.Nil(t, err)
 		})
 	}
 }
