@@ -263,8 +263,10 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return nil, lazyerrors.Error(err)
 	}
 
+	res := new(backends.ExplainResult)
+
 	if p == nil {
-		return new(backends.ExplainResult), nil
+		return res, nil
 	}
 
 	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
@@ -273,20 +275,29 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	if meta == nil {
-		return &backends.ExplainResult{
-			QueryPlanner: must.NotFail(types.NewDocument()),
-		}, nil
+		res.QueryPlanner = must.NotFail(types.NewDocument())
+		return res, nil
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3414
 	q := fmt.Sprintf(
 		`EXPLAIN (VERBOSE true, FORMAT JSON) SELECT %s FROM %s`,
 		metadata.DefaultColumn,
 		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
 	)
 
+	var placeholder Placeholder
+
+	where, args, err := prepareWhereClause(&placeholder, params.Filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res.QueryPushdown = where != ""
+
+	q += where
+
 	var b []byte
-	err = p.QueryRow(ctx, q).Scan(&b)
+	err = p.QueryRow(ctx, q, args...).Scan(&b)
 
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -297,9 +308,9 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &backends.ExplainResult{
-		QueryPlanner: must.NotFail(types.NewDocument("Plan", queryPlan)),
-	}, nil
+	res.QueryPlanner = queryPlan
+
+	return res, nil
 }
 
 // Stats implements backends.Collection interface.
