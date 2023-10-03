@@ -435,8 +435,9 @@ func generateDocuments(startID, endID int32) (bson.A, []bson.D) {
 	var docs []bson.D
 
 	for i := startID; i < endID; i++ {
-		arr = append(arr, bson.D{{"_id", i}})
-		docs = append(docs, bson.D{{"_id", i}})
+		doc := bson.D{{"_id", i}, {"v", "foo"}}
+		arr = append(arr, doc)
+		docs = append(docs, doc)
 	}
 
 	return arr, docs

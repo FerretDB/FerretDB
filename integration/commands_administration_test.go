@@ -776,6 +776,58 @@ func TestCommandsAdministrationCollStatsCount(t *testing.T) {
 	assert.EqualValues(t, n, must.NotFail(doc.Get("count")))
 }
 
+func TestCommandsAdministrationCollStatsSize(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+
+	var actual bson.D
+	command := bson.D{{"collStats", collection.Name()}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	countInitial := must.NotFail(doc.Get("count"))
+	sizeInitial := must.NotFail(doc.Get("size"))
+	aveObjSizeInitial := must.NotFail(doc.Get("avgObjSize"))
+
+	// insert documents
+	arr, _ := generateDocuments(0, 100)
+	_, err = collection.InsertMany(ctx, arr)
+	require.NoError(t, err)
+
+	err = collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc = ConvertDocument(t, actual)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	countAfterInsert := must.NotFail(doc.Get("count"))
+	sizeAfterInsert := must.NotFail(doc.Get("size"))
+	aveObjSizeAfterInsert := must.NotFail(doc.Get("avgObjSize"))
+
+	assert.Greater(t, countAfterInsert, countInitial)
+	assert.Greater(t, sizeAfterInsert, sizeInitial)
+	assert.Greater(t, aveObjSizeInitial, aveObjSizeAfterInsert)
+
+	// delete added documents
+	_, err = collection.DeleteMany(ctx, bson.D{{"v", "foo"}})
+	require.NoError(t, err)
+
+	err = collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc = ConvertDocument(t, actual)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+	countAfterDelete := must.NotFail(doc.Get("count"))
+	sizeAfterDelete := must.NotFail(doc.Get("size"))
+	aveObjSizeAfterDelete := must.NotFail(doc.Get("avgObjSize"))
+
+	assert.Equal(t, countInitial, countAfterDelete)
+	assert.Equal(t, sizeInitial, sizeAfterDelete)
+	assert.Equal(t, aveObjSizeInitial, aveObjSizeAfterDelete)
+}
+
 func TestCommandsAdministrationDataSize(t *testing.T) {
 	t.Parallel()
 
