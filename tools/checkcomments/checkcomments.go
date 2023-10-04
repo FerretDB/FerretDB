@@ -73,11 +73,6 @@ func run(pass *analysis.Pass) (any, error) {
 
 // isIssueopen check the issue open or closed.
 func isIssueOpen(todoText string) bool {
-	issueURL := getURL(todoText)
-	if issueURL == "" {
-		return false
-	}
-
 	token := ""
 	ctx := context.Background()
 	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
@@ -86,9 +81,9 @@ func isIssueOpen(todoText string) bool {
 
 	client := github.NewClient(httpClient)
 
-	owner := "owner"
-	repo := "repos"
-	issueNumber, err := getIssueNumber(issueURL)
+	owner := "FerretDB"
+	repo := "FerretDB"
+	issueNumber, err := getIssueNumber(todoText)
 	if err != nil {
 		log.Fatalf("error in getting issue number: %s", err.Error())
 		return false
@@ -100,24 +95,6 @@ func isIssueOpen(todoText string) bool {
 	}
 
 	return issue.GetState() == "open"
-}
-
-// extracting url from TODO comment if present.
-func getURL(todoText string) string {
-	arrText := strings.Split(todoText, " ")
-	for _, text := range arrText {
-		if strings.Contains(text, "https://") {
-			parts := strings.Split(text, "/")
-			if len(parts) >= 5 {
-				issueNumber := parts[6]
-				apiURL := fmt.Sprintf("https://api.github.com/repos/FerretDB/FerretDB/issues/%s", issueNumber)
-
-				return apiURL
-			}
-		}
-	}
-
-	return ""
 }
 
 // get the issue number from  issue url.
