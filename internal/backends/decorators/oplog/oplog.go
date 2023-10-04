@@ -37,6 +37,9 @@ func (d *document) marshal(t time.Time) (*types.Document, error) {
 		"ns", d.ns,
 		"op", d.op,
 		"o", d.o,
+		"t", int64(1),
+		"v", int64(2),
+		"wall", t,
 	)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
