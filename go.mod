@@ -2,8 +2,6 @@ module github.com/FerretDB/FerretDB
 
 go 1.21
 
-toolchain go1.21.1
-
 require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/SAP/go-hdb v1.5.5

@@ -289,6 +289,12 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 	}, nil
 }
 
+// Compact implements backends.Collection interface.
+func (c *collection) Compact(ctx context.Context, params *backends.CompactParams) (*backends.CompactResult, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/3484
+	return new(backends.CompactResult), nil
+}
+
 // ListIndexes implements backends.Collection interface.
 func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3394

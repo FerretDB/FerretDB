@@ -133,6 +133,61 @@ func TestCollectionUpdateAll(t *testing.T) {
 	}
 }
 
+func TestCollectionCompact(t *testing.T) {
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/3484")
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/3469")
+
+	t.Parallel()
+
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+
+	for _, b := range testBackends(t) {
+		b := b
+		t.Run(b.Name(), func(t *testing.T) {
+			t.Parallel()
+
+			t.Run("DatabaseDoesNotExist", func(t *testing.T) {
+				t.Parallel()
+
+				dbName, collName := testutil.DatabaseName(t), testutil.CollectionName(t)
+				cleanupDatabase(t, ctx, b, dbName)
+
+				db, err := b.Database(dbName)
+				require.NoError(t, err)
+
+				coll, err := db.Collection(collName)
+				require.NoError(t, err)
+
+				_, err = coll.Compact(ctx, nil)
+				assertErrorCode(t, err, backends.ErrorCodeDatabaseDoesNotExist)
+			})
+
+			t.Run("CollectionDoesNotExist", func(t *testing.T) {
+				t.Parallel()
+
+				dbName, collName := testutil.DatabaseName(t), testutil.CollectionName(t)
+				otherCollName := collName + "_other"
+				cleanupDatabase(t, ctx, b, dbName)
+
+				db, err := b.Database(dbName)
+				require.NoError(t, err)
+
+				// to create database
+				err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
+					Name: otherCollName,
+				})
+				require.NoError(t, err)
+
+				coll, err := db.Collection(collName)
+				require.NoError(t, err)
+
+				_, err = coll.Compact(ctx, nil)
+				assertErrorCode(t, err, backends.ErrorCodeCollectionDoesNotExist)
+			})
+		})
+	}
+}
+
 func TestCollectionStats(t *testing.T) {
 	t.Parallel()
 
