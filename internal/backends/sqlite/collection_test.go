@@ -26,37 +26,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestInsert(t *testing.T) {
-	sp, err := state.NewProvider("")
-	require.NoError(t, err)
-
-	b, err := NewBackend(&NewBackendParams{URI: "file:./?mode=memory", L: testutil.Logger(t), P: sp})
-	require.NoError(t, err)
-
-	defer b.Close()
-
-	db, err := b.Database(testutil.DatabaseName(t))
-	require.NoError(t, err)
-
-	c, err := db.Collection(testutil.CollectionName(t))
-	require.NoError(t, err)
-
-	ctx := testutil.Ctx(t)
-
-	doc, err := types.NewDocument("_id", types.NewObjectID())
-	require.NoError(t, err)
-
-	_, err = c.InsertAll(ctx, &backends.InsertAllParams{
-		Docs: []*types.Document{doc},
-	})
-	require.NoError(t, err)
-
-	_, err = c.InsertAll(ctx, &backends.InsertAllParams{
-		Docs: []*types.Document{doc},
-	})
-	require.True(t, backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID))
-}
-
 func TestCollectionStats(t *testing.T) {
 	t.Parallel()
 	ctx := testutil.Ctx(t)

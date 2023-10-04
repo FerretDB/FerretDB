@@ -24,7 +24,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
@@ -34,7 +33,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
@@ -221,19 +219,8 @@ func (r *Registry) initCollections(ctx context.Context, dbName string, p *pgxpoo
 	colls := map[string]*Collection{}
 
 	for rows.Next() {
-		var b []byte
-		if err = rows.Scan(&b); err != nil {
-			return lazyerrors.Error(err)
-		}
-
-		var doc *types.Document
-
-		if doc, err = sjson.Unmarshal(b); err != nil {
-			return lazyerrors.Error(err)
-		}
-
 		var c Collection
-		if err = c.Unmarshal(doc); err != nil {
+		if err = rows.Scan(&c); err != nil {
 			return lazyerrors.Error(err)
 		}
 
@@ -525,17 +512,11 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 		TableName: tableName,
 	}
 
-	b, err := sjson.Marshal(c.Marshal())
-	if err != nil {
-		return false, lazyerrors.Error(err)
-	}
-
 	q := fmt.Sprintf(
 		`CREATE TABLE %s (%s jsonb)`,
 		pgx.Identifier{dbName, tableName}.Sanitize(),
 		DefaultColumn,
 	)
-
 	if _, err = p.Exec(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -545,8 +526,7 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 		pgx.Identifier{dbName, metadataTableName}.Sanitize(),
 		DefaultColumn,
 	)
-
-	if _, err = p.Exec(ctx, q, string(b)); err != nil {
+	if _, err = p.Exec(ctx, q, c); err != nil {
 		q = fmt.Sprintf(`DROP TABLE %s`, pgx.Identifier{dbName, tableName}.Sanitize())
 		_, _ = p.Exec(ctx, q)
 
@@ -558,15 +538,11 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 	}
 	r.colls[dbName][collectionName] = c
 
-	err = r.indexesCreate(ctx, p, dbName, collectionName,
-		[]IndexInfo{
-			{
-				Name:   "_id_",
-				Key:    []IndexKeyPair{{Field: "_id"}},
-				Unique: true,
-			},
-		},
-	)
+	err = r.indexesCreate(ctx, p, dbName, collectionName, []IndexInfo{{
+		Name:   "_id_",
+		Key:    []IndexKeyPair{{Field: "_id"}},
+		Unique: true,
+	}})
 	if err != nil {
 		_, _ = r.collectionDrop(ctx, p, dbName, collectionName)
 		return false, lazyerrors.Error(err)
@@ -710,7 +686,7 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 
 	c.Name = newCollectionName
 
-	b, err := sjson.Marshal(c.Marshal())
+	b, err := sjson.Marshal(c.marshal())
 	if err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -740,6 +716,8 @@ func (r *Registry) CollectionRename(ctx context.Context, dbName, oldCollectionNa
 // IndexesCreate creates indexes in the collection.
 //
 // Existing indexes with given names are ignored.
+//
+// If the user is not authenticated, it returns error.
 func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
 	defer observability.FuncCall(ctx)()
 
@@ -777,23 +755,57 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 		panic("collection does not exist")
 	}
 
+	allIndexes := make(map[string]string, len(db))   // to check if the index already exists
+	allPgIndexes := make(map[string]string, len(db)) // to ensure there are no indexes with the same name in the pg schema
+
+	for _, coll := range db {
+		for _, index := range coll.Indexes {
+			allIndexes[index.Name] = coll.Name
+			allPgIndexes[index.PgIndex] = coll.Name
+		}
+	}
+
 	created := make([]string, 0, len(indexes))
 
 	for _, index := range indexes {
-		if slices.ContainsFunc(c.Settings.Indexes, func(i IndexInfo) bool { return index.Name == i.Name }) {
+		if coll, ok := allIndexes[index.Name]; ok && coll == collectionName {
 			continue
 		}
 
-		// indexes must be unique across the whole database, so we add a uuid to the index name
-		uuidPart := must.NotFail(uuid.NewRandom()).String()
 		tableNamePart := c.TableName
-		tableNamePartMax := maxIndexNameLength - len(uuidPart) - 5 // 5 is for _ and _idx
+		tableNamePartMax := maxIndexNameLength/2 - 1 // 1 for the separator between table name and index name
 
 		if len(tableNamePart) > tableNamePartMax {
 			tableNamePart = tableNamePart[:tableNamePartMax]
 		}
 
-		index.TableIndexName = fmt.Sprintf("%s_%s_idx", tableNamePart, uuidPart)
+		indexNamePart := specialCharacters.ReplaceAllString(strings.ToLower(index.Name), "_")
+
+		h := fnv.New32a()
+		must.NotFail(h.Write([]byte(collectionName)))
+		s := h.Sum32()
+
+		var pgIndexName string
+
+		for {
+			suffixHash := fmt.Sprintf("_%08x_idx", s)
+			if l := maxIndexNameLength/2 - len(suffixHash); len(indexNamePart) > l {
+				indexNamePart = indexNamePart[:l]
+			}
+
+			pgIndexName = fmt.Sprintf("%s_%s", tableNamePart, indexNamePart)
+
+			// indexes must be unique across the whole database, so we check for duplicates for all collections
+			_, duplicate := allPgIndexes[pgIndexName]
+
+			if !duplicate {
+				break
+			}
+
+			s++
+		}
+
+		index.PgIndex = pgIndexName
 
 		q := "CREATE "
 
@@ -823,7 +835,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 
 		q = fmt.Sprintf(
 			q,
-			pgx.Identifier{index.TableIndexName}.Sanitize(),
+			pgx.Identifier{index.PgIndex}.Sanitize(),
 			pgx.Identifier{dbName, c.TableName}.Sanitize(),
 			strings.Join(columns, ", "),
 		)
@@ -834,10 +846,10 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 		}
 
 		created = append(created, index.Name)
-		c.Settings.Indexes = append(c.Settings.Indexes, index)
+		c.Indexes = append(c.Indexes, index)
 	}
 
-	b, err := sjson.Marshal(c.Marshal())
+	b, err := sjson.Marshal(c.marshal())
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -863,8 +875,14 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 	return nil
 }
 
-// IndexesDrop drops provided indexes for the given collection.
-func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName string, toDrop []string) error {
+// IndexesDrop removes given connection's indexes.
+//
+// Non-existing indexes are ignored.
+//
+// If database or collection does not exist, nil is returned.
+//
+// If the user is not authenticated, it returns error.
+func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName string, indexNames []string) error {
 	defer observability.FuncCall(ctx)()
 
 	p, err := r.getPool(ctx)
@@ -875,10 +893,10 @@ func (r *Registry) IndexesDrop(ctx context.Context, dbName, collectionName strin
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	return r.indexesDrop(ctx, p, dbName, collectionName, toDrop)
+	return r.indexesDrop(ctx, p, dbName, collectionName, indexNames)
 }
 
-// indexesDrop remove given connection's indexes.
+// indexesDrop removes given connection's indexes.
 //
 // Non-existing indexes are ignored.
 //
@@ -894,20 +912,20 @@ func (r *Registry) indexesDrop(ctx context.Context, p *pgxpool.Pool, dbName, col
 	}
 
 	for _, name := range indexNames {
-		i := slices.IndexFunc(c.Settings.Indexes, func(i IndexInfo) bool { return name == i.Name })
+		i := slices.IndexFunc(c.Indexes, func(i IndexInfo) bool { return name == i.Name })
 		if i < 0 {
 			continue
 		}
 
-		q := fmt.Sprintf("DROP INDEX %s", pgx.Identifier{dbName, c.Settings.Indexes[i].TableIndexName}.Sanitize())
+		q := fmt.Sprintf("DROP INDEX %s", pgx.Identifier{dbName, c.Indexes[i].PgIndex}.Sanitize())
 		if _, err := p.Exec(ctx, q); err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		c.Settings.Indexes = slices.Delete(c.Settings.Indexes, i, i+1)
+		c.Indexes = slices.Delete(c.Indexes, i, i+1)
 	}
 
-	b, err := sjson.Marshal(c.Marshal())
+	b, err := sjson.Marshal(c.marshal())
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
