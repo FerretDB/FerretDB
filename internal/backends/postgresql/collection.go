@@ -77,11 +77,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	q := fmt.Sprintf(
-		`SELECT %s FROM %s`,
-		metadata.DefaultColumn,
-		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
-	)
+	q := prepareSelectClause(c.dbName, meta.TableName)
 
 	var placeholder Placeholder
 
@@ -279,11 +275,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return res, nil
 	}
 
-	q := fmt.Sprintf(
-		`EXPLAIN (VERBOSE true, FORMAT JSON) SELECT %s FROM %s`,
-		metadata.DefaultColumn,
-		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
-	)
+	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName)
 
 	var placeholder Placeholder
 

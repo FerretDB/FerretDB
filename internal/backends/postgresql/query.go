@@ -21,11 +21,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/jackc/pgx/v5"
 )
 
 // Placeholder stores the number of the relevant placeholder of the query.
@@ -35,6 +37,16 @@ type Placeholder int
 func (p *Placeholder) Next() string {
 	*p++
 	return "$" + strconv.Itoa(int(*p))
+}
+
+// prepareSelectClause returns simple SELECT clause for provided db and table name,
+// that can be used to construct the SQL query.
+func prepareSelectClause(db, table string) string {
+	return fmt.Sprintf(
+		`SELECT %s FROM %s`,
+		metadata.DefaultColumn,
+		pgx.Identifier{db, table}.Sanitize(),
+	)
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
