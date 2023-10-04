@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package oplog provides decorators that add OpLog functionality to the backend.
 package oplog
 
 import (
