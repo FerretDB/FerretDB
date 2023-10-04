@@ -551,8 +551,6 @@ func TestIndexesCreateDrop(t *testing.T) {
 	})
 
 	t.Run("CheckSettingsAfterCreation", func(t *testing.T) {
-		t.Parallel()
-
 		err := r.initCollections(ctx, dbName, db)
 		require.NoError(t, err)
 
