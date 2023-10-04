@@ -466,97 +466,107 @@ func TestIndexesCreateDrop(t *testing.T) {
 	collection, err := r.CollectionGet(ctx, dbName, collectionName)
 	require.NoError(t, err)
 
-	t.Run("NonUniqueIndex", func(t *testing.T) {
-		i := slices.IndexFunc(collection.Indexes, func(ii IndexInfo) bool {
-			return ii.Name == "index_non_unique"
+	t.Run("Lala", func(t *testing.T) {
+		t.Run("NonUniqueIndex", func(t *testing.T) {
+			t.Parallel()
+
+			i := slices.IndexFunc(collection.Indexes, func(ii IndexInfo) bool {
+				return ii.Name == "index_non_unique"
+			})
+			require.GreaterOrEqual(t, i, 0)
+			tableIndexName := collection.Indexes[i].PgIndex
+
+			var sql string
+			err := db.QueryRow(
+				ctx,
+				"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+				dbName, collection.TableName, tableIndexName,
+			).Scan(&sql)
+			require.NoError(t, err)
+
+			expected := fmt.Sprintf(
+				`CREATE INDEX %s ON %q.%s USING btree (((_jsonb -> 'f1'::text)), ((_jsonb -> 'f2'::text)) DESC)`,
+				tableIndexName, dbName, collection.TableName,
+			)
+			require.Equal(t, expected, sql)
 		})
-		require.GreaterOrEqual(t, i, 0)
-		tableIndexName := collection.Indexes[i].PgIndex
 
-		var sql string
-		err = db.QueryRow(
-			ctx,
-			"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
-			dbName, collection.TableName, tableIndexName,
-		).Scan(&sql)
-		require.NoError(t, err)
+		t.Run("UniqueIndex", func(t *testing.T) {
+			t.Parallel()
 
-		expected := fmt.Sprintf(
-			`CREATE INDEX %s ON %q.%s USING btree (((_jsonb -> 'f1'::text)), ((_jsonb -> 'f2'::text)) DESC)`,
-			tableIndexName, dbName, collection.TableName,
-		)
-		require.Equal(t, expected, sql)
-	})
+			i := slices.IndexFunc(collection.Indexes, func(ii IndexInfo) bool {
+				return ii.Name == "index_unique"
+			})
+			require.GreaterOrEqual(t, i, 0)
+			tableIndexName := collection.Indexes[i].PgIndex
 
-	t.Run("UniqueIndex", func(t *testing.T) {
-		i := slices.IndexFunc(collection.Indexes, func(ii IndexInfo) bool {
-			return ii.Name == "index_unique"
+			var sql string
+			err := db.QueryRow(
+				ctx,
+				"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+				dbName, collection.TableName, tableIndexName,
+			).Scan(&sql)
+			require.NoError(t, err)
+
+			expected := fmt.Sprintf(
+				`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> 'foo'::text)))`,
+				tableIndexName, dbName, collection.TableName,
+			)
+			require.Equal(t, expected, sql)
 		})
-		require.GreaterOrEqual(t, i, 0)
-		tableIndexName := collection.Indexes[i].PgIndex
 
-		var sql string
-		err = db.QueryRow(
-			ctx,
-			"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
-			dbName, collection.TableName, tableIndexName,
-		).Scan(&sql)
-		require.NoError(t, err)
+		t.Run("NestedFields", func(t *testing.T) {
+			t.Parallel()
 
-		expected := fmt.Sprintf(
-			`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> 'foo'::text)))`,
-			tableIndexName, dbName, collection.TableName,
-		)
-		require.Equal(t, expected, sql)
-	})
+			i := slices.IndexFunc(collection.Indexes, func(ii IndexInfo) bool {
+				return ii.Name == "nested_fields"
+			})
+			require.GreaterOrEqual(t, i, 0)
+			tableIndexName := collection.Indexes[i].PgIndex
 
-	t.Run("NestedFields", func(t *testing.T) {
-		i := slices.IndexFunc(collection.Indexes, func(ii IndexInfo) bool {
-			return ii.Name == "nested_fields"
+			var sql string
+			err := db.QueryRow(
+				ctx,
+				"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+				dbName, collection.TableName, tableIndexName,
+			).Scan(&sql)
+			require.NoError(t, err)
+
+			expected := fmt.Sprintf(
+				`CREATE INDEX %s ON %q.%s USING btree`+
+					` ((((_jsonb -> 'foo'::text) -> 'bar'::text)), (((_jsonb -> 'foo'::text) -> 'baz'::text)) DESC)`,
+				tableIndexName, dbName, collection.TableName,
+			)
+			require.Equal(t, expected, sql)
 		})
-		require.GreaterOrEqual(t, i, 0)
-		tableIndexName := collection.Indexes[i].PgIndex
 
-		var sql string
-		err = db.QueryRow(
-			ctx,
-			"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
-			dbName, collection.TableName, tableIndexName,
-		).Scan(&sql)
-		require.NoError(t, err)
+		t.Run("DefaultIndex", func(t *testing.T) {
+			t.Parallel()
 
-		expected := fmt.Sprintf(
-			`CREATE INDEX %s ON %q.%s USING btree`+
-				` ((((_jsonb -> 'foo'::text) -> 'bar'::text)), (((_jsonb -> 'foo'::text) -> 'baz'::text)) DESC)`,
-			tableIndexName, dbName, collection.TableName,
-		)
-		require.Equal(t, expected, sql)
-	})
+			i := slices.IndexFunc(collection.Indexes, func(ii IndexInfo) bool {
+				return ii.Name == "_id_"
+			})
+			require.GreaterOrEqual(t, i, 0)
+			tableIndexName := collection.Indexes[i].PgIndex
 
-	t.Run("DefaultIndex", func(t *testing.T) {
-		i := slices.IndexFunc(collection.Indexes, func(ii IndexInfo) bool {
-			return ii.Name == "_id_"
+			var sql string
+			err := db.QueryRow(
+				ctx,
+				"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+				dbName, collection.TableName, tableIndexName,
+			).Scan(&sql)
+			require.NoError(t, err)
+
+			expected := fmt.Sprintf(
+				`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> '_id'::text)))`,
+				tableIndexName, dbName, collection.TableName,
+			)
+			require.Equal(t, expected, sql)
 		})
-		require.GreaterOrEqual(t, i, 0)
-		tableIndexName := collection.Indexes[i].PgIndex
-
-		var sql string
-		err = db.QueryRow(
-			ctx,
-			"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
-			dbName, collection.TableName, tableIndexName,
-		).Scan(&sql)
-		require.NoError(t, err)
-
-		expected := fmt.Sprintf(
-			`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> '_id'::text)))`,
-			tableIndexName, dbName, collection.TableName,
-		)
-		require.Equal(t, expected, sql)
 	})
 
 	t.Run("CheckSettingsAfterCreation", func(t *testing.T) {
-		err = r.initCollections(ctx, dbName, db)
+		err := r.initCollections(ctx, dbName, db)
 		require.NoError(t, err)
 
 		var refreshedCollection *Collection
@@ -583,7 +593,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 
 	t.Run("DropIndexes", func(t *testing.T) {
 		toDrop := []string{"index_non_unique", "nested_fields"}
-		err = r.IndexesDrop(ctx, dbName, collectionName, toDrop)
+		err := r.IndexesDrop(ctx, dbName, collectionName, toDrop)
 		require.NoError(t, err)
 
 		q := "SELECT count(indexdef) FROM pg_indexes WHERE schemaname = $1 AND tablename = $2"
@@ -617,7 +627,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 		t.Parallel()
 
 		var sql string
-		err = db.QueryRow(
+		err := db.QueryRow(
 			ctx,
 			"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
 			dbName, metadataTableName, metadataTableName+"_id_idx",

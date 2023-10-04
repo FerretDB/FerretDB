@@ -755,10 +755,20 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 		panic("collection does not exist")
 	}
 
+	allIndexes := make(map[string]string, len(db))
+	allPgIndexes := make(map[string]string, len(db))
+
+	for _, coll := range db {
+		for _, index := range coll.Indexes {
+			allIndexes[index.Name] = coll.Name
+			allPgIndexes[index.PgIndex] = coll.Name
+		}
+	}
+
 	created := make([]string, 0, len(indexes))
 
 	for _, index := range indexes {
-		if slices.ContainsFunc(c.Indexes, func(i IndexInfo) bool { return index.Name == i.Name }) {
+		if coll, ok := allIndexes[index.Name]; ok && coll == collectionName {
 			continue
 		}
 
@@ -786,20 +796,13 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 			pgIndexName = fmt.Sprintf("%s%s", tableNamePart, indexNamePart)
 
 			// indexes must be unique across the whole database, so we check for duplicates for all collections
-			var duplicate bool
-
-			for _, coll := range db {
-				if slices.ContainsFunc(coll.Indexes, func(i IndexInfo) bool { return pgIndexName == i.PgIndex }) {
-					duplicate = true
-					s++
-
-					break
-				}
-			}
+			_, duplicate := allPgIndexes[pgIndexName]
 
 			if !duplicate {
 				break
 			}
+
+			s++
 		}
 
 		index.PgIndex = pgIndexName

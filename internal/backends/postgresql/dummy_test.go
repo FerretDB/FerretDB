@@ -14,9 +14,7 @@
 
 package postgresql
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestDummy(t *testing.T) {
 	// we need at least one test per package to correctly calculate coverage
