@@ -755,8 +755,8 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 		panic("collection does not exist")
 	}
 
-	allIndexes := make(map[string]string, len(db))
-	allPgIndexes := make(map[string]string, len(db))
+	allIndexes := make(map[string]string, len(db))   // to check if the index already exists
+	allPgIndexes := make(map[string]string, len(db)) // to ensure there are no indexes with the same name in the pg schema
 
 	for _, coll := range db {
 		for _, index := range coll.Indexes {
