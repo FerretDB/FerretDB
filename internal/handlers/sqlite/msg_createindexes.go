@@ -158,7 +158,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	resp.Set("numIndexesBefore", int32(numIndexesBefore))
 	resp.Set("numIndexesAfter", int32(numIndexesBefore+len(toCreate)))
 
-	if numIndexesBefore != numIndexesBefore+len(toCreate) {
+	if len(toCreate) > 0 {
 		resp.Set("createdCollectionAutomatically", createCollection)
 	} else {
 		resp.Set("note", "all indexes already exist")
