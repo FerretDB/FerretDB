@@ -329,10 +329,10 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 	}
 
 	res := backends.ListIndexesResult{
-		Indexes: make([]backends.IndexInfo, len(coll.Settings.Indexes)),
+		Indexes: make([]backends.IndexInfo, len(coll.Indexes)),
 	}
 
-	for i, index := range coll.Settings.Indexes {
+	for i, index := range coll.Indexes {
 		res.Indexes[i] = backends.IndexInfo{
 			Name:   index.Name,
 			Unique: index.Unique,
