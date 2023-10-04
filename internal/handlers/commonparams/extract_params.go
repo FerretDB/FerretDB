@@ -43,11 +43,8 @@ import (
 //   - `wholePositiveNumber` - provided value must be of types [int, long] and greater than 0;
 //   - `numericBool` - provided value must be of types [bool, int, long, double] and would be converted to bool;
 //   - `zeroOrOneAsBool` - provided value must be of types [int, long, double] with possible values `0` or `1`.
-//
-// Collection field processed in a special way. For the commands that require collection name
-// it is extracted from the command name.
-// If the field could have different types (e.g. `*types.Document` and `*types.Array`) then
-// the field must be of type `any`.
+//   - `collection` - Collection field value holds the name of the collection and must be of type string. An error is
+//     returned if `collection` tag is not set.
 //
 // It returns command errors with the following codes:
 //   - `ErrFailedToParse` when provided field is not present in passed structure;
@@ -86,12 +83,6 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 		}
 
 		lookup := key
-
-		// If the key is the same as the command name, then it is a collection name.
-		// Depending on the driver, the key may be camel case or lower case for a collection name.
-		if strings.ToLower(key) == strings.ToLower(command) { //nolint:staticcheck // for clarity
-			lookup = "collection"
-		}
 
 		fieldIndex, options, err := lookupFieldTag(lookup, &elem)
 		if err != nil {
@@ -161,6 +152,7 @@ type tagOptions struct {
 	wholePositiveNumber bool
 	numericBool         bool
 	zeroOrOneAsBool     bool
+	collection          bool
 }
 
 // lookupFieldTag looks for the tag and returns its options.
@@ -219,6 +211,8 @@ func tagOptionsFromList(optionsList []string) *tagOptions {
 			to.wholePositiveNumber = true
 		case "zeroOrOneAsBool":
 			to.zeroOrOneAsBool = true
+		case "collection":
+			to.collection = true
 		default:
 			panic(fmt.Sprintf("unknown tag option %s", tt))
 		}
@@ -353,6 +347,10 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 	if settable != nil {
 		v := reflect.ValueOf(settable)
 
+		if key == command && !o.collection {
+			return lazyerrors.New("collection field contains value that is not a collection name")
+		}
+
 		if v.Type() != fv.Type() {
 			if key == command {
 				return commonerrors.NewCommandErrorMsgWithArgument(
@@ -401,17 +399,16 @@ func checkAllRequiredFieldsPopulated(v *reflect.Value, command string, keys []st
 			continue
 		}
 
-		key := optionsList[0]
-		if key == "collection" {
+		if to.collection {
 			if v.Field(i).IsZero() {
 				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace,
 					fmt.Sprintf("Invalid namespace specified '%s.'", v.FieldByName("DB")),
 					command,
 				)
 			}
-
-			key = command
 		}
+
+		key := optionsList[0]
 
 		// Fields with "-" are ignored when parsing parameters.
 		if key == "-" {

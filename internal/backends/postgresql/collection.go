@@ -28,6 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -245,14 +246,60 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 
 // Explain implements backends.Collection interface.
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3389
-	return new(backends.ExplainResult), nil
+	p, err := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if p == nil {
+		return new(backends.ExplainResult), nil
+	}
+
+	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if meta == nil {
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3414
+	q := fmt.Sprintf(
+		`EXPLAIN (VERBOSE true, FORMAT JSON) SELECT %s FROM %s`,
+		metadata.DefaultColumn,
+		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
+	)
+
+	var b []byte
+	err = p.QueryRow(ctx, q).Scan(&b)
+
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	queryPlan, err := unmarshalExplain(b)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &backends.ExplainResult{
+		QueryPlanner: must.NotFail(types.NewDocument("Plan", queryPlan)),
+	}, nil
 }
 
 // Stats implements backends.Collection interface.
 func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3398
 	return new(backends.CollectionStatsResult), nil
+}
+
+// Compact implements backends.Collection interface.
+func (c *collection) Compact(ctx context.Context, params *backends.CompactParams) (*backends.CompactResult, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/3484
+	return new(backends.CompactResult), nil
 }
 
 // ListIndexes implements backends.Collection interface.
