@@ -348,11 +348,7 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 		v := reflect.ValueOf(settable)
 
 		if key == command && !o.collection {
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrInvalidNamespace,
-				"collection field contains value that is not a collection name",
-				command,
-			)
+			return lazyerrors.New("collection field contains value that is not a collection name")
 		}
 
 		if v.Type() != fv.Type() {
