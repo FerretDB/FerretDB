@@ -84,6 +84,13 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 
 		lookup := key
 
+		// If the key is the same as the command name, then it is a collection name.
+		// Depending on the driver, the key may be camel case or lower case for a collection name,
+		// hence use camel cased `command` for lookup of camel cased field tag.
+		if strings.ToLower(key) == strings.ToLower(command) { //nolint:staticcheck // for clarity
+			lookup = command
+		}
+
 		fieldIndex, options, err := lookupFieldTag(lookup, &elem)
 		if err != nil {
 			panic(err)
