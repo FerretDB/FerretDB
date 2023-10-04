@@ -212,7 +212,12 @@ func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams
 }
 
 // CollectionStatsParams represents the parameters of Collection.Stats method.
-type CollectionStatsParams struct{}
+//
+// Refresh updates statistics of the collection. It may trigger garbage collection
+// of the give table.
+type CollectionStatsParams struct {
+	Refresh bool
+}
 
 // CollectionStatsResult represents the results of Collection.Stats method.
 //

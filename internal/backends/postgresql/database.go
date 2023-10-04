@@ -146,7 +146,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := collectionsStats(ctx, p, db.name, list)
+	stats, err := collectionsStats(ctx, p, db.name, list, false)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
