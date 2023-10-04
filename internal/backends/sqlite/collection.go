@@ -134,12 +134,12 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 // UpdateAll implements backends.Collection interface.
 func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllParams) (*backends.UpdateAllResult, error) {
+	var res backends.UpdateAllResult
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
-		return nil, lazyerrors.Errorf("no database %q", c.dbName)
+		return &res, nil
 	}
 
-	var res backends.UpdateAllResult
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
 		return &res, nil
@@ -318,6 +318,12 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		SizeIndexes:    stats.sizeIndexes,
 		SizeCollection: stats.sizeTables,
 	}, nil
+}
+
+// Compact implements backends.Collection interface.
+func (c *collection) Compact(ctx context.Context, params *backends.CompactParams) (*backends.CompactResult, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/3469
+	return new(backends.CompactResult), nil
 }
 
 // ListIndexes implements backends.Collection interface.

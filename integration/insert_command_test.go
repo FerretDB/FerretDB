@@ -24,21 +24,19 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-func TestInsertCommandErrors(tt *testing.T) {
-	tt.Parallel()
+func TestInsertCommandErrors(t *testing.T) {
+	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
 		toInsert []any // required, slice of bson.D to insert
 		ordered  any   // required, sets it to `ordered`
 
-		cerr           *mongo.CommandError // optional, expected command error from MongoDB
-		werr           *mongo.WriteError   // optional, expected write error from MongoDB
-		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
-		skip           string              // optional, skip test with a specified reason
-		failsForSQLite string              // optional, if set, the case is expected to fail for SQLite due to given issue
+		cerr       *mongo.CommandError // optional, expected command error from MongoDB
+		werr       *mongo.WriteError   // optional, expected write error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"InsertOrderedInvalid": {
 			toInsert: []any{
@@ -92,17 +90,12 @@ func TestInsertCommandErrors(tt *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
-
-			var t testtb.TB = tt
-			if tc.failsForSQLite != "" {
-				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
-			}
+			t.Parallel()
 
 			require.NotNil(t, tc.toInsert, "toInsert must not be nil")
 			require.NotNil(t, tc.ordered, "ordered must not be nil")

@@ -110,7 +110,7 @@ func (reply *OpReply) MarshalBinary() ([]byte, error) {
 	}
 
 	for _, doc := range reply.Documents {
-		if err := bson.MustConvertDocument(doc).WriteTo(bufw); err != nil {
+		if err := must.NotFail(bson.ConvertDocument(doc)).WriteTo(bufw); err != nil {
 			return nil, lazyerrors.Errorf("wire.OpReply.MarshalBinary: %w", err)
 		}
 	}

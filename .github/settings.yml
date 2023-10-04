@@ -15,15 +15,24 @@ labels:
   - name: area/aggregations
     color: "#5319E7"
     description: Issues about aggregation pipelines
+  - name: area/build
+    color: "#52D58A"
+    description: Issues about builds and CI
   - name: area/cursors
     color: "#D93F0B"
     description: Issues about cursors
+  - name: area/diag
+    color: "#909BA6"
+    description: Issues about diagnostic commands
   - name: area/fuzz
     color: "#D4C5F9"
     description: Issues about fuzzing and smithing
   - name: area/indexes
     color: "#006B75"
     description: Issues about indexes
+  - name: area/observability
+    color: "#E04D33"
+    description: Issues about metrics, logs, traces, pprof, etc
   - name: area/oplog
     color: "#09D521"
     description: Issues about OpLog
@@ -44,6 +53,9 @@ labels:
   - name: backend/sqlite
     color: "#2C8FCA"
     description: Issues about SQLite backend
+  - name: backend/hana
+    color: "#2D6AB1"
+    description: Issues about SAP HANA backend
 
   # blog
   - name: blog/engineering

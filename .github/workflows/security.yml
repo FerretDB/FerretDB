@@ -40,8 +40,9 @@ jobs:
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
         if: false
 
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -55,8 +56,12 @@ jobs:
         run: go generate -x
         working-directory: tools
 
+      # https://github.com/aquasecurity/trivy/issues?q=is%3Aissue+%22permission+denied%22
+      - name: Create directory
+        run: mkdir -p tmp/trivy/fanal
+
       - name: Scan
-        run: bin/task --exit-code security
+        run: bin/task security
 
       # disabled until https://github.com/actions/dependency-review-action/issues/459 is resolved
       - name: Check dependencies for PRs
@@ -65,8 +70,3 @@ jobs:
         uses: actions/dependency-review-action@v3
         with:
           allow-licenses: Apache-2.0, BSD-3-Clause, MIT
-
-      # Workaround for `hashFiles` issue.
-      # See https://github.com/actions/runner/issues/449#issuecomment-1265837735.
-      - name: Clean
-        run: sudo rm -fr .cache

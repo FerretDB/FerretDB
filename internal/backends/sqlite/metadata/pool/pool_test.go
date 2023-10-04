@@ -58,7 +58,7 @@ func TestCreateDrop(t *testing.T) {
 
 	require.Contains(t, p.List(ctx), dbName)
 
-	_, err = db.ExecContext(ctx, "CREATE TABLE test (id INT) STRICT")
+	_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE TABLE %q (id INT) STRICT", t.Name()))
 	require.NoError(t, err)
 
 	// journal_mode is silently ignored for mode=memory
@@ -124,7 +124,7 @@ func TestCreateDropStress(t *testing.T) {
 
 				require.Contains(t, p.List(ctx), dbName)
 
-				_, err = db.ExecContext(ctx, "CREATE TABLE test (id INT) STRICT")
+				_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE TABLE %q (id INT) STRICT", t.Name()))
 				require.NoError(t, err)
 
 				dropped := p.Drop(ctx, dbName)
@@ -136,6 +136,8 @@ func TestCreateDropStress(t *testing.T) {
 				db = p.GetExisting(ctx, dbName)
 				require.Nil(t, db)
 			})
+
+			require.Equal(t, int32(teststress.NumGoroutines), i.Load())
 		})
 	}
 }
@@ -174,8 +176,9 @@ func TestDefaults(t *testing.T) {
 	require.NoError(t, rows.Err())
 	require.NoError(t, rows.Close())
 
-	require.Contains(t, options, "THREADSAFE=1")       // for it to work with database/sql
-	require.Contains(t, options, "ENABLE_DBSTAT_VTAB") // for dbStats/collStats/etc
+	require.Contains(t, options, "THREADSAFE=1")        // for it to work with database/sql
+	require.Contains(t, options, "ENABLE_DBSTAT_VTAB")  // for dbStats/collStats/etc
+	require.NotContains(t, options, "MAX_SCHEMA_RETRY") // see comments for SQLITE_SCHEMA in tests
 
 	for q, expected := range map[string]string{
 		"SELECT sqlite_version()":   "3.41.2",

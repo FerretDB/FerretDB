@@ -19,6 +19,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // database implements backends.Database interface.
@@ -44,25 +45,86 @@ func (db *database) Collection(name string) (backends.Collection, error) {
 //
 //nolint:lll // for readability
 func (db *database) ListCollections(ctx context.Context, params *backends.ListCollectionsParams) (*backends.ListCollectionsResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3406
-	return new(backends.ListCollectionsResult), nil
+	list, err := db.r.CollectionList(ctx, db.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res := make([]backends.CollectionInfo, len(list))
+	for i, c := range list {
+		res[i] = backends.CollectionInfo{
+			Name: c.Name,
+		}
+	}
+
+	return &backends.ListCollectionsResult{
+		Collections: res,
+	}, nil
 }
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3406
+	created, err := db.r.CollectionCreate(ctx, db.name, params.Name)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !created {
+		return backends.NewError(backends.ErrorCodeCollectionAlreadyExists, err)
+	}
+
 	return nil
 }
 
 // DropCollection implements backends.Database interface.
 func (db *database) DropCollection(ctx context.Context, params *backends.DropCollectionParams) error {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3406
+	dropped, err := db.r.CollectionDrop(ctx, db.name, params.Name)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !dropped {
+		return backends.NewError(backends.ErrorCodeCollectionDoesNotExist, err)
+	}
+
 	return nil
 }
 
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3393
+	c, err := db.r.CollectionGet(ctx, db.name, params.OldName)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if c == nil {
+		return backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("old database %q or collection %q does not exist", db.name, params.OldName),
+		)
+	}
+
+	c, err = db.r.CollectionGet(ctx, db.name, params.NewName)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if c != nil {
+		return backends.NewError(
+			backends.ErrorCodeCollectionAlreadyExists,
+			lazyerrors.Errorf("new database %q and collection %q already exists", db.name, params.NewName),
+		)
+	}
+
+	renamed, err := db.r.CollectionRename(ctx, db.name, params.OldName, params.NewName)
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	if !renamed {
+		return backends.NewError(backends.ErrorCodeCollectionDoesNotExist, err)
+	}
+
 	return nil
 }
 
