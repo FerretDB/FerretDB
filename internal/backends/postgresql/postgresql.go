@@ -45,8 +45,9 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 
 	if refresh {
 		// Calling VACUUM marks dead rows for deletion, then calls ANALYZE.
-		// However, the main purpose is to update statistics of tables after delete operation,
+		// The main purpose of this is to update statistics of tables after delete operation,
 		// see https://www.postgresql.org/docs/current/sql-vacuum.html.
+		// This does not lock read and write operations.
 		var q string
 		for _, c := range list {
 			q += fmt.Sprintf(`VACUUM %s;`, pgx.Identifier{dbName, c.TableName}.Sanitize())
