@@ -70,7 +70,7 @@ func TestParse(t *testing.T) {
 	}
 
 	type collectionTag struct {
-		Collection string `ferretdb:"explain,collection"`
+		Collection string `ferretdb:"findAndModify,collection"`
 	}
 
 	type noCollectionTag struct {
@@ -329,10 +329,10 @@ func TestParse(t *testing.T) {
 			wantErr: `The 'find.f' field must be 0 or 1. Got "true"`,
 		},
 		"CollectionTagWithWrongValue": {
-			command: "explain",
+			command: "findAndModify",
 			doc: must.NotFail(types.NewDocument(
-				"explain", must.NotFail(types.NewDocument(
-					"find", "test",
+				"findAndModify", must.NotFail(types.NewDocument(
+					"invalid", "document",
 				)),
 			)),
 			params:  new(collectionTag),
@@ -356,6 +356,15 @@ func TestParse(t *testing.T) {
 			params:  new(noCollectionTag),
 			wantErr: `collection field contains value that is not a collection name`,
 		},
+		"LowerCaseCollectionName": {
+			command: "findAndModify",
+			doc: must.NotFail(types.NewDocument(
+				"findandmodify", "test",
+			)),
+			params: new(collectionTag),
+			wantParams: &collectionTag{
+				Collection: "test",
+			}},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
