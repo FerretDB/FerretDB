@@ -55,8 +55,13 @@ func run(pass *analysis.Pass) (any, error) {
 						continue
 					}
 
-					if !todoRE.MatchString(c.Text) && isIssueOpen(c.Text) {
-						pass.Reportf(c.Pos(), "invalid TODO comment and issue is still open")
+					if !todoRE.MatchString(c.Text) {
+						pass.Reportf(c.Pos(), "invalid TODO: incorrect format")
+						continue
+					}
+					if !isIssueOpen(c.Text) {
+						pass.Reportf(c.Pos(), "invalid TODO: linked issue is closed")
+						continue
 					}
 				}
 			}
@@ -82,7 +87,7 @@ func isIssueOpen(todoText string) bool {
 	client := github.NewClient(httpClient)
 
 	owner := "owner"
-	repo := "https://github.com/FerretDB/FerretDB"
+	repo := "repos"
 	issueNumber, err := getIssueNumber(issueURL)
 	if err != nil {
 		log.Fatalf("error in getting issue number: %s", err.Error())
