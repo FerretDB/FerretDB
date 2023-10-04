@@ -21,6 +21,9 @@ labels:
   - name: area/cursors
     color: "#D93F0B"
     description: Issues about cursors
+  - name: area/diag
+    color: "#909BA6"
+    description: Issues about diagnostic commands
   - name: area/fuzz
     color: "#D4C5F9"
     description: Issues about fuzzing and smithing
