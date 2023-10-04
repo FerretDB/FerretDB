@@ -59,6 +59,7 @@ func run(pass *analysis.Pass) (any, error) {
 						pass.Reportf(c.Pos(), "invalid TODO: incorrect format")
 						continue
 					}
+
 					if !isIssueOpen(c.Text) {
 						pass.Reportf(c.Pos(), "invalid TODO: linked issue is closed")
 						continue
@@ -78,7 +79,6 @@ func isIssueOpen(todoText string) bool {
 	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	))
-
 	client := github.NewClient(httpClient)
 
 	owner := "FerretDB"
@@ -88,9 +88,10 @@ func isIssueOpen(todoText string) bool {
 		log.Fatalf("error in getting issue number: %s", err.Error())
 		return false
 	}
+
 	issue, _, err := client.Issues.Get(ctx, owner, repo, issueNumber)
 	if err != nil {
-		log.Fatalf("error in getting status of issue: %s for issue: %s", err.Error(), issueURL)
+		log.Fatalf("error in getting status of issue: %s for issue number: %d", err.Error(), issueNumber)
 		return false
 	}
 
