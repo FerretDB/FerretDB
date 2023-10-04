@@ -73,6 +73,8 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3490
+
 	// TODO https://github.com/FerretDB/FerretDB/issues/3414
 	q := fmt.Sprintf(
 		`SELECT %s FROM %s`,
@@ -113,6 +115,8 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
+
+			// TODO https://github.com/FerretDB/FerretDB/issues/3490
 
 			// use batches: INSERT INTO %s %s VALUES (?), (?), (?), ... up to, say, 100 documents
 			// TODO https://github.com/FerretDB/FerretDB/issues/3271
