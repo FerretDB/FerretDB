@@ -16,17 +16,21 @@
 package testdata
 
 func testCorrect() {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2733
+	// TODO https://github.com/FerretDB/FerretDB/issues/3413
 }
 
 func testCorrectForNow() {
 	// TODO no URL
 }
 
-func testIncorrect() {
-	// TODO: https://github.com/FerretDB/FerretDB/issues/2733 // want "invalid TODO comment"
+func testIncorrectFormat() {
+	// TODO: https://github.com/FerretDB/FerretDB/issues/3413 // want "invalid TODO: incorrect format"
 }
 
-func testCorrectTodoButClosedIssue() {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3341 // want "invalid TODO comment"
+func testIncorrectClosed() {
+	// TODO https://github.com/FerretDB/FerretDB/issues/1 // want "invalid TODO: linked issue is closed"
+}
+
+func testIncorrectFormatClosed() {
+	// TODO: https://github.com/FerretDB/FerretDB/issues/1 // want "invalid TODO: incorrect format"
 }
