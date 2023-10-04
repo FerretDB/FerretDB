@@ -482,7 +482,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := fmt.Sprintf(
-			`CREATE INDEX %q ON %q.%s USING btree (((_jsonb -> 'f1'::text)), ((_jsonb -> 'f2'::text)) DESC)`,
+			`CREATE INDEX %s ON %q.%s USING btree (((_jsonb -> 'f1'::text)), ((_jsonb -> 'f2'::text)) DESC)`,
 			tableIndexName, dbName, collection.TableName,
 		)
 		require.Equal(t, expected, sql)
@@ -504,7 +504,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := fmt.Sprintf(
-			`CREATE UNIQUE INDEX %q ON %q.%s USING btree (((_jsonb -> 'foo'::text)))`,
+			`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> 'foo'::text)))`,
 			tableIndexName, dbName, collection.TableName,
 		)
 		require.Equal(t, expected, sql)
@@ -526,7 +526,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := fmt.Sprintf(
-			`CREATE INDEX %q ON %q.%s USING btree`+
+			`CREATE INDEX %s ON %q.%s USING btree`+
 				` ((((_jsonb -> 'foo'::text) -> 'bar'::text)), (((_jsonb -> 'foo'::text) -> 'baz'::text)) DESC)`,
 			tableIndexName, dbName, collection.TableName,
 		)
@@ -549,7 +549,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := fmt.Sprintf(
-			`CREATE UNIQUE INDEX %q ON %q.%s USING btree (((_jsonb -> '_id'::text)))`,
+			`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> '_id'::text)))`,
 			tableIndexName, dbName, collection.TableName,
 		)
 		require.Equal(t, expected, sql)

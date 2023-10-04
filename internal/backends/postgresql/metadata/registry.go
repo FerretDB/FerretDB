@@ -24,7 +24,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
@@ -763,16 +762,47 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 			continue
 		}
 
-		// indexes must be unique across the whole database, so we add a uuid to the index name
-		uuidPart := uuid.NewString()
 		tableNamePart := c.TableName
-		tableNamePartMax := maxIndexNameLength - len(uuidPart) - 5 // 5 is for _ and _idx
+		tableNamePartMax := maxIndexNameLength/2 - 1 // 1 for the separator between table name and index name
 
 		if len(tableNamePart) > tableNamePartMax {
 			tableNamePart = tableNamePart[:tableNamePartMax]
 		}
 
-		index.PgIndex = fmt.Sprintf("%s_%s_idx", tableNamePart, uuidPart)
+		indexNamePart := specialCharacters.ReplaceAllString(strings.ToLower(index.Name), "_")
+
+		h := fnv.New32a()
+		must.NotFail(h.Write([]byte(collectionName)))
+		s := h.Sum32()
+
+		var pgIndexName string
+
+		for {
+			suffixHash := fmt.Sprintf("_%08x_idx", s)
+			if l := maxIndexNameLength/2 - len(suffixHash); len(indexNamePart) > l {
+				indexNamePart = indexNamePart[:l]
+			}
+
+			pgIndexName = fmt.Sprintf("%s%s", tableNamePart, indexNamePart)
+
+			// indexes must be unique across the whole database, so we check for duplicates for all collections
+			var duplicate bool
+
+			for _, coll := range db {
+				if slices.ContainsFunc(coll.Indexes, func(i IndexInfo) bool { return pgIndexName == i.PgIndex }) {
+					duplicate = true
+					s++
+
+					break
+				}
+			}
+
+			if !duplicate {
+				break
+			}
+		}
+
+		index.PgIndex = pgIndexName
 
 		q := "CREATE "
 
