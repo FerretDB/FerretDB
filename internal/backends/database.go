@@ -172,6 +172,8 @@ type DatabaseStatsParams struct{}
 
 // DatabaseStatsResult represents the results of Database.Stats method.
 //
+// CountObjects is an estimate of the number of documents.
+//
 // TODO https://github.com/FerretDB/FerretDB/issues/2447
 type DatabaseStatsResult struct {
 	CountCollections int64
