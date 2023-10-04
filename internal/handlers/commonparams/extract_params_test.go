@@ -364,7 +364,8 @@ func TestParse(t *testing.T) {
 			params: new(collectionTag),
 			wantParams: &collectionTag{
 				Collection: "test",
-			}},
+			},
+		},
 	}
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
