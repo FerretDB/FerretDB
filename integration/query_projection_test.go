@@ -285,11 +285,11 @@ func TestQueryProjectionSuccess(t *testing.T) {
 			require.NotNil(t, tc.expectedResponse, "expectedResponse should be set")
 
 			res, err := collection.Find(ctx, tc.filter, options.Find().SetProjection(tc.projection))
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			defer res.Close(ctx)
 			var results []bson.D
 			err = res.All(ctx, &results)
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tc.expectedResponse, results)
 		})
 	}
