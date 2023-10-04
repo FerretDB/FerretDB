@@ -796,9 +796,10 @@ func TestCommandsAdministrationCollStatsSize(t *testing.T) {
 		aveObjSizeInitial = must.NotFail(doc.Get("avgObjSize"))
 	})
 
+	n := int32(50)
 	var countAfterInsert, sizeAfterInsert, aveObjSizeAfterInsert any
 	t.Run("SizeAfterInsert", func(t *testing.T) {
-		arr, _ := generateDocuments(0, 100)
+		arr, _ := generateDocuments(0, n)
 		_, err := collection.InsertMany(ctx, arr)
 		require.NoError(t, err)
 
@@ -817,8 +818,9 @@ func TestCommandsAdministrationCollStatsSize(t *testing.T) {
 	})
 
 	t.Run("SizeAfterDelete", func(t *testing.T) {
-		_, err := collection.DeleteMany(ctx, bson.D{{"v", "foo"}})
+		res, err := collection.DeleteMany(ctx, bson.D{{"v", "foo"}})
 		require.NoError(t, err)
+		require.Equal(t, int64(n), res.DeletedCount)
 
 		err = collection.Database().RunCommand(ctx, command).Decode(&actual)
 		require.NoError(t, err)

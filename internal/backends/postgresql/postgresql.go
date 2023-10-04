@@ -65,12 +65,15 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3394
 	s.countIndexes = 0
 
-	// The table size is the size used by collection objects and excludes
+	// The sizeTables is the size used by collection objects and excludes visibility map,
+	// initialization fork, free space map and TOAST. The main pg_relation_size is used,
+	// however it may not be immediately updated after operation such as DELETE.
+	//
+	// See also https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-ADMIN-DBSIZE,
 	// visibility map https://www.postgresql.org/docs/current/storage-vm.html,
 	// initialization fork https://www.postgresql.org/docs/current/storage-init.html,
 	// free space map https://www.postgresql.org/docs/current/storage-fsm.html and
 	// TOAST https://www.postgresql.org/docs/current/storage-toast.html.
-	// See also https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-ADMIN-DBSIZE.
 	q = fmt.Sprintf(`
 		SELECT
 		    COALESCE(SUM(c.reltuples), 0),
