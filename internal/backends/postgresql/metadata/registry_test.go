@@ -148,21 +148,6 @@ func TestCheckAuth(t *testing.T) {
 	}
 }
 
-func TestCreateDrop(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
-	t.Parallel()
-
-	connInfo := conninfo.New()
-	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
-
-	r, db, dbName := createDatabase(t, ctx)
-	collectionName := testutil.CollectionName(t)
-	testCollection(t, ctx, r, db, dbName, collectionName)
-}
-
 func TestCreateDropStress(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping in -short mode")
@@ -466,7 +451,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 	collection, err := r.CollectionGet(ctx, dbName, collectionName)
 	require.NoError(t, err)
 
-	t.Run("Lala", func(t *testing.T) {
+	t.Run("CreateIndexes", func(t *testing.T) {
 		t.Run("NonUniqueIndex", func(t *testing.T) {
 			t.Parallel()
 
@@ -566,6 +551,8 @@ func TestIndexesCreateDrop(t *testing.T) {
 	})
 
 	t.Run("CheckSettingsAfterCreation", func(t *testing.T) {
+		t.Parallel()
+
 		err := r.initCollections(ctx, dbName, db)
 		require.NoError(t, err)
 
