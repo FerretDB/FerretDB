@@ -35,6 +35,7 @@ func Stress(tb testtb.TB, f func(ready chan<- struct{}, start <-chan struct{})) 
 
 	n := runtime.GOMAXPROCS(-1) * 10
 	StressN(tb, n, f)
+
 	return n
 }
 
