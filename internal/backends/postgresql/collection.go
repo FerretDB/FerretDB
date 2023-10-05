@@ -88,6 +88,14 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	q += where
 
+	sort, sortArgs, err := prepareOrderByClause(&placeholder /* sort */)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	q += sort
+	args = append(args, sortArgs...)
+
 	rows, err := p.Query(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)

@@ -24,6 +24,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -171,6 +172,58 @@ func prepareWhereClause(p *Placeholder, sqlFilters *types.Document) (string, []a
 	}
 
 	return filter, args, nil
+}
+
+// prepareOrderByClause adds ORDER BY clause with given sort document and returns the query and arguments.
+func prepareOrderByClause(p *Placeholder, sort *types.Document) (string, []any, error) {
+	iter := sort.Iterator()
+	defer iter.Close()
+
+	var key string
+	var order types.SortType
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return "", nil, lazyerrors.Error(err)
+		}
+
+		// Skip sorting if there are more than one sort parameters
+		if order != 0 {
+			return "", nil, nil
+		}
+
+		order, err = common.GetSortType(k, v)
+		if err != nil {
+			return "", nil, err
+		}
+
+		key = k
+	}
+
+	// Skip sorting dot notation
+	if strings.ContainsRune(key, '.') {
+		return "", nil, nil
+	}
+
+	var sqlOrder string
+
+	switch order {
+	case types.Descending:
+		sqlOrder = "DESC"
+	case types.Ascending:
+		sqlOrder = "ASC"
+	case 0:
+		return "", nil, nil
+	default:
+		panic(fmt.Sprint("forbidden order:", order))
+	}
+
+	return fmt.Sprintf(" ORDER BY _jsonb->%s %s", p.Next(), sqlOrder), []any{key}, nil
 }
 
 // filterEqual returns the proper SQL filter with arguments that filters documents
