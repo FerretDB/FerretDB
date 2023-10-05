@@ -797,6 +797,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 				break
 			}
 
+			r.l.Error("Index name is not unique, generating a new one", zap.String("name", pgIndexName), zap.Uint32("s", s))
 			s++
 		}
 
