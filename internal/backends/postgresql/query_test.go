@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -239,7 +240,7 @@ func TestPrepareWhereClause(t *testing.T) {
 				t.Skip(tc.skip)
 			}
 
-			actual, args, err := prepareWhereClause(new(Placeholder), tc.filter)
+			actual, args, err := prepareWhereClause(new(metadata.Placeholder), tc.filter)
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.expected, actual)

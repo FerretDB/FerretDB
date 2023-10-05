@@ -218,7 +218,7 @@ func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document) (string
 
 // filterEqual returns the proper SQL filter with arguments that filters documents
 // where the value under k is equal to v.
-func filterEqual(p *Placeholder, k string, v any) (filter string, args []any) {
+func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args []any) {
 	// Select if value under the key is equal to provided value.
 	sql := `_jsonb->%[1]s @> %[2]s`
 
