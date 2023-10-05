@@ -90,6 +90,8 @@ func TestCreateDropStress(t *testing.T) {
 		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
 	} {
 		t.Run(testName, func(t *testing.T) {
+			t.Parallel()
+
 			p, _, err := New(uri, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(p.Close)
