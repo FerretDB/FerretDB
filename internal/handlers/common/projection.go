@@ -200,6 +200,9 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 		}
 
 		if *inclusion != inclusionField {
+			if key == "_id" {
+				continue
+			}
 			if *inclusion {
 				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrProjectionExIn,
