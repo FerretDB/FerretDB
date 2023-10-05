@@ -83,6 +83,10 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Filter = params.Filter
 	}
 
+	if h.EnableSortPushdown {
+		qp.Sort = params.Sort
+	}
+
 	res, err := coll.Explain(ctx, &qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)

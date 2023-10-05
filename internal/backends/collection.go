@@ -191,6 +191,7 @@ func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllPa
 type ExplainParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Filter *types.Document
+	Sort   *types.Document
 }
 
 // ExplainResult represents the results of Collection.Explain method.

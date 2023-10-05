@@ -287,7 +287,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName)
 
-	var placeholder Placeholder
+	var placeholder metadata.Placeholder
 
 	where, args, err := prepareWhereClause(&placeholder, params.Filter)
 	if err != nil {
@@ -295,6 +295,16 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	res.QueryPushdown = where != ""
+
+	if params.Sort != nil {
+		sort, sortArgs, err := prepareOrderByClause(&placeholder, params.Sort)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		q += sort
+		args = append(args, sortArgs...)
+	}
 
 	q += where
 
