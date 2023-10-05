@@ -79,7 +79,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	q := prepareSelectClause(c.dbName, meta.TableName)
 
-	var placeholder Placeholder
+	var placeholder metadata.Placeholder
 
 	where, args, err := prepareWhereClause(&placeholder, params.Filter)
 	if err != nil {
