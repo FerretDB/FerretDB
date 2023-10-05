@@ -71,6 +71,9 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 		indexes += int64(len(c.Settings.Indexes))
 	}
 
+	// The sizeTable is the size used by collection objects. The dbstat is used,
+	// which does not include freelist pages, pointer-map pages, and the lock page.
+	// See https://www.sqlite.org/dbstat.html and https://www.sqlite.org/fileformat.html.
 	q = fmt.Sprintf(`
 		SELECT COALESCE(SUM(pgsize), 0)
 		FROM dbstat

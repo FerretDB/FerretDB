@@ -84,7 +84,8 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 
 	// The sizeTables is the size used by collection objects and excludes visibility map,
 	// initialization fork, free space map and TOAST. The main pg_relation_size is used,
-	// however it may not be immediately updated after operation such as DELETE.
+	// however it may not be immediately updated after operation such as DELETE
+	// unless VACUUM is called, ANALYZE does not update pg_relation_size in this case.
 	//
 	// See also https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-ADMIN-DBSIZE,
 	// visibility map https://www.postgresql.org/docs/current/storage-vm.html,
