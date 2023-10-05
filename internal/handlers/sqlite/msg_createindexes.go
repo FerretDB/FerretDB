@@ -457,6 +457,8 @@ func formatIndexKey(key []backends.IndexKeyPair) string {
 }
 
 // validateIndexesForCreation validates the given list of indexes to create against the existing ones.
+// It filters out duplicate indexes and returns a slice of indexes to create.
+// It returns an error if at least one provided index has an invalid specification.
 func validateIndexesForCreation(command string, existing, toCreate []backends.IndexInfo) ([]backends.IndexInfo, error) {
 	for i, newIdx := range toCreate {
 		newKey := formatIndexKey(newIdx.Key)
