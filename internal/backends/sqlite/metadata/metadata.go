@@ -33,7 +33,7 @@ import (
 
 const (
 	// DefaultColumn is a column name for all fields.
-	DefaultColumn = backends.ReservedPrefix + "_sjson"
+	DefaultColumn = backends.ReservedPrefix + "sjson"
 
 	// IDColumn is a SQLite path expression for _id field.
 	IDColumn = DefaultColumn + "->'$._id'"

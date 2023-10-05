@@ -89,10 +89,7 @@ func TestCreateDropStress(t *testing.T) {
 		"memory":           "file:./?mode=memory",
 		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
 	} {
-		uri := uri
 		t.Run(testName, func(t *testing.T) {
-			t.Parallel()
-
 			p, _, err := New(uri, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(p.Close)
@@ -199,6 +196,8 @@ func TestDefaults(t *testing.T) {
 	} {
 		q, expected := q, expected
 		t.Run(q, func(t *testing.T) {
+			t.Parallel()
+
 			var actual string
 			err := db.QueryRowContext(ctx, q).Scan(&actual)
 			require.NoError(t, err)
