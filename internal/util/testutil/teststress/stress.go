@@ -25,26 +25,35 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-// NumGoroutines is the total count of goroutines created in Stress function.
-var NumGoroutines = runtime.GOMAXPROCS(-1) * 10
-
 // Stress runs function f in multiple goroutines.
+// It returns the number of created goroutines.
 //
 // Function f should do a needed setup, send a message to ready channel when it is ready to start,
 // wait for start channel to be closed, and then do the actual work.
-func Stress(tb testtb.TB, f func(ready chan<- struct{}, start <-chan struct{})) {
+func Stress(tb testtb.TB, f func(ready chan<- struct{}, start <-chan struct{})) int {
+	tb.Helper()
+
+	n := runtime.GOMAXPROCS(-1) * 10
+	StressN(tb, n, f)
+	return n
+}
+
+// StressN is a variant of Stress that allows to specify the number of goroutines.
+//
+// Prefer using Stress when possible.
+func StressN(tb testtb.TB, n int, f func(ready chan<- struct{}, start <-chan struct{})) {
 	tb.Helper()
 
 	// do a bit more work to reduce a chance that one goroutine would finish
 	// before the other one is still being created
 	var wg sync.WaitGroup
-	readyCh := make(chan struct{}, NumGoroutines)
+	readyCh := make(chan struct{}, n)
 	startCh := make(chan struct{})
 
 	ctx, cancel := context.WithCancel(context.Background())
 	tb.Cleanup(cancel)
 
-	for i := 0; i < NumGoroutines; i++ {
+	for i := 0; i < n; i++ {
 		wg.Add(1)
 
 		go func() {
@@ -65,7 +74,7 @@ func Stress(tb testtb.TB, f func(ready chan<- struct{}, start <-chan struct{})) 
 		}()
 	}
 
-	for i := 0; i < NumGoroutines; i++ {
+	for i := 0; i < n; i++ {
 		select {
 		case _, ok := <-readyCh:
 			if !ok {

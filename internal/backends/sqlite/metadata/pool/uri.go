@@ -100,7 +100,7 @@ func setDefaultValues(values url.Values) {
 	}
 
 	if !autoVacuum {
-		values.Add("_pragma", "auto_vacuum(2)")
+		values.Add("_pragma", "auto_vacuum(none)")
 	}
 
 	if !busyTimeout {
