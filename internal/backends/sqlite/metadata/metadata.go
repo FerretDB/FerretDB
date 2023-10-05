@@ -22,6 +22,7 @@ import (
 
 	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -32,7 +33,7 @@ import (
 
 const (
 	// DefaultColumn is a column name for all fields.
-	DefaultColumn = "_ferretdb_sjson"
+	DefaultColumn = backends.ReservedPrefix + "sjson"
 
 	// IDColumn is a SQLite path expression for _id field.
 	IDColumn = DefaultColumn + "->'$._id'"
