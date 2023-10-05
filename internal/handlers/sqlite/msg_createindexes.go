@@ -517,7 +517,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 			existingKey := formatIndexKey(existingIdx.Key)
 
 			if newIdx.Name == existingIdx.Name && newKey == existingKey {
-				// Fully identical indexes are allowed, but we don't need to create them again.
+				// Fully identical indexes are allowed, but no need to attempt to create them.
 				toCreate = slices.Delete(toCreate, i, i+1)
 				break
 			}
