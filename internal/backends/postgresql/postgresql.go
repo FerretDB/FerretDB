@@ -86,7 +86,7 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	// initialization fork, free space map and TOAST. The main pg_relation_size is used,
 	// however it may not be immediately updated after operation such as DELETE
 	// unless VACUUM is called, ANALYZE does not update pg_relation_size in this case.
-	// The smallest difference it can report is 8192 bytes.
+	// Deleting a single small object may not change the size.
 	//
 	// See also https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-ADMIN-DBSIZE,
 	// visibility map https://www.postgresql.org/docs/current/storage-vm.html,
