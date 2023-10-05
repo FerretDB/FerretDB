@@ -89,14 +89,17 @@ func TestCreateDropStress(t *testing.T) {
 		"memory":           "file:./?mode=memory",
 		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
 	} {
+		uri := uri
 		t.Run(testName, func(t *testing.T) {
+			t.Parallel()
+
 			p, _, err := New(uri, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(p.Close)
 
 			var i atomic.Int32
 
-			teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+			n := teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
 				dbName := fmt.Sprintf("db_%03d", i.Add(1))
 
 				t.Cleanup(func() {
@@ -137,7 +140,7 @@ func TestCreateDropStress(t *testing.T) {
 				require.Nil(t, db)
 			})
 
-			require.Equal(t, int32(teststress.NumGoroutines), i.Load())
+			require.Equal(t, int32(n), i.Load())
 		})
 	}
 }
@@ -181,10 +184,15 @@ func TestDefaults(t *testing.T) {
 	require.Contains(t, options, "THREADSAFE=1")        // for it to work with database/sql
 	require.NotContains(t, options, "MAX_SCHEMA_RETRY") // see comments for SQLITE_SCHEMA in tests
 
+	// for capped collections
+	require.Contains(t, options, "DEFAULT_AUTOVACUUM") // implicit 0 value
+	require.NotContains(t, options, "OMIT_AUTOVACUUM")
+	require.NotContains(t, options, "OMIT_VACUUM")
+
 	for q, expected := range map[string]string{
 		"SELECT sqlite_version()":   "3.41.2",
 		"SELECT sqlite_source_id()": "2023-03-22 11:56:21 0d1fc92f94cb6b76bffe3ec34d69cffde2924203304e8ffc4155597af0c191da",
-		"PRAGMA auto_vacuum":        "2",
+		"PRAGMA auto_vacuum":        "0",
 		"PRAGMA busy_timeout":       "10000",
 		"PRAGMA encoding":           "UTF-8",
 		"PRAGMA journal_mode":       "wal",
