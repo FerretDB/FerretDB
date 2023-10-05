@@ -17,7 +17,6 @@ package postgresql
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -32,15 +31,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// Placeholder stores the number of the relevant placeholder of the query.
-type Placeholder int
-
-// Next increases the identifier value for the next variable in the PostgreSQL query.
-func (p *Placeholder) Next() string {
-	*p++
-	return "$" + strconv.Itoa(int(*p))
-}
-
 // prepareSelectClause returns simple SELECT clause for provided db and table name,
 // that can be used to construct the SQL query.
 func prepareSelectClause(db, table string) string {
@@ -52,7 +42,7 @@ func prepareSelectClause(db, table string) string {
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
-func prepareWhereClause(p *Placeholder, sqlFilters *types.Document) (string, []any, error) {
+func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (string, []any, error) {
 	var filters []string
 	var args []any
 
@@ -175,7 +165,7 @@ func prepareWhereClause(p *Placeholder, sqlFilters *types.Document) (string, []a
 }
 
 // prepareOrderByClause adds ORDER BY clause with given sort document and returns the query and arguments.
-func prepareOrderByClause(p *Placeholder, sort *types.Document) (string, []any, error) {
+func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document) (string, []any, error) {
 	iter := sort.Iterator()
 	defer iter.Close()
 
