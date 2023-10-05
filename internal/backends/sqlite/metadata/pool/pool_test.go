@@ -96,7 +96,7 @@ func TestCreateDropStress(t *testing.T) {
 
 			var i atomic.Int32
 
-			teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+			n := teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
 				dbName := fmt.Sprintf("db_%03d", i.Add(1))
 
 				t.Cleanup(func() {
@@ -137,7 +137,7 @@ func TestCreateDropStress(t *testing.T) {
 				require.Nil(t, db)
 			})
 
-			require.Equal(t, int32(teststress.NumGoroutines), i.Load())
+			require.Equal(t, int32(n), i.Load())
 		})
 	}
 }

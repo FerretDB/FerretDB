@@ -421,9 +421,9 @@ func TestCommandWhatsMyURIConnection(t *testing.T) {
 	t.Run("SameClientStress", func(t *testing.T) {
 		t.Parallel()
 
-		ports := make(chan string, teststress.NumGoroutines)
+		ports := make(chan string, 10)
 
-		teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+		teststress.StressN(t, len(ports), func(ready chan<- struct{}, start <-chan struct{}) {
 			ready <- struct{}{}
 			<-start
 
