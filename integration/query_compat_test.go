@@ -39,7 +39,7 @@ type queryCompatTestCase struct {
 	batchSize      *int32                   // defaults to nil to leave unset
 	projection     bson.D                   // nil for leaving projection unset
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown bool                     // defaults to false
+	resultPushdown resultPushdown           // defaults to noPushdown
 
 	skipIDCheck bool   // skip check collected IDs, use it when no ids returned from query
 	skip        string // skip test for all handlers, must have issue number mentioned
@@ -124,13 +124,17 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 					var explainRes bson.D
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
 
+					resultPushdown := tc.resultPushdown
+
 					var msg string
 					if setup.IsPushdownDisabled() {
-						tc.resultPushdown = false
+						resultPushdown = noPushdown
 						msg = "Query pushdown is disabled, but target resulted with pushdown"
 					}
 
-					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"], msg)
+					doc := ConvertDocument(t, explainRes)
+					pushdown, _ := doc.Get("pushdown")
+					assert.Equal(t, resultPushdown.PushdownExpected(t), pushdown, msg)
 
 					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
 					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
@@ -195,17 +199,29 @@ func TestQueryCompatFilter(t *testing.T) {
 		"Empty": {
 			filter: bson.D{},
 		},
+		"String": {
+			filter:         bson.D{{"v", "foo"}},
+			resultPushdown: pgPushdown,
+		},
+		"Int32": {
+			filter:         bson.D{{"v", int32(42)}},
+			resultPushdown: pgPushdown,
+		},
 		"IDString": {
 			filter:         bson.D{{"_id", "string"}},
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
+		},
+		"IDNilObjectID": {
+			filter:         bson.D{{"_id", primitive.NilObjectID}},
+			resultPushdown: allPushdown,
 		},
 		"IDObjectID": {
-			filter:         bson.D{{"_id", primitive.NilObjectID}},
-			resultPushdown: true,
+			filter:         bson.D{{"_id", primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11}}},
+			resultPushdown: allPushdown,
 		},
 		"ObjectID": {
 			filter:         bson.D{{"v", primitive.NilObjectID}},
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
 		},
 		"UnknownFilterOperator": {
 			filter:     bson.D{{"v", bson.D{{"$someUnknownOperator", 42}}}},

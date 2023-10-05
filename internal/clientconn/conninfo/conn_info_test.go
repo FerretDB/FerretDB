@@ -42,7 +42,7 @@ func TestGet(t *testing.T) {
 			connInfo := &ConnInfo{
 				PeerAddr: tc.peerAddr,
 			}
-			ctx = WithConnInfo(ctx, connInfo)
+			ctx = Ctx(ctx, connInfo)
 			actual := Get(ctx)
 			assert.Equal(t, connInfo, actual)
 		})

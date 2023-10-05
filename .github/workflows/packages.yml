@@ -40,13 +40,13 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
+  GOTOOLCHAIN: local
 
 jobs:
   build:
     name: Build packages
-    runs-on:
-      group: paid
-    timeout-minutes: 90
+    runs-on: 4-cores
+    timeout-minutes: 40
 
     if: >
       github.event_name != 'pull_request_target' ||
@@ -64,16 +64,18 @@ jobs:
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
         if: false
 
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
         if: github.event_name != 'pull_request_target'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
 
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout pull request code
         if: github.event_name == 'pull_request_target'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
           lfs: false
@@ -106,7 +108,7 @@ jobs:
         run: bin/task init
 
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@v2
+        uses: docker/setup-qemu-action@v3
 
       - name: Initialize Docker Buildx builder
         run: bin/task docker-init
@@ -116,20 +118,20 @@ jobs:
         uses: FerretDB/github-actions/extract-docker-tag@main
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           username: ferretdbbot
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Login to Quay.io
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: quay.io
           username: ferretdbbot
@@ -155,33 +157,44 @@ jobs:
         if: steps.extract.outputs.production_images != ''
         run: bin/task docker-production-push DOCKER_IMAGES=${{ steps.extract.outputs.production_images }}
 
-      - name: Build production release binary
-        run: bin/task build-release
+      - name: Build production binaries
+        run: bin/task build-production
 
-      - name: Upload ferretdb
+      - name: Upload production binaries
         uses: actions/upload-artifact@v3
         with:
-          name: ferretdb
-          path: bin/ferretdb
+          name: bin
+          path: tmp/bin/
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Build development binaries
+        run: bin/task build-development
+
+      - name: Upload development binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: bin-dev
+          path: tmp/bin-dev/
           retention-days: 1
           if-no-files-found: error
 
       - name: Build Linux packages
         run: bin/task packages
 
-      - name: Upload .deb package
+      - name: Upload .deb packages
         uses: actions/upload-artifact@v3
         with:
-          name: ferretdb.deb
-          path: tmp/debs/ferretdb.deb
+          name: debs
+          path: tmp/debs/
           retention-days: 1
           if-no-files-found: error
 
-      - name: Upload .rpm package
+      - name: Upload .rpm packages
         uses: actions/upload-artifact@v3
         with:
-          name: ferretdb.rpm
-          path: tmp/rpms/ferretdb.rpm
+          name: rpms
+          path: tmp/rpms/
           retention-days: 1
           if-no-files-found: error
 

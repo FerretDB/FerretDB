@@ -10,6 +10,7 @@
    - Ensure that "This section should be empty" section does not exist.
    - Add "All closed issues and pull requests" and "All commits", remove "Full Changelog".
    - Tweak spacing, headers levels.
+   - Sort items within sections according to importance and/or alphabetically.
 6. Update CHANGELOG.md with the same release notes:
    - Check spacing, header levels.
    - Run `task docs-fmt`.
@@ -29,7 +30,7 @@
 1. Trim draft release notes.
 2. Wait for the [packages CI build](https://github.com/FerretDB/FerretDB/actions/workflows/packages.yml?query=event%3Apush)
    to finish.
-3. Upload the binary and `.deb` and `.rpm` packages to the draft release.
+3. Upload binaries and packages to the draft release.
 4. Check:
    - <https://hub.docker.com/r/ferretdb/ferretdb/tags>
    - <https://hub.docker.com/r/ferretdb/ferretdb-dev/tags>
@@ -37,6 +38,9 @@
    - <https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb>
    - <https://github.com/FerretDB/FerretDB/pkgs/container/ferretdb-dev>
    - <https://github.com/FerretDB/FerretDB/pkgs/container/all-in-one>
+   - <https://quay.io/repository/ferretdb/ferretdb?tab=tags>
+   - <https://quay.io/repository/ferretdb/ferretdb-dev?tab=tags>
+   - <https://quay.io/repository/ferretdb/all-in-one?tab=tags>
 5. Close milestone in issues.
 6. Publish release on GitHub.
 7. Announce it on Slack.

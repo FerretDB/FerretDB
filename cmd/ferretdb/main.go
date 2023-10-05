@@ -31,6 +31,7 @@ import (
 	"github.com/prometheus/common/expfmt"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	_ "golang.org/x/crypto/x509roots/fallback" // register root TLS certificates for production Docker image
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
@@ -39,6 +40,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/telemetry"
 )
@@ -78,9 +80,14 @@ var cli struct {
 	Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.io."`
 
 	Test struct {
-		RecordsDir            string `default:"" help:"Experimental: directory for record files."`
-		DisableFilterPushdown bool   `default:"false" help:"Experimental: disable filter pushdown."`
-		EnableSortPushdown    bool   `default:"false" help:"Experimental: enable sort pushdown."`
+		RecordsDir string `default:"" help:"Experimental: directory for record files."`
+
+		DisableFilterPushdown bool `default:"false" help:"Experimental: disable filter pushdown."`
+		EnableSortPushdown    bool `default:"false" help:"Experimental: enable sort pushdown."`
+		EnableOplog           bool `default:"false" help:"Experimental: enable OpLog."            hidden:""`
+
+		UseNewPG   bool `default:"false" help:"Experimental: use new PostgreSQL backend." hidden:""`
+		UseNewHana bool `default:"false" help:"Experimental: use new SAP HANA backend."   hidden:""`
 
 		//nolint:lll // for readability
 		Telemetry struct {
@@ -184,12 +191,12 @@ func setupState() *state.Provider {
 		log.Fatalf("Failed to get path for state file: %s.", err)
 	}
 
-	p, err := state.NewProvider(f)
+	sp, err := state.NewProvider(f)
 	if err != nil {
 		log.Fatalf("Failed to create state provider: %s.", err)
 	}
 
-	return p
+	return sp
 }
 
 // setupMetrics setups Prometheus metrics registerer with some metrics.
@@ -258,15 +265,10 @@ func runTelemetryReporter(ctx context.Context, opts *telemetry.NewReporterOpts) 
 
 // dumpMetrics dumps all Prometheus metrics to stderr.
 func dumpMetrics() {
-	mfs, err := prometheus.DefaultGatherer.Gather()
-	if err != nil {
-		panic(err)
-	}
+	mfs := must.NotFail(prometheus.DefaultGatherer.Gather())
 
 	for _, mf := range mfs {
-		if _, err := expfmt.MetricFamilyToText(os.Stderr, mf); err != nil {
-			panic(err)
-		}
+		must.NotFail(expfmt.MetricFamilyToText(os.Stderr, mf))
 	}
 }
 
@@ -361,6 +363,10 @@ func run() {
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
 			EnableSortPushdown:    cli.Test.EnableSortPushdown,
+			EnableOplog:           cli.Test.EnableOplog,
+
+			UseNewPG:   cli.Test.UseNewPG,
+			UseNewHana: cli.Test.UseNewHana,
 		},
 	})
 	if err != nil {

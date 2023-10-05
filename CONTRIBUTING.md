@@ -7,10 +7,10 @@ Thank you for your interest in making FerretDB better!
 We are interested in all contributions, big or small, in code or documentation.
 But unless you are fixing a very small issue like a typo,
 we kindly ask you first to [create an issue](https://github.com/FerretDB/FerretDB/issues/new/choose),
-to leave a comment on an existing issue if you want to work on it,
-or to [join our Slack chat](./README.md#community) and leave a message for us in the `#dev` channel.
+or leave a comment on an existing issue if you want to work on it.
 This way, you will get help from us and avoid wasted efforts if something can't be worked on right now
 or someone is already working on it.
+You can also [join our Slack chat](./README.md#community) and leave a message for us in the `#dev` channel.
 
 You can find a list of good first issues for contributors [there](https://github.com/FerretDB/FerretDB/contribute).
 Once you have some experience with contributing to FerretDB,
@@ -30,7 +30,7 @@ On macOS and Windows, [Docker Desktop](https://www.docker.com/products/docker-de
 On Windows, it should be [configured to use WSL 2](https://docs.docker.com/desktop/windows/wsl/) without any distro;
 all commands should be run on the host.
 
-You will need Go 1.20 or later on the host.
+You will need Go 1.21 or later on the host.
 If your package manager doesn't provide it yet,
 please install it from [go.dev](https://go.dev/dl/).
 
@@ -73,10 +73,10 @@ and download required Docker images with `task env-pull`.
 If something does not work correctly,
 you can reset the environment with `task env-reset`.
 
-### Building a production release binary
+### Building a production release binaries
 
-To build a production release binary, run `task build-release`.
-The result will be saved as `bin/ferretdb`.
+To build a production release binaries, run `task build-release`.
+The results will be saved `tmp/bin`.
 
 ## Contributing code
 
@@ -212,7 +212,8 @@ If, on the other hand, you see code that is inconsistent without apparent reason
 please improve it as you work on it.
 
 Our code follows most of the standard Go conventions,
-documented on [CodeReviewComments wiki page](https://github.com/golang/go/wiki/CodeReviewComments).
+documented on [CodeReviewComments wiki page](https://github.com/golang/go/wiki/CodeReviewComments)
+and some other pages such as [Spelling](https://github.com/golang/go/wiki/Spelling).
 Some of our idiosyncrasies:
 
 1. We use type switches over BSON types in many places in our code.

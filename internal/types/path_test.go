@@ -289,13 +289,13 @@ func TestGetByPath(t *testing.T) {
 		)),
 	}, {
 		path: NewStaticPath("client", "0"),
-		err:  `types.getByPath: types.Document.Get: key not found: "0"`,
+		err:  `types.getByPath: key not found: "0"`,
 	}, {
 		path: NewStaticPath("compression", "invalid"),
 		err:  `types.getByPath: strconv.Atoi: parsing "invalid": invalid syntax`,
 	}, {
 		path: NewStaticPath("client", "missing"),
-		err:  `types.getByPath: types.Document.Get: key not found: "missing"`,
+		err:  `types.getByPath: key not found: "missing"`,
 	}, {
 		path: NewStaticPath("compression", "1"),
 		err:  `types.getByPath: types.Array.Get: index 1 is out of bounds [0-1)`,

@@ -29,7 +29,7 @@ import (
 type InsertParams struct {
 	Docs       *types.Array `ferretdb:"documents,opt"`
 	DB         string       `ferretdb:"$db"`
-	Collection string       `ferretdb:"collection"`
+	Collection string       `ferretdb:"insert,collection"`
 	Ordered    bool         `ferretdb:"ordered,opt"`
 
 	WriteConcern             any    `ferretdb:"writeConcern,ignored"`

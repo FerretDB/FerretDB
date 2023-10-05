@@ -22,6 +22,8 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // backend implements backends.Backend interface.
@@ -35,11 +37,12 @@ type backend struct {
 type NewBackendParams struct {
 	URI string
 	L   *zap.Logger
+	P   *state.Provider
 }
 
-// NewBackend creates a new SQLite backend.
+// NewBackend creates a new backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	r, err := metadata.NewRegistry(params.URI, params.L)
+	r, err := metadata.NewRegistry(params.URI, params.L, params.P)
 	if err != nil {
 		return nil, err
 	}
@@ -52,6 +55,33 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
 	b.r.Close()
+}
+
+// Name implements backends.Backend interface.
+func (b *backend) Name() string {
+	return "SQLite"
+}
+
+// Status implements backends.Backend interface.
+func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
+	// since authentication is not supported yet, and there is no way to not establish an SQLite "connection",
+	// there is no need to use conninfo
+	// TODO https://github.com/FerretDB/FerretDB/issues/3008
+
+	dbs := b.r.DatabaseList(ctx)
+
+	var res backends.StatusResult
+
+	for _, dbName := range dbs {
+		cs, err := b.r.CollectionList(ctx, dbName)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res.CountCollections += int64(len(cs))
+	}
+
+	return &res, nil
 }
 
 // Database implements backends.Backend interface.
@@ -68,8 +98,27 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 	res := &backends.ListDatabasesResult{
 		Databases: make([]backends.DatabaseInfo, len(list)),
 	}
-	for i, db := range list {
-		res.Databases[i] = backends.DatabaseInfo{Name: db}
+
+	for i, dbName := range list {
+		db, err := b.Database(dbName)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		stats, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
+			stats = new(backends.DatabaseStatsResult)
+			err = nil
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res.Databases[i] = backends.DatabaseInfo{
+			Name: dbName,
+			Size: stats.SizeTotal,
+		}
 	}
 
 	return res, nil

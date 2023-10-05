@@ -24,9 +24,11 @@ import (
 
 // CommandError represents wire protocol command error.
 type CommandError struct {
+	// the order of fields is weird to make the struct smaller due to alignment
+
 	err  error
-	code ErrorCode
 	info *ErrInfo
+	code ErrorCode
 }
 
 // There should not be NewCommandError function variant that accepts printf-like format specifiers.
@@ -56,29 +58,30 @@ func NewCommandErrorMsg(code ErrorCode, msg string) error {
 // NewCommandErrorMsgWithArgument creates a new wire protocol error with an argument that caused the error.
 func NewCommandErrorMsgWithArgument(code ErrorCode, msg string, argument string) error {
 	return &CommandError{
-		err:  errors.New(msg),
 		code: code,
+		err:  errors.New(msg),
 		info: &ErrInfo{
 			Argument: argument,
 		},
 	}
 }
 
-// Error implements error interface.
-func (e *CommandError) Error() string {
-	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", e.code, e.err)
-}
-
 // Err returns original error.
 //
 // It is not called Unwrap to prevent unwrapping by errors.Is and errors.As.
+// CommandError should not be unwrappable.
 func (e *CommandError) Err() error {
 	return e.err
 }
 
-// Code implements ProtoErr interface.
+// Code returns error code.
 func (e *CommandError) Code() ErrorCode {
 	return e.code
+}
+
+// Error implements error interface.
+func (e *CommandError) Error() string {
+	return fmt.Sprintf("%[1]s (%[1]d): %[2]v", e.code, e.err)
 }
 
 // Document implements ProtoErr interface.

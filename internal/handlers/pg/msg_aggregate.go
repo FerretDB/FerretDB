@@ -73,8 +73,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	// TODO handle collection-agnostic pipelines ({aggregate: 1})
-	// https://github.com/FerretDB/FerretDB/issues/1890
+	// handle collection-agnostic pipelines ({aggregate: 1})
+	// TODO https://github.com/FerretDB/FerretDB/issues/1890
 	var ok bool
 	var collection string
 
@@ -362,7 +362,7 @@ func processStagesDocuments(ctx context.Context, closer *iterator.MultiCloser, p
 	closer.Add(iterator.CloserFunc(func() {
 		// It does not matter if we commit or rollback the read transaction,
 		// but we should close it.
-		// ctx could be cancelled already.
+		// ctx could be canceled already.
 		_ = keepTx.Rollback(context.Background())
 	}))
 

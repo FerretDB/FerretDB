@@ -41,14 +41,36 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/2612
+	_ = params.Ordered
+
+	var we *writeError
+
 	matched, modified, upserted, err := h.updateDocument(ctx, params)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		switch {
+		case backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID):
+			// TODO https://github.com/FerretDB/FerretDB/issues/3263
+			we = &writeError{
+				index:  int32(0),
+				code:   commonerrors.ErrDuplicateKeyInsert,
+				errmsg: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
+			}
+
+		default:
+			if we, err = handleValidationError(err); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+		}
 	}
 
 	res := must.NotFail(types.NewDocument(
 		"n", matched,
 	))
+
+	if we != nil {
+		res.Set("writeErrors", must.NotFail(types.NewArray(we.Document())))
+	}
 
 	if upserted.Len() != 0 {
 		res.Set("upserted", upserted)
@@ -66,7 +88,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 }
 
 // updateDocument iterate through all documents in collection and update them.
-func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesParams) (int32, int32, *types.Array, error) {
+func (h *Handler) updateDocument(ctx context.Context, params *common.UpdateParams) (int32, int32, *types.Array, error) {
 	var matched, modified int32
 	var upserted types.Array
 
@@ -79,7 +101,6 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 
 		return 0, 0, nil, lazyerrors.Error(err)
 	}
-	defer db.Close()
 
 	err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: params.Collection})
 
@@ -106,7 +127,12 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 			return 0, 0, nil, lazyerrors.Error(err)
 		}
 
-		res, err := c.Query(ctx, nil)
+		var qp backends.QueryParams
+		if !h.DisableFilterPushdown {
+			qp.Filter = u.Filter
+		}
+
+		res, err := c.Query(ctx, &qp)
 		if err != nil {
 			return 0, 0, nil, lazyerrors.Error(err)
 		}
@@ -184,13 +210,15 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 				"_id", must.NotFail(doc.Get("_id")),
 			)))
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3454
+			if err = doc.ValidateData(); err != nil {
+				return 0, 0, nil, err
+			}
+
 			// TODO https://github.com/FerretDB/FerretDB/issues/2612
 
-			iter := must.NotFail(types.NewArray(doc)).Iterator()
-			defer iter.Close()
-
-			_, err = c.Insert(ctx, &backends.InsertParams{
-				Iter: iter,
+			_, err = c.InsertAll(ctx, &backends.InsertAllParams{
+				Docs: []*types.Document{doc},
 			})
 			if err != nil {
 				return 0, 0, nil, err
@@ -217,7 +245,12 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdatesPara
 				continue
 			}
 
-			updateRes, err := c.Update(ctx, &backends.UpdateParams{Docs: must.NotFail(types.NewArray(doc))})
+			// TODO https://github.com/FerretDB/FerretDB/issues/3454
+			if err = doc.ValidateData(); err != nil {
+				return 0, 0, nil, err
+			}
+
+			updateRes, err := c.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{doc}})
 			if err != nil {
 				return 0, 0, nil, lazyerrors.Error(err)
 			}

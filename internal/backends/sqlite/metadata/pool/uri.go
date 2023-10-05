@@ -55,8 +55,7 @@ func parseURI(u string) (*url.URL, error) {
 
 	values := uri.Query()
 
-	// https://www.sqlite.org/inmemorydb.html
-	// TODO https://github.com/FerretDB/FerretDB/issues/2755
+	// it is deprecated and interacts weirdly with database/sql.Pool
 	if values.Get("cache") == "shared" {
 		return nil, fmt.Errorf(`shared cache is not supported`)
 	}

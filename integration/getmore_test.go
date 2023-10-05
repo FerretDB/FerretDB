@@ -30,7 +30,6 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 func TestGetMoreCommand(t *testing.T) {
@@ -60,12 +59,11 @@ func TestGetMoreCommand(t *testing.T) {
 		collection       any // optional, nil to leave collection unset
 		cursorID         any // optional, defaults to cursorID from find()/aggregate()
 
-		firstBatch     []*types.Document   // required, expected find firstBatch
-		nextBatch      []*types.Document   // optional, expected getMore nextBatch
-		err            *mongo.CommandError // optional, expected error from MongoDB
-		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
-		skip           string              // optional, skip test with a specified reason
-		failsForSQLite string              // optional, if set, the case is expected to fail for SQLite due to given issue
+		firstBatch []*types.Document   // required, expected find firstBatch
+		nextBatch  []*types.Document   // optional, expected getMore nextBatch
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
 	}{
 		"Int": {
 			firstBatchSize:   1,
@@ -73,7 +71,6 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:1]),
 			nextBatch:        ConvertDocuments(t, arr[1:2]),
-			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"IntNegative": {
 			firstBatchSize:   1,
@@ -92,7 +89,6 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:1]),
 			nextBatch:        ConvertDocuments(t, arr[1:]),
-			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Long": {
 			firstBatchSize:   1,
@@ -100,7 +96,6 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:1]),
 			nextBatch:        ConvertDocuments(t, arr[1:2]),
-			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"LongNegative": {
 			firstBatchSize:   1,
@@ -119,7 +114,6 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:1]),
 			nextBatch:        ConvertDocuments(t, arr[1:]),
-			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"Double": {
 			firstBatchSize:   1,
@@ -127,7 +121,6 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:1]),
 			nextBatch:        ConvertDocuments(t, arr[1:2]),
-			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"DoubleNegative": {
 			firstBatchSize:   1,
@@ -146,7 +139,6 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:1]),
 			nextBatch:        ConvertDocuments(t, arr[1:]),
-			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"DoubleFloor": {
 			firstBatchSize:   1,
@@ -154,7 +146,6 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:1]),
 			nextBatch:        ConvertDocuments(t, arr[1:2]),
-			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"GetMoreCursorExhausted": {
 			firstBatchSize:   200,
@@ -186,7 +177,6 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:1]),
 			nextBatch:        ConvertDocuments(t, arr[1:]),
-			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"LargeBatchSize": {
 			firstBatchSize:   1,
@@ -194,7 +184,6 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:1]),
 			nextBatch:        ConvertDocuments(t, arr[1:106]),
-			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"StringCursorID": {
 			firstBatchSize:   1,
@@ -285,7 +274,6 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:101]),
 			nextBatch:        ConvertDocuments(t, arr[101:]),
-			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"UnsetFindBatchSize": {
 			firstBatchSize:   nil,
@@ -293,7 +281,6 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:101]),
 			nextBatch:        ConvertDocuments(t, arr[101:106]),
-			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"UnsetGetMoreBatchSize": {
 			firstBatchSize:   5,
@@ -301,7 +288,6 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:5]),
 			nextBatch:        ConvertDocuments(t, arr[5:]),
-			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"BatchSize": {
 			firstBatchSize:   3,
@@ -309,18 +295,12 @@ func TestGetMoreCommand(t *testing.T) {
 			collection:       collection.Name(),
 			firstBatch:       ConvertDocuments(t, arr[:3]),
 			nextBatch:        ConvertDocuments(t, arr[3:8]),
-			failsForSQLite:   "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
-			}
-
-			var t testtb.TB = tt
-			if tc.failsForSQLite != "" {
-				t = setup.FailsForSQLite(tt, tc.failsForSQLite)
+				t.Skip(tc.skip)
 			}
 
 			// Do not run subtests in t.Parallel() to eliminate the occurrence
@@ -491,10 +471,8 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 
 	cursorFuncs := []func(batchSize *int32) (*mongo.Cursor, error){findFunc, aggregateFunc}
 
-	t.Run("SetBatchSize", func(tt *testing.T) {
-		tt.Parallel()
-
-		t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
+	t.Run("SetBatchSize", func(t *testing.T) {
+		t.Parallel()
 
 		for _, f := range cursorFuncs {
 			cursor, err := f(pointer.ToInt32(2))
@@ -535,10 +513,8 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 		}
 	})
 
-	t.Run("DefaultBatchSize", func(tt *testing.T) {
-		tt.Parallel()
-
-		t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
+	t.Run("DefaultBatchSize", func(t *testing.T) {
+		t.Parallel()
 
 		for _, f := range cursorFuncs {
 			// unset batchSize uses default batchSize 101 for the first batch
@@ -564,10 +540,8 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 		}
 	})
 
-	t.Run("ZeroBatchSize", func(tt *testing.T) {
-		tt.Parallel()
-
-		t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
+	t.Run("ZeroBatchSize", func(t *testing.T) {
+		t.Parallel()
 
 		for _, f := range cursorFuncs {
 			cursor, err := f(pointer.ToInt32(0))
