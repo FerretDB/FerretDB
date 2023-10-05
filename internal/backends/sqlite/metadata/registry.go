@@ -42,7 +42,7 @@ const (
 	reservedTablePrefix = "sqlite_"
 
 	// SQLite table name where FerretDB metadata is stored.
-	metadataTableName = backends.ReservedPrefix + "_collections"
+	metadataTableName = backends.ReservedPrefix + "collections"
 )
 
 // Parts of Prometheus metric names.
