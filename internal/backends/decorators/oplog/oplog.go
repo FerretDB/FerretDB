@@ -24,9 +24,9 @@ import (
 
 // document represents a single OpLog collection record.
 type document struct {
+	o  *types.Document
 	ns string
 	op string // i, d
-	o  *types.Document
 }
 
 // marshal returns the BSON document representation with a given timestamp.

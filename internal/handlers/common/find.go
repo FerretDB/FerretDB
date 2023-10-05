@@ -51,7 +51,7 @@ type FindParams struct {
 	LSID         any             `ferretdb:"lsid,ignored"`
 
 	ReturnKey           bool `ferretdb:"returnKey,unimplemented-non-default"`
-	ShowRecordId        bool `ferretdb:"showRecordId,unimplemented-non-default"` // TODO https://github.com/FerretDB/FerretDB/issues/3467
+	ShowRecordId        bool `ferretdb:"showRecordId,unimplemented-non-default"` //nolint:lll // TODO https://github.com/FerretDB/FerretDB/issues/3467
 	Tailable            bool `ferretdb:"tailable,unimplemented-non-default"`
 	OplogReplay         bool `ferretdb:"oplogReplay,unimplemented-non-default"`
 	NoCursorTimeout     bool `ferretdb:"noCursorTimeout,unimplemented-non-default"`
