@@ -53,6 +53,14 @@ func TestMostCommandsAreCaseSensitive(t *testing.T) {
 	assert.NoError(t, res.Err())
 	res = db.RunCommand(ctx, bson.D{{"buildInfo", 1}})
 	assert.NoError(t, res.Err())
+	res = db.RunCommand(ctx, bson.D{{"dbstats", 1}})
+	assert.NoError(t, res.Err())
+	res = db.RunCommand(ctx, bson.D{{"dbStats", 1}})
+	assert.NoError(t, res.Err())
+	res = db.RunCommand(ctx, bson.D{{"findandmodify", collection.Name()}, {"update", bson.D{}}})
+	assert.NoError(t, res.Err())
+	res = db.RunCommand(ctx, bson.D{{"findAndModify", collection.Name()}, {"update", bson.D{}}})
+	assert.NoError(t, res.Err())
 }
 
 func TestFindNothing(t *testing.T) {
