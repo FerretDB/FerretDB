@@ -546,5 +546,5 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 		}
 	}
 
-	return toCreate, nil
+	return filteredToCreate, nil
 }
