@@ -17,6 +17,7 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -638,4 +639,107 @@ func TestIndexesCreateDrop(t *testing.T) {
 		)
 		assert.Equal(t, expected, sql)
 	})
+}
+
+func TestLongIndexNames(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
+	t.Parallel()
+
+	connInfo := conninfo.New()
+	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
+
+	r, db, dbName := createDatabase(t, ctx)
+
+	batch1 := []IndexInfo{{
+		Name: strings.Repeat("aB", 75),
+		Key: []IndexKeyPair{{
+			Field:      "foo",
+			Descending: false,
+		}, {
+			Field:      "bar",
+			Descending: true,
+		}},
+	}, {
+		Name: strings.Repeat("aB", 75) + "_unique",
+		Key: []IndexKeyPair{{
+			Field:      "foo",
+			Descending: false,
+		}},
+		Unique: true,
+	}}
+
+	batch2 := []IndexInfo{{
+		Name: strings.Repeat("aB", 75) + "_bar",
+		Key: []IndexKeyPair{{
+			Field:      "bar",
+			Descending: false,
+		}},
+	}}
+
+	for name, tc := range map[string]struct {
+		collectionName   string
+		tablePartInIndex string
+	}{
+		"ShortCollectionName": {
+			collectionName:   testutil.CollectionName(t),
+			tablePartInIndex: "testlongindexnames_47546aa3",
+		},
+		"LongCollectionName": {
+			collectionName:   "Collection" + strings.Repeat("cD", 75),
+			tablePartInIndex: "collection" + strings.Repeat("cd", 10),
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			err := r.IndexesCreate(ctx, dbName, tc.collectionName, batch1)
+			require.NoError(t, err)
+
+			collection, err := r.CollectionGet(ctx, dbName, tc.collectionName)
+			require.NoError(t, err)
+			require.Equal(t, 3, len(collection.Indexes))
+
+			for _, index := range collection.Indexes {
+				switch index.Name {
+				case "_id_":
+					assert.Equal(t, tc.tablePartInIndex+"__id__67399184_idx", index.PgIndex)
+				case batch1[0].Name:
+					assert.Equal(t, tc.tablePartInIndex+"_ababababababababab_12fa1dfe_idx", index.PgIndex)
+				case batch1[1].Name:
+					assert.Equal(t, tc.tablePartInIndex+"_ababababababababab_ca7ee610_idx", index.PgIndex)
+				default:
+					t.Errorf("unexpected index: %s", index.Name)
+				}
+			}
+
+			err = r.IndexesCreate(ctx, dbName, tc.collectionName, batch2)
+			require.NoError(t, err)
+
+			err = r.initCollections(ctx, dbName, db)
+			require.NoError(t, err)
+
+			collection, err = r.CollectionGet(ctx, dbName, tc.collectionName)
+			require.NoError(t, err)
+			require.Equal(t, 4, len(collection.Indexes))
+
+			for _, index := range collection.Indexes {
+				switch index.Name {
+				case "_id_":
+					assert.Equal(t, tc.tablePartInIndex+"__id__67399184_idx", index.PgIndex)
+				case batch1[0].Name:
+					assert.Equal(t, tc.tablePartInIndex+"_ababababababababab_12fa1dfe_idx", index.PgIndex)
+				case batch1[1].Name:
+					assert.Equal(t, tc.tablePartInIndex+"_ababababababababab_ca7ee610_idx", index.PgIndex)
+				case batch2[0].Name:
+					assert.Equal(t, tc.tablePartInIndex+"_ababababababababab_aaf0d99c_idx", index.PgIndex)
+				default:
+					t.Errorf("unexpected index: %s", index.Name)
+				}
+			}
+		})
+	}
 }

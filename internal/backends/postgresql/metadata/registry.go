@@ -777,7 +777,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 		indexNamePart := specialCharacters.ReplaceAllString(strings.ToLower(index.Name), "_")
 
 		h := fnv.New32a()
-		must.NotFail(h.Write([]byte(collectionName)))
+		must.NotFail(h.Write([]byte(index.Name)))
 		s := h.Sum32()
 
 		var pgIndexName string
@@ -842,6 +842,8 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 
 		created = append(created, index.Name)
 		c.Indexes = append(c.Indexes, index)
+		allIndexes[index.Name] = collectionName
+		allPgIndexes[index.PgIndex] = collectionName
 	}
 
 	b, err := sjson.Marshal(c.marshal())
