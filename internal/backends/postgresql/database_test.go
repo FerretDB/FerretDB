@@ -72,7 +72,7 @@ func TestDatabaseStats(t *testing.T) {
 		require.Zero(t, res.SizeCollections)
 		require.Zero(t, res.CountObjects)
 		require.Zero(t, res.CountIndexes)
-		require.Zero(t, res.SizeIndexes)
+		require.NotZero(t, res.SizeIndexes) // includes metadata table's indexes
 	})
 
 	t.Run("DatabaseWithCollections", func(t *testing.T) {

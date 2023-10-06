@@ -118,6 +118,16 @@ A keyword that starts with a `$` character to query, update, or transform data.
 
 ---
 
+### O
+
+#### Operation modes
+
+FerretDB utilizes operation modes to define its approach in handling incoming requests, serving purposes such as testing, debugging, and bug reporting.
+By default, FerretDB operates in `normal` mode.
+See [Operation modes](../configuration/operation-modes.md) for more details.
+
+---
+
 ### P
 
 #### primary key
