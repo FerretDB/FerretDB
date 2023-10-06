@@ -216,6 +216,8 @@ type CollectionStatsParams struct{}
 
 // CollectionStatsResult represents the results of Collection.Stats method.
 //
+// CountObjects is an estimate of the number of documents.
+//
 // TODO https://github.com/FerretDB/FerretDB/issues/2447
 type CollectionStatsResult struct {
 	CountObjects   int64
@@ -226,11 +228,13 @@ type CollectionStatsResult struct {
 }
 
 // Stats returns statistics about the collection.
+//
+// The errors for non-existing database and non-existing collection are the same.
 func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStatsParams) (*CollectionStatsResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.Stats(ctx, params)
-	checkError(err, ErrorCodeDatabaseDoesNotExist, ErrorCodeCollectionDoesNotExist)
+	checkError(err, ErrorCodeCollectionDoesNotExist)
 
 	return res, err
 }
