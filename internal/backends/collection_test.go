@@ -213,6 +213,9 @@ func TestCollectionStats(t *testing.T) {
 				require.NotZero(t, res.SizeCollection)
 				require.Less(t, res.SizeCollection, dbStatsRes.SizeCollections)
 				require.Equal(t, res.CountObjects, int64(1))
+				// TODO https://github.com/FerretDB/FerretDB/issues/3394
+				//require.NotZero(t, res.CountIndexes)
+				require.NotZero(t, res.SizeIndexes)
 			})
 		})
 	}
