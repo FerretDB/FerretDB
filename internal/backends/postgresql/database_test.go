@@ -72,7 +72,7 @@ func TestDatabaseStats(t *testing.T) {
 		require.NotZero(t, res.SizeCollections)
 		require.Zero(t, res.CountObjects)
 		// TODO https://github.com/FerretDB/FerretDB/issues/3394
-		//require.NotZero(t, res.CountIndexes)
+		// require.NotZero(t, res.CountIndexes)
 		require.NotZero(t, res.SizeIndexes) // includes metadata table's indexes
 	})
 
