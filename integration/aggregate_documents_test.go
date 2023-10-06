@@ -31,6 +31,8 @@ import (
 func TestAggregateAddFieldsErrors(t *testing.T) {
 	t.Parallel()
 
+	ctx, collection := setup.Setup(t)
+
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
 		pipeline bson.A // required, aggregation pipeline stages
 
@@ -71,8 +73,6 @@ func TestAggregateAddFieldsErrors(t *testing.T) {
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
-			ctx, collection := setup.Setup(t)
-
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 
 			if tc.altMessage != "" {
@@ -87,6 +87,8 @@ func TestAggregateAddFieldsErrors(t *testing.T) {
 
 func TestAggregateGroupErrors(t *testing.T) {
 	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct {
 		pipeline bson.A // required, aggregation pipeline stages
@@ -282,8 +284,6 @@ func TestAggregateGroupErrors(t *testing.T) {
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
-			ctx, collection := setup.Setup(t)
-
 			res, err := collection.Aggregate(ctx, tc.pipeline)
 
 			assert.Nil(t, res)
@@ -294,6 +294,8 @@ func TestAggregateGroupErrors(t *testing.T) {
 
 func TestAggregateProjectErrors(t *testing.T) {
 	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct {
 		pipeline bson.A // required, aggregation pipeline stages
@@ -661,6 +663,8 @@ func TestAggregateProject(t *testing.T) {
 func TestAggregateSetErrors(t *testing.T) {
 	t.Parallel()
 
+	ctx, collection := setup.Setup(t)
+
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
 		pipeline bson.A // required, aggregation pipeline stages
 
@@ -701,8 +705,6 @@ func TestAggregateSetErrors(t *testing.T) {
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
-			ctx, collection := setup.Setup(t)
-
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
@@ -711,6 +713,8 @@ func TestAggregateSetErrors(t *testing.T) {
 
 func TestAggregateUnsetErrors(t *testing.T) {
 	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
 		pipeline bson.A // required, aggregation pipeline stages
@@ -902,8 +906,6 @@ func TestAggregateUnsetErrors(t *testing.T) {
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
-			ctx, collection := setup.Setup(t)
-
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 		})
@@ -912,6 +914,8 @@ func TestAggregateUnsetErrors(t *testing.T) {
 
 func TestAggregateSortErrors(t *testing.T) {
 	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
 		pipeline bson.A // required, aggregation pipeline stages
@@ -941,8 +945,6 @@ func TestAggregateSortErrors(t *testing.T) {
 
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
-
-			ctx, collection := setup.Setup(t)
 
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
