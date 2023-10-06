@@ -21,37 +21,48 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestInsert(t *testing.T) {
+func TestCollectionStats(t *testing.T) {
+	t.Parallel()
+	ctx := testutil.Ctx(t)
+
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
 	b, err := NewBackend(&NewBackendParams{URI: "file:./?mode=memory", L: testutil.Logger(t), P: sp})
 	require.NoError(t, err)
 
-	defer b.Close()
+	t.Cleanup(b.Close)
 
 	db, err := b.Database(testutil.DatabaseName(t))
 	require.NoError(t, err)
 
-	c, err := db.Collection(testutil.CollectionName(t))
-	require.NoError(t, err)
+	cNames := []string{"collectionOne", "collectionTwo"}
+	for _, cName := range cNames {
+		err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: cName})
+		require.NoError(t, err)
+	}
 
-	ctx := testutil.Ctx(t)
-
-	doc, err := types.NewDocument("_id", types.NewObjectID())
-	require.NoError(t, err)
-
-	_, err = c.InsertAll(ctx, &backends.InsertAllParams{
-		Docs: []*types.Document{doc},
-	})
+	c, err := db.Collection(cNames[0])
 	require.NoError(t, err)
 
 	_, err = c.InsertAll(ctx, &backends.InsertAllParams{
-		Docs: []*types.Document{doc},
+		Docs: []*types.Document{must.NotFail(types.NewDocument("_id", types.NewObjectID()))},
 	})
-	require.True(t, backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID))
+	require.NoError(t, err)
+
+	dbStatsRes, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+	require.NoError(t, err)
+
+	res, err := c.Stats(ctx, new(backends.CollectionStatsParams))
+	require.NoError(t, err)
+	require.NotZero(t, res.SizeTotal)
+	require.Less(t, res.SizeTotal, dbStatsRes.SizeTotal)
+	require.NotZero(t, res.SizeCollection)
+	require.Less(t, res.SizeCollection, dbStatsRes.SizeCollections)
+	require.Equal(t, res.CountObjects, int64(1))
 }

@@ -14,6 +14,8 @@ ARG LABEL_COMMIT
 
 FROM ghcr.io/ferretdb/golang:1.21.1-2 AS development-build
 
+ARG TARGETARCH
+
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
 RUN test -n "$LABEL_VERSION"
@@ -35,39 +37,36 @@ ENV GOPROXY https://proxy.golang.org
 
 ENV CGO_ENABLED=1
 
-# copy cached stdlib builds from base image
-RUN --mount=type=cache,target=/cache \
-    cp -Rnv /root/.cache/go-build/. /cache/gocache
-
 # see .dockerignore
 WORKDIR /src
 COPY . .
 
-# TODO https://github.com/FerretDB/FerretDB/issues/2170
-# That command could be run only once by using a separate stage;
-# see https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
-RUN --mount=type=cache,target=/cache \
-    go mod download
-
-ARG TARGETARCH
-
-# Do not trim paths to make debugging with delve easier.
-#
-# Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
-# (and that happens on GitHub-hosted Actions runners).
-# Also disable it on arm/v6 and arm/v7 because it is not supported there.
 RUN --mount=type=cache,target=/cache <<EOF
 set -ex
 
+# copy cached stdlib builds from base image
+flock --verbose /cache/ cp -Rnv /root/.cache/go-build/. /cache/gocache
+
+# TODO https://github.com/FerretDB/FerretDB/issues/2170
+# That command could be run only once by using a separate stage;
+# see https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
+flock --verbose /cache/ go mod download
+
 git status
 
+# Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
+# (and that happens on GitHub-hosted Actions runners).
+# Also disable it on arm/v6 and arm/v7 because it is not supported there.
 RACE=false
 if test "$TARGETARCH" = "amd64"
 then
     RACE=true
 fi
 
+# Do not trim paths to make debugging with delve easier.
+
 # check that stdlib was cached
+# env GODEBUG=gocachehash=1 go install -v -race=$RACE std
 go install -v -race=$RACE std
 
 go build -v -o=bin/ferretdb -race=$RACE -tags=ferretdb_debug -coverpkg=./... ./cmd/ferretdb
