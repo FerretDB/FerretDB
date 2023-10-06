@@ -133,6 +133,91 @@ func TestCollectionUpdateAll(t *testing.T) {
 	}
 }
 
+func TestCollectionStats(t *testing.T) {
+	t.Parallel()
+
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+
+	for _, b := range testBackends(t) {
+		b := b
+		t.Run(b.Name(), func(t *testing.T) {
+			t.Parallel()
+
+			t.Run("DatabaseDoesNotExist", func(t *testing.T) {
+				t.Parallel()
+
+				dbName, collName := testutil.DatabaseName(t), testutil.CollectionName(t)
+				cleanupDatabase(t, ctx, b, dbName)
+
+				db, err := b.Database(dbName)
+				require.NoError(t, err)
+
+				coll, err := db.Collection(collName)
+				require.NoError(t, err)
+
+				_, err = coll.Stats(ctx, nil)
+				assertErrorCode(t, err, backends.ErrorCodeCollectionDoesNotExist)
+			})
+
+			t.Run("CollectionDoesNotExist", func(t *testing.T) {
+				t.Parallel()
+
+				dbName, collName := testutil.DatabaseName(t), testutil.CollectionName(t)
+				otherCollName := collName + "_other"
+				cleanupDatabase(t, ctx, b, dbName)
+
+				db, err := b.Database(dbName)
+				require.NoError(t, err)
+
+				// to create database
+				err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
+					Name: otherCollName,
+				})
+				require.NoError(t, err)
+
+				coll, err := db.Collection(collName)
+				require.NoError(t, err)
+
+				_, err = coll.Stats(ctx, nil)
+				assertErrorCode(t, err, backends.ErrorCodeCollectionDoesNotExist)
+			})
+
+			t.Run("Stats", func(t *testing.T) {
+				dbName := testutil.DatabaseName(t)
+				cleanupDatabase(t, ctx, b, dbName)
+
+				db, err := b.Database(dbName)
+				require.NoError(t, err)
+
+				cNames := []string{"collectionOne", "collectionTwo"}
+				for _, cName := range cNames {
+					err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: cName})
+					require.NoError(t, err)
+				}
+
+				c, err := db.Collection(cNames[0])
+				require.NoError(t, err)
+
+				_, err = c.InsertAll(ctx, &backends.InsertAllParams{
+					Docs: []*types.Document{must.NotFail(types.NewDocument("_id", types.NewObjectID()))},
+				})
+				require.NoError(t, err)
+
+				dbStatsRes, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+				require.NoError(t, err)
+
+				res, err := c.Stats(ctx, new(backends.CollectionStatsParams))
+				require.NoError(t, err)
+				require.NotZero(t, res.SizeTotal)
+				require.Less(t, res.SizeTotal, dbStatsRes.SizeTotal)
+				require.NotZero(t, res.SizeCollection)
+				require.Less(t, res.SizeCollection, dbStatsRes.SizeCollections)
+				require.Equal(t, res.CountObjects, int64(1))
+			})
+		})
+	}
+}
+
 func TestCollectionCompact(t *testing.T) {
 	t.Skip("https://github.com/FerretDB/FerretDB/issues/3484")
 	t.Skip("https://github.com/FerretDB/FerretDB/issues/3469")
@@ -184,50 +269,6 @@ func TestCollectionCompact(t *testing.T) {
 				_, err = coll.Compact(ctx, nil)
 				assertErrorCode(t, err, backends.ErrorCodeCollectionDoesNotExist)
 			})
-		})
-	}
-}
-
-func TestCollectionStats(t *testing.T) {
-	t.Parallel()
-
-	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
-
-	for _, b := range testBackends(t) {
-		b := b
-		t.Run(b.Name(), func(t *testing.T) {
-			t.Parallel()
-
-			dbName := testutil.DatabaseName(t)
-			cleanupDatabase(t, ctx, b, dbName)
-
-			db, err := b.Database(dbName)
-			require.NoError(t, err)
-
-			cNames := []string{"collectionOne", "collectionTwo"}
-			for _, cName := range cNames {
-				err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: cName})
-				require.NoError(t, err)
-			}
-
-			c, err := db.Collection(cNames[0])
-			require.NoError(t, err)
-
-			_, err = c.InsertAll(ctx, &backends.InsertAllParams{
-				Docs: []*types.Document{must.NotFail(types.NewDocument("_id", types.NewObjectID()))},
-			})
-			require.NoError(t, err)
-
-			dbStatsRes, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
-			require.NoError(t, err)
-
-			res, err := c.Stats(ctx, new(backends.CollectionStatsParams))
-			require.NoError(t, err)
-			require.NotZero(t, res.SizeTotal)
-			require.Less(t, res.SizeTotal, dbStatsRes.SizeTotal)
-			require.NotZero(t, res.SizeCollection)
-			require.Less(t, res.SizeCollection, dbStatsRes.SizeCollections)
-			require.Equal(t, res.CountObjects, int64(1))
 		})
 	}
 }
