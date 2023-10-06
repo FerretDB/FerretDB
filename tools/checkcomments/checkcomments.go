@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -74,12 +75,15 @@ func run(pass *analysis.Pass) (any, error) {
 
 // isIssueopen check the issue open or closed.
 func isIssueOpen(todoText string) bool {
-	token := ""
+	var src oauth2.TokenSource
+	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
+		src = oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: token},
+		)
+	}
+
 	ctx := context.Background()
-	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	))
-	client := github.NewClient(httpClient)
+	client := github.NewClient(oauth2.NewClient(ctx, src))
 
 	owner := "FerretDB"
 	repo := "FerretDB"
