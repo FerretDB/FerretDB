@@ -258,16 +258,16 @@ func TestQueryProjectionSuccess(t *testing.T) {
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
-		filter           bson.D   // required
-		projection       any      // required
-		expectedResponse []bson.D // required
+		filter     bson.D   // required
+		projection any      // required
+		res        []bson.D // required
 
 		skip string // optional, skip test with a specified reason
 	}{
 		"QueryProjectionOfFieldV": {
 			filter:     bson.D{{"_id", "int32"}},
 			projection: bson.D{{"v", true}, {"_id", false}},
-			expectedResponse: []bson.D{
+			res: []bson.D{
 				{{"v", int32(42)}},
 			},
 		},
@@ -282,15 +282,16 @@ func TestQueryProjectionSuccess(t *testing.T) {
 
 			require.NotNil(t, tc.filter, "filter should be set")
 			require.NotNil(t, tc.projection, "projection should be set")
-			require.NotNil(t, tc.expectedResponse, "expectedResponse should be set")
+			require.NotNil(t, tc.res, "res should be set")
 
-			res, err := collection.Find(ctx, tc.filter, options.Find().SetProjection(tc.projection))
+			cursor, err := collection.Find(ctx, tc.filter, options.Find().SetProjection(tc.projection))
 			require.NoError(t, err)
-			defer res.Close(ctx)
-			var results []bson.D
-			err = res.All(ctx, &results)
+			defer cursor.Close(ctx)
+
+			var res []bson.D
+			err = cursor.All(ctx, &res)
 			require.NoError(t, err)
-			assert.Equal(t, tc.expectedResponse, results)
+			assert.Equal(t, tc.res, res)
 		})
 	}
 }
