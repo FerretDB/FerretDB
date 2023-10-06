@@ -104,9 +104,7 @@ func isIssueOpen(todoText string) bool {
 
 // get the issue number from  issue url.
 func getIssueNumber(todoText string) (int, error) {
-	pattern := `\/issues\/(\d+)`
-	re := regexp.MustCompile(pattern)
-	match := re.FindStringSubmatch(todoText)
+	match := todoRE.FindStringSubmatch(todoText)
 
 	if len(match) >= 2 {
 		issueNumberStr := match[1]
