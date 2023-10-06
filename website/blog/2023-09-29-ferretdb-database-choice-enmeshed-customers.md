@@ -70,9 +70,9 @@ You can influence FerretDB by checking the [list of open issues on our GitHub](h
 
 ### About speakers
 
-Marcin Gwozdz - Director of Strategic Alliances at FerretDB
-Julian König – Senior Developer at j&s-soft GmbH
-Michael Feygelman – Senior Project- and Community Manager for enmeshed at j&s-soft GmbH
+- Marcin Gwozdz - Director of Strategic Alliances at FerretDB
+- Julian König – Senior Developer at j&s-soft GmbH
+- Michael Feygelman – Senior Project- and Community Manager for enmeshed at j&s-soft GmbH
 
 ### About enmeshed
 
