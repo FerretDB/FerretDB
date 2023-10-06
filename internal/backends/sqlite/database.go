@@ -138,7 +138,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	// Total size is the disk space used by the database,
 	// see https://www.sqlite.org/dbstat.html.
 	q := `
-		SELECT COALESCE(SUM(pgsize), 0)
+		SELECT SUM(pgsize)
 		FROM dbstat
 		WHERE aggregate = TRUE`
 

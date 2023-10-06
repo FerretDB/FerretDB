@@ -82,7 +82,7 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 	//
 	// See https://www.sqlite.org/dbstat.html and https://www.sqlite.org/fileformat.html.
 	q = fmt.Sprintf(`
-		SELECT COALESCE(SUM(pgsize), 0)
+		SELECT SUM(pgsize)
 		FROM dbstat
 		WHERE name IN (%s) AND aggregate = TRUE`,
 		strings.Join(placeholders, ", "),
@@ -97,7 +97,7 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 	// excluding `internal` and `overflow` pagetype used by SQLite.
 	// See https://www.sqlite.org/dbstat.html and https://www.sqlite.org/fileformat.html.
 	q = fmt.Sprintf(`
-		SELECT COALESCE(SUM(ncell), 0)
+		SELECT SUM(ncell)
 		FROM dbstat
 		WHERE name IN (%s) AND pagetype = 'leaf'`,
 		strings.Join(placeholders, ", "),
@@ -120,7 +120,7 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 	}
 
 	q = fmt.Sprintf(`
-		SELECT COALESCE(SUM(pgsize), 0)
+		SELECT SUM(pgsize)
 		FROM dbstat
 		WHERE name IN (%s) AND aggregate = TRUE`,
 		strings.Join(placeholders, ", "),
