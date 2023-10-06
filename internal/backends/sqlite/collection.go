@@ -293,7 +293,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
 		return nil, backends.NewError(
-			backends.ErrorCodeDatabaseDoesNotExist,
+			backends.ErrorCodeCollectionDoesNotExist,
 			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
 		)
 	}
@@ -396,7 +396,7 @@ func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateI
 func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
 	err := c.r.IndexesDrop(ctx, c.dbName, c.name, params.Indexes)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	return new(backends.DropIndexesResult), nil
