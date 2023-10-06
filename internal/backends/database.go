@@ -17,6 +17,7 @@ package backends
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
@@ -83,7 +84,14 @@ type ListCollectionsResult struct {
 
 // CollectionInfo represents information about a single collection.
 type CollectionInfo struct {
-	Name string
+	Name            string
+	CappedSize      int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
+	CappedDocuments int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
+}
+
+// Capped returns true if collection is capped.
+func (ci *CollectionInfo) Capped() bool {
+	return ci.CappedSize > 0 || ci.CappedDocuments > 0
 }
 
 // ListCollections returns information about collections in the database.
@@ -100,7 +108,14 @@ func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCo
 
 // CreateCollectionParams represents the parameters of Database.CreateCollection method.
 type CreateCollectionParams struct {
-	Name string
+	Name            string
+	CappedSize      int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
+	CappedDocuments int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
+}
+
+// Capped returns true if capped collection creation is requested.
+func (ccp *CreateCollectionParams) Capped() bool {
+	return ccp.CappedSize > 0 || ccp.CappedDocuments > 0
 }
 
 // CreateCollection creates a new collection with valid name in the database; it should not already exist.
@@ -108,6 +123,10 @@ type CreateCollectionParams struct {
 // Database may or may not exist; it should be created automatically if needed.
 func (dbc *databaseContract) CreateCollection(ctx context.Context, params *CreateCollectionParams) error {
 	defer observability.FuncCall(ctx)()
+
+	must.BeTrue(params.CappedSize >= 0)
+	must.BeTrue(params.CappedSize%256 == 0)
+	must.BeTrue(params.CappedDocuments >= 0)
 
 	err := validateCollectionName(params.Name)
 	if err == nil {

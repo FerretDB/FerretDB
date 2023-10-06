@@ -105,6 +105,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		"totalIndexSize", stats.SizeIndexes/scale,
 		"totalSize", stats.SizeTotal/scale,
 		"scaleFactor", int32(scale),
+		"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/3458
 		"ok", float64(1),
 	)
 
