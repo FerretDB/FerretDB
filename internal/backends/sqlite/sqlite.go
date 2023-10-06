@@ -71,6 +71,16 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 		indexes += int64(len(c.Settings.Indexes))
 	}
 
+	// The table size is the size used by collection objects. The `pgsize` of `dbstat` table
+	// does not include freelist pages, pointer-map pages, and the lock page.
+	//
+	// If rows are deleted from a page but there are other rows on that same page,
+	// the page won't be moved to freelist pages.
+	//
+	// The smallest difference in size that `pgsize` reports appears to be 4KB.
+	// Because of that inserting or deleting a single small object may not change the size.
+	//
+	// See https://www.sqlite.org/dbstat.html and https://www.sqlite.org/fileformat.html.
 	q = fmt.Sprintf(`
 		SELECT SUM(pgsize)
 		FROM dbstat
