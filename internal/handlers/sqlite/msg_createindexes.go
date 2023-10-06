@@ -460,6 +460,9 @@ func formatIndexKey(key []backends.IndexKeyPair) string {
 // It filters out duplicate indexes and returns a slice of indexes to create.
 // It returns an error if at least one provided index has an invalid specification.
 func validateIndexesForCreation(command string, existing, toCreate []backends.IndexInfo) ([]backends.IndexInfo, error) {
+	filteredToCreate := make([]backends.IndexInfo, len(toCreate))
+	copy(filteredToCreate, toCreate)
+
 	for i, newIdx := range toCreate {
 		newKey := formatIndexKey(newIdx.Key)
 
@@ -520,7 +523,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 
 			if newIdx.Name == existingIdx.Name && newKey == existingKey {
 				// Fully identical indexes are ignored, no need to attempt to create them.
-				toCreate = slices.Delete(toCreate, i, i+1)
+				filteredToCreate = slices.Delete(filteredToCreate, i, i+1)
 				break
 			}
 
