@@ -299,7 +299,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 
 	if p == nil {
 		return nil, backends.NewError(
-			backends.ErrorCodeDatabaseDoesNotExist,
+			backends.ErrorCodeCollectionDoesNotExist,
 			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
 		)
 	}
