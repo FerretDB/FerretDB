@@ -12,6 +12,9 @@ repository:
 # https://docs.github.com/en/rest/issues/labels
 labels:
   # area
+  - name: area/admin
+    color: "#2931BF"
+    description: Issues about administration commands
   - name: area/aggregations
     color: "#5319E7"
     description: Issues about aggregation pipelines

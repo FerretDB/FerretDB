@@ -137,7 +137,8 @@ func deepCopy(value any) any {
 		}
 
 		return &Document{
-			fields: fields,
+			fields:   fields,
+			recordID: value.recordID,
 		}
 
 	case *Array:
