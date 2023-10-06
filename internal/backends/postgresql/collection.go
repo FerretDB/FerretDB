@@ -73,6 +73,8 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3490
+
 	// TODO https://github.com/FerretDB/FerretDB/issues/3414
 	q := fmt.Sprintf(
 		`SELECT %s FROM %s`,
@@ -113,6 +115,8 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
+
+			// TODO https://github.com/FerretDB/FerretDB/issues/3490
 
 			// use batches: INSERT INTO %s %s VALUES (?), (?), (?), ... up to, say, 100 documents
 			// TODO https://github.com/FerretDB/FerretDB/issues/3271
@@ -218,6 +222,9 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 	if meta == nil {
 		return &backends.DeleteAllResult{Deleted: 0}, nil
 	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3498
+	_ = params.RecordIDs
 
 	var placeholder metadata.Placeholder
 	placeholders := make([]string, len(params.IDs))
