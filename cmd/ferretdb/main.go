@@ -49,6 +49,8 @@ import (
 // It's used for parsing the user input.
 //
 // Keep order in sync with documentation.
+//
+//nolint:lll // some tags are long
 var cli struct {
 	Version  bool   `default:"false" help:"Print version to stdout and exit." env:"-"`
 	Handler  string `default:"pg" help:"${help_handler}"`
@@ -84,15 +86,15 @@ var cli struct {
 
 		DisableFilterPushdown bool `default:"false" help:"Experimental: disable filter pushdown."`
 		EnableSortPushdown    bool `default:"false" help:"Experimental: enable sort pushdown."`
-		EnableOplog           bool `default:"false" help:"Experimental: enable OpLog."            hidden:""`
+		EnableOplog           bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
 
-		UseNewPG   bool `default:"false" help:"Experimental: use new PostgreSQL backend." hidden:""`
-		UseNewHana bool `default:"false" help:"Experimental: use new SAP HANA backend."   hidden:""`
+		UseNewPG   bool `default:"false" help:"Use new PostgreSQL backend."`
+		UseNewHana bool `default:"false" help:"Experimental: use new SAP HANA backend." hidden:""`
 
 		//nolint:lll // for readability
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.io/" help:"Experimental: telemetry: reporting URL."`
-			UndecidedDelay time.Duration `default:"1h"                          help:"${help_telemetry_undecided_delay}"`
+			UndecidedDelay time.Duration `default:"1h"                          help:"Experimental: telemetry: delay for undecided state."`
 			ReportInterval time.Duration `default:"24h"                         help:"Experimental: telemetry: report interval."`
 			ReportTimeout  time.Duration `default:"5s"                          help:"Experimental: telemetry: report timeout."`
 			Package        string        `default:""                            help:"Experimental: telemetry: custom package type."`
@@ -103,8 +105,10 @@ var cli struct {
 // The pgFlags struct represents flags that are used by the "pg" handler.
 //
 // See main_pg.go.
+//
+//nolint:lll // some tags are long
 var pgFlags struct {
-	PostgreSQLURL string `name:"postgresql-url" default:"${default_postgresql_url}" help:"PostgreSQL URL for 'pg' handler."`
+	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/ferretdb" help:"PostgreSQL URL for 'pg' handler."`
 }
 
 // The sqliteFlags struct represents flags that are used by the "sqlite" handler.
@@ -153,14 +157,12 @@ var (
 
 	kongOptions = []kong.Option{
 		kong.Vars{
-			"default_log_level":      defaultLogLevel().String(),
-			"default_mode":           clientconn.AllModes[0],
-			"default_postgresql_url": "postgres://127.0.0.1:5432/ferretdb",
+			"default_log_level": defaultLogLevel().String(),
+			"default_mode":      clientconn.AllModes[0],
 
-			"help_log_level":                 fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
-			"help_mode":                      fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
-			"help_handler":                   fmt.Sprintf("Backend handler: '%s'.", strings.Join(registry.Handlers(), "', '")),
-			"help_telemetry_undecided_delay": "Experimental: telemetry: delay for undecided state.",
+			"help_log_level": fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
+			"help_mode":      fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
+			"help_handler":   fmt.Sprintf("Backend handler: '%s'.", strings.Join(registry.Handlers(), "', '")),
 
 			"enum_mode": strings.Join(clientconn.AllModes, ","),
 		},
