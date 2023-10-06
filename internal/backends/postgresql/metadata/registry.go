@@ -788,7 +788,7 @@ func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, c
 				indexNamePart = indexNamePart[:l]
 			}
 
-			pgIndexName = fmt.Sprintf("%s_%s", tableNamePart, indexNamePart)
+			pgIndexName = fmt.Sprintf("%s_%s%s", tableNamePart, indexNamePart, suffixHash)
 
 			// indexes must be unique across the whole database, so we check for duplicates for all collections
 			_, duplicate := allPgIndexes[pgIndexName]
