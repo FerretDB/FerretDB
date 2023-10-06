@@ -25,6 +25,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestAggregateAddFieldsErrors(t *testing.T) {
@@ -602,10 +603,57 @@ func TestAggregateProjectErrors(t *testing.T) {
 			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
 
-			ctx, collection := setup.Setup(t)
-
 			_, err := collection.Aggregate(ctx, tc.pipeline)
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
+}
+
+func TestAggregateProject(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		pipeline bson.A // required, aggregation pipeline stages
+
+		res  []bson.D // required, expected response
+		skip string   // optional, skip test with a specified reason
+	}{
+		"IDFalseValueTrue": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"_id", "int32"}}}},
+				bson.D{{"$project", bson.D{{"_id", false}, {"v", true}}}},
+			},
+			res: []bson.D{{{"v", int32(42)}}},
+		},
+		"ValueTrueIDFalse": {
+			pipeline: bson.A{
+				bson.D{{"$match", bson.D{{"_id", "int32"}}}},
+				bson.D{{"$project", bson.D{{"v", true}, {"_id", false}}}},
+			},
+			res: []bson.D{{{"v", int32(42)}}},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.pipeline, "pipeline must not be nil")
+			require.NotNil(t, tc.res, "res must not be nil")
+
+			cursor, err := collection.Aggregate(ctx, tc.pipeline)
+			require.NoError(t, err)
+			defer cursor.Close(ctx)
+
+			var res []bson.D
+			err = cursor.All(ctx, &res)
+			require.NoError(t, err)
+			require.Equal(t, tc.res, res)
 		})
 	}
 }
