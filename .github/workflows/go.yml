@@ -266,6 +266,9 @@ jobs:
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
+    permissions:
+      issues: read
+
     steps:
       - name: Setup permissions monitoring
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
