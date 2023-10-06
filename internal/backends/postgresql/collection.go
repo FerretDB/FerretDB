@@ -292,8 +292,42 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 // Stats implements backends.Collection interface.
 func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3398
-	return new(backends.CollectionStatsResult), nil
+	p, err := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if p == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	coll, err := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if coll == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	stats, err := collectionsStats(ctx, p, c.dbName, []*metadata.Collection{coll})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &backends.CollectionStatsResult{
+		CountObjects:   stats.countRows,
+		CountIndexes:   stats.countIndexes,
+		SizeTotal:      stats.sizeTables + stats.sizeIndexes,
+		SizeIndexes:    stats.sizeIndexes,
+		SizeCollection: stats.sizeTables,
+	}, nil
 }
 
 // Compact implements backends.Collection interface.
