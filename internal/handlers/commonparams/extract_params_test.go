@@ -69,6 +69,14 @@ func TestParse(t *testing.T) {
 		Find bool `ferretdb:"f,zeroOrOneAsBool"`
 	}
 
+	type collectionTag struct {
+		Collection string `ferretdb:"findAndModify,collection"`
+	}
+
+	type noCollectionTag struct {
+		Collection string `ferretdb:"explain"`
+	}
+
 	tests := map[string]struct { //nolint:vet // it's a test table
 		doc        *types.Document
 		command    string
@@ -319,6 +327,44 @@ func TestParse(t *testing.T) {
 			)),
 			params:  new(zeroOrOneAsBool),
 			wantErr: `The 'find.f' field must be 0 or 1. Got "true"`,
+		},
+		"CollectionTagWithWrongValue": {
+			command: "findAndModify",
+			doc: must.NotFail(types.NewDocument(
+				"findAndModify", must.NotFail(types.NewDocument(
+					"invalid", "document",
+				)),
+			)),
+			params:  new(collectionTag),
+			wantErr: `collection name has invalid type object`,
+		},
+		"NoCollectionTagDocument": {
+			command: "explain",
+			doc: must.NotFail(types.NewDocument(
+				"explain", must.NotFail(types.NewDocument(
+					"find", "test",
+				)),
+			)),
+			params:  new(noCollectionTag),
+			wantErr: `collection field contains value that is not a collection name`,
+		},
+		"NoCollectionTagString": {
+			command: "explain",
+			doc: must.NotFail(types.NewDocument(
+				"explain", "test",
+			)),
+			params:  new(noCollectionTag),
+			wantErr: `collection field contains value that is not a collection name`,
+		},
+		"LowerCaseCollectionName": {
+			command: "findAndModify",
+			doc: must.NotFail(types.NewDocument(
+				"findandmodify", "test",
+			)),
+			params: new(collectionTag),
+			wantParams: &collectionTag{
+				Collection: "test",
+			},
 		},
 	}
 	for name, tt := range tests {
