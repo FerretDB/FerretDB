@@ -68,6 +68,12 @@ func (e *ValidationError) Code() ValidationErrorCode {
 // It replaces negative zero -0 with valid positive zero 0.
 // If the document is not valid it returns *ValidationError.
 func (d *Document) ValidateData() error {
+	topLevel := true
+	return d.validateData(topLevel)
+}
+
+// validateData applies different validation rules to the `_id` field depending on the document level.
+func (d *Document) validateData(isTopLevel bool) error {
 	d.moveIDToTheFirstIndex()
 
 	keys := d.Keys()
@@ -104,7 +110,8 @@ func (d *Document) ValidateData() error {
 
 		switch value := value.(type) {
 		case *Document:
-			err := value.ValidateData()
+			topLevel := false
+			err := value.validateData(topLevel)
 			if err != nil {
 				var vErr *ValidationError
 
@@ -115,7 +122,7 @@ func (d *Document) ValidateData() error {
 				return err
 			}
 		case *Array:
-			if key == "_id" {
+			if isTopLevel && key == "_id" {
 				return newValidationError(ErrWrongIDType, fmt.Errorf("The '_id' value cannot be of type array"))
 			}
 
@@ -124,7 +131,8 @@ func (d *Document) ValidateData() error {
 
 				switch item := item.(type) {
 				case *Document:
-					err := item.ValidateData()
+					topLevel := false
+					err := item.validateData(topLevel)
 					if err != nil {
 						var vErr *ValidationError
 
@@ -155,7 +163,7 @@ func (d *Document) ValidateData() error {
 				d.Set(key, math.Copysign(0, +1))
 			}
 		case Regex:
-			if key == "_id" {
+			if isTopLevel && key == "_id" {
 				return newValidationError(ErrWrongIDType, fmt.Errorf("The '_id' value cannot be of type regex"))
 			}
 		}
