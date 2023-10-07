@@ -187,7 +187,9 @@ func (dbc *databaseContract) RenameCollection(ctx context.Context, params *Renam
 }
 
 // DatabaseStatsParams represents the parameters of Database.Stats method.
-type DatabaseStatsParams struct{}
+type DatabaseStatsParams struct {
+	Refresh bool // TODO https://github.com/FerretDB/FerretDB/issues/3518
+}
 
 // DatabaseStatsResult represents the results of Database.Stats method.
 //

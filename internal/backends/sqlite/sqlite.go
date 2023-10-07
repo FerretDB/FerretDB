@@ -52,8 +52,7 @@ type stats struct {
 func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection) (*stats, error) {
 	var err error
 
-	// Call ANALYZE to update statistics of tables and indexes,
-	// see https://www.sqlite.org/lang_analyze.html.
+	// TODO https://github.com/FerretDB/FerretDB/issues/3518
 	q := `ANALYZE`
 	if _, err = db.ExecContext(ctx, q); err != nil {
 		return nil, lazyerrors.Error(err)
