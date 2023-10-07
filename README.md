@@ -13,6 +13,18 @@ FerretDB was founded to become the de-facto open-source substitute to MongoDB.
 FerretDB is an open-source proxy, converting the MongoDB 6.0+ wire protocol queries to SQL -
 using PostgreSQL or SQLite as a database engine.
 
+```mermaid
+flowchart LR;
+  A["Any application\nAny MongoDB driver"];
+  F{{FerretDB}};
+  P[(PostgreSQL)];
+  S[("SQLite")];
+
+  A -- "MongoDB protocol\nBSON" --> F;
+  F -- "PostgreSQL protocol\nSQL" --> P;
+  F -. "SQLite library\nSQL" .-> S;
+```
+
 ## Why do we need FerretDB?
 
 MongoDB was originally an eye-opening technology for many of us developers,
