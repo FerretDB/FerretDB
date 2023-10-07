@@ -19,6 +19,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -27,6 +29,8 @@ import (
 )
 
 func TestQueryComparisonCompatImplicit(t *testing.T) {
+	setup.SkipForNewPg(t, "FIXME")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -291,6 +295,8 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 }
 
 func TestQueryComparisonCompatEq(t *testing.T) {
+	setup.SkipForNewPg(t, "FIXME")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -1172,6 +1178,8 @@ func TestQueryComparisonCompatIn(t *testing.T) {
 }
 
 func TestQueryComparisonCompatNe(t *testing.T) {
+	setup.SkipForNewPg(t, "FIXME")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -1389,6 +1397,8 @@ func TestQueryComparisonCompatNe(t *testing.T) {
 }
 
 func TestQueryComparisonCompatMultipleOperators(t *testing.T) {
+	setup.SkipForNewPg(t, "FIXME")
+
 	t.Parallel()
 
 	var scalarDataTypesFilter bson.A

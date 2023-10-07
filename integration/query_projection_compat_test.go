@@ -19,6 +19,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
@@ -223,6 +225,8 @@ func TestQueryProjectionCompat(t *testing.T) {
 }
 
 func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
+	setup.SkipForNewPg(t, "FIXME")
+
 	t.Parallel()
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3053

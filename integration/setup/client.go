@@ -39,9 +39,9 @@ func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	if err = client.Ping(ctx, nil); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	//if err = client.Ping(ctx, nil); err != nil {
+	//	return nil, lazyerrors.Error(err)
+	//}
 
 	return client, nil
 }

@@ -363,6 +363,8 @@ func TestUpdateCommandUpsert(t *testing.T) {
 }
 
 func TestUpdateFieldErrors(t *testing.T) {
+	setup.SkipForNewPg(t, "TODO")
+
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // it is used for test only

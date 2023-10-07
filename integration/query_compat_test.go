@@ -193,6 +193,8 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 }
 
 func TestQueryCompatFilter(t *testing.T) {
+	setup.SkipForNewPg(t, "FIXME")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{

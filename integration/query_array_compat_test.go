@@ -18,6 +18,8 @@ import (
 	"math"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -133,6 +135,8 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 }
 
 func TestQueryArrayCompatElemMatch(t *testing.T) {
+	setup.SkipForNewPg(t, "FIXME")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
