@@ -58,12 +58,8 @@ func run(pass *analysis.Pass) (any, error) {
 
 					if !todoRE.MatchString(c.Text) {
 						pass.Reportf(c.Pos(), "invalid TODO: incorrect format")
-						continue
-					}
-
-					if !isIssueOpen(c.Text) {
+					} else if !isIssueOpen(c.Text) {
 						pass.Reportf(c.Pos(), "invalid TODO: linked issue is closed")
-						continue
 					}
 				}
 			}
