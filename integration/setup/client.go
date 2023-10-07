@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
@@ -40,9 +39,7 @@ func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// make sure that FerretDB-backend connection works
-	_, err = client.ListDatabases(ctx, bson.D{})
-	if err != nil {
+	if err = client.Ping(ctx, nil); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
