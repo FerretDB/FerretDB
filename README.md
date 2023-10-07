@@ -14,15 +14,15 @@ FerretDB is an open-source proxy, converting the MongoDB 6.0+ wire protocol quer
 using PostgreSQL or SQLite as a database engine.
 
 ```mermaid
-flowchart LR;
-  A["Any application\nAny MongoDB driver"];
-  F{{FerretDB}};
-  P[(PostgreSQL)];
-  S[("SQLite")];
+flowchart LR
+  A["Any application\nAny MongoDB driver"]
+  F{{FerretDB}}
+  P[(PostgreSQL)]
+  S[("SQLite")]
 
-  A -- "MongoDB protocol\nBSON" --> F;
-  F -- "PostgreSQL protocol\nSQL" --> P;
-  F -. "SQLite library\nSQL" .-> S;
+  A -- "MongoDB protocol\nBSON" --> F
+  F -- "PostgreSQL protocol\nSQL" --> P
+  F -. "SQLite library\nSQL" .-> S
 ```
 
 ## Why do we need FerretDB?
