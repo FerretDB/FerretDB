@@ -68,8 +68,7 @@ func (e *ValidationError) Code() ValidationErrorCode {
 // It replaces negative zero -0 with valid positive zero 0.
 // If the document is not valid it returns *ValidationError.
 func (d *Document) ValidateData() error {
-	topLevel := true
-	return d.validateData(topLevel)
+	return d.validateData(true)
 }
 
 // validateData applies different validation rules to the `_id` field depending on the document level.
@@ -110,8 +109,7 @@ func (d *Document) validateData(isTopLevel bool) error {
 
 		switch value := value.(type) {
 		case *Document:
-			topLevel := false
-			err := value.validateData(topLevel)
+			err := value.validateData(false)
 			if err != nil {
 				var vErr *ValidationError
 
@@ -131,8 +129,7 @@ func (d *Document) validateData(isTopLevel bool) error {
 
 				switch item := item.(type) {
 				case *Document:
-					topLevel := false
-					err := item.validateData(topLevel)
+					err := item.validateData(false)
 					if err != nil {
 						var vErr *ValidationError
 
