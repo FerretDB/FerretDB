@@ -34,10 +34,7 @@ import (
 
 // RunHandler runs debug handler.
 func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger) {
-	stdL, err := zap.NewStdLogAt(l, zap.WarnLevel)
-	if err != nil {
-		panic(err)
-	}
+	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
 
 	http.Handle("/debug/metrics", promhttp.InstrumentMetricHandler(
 		r, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
@@ -84,10 +81,7 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	}
 
 	go func() {
-		lis, err := net.Listen("tcp", addr)
-		if err != nil {
-			panic(err)
-		}
+		lis := must.NotFail(net.Listen("tcp", addr))
 
 		l.Sugar().Infof("Starting debug server on http://%s/", lis.Addr())
 

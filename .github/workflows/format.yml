@@ -25,6 +25,7 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
+  GOTOOLCHAIN: local
 
 jobs:
   format:
@@ -39,8 +40,9 @@ jobs:
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
         if: false
 
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -53,9 +55,6 @@ jobs:
       - name: Install Task
         run: go generate -x
         working-directory: tools
-
-      - name: Run init
-        run: bin/task init
 
       - name: Format Go code
         run: bin/task fmt-go

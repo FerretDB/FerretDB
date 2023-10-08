@@ -834,7 +834,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 		optSkip *int64 // optional, nil to leave optSkip unset
 
 		len            int                 // expected length of results
-		queryPushdown  bool                // optional, set true for expected pushdown for query
+		queryPushdown  resultPushdown      // optional, defaults to noPushdown
 		limitPushdown  bool                // optional, set true for expected pushdown for limit
 		err            *mongo.CommandError // optional, expected error from MongoDB
 		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
@@ -880,7 +880,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			filter:        bson.D{{"_id", "array"}},
 			limit:         3,
 			len:           1,
-			queryPushdown: true,
+			queryPushdown: pgPushdown,
 			limitPushdown: false,
 		},
 		"ValueFilter": {
@@ -888,28 +888,28 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           3,
-			queryPushdown: true,
+			queryPushdown: pgPushdown,
 			limitPushdown: false,
 		},
 		"DotNotationFilter": {
 			filter:        bson.D{{"v.foo", 42}},
 			limit:         3,
 			len:           3,
-			queryPushdown: false,
+			queryPushdown: noPushdown,
 			limitPushdown: false,
 		},
 		"ObjectFilter": {
 			filter:        bson.D{{"v", bson.D{{"foo", nil}}}},
 			limit:         3,
 			len:           1,
-			queryPushdown: false,
+			queryPushdown: noPushdown,
 			limitPushdown: false,
 		},
 		"Sort": {
 			sort:          bson.D{{"_id", 1}},
 			limit:         2,
 			len:           2,
-			queryPushdown: false,
+			queryPushdown: noPushdown,
 			limitPushdown: true,
 		},
 		"IDFilterSort": {
@@ -917,7 +917,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           1,
-			queryPushdown: true,
+			queryPushdown: pgPushdown,
 			limitPushdown: false,
 		},
 		"ValueFilterSort": {
@@ -925,7 +925,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           3,
-			queryPushdown: true,
+			queryPushdown: pgPushdown,
 			limitPushdown: false,
 		},
 		"DotNotationFilterSort": {
@@ -933,7 +933,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           3,
-			queryPushdown: false,
+			queryPushdown: noPushdown,
 			limitPushdown: false,
 		},
 		"ObjectFilterSort": {
@@ -941,7 +941,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           1,
-			queryPushdown: false,
+			queryPushdown: noPushdown,
 			limitPushdown: false,
 		},
 		"Skip": {
@@ -1004,8 +1004,10 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 					msg = "Sort pushdown is disabled, but target resulted with limitPushdown"
 				}
 
+				resultPushdown := tc.queryPushdown
+
 				if setup.IsPushdownDisabled() {
-					tc.queryPushdown = false
+					resultPushdown = noPushdown
 					msg = "Query pushdown is disabled, but target resulted with pushdown"
 				}
 
@@ -1014,7 +1016,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				assert.Equal(t, tc.limitPushdown, limitPushdown, msg)
 
 				queryPushdown, _ := ConvertDocument(t, res).Get("pushdown")
-				assert.Equal(t, tc.queryPushdown, queryPushdown, msg)
+				assert.Equal(t, resultPushdown.PushdownExpected(t), queryPushdown, msg)
 			})
 
 			t.Run("Find", func(t *testing.T) {
@@ -1036,4 +1038,33 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			})
 		})
 	}
+}
+
+// TestQueryIDDoc checks that the order of fields in the _id document matters.
+func TestQueryIDDoc(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	_, err := collection.InsertOne(ctx, bson.D{
+		{"_id", bson.D{{"a", int32(1)}, {"z", int32(2)}}},
+		{"v", int32(1)},
+	})
+	require.NoError(t, err)
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
+		{"v", int32(2)},
+	})
+	require.NoError(t, err)
+
+	expected := []bson.D{{
+		{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
+		{"v", int32(2)},
+	}}
+	actual := FilterAll(t, ctx, collection, bson.D{{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}}})
+	AssertEqualDocumentsSlice(t, expected, actual)
+
+	expected = []bson.D{}
+	actual = FilterAll(t, ctx, collection, bson.D{{"_id", bson.D{{"z", int32(4)}, {"a", int32(3)}}}})
+	AssertEqualDocumentsSlice(t, expected, actual)
 }

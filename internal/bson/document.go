@@ -24,6 +24,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
@@ -87,15 +88,6 @@ func ConvertDocument(d document) (*Document, error) {
 	}
 
 	return &doc, nil
-}
-
-// MustConvertDocument is a ConvertDocument that panics in case of error.
-func MustConvertDocument(d document) *Document {
-	doc, err := ConvertDocument(d)
-	if err != nil {
-		panic(err)
-	}
-	return doc
 }
 
 func (doc *Document) bsontype() {}
@@ -476,9 +468,7 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 	var res bytes.Buffer
 	l := int32(elist.Len() + 5)
 	binary.Write(&res, binary.LittleEndian, l)
-	if _, err := elist.WriteTo(&res); err != nil {
-		panic(err)
-	}
+	must.NotFail(elist.WriteTo(&res))
 	res.WriteByte(0)
 	if int32(res.Len()) != l {
 		panic(fmt.Sprintf("got %d, expected %d", res.Len(), l))

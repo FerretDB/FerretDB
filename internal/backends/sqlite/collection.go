@@ -18,12 +18,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+
+	sqlite3 "modernc.org/sqlite"
+	sqlite3lib "modernc.org/sqlite/lib"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -60,9 +64,26 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	q := fmt.Sprintf(`SELECT %s FROM %q`, metadata.DefaultColumn, meta.TableName)
+	var whereClause string
+	var args []any
 
-	rows, err := db.QueryContext(ctx, q)
+	// that logic should exist in one place
+	// TODO https://github.com/FerretDB/FerretDB/issues/3235
+	if params != nil && params.Filter.Len() == 1 {
+		v, _ := params.Filter.Get("_id")
+		if v != nil {
+			if id, ok := v.(types.ObjectID); ok {
+				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
+			}
+		}
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3490
+
+	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+
+	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -72,62 +93,57 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}, nil
 }
 
-// Insert implements backends.Collection interface.
-func (c *collection) Insert(ctx context.Context, params *backends.InsertParams) (*backends.InsertResult, error) {
+// InsertAll implements backends.Collection interface.
+func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
 	if _, err := c.r.CollectionCreate(ctx, c.dbName, c.name); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2750
 
-	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
-	if meta == nil {
-		panic(fmt.Sprintf("just created collection %q does not exist", c.name))
-	}
-
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
-	q := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
+	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 
-	var res backends.InsertResult
+	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
+		for _, doc := range params.Docs {
+			b, err := sjson.Marshal(doc)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
 
-	for {
-		_, d, err := params.Iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
+			// TODO https://github.com/FerretDB/FerretDB/issues/3490
+
+			// use batches: INSERT INTO %q %s VALUES (?), (?), (?), ... up to, say, 100 documents
+			// TODO https://github.com/FerretDB/FerretDB/issues/3271
+			q := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
+
+			if _, err = tx.ExecContext(ctx, q, string(b)); err != nil {
+				var se *sqlite3.Error
+				if errors.As(err, &se) && se.Code() == sqlite3lib.SQLITE_CONSTRAINT_UNIQUE {
+					return backends.NewError(backends.ErrorCodeInsertDuplicateID, err)
+				}
+
+				return lazyerrors.Error(err)
+			}
 		}
 
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		doc, ok := d.(*types.Document)
-		if !ok {
-			panic(fmt.Sprintf("expected document, got %T", d))
-		}
-
-		b, err := sjson.Marshal(doc)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		if _, err = db.ExecContext(ctx, q, string(b)); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		res.Inserted++
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
-	return &res, nil
+	return new(backends.InsertAllResult), nil
 }
 
-// Update implements backends.Collection interface.
-func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) (*backends.UpdateResult, error) {
+// UpdateAll implements backends.Collection interface.
+func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllParams) (*backends.UpdateAllResult, error) {
+	var res backends.UpdateAllResult
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
-		return nil, lazyerrors.Errorf("no database %q", c.dbName)
+		return &res, nil
 	}
 
-	var res backends.UpdateResult
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
 		return &res, nil
@@ -135,86 +151,264 @@ func (c *collection) Update(ctx context.Context, params *backends.UpdateParams) 
 
 	q := fmt.Sprintf(`UPDATE %q SET %s = ? WHERE %s = ?`, meta.TableName, metadata.DefaultColumn, metadata.IDColumn)
 
-	iter := params.Docs.Iterator()
-	defer iter.Close()
+	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
+		for _, doc := range params.Docs {
+			b, err := sjson.Marshal(doc)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
 
-	for {
-		_, d, err := iter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
+			id, _ := doc.Get("_id")
+			must.NotBeZero(id)
+
+			arg := string(must.NotFail(sjson.MarshalSingleValue(id)))
+
+			r, err := tx.ExecContext(ctx, q, string(b), arg)
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			ra, err := r.RowsAffected()
+			if err != nil {
+				return lazyerrors.Error(err)
+			}
+
+			res.Updated += int32(ra)
 		}
 
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		doc, ok := d.(*types.Document)
-		if !ok {
-			panic(fmt.Sprintf("expected document, got %T", d))
-		}
-
-		id, _ := doc.Get("_id")
-		must.NotBeZero(id)
-		docArg := string(must.NotFail(sjson.Marshal(doc)))
-		idArg := string(must.NotFail(sjson.MarshalSingleValue(id)))
-
-		r, err := db.ExecContext(ctx, q, docArg, idArg)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		rowsAffected, err := r.RowsAffected()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		res.Updated += rowsAffected
+		return nil
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	return &res, nil
 }
 
-// Delete implements backends.Collection interface.
-func (c *collection) Delete(ctx context.Context, params *backends.DeleteParams) (*backends.DeleteResult, error) {
+// DeleteAll implements backends.Collection interface.
+func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllParams) (*backends.DeleteAllResult, error) {
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
-		return &backends.DeleteResult{Deleted: 0}, nil
+		return &backends.DeleteAllResult{Deleted: 0}, nil
 	}
 
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
-		return &backends.DeleteResult{Deleted: 0}, nil
+		return &backends.DeleteAllResult{Deleted: 0}, nil
 	}
 
-	q := fmt.Sprintf(`DELETE FROM %q WHERE %s = ?`, meta.TableName, metadata.IDColumn)
+	// TODO https://github.com/FerretDB/FerretDB/issues/3498
+	_ = params.RecordIDs
 
-	var deleted int64
+	placeholders := make([]string, len(params.IDs))
+	args := make([]any, len(params.IDs))
 
-	for _, id := range params.IDs {
-		idArg := string(must.NotFail(sjson.MarshalSingleValue(id)))
-
-		res, err := db.ExecContext(ctx, q, idArg)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		rowsAffected, err := res.RowsAffected()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		deleted += rowsAffected
+	for i, id := range params.IDs {
+		placeholders[i] = "?"
+		args[i] = string(must.NotFail(sjson.MarshalSingleValue(id)))
 	}
 
-	return &backends.DeleteResult{
-		Deleted: deleted,
+	q := fmt.Sprintf(`DELETE FROM %q WHERE %s IN (%s)`, meta.TableName, metadata.IDColumn, strings.Join(placeholders, ", "))
+
+	res, err := db.ExecContext(ctx, q, args...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	ra, err := res.RowsAffected()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &backends.DeleteAllResult{
+		Deleted: int32(ra),
 	}, nil
 }
 
 // Explain implements backends.Collection interface.
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3050
-	panic("not implemented")
+	db := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if db == nil {
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
+	}
+
+	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if meta == nil {
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
+	}
+
+	var queryPushdown bool
+	var whereClause string
+	var args []any
+
+	// that logic should exist in one place
+	// TODO https://github.com/FerretDB/FerretDB/issues/3235
+	if params != nil && params.Filter.Len() == 1 {
+		v, _ := params.Filter.Get("_id")
+		if v != nil {
+			if id, ok := v.(types.ObjectID); ok {
+				queryPushdown = true
+				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
+			}
+		}
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3490
+
+	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+
+	rows, err := db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	defer rows.Close()
+
+	queryPlan, err := types.NewArray()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	for rows.Next() {
+		var id int32
+		var parent int32
+		var notused int32
+		var detail string
+
+		// SQLite query plan can be interpreted as a tree.
+		// Each row of query plan represents a node of this tree,
+		// it contains node id, parent id, auxiliary integer field, and a description.
+		// See https://www.sqlite.org/eqp.html for further details.
+		if err := rows.Scan(&id, &parent, &notused, &detail); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		queryPlan.Append(fmt.Sprintf("id=%d parent=%d notused=%d detail=%s", id, parent, notused, detail))
+	}
+
+	return &backends.ExplainResult{
+		QueryPlanner:  must.NotFail(types.NewDocument("Plan", queryPlan)),
+		QueryPushdown: queryPushdown,
+	}, nil
+}
+
+// Stats implements backends.Collection interface.
+func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
+	db := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if db == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	coll := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if coll == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	stats, err := collectionsStats(ctx, db, []*metadata.Collection{coll})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &backends.CollectionStatsResult{
+		CountObjects:   stats.countRows,
+		CountIndexes:   stats.countIndexes,
+		SizeTotal:      stats.sizeTables + stats.sizeIndexes,
+		SizeIndexes:    stats.sizeIndexes,
+		SizeCollection: stats.sizeTables,
+	}, nil
+}
+
+// Compact implements backends.Collection interface.
+func (c *collection) Compact(ctx context.Context, params *backends.CompactParams) (*backends.CompactResult, error) {
+	// TODO https://github.com/FerretDB/FerretDB/issues/3469
+	return new(backends.CompactResult), nil
+}
+
+// ListIndexes implements backends.Collection interface.
+func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
+	db := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if db == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	coll := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if coll == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	res := backends.ListIndexesResult{
+		Indexes: make([]backends.IndexInfo, len(coll.Settings.Indexes)),
+	}
+
+	for i, index := range coll.Settings.Indexes {
+		res.Indexes[i] = backends.IndexInfo{
+			Name:   index.Name,
+			Unique: index.Unique,
+			Key:    make([]backends.IndexKeyPair, len(index.Key)),
+		}
+
+		for j, key := range index.Key {
+			res.Indexes[i].Key[j] = backends.IndexKeyPair{
+				Field:      key.Field,
+				Descending: key.Descending,
+			}
+		}
+	}
+
+	return &res, nil
+}
+
+// CreateIndexes implements backends.Collection interface.
+func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) { //nolint:lll // for readability
+	indexes := make([]metadata.IndexInfo, len(params.Indexes))
+	for i, index := range params.Indexes {
+		indexes[i] = metadata.IndexInfo{
+			Name:   index.Name,
+			Key:    make([]metadata.IndexKeyPair, len(index.Key)),
+			Unique: index.Unique,
+		}
+
+		for j, key := range index.Key {
+			indexes[i].Key[j] = metadata.IndexKeyPair{
+				Field:      key.Field,
+				Descending: key.Descending,
+			}
+		}
+	}
+
+	err := c.r.IndexesCreate(ctx, c.dbName, c.name, indexes)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return new(backends.CreateIndexesResult), nil
+}
+
+// DropIndexes implements backends.Collection interface.
+func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
+	err := c.r.IndexesDrop(ctx, c.dbName, c.name, params.Indexes)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return new(backends.DropIndexesResult), nil
 }
 
 // check interfaces

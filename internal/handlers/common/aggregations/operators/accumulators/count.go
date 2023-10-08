@@ -17,7 +17,6 @@ package accumulators
 import (
 	"errors"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -27,9 +26,18 @@ import (
 type count struct{}
 
 // newCount creates a new $count aggregation operator.
-func newCount(expr *types.Document) (Accumulator, error) {
-	expression, err := common.GetRequiredParam[*types.Document](expr, "$count")
-	if err != nil || expression.Len() != 0 {
+func newCount(args ...any) (Accumulator, error) {
+	if len(args) != 1 {
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrStageGroupUnaryOperator,
+			"The $count accumulator is a unary operator",
+			"$count (accumulator)",
+		)
+	}
+
+	doc, ok := args[0].(*types.Document)
+
+	if !ok || doc.Len() > 0 {
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrTypeMismatch,
 			"$count takes no arguments, i.e. $count:{}",

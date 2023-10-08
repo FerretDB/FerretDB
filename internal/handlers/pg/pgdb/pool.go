@@ -65,12 +65,16 @@ func NewPool(ctx context.Context, uri string, logger *zap.Logger, p *state.Provi
 
 	config.AfterConnect = func(ctx context.Context, conn *pgx.Conn) error {
 		var v string
-		if err := conn.QueryRow(ctx, `SHOW server_version`).Scan(&v); err != nil {
+		var err error //nolint:vet // to avoid capturing the outer variable
+
+		if err = conn.QueryRow(ctx, `SHOW server_version`).Scan(&v); err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		if err := p.Update(func(s *state.State) { s.HandlerVersion = v }); err != nil {
-			logger.Error("pgdb.Pool.AfterConnect: failed to update state", zap.Error(err))
+		if p.Get().HandlerVersion != v {
+			if err = p.Update(func(s *state.State) { s.HandlerVersion = v }); err != nil {
+				logger.Error("pgdb.Pool.AfterConnect: failed to update state", zap.Error(err))
+			}
 		}
 
 		return nil
@@ -138,12 +142,6 @@ func setDefaultValues(values url.Values) {
 	//
 	// TODO https://github.com/FerretDB/FerretDB/issues/43
 	values.Set("timezone", "UTC")
-
-	// Set (and overwrite) it in debug builds to ensure that all identifiers in code are fully-qualified.
-	// Don't do it in non-debug builds because it makes using tools like PgBouncer harder.
-	if debugbuild.Enabled {
-		values.Set("search_path", "")
-	}
 }
 
 // simplifySetting simplifies PostgreSQL setting value for comparison.

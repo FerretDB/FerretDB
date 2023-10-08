@@ -19,30 +19,38 @@ import (
 	"time"
 )
 
-type (
-	// Timestamp represents BSON type Timestamp.
-	Timestamp int64
-)
+// Timestamp represents BSON type Timestamp.
+type Timestamp uint64
 
-// timestampCounter is an ordinal number for timestamps in the system.
-var timestampCounter uint32
+// timestampCounter is a process-wide timestamp counter.
+var timestampCounter atomic.Uint32
 
-// NewTimestamp returns a timestamp from time and an increment.
+// NewTimestamp returns the timestamp for the given time and counter values.
 func NewTimestamp(t time.Time, c uint32) Timestamp {
-	sec := t.Unix()
-	sec <<= 32
-	sec |= int64(c)
-	return Timestamp(sec)
+	return Timestamp((uint64(t.Unix()) << 32) | uint64(c))
 }
 
-// NextTimestamp returns a timestamp from time and an internal ops counter.
+// NewTimestampSigned returns the timestamp for the given signed value.
+func NewTimestampSigned(i int64) Timestamp {
+	return Timestamp(i)
+}
+
+// NextTimestamp returns the next timestamp for the given time value.
 func NextTimestamp(t time.Time) Timestamp {
-	c := atomic.AddUint32(&timestampCounter, 1)
+	// Technically, that should be a counter within a second, not a process-wide,
+	// but that's good enough for us.
+	c := timestampCounter.Add(1)
+
 	return NewTimestamp(t, c)
 }
 
-// Time returns time.Time ignoring increment.
-func (t Timestamp) Time() time.Time {
-	t >>= 32
-	return time.Unix(int64(t), 0)
+// Time returns timestamp's time component.
+func (ts Timestamp) Time() time.Time {
+	sec := int64(ts >> 32)
+	return time.Unix(sec, 0).UTC()
+}
+
+// Signed returns the timestamp as a signed value.
+func (ts Timestamp) Signed() int64 {
+	return int64(ts)
 }

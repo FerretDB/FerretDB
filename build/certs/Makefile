@@ -1,3 +1,5 @@
+# see https://github.com/FiloSottile/mkcert
+
 export CAROOT=$(PWD)
 export TRUST_STORES=system
 HOSTS=localhost 127.0.0.1 ::1 host.docker.internal

@@ -544,7 +544,7 @@ func TestFindAndModifyCompatUpsert(t *testing.T) {
 				{"new", true},
 			},
 		},
-		"UpsertNoSuchReplaceDocument": {
+		"UpsertNoReplaceDocument": {
 			command: bson.D{
 				{"query", bson.D{{"_id", "no-such-doc"}}},
 				{"update", bson.D{{"v", 43.13}}},
@@ -784,31 +784,29 @@ type findAndModifyCompatTestCase struct {
 }
 
 // testFindAndModifyCompat tests findAndModify compatibility test cases.
-func testFindAndModifyCompat(tt *testing.T, testCases map[string]findAndModifyCompatTestCase) {
-	tt.Helper()
+func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCompatTestCase) {
+	t.Helper()
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
-			tt.Helper()
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
 
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
+			t.Parallel()
 
 			// Use per-test setup because findAndModify modifies data set.
-			ctx, targetCollections, compatCollections := setup.SetupCompat(tt)
+			ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 
 			var nonEmptyResults bool
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				tt.Run(targetCollection.Name(), func(tt *testing.T) {
-					tt.Helper()
-
-					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+				t.Run(targetCollection.Name(), func(t *testing.T) {
+					t.Helper()
 
 					targetCommand := bson.D{{"findAndModify", targetCollection.Name()}}
 					targetCommand = append(targetCommand, tc.command...)
@@ -875,18 +873,13 @@ func testFindAndModifyCompat(tt *testing.T, testCases map[string]findAndModifyCo
 				})
 			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3049
-			if setup.IsSQLite(tt) {
-				return
-			}
-
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(tt, nonEmptyResults, "expected non-empty results")
+				assert.True(t, nonEmptyResults, "expected non-empty results")
 			case emptyResult:
-				assert.False(tt, nonEmptyResults, "expected empty results")
+				assert.False(t, nonEmptyResults, "expected empty results")
 			default:
-				tt.Fatalf("unknown result type %v", tc.resultType)
+				t.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}

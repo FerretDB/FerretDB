@@ -27,6 +27,7 @@ env:
   GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
   GOMODCACHE: /home/runner/go/mod
   GOPROXY: https://proxy.golang.org
+  GOTOOLCHAIN: local
 
 jobs:
   testjs:
@@ -41,8 +42,9 @@ jobs:
         uses: GitHubSecurityLab/actions-permissions/monitor@v1
         if: false
 
+      # TODO https://github.com/FerretDB/github-actions/issues/211
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # for `git describe` to work
           lfs: false # LFS is used only by website
@@ -75,7 +77,7 @@ jobs:
           --proxy-addr=127.0.0.1:47017
           --mode=diff-normal
           --handler=pg
-          --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
+          --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50&search_path='
           2> ferretdb.log &
 
       - name: Run testjs for MongoDB

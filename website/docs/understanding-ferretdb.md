@@ -44,9 +44,9 @@ MongoDB documents are mapped to rows with a single [JSONB](https://www.postgresq
 Those mappings will change as we work on improving compatibility and performance,
 but no breaking changes will be introduced without a major version bump.
 
-### SQLite (beta)
+### SQLite
 
-We also support the [SQLite](https://www.sqlite.org/) backend on a beta level.
+We also support the [SQLite](https://www.sqlite.org/) backend.
 
 MongoDB databases are mapped to SQLite database files.
 MongoDB collections are mapped to SQLite tables.

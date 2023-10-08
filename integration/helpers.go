@@ -17,7 +17,6 @@ package integration
 
 import (
 	"context"
-	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -95,7 +94,7 @@ func convert(t testtb.TB, v any) any {
 	case int32:
 		return v
 	case primitive.Timestamp:
-		return types.NewTimestamp(time.Unix(int64(v.T), 0), uint32(v.I))
+		return types.NewTimestamp(time.Unix(int64(v.T), 0), v.I)
 	case int64:
 		return v
 	default:
@@ -239,6 +238,8 @@ func AssertMatchesWriteError(t testtb.TB, expected, actual error) {
 
 // AssertMatchesBulkException asserts that both errors are BulkWriteExceptions containing the same number of WriteErrors,
 // and those WriteErrors are equal, except messages (and ignoring the Raw part).
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3290
 func AssertMatchesBulkException(t testtb.TB, expected, actual error) {
 	t.Helper()
 
@@ -247,6 +248,11 @@ func AssertMatchesBulkException(t testtb.TB, expected, actual error) {
 
 	e, ok := expected.(mongo.BulkWriteException) //nolint:errorlint // do not inspect error chain
 	require.Truef(t, ok, "expected is %T, not mongo.BulkWriteException", expected)
+
+	if len(a.WriteErrors) != len(e.WriteErrors) {
+		assert.Equal(t, expected, actual)
+		return
+	}
 
 	for i, we := range a.WriteErrors {
 		expectedWe := e.WriteErrors[i]
@@ -294,7 +300,7 @@ func AssertEqualAltCommandError(t testtb.TB, expected mongo.CommandError, altMes
 
 // AssertEqualAltWriteError asserts that the expected MongoDB error is the same as the actual;
 // the alternative error message may be provided if FerretDB is unable to produce exactly the same text as MongoDB.
-func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessage string, actual error) bool {
+func AssertEqualAltWriteError(t testtb.TB, expected mongo.WriteError, altMessage string, actual error) bool {
 	t.Helper()
 
 	we, ok := actual.(mongo.WriteException)
@@ -395,6 +401,8 @@ func CollectKeys(t testtb.TB, doc bson.D) []string {
 
 // FetchAll fetches all documents from the cursor, closing it.
 func FetchAll(t testtb.TB, ctx context.Context, cursor *mongo.Cursor) []bson.D {
+	t.Helper()
+
 	var res []bson.D
 	err := cursor.All(ctx, &res)
 	require.NoError(t, cursor.Close(ctx))
@@ -402,13 +410,22 @@ func FetchAll(t testtb.TB, ctx context.Context, cursor *mongo.Cursor) []bson.D {
 	return res
 }
 
-// FindAll returns all documents from the given collection sorted by _id.
-func FindAll(t testtb.TB, ctx context.Context, collection *mongo.Collection) []bson.D {
+// FilterAll returns filtered documented from the given collection sorted by _id.
+func FilterAll(t testtb.TB, ctx context.Context, collection *mongo.Collection, filter bson.D) []bson.D {
+	t.Helper()
+
 	opts := options.Find().SetSort(bson.D{{"_id", 1}})
-	cursor, err := collection.Find(ctx, bson.D{}, opts)
+	cursor, err := collection.Find(ctx, filter, opts)
 	require.NoError(t, err)
 
 	return FetchAll(t, ctx, cursor)
+}
+
+// FindAll returns all documents from the given collection sorted by _id.
+func FindAll(t testtb.TB, ctx context.Context, collection *mongo.Collection) []bson.D {
+	t.Helper()
+
+	return FilterAll(t, ctx, collection, bson.D{})
 }
 
 // generateDocuments generates documents with _id ranging from startID to endID.

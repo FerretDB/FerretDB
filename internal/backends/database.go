@@ -17,35 +17,33 @@ package backends
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
-	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
 // Database is a generic interface for all backends for accessing databases.
 //
-// Database object is expected to be mostly stateless and temporary;
+// Database object should be stateless and temporary;
 // all state should be in the Backend that created this Database instance.
-// Handler can create and destroy Database objects on the fly (but it should Close() them).
-// Creating a Database object does not imply the creating of the database itself.
+// Handler can create and destroy Database objects on the fly.
+// Creating a Database object does not imply the creation of the database.
 //
 // Database methods should be thread-safe.
 //
 // See databaseContract and its methods for additional details.
 type Database interface {
-	// TODO remove?
-	Close()
-
 	Collection(string) (Collection, error)
 	ListCollections(context.Context, *ListCollectionsParams) (*ListCollectionsResult, error)
 	CreateCollection(context.Context, *CreateCollectionParams) error
 	DropCollection(context.Context, *DropCollectionParams) error
 	RenameCollection(context.Context, *RenameCollectionParams) error
+
+	Stats(context.Context, *DatabaseStatsParams) (*DatabaseStatsResult, error)
 }
 
 // databaseContract implements Database interface.
 type databaseContract struct {
-	db    Database
-	token *resource.Token
+	db Database
 }
 
 // DatabaseContract wraps Database and enforces its contract.
@@ -55,21 +53,9 @@ type databaseContract struct {
 //
 // See databaseContract and its methods for additional details.
 func DatabaseContract(db Database) Database {
-	dbc := &databaseContract{
-		db:    db,
-		token: resource.NewToken(),
+	return &databaseContract{
+		db: db,
 	}
-	resource.Track(dbc, dbc.token)
-
-	return dbc
-}
-
-// Close marks this Database instance as not being used anymore.
-// The implementation may close an associated database connection, decrease a reference counter, etc.
-func (dbc *databaseContract) Close() {
-	dbc.db.Close()
-
-	resource.Untrack(dbc, dbc.token)
 }
 
 // Collection returns a Collection instance for the given valid name.
@@ -98,7 +84,14 @@ type ListCollectionsResult struct {
 
 // CollectionInfo represents information about a single collection.
 type CollectionInfo struct {
-	Name string
+	Name            string
+	CappedSize      int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
+	CappedDocuments int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
+}
+
+// Capped returns true if collection is capped.
+func (ci *CollectionInfo) Capped() bool {
+	return ci.CappedSize > 0 || ci.CappedDocuments > 0
 }
 
 // ListCollections returns information about collections in the database.
@@ -115,15 +108,25 @@ func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCo
 
 // CreateCollectionParams represents the parameters of Database.CreateCollection method.
 type CreateCollectionParams struct {
-	Name string
+	Name            string
+	CappedSize      int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
+	CappedDocuments int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
+}
+
+// Capped returns true if capped collection creation is requested.
+func (ccp *CreateCollectionParams) Capped() bool {
+	return ccp.CappedSize > 0 || ccp.CappedDocuments > 0
 }
 
 // CreateCollection creates a new collection with valid name in the database; it should not already exist.
 //
 // Database may or may not exist; it should be created automatically if needed.
-// TODO https://github.com/FerretDB/FerretDB/issues/3069
 func (dbc *databaseContract) CreateCollection(ctx context.Context, params *CreateCollectionParams) error {
 	defer observability.FuncCall(ctx)()
+
+	must.BeTrue(params.CappedSize >= 0)
+	must.BeTrue(params.CappedSize%256 == 0)
+	must.BeTrue(params.CappedDocuments >= 0)
 
 	err := validateCollectionName(params.Name)
 	if err == nil {
@@ -142,7 +145,7 @@ type DropCollectionParams struct {
 
 // DropCollection drops existing collection with valid name in the database.
 //
-// The errors for non-existing database and non-existing collection are the same (TODO?).
+// The errors for non-existing database and non-existing collection are the same.
 func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCollectionParams) error {
 	defer observability.FuncCall(ctx)()
 
@@ -151,7 +154,7 @@ func (dbc *databaseContract) DropCollection(ctx context.Context, params *DropCol
 		err = dbc.db.DropCollection(ctx, params)
 	}
 
-	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist) // TODO: ErrorCodeDatabaseDoesNotExist ?
+	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist)
 
 	return err
 }
@@ -165,7 +168,7 @@ type RenameCollectionParams struct {
 // RenameCollection renames existing collection in the database.
 // Both old and new names should be valid.
 //
-// The errors for non-existing database and non-existing collection are the same (TODO?).
+// The errors for non-existing database and non-existing collection are the same.
 func (dbc *databaseContract) RenameCollection(ctx context.Context, params *RenameCollectionParams) error {
 	defer observability.FuncCall(ctx)()
 
@@ -179,9 +182,37 @@ func (dbc *databaseContract) RenameCollection(ctx context.Context, params *Renam
 		err = dbc.db.RenameCollection(ctx, params)
 	}
 
-	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist) // TODO: ErrorCodeDatabaseDoesNotExist ?
-
+	checkError(err, ErrorCodeCollectionNameIsInvalid, ErrorCodeCollectionDoesNotExist, ErrorCodeCollectionAlreadyExists)
 	return err
+}
+
+// DatabaseStatsParams represents the parameters of Database.Stats method.
+type DatabaseStatsParams struct {
+	Refresh bool // TODO https://github.com/FerretDB/FerretDB/issues/3518
+}
+
+// DatabaseStatsResult represents the results of Database.Stats method.
+//
+// CountObjects is an estimate of the number of documents.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/2447
+type DatabaseStatsResult struct {
+	CountCollections int64
+	CountObjects     int64
+	CountIndexes     int64
+	SizeTotal        int64
+	SizeIndexes      int64
+	SizeCollections  int64
+}
+
+// Stats returns statistics about the database.
+func (dbc *databaseContract) Stats(ctx context.Context, params *DatabaseStatsParams) (*DatabaseStatsResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := dbc.db.Stats(ctx, params)
+	checkError(err, ErrorCodeDatabaseDoesNotExist)
+
+	return res, err
 }
 
 // check interfaces

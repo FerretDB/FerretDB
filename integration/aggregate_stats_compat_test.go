@@ -84,11 +84,8 @@ func TestAggregateCompatCollStats(tt *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-
-				tt.Run(targetCollection.Name(), func(tt *testing.T) {
-					tt.Helper()
-
-					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3148")
+				tt.Run(targetCollection.Name(), func(t *testing.T) {
+					t.Helper()
 
 					command := bson.A{bson.D{{"$collStats", tc.collStats}}}
 
@@ -133,11 +130,6 @@ func TestAggregateCompatCollStats(tt *testing.T) {
 					// Check the returned values when possible
 					// TODO https://github.com/FerretDB/FerretDB/issues/2349
 				})
-			}
-
-			// TODO https://github.com/FerretDB/FerretDB/issues/3148
-			if setup.IsSQLite(tt) {
-				return
 			}
 
 			switch tc.resultType {

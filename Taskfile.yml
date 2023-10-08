@@ -8,6 +8,8 @@ env:
 vars:
   SHARD_INDEX: 1
   SHARD_TOTAL: 1
+  DISABLE_FILTER_PUSHDOWN: false
+  ENABLE_SORT_PUSHDOWN: false
   TEST_RUN: ""
   TEST_TIMEOUT: 35m
   BENCH_TIME: 5s
@@ -15,7 +17,6 @@ vars:
   FUZZ_CORPUS: ../fuzz-corpus
   TESTJS_PORT: 27017
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
-  TEST_UNIX_SOCKET_FLAG: -target-unix-socket={{ne OS "windows"}}
   BUILD_TAGS: ferretdb_debug,ferretdb_hana
   SERVICES: postgres postgres_secured mongodb mongodb_secured jaeger
 
@@ -57,10 +58,12 @@ tasks:
 
   init:
     desc: "Install development tools"
-    deps: [gen-version, init-tools, init-tools-golangci, init-integration]
+    deps: [init-tools, init-tools-golangci, init-integration]
     cmds:
       - go mod tidy
       - go mod verify
+      - task: gen-version
+      - task: build-envtool
 
   env-reset:
     desc: "Clean ALL Go and Docker data (caches, images, volumes), and reset environment"
@@ -71,7 +74,7 @@ tasks:
       - docker system prune --all --volumes
       - bin/golangci-lint{{exeExt}} cache clean
       - go clean -cache -testcache -modcache -fuzzcache
-      - go run ./cmd/envtool shell rmdir .cache .task tools/.task integration/.task tmp
+      - bin/envtool{{exeExt}} shell rmdir .cache .task tools/.task integration/.task tmp
       - task: env-pull
       - task: init
 
@@ -99,7 +102,7 @@ tasks:
   env-setup:
     deps: [gen-version]
     cmds:
-      - go run {{.RACE_FLAG}} ./cmd/envtool setup
+      - bin/envtool{{exeExt}} setup
 
   env-logs:
     cmds:
@@ -139,13 +142,17 @@ tasks:
     cmds:
       - go generate -x ./build/version
 
+  build-envtool:
+    cmds:
+      - go build -v -o bin/ ./cmd/envtool/
+
   build-host:
     desc: "Build bin/ferretdb{{exeExt}} on the host for development"
     run: once
     deps: [gen-version]
     cmds:
-      - go build -o=bin/ferretdb{{exeExt}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -coverpkg=./... ./cmd/ferretdb
-      - go run ./cmd/envtool shell mkdir tmp/cover
+      - go build -v -o=bin/ferretdb{{exeExt}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -coverpkg=./... ./cmd/ferretdb
+      - bin/envtool{{exeExt}} shell mkdir tmp/cover
 
   gen:
     desc: "Generate (and format) Go code"
@@ -171,82 +178,147 @@ tasks:
   test-unit-short:
     desc: "Run short unit tests (with caching)"
     cmds:
-      - go test -short {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=./... -coverprofile=cover.txt ./...
+      - go test -short -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=./... -coverprofile=cover.txt ./...
       - bin/task{{exeExt}} -d tools tools-test
 
   test-unit:
     desc: "Run all unit tests"
     cmds:
-      - go test -count=1 {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=./... -coverprofile=cover.txt ./...
-      - go test -count=1 {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -bench=. -benchtime=1x ./...
+      - go test -count=1 -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=./... -coverprofile=cover.txt ./...
+      - go test -count=1 -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -bench=. -benchtime=1x ./...
       - bin/task{{exeExt}} -d tools tools-test
 
   test-integration:
     desc: "Run integration tests for several backends in parallel"
     deps:
       - test-integration-pg
-      - test-integration-mongodb
-      # no test-integration-sqlite yet
+      - test-integration-sqlite
+      # no test-integration-postgresql yet
       # no test-integration-hana
+      - test-integration-mongodb
 
   test-integration-pg:
     desc: "Run integration tests for `pg` handler"
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
+        ../bin/envtool{{exeExt}} tests run
+        --shard-index={{.SHARD_INDEX}}
+        --shard-total={{.SHARD_TOTAL}}
+        --run='{{.TEST_RUN}}'
+        --
+        -count=1
+        -timeout={{.TEST_TIMEOUT}}
+        {{.RACE_FLAG}}
+        -tags={{.BUILD_TAGS}}
+        -shuffle=on
+        -coverpkg=../...
         -coverprofile=integration-pg.txt
+        .
         -target-backend=ferretdb-pg
         -target-tls
-        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
+        -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50&search_path='
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-    vars:
-      SHARD_RUN:
-        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
+        -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
+        -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
 
-  test-integration-sqlite:
-    desc: "Run integration tests for `sqlite` handler"
+  test-integration-postgresql:
+    desc: "Run integration tests for new `postgresql` backend"
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-sqlite.txt .
+        ../bin/envtool{{exeExt}} tests run
+        --shard-index={{.SHARD_INDEX}}
+        --shard-total={{.SHARD_TOTAL}}
+        --run='{{.TEST_RUN}}'
+        --
+        -count=1
+        -timeout={{.TEST_TIMEOUT}}
+        {{.RACE_FLAG}}
+        -tags={{.BUILD_TAGS}}
+        -shuffle=on
+        -coverpkg=../...
+        -coverprofile=integration-postgresql.txt
+        .
+        -target-backend=ferretdb-pg
+        -target-tls
+        -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50&search_path='
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -use-new-pg
+        -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
+        -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
+
+  test-integration-sqlite:
+    desc: "Run integration tests for `sqlite` backend"
+    dir: integration
+    cmds:
+      - >
+        ../bin/envtool{{exeExt}} tests run
+        --shard-index={{.SHARD_INDEX}}
+        --shard-total={{.SHARD_TOTAL}}
+        --run='{{.TEST_RUN}}'
+        --
+        -count=1
+        -timeout={{.TEST_TIMEOUT}}
+        {{.RACE_FLAG}}
+        -tags={{.BUILD_TAGS}}
+        -shuffle=on
+        -coverpkg=../...
+        -coverprofile=integration-sqlite.txt
+        .
         -target-backend=ferretdb-sqlite
         -sqlite-url=file:../tmp/sqlite-tests/
         -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-        -disable-filter-pushdown
-    vars:
-      SHARD_RUN:
-        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
+        -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
+        -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
 
   test-integration-hana:
     desc: "Run integration tests for `hana` handler"
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-hana.txt .
+        ../bin/envtool{{exeExt}} tests run
+        --shard-index={{.SHARD_INDEX}}
+        --shard-total={{.SHARD_TOTAL}}
+        --run='{{.TEST_RUN}}'
+        --
+        -count=1
+        -timeout={{.TEST_TIMEOUT}}
+        {{.RACE_FLAG}}
+        -tags={{.BUILD_TAGS}}
+        -shuffle=on
+        -coverpkg=../...
+        -coverprofile=integration-hana.txt
+        .
         -target-backend=ferretdb-hana
-        {{.TEST_UNIX_SOCKET_FLAG}}
+        -target-tls
         -hana-url=$FERRETDB_HANA_URL
-        -compat-url=mongodb://127.0.0.1:47017/
-    vars:
-      SHARD_RUN:
-        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -use-new-hana
+        -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
+        -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
     dir: integration
     cmds:
       - >
-        go test -count=1 -run='{{or .TEST_RUN .SHARD_RUN}}' -timeout={{.TEST_TIMEOUT}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -shuffle=on -coverpkg=../...
-        -coverprofile=integration-mongodb.txt .
-        -target-url=mongodb://127.0.0.1:47017/
+        ../bin/envtool{{exeExt}} tests run
+        --shard-index={{.SHARD_INDEX}}
+        --shard-total={{.SHARD_TOTAL}}
+        --run='{{.TEST_RUN}}'
+        --
+        -count=1
+        -timeout={{.TEST_TIMEOUT}}
+        {{.RACE_FLAG}}
+        -tags={{.BUILD_TAGS}}
+        -shuffle=on
+        -coverpkg=../...
+        -coverprofile=integration-mongodb.txt
+        .
+        -target-url='mongodb://127.0.0.1:47017/'
         -target-backend=mongodb
-    vars:
-      SHARD_RUN:
-        sh: go run -C .. ./cmd/envtool tests shard --index={{.SHARD_INDEX}} --total={{.SHARD_TOTAL}}
 
   bench-unit:
     desc: "Run unit benchmarks"
@@ -283,28 +355,29 @@ tasks:
   fuzz-corpus:
     desc: "Sync seed and generated fuzz corpora with FUZZ_CORPUS"
     cmds:
-      - go run {{.RACE_FLAG}} ./cmd/envtool fuzz corpus generated {{.FUZZ_CORPUS}}
-      - go run {{.RACE_FLAG}} ./cmd/envtool fuzz corpus seed {{.FUZZ_CORPUS}}
-      - go run {{.RACE_FLAG}} ./cmd/envtool fuzz corpus {{.FUZZ_CORPUS}} generated
+      - bin/envtool{{exeExt}} fuzz corpus generated {{.FUZZ_CORPUS}}
+      - bin/envtool{{exeExt}} fuzz corpus seed {{.FUZZ_CORPUS}}
+      - bin/envtool{{exeExt}} fuzz corpus {{.FUZZ_CORPUS}} generated
 
   run:
     desc: "Run FerretDB with `pg` handler"
     deps: [build-host]
     cmds:
+      # TODO --use-new-pg
       - >
         bin/ferretdb{{exeExt}}
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
         --handler=pg
-        --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
+        --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50&search_path='
         --test-records-dir=tmp/records
 
   run-sqlite:
     desc: "Run FerretDB with `sqlite` handler"
     deps: [build-host]
     cmds:
-      - go run ./cmd/envtool shell mkdir tmp/sqlite
+      - bin/envtool{{exeExt}} shell mkdir tmp/sqlite
       - >
         bin/ferretdb{{exeExt}}
         --listen-addr=:27017
@@ -313,13 +386,14 @@ tasks:
         --handler=sqlite
         --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
-        --test-disable-filter-pushdown
+        --test-enable-oplog
 
   # set FERRETDB_HANA_URL environment variable to use it
   run-hana:
     desc: "Run FerretDB with `hana` handler"
     deps: [build-host]
     cmds:
+      # TODO --use-new-hana
       - >
         bin/ferretdb{{exeExt}}
         --listen-addr=:27017
@@ -332,6 +406,7 @@ tasks:
     desc: "Run FerretDB with `pg` handler (TLS, auth required)"
     deps: [build-host]
     cmds:
+      # TODO --use-new-pg
       - >
         bin/ferretdb{{exeExt}}
         --listen-addr=''
@@ -342,27 +417,28 @@ tasks:
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
         --handler=pg
-        --postgresql-url=postgres://127.0.0.1:5433/ferretdb?pool_max_conns=50
+        --postgresql-url='postgres://127.0.0.1:5433/ferretdb?pool_max_conns=50&search_path='
         --test-records-dir=tmp/records
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
     deps: [build-host]
     cmds:
+      # TODO --use-new-pg
       - >
         bin/ferretdb{{exeExt}}
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-proxy
         --handler=pg
-        --postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
+        --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50&search_path='
         --test-records-dir=tmp/records
 
   run-sqlite-proxy:
     desc: "Run FerretDB with `sqlite` handler in diff-proxy mode"
     deps: [build-host]
     cmds:
-      - go run ./cmd/envtool shell mkdir tmp/sqlite
+      - bin/envtool{{exeExt}} shell mkdir tmp/sqlite
       - >
         bin/ferretdb{{exeExt}}
         --listen-addr=:27017
@@ -371,7 +447,7 @@ tasks:
         --handler=sqlite
         --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
-        --test-disable-filter-pushdown
+        --test-enable-oplog
 
   lint:
     desc: "Run linters"
@@ -380,8 +456,8 @@ tasks:
       - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
       - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
       - bin/go-sumtype{{exeExt}} ./...
-      - go vet -vettool=./bin/checkswitch{{exeExt}} ./...
-      - go vet -vettool=./bin/checkcomments{{exeExt}} ./...
+      - go vet -vettool=bin/checkswitch{{exeExt}} ./...
+      - go vet -vettool=bin/checkcomments{{exeExt}} ./...
       - bin/task{{exeExt}} -d integration lint
       - bin/task{{exeExt}} -d tools lint
 
@@ -398,7 +474,7 @@ tasks:
         docker compose run --rm trivy filesystem .
         --secret-config=./build/trivy-secret.yml
         --ignorefile=./build/.trivyignore
-        --cache-dir=./.cache/trivy
+        --cache-dir=./tmp/trivy
         --exit-code=1
 
   security-govulncheck:
@@ -407,11 +483,9 @@ tasks:
       - bin/task{{exeExt}} -d integration integration-security
 
   godocs:
-    desc: "Serve godoc documentation"
+    desc: "Serve Go code documentation"
     cmds:
-      - cmd: open http://127.0.0.1:6060/pkg/github.com/FerretDB/FerretDB/?m=all
-        ignore_error: true # open might not work on that platform
-      - bin/godoc{{exeExt}} -http=127.0.0.1:6060
+      - bin/pkgsite{{exeExt}} -http=127.0.0.1:6060 -open
 
   psql:
     desc: "Run psql"
@@ -450,7 +524,16 @@ tasks:
   docker-init:
     run: once
     cmds:
-      - cmd: docker buildx create --driver=docker-container --name=ferretdb --bootstrap=true --use=false
+      - cmd: >
+          docker buildx create
+          --driver=docker-container
+          --name=ferretdb
+          --bootstrap=true
+          --use=false
+          --config=./build/docker/buildkitd.toml
+          --driver=docker-container
+          --driver-opt env.BUILDKIT_STEP_LOG_MAX_SIZE=-1
+          --driver-opt env.BUILDKIT_STEP_LOG_MAX_SPEED=-1
         ignore_error: true
       - docker buildx ls
 
@@ -462,38 +545,57 @@ tasks:
         --file=build/docker/{{.FILE}}.Dockerfile
         --build-arg=LABEL_VERSION={{.VERSION}}
         --build-arg=LABEL_COMMIT={{.COMMIT}}
-        --platform={{default "linux" .PLATFORM}}
-        {{range splitList "," .DOCKER_IMAGES}}--tag={{trim .}} {{end -}}
+        --target={{.TARGET}}
+        {{if .PLATFORM}}--platform={{.PLATFORM}}{{end}}
+        {{if .DOCKER_IMAGES}}{{range splitList "," .DOCKER_IMAGES}}--tag={{trim .}} {{end}}{{end}}
         --output={{.OUTPUT}}
         .
     vars:
       VERSION:
-        sh: go run ./cmd/envtool shell read build/version/version.txt
+        sh: bin/envtool{{exeExt}} shell read build/version/version.txt
       COMMIT:
-        sh: go run ./cmd/envtool shell read build/version/commit.txt
+        sh: bin/envtool{{exeExt}} shell read build/version/commit.txt
 
-  # do not change that target much; see "Building and packaging" in README.md
-  build-release:
-    desc: "Build bin/ferretdb (production build)"
+  build-development:
+    desc: "Build development debug binaries"
+    cmds:
+      - echo 'bin-development' > build/version/package.txt
+      - bin/envtool{{exeExt}} shell rmdir tmp/build
+      - bin/envtool{{exeExt}} shell mkdir tmp/bin-dev
+      - task: docker-build
+        vars:
+          FILE: development
+          TARGET: development-binary
+          PLATFORM: linux/amd64,linux/arm64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
+          OUTPUT: type=local,dest=tmp/build
+      - mv tmp/build/linux_amd64/ferretdb tmp/bin-dev/ferretdb-dev-linux-amd64
+      - mv tmp/build/linux_arm64/ferretdb tmp/bin-dev/ferretdb-dev-linux-arm64
+
+  build-production:
+    desc: "Build production non-debug binaries"
     cmds:
       - echo 'bin' > build/version/package.txt
+      - bin/envtool{{exeExt}} shell rmdir tmp/build
+      - bin/envtool{{exeExt}} shell mkdir tmp/bin
       - task: docker-build
         vars:
           FILE: production
-          PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
-          DOCKER_IMAGES: ignored
+          TARGET: production-binary
+          PLATFORM: linux/amd64,linux/arm64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
           OUTPUT: type=local,dest=tmp/build
-      - mv tmp/build/ferretdb bin/ferretdb
+      - mv tmp/build/linux_amd64/ferretdb tmp/bin/ferretdb-linux-amd64
+      - mv tmp/build/linux_arm64/ferretdb tmp/bin/ferretdb-linux-arm64
 
   docker-local:
     desc: "Build `ferretdb-local` Docker image for the host platform"
     cmds:
-      - echo 'docker-local' > build/version/package.txt
+      - echo 'docker-local-{{.FILE}}' > build/version/package.txt
       - task: docker-build
         vars:
-          FILE: development
           DOCKER_IMAGES: ferretdb-local
           OUTPUT: type=docker
+    requires:
+      vars: [FILE, TARGET]
 
   # TODO https://github.com/FerretDB/FerretDB/issues/2212
   docker-all-in-one-push:
@@ -502,18 +604,24 @@ tasks:
       - task: docker-build
         vars:
           FILE: all-in-one
-          PLATFORM: linux/amd64,linux/arm64 # no mongosh for arm/v7
+          TARGET: all-in-one
+          PLATFORM: linux/amd64,linux/arm64 # no mongosh for arm/v6 and arm/v7
           OUTPUT: type=image,push=true
+    requires:
+      vars: [DOCKER_IMAGES]
 
   # TODO https://github.com/FerretDB/FerretDB/issues/2212
   docker-development-push:
     cmds:
-      - echo 'docker' > build/version/package.txt
+      - echo 'docker-development' > build/version/package.txt
       - task: docker-build
         vars:
           FILE: development
+          TARGET: development
           PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
           OUTPUT: type=image,push=true
+    requires:
+      vars: [DOCKER_IMAGES]
 
   # TODO https://github.com/FerretDB/FerretDB/issues/2212
   docker-production-push:
@@ -522,8 +630,11 @@ tasks:
       - task: docker-build
         vars:
           FILE: production
+          TARGET: production
           PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
           OUTPUT: type=image,push=true
+    requires:
+      vars: [DOCKER_IMAGES]
 
   packages:
     cmds:
@@ -534,45 +645,47 @@ tasks:
   packages-deb:
     cmds:
       - echo 'deb' > build/version/package.txt
-      - go run ./cmd/envtool shell mkdir tmp/debs
+      - bin/envtool{{exeExt}} shell rmdir tmp/build
+      - bin/envtool{{exeExt}} shell mkdir tmp/debs
       - task: docker-build
         vars:
           FILE: production
-          PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
-          DOCKER_IMAGES: ignored
+          TARGET: production-binary
+          PLATFORM: linux/amd64,linux/arm64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
           OUTPUT: type=local,dest=tmp/build
-      - bin/nfpm{{exeExt}} package --config=build/nfpm.yml --packager=deb --target=tmp/debs/ferretdb.deb
-      - docker compose run --rm ubuntu /bin/sh -c 'dpkg -i /debs/ferretdb.deb && ferretdb --version'
+      - bin/nfpm{{exeExt}} package --config=build/nfpm-amd64.yml --packager=deb --target=tmp/debs/ferretdb-amd64.deb
+      - bin/nfpm{{exeExt}} package --config=build/nfpm-arm64.yml --packager=deb --target=tmp/debs/ferretdb-arm64.deb
+      - docker compose run --rm ubuntu /bin/sh -c 'dpkg -i /debs/ferretdb-{{ARCH}}.deb && ferretdb --version'
     env:
       # nfpm parameters
-      ARCH: amd64
       VERSION:
-        sh: go run ./cmd/envtool package-version
+        sh: bin/envtool{{exeExt}} package-version
       POSTGRES_PACKAGE: postgresql
 
   packages-rpm:
     cmds:
       - echo 'rpm' > build/version/package.txt
-      - go run ./cmd/envtool shell mkdir tmp/rpms
+      - bin/envtool{{exeExt}} shell rmdir tmp/build
+      - bin/envtool{{exeExt}} shell mkdir tmp/rpms
       - task: docker-build
         vars:
           FILE: production
-          PLATFORM: linux/amd64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
-          DOCKER_IMAGES: ignored
+          TARGET: production-binary
+          PLATFORM: linux/amd64,linux/arm64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
           OUTPUT: type=local,dest=tmp/build
-      - bin/nfpm{{exeExt}} package --config=build/nfpm.yml --packager=rpm --target=tmp/rpms/ferretdb.rpm
-      - docker compose run --rm ubi /bin/sh -c 'rpm -i /rpms/ferretdb.rpm && ferretdb --version'
+      - bin/nfpm{{exeExt}} package --config=build/nfpm-amd64.yml --packager=rpm --target=tmp/rpms/ferretdb-amd64.rpm
+      - bin/nfpm{{exeExt}} package --config=build/nfpm-arm64.yml --packager=rpm --target=tmp/rpms/ferretdb-arm64.rpm
+      - docker compose run --rm ubi /bin/sh -c 'rpm -i /rpms/ferretdb-{{ARCH}}.rpm && ferretdb --version'
     env:
       # nfpm parameters
-      ARCH: amd64
       VERSION:
-        sh: go run ./cmd/envtool package-version
+        sh: bin/envtool{{exeExt}} package-version
       POSTGRES_PACKAGE: postgresql
 
   fmt-yaml:
     desc: "Format YAML files"
     cmds:
-      - docker compose run --rm prettier --write --parser=yaml "**/*.yml"
+      - docker compose run --rm prettier --write --parser=yaml --print-width=120 "**/*.yml"
 
   docs:
     desc: "Format, lint and build documentation"
@@ -595,6 +708,16 @@ tasks:
       - docker compose run --rm prettier --write --parser markdown --no-semi --single-quote --trailing-comma none "**/*.md"
       - docker compose run --rm markdownlint "build/.markdownlint.yml" "**/*.md"
       - bin/checkdocs
+
+  pngcrush:
+    cmds:
+      - pngcrush -ow -brute {{.FILE}}
+    requires:
+      vars: [FILE]
+
+  pngcrush-all:
+    cmds:
+      - find . -type f -name '*.png' | parallel "pngcrush -ow -brute {} {.}.temp"
 
   docs-dev:
     desc: "Start documentation development server"

@@ -31,10 +31,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestFindAndModifyEmptyCollectionName(tt *testing.T) {
-	tt.Parallel()
-
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+func TestFindAndModifyEmptyCollectionName(t *testing.T) {
+	t.Parallel()
 
 	ctx, collection := setup.Setup(t, shareddata.Doubles)
 
@@ -54,10 +52,8 @@ func TestFindAndModifyEmptyCollectionName(tt *testing.T) {
 	)
 }
 
-func TestFindAndModifyNonExistingCollection(tt *testing.T) {
-	tt.Parallel()
-
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+func TestFindAndModifyNonExistingCollection(t *testing.T) {
+	t.Parallel()
 
 	ctx, collection := setup.Setup(t)
 
@@ -447,14 +443,12 @@ func TestFindAndModifyCommandErrors(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+			t.Parallel()
 
 			require.NotNil(t, tc.command, "command must not be nil")
 			require.NotNil(t, tc.err, "err must not be nil")
@@ -554,10 +548,8 @@ func TestFindAndModifyCommandUpsert(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
 			require.NotNil(t, tc.command, "command must not be nil")
 
@@ -588,10 +580,8 @@ func TestFindAndModifyCommandUpsert(t *testing.T) {
 	}
 }
 
-func TestFindAndModifyCommentMethod(tt *testing.T) {
-	tt.Parallel()
-
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+func TestFindAndModifyCommentMethod(t *testing.T) {
+	t.Parallel()
 
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
@@ -614,10 +604,8 @@ func TestFindAndModifyCommentMethod(tt *testing.T) {
 	assert.Equal(t, expected, res)
 }
 
-func TestFindAndModifyCommentQuery(tt *testing.T) {
-	tt.Parallel()
-
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3049")
+func TestFindAndModifyCommentQuery(t *testing.T) {
+	t.Parallel()
 
 	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
