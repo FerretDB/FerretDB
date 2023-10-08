@@ -17,6 +17,7 @@ package integration
 
 import (
 	"context"
+	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -466,4 +467,53 @@ func createNestedDocument(n int, arr bool) any {
 	}
 
 	return bson.D{{"v", child}}
+}
+
+// unsetRaw returns error with all Raw fields unset. It returns nil if err is nil.
+//
+// Error is checked using a regular type assertion; wrapped errors (errors.As) are not checked.
+func unsetRaw(t testing.TB, err error) error {
+	t.Helper()
+
+	switch err := err.(type) { //nolint:errorlint // simple check is enough
+	case mongo.CommandError:
+		err.Raw = nil
+		return err
+
+	case mongo.WriteException:
+		if err.WriteConcernError != nil {
+			err.WriteConcernError.Raw = nil
+		}
+
+		wes := make([]mongo.WriteError, len(err.WriteErrors))
+
+		for i, we := range err.WriteErrors {
+			we.Raw = nil
+			wes[i] = we
+		}
+
+		err.WriteErrors = wes
+		err.Raw = nil
+
+		return err
+
+	default:
+		return err
+	}
+}
+
+// assertEqualError asserts that the expected error is the same as the actual (ignoring the Raw part).
+func assertEqualError(t testing.TB, expected mongo.CommandError, actual error) bool {
+	t.Helper()
+
+	a, ok := actual.(mongo.CommandError)
+	if !ok {
+		return assert.Equal(t, expected, actual)
+	}
+
+	// set expected fields that might be helpful in the test output
+	require.Nil(t, expected.Raw)
+	expected.Raw = a.Raw
+
+	return assert.Equal(t, expected, a)
 }
