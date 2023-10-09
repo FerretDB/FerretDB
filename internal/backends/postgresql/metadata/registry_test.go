@@ -651,7 +651,7 @@ func TestLongIndexNames(t *testing.T) {
 	connInfo := conninfo.New()
 	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
-	r, db, dbName := createDatabase(t, ctx)
+	r, _, dbName := createDatabase(t, ctx)
 
 	batch1 := []IndexInfo{{
 		Name: strings.Repeat("aB", 75),
@@ -717,6 +717,10 @@ func TestLongIndexNames(t *testing.T) {
 			}
 
 			err = r.IndexesCreate(ctx, dbName, tc.collectionName, batch2)
+			require.NoError(t, err)
+
+			// Force DBs and collection initialization to check that indexes metadata is stored correctly in the database.
+			_, err = r.getPool(ctx)
 			require.NoError(t, err)
 
 			collection, err = r.CollectionGet(ctx, dbName, tc.collectionName)
