@@ -39,8 +39,8 @@ func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// The new PostgreSQL backend's tests can't survive this ping, as for every ping ANALYZE is called.
-	// TODO https://github.com/FerretDB/FerretDB/issues/3518
+	// When too many connections are opened, PostgreSQL returns an error for Ping but this error is hanging.
+	// TODO
 	//if err = client.Ping(ctx, nil); err != nil {
 	//	return nil, lazyerrors.Error(err)
 	//}
