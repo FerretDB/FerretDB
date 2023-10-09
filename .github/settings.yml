@@ -91,10 +91,6 @@ labels:
     color: "#FF3333"
     description: Scope, difficulty and/or clarify of the issue were different
 
-  - name: community
-    color: "#297252"
-    description: Issues and PRs assigned to community members
-
   - name: conflict
     color: "#FF0000"
     description: PRs that have merge conflicts
