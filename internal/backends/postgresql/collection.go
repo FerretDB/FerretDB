@@ -339,7 +339,41 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 
 // Compact implements backends.Collection interface.
 func (c *collection) Compact(ctx context.Context, params *backends.CompactParams) (*backends.CompactResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3484
+	p, err := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if p == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeDatabaseDoesNotExist,
+			lazyerrors.Errorf("no db %s", c.dbName),
+		)
+	}
+
+	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if meta == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	var q string
+	if params.Full {
+		q = fmt.Sprintf(`VACUUM FULL ANALYZE %s`, pgx.Identifier{c.dbName, meta.TableName}.Sanitize())
+	} else {
+		q = fmt.Sprintf(`VACUUM ANALYZE %s`, pgx.Identifier{c.dbName, meta.TableName}.Sanitize())
+	}
+
+	_, err = p.Exec(ctx, q)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 	return new(backends.CompactResult), nil
 }
 
