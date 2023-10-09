@@ -89,7 +89,7 @@ labels:
 
   - name: badly estimated
     color: "#FF3333"
-    description: Scope, difficulty and/or clarify of the issue were different
+    description: Scope, difficulty and/or clarify were different
 
   - name: conflict
     color: "#FF0000"
