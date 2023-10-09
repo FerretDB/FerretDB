@@ -719,12 +719,6 @@ func TestLongIndexNames(t *testing.T) {
 			err = r.IndexesCreate(ctx, dbName, tc.collectionName, batch2)
 			require.NoError(t, err)
 
-			// call initCollections to check that settings are stored correctly in the database
-			r.rw.Lock()
-			err = r.initCollections(ctx, dbName, db)
-			r.rw.Unlock()
-			require.NoError(t, err)
-
 			collection, err = r.CollectionGet(ctx, dbName, tc.collectionName)
 			require.NoError(t, err)
 			require.Equal(t, 4, len(collection.Indexes))
