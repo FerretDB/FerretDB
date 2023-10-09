@@ -72,8 +72,6 @@ var cli struct {
 	// see setCLIPlugins
 	kong.Plugins
 
-	UseNewPG bool `default:"false" help:"Use new PostgreSQL backend."`
-
 	Log struct {
 		Level string `default:"${default_log_level}" help:"${help_log_level}"`
 		UUID  bool   `default:"false"                help:"Add instance UUID to all log messages." negatable:""`
@@ -110,6 +108,7 @@ var cli struct {
 //nolint:lll // some tags are long
 var pgFlags struct {
 	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/ferretdb" help:"PostgreSQL URL for 'pg' handler."`
+	PostgreSQLNew bool   `name:"postgresql-new" default:"false"                              help:"Use new PostgreSQL backend."`
 }
 
 // The sqliteFlags struct represents flags that are used by the "sqlite" handler.
@@ -372,7 +371,7 @@ func run() {
 			EnableSortPushdown:    cli.Test.EnableSortPushdown,
 			EnableOplog:           cli.Test.EnableOplog,
 
-			UseNewPG:   cli.UseNewPG,
+			UseNewPG:   pgFlags.PostgreSQLNew,
 			UseNewHana: cli.Test.UseNewHana,
 		},
 	})

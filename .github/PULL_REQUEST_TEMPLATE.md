@@ -13,11 +13,12 @@ What else should reviewers know about your changes?
 -->
 
 <!-- Replace <issue_number> with an actual issue number. -->
+
 Closes #<issue_number>.
 
 ## Readiness checklist
 
-<!-- FIXME -->
+<!-- Please check all items in this checklist that were done. -->
 
 - [ ] I added/updated unit tests (and they pass).
 - [ ] I added/updated integration/compatibility tests (and they pass).
