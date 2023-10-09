@@ -552,7 +552,8 @@ func TestIndexesCreateDrop(t *testing.T) {
 	})
 
 	t.Run("CheckSettingsAfterCreation", func(t *testing.T) {
-		err := r.initCollections(ctx, dbName, db)
+		// Force DBs and collection initialization to check that indexes metadata is stored correctly in the database.
+		_, err = r.getPool(ctx)
 		require.NoError(t, err)
 
 		var refreshedCollection *Collection
@@ -589,8 +590,8 @@ func TestIndexesCreateDrop(t *testing.T) {
 		require.NoError(t, row.Scan(&count))
 		require.Equal(t, 2, count) // only default index and index_unique should be left
 
-		// check settings after dropping indexes
-		err = r.initCollections(ctx, dbName, db)
+		// Force DBs and collection initialization to check index metadata after deletion.
+		_, err = r.getPool(ctx)
 		require.NoError(t, err)
 
 		collection, err = r.CollectionGet(ctx, dbName, collectionName)
