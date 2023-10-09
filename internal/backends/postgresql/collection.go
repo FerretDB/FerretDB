@@ -315,6 +315,8 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 		q += sort
 		args = append(args, sortArgs...)
+
+		res.SortPushdown = sort != ""
 	}
 
 	q += where
