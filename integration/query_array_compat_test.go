@@ -18,10 +18,10 @@ import (
 	"math"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
-
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestQueryArrayCompatSize(t *testing.T) {
