@@ -36,6 +36,11 @@ func IsOldPg(tb testtb.TB) bool {
 	return *targetBackendF == "ferretdb-pg" && !*useNewPgF
 }
 
+// IsNewPg returns true if the current test is running for new PostgreSQL handler.
+//
+// This function should not be used lightly and always with an reason provided.
+// It should be removed when a new PG handler is fully supported.
+// TODO https://github.com/FerretDB/FerretDB/issues/3435
 func IsNewPg(tb testtb.TB) bool {
 	return *targetBackendF == "ferretdb-pg" && *useNewPgF
 }
@@ -108,6 +113,11 @@ func SkipForOldPg(tb testtb.TB, reason string) {
 	}
 }
 
+// SkipForNewPg skips the current test for the new PG handler.
+//
+// This function should not be used lightly and always with an reason provided.
+// It should be removed when a new PG handler is fully supported.
+// TODO https://github.com/FerretDB/FerretDB/issues/3435
 func SkipForNewPg(tb testtb.TB, reason string) {
 	tb.Helper()
 

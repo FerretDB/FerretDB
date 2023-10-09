@@ -821,7 +821,7 @@ func TestQueryCommandSingleBatch(t *testing.T) {
 }
 
 func TestQueryCommandLimitPushDown(t *testing.T) {
-	setup.SkipForNewPg(t, "FIXME")
+	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3416")
 
 	t.Parallel()
 

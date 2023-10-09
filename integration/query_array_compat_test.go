@@ -135,7 +135,7 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 }
 
 func TestQueryArrayCompatElemMatch(t *testing.T) {
-	setup.SkipForNewPg(t, "FIXME")
+	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3526")
 
 	t.Parallel()
 

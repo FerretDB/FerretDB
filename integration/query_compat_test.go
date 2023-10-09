@@ -193,7 +193,7 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 }
 
 func TestQueryCompatFilter(t *testing.T) {
-	setup.SkipForNewPg(t, "FIXME")
+	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3526")
 
 	t.Parallel()
 
