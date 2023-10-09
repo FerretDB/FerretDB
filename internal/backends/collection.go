@@ -220,7 +220,9 @@ func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams
 }
 
 // CollectionStatsParams represents the parameters of Collection.Stats method.
-type CollectionStatsParams struct{}
+type CollectionStatsParams struct {
+	Refresh bool // TODO https://github.com/FerretDB/FerretDB/issues/3518
+}
 
 // CollectionStatsResult represents the results of Collection.Stats method.
 //
