@@ -407,6 +407,46 @@ func TestRenameCollection(t *testing.T) {
 	})
 }
 
+func TestMetadataIndexes(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
+	t.Parallel()
+
+	connInfo := conninfo.New()
+	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
+
+	_, db, dbName := createDatabase(t, ctx)
+
+	var sql string
+	err := db.QueryRow(
+		ctx,
+		"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+		dbName, metadataTableName, metadataTableName+"_id_idx",
+	).Scan(&sql)
+	require.NoError(t, err)
+
+	expected := fmt.Sprintf(
+		`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> '_id'::text)))`,
+		metadataTableName+"_id_idx", dbName, metadataTableName,
+	)
+	assert.Equal(t, expected, sql)
+
+	err = db.QueryRow(
+		ctx,
+		"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+		dbName, metadataTableName, metadataTableName+"_table_idx",
+	).Scan(&sql)
+	assert.NoError(t, err)
+
+	expected = fmt.Sprintf(
+		`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> 'table'::text)))`,
+		metadataTableName+"_table_idx", dbName, metadataTableName,
+	)
+	assert.Equal(t, expected, sql)
+}
+
 func TestIndexesCreateDrop(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping in -short mode")
@@ -552,7 +592,8 @@ func TestIndexesCreateDrop(t *testing.T) {
 	})
 
 	t.Run("CheckSettingsAfterCreation", func(t *testing.T) {
-		err := r.initCollections(ctx, dbName, db)
+		// Force DBs and collection initialization to check that indexes metadata is stored correctly in the database.
+		_, err = r.getPool(ctx)
 		require.NoError(t, err)
 
 		var refreshedCollection *Collection
@@ -589,8 +630,8 @@ func TestIndexesCreateDrop(t *testing.T) {
 		require.NoError(t, row.Scan(&count))
 		require.Equal(t, 2, count) // only default index and index_unique should be left
 
-		// check settings after dropping indexes
-		err = r.initCollections(ctx, dbName, db)
+		// Force DBs and collection initialization to check index metadata after deletion.
+		_, err = r.getPool(ctx)
 		require.NoError(t, err)
 
 		collection, err = r.CollectionGet(ctx, dbName, collectionName)
@@ -608,37 +649,6 @@ func TestIndexesCreateDrop(t *testing.T) {
 			}
 		}
 	})
-
-	t.Run("MetadataIndexes", func(t *testing.T) {
-		t.Parallel()
-
-		var sql string
-		err := db.QueryRow(
-			ctx,
-			"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
-			dbName, metadataTableName, metadataTableName+"_id_idx",
-		).Scan(&sql)
-		require.NoError(t, err)
-
-		expected := fmt.Sprintf(
-			`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> '_id'::text)))`,
-			metadataTableName+"_id_idx", dbName, metadataTableName,
-		)
-		require.Equal(t, expected, sql)
-
-		err = db.QueryRow(
-			ctx,
-			"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
-			dbName, metadataTableName, metadataTableName+"_table_idx",
-		).Scan(&sql)
-		assert.NoError(t, err)
-
-		expected = fmt.Sprintf(
-			`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> 'table'::text)))`,
-			metadataTableName+"_table_idx", dbName, metadataTableName,
-		)
-		assert.Equal(t, expected, sql)
-	})
 }
 
 func TestLongIndexNames(t *testing.T) {
@@ -651,7 +661,7 @@ func TestLongIndexNames(t *testing.T) {
 	connInfo := conninfo.New()
 	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
 
-	r, db, dbName := createDatabase(t, ctx)
+	r, _, dbName := createDatabase(t, ctx)
 
 	batch1 := []IndexInfo{{
 		Name: strings.Repeat("aB", 75),
@@ -719,7 +729,8 @@ func TestLongIndexNames(t *testing.T) {
 			err = r.IndexesCreate(ctx, dbName, tc.collectionName, batch2)
 			require.NoError(t, err)
 
-			err = r.initCollections(ctx, dbName, db)
+			// Force DBs and collection initialization to check that indexes metadata is stored correctly in the database.
+			_, err = r.getPool(ctx)
 			require.NoError(t, err)
 
 			collection, err = r.CollectionGet(ctx, dbName, tc.collectionName)
