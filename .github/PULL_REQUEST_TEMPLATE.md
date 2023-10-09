@@ -1,20 +1,23 @@
+<!--
+Please remove comments like this one, but keep and use the rest of the template.
+See CONTRIBUTING.md for details.
+-->
+
 # Description
 
-Closes #{issue_number}.
-
 <!--
-    Write a short description to explain changes that are not mentioned in the initial issue.
-    What were the reasons for those changes?
-    Which decisions did you make and why?
-    What else should reviewers know about your changes?
+Write a short description to explain changes that are not mentioned in the initial issue.
+What were the reasons for those changes?
+Which decisions did you make and why?
+What else should reviewers know about your changes?
 -->
+
+<!-- Replace <issue_number> with an actual issue number. -->
+Closes #<issue_number>.
 
 ## Readiness checklist
 
-<!--
-    If you want your changes to be merged quickly,
-    please follow CONTRIBUTING.md.
--->
+<!-- FIXME -->
 
 - [ ] I added/updated unit tests (and they pass).
 - [ ] I added/updated integration/compatibility tests (and they pass).
