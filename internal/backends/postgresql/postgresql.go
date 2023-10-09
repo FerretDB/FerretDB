@@ -42,8 +42,7 @@ type stats struct {
 func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list []*metadata.Collection) (*stats, error) {
 	var err error
 
-	// Call ANALYZE to update statistics of tables and indexes,
-	// see https://wiki.postgresql.org/wiki/Count_estimate.
+	// TODO https://github.com/FerretDB/FerretDB/issues/3518
 	q := `ANALYZE`
 	if _, err = p.Exec(ctx, q); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -67,11 +66,11 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 
 	q = fmt.Sprintf(`
 		SELECT
-		    COALESCE(SUM(c.reltuples), 0),
-		    COALESCE(SUM(pg_table_size(c.oid)), 0),
-		    COALESCE(SUM(pg_indexes_size(c.oid)), 0)
+			COALESCE(SUM(c.reltuples), 0),
+			COALESCE(SUM(pg_table_size(c.oid)), 0),
+			COALESCE(SUM(pg_indexes_size(c.oid)), 0)
 		FROM pg_tables AS t
-		    LEFT JOIN pg_class AS c ON c.relname = t.tablename AND c.relnamespace = quote_ident(t.schemaname)::regnamespace
+			LEFT JOIN pg_class AS c ON c.relname = t.tablename AND c.relnamespace = quote_ident(t.schemaname)::regnamespace
 		WHERE t.schemaname = $1 AND t.tablename IN (%s)`,
 		strings.Join(placeholders, ", "),
 	)
