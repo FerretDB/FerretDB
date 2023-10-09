@@ -134,8 +134,7 @@ func TestCollectionUpdateAll(t *testing.T) {
 }
 
 func TestCollectionCompact(t *testing.T) {
-	// t.Skip("https://github.com/FerretDB/FerretDB/issues/3484")
-	// t.Skip("https://github.com/FerretDB/FerretDB/issues/3469")
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/3484")
 
 	t.Parallel()
 
