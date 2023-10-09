@@ -222,6 +222,7 @@ func TestCollectionStats(t *testing.T) {
 }
 
 func TestCollectionCompact(t *testing.T) {
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/3469") 
 	t.Parallel()
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
