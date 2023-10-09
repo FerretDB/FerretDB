@@ -90,7 +90,7 @@ See [our documentation](https://docs.ferretdb.io/quickstart-guide/) for more det
 
 ## Building and packaging
 
-> [!NOTE]
+> **Note**
 > We strongly advise users not to build FerretDB themselves.
 > Instead, use binaries, Docker images, or packages provided by us.
 
