@@ -72,6 +72,8 @@ var cli struct {
 	// see setCLIPlugins
 	kong.Plugins
 
+	UseNewPG bool `default:"false" help:"Use new PostgreSQL backend."`
+
 	Log struct {
 		Level string `default:"${default_log_level}" help:"${help_log_level}"`
 		UUID  bool   `default:"false"                help:"Add instance UUID to all log messages." negatable:""`
@@ -82,22 +84,21 @@ var cli struct {
 	Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.io."`
 
 	Test struct {
-		RecordsDir string `default:"" help:"Experimental: directory for record files."`
+		RecordsDir string `default:"" help:"Testing: directory for record files."`
 
 		DisableFilterPushdown bool `default:"false" help:"Experimental: disable filter pushdown."`
 		EnableSortPushdown    bool `default:"false" help:"Experimental: enable sort pushdown."`
 		EnableOplog           bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
 
-		UseNewPG   bool `default:"false" help:"Use new PostgreSQL backend."`
 		UseNewHana bool `default:"false" help:"Experimental: use new SAP HANA backend." hidden:""`
 
 		//nolint:lll // for readability
 		Telemetry struct {
-			URL            string        `default:"https://beacon.ferretdb.io/" help:"Experimental: telemetry: reporting URL."`
-			UndecidedDelay time.Duration `default:"1h"                          help:"Experimental: telemetry: delay for undecided state."`
-			ReportInterval time.Duration `default:"24h"                         help:"Experimental: telemetry: report interval."`
-			ReportTimeout  time.Duration `default:"5s"                          help:"Experimental: telemetry: report timeout."`
-			Package        string        `default:""                            help:"Experimental: telemetry: custom package type."`
+			URL            string        `default:"https://beacon.ferretdb.io/" help:"Telemetry: reporting URL."`
+			UndecidedDelay time.Duration `default:"1h"                          help:"Telemetry: delay for undecided state."`
+			ReportInterval time.Duration `default:"24h"                         help:"Telemetry: report interval."`
+			ReportTimeout  time.Duration `default:"5s"                          help:"Telemetry: report timeout."`
+			Package        string        `default:""                            help:"Telemetry: custom package type."`
 		} `embed:"" prefix:"telemetry-"`
 	} `embed:"" prefix:"test-"`
 }
@@ -252,6 +253,10 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 
 	l.Info("Starting FerretDB "+info.Version+"...", startupFields...)
 
+	if debugbuild.Enabled {
+		l.Info("This is debug build. The performance will be affected.")
+	}
+
 	return l
 }
 
@@ -367,7 +372,7 @@ func run() {
 			EnableSortPushdown:    cli.Test.EnableSortPushdown,
 			EnableOplog:           cli.Test.EnableOplog,
 
-			UseNewPG:   cli.Test.UseNewPG,
+			UseNewPG:   cli.UseNewPG,
 			UseNewHana: cli.Test.UseNewHana,
 		},
 	})
