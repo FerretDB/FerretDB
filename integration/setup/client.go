@@ -39,8 +39,9 @@ func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// When too many connections are opened, PostgreSQL returns an error for Ping but this error is hanging.
-	// TODO
+	// When too many connections are open, PostgreSQL returns an error,
+	// but this error is hanging (panic in setupClient doesn't immediately stop the test).
+	// TODO https://github.com/FerretDB/FerretDB/issues/3535
 	//if err = client.Ping(ctx, nil); err != nil {
 	//	return nil, lazyerrors.Error(err)
 	//}
