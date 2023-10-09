@@ -322,7 +322,39 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 
 // Compact implements backends.Collection interface.
 func (c *collection) Compact(ctx context.Context, params *backends.CompactParams) (*backends.CompactResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3469
+	var err error
+	q := `PRAGMA incremental_vacuum`
+
+	db := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if db == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeDatabaseDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	coll := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if coll == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	if params != nil && params.Full {
+		q = `VACUUM`
+	}
+	if _, err = db.ExecContext(ctx, q); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// Call ANALYZE to update statistics of tables and indexes,
+	// see https://www.sqlite.org/lang_analyze.html.
+	q = `ANALYZE`
+	if _, err = db.ExecContext(ctx, q); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	return new(backends.CompactResult), nil
 }
 
