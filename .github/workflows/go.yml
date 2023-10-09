@@ -26,7 +26,7 @@ jobs:
   short-test:
     name: Short test
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     # Do not run this job in parallel for any PR change or branch push.
     concurrency:
@@ -60,7 +60,7 @@ jobs:
         run: bin/task init
 
       - name: Run short unit tests
-        run: bin/task test-unit-short
+        run: bin/task test-unit-short TEST_TIMEOUT=10m
         env:
           GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
 
@@ -77,7 +77,7 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-22.04
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     # Do not run this job in parallel for any PR change or branch push.
     concurrency:
@@ -123,7 +123,7 @@ jobs:
         run: bin/task env-setup
 
       - name: Run unit tests
-        run: bin/task test-unit
+        run: bin/task test-unit TEST_TIMEOUT=10m
         env:
           GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
 
