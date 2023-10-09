@@ -43,7 +43,7 @@ type stats struct {
 // If the list of collections is empty, then stats filled with zero values is returned.
 func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list []*metadata.Collection) (*stats, error) {
 	if len(list) == 0 {
-		return &stats{}, nil
+		return new(stats), nil
 	}
 
 	var err error
