@@ -16,8 +16,10 @@ package backends
 
 import (
 	"context"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
@@ -70,7 +72,8 @@ func CollectionContract(c Collection) Collection {
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	Filter *types.Document
+	Filter        *types.Document
+	OnlyRecordIDs bool // TODO https://github.com/FerretDB/FerretDB/issues/3490
 }
 
 // QueryResult represents the results of Collection.Query method.
@@ -115,7 +118,9 @@ type InsertAllResult struct{}
 func (cc *collectionContract) InsertAll(ctx context.Context, params *InsertAllParams) (*InsertAllResult, error) {
 	defer observability.FuncCall(ctx)()
 
+	now := time.Now()
 	for _, doc := range params.Docs {
+		doc.SetRecordID(types.NextTimestamp(now))
 		doc.Freeze()
 	}
 
@@ -160,7 +165,8 @@ func (cc *collectionContract) UpdateAll(ctx context.Context, params *UpdateAllPa
 
 // DeleteAllParams represents the parameters of Collection.Delete method.
 type DeleteAllParams struct {
-	IDs []any
+	IDs       []any
+	RecordIDs []types.Timestamp
 }
 
 // DeleteAllResult represents the results of Collection.Delete method.
@@ -179,6 +185,8 @@ type DeleteAllResult struct {
 // Database or collection may not exist; that's not an error.
 func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllParams) (*DeleteAllResult, error) {
 	defer observability.FuncCall(ctx)()
+
+	must.BeTrue((params.IDs == nil) != (params.RecordIDs == nil))
 
 	res, err := cc.c.DeleteAll(ctx, params)
 	checkError(err)
@@ -212,9 +220,13 @@ func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams
 }
 
 // CollectionStatsParams represents the parameters of Collection.Stats method.
-type CollectionStatsParams struct{}
+type CollectionStatsParams struct {
+	Refresh bool // TODO https://github.com/FerretDB/FerretDB/issues/3518
+}
 
 // CollectionStatsResult represents the results of Collection.Stats method.
+//
+// CountObjects is an estimate of the number of documents.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/2447
 type CollectionStatsResult struct {
@@ -226,11 +238,13 @@ type CollectionStatsResult struct {
 }
 
 // Stats returns statistics about the collection.
+//
+// The errors for non-existing database and non-existing collection are the same.
 func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStatsParams) (*CollectionStatsResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.Stats(ctx, params)
-	checkError(err, ErrorCodeDatabaseDoesNotExist, ErrorCodeCollectionDoesNotExist)
+	checkError(err, ErrorCodeCollectionDoesNotExist)
 
 	return res, err
 }

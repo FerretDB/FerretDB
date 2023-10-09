@@ -97,6 +97,7 @@ jobs:
           bin/task test-integration-${{ inputs.task }}
           SHARD_INDEX=${{ inputs.shard_index }}
           SHARD_TOTAL=${{ inputs.shard_total }}
+          TEST_TIMEOUT=15m
           DISABLE_FILTER_PUSHDOWN=${{ inputs.disable_filter_pushdown }}
           ENABLE_SORT_PUSHDOWN=${{ inputs.enable_sort_pushdown }}
         env:

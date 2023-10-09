@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.21.1-2 AS all-in-one-build
+FROM ghcr.io/ferretdb/golang:1.21.2-1 AS all-in-one-build
 
 ARG TARGETARCH
 

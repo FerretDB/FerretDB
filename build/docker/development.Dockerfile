@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.21.1-2 AS development-build
+FROM ghcr.io/ferretdb/golang:1.21.2-1 AS development-build
 
 ARG TARGETARCH
 
@@ -85,7 +85,7 @@ COPY --from=development-build /src/bin/ferretdb /ferretdb
 
 # final stage
 
-FROM golang:1.21.1 AS development
+FROM golang:1.21.2 AS development
 
 ENV GOCOVERDIR=/tmp/cover
 ENV GORACE=halt_on_error=1,history_size=2

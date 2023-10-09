@@ -75,7 +75,7 @@ you can reset the environment with `task env-reset`.
 
 ### Building a production release binaries
 
-To build a production release binaries, run `task build-release`.
+To build a production release binaries, run `task build-production`.
 The results will be saved `tmp/bin`.
 
 ## Contributing code

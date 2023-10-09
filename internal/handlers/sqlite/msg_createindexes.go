@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"strings"
 
+	"golang.org/x/exp/slices"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -142,7 +144,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		numIndexesBefore = 1
 	}
 
-	if err = validateIndexesForCreation(command, beforeCreate.Indexes, toCreate); err != nil {
+	if toCreate, err = validateIndexesForCreation(command, beforeCreate.Indexes, toCreate); err != nil {
 		return nil, err
 	}
 
@@ -156,8 +158,10 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	resp.Set("numIndexesBefore", int32(numIndexesBefore))
 	resp.Set("numIndexesAfter", int32(numIndexesBefore+len(toCreate)))
 
-	if createCollection {
-		resp.Set("createdCollectionAutomatically", true)
+	if len(toCreate) > 0 {
+		resp.Set("createdCollectionAutomatically", createCollection)
+	} else {
+		resp.Set("note", "all indexes already exist")
 	}
 
 	resp.Set("ok", float64(1))
@@ -453,7 +457,12 @@ func formatIndexKey(key []backends.IndexKeyPair) string {
 }
 
 // validateIndexesForCreation validates the given list of indexes to create against the existing ones.
-func validateIndexesForCreation(command string, existing, toCreate []backends.IndexInfo) error {
+// It filters out duplicate indexes and returns a slice of indexes to create.
+// It returns an error if at least one provided index has an invalid specification.
+func validateIndexesForCreation(command string, existing, toCreate []backends.IndexInfo) ([]backends.IndexInfo, error) {
+	filteredToCreate := make([]backends.IndexInfo, len(toCreate))
+	copy(filteredToCreate, toCreate)
+
 	for i, newIdx := range toCreate {
 		newKey := formatIndexKey(newIdx.Key)
 
@@ -463,7 +472,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 				newKey, newIdx.Name,
 			)
 
-			return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrCannotCreateIndex, msg, command)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrCannotCreateIndex, msg, command)
 		}
 
 		if newIdx.Name == backends.DefaultIndexName && newKey != "_id: 1" {
@@ -473,7 +482,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 				newKey,
 			)
 
-			return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, command)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, command)
 		}
 
 		// Iterate backwards to check if the current index is a duplicate of any other index provided in the list earlier.
@@ -484,7 +493,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 			if otherName == newIdx.Name && otherKey == newKey {
 				msg := fmt.Sprintf("Identical index already exists: %s", otherName)
 
-				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexAlreadyExists, msg, command)
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexAlreadyExists, msg, command)
 			}
 
 			if newIdx.Name == otherName {
@@ -496,7 +505,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 					newKey, newIdx.Name, otherKey, otherName,
 				)
 
-				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexKeySpecsConflict, msg, command)
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexKeySpecsConflict, msg, command)
 			}
 
 			if newKey == otherKey {
@@ -504,7 +513,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 					"Index already exists with a different name: %s", otherName,
 				)
 
-				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexOptionsConflict, msg, command)
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexOptionsConflict, msg, command)
 			}
 		}
 
@@ -513,7 +522,8 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 			existingKey := formatIndexKey(existingIdx.Key)
 
 			if newIdx.Name == existingIdx.Name && newKey == existingKey {
-				// Fully identical indexes are allowed.
+				// Fully identical indexes are ignored, no need to attempt to create them.
+				filteredToCreate = slices.Delete(filteredToCreate, i, i+1)
 				break
 			}
 
@@ -526,15 +536,15 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 					newKey, newIdx.Name, existingKey, existingIdx.Name,
 				)
 
-				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexKeySpecsConflict, msg, command)
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexKeySpecsConflict, msg, command)
 			}
 
 			if newKey == existingKey {
 				msg := fmt.Sprintf("Index already exists with a different name: %s", existingIdx.Name)
-				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexOptionsConflict, msg, command)
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexOptionsConflict, msg, command)
 			}
 		}
 	}
 
-	return nil
+	return filteredToCreate, nil
 }
