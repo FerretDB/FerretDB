@@ -18,7 +18,6 @@ import (
 	"context"
 
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
@@ -40,11 +39,12 @@ func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// make sure that FerretDB-backend connection works
-	_, err = client.ListDatabases(ctx, bson.D{})
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	// When too many connections are open, PostgreSQL returns an error,
+	// but this error is hanging (panic in setupClient doesn't immediately stop the test).
+	// TODO https://github.com/FerretDB/FerretDB/issues/3535
+	//if err = client.Ping(ctx, nil); err != nil {
+	//	return nil, lazyerrors.Error(err)
+	//}
 
 	return client, nil
 }
