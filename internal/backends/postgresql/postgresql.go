@@ -39,7 +39,13 @@ type stats struct {
 }
 
 // collectionsStats returns statistics about tables and indexes for the given collections.
+//
+// If the list of collections is empty, then stats filled with zero values is returned.
 func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list []*metadata.Collection) (*stats, error) {
+	if len(list) == 0 {
+		return &stats{}, nil
+	}
+
 	var err error
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3518

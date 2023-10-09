@@ -407,6 +407,46 @@ func TestRenameCollection(t *testing.T) {
 	})
 }
 
+func TestMetadataIndexes(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
+	t.Parallel()
+
+	connInfo := conninfo.New()
+	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
+
+	_, db, dbName := createDatabase(t, ctx)
+
+	var sql string
+	err := db.QueryRow(
+		ctx,
+		"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+		dbName, metadataTableName, metadataTableName+"_id_idx",
+	).Scan(&sql)
+	require.NoError(t, err)
+
+	expected := fmt.Sprintf(
+		`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> '_id'::text)))`,
+		metadataTableName+"_id_idx", dbName, metadataTableName,
+	)
+	assert.Equal(t, expected, sql)
+
+	err = db.QueryRow(
+		ctx,
+		"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+		dbName, metadataTableName, metadataTableName+"_table_idx",
+	).Scan(&sql)
+	assert.NoError(t, err)
+
+	expected = fmt.Sprintf(
+		`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> 'table'::text)))`,
+		metadataTableName+"_table_idx", dbName, metadataTableName,
+	)
+	assert.Equal(t, expected, sql)
+}
+
 func TestIndexesCreateDrop(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping in -short mode")
@@ -608,37 +648,6 @@ func TestIndexesCreateDrop(t *testing.T) {
 				t.Errorf("unexpected index: %s", index.Name)
 			}
 		}
-	})
-
-	t.Run("MetadataIndexes", func(t *testing.T) {
-		t.Parallel()
-
-		var sql string
-		err := db.QueryRow(
-			ctx,
-			"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
-			dbName, metadataTableName, metadataTableName+"_id_idx",
-		).Scan(&sql)
-		require.NoError(t, err)
-
-		expected := fmt.Sprintf(
-			`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> '_id'::text)))`,
-			metadataTableName+"_id_idx", dbName, metadataTableName,
-		)
-		require.Equal(t, expected, sql)
-
-		err = db.QueryRow(
-			ctx,
-			"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
-			dbName, metadataTableName, metadataTableName+"_table_idx",
-		).Scan(&sql)
-		assert.NoError(t, err)
-
-		expected = fmt.Sprintf(
-			`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> 'table'::text)))`,
-			metadataTableName+"_table_idx", dbName, metadataTableName,
-		)
-		assert.Equal(t, expected, sql)
 	})
 }
 
