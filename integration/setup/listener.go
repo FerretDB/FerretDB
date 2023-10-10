@@ -33,6 +33,12 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
+// sharedListener is a shared client connection sharedListener for tests.
+var sharedListener *clientconn.Listener
+
+// sharedListenerCancelFunc is a shared function to cancel the listener's context.
+var sharedListenerCancelFunc context.CancelFunc
+
 // listenerMongoDBURI builds MongoDB URI for in-process FerretDB.
 func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAuth bool) string {
 	tb.Helper()
@@ -74,64 +80,7 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 	return u.String()
 }
 
-// setupListener starts in-process FerretDB server that runs until ctx is canceled.
-// It returns basic MongoDB URI for that listener.
-func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string {
-	tb.Helper()
-
-	_, span := otel.Tracer("").Start(ctx, "setupListener")
-	defer span.End()
-
-	defer observability.FuncCall(ctx)()
-	var l *clientconn.Listener
-	var handler string
-
-	if *shareServerF {
-		l = listener
-		handler = handlerType
-	} else {
-		handler, l = initListener(ctx, tb.Fatalf)
-
-		runDone := make(chan struct{})
-
-		go func() {
-			defer close(runDone)
-
-			err := l.Run(ctx)
-			if err == nil || errors.Is(err, context.Canceled) {
-				logger.Info("Listener stopped without error")
-			} else {
-				logger.Error("Listener stopped", zap.Error(err))
-			}
-		}()
-
-		// ensure that all listener's and handler's logs are written before test ends
-		tb.Cleanup(func() {
-			<-runDone
-		})
-	}
-
-	var hostPort, unixSocketPath string
-	var tlsAndAuth bool
-
-	switch {
-	case *targetTLSF:
-		hostPort = l.TLSAddr().String()
-		tlsAndAuth = true
-	case *targetUnixSocketF:
-		unixSocketPath = l.UnixAddr().String()
-	default:
-		hostPort = l.TCPAddr().String()
-	}
-
-	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, tlsAndAuth)
-
-	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
-
-	return uri
-}
-
-func initListener(ctx context.Context, fatalf func(format string, args ...any)) (string, *clientconn.Listener) {
+func makeListener(ctx context.Context, fatalf func(format string, args ...any)) (string, *clientconn.Listener) {
 	_, span := otel.Tracer("").Start(ctx, "initListener")
 	defer span.End()
 
@@ -304,4 +253,61 @@ func initListener(ctx context.Context, fatalf func(format string, args ...any)) 
 	l := clientconn.NewListener(&listenerOpts)
 
 	return handler, l
+}
+
+// setupListener starts in-process FerretDB server that runs until ctx is canceled.
+// It returns basic MongoDB URI for that listener.
+func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string {
+	tb.Helper()
+
+	_, span := otel.Tracer("").Start(ctx, "setupListener")
+	defer span.End()
+
+	defer observability.FuncCall(ctx)()
+	var l *clientconn.Listener
+	var handler string
+
+	if *shareServerF {
+		l = sharedListener
+		handler = handlerType
+	} else {
+		handler, l = makeListener(ctx, tb.Fatalf)
+
+		runDone := make(chan struct{})
+
+		go func() {
+			defer close(runDone)
+
+			err := l.Run(ctx)
+			if err == nil || errors.Is(err, context.Canceled) {
+				logger.Info("Listener stopped without error")
+			} else {
+				logger.Error("Listener stopped", zap.Error(err))
+			}
+		}()
+
+		// ensure that all listener's and handler's logs are written before test ends
+		tb.Cleanup(func() {
+			<-runDone
+		})
+	}
+
+	var hostPort, unixSocketPath string
+	var tlsAndAuth bool
+
+	switch {
+	case *targetTLSF:
+		hostPort = l.TLSAddr().String()
+		tlsAndAuth = true
+	case *targetUnixSocketF:
+		unixSocketPath = l.UnixAddr().String()
+	default:
+		hostPort = l.TCPAddr().String()
+	}
+
+	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, tlsAndAuth)
+
+	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
+
+	return uri
 }

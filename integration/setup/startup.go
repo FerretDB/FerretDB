@@ -33,24 +33,17 @@ import (
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// listenerMetrics are shared between tests.
-var listenerMetrics = connmetrics.NewListenerMetrics()
-
-// exporter is a shared OTLP http exporter for tests.
-var exporter *otlptrace.Exporter
-
-// listener is a shared client connection listener for tests.
-var listener *clientconn.Listener
-
-// listenerCancelFunc is a shared function to cancel the listener's context.
-var listenerCancelFunc context.CancelFunc
+// Those are always shared between all tests.
+var (
+	listenerMetrics = connmetrics.NewListenerMetrics()
+	otlpExporter    *otlptrace.Exporter
+)
 
 // handlerType represents the type of handler for tests.
 var handlerType string
@@ -68,6 +61,7 @@ func Startup() {
 	prometheus.DefaultRegisterer.MustRegister(listenerMetrics)
 
 	// use any available port to allow running different configurations in parallel
+	// TODO https://github.com/FerretDB/FerretDB/issues/3544
 	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -119,14 +113,14 @@ func Startup() {
 		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
 	}
 
-	exporter = must.NotFail(otlptracehttp.New(ctx,
+	otlpExporter = must.NotFail(otlptracehttp.New(ctx,
 		otlptracehttp.WithEndpoint("127.0.0.1:4318"),
 		otlptracehttp.WithInsecure(),
 	))
 
 	tp := oteltrace.NewTracerProvider(
 		oteltrace.WithSpanProcessor(
-			oteltrace.NewBatchSpanProcessor(exporter),
+			oteltrace.NewBatchSpanProcessor(otlpExporter),
 		),
 		oteltrace.WithSampler(oteltrace.AlwaysSample()),
 		oteltrace.WithResource(resource.NewSchemaless(
@@ -139,15 +133,15 @@ func Startup() {
 	if *shareServerF && *targetURLF == "" {
 		zap.S().Info("listener initialized start", handlerType)
 		var listenerCtx context.Context
-		listenerCtx, listenerCancelFunc = context.WithCancel(context.Background())
-		handlerType, listener = initListener(listenerCtx, zap.S().Fatalf)
+		listenerCtx, sharedListenerCancelFunc = context.WithCancel(context.Background())
+		handlerType, sharedListener = makeListener(listenerCtx, zap.S().Fatalf)
 
 		runDone := make(chan struct{})
 
 		go func() {
 			close(runDone)
 
-			err := listener.Run(listenerCtx)
+			err := sharedListener.Run(listenerCtx)
 			if err == nil || errors.Is(err, context.Canceled) {
 				zap.S().Info("Listener stopped without error")
 			} else {
@@ -169,10 +163,10 @@ func Shutdown() {
 	defer cancel()
 
 	if *shareServerF && *targetURLF == "" {
-		listenerCancelFunc()
+		sharedListenerCancelFunc()
 	}
 
-	must.NoError(exporter.Shutdown(ctx))
+	must.NoError(otlpExporter.Shutdown(ctx))
 
 	// to increase a chance of resource finalizers to spot problems
 	runtime.GC()
