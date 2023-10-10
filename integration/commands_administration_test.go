@@ -741,8 +741,6 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 }
 
 func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
-	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3521")
-
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
