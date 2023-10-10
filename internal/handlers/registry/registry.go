@@ -65,6 +65,7 @@ type TestOpts struct {
 
 // NewHandler constructs a new handler.
 func NewHandler(name string, opts *NewHandlerOpts) (handlers.Interface, error) {
+	opts.UseNewPG = true
 	if opts == nil {
 		return nil, fmt.Errorf("opts is nil")
 	}
