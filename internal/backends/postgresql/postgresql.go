@@ -62,13 +62,10 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	placeholder.Next()
 
 	for i, c := range list {
+		s.countIndexes += int64(len(c.Indexes))
 		placeholders[i] = placeholder.Next()
 		args = append(args, c.TableName)
 	}
-
-	// get index count from metadata
-	// TODO https://github.com/FerretDB/FerretDB/issues/3394
-	s.countIndexes = 0
 
 	// The table size is the size used by collection objects. It excludes visibility map,
 	// initialization fork, free space map and TOAST. The `main` `pg_relation_size` is

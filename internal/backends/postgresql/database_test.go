@@ -71,8 +71,7 @@ func TestDatabaseStats(t *testing.T) {
 		require.Equal(t, res.CountCollections, int64(len(cNames)))
 		require.Zero(t, res.SizeCollections)
 		require.Zero(t, res.CountObjects)
-		// TODO https://github.com/FerretDB/FerretDB/issues/3394
-		// require.NotZero(t, res.CountIndexes)
+		require.NotZero(t, res.CountIndexes)
 		require.NotZero(t, res.SizeIndexes) // includes metadata table's indexes
 	})
 
@@ -91,8 +90,7 @@ func TestDatabaseStats(t *testing.T) {
 		require.Equal(t, res.CountCollections, int64(len(cNames)))
 		require.NotZero(t, res.SizeCollections)
 		require.Equal(t, int64(1), res.CountObjects)
-		// TODO https://github.com/FerretDB/FerretDB/issues/3394
-		// require.NotZero(t, res.CountIndexes)
+		require.NotZero(t, res.CountIndexes)
 		require.NotZero(t, res.SizeIndexes)
 	})
 }
