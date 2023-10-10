@@ -44,7 +44,7 @@ const (
 // FindAndModifyParams represent parameters for the findAndModify command.
 type FindAndModifyParams struct {
 	DB                string          `ferretdb:"$db"`
-	Collection        string          `ferretdb:"collection"`
+	Collection        string          `ferretdb:"findAndModify,collection"`
 	Comment           string          `ferretdb:"comment,opt"`
 	Query             *types.Document `ferretdb:"query,opt"`
 	Sort              *types.Document `ferretdb:"sort,opt"`

@@ -20,8 +20,6 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/google/uuid"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // State represents FerretDB process state.
@@ -68,7 +66,7 @@ func (s *State) EnableTelemetry() {
 // fill replaces all unset or invalid values with default.
 func (s *State) fill() {
 	if _, err := uuid.Parse(s.UUID); err != nil {
-		s.UUID = must.NotFail(uuid.NewRandom()).String()
+		s.UUID = uuid.NewString()
 	}
 
 	if s.Start.IsZero() {

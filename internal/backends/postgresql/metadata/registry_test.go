@@ -23,7 +23,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -145,49 +147,6 @@ func TestCheckAuth(t *testing.T) {
 			require.NoError(t, err)
 		})
 	}
-}
-
-func TestCreateDrop(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
-	t.Parallel()
-
-	connInfo := conninfo.New()
-	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
-
-	r, db, dbName := createDatabase(t, ctx)
-	collectionName := testutil.CollectionName(t)
-	testCollection(t, ctx, r, db, dbName, collectionName)
-}
-
-func TestCreateLongCollectionName(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
-	t.Parallel()
-
-	connInfo := conninfo.New()
-	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
-
-	r, _, dbName := createDatabase(t, ctx)
-
-	collectionName := strings.Repeat("a", 63)
-	created, err := r.CollectionCreate(ctx, dbName, collectionName)
-	require.NoError(t, err)
-	require.True(t, created)
-
-	collectionName = strings.Repeat("a", 63)
-	created, err = r.CollectionCreate(ctx, dbName, collectionName)
-	require.NoError(t, err)
-	require.False(t, created)
-
-	collectionName = strings.Repeat("a", 64)
-	created, err = r.CollectionCreate(ctx, dbName, collectionName)
-	require.NoError(t, err)
-	require.True(t, created)
 }
 
 func TestCreateDropStress(t *testing.T) {
@@ -406,6 +365,8 @@ func TestRenameCollection(t *testing.T) {
 		t.Skip("skipping in -short mode")
 	}
 
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/3409")
+
 	t.Parallel()
 
 	connInfo := conninfo.New()
@@ -437,10 +398,359 @@ func TestRenameCollection(t *testing.T) {
 		expected := &Collection{
 			Name:      newCollectionName,
 			TableName: oldCollection.TableName,
+			Indexes:   oldCollection.Indexes,
 		}
 
 		actual, err := r.CollectionGet(ctx, dbName, newCollectionName)
 		require.NoError(t, err)
 		require.Equal(t, expected, actual)
 	})
+}
+
+func TestMetadataIndexes(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
+	t.Parallel()
+
+	connInfo := conninfo.New()
+	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
+
+	_, db, dbName := createDatabase(t, ctx)
+
+	var sql string
+	err := db.QueryRow(
+		ctx,
+		"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+		dbName, metadataTableName, metadataTableName+"_id_idx",
+	).Scan(&sql)
+	require.NoError(t, err)
+
+	expected := fmt.Sprintf(
+		`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> '_id'::text)))`,
+		metadataTableName+"_id_idx", dbName, metadataTableName,
+	)
+	assert.Equal(t, expected, sql)
+
+	err = db.QueryRow(
+		ctx,
+		"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+		dbName, metadataTableName, metadataTableName+"_table_idx",
+	).Scan(&sql)
+	assert.NoError(t, err)
+
+	expected = fmt.Sprintf(
+		`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> 'table'::text)))`,
+		metadataTableName+"_table_idx", dbName, metadataTableName,
+	)
+	assert.Equal(t, expected, sql)
+}
+
+func TestIndexesCreateDrop(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
+	t.Parallel()
+
+	connInfo := conninfo.New()
+	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
+
+	r, db, dbName := createDatabase(t, ctx)
+	collectionName := testutil.CollectionName(t)
+
+	toCreate := []IndexInfo{{
+		Name: "index_non_unique",
+		Key: []IndexKeyPair{{
+			Field:      "f1",
+			Descending: false,
+		}, {
+			Field:      "f2",
+			Descending: true,
+		}},
+	}, {
+		Name: "index_unique",
+		Key: []IndexKeyPair{{
+			Field:      "foo",
+			Descending: false,
+		}},
+		Unique: true,
+	}, {
+		Name: "nested_fields",
+		Key: []IndexKeyPair{{
+			Field: "foo.bar",
+		}, {
+			Field:      "foo.baz",
+			Descending: true,
+		}},
+	}}
+
+	err := r.IndexesCreate(ctx, dbName, collectionName, toCreate)
+	require.NoError(t, err)
+
+	collection, err := r.CollectionGet(ctx, dbName, collectionName)
+	require.NoError(t, err)
+
+	t.Run("CreateIndexes", func(t *testing.T) {
+		t.Run("NonUniqueIndex", func(t *testing.T) {
+			t.Parallel()
+
+			i := slices.IndexFunc(collection.Indexes, func(ii IndexInfo) bool {
+				return ii.Name == "index_non_unique"
+			})
+			require.GreaterOrEqual(t, i, 0)
+			tableIndexName := collection.Indexes[i].PgIndex
+
+			var sql string
+			err := db.QueryRow(
+				ctx,
+				"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+				dbName, collection.TableName, tableIndexName,
+			).Scan(&sql)
+			require.NoError(t, err)
+
+			expected := fmt.Sprintf(
+				`CREATE INDEX %s ON %q.%s USING btree (((_jsonb -> 'f1'::text)), ((_jsonb -> 'f2'::text)) DESC)`,
+				tableIndexName, dbName, collection.TableName,
+			)
+			require.Equal(t, expected, sql)
+		})
+
+		t.Run("UniqueIndex", func(t *testing.T) {
+			t.Parallel()
+
+			i := slices.IndexFunc(collection.Indexes, func(ii IndexInfo) bool {
+				return ii.Name == "index_unique"
+			})
+			require.GreaterOrEqual(t, i, 0)
+			tableIndexName := collection.Indexes[i].PgIndex
+
+			var sql string
+			err := db.QueryRow(
+				ctx,
+				"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+				dbName, collection.TableName, tableIndexName,
+			).Scan(&sql)
+			require.NoError(t, err)
+
+			expected := fmt.Sprintf(
+				`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> 'foo'::text)))`,
+				tableIndexName, dbName, collection.TableName,
+			)
+			require.Equal(t, expected, sql)
+		})
+
+		t.Run("NestedFields", func(t *testing.T) {
+			t.Parallel()
+
+			i := slices.IndexFunc(collection.Indexes, func(ii IndexInfo) bool {
+				return ii.Name == "nested_fields"
+			})
+			require.GreaterOrEqual(t, i, 0)
+			tableIndexName := collection.Indexes[i].PgIndex
+
+			var sql string
+			err := db.QueryRow(
+				ctx,
+				"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+				dbName, collection.TableName, tableIndexName,
+			).Scan(&sql)
+			require.NoError(t, err)
+
+			expected := fmt.Sprintf(
+				`CREATE INDEX %s ON %q.%s USING btree`+
+					` ((((_jsonb -> 'foo'::text) -> 'bar'::text)), (((_jsonb -> 'foo'::text) -> 'baz'::text)) DESC)`,
+				tableIndexName, dbName, collection.TableName,
+			)
+			require.Equal(t, expected, sql)
+		})
+
+		t.Run("DefaultIndex", func(t *testing.T) {
+			t.Parallel()
+
+			i := slices.IndexFunc(collection.Indexes, func(ii IndexInfo) bool {
+				return ii.Name == "_id_"
+			})
+			require.GreaterOrEqual(t, i, 0)
+			tableIndexName := collection.Indexes[i].PgIndex
+
+			var sql string
+			err := db.QueryRow(
+				ctx,
+				"SELECT indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2 AND indexname = $3",
+				dbName, collection.TableName, tableIndexName,
+			).Scan(&sql)
+			require.NoError(t, err)
+
+			expected := fmt.Sprintf(
+				`CREATE UNIQUE INDEX %s ON %q.%s USING btree (((_jsonb -> '_id'::text)))`,
+				tableIndexName, dbName, collection.TableName,
+			)
+			require.Equal(t, expected, sql)
+		})
+	})
+
+	t.Run("CheckSettingsAfterCreation", func(t *testing.T) {
+		// Force DBs and collection initialization to check that indexes metadata is stored correctly in the database.
+		_, err = r.getPool(ctx)
+		require.NoError(t, err)
+
+		var refreshedCollection *Collection
+		refreshedCollection, err = r.CollectionGet(ctx, dbName, collectionName)
+		require.NoError(t, err)
+
+		require.Equal(t, 4, len(refreshedCollection.Indexes))
+
+		for _, index := range refreshedCollection.Indexes {
+			switch index.Name {
+			case "_id_":
+				assert.Equal(t, 1, len(index.Key))
+			case "index_non_unique":
+				assert.Equal(t, 2, len(index.Key))
+			case "index_unique":
+				assert.Equal(t, 1, len(index.Key))
+			case "nested_fields":
+				assert.Equal(t, 2, len(index.Key))
+			default:
+				t.Errorf("unexpected index: %s", index.Name)
+			}
+		}
+	})
+
+	t.Run("DropIndexes", func(t *testing.T) {
+		toDrop := []string{"index_non_unique", "nested_fields"}
+		err := r.IndexesDrop(ctx, dbName, collectionName, toDrop)
+		require.NoError(t, err)
+
+		q := "SELECT count(indexdef) FROM pg_indexes WHERE schemaname = $1 AND tablename = $2"
+		row := db.QueryRow(ctx, q, dbName, collection.TableName)
+
+		var count int
+		require.NoError(t, row.Scan(&count))
+		require.Equal(t, 2, count) // only default index and index_unique should be left
+
+		// Force DBs and collection initialization to check index metadata after deletion.
+		_, err = r.getPool(ctx)
+		require.NoError(t, err)
+
+		collection, err = r.CollectionGet(ctx, dbName, collectionName)
+		require.NoError(t, err)
+		require.Equal(t, 2, len(collection.Indexes))
+
+		for _, index := range collection.Indexes {
+			switch index.Name {
+			case "_id_":
+				assert.Equal(t, 1, len(index.Key))
+			case "index_unique":
+				assert.Equal(t, 1, len(index.Key))
+			default:
+				t.Errorf("unexpected index: %s", index.Name)
+			}
+		}
+	})
+}
+
+func TestLongIndexNames(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping in -short mode")
+	}
+
+	t.Parallel()
+
+	connInfo := conninfo.New()
+	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
+
+	r, _, dbName := createDatabase(t, ctx)
+
+	batch1 := []IndexInfo{{
+		Name: strings.Repeat("aB", 75),
+		Key: []IndexKeyPair{{
+			Field:      "foo",
+			Descending: false,
+		}, {
+			Field:      "bar",
+			Descending: true,
+		}},
+	}, {
+		Name: strings.Repeat("aB", 75) + "_unique",
+		Key: []IndexKeyPair{{
+			Field:      "foo",
+			Descending: false,
+		}},
+		Unique: true,
+	}}
+
+	batch2 := []IndexInfo{{
+		Name: strings.Repeat("aB", 75) + "_bar",
+		Key: []IndexKeyPair{{
+			Field:      "bar",
+			Descending: false,
+		}},
+	}}
+
+	for name, tc := range map[string]struct {
+		collectionName   string
+		tablePartInIndex string
+	}{
+		"ShortCollectionName": {
+			collectionName:   testutil.CollectionName(t),
+			tablePartInIndex: "testlongindexnames_47546aa3",
+		},
+		"LongCollectionName": {
+			collectionName:   "Collection" + strings.Repeat("cD", 75),
+			tablePartInIndex: "collection" + strings.Repeat("cd", 10),
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			err := r.IndexesCreate(ctx, dbName, tc.collectionName, batch1)
+			require.NoError(t, err)
+
+			collection, err := r.CollectionGet(ctx, dbName, tc.collectionName)
+			require.NoError(t, err)
+			require.Equal(t, 3, len(collection.Indexes))
+
+			for _, index := range collection.Indexes {
+				switch index.Name {
+				case "_id_":
+					assert.Equal(t, tc.tablePartInIndex+"__id__67399184_idx", index.PgIndex)
+				case batch1[0].Name:
+					assert.Equal(t, tc.tablePartInIndex+"_ababababababababab_12fa1dfe_idx", index.PgIndex)
+				case batch1[1].Name:
+					assert.Equal(t, tc.tablePartInIndex+"_ababababababababab_ca7ee610_idx", index.PgIndex)
+				default:
+					t.Errorf("unexpected index: %s", index.Name)
+				}
+			}
+
+			err = r.IndexesCreate(ctx, dbName, tc.collectionName, batch2)
+			require.NoError(t, err)
+
+			// Force DBs and collection initialization to check that indexes metadata is stored correctly in the database.
+			_, err = r.getPool(ctx)
+			require.NoError(t, err)
+
+			collection, err = r.CollectionGet(ctx, dbName, tc.collectionName)
+			require.NoError(t, err)
+			require.Equal(t, 4, len(collection.Indexes))
+
+			for _, index := range collection.Indexes {
+				switch index.Name {
+				case "_id_":
+					assert.Equal(t, tc.tablePartInIndex+"__id__67399184_idx", index.PgIndex)
+				case batch1[0].Name:
+					assert.Equal(t, tc.tablePartInIndex+"_ababababababababab_12fa1dfe_idx", index.PgIndex)
+				case batch1[1].Name:
+					assert.Equal(t, tc.tablePartInIndex+"_ababababababababab_ca7ee610_idx", index.PgIndex)
+				case batch2[0].Name:
+					assert.Equal(t, tc.tablePartInIndex+"_ababababababababab_aaf0d99c_idx", index.PgIndex)
+				default:
+					t.Errorf("unexpected index: %s", index.Name)
+				}
+			}
+		})
+	}
 }

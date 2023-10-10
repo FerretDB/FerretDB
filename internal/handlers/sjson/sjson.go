@@ -321,7 +321,7 @@ func unmarshalSingleValue(data json.RawMessage, sch *elem) (any, error) {
 	return fromSJSON(res), nil
 }
 
-// Marshal encodes the given document and set its schema in the field $s.
+// Marshal encodes given document fields and set its schema in the field $s.
 // Use it when you need to encode a document with schema, for example, when you want to store it in a database.
 func Marshal(d *types.Document) ([]byte, error) {
 	if d == nil {

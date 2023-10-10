@@ -101,7 +101,7 @@ func TestCreateDropStress(t *testing.T) {
 	// Otherwise, the test might fail with "database schema has changed".
 	// That error code is SQLITE_SCHEMA (17).
 	// See https://www.sqlite.org/rescode.html#schema and https://www.sqlite.org/compile.html#max_schema_retry
-	require.Less(t, teststress.NumGoroutines, 50)
+	const n = 50
 
 	ctx := testutil.Ctx(t)
 
@@ -132,7 +132,7 @@ func TestCreateDropStress(t *testing.T) {
 
 			var i atomic.Int32
 
-			teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+			teststress.StressN(t, n, func(ready chan<- struct{}, start <-chan struct{}) {
 				collectionName := fmt.Sprintf("collection_%03d", i.Add(1))
 
 				ready <- struct{}{}
@@ -141,7 +141,7 @@ func TestCreateDropStress(t *testing.T) {
 				testCollection(t, ctx, r, db, dbName, collectionName)
 			})
 
-			require.Equal(t, int32(teststress.NumGoroutines), i.Load())
+			require.Equal(t, int32(n), i.Load())
 		})
 	}
 }
@@ -150,7 +150,7 @@ func TestCreateSameStress(t *testing.T) {
 	// Otherwise, the test might fail with "database schema has changed".
 	// That error code is SQLITE_SCHEMA (17).
 	// See https://www.sqlite.org/rescode.html#schema and https://www.sqlite.org/compile.html#max_schema_retry
-	require.Less(t, teststress.NumGoroutines, 50)
+	const n = 50
 
 	ctx := testutil.Ctx(t)
 
@@ -183,7 +183,7 @@ func TestCreateSameStress(t *testing.T) {
 
 			var i, createdTotal atomic.Int32
 
-			teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+			teststress.StressN(t, n, func(ready chan<- struct{}, start <-chan struct{}) {
 				id := i.Add(1)
 
 				ready <- struct{}{}
@@ -213,7 +213,7 @@ func TestCreateSameStress(t *testing.T) {
 				require.NoError(t, err)
 			})
 
-			require.Equal(t, int32(teststress.NumGoroutines), i.Load())
+			require.Equal(t, int32(n), i.Load())
 			require.Equal(t, int32(1), createdTotal.Load())
 		})
 	}
@@ -223,7 +223,7 @@ func TestDropSameStress(t *testing.T) {
 	// Otherwise, the test might fail with "database schema has changed".
 	// That error code is SQLITE_SCHEMA (17).
 	// See https://www.sqlite.org/rescode.html#schema and https://www.sqlite.org/compile.html#max_schema_retry
-	require.Less(t, teststress.NumGoroutines, 50)
+	const n = 50
 
 	ctx := testutil.Ctx(t)
 
@@ -260,7 +260,7 @@ func TestDropSameStress(t *testing.T) {
 
 			var droppedTotal atomic.Int32
 
-			teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+			teststress.StressN(t, n, func(ready chan<- struct{}, start <-chan struct{}) {
 				ready <- struct{}{}
 				<-start
 
@@ -280,7 +280,7 @@ func TestCreateDropSameStress(t *testing.T) {
 	// Otherwise, the test might fail with "database schema has changed".
 	// That error code is SQLITE_SCHEMA (17).
 	// See https://www.sqlite.org/rescode.html#schema and https://www.sqlite.org/compile.html#max_schema_retry
-	require.Less(t, teststress.NumGoroutines, 50)
+	const n = 50
 
 	ctx := testutil.Ctx(t)
 
@@ -313,7 +313,7 @@ func TestCreateDropSameStress(t *testing.T) {
 
 			var i, createdTotal, droppedTotal atomic.Int32
 
-			teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+			teststress.StressN(t, n, func(ready chan<- struct{}, start <-chan struct{}) {
 				id := i.Add(1)
 
 				ready <- struct{}{}
@@ -334,7 +334,7 @@ func TestCreateDropSameStress(t *testing.T) {
 				}
 			})
 
-			require.Equal(t, int32(teststress.NumGoroutines), i.Load())
+			require.Equal(t, int32(n), i.Load())
 			require.Less(t, int32(1), createdTotal.Load())
 			require.Less(t, int32(1), droppedTotal.Load())
 		})

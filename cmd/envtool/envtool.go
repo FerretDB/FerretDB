@@ -478,6 +478,7 @@ func main() {
 		if cmd == "setup" {
 			printDiagnosticData(err, logger)
 		}
-		os.Exit(1)
+
+		logger.Fatal(err)
 	}
 }

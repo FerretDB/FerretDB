@@ -26,24 +26,28 @@ import (
 
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // testsRun runs tests specified by the shard index and total or by the run regex
 // using `go test` with given extra args.
 func testsRun(w io.Writer, index, total uint, run string, args []string) error {
-	if (index == 0 && total == 0) == (run == "") {
-		return fmt.Errorf("either --shard-index and --shard-total or --run must be specified")
-	}
+	zap.S().Debugf("testsRun: index=%d, total=%d, run=%q, args=%q", index, total, run, args)
 
 	if run == "" {
+		if index == 0 || total == 0 {
+			return fmt.Errorf("--shard-index and --shard-total must be specified when --run is not")
+		}
+
 		all, err := listTests("")
 		if err != nil {
-			return err
+			return lazyerrors.Error(err)
 		}
 
 		shard, err := shardTests(index, total, all)
 		if err != nil {
-			return err
+			return lazyerrors.Error(err)
 		}
 
 		run = "^("
@@ -75,7 +79,7 @@ func listTests(dir string) ([]string, error) {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	tests := make(map[string]struct{}, 200)
@@ -105,7 +109,7 @@ func listTests(dir string) ([]string, error) {
 	}
 
 	if err := s.Err(); err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	res := maps.Keys(tests)

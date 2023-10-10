@@ -8,6 +8,7 @@ To install the `.deb` packages for FerretDB on your Debian, Ubuntu, and other `.
 you can use `dpkg` tool.
 
 Download the latest FerretDB `.deb` package from [our release pages](https://github.com/FerretDB/FerretDB/releases/latest),
+rename it to `ferretdb.deb`,
 then run the following command in your terminal:
 
 ```sh

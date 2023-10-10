@@ -43,5 +43,8 @@
 // But there are some common tests for all backends that check corner cases in contracts.
 // They also test that all backends adjusted to contract changes.
 //
+// Some backends may have their own tests.
+//
+// Both kinds of tests could be removed over time as they are replaced by integration tests.
 // Prefer integration tests when possible.
 package backends

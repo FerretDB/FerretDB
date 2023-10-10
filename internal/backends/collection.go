@@ -16,8 +16,10 @@ package backends
 
 import (
 	"context"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
@@ -43,6 +45,7 @@ type Collection interface {
 	Explain(context.Context, *ExplainParams) (*ExplainResult, error)
 
 	Stats(context.Context, *CollectionStatsParams) (*CollectionStatsResult, error)
+	Compact(context.Context, *CompactParams) (*CompactResult, error)
 
 	ListIndexes(context.Context, *ListIndexesParams) (*ListIndexesResult, error)
 	CreateIndexes(context.Context, *CreateIndexesParams) (*CreateIndexesResult, error)
@@ -69,7 +72,8 @@ func CollectionContract(c Collection) Collection {
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	Filter *types.Document
+	Filter        *types.Document
+	OnlyRecordIDs bool // TODO https://github.com/FerretDB/FerretDB/issues/3490
 }
 
 // QueryResult represents the results of Collection.Query method.
@@ -114,7 +118,9 @@ type InsertAllResult struct{}
 func (cc *collectionContract) InsertAll(ctx context.Context, params *InsertAllParams) (*InsertAllResult, error) {
 	defer observability.FuncCall(ctx)()
 
+	now := time.Now()
 	for _, doc := range params.Docs {
+		doc.SetRecordID(types.NextTimestamp(now))
 		doc.Freeze()
 	}
 
@@ -159,7 +165,8 @@ func (cc *collectionContract) UpdateAll(ctx context.Context, params *UpdateAllPa
 
 // DeleteAllParams represents the parameters of Collection.Delete method.
 type DeleteAllParams struct {
-	IDs []any
+	IDs       []any
+	RecordIDs []types.Timestamp
 }
 
 // DeleteAllResult represents the results of Collection.Delete method.
@@ -178,6 +185,8 @@ type DeleteAllResult struct {
 // Database or collection may not exist; that's not an error.
 func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllParams) (*DeleteAllResult, error) {
 	defer observability.FuncCall(ctx)()
+
+	must.BeTrue((params.IDs == nil) != (params.RecordIDs == nil))
 
 	res, err := cc.c.DeleteAll(ctx, params)
 	checkError(err)
@@ -211,9 +220,15 @@ func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams
 }
 
 // CollectionStatsParams represents the parameters of Collection.Stats method.
-type CollectionStatsParams struct{}
+type CollectionStatsParams struct {
+	Refresh bool // TODO https://github.com/FerretDB/FerretDB/issues/3518
+}
 
 // CollectionStatsResult represents the results of Collection.Stats method.
+//
+// CountObjects is an estimate of the number of documents.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/2447
 type CollectionStatsResult struct {
 	CountObjects   int64
 	CountIndexes   int64
@@ -223,10 +238,34 @@ type CollectionStatsResult struct {
 }
 
 // Stats returns statistics about the collection.
+//
+// The errors for non-existing database and non-existing collection are the same.
 func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStatsParams) (*CollectionStatsResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.Stats(ctx, params)
+	checkError(err, ErrorCodeCollectionDoesNotExist)
+
+	return res, err
+}
+
+// CompactParams represents the parameters of Collection.Compact method.
+type CompactParams struct {
+	Full bool
+}
+
+// CompactResult represents the results of Collection.Compact method.
+type CompactResult struct{}
+
+// Compact reduces the disk space collection takes (by defragmenting, removing dead rows, etc)
+// and refreshes its statistics.
+//
+// If full is true, the operation should try to reduce the disk space as much as possible,
+// even if collection or the whole database will be locked for some time.
+func (cc *collectionContract) Compact(ctx context.Context, params *CompactParams) (*CompactResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := cc.c.Compact(ctx, params)
 	checkError(err, ErrorCodeDatabaseDoesNotExist, ErrorCodeCollectionDoesNotExist)
 
 	return res, err
