@@ -70,8 +70,8 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 		indexes += int64(len(c.Settings.Indexes))
 	}
 
-	// The table size is the size used by collection objects. The `pgsize` of `dbstat` table
-	// does not include freelist pages, pointer-map pages, and the lock page.
+	// The table size is the size used by collection objects. The `pgsize` of `dbstat`
+	// table does not include freelist pages, pointer-map pages, and the lock page.
 	//
 	// If rows are deleted from a page but there are other rows on that same page,
 	// the page won't be moved to freelist pages.
