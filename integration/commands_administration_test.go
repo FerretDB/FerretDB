@@ -804,7 +804,9 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 		assert.InDelta(t, 24_576, must.NotFail(doc.Get("size")), 24_576)
 		assert.InDelta(t, 4, must.NotFail(doc.Get("numObjects")), 4) // TODO https://github.com/FerretDB/FerretDB/issues/727
-		assert.InDelta(t, 200, must.NotFail(doc.Get("millis")), 200)
+		// reduce delta to 200 once ANALYZE is called less
+		// TODO https://github.com/FerretDB/FerretDB/issues/3518
+		assert.InDelta(t, 200, must.NotFail(doc.Get("millis")), 300)
 	})
 
 	t.Run("NonExistent", func(t *testing.T) {
