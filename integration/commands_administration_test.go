@@ -788,8 +788,6 @@ func TestCommandsAdministrationCollStatsCount(t *testing.T) {
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
-	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3521")
-
 	t.Parallel()
 
 	t.Run("Existing", func(t *testing.T) {
