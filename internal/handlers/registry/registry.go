@@ -69,6 +69,11 @@ func NewHandler(name string, opts *NewHandlerOpts) (handlers.Interface, error) {
 		return nil, fmt.Errorf("opts is nil")
 	}
 
+	// handle deprecated variant
+	if name == "pg" {
+		name = "postgresql"
+	}
+
 	newHandler := registry[name]
 	if newHandler == nil {
 		return nil, fmt.Errorf("unknown handler %q", name)
@@ -82,7 +87,7 @@ func Handlers() []string {
 	res := make([]string, 0, len(registry))
 
 	// double check registered names and return them in the right order
-	for _, h := range []string{"pg", "sqlite", "hana"} {
+	for _, h := range []string{"postgresql", "sqlite", "hana"} {
 		if _, ok := registry[h]; !ok {
 			continue
 		}

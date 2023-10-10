@@ -16,12 +16,12 @@ tasks:
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
-        -target-backend=ferretdb-pg
+        -target-backend=ferretdb-postgresql
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
-        -target-backend=ferretdb-pg
+        -target-backend=ferretdb-postgresql
         -postgresql-url=postgres://username:password@127.0.0.1:5433/ferretdb?pool_max_conns=50
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
@@ -53,35 +53,35 @@ tasks:
     cmds:
       - ../bin/govulncheck{{exeExt}} -test ./...
 
-  bench-pg:
-    desc: "Run benchmarks for `pg` handler"
+  bench-postgresql:
+    desc: "Run benchmarks for `postgresql` backend"
     cmds:
       - >
         go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
         -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
-        -target-backend=ferretdb-pg
+        -target-backend=ferretdb-postgresql
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
-        | tee new-pg.txt
-      - ../bin/benchstat{{exeExt}} old-pg.txt new-pg.txt
+        | tee new-postgresql.txt
+      - ../bin/benchstat{{exeExt}} old-postgresql.txt new-postgresql.txt
 
-  bench-pg-no-pushdown:
-    desc: "Run benchmarks for `pg` with query pushdown disabled"
+  bench-postgresql-no-pushdown:
+    desc: "Run benchmarks for `postgresql` backend without filter pushdown"
     cmds:
       - >
         go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
         -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
-        -target-backend=ferretdb-pg
+        -target-backend=ferretdb-postgresql
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
         -disable-filter-pushdown
-        | tee new-pg.txt
-      - ../bin/benchstat{{exeExt}} old-pg.txt new-pg.txt
+        | tee new-postgresql.txt
+      - ../bin/benchstat{{exeExt}} old-postgresql.txt new-postgresql.txt
 
   bench-sqlite:
-    desc: "Run benchmarks for `sqlite` handler"
+    desc: "Run benchmarks for `sqlite` backned"
     cmds:
       - >
         go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX

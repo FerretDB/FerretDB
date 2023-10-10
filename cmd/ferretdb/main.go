@@ -108,7 +108,7 @@ var cli struct {
 //nolint:lll // some tags are long
 var pgFlags struct {
 	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/ferretdb" help:"PostgreSQL URL for 'pg' handler."`
-	PostgreSQLNew bool   `name:"postgresql-new" default:"false"                              help:"Use new PostgreSQL backend."`
+	PostgreSQLNew bool   `name:"postgresql-new" default:"true"                               help:"Use new PostgreSQL backend."`
 }
 
 // The sqliteFlags struct represents flags that are used by the "sqlite" handler.
