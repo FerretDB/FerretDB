@@ -721,14 +721,52 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 
-	// Values are returned as "numbers" that could be int32 or int64.
-	// FerretDB always returns int64 for simplicity.
-	assert.InDelta(t, 40_000, must.NotFail(doc.Get("size")), 39_900)
-	assert.InDelta(t, 2_400, must.NotFail(doc.Get("avgObjSize")), 2_370)
-	assert.InDelta(t, 40_000, must.NotFail(doc.Get("storageSize")), 39_900)
-	assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
-	assert.InDelta(t, 12_000, must.NotFail(doc.Get("totalIndexSize")), 11_000)
-	assert.InDelta(t, 32_000, must.NotFail(doc.Get("totalSize")), 30_000)
+	type defaultSize struct {
+		collectionSize int32
+		storageSize    int32
+		indexSize      int32
+	}
+
+	// The expected sizes are vastly different for each database due to
+	// how much storage is allocated for collection and indexes.
+	// MongoDB differentiates the size used by collection and the storage allocated
+	// for collection, FerretDB does not differentiate them.
+	// Hence, the expectation is defined for each backend.
+	var expectedSizes defaultSize
+	switch {
+	case setup.IsPostgres(t):
+		expectedSizes = defaultSize{
+			collectionSize: 16384,
+			storageSize:    16384,
+			indexSize:      16384,
+		}
+	case setup.IsSQLite(t):
+		expectedSizes = defaultSize{
+			collectionSize: 4096,
+			storageSize:    4096,
+			indexSize:      4096,
+		}
+	case setup.IsMongoDB(t):
+		expectedSizes = defaultSize{
+			collectionSize: 298,
+			storageSize:    4096,
+			indexSize:      4096,
+		}
+	default:
+		t.Fatalf("expected size is not defined for the backend")
+	}
+
+	assert.NotZero(t, must.NotFail(doc.Get("size")))
+	assert.LessOrEqual(t, must.NotFail(doc.Get("size")), expectedSizes.collectionSize)
+
+	expectedAvgObjSize := expectedSizes.collectionSize / must.NotFail(doc.Get("count")).(int32)
+	assert.NotZero(t, expectedAvgObjSize)
+	assert.InDelta(t, expectedAvgObjSize, must.NotFail(doc.Get("avgObjSize")), float64(expectedAvgObjSize))
+
+	assert.Equal(t, expectedSizes.storageSize, must.NotFail(doc.Get("storageSize")))
+	assert.Equal(t, int32(1), must.NotFail(doc.Get("nindexes")))
+	assert.Equal(t, expectedSizes.indexSize, must.NotFail(doc.Get("totalIndexSize")))
+	assert.Equal(t, expectedSizes.storageSize+expectedSizes.indexSize, must.NotFail(doc.Get("totalSize")))
 }
 
 func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
@@ -738,25 +776,48 @@ func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
-	var actual bson.D
-	command := bson.D{{"collStats", collection.Name()}, {"scale", float64(1_000)}}
-	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	scale := 1_000
+	var res bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{
+		{"collStats", collection.Name()},
+		{"scale", float64(scale)},
+	}).Decode(&res)
 	require.NoError(t, err)
 
-	// Set better expected results.
-	// TODO https://github.com/FerretDB/FerretDB/issues/1771
-	doc := ConvertDocument(t, actual)
+	var resWithoutScale bson.D
+	err = collection.Database().RunCommand(ctx, bson.D{
+		{"collStats", collection.Name()},
+	}).Decode(&resWithoutScale)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, res)
+	docWithoutScale := ConvertDocument(t, resWithoutScale)
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 	assert.EqualValues(t, 6, must.NotFail(doc.Get("count"))) // Number of documents in DocumentsStrings
 	assert.Equal(t, int32(1000), must.NotFail(doc.Get("scaleFactor")))
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 
-	assert.InDelta(t, 16, must.NotFail(doc.Get("size")), 16)
-	assert.InDelta(t, 2_400, must.NotFail(doc.Get("avgObjSize")), 2_370)
-	assert.InDelta(t, 24, must.NotFail(doc.Get("storageSize")), 24)
+	size := must.NotFail(doc.Get("size"))
+	sizeWithoutScale := must.NotFail(docWithoutScale.Get("size")).(int32)
+	assert.EqualValues(t, sizeWithoutScale/int32(scale), size)
+
+	avgObjSize := must.NotFail(doc.Get("avgObjSize"))
+	avgObjSizeWithoutScale := must.NotFail(docWithoutScale.Get("avgObjSize")).(int32)
+	assert.EqualValues(t, avgObjSizeWithoutScale, avgObjSize)
+
+	storageSize := must.NotFail(doc.Get("storageSize"))
+	storageSizeWithoutScale := must.NotFail(docWithoutScale.Get("storageSize")).(int32)
+	assert.EqualValues(t, storageSizeWithoutScale/int32(scale), storageSize)
+
 	assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
-	assert.InDelta(t, 8, must.NotFail(doc.Get("totalIndexSize")), 8)
-	assert.InDelta(t, 24, must.NotFail(doc.Get("totalSize")), 24)
+
+	totalIndexSize := must.NotFail(doc.Get("totalIndexSize"))
+	totalIndexSizeWithoutScale := must.NotFail(docWithoutScale.Get("totalIndexSize")).(int32)
+	assert.EqualValues(t, totalIndexSizeWithoutScale/int32(scale), totalIndexSize)
+
+	totalSize := must.NotFail(doc.Get("totalSize"))
+	totalSizeWithoutScale := must.NotFail(docWithoutScale.Get("totalSize")).(int32)
+	assert.EqualValues(t, totalSizeWithoutScale/int32(scale), totalSize)
 }
 
 // TestCommandsAdministrationCollStatsCount adds large number of documents and checks

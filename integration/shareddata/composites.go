@@ -139,6 +139,8 @@ var DocumentsDoubles = &Values[string]{
 }
 
 // DocumentsStrings contains documents with string values for tests.
+// It is used by CollStats for testing stored object and index sizes,
+// modifying this may require updating CollStats tests.
 var DocumentsStrings = &Values[string]{
 	name: "DocumentsStrings",
 	data: map[string]any{
