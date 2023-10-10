@@ -17,8 +17,13 @@ The next FerretDB version will enable it by default.
 Production Docker images use `scratch` as a base Docker image.
 The only file present in the image is a FerretDB binary (with root TLS certificates embedded).
 
+#### `arm64` binaries
+
+In addition to `linux/arm64` Docker images, we now provide `linux/arm64` binaries and `.deb` / `.rpm` packages.
+
 ### New Features 🎉
 
+- Build `arm64` binaries and packages by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3477
 - Implement metrics collection by @Mihai22125 in https://github.com/FerretDB/FerretDB/pull/3430
 - Implement `RenameCollection` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3440
 - Implement `InsertAll` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3419
@@ -31,15 +36,18 @@ The only file present in the image is a FerretDB binary (with root TLS certifica
 - Implement `collection.Stats` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3478
 - Implement `CreateIndexes`, `DropIndexes`, `ListIndexes` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/3468
 - Implement filter pushdown by @noisersup in https://github.com/FerretDB/FerretDB/pull/3482
+- Add info about indexes to `dbStats` response by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/3534
 
 ### Fixed Bugs 🐛
 
 - Verify that client metadata not being mutated by @kropidlowsky in https://github.com/FerretDB/FerretDB/pull/3194
 - Relax restrictions when \_id is not the first field in projection by @princejha95 in https://github.com/FerretDB/FerretDB/pull/3491
+- Fix `_id` restriction in aggregation `$project` stage by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3508
 
 ### Enhancements 🛠
 
 - Implement validation for `createIndexes` and `dropIndexes` commands for SQLite by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/3373
+- Use `Ping` for checking connection by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3519
 
 ### Documentation 📄
 
@@ -56,6 +64,7 @@ The only file present in the image is a FerretDB binary (with root TLS certifica
 - Fix blog post formatting by @Fashander in https://github.com/FerretDB/FerretDB/pull/3515
 - Fix typo in contributing documentation by @jrmanes in https://github.com/FerretDB/FerretDB/pull/3507
 - Add mermaid diagrams by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3524
+- Update documentation by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3530
 
 ### Other Changes 🤖
 
@@ -71,7 +80,6 @@ The only file present in the image is a FerretDB binary (with root TLS certifica
 - Tweak SQLite backend tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3460
 - Add tests for backends contract by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3456
 - Speed-up Docker image building by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3470
-- Build `arm64` binaries and packages by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3477
 - Fix running a subset of tests by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3479
 - Add a workaround for Docker build failures by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3480
 - Add stubs for `Collection.Compact` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3485
@@ -86,8 +94,9 @@ The only file present in the image is a FerretDB binary (with root TLS certifica
 - Bump Go version by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3510
 - Disallow importing handlers code from backends by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3512
 - Disable `auto_vacuum` for SQLite by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3496
-- Use `Ping` for checking connection by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3519
 - Fix index name generation by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/3511
+- Fix unit tests for indexes by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/3531
+- Make new PostgreSQL backend tests pass by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/3522
 
 ### New Contributors
 
