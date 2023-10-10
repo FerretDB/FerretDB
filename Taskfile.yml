@@ -191,9 +191,9 @@ tasks:
   test-integration:
     desc: "Run integration tests for several backends in parallel"
     deps:
-      - test-integration-pg
+      # no test-integration-pg
+      - test-integration-postgresql
       - test-integration-sqlite
-      # no test-integration-postgresql yet
       # no test-integration-hana
       - test-integration-mongodb
 
