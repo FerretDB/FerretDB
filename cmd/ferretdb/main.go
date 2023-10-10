@@ -52,8 +52,8 @@ import (
 //
 //nolint:lll // some tags are long
 var cli struct {
-	Version  bool   `default:"false"      help:"Print version to stdout and exit." env:"-"`
-	Handler  string `default:"postgresql" help:"${help_handler}"`
+	Version  bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
+	Handler  string `default:"postgresql"      help:"${help_handler}"`
 	Mode     string `default:"${default_mode}" help:"${help_mode}" enum:"${enum_mode}"`
 	StateDir string `default:"."               help:"Process state directory."`
 
