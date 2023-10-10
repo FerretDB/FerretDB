@@ -320,8 +320,6 @@ func TestAggregateCompatOptions(t *testing.T) {
 }
 
 func TestAggregateCompatStages(t *testing.T) {
-	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3520")
-
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -904,8 +902,6 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 }
 
 func TestAggregateCompatLimit(t *testing.T) {
-	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3520")
-
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -1247,8 +1243,6 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 }
 
 func TestAggregateCompatMatch(t *testing.T) {
-	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3520")
-
 	t.Parallel()
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2291
@@ -1511,8 +1505,6 @@ func TestAggregateCompatUnwind(t *testing.T) {
 }
 
 func TestAggregateCompatSkip(t *testing.T) {
-	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3520")
-
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
