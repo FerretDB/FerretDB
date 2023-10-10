@@ -97,6 +97,8 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		pairs = append(pairs, "avgObjSize", stats.SizeCollection/stats.CountObjects)
 	}
 
+	capped := stats.CappedSize != int64(0)
+
 	// MongoDB uses "numbers" that could be int32 or int64,
 	// FerretDB always returns int64 for simplicity.
 	pairs = append(pairs,
@@ -105,7 +107,17 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		"totalIndexSize", stats.SizeIndexes/scale,
 		"totalSize", stats.SizeTotal/scale,
 		"scaleFactor", int32(scale),
-		"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/3458
+		"capped", capped,
+	)
+
+	if capped {
+		pairs = append(pairs,
+			"max", stats.CappedDocuments,
+			"maxSize", stats.CappedSize,
+		)
+	}
+
+	pairs = append(pairs,
 		"ok", float64(1),
 	)
 
