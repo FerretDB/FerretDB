@@ -2,7 +2,7 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
-## [v1.12.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.12.0) (2023-10-10)
+## [v1.12.1](https://github.com/FerretDB/FerretDB/releases/tag/v1.12.1) (2023-10-10)
 
 ### What's Changed
 
@@ -107,7 +107,7 @@ In addition to `linux/arm64` Docker images, we now provide `linux/arm64` binarie
 - @jrmanes made their first contribution in https://github.com/FerretDB/FerretDB/pull/3507
 
 [All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/54?closed=1).
-[All commits](https://github.com/FerretDB/FerretDB/compare/v1.11.0...v1.12.0).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.11.0...v1.12.1).
 
 ## [v1.11.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.11.0) (2023-09-25)
 
