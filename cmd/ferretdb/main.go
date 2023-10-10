@@ -52,8 +52,8 @@ import (
 //
 //nolint:lll // some tags are long
 var cli struct {
-	Version  bool   `default:"false" help:"Print version to stdout and exit." env:"-"`
-	Handler  string `default:"pg" help:"${help_handler}"`
+	Version  bool   `default:"false"      help:"Print version to stdout and exit." env:"-"`
+	Handler  string `default:"postgresql" help:"${help_handler}"`
 	Mode     string `default:"${default_mode}" help:"${help_mode}" enum:"${enum_mode}"`
 	StateDir string `default:"."               help:"Process state directory."`
 
@@ -101,17 +101,17 @@ var cli struct {
 	} `embed:"" prefix:"test-"`
 }
 
-// The pgFlags struct represents flags that are used by the "pg" handler.
+// The postgreSQLFlags struct represents flags that are used by the "postgresql" backend.
 //
-// See main_pg.go.
+// See main_postgresql.go.
 //
 //nolint:lll // some tags are long
-var pgFlags struct {
+var postgreSQLFlags struct {
 	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/ferretdb" help:"PostgreSQL URL for 'pg' handler."`
 	PostgreSQLNew bool   `name:"postgresql-new" default:"true"                               help:"Use new PostgreSQL backend."`
 }
 
-// The sqliteFlags struct represents flags that are used by the "sqlite" handler.
+// The sqliteFlags struct represents flags that are used by the "sqlite" backend.
 //
 // See main_sqlite.go.
 var sqliteFlags struct {
@@ -360,7 +360,7 @@ func run() {
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: stateProvider,
 
-		PostgreSQLURL: pgFlags.PostgreSQLURL,
+		PostgreSQLURL: postgreSQLFlags.PostgreSQLURL,
 
 		SQLiteURL: sqliteFlags.SQLiteURL,
 
@@ -371,7 +371,7 @@ func run() {
 			EnableSortPushdown:    cli.Test.EnableSortPushdown,
 			EnableOplog:           cli.Test.EnableOplog,
 
-			UseNewPG:   pgFlags.PostgreSQLNew,
+			UseNewPG:   postgreSQLFlags.PostgreSQLNew,
 			UseNewHana: cli.Test.UseNewHana,
 		},
 	})
