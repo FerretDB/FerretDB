@@ -66,6 +66,7 @@ func openDB(uri string, l *zap.Logger, sp *state.Provider) (*pgxpool.Pool, error
 	}
 
 	// TODO port logging, tracing
+	// TODO https://github.com/FerretDB/FerretDB/issues/3554
 
 	// see https://github.com/jackc/pgx/issues/1726#issuecomment-1711612138
 	ctx := context.TODO()
