@@ -119,6 +119,10 @@ func New(config *Config) (*FerretDB, error) {
 		PostgreSQLURL: config.PostgreSQLURL,
 
 		SQLiteURL: config.SQLiteURL,
+
+		TestOpts: registry.TestOpts{
+			UseNewPG: true,
+		},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct handler: %s", err)

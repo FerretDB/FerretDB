@@ -63,13 +63,12 @@ var (
 	enableSortPushdownF    = flag.Bool("enable-sort-pushdown", false, "enable sort pushdown")
 	enableOplogF           = flag.Bool("enable-oplog", false, "enable OpLog")
 
-	useNewPgF   = flag.Bool("use-new-pg", false, "use new PostgreSQL backend")
 	useNewHanaF = flag.Bool("use-new-hana", false, "use new SAP HANA backend")
 )
 
 // Other globals.
 var (
-	allBackends = []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-hana", "mongodb"}
+	allBackends = []string{"ferretdb-postgresql", "ferretdb-sqlite", "ferretdb-hana", "mongodb"}
 
 	CertsRoot = filepath.Join("..", "build", "certs") // relative to `integration` directory
 )
