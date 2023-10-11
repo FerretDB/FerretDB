@@ -56,6 +56,10 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		return nil, lazyerrors.Error(err)
 	}
 
+	if params == nil {
+		params = new(backends.QueryParams)
+	}
+
 	if p == nil {
 		return &backends.QueryResult{
 			Iter: newQueryIterator(ctx, nil),
@@ -73,16 +77,18 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3490
+	q := prepareSelectClause(c.dbName, meta.TableName)
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3414
-	q := fmt.Sprintf(
-		`SELECT %s FROM %s`,
-		metadata.DefaultColumn,
-		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
-	)
+	var placeholder metadata.Placeholder
 
-	rows, err := p.Query(ctx, q)
+	where, args, err := prepareWhereClause(&placeholder, params.Filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	q += where
+
+	rows, err := p.Query(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -258,8 +264,10 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return nil, lazyerrors.Error(err)
 	}
 
+	res := new(backends.ExplainResult)
+
 	if p == nil {
-		return new(backends.ExplainResult), nil
+		return res, nil
 	}
 
 	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
@@ -268,20 +276,25 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	if meta == nil {
-		return &backends.ExplainResult{
-			QueryPlanner: must.NotFail(types.NewDocument()),
-		}, nil
+		res.QueryPlanner = must.NotFail(types.NewDocument())
+		return res, nil
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3414
-	q := fmt.Sprintf(
-		`EXPLAIN (VERBOSE true, FORMAT JSON) SELECT %s FROM %s`,
-		metadata.DefaultColumn,
-		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
-	)
+	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName)
+
+	var placeholder metadata.Placeholder
+
+	where, args, err := prepareWhereClause(&placeholder, params.Filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res.QueryPushdown = where != ""
+
+	q += where
 
 	var b []byte
-	err = p.QueryRow(ctx, q).Scan(&b)
+	err = p.QueryRow(ctx, q, args...).Scan(&b)
 
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -292,15 +305,49 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &backends.ExplainResult{
-		QueryPlanner: must.NotFail(types.NewDocument("Plan", queryPlan)),
-	}, nil
+	res.QueryPlanner = queryPlan
+
+	return res, nil
 }
 
 // Stats implements backends.Collection interface.
 func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3398
-	return new(backends.CollectionStatsResult), nil
+	p, err := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if p == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	coll, err := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if coll == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	stats, err := collectionsStats(ctx, p, c.dbName, []*metadata.Collection{coll})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &backends.CollectionStatsResult{
+		CountObjects:   stats.countRows,
+		CountIndexes:   stats.countIndexes,
+		SizeTotal:      stats.sizeTables + stats.sizeIndexes,
+		SizeIndexes:    stats.sizeIndexes,
+		SizeCollection: stats.sizeTables,
+	}, nil
 }
 
 // Compact implements backends.Collection interface.
@@ -311,19 +358,85 @@ func (c *collection) Compact(ctx context.Context, params *backends.CompactParams
 
 // ListIndexes implements backends.Collection interface.
 func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3394
-	return new(backends.ListIndexesResult), nil
+	db, err := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if db == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	coll, err := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if coll == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	res := backends.ListIndexesResult{
+		Indexes: make([]backends.IndexInfo, len(coll.Indexes)),
+	}
+
+	for i, index := range coll.Indexes {
+		res.Indexes[i] = backends.IndexInfo{
+			Name:   index.Name,
+			Unique: index.Unique,
+			Key:    make([]backends.IndexKeyPair, len(index.Key)),
+		}
+
+		for j, key := range index.Key {
+			res.Indexes[i].Key[j] = backends.IndexKeyPair{
+				Field:      key.Field,
+				Descending: key.Descending,
+			}
+		}
+	}
+
+	return &res, nil
 }
 
 // CreateIndexes implements backends.Collection interface.
 func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) { //nolint:lll // for readability
-	// TODO https://github.com/FerretDB/FerretDB/issues/3399
+	indexes := make([]metadata.IndexInfo, len(params.Indexes))
+	for i, index := range params.Indexes {
+		indexes[i] = metadata.IndexInfo{
+			Name:   index.Name,
+			Key:    make([]metadata.IndexKeyPair, len(index.Key)),
+			Unique: index.Unique,
+		}
+
+		for j, key := range index.Key {
+			indexes[i].Key[j] = metadata.IndexKeyPair{
+				Field:      key.Field,
+				Descending: key.Descending,
+			}
+		}
+	}
+
+	err := c.r.IndexesCreate(ctx, c.dbName, c.name, indexes)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	return new(backends.CreateIndexesResult), nil
 }
 
 // DropIndexes implements backends.Collection interface.
 func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3397
+	err := c.r.IndexesDrop(ctx, c.dbName, c.name, params.Indexes)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	return new(backends.DropIndexesResult), nil
 }
 

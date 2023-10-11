@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.21.1-2 AS production-build
+FROM ghcr.io/ferretdb/golang:1.21.2-1 AS production-build
 
 ARG TARGETARCH
 
@@ -77,6 +77,8 @@ COPY --from=production-build /src/bin/ferretdb /ferretdb
 # final stage
 
 FROM scratch AS production
+
+COPY --from=production-build /src/bin/ferretdb /ferretdb
 
 ENTRYPOINT [ "/ferretdb" ]
 
