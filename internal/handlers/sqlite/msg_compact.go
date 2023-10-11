@@ -21,15 +21,20 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
+// MsgCompact implements HandlerInterface
 func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
+	common.Ignored(document, h.L, "comment")
 
 	command := document.Command()
 
@@ -69,18 +74,54 @@ func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO: handle compact parameters
+	var forceParam any
+	if forceParam, err = document.Get("force"); err != nil {
+		return nil, err
+	}
 
-	// TODO: call collstats before
+	force, ok := forceParam.(bool)
+	if !ok {
+		force = false
+	}
 
-	// TODO: call compact
-	_, err = c.Compact(ctx, nil)
+	statsBefore, err := c.Stats(ctx, new(backends.CollectionStatsParams))
+	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
+		statsBefore = new(backends.CollectionStatsResult)
+		err = nil
+	}
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO: cal
-	// call collstats after
+	_, err = c.Compact(ctx, &backends.CompactParams{
+		Full: force,
+	})
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	return nil, nil
+	statsAfter, err := c.Stats(ctx, new(backends.CollectionStatsParams))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	bytesFreed := statsBefore.SizeTotal - statsAfter.SizeTotal
+
+	// There's a possibility that the size of a collection might be greater at the
+	// end of a compact operation if the collection is being actively written to at
+	// the time of compaction.
+	if bytesFreed < 0 {
+		bytesFreed = 0
+	}
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"bytesFreed", float64(bytesFreed),
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }
