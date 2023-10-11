@@ -130,24 +130,7 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		}
 	}
 
-	logger.Info("Tweaking settings...")
-
-	return pgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		for _, q := range []string{
-			`CREATE ROLE readonly NOINHERIT LOGIN PASSWORD 'readonly_password'`,
-
-			// TODO Grant permissions to readonly role.
-			// https://github.com/FerretDB/FerretDB/issues/1025
-
-			`ANALYZE`, // to make tests more stable
-		} {
-			if _, err = tx.Exec(ctx, q); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
+	return nil
 }
 
 // setupPostgres configures `postgres` container.
