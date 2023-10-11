@@ -146,6 +146,9 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		require.True(tb, u.Path != "")
 		require.True(tb, u.Opaque == "")
 
+		// TODO port logging, tracing; merge with openDB?
+		// TODO https://github.com/FerretDB/FerretDB/issues/3554
+
 		config, err := pgxpool.ParseConfig(postgreSQLURLF)
 		require.NoError(tb, err)
 
@@ -156,12 +159,10 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		template := "template1" // FIXME strings.TrimPrefix(u.Path, "/")
 
 		q := "DROP DATABASE IF EXISTS " + pgx.Identifier{name}.Sanitize()
-		logger.Debug(q)
 		_, err = p.Exec(ctx, q)
 		require.NoError(tb, err)
 
 		q = fmt.Sprintf("CREATE DATABASE %s TEMPLATE %s", pgx.Identifier{name}.Sanitize(), pgx.Identifier{template}.Sanitize())
-		logger.Debug(q)
 		_, err = p.Exec(ctx, q)
 		require.NoError(tb, err)
 
@@ -179,7 +180,6 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 			}
 
 			q := "DROP DATABASE " + pgx.Identifier{name}.Sanitize()
-			logger.Debug(q)
 			_, err = p.Exec(context.Background(), q)
 			require.NoError(tb, err)
 		})
