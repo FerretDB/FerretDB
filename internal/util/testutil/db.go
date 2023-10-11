@@ -25,6 +25,9 @@ import (
 )
 
 var (
+	directoryNamesM sync.Mutex
+	directoryNames  = map[string]string{}
+
 	databaseNamesM sync.Mutex
 	databaseNames  = map[string]string{}
 
@@ -32,11 +35,38 @@ var (
 	collectionNames  = map[string]string{}
 )
 
+// DirectoryName returns a stable directory name for that test.
+//
+// It also could be used as PostgreSQL database name (not FerretDB database / PostgreSQL schema name).
+func DirectoryName(tb testtb.TB) string {
+	tb.Helper()
+
+	name := strings.ToLower(tb.Name())
+
+	name = strings.ReplaceAll(name, "/", "_")
+	name = strings.ReplaceAll(name, " ", "_")
+	name = strings.ReplaceAll(name, "$", "_")
+
+	require.Less(tb, len(name), 64)
+
+	directoryNamesM.Lock()
+	defer directoryNamesM.Unlock()
+
+	// it may be the same test if `go test -count=X` is used
+	if t, ok := directoryNames[name]; ok && t != tb.Name() {
+		panic(fmt.Sprintf("Directory name %q already used by another test %q.", name, tb.Name()))
+	}
+
+	directoryNames[name] = tb.Name()
+
+	return name
+}
+
 // DatabaseName returns a stable FerretDB database name for that test.
 func DatabaseName(tb testtb.TB) string {
 	tb.Helper()
 
-	// database names may contain lowercase and uppercase characters
+	// do not use strings.ToLower because database names can contain uppercase letters
 	name := tb.Name()
 
 	name = strings.ReplaceAll(name, "/", "-")
