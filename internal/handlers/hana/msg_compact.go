@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgCollStats implements HandlerInterface.
+// MsgCompact implements HandlerInterface.
 func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return nil, notImplemented(must.NotFail(msg.Document()).Command())
 }

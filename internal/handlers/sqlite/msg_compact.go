@@ -27,7 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgCompact implements HandlerInterface
+// MsgCompact implements HandlerInterface.
 func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
@@ -75,6 +75,7 @@ func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	var forceParam any
+
 	if forceParam, err = document.Get("force"); err != nil {
 		return nil, err
 	}
