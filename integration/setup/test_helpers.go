@@ -36,6 +36,15 @@ func IsOldPg(tb testtb.TB) bool {
 	return *targetBackendF == "ferretdb-pg" && !*useNewPgF
 }
 
+// IsNewPg returns true if the current test is running for new PostgreSQL handler.
+//
+// This function should not be used lightly and always with an reason provided.
+// It should be removed when a new PG handler is fully supported.
+// TODO https://github.com/FerretDB/FerretDB/issues/3435
+func IsNewPg(tb testtb.TB) bool {
+	return *targetBackendF == "ferretdb-pg" && *useNewPgF
+}
+
 // IsSQLite returns true if the current test is running for SQLite.
 //
 // This function should not be used lightly.
@@ -101,6 +110,21 @@ func SkipForOldPg(tb testtb.TB, reason string) {
 		require.NotEmpty(tb, reason, "reason must not be empty")
 
 		tb.Skipf("Skipping for old PostgreSQL handler: %s.", reason)
+	}
+}
+
+// SkipForNewPg skips the current test for the new PG handler.
+//
+// This function should not be used lightly and always with an reason provided.
+// It should be removed when a new PG handler is fully supported.
+// TODO https://github.com/FerretDB/FerretDB/issues/3435
+func SkipForNewPg(tb testtb.TB, reason string) {
+	tb.Helper()
+
+	if IsNewPg(tb) {
+		require.NotEmpty(tb, reason, "reason must not be empty")
+
+		tb.Skipf("Skipping for new PostgreSQL handler: %s.", reason)
 	}
 }
 

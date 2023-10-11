@@ -17,11 +17,14 @@ package setup
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -133,6 +136,55 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		panic("not reached")
 	}
 
+	// use per-test PostgreSQL database to prevent handler's/backend's metadata registry
+	// read schemas owned by concurrent tests
+	postgreSQLURLF := *postgreSQLURLF
+	if postgreSQLURLF != "" {
+		u, err := url.Parse(postgreSQLURLF)
+		require.NoError(tb, err)
+
+		require.True(tb, u.Path != "")
+		require.True(tb, u.Opaque == "")
+
+		// TODO port logging, tracing; merge with openDB?
+		// TODO https://github.com/FerretDB/FerretDB/issues/3554
+
+		config, err := pgxpool.ParseConfig(postgreSQLURLF)
+		require.NoError(tb, err)
+
+		p, err := pgxpool.NewWithConfig(ctx, config)
+		require.NoError(tb, err)
+
+		name := testutil.DirectoryName(tb)
+		template := "template1"
+
+		q := "DROP DATABASE IF EXISTS " + pgx.Identifier{name}.Sanitize()
+		_, err = p.Exec(ctx, q)
+		require.NoError(tb, err)
+
+		q = fmt.Sprintf("CREATE DATABASE %s TEMPLATE %s", pgx.Identifier{name}.Sanitize(), pgx.Identifier{template}.Sanitize())
+		_, err = p.Exec(ctx, q)
+		require.NoError(tb, err)
+
+		p.Reset()
+
+		u.Path = name
+		postgreSQLURLF = u.String()
+
+		tb.Cleanup(func() {
+			defer p.Close()
+
+			if tb.Failed() {
+				tb.Logf("Keeping %s (%s) for debugging.", name, postgreSQLURLF)
+				return
+			}
+
+			q := "DROP DATABASE " + pgx.Identifier{name}.Sanitize()
+			_, err = p.Exec(context.Background(), q)
+			require.NoError(tb, err)
+		})
+	}
+
 	// use per-test directory to prevent handler's/backend's metadata registry
 	// read databases owned by concurrent tests
 	sqliteURL := *sqliteURLF
@@ -143,7 +195,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		require.True(tb, u.Path == "")
 		require.True(tb, u.Opaque != "")
 
-		u.Opaque = path.Join(u.Opaque, testutil.DatabaseName(tb)) + "/"
+		u.Opaque = path.Join(u.Opaque, testutil.DirectoryName(tb)) + "/"
 		sqliteURL = u.String()
 
 		dir, err := filepath.Abs(u.Opaque)
@@ -169,7 +221,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		ConnMetrics:   listenerMetrics.ConnMetrics,
 		StateProvider: p,
 
-		PostgreSQLURL: *postgreSQLURLF,
+		PostgreSQLURL: postgreSQLURLF,
 		SQLiteURL:     sqliteURL,
 		HANAURL:       *hanaURLF,
 

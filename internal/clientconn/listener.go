@@ -184,6 +184,7 @@ func (l *Listener) Run(ctx context.Context) error {
 		}()
 	}
 
+	<-ctx.Done()
 	logger.Info("Waiting for all connections to stop...")
 	wg.Wait()
 
