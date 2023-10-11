@@ -29,7 +29,8 @@ We encourage you to try out the new PostgreSQL backend and let us know what you 
 ## arm64 binaries now available
 
 We're also happy to announce that we've added linux/arm64 binaries and .deb/.rpm packages.
-This has been a requested feature by the FerretDB community, and we're thrilled that we can finally provide them for you. Check them out [here](https://github.com/FerretDB/FerretDB/releases/).
+This has been a requested feature by the FerretDB community, and we're thrilled that we can finally provide them for you.
+Check them out [here](https://github.com/FerretDB/FerretDB/releases/).
 
 ## Docker images changes
 
