@@ -33,7 +33,7 @@ import (
 )
 
 func TestGetMoreCommand(t *testing.T) {
-	t.Parallel()
+	// do not run tests in parallel to avoid using to many backend connections
 
 	// options are applied to create a client that uses single connection pool
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
@@ -440,7 +440,8 @@ func TestGetMoreCommand(t *testing.T) {
 }
 
 func TestGetMoreBatchSizeCursor(t *testing.T) {
-	t.Parallel()
+	// do not run tests in parallel to avoid using to many backend connections
+
 	ctx, collection := setup.Setup(t)
 
 	// The test cases call `find`/`aggregate`, then may implicitly call `getMore` upon `cursor.Next()`.
@@ -583,7 +584,7 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 }
 
 func TestGetMoreCommandConnection(t *testing.T) {
-	t.Parallel()
+	// do not run tests in parallel to avoid using to many backend connections
 
 	// options are applied to create a client that uses single connection pool
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
@@ -696,7 +697,8 @@ func TestGetMoreCommandConnection(t *testing.T) {
 }
 
 func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
-	t.Parallel()
+	// do not run tests in parallel to avoid using to many backend connections
+
 	ctx, collection := setup.Setup(t)
 
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
@@ -877,7 +879,7 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 }
 
 func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
-	// do not run tests in parallel to for server execution time to use maximum possible maxTimeMS
+	// do not run tests in parallel to avoid using to many backend connections
 
 	// options are applied to create a client that uses single connection pool
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{

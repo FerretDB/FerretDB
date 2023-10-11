@@ -156,7 +156,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		require.NoError(tb, err)
 
 		name := testutil.DirectoryName(tb)
-		template := "template1" // FIXME strings.TrimPrefix(u.Path, "/")
+		template := "template1"
 
 		q := "DROP DATABASE IF EXISTS " + pgx.Identifier{name}.Sanitize()
 		_, err = p.Exec(ctx, q)
