@@ -23,7 +23,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
-	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -187,7 +187,7 @@ func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document) (string
 			return "", nil, nil
 		}
 
-		order, err = common.GetSortType(k, v)
+		order, err = getSortType(v)
 		if err != nil {
 			return "", nil, err
 		}
@@ -278,4 +278,21 @@ func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args 
 	}
 
 	return
+}
+
+// getSortType determines SortType from input sort value.
+func getSortType(value any) (types.SortType, error) {
+	sortValue, err := commonparams.GetWholeNumberParam(value)
+	if err != nil {
+		return 0, lazyerrors.Error(err)
+	}
+
+	switch sortValue {
+	case 1:
+		return types.Ascending, nil
+	case -1:
+		return types.Descending, nil
+	default:
+		return 0, lazyerrors.New("sort value needs to be 1 or -1")
+	}
 }
