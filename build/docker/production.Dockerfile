@@ -78,6 +78,8 @@ COPY --from=production-build /src/bin/ferretdb /ferretdb
 
 FROM scratch AS production
 
+COPY --from=production-build /src/bin/ferretdb /ferretdb
+
 ENTRYPOINT [ "/ferretdb" ]
 
 WORKDIR /
