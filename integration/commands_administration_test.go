@@ -698,7 +698,8 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 }
 
 func TestCommandsAdministrationCollStats(t *testing.T) {
-	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3521")
+	// old PG handler returns sizes in int64 instead of int32
+	setup.SkipForOldPg(t, "https://github.com/FerretDB/FerretDB/issues/3435")
 
 	t.Parallel()
 
@@ -770,7 +771,8 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 }
 
 func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
-	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3521")
+	// old PG handler returns sizes in int64 instead of int32
+	setup.SkipForOldPg(t, "https://github.com/FerretDB/FerretDB/issues/3435")
 
 	t.Parallel()
 
