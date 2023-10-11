@@ -108,7 +108,7 @@ var cli struct {
 //nolint:lll // some tags are long
 var postgreSQLFlags struct {
 	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/ferretdb" help:"PostgreSQL URL for 'pg' handler."`
-	PostgreSQLNew bool   `name:"postgresql-new" default:"true"                               help:"Use new PostgreSQL backend."`
+	PostgreSQLOld bool   `name:"postgresql-old" default:"false"                              help:"Use old PostgreSQL handler."`
 }
 
 // The sqliteFlags struct represents flags that are used by the "sqlite" backend.
@@ -371,7 +371,7 @@ func run() {
 			EnableSortPushdown:    cli.Test.EnableSortPushdown,
 			EnableOplog:           cli.Test.EnableOplog,
 
-			UseNewPG:   postgreSQLFlags.PostgreSQLNew,
+			UseNewPG:   !postgreSQLFlags.PostgreSQLOld,
 			UseNewHana: cli.Test.UseNewHana,
 		},
 	})

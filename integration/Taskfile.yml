@@ -17,7 +17,7 @@ tasks:
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
         -target-backend=ferretdb-postgresql
-        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
+        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
@@ -81,7 +81,7 @@ tasks:
       - ../bin/benchstat{{exeExt}} old-postgresql.txt new-postgresql.txt
 
   bench-sqlite:
-    desc: "Run benchmarks for `sqlite` backned"
+    desc: "Run benchmarks for `sqlite` backend"
     cmds:
       - >
         go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
