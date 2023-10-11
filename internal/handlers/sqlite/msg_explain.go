@@ -93,7 +93,10 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		var order types.SortType
 
 		for {
-			k, v, err := iter.Next()
+			var k string
+			var v any
+
+			k, v, err = iter.Next()
 			if err != nil {
 				if errors.Is(err, iterator.ErrIteratorDone) {
 					break
