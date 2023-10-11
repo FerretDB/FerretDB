@@ -25,7 +25,7 @@ import (
 //
 // This function should not be used lightly.
 func IsPostgres(tb testtb.TB) bool {
-	return *targetBackendF == "ferretdb-pg" && *useNewPgF
+	return flags.targetBackend == "ferretdb-pg" && flags.useNewPg
 }
 
 // IsOldPg returns true if the current test is running for old PostgreSQL handler.
@@ -33,7 +33,7 @@ func IsPostgres(tb testtb.TB) bool {
 // This function should not be used lightly and should be removed when a new PG handler is in place.
 // TODO https://github.com/FerretDB/FerretDB/issues/3435
 func IsOldPg(tb testtb.TB) bool {
-	return *targetBackendF == "ferretdb-pg" && !*useNewPgF
+	return flags.targetBackend == "ferretdb-pg" && !flags.useNewPg
 }
 
 // IsNewPg returns true if the current test is running for new PostgreSQL handler.
@@ -42,21 +42,21 @@ func IsOldPg(tb testtb.TB) bool {
 // It should be removed when a new PG handler is fully supported.
 // TODO https://github.com/FerretDB/FerretDB/issues/3435
 func IsNewPg(tb testtb.TB) bool {
-	return *targetBackendF == "ferretdb-pg" && *useNewPgF
+	return flags.targetBackend == "ferretdb-pg" && flags.useNewPg
 }
 
 // IsSQLite returns true if the current test is running for SQLite.
 //
 // This function should not be used lightly.
 func IsSQLite(tb testtb.TB) bool {
-	return *targetBackendF == "ferretdb-sqlite"
+	return flags.targetBackend == "ferretdb-sqlite"
 }
 
 // IsMongoDB returns true if the current test is running for MongoDB.
 //
 // This function should not be used lightly.
 func IsMongoDB(tb testtb.TB) bool {
-	return *targetBackendF == "mongodb"
+	return flags.targetBackend == "mongodb"
 }
 
 // FailsForFerretDB return testtb.TB that expects test to fail for FerretDB and pass for MongoDB.
@@ -130,10 +130,10 @@ func SkipForNewPg(tb testtb.TB, reason string) {
 
 // IsPushdownDisabled returns true if FerretDB pushdowns are disabled.
 func IsPushdownDisabled() bool {
-	return *disableFilterPushdownF
+	return flags.disableFilterPushdown
 }
 
 // IsSortPushdownEnabled returns true if sort pushdown is enabled.
 func IsSortPushdownEnabled() bool {
-	return *enableSortPushdownF
+	return flags.enableSortPushdown
 }

@@ -17,7 +17,6 @@ package setup
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"net/url"
 	"path/filepath"
@@ -38,41 +37,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-// Flags.
-var (
-	targetURLF     = flag.String("target-url", "", "target system's URL; if empty, in-process FerretDB is used")
-	targetBackendF = flag.String("target-backend", "", "target system's backend: '%s'"+strings.Join(allBackends, "', '"))
-
-	targetProxyAddrF  = flag.String("target-proxy-addr", "", "in-process FerretDB: use given proxy")
-	targetTLSF        = flag.Bool("target-tls", false, "in-process FerretDB: use TLS")
-	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix socket")
-
-	postgreSQLURLF = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'pg' handler.")
-	sqliteURLF     = flag.String("sqlite-url", "", "in-process FerretDB: SQLite URI for 'sqlite' handler.")
-	hanaURLF       = flag.String("hana-url", "", "in-process FerretDB: Hana URL for 'hana' handler.")
-
-	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
-
-	benchDocsF = flag.Int("bench-docs", 1000, "benchmarks: number of documents to generate per iteration")
-
-	// Disable noisy setup logs by default.
-	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
-	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
-
-	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
-	enableSortPushdownF    = flag.Bool("enable-sort-pushdown", false, "enable sort pushdown")
-	enableOplogF           = flag.Bool("enable-oplog", false, "enable OpLog")
-
-	useNewPgF   = flag.Bool("use-new-pg", false, "use new PostgreSQL backend")
-	useNewHanaF = flag.Bool("use-new-hana", false, "use new SAP HANA backend")
-
-	shareServerF = flag.Bool("share-server", false, "make all tests share a single instance of server")
-)
-
 // Other globals.
 var (
-	allBackends = []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-hana", "mongodb"}
-
 	CertsRoot = filepath.Join("..", "build", "certs") // relative to `integration` directory
 )
 
@@ -137,12 +103,12 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	}
 
 	level := zap.NewAtomicLevelAt(zap.ErrorLevel)
-	if *debugSetupF {
+	if flags.debugSetup {
 		level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	}
 	logger := testutil.LevelLogger(tb, level)
 
-	uri := *targetURLF
+	uri := flags.targetURL
 	if uri == "" {
 		uri = setupListener(tb, setupCtx, logger)
 	}
@@ -171,7 +137,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 
 	collection := setupCollection(tb, setupCtx, client, opts)
 
-	level.SetLevel(*logLevelF)
+	level.SetLevel(flags.logLevel)
 
 	return &SetupResult{
 		Ctx:        ctx,

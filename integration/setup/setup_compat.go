@@ -61,7 +61,7 @@ type SetupCompatResult struct {
 func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult {
 	tb.Helper()
 
-	if *compatURLF == "" {
+	if flags.compatURL == "" {
 		tb.Skip("-compat-url is empty, skipping compatibility test")
 	}
 
@@ -79,7 +79,7 @@ func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult
 	// When we use `task test-integration` to run `pg` and `sqlite` compat tests in parallel,
 	// they both use the same MongoDB instance.
 	// Add the backend's name to prevent the usage of the same database.
-	opts.databaseName = testutil.DatabaseName(tb) + "_" + strings.TrimPrefix(*targetBackendF, "ferretdb-")
+	opts.databaseName = testutil.DatabaseName(tb) + "_" + strings.TrimPrefix(flags.targetBackend, "ferretdb-")
 
 	// When database name is too long, database is created but inserting documents
 	// fail with InvalidNamespace error.
@@ -88,28 +88,28 @@ func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult
 	opts.baseCollectionName = testutil.CollectionName(tb)
 
 	level := zap.NewAtomicLevelAt(zap.ErrorLevel)
-	if *debugSetupF {
+	if flags.debugSetup {
 		level = zap.NewAtomicLevelAt(zap.DebugLevel)
 	}
 	logger := testutil.LevelLogger(tb, level)
 
 	var targetClient *mongo.Client
-	if *targetURLF == "" {
+	if flags.targetURL == "" {
 		uri := setupListener(tb, setupCtx, logger)
 		targetClient = setupClient(tb, setupCtx, uri)
 	} else {
-		targetClient = setupClient(tb, setupCtx, *targetURLF)
+		targetClient = setupClient(tb, setupCtx, flags.targetURL)
 	}
 
 	// register cleanup function after setupListener registers its own to preserve full logs
 	tb.Cleanup(cancel)
 
-	targetCollections := setupCompatCollections(tb, setupCtx, targetClient, opts, *targetBackendF)
+	targetCollections := setupCompatCollections(tb, setupCtx, targetClient, opts, flags.targetBackend)
 
-	compatClient := setupClient(tb, setupCtx, *compatURLF)
+	compatClient := setupClient(tb, setupCtx, flags.compatURL)
 	compatCollections := setupCompatCollections(tb, setupCtx, compatClient, opts, "mongodb")
 
-	level.SetLevel(*logLevelF)
+	level.SetLevel(flags.logLevel)
 
 	return &SetupCompatResult{
 		Ctx:               ctx,

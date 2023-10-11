@@ -45,9 +45,6 @@ var (
 	otlpExporter    *otlptrace.Exporter
 )
 
-// handlerType represents the type of handler for tests.
-var handlerType string
-
 // Startup initializes things that should be initialized only once.
 func Startup() {
 	logging.Setup(zap.DebugLevel, "")
@@ -87,7 +84,7 @@ func Startup() {
 		zap.S().Fatalf("Unknown target backend %q.", *targetBackendF)
 	}
 
-	if u := *targetURLF; u != "" {
+	if u := flags.targetURL; u != "" {
 		client, err := makeClient(ctx, u)
 		if err != nil {
 			zap.S().Fatalf("Failed to connect to target system %s: %s", u, err)
@@ -130,7 +127,7 @@ func Startup() {
 
 	otel.SetTracerProvider(tp)
 
-	if *shareServerF && *targetURLF == "" {
+	if flags.shareServer && flags.targetURL == "" {
 		zap.S().Info("listener initialized start", handlerType)
 		var listenerCtx context.Context
 		listenerCtx, sharedListenerCancelFunc = context.WithCancel(context.Background())
@@ -162,7 +159,7 @@ func Shutdown() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	if *shareServerF && *targetURLF == "" {
+	if flags.shareServer && flags.targetURL == "" {
 		sharedListenerCancelFunc()
 	}
 
