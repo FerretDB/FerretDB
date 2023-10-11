@@ -19,22 +19,22 @@ Let's dive in!
 ## New PostgreSQL backend
 
 In the last couple of weeks, we've been working on migrating to the new PostgreSQL backend, and we're happy to announce that it's now available for testing in the new release.
-If you're curious to know more on the new backend, [see here for more](https://blog.ferretdb.io/ferretdb-v1-10-production-ready-sqlite/#the-new-architecture).
+If you're curious to know more on the new backend, [see here](https://blog.ferretdb.io/ferretdb-v1-10-production-ready-sqlite/#the-new-architecture).
 
 At the moment, it's not enabled by default; you can enable it by setting `--postgresql-new` flag or `FERRETDB_POSTGRESQL_NEW=true` environment variable.
-While it's only available for testing in this release, you can expect it to be enabled by default in the next release, so please stay tuned!
+You can expect it to be enabled by default in the next release, so please stay tuned!
 
 We encourage you to try out the new PostgreSQL backend and let us know what you think – we can't wait to learn about all your discoveries!
 
 ## arm64 binaries now available
 
 We're also happy to announce that we've added linux/arm64 binaries and .deb/.rpm packages.
-This has been a requested feature by the FerretDB community, and it's now available and you can check them [here](https://github.com/FerretDB/FerretDB/releases/).
+This has been a requested feature by the FerretDB community, and we're thrilled that we can finally provide them for you. Check them out [here](https://github.com/FerretDB/FerretDB/releases/).
 
 ## Docker images changes
 
 We've also made changes to our Docker images.
-The production Docker images use `scratch` as a base Docker image, with the only file present in the image being a FerretDB binary (with root TLS certificates embedded).
+Production Docker images use `scratch` as a base Docker image, with the only file present in the image being a FerretDB binary (with root TLS certificates embedded).
 
 ## Exciting time for the community
 
