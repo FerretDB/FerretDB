@@ -25,6 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -73,6 +74,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	if h.EnableSortPushdown {
 		qp.Sort = params.Sort
+	}
+
+	if err := validateSort(params.Sort); err != nil {
+		return nil, err
 	}
 
 	cancel := func() {}
@@ -166,4 +171,60 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}))
 
 	return &reply, nil
+}
+
+// validateSort validates sort document.
+// It returns nil if document is valid.
+func validateSort(sort *types.Document) error {
+	if sort == nil {
+		return nil
+	}
+
+	iter := sort.Iterator()
+	defer iter.Close()
+
+	for {
+		k, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return lazyerrors.Error(err)
+		}
+
+		sortValue, err := commonparams.GetWholeNumberParam(v)
+		if err != nil {
+			switch {
+			case errors.Is(err, commonparams.ErrUnexpectedType):
+				if _, ok := v.(types.NullType); ok {
+					v = "null"
+				}
+
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrSortBadValue,
+					fmt.Sprintf(`Illegal key in $sort specification: %v: %v`, k, v),
+					"$sort",
+				)
+			case errors.Is(err, commonparams.ErrNotWholeNumber):
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrSortBadOrder,
+					"$sort key ordering must be 1 (for ascending) or -1 (for descending)",
+					"$sort",
+				)
+			default:
+				return err
+			}
+		}
+
+		if sortValue != -1 && sortValue != 1 {
+			return commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrSortBadOrder,
+				"$sort key ordering must be 1 (for ascending) or -1 (for descending)",
+				"$sort",
+			)
+		}
+	}
+
+	return nil
 }

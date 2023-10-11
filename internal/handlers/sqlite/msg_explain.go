@@ -87,6 +87,10 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Sort = params.Sort
 	}
 
+	if err := validateSort(params.Sort); err != nil {
+		return nil, err
+	}
+
 	res, err := coll.Explain(ctx, &qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
