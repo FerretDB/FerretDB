@@ -88,22 +88,24 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	pairs := []any{
 		"ns", dbName + "." + collection,
-		"size", int32(stats.SizeCollection / scale),
-		"count", int32(stats.CountObjects),
+		"size", stats.SizeCollection / scale,
+		"count", stats.CountObjects,
 	}
 
 	// If there are objects in the collection, calculate the average object size.
 	if stats.CountObjects > 0 {
-		pairs = append(pairs, "avgObjSize", int32(stats.SizeCollection/stats.CountObjects))
+		pairs = append(pairs, "avgObjSize", stats.SizeCollection/stats.CountObjects)
 	}
 
 	capped := stats.CappedSize != int64(0)
 
+	// MongoDB uses "numbers" that could be int32 or int64,
+	// FerretDB always returns int64 for simplicity.
 	pairs = append(pairs,
-		"storageSize", int32(stats.SizeCollection/scale),
-		"nindexes", int32(stats.CountIndexes),
-		"totalIndexSize", int32(stats.SizeIndexes/scale),
-		"totalSize", int32(stats.SizeTotal/scale),
+		"storageSize", stats.SizeCollection/scale,
+		"nindexes", stats.CountIndexes,
+		"totalIndexSize", stats.SizeIndexes/scale,
+		"totalSize", stats.SizeTotal/scale,
 		"scaleFactor", int32(scale),
 		"capped", capped,
 	)
