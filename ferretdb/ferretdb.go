@@ -149,7 +149,7 @@ func New(config *Config) (*FerretDB, error) {
 // When this method returns, listener and all connections, as well as handler are closed.
 //
 // It is required to run this method in order to initialise the listeners with their respective
-// IP address and port. Calling methods which require the listener's address (eg: `FerretDB.MongoDBURI()`
+// IP address and port. Calling methods which require the listener's address (eg: [*FerretDB.MongoDBURI]
 // requires it for configuring its Host URL) before calling this method might result in a deadlock.
 func (f *FerretDB) Run(ctx context.Context) error {
 	err := f.l.Run(ctx)
