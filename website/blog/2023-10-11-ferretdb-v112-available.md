@@ -1,16 +1,16 @@
 ---
-slug: ferretdb-v1120-available
-title: FerretDB v1.12.0 is available with new PostgreSQL backend ready for testing
+slug: ferretdb-v112-available
+title: FerretDB v1.12 is available with new PostgreSQL backend ready for testing
 authors: [alex]
 description: >
-  We’ve just released FerretDB v1.12.0 with many new interesting updates on our new PostgreSQL backend, Docker images, arm64 binaries and packages, and more.
+  We’ve just released FerretDB v1.12 with many new interesting updates on our new PostgreSQL backend, Docker images, arm64 binaries and packages, and more.
 image: /img/blog/ferretdb-v1.12.png
 tags: [release]
 ---
 
-![FerretDB v.1.12.0 - new release](/img/blog/ferretdb-v1.12.png)
+![FerretDB v.1.12 - new release](/img/blog/ferretdb-v1.12.png)
 
-We've just released FerretDB v1.12.0 with many new interesting updates on our new PostgreSQL backend, Docker images, arm64 binaries and packages, and more.
+We've just released FerretDB v1.12 with many new interesting updates on our new PostgreSQL backend, Docker images, arm64 binaries and packages, and more.
 
 <!--truncate-->
 
@@ -53,7 +53,7 @@ We've also enabled extra details about indexes for `dbStats` response.
 In addition, bugs from the previous release were addressed in this release.
 For example, we've relaxed restrictions when `_id` is not the first field in projection, allowing it to be at any index.
 
-Please see our [release notes](https://github.com/FerretDB/FerretDB/releases/tag/v1.12.0)
+Please see our [release notes](https://github.com/FerretDB/FerretDB/releases/tag/v1.12.1)
 
 In recent weeks, the support and enthusiasm from the community have been remarkable.
 We appreciate you!
