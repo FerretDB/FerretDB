@@ -33,7 +33,7 @@ import (
 )
 
 func TestGetMoreCommand(t *testing.T) {
-	// do not run tests in parallel to avoid using to many backend connections
+	// do not run tests in parallel to avoid using too many backend connections
 
 	// options are applied to create a client that uses single connection pool
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
@@ -440,7 +440,7 @@ func TestGetMoreCommand(t *testing.T) {
 }
 
 func TestGetMoreBatchSizeCursor(t *testing.T) {
-	// do not run tests in parallel to avoid using to many backend connections
+	// do not run tests in parallel to avoid using too many backend connections
 
 	ctx, collection := setup.Setup(t)
 
@@ -584,7 +584,7 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 }
 
 func TestGetMoreCommandConnection(t *testing.T) {
-	// do not run tests in parallel to avoid using to many backend connections
+	// do not run tests in parallel to avoid using too many backend connections
 
 	// options are applied to create a client that uses single connection pool
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
@@ -697,7 +697,7 @@ func TestGetMoreCommandConnection(t *testing.T) {
 }
 
 func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
-	// do not run tests in parallel to avoid using to many backend connections
+	// do not run tests in parallel to avoid using too many backend connections
 
 	ctx, collection := setup.Setup(t)
 
@@ -879,7 +879,7 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 }
 
 func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
-	// do not run tests in parallel to avoid using to many backend connections
+	// do not run tests in parallel to avoid using too many backend connections
 
 	// options are applied to create a client that uses single connection pool
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
