@@ -114,6 +114,8 @@ func TestExplainCommandQueryErrors(t *testing.T) {
 func TestExplainNonExistentCollection(t *testing.T) {
 	t.Parallel()
 
+	setup.SkipForOldPg(t, "https://github.com/FerretDB/FerretDB/issues/3228")
+
 	ctx, collection := setup.Setup(t)
 
 	var res bson.D
