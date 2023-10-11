@@ -16,6 +16,7 @@ package sqlite
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -24,6 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -84,11 +86,37 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	if h.EnableSortPushdown {
-		qp.Sort = params.Sort
-	}
+		iter := params.Sort.Iterator()
+		defer iter.Close()
 
-	if err := validateSort(params.Sort); err != nil {
-		return nil, err
+		var key string
+		var order types.SortType
+
+		for {
+			k, v, err := iter.Next()
+			if err != nil {
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
+
+				return nil, lazyerrors.Error(err)
+			}
+
+			// Skip sorting if there are more than one sort parameters
+			if order != 0 {
+				return nil, nil
+			}
+
+			order, err = common.GetSortType(k, v)
+			if err != nil {
+				return nil, err
+			}
+
+			key = k
+		}
+
+		qp.SortOrder = &order
+		qp.SortKey = key
 	}
 
 	res, err := coll.Explain(ctx, &qp)

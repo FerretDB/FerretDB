@@ -165,36 +165,7 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 }
 
 // prepareOrderByClause adds ORDER BY clause with given sort document and returns the query and arguments.
-func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document) (string, []any, error) {
-	iter := sort.Iterator()
-	defer iter.Close()
-
-	var key string
-	var order types.SortType
-
-	for {
-		k, v, err := iter.Next()
-		if err != nil {
-			if errors.Is(err, iterator.ErrIteratorDone) {
-				break
-			}
-
-			return "", nil, lazyerrors.Error(err)
-		}
-
-		// Skip sorting if there are more than one sort parameters
-		if order != 0 {
-			return "", nil, nil
-		}
-
-		order, err = getSortType(v)
-		if err != nil {
-			return "", nil, err
-		}
-
-		key = k
-	}
-
+func prepareOrderByClause(p *metadata.Placeholder, key string, order types.SortType) (string, []any, error) {
 	// Skip sorting dot notation
 	if strings.ContainsRune(key, '.') {
 		return "", nil, nil
