@@ -709,11 +709,6 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 
 	doc := ConvertDocument(t, actual)
 
-	// Values are returned as "numbers" that could be int32 or int64.
-	// FerretDB always returns int64 for simplicity.
-	//
-	// Set better expected results.
-	// TODO https://github.com/FerretDB/FerretDB/issues/1771
 	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
 	assert.EqualValues(t, 6, must.NotFail(doc.Get("count"))) // // Number of documents in DocumentsStrings
 	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
@@ -725,8 +720,8 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 		indexSize      int32
 	}
 
-	// The expected sizes are vastly different for each database due to
-	// how much storage is allocated for collection and indexes.
+	// The expected sizes are vastly different for each database due to how much storage
+	// is allocated for collection and indexes.
 	// MongoDB differentiates the size used by collection and the storage allocated
 	// for collection, FerretDB does not differentiate them.
 	// Hence, the expectation is defined for each backend.
@@ -778,6 +773,8 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.Nil(t, maxSize)
 }
 
+// TestCommandsAdministrationCollStatsWithScale asserts scale is set appropriately by
+// calling collStats with and without scale and compares the response.
 func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 	t.Parallel()
 

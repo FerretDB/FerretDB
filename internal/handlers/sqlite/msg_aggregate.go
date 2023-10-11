@@ -409,14 +409,13 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 				"avgObjSize", avgObjSize,
 				"storageSize", collStats.SizeCollection,
 				"freeStorageSize", int64(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"capped", collStats.CappedSize != int64(0),
 				"nindexes", collStats.CountIndexes,
 				"indexDetails", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"totalIndexSize", collStats.SizeIndexes,
 				"totalSize", collStats.SizeTotal,
-				"indexSizes", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"indexSizes", collStats.SizeIndexes,
 			)),
 		)
 	}

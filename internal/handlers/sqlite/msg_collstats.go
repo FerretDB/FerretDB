@@ -110,8 +110,8 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	if capped {
 		pairs = append(pairs,
-			"max", stats.CappedDocuments,
-			"maxSize", stats.CappedSize/scale,
+			"max", int32(stats.CappedDocuments),
+			"maxSize", int32(stats.CappedSize/scale),
 		)
 	}
 
