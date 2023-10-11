@@ -728,8 +728,8 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 		indexSize      int32
 	}
 
-	// The expected sizes are vastly different for each database due to
-	// how much storage is allocated for collection and indexes.
+	// The expected sizes are vastly different for each database due to how much storage
+	// is allocated for collection and indexes.
 	// MongoDB differentiates the size used by collection and the storage allocated
 	// for collection, FerretDB does not differentiate them.
 	// Hence, the expectation is defined for each backend.
@@ -770,6 +770,8 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.Equal(t, expectedSizes.storageSize+expectedSizes.indexSize, must.NotFail(doc.Get("totalSize")))
 }
 
+// TestCommandsAdministrationCollStatsWithScale asserts scale is set appropriately by
+// calling collStats with and without scale and compares the response.
 func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 	// old PG handler returns sizes in int64 instead of int32
 	setup.SkipForOldPg(t, "https://github.com/FerretDB/FerretDB/issues/3435")
