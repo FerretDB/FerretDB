@@ -83,7 +83,7 @@ func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult
 
 	// When database name is too long, database is created but inserting documents
 	// fail with InvalidNamespace error.
-	require.Less(tb, len(opts.databaseName), 64, "database name is too long")
+	require.Less(tb, len(opts.databaseName), 64, "database name %q is too long", opts.databaseName)
 
 	opts.baseCollectionName = testutil.CollectionName(tb)
 
