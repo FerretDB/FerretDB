@@ -1004,6 +1004,8 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		cursor, err := collection.Aggregate(ctx, bson.A{}, opts)
 		require.NoError(t, err)
 
+		defer cursor.Close(ctx)
+
 		cursor.SetBatchSize(50000)
 
 		// getMore uses maxTimeMS set on aggregate
