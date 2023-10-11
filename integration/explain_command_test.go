@@ -110,3 +110,17 @@ func TestExplainCommandQueryErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestExplainNonExistentCollection(t *testing.T) {
+	t.Parallel()
+
+	var res bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{
+		{"explain", bson.D{
+			{"find", "non-existent"},
+		}},
+	}).Decode(&res)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, res)
+}
