@@ -71,8 +71,7 @@ Additionally:
 
 - `pool_max_conns` parameter is set to 50 if it is unset in the URL;
 - `application_name` is always set to "FerretDB";
-- `timezone` is always set to "UTC";
-- `search_path` is set to the empty string in debug builds only.
+- `timezone` is always set to "UTC".
 
 ### SQLite
 

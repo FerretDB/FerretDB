@@ -12,7 +12,7 @@ services:
       -c log_min_duration_statement=1000ms
       -c log_min_error_statement=WARNING
       -c log_min_messages=WARNING
-      -c max_connections=200
+      -c max_connections=300
     ports:
       - 5432:5432
     extra_hosts:
