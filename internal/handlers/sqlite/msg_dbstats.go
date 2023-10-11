@@ -85,6 +85,9 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		pairs = append(pairs, "avgObjSize", stats.SizeCollections/stats.CountObjects)
 	}
 
+	// add freeStorageSize, indexFreeStorageSize and totalFreeStorageSize when freeStorage parameter is 1
+	// TODO https://github.com/FerretDB/FerretDB/issues/2447
+
 	pairs = append(pairs,
 		"dataSize", stats.SizeCollections/scale,
 		"storageSize", stats.SizeCollections/scale,

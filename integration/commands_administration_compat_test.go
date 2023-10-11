@@ -101,7 +101,7 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 }
 
 func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/3458")
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/2447")
 
 	t.Parallel()
 

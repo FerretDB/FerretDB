@@ -228,8 +228,6 @@ type CollectionStatsParams struct {
 //
 // CappedSize and CappedDocuments are zero for not capped collection.
 // CountObjects is an estimate of the number of documents.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/2447
 type CollectionStatsResult struct {
 	CappedSize      int64
 	CappedDocuments int64

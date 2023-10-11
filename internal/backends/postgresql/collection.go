@@ -336,17 +336,42 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		)
 	}
 
+	db := newDatabase(c.r, c.dbName)
+
+	res, err := db.ListCollections(ctx, new(backends.ListCollectionsParams))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var cInfo *backends.CollectionInfo
+
+	for _, elem := range res.Collections {
+		if elem.Name == c.name {
+			cInfo = &elem
+			break
+		}
+	}
+
+	if cInfo == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
 	stats, err := collectionsStats(ctx, p, c.dbName, []*metadata.Collection{coll})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	return &backends.CollectionStatsResult{
-		CountObjects:   stats.countRows,
-		CountIndexes:   stats.countIndexes,
-		SizeTotal:      stats.sizeTables + stats.sizeIndexes,
-		SizeIndexes:    stats.sizeIndexes,
-		SizeCollection: stats.sizeTables,
+		CappedSize:      cInfo.CappedSize,
+		CappedDocuments: cInfo.CappedDocuments,
+		CountObjects:    stats.countRows,
+		CountIndexes:    stats.countIndexes,
+		SizeTotal:       stats.sizeTables + stats.sizeIndexes,
+		SizeIndexes:     stats.sizeIndexes,
+		SizeCollection:  stats.sizeTables,
 	}, nil
 }
 
