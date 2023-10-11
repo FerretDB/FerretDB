@@ -27,20 +27,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-// Other globals.
-var (
-	CertsRoot = filepath.Join("..", "build", "certs") // relative to `integration` directory
-)
+var CertsRoot = filepath.Join("..", "build", "certs") // relative to `integration` directory
 
 // SetupOpts represents setup options.
 //
@@ -102,15 +99,13 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 		opts = new(SetupOpts)
 	}
 
-	level := zap.NewAtomicLevelAt(zap.ErrorLevel)
-	if flags.debugSetup {
-		level = zap.NewAtomicLevelAt(zap.DebugLevel)
-	}
-	logger := testutil.LevelLogger(tb, level)
-
 	uri := flags.targetURL
 	if uri == "" {
-		uri = setupListener(tb, setupCtx, logger)
+		uri = sharedListenerURI
+		if !flags.shareServer {
+			must.BeZero(uri)
+			uri = setupListener(tb, setupCtx)
+		}
 	}
 
 	if opts.ExtraOptions != nil {

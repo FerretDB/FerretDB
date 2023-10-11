@@ -32,8 +32,8 @@ func TestMain(m *testing.M) {
 	func() {
 		// make `go test -list=.` work without side effects
 		if flag.Lookup("test.list").Value.String() == "" {
-			setup.Startup()
-			defer setup.Shutdown()
+			shutdown := setup.Startup()
+			defer shutdown()
 		}
 
 		code = m.Run()

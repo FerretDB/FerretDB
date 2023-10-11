@@ -21,6 +21,9 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
+// flags contains all command-line flags.
+//
+// It is a global struct to make it easier to track what functions use flags.
 var flags struct {
 	targetURL     string
 	targetBackend string
@@ -50,8 +53,10 @@ var flags struct {
 	shareServer bool
 }
 
+// allBackends is a list of all supported backends.
 var allBackends = []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-hana", "mongodb"}
 
+// init initializes flags.
 func init() {
 	flag.StringVar(&flags.targetURL, "target-url", "", "target system's URL; if empty, in-process FerretDB is used")
 	flag.StringVar(&flags.targetBackend, "target-backend", "", "target system's backend: '%s'"+strings.Join(allBackends, "', '"))
@@ -79,5 +84,5 @@ func init() {
 	flag.BoolVar(&flags.useNewPg, "use-new-pg", false, "use new PostgreSQL backend")
 	flag.BoolVar(&flags.useNewHana, "use-new-hana", false, "use new SAP HANA backend")
 
-	flag.BoolVar(&flags.shareServer, "share-server", false, "make all tests share a single instance of server")
+	flag.BoolVar(&flags.shareServer, "share-server", false, "make all tests share listener/handler/backend")
 }

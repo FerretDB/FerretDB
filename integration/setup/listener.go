@@ -19,8 +19,8 @@ import (
 	"errors"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
@@ -35,6 +35,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
+// sharedUnixSocketPath returns temporary Unix domain socket path for all tests.
 func sharedUnixSocketPath() string {
 	// do not use tb.TempDir() because generated path is too long on macOS
 	f, err := os.CreateTemp("", "*-ferretdb.sock")
@@ -43,6 +44,8 @@ func sharedUnixSocketPath() string {
 	// remove file so listener could create it (and remove it itself on stop)
 	must.NoError(f.Close())
 	must.NoError(os.Remove(f.Name()))
+
+	zap.S().Infof("Using shared Unix socket: %s.", f.Name())
 
 	return f.Name()
 }
@@ -65,13 +68,11 @@ func privateUnixSocketPath(tb testtb.TB) string {
 }
 
 // listenerMongoDBURI builds MongoDB URI for in-process FerretDB.
-func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAuth bool) string {
-	tb.Helper()
-
+func listenerMongoDBURI(hostPort, unixSocketPath string, tlsAndAuth bool) string {
 	var host string
 
 	if hostPort != "" {
-		require.Empty(tb, unixSocketPath, "both hostPort and unixSocketPath are set")
+		must.BeZero(unixSocketPath)
 		host = hostPort
 	} else {
 		host = unixSocketPath
@@ -81,7 +82,7 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 	var q url.Values
 
 	if tlsAndAuth {
-		require.Empty(tb, unixSocketPath, "unixSocketPath cannot be used with TLS")
+		must.BeZero(unixSocketPath)
 
 		// we don't separate TLS and auth just for simplicity of our test configurations
 		q = url.Values{
@@ -105,86 +106,81 @@ func listenerMongoDBURI(tb testtb.TB, hostPort, unixSocketPath string, tlsAndAut
 	return u.String()
 }
 
-// setupListener starts in-process FerretDB server that runs until ctx is canceled.
-// It returns basic MongoDB URI for that listener.
-func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string {
-	tb.Helper()
+// makeListener returns non-running listener for flags.
+//
+// Shared and private listeners are constructed differently.
+func makeListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) (*clientconn.Listener, string) {
+	must.BeTrue(flags.shareServer == (tb == nil))
 
-	_, span := otel.Tracer("").Start(ctx, "setupListener")
+	if tb != nil {
+		tb.Helper()
+	}
+
+	_, span := otel.Tracer("").Start(ctx, "makeListener")
 	defer span.End()
 
 	defer observability.FuncCall(ctx)()
 
-	require.Empty(tb, flags.targetURL, "-target-url must be empty for in-process FerretDB")
+	must.BeZero(flags.targetURL)
 
 	var handler string
+	var postgreSQLURL, sqliteURL, hanaURL string
 
 	switch flags.targetBackend {
 	case "ferretdb-pg":
-		require.NotEmpty(tb, flags.postgreSQLURL, "-postgresql-url must be set for %q", flags.targetBackend)
-		require.Empty(tb, flags.sqliteURL, "-sqlite-url must be empty for %q", flags.targetBackend)
-		require.Empty(tb, flags.hanaURL, "-hana-url must be empty for %q", flags.targetBackend)
+		must.NotBeZero(flags.postgreSQLURL)
+		must.BeZero(flags.sqliteURL)
+		must.BeZero(flags.hanaURL)
+
 		handler = "pg"
 
+		if flags.shareServer {
+			postgreSQLURL = sharedPostgreSQLURL(flags.postgreSQLURL)
+		} else {
+			postgreSQLURL = privatePostgreSQLURL(tb, flags.postgreSQLURL)
+		}
+
 	case "ferretdb-sqlite":
-		require.Empty(tb, flags.postgreSQLURL, "-postgresql-url must be empty for %q", flags.targetBackend)
-		require.NotEmpty(tb, flags.sqliteURL, "-sqlite-url must be set for %q", flags.targetBackend)
-		require.Empty(tb, flags.hanaURL, "-hana-url must be empty for %q", flags.targetBackend)
+		must.BeZero(flags.postgreSQLURL)
+		must.NotBeZero(flags.sqliteURL)
+		must.BeZero(flags.hanaURL)
+
 		handler = "sqlite"
 
+		if flags.shareServer {
+			sqliteURL = sharedSQLiteURL(flags.sqliteURL)
+		} else {
+			sqliteURL = privateSQLiteURL(tb, flags.sqliteURL)
+		}
+
 	case "ferretdb-hana":
-		require.Empty(tb, flags.postgreSQLURL, "-postgresql-url must be empty for %q", flags.targetBackend)
-		require.Empty(tb, flags.sqliteURL, "-sqlite-url must be empty for %q", flags.targetBackend)
-		require.NotEmpty(tb, flags.hanaURL, "-hana-url must be set for %q", flags.targetBackend)
+		must.BeZero(flags.postgreSQLURL)
+		must.BeZero(flags.sqliteURL)
+		must.NotBeZero(flags.hanaURL)
+
 		handler = "hana"
 
+		hanaURL = flags.hanaURL
+
 	case "mongodb":
-		tb.Fatal("can't start in-process MongoDB")
+		panic("can't start in-process MongoDB")
 
 	default:
 		// that should be caught by Startup function
 		panic("not reached")
 	}
 
-	// use per-test directory to prevent handler's/backend's metadata registry
-	// read databases owned by concurrent tests
-	sqliteURL := flags.sqliteURL
-	if sqliteURL != "" {
-		u, err := url.Parse(sqliteURL)
-		require.NoError(tb, err)
-
-		require.True(tb, u.Path == "")
-		require.True(tb, u.Opaque != "")
-
-		u.Opaque = path.Join(u.Opaque, testutil.DatabaseName(tb)) + "/"
-		sqliteURL = u.String()
-
-		dir, err := filepath.Abs(u.Opaque)
-		require.NoError(tb, err)
-		require.NoError(tb, os.RemoveAll(dir))
-		require.NoError(tb, os.MkdirAll(dir, 0o777))
-
-		tb.Cleanup(func() {
-			if tb.Failed() {
-				tb.Logf("Keeping %s (%s) for debugging.", dir, sqliteURL)
-				return
-			}
-
-			require.NoError(tb, os.RemoveAll(dir))
-		})
-	}
-
 	p, err := state.NewProvider("")
-	require.NoError(tb, err)
+	must.NoError(err)
 
 	handlerOpts := &registry.NewHandlerOpts{
 		Logger:        logger,
 		ConnMetrics:   listenerMetrics.ConnMetrics,
 		StateProvider: p,
 
-		PostgreSQLURL: flags.postgreSQLURL,
+		PostgreSQLURL: postgreSQLURL,
 		SQLiteURL:     sqliteURL,
-		HANAURL:       flags.hanaURL,
+		HANAURL:       hanaURL,
 
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown: flags.disableFilterPushdown,
@@ -195,8 +191,9 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 			UseNewHana: flags.useNewHana,
 		},
 	}
+
 	h, err := registry.NewHandler(handler, handlerOpts)
-	require.NoError(tb, err)
+	must.NoError(err)
 
 	listenerOpts := clientconn.NewListenerOpts{
 		ProxyAddr:      flags.targetProxyAddr,
@@ -211,9 +208,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		listenerOpts.Mode = clientconn.DiffNormalMode
 	}
 
-	if flags.targetTLS && flags.targetUnixSocket {
-		tb.Fatal("Both -target-tls and -target-unix-socket are set.")
-	}
+	must.BeTrue(!(flags.targetTLS && flags.targetUnixSocket))
 
 	switch {
 	case flags.targetTLS:
@@ -222,12 +217,49 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		listenerOpts.TLSKeyFile = filepath.Join(CertsRoot, "server-key.pem")
 		listenerOpts.TLSCAFile = filepath.Join(CertsRoot, "rootCA-cert.pem")
 	case flags.targetUnixSocket:
-		listenerOpts.Unix = privateUnixSocketPath(tb)
+		if flags.shareServer {
+			sqliteURL = sharedUnixSocketPath()
+		} else {
+			sqliteURL = privateUnixSocketPath(tb)
+		}
 	default:
 		listenerOpts.TCP = "127.0.0.1:0"
 	}
 
 	l := clientconn.NewListener(&listenerOpts)
+
+	return l, handler
+}
+
+// setupListener starts in-process FerretDB server that runs until ctx is canceled.
+// It returns basic MongoDB URI for that listener.
+//
+// Shared and private listeners are constructed and run differently.
+func setupListener(tb testtb.TB, ctx context.Context) string {
+	must.BeTrue(flags.shareServer == (tb == nil))
+
+	if tb != nil {
+		tb.Helper()
+	}
+
+	_, span := otel.Tracer("").Start(ctx, "runPrivateListener")
+	defer span.End()
+
+	defer observability.FuncCall(ctx)()
+
+	level := zap.NewAtomicLevelAt(zap.ErrorLevel)
+	if flags.debugSetup {
+		level = zap.NewAtomicLevelAt(zap.DebugLevel)
+	}
+
+	var logger *zap.Logger
+	if flags.shareServer {
+		logger = zap.L()
+	} else {
+		logger = testutil.LevelLogger(tb, level)
+	}
+
+	l, handler := makeListener(tb, ctx, logger)
 
 	runDone := make(chan struct{})
 
@@ -243,9 +275,15 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 	}()
 
 	// ensure that all listener's and handler's logs are written before test ends
-	tb.Cleanup(func() {
-		<-runDone
-	})
+	if flags.shareServer {
+		tb.Cleanup(func() {
+			select {
+			case <-runDone:
+			case <-time.After(10 * time.Second):
+				panic("listener didn't stop in 10 seconds")
+			}
+		})
+	}
 
 	var hostPort, unixSocketPath string
 	var tlsAndAuth bool
@@ -260,9 +298,13 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		hostPort = l.TCPAddr().String()
 	}
 
-	uri := listenerMongoDBURI(tb, hostPort, unixSocketPath, tlsAndAuth)
+	uri := listenerMongoDBURI(hostPort, unixSocketPath, tlsAndAuth)
 
-	logger.Info("Listener started", zap.String("handler", handler), zap.String("uri", uri))
+	msg := "Private listener started"
+	if flags.shareServer {
+		msg = "Shared listener started"
+	}
+	logger.Info(msg, zap.String("handler", handler), zap.String("uri", uri))
 
 	return uri
 }

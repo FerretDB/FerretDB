@@ -24,7 +24,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	oteltrace "go.opentelemetry.io/otel/sdk/trace"
@@ -37,22 +36,24 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // Those are always shared between all tests.
 var (
 	listenerMetrics = connmetrics.NewListenerMetrics()
-	otlpExporter    *otlptrace.Exporter
 )
 
+var sharedListenerURI string
+
 // Startup initializes things that should be initialized only once.
-func Startup() {
+func Startup() func() {
 	logging.Setup(zap.DebugLevel, "")
 
 	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
 	if t, _ := strconv.ParseBool(os.Getenv("RUNNER_DEBUG")); t {
 		zap.S().Info("Enabling setup debug logging on GitHub Actions.")
-		*debugSetupF = true
+		flags.debugSetup = true
 	}
 
 	prometheus.DefaultRegisterer.MustRegister(listenerMetrics)
@@ -61,56 +62,56 @@ func Startup() {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3544
 	go debug.RunHandler(context.Background(), "127.0.0.1:0", prometheus.DefaultRegisterer, zap.L().Named("debug"))
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	startupCtx, startupCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer startupCancel()
 
 	// do basic flags validation earlier, before all tests
 
-	if *benchDocsF <= 0 {
+	if flags.benchDocs <= 0 {
 		zap.S().Fatal("-bench-docs must be > 0.")
 	}
 
 	for _, p := range shareddata.AllBenchmarkProviders() {
 		if g, ok := p.(shareddata.BenchmarkGenerator); ok {
-			g.Init(*benchDocsF)
+			g.Init(flags.benchDocs)
 		}
 	}
 
-	if *targetBackendF == "" {
+	if flags.targetBackend == "" {
 		zap.S().Fatal("-target-backend must be set.")
 	}
 
-	if !slices.Contains(allBackends, *targetBackendF) {
-		zap.S().Fatalf("Unknown target backend %q.", *targetBackendF)
+	if !slices.Contains(allBackends, flags.targetBackend) {
+		zap.S().Fatalf("Unknown target backend %q.", flags.targetBackend)
 	}
 
 	if u := flags.targetURL; u != "" {
-		client, err := makeClient(ctx, u)
+		client, err := makeClient(startupCtx, u)
 		if err != nil {
 			zap.S().Fatalf("Failed to connect to target system %s: %s", u, err)
 		}
 
-		client.Disconnect(ctx)
+		client.Disconnect(startupCtx)
 
-		zap.S().Infof("Target system: %s (%s).", *targetBackendF, u)
+		zap.S().Infof("Target system: %s (%s).", flags.targetBackend, u)
 	} else {
-		zap.S().Infof("Target system: %s (built-in).", *targetBackendF)
+		zap.S().Infof("Target system: %s (built-in).", flags.targetBackend)
 	}
 
-	if u := *compatURLF; u != "" {
-		client, err := makeClient(ctx, u)
+	if u := flags.compatURL; u != "" {
+		client, err := makeClient(startupCtx, u)
 		if err != nil {
 			zap.S().Fatalf("Failed to connect to compat system %s: %s", u, err)
 		}
 
-		client.Disconnect(ctx)
+		client.Disconnect(startupCtx)
 
 		zap.S().Infof("Compat system: MongoDB (%s).", u)
 	} else {
 		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
 	}
 
-	otlpExporter = must.NotFail(otlptracehttp.New(ctx,
+	otlpExporter := must.NotFail(otlptracehttp.New(startupCtx,
 		otlptracehttp.WithEndpoint("127.0.0.1:4318"),
 		otlptracehttp.WithInsecure(),
 	))
@@ -127,7 +128,16 @@ func Startup() {
 
 	otel.SetTracerProvider(tp)
 
-	if flags.shareServer && flags.targetURL == "" {
+	var listenerCancel context.CancelFunc
+	if flags.shareServer {
+		must.BeZero(flags.targetURL)
+
+		var listenerCtx context.Context
+		listenerCtx, listenerCancel = context.WithCancel(context.Background())
+		setupListener(nil, listenerCtx, logger)
+
+		testutil.Ctx(tb)
+
 		zap.S().Info("listener initialized start", handlerType)
 		var listenerCtx context.Context
 		listenerCtx, sharedListenerCancelFunc = context.WithCancel(context.Background())
@@ -152,20 +162,19 @@ func Startup() {
 		}()
 		zap.S().Info("listener initialized end", handlerType)
 	}
-}
 
-// Shutdown cleans up after all tests.
-func Shutdown() {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	return func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
 
-	if flags.shareServer && flags.targetURL == "" {
-		sharedListenerCancelFunc()
+		if flags.shareServer && flags.targetURL == "" {
+			sharedListenerCancelFunc()
+		}
+
+		must.NoError(otlpExporter.Shutdown(ctx))
+
+		// to increase a chance of resource finalizers to spot problems
+		runtime.GC()
+		runtime.GC()
 	}
-
-	must.NoError(otlpExporter.Shutdown(ctx))
-
-	// to increase a chance of resource finalizers to spot problems
-	runtime.GC()
-	runtime.GC()
 }

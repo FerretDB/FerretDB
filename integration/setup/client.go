@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/otel"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
@@ -56,6 +57,7 @@ func makeClient(ctx context.Context, uri string) (*mongo.Client, error) {
 // If the connection can't be established, it panics,
 // as it doesn't make sense to proceed with other tests if we couldn't connect in one of them.
 func setupClient(tb testtb.TB, ctx context.Context, uri string) *mongo.Client {
+	must.NotBeZero(tb)
 	tb.Helper()
 
 	ctx, span := otel.Tracer("").Start(ctx, "setupClient")

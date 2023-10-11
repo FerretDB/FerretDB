@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
@@ -95,7 +96,11 @@ func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult
 
 	var targetClient *mongo.Client
 	if flags.targetURL == "" {
-		uri := setupListener(tb, setupCtx, logger)
+		uri := sharedListenerURI
+		if !flags.shareServer {
+			must.BeZero(uri)
+			uri = setupListener(tb, setupCtx, logger)
+		}
 		targetClient = setupClient(tb, setupCtx, uri)
 	} else {
 		targetClient = setupClient(tb, setupCtx, flags.targetURL)

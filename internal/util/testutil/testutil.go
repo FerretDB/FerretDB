@@ -69,11 +69,15 @@ func Ctx(tb testtb.TB) context.Context {
 
 // Logger returns zap test logger with valid configuration.
 func Logger(tb testtb.TB) *zap.Logger {
+	tb.Helper()
+
 	return LevelLogger(tb, zap.NewAtomicLevelAt(zap.DebugLevel))
 }
 
 // LevelLogger returns zap test logger with given level and valid configuration.
 func LevelLogger(tb testtb.TB, level zap.AtomicLevel) *zap.Logger {
+	tb.Helper()
+
 	opts := []zaptest.LoggerOption{
 		zaptest.Level(level),
 		zaptest.WrapOptions(zap.AddCaller(), zap.Development()),

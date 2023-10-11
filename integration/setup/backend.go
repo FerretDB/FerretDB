@@ -19,11 +19,13 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"testing"
+
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
-	"github.com/stretchr/testify/require"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // recreateDir removes and creates a directory and returns its absolute path.
@@ -37,6 +39,7 @@ func recreateDir(dir string) string {
 	return dir
 }
 
+// parseSQLiteURL parses and checks SQLite URI.
 func parseSQLiteURL(sqliteURL string) *url.URL {
 	u, err := url.Parse(sqliteURL)
 	must.NoError(err)
@@ -47,15 +50,20 @@ func parseSQLiteURL(sqliteURL string) *url.URL {
 	return u
 }
 
+// sharedSQLiteURL returns SQLite URI for all tests.
 func sharedSQLiteURL(sqliteURL string) string {
 	u := parseSQLiteURL(sqliteURL)
-	recreateDir(u.Opaque)
+	dir := recreateDir(u.Opaque)
+
+	zap.S().Infof("Using shared SQLite URI: %s (%s).", u.String(), dir)
+
 	return u.String()
 }
 
-// use per-test directory to prevent backend's metadata registry
-// read databases owned by concurrent tests
-func privateSQLiteURL(tb testing.TB, sqliteURL string) string {
+// privateSQLiteURL returns test-specific SQLite URI.
+// It is cleaned-up if test passes.
+func privateSQLiteURL(tb testtb.TB, sqliteURL string) string {
+	must.NotBeZero(tb)
 	tb.Helper()
 
 	u := parseSQLiteURL(sqliteURL)
@@ -67,7 +75,7 @@ func privateSQLiteURL(tb testing.TB, sqliteURL string) string {
 
 	tb.Cleanup(func() {
 		if tb.Failed() {
-			tb.Logf("Keeping %s (%s) for debugging.", dir, res)
+			tb.Logf("Keeping %s (%s) for debugging.", res, dir)
 
 			return
 		}
@@ -78,11 +86,17 @@ func privateSQLiteURL(tb testing.TB, sqliteURL string) string {
 	return res
 }
 
+// sharedPostgreSQLURL returns PostgreSQL URL for all tests.
 func sharedPostgreSQLURL(postgreSQLURL string) string {
+	zap.S().Infof("Using shared PostgreSQL URL: %s.", postgreSQLURL)
+
 	return postgreSQLURL
 }
 
-func privatePostgreSQLURL(tb testing.TB, postgreSQLURL string) string {
+// privatePostgreSQLURL returns test-specific PostgreSQL URL.
+// Currently, it is the same as shared URL.
+func privatePostgreSQLURL(tb testtb.TB, postgreSQLURL string) string {
+	must.NotBeZero(tb)
 	tb.Helper()
 
 	return postgreSQLURL
