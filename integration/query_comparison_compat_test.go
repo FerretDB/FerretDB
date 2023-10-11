@@ -22,11 +22,14 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestQueryComparisonCompatImplicit(t *testing.T) {
+	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3526")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -291,6 +294,8 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 }
 
 func TestQueryComparisonCompatEq(t *testing.T) {
+	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3526")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -1172,6 +1177,8 @@ func TestQueryComparisonCompatIn(t *testing.T) {
 }
 
 func TestQueryComparisonCompatNe(t *testing.T) {
+	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3526")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -1389,6 +1396,8 @@ func TestQueryComparisonCompatNe(t *testing.T) {
 }
 
 func TestQueryComparisonCompatMultipleOperators(t *testing.T) {
+	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3526")
+
 	t.Parallel()
 
 	var scalarDataTypesFilter bson.A

@@ -821,6 +821,8 @@ func TestQueryCommandSingleBatch(t *testing.T) {
 }
 
 func TestQueryCommandLimitPushDown(t *testing.T) {
+	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3416")
+
 	t.Parallel()
 
 	// must use a collection of documents which does not support query pushdown to test limit pushdown
