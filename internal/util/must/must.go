@@ -49,6 +49,17 @@ func NotBeZero[T comparable](v T) {
 	}
 }
 
+// BeZero panics if argument has non-zero value.
+//
+// Use that function only for static initialization, test code, or code that "can't" fail.
+// When in doubt, don't.
+func BeZero[T comparable](v T) {
+	var zero T
+	if v != zero {
+		panic(fmt.Sprintf("v has non-zero value (%#v)", v))
+	}
+}
+
 // BeTrue panic if the b is not true.
 //
 // Use that function only for static initialization, test code, or statemants that
