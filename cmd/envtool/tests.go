@@ -21,7 +21,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -91,11 +90,12 @@ func (te testEvent) Elapsed() time.Duration {
 	return time.Duration(te.ElapsedSeconds * float64(time.Second))
 }
 
-func totalNumberOfTest(input string) int {
-	re := regexp.MustCompile(`-run=\^\((.*?)\)\$`)
-	matches := re.FindStringSubmatch(input)
-	return len(strings.Split(matches[1], "|"))
-
+func extractRootTestName(fullTestName string) string {
+	parts := strings.Split(fullTestName, "/")
+	if len(parts) > 0 {
+		return parts[0]
+	}
+	return fullTestName
 }
 
 // testsRun runs tests specified by the shard index and total or by the run regex
@@ -103,6 +103,7 @@ func totalNumberOfTest(input string) int {
 func testsRun(w io.Writer, index, total uint, run string, args []string) error {
 	zap.S().Debugf("testsRun: index=%d, total=%d, run=%q, args=%q", index, total, run, args)
 
+	var totalTest int
 	if run == "" {
 		if index == 0 || total == 0 {
 			return fmt.Errorf("--shard-index and --shard-total must be specified when --run is not")
@@ -127,6 +128,7 @@ func testsRun(w io.Writer, index, total uint, run string, args []string) error {
 			}
 		}
 
+		totalTest = len(shard)
 		run += ")$"
 	}
 
@@ -134,7 +136,7 @@ func testsRun(w io.Writer, index, total uint, run string, args []string) error {
 
 	args = append([]string{"test", "-json", "-run=" + run}, args...)
 
-	return runCommand("go", args, w, zap.S())
+	return runTest("go", args, totalTest, zap.S())
 }
 
 // listTests returns a sorted slice of all tests in the specified directory and subdirectories.

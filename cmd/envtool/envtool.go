@@ -199,19 +199,36 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 	cmd := exec.Command(bin, args...)
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
+	cmd.Stdout = stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%s failed: %s", strings.Join(cmd.Args, " "), err)
+	}
+
+	return nil
+}
+
+// runTest runs test with given arguments.
+func runTest(command string, args []string, totalTest int, logger *zap.SugaredLogger) error {
+	bin, err := exec.LookPath(command)
+	if err != nil {
+		return err
+	}
+	cmd := exec.Command(bin, args...)
+	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
+
 	cmd.Stderr = os.Stderr
 	p, err := cmd.StdoutPipe()
 	if err != nil {
 		return err
 	}
 
-	var testCounter int = 1
-	totalTest := totalNumberOfTest(args[2])
-
 	if err = cmd.Start(); err != nil {
 		return err
 	}
 
+	var testCounter int = 1
+	tested := make(map[string]bool)
 	if args[0] == "test" {
 		var r io.Reader = p
 		d := json.NewDecoder(r)
@@ -236,6 +253,7 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 			}
 
 			testName := event.Package + "/" + event.Test
+			rootTestName := extractRootTestName(event.Test)
 
 			result := res.TestResults[testName]
 			if result.Status == "" {
@@ -246,14 +264,28 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 
 			switch event.Action {
 			case actionPass:
-				fmt.Println(fmt.Sprintf("Pass: %s %d/%d", event.Test, testCounter, totalTest))
-				testCounter++
+				_, exists := tested[rootTestName]
+				if !exists {
+					fmt.Println(fmt.Sprintf("Pass: %s %d/%d", rootTestName, testCounter, totalTest))
+					testCounter++
+					tested[rootTestName] = true
+				}
 				result.Status = Pass
 			case actionFail:
-				fmt.Println(fmt.Sprintf("Failed: %s %d/%d", event.Test, testCounter, totalTest))
-				testCounter++
+				_, exists := tested[rootTestName]
+				if !exists {
+					fmt.Println(fmt.Sprintf("Pass: %s %d/%d", rootTestName, testCounter, totalTest))
+					testCounter++
+					tested[rootTestName] = true
+				}
 				result.Status = Fail
 			case actionSkip:
+				_, exists := tested[rootTestName]
+				if !exists {
+					fmt.Println(fmt.Sprintf("Skip: %s %d/%d", rootTestName, testCounter, totalTest))
+					testCounter++
+					tested[rootTestName] = true
+				}
 				result.Status = Skip
 			case actionBench, actionCont, actionOutput, actionPause, actionRun:
 				fallthrough
