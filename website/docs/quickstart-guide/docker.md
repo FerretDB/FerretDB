@@ -111,7 +111,7 @@ The following steps describe the setup for SQLite:
 
    Unlike PostgreSQL, SQLite operates serverlessly so it doesn not require its own service in Docker Compose.
    :::note
-   At the moment, authentication is not avaialable for the SQLite backend ([See Issue here](https://github.com/FerretDB/FerretDB/issues/3008)).
+   At the moment, authentication is not available for the SQLite backend ([See Issue here](https://github.com/FerretDB/FerretDB/issues/3008)).
    :::
 
 2. Start services with `docker compose up -d`.
