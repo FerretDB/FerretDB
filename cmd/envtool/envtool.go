@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	_ "embed"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -203,104 +202,6 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("%s failed: %s", strings.Join(cmd.Args, " "), err)
-	}
-
-	return nil
-}
-
-// runTest runs test with given arguments.
-func runTest(command string, args []string, totalTest int, logger *zap.SugaredLogger) error {
-	bin, err := exec.LookPath(command)
-	if err != nil {
-		return err
-	}
-	cmd := exec.Command(bin, args...)
-	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
-
-	cmd.Stderr = os.Stderr
-	p, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-
-	if err = cmd.Start(); err != nil {
-		return err
-	}
-
-	var testCounter int = 1
-	tested := make(map[string]bool)
-	if args[0] == "test" {
-		var r io.Reader = p
-		d := json.NewDecoder(r)
-		d.DisallowUnknownFields()
-
-		res := &TestResults{
-			TestResults: make(map[string]TestResult),
-		}
-
-		for {
-			var event testEvent
-			if err = d.Decode(&event); err != nil {
-				if err == io.EOF {
-					break
-				}
-				return err
-			}
-
-			// skip package failures
-			if event.Test == "" {
-				continue
-			}
-
-			testName := event.Package + "/" + event.Test
-			rootTestName := extractRootTestName(event.Test)
-
-			result := res.TestResults[testName]
-			if result.Status == "" {
-				result.Status = Unknown
-			}
-
-			result.Output += event.Output
-
-			switch event.Action {
-			case actionPass:
-				_, exists := tested[rootTestName]
-				if !exists {
-					fmt.Println(fmt.Sprintf("Pass: %s %d/%d", rootTestName, testCounter, totalTest))
-					testCounter++
-					tested[rootTestName] = true
-				}
-				result.Status = Pass
-			case actionFail:
-				_, exists := tested[rootTestName]
-				if !exists {
-					fmt.Println(fmt.Sprintf("Pass: %s %d/%d", rootTestName, testCounter, totalTest))
-					testCounter++
-					tested[rootTestName] = true
-				}
-				result.Status = Fail
-			case actionSkip:
-				_, exists := tested[rootTestName]
-				if !exists {
-					fmt.Println(fmt.Sprintf("Skip: %s %d/%d", rootTestName, testCounter, totalTest))
-					testCounter++
-					tested[rootTestName] = true
-				}
-				result.Status = Skip
-			case actionBench, actionCont, actionOutput, actionPause, actionRun:
-				fallthrough
-			default:
-				result.Status = Unknown
-			}
-
-			res.TestResults[testName] = result
-		}
-	}
-
-	if err = cmd.Wait(); err != nil {
-		if _, ok := err.(*exec.ExitError); ok {
-			err = nil
-		}
 	}
 
 	return nil
