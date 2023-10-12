@@ -89,7 +89,7 @@ type StatusParams struct{}
 // StatusResult represents the results of Backend.Status method.
 type StatusResult struct {
 	CountCollections       int64
-	CountCappedCollections int64
+	CountCappedCollections int32
 }
 
 // Status returns backend's status.
