@@ -690,6 +690,8 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("size")))
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("count")))
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("storageSize")))
+	// add assertion for freeStorageSize
+	// TODO https://github.com/FerretDB/FerretDB/issues/2447
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("nindexes")))
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("totalIndexSize")))
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("totalSize")))
@@ -724,6 +726,8 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.InDelta(t, 40_000, must.NotFail(doc.Get("size")), 39_900)
 	assert.InDelta(t, 2_400, must.NotFail(doc.Get("avgObjSize")), 2_370)
 	assert.InDelta(t, 40_000, must.NotFail(doc.Get("storageSize")), 39_900)
+	// add assertion for freeStorageSize
+	// TODO https://github.com/FerretDB/FerretDB/issues/2447
 	assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
 	assert.InDelta(t, 12_000, must.NotFail(doc.Get("totalIndexSize")), 11_000)
 	assert.InDelta(t, 32_000, must.NotFail(doc.Get("totalSize")), 30_000)
@@ -761,6 +765,8 @@ func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 	assert.InDelta(t, 16, must.NotFail(doc.Get("size")), 16)
 	assert.InDelta(t, 2_400, must.NotFail(doc.Get("avgObjSize")), 2_370)
 	assert.InDelta(t, 24, must.NotFail(doc.Get("storageSize")), 24)
+	// add assertion for freeStorageSize
+	// TODO https://github.com/FerretDB/FerretDB/issues/2447
 	assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
 	assert.InDelta(t, 8, must.NotFail(doc.Get("totalIndexSize")), 8)
 	assert.InDelta(t, 24, must.NotFail(doc.Get("totalSize")), 24)
@@ -804,8 +810,6 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 		assert.InDelta(t, 24_576, must.NotFail(doc.Get("size")), 24_576)
 		assert.InDelta(t, 4, must.NotFail(doc.Get("numObjects")), 4) // TODO https://github.com/FerretDB/FerretDB/issues/727
-		// reduce delta to 200 once ANALYZE is called less
-		// TODO https://github.com/FerretDB/FerretDB/issues/3518
 		assert.InDelta(t, 200, must.NotFail(doc.Get("millis")), 300)
 	})
 
@@ -904,6 +908,15 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 	assert.InDelta(t, 37_500, doc.Remove("storageSize"), 37_450)
 	assert.InDelta(t, 49_152, doc.Remove("totalSize"), 49_100)
 
+	freeStorageSize, _ := doc.Get("freeStorageSize")
+	assert.Nil(t, freeStorageSize)
+
+	indexFreeStorageSize, _ := doc.Get("indexFreeStorageSize")
+	assert.Nil(t, indexFreeStorageSize)
+
+	totalFreeStorageSize, _ := doc.Get("totalFreeStorageSize")
+	assert.Nil(t, totalFreeStorageSize)
+
 	// TODO assert.Empty(t, doc.Keys())
 	// https://github.com/FerretDB/FerretDB/issues/727
 }
@@ -978,6 +991,25 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 
 	// TODO assert.Empty(t, doc.Keys())
 	// https://github.com/FerretDB/FerretDB/issues/727
+}
+
+func TestCommandsAdministrationDBStatsFreeStorage(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+
+	var actual bson.D
+	command := bson.D{{"dbStats", int32(1)}, {"freeStorage", int32(1)}}
+	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+
+	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
+	assert.Equal(t, float64(1), doc.Remove("ok"))
+
+	// assert freeStorageSize, indexFreeStorageSize and totalFreeStorageSize
+	// TODO https://github.com/FerretDB/FerretDB/issues/2447
 }
 
 //nolint:paralleltest // we test a global server status

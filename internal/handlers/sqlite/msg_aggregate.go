@@ -416,7 +416,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"totalIndexSize", collStats.SizeIndexes,
 				"totalSize", collStats.SizeTotal,
-				"indexSizes", collStats.SizeIndexes,
+				"indexSizes", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 			)),
 		)
 	}
