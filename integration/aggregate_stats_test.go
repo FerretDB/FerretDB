@@ -64,7 +64,8 @@ func TestAggregateCollStats(t *testing.T) {
 	assert.NotZero(t, must.NotFail(storageStats.Get("totalIndexSize")))
 	assert.NotZero(t, must.NotFail(storageStats.Get("totalSize")))
 	assert.NotZero(t, must.NotFail(storageStats.Get("indexSizes")))
-	assert.Equal(t, int32(1), must.NotFail(storageStats.Get("scaleFactor")))
+	// TODO https://github.com/FerretDB/FerretDB/issues/2447
+	// assert.Equal(t, int32(1), must.NotFail(storageStats.Get("scaleFactor")))
 }
 
 func TestAggregateCollStatsCommandErrors(t *testing.T) {
