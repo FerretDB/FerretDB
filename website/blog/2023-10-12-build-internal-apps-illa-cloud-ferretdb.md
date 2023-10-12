@@ -14,7 +14,7 @@ In this blog post, we will explore ways to quickly build internal apps in minute
 
 <!--truncate-->
 
-FerretDB is an [open-source document database replacement](https://blog.ferretdb.io/open-source-is-in-danger/) for MongoDB that converts MongoDB protocols to SQL and provides [PostgreSQL](https://www.postgresql.org/) and [SQLite](https://www.sqlite.org/) as database backend options.
+FerretDB is an [open-source document database replacement](https://blog.ferretdb.io/open-source-is-in-danger/) that turns [PostgreSQL](https://www.postgresql.org/) or [SQLite](https://www.sqlite.org/) into a MongoDB compatible database, using these relational databases as the backend.
 
 By connecting FerretDB with Illa Cloud, you can [use the same MongoDB commands](https://blog.ferretdb.io/mongodb-crud-operations-with-ferretdb/) to run queries and create dashboards, admin panels, or internal tools.
 
