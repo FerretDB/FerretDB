@@ -104,6 +104,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			doc.Set("_id", types.NewObjectID())
 		}
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/3454
 		if err = doc.ValidateData(); err != nil {
 			var ve *types.ValidationError
 

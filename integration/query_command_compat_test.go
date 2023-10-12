@@ -37,7 +37,7 @@ type queryCommandCompatTestCase struct {
 	optSkip        any                      // defaults to nil to leave unset
 	limit          *int64                   // defaults to nil to leave unset
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
-	resultPushdown bool                     // defaults to false
+	resultPushdown resultPushdown           // defaults to noPushdown
 
 	skip string // skip test for all handlers, must have issue number mentioned
 }
@@ -103,11 +103,13 @@ func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompa
 
 					var msg string
 					if setup.IsPushdownDisabled() {
-						tc.resultPushdown = false
+						tc.resultPushdown = noPushdown
 						msg = "Query pushdown is disabled, but target resulted with pushdown"
 					}
 
-					assert.Equal(t, tc.resultPushdown, explainRes.Map()["pushdown"], msg)
+					doc := ConvertDocument(t, explainRes)
+					pushdown, _ := doc.Get("pushdown")
+					assert.Equal(t, tc.resultPushdown.PushdownExpected(t), pushdown, msg)
 
 					targetCommand := append(
 						bson.D{

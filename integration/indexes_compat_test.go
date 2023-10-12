@@ -610,6 +610,16 @@ func TestCreateIndexesCompatDuplicates(t *testing.T) {
 				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"foo", 1}}},
 			},
 		},
+		"DuplicateAndInvalid": {
+			models: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"foo", 1}}},
+			},
+			duplicates: []mongo.IndexModel{
+				{Options: &options.IndexOptions{Name: pointer.To("index_foo")}, Keys: bson.D{{"foo", 1}}}, // duplicate
+				{Options: &options.IndexOptions{Name: pointer.To("index_bar")}, Keys: bson.D{{"foo", 1}}}, // invalid
+				{Options: &options.IndexOptions{Name: pointer.To("index_baz")}, Keys: bson.D{{"baz", 1}}}, // valid
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {

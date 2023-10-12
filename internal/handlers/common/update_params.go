@@ -26,7 +26,7 @@ import (
 //nolint:vet // for readability
 type UpdateParams struct {
 	DB         string   `ferretdb:"$db"`
-	Collection string   `ferretdb:"collection"`
+	Collection string   `ferretdb:"update,collection"`
 	Updates    []Update `ferretdb:"updates"`
 
 	Comment string `ferretdb:"comment,opt"`

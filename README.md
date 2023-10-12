@@ -13,6 +13,18 @@ FerretDB was founded to become the de-facto open-source substitute to MongoDB.
 FerretDB is an open-source proxy, converting the MongoDB 6.0+ wire protocol queries to SQL -
 using PostgreSQL or SQLite as a database engine.
 
+```mermaid
+flowchart LR
+  A["Any application\nAny MongoDB driver"]
+  F{{FerretDB}}
+  P[(PostgreSQL)]
+  S[("SQLite")]
+
+  A -- "MongoDB protocol\nBSON" --> F
+  F -- "PostgreSQL protocol\nSQL" --> P
+  F -. "SQLite library\nSQL" .-> S
+```
+
 ## Why do we need FerretDB?
 
 MongoDB was originally an eye-opening technology for many of us developers,
@@ -78,13 +90,11 @@ See [our documentation](https://docs.ferretdb.io/quickstart-guide/) for more det
 
 ## Building and packaging
 
-We strongly advise users not to build FerretDB themselves.
-Instead, use binaries, Docker images, or `.deb`/`.rpm` packages provided by us.
+> **Note**
+> We strongly advise users not to build FerretDB themselves.
+> Instead, use binaries, Docker images, or packages provided by us.
 
-If you want to package FerretDB for your operating system or distribution,
-the recommended way to build the binary is to use the `build-release` task;
-see our [instructions for contributors](CONTRIBUTING.md) for more details.
-FerretDB could also be built as any other Go program,
+FerretDB could be built as any other Go program,
 but a few generated files and build tags could affect it.
 See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version) for more details.
 

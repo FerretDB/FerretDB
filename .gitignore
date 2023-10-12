@@ -1,19 +1,16 @@
 # Please use global .gitignore file for .vscode/, .idea/, etc.
 # See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files#configuring-ignored-files-for-all-repositories-on-your-computer
 
-# our tools
-bin/
+state.json
 
-# caches
-.task/
-.cache/
-vendor/
-
-# development and build artifacts, temporary files, etc
 *.out
 *.sqlite*
 *.txt
-**/testdata/fuzz/
-state.json
+
+.task/
+bin/
 tmp/
+vendor/
 website/build/
+
+**/testdata/fuzz/

@@ -46,6 +46,11 @@ linters-settings:
           - "!**/internal/handlers/hana/hanadb/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handlers/sjson
+      backends:
+        files:
+          - "**/internal/backends/**/*.go"
+        deny:
+          - pkg: github.com/FerretDB/FerretDB/internal/handlers/common
       pgdb:
         files:
           - $all

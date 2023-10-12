@@ -12,7 +12,7 @@ services:
       -c log_min_duration_statement=1000ms
       -c log_min_error_statement=WARNING
       -c log_min_messages=WARNING
-      -c max_connections=200
+      -c max_connections=300
     ports:
       - 5432:5432
     extra_hosts:
@@ -123,7 +123,6 @@ services:
       context: ./build/deps
       dockerfile: ubuntu2204.Dockerfile
     container_name: ferretdb_ubuntu
-    platform: linux/amd64
     volumes:
       - ./tmp/debs:/debs
   ubi:
@@ -131,7 +130,6 @@ services:
       context: ./build/deps
       dockerfile: ubi9.Dockerfile
     container_name: ferretdb_ubi
-    platform: linux/amd64
     volumes:
       - ./tmp/rpms:/rpms
 

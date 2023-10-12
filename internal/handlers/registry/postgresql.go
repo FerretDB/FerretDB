@@ -20,9 +20,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/sqlite"
 )
 
-// init registers "pg" handler.
+// init registers "postgresql" handler.
 func init() {
-	registry["pg"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
+	registry["postgresql"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
 		if opts.UseNewPG {
 			handlerOpts := &sqlite.NewOpts{
 				Backend: "postgresql",

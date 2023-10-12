@@ -25,7 +25,7 @@ import (
 type CountParams struct {
 	Filter     *types.Document `ferretdb:"query,opt"`
 	DB         string          `ferretdb:"$db"`
-	Collection string          `ferretdb:"collection"`
+	Collection string          `ferretdb:"count,collection"`
 
 	Skip  int64 `ferretdb:"skip,opt,positiveNumber"`
 	Limit int64 `ferretdb:"limit,opt,positiveNumber"`

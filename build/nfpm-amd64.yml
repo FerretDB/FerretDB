@@ -1,0 +1,21 @@
+---
+# https://nfpm.goreleaser.com/configuration/
+
+name: ferretdb
+arch: amd64 # https://github.com/goreleaser/nfpm/issues/719
+platform: linux
+version: ${VERSION}
+section: database
+maintainer: packages@ferretdb.io
+description: A truly Open Source MongoDB alternative
+homepage: https://ferretdb.io
+license: Apache License 2.0
+
+# https://www.debian.org/doc/debian-policy/ch-relationships.html#binary-dependencies-depends-recommends-suggests-enhances-pre-depends
+# https://rpm-software-management.github.io/rpm/manual/dependencies.html#weak-dependencies
+suggests:
+  - ${POSTGRES_PACKAGE}
+
+contents:
+  - src: tmp/build/linux_amd64/ferretdb # https://github.com/goreleaser/nfpm/issues/719
+    dst: /usr/bin/ferretdb

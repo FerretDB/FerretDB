@@ -114,6 +114,9 @@ const (
 	// ErrInvalidPipelineOperator indicates that provided aggregation operator is invalid.
 	ErrInvalidPipelineOperator = ErrorCode(168) // InvalidPipelineOperator
 
+	// ErrClientMetadataCannotBeMutated indicates that client metadata cannot be mutated.
+	ErrClientMetadataCannotBeMutated = ErrorCode(186) // ClientMetadataCannotBeMutated
+
 	// ErrNotImplemented indicates that a flag or command is not implemented.
 	ErrNotImplemented = ErrorCode(238) // NotImplemented
 

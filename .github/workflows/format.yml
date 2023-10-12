@@ -56,9 +56,6 @@ jobs:
         run: go generate -x
         working-directory: tools
 
-      - name: Run init
-        run: bin/task init
-
       - name: Format Go code
         run: bin/task fmt-go
 

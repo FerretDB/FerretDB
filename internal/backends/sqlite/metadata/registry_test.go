@@ -98,6 +98,11 @@ func TestCreateDrop(t *testing.T) {
 }
 
 func TestCreateDropStress(t *testing.T) {
+	// Otherwise, the test might fail with "database schema has changed".
+	// That error code is SQLITE_SCHEMA (17).
+	// See https://www.sqlite.org/rescode.html#schema and https://www.sqlite.org/compile.html#max_schema_retry
+	const n = 50
+
 	ctx := testutil.Ctx(t)
 
 	sp, err := state.NewProvider("")
@@ -127,7 +132,7 @@ func TestCreateDropStress(t *testing.T) {
 
 			var i atomic.Int32
 
-			teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+			teststress.StressN(t, n, func(ready chan<- struct{}, start <-chan struct{}) {
 				collectionName := fmt.Sprintf("collection_%03d", i.Add(1))
 
 				ready <- struct{}{}
@@ -135,11 +140,18 @@ func TestCreateDropStress(t *testing.T) {
 
 				testCollection(t, ctx, r, db, dbName, collectionName)
 			})
+
+			require.Equal(t, int32(n), i.Load())
 		})
 	}
 }
 
 func TestCreateSameStress(t *testing.T) {
+	// Otherwise, the test might fail with "database schema has changed".
+	// That error code is SQLITE_SCHEMA (17).
+	// See https://www.sqlite.org/rescode.html#schema and https://www.sqlite.org/compile.html#max_schema_retry
+	const n = 50
+
 	ctx := testutil.Ctx(t)
 
 	sp, err := state.NewProvider("")
@@ -171,7 +183,7 @@ func TestCreateSameStress(t *testing.T) {
 
 			var i, createdTotal atomic.Int32
 
-			teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+			teststress.StressN(t, n, func(ready chan<- struct{}, start <-chan struct{}) {
 				id := i.Add(1)
 
 				ready <- struct{}{}
@@ -201,12 +213,18 @@ func TestCreateSameStress(t *testing.T) {
 				require.NoError(t, err)
 			})
 
+			require.Equal(t, int32(n), i.Load())
 			require.Equal(t, int32(1), createdTotal.Load())
 		})
 	}
 }
 
 func TestDropSameStress(t *testing.T) {
+	// Otherwise, the test might fail with "database schema has changed".
+	// That error code is SQLITE_SCHEMA (17).
+	// See https://www.sqlite.org/rescode.html#schema and https://www.sqlite.org/compile.html#max_schema_retry
+	const n = 50
+
 	ctx := testutil.Ctx(t)
 
 	sp, err := state.NewProvider("")
@@ -242,7 +260,7 @@ func TestDropSameStress(t *testing.T) {
 
 			var droppedTotal atomic.Int32
 
-			teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+			teststress.StressN(t, n, func(ready chan<- struct{}, start <-chan struct{}) {
 				ready <- struct{}{}
 				<-start
 
@@ -259,6 +277,11 @@ func TestDropSameStress(t *testing.T) {
 }
 
 func TestCreateDropSameStress(t *testing.T) {
+	// Otherwise, the test might fail with "database schema has changed".
+	// That error code is SQLITE_SCHEMA (17).
+	// See https://www.sqlite.org/rescode.html#schema and https://www.sqlite.org/compile.html#max_schema_retry
+	const n = 50
+
 	ctx := testutil.Ctx(t)
 
 	sp, err := state.NewProvider("")
@@ -290,7 +313,7 @@ func TestCreateDropSameStress(t *testing.T) {
 
 			var i, createdTotal, droppedTotal atomic.Int32
 
-			teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+			teststress.StressN(t, n, func(ready chan<- struct{}, start <-chan struct{}) {
 				id := i.Add(1)
 
 				ready <- struct{}{}
@@ -311,6 +334,7 @@ func TestCreateDropSameStress(t *testing.T) {
 				}
 			})
 
+			require.Equal(t, int32(n), i.Load())
 			require.Less(t, int32(1), createdTotal.Load())
 			require.Less(t, int32(1), droppedTotal.Load())
 		})
@@ -340,31 +364,23 @@ func TestIndexesCreateDrop(t *testing.T) {
 
 	collectionName := testutil.CollectionName(t)
 
-	toCreate := []IndexInfo{
-		{
-			Name: "index_non_unique",
-			Key: []IndexKeyPair{
-				{
-					Field:      "f1",
-					Descending: false,
-				},
-				{
-					Field:      "f2",
-					Descending: true,
-				},
-			},
-		},
-		{
-			Name: "index_unique",
-			Key: []IndexKeyPair{
-				{
-					Field:      "foo",
-					Descending: false,
-				},
-			},
-			Unique: true,
-		},
-	}
+	toCreate := []IndexInfo{{
+		Name: "index_non_unique",
+		Key: []IndexKeyPair{{
+			Field:      "f1",
+			Descending: false,
+		}, {
+			Field:      "f2",
+			Descending: true,
+		}},
+	}, {
+		Name: "index_unique",
+		Key: []IndexKeyPair{{
+			Field:      "foo",
+			Descending: false,
+		}},
+		Unique: true,
+	}}
 
 	err = r.IndexesCreate(ctx, dbName, collectionName, toCreate)
 	require.NoError(t, err)

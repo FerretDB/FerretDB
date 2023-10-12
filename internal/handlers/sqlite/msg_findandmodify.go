@@ -215,6 +215,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 		writeErrors := types.MakeArray(0)
 
 		// ValidateData also moves _id field to the first index
+		// TODO https://github.com/FerretDB/FerretDB/issues/3454
 		if err = doc.ValidateData(); err != nil {
 			// TODO https://github.com/FerretDB/FerretDB/issues/2168
 			var we *writeError
@@ -305,6 +306,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 	writeErrors := types.MakeArray(0)
 
 	// ValidateData also moves _id field to the first index
+	// TODO https://github.com/FerretDB/FerretDB/issues/3454
 	if err = doc.ValidateData(); err != nil {
 		// TODO https://github.com/FerretDB/FerretDB/issues/2168
 		var we *writeError

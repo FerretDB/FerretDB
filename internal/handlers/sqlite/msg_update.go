@@ -58,7 +58,9 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 
 		default:
-			return nil, lazyerrors.Error(err)
+			if we, err = handleValidationError(err); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 		}
 	}
 
@@ -208,6 +210,11 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdateParam
 				"_id", must.NotFail(doc.Get("_id")),
 			)))
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3454
+			if err = doc.ValidateData(); err != nil {
+				return 0, 0, nil, err
+			}
+
 			// TODO https://github.com/FerretDB/FerretDB/issues/2612
 
 			_, err = c.InsertAll(ctx, &backends.InsertAllParams{
@@ -236,6 +243,11 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdateParam
 
 			if !changed {
 				continue
+			}
+
+			// TODO https://github.com/FerretDB/FerretDB/issues/3454
+			if err = doc.ValidateData(); err != nil {
+				return 0, 0, nil, err
 			}
 
 			updateRes, err := c.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{doc}})

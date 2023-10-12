@@ -79,6 +79,8 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3490
+
 	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
 
 	rows, err := db.QueryContext(ctx, q, args...)
@@ -109,6 +111,8 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 				return lazyerrors.Error(err)
 			}
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3490
+
 			// use batches: INSERT INTO %q %s VALUES (?), (?), (?), ... up to, say, 100 documents
 			// TODO https://github.com/FerretDB/FerretDB/issues/3271
 			q := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
@@ -134,12 +138,12 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 // UpdateAll implements backends.Collection interface.
 func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllParams) (*backends.UpdateAllResult, error) {
+	var res backends.UpdateAllResult
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
-		return nil, lazyerrors.Errorf("no database %q", c.dbName)
+		return &res, nil
 	}
 
-	var res backends.UpdateAllResult
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
 		return &res, nil
@@ -192,6 +196,9 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 	if meta == nil {
 		return &backends.DeleteAllResult{Deleted: 0}, nil
 	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3498
+	_ = params.RecordIDs
 
 	placeholders := make([]string, len(params.IDs))
 	args := make([]any, len(params.IDs))
@@ -251,6 +258,8 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3490
+
 	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
 
 	rows, err := db.QueryContext(ctx, q, args...)
@@ -293,7 +302,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
 		return nil, backends.NewError(
-			backends.ErrorCodeDatabaseDoesNotExist,
+			backends.ErrorCodeCollectionDoesNotExist,
 			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
 		)
 	}
@@ -318,6 +327,38 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		SizeIndexes:    stats.sizeIndexes,
 		SizeCollection: stats.sizeTables,
 	}, nil
+}
+
+// Compact implements backends.Collection interface.
+func (c *collection) Compact(ctx context.Context, params *backends.CompactParams) (*backends.CompactResult, error) {
+	var err error
+	q := `PRAGMA incremental_vacuum`
+
+	db := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if db == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeDatabaseDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	coll := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if coll == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	if params != nil && params.Full {
+		q = `VACUUM`
+	}
+
+	if _, err = db.ExecContext(ctx, q); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return new(backends.CompactResult), nil
 }
 
 // ListIndexes implements backends.Collection interface.
@@ -390,7 +431,7 @@ func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateI
 func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
 	err := c.r.IndexesDrop(ctx, c.dbName, c.name, params.Indexes)
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	return new(backends.DropIndexesResult), nil

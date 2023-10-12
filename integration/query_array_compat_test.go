@@ -20,6 +20,8 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+
+	"github.com/FerretDB/FerretDB/integration/setup"
 )
 
 func TestQueryArrayCompatSize(t *testing.T) {
@@ -133,6 +135,8 @@ func TestQueryArrayCompatDotNotation(t *testing.T) {
 }
 
 func TestQueryArrayCompatElemMatch(t *testing.T) {
+	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3526")
+
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -142,7 +146,7 @@ func TestQueryArrayCompatElemMatch(t *testing.T) {
 				{"v", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}},
 			},
 			resultType:     emptyResult,
-			resultPushdown: true,
+			resultPushdown: pgPushdown,
 		},
 		"GtZero": {
 			filter: bson.D{{"v", bson.D{{"$elemMatch", bson.D{{"$gt", int32(0)}}}}}},

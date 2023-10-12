@@ -12,9 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package metadata
 
-// init adds "pg" handler flags.
-func init() {
-	handlerFlags["pg"] = &pgFlags
+import "strconv"
+
+// Placeholder stores the number of the relevant placeholder of the query.
+type Placeholder int
+
+// Next increases the identifier value for the next variable in the PostgreSQL query.
+func (p *Placeholder) Next() string {
+	*p++
+	return "$" + strconv.Itoa(int(*p))
 }

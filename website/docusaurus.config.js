@@ -60,7 +60,7 @@ const config = {
         logo: {
           alt: 'FerretDB Logo',
           src: 'img/logo-dark.jpg',
-          srcDark:'img/logo-light.png'
+          srcDark: 'img/logo-light.png'
         },
         items: [
           {

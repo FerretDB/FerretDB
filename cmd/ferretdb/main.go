@@ -32,6 +32,7 @@ import (
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	_ "golang.org/x/crypto/x509roots/fallback" // register root TLS certificates for production Docker image
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
@@ -40,6 +41,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/telemetry"
 )
@@ -48,9 +50,11 @@ import (
 // It's used for parsing the user input.
 //
 // Keep order in sync with documentation.
+//
+//nolint:lll // some tags are long
 var cli struct {
-	Version  bool   `default:"false" help:"Print version to stdout and exit." env:"-"`
-	Handler  string `default:"pg" help:"${help_handler}"`
+	Version  bool   `default:"false"           help:"Print version to stdout and exit." env:"-"`
+	Handler  string `default:"postgresql"      help:"${help_handler}"`
 	Mode     string `default:"${default_mode}" help:"${help_mode}" enum:"${enum_mode}"`
 	StateDir string `default:"."               help:"Process state directory."`
 
@@ -79,34 +83,36 @@ var cli struct {
 	Telemetry telemetry.Flag `default:"undecided" help:"Enable or disable basic telemetry. See https://beacon.ferretdb.io."`
 
 	Test struct {
-		RecordsDir string `default:"" help:"Experimental: directory for record files."`
+		RecordsDir string `default:"" help:"Testing: directory for record files."`
 
 		DisableFilterPushdown bool `default:"false" help:"Experimental: disable filter pushdown."`
 		EnableSortPushdown    bool `default:"false" help:"Experimental: enable sort pushdown."`
-		EnableOplog           bool `default:"false" help:"Experimental: enable OpLog."            hidden:""`
+		EnableOplog           bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
 
-		UseNewPG   bool `default:"false" help:"Experimental: use new PostgreSQL backend." hidden:""`
-		UseNewHana bool `default:"false" help:"Experimental: use new SAP HANA backend."   hidden:""`
+		UseNewHana bool `default:"false" help:"Experimental: use new SAP HANA backend." hidden:""`
 
 		//nolint:lll // for readability
 		Telemetry struct {
-			URL            string        `default:"https://beacon.ferretdb.io/" help:"Experimental: telemetry: reporting URL."`
-			UndecidedDelay time.Duration `default:"1h"                          help:"${help_telemetry_undecided_delay}"`
-			ReportInterval time.Duration `default:"24h"                         help:"Experimental: telemetry: report interval."`
-			ReportTimeout  time.Duration `default:"5s"                          help:"Experimental: telemetry: report timeout."`
-			Package        string        `default:""                            help:"Experimental: telemetry: custom package type."`
+			URL            string        `default:"https://beacon.ferretdb.io/" help:"Telemetry: reporting URL."`
+			UndecidedDelay time.Duration `default:"1h"                          help:"Telemetry: delay for undecided state."`
+			ReportInterval time.Duration `default:"24h"                         help:"Telemetry: report interval."`
+			ReportTimeout  time.Duration `default:"5s"                          help:"Telemetry: report timeout."`
+			Package        string        `default:""                            help:"Telemetry: custom package type."`
 		} `embed:"" prefix:"telemetry-"`
 	} `embed:"" prefix:"test-"`
 }
 
-// The pgFlags struct represents flags that are used by the "pg" handler.
+// The postgreSQLFlags struct represents flags that are used by the "postgresql" backend.
 //
-// See main_pg.go.
-var pgFlags struct {
-	PostgreSQLURL string `name:"postgresql-url" default:"${default_postgresql_url}" help:"PostgreSQL URL for 'pg' handler."`
+// See main_postgresql.go.
+//
+//nolint:lll // some tags are long
+var postgreSQLFlags struct {
+	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/ferretdb" help:"PostgreSQL URL for 'postgresql' handler."`
+	PostgreSQLOld bool   `name:"postgresql-old" default:"false"                              help:"Use old PostgreSQL handler."`
 }
 
-// The sqliteFlags struct represents flags that are used by the "sqlite" handler.
+// The sqliteFlags struct represents flags that are used by the "sqlite" backend.
 //
 // See main_sqlite.go.
 var sqliteFlags struct {
@@ -152,14 +158,12 @@ var (
 
 	kongOptions = []kong.Option{
 		kong.Vars{
-			"default_log_level":      defaultLogLevel().String(),
-			"default_mode":           clientconn.AllModes[0],
-			"default_postgresql_url": "postgres://127.0.0.1:5432/ferretdb",
+			"default_log_level": defaultLogLevel().String(),
+			"default_mode":      clientconn.AllModes[0],
 
-			"help_log_level":                 fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
-			"help_mode":                      fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
-			"help_handler":                   fmt.Sprintf("Backend handler: '%s'.", strings.Join(registry.Handlers(), "', '")),
-			"help_telemetry_undecided_delay": "Experimental: telemetry: delay for undecided state.",
+			"help_log_level": fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
+			"help_mode":      fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
+			"help_handler":   fmt.Sprintf("Backend handler: '%s'.", strings.Join(registry.Handlers(), "', '")),
 
 			"enum_mode": strings.Join(clientconn.AllModes, ","),
 		},
@@ -249,6 +253,10 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 
 	l.Info("Starting FerretDB "+info.Version+"...", startupFields...)
 
+	if debugbuild.Enabled {
+		l.Info("This is debug build. The performance will be affected.")
+	}
+
 	return l
 }
 
@@ -264,15 +272,10 @@ func runTelemetryReporter(ctx context.Context, opts *telemetry.NewReporterOpts) 
 
 // dumpMetrics dumps all Prometheus metrics to stderr.
 func dumpMetrics() {
-	mfs, err := prometheus.DefaultGatherer.Gather()
-	if err != nil {
-		panic(err)
-	}
+	mfs := must.NotFail(prometheus.DefaultGatherer.Gather())
 
 	for _, mf := range mfs {
-		if _, err := expfmt.MetricFamilyToText(os.Stderr, mf); err != nil {
-			panic(err)
-		}
+		must.NotFail(expfmt.MetricFamilyToText(os.Stderr, mf))
 	}
 }
 
@@ -362,7 +365,7 @@ func run() {
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: stateProvider,
 
-		PostgreSQLURL: pgFlags.PostgreSQLURL,
+		PostgreSQLURL: postgreSQLFlags.PostgreSQLURL,
 
 		SQLiteURL: sqliteFlags.SQLiteURL,
 
@@ -373,7 +376,7 @@ func run() {
 			EnableSortPushdown:    cli.Test.EnableSortPushdown,
 			EnableOplog:           cli.Test.EnableOplog,
 
-			UseNewPG:   cli.Test.UseNewPG,
+			UseNewPG:   !postgreSQLFlags.PostgreSQLOld,
 			UseNewHana: cli.Test.UseNewHana,
 		},
 	})
