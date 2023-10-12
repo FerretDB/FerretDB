@@ -69,12 +69,16 @@ func CollectionContract(c Collection) Collection {
 	}
 }
 
+type SortField struct {
+	Key        string
+	Descending bool
+}
+
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Filter        *types.Document
-	SortKey       string
-	SortOrder     *types.SortType
+	Sort          *SortField
 	OnlyRecordIDs bool // TODO https://github.com/FerretDB/FerretDB/issues/3490
 }
 
@@ -199,9 +203,8 @@ func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllPa
 // ExplainParams represents the parameters of Collection.Explain method.
 type ExplainParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	Filter    *types.Document
-	SortKey   string
-	SortOrder *types.SortType
+	Filter *types.Document
+	Sort   *SortField
 }
 
 // ExplainResult represents the results of Collection.Explain method.

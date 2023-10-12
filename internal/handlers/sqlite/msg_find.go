@@ -93,7 +93,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 			// Skip sorting if there are more than one sort parameters
 			if order != 0 {
-				return nil, nil
+				break
 			}
 
 			order, err = common.GetSortType(k, v)
@@ -104,8 +104,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			key = k
 		}
 
-		qp.SortKey = key
-		qp.SortOrder = &order
+		if key != "" {
+			qp.Sort = &backends.SortField{
+				Key:        key,
+				Descending: order == types.Descending,
+			}
+		}
 	}
 
 	cancel := func() {}
