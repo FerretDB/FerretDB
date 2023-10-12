@@ -375,7 +375,7 @@ tasks:
         --test-records-dir=tmp/records
 
   run-secured:
-    desc: "Run FerretDB with `pg` handler (TLS, auth required)"
+    desc: "Run FerretDB with `postgresql` backend (TLS, auth required)"
     deps: [build-host]
     cmds:
       - >

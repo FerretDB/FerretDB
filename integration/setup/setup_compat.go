@@ -76,10 +76,17 @@ func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult
 		opts = new(SetupCompatOpts)
 	}
 
-	// When we use `task test-integration` to run `pg` and `sqlite` compat tests in parallel,
+	// When we use `task test-integration` to run `postgresql` and `sqlite` compat tests in parallel,
 	// they both use the same MongoDB instance.
-	// Add the backend's name to prevent the usage of the same database.
-	opts.databaseName = testutil.DatabaseName(tb) + "_" + strings.TrimPrefix(*targetBackendF, "ferretdb-")
+	// Add suffix to prevent the usage of the same database.
+	suffix := strings.TrimPrefix(*targetBackendF, "ferretdb-")
+	switch suffix {
+	case "postgresql":
+		suffix = "pg"
+	case "sqlite":
+		suffix = "sl"
+	}
+	opts.databaseName = testutil.DatabaseName(tb) + "_" + suffix
 
 	// When database name is too long, database is created but inserting documents
 	// fail with InvalidNamespace error.

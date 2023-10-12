@@ -38,10 +38,10 @@ import (
 type Config struct {
 	Listener ListenerConfig
 
-	// Handler to use; one of `pg` or `sqlite`.
+	// Handler to use; one of `postgresql` or `sqlite`.
 	Handler string
 
-	// PostgreSQL connection string for `pg` handler.
+	// PostgreSQL connection string for `postgresql` handler.
 	// See:
 	//   - https://pkg.go.dev/github.com/jackc/pgx/v5/pgxpool#ParseConfig
 	//   - https://pkg.go.dev/github.com/jackc/pgx/v5#ParseConfig
