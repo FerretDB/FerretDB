@@ -235,6 +235,13 @@ type CollectionStatsResult struct {
 	SizeTotal      int64
 	SizeIndexes    int64
 	SizeCollection int64
+	IndexSizes     []IndexSize
+}
+
+// IndexSize represents the name and the size of an index.
+type IndexSize struct {
+	Name string
+	Size int64
 }
 
 // Stats returns statistics about the collection.

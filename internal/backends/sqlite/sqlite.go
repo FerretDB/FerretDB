@@ -35,6 +35,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -46,6 +47,7 @@ type stats struct {
 	countIndexes int64
 	sizeIndexes  int64
 	sizeTables   int64
+	indexSizes   []backends.IndexSize
 }
 
 // collectionsStats returns statistics about tables and indexes for the given collections.
@@ -119,14 +121,38 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 	}
 
 	q = fmt.Sprintf(`
-		SELECT SUM(pgsize)
+		SELECT name, pgsize
 		FROM dbstat
 		WHERE name IN (%s) AND aggregate = TRUE`,
 		strings.Join(placeholders, ", "),
 	)
 
-	if err = db.QueryRowContext(ctx, q, args...).Scan(&stats.sizeIndexes); err != nil {
+	rows, err := db.QueryContext(ctx, q, args...)
+	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	defer rows.Close()
+
+	stats.indexSizes = make([]backends.IndexSize, len(args))
+	var i int
+
+	for rows.Next() {
+		var indexName string
+		var indexSize backends.IndexSize
+		if err = rows.Scan(&indexName, &indexSize.Size); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		// TODO convert sql index name to ferretdb index name
+
+		stats.indexSizes[i] = indexSize
+		stats.sizeIndexes += indexSize.Size
+		i++
+	}
+
+	if rows.Err() != nil {
+		return nil, lazyerrors.Error(rows.Err())
 	}
 
 	return stats, nil

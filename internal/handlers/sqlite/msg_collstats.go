@@ -97,6 +97,11 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		pairs = append(pairs, "avgObjSize", stats.SizeCollection/stats.CountObjects)
 	}
 
+	indexSizes := types.MakeDocument(len(stats.IndexSizes))
+	for _, indexSize := range stats.IndexSizes {
+		indexSizes.Set(indexSize.Name, indexSize.Size/scale)
+	}
+
 	// MongoDB uses "numbers" that could be int32 or int64,
 	// FerretDB always returns int64 for simplicity.
 	pairs = append(pairs,
@@ -104,6 +109,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		"nindexes", stats.CountIndexes,
 		"totalIndexSize", stats.SizeIndexes/scale,
 		"totalSize", stats.SizeTotal/scale,
+		"indexSizes", indexSizes,
 		"scaleFactor", int32(scale),
 		"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/3458
 		"ok", float64(1),

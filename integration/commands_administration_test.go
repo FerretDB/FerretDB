@@ -693,6 +693,7 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("nindexes")))
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("totalIndexSize")))
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("totalSize")))
+	assert.Empty(t, must.NotFail(doc.Get("indexSizes")))
 	assert.Equal(t, int32(1), must.NotFail(doc.Get("scaleFactor")))
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 }
@@ -729,6 +730,10 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
 	assert.InDelta(t, 12_000, must.NotFail(doc.Get("totalIndexSize")), 11_000)
 	assert.InDelta(t, 32_000, must.NotFail(doc.Get("totalSize")), 30_000)
+	indexSizes := must.NotFail(doc.Get("indexSizes")).(*types.Document)
+	assert.Equal(t, 1, indexSizes.Len())
+	idIndex, _ := indexSizes.Get("_id_")
+	assert.NotZero(t, idIndex)
 }
 
 func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
