@@ -117,9 +117,8 @@ func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
 	}{
 		"Size": {
 			opts: &options.CreateCollectionOptions{
-				Capped:       pointer.ToBool(true),
-				SizeInBytes:  pointer.ToInt64(1000),
-				MaxDocuments: pointer.ToInt64(10),
+				Capped:      pointer.ToBool(true),
+				SizeInBytes: pointer.ToInt64(1000),
 			},
 		},
 		"MaxDocuments": {
