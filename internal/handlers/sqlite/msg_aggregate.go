@@ -380,9 +380,11 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 	))
 
 	var collStats *backends.CollectionStatsResult
+	collStatParams := new(backends.CollectionStatsParams)
+	collStatParams.Refresh = true
 
 	if hasCount || hasStorage {
-		collStats, err = p.c.Stats(ctx, new(backends.CollectionStatsParams))
+		collStats, err = p.c.Stats(ctx, collStatParams)
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNamespaceNotFound,
