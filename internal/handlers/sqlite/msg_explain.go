@@ -91,8 +91,9 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 		var key string
 		var order types.SortType
+		var count int
 
-		for {
+		for ; ; count++ {
 			var k string
 			var v any
 
@@ -105,11 +106,6 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 				return nil, lazyerrors.Error(err)
 			}
 
-			// Skip sorting if there are more than one sort parameters
-			if order != 0 {
-				break
-			}
-
 			order, err = common.GetSortType(k, v)
 			if err != nil {
 				return nil, err
@@ -118,7 +114,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			key = k
 		}
 
-		if key != "" {
+		// Skip sorting if there are more than one sort parameters
+		if count == 1 {
 			qp.Sort = &backends.SortField{
 				Key:        key,
 				Descending: order == types.Descending,
