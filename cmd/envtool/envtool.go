@@ -98,6 +98,8 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		return err
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3452
+
 	var pgPool *pgdb.Pool
 
 	var retry int64
