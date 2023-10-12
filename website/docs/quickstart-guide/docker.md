@@ -85,9 +85,9 @@ Find out more about:
 
 - [getting logs](../configuration/logging.md#docker-logs).
 
-### SQLite Setup with Docker Compose
+## SQLite Setup with Docker Compose
 
-The following steps describe a production setup for SQLite:
+The following steps describe the setup for SQLite:
 
 1. Store the following in the `docker-compose.yml` file:
 
