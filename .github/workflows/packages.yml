@@ -122,7 +122,6 @@ jobs:
         with:
           username: ferretdbbot
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
-          logout: false
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -130,7 +129,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          logout: false
 
       - name: Login to Quay.io
         uses: docker/login-action@v3
@@ -138,7 +136,6 @@ jobs:
           registry: quay.io
           username: ferretdbbot
           password: ${{ secrets.QUAY_TOKEN }}
-          logout: false
 
       - name: Build and push all-in-one Docker images ${{ steps.extract.outputs.all_in_one_images }}
         if: steps.extract.outputs.all_in_one_images != ''

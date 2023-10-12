@@ -110,11 +110,11 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 	var handler string
 
 	switch *targetBackendF {
-	case "ferretdb-pg":
+	case "ferretdb-postgresql":
 		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for %q", *targetBackendF)
 		require.Empty(tb, *sqliteURLF, "-sqlite-url must be empty for %q", *targetBackendF)
 		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
-		handler = "pg"
+		handler = "postgresql"
 
 	case "ferretdb-sqlite":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
@@ -230,7 +230,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 			EnableSortPushdown:    *enableSortPushdownF,
 			EnableOplog:           *enableOplogF,
 
-			UseNewPG:   *useNewPgF,
+			UseNewPG:   true,
 			UseNewHana: *useNewHanaF,
 		},
 	}
