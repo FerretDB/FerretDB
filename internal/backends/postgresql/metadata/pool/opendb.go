@@ -56,8 +56,8 @@ func openDB(uri string, l *zap.Logger, sp *state.Provider) (*pgxpool.Pool, error
 			return lazyerrors.Error(err)
 		}
 
-		if sp.Get().HandlerVersion != v {
-			if err = sp.Update(func(s *state.State) { s.HandlerVersion = v }); err != nil {
+		if sp.Get().BackendVersion != v {
+			if err = sp.Update(func(s *state.State) { s.BackendName = "PostgreSQL"; s.BackendVersion = v }); err != nil {
 				l.Error("openDB: failed to update state", zap.Error(err))
 			}
 		}
