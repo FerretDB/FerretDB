@@ -29,7 +29,7 @@ import (
 )
 
 // testBackends returns all backends configured for testing contracts.
-func testBackends(t *testing.T) []backends.Backend {
+func testBackends(t *testing.T) map[string]backends.Backend {
 	t.Helper()
 
 	if testing.Short() {
@@ -38,7 +38,7 @@ func testBackends(t *testing.T) []backends.Backend {
 
 	l := testutil.Logger(t)
 
-	var res []backends.Backend
+	res := make(map[string]backends.Backend)
 
 	{
 		p, err := state.NewProvider("")
@@ -52,7 +52,7 @@ func testBackends(t *testing.T) []backends.Backend {
 		require.NoError(t, err)
 		t.Cleanup(b.Close)
 
-		res = append(res, b)
+		res["PostgreSQL"] = b
 	}
 
 	{
@@ -67,7 +67,7 @@ func testBackends(t *testing.T) []backends.Backend {
 		require.NoError(t, err)
 		t.Cleanup(b.Close)
 
-		res = append(res, b)
+		res["SQLite"] = b
 	}
 
 	return res
