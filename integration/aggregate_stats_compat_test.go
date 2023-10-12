@@ -23,6 +23,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 func TestAggregateCompatCollStats(t *testing.T) {
@@ -128,6 +129,29 @@ func TestAggregateCompatCollStats(t *testing.T) {
 					targetCount, _ := targetDoc.Get("count")
 					compatCount, _ := compatDoc.Get("count")
 					require.EqualValues(t, compatCount, targetCount)
+
+					targetStorageStatsV, _ := targetDoc.Get("storageStats")
+					compatStorageStatsV, _ := compatDoc.Get("storageStats")
+
+					if targetStorageStatsV == nil {
+						require.Equal(t, compatStorageStatsV, targetStorageStatsV)
+						return
+					}
+
+					targetStorageStats := targetStorageStatsV.(*types.Document)
+					compatStorageStats := compatStorageStatsV.(*types.Document)
+
+					targetStorageCount, _ := targetStorageStats.Get("count")
+					compatStorageCount, _ := compatStorageStats.Get("count")
+					require.EqualValues(t, compatStorageCount, targetStorageCount)
+
+					targetStorageIndexes, _ := targetStorageStats.Get("nindexes")
+					compatStorageIndexes, _ := compatStorageStats.Get("nindexes")
+					require.EqualValues(t, compatStorageIndexes, targetStorageIndexes)
+
+					targetStorageScaleFactor, _ := targetStorageStats.Get("scaleFactor")
+					compatStorageScaleFactor, _ := compatStorageStats.Get("scaleFactor")
+					require.Equal(t, compatStorageScaleFactor, targetStorageScaleFactor)
 				})
 			}
 
