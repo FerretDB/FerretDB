@@ -14,7 +14,7 @@
 
 package main
 
-// init adds "pg" handler flags.
+// init adds "postgresql" backend flags.
 func init() {
-	handlerFlags["pg"] = &pgFlags
+	handlerFlags["postgresql"] = &postgreSQLFlags
 }

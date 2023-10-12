@@ -176,7 +176,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [pg, postgresql, sqlite]
+        task: [postgresql, sqlite]
         shard_index: [1, 2, 3]
         shard_total: [3]
         include:

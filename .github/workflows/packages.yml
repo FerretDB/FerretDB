@@ -137,14 +137,6 @@ jobs:
           username: ferretdbbot
           password: ${{ secrets.QUAY_TOKEN }}
 
-      - name: Restore Go caches
-        uses: actions/cache@v3
-        with:
-          path: tmp/docker/gocaches
-          key: packages-gocaches-${{ steps.setup.outputs.cache_week }}-${{ hashFiles('**/go.mod') }}
-          restore-keys: |
-            packages-gocaches-${{ steps.setup.outputs.cache_week }}-
-
       - name: Build and push all-in-one Docker images ${{ steps.extract.outputs.all_in_one_images }}
         if: steps.extract.outputs.all_in_one_images != ''
         run: bin/task docker-all-in-one-push DOCKER_IMAGES=${{ steps.extract.outputs.all_in_one_images }}
@@ -157,17 +149,6 @@ jobs:
         if: steps.extract.outputs.production_images != ''
         run: bin/task docker-production-push DOCKER_IMAGES=${{ steps.extract.outputs.production_images }}
 
-      - name: Build production binaries
-        run: bin/task build-production
-
-      - name: Upload production binaries
-        uses: actions/upload-artifact@v3
-        with:
-          name: bin
-          path: tmp/bin/
-          retention-days: 1
-          if-no-files-found: error
-
       - name: Build development binaries
         run: bin/task build-development
 
@@ -176,6 +157,17 @@ jobs:
         with:
           name: bin-dev
           path: tmp/bin-dev/
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Build production binaries
+        run: bin/task build-production
+
+      - name: Upload production binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: bin
+          path: tmp/bin/
           retention-days: 1
           if-no-files-found: error
 
