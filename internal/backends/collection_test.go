@@ -189,19 +189,20 @@ func TestCollectionStats(t *testing.T) {
 				db, err := b.Database(dbName)
 				require.NoError(t, err)
 
+				var c backends.Collection
 				cNames := []string{"collectionOne", "collectionTwo"}
 				for _, cName := range cNames {
 					err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: cName})
 					require.NoError(t, err)
+
+					c, err = db.Collection(cName)
+					require.NoError(t, err)
+
+					_, err = c.InsertAll(ctx, &backends.InsertAllParams{
+						Docs: []*types.Document{must.NotFail(types.NewDocument("_id", types.NewObjectID()))},
+					})
+					require.NoError(t, err)
 				}
-
-				c, err := db.Collection(cNames[0])
-				require.NoError(t, err)
-
-				_, err = c.InsertAll(ctx, &backends.InsertAllParams{
-					Docs: []*types.Document{must.NotFail(types.NewDocument("_id", types.NewObjectID()))},
-				})
-				require.NoError(t, err)
 
 				dbStatsRes, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
 				require.NoError(t, err)
@@ -222,7 +223,6 @@ func TestCollectionStats(t *testing.T) {
 
 func TestCollectionCompact(t *testing.T) {
 	t.Skip("https://github.com/FerretDB/FerretDB/issues/3484")
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/3469")
 
 	t.Parallel()
 
