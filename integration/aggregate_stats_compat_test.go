@@ -58,6 +58,12 @@ func TestAggregateCompatCollStats(t *testing.T) {
 		"CountAndStorageStats": {
 			pipeline: bson.A{bson.D{{"$collStats", bson.D{{"count", bson.D{}}, {"storageStats", bson.D{}}}}}},
 		},
+		"CollStatsCount": {
+			pipeline: bson.A{
+				bson.D{{"$collStats", bson.D{{"count", bson.D{}}, {"storageStats", bson.D{}}}}},
+				bson.D{{"$count", "after"}},
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
@@ -119,9 +125,9 @@ func TestAggregateCompatCollStats(t *testing.T) {
 
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be returned)")
 			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
+				assert.False(t, nonEmptyResults, "expected empty results (no documents should be returned)")
 			default:
 				t.Fatalf("unknown result type %v", tc.resultType)
 			}

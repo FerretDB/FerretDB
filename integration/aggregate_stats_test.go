@@ -106,6 +106,22 @@ func TestAggregateCollStatsCommandErrors(t *testing.T) {
 			},
 			altMessage: `BSON field '$collStats.storageStats.scale' is the wrong type 'string', expected types '[long, int, decimal, double]'`,
 		},
+		"CountCollStatsCount": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{
+					bson.D{{"$count", "before"}},
+					bson.D{{"$collStats", bson.D{{"count", bson.D{}}, {"storageStats", bson.D{}}}}},
+					bson.D{{"$count", "after"}},
+				}},
+				{"cursor", bson.D{}},
+			},
+			err: &mongo.CommandError{
+				Code:    40602,
+				Name:    "Location40602",
+				Message: `$collStats is only valid as the first stage in a pipeline`,
+			},
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
