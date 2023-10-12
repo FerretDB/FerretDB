@@ -4,8 +4,9 @@ sidebar_position: 2
 
 # Understanding FerretDB
 
-FerretDB is an open source MongoDB alternative that converts MongoDB wire protocol queries to SQL.
-As a document database, FerretDB uses the same commands, drivers, and tools to those of MongoDB.
+FerretDB is an open-source proxy that translates MongoDB wire protocol queries to SQL,
+with PostgreSQL or SQLite as the database engine.
+It uses the same commands, drivers, and tools as MongoDB.
 
 ```mermaid
 flowchart LR
