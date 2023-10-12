@@ -107,7 +107,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 			// Skip sorting if there are more than one sort parameters
 			if order != 0 {
-				return nil, nil
+				break
 			}
 
 			order, err = common.GetSortType(k, v)
@@ -118,8 +118,12 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			key = k
 		}
 
-		qp.SortOrder = &order
-		qp.SortKey = key
+		if key != "" {
+			qp.Sort = &backends.SortField{
+				Key:        key,
+				Descending: order == types.Descending,
+			}
+		}
 	}
 
 	res, err := coll.Explain(ctx, &qp)

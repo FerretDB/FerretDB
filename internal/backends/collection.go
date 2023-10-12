@@ -69,6 +69,7 @@ func CollectionContract(c Collection) Collection {
 	}
 }
 
+// SortField consists of a field name and a sort order that are used in queries.
 type SortField struct {
 	Key        string
 	Descending bool

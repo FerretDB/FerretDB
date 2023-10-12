@@ -88,11 +88,11 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	q += where
 
-	if params.SortOrder != nil {
+	if params.Sort != nil {
 		var sort string
 		var sortArgs []any
 
-		sort, sortArgs, err = prepareOrderByClause(&placeholder, params.SortKey, *params.SortOrder)
+		sort, sortArgs, err = prepareOrderByClause(&placeholder, params.Sort.Key, params.Sort.Descending)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -304,11 +304,11 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	res.QueryPushdown = where != ""
 
-	if params.SortOrder != nil {
+	if params.Sort != nil {
 		var sort string
 		var sortArgs []any
 
-		sort, sortArgs, err = prepareOrderByClause(&placeholder, params.SortKey, *params.SortOrder)
+		sort, sortArgs, err = prepareOrderByClause(&placeholder, params.Sort.Key, params.Sort.Descending)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}

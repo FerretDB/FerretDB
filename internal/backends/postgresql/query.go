@@ -164,23 +164,16 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 }
 
 // prepareOrderByClause adds ORDER BY clause with given sort document and returns the query and arguments.
-func prepareOrderByClause(p *metadata.Placeholder, key string, order types.SortType) (string, []any, error) {
+func prepareOrderByClause(p *metadata.Placeholder, key string, descending bool) (string, []any, error) {
 	// Skip sorting dot notation
 	if strings.ContainsRune(key, '.') {
 		return "", nil, nil
 	}
 
-	var sqlOrder string
+	sqlOrder := "ASC"
 
-	switch order {
-	case types.Descending:
+	if descending {
 		sqlOrder = "DESC"
-	case types.Ascending:
-		sqlOrder = "ASC"
-	case 0:
-		return "", nil, nil
-	default:
-		panic(fmt.Sprint("forbidden order:", order))
 	}
 
 	return fmt.Sprintf(" ORDER BY _jsonb->%s %s", p.Next(), sqlOrder), []any{key}, nil
