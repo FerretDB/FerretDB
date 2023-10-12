@@ -204,17 +204,17 @@ func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args 
 			// don't change the default eq query
 		}
 
-		filter = fmt.Sprintf(sql, p.Next(), p.Next())
+		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
 		args = append(args, k, v)
 
 	case string, types.ObjectID, time.Time:
 		// don't change the default eq query
-		filter = fmt.Sprintf(sql, p.Next(), p.Next())
+		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
 		args = append(args, k, string(must.NotFail(sjson.MarshalSingleValue(v))))
 
 	case bool, int32:
 		// don't change the default eq query
-		filter = fmt.Sprintf(sql, p.Next(), p.Next())
+		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
 		args = append(args, k, v)
 
 	case int64:
