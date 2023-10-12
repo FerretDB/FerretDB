@@ -21,31 +21,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-// IsPostgres returns true if the current test is running for pg handler.
+// IsPostgreSQL returns true if the current test is running for PostgreSQL backend.
 //
 // This function should not be used lightly.
-func IsPostgres(tb testtb.TB) bool {
-	return *targetBackendF == "ferretdb-pg" && *useNewPgF
+func IsPostgreSQL(tb testtb.TB) bool {
+	return *targetBackendF == "ferretdb-postgresql"
 }
 
-// IsOldPg returns true if the current test is running for old PostgreSQL handler.
-//
-// This function should not be used lightly and should be removed when a new PG handler is in place.
-// TODO https://github.com/FerretDB/FerretDB/issues/3435
-func IsOldPg(tb testtb.TB) bool {
-	return *targetBackendF == "ferretdb-pg" && !*useNewPgF
-}
-
-// IsNewPg returns true if the current test is running for new PostgreSQL handler.
-//
-// This function should not be used lightly and always with an reason provided.
-// It should be removed when a new PG handler is fully supported.
-// TODO https://github.com/FerretDB/FerretDB/issues/3435
-func IsNewPg(tb testtb.TB) bool {
-	return *targetBackendF == "ferretdb-pg" && *useNewPgF
-}
-
-// IsSQLite returns true if the current test is running for SQLite.
+// IsSQLite returns true if the current test is running for SQLite backend.
 //
 // This function should not be used lightly.
 func IsSQLite(tb testtb.TB) bool {
@@ -85,6 +68,21 @@ func FailsForSQLite(tb testtb.TB, reason string) testtb.TB {
 	return tb
 }
 
+// SkipForPostgreSQL skips the current test for PostgreSQL backend.
+//
+// This function should not be used lightly and always with an reason provided.
+// It should be removed when a new PG handler is fully supported.
+// TODO https://github.com/FerretDB/FerretDB/issues/3435
+func SkipForPostgreSQL(tb testtb.TB, reason string) {
+	tb.Helper()
+
+	if IsPostgreSQL(tb) {
+		require.NotEmpty(tb, reason, "reason must not be empty")
+
+		tb.Skipf("Skipping for PostgreSQL: %s.", reason)
+	}
+}
+
 // SkipForMongoDB skips the current test for MongoDB.
 //
 // This function should not be used lightly and always with an issue URL.
@@ -95,36 +93,6 @@ func SkipForMongoDB(tb testtb.TB, reason string) {
 		require.NotEmpty(tb, reason, "reason must not be empty")
 
 		tb.Skipf("Skipping for MongoDB: %s.", reason)
-	}
-}
-
-// SkipForOldPg skips the current test for the old PG handler.
-//
-// This function should not be used lightly and always with an reason provided.
-// It should be removed when a new PG handler is in place.
-// TODO https://github.com/FerretDB/FerretDB/issues/3435
-func SkipForOldPg(tb testtb.TB, reason string) {
-	tb.Helper()
-
-	if IsOldPg(tb) {
-		require.NotEmpty(tb, reason, "reason must not be empty")
-
-		tb.Skipf("Skipping for old PostgreSQL handler: %s.", reason)
-	}
-}
-
-// SkipForNewPg skips the current test for the new PG handler.
-//
-// This function should not be used lightly and always with an reason provided.
-// It should be removed when a new PG handler is fully supported.
-// TODO https://github.com/FerretDB/FerretDB/issues/3435
-func SkipForNewPg(tb testtb.TB, reason string) {
-	tb.Helper()
-
-	if IsNewPg(tb) {
-		require.NotEmpty(tb, reason, "reason must not be empty")
-
-		tb.Skipf("Skipping for new PostgreSQL handler: %s.", reason)
 	}
 }
 
