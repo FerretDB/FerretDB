@@ -100,7 +100,7 @@ tasks:
         {{.SERVICES}}
 
   env-setup:
-    deps: [gen-version]
+    deps: [gen-version, build-envtool]
     cmds:
       - bin/envtool{{exeExt}} setup
 
@@ -143,6 +143,7 @@ tasks:
       - go generate -x ./build/version
 
   build-envtool:
+    run: once
     cmds:
       - go build -v -o bin/ ./cmd/envtool/
 
@@ -151,6 +152,7 @@ tasks:
     run: once
     deps: [gen-version]
     cmds:
+      - echo 'build-host' > build/version/package.txt
       - go build -v -o=bin/ferretdb{{exeExt}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -coverpkg=./... ./cmd/ferretdb
       - bin/envtool{{exeExt}} shell mkdir tmp/cover
 
