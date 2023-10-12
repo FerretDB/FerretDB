@@ -4,14 +4,20 @@ sidebar_position: 2
 
 # Understanding FerretDB
 
-FerretDB is an open source MongoDB alternative that converts MongoDB wire protocols to SQL, with a backend on PostgreSQL.
+FerretDB is an open source MongoDB alternative that converts MongoDB wire protocol queries to SQL.
 As a document database, FerretDB uses the same commands, drivers, and tools to those of MongoDB.
 
-In FerretDB, data is stored as [BSON](https://bsonspec.org/spec.html) - a binary representation of JSON - so you can store more types of data than in regular JSON.
-However, we do not currently support 128-bit decimal floating point values.
+```mermaid
+flowchart LR
+  A["Any application\nAny MongoDB driver"]
+  F{{FerretDB}}
+  P[(PostgreSQL)]
+  S[("SQLite")]
 
-Before inserting data into a document, you do not need to declare a schema.
-That makes it ideal for applications and workloads requiring flexible schemas, such as blogs, chat apps, and video games.
+  A -- "MongoDB protocol\nBSON" --> F
+  F -- "PostgreSQL protocol\nSQL" --> P
+  F -. "SQLite library\nSQL" .-> S
+```
 
 :::tip
 New to FerretDB?
