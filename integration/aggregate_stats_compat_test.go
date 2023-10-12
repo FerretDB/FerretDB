@@ -25,72 +25,57 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestAggregateCompatCollStats(tt *testing.T) {
-	tt.Parallel()
+func TestAggregateCompatCollStats(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers:                []shareddata.Provider{shareddata.ArrayDocuments},
+		AddNonExistentCollection: true,
+	})
+	ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
 
 	for name, tc := range map[string]struct {
-		skip       string                   // skip test for all handlers, must have issue number mentioned
-		collStats  bson.D                   // required
+		pipeline bson.A // required
+
 		resultType compatTestCaseResultType // defaults to nonEmptyResult
+		skip       string                   // skip test for all handlers, must have issue number mentioned
 	}{
-		"NilCollStats": {
-			collStats:  nil,
-			resultType: emptyResult,
-		},
 		"EmptyCollStats": {
-			collStats: bson.D{},
+			pipeline: bson.A{bson.D{{"$collStats", bson.D{}}}},
 		},
 		"Count": {
-			collStats: bson.D{{"count", bson.D{}}},
+			pipeline: bson.A{bson.D{{"$collStats", bson.D{{"count", bson.D{}}}}}},
 		},
 		"StorageStats": {
-			collStats: bson.D{{"storageStats", bson.D{}}},
+			pipeline: bson.A{bson.D{{"$collStats", bson.D{{"storageStats", bson.D{}}}}}},
 		},
 		"StorageStatsWithScale": {
-			collStats: bson.D{{"storageStats", bson.D{{"scale", 1000}}}},
-		},
-		"StorageStatsNegativeScale": {
-			collStats:  bson.D{{"storageStats", bson.D{{"scale", -1000}}}},
-			resultType: emptyResult,
+			pipeline: bson.A{bson.D{{"$collStats", bson.D{{"storageStats", bson.D{{"scale", 1000}}}}}}},
 		},
 		"StorageStatsFloatScale": {
-			collStats: bson.D{{"storageStats", bson.D{{"scale", 42.42}}}},
-		},
-		"StorageStatsInvalidScale": {
-			collStats:  bson.D{{"storageStats", bson.D{{"scale", "invalid"}}}},
-			resultType: emptyResult,
+			pipeline: bson.A{bson.D{{"$collStats", bson.D{{"storageStats", bson.D{{"scale", 42.42}}}}}}},
 		},
 		"CountAndStorageStats": {
-			collStats: bson.D{{"count", bson.D{}}, {"storageStats", bson.D{}}},
+			pipeline: bson.A{bson.D{{"$collStats", bson.D{{"count", bson.D{}}, {"storageStats", bson.D{}}}}}},
 		},
 	} {
 		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Helper()
-			tt.Parallel()
+			t.Parallel()
 
-			// It's enough to use a couple of providers: one for some collection and one for a non-existent collection.
-			s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
-				Providers:                []shareddata.Provider{shareddata.ArrayDocuments},
-				AddNonExistentCollection: true,
-			})
-			ctx, targetCollections, compatCollections := s.Ctx, s.TargetCollections, s.CompatCollections
+			require.NotNil(t, tc.pipeline, "pipeline must be set")
 
 			var nonEmptyResults bool
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-				tt.Run(targetCollection.Name(), func(t *testing.T) {
-					t.Helper()
-
-					command := bson.A{bson.D{{"$collStats", tc.collStats}}}
-
-					targetCursor, targetErr := targetCollection.Aggregate(ctx, command)
-					compatCursor, compatErr := compatCollection.Aggregate(ctx, command)
+				t.Run(targetCollection.Name(), func(t *testing.T) {
+					targetCursor, targetErr := targetCollection.Aggregate(ctx, tc.pipeline)
+					compatCursor, compatErr := compatCollection.Aggregate(ctx, tc.pipeline)
 
 					if targetCursor != nil {
 						defer targetCursor.Close(ctx)
@@ -134,11 +119,11 @@ func TestAggregateCompatCollStats(tt *testing.T) {
 
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(tt, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
 			case emptyResult:
-				assert.False(tt, nonEmptyResults, "expected empty results (no documents should be modified)")
+				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
-				tt.Fatalf("unknown result type %v", tc.resultType)
+				t.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}

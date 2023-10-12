@@ -68,6 +68,44 @@ func TestAggregateCollStatsCommandErrors(t *testing.T) {
 			},
 			altMessage: "ns not found: TestAggregateCollStatsCommandErrors.non-existent",
 		},
+		"NilCollStats": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{bson.D{{"$collStats", nil}}}},
+				{"cursor", bson.D{}},
+			},
+			err: &mongo.CommandError{
+				Code:    5447000,
+				Name:    "Location5447000",
+				Message: `$collStats must take a nested object but found: $collStats: null`,
+			},
+			altMessage: `$collStats must take a nested object but found: { $collStats: null }`,
+		},
+		"StorageStatsNegativeScale": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{bson.D{{"$collStats", bson.D{{"storageStats", bson.D{{"scale", -1000}}}}}}}},
+				{"cursor", bson.D{}},
+			},
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: `BSON field 'scale' value must be >= 1, actual value '-1000'`,
+			},
+		},
+		"StorageStatsInvalidScale": {
+			command: bson.D{
+				{"aggregate", collection.Name()},
+				{"pipeline", bson.A{bson.D{{"$collStats", bson.D{{"storageStats", bson.D{{"scale", "invalid"}}}}}}}},
+				{"cursor", bson.D{}},
+			},
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: `BSON field '$collStats.storageStats.scale' is the wrong type 'string', expected types '[long, int, decimal, double']`,
+			},
+			altMessage: `BSON field '$collStats.storageStats.scale' is the wrong type 'string', expected types '[long, int, decimal, double]'`,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
