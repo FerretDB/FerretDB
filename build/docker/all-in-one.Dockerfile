@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.21.2-1 AS all-in-one-build
+FROM ghcr.io/ferretdb/golang:1.21.3-1 AS all-in-one-build
 
 ARG TARGETARCH
 
@@ -116,6 +116,7 @@ ENTRYPOINT [ "/entrypoint.sh" ]
 # all-in-one hacks stop there
 
 WORKDIR /
+VOLUME /state
 EXPOSE 27017 27018 8080
 
 # don't forget to update documentation if you change defaults
@@ -123,6 +124,7 @@ ENV FERRETDB_LISTEN_ADDR=:27017
 # ENV FERRETDB_LISTEN_TLS=:27018
 ENV FERRETDB_DEBUG_ADDR=:8080
 ENV FERRETDB_STATE_DIR=/state
+ENV FERRETDB_SQLITE_URL=file:/state/
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
