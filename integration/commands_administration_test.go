@@ -1007,7 +1007,6 @@ func TestCommandsAdministrationDBStatsFreeStorage(t *testing.T) {
 
 	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
 	assert.Equal(t, float64(1), doc.Remove("ok"))
-
 	// assert freeStorageSize, indexFreeStorageSize and totalFreeStorageSize
 	// TODO https://github.com/FerretDB/FerretDB/issues/2447
 }
