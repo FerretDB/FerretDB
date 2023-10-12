@@ -118,8 +118,16 @@ func TestAggregateCompatCollStats(t *testing.T) {
 						nonEmptyResults = true
 					}
 
-					// Check the returned values when possible
-					// TODO https://github.com/FerretDB/FerretDB/issues/2349
+					targetDoc := ConvertDocument(t, targetRes[0])
+					compatDoc := ConvertDocument(t, compatRes[0])
+
+					targetNs, _ := targetDoc.Get("ns")
+					compatNs, _ := compatDoc.Get("ns")
+					require.Equal(t, compatNs, targetNs)
+
+					targetCount, _ := targetDoc.Get("count")
+					compatCount, _ := compatDoc.Get("count")
+					require.EqualValues(t, compatCount, targetCount)
 				})
 			}
 
