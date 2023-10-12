@@ -200,6 +200,7 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 
 	cmd.Stdout = stdout
 	cmd.Stderr = os.Stderr
+
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("%s failed: %s", strings.Join(cmd.Args, " "), err)
 	}
