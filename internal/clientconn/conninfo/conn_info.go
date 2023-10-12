@@ -18,8 +18,6 @@ package conninfo
 import (
 	"context"
 	"sync"
-
-	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
 // contextKey is a named unexported type for the safe use of context.WithValue.
@@ -32,26 +30,15 @@ var connInfoKey = contextKey{}
 type ConnInfo struct {
 	PeerAddr string
 
-	token *resource.Token
-
-	rw       sync.RWMutex
-	username string
-	password string
+	rw           sync.RWMutex
+	username     string
+	password     string
+	metadataRecv bool
 }
 
-// NewConnInfo return a new ConnInfo.
-func NewConnInfo() *ConnInfo {
-	connInfo := &ConnInfo{
-		token: resource.NewToken(),
-	}
-	resource.Track(connInfo, connInfo.token)
-
-	return connInfo
-}
-
-// Close frees resources.
-func (connInfo *ConnInfo) Close() {
-	resource.Untrack(connInfo, connInfo.token)
+// New returns a new ConnInfo.
+func New() *ConnInfo {
+	return new(ConnInfo)
 }
 
 // Auth returns stored username and password.
@@ -71,8 +58,24 @@ func (connInfo *ConnInfo) SetAuth(username, password string) {
 	connInfo.password = password
 }
 
-// WithConnInfo returns a new context with the given ConnInfo.
-func WithConnInfo(ctx context.Context, connInfo *ConnInfo) context.Context {
+// MetadataRecv returns whatever client metadata was received already.
+func (connInfo *ConnInfo) MetadataRecv() bool {
+	connInfo.rw.RLock()
+	defer connInfo.rw.RUnlock()
+
+	return connInfo.metadataRecv
+}
+
+// SetMetadataRecv marks client metadata as received.
+func (connInfo *ConnInfo) SetMetadataRecv() {
+	connInfo.rw.Lock()
+	defer connInfo.rw.Unlock()
+
+	connInfo.metadataRecv = true
+}
+
+// Ctx returns a derived context with the given ConnInfo.
+func Ctx(ctx context.Context, connInfo *ConnInfo) context.Context {
 	return context.WithValue(ctx, connInfoKey, connInfo)
 }
 

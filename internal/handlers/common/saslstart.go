@@ -15,54 +15,38 @@
 package common
 
 import (
-	"bytes"
-	"encoding/base64"
+	"context"
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// SASLStartPlain extracts username and password from PLAIN `saslStart` payload.
-func SASLStartPlain(doc *types.Document) (string, string, error) {
-	var payload []byte
+// SASLStart returns a common part of saslStart command response.
+func SASLStart(ctx context.Context, doc *types.Document) error {
+	mechanism, err := GetRequiredParam[string](doc, "mechanism")
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
 
-	// some drivers send payload as a string
-	stringPayload, err := GetRequiredParam[string](doc, "payload")
-	if err == nil {
-		if payload, err = base64.StdEncoding.DecodeString(stringPayload); err != nil {
-			return "", "", lazyerrors.Error(err)
+	var username, password string
+
+	switch mechanism {
+	case "PLAIN":
+		username, password, err = saslStartPlain(doc)
+		if err != nil {
+			return err
 		}
+
+	default:
+		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
+			"See https://docs.ferretdb.io/security/authentication/ for more details."
+		return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrAuthenticationFailed, msg, "mechanism")
 	}
 
-	// most drivers follow spec and send payload as a binary
-	binaryPayload, err := GetRequiredParam[types.Binary](doc, "payload")
-	if err == nil {
-		payload = binaryPayload.B
-	}
+	conninfo.Get(ctx).SetAuth(username, password)
 
-	if payload == nil {
-		// return error about expected types.Binary, not string
-		return "", "", err
-	}
-
-	parts := bytes.Split(payload, []byte{0})
-	if l := len(parts); l != 3 {
-		return "", "", commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrTypeMismatch,
-			fmt.Sprintf("Invalid payload (expected 3 parts, got %d)", l),
-			"payload",
-		)
-	}
-
-	authzid, authcid, passwd := parts[0], parts[1], parts[2]
-
-	// Some drivers (Go) send empty authorization identity (authzid),
-	// while others (Java) set it to the same value as authentication identity (authcid)
-	// (see https://www.rfc-editor.org/rfc/rfc4616.html).
-	// Ignore authzid for now.
-	_ = authzid
-
-	return string(authcid), string(passwd), nil
+	return nil
 }

@@ -69,11 +69,6 @@ func (s *set) Process(_ context.Context, iter types.DocumentsIterator, closer *i
 	return common.AddFieldsIterator(iter, closer, s.newField), nil
 }
 
-// Type implements Stage interface.
-func (s *set) Type() aggregations.StageType {
-	return aggregations.StageTypeDocuments
-}
-
 // check interfaces
 var (
 	_ aggregations.Stage = (*set)(nil)

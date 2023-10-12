@@ -17,7 +17,6 @@ package integration
 
 import (
 	"context"
-	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -27,12 +26,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-//go:generate ../bin/stringer  -type compatTestCaseResultType
+//go:generate ../bin/stringer -linecomment -type compatTestCaseResultType
 
 // compatTestCaseResultType represents compatibility test case result type.
 //
@@ -94,7 +94,7 @@ func convert(t testtb.TB, v any) any {
 	case int32:
 		return v
 	case primitive.Timestamp:
-		return types.NewTimestamp(time.Unix(int64(v.T), 0), uint32(v.I))
+		return types.NewTimestamp(time.Unix(int64(v.T), 0), v.I)
 	case int64:
 		return v
 	default:
@@ -238,6 +238,8 @@ func AssertMatchesWriteError(t testtb.TB, expected, actual error) {
 
 // AssertMatchesBulkException asserts that both errors are BulkWriteExceptions containing the same number of WriteErrors,
 // and those WriteErrors are equal, except messages (and ignoring the Raw part).
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3290
 func AssertMatchesBulkException(t testtb.TB, expected, actual error) {
 	t.Helper()
 
@@ -246,6 +248,11 @@ func AssertMatchesBulkException(t testtb.TB, expected, actual error) {
 
 	e, ok := expected.(mongo.BulkWriteException) //nolint:errorlint // do not inspect error chain
 	require.Truef(t, ok, "expected is %T, not mongo.BulkWriteException", expected)
+
+	if len(a.WriteErrors) != len(e.WriteErrors) {
+		assert.Equal(t, expected, actual)
+		return
+	}
 
 	for i, we := range a.WriteErrors {
 		expectedWe := e.WriteErrors[i]
@@ -257,7 +264,7 @@ func AssertMatchesBulkException(t testtb.TB, expected, actual error) {
 	}
 }
 
-// AssertEqualAltCommandError asserts that the expected error is the same as the actual (ignoring the Raw part);
+// AssertEqualAltCommandError asserts that the expected MongoDB error is the same as the actual (ignoring the Raw part);
 // the alternative error message may be provided if FerretDB is unable to produce exactly the same text as MongoDB.
 //
 // In general, error messages should be the same. Exceptions include:
@@ -279,20 +286,21 @@ func AssertEqualAltCommandError(t testtb.TB, expected mongo.CommandError, altMes
 	require.Nil(t, expected.Raw)
 	expected.Raw = a.Raw
 
+	if setup.IsMongoDB(t) || altMessage == "" {
+		return assert.Equal(t, expected, a)
+	}
+
 	if assert.ObjectsAreEqual(expected, a) {
 		return true
 	}
 
-	if altMessage != "" {
-		expected.Message = altMessage
-	}
-
+	expected.Message = altMessage
 	return assert.Equal(t, expected, a)
 }
 
-// AssertEqualAltWriteError asserts that the expected error is the same as the actual;
+// AssertEqualAltWriteError asserts that the expected MongoDB error is the same as the actual;
 // the alternative error message may be provided if FerretDB is unable to produce exactly the same text as MongoDB.
-func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessage string, actual error) bool {
+func AssertEqualAltWriteError(t testtb.TB, expected mongo.WriteError, altMessage string, actual error) bool {
 	t.Helper()
 
 	we, ok := actual.(mongo.WriteException)
@@ -310,14 +318,15 @@ func AssertEqualAltWriteError(t *testing.T, expected mongo.WriteError, altMessag
 	require.Nil(t, expected.Raw)
 	expected.Raw = a.Raw
 
+	if setup.IsMongoDB(t) || altMessage == "" {
+		return assert.Equal(t, expected, a)
+	}
+
 	if assert.ObjectsAreEqual(expected, a) {
 		return true
 	}
 
-	if altMessage != "" {
-		expected.Message = altMessage
-	}
-
+	expected.Message = altMessage
 	return assert.Equal(t, expected, a)
 }
 
@@ -392,6 +401,8 @@ func CollectKeys(t testtb.TB, doc bson.D) []string {
 
 // FetchAll fetches all documents from the cursor, closing it.
 func FetchAll(t testtb.TB, ctx context.Context, cursor *mongo.Cursor) []bson.D {
+	t.Helper()
+
 	var res []bson.D
 	err := cursor.All(ctx, &res)
 	require.NoError(t, cursor.Close(ctx))
@@ -399,13 +410,22 @@ func FetchAll(t testtb.TB, ctx context.Context, cursor *mongo.Cursor) []bson.D {
 	return res
 }
 
-// FindAll returns all documents from the given collection sorted by _id.
-func FindAll(t testtb.TB, ctx context.Context, collection *mongo.Collection) []bson.D {
+// FilterAll returns filtered documented from the given collection sorted by _id.
+func FilterAll(t testtb.TB, ctx context.Context, collection *mongo.Collection, filter bson.D) []bson.D {
+	t.Helper()
+
 	opts := options.Find().SetSort(bson.D{{"_id", 1}})
-	cursor, err := collection.Find(ctx, bson.D{}, opts)
+	cursor, err := collection.Find(ctx, filter, opts)
 	require.NoError(t, err)
 
 	return FetchAll(t, ctx, cursor)
+}
+
+// FindAll returns all documents from the given collection sorted by _id.
+func FindAll(t testtb.TB, ctx context.Context, collection *mongo.Collection) []bson.D {
+	t.Helper()
+
+	return FilterAll(t, ctx, collection, bson.D{})
 }
 
 // generateDocuments generates documents with _id ranging from startID to endID.
@@ -420,4 +440,30 @@ func generateDocuments(startID, endID int32) (bson.A, []bson.D) {
 	}
 
 	return arr, docs
+}
+
+// CreateNestedDocument creates a mock BSON document that consists of nested arrays and documents.
+// The nesting level is based on integer parameter.
+func CreateNestedDocument(n int) bson.D {
+	return createNestedDocument(n, false).(bson.D)
+}
+
+// createNestedDocument creates the nested n times object that consists of
+// documents and arrays. If the arr is true, the root value will be array.
+//
+// This function should be used only internally.
+// To generate values for tests please use
+// exported CreateNestedDocument function.
+func createNestedDocument(n int, arr bool) any {
+	var child any
+
+	if n > 0 {
+		child = createNestedDocument(n-1, !arr)
+	}
+
+	if arr {
+		return bson.A{child}
+	}
+
+	return bson.D{{"v", child}}
 }

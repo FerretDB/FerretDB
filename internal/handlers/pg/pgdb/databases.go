@@ -24,7 +24,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/FerretDB/FerretDB/internal/util/contract"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -91,8 +90,6 @@ func CreateDatabaseIfNotExists(ctx context.Context, tx pgx.Tx, db string) error 
 
 // DropDatabase drops FerretDB database.
 func DropDatabase(ctx context.Context, tx pgx.Tx, db string) (err error) {
-	defer contract.EnsureError(err, ErrSchemaNotExist) // if schema does not exist
-
 	if _, err = tx.Exec(ctx, `DROP SCHEMA `+pgx.Identifier{db}.Sanitize()+` CASCADE`); err == nil {
 		return
 	}

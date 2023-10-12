@@ -57,6 +57,18 @@ We also look at the flows' metrics to gather more information about the team's d
 Estimation mistakes should be an exception, not a norm.
 Try to estimate on the planning as best as you can.
 
+## Showing progress
+
+We want our work to be visible and transparent.
+This way we can help each other and make sure that we are on the right track.
+To uphold these principles, we agree to make results of our daily work available for others through various means such as
+pull requests, code reviews, created issues, or any other relevant method.
+
+### Community
+
+We expect issues picked up by the community to be done in about two weeks.
+After about a week of inactivity, we should ping contributors.
+
 ## Pull requests
 
 For FerretDB Inc. engineers and long-term contributors,
@@ -93,6 +105,18 @@ To make them useful,
 talk with [@GitHub bot in direct messages](https://ferretdb.slack.com/archives/D02P4EJPFGV)
 to link your Slack and GitHub identities,
 and then configure notification only for your name.
+
+### Test scripts
+
+Pull requests that add temporary `test.js` test scripts have slightly different rules:
+
+1. The title should start with "Add test script for".
+2. The descriptions of both PR and issue should link to each other.
+3. Commits must change only the `test.js` file.
+
+Once PR with a test script is sent and verified by someone else, it is closed.
+Once the linked issue is resolved, the PR should be reopened and merged with `main` to confirm that the test script pass now.
+Then it should be closed again.
 
 ## Creating issues
 

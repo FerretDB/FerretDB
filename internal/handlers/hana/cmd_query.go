@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
@@ -31,6 +32,10 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 	if query.FullCollectionName == "admin.$cmd" {
 		switch cmd := query.Query.Command(); cmd {
 		case "ismaster", "isMaster": // both are valid
+			if err := common.CheckClientMetadata(ctx, query.Query); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
 			reply := &wire.OpReply{
 				NumberReturned: 1,
 				Documents: []*types.Document{must.NotFail(types.NewDocument(

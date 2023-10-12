@@ -17,12 +17,12 @@ package common
 import (
 	"errors"
 	"fmt"
-	"strings"
 
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonpath"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -33,7 +33,7 @@ import (
 //nolint:vet // for readability
 type DistinctParams struct {
 	DB         string          `ferretdb:"$db"`
-	Collection string          `ferretdb:"collection"`
+	Collection string          `ferretdb:"distinct,collection"`
 	Key        string          `ferretdb:"key"`
 	Filter     *types.Document `ferretdb:"-"`
 	Comment    string          `ferretdb:"comment,opt"`
@@ -102,26 +102,22 @@ func FilterDistinctValues(iter types.DocumentsIterator, key string) (*types.Arra
 			return nil, lazyerrors.Error(err)
 		}
 
-		// docsAtSuffix contains all documents exist at the suffix key.
-		docsAtSuffix := []*types.Document{doc}
-		suffix := key
-
-		if strings.ContainsRune(key, '.') {
-			path, err := types.NewPathFromString(key)
-			if err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-
-			// Multiple documents may be found at suffix by array dot notation.
-			suffix, docsAtSuffix = getDocumentsAtSuffix(doc, path)
+		path, err := types.NewPathFromString(key)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 
-		for _, doc := range docsAtSuffix {
-			val, err := doc.Get(suffix)
-			if err != nil {
-				continue
-			}
+		// distinct using dot notation returns the value by valid array index
+		// or values for the given key in array's document
+		vals, err := commonpath.FindValues(doc, path, &commonpath.FindValuesOpts{
+			FindArrayIndex:     true,
+			FindArrayDocuments: true,
+		})
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 
+		for _, val := range vals {
 			switch v := val.(type) {
 			case *types.Array:
 				for i := 0; i < v.Len(); i++ {

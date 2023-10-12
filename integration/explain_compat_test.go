@@ -110,7 +110,6 @@ func testExplainCompatError(t *testing.T, testCases map[string]explainCompatTest
 				assert.Equal(t, compatMap["ok"], targetMap["ok"])
 				assert.Equal(t, compatMap["command"], targetMap["command"])
 
-				// check queryPlanner is set
 				assert.NotEmpty(t, targetMap["queryPlanner"])
 
 				var nonEmptyResults bool

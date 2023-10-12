@@ -12,62 +12,78 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pool provides access to SQLite database connections.
+// Package pool provides access to SQLite databases and their connections.
 //
 // It should be used only by the metadata package.
 package pool
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"net/url"
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 
+	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // filenameExtension represents SQLite database filename extension.
 const filenameExtension = ".sqlite"
 
-// Pool provides access to SQLite database connections.
+// Parts of Prometheus metric names.
+const (
+	namespace = "ferretdb"
+	subsystem = "sqlite_pool"
+)
+
+// Pool provides access to SQLite databases and their connections.
 //
 //nolint:vet // for readability
 type Pool struct {
-	uri *url.URL
+	uri url.URL
 	l   *zap.Logger
+	sp  *state.Provider
 
 	rw  sync.RWMutex
-	dbs map[string]*db
+	dbs map[string]*fsql.DB
 
 	token *resource.Token
 }
 
-// New creates a pool for SQLite databases in the given directory.
-func New(u string, l *zap.Logger) (*Pool, error) {
-	uri, err := validateURI(u)
+// New creates a pool for SQLite databases in the directory specified by SQLite URI.
+//
+// All databases are opened on creation.
+//
+// The returned map is the initial set of existing databases.
+// It should not be modified.
+func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, map[string]*fsql.DB, error) {
+	uri, err := parseURI(u)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse SQLite URI %q: %s", u, err)
+		return nil, nil, fmt.Errorf("failed to parse SQLite URI %q: %s", u, err)
 	}
 
 	matches, err := filepath.Glob(filepath.Join(uri.Path, "*"+filenameExtension))
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, nil, lazyerrors.Error(err)
 	}
 
 	p := &Pool{
-		uri:   uri,
+		uri:   *uri,
 		l:     l,
-		dbs:   make(map[string]*db, len(matches)),
+		sp:    sp,
+		dbs:   make(map[string]*fsql.DB, len(matches)),
 		token: resource.NewToken(),
 	}
 
@@ -79,60 +95,21 @@ func New(u string, l *zap.Logger) (*Pool, error) {
 
 		p.l.Debug("Opening existing database.", zap.String("name", name), zap.String("uri", uri))
 
-		db, err := openDB(uri)
+		db, err := openDB(name, uri, p.memory(), l, p.sp)
 		if err != nil {
 			p.Close()
-			return nil, lazyerrors.Error(err)
+			return nil, nil, lazyerrors.Error(err)
 		}
 
 		p.dbs[name] = db
 	}
 
-	return p, nil
+	return p, p.dbs, nil
 }
 
-// validateURI checks given URI value and returns parsed URL.
-// URI should contain 'file' scheme and point to an existing directory.
-// Path should end with '/'. Authority should be empty or absent.
-//
-// Returned URL contains path in both Path and Opaque to make String() method work correctly.
-func validateURI(u string) (*url.URL, error) {
-	uri, err := url.Parse(u)
-	if err != nil {
-		return nil, err
-	}
-
-	if uri.Scheme != "file" {
-		return nil, fmt.Errorf(`expected "file:" schema, got %q`, uri.Scheme)
-	}
-
-	if uri.User != nil {
-		return nil, fmt.Errorf(`expected empty user info, got %q`, uri.User)
-	}
-
-	if uri.Host != "" {
-		return nil, fmt.Errorf(`expected empty host, got %q`, uri.Host)
-	}
-
-	if uri.Path == "" && uri.Opaque != "" {
-		uri.Path = uri.Opaque
-	}
-	uri.Opaque = uri.Path
-
-	if !strings.HasSuffix(uri.Path, "/") {
-		return nil, fmt.Errorf(`expected path ending with "/", got %q`, uri.Path)
-	}
-
-	fi, err := os.Stat(uri.Path)
-	if err != nil {
-		return nil, fmt.Errorf(`%q should be an existing directory, got %s`, uri.Path, err)
-	}
-
-	if !fi.IsDir() {
-		return nil, fmt.Errorf(`%q should be an existing directory`, uri.Path)
-	}
-
-	return uri, nil
+// memory returns true if the pool is for the in-memory database.
+func (p *Pool) memory() bool {
+	return p.uri.Query().Get("mode") == "memory"
 }
 
 // databaseName returns database name for given database file path.
@@ -142,15 +119,20 @@ func (p *Pool) databaseName(databaseFile string) string {
 
 // databaseURI returns SQLite URI for the given database name.
 func (p *Pool) databaseURI(databaseName string) string {
-	dbURI := *p.uri
+	dbURI := p.uri
 	dbURI.Path = path.Join(dbURI.Path, databaseName+filenameExtension)
 	dbURI.Opaque = dbURI.Path
 
 	return dbURI.String()
 }
 
-// databaseFile returns database file path for the given database name.
+// databaseFile returns database file path for the given database name,
+// or empty string for in-memory database.
 func (p *Pool) databaseFile(databaseName string) string {
+	if p.memory() {
+		return ""
+	}
+
 	return filepath.Join(p.uri.Path, databaseName+filenameExtension)
 }
 
@@ -170,35 +152,36 @@ func (p *Pool) Close() {
 
 // List returns a sorted list of database names in the pool.
 func (p *Pool) List(ctx context.Context) []string {
+	defer observability.FuncCall(ctx)()
+
 	p.rw.RLock()
 	defer p.rw.RUnlock()
 
 	res := maps.Keys(p.dbs)
-	slices.Sort(res)
+	sort.Strings(res)
 
 	return res
 }
 
-// GetExisting returns an existing database connection by name, or nil.
-func (p *Pool) GetExisting(ctx context.Context, name string) *sql.DB {
+// GetExisting returns an existing database by valid name, or nil.
+func (p *Pool) GetExisting(ctx context.Context, name string) *fsql.DB {
+	defer observability.FuncCall(ctx)()
+
 	p.rw.RLock()
 	defer p.rw.RUnlock()
 
-	db := p.dbs[name]
-	if db == nil {
-		return nil
-	}
-
-	return db.sqlDB
+	return p.dbs[name]
 }
 
-// GetOrCreate returns an existing database connection by name, or creates a new one.
+// GetOrCreate returns an existing database by valid name, or creates a new one.
 //
-// Returned boolean value indicates whether the connection was created.
-func (p *Pool) GetOrCreate(ctx context.Context, name string) (*sql.DB, bool, error) {
-	sqlDB := p.GetExisting(ctx, name)
-	if sqlDB != nil {
-		return sqlDB, false, nil
+// Returned boolean value indicates whether the database was created.
+func (p *Pool) GetOrCreate(ctx context.Context, name string) (*fsql.DB, bool, error) {
+	defer observability.FuncCall(ctx)()
+
+	db := p.GetExisting(ctx, name)
+	if db != nil {
+		return db, false, nil
 	}
 
 	p.rw.Lock()
@@ -206,11 +189,11 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*sql.DB, bool, err
 
 	// it might have been created by a concurrent call
 	if db := p.dbs[name]; db != nil {
-		return db.sqlDB, false, nil
+		return db, false, nil
 	}
 
 	uri := p.databaseURI(name)
-	db, err := openDB(uri)
+	db, err := openDB(name, uri, p.memory(), p.l, p.sp)
 	if err != nil {
 		return nil, false, lazyerrors.Errorf("%s: %w", uri, err)
 	}
@@ -219,15 +202,17 @@ func (p *Pool) GetOrCreate(ctx context.Context, name string) (*sql.DB, bool, err
 
 	p.dbs[name] = db
 
-	return db.sqlDB, true, nil
+	return db, true, nil
 }
 
-// Drop closes and removes a database by name.
+// Drop closes and removes a database by valid name.
 //
 // It does nothing if the database does not exist.
 //
 // Returned boolean value indicates whether the database was removed.
 func (p *Pool) Drop(ctx context.Context, name string) bool {
+	defer observability.FuncCall(ctx)()
+
 	p.rw.Lock()
 	defer p.rw.Unlock()
 
@@ -236,11 +221,49 @@ func (p *Pool) Drop(ctx context.Context, name string) bool {
 		return false
 	}
 
-	_ = db.Close()
-	_ = os.Remove(p.databaseFile(name))
+	if err := db.Close(); err != nil {
+		p.l.Warn("Failed to close database connection.", zap.String("name", name), zap.Error(err))
+	}
+
 	delete(p.dbs, name)
+
+	if f := p.databaseFile(name); f != "" {
+		if err := os.Remove(f); err != nil {
+			p.l.Warn("Failed to remove database file.", zap.String("file", f), zap.String("name", name), zap.Error(err))
+		}
+	}
 
 	p.l.Debug("Database dropped.", zap.String("name", name))
 
 	return true
 }
+
+// Describe implements prometheus.Collector.
+func (p *Pool) Describe(ch chan<- *prometheus.Desc) {
+	prometheus.DescribeByCollect(p, ch)
+}
+
+// Collect implements prometheus.Collector.
+func (p *Pool) Collect(ch chan<- prometheus.Metric) {
+	p.rw.RLock()
+	defer p.rw.RUnlock()
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "databases"),
+			"The current number of database in the pool.",
+			nil, nil,
+		),
+		prometheus.GaugeValue,
+		float64(len(p.dbs)),
+	)
+
+	for _, db := range p.dbs {
+		db.Collect(ch)
+	}
+}
+
+// check interfaces
+var (
+	_ prometheus.Collector = (*Pool)(nil)
+)

@@ -51,11 +51,6 @@ func (s *skip) Process(ctx context.Context, iter types.DocumentsIterator, closer
 	return common.SkipIterator(iter, closer, s.value), nil
 }
 
-// Type implements Stage interface.
-func (s *skip) Type() aggregations.StageType {
-	return aggregations.StageTypeDocuments
-}
-
 // check interfaces
 var (
 	_ aggregations.Stage = (*skip)(nil)

@@ -16,11 +16,11 @@ package sqlite
 
 import (
 	"context"
-	"database/sql"
 	"sync"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
@@ -32,7 +32,7 @@ type queryIterator struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
 	ctx   context.Context
-	rows  *sql.Rows // protected by m
+	rows  *fsql.Rows // protected by m
 	token *resource.Token
 	m     sync.Mutex
 }
@@ -46,7 +46,7 @@ type queryIterator struct {
 //
 // Nil rows are possible and return already done iterator.
 // It still should be Close'd.
-func newQueryIterator(ctx context.Context, rows *sql.Rows) types.DocumentsIterator {
+func newQueryIterator(ctx context.Context, rows *fsql.Rows) types.DocumentsIterator {
 	iter := &queryIterator{
 		ctx:   ctx,
 		rows:  rows,

@@ -45,7 +45,7 @@ func newFaker() *faker {
 
 // FieldName generates a random document field name.
 func (f *faker) FieldName() string {
-	// TODO https://github.com/jaswdr/faker/issues/142
+	// See https://github.com/jaswdr/faker/issues/142.
 
 	// somewhat surprisingly, generating "better" field names generates duplicates too often
 	return fmt.Sprintf("field_%d", f.r.Int())

@@ -3,7 +3,7 @@ slug: ferretdb-v-1-4-0-new-release
 title: FerretDB v1.4.0 New Release
 authors: [alex]
 description: >
-  We’re delighted to announce the latest FerretDB release – v1.4.0, which now includes options for creating unique indexes, and support for more aggregation pipeline stages, among other interesting updates.
+  We're delighted to announce the latest FerretDB release – v1.4.0, which now includes options for creating unique indexes, and support for more aggregation pipeline stages, among other interesting updates.
 image: /img/blog/ferretdb-v1.4.0.jpg
 tags: [release]
 ---

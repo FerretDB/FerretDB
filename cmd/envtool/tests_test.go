@@ -22,16 +22,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTestsShard(t *testing.T) {
+func TestTests(t *testing.T) {
 	t.Parallel()
 
-	tests, err := getAllTestNames(filepath.Join("..", "..", "integration"))
+	tests, err := listTests(filepath.Join("..", "..", "integration"))
 	require.NoError(t, err)
 	assert.Contains(t, tests, "TestQueryCompatLimit")
 
-	// TODO replace with a real test name is a subdirectory
+	// TODO enable once subdirectories are used
 	// https://github.com/FerretDB/engineering/issues/66
-	assert.Contains(t, tests, "TestSubDir")
+	// assert.Contains(t, tests, "TestSubDir")
 
 	t.Run("ShardTestsInvalidIndex", func(t *testing.T) {
 		t.Parallel()

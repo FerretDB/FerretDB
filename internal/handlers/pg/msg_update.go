@@ -56,7 +56,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	case err == nil:
 		// do nothing
 	case errors.Is(err, pgdb.ErrInvalidCollectionName), errors.Is(err, pgdb.ErrInvalidDatabaseName):
-		msg := fmt.Sprintf("Invalid namespace: %s.%s", params.DB, params.Collection)
+		msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
 	default:
 		return nil, lazyerrors.Error(err)
@@ -85,16 +85,39 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 					continue
 				}
 
-				doc := u.Filter.DeepCopy()
-				if _, err = common.UpdateDocument(document.Command(), doc, u.Update); err != nil {
+				// TODO https://github.com/FerretDB/FerretDB/issues/3040
+				hasQueryOperators, err := common.HasQueryOperator(u.Filter)
+				if err != nil {
+					return lazyerrors.Error(err)
+				}
+
+				var doc *types.Document
+				if hasQueryOperators {
+					doc = must.NotFail(types.NewDocument())
+				} else {
+					doc = u.Filter
+				}
+
+				hasUpdateOperators, err := common.HasSupportedUpdateModifiers(document.Command(), u.Update)
+				if err != nil {
 					return err
 				}
+
+				if hasUpdateOperators {
+					// TODO https://github.com/FerretDB/FerretDB/issues/3044
+					if _, err = common.UpdateDocument(document.Command(), doc, u.Update); err != nil {
+						return err
+					}
+				} else {
+					doc = u.Update
+				}
+
 				if !doc.Has("_id") {
 					doc.Set("_id", types.NewObjectID())
 				}
 
 				upserted.Append(must.NotFail(types.NewDocument(
-					"index", int32(0), // TODO
+					"index", int32(upserted.Len()),
 					"_id", must.NotFail(doc.Get("_id")),
 				)))
 
@@ -107,7 +130,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				continue
 			}
 
-			if len(resDocs) > 1 && !u.Multi {
+			if len(resDocs) > 1 && !u.Multi { // lalala
 				resDocs = resDocs[:1]
 			}
 
@@ -167,5 +190,18 @@ func updateDocument(ctx context.Context, tx pgx.Tx, qp *pgdb.QueryParams, doc *t
 		return res, nil
 	}
 
-	return 0, commonerrors.CheckError(err)
+	var ve *types.ValidationError
+
+	if !errors.As(err, &ve) {
+		return 0, lazyerrors.Error(err)
+	}
+
+	switch ve.Code() {
+	case types.ErrValidation, types.ErrIDNotFound:
+		return 0, commonerrors.NewCommandErrorMsg(commonerrors.ErrBadValue, ve.Error())
+	case types.ErrWrongIDType:
+		return 0, commonerrors.NewWriteErrorMsg(commonerrors.ErrInvalidID, ve.Error())
+	default:
+		panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
+	}
 }

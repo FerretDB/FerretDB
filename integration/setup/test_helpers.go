@@ -21,13 +21,34 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
+// IsPostgreSQL returns true if the current test is running for PostgreSQL backend.
+//
+// This function should not be used lightly.
+func IsPostgreSQL(tb testtb.TB) bool {
+	return *targetBackendF == "ferretdb-postgresql"
+}
+
+// IsSQLite returns true if the current test is running for SQLite backend.
+//
+// This function should not be used lightly.
+func IsSQLite(tb testtb.TB) bool {
+	return *targetBackendF == "ferretdb-sqlite"
+}
+
+// IsMongoDB returns true if the current test is running for MongoDB.
+//
+// This function should not be used lightly.
+func IsMongoDB(tb testtb.TB) bool {
+	return *targetBackendF == "mongodb"
+}
+
 // FailsForFerretDB return testtb.TB that expects test to fail for FerretDB and pass for MongoDB.
 //
 // This function should not be used lightly and always with an issue URL.
 func FailsForFerretDB(tb testtb.TB, reason string) testtb.TB {
 	tb.Helper()
 
-	if *targetBackendF == "mongodb" {
+	if IsMongoDB(tb) {
 		return tb
 	}
 
@@ -40,11 +61,26 @@ func FailsForFerretDB(tb testtb.TB, reason string) testtb.TB {
 func FailsForSQLite(tb testtb.TB, reason string) testtb.TB {
 	tb.Helper()
 
-	if *targetBackendF == "ferretdb-sqlite" {
+	if IsSQLite(tb) {
 		return testfail.Expected(tb, reason)
 	}
 
 	return tb
+}
+
+// SkipForPostgreSQL skips the current test for PostgreSQL backend.
+//
+// This function should not be used lightly and always with an reason provided.
+// It should be removed when a new PG handler is fully supported.
+// TODO https://github.com/FerretDB/FerretDB/issues/3435
+func SkipForPostgreSQL(tb testtb.TB, reason string) {
+	tb.Helper()
+
+	if IsPostgreSQL(tb) {
+		require.NotEmpty(tb, reason, "reason must not be empty")
+
+		tb.Skipf("Skipping for PostgreSQL: %s.", reason)
+	}
 }
 
 // SkipForMongoDB skips the current test for MongoDB.
@@ -53,14 +89,14 @@ func FailsForSQLite(tb testtb.TB, reason string) testtb.TB {
 func SkipForMongoDB(tb testtb.TB, reason string) {
 	tb.Helper()
 
-	if *targetBackendF == "mongodb" {
+	if IsMongoDB(tb) {
 		require.NotEmpty(tb, reason, "reason must not be empty")
 
 		tb.Skipf("Skipping for MongoDB: %s.", reason)
 	}
 }
 
-// IsPushdownDisabled returns if FerretDB pushdowns are disabled.
+// IsPushdownDisabled returns true if FerretDB pushdowns are disabled.
 func IsPushdownDisabled() bool {
 	return *disableFilterPushdownF
 }

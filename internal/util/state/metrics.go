@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/build/version"
 )
 
+// Parts of Prometheus metric names.
 const (
 	namespace = "ferretdb"
 	subsystem = ""

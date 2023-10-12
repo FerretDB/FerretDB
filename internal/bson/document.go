@@ -24,11 +24,12 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
 	minDocumentLen = 5
-	maxNesting     = 100 // TODO https://github.com/FerretDB/FerretDB/issues/1639
+	maxNesting     = 179
 )
 
 // Common interface with types.Document.
@@ -89,15 +90,6 @@ func ConvertDocument(d document) (*Document, error) {
 	return &doc, nil
 }
 
-// MustConvertDocument is a ConvertDocument that panics in case of error.
-func MustConvertDocument(d document) *Document {
-	doc, err := ConvertDocument(d)
-	if err != nil {
-		panic(err)
-	}
-	return doc
-}
-
 func (doc *Document) bsontype() {}
 
 // Keys returns a copy of document's keys.
@@ -136,6 +128,18 @@ func (doc *Document) Values() []any {
 
 // ReadFrom implements bsontype interface.
 func (doc *Document) ReadFrom(r *bufio.Reader) error {
+	return doc.readNested(r, 0)
+}
+
+// readNested, similarly to ReadFrom, takes raw bytes from reader
+// and unmarshal them to the Document.
+// It also takes the nesting value, and checks if the
+// document doesn't exceed the max nesting allowed.
+func (doc *Document) readNested(r *bufio.Reader, nesting int) error {
+	if nesting > maxNesting {
+		return fmt.Errorf("bson.Document.readNested: document has exceeded the max supported nesting: %d", maxNesting)
+	}
+
 	var l int32
 	if err := binary.Read(r, binary.LittleEndian, &l); err != nil {
 		return lazyerrors.Errorf("bson.Document.ReadFrom (binary.Read): %w", err)
@@ -181,10 +185,8 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 
 		switch tag(t) {
 		case tagDocument:
-			// TODO check max nesting https://github.com/FerretDB/FerretDB/issues/1639
-
 			var v Document
-			if err := v.ReadFrom(bufr); err != nil {
+			if err := v.readNested(bufr, nesting+1); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (embedded document): %w", err)
 			}
 
@@ -196,10 +198,8 @@ func (doc *Document) ReadFrom(r *bufio.Reader) error {
 			fields = append(fields, field{key: key, value: value})
 
 		case tagArray:
-			// TODO check max nesting https://github.com/FerretDB/FerretDB/issues/1639
-
 			var v arrayType
-			if err := v.ReadFrom(bufr); err != nil {
+			if err := v.readNested(bufr, nesting+1); err != nil {
 				return lazyerrors.Errorf("bson.Document.ReadFrom (Array): %w", err)
 			}
 			a := types.Array(v)
@@ -468,9 +468,7 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 	var res bytes.Buffer
 	l := int32(elist.Len() + 5)
 	binary.Write(&res, binary.LittleEndian, l)
-	if _, err := elist.WriteTo(&res); err != nil {
-		panic(err)
-	}
+	must.NotFail(elist.WriteTo(&res))
 	res.WriteByte(0)
 	if int32(res.Len()) != l {
 		panic(fmt.Sprintf("got %d, expected %d", res.Len(), l))

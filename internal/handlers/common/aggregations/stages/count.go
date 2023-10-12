@@ -83,11 +83,6 @@ func (c *count) Process(ctx context.Context, iter types.DocumentsIterator, close
 	return common.CountIterator(iter, closer, c.field), nil
 }
 
-// Type implements Stage interface.
-func (c *count) Type() aggregations.StageType {
-	return aggregations.StageTypeDocuments
-}
-
 // check interfaces
 var (
 	_ aggregations.Stage = (*count)(nil)

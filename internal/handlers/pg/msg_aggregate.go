@@ -73,8 +73,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, err
 	}
 
-	// TODO handle collection-agnostic pipelines ({aggregate: 1})
-	// https://github.com/FerretDB/FerretDB/issues/1890
+	// handle collection-agnostic pipelines ({aggregate: 1})
+	// TODO https://github.com/FerretDB/FerretDB/issues/1890
 	var ok bool
 	var collection string
 
@@ -164,7 +164,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	aggregationStages := must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
 	stagesDocuments := make([]aggregations.Stage, 0, len(aggregationStages))
-	stagesStats := make([]aggregations.Stage, 0, len(aggregationStages))
+	collStatsDocuments := make([]aggregations.Stage, 0, len(aggregationStages))
 
 	for i, d := range aggregationStages {
 		d, ok := d.(*types.Document)
@@ -182,22 +182,22 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 
-		switch s.Type() {
-		case aggregations.StageTypeDocuments:
-			stagesDocuments = append(stagesDocuments, s)
-			stagesStats = append(stagesStats, s) // It's possible to apply "documents" stages to statistics
-		case aggregations.StageTypeStats:
+		switch d.Command() {
+		case "$collStats":
 			if i > 0 {
-				// TODO Add a test to cover this error: https://github.com/FerretDB/FerretDB/issues/2349
+				// Add a test to cover this error.
+				// TODO https://github.com/FerretDB/FerretDB/issues/2349
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrCollStatsIsNotFirstStage,
 					"$collStats is only valid as the first stage in a pipeline",
 					document.Command(),
 				)
 			}
-			stagesStats = append(stagesStats, s)
+
+			collStatsDocuments = append(collStatsDocuments, s)
 		default:
-			panic(fmt.Sprintf("unknown stage type: %v", s.Type()))
+			stagesDocuments = append(stagesDocuments, s)
+			collStatsDocuments = append(collStatsDocuments, s) // It's possible to apply any stage after $collStats stage
 		}
 	}
 
@@ -245,9 +245,9 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	var iter iterator.Interface[struct{}, *types.Document]
 
 	// At this point we have a list of stages to apply to the documents or stats.
-	// If stagesStats contains the same stages as stagesDocuments, we apply aggregation to documents fetched from the DB.
-	// If stagesStats contains more stages than stagesDocuments, we apply aggregation to statistics fetched from the DB.
-	if len(stagesStats) == len(stagesDocuments) {
+	// If collStatsDocuments contains the same stages as stagesDocuments, we apply aggregation to documents fetched from the DB.
+	// If collStatsDocuments contains more stages than stagesDocuments, we apply aggregation to statistics fetched from the DB.
+	if len(collStatsDocuments) == len(stagesDocuments) {
 		filter, sort := aggregations.GetPushdownQuery(aggregationStages)
 
 		// only documents stages or no stages - fetch documents from the DB and apply stages to them
@@ -267,10 +267,12 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{dbPool, &qp, stagesDocuments})
 	} else {
 		// stats stages are provided - fetch stats from the DB and apply stages to them
-		statistics := stages.GetStatistics(stagesStats)
+		// move $collStatsDocuments specific logic to its stage
+		// TODO https://github.com/FerretDB/FerretDB/issues/2423
+		statistics := stages.GetStatistics(collStatsDocuments)
 
 		iter, err = processStagesStats(ctx, closer, &stagesStatsParams{
-			dbPool, db, collection, statistics, stagesStats,
+			dbPool, db, collection, statistics, collStatsDocuments,
 		})
 	}
 
@@ -360,7 +362,7 @@ func processStagesDocuments(ctx context.Context, closer *iterator.MultiCloser, p
 	closer.Add(iterator.CloserFunc(func() {
 		// It does not matter if we commit or rollback the read transaction,
 		// but we should close it.
-		// ctx could be cancelled already.
+		// ctx could be canceled already.
 		_ = keepTx.Rollback(context.Background())
 	}))
 
@@ -377,6 +379,9 @@ type stagesStatsParams struct {
 }
 
 // processStagesStats retrieves the statistics from the database and then processes them through the stages.
+//
+// Move $collStats specific logic to its stage.
+// TODO https://github.com/FerretDB/FerretDB/issues/2423
 func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *stagesStatsParams) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	// Clarify what needs to be retrieved from the database and retrieve it.
 	_, hasCount := p.statistics[stages.StatisticCount]

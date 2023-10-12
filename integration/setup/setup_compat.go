@@ -33,14 +33,17 @@ import (
 
 // SetupCompatOpts represents setup options for compatibility test.
 //
-// TODO Add option to use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
+// Add option to use read-only user.
+// TODO https://github.com/FerretDB/FerretDB/issues/1025
 type SetupCompatOpts struct {
 	// Data providers.
 	Providers []shareddata.Provider
 
 	// If true, a non-existent collection will be added to the list of collections.
 	// This is useful to test the behavior when a collection is not found.
-	// TODO This flag is not needed, always add a non-existent collection https://github.com/FerretDB/FerretDB/issues/1545
+	//
+	// This flag is not needed, always add a non-existent collection.
+	// TODO https://github.com/FerretDB/FerretDB/issues/1545
 	AddNonExistentCollection bool
 
 	databaseName       string
@@ -73,14 +76,21 @@ func SetupCompatWithOpts(tb testtb.TB, opts *SetupCompatOpts) *SetupCompatResult
 		opts = new(SetupCompatOpts)
 	}
 
-	// When we use `task test-integration` to run `pg` and `sqlite` compat tests in parallel,
+	// When we use `task test-integration` to run `postgresql` and `sqlite` compat tests in parallel,
 	// they both use the same MongoDB instance.
-	// Add the backend's name to prevent the usage of the same database.
-	opts.databaseName = testutil.DatabaseName(tb) + "_" + strings.TrimPrefix(*targetBackendF, "ferretdb-")
+	// Add suffix to prevent the usage of the same database.
+	suffix := strings.TrimPrefix(*targetBackendF, "ferretdb-")
+	switch suffix {
+	case "postgresql":
+		suffix = "pg"
+	case "sqlite":
+		suffix = "sl"
+	}
+	opts.databaseName = testutil.DatabaseName(tb) + "_" + suffix
 
 	// When database name is too long, database is created but inserting documents
 	// fail with InvalidNamespace error.
-	require.Less(tb, len(opts.databaseName), 64, "database name is too long")
+	require.Less(tb, len(opts.databaseName), 64, "database name %q is too long", opts.databaseName)
 
 	opts.baseCollectionName = testutil.CollectionName(tb)
 

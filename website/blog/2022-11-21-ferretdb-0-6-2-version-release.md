@@ -1,11 +1,10 @@
 ---
 slug: ferretdb-0-6-2-version-release
 title: 'New FerretDB release – 0.6.2: Now runs on Raspberry Pi!'
-author: Alexander Fashakin
+authors: [alex]
 description: FerretDB 0.6.2 contains several upgrades especially support for Raspberry Pi.
 image: /img/blog/ferret-rpi-1-1024x390.png
 tags: [release]
-date: 2022-11-21
 ---
 
 FerretDB 0.6.2 contains several upgrades especially support for Raspberry Pi.

@@ -184,11 +184,11 @@ func equalDocuments(tb testtb.TB, v1, v2 *types.Document) bool {
 	}
 
 	for _, k := range keys {
-		f1, err := v1.Get(k)
-		require.NoError(tb, err)
+		f1, _ := v1.Get(k)
+		require.NotNil(tb, f1)
 
-		f2, err := v2.Get(k)
-		require.NoError(tb, err)
+		f2, _ := v2.Get(k)
+		require.NotNil(tb, f2)
 
 		if !equal(tb, f1, f2) {
 			return false

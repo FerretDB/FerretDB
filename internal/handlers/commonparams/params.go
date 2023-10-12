@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -47,7 +48,8 @@ var (
 // such as used in the limit, $size, etc.
 func GetWholeNumberParam(value any) (int64, error) {
 	switch value := value.(type) {
-	// TODO: add string support https://github.com/FerretDB/FerretDB/issues/1089
+	// add string support
+	// TODO https://github.com/FerretDB/FerretDB/issues/1089
 	case float64:
 		switch {
 		case math.IsInf(value, 1):
@@ -218,4 +220,19 @@ func GetBoolOptionalParam(key string, v any) (bool, error) {
 
 		return false, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrTypeMismatch, msg, key)
 	}
+}
+
+// SplitNamespace returns the database and collection name from a given namespace in format "database.collection".
+func SplitNamespace(ns, argument string) (string, string, error) {
+	parts := strings.Split(ns, ".")
+
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return "", "", commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrInvalidNamespace,
+			fmt.Sprintf("Invalid namespace specified '%s'", ns),
+			argument,
+		)
+	}
+
+	return parts[0], parts[1], nil
 }

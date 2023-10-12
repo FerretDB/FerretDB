@@ -29,7 +29,7 @@ import (
 
 // SortDocuments sorts given documents in place according to the given sorting conditions.
 //
-// If sort path is invalid, it returns a possibly wrapped types.DocumentPathError.
+// If sort path is invalid, it returns a possibly wrapped types.PathError.
 func SortDocuments(docs []*types.Document, sortDoc *types.Document) error {
 	if sortDoc.Len() == 0 {
 		return nil

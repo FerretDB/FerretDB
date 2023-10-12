@@ -25,8 +25,8 @@ import (
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
-func TestAggregateCompatCollStats(t *testing.T) {
-	t.Parallel()
+func TestAggregateCompatCollStats(tt *testing.T) {
+	tt.Parallel()
 
 	for name, tc := range map[string]struct {
 		skip       string                   // skip test for all handlers, must have issue number mentioned
@@ -65,16 +65,16 @@ func TestAggregateCompatCollStats(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+		tt.Run(name, func(tt *testing.T) {
 			if tc.skip != "" {
-				t.Skip(tc.skip)
+				tt.Skip(tc.skip)
 			}
 
-			t.Helper()
-			t.Parallel()
+			tt.Helper()
+			tt.Parallel()
 
 			// It's enough to use a couple of providers: one for some collection and one for a non-existent collection.
-			s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+			s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
 				Providers:                []shareddata.Provider{shareddata.ArrayDocuments},
 				AddNonExistentCollection: true,
 			})
@@ -84,8 +84,7 @@ func TestAggregateCompatCollStats(t *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-
-				t.Run(targetCollection.Name(), func(t *testing.T) {
+				tt.Run(targetCollection.Name(), func(t *testing.T) {
 					t.Helper()
 
 					command := bson.A{bson.D{{"$collStats", tc.collStats}}}
@@ -128,17 +127,18 @@ func TestAggregateCompatCollStats(t *testing.T) {
 						nonEmptyResults = true
 					}
 
-					// TODO Check the returned values when possible: https://github.com/FerretDB/FerretDB/issues/2349
+					// Check the returned values when possible
+					// TODO https://github.com/FerretDB/FerretDB/issues/2349
 				})
 			}
 
 			switch tc.resultType {
 			case nonEmptyResult:
-				assert.True(t, nonEmptyResults, "expected non-empty results (some documents should be modified)")
+				assert.True(tt, nonEmptyResults, "expected non-empty results (some documents should be modified)")
 			case emptyResult:
-				assert.False(t, nonEmptyResults, "expected empty results (no documents should be modified)")
+				assert.False(tt, nonEmptyResults, "expected empty results (no documents should be modified)")
 			default:
-				t.Fatalf("unknown result type %v", tc.resultType)
+				tt.Fatalf("unknown result type %v", tc.resultType)
 			}
 		})
 	}

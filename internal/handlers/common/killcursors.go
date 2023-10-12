@@ -59,6 +59,7 @@ func KillCursors(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry
 	iter := cursors.Iterator()
 	defer iter.Close()
 
+	var ids []int64
 	cursorsKilled := types.MakeArray(0)
 	cursorsNotFound := types.MakeArray(0)
 	cursorsAlive := types.MakeArray(0)
@@ -87,6 +88,10 @@ func KillCursors(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry
 			)
 		}
 
+		ids = append(ids, id)
+	}
+
+	for _, id := range ids {
 		cursor := registry.Get(id)
 		if cursor == nil || cursor.DB != db || cursor.Collection != collection || cursor.Username != username {
 			cursorsNotFound.Append(id)

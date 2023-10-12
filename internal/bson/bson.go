@@ -108,7 +108,7 @@ func fromBSON(v bsontype) any {
 func toBSON(v any) bsontype {
 	switch v := v.(type) {
 	case *types.Document:
-		return MustConvertDocument(v)
+		return must.NotFail(ConvertDocument(v))
 	case *types.Array:
 		return pointer.To(arrayType(*v))
 	case float64:

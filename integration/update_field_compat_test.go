@@ -21,6 +21,7 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -211,22 +212,38 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 		"DotNotationNegativeIndex": {
 			update: bson.D{{"$inc", bson.D{{"v.-1", int32(42)}}}},
 		},
-		"DotNotationIndexOutsideArray": {
+		"DotNotatIndexOutOfArray": {
 			update: bson.D{{"$inc", bson.D{{"v.100", int32(42)}}}},
 		},
-		"DotNotationArrayFieldNotExist": {
+		"DotNotatArrayFieldNotExist": {
 			update: bson.D{{"$inc", bson.D{{"v.array.foo", int32(1)}}}},
 			skip:   "TODO: fix namespace error",
 		},
-		"DotNotationArrayFieldExist": {
+		"DotNotatArrFieldExist": {
 			update: bson.D{{"$inc", bson.D{{"v.array.0", int32(1)}}}},
 		},
-		"DotNotationArrayFieldValue": {
+		"DotNotatArrFieldValue": {
 			update: bson.D{{"$inc", bson.D{{"v.0.foo", int32(1)}}}},
 		},
 	}
 
 	testUpdateCompat(t, testCases)
+}
+
+func TestUpdateFieldCompatIncMulti(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]testUpdateManyCompatTestCase{
+		"InvalidInc": {
+			filter:     bson.D{{"v", bson.D{{"$eq", "non-existent"}}}},
+			update:     bson.D{{"$inc", bson.D{{"v", 1}}}},
+			updateOpts: options.Update().SetUpsert(true),
+			providers:  []shareddata.Provider{shareddata.Scalars},
+			skip:       "https://github.com/FerretDB/FerretDB/issues/3044",
+		},
+	}
+
+	testUpdateManyCompat(t, testCases)
 }
 
 func TestUpdateFieldCompatMax(t *testing.T) {
@@ -817,6 +834,38 @@ func TestUpdateFieldCompatSet(t *testing.T) {
 	testUpdateCompat(t, testCases)
 }
 
+func TestUpdateFieldCompatSetMulti(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]testUpdateManyCompatTestCase{
+		"QueryOperatorExists": {
+			filter:     bson.D{{"v", bson.D{{"$lt", 3}}}},
+			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
+			updateOpts: options.Update().SetUpsert(true),
+			// only use providers contain filter match, no match results in
+			// upsert with generated ID which is tested in integration test
+			providers: []shareddata.Provider{shareddata.Scalars, shareddata.Int32s, shareddata.Doubles},
+		},
+		"QueryOperatorUpsertFalse": {
+			filter:     bson.D{{"v", int32(4080)}},
+			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
+			updateOpts: options.Update().SetUpsert(false),
+		},
+		"QueryOperatorModified": {
+			filter:     bson.D{{"v", bson.D{{"$eq", 4080}}}},
+			update:     bson.D{{"$set", bson.D{{"new", "val"}}}},
+			updateOpts: options.Update().SetUpsert(false),
+		},
+		"QueryOperatorEmptySet": {
+			filter:     bson.D{{"v", bson.D{{"$eq", 4080}}}},
+			update:     bson.D{{"$set", bson.D{}}},
+			updateOpts: options.Update().SetUpsert(false),
+		},
+	}
+
+	testUpdateManyCompat(t, testCases)
+}
+
 func TestUpdateFieldCompatSetArray(t *testing.T) {
 	t.Parallel()
 
@@ -910,7 +959,7 @@ func TestUpdateFieldCompatSetOnInsert(t *testing.T) {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.-1.bar", int32(1)}}}},
 			resultType: emptyResult,
 		},
-		"DotNotationIndexOutOfArr": {
+		"DotNotatIndexOutOfArr": {
 			update:     bson.D{{"$setOnInsert", bson.D{{"v.100.bar", int32(1)}}}},
 			resultType: emptyResult,
 		},
@@ -973,7 +1022,7 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 	providers := shareddata.AllProviders().
 		// OverflowVergeDoubles and Scalars contain numbers that produces +INF on compat,
 		// validation error on target upon $mul operation.
-		Remove("OverflowVergeDoubles", "Scalars")
+		Remove(shareddata.OverflowVergeDoubles, shareddata.Scalars)
 
 	testCases := map[string]updateCompatTestCase{
 		"Int32": {
@@ -1145,7 +1194,7 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 			update:     bson.D{{"$mul", bson.D{{"v..", int32(45)}}}},
 			resultType: emptyResult,
 		},
-		"DotNotationIndexExceedsArrayLength": {
+		"DotNotatIndexOverArrayLen": {
 			update: bson.D{{"$mul", bson.D{{"v.100.bar", int32(45)}}}},
 		},
 		"DotNotationFieldNumericName": {
@@ -1153,6 +1202,148 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 		},
 		"DotNotationNegativeIndex": {
 			update: bson.D{{"$mul", bson.D{{"v.array.-1", int32(42)}}}},
+		},
+	}
+
+	testUpdateCompat(t, testCases)
+}
+
+func TestUpdateFieldCompatBit(t *testing.T) {
+	t.Parallel()
+
+	testCases := map[string]updateCompatTestCase{
+		"And": {
+			update: bson.D{{"$bit", bson.D{{"v", bson.D{{"and", 1}}}}}},
+		},
+		"Or": {
+			update: bson.D{{"$bit", bson.D{{"v", bson.D{{"or", 1}}}}}},
+		},
+		"Xor": {
+			update: bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", 1}}}}}},
+		},
+		"Int32": {
+			update: bson.D{
+				{"$bit", bson.D{
+					{"v", bson.D{{"and", int32(1)}}},
+				}},
+			},
+		},
+		"Int32Negative": {
+			update: bson.D{{"$bit", bson.D{{"v", bson.D{{"and", int32(-1)}}}}}},
+		},
+		"Int32Min": {
+			update: bson.D{{"$bit", bson.D{{"v", bson.D{{"or", math.MinInt32}}}}}},
+		},
+		"Int32Max": {
+			update: bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", math.MaxInt32}}}}}},
+		},
+		"Int64": {
+			update: bson.D{{"$bit", bson.D{
+				{"v", bson.D{{"or", int64(11)}}},
+			}}},
+		},
+		"Int64Min": {
+			update: bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", math.MinInt64}}}}}},
+		},
+		"Int64Max": {
+			update: bson.D{{"$bit", bson.D{{"v", bson.D{{"and", math.MaxInt64}}}}}},
+		},
+		"Int64MaxUnderflow": {
+			update: bson.D{{"$bit", bson.D{{"v", bson.D{{"or", -math.MaxInt64}}}}}},
+		},
+		"Int64MaxOverflow": {
+			update: bson.D{{"$bit", bson.D{{"v", bson.D{{"or", math.MaxInt64}}}}}},
+		},
+		"Double": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"and", float64(1)}}}}}},
+			resultType: emptyResult,
+		},
+		"String": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"and", "string"}}}}}},
+			resultType: emptyResult,
+		},
+		"Binary": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"and", primitive.Binary{Subtype: 0x80, Data: []byte{42, 0, 13}}}}}}}},
+			resultType: emptyResult,
+		},
+		"ObjectID": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"or", primitive.ObjectID{0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11}}}}}}},
+			resultType: emptyResult,
+		},
+		"Bool": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"or", true}}}}}},
+			resultType: emptyResult,
+		},
+		"DateTime": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"or", primitive.NewDateTimeFromTime(time.Date(9999, 12, 31, 23, 59, 59, 999000000, time.UTC))}}}}}},
+			resultType: emptyResult,
+		},
+		"Nil": {
+			update:     bson.D{{"$bit", bson.D{{"and", nil}}}},
+			resultType: emptyResult,
+		},
+		"Regex": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", primitive.Regex{Pattern: "foo", Options: "i"}}}}}}},
+			resultType: emptyResult,
+		},
+		"Timestamp": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", primitive.Timestamp{T: 42, I: 13}}}}}}},
+			resultType: emptyResult,
+		},
+		"Object": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", bson.D{{"foo", int32(42)}}}}}}}},
+			resultType: emptyResult,
+		},
+		"Array": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"xor", bson.A{int32(42)}}}}}}},
+			resultType: emptyResult,
+		},
+		"NonExistent": {
+			update: bson.D{{"$bit", bson.D{{"non-existent", bson.D{{"xor", int32(1)}}}}}},
+		},
+		"DotNotation": {
+			update: bson.D{{"$bit", bson.D{{"v.foo", bson.D{{"xor", int32(1)}}}}}},
+		},
+		"DotNotationArray": {
+			update: bson.D{{"$bit", bson.D{{"v.0", bson.D{{"xor", int32(1)}}}}}},
+		},
+		"DotNotationMissingField": {
+			update:     bson.D{{"$bit", bson.D{{"v..", int32(1)}}}},
+			resultType: emptyResult,
+		},
+		"DotNotationNegativeIndex": {
+			update: bson.D{{"$bit", bson.D{{"v.-1", bson.D{{"or", int32(10)}}}}}},
+		},
+		"DotNotationArrayFieldNotExist": {
+			update: bson.D{{"$bit", bson.D{{"v.array.0.foo", bson.D{{"xor", int32(11)}}}}}},
+		},
+		"DotNotAtIndexOverArrayLen": {
+			update: bson.D{{"$bit", bson.D{{"v.100.foo", bson.D{{"and", int32(11)}}}}}},
+		},
+		"EmptyBitwiseOperation": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{}}}}},
+			resultType: emptyResult,
+		},
+		"InvalidBitwiseOperation": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"not", int32(10)}}}}}},
+			resultType: emptyResult,
+		},
+		"InvalidBitwiseOperand": {
+			update:     bson.D{{"$bit", bson.D{{"v", bson.D{{"and", bson.A{}}}}}}},
+			resultType: emptyResult,
+		},
+		"EmptyUpdateOperand": {
+			update:     bson.D{{"$bit", bson.D{}}},
+			resultType: emptyResult,
+		},
+		"DuplicateKeys": {
+			update: bson.D{
+				{"$bit", bson.D{
+					{"v", bson.D{{"and", int32(1)}}},
+					{"v", bson.D{{"or", int32(1)}}},
+				}},
+			},
+			resultType: emptyResult,
 		},
 	}
 

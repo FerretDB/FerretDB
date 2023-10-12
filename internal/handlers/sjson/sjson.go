@@ -293,7 +293,7 @@ func unmarshalSingleValue(data json.RawMessage, sch *elem) (any, error) {
 		err = d.UnmarshalJSON(data)
 		res = &d
 	case elemTypeNull:
-		panic(fmt.Sprintf("must not be called, was called with %s", string(data)))
+		return nil, lazyerrors.Errorf("sjson.unmarshalSingleValue: expected null, got %s", data)
 	case elemTypeRegex:
 		var r regexType
 		err = r.UnmarshalJSONWithSchema(data, sch)
@@ -321,7 +321,7 @@ func unmarshalSingleValue(data json.RawMessage, sch *elem) (any, error) {
 	return fromSJSON(res), nil
 }
 
-// Marshal encodes the given document and set its schema in the field $s.
+// Marshal encodes given document fields and set its schema in the field $s.
 // Use it when you need to encode a document with schema, for example, when you want to store it in a database.
 func Marshal(d *types.Document) ([]byte, error) {
 	if d == nil {

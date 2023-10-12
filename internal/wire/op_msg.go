@@ -203,8 +203,8 @@ func (msg *OpMsg) readFrom(bufr *bufio.Reader) error {
 
 	if msg.FlagBits.FlagSet(OpMsgChecksumPresent) {
 		if err := binary.Read(bufr, binary.LittleEndian, &msg.checksum); err != nil {
-			// TODO Move checksum validation here: https://github.com/FerretDB/FerretDB/issues/2690
-			// It needs header data to be available.
+			// Move checksum validation here. It needs header data to be available.
+			// TODO https://github.com/FerretDB/FerretDB/issues/2690
 			return lazyerrors.Error(err)
 		}
 	}
@@ -297,8 +297,8 @@ func (msg *OpMsg) MarshalBinary() ([]byte, error) {
 	}
 
 	if msg.FlagBits.FlagSet(OpMsgChecksumPresent) {
-		// TODO Calculate checksum before writing it: https://github.com/FerretDB/FerretDB/issues/2690
-		// It needs header data to be ready and available here.
+		// Calculate checksum before writing it. It needs header data to be ready and available here.
+		// TODO https://github.com/FerretDB/FerretDB/issues/2690
 		if err := binary.Write(bufw, binary.LittleEndian, msg.checksum); err != nil {
 			return nil, lazyerrors.Error(err)
 		}

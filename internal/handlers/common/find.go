@@ -29,7 +29,7 @@ import (
 //nolint:vet // for readability
 type FindParams struct {
 	DB          string          `ferretdb:"$db"`
-	Collection  string          `ferretdb:"collection"`
+	Collection  string          `ferretdb:"find,collection"`
 	Filter      *types.Document `ferretdb:"filter,opt"`
 	Sort        *types.Document `ferretdb:"sort,opt"`
 	Projection  *types.Document `ferretdb:"projection,opt"`
@@ -51,7 +51,7 @@ type FindParams struct {
 	LSID         any             `ferretdb:"lsid,ignored"`
 
 	ReturnKey           bool `ferretdb:"returnKey,unimplemented-non-default"`
-	ShowRecordId        bool `ferretdb:"showRecordId,unimplemented-non-default"`
+	ShowRecordId        bool `ferretdb:"showRecordId,unimplemented-non-default"` //nolint:lll // TODO https://github.com/FerretDB/FerretDB/issues/3467
 	Tailable            bool `ferretdb:"tailable,unimplemented-non-default"`
 	OplogReplay         bool `ferretdb:"oplogReplay,unimplemented-non-default"`
 	NoCursorTimeout     bool `ferretdb:"noCursorTimeout,unimplemented-non-default"`
@@ -70,7 +70,7 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 	var ce *commonerrors.CommandError
 	if errors.As(err, &ce) {
 		if ce.Code() == commonerrors.ErrInvalidNamespace {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, ce.Unwrap().Error(), "find")
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, ce.Err().Error(), "find")
 		}
 	}
 

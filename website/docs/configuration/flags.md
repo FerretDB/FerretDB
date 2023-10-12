@@ -54,15 +54,52 @@ Some default values are overridden in [our Docker image](quickstart-guide/docker
 | Flag               | Description                     | Environment Variable      | Default Value                        |
 | ------------------ | ------------------------------- | ------------------------- | ------------------------------------ |
 | `--postgresql-url` | PostgreSQL URL for 'pg' handler | `FERRETDB_POSTGRESQL_URL` | `postgres://127.0.0.1:5432/ferretdb` |
+| `--postgresql-new` | Use new PostgreSQL backend      | `FERRETDB_POSTGRESQL_NEW` | `false`                              |
 
-### SQLite (beta)
+The `--postgresql-new` flag enables the use of a new PostgreSQL backend (currently a release candidate).
+It is fully compatible with existing databases and collections and will be enabled by default soon.
+Read more about it [in this blog post](https://blog.ferretdb.io/ferretdb-v1-10-production-ready-sqlite/).
 
-[SQLite backend](../understanding-ferretdb.md#sqlite-beta) can be enabled by
+FerretDB uses [pgx v5](https://github.com/jackc/pgx) library for connecting to PostgreSQL.
+Supported URL parameters are documented there:
+
+- <https://pkg.go.dev/github.com/jackc/pgx/v5/pgconn#ParseConfig>
+- <https://pkg.go.dev/github.com/jackc/pgx/v5#ParseConfig>
+- <https://pkg.go.dev/github.com/jackc/pgx/v5/pgxpool#ParseConfig>
+
+Additionally:
+
+- `pool_max_conns` parameter is set to 50 if it is unset in the URL;
+- `application_name` is always set to "FerretDB";
+- `timezone` is always set to "UTC".
+
+### SQLite
+
+[SQLite backend](../understanding-ferretdb.md#sqlite) can be enabled by
 `--handler=sqlite` flag or `FERRETDB_HANDLER=sqlite` environment variable.
 
 | Flag           | Description                                 | Environment Variable  | Default Value |
 | -------------- | ------------------------------------------- | --------------------- | ------------- |
 | `--sqlite-url` | SQLite URI (directory) for 'sqlite' handler | `FERRETDB_SQLITE_URL` | `file:data/`  |
+
+FerretDB uses [modernc.org/sqlite](https://gitlab.com/cznic/sqlite) library for accessing SQLite database files.
+Supported URL parameters are documented there:
+
+- <https://www.sqlite.org/uri.html>
+- <https://pkg.go.dev/modernc.org/sqlite#Driver.Open>
+- <https://www.sqlite.org/pragma.html>
+
+Additionally:
+
+- `_pragma=busy_timeout(10000)` parameter is set if that PRAGMA is not present;
+- `_pragma=journal_mode(wal)` parameter is set if that PRAGMA is not present.
+
+One difference is that URI should point to the existing directory (with absolute or relative path), not to a single database file.
+That allows FerretDB to work with multiple databases.
+
+In-memory SQLite databases are fully supported.
+In that case, the URI should still point to the existing directory (that will be unused).
+For example: `file:./?mode=memory`.
 
 ## Miscellaneous
 

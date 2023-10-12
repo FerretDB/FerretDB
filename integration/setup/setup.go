@@ -47,12 +47,13 @@ var (
 	targetTLSF        = flag.Bool("target-tls", false, "in-process FerretDB: use TLS")
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix socket")
 
-	postgreSQLURLF = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'pg' handler.")
+	postgreSQLURLF = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'postgresql' handler.")
+	sqliteURLF     = flag.String("sqlite-url", "", "in-process FerretDB: SQLite URI for 'sqlite' handler.")
 	hanaURLF       = flag.String("hana-url", "", "in-process FerretDB: Hana URL for 'hana' handler.")
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
 
-	benchDocsF = flag.Int("bench-docs", 0, "benchmarks: number of documents to generate per iteration")
+	benchDocsF = flag.Int("bench-docs", 1000, "benchmarks: number of documents to generate per iteration")
 
 	// Disable noisy setup logs by default.
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
@@ -60,18 +61,22 @@ var (
 
 	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
 	enableSortPushdownF    = flag.Bool("enable-sort-pushdown", false, "enable sort pushdown")
+	enableOplogF           = flag.Bool("enable-oplog", false, "enable OpLog")
+
+	useNewHanaF = flag.Bool("use-new-hana", false, "use new SAP HANA backend")
 )
 
 // Other globals.
 var (
-	allBackends = []string{"ferretdb-pg", "ferretdb-sqlite", "ferretdb-hana", "mongodb"}
+	allBackends = []string{"ferretdb-postgresql", "ferretdb-sqlite", "ferretdb-hana", "mongodb"}
 
 	CertsRoot = filepath.Join("..", "build", "certs") // relative to `integration` directory
 )
 
 // SetupOpts represents setup options.
 //
-// TODO Add option to use read-only user. https://github.com/FerretDB/FerretDB/issues/1025
+// Add option to use read-only user.
+// TODO https://github.com/FerretDB/FerretDB/issues/1025
 type SetupOpts struct {
 	// Database to use. If empty, temporary test-specific database is created and dropped after test.
 	DatabaseName string

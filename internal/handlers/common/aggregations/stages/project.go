@@ -67,11 +67,6 @@ func (p *project) Process(_ context.Context, iter types.DocumentsIterator, close
 	return projection.ProjectionIterator(iter, closer, p.projection)
 }
 
-// Type implements Stage interface.
-func (p *project) Type() aggregations.StageType {
-	return aggregations.StageTypeDocuments
-}
-
 // check interfaces
 var (
 	_ aggregations.Stage = (*project)(nil)

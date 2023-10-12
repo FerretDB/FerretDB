@@ -64,13 +64,9 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		)
 	}
 
-	db, collection, err := splitNamespace(namespace)
+	db, collection, err := commonparams.SplitNamespace(namespace, "dataSize")
 	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrInvalidNamespace,
-			fmt.Sprintf("Invalid namespace specified '%s'", namespace),
-			"dataSize",
-		)
+		return nil, err
 	}
 
 	var stats *pgdb.CollStats

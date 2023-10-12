@@ -16,8 +16,11 @@ package sqlite
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -26,8 +29,6 @@ import (
 
 // MsgPing implements HandlerInterface.
 func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	var reply wire.OpMsg
-
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -38,16 +39,20 @@ func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	db := h.b.Database(dbName)
-	defer db.Close()
+	if _, err = h.b.Database(dbName); err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid namespace specified '%s'", dbName)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "ping")
+		}
 
-	res, err := db.Collection("").Query(ctx, nil)
-	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
-	res.Iter.Close()
+	if _, err = h.b.Status(ctx, nil); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
+	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"ok", float64(1),

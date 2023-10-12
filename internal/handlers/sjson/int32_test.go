@@ -44,8 +44,12 @@ func TestInt32(t *testing.T) {
 	testJSON(t, int32TestCases, func() sjsontype { return new(int32Type) })
 }
 
-func FuzzInt32(f *testing.F) {
-	fuzzJSON(f, int32TestCases, func() sjsontype { return new(int32Type) })
+func FuzzInt32WithFixedSchemas(f *testing.F) {
+	fuzzJSONWithFixedSchemas(f, int32TestCases, func() sjsontype { return new(int32Type) })
+}
+
+func FuzzInt32WithFixedDocuments(f *testing.F) {
+	fuzzJSONWithFixedDocuments(f, int32TestCases, func() sjsontype { return new(int32Type) })
 }
 
 func BenchmarkInt32(b *testing.B) {

@@ -24,50 +24,67 @@ import (
 	"sort"
 	"strings"
 
+	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// testsShard shards integration test names.
-func testsShard(w io.Writer, index, total uint) error {
-	all, err := getAllTestNames("integration")
-	if err != nil {
-		return err
-	}
+// testsRun runs tests specified by the shard index and total or by the run regex
+// using `go test` with given extra args.
+func testsRun(w io.Writer, index, total uint, run string, args []string) error {
+	zap.S().Debugf("testsRun: index=%d, total=%d, run=%q, args=%q", index, total, run, args)
 
-	sharded, err := shardTests(index, total, all)
-	if err != nil {
-		return err
-	}
-
-	fmt.Fprint(w, "^(")
-
-	for i, t := range sharded {
-		fmt.Fprint(w, t)
-
-		if i != len(sharded)-1 {
-			fmt.Fprint(w, "|")
+	if run == "" {
+		if index == 0 || total == 0 {
+			return fmt.Errorf("--shard-index and --shard-total must be specified when --run is not")
 		}
+
+		all, err := listTests("")
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		shard, err := shardTests(index, total, all)
+		if err != nil {
+			return lazyerrors.Error(err)
+		}
+
+		run = "^("
+
+		for i, t := range shard {
+			run += t
+			if i != len(shard)-1 {
+				run += "|"
+			}
+		}
+
+		run += ")$"
 	}
 
-	fmt.Fprint(w, ")$")
+	// TODO https://github.com/FerretDB/FerretDB/issues/3055
 
-	return nil
+	args = append([]string{"test", "-run=" + run}, args...)
+
+	return runCommand("go", args, w, zap.S())
 }
 
-// getAllTestNames returns a sorted slice of all tests in the specified directory and subdirectories.
-func getAllTestNames(dir string) ([]string, error) {
+// listTests returns a sorted slice of all tests in the specified directory and subdirectories.
+func listTests(dir string) ([]string, error) {
+	var buf bytes.Buffer
+
 	cmd := exec.Command("go", "test", "-list=.", "./...")
 	cmd.Dir = dir
+	cmd.Stdout = &buf
 	cmd.Stderr = os.Stderr
 
-	b, err := cmd.Output()
-	if err != nil {
-		return nil, err
+	if err := cmd.Run(); err != nil {
+		return nil, lazyerrors.Error(err)
 	}
 
 	tests := make(map[string]struct{}, 200)
 
-	s := bufio.NewScanner(bytes.NewReader(b))
+	s := bufio.NewScanner(&buf)
 	for s.Scan() {
 		l := s.Text()
 
@@ -92,7 +109,7 @@ func getAllTestNames(dir string) ([]string, error) {
 	}
 
 	if err := s.Err(); err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	res := maps.Keys(tests)

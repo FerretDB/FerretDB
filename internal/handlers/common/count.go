@@ -25,12 +25,14 @@ import (
 type CountParams struct {
 	Filter     *types.Document `ferretdb:"query,opt"`
 	DB         string          `ferretdb:"$db"`
-	Collection string          `ferretdb:"collection"`
+	Collection string          `ferretdb:"count,collection"`
 
 	Skip  int64 `ferretdb:"skip,opt,positiveNumber"`
 	Limit int64 `ferretdb:"limit,opt,positiveNumber"`
 
 	Collation *types.Document `ferretdb:"collation,unimplemented"`
+
+	Fields any `ferretdb:"fields,ignored"` // legacy MongoDB shell adds it, but it is never actually used
 
 	Hint        any             `ferretdb:"hint,ignored"`
 	ReadConcern *types.Document `ferretdb:"readConcern,ignored"`

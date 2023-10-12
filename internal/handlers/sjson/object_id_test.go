@@ -35,8 +35,12 @@ func TestObjectID(t *testing.T) {
 	testJSON(t, objectIDTestCases, func() sjsontype { return new(objectIDType) })
 }
 
-func FuzzObjectID(f *testing.F) {
-	fuzzJSON(f, objectIDTestCases, func() sjsontype { return new(objectIDType) })
+func FuzzObjectIDWithFixedSchemas(f *testing.F) {
+	fuzzJSONWithFixedSchemas(f, objectIDTestCases, func() sjsontype { return new(objectIDType) })
+}
+
+func FuzzObjectIDWithFixedDocuments(f *testing.F) {
+	fuzzJSONWithFixedDocuments(f, objectIDTestCases, func() sjsontype { return new(objectIDType) })
 }
 
 func BenchmarkObjectID(b *testing.B) {

@@ -85,10 +85,10 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 			}
 
 			err = types.IsConflictPath(visitedPaths, *path)
-			var pathErr *types.DocumentPathError
+			var pathErr *types.PathError
 
 			if errors.As(err, &pathErr) {
-				if pathErr.Code() == types.ErrDocumentPathConflictOverwrite {
+				if pathErr.Code() == types.ErrPathConflictOverwrite {
 					// the path overwrites one of visitedPaths.
 					return nil, commonerrors.NewCommandErrorMsgWithArgument(
 						commonerrors.ErrUnsetPathOverwrite,
@@ -97,7 +97,7 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 					)
 				}
 
-				if pathErr.Code() == types.ErrDocumentPathConflictCollision {
+				if pathErr.Code() == types.ErrPathConflictCollision {
 					// the path creates collision at one of visitedPaths.
 					return nil, commonerrors.NewCommandErrorMsgWithArgument(
 						commonerrors.ErrUnsetPathCollision,
@@ -142,11 +142,6 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 func (u *unset) Process(_ context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	// Use $project to unset fields, $unset is alias for $project exclusion.
 	return projection.ProjectionIterator(iter, closer, u.exclusion)
-}
-
-// Type implements Stage interface.
-func (u *unset) Type() aggregations.StageType {
-	return aggregations.StageTypeDocuments
 }
 
 // validateUnsetField returns error on invalid field value.

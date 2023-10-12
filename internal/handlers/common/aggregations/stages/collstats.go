@@ -55,13 +55,14 @@ func newCollStats(stage *types.Document) (aggregations.Stage, error) {
 
 	var cs collStats
 
-	// TODO Return error on invalid type of count: https://github.com/FerretDB/FerretDB/issues/2336
+	// Return error on invalid type of count.
+	// TODO https://github.com/FerretDB/FerretDB/issues/2336
 	cs.count = fields.Has("count")
 
-	// TODO Implement latencyStats: https://github.com/FerretDB/FerretDB/issues/2341
+	// TODO https://github.com/FerretDB/FerretDB/issues/2341
 	cs.latencyStats = fields.Has("latencyStats")
 
-	// TODO Implement queryExecStats: https://github.com/FerretDB/FerretDB/issues/2341
+	// TODO https://github.com/FerretDB/FerretDB/issues/2341
 	cs.queryExecStats = fields.Has("queryExecStats")
 
 	if fields.Has("storageStats") {
@@ -122,11 +123,6 @@ func (c *collStats) Process(ctx context.Context, iter types.DocumentsIterator, c
 	closer.Add(iter)
 
 	return iter, nil
-}
-
-// Type implements Stage interface.
-func (c *collStats) Type() aggregations.StageType {
-	return aggregations.StageTypeStats
 }
 
 // check interfaces

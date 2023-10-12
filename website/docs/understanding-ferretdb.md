@@ -4,19 +4,61 @@ sidebar_position: 2
 
 # Understanding FerretDB
 
-FerretDB is a document database that uses similar commands, drivers, and tools to those of MongoDB for storing data.
-Unlike relational databases, which use tables, rows, and columns to define the schema of the database, document databases use key-value pairs to build the structure of a document.
+FerretDB is an open source MongoDB alternative that converts MongoDB wire protocols to SQL, with a backend on PostgreSQL.
+As a document database, FerretDB uses the same commands, drivers, and tools to those of MongoDB.
 
-Document databases can collect, store, and retrieve data in a variety of data types.
 In FerretDB, data is stored as [BSON](https://bsonspec.org/spec.html) - a binary representation of JSON - so you can store more types of data than in regular JSON.
 However, we do not currently support 128-bit decimal floating point values.
 
 Before inserting data into a document, you do not need to declare a schema.
 That makes it ideal for applications and workloads requiring flexible schemas, such as blogs, chat apps, and video games.
 
-:::note
-Get more information on the key differences [here](diff.md).
+:::tip
+New to FerretDB?
+
+Check out our:
+
+- [Installation guide](./quickstart-guide/docker.md)
+- [Key differences](./diff.md)
+- [Basic CRUD operations](./basic-operations/index.md)
+
 :::
+
+## Supported backends
+
+:::caution
+FerretDB is under constant development.
+As with any database, before moving to production, please verify if it is suitable for your application.
+:::
+
+### PostgreSQL
+
+PostgreSQL backend is our main backend and is fully supported.
+
+PostgreSQL should be configured with `UTF8` encoding and one of the following locales:
+`POSIX`, `C`, `C.UTF8`, `en_US.UTF8`.
+
+MongoDB databases are mapped to PostgreSQL schemas in a single PostgreSQL database that should be created in advance.
+MongoDB collections are mapped to PostgreSQL tables.
+MongoDB documents are mapped to rows with a single [JSONB](https://www.postgresql.org/docs/current/datatype-json.html) column.
+Those mappings will change as we work on improving compatibility and performance,
+but no breaking changes will be introduced without a major version bump.
+
+### SQLite
+
+We also support the [SQLite](https://www.sqlite.org/) backend.
+
+MongoDB databases are mapped to SQLite database files.
+MongoDB collections are mapped to SQLite tables.
+MongoDB documents are mapped to rows with a single [JSON1](https://www.sqlite.org/json1.html) column.
+Those mappings will change as we work on improving compatibility and performance,
+but no breaking changes will be introduced without a major version bump.
+
+### SAP HANA (alpha)
+
+Currently, [we are also working](https://blogs.sap.com/2022/12/13/introduction-to-sap-hana-compatibility-layer-for-mongodb-wire-protocol/)
+with SAP on HANA compatibility.
+It is not officially supported yet.
 
 ## Documents
 
@@ -146,33 +188,3 @@ For example, the following collection contains three documents.
   ]
 }
 ```
-
-## Supported backends
-
-:::caution
-FerretDB is under constant development.
-As with any database, before moving to production, please verify if it is suitable for your application.
-:::
-
-### PostgreSQL
-
-PostgreSQL backend is our main backend and is fully supported.
-
-PostgreSQL should be configured with `UTF8` encoding and one of the following locales:
-`POSIX`, `C`, `C.UTF8`, `en_US.UTF8`.
-
-MongoDB databases are mapped to PostgreSQL schemas in a single PostgreSQL database that should be created in advance.
-MongoDB collections are mapped to PostgreSQL tables.
-MongoDB documents are mapped to rows with a single [JSONB](https://www.postgresql.org/docs/current/datatype-json.html) column.
-Those mappings might change as we work on improving compatibility and performance,
-but no breaking changes will be introduced without a major version bump.
-
-### SQLite (beta)
-
-We also support the [SQLite](https://www.sqlite.org/) backend on a beta level.
-
-### SAP HANA (alpha)
-
-Currently, [we are also working](https://blogs.sap.com/2022/12/13/introduction-to-sap-hana-compatibility-layer-for-mongodb-wire-protocol/)
-with SAP on HANA compatibility.
-It is not officially supported yet.

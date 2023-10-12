@@ -44,8 +44,8 @@ func TestEmbedded(t *testing.T) {
 				Listener: ferretdb.ListenerConfig{
 					TCP: "127.0.0.1:37027",
 				},
-				Handler:       "pg",
-				PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
+				Handler:       "postgresql",
+				PostgreSQLURL: "postgres://username:password@127.0.0.1:5432/ferretdb",
 			},
 		},
 		"TLS": {
@@ -56,8 +56,17 @@ func TestEmbedded(t *testing.T) {
 					TLSKeyFile:  filepath.Join(setup.CertsRoot, "server-key.pem"),
 					TLSCAFile:   filepath.Join(setup.CertsRoot, "rootCA-cert.pem"),
 				},
+				Handler:       "postgresql",
+				PostgreSQLURL: "postgres://username:password@127.0.0.1:5432/ferretdb",
+			},
+		},
+		"OldName": {
+			config: &ferretdb.Config{
+				Listener: ferretdb.ListenerConfig{
+					TCP: "127.0.0.1:37029",
+				},
 				Handler:       "pg",
-				PostgreSQLURL: testutil.PostgreSQLURL(t, nil),
+				PostgreSQLURL: "postgres://username:password@127.0.0.1:5432/ferretdb",
 			},
 		},
 	} {
