@@ -41,19 +41,10 @@ type stats struct {
 // collectionsStats returns statistics about tables and indexes for the given collections.
 //
 // If the list of collections is empty, then stats filled with zero values is returned.
-func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list []*metadata.Collection) (*stats, error) {
+func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list []*metadata.Collection) (*stats, []string, []any, error) {
 	if len(list) == 0 {
-		return new(stats), nil
+		return new(stats), nil, nil, nil
 	}
-
-	var err error
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/3518
-	q := `ANALYZE`
-	if _, err = p.Exec(ctx, q); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
 	var s stats
 	var placeholder metadata.Placeholder
 	placeholders := make([]string, len(list))
@@ -80,6 +71,16 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	// initialization fork https://www.postgresql.org/docs/current/storage-init.html,
 	// free space map https://www.postgresql.org/docs/current/storage-fsm.html and
 	// TOAST https://www.postgresql.org/docs/current/storage-toast.html.
+
+	return &s, placeholders, args, nil
+}
+
+func analyseColl(ctx context.Context, p *pgxpool.Pool, s stats, placeholders []string, args []any) error {
+	var err error
+	q := `ANALYZE`
+	if _, err = p.Exec(ctx, q); err != nil {
+		return lazyerrors.Error(err)
+	}
 	q = fmt.Sprintf(`
 		SELECT
 			COALESCE(SUM(c.reltuples), 0),
@@ -90,11 +91,9 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 		WHERE t.schemaname = $1 AND t.tablename IN (%s)`,
 		strings.Join(placeholders, ", "),
 	)
-
 	row := p.QueryRow(ctx, q, args...)
 	if err := row.Scan(&s.countRows, &s.sizeTables, &s.sizeIndexes); err != nil {
-		return nil, lazyerrors.Error(err)
+		return lazyerrors.Error(err)
 	}
-
-	return &s, nil
+	return nil
 }

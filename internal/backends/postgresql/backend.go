@@ -128,9 +128,7 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
-		dbStatParams := new(backends.DatabaseStatsParams)
-		dbStatParams.Refresh = true
-		stats, err := db.Stats(ctx, dbStatParams)
+		stats, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
 			stats = new(backends.DatabaseStatsResult)
 			err = nil
