@@ -76,6 +76,8 @@ func openDB(uri string, l *zap.Logger, sp *state.Provider) (*pgxpool.Pool, error
 		LogLevel: tracelog.LogLevelTrace,
 	}
 
+	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeCacheStatement
+
 	// see https://github.com/jackc/pgx/issues/1726#issuecomment-1711612138
 	ctx := context.TODO()
 
