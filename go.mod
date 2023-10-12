@@ -17,6 +17,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/otel v1.19.0
 	go.opentelemetry.io/otel/trace v1.19.0
+	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.14.0 // indirect; always use @latest
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20231011220222-8779cbd1c995
@@ -24,8 +25,6 @@ require (
 	golang.org/x/sys v0.13.0
 	modernc.org/sqlite v1.26.0
 )
-
-require go.uber.org/automaxprocs v1.5.3
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
