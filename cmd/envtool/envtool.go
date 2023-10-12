@@ -33,7 +33,6 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
-	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
@@ -118,17 +117,6 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 	}
 
 	defer pgPool.Close()
-
-	logger.Info("Creating databases...")
-
-	for _, name := range []string{"admin", "test"} {
-		err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			return pgdb.CreateDatabaseIfNotExists(ctx, tx, name)
-		})
-		if err != nil && !errors.Is(err, pgdb.ErrAlreadyExist) {
-			return err
-		}
-	}
 
 	return nil
 }
