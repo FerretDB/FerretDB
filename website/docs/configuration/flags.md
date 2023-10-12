@@ -51,10 +51,10 @@ Some default values are overridden in [our Docker image](quickstart-guide/docker
 [PostgreSQL backend](../understanding-ferretdb.md#postgresql) can be enabled by
 `--handler=pg` flag or `FERRETDB_HANDLER=pg` environment variable.
 
-| Flag               | Description                     | Environment Variable       | Default Value                        |
-| ------------------ | ------------------------------- | -------------------------- | ------------------------------------ |
-| `--postgresql-url` | PostgreSQL URL for 'pg' handler | `FERRETDB_POSTGRESQL_URL`  | `postgres://127.0.0.1:5432/ferretdb` |
-| `--postgresql-new` | Use new PostgreSQL backend      | `$FERRETDB_POSTGRESQL_NEW` | `false`                              |
+| Flag               | Description                     | Environment Variable      | Default Value                        |
+| ------------------ | ------------------------------- | ------------------------- | ------------------------------------ |
+| `--postgresql-url` | PostgreSQL URL for 'pg' handler | `FERRETDB_POSTGRESQL_URL` | `postgres://127.0.0.1:5432/ferretdb` |
+| `--postgresql-new` | Use new PostgreSQL backend      | `FERRETDB_POSTGRESQL_NEW` | `false`                              |
 
 The `--postgresql-new` flag enables the use of a new PostgreSQL backend (currently a release candidate).
 It is fully compatible with existing databases and collections and will be enabled by default soon.
