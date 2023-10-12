@@ -507,6 +507,15 @@ tasks:
         ignore_error: true
       - docker buildx ls
 
+  docker-cleanup:
+    cmds:
+      - docker system df
+      - cmd: docker buildx --builder=ferretdb du
+        ignore_error: true
+      - cmd: docker buildx --builder=ferretdb rm --force
+        ignore_error: true
+      - docker system df
+
   docker-build:
     deps: [gen-version, docker-init]
     cmds:
