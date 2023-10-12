@@ -92,8 +92,8 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		// it may be empty if no connection was established yet
 		var b string
 		if state.BackendVersion != "" {
-			b, _, _ = strings.Cut(state.BackendVersion, " ")
-			b = " and " + state.BackendName + " " + b
+			b, _, _ = strings.Cut(state.BackendVersion, " (")
+			b = " and " + state.BackendName + " " + strings.TrimSpace(b)
 		}
 
 		startupWarnings := []string{
