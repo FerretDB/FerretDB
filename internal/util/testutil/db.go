@@ -47,7 +47,7 @@ func DirectoryName(tb testtb.TB) string {
 	name = strings.ReplaceAll(name, " ", "_")
 	name = strings.ReplaceAll(name, "$", "_")
 
-	require.Less(tb, len(name), 64)
+	require.Less(tb, len(name), 64, "directory name %q is too long", name)
 
 	directoryNamesM.Lock()
 	defer directoryNamesM.Unlock()
@@ -73,7 +73,7 @@ func DatabaseName(tb testtb.TB) string {
 	name = strings.ReplaceAll(name, " ", "_")
 	name = strings.ReplaceAll(name, "$", "_")
 
-	require.Less(tb, len(name), 64)
+	require.Less(tb, len(name), 64, "database name %q is too long", name)
 
 	databaseNamesM.Lock()
 	defer databaseNamesM.Unlock()
@@ -99,7 +99,7 @@ func CollectionName(tb testtb.TB) string {
 	name = strings.ReplaceAll(name, " ", "_")
 	name = strings.ReplaceAll(name, "$", "_")
 
-	require.Less(tb, len(name), 255)
+	require.Less(tb, len(name), 255, "collection name %q is too long", name)
 
 	collectionNamesM.Lock()
 	defer collectionNamesM.Unlock()

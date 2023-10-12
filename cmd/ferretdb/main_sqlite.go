@@ -14,7 +14,7 @@
 
 package main
 
-// init adds "sqlite" handler flags.
+// init adds "sqlite" backend flags.
 func init() {
 	handlerFlags["sqlite"] = &sqliteFlags
 }
