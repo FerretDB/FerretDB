@@ -45,7 +45,7 @@ func testBackends(t *testing.T) []backends.Backend {
 		require.NoError(t, err)
 
 		b, err := postgresql.NewBackend(&postgresql.NewBackendParams{
-			URI: "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1",
+			URI: "postgres://username:password@127.0.0.1:5432/ferretdb",
 			L:   l.Named("postgresql"),
 			P:   p,
 		})
