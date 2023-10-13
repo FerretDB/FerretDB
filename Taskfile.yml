@@ -550,7 +550,10 @@ tasks:
           PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=local,dest=tmp/build
       - for: [amd64, arm64, arm/v7]
-        cmd: mv tmp/build/linux_{{replace "/" "_" .ITEM}}/ferretdb tmp/bin-dev/ferretdb-dev-linux-{{replace "/" "" .ITEM}}
+        cmd: >
+          mv tmp/build/linux_{{replace "/" "_" .ITEM}}/ferretdb tmp/bin-dev/ferretdb-dev-linux-{{replace "/" "" .ITEM}} &&
+          docker run --rm --platform=linux/{{.ITEM}} -v ./tmp/bin-dev:/bins ubuntu
+          /bins/ferretdb-dev-linux-{{replace "/" "" .ITEM}} --version
 
   build-production:
     desc: "Build production non-debug binaries"
@@ -565,7 +568,10 @@ tasks:
           PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=local,dest=tmp/build
       - for: [amd64, arm64, arm/v7]
-        cmd: mv tmp/build/linux_{{replace "/" "_" .ITEM}}/ferretdb tmp/bin/ferretdb-linux-{{replace "/" "" .ITEM}}
+        cmd: >
+          mv tmp/build/linux_{{replace "/" "_" .ITEM}}/ferretdb tmp/bin/ferretdb-linux-{{replace "/" "" .ITEM}} &&
+          docker run --rm --platform=linux/{{.ITEM}} -v ./tmp/bin:/bins ubuntu
+          /bins/ferretdb-linux-{{replace "/" "" .ITEM}} --version
 
   docker-local:
     desc: "Build `ferretdb-local` Docker image for the host platform"

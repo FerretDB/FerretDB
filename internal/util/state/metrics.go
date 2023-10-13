@@ -71,9 +71,16 @@ func (mc *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 	}
 
 	ch <- prometheus.MustNewConstMetric(
-		prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "up"), "FerretDB instance state.", nil, constLabels),
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "up"),
+			"FerretDB instance state.",
+			[]string{"backend_name", "backend_version"},
+			constLabels,
+		),
 		prometheus.GaugeValue,
 		1,
+		s.BackendName,
+		s.BackendVersion,
 	)
 }
 
