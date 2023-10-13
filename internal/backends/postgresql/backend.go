@@ -57,11 +57,6 @@ func (b *backend) Close() {
 	b.r.Close()
 }
 
-// Name implements backends.Backend interface.
-func (b *backend) Name() string {
-	return "PostgreSQL"
-}
-
 // Status implements backends.Backend interface.
 func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
 	dbs, err := b.r.DatabaseList(ctx)
@@ -81,6 +76,17 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 		}
 
 		res.CountCollections += int64(len(cs))
+
+		colls, err := newDatabase(b.r, dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		for _, cInfo := range colls.Collections {
+			if cInfo.Capped() {
+				res.CountCappedCollections++
+			}
+		}
 
 		if pingSucceeded {
 			continue

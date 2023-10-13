@@ -89,9 +89,9 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		info := version.Get()
 
 		// it may be empty if no connection was established yet
-		hv, _, _ := strings.Cut(state.HandlerVersion, " ")
+		hv, _, _ := strings.Cut(state.BackendVersion, " ")
 		if hv != "" {
-			hv = " " + hv
+			hv = "-" + hv
 		}
 
 		startupWarnings := []string{
