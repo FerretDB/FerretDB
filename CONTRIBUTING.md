@@ -132,7 +132,7 @@ The `internal` subpackages contain most of the FerretDB code:
 - `handlers/sjson` provides converters from/to SJSON for built-in and `types` types.
   SJSON adds some extensions to JSON for keeping object keys in order,
   preserving BSON type information in the values themselves, etc.
-  It is used by `sqlite` and `pg` handlers.
+  It is used by backends and old `pg` handler.
 - `handlers/sqlite` contains the implementation of the SQLite handler.
   It is being converted into universal handler for all backends.
 - `handlers/pg` contains the implementation of the old PostgreSQL handler.

@@ -261,13 +261,15 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
 	p, err := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
 	}
 
-	res := new(backends.ExplainResult)
-
 	if p == nil {
-		return res, nil
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
 	}
 
 	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
@@ -276,9 +278,12 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	if meta == nil {
-		res.QueryPlanner = must.NotFail(types.NewDocument())
-		return res, nil
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
 	}
+
+	res := new(backends.ExplainResult)
 
 	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName)
 

@@ -41,7 +41,7 @@ type NewHandlerOpts struct {
 	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider
 
-	// for `pg` handler
+	// for `postgresql` handler
 	PostgreSQLURL string
 
 	// for `sqlite` handler

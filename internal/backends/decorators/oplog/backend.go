@@ -42,11 +42,6 @@ func (b *backend) Close() {
 	b.origB.Close()
 }
 
-// Name implements backends.Backend interface.
-func (b *backend) Name() string {
-	return b.origB.Name()
-}
-
 // Status implements backends.Backend interface.
 func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
 	return b.origB.Status(ctx, params)

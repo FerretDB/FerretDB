@@ -27,12 +27,18 @@ type State struct {
 	UUID      string `json:"uuid"`
 	Telemetry *bool  `json:"telemetry,omitempty"` // nil for undecided
 
-	// never persisted
+	// all following fields are never persisted
+
 	TelemetryLocked bool      `json:"-"`
 	Start           time.Time `json:"-"`
-	HandlerVersion  string    `json:"-"` // may be empty if FerretDB did not connect to the backend yet
-	LatestVersion   string    `json:"-"` // as reported by beacon, if known
-	UpdateAvailable bool      `json:"-"` // as reported by beacon, if known
+
+	// may be empty if FerretDB did not connect to the backend yet
+	BackendName    string `json:"-"`
+	BackendVersion string `json:"-"`
+
+	// as reported by beacon, if known
+	LatestVersion   string `json:"-"`
+	UpdateAvailable bool   `json:"-"`
 }
 
 // TelemetryString returns "enabled", "disabled" or "undecided".
@@ -86,7 +92,8 @@ func (s *State) deepCopy() *State {
 		Telemetry:       telemetry,
 		TelemetryLocked: s.TelemetryLocked,
 		Start:           s.Start,
-		HandlerVersion:  s.HandlerVersion,
+		BackendName:     s.BackendName,
+		BackendVersion:  s.BackendVersion,
 		LatestVersion:   s.LatestVersion,
 		UpdateAvailable: s.UpdateAvailable,
 	}

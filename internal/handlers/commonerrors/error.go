@@ -273,7 +273,7 @@ const (
 	ErrFailedToParseInput = ErrorCode(40415) // Location40415
 
 	// ErrCollStatsIsNotFirstStage indicates that $collStats must be the first stage in the pipeline.
-	ErrCollStatsIsNotFirstStage = ErrorCode(40415) // Location40602
+	ErrCollStatsIsNotFirstStage = ErrorCode(40602) // Location40602
 
 	// ErrFreeMonitoringDisabled indicates that free monitoring is disabled
 	// by command-line or config file.

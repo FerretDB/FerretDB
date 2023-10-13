@@ -107,7 +107,7 @@ var cli struct {
 //
 //nolint:lll // some tags are long
 var postgreSQLFlags struct {
-	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/ferretdb" help:"PostgreSQL URL for 'pg' handler."`
+	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/ferretdb" help:"PostgreSQL URL for 'postgresql' handler."`
 	PostgreSQLOld bool   `name:"postgresql-old" default:"false"                              help:"Use old PostgreSQL handler."`
 }
 
@@ -347,7 +347,6 @@ func run() {
 				P:              stateProvider,
 				ConnMetrics:    metrics.ConnMetrics,
 				L:              logger.Named("telemetry"),
-				Handler:        cli.Handler,
 				UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
 				ReportInterval: cli.Test.Telemetry.ReportInterval,
 				ReportTimeout:  cli.Test.Telemetry.ReportTimeout,
