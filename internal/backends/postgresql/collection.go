@@ -56,6 +56,10 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		return nil, lazyerrors.Error(err)
 	}
 
+	if params == nil {
+		params = new(backends.QueryParams)
+	}
+
 	if p == nil {
 		return &backends.QueryResult{
 			Iter: newQueryIterator(ctx, nil),
@@ -73,16 +77,18 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3490
+	q := prepareSelectClause(c.dbName, meta.TableName)
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3414
-	q := fmt.Sprintf(
-		`SELECT %s FROM %s`,
-		metadata.DefaultColumn,
-		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
-	)
+	var placeholder metadata.Placeholder
 
-	rows, err := p.Query(ctx, q)
+	where, args, err := prepareWhereClause(&placeholder, params.Filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	q += where
+
+	rows, err := p.Query(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -255,11 +261,15 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
 	p, err := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
 	}
 
 	if p == nil {
-		return new(backends.ExplainResult), nil
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
 	}
 
 	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
@@ -273,15 +283,23 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}, nil
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3414
-	q := fmt.Sprintf(
-		`EXPLAIN (VERBOSE true, FORMAT JSON) SELECT %s FROM %s`,
-		metadata.DefaultColumn,
-		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
-	)
+	res := new(backends.ExplainResult)
+
+	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName)
+
+	var placeholder metadata.Placeholder
+
+	where, args, err := prepareWhereClause(&placeholder, params.Filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res.QueryPushdown = where != ""
+
+	q += where
 
 	var b []byte
-	err = p.QueryRow(ctx, q).Scan(&b)
+	err = p.QueryRow(ctx, q, args...).Scan(&b)
 
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -292,9 +310,9 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &backends.ExplainResult{
-		QueryPlanner: must.NotFail(types.NewDocument("Plan", queryPlan)),
-	}, nil
+	res.QueryPlanner = queryPlan
+
+	return res, nil
 }
 
 // Stats implements backends.Collection interface.

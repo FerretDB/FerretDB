@@ -132,10 +132,10 @@ The `internal` subpackages contain most of the FerretDB code:
 - `handlers/sjson` provides converters from/to SJSON for built-in and `types` types.
   SJSON adds some extensions to JSON for keeping object keys in order,
   preserving BSON type information in the values themselves, etc.
-  It is used by `sqlite` and `pg` handlers.
+  It is used by backends and old `pg` handler.
 - `handlers/sqlite` contains the implementation of the SQLite handler.
   It is being converted into universal handler for all backends.
-- `handlers/pg` contains the implementation of the PostgreSQL handler.
+- `handlers/pg` contains the implementation of the old PostgreSQL handler.
 
 #### Running tests
 
@@ -150,13 +150,13 @@ We also have a set of "integration" tests in the `integration` directory.
 They use the Go MongoDB driver like a regular user application.
 They could test any MongoDB-compatible database (such as FerretDB or MongoDB itself) via a regular TCP or TLS port or Unix socket.
 They also could test in-process FerretDB instances
-(meaning that integration tests start and stop them themselves) with a given handler.
+(meaning that integration tests start and stop them themselves) with a given backend.
 Finally, some integration tests (so-called compatibility or "compat" tests) connect to two systems
 ("target" for FerretDB and "compat" for MongoDB) at the same time,
 send the same queries to both, and compare results.
 You can run them with:
 
-- `task test-integration-pg` for in-process FerretDB with `pg` handler and MongoDB;
+- `task test-integration-postgresql` for in-process FerretDB with PostgreSQL backend and MongoDB;
 - `task test-integration-mongodb` for MongoDB only, skipping compat tests;
 - or `task test-integration` to run all in parallel.
 
@@ -166,8 +166,8 @@ If tests fail and the output is too confusing, try running them sequentially by 
 You can also run `task -C 1` to limit the number of concurrent tasks, which is useful for debugging.
 
 To run a subset of integration tests and test cases, you may use Task variable `TEST_RUN`.
-For example, to run all tests related to the `getMore` command implementation for in-process FerretDB with `pg` handler
-you may use `task test-integration-pg TEST_RUN='(?i)GetMore'`.
+For example, to run all tests related to the `getMore` command implementation for in-process FerretDB with PostgreSQL backend
+you may use `task test-integration-postgresql TEST_RUN='(?i)GetMore'`.
 
 Finally, since all tests just run `go test` with various arguments and flags under the hood
 (for example, `TEST_RUN` just provides the value for the [`-run` flag](https://pkg.go.dev/cmd/go#hdr-Testing_flags)),
@@ -175,10 +175,10 @@ you may also use all standard `go` tool facilities,
 including [`GOFLAGS` environment variable](https://pkg.go.dev/cmd/go#hdr-Environment_variables).
 For example:
 
-- to run all tests related to the `getMore` command implementation for in-process FerretDB with `pg` handler
+- to run all tests related to the `getMore` command implementation in-process FerretDB with PostgreSQL backend
   with all subtests running sequentially,
-  you may use `env GOFLAGS='-parallel=1' task test-integration-pg TEST_RUN='(?i)GetMore'`;
-- to run all tests for in-process FerretDB with `sqlite` handler
+  you may use `env GOFLAGS='-parallel=1' task test-integration-postgresql TEST_RUN='(?i)GetMore'`;
+- to run all tests for in-process FerretDB with SQLite backend
   with [Go execution tracer](https://pkg.go.dev/runtime/trace) enabled,
   you may use `env GOFLAGS='-trace=trace.out' task test-integration-sqlite`.
 
@@ -239,7 +239,7 @@ Some of our idiosyncrasies:
 We prefer our integration tests to be straightforward,
 branchless (with a few, if any, `if` and `switch` statements),
 and backend-independent.
-Ideally, the same test should work for both FerretDB with all handlers and MongoDB.
+Ideally, the same test should work for both FerretDB with all backends and MongoDB.
 If that's impossible without some branching, use helpers exported from the `setup` package,
 such us `FailsForFerretDB`, `SkipForMongoDB`, etc.
 The bar for using other ways of branching, such as checking error codes and messages, is very high.
@@ -282,7 +282,7 @@ const doubleMaxPrec = float64(1<<53 - 1) // 9007199254740991.0:    largest doubl
 8. Avoid including test data in the name to maintain clarity and prevent excessively long names.
 9. Test case names should follow `TitleCase` capitalization style.
    No spaces, dashes or underscores should be used neither for test names nor for test case names.
-10. Keep the concatenation of test name segments (test, subtests, and handler) within 64 characters
+10. Keep the concatenation of test name segments (test, subtests) within 64 characters
     to satisfy the maximum limit for database names.
 
 ### Submitting code changes

@@ -22,6 +22,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
+	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
@@ -223,6 +224,8 @@ func TestQueryProjectionCompat(t *testing.T) {
 }
 
 func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
+	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3526")
+
 	t.Parallel()
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3053

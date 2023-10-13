@@ -28,8 +28,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
+// testBackend contains information about backend under test.
+type testBackend struct {
+	backends.Backend
+	sp *state.Provider
+}
+
 // testBackends returns all backends configured for testing contracts.
-func testBackends(t *testing.T) []backends.Backend {
+func testBackends(t *testing.T) map[string]*testBackend {
 	t.Helper()
 
 	if testing.Short() {
@@ -38,36 +44,42 @@ func testBackends(t *testing.T) []backends.Backend {
 
 	l := testutil.Logger(t)
 
-	var res []backends.Backend
+	res := map[string]*testBackend{}
 
 	{
-		p, err := state.NewProvider("")
+		sp, err := state.NewProvider("")
 		require.NoError(t, err)
 
 		b, err := postgresql.NewBackend(&postgresql.NewBackendParams{
-			URI: "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1",
+			URI: "postgres://username:password@127.0.0.1:5432/ferretdb",
 			L:   l.Named("postgresql"),
-			P:   p,
+			P:   sp,
 		})
 		require.NoError(t, err)
 		t.Cleanup(b.Close)
 
-		res = append(res, b)
+		res["postgresql"] = &testBackend{
+			Backend: b,
+			sp:      sp,
+		}
 	}
 
 	{
-		p, err := state.NewProvider("")
+		sp, err := state.NewProvider("")
 		require.NoError(t, err)
 
 		b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
 			URI: "file:./?mode=memory",
 			L:   l.Named("sqlite"),
-			P:   p,
+			P:   sp,
 		})
 		require.NoError(t, err)
 		t.Cleanup(b.Close)
 
-		res = append(res, b)
+		res["sqlite"] = &testBackend{
+			Backend: b,
+			sp:      sp,
+		}
 	}
 
 	return res

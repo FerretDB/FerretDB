@@ -100,7 +100,7 @@ tasks:
         {{.SERVICES}}
 
   env-setup:
-    deps: [gen-version]
+    deps: [gen-version, build-envtool]
     cmds:
       - bin/envtool{{exeExt}} setup
 
@@ -143,6 +143,7 @@ tasks:
       - go generate -x ./build/version
 
   build-envtool:
+    run: once
     cmds:
       - go build -v -o bin/ ./cmd/envtool/
 
@@ -151,6 +152,7 @@ tasks:
     run: once
     deps: [gen-version]
     cmds:
+      - echo 'build-host' > build/version/package.txt
       - go build -v -o=bin/ferretdb{{exeExt}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -coverpkg=./... ./cmd/ferretdb
       - bin/envtool{{exeExt}} shell mkdir tmp/cover
 
@@ -191,39 +193,13 @@ tasks:
   test-integration:
     desc: "Run integration tests for several backends in parallel"
     deps:
-      - test-integration-pg
+      - test-integration-postgresql
       - test-integration-sqlite
-      # no test-integration-postgresql yet
       # no test-integration-hana
       - test-integration-mongodb
 
-  test-integration-pg:
-    desc: "Run integration tests for `pg` handler"
-    dir: integration
-    cmds:
-      - >
-        ../bin/envtool{{exeExt}} tests run
-        --shard-index={{.SHARD_INDEX}}
-        --shard-total={{.SHARD_TOTAL}}
-        --run='{{.TEST_RUN}}'
-        --
-        -count=1
-        -timeout={{.TEST_TIMEOUT}}
-        {{.RACE_FLAG}}
-        -tags={{.BUILD_TAGS}}
-        -shuffle=on
-        -coverpkg=../...
-        -coverprofile=integration-pg.txt
-        .
-        -target-backend=ferretdb-pg
-        -target-tls
-        -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50&search_path='
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-        -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
-        -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
-
   test-integration-postgresql:
-    desc: "Run integration tests for new `postgresql` backend"
+    desc: "Run integration tests for `postgresql` backend"
     dir: integration
     cmds:
       - >
@@ -240,11 +216,10 @@ tasks:
         -coverpkg=../...
         -coverprofile=integration-postgresql.txt
         .
-        -target-backend=ferretdb-pg
+        -target-backend=ferretdb-postgresql
         -target-tls
-        -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50&search_path='
+        -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-        -use-new-pg
         -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
         -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
 
@@ -360,21 +335,20 @@ tasks:
       - bin/envtool{{exeExt}} fuzz corpus {{.FUZZ_CORPUS}} generated
 
   run:
-    desc: "Run FerretDB with `pg` handler"
+    desc: "Run FerretDB with `postgresql` backend"
     deps: [build-host]
     cmds:
-      # TODO --use-new-pg
       - >
         bin/ferretdb{{exeExt}}
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
         --handler=pg
-        --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50&search_path='
+        --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         --test-records-dir=tmp/records
 
   run-sqlite:
-    desc: "Run FerretDB with `sqlite` handler"
+    desc: "Run FerretDB with `sqlite` backend"
     deps: [build-host]
     cmds:
       - bin/envtool{{exeExt}} shell mkdir tmp/sqlite
@@ -403,10 +377,9 @@ tasks:
         --test-records-dir=tmp/records
 
   run-secured:
-    desc: "Run FerretDB with `pg` handler (TLS, auth required)"
+    desc: "Run FerretDB with `postgresql` backend (TLS, auth required)"
     deps: [build-host]
     cmds:
-      # TODO --use-new-pg
       - >
         bin/ferretdb{{exeExt}}
         --listen-addr=''
@@ -417,21 +390,20 @@ tasks:
         --proxy-addr=127.0.0.1:47017
         --mode=diff-normal
         --handler=pg
-        --postgresql-url='postgres://127.0.0.1:5433/ferretdb?pool_max_conns=50&search_path='
+        --postgresql-url='postgres://127.0.0.1:5433/ferretdb?search_path='
         --test-records-dir=tmp/records
 
   run-proxy:
     desc: "Run FerretDB in diff-proxy mode"
     deps: [build-host]
     cmds:
-      # TODO --use-new-pg
       - >
         bin/ferretdb{{exeExt}}
         --listen-addr=:27017
         --proxy-addr=127.0.0.1:47017
         --mode=diff-proxy
         --handler=pg
-        --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50&search_path='
+        --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         --test-records-dir=tmp/records
 
   run-sqlite-proxy:
@@ -537,6 +509,15 @@ tasks:
         ignore_error: true
       - docker buildx ls
 
+  docker-cleanup:
+    cmds:
+      - docker system df
+      - cmd: docker buildx --builder=ferretdb du
+        ignore_error: true
+      - cmd: docker buildx --builder=ferretdb rm --force
+        ignore_error: true
+      - docker system df
+
   docker-build:
     deps: [gen-version, docker-init]
     cmds:
@@ -566,10 +547,13 @@ tasks:
         vars:
           FILE: development
           TARGET: development-binary
-          PLATFORM: linux/amd64,linux/arm64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=local,dest=tmp/build
-      - mv tmp/build/linux_amd64/ferretdb tmp/bin-dev/ferretdb-dev-linux-amd64
-      - mv tmp/build/linux_arm64/ferretdb tmp/bin-dev/ferretdb-dev-linux-arm64
+      - for: [amd64, arm64, arm/v7]
+        cmd: >
+          mv tmp/build/linux_{{replace "/" "_" .ITEM}}/ferretdb tmp/bin-dev/ferretdb-dev-linux-{{replace "/" "" .ITEM}} &&
+          docker run --rm --platform=linux/{{.ITEM}} -v ./tmp/bin-dev:/bins ubuntu
+          /bins/ferretdb-dev-linux-{{replace "/" "" .ITEM}} --version
 
   build-production:
     desc: "Build production non-debug binaries"
@@ -581,10 +565,13 @@ tasks:
         vars:
           FILE: production
           TARGET: production-binary
-          PLATFORM: linux/amd64,linux/arm64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=local,dest=tmp/build
-      - mv tmp/build/linux_amd64/ferretdb tmp/bin/ferretdb-linux-amd64
-      - mv tmp/build/linux_arm64/ferretdb tmp/bin/ferretdb-linux-arm64
+      - for: [amd64, arm64, arm/v7]
+        cmd: >
+          mv tmp/build/linux_{{replace "/" "_" .ITEM}}/ferretdb tmp/bin/ferretdb-linux-{{replace "/" "" .ITEM}} &&
+          docker run --rm --platform=linux/{{.ITEM}} -v ./tmp/bin:/bins ubuntu
+          /bins/ferretdb-linux-{{replace "/" "" .ITEM}} --version
 
   docker-local:
     desc: "Build `ferretdb-local` Docker image for the host platform"
@@ -618,7 +605,7 @@ tasks:
         vars:
           FILE: development
           TARGET: development
-          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=image,push=true
     requires:
       vars: [DOCKER_IMAGES]
@@ -631,7 +618,7 @@ tasks:
         vars:
           FILE: production
           TARGET: production
-          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=image,push=true
     requires:
       vars: [DOCKER_IMAGES]
@@ -642,6 +629,20 @@ tasks:
       - task: packages-rpm
       # TODO https://github.com/FerretDB/FerretDB/issues/2172
 
+  packages-build:
+    cmds:
+      - >
+        bin/nfpm{{exeExt}} package
+        --config=build/nfpm.yml
+        --packager={{.PACKAGER}}
+        --target=tmp/{{.PACKAGER}}s/ferretdb-{{.PACKAGE_ARCH}}.{{.PACKAGER}}
+    env:
+      PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
+      PACKAGE_ARCH: "{{.PACKAGE_ARCH}}"
+      DIR_ARCH: "{{.DIR_ARCH}}"
+    requires:
+      vars: [PACKAGER, PACKAGE_VERSION, PACKAGE_ARCH, DIR_ARCH]
+
   packages-deb:
     cmds:
       - echo 'deb' > build/version/package.txt
@@ -651,16 +652,25 @@ tasks:
         vars:
           FILE: production
           TARGET: production-binary
-          PLATFORM: linux/amd64,linux/arm64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=local,dest=tmp/build
-      - bin/nfpm{{exeExt}} package --config=build/nfpm-amd64.yml --packager=deb --target=tmp/debs/ferretdb-amd64.deb
-      - bin/nfpm{{exeExt}} package --config=build/nfpm-arm64.yml --packager=deb --target=tmp/debs/ferretdb-arm64.deb
-      - docker compose run --rm ubuntu /bin/sh -c 'dpkg -i /debs/ferretdb-{{ARCH}}.deb && ferretdb --version'
-    env:
-      # nfpm parameters
-      VERSION:
+      - for: [amd64, arm64] # TODO https://github.com/FerretDB/FerretDB/issues/2171
+        task: packages-build
+        vars:
+          PACKAGER: deb
+          PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
+          PACKAGE_ARCH: '{{replace "/" "" .ITEM}}'
+          DIR_ARCH: '{{replace "/" "_" .ITEM}}'
+      - for: [amd64, arm64] # TODO https://github.com/FerretDB/FerretDB/issues/2171
+        cmd: >
+          docker run --rm --platform=linux/{{.ITEM}} -v ./tmp/debs:/debs ubuntu /bin/sh -c '
+          dpkg-deb --info /debs/ferretdb-{{replace "/" "" .ITEM}}.deb &&
+          dpkg --install /debs/ferretdb-{{replace "/" "" .ITEM}}.deb &&
+          ferretdb --version
+          '
+    vars:
+      PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
-      POSTGRES_PACKAGE: postgresql
 
   packages-rpm:
     cmds:
@@ -671,16 +681,25 @@ tasks:
         vars:
           FILE: production
           TARGET: production-binary
-          PLATFORM: linux/amd64,linux/arm64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=local,dest=tmp/build
-      - bin/nfpm{{exeExt}} package --config=build/nfpm-amd64.yml --packager=rpm --target=tmp/rpms/ferretdb-amd64.rpm
-      - bin/nfpm{{exeExt}} package --config=build/nfpm-arm64.yml --packager=rpm --target=tmp/rpms/ferretdb-arm64.rpm
-      - docker compose run --rm ubi /bin/sh -c 'rpm -i /rpms/ferretdb-{{ARCH}}.rpm && ferretdb --version'
-    env:
-      # nfpm parameters
-      VERSION:
+      - for: [amd64, arm64] # TODO https://github.com/FerretDB/FerretDB/issues/2171
+        task: packages-build
+        vars:
+          PACKAGER: rpm
+          PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
+          PACKAGE_ARCH: '{{replace "/" "" .ITEM}}'
+          DIR_ARCH: '{{replace "/" "_" .ITEM}}'
+      - for: [amd64, arm64] # TODO https://github.com/FerretDB/FerretDB/issues/2171
+        cmd: >
+          docker run --rm --platform=linux/{{.ITEM}} -v ./tmp/rpms:/rpms centos:7 /bin/sh -c '
+          rpm --query --info --package /rpms/ferretdb-{{replace "/" "" .ITEM}}.rpm &&
+          rpm --install /rpms/ferretdb-{{replace "/" "" .ITEM}}.rpm &&
+          ferretdb --version
+          '
+    vars:
+      PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
-      POSTGRES_PACKAGE: postgresql
 
   fmt-yaml:
     desc: "Format YAML files"
