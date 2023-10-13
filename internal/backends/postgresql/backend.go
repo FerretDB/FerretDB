@@ -57,11 +57,6 @@ func (b *backend) Close() {
 	b.r.Close()
 }
 
-// Name implements backends.Backend interface.
-func (b *backend) Name() string {
-	return "PostgreSQL"
-}
-
 // Status implements backends.Backend interface.
 func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
 	dbs, err := b.r.DatabaseList(ctx)

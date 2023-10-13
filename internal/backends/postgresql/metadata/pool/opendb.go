@@ -54,12 +54,13 @@ func openDB(uri string, l *zap.Logger, sp *state.Provider) (*pgxpool.Pool, error
 		ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
 		defer cancel()
 
-		if err = conn.QueryRow(ctx, `SHOW server_version`).Scan(&v); err != nil {
+		if err = conn.QueryRow(ctx, `SELECT version()`).Scan(&v); err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		if sp.Get().HandlerVersion != v {
-			if err = sp.Update(func(s *state.State) { s.HandlerVersion = v }); err != nil {
+		n, v, _ := strings.Cut(v, " ")
+		if sp.Get().BackendVersion != v {
+			if err = sp.Update(func(s *state.State) { s.BackendName = n; s.BackendVersion = v }); err != nil {
 				l.Error("openDB: failed to update state", zap.Error(err))
 			}
 		}
