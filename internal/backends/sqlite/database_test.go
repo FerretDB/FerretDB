@@ -49,7 +49,6 @@ func TestDatabaseStats(t *testing.T) {
 		res, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
 		require.NoError(t, err)
 		require.NotZero(t, res.SizeTotal)
-		require.Equal(t, res.CountCollections, int64(len(cNames)))
 		require.NotZero(t, res.SizeCollections)
 		require.Zero(t, res.CountDocuments)
 	})

@@ -61,6 +61,11 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	list, err := db.ListCollections(ctx, new(backends.ListCollectionsParams))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	stats, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
 	if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
 		stats = new(backends.DatabaseStatsResult)
@@ -75,7 +80,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	// FerretDB always returns int64 for simplicity.
 	pairs := []any{
 		"db", dbName,
-		"collections", stats.CountCollections,
+		"collections", int64(len(list.Collections)),
 		// TODO https://github.com/FerretDB/FerretDB/issues/176
 		"views", int32(0),
 		"objects", stats.CountDocuments,
