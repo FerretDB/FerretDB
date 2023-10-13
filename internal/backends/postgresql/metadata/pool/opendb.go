@@ -19,8 +19,10 @@ import (
 	"strings"
 	"time"
 
+	zapadapter "github.com/jackc/pgx-zap"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/tracelog"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
 
@@ -65,8 +67,16 @@ func openDB(uri string, l *zap.Logger, sp *state.Provider) (*pgxpool.Pool, error
 		return nil
 	}
 
-	// TODO port logging, tracing
+	// TODO port tracing, tweak logging
 	// TODO https://github.com/FerretDB/FerretDB/issues/3554
+
+	// try to log everything; logger's configuration will skip extra levels if needed
+	config.ConnConfig.Tracer = &tracelog.TraceLog{
+		Logger:   zapadapter.NewLogger(l),
+		LogLevel: tracelog.LogLevelTrace,
+	}
+
+	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeCacheStatement
 
 	// see https://github.com/jackc/pgx/issues/1726#issuecomment-1711612138
 	ctx := context.TODO()

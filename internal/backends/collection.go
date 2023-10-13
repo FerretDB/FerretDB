@@ -218,7 +218,8 @@ type ExplainResult struct {
 
 // Explain return a backend-specific execution plan for the given query.
 //
-// Database or collection may not exist; that's not an error.
+// Database or collection may not exist; that's not an error, it still
+// returns the ExplainResult with QueryPlanner.
 func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams) (*ExplainResult, error) {
 	defer observability.FuncCall(ctx)()
 
