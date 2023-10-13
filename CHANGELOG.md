@@ -2,6 +2,18 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.13.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.13.0) (TBD)
+
+### What's Changed
+
+#### New PostgreSQL backend
+
+XXX Is enabled by default now.
+
+#### Docker images changes
+
+XXX Default directory for SQLite changed to `/state` that is also a volume now.
+
 ## [v1.12.1](https://github.com/FerretDB/FerretDB/releases/tag/v1.12.1) (2023-10-10)
 
 ### What's Changed

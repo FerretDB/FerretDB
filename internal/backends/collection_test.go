@@ -33,9 +33,9 @@ func TestCollectionUpdateAll(t *testing.T) {
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 
-	for _, b := range testBackends(t) {
-		b := b
-		t.Run(b.Name(), func(t *testing.T) {
+	for name, b := range testBackends(t) {
+		name, b := name, b
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			t.Run("DatabaseDoesNotExist", func(t *testing.T) {
@@ -138,9 +138,9 @@ func TestCollectionStats(t *testing.T) {
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 
-	for _, b := range testBackends(t) {
-		b := b
-		t.Run(b.Name(), func(t *testing.T) {
+	for name, b := range testBackends(t) {
+		name, b := name, b
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			t.Run("DatabaseDoesNotExist", func(t *testing.T) {
@@ -228,9 +228,9 @@ func TestCollectionCompact(t *testing.T) {
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 
-	for _, b := range testBackends(t) {
-		b := b
-		t.Run(b.Name(), func(t *testing.T) {
+	for name, b := range testBackends(t) {
+		name, b := name, b
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			t.Run("DatabaseDoesNotExist", func(t *testing.T) {

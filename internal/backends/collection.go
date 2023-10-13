@@ -80,7 +80,8 @@ type QueryParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Filter        *types.Document
 	Sort          *SortField
-	OnlyRecordIDs bool // TODO https://github.com/FerretDB/FerretDB/issues/3490
+	OnlyRecordIDs bool   // TODO https://github.com/FerretDB/FerretDB/issues/3490
+	Comment       string // TODO https://github.com/FerretDB/FerretDB/issues/3573
 }
 
 // QueryResult represents the results of Collection.Query method.
