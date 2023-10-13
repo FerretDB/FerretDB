@@ -15,12 +15,14 @@
 package backends
 
 import (
+	"cmp"
 	"context"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
+	"golang.org/x/exp/slices"
 )
 
 // DefaultIndexName is a name of the index that is created when a collection is created.
@@ -302,6 +304,15 @@ func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndex
 
 	res, err := cc.c.ListIndexes(ctx, params)
 	checkError(err, ErrorCodeCollectionDoesNotExist)
+
+	if res != nil && len(res.Indexes) > 0 {
+		byName := func(x, y IndexInfo) int {
+			return cmp.Compare(x.Name, y.Name)
+		}
+		if slices.IsSortedFunc(res.Indexes, byName) {
+			slices.SortFunc(res.Indexes, byName)
+		}
+	}
 
 	return res, err
 }
