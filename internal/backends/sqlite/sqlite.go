@@ -35,7 +35,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -47,7 +46,6 @@ type stats struct {
 	countIndexes int64
 	sizeIndexes  int64
 	sizeTables   int64
-	indexSizes   []backends.IndexSize
 }
 
 // collectionsStats returns statistics about tables and indexes for the given collections.
@@ -112,56 +110,23 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 
 	placeholders = make([]string, 0, indexes)
 	args = make([]any, 0, indexes)
-	indexMap := map[string]string{}
+
 	for _, c := range list {
 		for _, index := range c.Settings.Indexes {
 			placeholders = append(placeholders, "?")
 			args = append(args, c.TableName+"_"+index.Name)
-			indexMap[c.TableName+"_"+index.Name] = index.Name
 		}
 	}
 
 	q = fmt.Sprintf(`
-		SELECT name, pgsize
+		SELECT SUM(pgsize)
 		FROM dbstat
 		WHERE name IN (%s) AND aggregate = TRUE`,
 		strings.Join(placeholders, ", "),
 	)
 
-	rows, err := db.QueryContext(ctx, q, args...)
-	if err != nil {
+	if err = db.QueryRowContext(ctx, q, args...).Scan(&stats.sizeIndexes); err != nil {
 		return nil, lazyerrors.Error(err)
-	}
-
-	defer rows.Close()
-
-	stats.indexSizes = make([]backends.IndexSize, len(indexMap))
-	var i int
-
-	for rows.Next() {
-		var name string
-		var size int64
-
-		if err = rows.Scan(&name, &size); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		indexName, ok := indexMap[name]
-		if !ok {
-			// new index have been created since fetching metadata
-			continue
-		}
-
-		stats.indexSizes[i] = backends.IndexSize{
-			Name: indexName,
-			Size: size,
-		}
-		stats.sizeIndexes += size
-		i++
-	}
-
-	if rows.Err() != nil {
-		return nil, lazyerrors.Error(rows.Err())
 	}
 
 	return stats, nil
