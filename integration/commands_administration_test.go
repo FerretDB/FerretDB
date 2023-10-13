@@ -24,7 +24,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -1015,11 +1014,7 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("internalViews")))
 
 	t.Skip("https://github.com/FerretDB/FerretDB/issues/2447")
-	opts := &options.CreateCollectionOptions{
-		Capped:       pointer.ToBool(true),
-		SizeInBytes:  pointer.ToInt64(1000),
-		MaxDocuments: pointer.ToInt64(10),
-	}
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000).SetMaxDocuments(10)
 	err = collection.Database().CreateCollection(ctx, testutil.CollectionName(t), opts)
 	require.NoError(t, err)
 

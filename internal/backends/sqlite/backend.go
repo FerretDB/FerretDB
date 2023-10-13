@@ -87,7 +87,7 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 
 		for _, cInfo := range colls.Collections {
 			if cInfo.Capped() {
-				res.CountCappedCollections += 1
+				res.CountCappedCollections++
 			}
 		}
 	}
