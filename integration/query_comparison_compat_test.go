@@ -28,7 +28,7 @@ import (
 )
 
 func TestQueryComparisonCompatImplicit(t *testing.T) {
-	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3526")
+	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3526")
 
 	t.Parallel()
 
@@ -294,7 +294,7 @@ func TestQueryComparisonCompatImplicit(t *testing.T) {
 }
 
 func TestQueryComparisonCompatEq(t *testing.T) {
-	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3526")
+	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3526")
 
 	t.Parallel()
 
@@ -1177,7 +1177,7 @@ func TestQueryComparisonCompatIn(t *testing.T) {
 }
 
 func TestQueryComparisonCompatNe(t *testing.T) {
-	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3526")
+	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3526")
 
 	t.Parallel()
 
@@ -1396,7 +1396,7 @@ func TestQueryComparisonCompatNe(t *testing.T) {
 }
 
 func TestQueryComparisonCompatMultipleOperators(t *testing.T) {
-	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3526")
+	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3526")
 
 	t.Parallel()
 

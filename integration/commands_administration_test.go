@@ -700,6 +700,8 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 }
 
 func TestCommandsAdministrationCollStats(t *testing.T) {
+	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3521")
+
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
@@ -732,8 +734,6 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.InDelta(t, 12_000, must.NotFail(doc.Get("totalIndexSize")), 11_000)
 	assert.InDelta(t, 32_000, must.NotFail(doc.Get("totalSize")), 30_000)
 
-	// old PG handler does not include capped collection details in response
-	setup.SkipForOldPg(t, "https://github.com/FerretDB/FerretDB/issues/3435")
 	capped, _ := doc.Get("capped")
 	assert.Equal(t, false, capped)
 
@@ -745,6 +745,8 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 }
 
 func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
+	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3521")
+
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
@@ -794,6 +796,8 @@ func TestCommandsAdministrationCollStatsCount(t *testing.T) {
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
+	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3521")
+
 	t.Parallel()
 
 	t.Run("Existing", func(t *testing.T) {
