@@ -73,7 +73,8 @@ func CollectionContract(c Collection) Collection {
 type QueryParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Filter        *types.Document
-	OnlyRecordIDs bool // TODO https://github.com/FerretDB/FerretDB/issues/3490
+	OnlyRecordIDs bool   // TODO https://github.com/FerretDB/FerretDB/issues/3490
+	Comment       string // TODO https://github.com/FerretDB/FerretDB/issues/3573
 }
 
 // QueryResult represents the results of Collection.Query method.
@@ -209,7 +210,8 @@ type ExplainResult struct {
 
 // Explain return a backend-specific execution plan for the given query.
 //
-// Database or collection may not exist; that's not an error.
+// Database or collection may not exist; that's not an error, it still
+// returns the ExplainResult with QueryPlanner.
 func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams) (*ExplainResult, error) {
 	defer observability.FuncCall(ctx)()
 

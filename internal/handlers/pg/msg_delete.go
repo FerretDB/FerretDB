@@ -60,7 +60,6 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	// process every delete filter
 	for i, deleteParams := range params.Deletes {
 		qp.Filter = deleteParams.Filter
-		qp.Comment = deleteParams.Comment
 
 		del, err := execDelete(ctx, &execDeleteParams{
 			dbPool,
