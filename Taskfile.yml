@@ -637,9 +637,12 @@ tasks:
       vars: [DOCKER_IMAGES]
 
   packages:
+    desc: "Build .deb and .rpm packages"
     cmds:
-      - task: packages-deb
-      - task: packages-rpm
+      - task: packages-deb-development
+      - task: packages-deb-production
+      - task: packages-rpm-development
+      - task: packages-rpm-production
       # TODO https://github.com/FerretDB/FerretDB/issues/2172
 
   packages-build:
@@ -668,7 +671,35 @@ tasks:
     requires:
       vars: [DOCKER_ARCH, FILE_SUFFIX]
 
-  packages-deb:
+  packages-deb-development:
+    cmds:
+      - echo 'deb-development' > build/version/package.txt
+      - bin/envtool{{exeExt}} shell rmdir tmp/build
+      - bin/envtool{{exeExt}} shell mkdir tmp/debs
+      - task: docker-build
+        vars:
+          FILE: development
+          TARGET: development-binary
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
+          OUTPUT: type=local,dest=tmp/build
+      - for: [amd64, arm64, arm/v7]
+        task: packages-build
+        vars:
+          PACKAGER: deb
+          PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
+          PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
+          DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+      - for: [amd64, arm64, arm/v7]
+        task: packages-deb-check
+        vars:
+          DOCKER_ARCH: "{{.ITEM}}" # arm/v7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+    vars:
+      PACKAGE_VERSION:
+        sh: bin/envtool{{exeExt}} package-version
+
+  packages-deb-production:
     cmds:
       - echo 'deb' > build/version/package.txt
       - bin/envtool{{exeExt}} shell rmdir tmp/build
@@ -708,7 +739,35 @@ tasks:
     requires:
       vars: [DOCKER_ARCH, FILE_SUFFIX]
 
-  packages-rpm:
+  packages-rpm-development:
+    cmds:
+      - echo 'rpm-development' > build/version/package.txt
+      - bin/envtool{{exeExt}} shell rmdir tmp/build
+      - bin/envtool{{exeExt}} shell mkdir tmp/rpms
+      - task: docker-build
+        vars:
+          FILE: development
+          TARGET: development-binary
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
+          OUTPUT: type=local,dest=tmp/build
+      - for: [amd64, arm64, arm/v7]
+        task: packages-build
+        vars:
+          PACKAGER: rpm
+          PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
+          PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
+          DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+      - for: [amd64, arm64, arm/v7]
+        task: packages-rpm-check
+        vars:
+          DOCKER_ARCH: "{{.ITEM}}" # arm/v7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+    vars:
+      PACKAGE_VERSION:
+        sh: bin/envtool{{exeExt}} package-version
+
+  packages-rpm-production:
     cmds:
       - echo 'rpm' > build/version/package.txt
       - bin/envtool{{exeExt}} shell rmdir tmp/build
