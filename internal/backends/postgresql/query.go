@@ -123,11 +123,25 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 						// type not supported for pushdown
 
 					case float64, bool, int32, int64:
-						filters = append(filters, fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next(), sjson.GetTypeOfValue(v)))
+						filters = append(filters, fmt.Sprintf(
+							sql,
+							metadata.DefaultColumn,
+							p.Next(),
+							p.Next(),
+							sjson.GetTypeOfValue(v),
+						))
+
 						args = append(args, rootKey, v)
 
 					case string, types.ObjectID, time.Time:
-						filters = append(filters, fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next(), sjson.GetTypeOfValue(v)))
+						filters = append(filters, fmt.Sprintf(
+							sql,
+							metadata.DefaultColumn,
+							p.Next(),
+							p.Next(),
+							sjson.GetTypeOfValue(v),
+						))
+
 						args = append(args, rootKey, string(must.NotFail(sjson.MarshalSingleValue(v))))
 
 					default:
