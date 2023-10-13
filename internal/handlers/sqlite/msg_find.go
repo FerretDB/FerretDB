@@ -66,7 +66,16 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
-	var qp backends.QueryParams
+	qp := &backends.QueryParams{
+		Comment: params.Comment,
+	}
+
+	if params.Filter != nil {
+		if qp.Comment, err = common.GetOptionalParam(params.Filter, "$comment", qp.Comment); err != nil {
+			return nil, err
+		}
+	}
+
 	if !h.DisableFilterPushdown {
 		qp.Filter = params.Filter
 	}
@@ -81,7 +90,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	// closer accumulates all things that should be closed / canceled.
 	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
 
-	queryRes, err := c.Query(ctx, &qp)
+	queryRes, err := c.Query(ctx, qp)
 	if err != nil {
 		closer.Close()
 		return nil, lazyerrors.Error(err)

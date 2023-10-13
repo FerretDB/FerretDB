@@ -57,11 +57,6 @@ func (b *backend) Close() {
 	b.r.Close()
 }
 
-// Name implements backends.Backend interface.
-func (b *backend) Name() string {
-	return "SQLite"
-}
-
 // Status implements backends.Backend interface.
 func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
 	// since authentication is not supported yet, and there is no way to not establish an SQLite "connection",
