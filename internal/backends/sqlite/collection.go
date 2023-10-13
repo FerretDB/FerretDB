@@ -326,6 +326,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		SizeTotal:      stats.sizeTables + stats.sizeIndexes,
 		SizeIndexes:    stats.sizeIndexes,
 		SizeCollection: stats.sizeTables,
+		IndexSizes:     stats.indexSizes,
 	}, nil
 }
 

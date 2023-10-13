@@ -112,11 +112,12 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 
 	placeholders = make([]string, 0, indexes)
 	args = make([]any, 0, indexes)
-
+	indexMap := map[string]string{}
 	for _, c := range list {
 		for _, index := range c.Settings.Indexes {
 			placeholders = append(placeholders, "?")
 			args = append(args, c.TableName+"_"+index.Name)
+			indexMap[c.TableName+"_"+index.Name] = index.Name
 		}
 	}
 
@@ -134,20 +135,28 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 
 	defer rows.Close()
 
-	stats.indexSizes = make([]backends.IndexSize, len(args))
+	stats.indexSizes = make([]backends.IndexSize, len(indexMap))
 	var i int
 
 	for rows.Next() {
-		var indexName string
-		var indexSize backends.IndexSize
-		if err = rows.Scan(&indexName, &indexSize.Size); err != nil {
+		var name string
+		var size int64
+
+		if err = rows.Scan(&name, &size); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		// TODO convert sql index name to ferretdb index name
+		indexName, ok := indexMap[name]
+		if !ok {
+			// new index have been created since fetching metadata
+			continue
+		}
 
-		stats.indexSizes[i] = indexSize
-		stats.sizeIndexes += indexSize.Size
+		stats.indexSizes[i] = backends.IndexSize{
+			Name: indexName,
+			Size: size,
+		}
+		stats.sizeIndexes += size
 		i++
 	}
 
