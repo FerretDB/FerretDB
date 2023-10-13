@@ -730,7 +730,7 @@ tasks:
   packages-rpm-check:
     cmds:
       - >
-        docker run --rm --platform=linux/{{.DOCKER_ARCH}} -v ./tmp/rpms:/rpms centos:7
+        docker run --rm --platform=linux/{{.DOCKER_ARCH}} -v ./tmp/rpms:/rpms opensuse/tumbleweed
         /bin/sh -c '
         rpm --query --info --package /rpms/ferretdb-{{.FILE_SUFFIX}}.rpm &&
         rpm --install /rpms/ferretdb-{{.FILE_SUFFIX}}.rpm &&
