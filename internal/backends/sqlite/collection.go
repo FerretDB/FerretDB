@@ -351,7 +351,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 
 	for rows.Next() {
 		var name string
-		var size int64
+		var size int32
 
 		if err = rows.Scan(&name, &size); err != nil {
 			return nil, lazyerrors.Error(err)

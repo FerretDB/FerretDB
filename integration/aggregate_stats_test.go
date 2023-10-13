@@ -22,6 +22,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestAggregateCollStatsCommandErrors(t *testing.T) {
@@ -89,5 +92,49 @@ func TestAggregateCollStatsCommandErrors(t *testing.T) {
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 			require.Nil(t, res)
 		})
+	}
+}
+
+func TestAggregateCollStatsCommandIndexSizes(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+
+	cursorNoScale, err := collection.Aggregate(ctx, bson.A{
+		bson.D{{"$collStats", bson.D{{"storageStats", bson.D{}}}}},
+	})
+	require.NoError(t, err)
+
+	defer cursorNoScale.Close(ctx)
+
+	cursor, err := collection.Aggregate(ctx, bson.A{
+		bson.D{{"$collStats", bson.D{{"storageStats", bson.D{{"scale", 1000}}}}}},
+	})
+	require.NoError(t, err)
+
+	defer cursor.Close(ctx)
+
+	resNoScale := FetchAll(t, ctx, cursorNoScale)
+	require.Equal(t, 1, len(resNoScale))
+
+	res := FetchAll(t, ctx, cursor)
+	require.Equal(t, 1, len(res))
+
+	docNoScale := ConvertDocument(t, resNoScale[0])
+	indexSizesNoScale := must.NotFail(docNoScale.GetByPath(types.NewStaticPath("storageStats", "indexSizes"))).(*types.Document)
+
+	doc := ConvertDocument(t, res[0])
+	indexSizes := must.NotFail(doc.GetByPath(types.NewStaticPath("storageStats", "indexSizes"))).(*types.Document)
+
+	require.Equal(t, []string{"_id_"}, indexSizesNoScale.Keys())
+	require.Equal(t, []string{"_id_"}, indexSizes.Keys())
+
+	for _, index := range indexSizesNoScale.Keys() {
+		sizeNoScale := must.NotFail(indexSizesNoScale.Get(index)).(int32)
+		size := must.NotFail(indexSizes.Get(index)).(int32)
+
+		require.NotZero(t, sizeNoScale)
+		require.NotZero(t, size)
+		require.Equal(t, sizeNoScale/1000, size)
 	}
 }

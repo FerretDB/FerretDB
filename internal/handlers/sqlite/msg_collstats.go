@@ -99,7 +99,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	indexSizes := types.MakeDocument(len(stats.IndexSizes))
 	for _, indexSize := range stats.IndexSizes {
-		indexSizes.Set(indexSize.Name, indexSize.Size/scale)
+		indexSizes.Set(indexSize.Name, indexSize.Size/int32(scale))
 	}
 
 	// MongoDB uses "numbers" that could be int32 or int64,

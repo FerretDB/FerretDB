@@ -242,7 +242,7 @@ type CollectionStatsResult struct {
 // IndexSize represents the name and the size of an index.
 type IndexSize struct {
 	Name string
-	Size int64
+	Size int32
 }
 
 // Stats returns statistics about the collection.
