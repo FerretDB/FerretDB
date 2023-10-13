@@ -86,7 +86,8 @@ func TestCreateDrop(t *testing.T) {
 	require.NotNil(t, db)
 
 	state := sp.Get()
-	require.Equal(t, "3.41.2", state.HandlerVersion)
+	require.Equal(t, "SQLite", state.BackendName)
+	require.Equal(t, "3.41.2", state.BackendVersion)
 
 	t.Cleanup(func() {
 		r.DatabaseDrop(ctx, dbName)
