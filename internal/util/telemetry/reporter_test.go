@@ -72,7 +72,7 @@ func TestNewReporterLock(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			provider, err := state.NewProvider("")
+			sp, err := state.NewProvider("")
 			require.NoError(t, err)
 
 			opts := NewReporterOpts{
@@ -80,14 +80,14 @@ func TestNewReporterLock(t *testing.T) {
 				DNT:         tc.dnt,
 				ExecName:    tc.execName,
 				ConnMetrics: connmetrics.NewListenerMetrics().ConnMetrics,
-				P:           provider,
+				P:           sp,
 				L:           zap.L(),
 			}
 
 			_, err = NewReporter(&opts)
 			assert.NoError(t, err)
 
-			s := provider.Get()
+			s := sp.Get()
 			assert.Equal(t, tc.t, s.Telemetry)
 			assert.Equal(t, tc.locked, s.TelemetryLocked)
 		})
@@ -123,14 +123,14 @@ func TestReporterReport(t *testing.T) {
 		}
 		bs := beaconServer(t, &serverCalled, &telemetryResponse)
 
-		provider, err := state.NewProvider("")
+		sp, err := state.NewProvider("")
 		require.NoError(t, err)
 
 		opts := NewReporterOpts{
 			URL:           bs.URL,
 			F:             &Flag{v: pointer.ToBool(true)},
 			ConnMetrics:   connmetrics.NewListenerMetrics().ConnMetrics,
-			P:             provider,
+			P:             sp,
 			L:             zap.L(),
 			ReportTimeout: 1 * time.Minute,
 		}
@@ -173,7 +173,7 @@ func TestReporterReport(t *testing.T) {
 		assert.Equal(t, "v1.2.0", s.LatestVersion)
 
 		// Disable telemetry and call the telemetry server again.
-		require.NoError(t, provider.Update(func(s *state.State) { s.DisableTelemetry() }))
+		require.NoError(t, sp.Update(func(s *state.State) { s.DisableTelemetry() }))
 		r.report(testutil.Ctx(t))
 
 		// Expect no call to the telemetry server (number of calls should not change).
@@ -185,7 +185,7 @@ func TestReporterReport(t *testing.T) {
 		assert.Empty(t, s.LatestVersion)
 
 		// Enable telemetry
-		require.NoError(t, provider.Update(func(s *state.State) { s.EnableTelemetry() }))
+		require.NoError(t, sp.Update(func(s *state.State) { s.EnableTelemetry() }))
 
 		// Set a newer version to expect.
 		telemetryResponse.LatestVersion = "v1.2.2"
@@ -208,14 +208,14 @@ func TestReporterReport(t *testing.T) {
 		}
 		bs := beaconServer(t, &serverCalled, &telemetryResponse)
 
-		provider, err := state.NewProvider("")
+		sp, err := state.NewProvider("")
 		require.NoError(t, err)
 
 		opts := NewReporterOpts{
 			URL:           bs.URL,
 			F:             &Flag{v: pointer.ToBool(false)},
 			ConnMetrics:   connmetrics.NewListenerMetrics().ConnMetrics,
-			P:             provider,
+			P:             sp,
 			L:             zap.L(),
 			ReportTimeout: 1 * time.Minute,
 		}
