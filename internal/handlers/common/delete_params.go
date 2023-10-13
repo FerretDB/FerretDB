@@ -28,8 +28,8 @@ type DeleteParams struct {
 	DB         string `ferretdb:"$db"`
 	Collection string `ferretdb:"delete,collection"`
 
-	Comment string   `ferretdb:"comment,opt"`
 	Deletes []Delete `ferretdb:"deletes,opt"`
+	Comment string   `ferretdb:"comment,opt"`
 	Ordered bool     `ferretdb:"ordered,opt"`
 
 	Let *types.Document `ferretdb:"let,unimplemented"`
@@ -44,8 +44,6 @@ type DeleteParams struct {
 type Delete struct {
 	Filter  *types.Document `ferretdb:"q"`
 	Limited bool            `ferretdb:"limit,zeroOrOneAsBool"`
-	// TODO https://github.com/FerretDB/FerretDB/issues/2627
-	Comment string `ferretdb:"comment,opt"`
 
 	Collation *types.Document `ferretdb:"collation,unimplemented"`
 

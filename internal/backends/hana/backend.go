@@ -47,11 +47,6 @@ func (b *backend) Close() {
 	// TODO
 }
 
-// Name implements backends.Backend interface.
-func (b *backend) Name() string {
-	return "SAP HANA"
-}
-
 // Status implements backends.Backend interface.
 func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
 	return nil, lazyerrors.New("not implemented yet")
