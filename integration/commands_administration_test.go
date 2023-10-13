@@ -785,6 +785,34 @@ func TestCommandsAdministrationCollStatsCount(t *testing.T) {
 	assert.EqualValues(t, n, must.NotFail(doc.Get("count")))
 }
 
+func TestCommandsAdministrationCollStatsIndexSizes(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+
+	indexName := "custom-name"
+	res, err := collection.Indexes().CreateOne(ctx, mongo.IndexModel{
+		Keys:    bson.D{{"foo", 1}, {"bar", -1}},
+		Options: options.Index().SetName(indexName),
+	})
+	require.NoError(t, err)
+	require.Equal(t, indexName, res)
+
+	var actual bson.D
+	command := bson.D{{"collStats", collection.Name()}}
+	err = collection.Database().RunCommand(ctx, command).Decode(&actual)
+	require.NoError(t, err)
+
+	doc := ConvertDocument(t, actual)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+
+	assert.EqualValues(t, 2, must.NotFail(doc.Get("nindexes")))
+	indexSizes := must.NotFail(doc.Get("indexSizes")).(*types.Document)
+	require.Equal(t, []string{"_id_", indexName}, indexSizes.Keys())
+	assert.NotZero(t, must.NotFail(indexSizes.Get("_id_")))
+	assert.NotZero(t, must.NotFail(indexSizes.Get(indexName)))
+}
+
 func TestCommandsAdministrationDataSize(t *testing.T) {
 	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3521")
 
