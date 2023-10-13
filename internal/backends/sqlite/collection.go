@@ -346,7 +346,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 	return &backends.CollectionStatsResult{
 		CappedSize:      cInfo.CappedSize,
 		CappedDocuments: cInfo.CappedDocuments,
-		CountObjects:    stats.countRows,
+		CountDocuments:  stats.countRows,
 		CountIndexes:    stats.countIndexes,
 		SizeTotal:       stats.sizeTables + stats.sizeIndexes,
 		SizeIndexes:     stats.sizeIndexes,

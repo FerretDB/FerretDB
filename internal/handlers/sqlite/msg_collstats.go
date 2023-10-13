@@ -89,12 +89,12 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	pairs := []any{
 		"ns", dbName + "." + collection,
 		"size", stats.SizeCollection / scale,
-		"count", stats.CountObjects,
+		"count", stats.CountDocuments,
 	}
 
 	// If there are objects in the collection, calculate the average object size.
-	if stats.CountObjects > 0 {
-		pairs = append(pairs, "avgObjSize", stats.SizeCollection/stats.CountObjects)
+	if stats.CountDocuments > 0 {
+		pairs = append(pairs, "avgObjSize", stats.SizeCollection/stats.CountDocuments)
 	}
 
 	capped := stats.CappedSize > 0

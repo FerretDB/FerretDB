@@ -53,7 +53,7 @@ type DBStats struct {
 // Include more data.
 // TODO https://github.com/FerretDB/FerretDB/issues/2447
 type CollStats struct {
-	CountObjects   int64
+	CountDocuments int64
 	CountIndexes   int64
 	SizeTotal      int64
 	SizeIndexes    int64
@@ -175,7 +175,7 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 	)
 	row := tx.QueryRow(ctx, sql)
 
-	if err := row.Scan(&res.CountObjects, &res.SizeTotal, &res.SizeCollection, &res.SizeIndexes); err != nil {
+	if err := row.Scan(&res.CountDocuments, &res.SizeTotal, &res.SizeCollection, &res.SizeIndexes); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

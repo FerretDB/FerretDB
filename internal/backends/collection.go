@@ -228,11 +228,11 @@ type CollectionStatsParams struct {
 // CollectionStatsResult represents the results of Collection.Stats method.
 //
 // CappedSize and CappedDocuments are zero for not capped collection.
-// CountObjects is an estimate of the number of documents.
+// CountDocuments is an estimate of the number of documents.
 type CollectionStatsResult struct {
 	CappedSize      int64
 	CappedDocuments int64
-	CountObjects    int64
+	CountDocuments  int64
 	CountIndexes    int64
 	SizeTotal       int64
 	SizeIndexes     int64
