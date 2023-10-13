@@ -25,7 +25,7 @@ on:
     tags:
       - "*"
   schedule:
-    - cron: "12 0 * * 1" # on Mondays to pre-fill cache
+    - cron: "10 1 * * 1" # after cleanup
 
 # Do not run this workflow in parallel for any PR change or branch/tag push
 # to prevent concurrent pushes for the same Docker image tag
@@ -45,7 +45,7 @@ env:
 jobs:
   build:
     name: Build packages
-    runs-on: 4-cores
+    runs-on: server
     timeout-minutes: 40
 
     if: >
@@ -97,8 +97,6 @@ jobs:
       - name: Setup Go
         id: setup
         uses: FerretDB/github-actions/setup-go@main
-        with:
-          cache-key: packages
 
       - name: Install Task
         run: go generate -x
@@ -122,7 +120,6 @@ jobs:
         with:
           username: ferretdbbot
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
-          logout: false
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -130,7 +127,6 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          logout: false
 
       - name: Login to Quay.io
         uses: docker/login-action@v3
@@ -138,7 +134,6 @@ jobs:
           registry: quay.io
           username: ferretdbbot
           password: ${{ secrets.QUAY_TOKEN }}
-          logout: false
 
       - name: Build and push all-in-one Docker images ${{ steps.extract.outputs.all_in_one_images }}
         if: steps.extract.outputs.all_in_one_images != ''

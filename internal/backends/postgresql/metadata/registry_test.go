@@ -86,7 +86,7 @@ func createDatabase(t *testing.T, ctx context.Context) (r *Registry, db *pgxpool
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	u := "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1"
+	u := "postgres://username:password@127.0.0.1:5432/ferretdb"
 	r, err = NewRegistry(u, testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
@@ -117,15 +117,15 @@ func TestCheckAuth(t *testing.T) {
 		err string
 	}{
 		"Auth": {
-			uri: "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1",
+			uri: "postgres://username:password@127.0.0.1:5432/ferretdb",
 			err: "",
 		},
 		"NoAuth": {
-			uri: "postgres://127.0.0.1:5432/ferretdb?pool_min_conns=1",
+			uri: "postgres://127.0.0.1:5432/ferretdb",
 			err: "failed to connect to `host=127.0.0.1 user=", // username is the current user running the test
 		},
 		"NonExistingUser": {
-			uri: "postgres://wrong-user:wrong-password@127.0.0.1:5432/ferretdb?pool_min_conns=1",
+			uri: "postgres://wrong-user:wrong-password@127.0.0.1:5432/ferretdb",
 			err: "failed to connect to `host=127.0.0.1 user=wrong-user database=ferretdb`",
 		},
 	} {
