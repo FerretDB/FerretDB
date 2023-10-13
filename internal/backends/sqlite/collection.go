@@ -331,7 +331,9 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 	}
 
 	q := fmt.Sprintf(`
-		SELECT name, pgsize
+		SELECT
+			name,
+			pgsize
 		FROM dbstat
 		WHERE name IN (%s) AND aggregate = TRUE`,
 		strings.Join(placeholders, ", "),
