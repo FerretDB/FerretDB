@@ -699,7 +699,7 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 }
 
 func TestCommandsAdministrationCollStats(t *testing.T) {
-	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3521")
+	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3521")
 
 	t.Parallel()
 
@@ -737,7 +737,7 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 }
 
 func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
-	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3521")
+	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3521")
 
 	t.Parallel()
 
@@ -786,7 +786,7 @@ func TestCommandsAdministrationCollStatsCount(t *testing.T) {
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
-	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3521")
+	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3521")
 
 	t.Parallel()
 
