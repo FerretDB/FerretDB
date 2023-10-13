@@ -100,7 +100,7 @@ tasks:
         {{.SERVICES}}
 
   env-setup:
-    deps: [gen-version]
+    deps: [gen-version, build-envtool]
     cmds:
       - bin/envtool{{exeExt}} setup
 
@@ -143,6 +143,7 @@ tasks:
       - go generate -x ./build/version
 
   build-envtool:
+    run: once
     cmds:
       - go build -v -o bin/ ./cmd/envtool/
 
@@ -151,6 +152,7 @@ tasks:
     run: once
     deps: [gen-version]
     cmds:
+      - echo 'build-host' > build/version/package.txt
       - go build -v -o=bin/ferretdb{{exeExt}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -coverpkg=./... ./cmd/ferretdb
       - bin/envtool{{exeExt}} shell mkdir tmp/cover
 
@@ -191,39 +193,13 @@ tasks:
   test-integration:
     desc: "Run integration tests for several backends in parallel"
     deps:
-      - test-integration-pg
+      - test-integration-postgresql
       - test-integration-sqlite
-      # no test-integration-postgresql yet
       # no test-integration-hana
       - test-integration-mongodb
 
-  test-integration-pg:
-    desc: "Run integration tests for `pg` handler"
-    dir: integration
-    cmds:
-      - >
-        ../bin/envtool{{exeExt}} tests run
-        --shard-index={{.SHARD_INDEX}}
-        --shard-total={{.SHARD_TOTAL}}
-        --run='{{.TEST_RUN}}'
-        --
-        -count=1
-        -timeout={{.TEST_TIMEOUT}}
-        {{.RACE_FLAG}}
-        -tags={{.BUILD_TAGS}}
-        -shuffle=on
-        -coverpkg=../...
-        -coverprofile=integration-pg.txt
-        .
-        -target-backend=ferretdb-pg
-        -target-tls
-        -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
-        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-        -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
-        -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
-
   test-integration-postgresql:
-    desc: "Run integration tests for new `postgresql` backend"
+    desc: "Run integration tests for `postgresql` backend"
     dir: integration
     cmds:
       - >
@@ -240,11 +216,10 @@ tasks:
         -coverpkg=../...
         -coverprofile=integration-postgresql.txt
         .
-        -target-backend=ferretdb-pg
+        -target-backend=ferretdb-postgresql
         -target-tls
         -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-        -use-new-pg
         -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
         -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
 
@@ -360,10 +335,9 @@ tasks:
       - bin/envtool{{exeExt}} fuzz corpus {{.FUZZ_CORPUS}} generated
 
   run:
-    desc: "Run FerretDB with `pg` handler"
+    desc: "Run FerretDB with `postgresql` backend"
     deps: [build-host]
     cmds:
-      # TODO --use-new-pg
       - >
         bin/ferretdb{{exeExt}}
         --listen-addr=:27017
@@ -374,7 +348,7 @@ tasks:
         --test-records-dir=tmp/records
 
   run-sqlite:
-    desc: "Run FerretDB with `sqlite` handler"
+    desc: "Run FerretDB with `sqlite` backend"
     deps: [build-host]
     cmds:
       - bin/envtool{{exeExt}} shell mkdir tmp/sqlite
@@ -403,10 +377,9 @@ tasks:
         --test-records-dir=tmp/records
 
   run-secured:
-    desc: "Run FerretDB with `pg` handler (TLS, auth required)"
+    desc: "Run FerretDB with `postgresql` backend (TLS, auth required)"
     deps: [build-host]
     cmds:
-      # TODO --use-new-pg
       - >
         bin/ferretdb{{exeExt}}
         --listen-addr=''
@@ -424,7 +397,6 @@ tasks:
     desc: "Run FerretDB in diff-proxy mode"
     deps: [build-host]
     cmds:
-      # TODO --use-new-pg
       - >
         bin/ferretdb{{exeExt}}
         --listen-addr=:27017
@@ -536,6 +508,15 @@ tasks:
           --driver-opt env.BUILDKIT_STEP_LOG_MAX_SPEED=-1
         ignore_error: true
       - docker buildx ls
+
+  docker-cleanup:
+    cmds:
+      - docker system df
+      - cmd: docker buildx --builder=ferretdb du
+        ignore_error: true
+      - cmd: docker buildx --builder=ferretdb rm --force
+        ignore_error: true
+      - docker system df
 
   docker-build:
     deps: [gen-version, docker-init]
