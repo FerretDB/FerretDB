@@ -267,7 +267,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		statistics := stages.GetStatistics(collStatsDocuments)
 
 		iter, err = processStagesStats(ctx, closer, &stagesStatsParams{
-			c, dbName, cName, statistics, collStatsDocuments,
+			c, db, dbName, cName, statistics, collStatsDocuments,
 		})
 	}
 
@@ -350,6 +350,7 @@ func processStagesDocuments(ctx context.Context, closer *iterator.MultiCloser, p
 // stagesStatsParams contains the parameters for processStagesStats.
 type stagesStatsParams struct {
 	c          backends.Collection
+	db         backends.Database
 	dbName     string
 	cName      string
 	statistics map[stages.Statistic]struct{}
@@ -380,6 +381,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 	))
 
 	var collStats *backends.CollectionStatsResult
+	var cInfo backends.CollectionInfo
 
 	if hasCount || hasStorage {
 		collStats, err = p.c.Stats(ctx, new(backends.CollectionStatsParams))
@@ -393,6 +395,25 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 
 		if err != nil {
 			return nil, lazyerrors.Error(err)
+		}
+
+		var list *backends.ListCollectionsResult
+
+		if list, err = p.db.ListCollections(ctx, new(backends.ListCollectionsParams)); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		var found bool
+
+		for _, cInfo := range list.Collections {
+			if cInfo.Name == p.cName {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			cInfo = backends.CollectionInfo{}
 		}
 	}
 
@@ -410,7 +431,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 				"storageSize", collStats.SizeCollection,
 				// TODO https://github.com/FerretDB/FerretDB/issues/2447
 				"freeStorageSize", int64(0),
-				"capped", collStats.CappedSize > 0,
+				"capped", cInfo.Capped(),
 				"nindexes", collStats.CountIndexes,
 				"indexDetails", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342

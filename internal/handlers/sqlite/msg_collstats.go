@@ -76,6 +76,25 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
+	list, err := db.ListCollections(ctx, new(backends.ListCollectionsParams))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var found bool
+	var cInfo backends.CollectionInfo
+
+	for _, cInfo := range list.Collections {
+		if cInfo.Name == collection {
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		cInfo = backends.CollectionInfo{}
+	}
+
 	stats, err := c.Stats(ctx, new(backends.CollectionStatsParams))
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 		stats = new(backends.CollectionStatsResult)
@@ -97,8 +116,6 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		pairs = append(pairs, "avgObjSize", stats.SizeCollection/stats.CountDocuments)
 	}
 
-	capped := stats.CappedSize > 0
-
 	// add freeStorageSize
 	// TODO https://github.com/FerretDB/FerretDB/issues/2447
 
@@ -110,13 +127,13 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		"totalIndexSize", stats.SizeIndexes/scale,
 		"totalSize", stats.SizeTotal/scale,
 		"scaleFactor", int32(scale),
-		"capped", capped,
+		"capped", cInfo.Capped(),
 	)
 
-	if capped {
+	if cInfo.Capped() {
 		pairs = append(pairs,
-			"max", stats.CappedDocuments,
-			"maxSize", stats.CappedSize/scale,
+			"max", cInfo.CappedDocuments,
+			"maxSize", cInfo.CappedSize/scale,
 		)
 	}
 
