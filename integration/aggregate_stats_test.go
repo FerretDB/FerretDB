@@ -107,8 +107,9 @@ func TestAggregateCollStatsCommandIndexSizes(t *testing.T) {
 
 	defer cursorNoScale.Close(ctx)
 
+	scale := int32(1000)
 	cursor, err := collection.Aggregate(ctx, bson.A{
-		bson.D{{"$collStats", bson.D{{"storageStats", bson.D{{"scale", 1000}}}}}},
+		bson.D{{"$collStats", bson.D{{"storageStats", bson.D{{"scale", scale}}}}}},
 	})
 	require.NoError(t, err)
 
@@ -128,7 +129,7 @@ func TestAggregateCollStatsCommandIndexSizes(t *testing.T) {
 
 	sizeNoScale := must.NotFail(storageStatsNoScale.Get("size")).(int32)
 	size := must.NotFail(storageStats.Get("size")).(int32)
-	require.Equal(t, sizeNoScale/1000, size)
+	require.Equal(t, sizeNoScale/scale, size)
 
 	avgObjSizeNoScale := must.NotFail(storageStatsNoScale.Get("avgObjSize")).(int32)
 	avgObjSize := must.NotFail(storageStats.Get("avgObjSize")).(int32)
@@ -136,19 +137,19 @@ func TestAggregateCollStatsCommandIndexSizes(t *testing.T) {
 
 	storageSizeNoScale := must.NotFail(storageStatsNoScale.Get("storageSize")).(int32)
 	storageSize := must.NotFail(storageStats.Get("storageSize")).(int32)
-	require.Equal(t, storageSizeNoScale/1000, storageSize)
+	require.Equal(t, storageSizeNoScale/scale, storageSize)
 
 	freeStorageSizeNoScale := must.NotFail(storageStatsNoScale.Get("freeStorageSize")).(int32)
 	freeStorageSize := must.NotFail(storageStats.Get("freeStorageSize")).(int32)
-	require.Equal(t, freeStorageSizeNoScale/1000, freeStorageSize)
+	require.Equal(t, freeStorageSizeNoScale/scale, freeStorageSize)
 
 	totalIndexSizeNoScale := must.NotFail(storageStatsNoScale.Get("totalIndexSize")).(int32)
 	totalIndexSize := must.NotFail(storageStats.Get("totalIndexSize")).(int32)
-	require.Equal(t, totalIndexSizeNoScale/1000, totalIndexSize)
+	require.Equal(t, totalIndexSizeNoScale/scale, totalIndexSize)
 
 	totalSizeNoScale := must.NotFail(storageStatsNoScale.Get("totalSize")).(int32)
 	totalSize := must.NotFail(storageStats.Get("totalSize")).(int32)
-	require.Equal(t, totalSizeNoScale/1000, totalSize)
+	require.Equal(t, totalSizeNoScale/scale, totalSize)
 
 	indexSizesNoScale := must.NotFail(storageStatsNoScale.Get("indexSizes")).(*types.Document)
 	indexSizes := must.NotFail(storageStats.Get("indexSizes")).(*types.Document)
@@ -159,6 +160,6 @@ func TestAggregateCollStatsCommandIndexSizes(t *testing.T) {
 	for _, index := range indexSizesNoScale.Keys() {
 		sizeNoScale := must.NotFail(indexSizesNoScale.Get(index)).(int32)
 		size := must.NotFail(indexSizes.Get(index)).(int32)
-		require.Equal(t, sizeNoScale/1000, size)
+		require.Equal(t, sizeNoScale/scale, size)
 	}
 }

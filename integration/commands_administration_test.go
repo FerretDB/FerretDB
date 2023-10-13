@@ -731,9 +731,8 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.InDelta(t, 12_000, must.NotFail(doc.Get("totalIndexSize")), 11_000)
 	assert.InDelta(t, 32_000, must.NotFail(doc.Get("totalSize")), 30_000)
 	indexSizes := must.NotFail(doc.Get("indexSizes")).(*types.Document)
-	assert.Equal(t, 1, indexSizes.Len())
-	idIndex, _ := indexSizes.Get("_id_")
-	assert.NotZero(t, idIndex)
+	assert.Equal(t, []string{"_id_"}, indexSizes.Keys())
+	assert.NotZero(t, must.NotFail(indexSizes.Get("_id_")))
 }
 
 func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
@@ -785,32 +784,50 @@ func TestCommandsAdministrationCollStatsCount(t *testing.T) {
 	assert.EqualValues(t, n, must.NotFail(doc.Get("count")))
 }
 
-func TestCommandsAdministrationCollStatsIndexSizes(t *testing.T) {
+func TestCommandsAdministrationCollStatsScaleIndexSizes(t *testing.T) {
 	t.Parallel()
 
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
 	indexName := "custom-name"
-	res, err := collection.Indexes().CreateOne(ctx, mongo.IndexModel{
+	resIndexName, err := collection.Indexes().CreateOne(ctx, mongo.IndexModel{
 		Keys:    bson.D{{"foo", 1}, {"bar", -1}},
 		Options: options.Index().SetName(indexName),
 	})
 	require.NoError(t, err)
-	require.Equal(t, indexName, res)
+	require.Equal(t, indexName, resIndexName)
 
-	var actual bson.D
-	command := bson.D{{"collStats", collection.Name()}}
-	err = collection.Database().RunCommand(ctx, command).Decode(&actual)
+	scale := int32(10)
+	var resNoScale bson.D
+	err = collection.Database().RunCommand(ctx, bson.D{{"collStats", collection.Name()}}).Decode(&resNoScale)
 	require.NoError(t, err)
 
-	doc := ConvertDocument(t, actual)
+	var res bson.D
+	err = collection.Database().RunCommand(ctx, bson.D{{"collStats", collection.Name()}, {"scale", scale}}).Decode(&res)
+	require.NoError(t, err)
+
+	docNoScale := ConvertDocument(t, resNoScale)
+	doc := ConvertDocument(t, res)
+
+	assert.Equal(t, float64(1), must.NotFail(docNoScale.Get("ok")))
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 
+	assert.EqualValues(t, 2, must.NotFail(docNoScale.Get("nindexes")))
 	assert.EqualValues(t, 2, must.NotFail(doc.Get("nindexes")))
+
+	indexSizesNoScale := must.NotFail(docNoScale.Get("indexSizes")).(*types.Document)
 	indexSizes := must.NotFail(doc.Get("indexSizes")).(*types.Document)
+
+	require.Equal(t, []string{"_id_", indexName}, indexSizesNoScale.Keys())
 	require.Equal(t, []string{"_id_", indexName}, indexSizes.Keys())
-	assert.NotZero(t, must.NotFail(indexSizes.Get("_id_")))
-	assert.NotZero(t, must.NotFail(indexSizes.Get(indexName)))
+
+	idIndexSizeNoScale := must.NotFail(indexSizesNoScale.Get("_id_")).(int32)
+	idIndexSize := must.NotFail(indexSizes.Get("_id_"))
+	assert.Equal(t, idIndexSizeNoScale/scale, idIndexSize)
+
+	customIndexSizeNoScale := must.NotFail(indexSizesNoScale.Get(indexName)).(int32)
+	customIndexSize := must.NotFail(indexSizes.Get(indexName))
+	assert.Equal(t, customIndexSizeNoScale/scale, customIndexSize)
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
