@@ -1014,6 +1014,8 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("internalViews")))
 
 	t.Skip("https://github.com/FerretDB/FerretDB/issues/2447")
+	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
+
 	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000).SetMaxDocuments(10)
 	err = collection.Database().CreateCollection(ctx, testutil.CollectionName(t), opts)
 	require.NoError(t, err)
