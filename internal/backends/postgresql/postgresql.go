@@ -75,7 +75,7 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	return &s, placeholders, args, nil
 }
 
-func analyseColl(ctx context.Context, p *pgxpool.Pool, s stats, placeholders []string, args []any) error {
+func AnalyzeColl(ctx context.Context, p *pgxpool.Pool, s stats, placeholders []string, args []any) error {
 	var err error
 	q := `ANALYZE`
 	if _, err = p.Exec(ctx, q); err != nil {

@@ -315,7 +315,13 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		)
 	}
 
-	stats, err := collectionsStats(ctx, db, []*metadata.Collection{coll})
+	stats, placeholders, args, err := collectionsStats(ctx, db, []*metadata.Collection{coll})
+
+	if params.Refresh {
+		if err := AnalyzeColl(ctx, db, placeholders, *stats, args); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

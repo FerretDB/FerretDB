@@ -49,14 +49,8 @@ type stats struct {
 }
 
 // collectionsStats returns statistics about tables and indexes for the given collections.
-func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection) (*stats, error) {
-	var err error
-
+func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection) (*stats, []string, []any, error) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3518
-	q := `ANALYZE`
-	if _, err = db.ExecContext(ctx, q); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
 
 	placeholders := make([]string, len(list))
 	args := make([]any, len(list))
@@ -80,33 +74,13 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 	// Because of that inserting or deleting a single small object may not change the size.
 	//
 	// See https://www.sqlite.org/dbstat.html and https://www.sqlite.org/fileformat.html.
-	q = fmt.Sprintf(`
-		SELECT SUM(pgsize)
-		FROM dbstat
-		WHERE name IN (%s) AND aggregate = TRUE`,
-		strings.Join(placeholders, ", "),
-	)
-
-	stats := new(stats)
-	if err = db.QueryRowContext(ctx, q, args...).Scan(&stats.sizeTables); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	Stats := new(stats)
 
 	// Use number of cells to approximate total row count,
 	// excluding `internal` and `overflow` pagetype used by SQLite.
 	// See https://www.sqlite.org/dbstat.html and https://www.sqlite.org/fileformat.html.
-	q = fmt.Sprintf(`
-		SELECT SUM(ncell)
-		FROM dbstat
-		WHERE name IN (%s) AND pagetype = 'leaf'`,
-		strings.Join(placeholders, ", "),
-	)
 
-	if err = db.QueryRowContext(ctx, q, args...).Scan(&stats.countRows); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	stats.countIndexes = indexes
+	Stats.countIndexes = indexes
 
 	placeholders = make([]string, 0, indexes)
 	args = make([]any, 0, indexes)
@@ -118,6 +92,34 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 		}
 	}
 
+	return Stats, placeholders, args, nil
+}
+
+func AnalyzeColl(ctx context.Context, db *fsql.DB, placeholders []string, Stats stats, args []any) error {
+	var err error
+	q := `ANALYZE`
+	if _, err = db.ExecContext(ctx, q); err != nil {
+		return lazyerrors.Error(err)
+	}
+	q = fmt.Sprintf(`
+		SELECT SUM(pgsize)
+		FROM dbstat
+		WHERE name IN (%s) AND aggregate = TRUE`,
+		strings.Join(placeholders, ", "),
+	)
+	if err = db.QueryRowContext(ctx, q, args...).Scan(&Stats.sizeTables); err != nil {
+		return lazyerrors.Error(err)
+	}
+	q = fmt.Sprintf(`
+		SELECT SUM(ncell)
+		FROM dbstat
+		WHERE name IN (%s) AND pagetype = 'leaf'`,
+		strings.Join(placeholders, ", "),
+	)
+
+	if err = db.QueryRowContext(ctx, q, args...).Scan(&Stats.countRows); err != nil {
+		return lazyerrors.Error(err)
+	}
 	q = fmt.Sprintf(`
 		SELECT SUM(pgsize)
 		FROM dbstat
@@ -125,9 +127,8 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 		strings.Join(placeholders, ", "),
 	)
 
-	if err = db.QueryRowContext(ctx, q, args...).Scan(&stats.sizeIndexes); err != nil {
-		return nil, lazyerrors.Error(err)
+	if err = db.QueryRowContext(ctx, q, args...).Scan(&Stats.sizeIndexes); err != nil {
+		return lazyerrors.Error(err)
 	}
-
-	return stats, nil
+	return nil
 }

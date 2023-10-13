@@ -130,7 +130,13 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := collectionsStats(ctx, d, list)
+	stats, placeholders, args, err := collectionsStats(ctx, d, list)
+
+	if params.Refresh {
+		if err := AnalyzeColl(ctx, d, placeholders, *stats, args); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

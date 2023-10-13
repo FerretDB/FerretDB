@@ -339,7 +339,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 	stats, placeholders, args, err := collectionsStats(ctx, p, c.dbName, []*metadata.Collection{coll})
 
 	if params.Refresh {
-		if err := analyseColl(ctx, p, *stats, placeholders, args); err != nil {
+		if err := AnalyzeColl(ctx, p, *stats, placeholders, args); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
