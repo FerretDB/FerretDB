@@ -583,7 +583,7 @@ tasks:
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          BIN_FILE: 'ferretdb-dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          BIN_FILE: 'ferretdb-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
           BIN_DIR: bin
 
   docker-local:
