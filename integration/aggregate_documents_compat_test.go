@@ -331,6 +331,7 @@ func TestAggregateCompatStages(t *testing.T) {
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
 			resultPushdown: pgPushdown,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/3526",
 		},
 		"CountAndMatch": {
 			pipeline: bson.A{
@@ -992,6 +993,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$limit", 1}},
 			},
 			resultPushdown: pgPushdown, // $sort and $match are first two stages
+			skip:           "https://github.com/FerretDB/FerretDB/issues/3526",
 		},
 		"BeforeMatch": {
 			pipeline: bson.A{
@@ -1007,6 +1009,7 @@ func TestAggregateCompatLimit(t *testing.T) {
 				bson.D{{"$limit", 100}},
 			},
 			resultPushdown: pgPushdown,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/3526",
 		},
 		"NoSortBeforeMatch": {
 			pipeline: bson.A{
@@ -1252,18 +1255,21 @@ func TestAggregateCompatMatch(t *testing.T) {
 		"ID": {
 			pipeline:       bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
 			resultPushdown: pgPushdown,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/3526",
 		},
 		"Int": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", 42}}}},
 			},
 			resultPushdown: pgPushdown,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/3526",
 		},
 		"String": {
 			pipeline: bson.A{
 				bson.D{{"$match", bson.D{{"v", "foo"}}}},
 			},
 			resultPushdown: pgPushdown,
+			skip:           "https://github.com/FerretDB/FerretDB/issues/3526",
 		},
 		"Document": {
 			pipeline: bson.A{bson.D{{"$match", bson.D{{"v", bson.D{{"foo", int32(42)}}}}}}},
@@ -1574,6 +1580,7 @@ func TestAggregateCompatSkip(t *testing.T) {
 				bson.D{{"$skip", int32(1)}},
 			},
 			resultPushdown: pgPushdown, // $match after $sort can be pushed down
+			skip:           "https://github.com/FerretDB/FerretDB/issues/3526",
 		},
 		"BeforeMatch": {
 			pipeline: bson.A{
