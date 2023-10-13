@@ -32,63 +32,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-type action string
-
-//nolint:godot // false positive for unexported identifiers
-const (
-	// actionRun means the test has started running.
-	actionRun action = "run"
-	// actionPause means the test has been paused.
-	actionPause action = "pause"
-	// actionCont means the test has continued running.
-	actionCont action = "cont"
-	// actionPass means the test passed.
-	actionPass action = "pass"
-	// actionBench means the benchmark printed log output but did not fail.
-	actionBench action = "bench"
-	// actionFail means the test or benchmark failed.
-	actionFail action = "fail"
-	// actionOutput means the test printed output.
-	actionOutput action = "output"
-	// actionSkip means the test was skipped or the package contained no tests.
-	actionSkip action = "skip"
-)
-
-// Status represents the status of a single test.
-type Status string
-
-// Constants representing different test statuses.
-const (
-	Fail    Status = "fail"
-	Skip    Status = "skip"
-	Pass    Status = "pass"
-	Ignore  Status = "ignore"  // for fluky tests
-	Unknown Status = "unknown" // result can't be parsed
-)
-
-// TestResults represents the collection of results from multiple tests.
-type TestResults struct {
-	// Test results by full test name.
-	TestResults map[string]TestResult
-}
-
-// TestResult represents the outcome of a single test.
-type TestResult struct {
-	Status Status
-	Output string
-}
-
 type testEvent struct {
 	Time           time.Time `json:"Time"`
-	Action         action    `json:"Action"`
+	Action         string    `json:"Action"`
 	Package        string    `json:"Package"`
 	Test           string    `json:"Test"`
 	Output         string    `json:"Output"`
 	ElapsedSeconds float64   `json:"Elapsed"`
-}
-
-func (te testEvent) Elapsed() time.Duration {
-	return time.Duration(te.ElapsedSeconds * float64(time.Second))
 }
 
 func extractRootTestName(fullTestName string) string {
@@ -117,13 +67,8 @@ func execTestCommand(command string, args []string, totalTest int, logger *zap.S
 
 	var testCounter int = 1
 	tested := make(map[string]bool)
-	var r io.Reader = p
-	d := json.NewDecoder(r)
+	d := json.NewDecoder(p)
 	d.DisallowUnknownFields()
-
-	res := &TestResults{
-		TestResults: make(map[string]TestResult),
-	}
 
 	for {
 		var event testEvent
@@ -139,48 +84,31 @@ func execTestCommand(command string, args []string, totalTest int, logger *zap.S
 			continue
 		}
 
-		testName := event.Package + "/" + event.Test
 		rootTestName := extractRootTestName(event.Test)
-
-		result := res.TestResults[testName]
-		if result.Status == "" {
-			result.Status = Unknown
-		}
-
-		result.Output += event.Output
-
 		switch event.Action {
-		case actionPass:
+		case "pass":
 			_, exists := tested[rootTestName]
 			if !exists {
 				fmt.Println(fmt.Sprintf("Pass: %s %d/%d", rootTestName, testCounter, totalTest))
 				testCounter++
 				tested[rootTestName] = true
 			}
-			result.Status = Pass
-		case actionFail:
+		case "fail":
 			_, exists := tested[rootTestName]
 			if !exists {
 				fmt.Println(fmt.Sprintf("Pass: %s %d/%d", rootTestName, testCounter, totalTest))
 				testCounter++
 				tested[rootTestName] = true
 			}
-			result.Status = Fail
-		case actionSkip:
+		case "skip":
 			_, exists := tested[rootTestName]
 			if !exists {
 				fmt.Println(fmt.Sprintf("Skip: %s %d/%d", rootTestName, testCounter, totalTest))
 				testCounter++
 				tested[rootTestName] = true
 			}
-			result.Status = Skip
-		case actionBench, actionCont, actionOutput, actionPause, actionRun:
-			fallthrough
-		default:
-			result.Status = Unknown
 		}
 
-		res.TestResults[testName] = result
 	}
 
 	if err = cmd.Wait(); err != nil {
