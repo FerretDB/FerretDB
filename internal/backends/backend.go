@@ -37,7 +37,6 @@ import (
 type Backend interface {
 	Close()
 
-	Name() string
 	Status(context.Context, *StatusParams) (*StatusResult, error)
 
 	Database(string) (Database, error)
@@ -76,11 +75,6 @@ func (bc *backendContract) Close() {
 	bc.b.Close()
 
 	resource.Untrack(bc, bc.token)
-}
-
-// Name returns human-readable formatted name of the backend.
-func (bc *backendContract) Name() string {
-	return bc.b.Name()
 }
 
 // StatusParams represents the parameters of Backend.Status method.
