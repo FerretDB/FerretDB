@@ -354,7 +354,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 	q := `
 		SELECT
 			indexname,
-			pg_table_size(quote_ident(schemaname)|| '.' || quote_ident(indexname))
+			pg_relation_size(quote_ident(schemaname)|| '.' || quote_ident(indexname), 'main')
 		FROM pg_indexes
 		WHERE schemaname = $1 AND tablename IN ($2)
 		`
