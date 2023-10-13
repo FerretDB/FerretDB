@@ -113,20 +113,18 @@ func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
 	ctx, targetCollection, compatCollection := s.Ctx, s.TargetCollections[0], s.CompatCollections[0]
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		opts *options.CreateCollectionOptions
+		capped       *bool
+		sizeInBytes  *int64
+		maxDocuments *int64
 	}{
 		"Size": {
-			opts: &options.CreateCollectionOptions{
-				Capped:      pointer.ToBool(true),
-				SizeInBytes: pointer.ToInt64(1000),
-			},
+			capped:      pointer.ToBool(true),
+			sizeInBytes: pointer.ToInt64(1000),
 		},
 		"MaxDocuments": {
-			opts: &options.CreateCollectionOptions{
-				Capped:       pointer.ToBool(true),
-				SizeInBytes:  pointer.ToInt64(1000),
-				MaxDocuments: pointer.ToInt64(10),
-			},
+			capped:       pointer.ToBool(true),
+			sizeInBytes:  pointer.ToInt64(1000),
+			maxDocuments: pointer.ToInt64(10),
 		},
 	} {
 		name, tc := name, tc
@@ -134,10 +132,23 @@ func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
 			t.Parallel()
 
 			cName := testutil.CollectionName(t) + name
-			targetErr := targetCollection.Database().CreateCollection(ctx, cName, tc.opts)
+			opts := options.CreateCollection()
+			if tc.capped != nil {
+				opts.SetCapped(*tc.capped)
+			}
+
+			if tc.sizeInBytes != nil {
+				opts.SetSizeInBytes(*tc.sizeInBytes)
+			}
+
+			if tc.maxDocuments != nil {
+				opts.SetMaxDocuments(*tc.maxDocuments)
+			}
+
+			targetErr := targetCollection.Database().CreateCollection(ctx, cName, opts)
 			require.NoError(t, targetErr)
 
-			compatErr := compatCollection.Database().CreateCollection(ctx, cName, tc.opts)
+			compatErr := compatCollection.Database().CreateCollection(ctx, cName, opts)
 			require.NoError(t, compatErr)
 
 			require.Equal(t, compatCollection.Name(), targetCollection.Name())

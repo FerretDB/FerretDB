@@ -97,7 +97,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		pairs = append(pairs, "avgObjSize", stats.SizeCollection/stats.CountObjects)
 	}
 
-	capped := stats.CappedSize != int64(0)
+	capped := stats.CappedSize > 0
 
 	// add freeStorageSize
 	// TODO https://github.com/FerretDB/FerretDB/issues/2447

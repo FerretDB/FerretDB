@@ -410,7 +410,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 				"storageSize", collStats.SizeCollection,
 				// TODO https://github.com/FerretDB/FerretDB/issues/2447
 				"freeStorageSize", int64(0),
-				"capped", collStats.CappedSize != int64(0),
+				"capped", collStats.CappedSize > 0,
 				"nindexes", collStats.CountIndexes,
 				"indexDetails", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
