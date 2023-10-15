@@ -314,14 +314,16 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
 		)
 	}
-
-	stats, placeholders, args, err := collectionsStats(ctx, db, []*metadata.Collection{coll})
-
 	if params.Refresh {
-		if err := AnalyzeColl(ctx, db, placeholders, *stats, args); err != nil {
+		var err error
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/3518
+		q := `ANALYZE`
+		if _, err = db.ExecContext(ctx, q); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
+	stats, err := collectionsStats(ctx, db, []*metadata.Collection{coll})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

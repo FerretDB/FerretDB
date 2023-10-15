@@ -41,10 +41,11 @@ type stats struct {
 // collectionsStats returns statistics about tables and indexes for the given collections.
 //
 // If the list of collections is empty, then stats filled with zero values is returned.
-func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list []*metadata.Collection) (*stats, []string, []any, error) {
+func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list []*metadata.Collection) (*stats, error) {
 	if len(list) == 0 {
-		return new(stats), nil, nil, nil
+		return new(stats), nil
 	}
+
 	var s stats
 	var placeholder metadata.Placeholder
 	placeholders := make([]string, len(list))
@@ -71,17 +72,7 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	// initialization fork https://www.postgresql.org/docs/current/storage-init.html,
 	// free space map https://www.postgresql.org/docs/current/storage-fsm.html and
 	// TOAST https://www.postgresql.org/docs/current/storage-toast.html.
-
-	return &s, placeholders, args, nil
-}
-
-func AnalyzeColl(ctx context.Context, p *pgxpool.Pool, s stats, placeholders []string, args []any) error {
-	var err error
-	q := `ANALYZE`
-	if _, err = p.Exec(ctx, q); err != nil {
-		return lazyerrors.Error(err)
-	}
-	q = fmt.Sprintf(`
+	q := fmt.Sprintf(`
 		SELECT
 			COALESCE(SUM(c.reltuples), 0),
 			COALESCE(SUM(pg_relation_size(c.oid,'main')), 0),
@@ -91,9 +82,11 @@ func AnalyzeColl(ctx context.Context, p *pgxpool.Pool, s stats, placeholders []s
 		WHERE t.schemaname = $1 AND t.tablename IN (%s)`,
 		strings.Join(placeholders, ", "),
 	)
+
 	row := p.QueryRow(ctx, q, args...)
 	if err := row.Scan(&s.countRows, &s.sizeTables, &s.sizeIndexes); err != nil {
-		return lazyerrors.Error(err)
+		return nil, lazyerrors.Error(err)
 	}
-	return nil
+
+	return &s, nil
 }

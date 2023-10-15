@@ -340,15 +340,14 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
 		)
 	}
-
-	stats, placeholders, args, err := collectionsStats(ctx, p, c.dbName, []*metadata.Collection{coll})
-
 	if params.Refresh {
-		if err := AnalyzeColl(ctx, p, *stats, placeholders, args); err != nil {
+		var err error
+		q := `ANALYZE`
+		if _, err = p.Exec(ctx, q); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
-
+	stats, err := collectionsStats(ctx, p, c.dbName, []*metadata.Collection{coll})
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
