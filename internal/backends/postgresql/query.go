@@ -33,6 +33,7 @@ import (
 // prepareSelectClause returns simple SELECT clause for provided db and table name,
 // that can be used to construct the SQL query.
 func prepareSelectClause(db, table string) string {
+	// TODO https://github.com/FerretDB/FerretDB/issues/3573
 	return fmt.Sprintf(
 		`SELECT %s FROM %s`,
 		metadata.DefaultColumn,
@@ -58,6 +59,9 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 
 			return "", nil, lazyerrors.Error(err)
 		}
+
+		// Is the comment below correct? Does it also skip things like $or?
+		// TODO https://github.com/FerretDB/FerretDB/issues/3573
 
 		// don't pushdown $comment, it's attached to query in handlers
 		if strings.HasPrefix(rootKey, "$") {

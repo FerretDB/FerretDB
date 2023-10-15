@@ -90,13 +90,14 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		info := version.Get()
 
 		// it may be empty if no connection was established yet
-		hv, _, _ := strings.Cut(state.HandlerVersion, " ")
-		if hv != "" {
-			hv = " " + hv
+		var b string
+		if state.BackendVersion != "" {
+			b, _, _ = strings.Cut(state.BackendVersion, " (")
+			b = " and " + state.BackendName + " " + strings.TrimSpace(b)
 		}
 
 		startupWarnings := []string{
-			fmt.Sprintf("Powered by FerretDB %s and %s%s.", info.Version, h.b.Name(), hv),
+			fmt.Sprintf("Powered by FerretDB %s%s.", info.Version, b),
 			"Please star us on GitHub: https://github.com/FerretDB/FerretDB.",
 		}
 

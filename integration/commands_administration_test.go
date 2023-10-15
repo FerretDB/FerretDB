@@ -1054,6 +1054,24 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("timeseries")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("views")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("internalViews")))
+
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/2447")
+	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000).SetMaxDocuments(10)
+	err = collection.Database().CreateCollection(ctx, testutil.CollectionName(t), opts)
+	require.NoError(t, err)
+
+	err = collection.Database().RunCommand(ctx, bson.D{{"serverStatus", int32(1)}}).Decode(&actual)
+	require.NoError(t, err)
+
+	doc = ConvertDocument(t, actual)
+	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+
+	catalogStats, ok = must.NotFail(doc.Get("catalogStats")).(*types.Document)
+	assert.True(t, ok)
+
+	assert.Equal(t, int32(1), must.NotFail(catalogStats.Get("capped")))
 }
 
 func TestCommandsAdministrationServerStatusMetrics(t *testing.T) {
