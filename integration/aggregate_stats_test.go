@@ -181,29 +181,59 @@ func TestAggregateCollStatsCommandIndexSizes(t *testing.T) {
 	storageStatsNoScale := must.NotFail(docNoScale.Get("storageStats")).(*types.Document)
 	storageStats := must.NotFail(doc.Get("storageStats")).(*types.Document)
 
-	sizeNoScale := must.NotFail(storageStatsNoScale.Get("size")).(int32)
-	size := must.NotFail(storageStats.Get("size")).(int32)
-	require.Equal(t, sizeNoScale/scale, size)
+	size := must.NotFail(storageStats.Get("size"))
+	switch sizeNoScale := must.NotFail(storageStatsNoScale.Get("size")).(type) {
+	case int32:
+		require.EqualValues(t, sizeNoScale/scale, size)
+	case int64:
+		require.EqualValues(t, sizeNoScale/int64(scale), size)
+	default:
+		t.Fatalf("unknown type %v", sizeNoScale)
+	}
 
-	avgObjSizeNoScale := must.NotFail(storageStatsNoScale.Get("avgObjSize")).(int32)
-	avgObjSize := must.NotFail(storageStats.Get("avgObjSize")).(int32)
-	require.Equal(t, avgObjSizeNoScale, avgObjSize)
+	avgObjSizeNoScale := must.NotFail(storageStatsNoScale.Get("avgObjSize"))
+	avgObjSize := must.NotFail(storageStats.Get("avgObjSize"))
+	require.EqualValues(t, avgObjSizeNoScale, avgObjSize)
 
-	storageSizeNoScale := must.NotFail(storageStatsNoScale.Get("storageSize")).(int32)
-	storageSize := must.NotFail(storageStats.Get("storageSize")).(int32)
-	require.Equal(t, storageSizeNoScale/scale, storageSize)
+	storageSize := must.NotFail(storageStats.Get("storageSize"))
+	switch sizeNoScale := must.NotFail(storageStatsNoScale.Get("storageSize")).(type) {
+	case int32:
+		require.EqualValues(t, sizeNoScale/scale, storageSize)
+	case int64:
+		require.EqualValues(t, sizeNoScale/int64(scale), storageSize)
+	default:
+		t.Fatalf("unknown type %v", sizeNoScale)
+	}
 
-	freeStorageSizeNoScale := must.NotFail(storageStatsNoScale.Get("freeStorageSize")).(int32)
-	freeStorageSize := must.NotFail(storageStats.Get("freeStorageSize")).(int32)
-	require.Equal(t, freeStorageSizeNoScale/scale, freeStorageSize)
+	freeStorageSize := must.NotFail(storageStats.Get("freeStorageSize"))
+	switch sizeNoScale := must.NotFail(storageStatsNoScale.Get("freeStorageSize")).(type) {
+	case int32:
+		require.EqualValues(t, sizeNoScale/scale, freeStorageSize)
+	case int64:
+		require.EqualValues(t, sizeNoScale/int64(scale), freeStorageSize)
+	default:
+		t.Fatalf("unknown type %v", sizeNoScale)
+	}
 
-	totalIndexSizeNoScale := must.NotFail(storageStatsNoScale.Get("totalIndexSize")).(int32)
-	totalIndexSize := must.NotFail(storageStats.Get("totalIndexSize")).(int32)
-	require.Equal(t, totalIndexSizeNoScale/scale, totalIndexSize)
+	totalIndexSize := must.NotFail(storageStats.Get("totalIndexSize"))
+	switch sizeNoScale := must.NotFail(storageStatsNoScale.Get("totalIndexSize")).(type) {
+	case int32:
+		require.EqualValues(t, sizeNoScale/scale, totalIndexSize)
+	case int64:
+		require.EqualValues(t, sizeNoScale/int64(scale), totalIndexSize)
+	default:
+		t.Fatalf("unknown type %v", sizeNoScale)
+	}
 
-	totalSizeNoScale := must.NotFail(storageStatsNoScale.Get("totalSize")).(int32)
-	totalSize := must.NotFail(storageStats.Get("totalSize")).(int32)
-	require.Equal(t, totalSizeNoScale/scale, totalSize)
+	totalSize := must.NotFail(storageStats.Get("totalSize"))
+	switch sizeNoScale := must.NotFail(storageStatsNoScale.Get("totalSize")).(type) {
+	case int32:
+		require.EqualValues(t, sizeNoScale/scale, totalSize)
+	case int64:
+		require.EqualValues(t, sizeNoScale/int64(scale), totalSize)
+	default:
+		t.Fatalf("unknown type %v", sizeNoScale)
+	}
 
 	indexSizesNoScale := must.NotFail(storageStatsNoScale.Get("indexSizes")).(*types.Document)
 	indexSizes := must.NotFail(storageStats.Get("indexSizes")).(*types.Document)
@@ -212,8 +242,14 @@ func TestAggregateCollStatsCommandIndexSizes(t *testing.T) {
 	require.Equal(t, []string{"_id_"}, indexSizes.Keys())
 
 	for _, index := range indexSizesNoScale.Keys() {
-		sizeNoScale := must.NotFail(indexSizesNoScale.Get(index)).(int32)
-		size := must.NotFail(indexSizes.Get(index)).(int32)
-		require.Equal(t, sizeNoScale/scale, size)
+		size := must.NotFail(indexSizes.Get(index))
+		switch sizeNoScale := must.NotFail(indexSizesNoScale.Get(index)).(type) {
+		case int32:
+			require.EqualValues(t, sizeNoScale/scale, size)
+		case int64:
+			require.EqualValues(t, sizeNoScale/int64(scale), size)
+		default:
+			t.Fatalf("unknown type %v", sizeNoScale)
+		}
 	}
 }

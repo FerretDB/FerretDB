@@ -861,13 +861,25 @@ func TestCommandsAdministrationCollStatsScaleIndexSizes(t *testing.T) {
 	require.Equal(t, []string{"_id_", indexName}, indexSizesNoScale.Keys())
 	require.Equal(t, []string{"_id_", indexName}, indexSizes.Keys())
 
-	idIndexSizeNoScale := must.NotFail(indexSizesNoScale.Get("_id_")).(int32)
 	idIndexSize := must.NotFail(indexSizes.Get("_id_"))
-	assert.Equal(t, idIndexSizeNoScale/scale, idIndexSize)
+	switch idIndexSizeNoScale := must.NotFail(indexSizesNoScale.Get("_id_")).(type) {
+	case int32:
+		assert.EqualValues(t, idIndexSizeNoScale/scale, idIndexSize)
+	case int64:
+		assert.EqualValues(t, idIndexSizeNoScale/int64(scale), idIndexSize)
+	default:
+		t.Fatalf("unknown type %v", idIndexSizeNoScale)
+	}
 
-	customIndexSizeNoScale := must.NotFail(indexSizesNoScale.Get(indexName)).(int32)
 	customIndexSize := must.NotFail(indexSizes.Get(indexName))
-	assert.Equal(t, customIndexSizeNoScale/scale, customIndexSize)
+	switch customIndexSizeNoScale := must.NotFail(indexSizesNoScale.Get(indexName)).(type) {
+	case int32:
+		assert.EqualValues(t, customIndexSizeNoScale/scale, customIndexSize)
+	case int64:
+		assert.EqualValues(t, customIndexSizeNoScale/int64(scale), customIndexSize)
+	default:
+		t.Fatalf("unknown type %v", customIndexSizeNoScale)
+	}
 }
 
 func TestCommandsAdministrationDataSize(t *testing.T) {
