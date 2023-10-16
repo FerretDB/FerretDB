@@ -784,6 +784,46 @@ func TestCommandsAdministrationCollStatsCount(t *testing.T) {
 	assert.EqualValues(t, n, must.NotFail(doc.Get("count")))
 }
 
+func TestCommandsAdministrationCollStatsSizes(tt *testing.T) {
+	tt.Parallel()
+
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2447")
+
+	ctx, collection := setup.Setup(t)
+
+	maxInt32PlusSize := math.MaxInt32 + 1
+	smallSize := 1 << 30
+
+	largeCollection := testutil.CollectionName(t) + "maxInt32Plus"
+	smallCollection := testutil.CollectionName(t) + "smallSize"
+
+	opts := options.CreateCollection().SetCapped(true)
+
+	err := collection.Database().CreateCollection(ctx, largeCollection, opts.SetSizeInBytes(int64(maxInt32PlusSize)))
+	require.NoError(t, err)
+
+	err = collection.Database().CreateCollection(ctx, smallCollection, opts.SetSizeInBytes(int64(smallSize)))
+	require.NoError(t, err)
+
+	var largeRes bson.D
+	err = collection.Database().RunCommand(ctx, bson.D{{"collStats", largeCollection}}).Decode(&largeRes)
+	require.NoError(t, err)
+
+	var smallRes bson.D
+	err = collection.Database().RunCommand(ctx, bson.D{{"collStats", smallCollection}}).Decode(&smallRes)
+	require.NoError(t, err)
+
+	largeDoc := ConvertDocument(t, largeRes)
+	largeMaxSize, ok := must.NotFail(largeDoc.Get("maxSize")).(int64)
+	assert.True(t, ok, "int64 is used for sizes greater than math.MaxInt32")
+	assert.Equal(t, int64(maxInt32PlusSize), largeMaxSize)
+
+	smallDoc := ConvertDocument(t, smallRes)
+	smallMaxSize, ok := must.NotFail(smallDoc.Get("maxSize")).(int32)
+	assert.True(t, ok, "int32 is used for sizes less than math.MaxInt32")
+	assert.Equal(t, int32(smallSize), smallMaxSize)
+}
+
 func TestCommandsAdministrationCollStatsScaleIndexSizes(t *testing.T) {
 	t.Parallel()
 
