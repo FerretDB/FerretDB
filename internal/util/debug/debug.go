@@ -45,10 +45,11 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		}),
 	))
 
-	handlers := []string{
-		"/debug/metrics", // from http.Handle above
-		"/debug/vars",    // from expvar
-		"/debug/pprof",   // from net/http/pprof
+	handlers := map[string]string{
+		"/debug/metrics":  "Contains Prometheus metrics dump",                                                                       // from http.Handle above
+		"/debug/vars":     "Exports metrics captured by the expvar package, such as memory statistics and command-line parameters.", // from expvar
+		"/debug/pprof":    "Provides access to runtime profiling data via the pprof package.",                                       // from net/http/pprof,
+		"/debug/statsviz": "Visualize runtime metrics in real time",                                                                 // from statsviz below
 	}
 
 	var page bytes.Buffer
@@ -56,8 +57,8 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	<html>
 	<body>
 	<ul>
-	{{range .}}
-		<li><a href="{{.}}">{{.}}</a></li>
+	{{range $key, $value := .}}
+		<li><a href="{{$key}}">{{$key}}</a>: {{$value}}</li>
 	{{end}}
 	</ul>
 	</body>
