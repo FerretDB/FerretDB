@@ -85,18 +85,10 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	// Skip sorting if there are more than one sort parameters
 	if h.EnableSortPushdown && params.Sort.Len() == 1 {
-		iter := params.Sort.Iterator()
-		defer iter.Close()
-
 		var order types.SortType
 
-		var k string
-		var v any
-
-		k, v, err = iter.Next()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		k := params.Sort.Keys()[0]
+		v := params.Sort.Values()[0]
 
 		order, err = common.GetSortType(k, v)
 		if err != nil {
@@ -108,6 +100,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			Descending: order == types.Descending,
 		}
 	}
+
+	qp.Limit = params.Limit
 
 	res, err := coll.Explain(ctx, &qp)
 	if err != nil {
@@ -126,7 +120,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			// TODO https://github.com/FerretDB/FerretDB/issues/3235
 			"pushdown", res.QueryPushdown,
 			"sortingPushdown", res.SortPushdown,
-			"limitPushdown", false,
+			"limitPushdown", res.LimitPushdown,
 
 			"ok", float64(1),
 		))},
