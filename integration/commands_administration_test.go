@@ -787,7 +787,7 @@ func TestCommandsAdministrationCollStatsCount(t *testing.T) {
 func TestCommandsAdministrationCollStatsSizes(tt *testing.T) {
 	tt.Parallel()
 
-	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2447")
+	t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/3582")
 
 	ctx, collection := setup.Setup(t)
 
