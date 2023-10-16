@@ -148,12 +148,10 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	}
 
 	return &backends.DatabaseStatsResult{
-		CountCollections: int64(len(list)),
-		CountObjects:     stats.countRows,
-		CountIndexes:     stats.countIndexes,
-		SizeTotal:        totalSize,
-		SizeIndexes:      stats.sizeIndexes,
-		SizeCollections:  stats.sizeTables,
+		CountDocuments:  stats.countDocuments,
+		SizeTotal:       totalSize,
+		SizeIndexes:     stats.sizeIndexes,
+		SizeCollections: stats.sizeTables,
 	}, nil
 }
 
