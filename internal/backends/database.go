@@ -99,6 +99,8 @@ func (ci *CollectionInfo) Capped() bool {
 // ListCollections returns information about collections in the database.
 //
 // Database may not exist; that's not an error.
+//
+// Contract ensures that returned list is sorted by name.
 func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCollectionsParams) (*ListCollectionsResult, error) {
 	defer observability.FuncCall(ctx)()
 

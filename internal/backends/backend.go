@@ -136,6 +136,8 @@ type DatabaseInfo struct {
 }
 
 // ListDatabases returns a list of databases.
+//
+// Contract ensures that returned list is sorted by name.
 func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDatabasesParams) (*ListDatabasesResult, error) {
 	defer observability.FuncCall(ctx)()
 

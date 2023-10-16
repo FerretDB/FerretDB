@@ -299,6 +299,8 @@ type IndexKeyPair struct {
 // ListIndexes returns information about indexes in the database.
 //
 // The errors for non-existing database and non-existing collection are the same.
+//
+// Contract ensures that returned list is sorted by name.
 func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndexesParams) (*ListIndexesResult, error) {
 	defer observability.FuncCall(ctx)()
 
