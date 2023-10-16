@@ -109,6 +109,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 	}
 
+	qp.Limit = params.Limit
+
 	res, err := coll.Explain(ctx, &qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -126,7 +128,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			// TODO https://github.com/FerretDB/FerretDB/issues/3235
 			"pushdown", res.QueryPushdown,
 			"sortingPushdown", res.SortPushdown,
-			"limitPushdown", false,
+			"limitPushdown", res.LimitPushdown,
 
 			"ok", float64(1),
 		))},
