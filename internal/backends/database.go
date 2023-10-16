@@ -15,7 +15,10 @@
 package backends
 
 import (
+	"cmp"
 	"context"
+
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
@@ -102,6 +105,15 @@ func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCo
 
 	res, err := dbc.db.ListCollections(ctx, params)
 	checkError(err)
+
+	if res != nil && len(res.Collections) > 0 {
+		byName := func(x, y CollectionInfo) int {
+			return cmp.Compare(x.Name, y.Name)
+		}
+		if !slices.IsSortedFunc(res.Collections, byName) {
+			slices.SortFunc(res.Collections, byName)
+		}
+	}
 
 	return res, err
 }

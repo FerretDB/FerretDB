@@ -17,6 +17,8 @@ package sqlite
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -56,14 +58,33 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	databases := types.MakeArray(len(res.Databases))
 
-	for _, db := range res.Databases {
+	for _, dbInfo := range res.Databases {
+		if nameOnly {
+			databases.Append(must.NotFail(types.NewDocument(
+				"name", dbInfo.Name,
+			)))
+			continue
+		}
+
+		db, err := h.b.Database(dbInfo.Name)
+		if err != nil {
+			h.L.Warn("Failed to get database", zap.Error(err))
+			continue
+		}
+
+		stats, err := db.Stats(ctx, nil)
+		if err != nil {
+			h.L.Warn("Failed to get database stats", zap.Error(err))
+			continue
+		}
+
 		d := must.NotFail(types.NewDocument(
-			"name", db.Name,
-			"sizeOnDisk", db.Size,
-			"empty", db.Size == 0,
+			"name", dbInfo.Name,
+			"sizeOnDisk", stats.SizeTotal,
+			"empty", stats.SizeTotal == 0,
 		))
 
-		totalSize += db.Size
+		totalSize += stats.SizeTotal
 
 		matches, err := common.FilterDocument(d, filter)
 		if err != nil {
@@ -72,12 +93,6 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 		if !matches {
 			continue
-		}
-
-		if nameOnly {
-			d = must.NotFail(types.NewDocument(
-				"name", db.Name,
-			))
 		}
 
 		databases.Append(d)

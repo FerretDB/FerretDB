@@ -15,8 +15,11 @@
 package backends
 
 import (
+	"cmp"
 	"context"
 	"time"
+
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -302,6 +305,15 @@ func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndex
 
 	res, err := cc.c.ListIndexes(ctx, params)
 	checkError(err, ErrorCodeCollectionDoesNotExist)
+
+	if res != nil && len(res.Indexes) > 0 {
+		byName := func(x, y IndexInfo) int {
+			return cmp.Compare(x.Name, y.Name)
+		}
+		if !slices.IsSortedFunc(res.Indexes, byName) {
+			slices.SortFunc(res.Indexes, byName)
+		}
+	}
 
 	return res, err
 }
