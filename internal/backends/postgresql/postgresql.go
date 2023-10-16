@@ -41,9 +41,24 @@ type stats struct {
 // collectionsStats returns statistics about tables and indexes for the given collections.
 //
 // If the list of collections is empty, then stats filled with zero values is returned.
-func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list []*metadata.Collection) (*stats, error) {
-	if len(list) == 0 {
+func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list []*metadata.Collection, val bool) (*stats, error) {
+	var err error
+	if len(list) == 0 && val {
+
+		q := fmt.Sprintf(`ANALYZE %s`, dbName)
+		if _, err = p.Exec(ctx, q); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
 		return new(stats), nil
+	}
+	if val {
+		for _, c := range list {
+			q := fmt.Sprintf(`ANALYZE %s.%s`, dbName, c.TableName)
+			if _, err = p.Exec(ctx, q); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+		}
 	}
 
 	var s stats
@@ -89,15 +104,4 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	}
 
 	return &s, nil
-}
-
-func AnalyzeTemp(ctx context.Context, p *pgxpool.Pool, dbName string, list []*metadata.Collection) error {
-	var err error
-	for _, c := range list {
-		q := fmt.Sprintf(`ANALYZE %s.%s`, dbName, c.TableName)
-		if _, err = p.Exec(ctx, q); err != nil {
-			return lazyerrors.Error(err)
-		}
-	}
-	return nil
 }

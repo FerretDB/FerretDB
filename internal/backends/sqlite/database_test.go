@@ -46,7 +46,10 @@ func TestDatabaseStats(t *testing.T) {
 	}
 
 	t.Run("DatabaseWithCollections", func(t *testing.T) {
-		res, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+
+		res, err := db.Stats(ctx, &backends.DatabaseStatsParams{
+			Refresh: true,
+		})
 		require.NoError(t, err)
 		require.NotZero(t, res.SizeTotal)
 		require.Equal(t, res.CountCollections, int64(len(cNames)))

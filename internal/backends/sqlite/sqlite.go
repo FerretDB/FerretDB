@@ -49,8 +49,16 @@ type stats struct {
 }
 
 // collectionsStats returns statistics about tables and indexes for the given collections.
-func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection) (*stats, error) {
+func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection, val bool) (*stats, error) {
 	var err error
+	if val {
+		for _, c := range list {
+			q := fmt.Sprintf(`ANALYZE %s`, c.TableName)
+			if _, err = db.ExecContext(ctx, q); err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+		}
+	}
 
 	placeholders := make([]string, len(list))
 	args := make([]any, len(list))
@@ -124,16 +132,4 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 	}
 
 	return stats, nil
-}
-
-func AnalyzeTemp(ctx context.Context, db *fsql.DB, list []*metadata.Collection) error {
-	var err error
-
-	for _, c := range list {
-		q := fmt.Sprintf(`ANALYZE %s`, c.TableName)
-		if _, err = db.ExecContext(ctx, q); err != nil {
-			return lazyerrors.Error(err)
-		}
-	}
-	return nil
 }

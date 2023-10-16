@@ -314,12 +314,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
 		)
 	}
-	if params.Refresh {
-		if err := AnalyzeTemp(ctx, db, []*metadata.Collection{coll}); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-	}
-	stats, err := collectionsStats(ctx, db, []*metadata.Collection{coll})
+	stats, err := collectionsStats(ctx, db, []*metadata.Collection{coll}, params.Refresh)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
