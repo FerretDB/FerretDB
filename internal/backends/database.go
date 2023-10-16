@@ -192,8 +192,6 @@ type DatabaseStatsParams struct {
 }
 
 // DatabaseStatsResult represents the results of Database.Stats method.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/2447
 type DatabaseStatsResult struct {
 	CountDocuments  int64
 	SizeTotal       int64
