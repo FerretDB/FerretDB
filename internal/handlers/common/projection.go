@@ -17,9 +17,10 @@ package common
 import (
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 	"time"
+
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"

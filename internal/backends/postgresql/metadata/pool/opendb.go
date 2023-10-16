@@ -16,7 +16,6 @@ package pool
 
 import (
 	"context"
-	"slices"
 	"strings"
 	"time"
 
@@ -25,6 +24,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/tracelog"
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"

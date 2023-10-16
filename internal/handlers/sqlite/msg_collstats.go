@@ -18,7 +18,8 @@ import (
 	"cmp"
 	"context"
 	"fmt"
-	"slices"
+
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -83,11 +84,11 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	var collInfo backends.CollectionInfo
+	var cInfo backends.CollectionInfo
 	if i, found := slices.BinarySearchFunc(collections.Collections, collection, func(e backends.CollectionInfo, t string) int {
 		return cmp.Compare(e.Name, t)
 	}); found {
-		collInfo = collections.Collections[i]
+		cInfo = collections.Collections[i]
 	}
 
 	indexes, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
@@ -132,13 +133,13 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		"totalIndexSize", stats.SizeIndexes/scale,
 		"totalSize", stats.SizeTotal/scale,
 		"scaleFactor", int32(scale),
-		"capped", collInfo.Capped(),
+		"capped", cInfo.Capped(),
 	)
 
-	if collInfo.Capped() {
+	if cInfo.Capped() {
 		pairs = append(pairs,
-			"max", collInfo.CappedDocuments,
-			"maxSize", collInfo.CappedSize/scale,
+			"max", cInfo.CappedDocuments,
+			"maxSize", cInfo.CappedSize/scale,
 		)
 	}
 

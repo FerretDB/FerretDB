@@ -18,12 +18,12 @@ import (
 	"bytes"
 	"fmt"
 	"math"
-	"slices"
 	"time"
 
 	"github.com/pmezard/go-difflib/difflib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"

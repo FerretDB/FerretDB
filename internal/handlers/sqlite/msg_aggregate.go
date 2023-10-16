@@ -21,8 +21,9 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"slices"
 	"time"
+
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
@@ -381,7 +382,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 	))
 
 	var collStats *backends.CollectionStatsResult
-	var collInfo backends.CollectionInfo
+	var cInfo backends.CollectionInfo
 	var nIndexes int64
 
 	if hasCount || hasStorage {
@@ -398,23 +399,23 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 			return nil, lazyerrors.Error(err)
 		}
 
-		var collections *backends.ListCollectionsResult
+		var cList *backends.ListCollectionsResult
 
-		if collections, err = p.db.ListCollections(ctx, new(backends.ListCollectionsParams)); err != nil {
+		if cList, err = p.db.ListCollections(ctx, new(backends.ListCollectionsParams)); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		if i, found := slices.BinarySearchFunc(collections.Collections, p.cName, func(e backends.CollectionInfo, t string) int {
+		if i, found := slices.BinarySearchFunc(cList.Collections, p.cName, func(e backends.CollectionInfo, t string) int {
 			return cmp.Compare(e.Name, t)
 		}); found {
-			collInfo = collections.Collections[i]
+			cInfo = cList.Collections[i]
 		}
 
-		var indexes *backends.ListIndexesResult
+		var iList *backends.ListIndexesResult
 
-		indexes, err = p.c.ListIndexes(ctx, new(backends.ListIndexesParams))
+		iList, err = p.c.ListIndexes(ctx, new(backends.ListIndexesParams))
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
-			indexes = new(backends.ListIndexesResult)
+			iList = new(backends.ListIndexesResult)
 			err = nil
 		}
 
@@ -422,7 +423,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 			return nil, lazyerrors.Error(err)
 		}
 
-		nIndexes = int64(len(indexes.Indexes))
+		nIndexes = int64(len(iList.Indexes))
 	}
 
 	if hasStorage {
@@ -439,7 +440,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 				"storageSize", collStats.SizeCollection,
 				// TODO https://github.com/FerretDB/FerretDB/issues/2447
 				"freeStorageSize", int64(0),
-				"capped", collInfo.Capped(),
+				"capped", cInfo.Capped(),
 				"nindexes", nIndexes,
 				"indexDetails", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342

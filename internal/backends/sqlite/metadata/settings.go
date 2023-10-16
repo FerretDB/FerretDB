@@ -18,7 +18,8 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
-	"slices"
+
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )

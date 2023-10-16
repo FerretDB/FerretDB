@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"regexp"
-	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -26,6 +25,7 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"

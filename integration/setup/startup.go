@@ -18,7 +18,6 @@ import (
 	"context"
 	"os"
 	"runtime"
-	"slices"
 	"strconv"
 	"time"
 
@@ -30,6 +29,7 @@ import (
 	oteltrace "go.opentelemetry.io/otel/sdk/trace"
 	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.uber.org/zap"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
