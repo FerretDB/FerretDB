@@ -79,24 +79,20 @@ func execTestCommand(command string, args []string, totalTest int, logger *zap.S
 			return err
 		}
 
-		// skip package failures
-		if event.Test == "" {
-			continue
-		}
-
 		rootTestName := extractRootTestName(event.Test)
+
 		switch event.Action {
 		case "pass":
 			_, exists := tested[rootTestName]
 			if !exists {
-				fmt.Println(fmt.Sprintf("Pass: %s %d/%d", rootTestName, testCounter, totalTest))
+				fmt.Println(fmt.Sprintf("Progress: %d/%d", testCounter, totalTest))
 				testCounter++
 				tested[rootTestName] = true
 			}
 		case "fail":
 			_, exists := tested[rootTestName]
 			if !exists {
-				fmt.Println(fmt.Sprintf("Pass: %s %d/%d", rootTestName, testCounter, totalTest))
+				fmt.Println(fmt.Sprintf("Fail: %s %d/%d", rootTestName, testCounter, totalTest))
 				testCounter++
 				tested[rootTestName] = true
 			}
