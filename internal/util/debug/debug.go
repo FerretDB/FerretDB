@@ -47,9 +47,10 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	))
 
 	handlers := []string{
-		"/debug/metrics", // from http.Handle above
-		"/debug/vars",    // from expvar
-		"/debug/pprof",   // from net/http/pprof
+		"/debug/metrics",  // from http.Handle above
+		"/debug/vars",     // from expvar
+		"/debug/pprof",    // from net/http/pprof,
+		"/debug/statsviz", // from statsviz below
 	}
 
 	var page bytes.Buffer
