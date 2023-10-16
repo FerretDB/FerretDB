@@ -84,12 +84,12 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	pairs := []any{
 		"ns", db + "." + collection,
 		"size", stats.SizeCollection / int64(scale),
-		"count", stats.CountDocuments,
+		"count", stats.CountObjects,
 	}
 
 	// If there are objects in the collection, calculate the average object size.
-	if stats.CountDocuments > 0 {
-		pairs = append(pairs, "avgObjSize", stats.SizeCollection/stats.CountDocuments)
+	if stats.CountObjects > 0 {
+		pairs = append(pairs, "avgObjSize", stats.SizeCollection/stats.CountObjects)
 	}
 
 	// MongoDB uses "numbers" that could be int32 or int64,

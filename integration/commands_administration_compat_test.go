@@ -112,8 +112,8 @@ func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
 	ctx, targetCollection, compatCollection := s.Ctx, s.TargetCollections[0], s.CompatCollections[0]
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		sizeInBytes  int64
-		maxDocuments int64
+		sizeInBytes  int64 // also sets capped true if it is greater than zero
+		maxDocuments int64 // maxDocuments is set if sizeInBytes is greater than zero
 	}{
 		"Size": {
 			sizeInBytes: 1000,

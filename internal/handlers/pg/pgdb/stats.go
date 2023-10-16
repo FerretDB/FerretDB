@@ -38,7 +38,7 @@ type ServerStats struct {
 // TODO https://github.com/FerretDB/FerretDB/issues/2447
 type DBStats struct {
 	CountCollections int64
-	CountDocuments   int64
+	CountObjects     int64
 	CountIndexes     int64
 	SizeTotal        int64
 	SizeIndexes      int64
@@ -53,7 +53,7 @@ type DBStats struct {
 // Include more data.
 // TODO https://github.com/FerretDB/FerretDB/issues/2447
 type CollStats struct {
-	CountDocuments int64
+	CountObjects   int64
 	CountIndexes   int64
 	SizeTotal      int64
 	SizeIndexes    int64
@@ -131,7 +131,7 @@ func CalculateDBStats(ctx context.Context, tx pgx.Tx, db string) (*DBStats, erro
 
 	row = tx.QueryRow(ctx, sql, args...)
 	if err := row.Scan(
-		&res.CountCollections, &res.CountIndexes, &res.CountDocuments, &res.SizeCollections, &res.SizeIndexes,
+		&res.CountCollections, &res.CountIndexes, &res.CountObjects, &res.SizeCollections, &res.SizeIndexes,
 	); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -175,7 +175,7 @@ func CalculateCollStats(ctx context.Context, tx pgx.Tx, db, collection string) (
 	)
 	row := tx.QueryRow(ctx, sql)
 
-	if err := row.Scan(&res.CountDocuments, &res.SizeTotal, &res.SizeCollection, &res.SizeIndexes); err != nil {
+	if err := row.Scan(&res.CountObjects, &res.SizeTotal, &res.SizeCollection, &res.SizeIndexes); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

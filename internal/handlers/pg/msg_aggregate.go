@@ -428,14 +428,14 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 
 	if hasStorage {
 		var avgObjSize int64
-		if collStats.CountDocuments > 0 {
-			avgObjSize = collStats.SizeCollection / collStats.CountDocuments
+		if collStats.CountObjects > 0 {
+			avgObjSize = collStats.SizeCollection / collStats.CountObjects
 		}
 
 		doc.Set(
 			"storageStats", must.NotFail(types.NewDocument(
 				"size", collStats.SizeTotal,
-				"count", collStats.CountDocuments,
+				"count", collStats.CountObjects,
 				"avgObjSize", avgObjSize,
 				"storageSize", collStats.SizeCollection,
 				"freeStorageSize", int64(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
@@ -453,7 +453,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 
 	if hasCount {
 		doc.Set(
-			"count", collStats.CountDocuments,
+			"count", collStats.CountObjects,
 		)
 	}
 

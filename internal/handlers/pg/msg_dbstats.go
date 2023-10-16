@@ -70,11 +70,11 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		"collections", stats.CountCollections,
 		// TODO https://github.com/FerretDB/FerretDB/issues/176
 		"views", int32(0),
-		"objects", stats.CountDocuments,
+		"objects", stats.CountObjects,
 	}
 
-	if stats.CountDocuments > 0 {
-		pairs = append(pairs, "avgObjSize", stats.SizeCollections/stats.CountDocuments)
+	if stats.CountObjects > 0 {
+		pairs = append(pairs, "avgObjSize", stats.SizeCollections/stats.CountObjects)
 	}
 
 	// MongoDB uses "numbers" that could be int32 or int64,
