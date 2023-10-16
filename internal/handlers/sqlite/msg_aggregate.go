@@ -398,8 +398,9 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 			return nil, lazyerrors.Error(err)
 		}
 
-		collections, err := p.db.ListCollections(ctx, new(backends.ListCollectionsParams))
-		if err != nil {
+		var collections *backends.ListCollectionsResult
+
+		if collections, err = p.db.ListCollections(ctx, new(backends.ListCollectionsParams)); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
@@ -409,7 +410,9 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 			collInfo = collections.Collections[i]
 		}
 
-		indexes, err := p.c.ListIndexes(ctx, new(backends.ListIndexesParams))
+		var indexes *backends.ListIndexesResult
+
+		indexes, err = p.c.ListIndexes(ctx, new(backends.ListIndexesParams))
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 			indexes = new(backends.ListIndexesResult)
 			err = nil
