@@ -32,10 +32,9 @@ import (
 
 // stats represents information about statistics of tables and indexes.
 type stats struct {
-	countRows    int64
-	countIndexes int64
-	sizeIndexes  int64
-	sizeTables   int64
+	countRows   int64
+	sizeIndexes int64
+	sizeTables  int64
 }
 
 // collectionsStats returns statistics about tables and indexes for the given collections.
@@ -62,7 +61,6 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	placeholder.Next()
 
 	for i, c := range list {
-		s.countIndexes += int64(len(c.Indexes))
 		placeholders[i] = placeholder.Next()
 		args = append(args, c.TableName)
 	}

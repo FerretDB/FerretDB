@@ -214,7 +214,6 @@ func TestCollectionStats(t *testing.T) {
 				require.NotZero(t, res.SizeCollection)
 				require.Less(t, res.SizeCollection, dbStatsRes.SizeCollections)
 				require.Equal(t, res.CountDocuments, int64(1))
-				require.NotZero(t, res.CountIndexes)
 				require.NotZero(t, res.SizeIndexes)
 			})
 		})

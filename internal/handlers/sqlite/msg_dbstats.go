@@ -66,6 +66,31 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
+	var nIndexes int64
+
+	for _, cInfo := range list.Collections {
+		var c backends.Collection
+
+		c, err = db.Collection(cInfo.Name)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		var iList *backends.ListIndexesResult
+
+		iList, err = c.ListIndexes(ctx, new(backends.ListIndexesParams))
+		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
+			iList = new(backends.ListIndexesResult)
+			err = nil
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		nIndexes += int64(len(iList.Indexes))
+	}
+
 	stats, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
 	if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
 		stats = new(backends.DatabaseStatsResult)
@@ -96,7 +121,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	pairs = append(pairs,
 		"dataSize", stats.SizeCollections/scale,
 		"storageSize", stats.SizeCollections/scale,
-		"indexes", stats.CountIndexes,
+		"indexes", nIndexes,
 		"indexSize", stats.SizeIndexes/scale,
 		"totalSize", stats.SizeTotal/scale,
 		"scaleFactor", float64(scale),

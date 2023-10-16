@@ -229,7 +229,6 @@ type CollectionStatsParams struct {
 // CollectionStatsResult represents the results of Collection.Stats method.
 type CollectionStatsResult struct {
 	CountDocuments int64
-	CountIndexes   int64
 	SizeTotal      int64
 	SizeIndexes    int64
 	SizeCollection int64

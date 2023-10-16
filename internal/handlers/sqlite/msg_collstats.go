@@ -95,6 +95,16 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		cInfo = backends.CollectionInfo{}
 	}
 
+	indexes, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
+	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
+		indexes = new(backends.ListIndexesResult)
+		err = nil
+	}
+
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	stats, err := c.Stats(ctx, new(backends.CollectionStatsParams))
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 		stats = new(backends.CollectionStatsResult)
@@ -123,7 +133,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	// FerretDB always returns int64 for simplicity.
 	pairs = append(pairs,
 		"storageSize", stats.SizeCollection/scale,
-		"nindexes", stats.CountIndexes,
+		"nindexes", int64(len(indexes.Indexes)),
 		"totalIndexSize", stats.SizeIndexes/scale,
 		"totalSize", stats.SizeTotal/scale,
 		"scaleFactor", int32(scale),

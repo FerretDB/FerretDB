@@ -380,6 +380,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 
 	var collStats *backends.CollectionStatsResult
 	var cInfo backends.CollectionInfo
+	var nIndexes int64
 
 	if hasCount || hasStorage {
 		collStats, err = p.c.Stats(ctx, new(backends.CollectionStatsParams))
@@ -395,15 +396,15 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 			return nil, lazyerrors.Error(err)
 		}
 
-		var list *backends.ListCollectionsResult
+		var cList *backends.ListCollectionsResult
 
-		if list, err = p.db.ListCollections(ctx, new(backends.ListCollectionsParams)); err != nil {
+		if cList, err = p.db.ListCollections(ctx, new(backends.ListCollectionsParams)); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
 		var found bool
 
-		for _, cInfo := range list.Collections {
+		for _, cInfo := range cList.Collections {
 			if cInfo.Name == p.cName {
 				found = true
 				break
@@ -413,6 +414,20 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 		if !found {
 			cInfo = backends.CollectionInfo{}
 		}
+
+		var iList *backends.ListIndexesResult
+
+		iList, err = p.c.ListIndexes(ctx, new(backends.ListIndexesParams))
+		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
+			iList = new(backends.ListIndexesResult)
+			err = nil
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		nIndexes = int64(len(iList.Indexes))
 	}
 
 	if hasStorage {
@@ -430,7 +445,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 				// TODO https://github.com/FerretDB/FerretDB/issues/2447
 				"freeStorageSize", int64(0),
 				"capped", cInfo.Capped(),
-				"nindexes", collStats.CountIndexes,
+				"nindexes", nIndexes,
 				"indexDetails", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"totalIndexSize", collStats.SizeIndexes,

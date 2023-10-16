@@ -42,10 +42,9 @@ import (
 
 // stats represents information about statistics of tables and indexes.
 type stats struct {
-	countRows    int64
-	countIndexes int64
-	sizeIndexes  int64
-	sizeTables   int64
+	countRows   int64
+	sizeIndexes int64
+	sizeTables  int64
 }
 
 // collectionsStats returns statistics about tables and indexes for the given collections.
@@ -105,8 +104,6 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 	if err = db.QueryRowContext(ctx, q, args...).Scan(&stats.countRows); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
-	stats.countIndexes = indexes
 
 	placeholders = make([]string, 0, indexes)
 	args = make([]any, 0, indexes)

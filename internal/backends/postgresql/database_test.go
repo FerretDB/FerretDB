@@ -70,7 +70,6 @@ func TestDatabaseStats(t *testing.T) {
 		require.NotZero(t, res.SizeTotal)
 		require.Zero(t, res.SizeCollections)
 		require.Zero(t, res.CountDocuments)
-		require.NotZero(t, res.CountIndexes)
 		require.NotZero(t, res.SizeIndexes) // includes metadata table's indexes
 	})
 
@@ -88,7 +87,6 @@ func TestDatabaseStats(t *testing.T) {
 		require.NotZero(t, res.SizeTotal)
 		require.NotZero(t, res.SizeCollections)
 		require.Equal(t, int64(1), res.CountDocuments)
-		require.NotZero(t, res.CountIndexes)
 		require.NotZero(t, res.SizeIndexes)
 	})
 }
