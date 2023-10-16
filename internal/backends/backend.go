@@ -143,8 +143,8 @@ func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDataba
 	checkError(err)
 
 	if res != nil && len(res.Databases) > 0 {
-		must.BeTrue(slices.IsSortedFunc(res.Databases, func(x, y DatabaseInfo) int {
-			return cmp.Compare(x.Name, y.Name)
+		must.BeTrue(slices.IsSortedFunc(res.Databases, func(a, b DatabaseInfo) int {
+			return cmp.Compare(a.Name, b.Name)
 		}))
 	}
 

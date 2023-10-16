@@ -108,8 +108,8 @@ func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCo
 	checkError(err)
 
 	if res != nil && len(res.Collections) > 0 {
-		must.BeTrue(slices.IsSortedFunc(res.Collections, func(x, y CollectionInfo) int {
-			return cmp.Compare(x.Name, y.Name)
+		must.BeTrue(slices.IsSortedFunc(res.Collections, func(a, b CollectionInfo) int {
+			return cmp.Compare(a.Name, b.Name)
 		}))
 	}
 

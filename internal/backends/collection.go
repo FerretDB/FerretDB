@@ -306,8 +306,8 @@ func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndex
 	checkError(err, ErrorCodeCollectionDoesNotExist)
 
 	if res != nil && len(res.Indexes) > 0 {
-		must.BeTrue(slices.IsSortedFunc(res.Indexes, func(x, y IndexInfo) int {
-			return cmp.Compare(x.Name, y.Name)
+		must.BeTrue(slices.IsSortedFunc(res.Indexes, func(a, b IndexInfo) int {
+			return cmp.Compare(a.Name, b.Name)
 		}))
 	}
 

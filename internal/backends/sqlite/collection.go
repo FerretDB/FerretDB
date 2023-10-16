@@ -15,9 +15,11 @@
 package sqlite
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	sqlite3 "modernc.org/sqlite"
@@ -397,6 +399,10 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 			}
 		}
 	}
+
+	slices.SortFunc(res.Indexes, func(a, b backends.IndexInfo) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
 
 	return &res, nil
 }

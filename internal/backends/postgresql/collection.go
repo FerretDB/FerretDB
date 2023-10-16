@@ -15,9 +15,11 @@
 package postgresql
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/jackc/pgerrcode"
@@ -405,6 +407,10 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 			}
 		}
 	}
+
+	slices.SortFunc(res.Indexes, func(a, b backends.IndexInfo) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
 
 	return &res, nil
 }
