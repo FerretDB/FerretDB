@@ -341,9 +341,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		)
 	}
 	if params.Refresh {
-		var err error
-		q := `ANALYZE`
-		if _, err = p.Exec(ctx, q); err != nil {
+		if err := AnalyzeTemp(ctx, p, c.dbName, []*metadata.Collection{coll}); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}

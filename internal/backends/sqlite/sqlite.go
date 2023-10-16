@@ -125,3 +125,15 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 
 	return stats, nil
 }
+
+func AnalyzeTemp(ctx context.Context, db *fsql.DB, list []*metadata.Collection) error {
+	var err error
+
+	for _, c := range list {
+		q := fmt.Sprintf(`ANALYZE %s`, c.TableName)
+		if _, err = db.ExecContext(ctx, q); err != nil {
+			return lazyerrors.Error(err)
+		}
+	}
+	return nil
+}

@@ -146,9 +146,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		return nil, lazyerrors.Error(err)
 	}
 	if params.Refresh {
-		var err error
-		q := `ANALYZE`
-		if _, err = p.Exec(ctx, q); err != nil {
+		if err := AnalyzeTemp(ctx, p, db.name, list); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}

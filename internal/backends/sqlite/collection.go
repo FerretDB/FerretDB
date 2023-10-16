@@ -315,11 +315,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		)
 	}
 	if params.Refresh {
-		var err error
-
-		// TODO https://github.com/FerretDB/FerretDB/issues/3518
-		q := `ANALYZE`
-		if _, err = db.ExecContext(ctx, q); err != nil {
+		if err := AnalyzeTemp(ctx, db, []*metadata.Collection{coll}); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}

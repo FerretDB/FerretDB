@@ -90,3 +90,14 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 
 	return &s, nil
 }
+
+func AnalyzeTemp(ctx context.Context, p *pgxpool.Pool, dbName string, list []*metadata.Collection) error {
+	var err error
+	for _, c := range list {
+		q := fmt.Sprintf(`ANALYZE %s.%s`, dbName, c.TableName)
+		if _, err = p.Exec(ctx, q); err != nil {
+			return lazyerrors.Error(err)
+		}
+	}
+	return nil
+}

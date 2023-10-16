@@ -129,12 +129,9 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-	if params.Refresh {
-		var err error
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/3518
-		q := `ANALYZE`
-		if _, err = d.ExecContext(ctx, q); err != nil {
+	if params.Refresh {
+		if err := AnalyzeTemp(ctx, d, list); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
