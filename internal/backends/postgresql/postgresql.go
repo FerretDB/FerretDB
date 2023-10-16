@@ -32,10 +32,9 @@ import (
 
 // stats represents information about statistics of tables and indexes.
 type stats struct {
-	countRows    int64
-	countIndexes int64
-	sizeIndexes  int64
-	sizeTables   int64
+	countDocuments int64
+	sizeIndexes    int64
+	sizeTables     int64
 }
 
 // collectionsStats returns statistics about tables and indexes for the given collections.
@@ -62,12 +61,11 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	placeholder.Next()
 
 	for i, c := range list {
-		s.countIndexes += int64(len(c.Indexes))
 		placeholders[i] = placeholder.Next()
 		args = append(args, c.TableName)
 	}
 
-	// The table size is the size used by collection objects. It excludes visibility map,
+	// The table size is the size used by collection documents. It excludes visibility map,
 	// initialization fork, free space map and TOAST. The `main` `pg_relation_size` is
 	// used, however it is not updated immediately after operation such as DELETE
 	// unless VACUUM is called, ANALYZE does not update pg_relation_size in this case.
@@ -92,7 +90,7 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	)
 
 	row := p.QueryRow(ctx, q, args...)
-	if err := row.Scan(&s.countRows, &s.sizeTables, &s.sizeIndexes); err != nil {
+	if err := row.Scan(&s.countDocuments, &s.sizeTables, &s.sizeIndexes); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

@@ -229,13 +229,8 @@ type CollectionStatsParams struct {
 }
 
 // CollectionStatsResult represents the results of Collection.Stats method.
-//
-// CountObjects is an estimate of the number of documents.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/2447
 type CollectionStatsResult struct {
-	CountObjects   int64
-	CountIndexes   int64
+	CountDocuments int64
 	SizeTotal      int64
 	SizeIndexes    int64
 	SizeCollection int64
