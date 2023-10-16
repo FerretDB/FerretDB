@@ -17,6 +17,7 @@ package integration
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -26,6 +27,46 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
+
+func TestAggregateCollStats(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+
+	pipeline := bson.A{bson.D{{"$collStats", bson.D{{"storageStats", bson.D{}}}}}}
+
+	cursor, err := collection.Aggregate(ctx, pipeline)
+	require.NoError(t, err)
+
+	var res []bson.D
+	err = cursor.All(ctx, &res)
+	require.NoError(t, err)
+
+	require.Len(t, res, 1)
+	doc := ConvertDocument(t, res[0])
+
+	assert.Equal(t, collection.Database().Name()+"."+collection.Name(), must.NotFail(doc.Get("ns")))
+
+	v, _ := doc.Get("storageStats")
+	require.NotNil(t, v)
+
+	storageStats, ok := v.(*types.Document)
+	require.True(t, ok)
+
+	assert.NotZero(t, must.NotFail(storageStats.Get("size")))
+	assert.NotZero(t, must.NotFail(storageStats.Get("count")))
+	assert.NotZero(t, must.NotFail(storageStats.Get("avgObjSize")))
+	assert.NotZero(t, must.NotFail(storageStats.Get("storageSize")))
+	// TODO https://github.com/FerretDB/FerretDB/issues/2447
+	// assert.NotZero(t, must.NotFail(storageStats.Get("freeStorageSize")))
+	assert.Equal(t, false, must.NotFail(storageStats.Get("capped")))
+	assert.NotZero(t, must.NotFail(storageStats.Get("nindexes")))
+	assert.NotZero(t, must.NotFail(storageStats.Get("totalIndexSize")))
+	assert.NotZero(t, must.NotFail(storageStats.Get("totalSize")))
+	assert.NotZero(t, must.NotFail(storageStats.Get("indexSizes")))
+	// TODO https://github.com/FerretDB/FerretDB/issues/2447
+	// assert.Equal(t, int32(1), must.NotFail(storageStats.Get("scaleFactor")))
+}
 
 func TestAggregateCollStatsCommandErrors(t *testing.T) {
 	t.Parallel()
