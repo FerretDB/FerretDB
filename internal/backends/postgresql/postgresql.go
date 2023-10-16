@@ -52,6 +52,16 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 
 		return new(stats), nil
 	}
+	if val {
+		var placeholder []string
+		for _, c := range list {
+			placeholder = append(placeholder, c.TableName)
+		}
+		q := fmt.Sprintf(`ANALYZE %s`, strings.Join(placeholder, ", "))
+		if _, err = p.Exec(ctx, q); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
 
 	var s stats
 	var placeholder metadata.Placeholder
@@ -65,14 +75,6 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 		placeholders[i] = placeholder.Next()
 		args = append(args, c.TableName)
 	}
-
-	if val {
-		q := fmt.Sprintf(`ANALYZE %s`, strings.Join(placeholders, ", "))
-		if _, err = p.Exec(ctx, q, args...); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-	}
-
 	// The table size is the size used by collection objects. It excludes visibility map,
 	// initialization fork, free space map and TOAST. The `main` `pg_relation_size` is
 	// used, however it is not updated immediately after operation such as DELETE
