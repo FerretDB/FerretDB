@@ -15,8 +15,10 @@
 package sqlite
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -76,23 +78,16 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	list, err := db.ListCollections(ctx, new(backends.ListCollectionsParams))
+	collections, err := db.ListCollections(ctx, new(backends.ListCollectionsParams))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var found bool
-	var cInfo backends.CollectionInfo
-
-	for _, cInfo := range list.Collections {
-		if cInfo.Name == collection {
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		cInfo = backends.CollectionInfo{}
+	var collInfo backends.CollectionInfo
+	if i, found := slices.BinarySearchFunc(collections.Collections, collection, func(e backends.CollectionInfo, t string) int {
+		return cmp.Compare(e.Name, t)
+	}); found {
+		collInfo = collections.Collections[i]
 	}
 
 	indexes, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
@@ -137,13 +132,13 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		"totalIndexSize", stats.SizeIndexes/scale,
 		"totalSize", stats.SizeTotal/scale,
 		"scaleFactor", int32(scale),
-		"capped", cInfo.Capped(),
+		"capped", collInfo.Capped(),
 	)
 
-	if cInfo.Capped() {
+	if collInfo.Capped() {
 		pairs = append(pairs,
-			"max", cInfo.CappedDocuments,
-			"maxSize", cInfo.CappedSize/scale,
+			"max", collInfo.CappedDocuments,
+			"maxSize", collInfo.CappedSize/scale,
 		)
 	}
 

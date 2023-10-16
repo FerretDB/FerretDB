@@ -14,6 +14,8 @@ linters-settings:
         deny:
           - pkg: golang.org/x/net/context
             desc: use `context` package instead
+          - pkg: golang.org/x/exp/slices
+            desc: use `slices` package instead
           - pkg: github.com/jackc/pgconn
             desc: use `github.com/jackc/pgx/v5/pgconn` package instead
           - pkg: github.com/jackc/pgproto3
