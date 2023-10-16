@@ -17,6 +17,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -33,6 +34,8 @@ import (
 )
 
 // testEvent represents a single even emitted by `go test -json`.
+//
+// See https://pkg.go.dev/cmd/test2json#hdr-Output_Format.
 type testEvent struct {
 	Time           time.Time `json:"Time"`
 	Action         string    `json:"Action"`
@@ -42,32 +45,42 @@ type testEvent struct {
 	ElapsedSeconds float64   `json:"Elapsed"`
 }
 
-func extractRootTestName(fullTestName string) string {
-	parts := strings.Split(fullTestName, "/")
-	return parts[0]
+// Elapsed returns an elapsed time.
+func (te testEvent) Elapsed() time.Duration {
+	return time.Duration(te.ElapsedSeconds * float64(time.Second))
 }
 
-// execTestCommand runs test with given arguments.
-func execTestCommand(command string, args []string, totalTest int, logger *zap.SugaredLogger) error {
-	bin, err := exec.LookPath(command)
-	if err != nil {
-		return err
-	}
-	cmd := exec.Command(bin, args...)
+// testResult represents the outcome of a single test.
+type testResult struct {
+	output string
+}
+
+// topLevelName returns a top-level test function name.
+func topLevelName(fullTestName string) string {
+	res, _, _ := strings.Cut(fullTestName, "/")
+	return res
+}
+
+// runGoTest runs `go test` with given extra args.
+func runGoTest(ctx context.Context, args []string, total int, logger *zap.SugaredLogger) error {
+	cmd := exec.CommandContext(ctx, "go", append([]string{"test", "-json"}, args...)...)
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
 	cmd.Stderr = os.Stderr
 	p, err := cmd.StdoutPipe()
 	if err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 
 	if err = cmd.Start(); err != nil {
-		return err
+		return lazyerrors.Error(err)
 	}
 
-	var testCounter int = 1
-	tested := make(map[string]bool)
+	defer cmd.Cancel()
+
+	var done int
+	results := make(map[string]*testResult)
+
 	d := json.NewDecoder(p)
 	d.DisallowUnknownFields()
 
@@ -75,45 +88,66 @@ func execTestCommand(command string, args []string, totalTest int, logger *zap.S
 		var event testEvent
 		if err = d.Decode(&event); err != nil {
 			if err == io.EOF {
-				break
+				return cmd.Wait()
 			}
-			return err
+
+			return lazyerrors.Error(err)
 		}
 
-		rootTestName := extractRootTestName(event.Test)
+		logger.Desugar().Debug("decoded event", zap.Any("event", event))
+
+		res := results[event.Test]
+		if res == nil {
+			res = &testResult{}
+			results[event.Test] = res
+		}
+
+		res.output += event.Output
+
+		topLevel := topLevelName(event.Test) == event.Test
 
 		switch event.Action {
-		case "pass":
-			_, exists := tested[rootTestName]
-			if !exists {
-				fmt.Printf("Progress: %s %d/%d\n", rootTestName, testCounter, totalTest)
-				testCounter++
-				tested[rootTestName] = true
+		case "pass": // the test passed
+			fallthrough
+
+		case "fail": // the test or benchmark failed
+			fallthrough
+
+		case "skip": // the test was skipped or the package contained no tests
+			msg := strings.ToTitle(event.Action)
+
+			if event.Test == "" {
+				msg += " " + event.Package
+			} else {
+				msg += " " + event.Test
 			}
-		case "fail":
-			_, exists := tested[rootTestName]
-			if !exists {
-				fmt.Printf("Fail: %s %d/%d\n", rootTestName, testCounter, totalTest)
-				testCounter++
-				tested[rootTestName] = true
+
+			if topLevel {
+				if event.Test != "" {
+					done++
+				}
+				msg += fmt.Sprintf(" (%d/%d)", done, total)
 			}
-		case "skip":
-			_, exists := tested[rootTestName]
-			if !exists {
-				fmt.Printf("Skip: %s %d/%d\n", rootTestName, testCounter, totalTest)
-				testCounter++
-				tested[rootTestName] = true
-			}
+
+			logger.Info(msg)
+
+		case "start": // the test binary is about to be executed
+		case "run": // the test has started running
+		case "pause": // the test has been paused
+		case "cont": // the test has continued running
+		case "output": // the test printed output
+		case "bench": // the benchmark printed log output but did not fail
+
+		default:
+			return lazyerrors.Errorf("unknown action %q", event.Action)
 		}
 	}
-
-	return cmd.Wait()
 }
 
 // testsRun runs tests specified by the shard index and total or by the run regex
 // using `go test` with given extra args.
-func testsRun(w io.Writer, index, total uint, run string, args []string) error {
-	zap.S().Debugf("testsRun: index=%d, total=%d, run=%q, args=%q", index, total, run, args)
+func testsRun(index, total uint, run string, args []string, logger *zap.SugaredLogger) error {
+	logger.Debugf("testsRun: index=%d, total=%d, run=%q, args=%q", index, total, run, args)
 
 	var totalTest int
 	if run == "" {
@@ -144,9 +178,7 @@ func testsRun(w io.Writer, index, total uint, run string, args []string) error {
 		run += ")$"
 	}
 
-	args = append([]string{"test", "-json", "-run=" + run}, args...)
-
-	return execTestCommand("go", args, totalTest, zap.S())
+	return runGoTest(context.TODO(), append([]string{"-run=" + run}, args...), totalTest, logger)
 }
 
 // listTestFuncs returns a sorted slice of all top-level test functions (tests, benchmarks, examples, fuzz functions)

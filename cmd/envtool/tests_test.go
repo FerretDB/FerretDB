@@ -15,12 +15,56 @@
 package main
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
+
+// makeTestLogger returns a logger that adds all messages to the given slice.
+func makeTestLogger(messages *[]string) (*zap.Logger, error) {
+	logger, err := makeLogger(zap.InfoLevel, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	logger = logger.WithOptions(zap.Hooks(func(entry zapcore.Entry) error {
+		*messages = append(*messages, entry.Message)
+		return nil
+	}))
+
+	return logger, nil
+}
+
+func TestRunGoTest(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Normal", func(t *testing.T) {
+		t.Parallel()
+
+		var actual []string
+		logger, err := makeTestLogger(&actual)
+		require.NoError(t, err)
+
+		err = runGoTest(context.TODO(), []string{"./testdata", "-run=TestNormal"}, 2, logger.Sugar())
+		require.NoError(t, err)
+
+		expected := []string{
+			"PASS TestNormal1/NotParallel",
+			"PASS TestNormal1/Parallel",
+			"PASS TestNormal1 (1/2)",
+			"PASS TestNormal2/NotParallel",
+			"PASS TestNormal2/Parallel",
+			"PASS TestNormal2 (2/2)",
+			"PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata (2/2)",
+		}
+		assert.Equal(t, expected, actual)
+	})
+}
 
 func TestShardTestFuncs(t *testing.T) {
 	t.Parallel()

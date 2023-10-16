@@ -35,12 +35,14 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -363,6 +365,35 @@ var cli struct {
 	} `cmd:""`
 }
 
+// makeLogger returns a human-friendly logger.
+func makeLogger(level zapcore.Level, output []string) (*zap.Logger, error) {
+	return zap.Config{
+		Level:             zap.NewAtomicLevelAt(level),
+		Development:       true,
+		DisableCaller:     true,
+		DisableStacktrace: false,
+		Sampling:          nil,
+		Encoding:          "console",
+		EncoderConfig: zapcore.EncoderConfig{
+			TimeKey:        "T",
+			LevelKey:       "L",
+			NameKey:        "N",
+			CallerKey:      zapcore.OmitKey,
+			FunctionKey:    zapcore.OmitKey,
+			MessageKey:     "M",
+			StacktraceKey:  "S",
+			LineEnding:     zapcore.DefaultLineEnding,
+			EncodeLevel:    zapcore.CapitalLevelEncoder,
+			EncodeTime:     zapcore.ISO8601TimeEncoder,
+			EncodeDuration: zapcore.StringDurationEncoder,
+			EncodeCaller:   zapcore.ShortCallerEncoder,
+		},
+		OutputPaths:      output,
+		ErrorOutputPaths: []string{"stderr"},
+		InitialFields:    nil,
+	}.Build()
+}
+
 func main() {
 	kongCtx := kong.Parse(&cli)
 
@@ -376,7 +407,8 @@ func main() {
 		level = zap.DebugLevel
 	}
 
-	logging.Setup(level, "")
+	logging.SetupWithLogger(must.NotFail(makeLogger(level, []string{"stderr"})))
+
 	logger := zap.S()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
@@ -402,7 +434,10 @@ func main() {
 		err = shellRead(os.Stdout, cli.Shell.Read.Paths...)
 
 	case "tests run <args>":
-		err = testsRun(os.Stdout, cli.Tests.Run.ShardIndex, cli.Tests.Run.ShardTotal, cli.Tests.Run.Run, cli.Tests.Run.Args)
+		err = testsRun(
+			cli.Tests.Run.ShardIndex, cli.Tests.Run.ShardTotal, cli.Tests.Run.Run, cli.Tests.Run.Args,
+			logger,
+		)
 
 	case "fuzz corpus <src> <dst>":
 		var seedCorpus, generatedCorpus string
