@@ -25,6 +25,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/arl/statsviz"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
@@ -71,6 +72,12 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	http.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
 		http.Redirect(rw, req, "/debug", http.StatusSeeOther)
 	})
+
+	srv, err := statsviz.NewServer()
+	must.NoError(err)
+
+	http.Handle("/debug/statsviz/", srv.Index())
+	http.Handle("/debug/statsviz/ws", srv.Ws())
 
 	s := http.Server{
 		Addr:     addr,
