@@ -82,18 +82,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	// Skip sorting if there are more than one sort parameters
 	if h.EnableSortPushdown && params.Sort.Len() == 1 {
-		iter := params.Sort.Iterator()
-		defer iter.Close()
-
 		var order types.SortType
 
-		var k string
-		var v any
-
-		k, v, err = iter.Next()
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		k := params.Sort.Keys()[0]
+		v := params.Sort.Values()[0]
 
 		order, err = common.GetSortType(k, v)
 		if err != nil {
