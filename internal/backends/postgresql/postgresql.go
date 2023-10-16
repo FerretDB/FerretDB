@@ -45,20 +45,12 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	var err error
 	if len(list) == 0 && val {
 
-		q := fmt.Sprintf(`ANALYZE %s`, dbName)
+		q := `ANALYZE`
 		if _, err = p.Exec(ctx, q); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
 		return new(stats), nil
-	}
-	if val {
-		for _, c := range list {
-			q := fmt.Sprintf(`ANALYZE %s.%s`, dbName, c.TableName)
-			if _, err = p.Exec(ctx, q); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-		}
 	}
 
 	var s stats
@@ -72,6 +64,13 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 		s.countIndexes += int64(len(c.Indexes))
 		placeholders[i] = placeholder.Next()
 		args = append(args, c.TableName)
+	}
+
+	if val {
+		q := fmt.Sprintf(`ANALYZE %s`, strings.Join(placeholders, ", "))
+		if _, err = p.Exec(ctx, q, args...); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	// The table size is the size used by collection objects. It excludes visibility map,

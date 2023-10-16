@@ -51,14 +51,6 @@ type stats struct {
 // collectionsStats returns statistics about tables and indexes for the given collections.
 func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection, val bool) (*stats, error) {
 	var err error
-	if val {
-		for _, c := range list {
-			q := fmt.Sprintf(`ANALYZE %s`, c.TableName)
-			if _, err = db.ExecContext(ctx, q); err != nil {
-				return nil, lazyerrors.Error(err)
-			}
-		}
-	}
 
 	placeholders := make([]string, len(list))
 	args := make([]any, len(list))
@@ -70,6 +62,13 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 		args[i] = c.TableName
 
 		indexes += int64(len(c.Settings.Indexes))
+	}
+
+	if val {
+		q := fmt.Sprintf(`ANALYZE %s`, strings.Join(placeholders, ", "))
+		if _, err = db.ExecContext(ctx, q, args...); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	// The table size is the size used by collection objects. The `pgsize` of `dbstat`
