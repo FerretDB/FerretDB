@@ -15,11 +15,8 @@
 package backends
 
 import (
-	"cmp"
 	"context"
 	"time"
-
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -293,7 +290,7 @@ type IndexKeyPair struct {
 	Descending bool
 }
 
-// ListIndexes returns a list of collection indexes sorted by name.
+// ListIndexes returns a list of collection indexes.
 //
 // The errors for non-existing database and non-existing collection are the same.
 func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndexesParams) (*ListIndexesResult, error) {
@@ -302,11 +299,12 @@ func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndex
 	res, err := cc.c.ListIndexes(ctx, params)
 	checkError(err, ErrorCodeCollectionDoesNotExist)
 
-	if res != nil && len(res.Indexes) > 0 {
-		must.BeTrue(slices.IsSortedFunc(res.Indexes, func(a, b IndexInfo) int {
-			return cmp.Compare(a.Name, b.Name)
-		}))
-	}
+	// TODO https://github.com/FerretDB/FerretDB/issues/3589
+	// if res != nil && len(res.Indexes) > 0 {
+	// 	must.BeTrue(slices.IsSortedFunc(res.Indexes, func(a, b IndexInfo) int {
+	// 		return cmp.Compare(a.Name, b.Name)
+	// 	}))
+	// }
 
 	return res, err
 }

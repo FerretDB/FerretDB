@@ -15,7 +15,6 @@
 package postgresql
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -24,7 +23,6 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
@@ -407,9 +405,10 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 		}
 	}
 
-	slices.SortFunc(res.Indexes, func(a, b backends.IndexInfo) int {
-		return cmp.Compare(a.Name, b.Name)
-	})
+	// TODO https://github.com/FerretDB/FerretDB/issues/3589
+	// slices.SortFunc(res.Indexes, func(a, b backends.IndexInfo) int {
+	// 	return cmp.Compare(a.Name, b.Name)
+	// })
 
 	return &res, nil
 }
