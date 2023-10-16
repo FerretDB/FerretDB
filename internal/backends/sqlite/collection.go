@@ -320,11 +320,66 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		return nil, lazyerrors.Error(err)
 	}
 
+	placeholders := make([]string, 0, len(coll.Settings.Indexes))
+	args := make([]any, 0, len(coll.Settings.Indexes))
+	indexMap := map[string]string{}
+
+	for _, index := range coll.Settings.Indexes {
+		placeholders = append(placeholders, "?")
+		args = append(args, coll.TableName+"_"+index.Name)
+		indexMap[coll.TableName+"_"+index.Name] = index.Name
+	}
+
+	q := fmt.Sprintf(`
+		SELECT
+			name,
+			pgsize
+		FROM dbstat
+		WHERE name IN (%s) AND aggregate = TRUE`,
+		strings.Join(placeholders, ", "),
+	)
+
+	rows, err := db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	defer rows.Close()
+
+	indexSizes := make([]backends.IndexSize, len(indexMap))
+	var i int
+
+	for rows.Next() {
+		var name string
+		var size int64
+
+		if err = rows.Scan(&name, &size); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		indexName, ok := indexMap[name]
+		if !ok {
+			// new index have been created since fetching metadata
+			continue
+		}
+
+		indexSizes[i] = backends.IndexSize{
+			Name: indexName,
+			Size: size,
+		}
+		i++
+	}
+
+	if rows.Err() != nil {
+		return nil, lazyerrors.Error(rows.Err())
+	}
+
 	return &backends.CollectionStatsResult{
 		CountDocuments: stats.countDocuments,
 		SizeTotal:      stats.sizeTables + stats.sizeIndexes,
 		SizeIndexes:    stats.sizeIndexes,
 		SizeCollection: stats.sizeTables,
+		IndexSizes:     indexSizes,
 	}, nil
 }
 
