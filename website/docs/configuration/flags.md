@@ -10,7 +10,7 @@ To make user experience cloud native, every flag has its environment variable eq
 There is no configuration file.
 
 :::info
-Some default values are overridden in [our Docker image](quickstart-guide/docker.md).
+Some default values are overridden in [our Docker image](../quickstart-guide/docker.md).
 :::
 
 <!-- Keep order in sync with the `--help` output -->
@@ -78,9 +78,9 @@ Additionally:
 [SQLite backend](../understanding-ferretdb.md#sqlite) can be enabled by
 `--handler=sqlite` flag or `FERRETDB_HANDLER=sqlite` environment variable.
 
-| Flag           | Description                                 | Environment Variable  | Default Value |
-| -------------- | ------------------------------------------- | --------------------- | ------------- |
-| `--sqlite-url` | SQLite URI (directory) for 'sqlite' handler | `FERRETDB_SQLITE_URL` | `file:data/`  |
+| Flag           | Description                                 | Environment Variable  | Default Value                                     |
+| -------------- | ------------------------------------------- | --------------------- | ------------------------------------------------- |
+| `--sqlite-url` | SQLite URI (directory) for 'sqlite' handler | `FERRETDB_SQLITE_URL` | `file:data/` `.`<br />(`file:/state/` for Docker) |
 
 FerretDB uses [modernc.org/sqlite](https://gitlab.com/cznic/sqlite) library for accessing SQLite database files.
 Supported URL parameters are documented there:

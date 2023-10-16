@@ -39,7 +39,7 @@ type collStats struct {
 
 // storageStats represents $collStats.storageStats field.
 type storageStats struct {
-	scale int64
+	scale int32
 }
 
 // newCollStats creates a new $collStats stage.
@@ -70,14 +70,18 @@ func newCollStats(stage *types.Document) (aggregations.Stage, error) {
 
 		storageStatsFields := must.NotFail(fields.Get("storageStats")).(*types.Document)
 
+		cs.storageStats.scale = 1
+
 		var s any
 		if s, err = storageStatsFields.Get("scale"); err == nil {
-			cs.storageStats.scale, err = commonparams.GetValidatedNumberParamWithMinValue(
+			scale, err := commonparams.GetValidatedNumberParamWithMinValue(
 				"$collStats.storageStats", "scale", s, 1,
 			)
 			if err != nil {
 				return nil, err
 			}
+
+			cs.storageStats.scale = int32(scale)
 		}
 	}
 
