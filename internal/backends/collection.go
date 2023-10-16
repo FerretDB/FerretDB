@@ -207,8 +207,8 @@ func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllPa
 type ExplainParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Filter *types.Document
-	Limit  int64 // if 0 no limit pushdown is applied
 	Sort   *SortField
+	Limit  int64 // if 0 no limit pushdown is applied
 }
 
 // ExplainResult represents the results of Collection.Explain method.
