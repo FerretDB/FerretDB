@@ -32,6 +32,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// testEvent represents a single even emitted by `go test -json`.
 type testEvent struct {
 	Time           time.Time `json:"Time"`
 	Action         string    `json:"Action"`
@@ -85,35 +86,28 @@ func execTestCommand(command string, args []string, totalTest int, logger *zap.S
 		case "pass":
 			_, exists := tested[rootTestName]
 			if !exists {
-				fmt.Println(fmt.Sprintf("Progress: %d/%d", testCounter, totalTest))
+				fmt.Printf("Progress: %s %d/%d\n", rootTestName, testCounter, totalTest)
 				testCounter++
 				tested[rootTestName] = true
 			}
 		case "fail":
 			_, exists := tested[rootTestName]
 			if !exists {
-				fmt.Println(fmt.Sprintf("Fail: %s %d/%d", rootTestName, testCounter, totalTest))
+				fmt.Printf("Fail: %s %d/%d\n", rootTestName, testCounter, totalTest)
 				testCounter++
 				tested[rootTestName] = true
 			}
 		case "skip":
 			_, exists := tested[rootTestName]
 			if !exists {
-				fmt.Println(fmt.Sprintf("Skip: %s %d/%d", rootTestName, testCounter, totalTest))
+				fmt.Printf("Skip: %s %d/%d\n", rootTestName, testCounter, totalTest)
 				testCounter++
 				tested[rootTestName] = true
 			}
 		}
-
 	}
 
-	if err = cmd.Wait(); err != nil {
-		if _, ok := err.(*exec.ExitError); ok {
-			err = nil
-		}
-	}
-
-	return nil
+	return cmd.Wait()
 }
 
 // testsRun runs tests specified by the shard index and total or by the run regex
@@ -127,12 +121,12 @@ func testsRun(w io.Writer, index, total uint, run string, args []string) error {
 			return fmt.Errorf("--shard-index and --shard-total must be specified when --run is not")
 		}
 
-		all, err := listTests("")
+		all, err := listTestFuncs("")
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
 
-		shard, err := shardTests(index, total, all)
+		shard, err := shardTestFuncs(index, total, all)
 		if err != nil {
 			return lazyerrors.Error(err)
 		}
@@ -150,15 +144,14 @@ func testsRun(w io.Writer, index, total uint, run string, args []string) error {
 		run += ")$"
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3055
-
 	args = append([]string{"test", "-json", "-run=" + run}, args...)
 
 	return execTestCommand("go", args, totalTest, zap.S())
 }
 
-// listTests returns a sorted slice of all tests in the specified directory and subdirectories.
-func listTests(dir string) ([]string, error) {
+// listTestFuncs returns a sorted slice of all top-level test functions (tests, benchmarks, examples, fuzz functions)
+// in the specified directory and subdirectories.
+func listTestFuncs(dir string) ([]string, error) {
 	var buf bytes.Buffer
 
 	cmd := exec.Command("go", "test", "-list=.", "./...")
@@ -170,7 +163,7 @@ func listTests(dir string) ([]string, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	tests := make(map[string]struct{}, 200)
+	testFuncs := make(map[string]struct{}, 300)
 
 	s := bufio.NewScanner(&buf)
 	for s.Scan() {
@@ -189,25 +182,25 @@ func listTests(dir string) ([]string, error) {
 			return nil, fmt.Errorf("can't parse line %q", l)
 		}
 
-		if _, dup := tests[l]; dup {
-			return nil, fmt.Errorf("duplicate test name %q", l)
+		if _, dup := testFuncs[l]; dup {
+			return nil, fmt.Errorf("duplicate test function name %q", l)
 		}
 
-		tests[l] = struct{}{}
+		testFuncs[l] = struct{}{}
 	}
 
 	if err := s.Err(); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	res := maps.Keys(tests)
+	res := maps.Keys(testFuncs)
 	sort.Strings(res)
 
 	return res, nil
 }
 
-// shardTests shards given test names.
-func shardTests(index, total uint, tests []string) ([]string, error) {
+// shardTestFuncs shards given top-level test functions.
+func shardTestFuncs(index, total uint, testFuncs []string) ([]string, error) {
 	if index == 0 {
 		return nil, fmt.Errorf("index must be greater than 0")
 	}
@@ -217,29 +210,25 @@ func shardTests(index, total uint, tests []string) ([]string, error) {
 	}
 
 	if index > total {
-		return nil, fmt.Errorf("cannot shard when index is greater to total (%d > %d)", index, total)
+		return nil, fmt.Errorf("cannot shard when index is greater than total (%d > %d)", index, total)
 	}
 
-	testsLen := uint(len(tests))
-	if total > testsLen {
-		return nil, fmt.Errorf("cannot shard when total is greater than amount of tests (%d > %d)", total, testsLen)
+	l := uint(len(testFuncs))
+	if total > l {
+		return nil, fmt.Errorf("cannot shard when total is greater than a number of test functions (%d > %d)", total, l)
 	}
 
-	res := make([]string, 0, testsLen/total)
-	var test uint
+	res := make([]string, 0, l/total+1)
 	shard := uint(1)
 
 	// use different shards for tests with similar names for better load balancing
-	for {
-		if test == testsLen {
-			return res, nil
-		}
-
+	for _, test := range testFuncs {
 		if index == shard {
-			res = append(res, tests[test])
+			res = append(res, test)
 		}
 
-		test++
 		shard = shard%total + 1
 	}
+
+	return res, nil
 }

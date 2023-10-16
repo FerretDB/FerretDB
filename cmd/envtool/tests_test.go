@@ -25,9 +25,9 @@ import (
 func TestTests(t *testing.T) {
 	t.Parallel()
 
-	tests, err := listTests(filepath.Join("..", "..", "integration"))
+	testFuncs, err := listTestFuncs(filepath.Join("..", "..", "integration"))
 	require.NoError(t, err)
-	assert.Contains(t, tests, "TestQueryCompatLimit")
+	assert.Contains(t, testFuncs, "TestQueryCompatLimit")
 
 	// TODO enable once subdirectories are used
 	// https://github.com/FerretDB/engineering/issues/66
@@ -36,37 +36,37 @@ func TestTests(t *testing.T) {
 	t.Run("ShardTestsInvalidIndex", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := shardTests(0, 3, tests)
+		_, err := shardTestFuncs(0, 3, testFuncs)
 		assert.EqualError(t, err, "index must be greater than 0")
 
-		_, err = shardTests(3, 3, tests)
+		_, err = shardTestFuncs(3, 3, testFuncs)
 		assert.NoError(t, err)
 
-		_, err = shardTests(4, 3, tests)
-		assert.EqualError(t, err, "cannot shard when index is greater to total (4 > 3)")
+		_, err = shardTestFuncs(4, 3, testFuncs)
+		assert.EqualError(t, err, "cannot shard when index is greater than total (4 > 3)")
 	})
 
 	t.Run("ShardTestsInvalidTotal", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := shardTests(3, 1000, tests[:42])
-		assert.EqualError(t, err, "cannot shard when total is greater than amount of tests (1000 > 42)")
+		_, err := shardTestFuncs(3, 1000, testFuncs[:42])
+		assert.EqualError(t, err, "cannot shard when total is greater than a number of test functions (1000 > 42)")
 	})
 
 	t.Run("ShardTestsValid", func(t *testing.T) {
 		t.Parallel()
 
-		res, err := shardTests(1, 3, tests)
+		res, err := shardTestFuncs(1, 3, testFuncs)
 		require.NoError(t, err)
-		assert.Equal(t, tests[0], res[0])
-		assert.NotEqual(t, tests[1], res[1])
-		assert.NotEqual(t, tests[2], res[1])
-		assert.Equal(t, tests[3], res[1])
+		assert.Equal(t, testFuncs[0], res[0])
+		assert.NotEqual(t, testFuncs[1], res[1])
+		assert.NotEqual(t, testFuncs[2], res[1])
+		assert.Equal(t, testFuncs[3], res[1])
 
-		res, err = shardTests(3, 3, tests)
+		res, err = shardTestFuncs(3, 3, testFuncs)
 		require.NoError(t, err)
-		assert.NotEqual(t, tests[0], res[0])
-		assert.NotEqual(t, tests[1], res[0])
-		assert.Equal(t, tests[2], res[0])
+		assert.NotEqual(t, testFuncs[0], res[0])
+		assert.NotEqual(t, testFuncs[1], res[0])
+		assert.Equal(t, testFuncs[2], res[0])
 	})
 }
