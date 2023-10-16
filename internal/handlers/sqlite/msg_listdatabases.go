@@ -17,13 +17,14 @@ package sqlite
 import (
 	"context"
 
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
-	"go.uber.org/zap"
 )
 
 // MsgListDatabases implements HandlerInterface.

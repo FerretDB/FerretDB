@@ -17,12 +17,12 @@ package backends
 import (
 	"cmp"
 	"context"
+	"slices"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
-	"golang.org/x/exp/slices"
 )
 
 // DefaultIndexName is a name of the index that is created when a collection is created.
