@@ -80,40 +80,29 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		qp.Filter = params.Filter
 	}
 
-	if h.EnableSortPushdown {
+	// Skip sorting if there are more than one sort parameters
+	if h.EnableSortPushdown && params.Sort.Len() == 1 {
 		iter := params.Sort.Iterator()
 		defer iter.Close()
 
-		var key string
 		var order types.SortType
 
-		for {
-			var k string
-			var v any
+		var k string
+		var v any
 
-			k, v, err = iter.Next()
-			if err != nil {
-				if errors.Is(err, iterator.ErrIteratorDone) {
-					break
-				}
-
-				return nil, lazyerrors.Error(err)
-			}
-
-			order, err = common.GetSortType(k, v)
-			if err != nil {
-				return nil, err
-			}
-
-			key = k
+		k, v, err = iter.Next()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
 		}
 
-		// Skip sorting if there are more than one sort parameters
-		if params.Sort.Len() == 1 {
-			qp.Sort = &backends.SortField{
-				Key:        key,
-				Descending: order == types.Descending,
-			}
+		order, err = common.GetSortType(k, v)
+		if err != nil {
+			return nil, err
+		}
+
+		qp.Sort = &backends.SortField{
+			Key:        k,
+			Descending: order == types.Descending,
 		}
 	}
 
