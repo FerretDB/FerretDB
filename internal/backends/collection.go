@@ -236,7 +236,8 @@ type CollectionStatsResult struct {
 	SizeCollection int64
 }
 
-// Stats returns statistics about the collection.
+// Stats returns statistic estimations about the collection.
+// All returned values are not exact, but might be more accurate when Stats is called with `Refresh: true`.
 //
 // The errors for non-existing database and non-existing collection are the same.
 func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStatsParams) (*CollectionStatsResult, error) {

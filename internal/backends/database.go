@@ -209,7 +209,8 @@ type DatabaseStatsResult struct {
 	SizeCollections int64
 }
 
-// Stats returns statistics about the database.
+// Stats returns statistic estimations about the database.
+// All returned values are not exact, but might be more accurate when Stats is called with `Refresh: true`.
 func (dbc *databaseContract) Stats(ctx context.Context, params *DatabaseStatsParams) (*DatabaseStatsResult, error) {
 	defer observability.FuncCall(ctx)()
 
