@@ -22,18 +22,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTests(t *testing.T) {
+func TestShardTestFuncs(t *testing.T) {
 	t.Parallel()
 
 	testFuncs, err := listTestFuncs(filepath.Join("..", "..", "integration"))
 	require.NoError(t, err)
 	assert.Contains(t, testFuncs, "TestQueryCompatLimit")
 
-	// TODO enable once subdirectories are used
-	// https://github.com/FerretDB/engineering/issues/66
-	// assert.Contains(t, tests, "TestSubDir")
-
-	t.Run("ShardTestsInvalidIndex", func(t *testing.T) {
+	t.Run("InvalidIndex", func(t *testing.T) {
 		t.Parallel()
 
 		_, err := shardTestFuncs(0, 3, testFuncs)
@@ -46,14 +42,14 @@ func TestTests(t *testing.T) {
 		assert.EqualError(t, err, "cannot shard when index is greater than total (4 > 3)")
 	})
 
-	t.Run("ShardTestsInvalidTotal", func(t *testing.T) {
+	t.Run("InvalidTotal", func(t *testing.T) {
 		t.Parallel()
 
 		_, err := shardTestFuncs(3, 1000, testFuncs[:42])
 		assert.EqualError(t, err, "cannot shard when total is greater than a number of test functions (1000 > 42)")
 	})
 
-	t.Run("ShardTestsValid", func(t *testing.T) {
+	t.Run("Valid", func(t *testing.T) {
 		t.Parallel()
 
 		res, err := shardTestFuncs(1, 3, testFuncs)
