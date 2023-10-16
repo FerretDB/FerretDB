@@ -296,11 +296,9 @@ type IndexKeyPair struct {
 	Descending bool
 }
 
-// ListIndexes returns information about indexes in the database.
+// ListIndexes returns a list of collection indexes sorted by name.
 //
 // The errors for non-existing database and non-existing collection are the same.
-//
-// Contract ensures that returned list is sorted by name.
 func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndexesParams) (*ListIndexesResult, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -308,12 +306,9 @@ func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndex
 	checkError(err, ErrorCodeCollectionDoesNotExist)
 
 	if res != nil && len(res.Indexes) > 0 {
-		byName := func(x, y IndexInfo) int {
+		must.BeTrue(slices.IsSortedFunc(res.Indexes, func(x, y IndexInfo) int {
 			return cmp.Compare(x.Name, y.Name)
-		}
-		if !slices.IsSortedFunc(res.Indexes, byName) {
-			slices.SortFunc(res.Indexes, byName)
-		}
+		}))
 	}
 
 	return res, err

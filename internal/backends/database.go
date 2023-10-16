@@ -96,7 +96,7 @@ func (ci *CollectionInfo) Capped() bool {
 	return ci.CappedSize > 0 || ci.CappedDocuments > 0
 }
 
-// ListCollections returns information about collections in the database.
+// ListCollections returns a list collections in the database sorted by name.
 //
 // Database may not exist; that's not an error.
 //
@@ -108,12 +108,9 @@ func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCo
 	checkError(err)
 
 	if res != nil && len(res.Collections) > 0 {
-		byName := func(x, y CollectionInfo) int {
+		must.BeTrue(slices.IsSortedFunc(res.Collections, func(x, y CollectionInfo) int {
 			return cmp.Compare(x.Name, y.Name)
-		}
-		if !slices.IsSortedFunc(res.Collections, byName) {
-			slices.SortFunc(res.Collections, byName)
-		}
+		}))
 	}
 
 	return res, err
