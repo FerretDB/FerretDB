@@ -17,8 +17,7 @@ package backends
 import (
 	"cmp"
 	"context"
-
-	"golang.org/x/exp/slices"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"

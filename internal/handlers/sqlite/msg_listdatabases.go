@@ -63,6 +63,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			databases.Append(must.NotFail(types.NewDocument(
 				"name", dbInfo.Name,
 			)))
+
 			continue
 		}
 
