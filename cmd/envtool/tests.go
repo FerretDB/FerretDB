@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -67,6 +68,7 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
 	cmd.Stderr = os.Stderr
+
 	p, err := cmd.StdoutPipe()
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -76,10 +78,10 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 		return lazyerrors.Error(err)
 	}
 
-	defer cmd.Cancel()
+	defer cmd.Cancel() //nolint:errcheck // safe to ignore
 
 	var done int
-	results := make(map[string]*testResult)
+	results := make(map[string]*testResult, 250)
 
 	d := json.NewDecoder(p)
 	d.DisallowUnknownFields()
@@ -87,7 +89,7 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 	for {
 		var event testEvent
 		if err = d.Decode(&event); err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return cmd.Wait()
 			}
 
@@ -98,7 +100,7 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 
 		res := results[event.Test]
 		if res == nil {
-			res = &testResult{}
+			res = new(testResult)
 			results[event.Test] = res
 		}
 
