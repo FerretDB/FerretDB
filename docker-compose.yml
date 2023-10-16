@@ -117,22 +117,6 @@ services:
     volumes:
       - .:/workdir
 
-  # for testing .deb and .rpm packages
-  ubuntu:
-    build:
-      context: ./build/deps
-      dockerfile: ubuntu2204.Dockerfile
-    container_name: ferretdb_ubuntu
-    volumes:
-      - ./tmp/debs:/debs
-  ubi:
-    build:
-      context: ./build/deps
-      dockerfile: ubi9.Dockerfile
-    container_name: ferretdb_ubi
-    volumes:
-      - ./tmp/rpms:/rpms
-
   # for YAML files
   prettier:
     build:

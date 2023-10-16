@@ -57,11 +57,6 @@ func (b *backend) Close() {
 	b.r.Close()
 }
 
-// Name implements backends.Backend interface.
-func (b *backend) Name() string {
-	return "SQLite"
-}
-
 // Status implements backends.Backend interface.
 func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
 	// since authentication is not supported yet, and there is no way to not establish an SQLite "connection",
@@ -79,6 +74,17 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 		}
 
 		res.CountCollections += int64(len(cs))
+
+		colls, err := newDatabase(b.r, dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		for _, cInfo := range colls.Collections {
+			if cInfo.Capped() {
+				res.CountCappedCollections++
+			}
+		}
 	}
 
 	return &res, nil
