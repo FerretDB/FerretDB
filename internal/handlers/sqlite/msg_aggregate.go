@@ -265,7 +265,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		statistics := stages.GetStatistics(collStatsDocuments)
 
 		iter, err = processStagesStats(ctx, closer, &stagesStatsParams{
-			c, dbName, cName, statistics, collStatsDocuments,
+			c, db, dbName, cName, statistics, collStatsDocuments,
 		})
 	}
 
@@ -348,6 +348,7 @@ func processStagesDocuments(ctx context.Context, closer *iterator.MultiCloser, p
 // stagesStatsParams contains the parameters for processStagesStats.
 type stagesStatsParams struct {
 	c          backends.Collection
+	db         backends.Database
 	dbName     string
 	cName      string
 	statistics map[stages.Statistic]struct{}
@@ -378,6 +379,8 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 	))
 
 	var collStats *backends.CollectionStatsResult
+	var cInfo backends.CollectionInfo
+	var nIndexes int64
 
 	if hasCount || hasStorage {
 		collStats, err = p.c.Stats(ctx, new(backends.CollectionStatsParams))
@@ -392,24 +395,57 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
+		var cList *backends.ListCollectionsResult
+
+		if cList, err = p.db.ListCollections(ctx, new(backends.ListCollectionsParams)); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		var found bool
+
+		for _, cInfo := range cList.Collections {
+			if cInfo.Name == p.cName {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			cInfo = backends.CollectionInfo{}
+		}
+
+		var iList *backends.ListIndexesResult
+
+		iList, err = p.c.ListIndexes(ctx, new(backends.ListIndexesParams))
+		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
+			iList = new(backends.ListIndexesResult)
+			err = nil
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		nIndexes = int64(len(iList.Indexes))
 	}
 
 	if hasStorage {
 		var avgObjSize int64
-		if collStats.CountObjects > 0 {
-			avgObjSize = collStats.SizeCollection / collStats.CountObjects
+		if collStats.CountDocuments > 0 {
+			avgObjSize = collStats.SizeCollection / collStats.CountDocuments
 		}
 
 		doc.Set(
 			"storageStats", must.NotFail(types.NewDocument(
 				"size", collStats.SizeTotal,
-				"count", collStats.CountObjects,
+				"count", collStats.CountDocuments,
 				"avgObjSize", avgObjSize,
 				"storageSize", collStats.SizeCollection,
-				"freeStorageSize", int64(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"nindexes", collStats.CountIndexes,
+				// TODO https://github.com/FerretDB/FerretDB/issues/2447
+				"freeStorageSize", int64(0),
+				"capped", cInfo.Capped(),
+				"nindexes", nIndexes,
 				"indexDetails", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"totalIndexSize", collStats.SizeIndexes,
@@ -421,7 +457,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 
 	if hasCount {
 		doc.Set(
-			"count", collStats.CountObjects,
+			"count", collStats.CountDocuments,
 		)
 	}
 

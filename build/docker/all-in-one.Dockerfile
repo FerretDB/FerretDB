@@ -93,7 +93,7 @@ COPY --from=all-in-one-build /src/build/docker/all-in-one/ferretdb.sh /etc/servi
 COPY --from=all-in-one-build /src/build/docker/all-in-one/postgresql.sh /etc/service/postgresql/run
 COPY --from=all-in-one-build /src/build/docker/all-in-one/entrypoint.sh /entrypoint.sh
 
-RUN <<EOF
+RUN --mount=type=cache,target=/var/cache/apt <<EOF
 set -ex
 
 apt update
