@@ -115,11 +115,11 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 					sql := `NOT ( ` +
 						// does document contain the key,
 						// it is necessary, as NOT won't work correctly if the key does not exist.
-						`_jsonb ? %[1]s AND ` +
+						`%[1]s ? %[2]s AND ` +
 						// does the value under the key is equal to filter value
-						`_jsonb->%[1]s @> %[2]s AND ` +
+						`%[1]s->%[2]s @> %[3]s AND ` +
 						// does the value type is equal to the filter's one
-						`_jsonb->'$s'->'p'->%[1]s->'t' = '"%[3]s"' )`
+						`%[1]s->'$s'->'p'->%[2]s->'t' = '"%[4]s"' )`
 
 					switch v := v.(type) {
 					case *types.Document, *types.Array, types.Binary,
@@ -127,11 +127,25 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 						// type not supported for pushdown
 
 					case float64, bool, int32, int64:
-						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next(), sjson.GetTypeOfValue(v)))
+						filters = append(filters, fmt.Sprintf(
+							sql,
+							metadata.DefaultColumn,
+							p.Next(),
+							p.Next(),
+							sjson.GetTypeOfValue(v),
+						))
+
 						args = append(args, rootKey, v)
 
 					case string, types.ObjectID, time.Time:
-						filters = append(filters, fmt.Sprintf(sql, p.Next(), p.Next(), sjson.GetTypeOfValue(v)))
+						filters = append(filters, fmt.Sprintf(
+							sql,
+							metadata.DefaultColumn,
+							p.Next(),
+							p.Next(),
+							sjson.GetTypeOfValue(v),
+						))
+
 						args = append(args, rootKey, string(must.NotFail(sjson.MarshalSingleValue(v))))
 
 					default:
@@ -167,11 +181,27 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 	return filter, args, nil
 }
 
+// prepareOrderByClause adds ORDER BY clause with given sort document and returns the query and arguments.
+func prepareOrderByClause(p *metadata.Placeholder, key string, descending bool) (string, []any, error) {
+	// Skip sorting dot notation
+	if strings.ContainsRune(key, '.') {
+		return "", nil, nil
+	}
+
+	sqlOrder := "ASC"
+
+	if descending {
+		sqlOrder = "DESC"
+	}
+
+	return fmt.Sprintf(" ORDER BY %s->%s %s", metadata.DefaultColumn, p.Next(), sqlOrder), []any{key}, nil
+}
+
 // filterEqual returns the proper SQL filter with arguments that filters documents
 // where the value under k is equal to v.
 func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args []any) {
 	// Select if value under the key is equal to provided value.
-	sql := `_jsonb->%[1]s @> %[2]s`
+	sql := `%[1]s->%[2]s @> %[3]s`
 
 	switch v := v.(type) {
 	case *types.Document, *types.Array, types.Binary,
@@ -182,27 +212,27 @@ func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args 
 		// If value is not safe double, fetch all numbers out of safe range.
 		switch {
 		case v > types.MaxSafeDouble:
-			sql = `_jsonb->%[1]s > %[2]s`
+			sql = `%[1]s->%[2]s > %[3]s`
 			v = types.MaxSafeDouble
 
 		case v < -types.MaxSafeDouble:
-			sql = `_jsonb->%[1]s < %[2]s`
+			sql = `%[1]s->%[2]s < %[3]s`
 			v = -types.MaxSafeDouble
 		default:
 			// don't change the default eq query
 		}
 
-		filter = fmt.Sprintf(sql, p.Next(), p.Next())
+		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
 		args = append(args, k, v)
 
 	case string, types.ObjectID, time.Time:
 		// don't change the default eq query
-		filter = fmt.Sprintf(sql, p.Next(), p.Next())
+		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
 		args = append(args, k, string(must.NotFail(sjson.MarshalSingleValue(v))))
 
 	case bool, int32:
 		// don't change the default eq query
-		filter = fmt.Sprintf(sql, p.Next(), p.Next())
+		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
 		args = append(args, k, v)
 
 	case int64:
@@ -211,17 +241,17 @@ func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args 
 		// If value cannot be safe double, fetch all numbers out of the safe range.
 		switch {
 		case v > maxSafeDouble:
-			sql = `_jsonb->%[1]s > %[2]s`
+			sql = `%[1]s->%[2]s > %[3]s`
 			v = maxSafeDouble
 
 		case v < -maxSafeDouble:
-			sql = `_jsonb->%[1]s < %[2]s`
+			sql = `%[1]s->%[2]s < %[3]s`
 			v = -maxSafeDouble
 		default:
 			// don't change the default eq query
 		}
 
-		filter = fmt.Sprintf(sql, p.Next(), p.Next())
+		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
 		args = append(args, k, v)
 
 	default:
