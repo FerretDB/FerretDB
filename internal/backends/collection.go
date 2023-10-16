@@ -227,8 +227,6 @@ type CollectionStatsParams struct {
 }
 
 // CollectionStatsResult represents the results of Collection.Stats method.
-//
-// CountDocuments is an estimate of the number of documents.
 type CollectionStatsResult struct {
 	CountDocuments int64
 	CountIndexes   int64

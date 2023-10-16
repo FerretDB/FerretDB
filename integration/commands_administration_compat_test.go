@@ -18,7 +18,6 @@ import (
 	"math"
 	"testing"
 
-	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -113,18 +112,15 @@ func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
 	ctx, targetCollection, compatCollection := s.Ctx, s.TargetCollections[0], s.CompatCollections[0]
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		capped       *bool
-		sizeInBytes  *int64
-		maxDocuments *int64
+		sizeInBytes  int64
+		maxDocuments int64
 	}{
 		"Size": {
-			capped:      pointer.ToBool(true),
-			sizeInBytes: pointer.ToInt64(1000),
+			sizeInBytes: 1000,
 		},
 		"MaxDocuments": {
-			capped:       pointer.ToBool(true),
-			sizeInBytes:  pointer.ToInt64(1000),
-			maxDocuments: pointer.ToInt64(10),
+			sizeInBytes:  1000,
+			maxDocuments: 10,
 		},
 	} {
 		name, tc := name, tc
@@ -133,16 +129,14 @@ func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
 
 			cName := testutil.CollectionName(t) + name
 			opts := options.CreateCollection()
-			if tc.capped != nil {
-				opts.SetCapped(*tc.capped)
-			}
 
-			if tc.sizeInBytes != nil {
-				opts.SetSizeInBytes(*tc.sizeInBytes)
-			}
+			if tc.sizeInBytes > 0 {
+				opts.SetCapped(true)
+				opts.SetSizeInBytes(tc.sizeInBytes)
 
-			if tc.maxDocuments != nil {
-				opts.SetMaxDocuments(*tc.maxDocuments)
+				if tc.maxDocuments > 0 {
+					opts.SetMaxDocuments(tc.maxDocuments)
+				}
 			}
 
 			targetErr := targetCollection.Database().CreateCollection(ctx, cName, opts)
