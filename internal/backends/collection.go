@@ -318,11 +318,11 @@ func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndex
 	res, err := cc.c.ListIndexes(ctx, params)
 	checkError(err, ErrorCodeCollectionDoesNotExist)
 
-	sort.Slice(res.Indexes, func(i, j int) bool {
-		return res.Indexes[i].Name < res.Indexes[j].Name
-	})
-
 	if res != nil && len(res.Indexes) > 0 {
+		sort.Slice(res.Indexes, func(i, j int) bool {
+			return res.Indexes[i].Name < res.Indexes[j].Name
+		})
+
 		must.BeTrue(slices.IsSortedFunc(res.Indexes, func(a, b IndexInfo) int {
 			return cmp.Compare(a.Name, b.Name)
 		}))
