@@ -146,4 +146,9 @@ See [Operation modes](../configuration/operation-modes.md) for more details.
 An open source relational database.
 FerretDB uses PostgreSQL as a database engine.
 
+#### SQLite 
+
+SQLite is a self-contained, serverless system ideal for lightweight applications.
+FerretDB now offers SQLite backend support.
+
 ---
