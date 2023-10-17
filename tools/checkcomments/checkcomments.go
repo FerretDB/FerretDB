@@ -24,8 +24,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/go-github/v41/github"
-	"golang.org/x/oauth2"
+	"github.com/FerretDB/gh"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
@@ -45,6 +44,11 @@ func main() {
 
 // run analyses TODO comments.
 func run(pass *analysis.Pass) (any, error) {
+	client, err := gh.NewRESTClient(os.Getenv("GITHUB_TOKEN"), nil)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	for _, f := range pass.Files {
 		for _, cg := range f.Comments {
 			for _, c := range cg.List {
@@ -71,16 +75,6 @@ func run(pass *analysis.Pass) (any, error) {
 
 // isIssueopen check the issue open or closed.
 func isIssueOpen(todoText string) bool {
-	var src oauth2.TokenSource
-	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
-		src = oauth2.StaticTokenSource(
-			&oauth2.Token{AccessToken: token},
-		)
-	}
-
-	ctx := context.Background()
-	client := github.NewClient(oauth2.NewClient(ctx, src))
-
 	owner := "FerretDB"
 	repo := "FerretDB"
 	issueNumber, err := getIssueNumber(todoText)
@@ -89,7 +83,7 @@ func isIssueOpen(todoText string) bool {
 		return false
 	}
 
-	issue, _, err := client.Issues.Get(ctx, owner, repo, issueNumber)
+	issue, _, err := client.Issues.Get(context.TODO(), owner, repo, issueNumber)
 	if err != nil {
 		log.Fatalf("error in getting status of issue: %s for issue number: %d", err.Error(), issueNumber)
 		return false
