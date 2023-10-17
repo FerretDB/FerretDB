@@ -346,11 +346,60 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		return nil, lazyerrors.Error(err)
 	}
 
+	indexMap := map[string]string{}
+	for _, index := range coll.Indexes {
+		indexMap[index.PgIndex] = index.Name
+	}
+
+	q := `
+		SELECT
+			indexname,
+			pg_relation_size(quote_ident(schemaname)|| '.' || quote_ident(indexname), 'main')
+		FROM pg_indexes
+		WHERE schemaname = $1 AND tablename IN ($2)
+		`
+
+	rows, err := p.Query(ctx, q, c.dbName, coll.TableName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	defer rows.Close()
+
+	indexSizes := make([]backends.IndexSize, len(indexMap))
+	var i int
+
+	for rows.Next() {
+		var name string
+		var size int64
+
+		if err = rows.Scan(&name, &size); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		indexName, ok := indexMap[name]
+		if !ok {
+			// new index have been created since fetching metadata
+			continue
+		}
+
+		indexSizes[i] = backends.IndexSize{
+			Name: indexName,
+			Size: size,
+		}
+		i++
+	}
+
+	if rows.Err() != nil {
+		return nil, lazyerrors.Error(rows.Err())
+	}
+
 	return &backends.CollectionStatsResult{
 		CountDocuments: stats.countDocuments,
 		SizeTotal:      stats.sizeTables + stats.sizeIndexes,
 		SizeIndexes:    stats.sizeIndexes,
 		SizeCollection: stats.sizeTables,
+		IndexSizes:     indexSizes,
 	}, nil
 }
 
@@ -404,6 +453,11 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 			}
 		}
 	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3589
+	// slices.SortFunc(res.Indexes, func(a, b backends.IndexInfo) int {
+	// 	return cmp.Compare(a.Name, b.Name)
+	// })
 
 	return &res, nil
 }
