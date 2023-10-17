@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
@@ -40,24 +41,19 @@ type stats struct {
 // collectionsStats returns statistics about tables and indexes for the given collections.
 //
 // If the list of collections is empty, then stats filled with zero values is returned.
-func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list []*metadata.Collection, val bool) (*stats, error) {
-	var err error
-	if len(list) == 0 && val {
-
-		q := `ANALYZE`
-		if _, err = p.Exec(ctx, q); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
+func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list []*metadata.Collection, refresh bool) (*stats, error) {
+	if len(list) == 0 {
 		return new(stats), nil
 	}
-	if val {
-		var placeholder []string
+	if refresh {
+		var fields []string
 		for _, c := range list {
-			placeholder = append(placeholder, c.TableName)
+			field := pgx.Identifier{dbName, c.TableName}.Sanitize()
+			fields = append(fields, field)
 		}
-		q := fmt.Sprintf(`ANALYZE %s`, strings.Join(placeholder, ", "))
-		if _, err = p.Exec(ctx, q); err != nil {
+
+		q := fmt.Sprintf(`ANALYZE %s`, strings.Join(fields, ", "))
+		if _, err := p.Exec(ctx, q); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
@@ -73,9 +69,9 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 		placeholders[i] = placeholder.Next()
 		args = append(args, c.TableName)
 	}
-  
+
 	// The table size is the size used by collection documents. It excludes visibility map,
-  
+
 	// initialization fork, free space map and TOAST. The `main` `pg_relation_size` is
 	// used, however it is not updated immediately after operation such as DELETE
 	// unless VACUUM is called, ANALYZE does not update pg_relation_size in this case.
