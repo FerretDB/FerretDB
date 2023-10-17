@@ -69,10 +69,17 @@ func CollectionContract(c Collection) Collection {
 	}
 }
 
+// SortField consists of a field name and a sort order that are used in queries.
+type SortField struct {
+	Key        string
+	Descending bool
+}
+
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Filter        *types.Document
+	Sort          *SortField
 	OnlyRecordIDs bool   // TODO https://github.com/FerretDB/FerretDB/issues/3490
 	Comment       string // TODO https://github.com/FerretDB/FerretDB/issues/3573
 }
@@ -199,6 +206,7 @@ func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllPa
 type ExplainParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Filter *types.Document
+	Sort   *SortField
 }
 
 // ExplainResult represents the results of Collection.Explain method.
@@ -206,6 +214,7 @@ type ExplainResult struct {
 	QueryPlanner *types.Document
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	QueryPushdown bool
+	SortPushdown  bool
 }
 
 // Explain return a backend-specific execution plan for the given query.
@@ -241,7 +250,8 @@ type IndexSize struct {
 	Size int64
 }
 
-// Stats returns statistics about the collection.
+// Stats returns statistic estimations about the collection.
+// All returned values are not exact, but might be more accurate when Stats is called with `Refresh: true`.
 //
 // The errors for non-existing database and non-existing collection are the same.
 func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStatsParams) (*CollectionStatsResult, error) {
@@ -296,7 +306,7 @@ type IndexKeyPair struct {
 	Descending bool
 }
 
-// ListIndexes returns information about indexes in the database.
+// ListIndexes returns a list of collection indexes.
 //
 // The errors for non-existing database and non-existing collection are the same.
 func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndexesParams) (*ListIndexesResult, error) {
@@ -304,6 +314,13 @@ func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndex
 
 	res, err := cc.c.ListIndexes(ctx, params)
 	checkError(err, ErrorCodeCollectionDoesNotExist)
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3589
+	// if res != nil && len(res.Indexes) > 0 {
+	// 	must.BeTrue(slices.IsSortedFunc(res.Indexes, func(a, b IndexInfo) int {
+	// 		return cmp.Compare(a.Name, b.Name)
+	// 	}))
+	// }
 
 	return res, err
 }

@@ -88,6 +88,19 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	q += where
 
+	if params.Sort != nil {
+		var sort string
+		var sortArgs []any
+
+		sort, sortArgs, err = prepareOrderByClause(&placeholder, params.Sort.Key, params.Sort.Descending)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		q += sort
+		args = append(args, sortArgs...)
+	}
+
 	rows, err := p.Query(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -296,6 +309,21 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	res.QueryPushdown = where != ""
 
+	if params.Sort != nil {
+		var sort string
+		var sortArgs []any
+
+		sort, sortArgs, err = prepareOrderByClause(&placeholder, params.Sort.Key, params.Sort.Descending)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		q += sort
+		args = append(args, sortArgs...)
+
+		res.SortPushdown = sort != ""
+	}
+
 	q += where
 
 	var b []byte
@@ -453,6 +481,11 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 			}
 		}
 	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3589
+	// slices.SortFunc(res.Indexes, func(a, b backends.IndexInfo) int {
+	// 	return cmp.Compare(a.Name, b.Name)
+	// })
 
 	return &res, nil
 }

@@ -99,8 +99,6 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 		return nil, lazyerrors.Error(err)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/2750
-
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 
@@ -450,6 +448,11 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 			}
 		}
 	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3589
+	// slices.SortFunc(res.Indexes, func(a, b backends.IndexInfo) int {
+	// 	return cmp.Compare(a.Name, b.Name)
+	// })
 
 	return &res, nil
 }

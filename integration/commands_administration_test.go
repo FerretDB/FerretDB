@@ -910,7 +910,7 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 		doc := ConvertDocument(t, actual)
 		assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
 		assert.InDelta(t, 24_576, must.NotFail(doc.Get("size")), 24_576)
-		assert.InDelta(t, 4, must.NotFail(doc.Get("numObjects")), 4) // TODO https://github.com/FerretDB/FerretDB/issues/727
+		assert.EqualValues(t, len(shareddata.DocumentsStrings.Docs()), must.NotFail(doc.Get("numObjects")))
 		assert.InDelta(t, 200, must.NotFail(doc.Get("millis")), 300)
 	})
 
@@ -1000,7 +1000,7 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 	doc := ConvertDocument(t, actual)
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
 	assert.EqualValues(t, 1, doc.Remove("collections"))
-	assert.EqualValues(t, 6, doc.Remove("objects")) // Number of documents in DocumentsStrings
+	assert.EqualValues(t, len(shareddata.DocumentsStrings.Docs()), doc.Remove("objects"))
 	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
 	assert.Equal(t, float64(1), doc.Remove("ok"))
 
@@ -1018,8 +1018,9 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 	totalFreeStorageSize, _ := doc.Get("totalFreeStorageSize")
 	assert.Nil(t, totalFreeStorageSize)
 
-	// TODO assert.Empty(t, doc.Keys())
-	// https://github.com/FerretDB/FerretDB/issues/727
+	assert.Equal(t, int32(0), doc.Remove("views"))
+	assert.EqualValues(t, 1, doc.Remove("indexes"))
+	assert.NotZero(t, doc.Remove("indexSize"))
 }
 
 func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
@@ -1036,14 +1037,18 @@ func TestCommandsAdministrationDBStatsEmpty(t *testing.T) {
 
 	assert.Equal(t, float64(1), doc.Remove("ok"))
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
-	assert.EqualValues(t, float64(1), doc.Remove("scaleFactor")) // https://github.com/FerretDB/FerretDB/issues/727
+
+	// use Equal instead of EqualValues
+	// TODO https://github.com/FerretDB/FerretDB/issues/3582
+	assert.EqualValues(t, float64(1), doc.Remove("scaleFactor"))
 
 	assert.InDelta(t, 1, doc.Remove("collections"), 1)
 	assert.InDelta(t, 35500, doc.Remove("dataSize"), 35500)
 	assert.InDelta(t, 16384, doc.Remove("totalSize"), 16384)
 
-	// TODO assert.Empty(t, doc.Keys())
-	// https://github.com/FerretDB/FerretDB/issues/727
+	assert.Equal(t, int32(0), doc.Remove("views"))
+	assert.EqualValues(t, 0, doc.Remove("indexes"))
+	assert.Zero(t, doc.Remove("indexSize"))
 }
 
 func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
@@ -1066,8 +1071,9 @@ func TestCommandsAdministrationDBStatsWithScale(t *testing.T) {
 	assert.InDelta(t, 35500, doc.Remove("dataSize"), 35500)
 	assert.InDelta(t, 16384, doc.Remove("totalSize"), 16384)
 
-	// TODO assert.Empty(t, doc.Keys())
-	// https://github.com/FerretDB/FerretDB/issues/727
+	assert.Equal(t, int32(0), doc.Remove("views"))
+	assert.EqualValues(t, 1, doc.Remove("indexes"))
+	assert.NotZero(t, doc.Remove("indexSize"))
 }
 
 func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
@@ -1084,14 +1090,18 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 
 	assert.Equal(t, float64(1), doc.Remove("ok"))
 	assert.Equal(t, collection.Database().Name(), doc.Remove("db"))
-	assert.EqualValues(t, float64(1000), doc.Remove("scaleFactor")) // TODO https://github.com/FerretDB/FerretDB/issues/727
+
+	// use Equal instead of EqualValues
+	// TODO https://github.com/FerretDB/FerretDB/issues/3582
+	assert.EqualValues(t, float64(1000), doc.Remove("scaleFactor"))
 
 	assert.InDelta(t, 1, doc.Remove("collections"), 1)
 	assert.InDelta(t, 35500, doc.Remove("dataSize"), 35500)
 	assert.InDelta(t, 16384, doc.Remove("totalSize"), 16384)
 
-	// TODO assert.Empty(t, doc.Keys())
-	// https://github.com/FerretDB/FerretDB/issues/727
+	assert.Equal(t, int32(0), doc.Remove("views"))
+	assert.EqualValues(t, 0, doc.Remove("indexes"))
+	assert.Zero(t, doc.Remove("indexSize"))
 }
 
 func TestCommandsAdministrationDBStatsFreeStorage(t *testing.T) {
