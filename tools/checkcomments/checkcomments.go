@@ -17,7 +17,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log"
 	"os"
 	"regexp"
@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/FerretDB/gh"
+	"github.com/google/go-github/v56/github"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
@@ -44,10 +45,14 @@ func main() {
 
 // run analyses TODO comments.
 func run(pass *analysis.Pass) (any, error) {
-	client, err := gh.NewRESTClient(os.Getenv("GITHUB_TOKEN"), nil)
+	token := os.Getenv("GITHUB_TOKEN")
+
+	client, err := gh.NewRESTClient(token, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	issues := make(map[int]bool)
 
 	for _, f := range pass.Files {
 		for _, cg := range f.Comments {
@@ -60,9 +65,41 @@ func run(pass *analysis.Pass) (any, error) {
 						continue
 					}
 
-					if !todoRE.MatchString(c.Text) {
+					match := todoRE.FindStringSubmatch(c.Text)
+
+					if match == nil {
 						pass.Reportf(c.Pos(), "invalid TODO: incorrect format")
-					} else if !isIssueOpen(c.Text) {
+						continue
+					}
+
+					n, err := strconv.Atoi(match[1])
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					open, ok := issues[n]
+					if !ok {
+						issue, _, err := client.Issues.Get(context.TODO(), "FerretDB", "FerretDB", n)
+						if err != nil {
+							if errors.As(err, new(*github.RateLimitError)) && token == "" {
+								log.Printf(
+									"%[1]T %[1]s\n%[2]s %[3]s",
+									err,
+									"Please set a GITHUB_TOKEN as described at",
+									"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token",
+								)
+
+								return nil, nil
+							}
+
+							log.Fatalf("%[1]T %[1]s", err)
+						}
+
+						open = issue.GetState() == "open"
+						issues[n] = open
+					}
+
+					if !open {
 						pass.Reportf(c.Pos(), "invalid TODO: linked issue is closed")
 					}
 				}
@@ -71,40 +108,4 @@ func run(pass *analysis.Pass) (any, error) {
 	}
 
 	return nil, nil
-}
-
-// isIssueopen check the issue open or closed.
-func isIssueOpen(todoText string) bool {
-	owner := "FerretDB"
-	repo := "FerretDB"
-	issueNumber, err := getIssueNumber(todoText)
-	if err != nil {
-		log.Fatalf("error in getting issue number: %s", err.Error())
-		return false
-	}
-
-	issue, _, err := client.Issues.Get(context.TODO(), owner, repo, issueNumber)
-	if err != nil {
-		log.Fatalf("error in getting status of issue: %s for issue number: %d", err.Error(), issueNumber)
-		return false
-	}
-
-	return issue.GetState() == "open"
-}
-
-// get the issue number from  issue url.
-func getIssueNumber(todoText string) (int, error) {
-	match := todoRE.FindStringSubmatch(todoText)
-
-	if len(match) >= 2 {
-		issueNumberStr := match[1]
-		issueNumber, err := strconv.Atoi(issueNumberStr)
-		if err != nil {
-			return 0, err
-		}
-
-		return issueNumber, nil
-	}
-
-	return 0, fmt.Errorf("invalid issue url: %s", todoText)
 }

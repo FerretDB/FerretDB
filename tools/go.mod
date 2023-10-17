@@ -10,7 +10,7 @@ require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20221020234012-480526a59796
 	github.com/FerretDB/gh v0.0.0-20231017052058-110a65393a76
 	github.com/go-task/task/v3 v3.31.0
-	github.com/google/go-github/v41 v41.0.0
+	github.com/google/go-github/v56 v56.0.0
 	github.com/goreleaser/nfpm/v2 v2.33.1
 	github.com/quasilyte/go-consistent v0.6.0
 	github.com/stretchr/testify v1.8.4
@@ -56,7 +56,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/go-github/v56 v56.0.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/licensecheck v0.3.1 // indirect
 	github.com/google/rpmpack v0.5.0 // indirect
