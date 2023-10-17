@@ -15,7 +15,9 @@
 package backends
 
 import (
+	"cmp"
 	"context"
+	"slices"
 
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -82,7 +84,8 @@ type StatusParams struct{}
 
 // StatusResult represents the results of Backend.Status method.
 type StatusResult struct {
-	CountCollections int64
+	CountCollections       int64
+	CountCappedCollections int32
 }
 
 // Status returns backend's status.
@@ -130,15 +133,20 @@ type ListDatabasesResult struct {
 // DatabaseInfo represents information about a single database.
 type DatabaseInfo struct {
 	Name string
-	Size int64
 }
 
-// ListDatabases returns a list of databases.
+// ListDatabases returns a list of databases sorted by name.
 func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDatabasesParams) (*ListDatabasesResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	res, err := bc.b.ListDatabases(ctx, params)
 	checkError(err)
+
+	if res != nil && len(res.Databases) > 0 {
+		must.BeTrue(slices.IsSortedFunc(res.Databases, func(a, b DatabaseInfo) int {
+			return cmp.Compare(a.Name, b.Name)
+		}))
+	}
 
 	return res, err
 }

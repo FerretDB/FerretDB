@@ -78,6 +78,45 @@ you can reset the environment with `task env-reset`.
 To build a production release binaries, run `task build-production`.
 The results will be saved `tmp/bin`.
 
+### Setting a GITHUB_TOKEN
+
+Some of our development tools require access to public information on GitHub
+at a rate higher than allowed for unauthenticated requests.
+Those tools will report a problem in this case.
+It could be solved by creating a new classic or fine-graned personal access token
+[there](https://github.com/settings/tokens).
+No scopes are needed for classic tokens, not even `public_repo`.
+For fine-graned tokens, only read-only access to public repositories is needed without any additional permissions.
+After generating a token, set the `GITHUB_TOKEN` environment variable:
+
+```sh
+export GITHUB_TOKEN=ghp_XXX
+```
+
+or
+
+```sh
+export GITHUB_TOKEN=github_pat_XXX
+```
+
+## Reporting a bug
+
+We appreciate reporting a bug to us.
+To help us accurately identify the cause, we encourage you to include a pull request with test script.
+Please write the test script in [build/legacy-mongo-shell/test.js](build/legacy-mongo-shell/test.js).
+You can find an overview of the available assertions [here](build/legacy-mongo-shell/README.md).
+Use these assertions to validate your test's assumptions and invariants.
+You can also find an example of how to prepare a test script in
+[build/legacy-mongo-shell/test.example.js](build/legacy-mongo-shell/test.example.js).
+
+With `task` installed (see above), you may test your script using following steps:
+
+1. Start the development environment with `task env-up`.
+2. Start FerretDB with `task run`.
+3. Run the test script with `task testjs`.
+
+Please create a pull request and include the link of the pull request in the bug issue.
+
 ## Contributing code
 
 ### Commands for contributing code
@@ -333,26 +372,6 @@ Before submitting a pull request, please make sure that:
 
 If you have interest in becoming or are a long-term contributor,
 please read [PROCESS.md](.github/PROCESS.md) for more details.
-
-## Reporting a bug
-
-We appreciate reporting a bug to us.
-To help us accurately identify the cause, we encourage
-you to include a pull request with test script.
-Please write the test script in
-[build/legacy-mongo-shell/test.js](build/legacy-mongo-shell/test.js).
-You can find an overview of the available assertions [here](build/legacy-mongo-shell/README.md).
-Use these assertions to validate your test's assumptions and invariants.
-You can also find an example of how to prepare a test script in
-[build/legacy-mongo-shell/test.example.js](build/legacy-mongo-shell/test.example.js).
-
-Test your script using following steps:
-
-1. Start the development environment with `task env-up`.
-2. Start FerretDB with `task run`.
-3. Run the test script with `task testjs`.
-
-Please create a pull request and include the link of the pull request in the bug issue.
 
 ## Contributing documentation
 
