@@ -15,9 +15,11 @@
 package backends
 
 import (
+	"cmp"
 	"context"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -131,15 +133,20 @@ type ListDatabasesResult struct {
 // DatabaseInfo represents information about a single database.
 type DatabaseInfo struct {
 	Name string
-	Size int64
 }
 
-// ListDatabases returns a list of databases.
+// ListDatabases returns a list of databases sorted by name.
 func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDatabasesParams) (*ListDatabasesResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	res, err := bc.b.ListDatabases(ctx, params)
 	checkError(err)
+
+	if res != nil && len(res.Databases) > 0 {
+		must.BeTrue(slices.IsSortedFunc(res.Databases, func(a, b DatabaseInfo) int {
+			return cmp.Compare(a.Name, b.Name)
+		}))
+	}
 
 	return res, err
 }

@@ -15,7 +15,10 @@
 package backends
 
 import (
+	"cmp"
 	"context"
+
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
@@ -94,14 +97,22 @@ func (ci *CollectionInfo) Capped() bool {
 	return ci.CappedSize > 0 || ci.CappedDocuments > 0
 }
 
-// ListCollections returns information about collections in the database.
+// ListCollections returns a list collections in the database sorted by name.
 //
 // Database may not exist; that's not an error.
+//
+// Contract ensures that returned list is sorted by name.
 func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCollectionsParams) (*ListCollectionsResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	res, err := dbc.db.ListCollections(ctx, params)
 	checkError(err)
+
+	if res != nil && len(res.Collections) > 0 {
+		must.BeTrue(slices.IsSortedFunc(res.Collections, func(a, b CollectionInfo) int {
+			return cmp.Compare(a.Name, b.Name)
+		}))
+	}
 
 	return res, err
 }
@@ -199,7 +210,8 @@ type DatabaseStatsResult struct {
 	SizeCollections int64
 }
 
-// Stats returns statistics about the database.
+// Stats returns statistic estimations about the database.
+// All returned values are not exact, but might be more accurate when Stats is called with `Refresh: true`.
 func (dbc *databaseContract) Stats(ctx context.Context, params *DatabaseStatsParams) (*DatabaseStatsResult, error) {
 	defer observability.FuncCall(ctx)()
 
