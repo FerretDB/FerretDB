@@ -1029,8 +1029,6 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 					return
 				}
 
-				defer cursor.Close(ctx)
-
 				require.NoError(t, err)
 
 				docs := FetchAll(t, ctx, cursor)
@@ -1068,23 +1066,37 @@ func TestQueryTailable(t *testing.T) {
 
 		ctx, collection := setup.Setup(t)
 
-		err := collection.Database().CreateCollection(ctx, collection.Name(), options.CreateCollection().SetCapped(true))
+		createOpts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1)
+		err := collection.Database().CreateCollection(ctx, collection.Name(), createOpts)
 		require.NoError(t, err)
 
-		cursor, err := collection.Find(ctx, bson.D{}, options.Find().SetCursorType(options.Tailable))
-		expected := mongo.CommandError{
-			Code: 2,
-			Name: "BadValue",
-			Message: "error processing query: " +
-				"ns=TestQueryTailable-NonCapped.TestQueryTailable-NonCappedTree: " +
-				"$and\nSort: {}\nProj: {}\n " +
-				"tailable cursor requested on non capped collection",
-		}
-		AssertEqualAltCommandError(t, expected, "tailable cursor requested on non capped collection", err)
-		assert.Nil(t, cursor)
-	})
+		t.Run("FilterLimitSkip", func(t *testing.T) {
+			t.Parallel()
 
-	// https://github.com/FerretDB/FerretDB/issues/2283
+			opts := options.Find().SetCursorType(options.Tailable).SetLimit(10).SetSkip(5)
+			cursor, err := collection.Find(ctx, bson.D{{"_id", 1}}, opts)
+			require.NoError(t, err)
+
+			defer cursor.Close(ctx)
+		})
+
+		t.Run("Sort", func(t *testing.T) {
+			t.Parallel()
+
+			opts := options.Find().SetCursorType(options.Tailable).SetSort(bson.D{{"_id", 1}})
+			cursor, err := collection.Find(ctx, bson.D{}, opts)
+			expected := mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "cannot use tailable option with a sort other than {$natural: 1}",
+			}
+			AssertEqualCommandError(t, expected, err)
+
+			assert.Nil(t, cursor)
+		})
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/2283
+	})
 }
 
 // TestQueryIDDoc checks that the order of fields in the _id document matters.
