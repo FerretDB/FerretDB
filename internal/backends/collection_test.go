@@ -15,11 +15,11 @@
 package backends_test // to avoid import cycle
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
@@ -213,8 +213,7 @@ func TestCollectionStats(t *testing.T) {
 				require.Less(t, res.SizeTotal, dbStatsRes.SizeTotal)
 				require.NotZero(t, res.SizeCollection)
 				require.Less(t, res.SizeCollection, dbStatsRes.SizeCollections)
-				require.Equal(t, res.CountObjects, int64(1))
-				require.NotZero(t, res.CountIndexes)
+				require.Equal(t, res.CountDocuments, int64(1))
 				require.NotZero(t, res.SizeIndexes)
 			})
 		})

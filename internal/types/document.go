@@ -16,10 +16,9 @@ package types
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
-
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"

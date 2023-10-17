@@ -239,19 +239,22 @@ type CollectionStatsParams struct {
 }
 
 // CollectionStatsResult represents the results of Collection.Stats method.
-//
-// CountObjects is an estimate of the number of documents.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/2447
 type CollectionStatsResult struct {
-	CountObjects   int64
-	CountIndexes   int64
+	CountDocuments int64
 	SizeTotal      int64
 	SizeIndexes    int64
 	SizeCollection int64
+	IndexSizes     []IndexSize
 }
 
-// Stats returns statistics about the collection.
+// IndexSize represents the name and the size of an index.
+type IndexSize struct {
+	Name string
+	Size int64
+}
+
+// Stats returns statistic estimations about the collection.
+// All returned values are not exact, but might be more accurate when Stats is called with `Refresh: true`.
 //
 // The errors for non-existing database and non-existing collection are the same.
 func (cc *collectionContract) Stats(ctx context.Context, params *CollectionStatsParams) (*CollectionStatsResult, error) {
@@ -306,7 +309,7 @@ type IndexKeyPair struct {
 	Descending bool
 }
 
-// ListIndexes returns information about indexes in the database.
+// ListIndexes returns a list of collection indexes.
 //
 // The errors for non-existing database and non-existing collection are the same.
 func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndexesParams) (*ListIndexesResult, error) {
@@ -314,6 +317,13 @@ func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndex
 
 	res, err := cc.c.ListIndexes(ctx, params)
 	checkError(err, ErrorCodeCollectionDoesNotExist)
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3589
+	// if res != nil && len(res.Indexes) > 0 {
+	// 	must.BeTrue(slices.IsSortedFunc(res.Indexes, func(a, b IndexInfo) int {
+	// 		return cmp.Compare(a.Name, b.Name)
+	// 	}))
+	// }
 
 	return res, err
 }
