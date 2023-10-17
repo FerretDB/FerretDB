@@ -60,7 +60,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 		for i, doc := range params.Docs {
 			oplogDoc, err := types.NewDocument(
-				"_id", types.NewObjectID(), // TODO
+				"_id", types.NewObjectID(),
 				"ts", types.NextTimestamp(time.Now()),
 				"ns", c.db.name+"."+c.name,
 				"op", "i",
@@ -104,7 +104,6 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 	}
 
 	if c.name != "oplog" {
-		// TODO
 		_ = res
 	}
 
@@ -131,7 +130,7 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 			}
 
 			oplogDoc, err := types.NewDocument(
-				"_id", types.NewObjectID(), // TODO
+				"_id", types.NewObjectID(),
 				"ts", types.NextTimestamp(time.Now()),
 				"ns", c.db.name+"."+c.name,
 				"op", "d",
