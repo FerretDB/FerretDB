@@ -15,12 +15,15 @@
 package sqlite
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"math"
 	"os"
 	"time"
+
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
@@ -402,17 +405,10 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 			return nil, lazyerrors.Error(err)
 		}
 
-		var found bool
-
-		for _, cInfo := range cList.Collections {
-			if cInfo.Name == p.cName {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			cInfo = backends.CollectionInfo{}
+		if i, found := slices.BinarySearchFunc(cList.Collections, p.cName, func(e backends.CollectionInfo, t string) int {
+			return cmp.Compare(e.Name, t)
+		}); found {
+			cInfo = cList.Collections[i]
 		}
 
 		var iList *backends.ListIndexesResult

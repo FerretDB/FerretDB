@@ -452,6 +452,11 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 		}
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3589
+	// slices.SortFunc(res.Indexes, func(a, b backends.IndexInfo) int {
+	// 	return cmp.Compare(a.Name, b.Name)
+	// })
+
 	return &res, nil
 }
 
