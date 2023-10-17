@@ -46,11 +46,16 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		}),
 	))
 
+	sts, err := statsviz.NewServer()
+	must.NoError(err)
+
+	sts.Register(http.DefaultServeMux)
+
 	handlers := []string{
-		"/debug/metrics",  // from http.Handle above
+		"/debug/metrics",  // from promhttp above
+		"/debug/statsviz", // from statsviz above
 		"/debug/vars",     // from expvar
-		"/debug/pprof",    // from net/http/pprof,
-		"/debug/statsviz", // from statsviz below
+		"/debug/pprof",    // from net/http/pprof
 	}
 
 	var page bytes.Buffer
@@ -73,11 +78,6 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	http.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
 		http.Redirect(rw, req, "/debug", http.StatusSeeOther)
 	})
-
-	sts, err := statsviz.NewServer()
-	must.NoError(err)
-
-	sts.Register(http.DefaultServeMux)
 
 	s := http.Server{
 		Addr:     addr,
