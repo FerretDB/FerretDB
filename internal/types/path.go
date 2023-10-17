@@ -17,10 +17,9 @@ package types
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
-
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )

@@ -17,8 +17,7 @@ package backends
 import (
 	"errors"
 	"fmt"
-
-	"golang.org/x/exp/slices"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 )
