@@ -110,3 +110,28 @@ func TestShardTestFuncs(t *testing.T) {
 		assert.Equal(t, testFuncs[2], res[0])
 	})
 }
+
+func TestRunGoFailed(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Normal", func(t *testing.T) {
+		t.Parallel()
+
+		var actual []string
+		logger, err := makeTestLogger(&actual)
+		require.NoError(t, err)
+
+		err = runGoTest(context.TODO(), []string{"./testdata", "-run=TestFailed"}, 2, logger.Sugar())
+
+		expected := []string{
+			"PASS TestFailed1/NotParallel",
+			"PASS TestFailed1/Parallel",
+			"PASS TestFailed1 (1/2)",
+			"FAIL TestFailed2/NotParallel",
+			"PASS TestFailed2/Parallel",
+			"FAIL TestFailed2 (2/2)",
+			"FAIL github.com/FerretDB/FerretDB/cmd/envtool/testdata (2/2)",
+		}
+		assert.Equal(t, expected, actual)
+	})
+}
