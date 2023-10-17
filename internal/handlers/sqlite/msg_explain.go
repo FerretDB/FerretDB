@@ -83,6 +83,24 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Filter = params.Filter
 	}
 
+	// Skip sorting if there are more than one sort parameters
+	if h.EnableSortPushdown && params.Sort.Len() == 1 {
+		var order types.SortType
+
+		k := params.Sort.Keys()[0]
+		v := params.Sort.Values()[0]
+
+		order, err = common.GetSortType(k, v)
+		if err != nil {
+			return nil, err
+		}
+
+		qp.Sort = &backends.SortField{
+			Key:        k,
+			Descending: order == types.Descending,
+		}
+	}
+
 	res, err := coll.Explain(ctx, &qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -99,7 +117,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			// our extensions
 			// TODO https://github.com/FerretDB/FerretDB/issues/3235
 			"pushdown", res.QueryPushdown,
-			"sortingPushdown", false,
+			"sortingPushdown", res.SortPushdown,
 			"limitPushdown", false,
 
 			"ok", float64(1),
