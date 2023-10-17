@@ -46,16 +46,20 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		}),
 	))
 
-	sts, err := statsviz.NewServer()
-	must.NoError(err)
-
-	sts.Register(http.DefaultServeMux)
+	opts := []statsviz.Option{
+		statsviz.Root("/debug/graphs"),
+		// TODO https://github.com/FerretDB/FerretDB/issues/3600
+	}
+	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
 
 	handlers := map[string]string{
-		"/debug/metrics":  "Contains Prometheus metrics dump",                                                                       // from http.Handle above
-		"/debug/vars":     "Exports metrics captured by the expvar package, such as memory statistics and command-line parameters.", // from expvar
-		"/debug/pprof":    "Provides access to runtime profiling data via the pprof package.",                                       // from net/http/pprof,
-		"/debug/statsviz": "Visualize runtime metrics in real time",                                                                 // from statsviz above
+		// custom handlers registered above
+		"/debug/graphs":  "Visualize metrics",
+		"/debug/metrics": "Metrics in Prometheus format",
+
+		// stdlib handlers
+		"/debug/vars":  "Expvar package metrics",
+		"/debug/pprof": "Runtime profiling data for pprof",
 	}
 
 	var page bytes.Buffer
