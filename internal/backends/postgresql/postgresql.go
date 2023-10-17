@@ -32,9 +32,11 @@ import (
 
 // stats represents information about statistics of tables and indexes.
 type stats struct {
-	countDocuments int64
-	sizeIndexes    int64
-	sizeTables     int64
+	countDocuments       int64
+	sizeIndexes          int64
+	sizeTables           int64
+	sizeFreeStorage      int64
+	sizeIndexFreeStorage int64
 }
 
 // collectionsStats returns statistics about tables and indexes for the given collections.
@@ -82,6 +84,7 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 		SELECT
 			COALESCE(SUM(c.reltuples), 0),
 			COALESCE(SUM(pg_relation_size(c.oid,'main')), 0),
+			COALESCE(SUM(pg_relation_size(c.oid,'fsm')), 0),
 			COALESCE(SUM(pg_indexes_size(c.oid)), 0)
 		FROM pg_tables AS t
 			LEFT JOIN pg_class AS c ON c.relname = t.tablename AND c.relnamespace = quote_ident(t.schemaname)::regnamespace
@@ -90,7 +93,19 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	)
 
 	row := p.QueryRow(ctx, q, args...)
-	if err := row.Scan(&s.countDocuments, &s.sizeTables, &s.sizeIndexes); err != nil {
+	if err := row.Scan(&s.countDocuments, &s.sizeTables, &s.sizeFreeStorage, &s.sizeIndexes); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	q = `
+		SELECT
+			COALESCE(SUM(pg_relation_size(quote_ident(schemaname)|| '.' || quote_ident(indexname), 'fsm'), 0)
+		FROM pg_indexes
+		WHERE schemaname = $1 AND tablename IN ($2)
+		`
+
+	row = p.QueryRow(ctx, q, args...)
+	if err := row.Scan(&s.sizeIndexFreeStorage); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

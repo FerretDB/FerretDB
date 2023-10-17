@@ -172,10 +172,13 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	}
 
 	return &backends.DatabaseStatsResult{
-		CountDocuments:  stats.countDocuments,
-		SizeTotal:       *schemaSize,
-		SizeIndexes:     stats.sizeIndexes,
-		SizeCollections: stats.sizeTables,
+		CountDocuments:       stats.countDocuments,
+		SizeTotal:            *schemaSize,
+		SizeIndexes:          stats.sizeIndexes,
+		SizeCollections:      stats.sizeTables,
+		SizeFreeStorage:      stats.sizeFreeStorage,
+		SizeIndexFreeStorage: stats.sizeIndexFreeStorage,
+		SizeTotalFreeStorage: stats.sizeFreeStorage + stats.sizeIndexFreeStorage,
 	}, nil
 }
 
