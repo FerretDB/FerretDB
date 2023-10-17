@@ -57,51 +57,59 @@ func run(pass *analysis.Pass) (any, error) {
 	for _, f := range pass.Files {
 		for _, cg := range f.Comments {
 			for _, c := range cg.List {
+				line := c.Text
+
 				// the space between `//` and `TODO` is always added by `task fmt`
-				if strings.HasPrefix(c.Text, "// TODO") {
-					// skip comments without URLs for now
-					// TODO https://github.com/FerretDB/FerretDB/issues/2733
-					if !strings.Contains(c.Text, "https://") {
-						continue
-					}
+				if !strings.HasPrefix(line, "// TODO") {
+					continue
+				}
 
-					match := todoRE.FindStringSubmatch(c.Text)
+				if f.Name.Name == "testdata" {
+					line, _, _ = strings.Cut(line, ` // want "`)
+				}
 
-					if match == nil {
-						pass.Reportf(c.Pos(), "invalid TODO: incorrect format")
-						continue
-					}
+				// skip comments without URLs for now
+				// TODO https://github.com/FerretDB/FerretDB/issues/2733
+				if !strings.Contains(line, "https://") {
+					continue
+				}
 
-					n, err := strconv.Atoi(match[1])
+				match := todoRE.FindStringSubmatch(line)
+
+				if match == nil {
+					pass.Reportf(c.Pos(), "invalid TODO: incorrect format")
+					continue
+				}
+
+				n, err := strconv.Atoi(match[1])
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				open, ok := issues[n]
+				if !ok {
+					issue, _, err := client.Issues.Get(context.TODO(), "FerretDB", "FerretDB", n)
 					if err != nil {
-						log.Fatal(err)
-					}
+						if errors.As(err, new(*github.RateLimitError)) && token == "" {
+							log.Printf(
+								"%[1]T %[1]s\n%[2]s %[3]s",
+								err,
+								"Please set a GITHUB_TOKEN as described at",
+								"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token",
+							)
 
-					open, ok := issues[n]
-					if !ok {
-						issue, _, err := client.Issues.Get(context.TODO(), "FerretDB", "FerretDB", n)
-						if err != nil {
-							if errors.As(err, new(*github.RateLimitError)) && token == "" {
-								log.Printf(
-									"%[1]T %[1]s\n%[2]s %[3]s",
-									err,
-									"Please set a GITHUB_TOKEN as described at",
-									"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token",
-								)
-
-								return nil, nil
-							}
-
-							log.Fatalf("%[1]T %[1]s", err)
+							return nil, nil
 						}
 
-						open = issue.GetState() == "open"
-						issues[n] = open
+						log.Fatalf("%[1]T %[1]s", err)
 					}
 
-					if !open {
-						pass.Reportf(c.Pos(), "invalid TODO: linked issue is closed")
-					}
+					open = issue.GetState() == "open"
+					issues[n] = open
+				}
+
+				if !open {
+					pass.Reportf(c.Pos(), "invalid TODO: linked issue is closed")
 				}
 			}
 		}
