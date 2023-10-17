@@ -21,9 +21,8 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"slices"
 	"time"
-
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
