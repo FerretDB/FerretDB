@@ -83,6 +83,11 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
 
+	if params.Limit != 0 {
+		q += ` LIMIT ?`
+		args = append(args, params.Limit)
+	}
+
 	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -260,6 +265,14 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
 
+	var limitPushdown bool
+
+	if params.Limit != 0 {
+		q += ` LIMIT ?`
+		args = append(args, params.Limit)
+		limitPushdown = true
+	}
+
 	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -292,6 +305,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	return &backends.ExplainResult{
 		QueryPlanner:  must.NotFail(types.NewDocument("Plan", queryPlan)),
 		QueryPushdown: queryPushdown,
+		LimitPushdown: limitPushdown,
 	}, nil
 }
 
