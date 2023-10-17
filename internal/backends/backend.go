@@ -17,9 +17,9 @@ package backends
 import (
 	"cmp"
 	"context"
+	"slices"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/util/must"
