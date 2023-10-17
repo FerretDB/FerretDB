@@ -494,6 +494,16 @@ func TestIndexesCreateDrop(t *testing.T) {
 	collection, err := r.CollectionGet(ctx, dbName, collectionName)
 	require.NoError(t, err)
 
+	t.Run("IndexOrder", func(t *testing.T) {
+		t.Parallel()
+
+		require.Equal(t, 4, len(collection.Indexes))
+		require.Equal(t, "_id_", collection.Indexes[0].Name)
+		require.Equal(t, "index_non_unique", collection.Indexes[1].Name)
+		require.Equal(t, "index_unique", collection.Indexes[2].Name)
+		require.Equal(t, "nested_fields", collection.Indexes[3].Name)
+	})
+
 	t.Run("CreateIndexes", func(t *testing.T) {
 		t.Run("NonUniqueIndex", func(t *testing.T) {
 			t.Parallel()
