@@ -25,6 +25,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/arl/statsviz"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
@@ -45,11 +46,16 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		}),
 	))
 
+  sts, err := statsviz.NewServer()
+	must.NoError(err)
+
+	sts.Register(http.DefaultServeMux)
+  
 	handlers := map[string]string{
 		"/debug/metrics":  "Contains Prometheus metrics dump",                                                                       // from http.Handle above
 		"/debug/vars":     "Exports metrics captured by the expvar package, such as memory statistics and command-line parameters.", // from expvar
 		"/debug/pprof":    "Provides access to runtime profiling data via the pprof package.",                                       // from net/http/pprof,
-		"/debug/statsviz": "Visualize runtime metrics in real time",                                                                 // from statsviz below
+		"/debug/statsviz": "Visualize runtime metrics in real time",                                                                 // from statsviz above
 	}
 
 	var page bytes.Buffer
