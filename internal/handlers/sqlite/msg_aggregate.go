@@ -432,6 +432,11 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 			avgObjSize = collStats.SizeCollection / collStats.CountDocuments
 		}
 
+		indexSizes := types.MakeDocument(len(collStats.IndexSizes))
+		for _, indexSize := range collStats.IndexSizes {
+			indexSizes.Set(indexSize.Name, indexSize.Size)
+		}
+
 		doc.Set(
 			"storageStats", must.NotFail(types.NewDocument(
 				"size", collStats.SizeTotal,
@@ -446,7 +451,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"totalIndexSize", collStats.SizeIndexes,
 				"totalSize", collStats.SizeTotal,
-				"indexSizes", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"indexSizes", indexSizes,
 			)),
 		)
 	}

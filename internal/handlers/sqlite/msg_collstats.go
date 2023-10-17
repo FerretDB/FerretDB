@@ -122,6 +122,11 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		pairs = append(pairs, "avgObjSize", stats.SizeCollection/stats.CountDocuments)
 	}
 
+	indexSizes := types.MakeDocument(len(stats.IndexSizes))
+	for _, indexSize := range stats.IndexSizes {
+		indexSizes.Set(indexSize.Name, indexSize.Size/scale)
+	}
+
 	// add freeStorageSize
 	// TODO https://github.com/FerretDB/FerretDB/issues/2447
 
@@ -132,6 +137,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		"nindexes", int64(len(indexes.Indexes)),
 		"totalIndexSize", stats.SizeIndexes/scale,
 		"totalSize", stats.SizeTotal/scale,
+		"indexSizes", indexSizes,
 		"scaleFactor", int32(scale),
 		"capped", cInfo.Capped(),
 	)

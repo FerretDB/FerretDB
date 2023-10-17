@@ -189,3 +189,108 @@ func TestAggregateCollStatsCommandErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestAggregateCollStatsCommandIndexSizes(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+
+	cursorNoScale, err := collection.Aggregate(ctx, bson.A{
+		bson.D{{"$collStats", bson.D{{"storageStats", bson.D{}}}}},
+	})
+	require.NoError(t, err)
+
+	defer cursorNoScale.Close(ctx)
+
+	scale := int32(1000)
+	cursor, err := collection.Aggregate(ctx, bson.A{
+		bson.D{{"$collStats", bson.D{{"storageStats", bson.D{{"scale", scale}}}}}},
+	})
+	require.NoError(t, err)
+
+	defer cursor.Close(ctx)
+
+	resNoScale := FetchAll(t, ctx, cursorNoScale)
+	require.Equal(t, 1, len(resNoScale))
+
+	res := FetchAll(t, ctx, cursor)
+	require.Equal(t, 1, len(res))
+
+	docNoScale := ConvertDocument(t, resNoScale[0])
+	doc := ConvertDocument(t, res[0])
+
+	storageStatsNoScale := must.NotFail(docNoScale.Get("storageStats")).(*types.Document)
+	storageStats := must.NotFail(doc.Get("storageStats")).(*types.Document)
+
+	size := must.NotFail(storageStats.Get("size"))
+	switch sizeNoScale := must.NotFail(storageStatsNoScale.Get("size")).(type) {
+	case int32:
+		require.EqualValues(t, sizeNoScale/scale, size)
+	case int64:
+		require.EqualValues(t, sizeNoScale/int64(scale), size)
+	default:
+		t.Fatalf("unknown type %v", sizeNoScale)
+	}
+
+	avgObjSizeNoScale := must.NotFail(storageStatsNoScale.Get("avgObjSize"))
+	avgObjSize := must.NotFail(storageStats.Get("avgObjSize"))
+	require.EqualValues(t, avgObjSizeNoScale, avgObjSize)
+
+	storageSize := must.NotFail(storageStats.Get("storageSize"))
+	switch sizeNoScale := must.NotFail(storageStatsNoScale.Get("storageSize")).(type) {
+	case int32:
+		require.EqualValues(t, sizeNoScale/scale, storageSize)
+	case int64:
+		require.EqualValues(t, sizeNoScale/int64(scale), storageSize)
+	default:
+		t.Fatalf("unknown type %v", sizeNoScale)
+	}
+
+	freeStorageSize := must.NotFail(storageStats.Get("freeStorageSize"))
+	switch sizeNoScale := must.NotFail(storageStatsNoScale.Get("freeStorageSize")).(type) {
+	case int32:
+		require.EqualValues(t, sizeNoScale/scale, freeStorageSize)
+	case int64:
+		require.EqualValues(t, sizeNoScale/int64(scale), freeStorageSize)
+	default:
+		t.Fatalf("unknown type %v", sizeNoScale)
+	}
+
+	totalIndexSize := must.NotFail(storageStats.Get("totalIndexSize"))
+	switch sizeNoScale := must.NotFail(storageStatsNoScale.Get("totalIndexSize")).(type) {
+	case int32:
+		require.EqualValues(t, sizeNoScale/scale, totalIndexSize)
+	case int64:
+		require.EqualValues(t, sizeNoScale/int64(scale), totalIndexSize)
+	default:
+		t.Fatalf("unknown type %v", sizeNoScale)
+	}
+
+	totalSize := must.NotFail(storageStats.Get("totalSize"))
+	switch sizeNoScale := must.NotFail(storageStatsNoScale.Get("totalSize")).(type) {
+	case int32:
+		require.EqualValues(t, sizeNoScale/scale, totalSize)
+	case int64:
+		require.EqualValues(t, sizeNoScale/int64(scale), totalSize)
+	default:
+		t.Fatalf("unknown type %v", sizeNoScale)
+	}
+
+	indexSizesNoScale := must.NotFail(storageStatsNoScale.Get("indexSizes")).(*types.Document)
+	indexSizes := must.NotFail(storageStats.Get("indexSizes")).(*types.Document)
+
+	require.Equal(t, []string{"_id_"}, indexSizesNoScale.Keys())
+	require.Equal(t, []string{"_id_"}, indexSizes.Keys())
+
+	for _, index := range indexSizesNoScale.Keys() {
+		size := must.NotFail(indexSizes.Get(index))
+		switch sizeNoScale := must.NotFail(indexSizesNoScale.Get(index)).(type) {
+		case int32:
+			require.EqualValues(t, sizeNoScale/scale, size)
+		case int64:
+			require.EqualValues(t, sizeNoScale/int64(scale), size)
+		default:
+			t.Fatalf("unknown type %v", sizeNoScale)
+		}
+	}
+}
