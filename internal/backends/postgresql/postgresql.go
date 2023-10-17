@@ -103,7 +103,8 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 		FROM pg_indexes
 		WHERE schemaname = $1 AND tablename IN (%s)
 		`,
-		strings.Join(placeholders, ", "))
+		strings.Join(placeholders, ", "),
+	)
 
 	row = p.QueryRow(ctx, q, args...)
 	if err := row.Scan(&s.sizeIndexFreeStorage); err != nil {
