@@ -15,11 +15,13 @@
 package sqlite
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"math"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -402,17 +404,10 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 			return nil, lazyerrors.Error(err)
 		}
 
-		var found bool
-
-		for _, cInfo := range cList.Collections {
-			if cInfo.Name == p.cName {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			cInfo = backends.CollectionInfo{}
+		if i, found := slices.BinarySearchFunc(cList.Collections, p.cName, func(e backends.CollectionInfo, t string) int {
+			return cmp.Compare(e.Name, t)
+		}); found {
+			cInfo = cList.Collections[i]
 		}
 
 		var iList *backends.ListIndexesResult
@@ -436,6 +431,11 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 			avgObjSize = collStats.SizeCollection / collStats.CountDocuments
 		}
 
+		indexSizes := types.MakeDocument(len(collStats.IndexSizes))
+		for _, indexSize := range collStats.IndexSizes {
+			indexSizes.Set(indexSize.Name, indexSize.Size)
+		}
+
 		doc.Set(
 			"storageStats", must.NotFail(types.NewDocument(
 				"size", collStats.SizeTotal,
@@ -450,7 +450,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
 				"totalIndexSize", collStats.SizeIndexes,
 				"totalSize", collStats.SizeTotal,
-				"indexSizes", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"indexSizes", indexSizes,
 			)),
 		)
 	}

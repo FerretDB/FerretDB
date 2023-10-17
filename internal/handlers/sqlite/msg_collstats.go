@@ -15,8 +15,10 @@
 package sqlite
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -76,23 +78,16 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	list, err := db.ListCollections(ctx, new(backends.ListCollectionsParams))
+	collections, err := db.ListCollections(ctx, new(backends.ListCollectionsParams))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var found bool
 	var cInfo backends.CollectionInfo
-
-	for _, cInfo := range list.Collections {
-		if cInfo.Name == collection {
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		cInfo = backends.CollectionInfo{}
+	if i, found := slices.BinarySearchFunc(collections.Collections, collection, func(e backends.CollectionInfo, t string) int {
+		return cmp.Compare(e.Name, t)
+	}); found {
+		cInfo = collections.Collections[i]
 	}
 
 	indexes, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
@@ -126,6 +121,11 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		pairs = append(pairs, "avgObjSize", stats.SizeCollection/stats.CountDocuments)
 	}
 
+	indexSizes := types.MakeDocument(len(stats.IndexSizes))
+	for _, indexSize := range stats.IndexSizes {
+		indexSizes.Set(indexSize.Name, indexSize.Size/scale)
+	}
+
 	// add freeStorageSize
 	// TODO https://github.com/FerretDB/FerretDB/issues/2447
 
@@ -136,6 +136,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		"nindexes", int64(len(indexes.Indexes)),
 		"totalIndexSize", stats.SizeIndexes/scale,
 		"totalSize", stats.SizeTotal/scale,
+		"indexSizes", indexSizes,
 		"scaleFactor", int32(scale),
 		"capped", cInfo.Capped(),
 	)

@@ -63,6 +63,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			databases.Append(must.NotFail(types.NewDocument(
 				"name", dbInfo.Name,
 			)))
+
 			continue
 		}
 
@@ -84,7 +85,6 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			"empty", stats.SizeTotal == 0,
 		))
 
-		// FIXME or after filter?
 		totalSize += stats.SizeTotal
 
 		matches, err := common.FilterDocument(d, filter)

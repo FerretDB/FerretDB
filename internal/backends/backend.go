@@ -135,7 +135,7 @@ type DatabaseInfo struct {
 	Name string
 }
 
-// ListDatabases returns a list of databases.
+// ListDatabases returns a list of databases sorted by name.
 func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDatabasesParams) (*ListDatabasesResult, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -143,12 +143,9 @@ func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDataba
 	checkError(err)
 
 	if res != nil && len(res.Databases) > 0 {
-		byName := func(x, y DatabaseInfo) int {
-			return cmp.Compare(x.Name, y.Name)
-		}
-		if slices.IsSortedFunc(res.Databases, byName) {
-			slices.SortFunc(res.Databases, byName)
-		}
+		must.BeTrue(slices.IsSortedFunc(res.Databases, func(a, b DatabaseInfo) int {
+			return cmp.Compare(a.Name, b.Name)
+		}))
 	}
 
 	return res, err
