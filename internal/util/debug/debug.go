@@ -46,7 +46,7 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		}),
 	))
 
-  	sts, err := statsviz.NewServer()
+	sts, err := statsviz.NewServer()
 	must.NoError(err)
 
 	sts.Register(http.DefaultServeMux)
