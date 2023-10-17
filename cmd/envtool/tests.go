@@ -96,7 +96,7 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 			return lazyerrors.Error(err)
 		}
 
-		logger.Desugar().Debug("decoded event", zap.Any("event", event))
+		// logger.Desugar().Debug("decoded event", zap.Any("event", event))
 
 		res := results[event.Test]
 		if res == nil {
