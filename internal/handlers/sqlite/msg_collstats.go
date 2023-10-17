@@ -15,8 +15,11 @@
 package sqlite
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -76,23 +79,16 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	list, err := db.ListCollections(ctx, new(backends.ListCollectionsParams))
+	collections, err := db.ListCollections(ctx, new(backends.ListCollectionsParams))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var found bool
 	var cInfo backends.CollectionInfo
-
-	for _, cInfo := range list.Collections {
-		if cInfo.Name == collection {
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		cInfo = backends.CollectionInfo{}
+	if i, found := slices.BinarySearchFunc(collections.Collections, collection, func(e backends.CollectionInfo, t string) int {
+		return cmp.Compare(e.Name, t)
+	}); found {
+		cInfo = collections.Collections[i]
 	}
 
 	indexes, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
