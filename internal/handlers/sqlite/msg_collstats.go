@@ -83,6 +83,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3601
 	var cInfo backends.CollectionInfo
 	if i, found := slices.BinarySearchFunc(collections.Collections, collection, func(e backends.CollectionInfo, t string) int {
 		return cmp.Compare(e.Name, t)

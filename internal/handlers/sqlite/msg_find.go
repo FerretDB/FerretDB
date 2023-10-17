@@ -15,9 +15,11 @@
 package sqlite
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -64,6 +66,34 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 
 		return nil, lazyerrors.Error(err)
+	}
+
+	var cList *backends.ListCollectionsResult
+
+	if cList, err = db.ListCollections(ctx, new(backends.ListCollectionsParams)); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3601
+	i, found := slices.BinarySearchFunc(cList.Collections, params.Collection, func(e backends.CollectionInfo, t string) int {
+		return cmp.Compare(e.Name, t)
+	})
+	if !found {
+		return nil, lazyerrors.Errorf("collection %q not found", params.Collection)
+	}
+
+	cInfo := cList.Collections[i]
+
+	if params.Tailable {
+		if !cInfo.Capped() {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				"tailable cursor requested on non capped collection",
+				"tailable",
+			)
+		}
+
+		return nil, lazyerrors.New("tailable cursors are not implemented yet")
 	}
 
 	qp := &backends.QueryParams{
