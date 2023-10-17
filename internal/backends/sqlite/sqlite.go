@@ -42,10 +42,9 @@ import (
 
 // stats represents information about statistics of tables and indexes.
 type stats struct {
-	countRows    int64
-	countIndexes int64
-	sizeIndexes  int64
-	sizeTables   int64
+	countDocuments int64
+	sizeIndexes    int64
+	sizeTables     int64
 }
 
 // collectionsStats returns statistics about tables and indexes for the given collections.
@@ -70,6 +69,16 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 		indexes += int64(len(c.Settings.Indexes))
 	}
 
+	// The table size is the size used by collection documents. The `pgsize` of `dbstat`
+	// table does not include freelist pages, pointer-map pages, and the lock page.
+	//
+	// If rows are deleted from a page but there are other rows on that same page,
+	// the page won't be moved to freelist pages.
+	//
+	// The smallest difference in size that `pgsize` reports appears to be 4KB.
+	// Because of that inserting or deleting a single small object may not change the size.
+	//
+	// See https://www.sqlite.org/dbstat.html and https://www.sqlite.org/fileformat.html.
 	q = fmt.Sprintf(`
 		SELECT SUM(pgsize)
 		FROM dbstat
@@ -82,7 +91,7 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 		return nil, lazyerrors.Error(err)
 	}
 
-	// Use number of cells to approximate total row count,
+	// Use number of cells to approximate total document count,
 	// excluding `internal` and `overflow` pagetype used by SQLite.
 	// See https://www.sqlite.org/dbstat.html and https://www.sqlite.org/fileformat.html.
 	q = fmt.Sprintf(`
@@ -92,11 +101,9 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 		strings.Join(placeholders, ", "),
 	)
 
-	if err = db.QueryRowContext(ctx, q, args...).Scan(&stats.countRows); err != nil {
+	if err = db.QueryRowContext(ctx, q, args...).Scan(&stats.countDocuments); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
-	stats.countIndexes = indexes
 
 	placeholders = make([]string, 0, indexes)
 	args = make([]any, 0, indexes)

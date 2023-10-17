@@ -71,8 +71,8 @@ func NewPool(ctx context.Context, uri string, logger *zap.Logger, p *state.Provi
 			return lazyerrors.Error(err)
 		}
 
-		if p.Get().HandlerVersion != v {
-			if err = p.Update(func(s *state.State) { s.HandlerVersion = v }); err != nil {
+		if p.Get().BackendVersion != v {
+			if err = p.Update(func(s *state.State) { s.BackendName = "PG"; s.BackendVersion = v }); err != nil {
 				logger.Error("pgdb.Pool.AfterConnect: failed to update state", zap.Error(err))
 			}
 		}

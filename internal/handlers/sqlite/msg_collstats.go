@@ -15,8 +15,11 @@
 package sqlite
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+
+	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -76,6 +79,28 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
+	collections, err := db.ListCollections(ctx, new(backends.ListCollectionsParams))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var cInfo backends.CollectionInfo
+	if i, found := slices.BinarySearchFunc(collections.Collections, collection, func(e backends.CollectionInfo, t string) int {
+		return cmp.Compare(e.Name, t)
+	}); found {
+		cInfo = collections.Collections[i]
+	}
+
+	indexes, err := c.ListIndexes(ctx, new(backends.ListIndexesParams))
+	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
+		indexes = new(backends.ListIndexesResult)
+		err = nil
+	}
+
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	stats, err := c.Stats(ctx, new(backends.CollectionStatsParams))
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 		stats = new(backends.CollectionStatsResult)
@@ -89,23 +114,42 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	pairs := []any{
 		"ns", dbName + "." + collection,
 		"size", stats.SizeCollection / scale,
-		"count", stats.CountObjects,
+		"count", stats.CountDocuments,
 	}
 
 	// If there are objects in the collection, calculate the average object size.
-	if stats.CountObjects > 0 {
-		pairs = append(pairs, "avgObjSize", stats.SizeCollection/stats.CountObjects)
+	if stats.CountDocuments > 0 {
+		pairs = append(pairs, "avgObjSize", stats.SizeCollection/stats.CountDocuments)
 	}
+
+	indexSizes := types.MakeDocument(len(stats.IndexSizes))
+	for _, indexSize := range stats.IndexSizes {
+		indexSizes.Set(indexSize.Name, indexSize.Size/scale)
+	}
+
+	// add freeStorageSize
+	// TODO https://github.com/FerretDB/FerretDB/issues/2447
 
 	// MongoDB uses "numbers" that could be int32 or int64,
 	// FerretDB always returns int64 for simplicity.
 	pairs = append(pairs,
 		"storageSize", stats.SizeCollection/scale,
-		"nindexes", stats.CountIndexes,
+		"nindexes", int64(len(indexes.Indexes)),
 		"totalIndexSize", stats.SizeIndexes/scale,
 		"totalSize", stats.SizeTotal/scale,
+		"indexSizes", indexSizes,
 		"scaleFactor", int32(scale),
-		"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/3458
+		"capped", cInfo.Capped(),
+	)
+
+	if cInfo.Capped() {
+		pairs = append(pairs,
+			"max", cInfo.CappedDocuments,
+			"maxSize", cInfo.CappedSize/scale,
+		)
+	}
+
+	pairs = append(pairs,
 		"ok", float64(1),
 	)
 

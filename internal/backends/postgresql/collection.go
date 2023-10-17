@@ -56,6 +56,10 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		return nil, lazyerrors.Error(err)
 	}
 
+	if params == nil {
+		params = new(backends.QueryParams)
+	}
+
 	if p == nil {
 		return &backends.QueryResult{
 			Iter: newQueryIterator(ctx, nil),
@@ -73,16 +77,18 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3490
+	q := prepareSelectClause(c.dbName, meta.TableName)
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3414
-	q := fmt.Sprintf(
-		`SELECT %s FROM %s`,
-		metadata.DefaultColumn,
-		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
-	)
+	var placeholder metadata.Placeholder
 
-	rows, err := p.Query(ctx, q)
+	where, args, err := prepareWhereClause(&placeholder, params.Filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	q += where
+
+	rows, err := p.Query(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -255,11 +261,15 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
 	p, err := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
 	}
 
 	if p == nil {
-		return new(backends.ExplainResult), nil
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
 	}
 
 	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
@@ -273,15 +283,23 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}, nil
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3414
-	q := fmt.Sprintf(
-		`EXPLAIN (VERBOSE true, FORMAT JSON) SELECT %s FROM %s`,
-		metadata.DefaultColumn,
-		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
-	)
+	res := new(backends.ExplainResult)
+
+	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName)
+
+	var placeholder metadata.Placeholder
+
+	where, args, err := prepareWhereClause(&placeholder, params.Filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	res.QueryPushdown = where != ""
+
+	q += where
 
 	var b []byte
-	err = p.QueryRow(ctx, q).Scan(&b)
+	err = p.QueryRow(ctx, q, args...).Scan(&b)
 
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -292,9 +310,9 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return nil, lazyerrors.Error(err)
 	}
 
-	return &backends.ExplainResult{
-		QueryPlanner: must.NotFail(types.NewDocument("Plan", queryPlan)),
-	}, nil
+	res.QueryPlanner = queryPlan
+
+	return res, nil
 }
 
 // Stats implements backends.Collection interface.
@@ -328,12 +346,60 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		return nil, lazyerrors.Error(err)
 	}
 
+	indexMap := map[string]string{}
+	for _, index := range coll.Indexes {
+		indexMap[index.PgIndex] = index.Name
+	}
+
+	q := `
+		SELECT
+			indexname,
+			pg_relation_size(quote_ident(schemaname)|| '.' || quote_ident(indexname), 'main')
+		FROM pg_indexes
+		WHERE schemaname = $1 AND tablename IN ($2)
+		`
+
+	rows, err := p.Query(ctx, q, c.dbName, coll.TableName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	defer rows.Close()
+
+	indexSizes := make([]backends.IndexSize, len(indexMap))
+	var i int
+
+	for rows.Next() {
+		var name string
+		var size int64
+
+		if err = rows.Scan(&name, &size); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		indexName, ok := indexMap[name]
+		if !ok {
+			// new index have been created since fetching metadata
+			continue
+		}
+
+		indexSizes[i] = backends.IndexSize{
+			Name: indexName,
+			Size: size,
+		}
+		i++
+	}
+
+	if rows.Err() != nil {
+		return nil, lazyerrors.Error(rows.Err())
+	}
+
 	return &backends.CollectionStatsResult{
-		CountObjects:   stats.countRows,
-		CountIndexes:   stats.countIndexes,
+		CountDocuments: stats.countDocuments,
 		SizeTotal:      stats.sizeTables + stats.sizeIndexes,
 		SizeIndexes:    stats.sizeIndexes,
 		SizeCollection: stats.sizeTables,
+		IndexSizes:     indexSizes,
 	}, nil
 }
 
@@ -387,6 +453,11 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 			}
 		}
 	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3589
+	// slices.SortFunc(res.Indexes, func(a, b backends.IndexInfo) int {
+	// 	return cmp.Compare(a.Name, b.Name)
+	// })
 
 	return &res, nil
 }

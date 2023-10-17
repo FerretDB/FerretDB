@@ -33,7 +33,6 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
-	"github.com/jackc/pgx/v5"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
@@ -99,6 +98,8 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		return err
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3452
+
 	var pgPool *pgdb.Pool
 
 	var retry int64
@@ -119,35 +120,7 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 
 	defer pgPool.Close()
 
-	logger.Info("Creating databases...")
-
-	for _, name := range []string{"admin", "test"} {
-		err = pgPool.InTransaction(ctx, func(tx pgx.Tx) error {
-			return pgdb.CreateDatabaseIfNotExists(ctx, tx, name)
-		})
-		if err != nil && !errors.Is(err, pgdb.ErrAlreadyExist) {
-			return err
-		}
-	}
-
-	logger.Info("Tweaking settings...")
-
-	return pgPool.InTransactionRetry(ctx, func(tx pgx.Tx) error {
-		for _, q := range []string{
-			`CREATE ROLE readonly NOINHERIT LOGIN PASSWORD 'readonly_password'`,
-
-			// TODO Grant permissions to readonly role.
-			// https://github.com/FerretDB/FerretDB/issues/1025
-
-			`ANALYZE`, // to make tests more stable
-		} {
-			if _, err = tx.Exec(ctx, q); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
+	return nil
 }
 
 // setupPostgres configures `postgres` container.

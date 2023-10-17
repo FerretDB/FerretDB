@@ -40,7 +40,7 @@ func TestDatabaseStats(t *testing.T) {
 	require.NoError(t, err)
 
 	params := NewBackendParams{
-		URI: "postgres://username:password@127.0.0.1:5432/ferretdb?pool_min_conns=1",
+		URI: "postgres://username:password@127.0.0.1:5432/ferretdb",
 		L:   testutil.Logger(t),
 		P:   sp,
 	}
@@ -68,11 +68,8 @@ func TestDatabaseStats(t *testing.T) {
 		res, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
 		require.NoError(t, err)
 		require.NotZero(t, res.SizeTotal)
-		require.Equal(t, res.CountCollections, int64(len(cNames)))
-		require.NotZero(t, res.SizeCollections)
-		require.Zero(t, res.CountObjects)
-		// TODO https://github.com/FerretDB/FerretDB/issues/3394
-		// require.NotZero(t, res.CountIndexes)
+		require.Zero(t, res.SizeCollections)
+		require.Zero(t, res.CountDocuments)
 		require.NotZero(t, res.SizeIndexes) // includes metadata table's indexes
 	})
 
@@ -88,11 +85,8 @@ func TestDatabaseStats(t *testing.T) {
 		res, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
 		require.NoError(t, err)
 		require.NotZero(t, res.SizeTotal)
-		require.Equal(t, res.CountCollections, int64(len(cNames)))
 		require.NotZero(t, res.SizeCollections)
-		require.Equal(t, int64(1), res.CountObjects)
-		// TODO https://github.com/FerretDB/FerretDB/issues/3394
-		// require.NotZero(t, res.CountIndexes)
+		require.Equal(t, int64(1), res.CountDocuments)
 		require.NotZero(t, res.SizeIndexes)
 	})
 }

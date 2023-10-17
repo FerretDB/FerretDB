@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.21.2-1 AS production-build
+FROM ghcr.io/ferretdb/golang:1.21.3-1 AS production-build
 
 ARG TARGETARCH
 
@@ -78,9 +78,12 @@ COPY --from=production-build /src/bin/ferretdb /ferretdb
 
 FROM scratch AS production
 
+COPY --from=production-build /src/bin/ferretdb /ferretdb
+
 ENTRYPOINT [ "/ferretdb" ]
 
 WORKDIR /
+VOLUME /state
 EXPOSE 27017 27018 8080
 
 # don't forget to update documentation if you change defaults
@@ -88,6 +91,7 @@ ENV FERRETDB_LISTEN_ADDR=:27017
 # ENV FERRETDB_LISTEN_TLS=:27018
 ENV FERRETDB_DEBUG_ADDR=:8080
 ENV FERRETDB_STATE_DIR=/state
+ENV FERRETDB_SQLITE_URL=file:/state/
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
