@@ -97,12 +97,13 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 		return nil, lazyerrors.Error(err)
 	}
 
-	q = `
+	q = fmt.Sprintf(`
 		SELECT
-			COALESCE(SUM(pg_relation_size(quote_ident(schemaname)|| '.' || quote_ident(indexname), 'fsm'), 0)
+			COALESCE(SUM(pg_relation_size(quote_ident(schemaname)|| '.' || quote_ident(indexname), 'fsm')), 0)
 		FROM pg_indexes
-		WHERE schemaname = $1 AND tablename IN ($2)
-		`
+		WHERE schemaname = $1 AND tablename IN (%s)
+		`,
+		strings.Join(placeholders, ", "))
 
 	row = p.QueryRow(ctx, q, args...)
 	if err := row.Scan(&s.sizeIndexFreeStorage); err != nil {
