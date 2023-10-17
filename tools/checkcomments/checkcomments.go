@@ -68,12 +68,6 @@ func run(pass *analysis.Pass) (any, error) {
 					line, _, _ = strings.Cut(line, ` // want "`)
 				}
 
-				// skip comments without URLs for now
-				// TODO https://github.com/FerretDB/FerretDB/issues/2733
-				if !strings.Contains(line, "https://") {
-					continue
-				}
-
 				match := todoRE.FindStringSubmatch(line)
 
 				if match == nil {
