@@ -15,11 +15,11 @@
 package backends_test // to avoid import cycle
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
@@ -33,9 +33,9 @@ func TestCollectionUpdateAll(t *testing.T) {
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 
-	for _, b := range testBackends(t) {
-		b := b
-		t.Run(b.Name(), func(t *testing.T) {
+	for name, b := range testBackends(t) {
+		name, b := name, b
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			t.Run("DatabaseDoesNotExist", func(t *testing.T) {
@@ -138,9 +138,9 @@ func TestCollectionStats(t *testing.T) {
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 
-	for _, b := range testBackends(t) {
-		b := b
-		t.Run(b.Name(), func(t *testing.T) {
+	for name, b := range testBackends(t) {
+		name, b := name, b
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			t.Run("DatabaseDoesNotExist", func(t *testing.T) {
@@ -189,19 +189,20 @@ func TestCollectionStats(t *testing.T) {
 				db, err := b.Database(dbName)
 				require.NoError(t, err)
 
+				var c backends.Collection
 				cNames := []string{"collectionOne", "collectionTwo"}
 				for _, cName := range cNames {
 					err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: cName})
 					require.NoError(t, err)
+
+					c, err = db.Collection(cName)
+					require.NoError(t, err)
+
+					_, err = c.InsertAll(ctx, &backends.InsertAllParams{
+						Docs: []*types.Document{must.NotFail(types.NewDocument("_id", types.NewObjectID()))},
+					})
+					require.NoError(t, err)
 				}
-
-				c, err := db.Collection(cNames[0])
-				require.NoError(t, err)
-
-				_, err = c.InsertAll(ctx, &backends.InsertAllParams{
-					Docs: []*types.Document{must.NotFail(types.NewDocument("_id", types.NewObjectID()))},
-				})
-				require.NoError(t, err)
 
 				dbStatsRes, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
 				require.NoError(t, err)
@@ -212,8 +213,7 @@ func TestCollectionStats(t *testing.T) {
 				require.Less(t, res.SizeTotal, dbStatsRes.SizeTotal)
 				require.NotZero(t, res.SizeCollection)
 				require.Less(t, res.SizeCollection, dbStatsRes.SizeCollections)
-				require.Equal(t, res.CountObjects, int64(1))
-				require.NotZero(t, res.CountIndexes)
+				require.Equal(t, res.CountDocuments, int64(1))
 				require.NotZero(t, res.SizeIndexes)
 			})
 		})
@@ -222,15 +222,14 @@ func TestCollectionStats(t *testing.T) {
 
 func TestCollectionCompact(t *testing.T) {
 	t.Skip("https://github.com/FerretDB/FerretDB/issues/3484")
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/3469")
 
 	t.Parallel()
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 
-	for _, b := range testBackends(t) {
-		b := b
-		t.Run(b.Name(), func(t *testing.T) {
+	for name, b := range testBackends(t) {
+		name, b := name, b
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			t.Run("DatabaseDoesNotExist", func(t *testing.T) {

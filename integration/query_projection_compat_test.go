@@ -224,7 +224,7 @@ func TestQueryProjectionCompat(t *testing.T) {
 }
 
 func TestQueryProjectionPositionalOperatorCompat(t *testing.T) {
-	setup.SkipForNewPg(t, "https://github.com/FerretDB/FerretDB/issues/3526")
+	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3526")
 
 	t.Parallel()
 
