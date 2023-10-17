@@ -690,8 +690,8 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("size")))
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("count")))
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("storageSize")))
-	// add assertion for freeStorageSize
-	// TODO https://github.com/FerretDB/FerretDB/issues/2447
+	freeStorageSize, _ := doc.Get("freeStorageSize")
+	assert.Nil(t, freeStorageSize)
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("nindexes")))
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("totalIndexSize")))
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("totalSize")))
@@ -727,8 +727,7 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.InDelta(t, 40_000, must.NotFail(doc.Get("size")), 39_900)
 	assert.InDelta(t, 2_400, must.NotFail(doc.Get("avgObjSize")), 2_370)
 	assert.InDelta(t, 40_000, must.NotFail(doc.Get("storageSize")), 39_900)
-	// add assertion for freeStorageSize
-	// TODO https://github.com/FerretDB/FerretDB/issues/2447
+	assert.EqualValues(t, 0, must.NotFail(doc.Get("freeStorageSize")))
 	assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
 	assert.InDelta(t, 12_000, must.NotFail(doc.Get("totalIndexSize")), 11_000)
 	assert.InDelta(t, 32_000, must.NotFail(doc.Get("totalSize")), 30_000)
@@ -768,8 +767,7 @@ func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 	assert.InDelta(t, 16, must.NotFail(doc.Get("size")), 16)
 	assert.InDelta(t, 2_400, must.NotFail(doc.Get("avgObjSize")), 2_370)
 	assert.InDelta(t, 24, must.NotFail(doc.Get("storageSize")), 24)
-	// add assertion for freeStorageSize
-	// TODO https://github.com/FerretDB/FerretDB/issues/2447
+	assert.EqualValues(t, 0, must.NotFail(doc.Get("freeStorageSize")))
 	assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
 	assert.InDelta(t, 8, must.NotFail(doc.Get("totalIndexSize")), 8)
 	assert.InDelta(t, 24, must.NotFail(doc.Get("totalSize")), 24)
@@ -1118,8 +1116,9 @@ func TestCommandsAdministrationDBStatsFreeStorage(t *testing.T) {
 
 	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
 	assert.Equal(t, float64(1), doc.Remove("ok"))
-	// assert freeStorageSize, indexFreeStorageSize and totalFreeStorageSize
-	// TODO https://github.com/FerretDB/FerretDB/issues/2447
+	assert.EqualValues(t, 0, must.NotFail(doc.Get("freeStorageSize")))
+	assert.EqualValues(t, 0, must.NotFail(doc.Get("indexFreeStorageSize")))
+	assert.EqualValues(t, 0, must.NotFail(doc.Get("totalFreeStorageSize")))
 }
 
 //nolint:paralleltest // we test a global server status

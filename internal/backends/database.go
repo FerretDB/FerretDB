@@ -204,10 +204,13 @@ type DatabaseStatsParams struct {
 
 // DatabaseStatsResult represents the results of Database.Stats method.
 type DatabaseStatsResult struct {
-	CountDocuments  int64
-	SizeTotal       int64
-	SizeIndexes     int64
-	SizeCollections int64
+	CountDocuments       int64
+	SizeTotal            int64
+	SizeIndexes          int64
+	SizeCollections      int64
+	SizeTotalFreeStorage int64
+	SizeIndexFreeStorage int64
+	SizeFreeStorage      int64
 }
 
 // Stats returns statistic estimations about the database.

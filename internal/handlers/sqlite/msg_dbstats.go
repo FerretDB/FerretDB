@@ -44,9 +44,17 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	scale := int64(1)
 
-	var s any
-	if s, err = document.Get("scale"); err == nil {
-		if scale, err = commonparams.GetValidatedNumberParamWithMinValue(command, "scale", s, 1); err != nil {
+	var v any
+	if v, _ = document.Get("scale"); v != nil {
+		if scale, err = commonparams.GetValidatedNumberParamWithMinValue(command, "scale", v, 1); err != nil {
+			return nil, err
+		}
+	}
+
+	var freeStorage bool
+
+	if v, _ = document.Get("freeStorage"); v != nil {
+		if freeStorage, err = commonparams.GetBoolOptionalParam("freeStorage", v); err != nil {
 			return nil, err
 		}
 	}
@@ -121,9 +129,36 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	pairs = append(pairs,
 		"dataSize", stats.SizeCollections/scale,
 		"storageSize", stats.SizeCollections/scale,
+	)
+
+	if freeStorage {
+		pairs = append(pairs,
+			"freeStorageSize", stats.SizeFreeStorage/scale,
+		)
+	}
+
+	pairs = append(pairs,
 		"indexes", nIndexes,
 		"indexSize", stats.SizeIndexes/scale,
+	)
+
+	if freeStorage {
+		pairs = append(pairs,
+			"indexFreeStorageSize", stats.SizeIndexFreeStorage/scale,
+		)
+	}
+
+	pairs = append(pairs,
 		"totalSize", stats.SizeTotal/scale,
+	)
+
+	if freeStorage {
+		pairs = append(pairs,
+			"totalFreeStorageSize", stats.SizeTotalFreeStorage/scale,
+		)
+	}
+
+	pairs = append(pairs,
 		"scaleFactor", float64(scale),
 		"ok", float64(1),
 	)
