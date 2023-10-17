@@ -266,8 +266,8 @@ jobs:
 
     if: github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'not ready')
 
-    permissions:
-      issues: read
+    # permissions:
+    #   issues: read
 
     steps:
       - name: Setup permissions monitoring
@@ -288,6 +288,8 @@ jobs:
 
       - name: Run linters
         uses: FerretDB/github-actions/linters@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   fuzz-short:
     name: Fuzz short
