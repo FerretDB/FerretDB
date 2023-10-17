@@ -1042,6 +1042,51 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 	}
 }
 
+func TestQueryTailable(t *testing.T) {
+	t.Parallel()
+
+	t.Run("NonCapped", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, collection := setup.Setup(t, shareddata.Scalars)
+
+		cursor, err := collection.Find(ctx, bson.D{}, options.Find().SetCursorType(options.Tailable))
+		expected := mongo.CommandError{
+			Code: 2,
+			Name: "BadValue",
+			Message: "error processing query: " +
+				"ns=TestQueryTailable-NonCapped.TestQueryTailable-NonCappedTree: " +
+				"$and\nSort: {}\nProj: {}\n " +
+				"tailable cursor requested on non capped collection",
+		}
+		AssertEqualAltCommandError(t, expected, "tailable cursor requested on non capped collection", err)
+		assert.Nil(t, cursor)
+	})
+
+	t.Run("Capped", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, collection := setup.Setup(t)
+
+		err := collection.Database().CreateCollection(ctx, collection.Name(), options.CreateCollection().SetCapped(true))
+		require.NoError(t, err)
+
+		cursor, err := collection.Find(ctx, bson.D{}, options.Find().SetCursorType(options.Tailable))
+		expected := mongo.CommandError{
+			Code: 2,
+			Name: "BadValue",
+			Message: "error processing query: " +
+				"ns=TestQueryTailable-NonCapped.TestQueryTailable-NonCappedTree: " +
+				"$and\nSort: {}\nProj: {}\n " +
+				"tailable cursor requested on non capped collection",
+		}
+		AssertEqualAltCommandError(t, expected, "tailable cursor requested on non capped collection", err)
+		assert.Nil(t, cursor)
+	})
+
+	// https://github.com/FerretDB/FerretDB/issues/2283
+}
+
 // TestQueryIDDoc checks that the order of fields in the _id document matters.
 func TestQueryIDDoc(t *testing.T) {
 	t.Parallel()
