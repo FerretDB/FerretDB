@@ -375,11 +375,12 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 	}
 
 	return &backends.CollectionStatsResult{
-		CountDocuments: stats.countDocuments,
-		SizeTotal:      stats.sizeTables + stats.sizeIndexes,
-		SizeIndexes:    stats.sizeIndexes,
-		SizeCollection: stats.sizeTables,
-		IndexSizes:     indexSizes,
+		CountDocuments:  stats.countDocuments,
+		SizeTotal:       stats.sizeTables + stats.sizeIndexes,
+		SizeIndexes:     stats.sizeIndexes,
+		SizeCollection:  stats.sizeTables,
+		IndexSizes:      indexSizes,
+		SizeFreeStorage: stats.sizeFreeStorage,
 	}, nil
 }
 

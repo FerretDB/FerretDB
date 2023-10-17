@@ -42,9 +42,10 @@ import (
 
 // stats represents information about statistics of tables and indexes.
 type stats struct {
-	countDocuments int64
-	sizeIndexes    int64
-	sizeTables     int64
+	countDocuments  int64
+	sizeIndexes     int64
+	sizeTables      int64
+	sizeFreeStorage int64
 }
 
 // collectionsStats returns statistics about tables and indexes for the given collections.
@@ -125,6 +126,28 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 	if err = db.QueryRowContext(ctx, q, args...).Scan(&stats.sizeIndexes); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
+	// TODO in memory db handling
+
+	// https://www.sqlite.org/pragma.html#pragma_freelist_count
+	q = `PRAGMA freelist_count`
+
+	var freeListCount int64
+	if err = db.QueryRowContext(ctx, q).Scan(&freeListCount); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// https://www.sqlite.org/pragma.html#pragma_page_size
+	// https://www.sqlite.org/fileformat.html
+	// > All pages within the same database are the same size.
+	q = `PRAGMA page_size`
+
+	var pageSize int64
+	if err = db.QueryRowContext(ctx, q).Scan(&pageSize); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	stats.sizeFreeStorage = freeListCount * pageSize
 
 	return stats, nil
 }
