@@ -74,11 +74,10 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		http.Redirect(rw, req, "/debug", http.StatusSeeOther)
 	})
 
-	srv, err := statsviz.NewServer()
+	sts, err := statsviz.NewServer()
 	must.NoError(err)
 
-	http.Handle("/debug/statsviz/", srv.Index())
-	http.Handle("/debug/statsviz/ws", srv.Ws())
+	sts.Register(http.DefaultServeMux)
 
 	s := http.Server{
 		Addr:     addr,
