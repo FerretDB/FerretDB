@@ -19,8 +19,8 @@ func testCorrect() {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3413
 }
 
-func testCorrectForNow() {
-	// TODO no URL
+func testIncorrectNoURL() {
+	// TODO no URL // want "invalid TODO: incorrect format"
 }
 
 func testIncorrectFormat() {
