@@ -17,21 +17,39 @@ package testdata
 import "testing"
 
 func TestNormal1(t *testing.T) {
+	t.Log("hidden")
+
 	t.Run("Parallel", func(t *testing.T) {
+		t.Log("hidden")
+
 		t.Parallel()
+
+		t.Log("hidden")
 	})
 
 	t.Run("NotParallel", func(t *testing.T) {
+		t.Log("hidden")
 	})
+
+	t.Log("hidden")
 }
 
 func TestNormal2(t *testing.T) {
+	t.Log("hidden")
+
 	t.Parallel()
 
+	t.Log("hidden")
+
 	t.Run("NotParallel", func(t *testing.T) {
+		t.Log("hidden")
 	})
 
 	t.Run("Parallel", func(t *testing.T) {
+		t.Log("hidden")
+
 		t.Parallel()
+
+		t.Log("hidden")
 	})
 }
