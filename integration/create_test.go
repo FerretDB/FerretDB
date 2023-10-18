@@ -31,7 +31,7 @@ import (
 )
 
 func TestCreateStress(t *testing.T) {
-	// TODO rewrite using teststress.Stress
+	// It should be rewritten to use teststress.Stress.
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	db := collection.Database()
@@ -94,7 +94,7 @@ func TestCreateStress(t *testing.T) {
 }
 
 func TestCreateOnInsertStressSameCollection(t *testing.T) {
-	// TODO rewrite using teststress.Stress
+	// It should be rewritten to use teststress.Stress.
 
 	ctx, collection := setup.Setup(t)
 	// do not toLower() db name as it may contain uppercase letters
@@ -134,7 +134,7 @@ func TestCreateOnInsertStressSameCollection(t *testing.T) {
 }
 
 func TestCreateOnInsertStressDiffCollection(t *testing.T) {
-	// TODO rewrite using teststress.Stress
+	// It should be rewritten to use teststress.Stress.
 
 	ctx, collection := setup.Setup(t)
 	// do not toLower() db name as it may contain uppercase letters
@@ -175,7 +175,7 @@ func TestCreateOnInsertStressDiffCollection(t *testing.T) {
 }
 
 func TestCreateStressSameCollection(t *testing.T) {
-	// TODO rewrite using teststress.Stress
+	// It should be rewritten to use teststress.Stress.
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collection from the test
 	db := collection.Database()

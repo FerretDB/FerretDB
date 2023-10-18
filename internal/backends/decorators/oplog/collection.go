@@ -112,7 +112,6 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 		return nil, err
 	}
 
-	// TODO
 	_ = res
 
 	return res, nil

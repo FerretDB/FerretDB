@@ -32,7 +32,7 @@ type document struct {
 // marshal returns the BSON document representation with a given timestamp.
 func (d *document) marshal(t time.Time) (*types.Document, error) {
 	res, err := types.NewDocument(
-		"_id", types.NewObjectID(), // TODO
+		"_id", types.NewObjectID(),
 		"ts", types.NextTimestamp(t),
 		"ns", d.ns,
 		"op", d.op,

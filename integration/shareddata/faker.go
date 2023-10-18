@@ -80,11 +80,11 @@ func (f *faker) ScalarValue() any {
 		case 0x0a: // Null
 			return nil
 		case 0x0b: // Regex
-			// TODO
+			// not yet
 		case 0x10: // Int32
 			return f.f.Int32()
 		case 0x11: // Timestamp
-			// TODO
+			// not yet
 		case 0x12: // Int64
 			return f.f.Int64()
 		case 0x13: // Decimal
