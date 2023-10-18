@@ -821,8 +821,6 @@ func TestQueryCommandSingleBatch(t *testing.T) {
 }
 
 func TestQueryCommandLimitPushDown(t *testing.T) {
-	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3416")
-
 	t.Parallel()
 
 	// must use a collection of documents which does not support query pushdown to test limit pushdown
@@ -844,34 +842,29 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 		failsForSQLite string              // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"Simple": {
-			limit:          1,
-			len:            1,
-			limitPushdown:  true,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
+			limit:         1,
+			len:           1,
+			limitPushdown: true,
 		},
 		"AlmostAll": {
-			limit:          int64(len(shareddata.Composites.Docs()) - 1),
-			len:            len(shareddata.Composites.Docs()) - 1,
-			limitPushdown:  true,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
+			limit:         int64(len(shareddata.Composites.Docs()) - 1),
+			len:           len(shareddata.Composites.Docs()) - 1,
+			limitPushdown: true,
 		},
 		"All": {
-			limit:          int64(len(shareddata.Composites.Docs())),
-			len:            len(shareddata.Composites.Docs()),
-			limitPushdown:  true,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
+			limit:         int64(len(shareddata.Composites.Docs())),
+			len:           len(shareddata.Composites.Docs()),
+			limitPushdown: true,
 		},
 		"More": {
-			limit:          int64(len(shareddata.Composites.Docs()) + 1),
-			len:            len(shareddata.Composites.Docs()),
-			limitPushdown:  true,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
+			limit:         int64(len(shareddata.Composites.Docs()) + 1),
+			len:           len(shareddata.Composites.Docs()),
+			limitPushdown: true,
 		},
 		"Big": {
-			limit:          1000,
-			len:            len(shareddata.Composites.Docs()),
-			limitPushdown:  true,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
+			limit:         1000,
+			len:           len(shareddata.Composites.Docs()),
+			limitPushdown: true,
 		},
 		"Zero": {
 			limit:         0,
