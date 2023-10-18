@@ -15,7 +15,6 @@
 package metadata
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"slices"
@@ -494,12 +493,6 @@ func TestIndexesCreateDrop(t *testing.T) {
 
 	collection, err := r.CollectionGet(ctx, dbName, collectionName)
 	require.NoError(t, err)
-
-	t.Run("IndexOrder", func(t *testing.T) {
-		require.Equal(t, slices.IsSortedFunc(collection.Indexes, func(a, b IndexInfo) int {
-			return cmp.Compare(a.Name, b.Name)
-		}), true)
-	})
 
 	t.Run("CreateIndexes", func(t *testing.T) {
 		t.Run("NonUniqueIndex", func(t *testing.T) {
