@@ -94,7 +94,7 @@ func (p *Pool) Get(username, password string) (*pgxpool.Pool, error) {
 
 	// replace authentication info only if it is passed
 	uri := p.baseURI
-	if username != "" { // TODO `&& password != ""`  ?
+	if username != "" {
 		uri.User = url.UserPassword(username, password)
 	}
 

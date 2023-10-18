@@ -26,7 +26,8 @@ import (
 
 // Common interface with bson.Document.
 //
-// TODO Remove this type.
+// Remove this type.
+// TODO https://github.com/FerretDB/FerretDB/issues/260
 type document interface {
 	Keys() []string
 	Values() []any
