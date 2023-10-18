@@ -148,12 +148,10 @@ func (h *Handler) DBPool(ctx context.Context) (*pgdb.Pool, error) {
 
 // Describe implements handlers.Interface.
 func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
-	// TODO
 }
 
 // Collect implements handlers.Interface.
 func (h *Handler) Collect(ch chan<- prometheus.Metric) {
-	// TODO
 }
 
 // check interfaces
