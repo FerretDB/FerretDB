@@ -46,7 +46,6 @@ func TestDatabaseStats(t *testing.T) {
 	}
 
 	t.Run("DatabaseWithCollections", func(t *testing.T) {
-
 		res, err := db.Stats(ctx, &backends.DatabaseStatsParams{
 			Refresh: true,
 		})

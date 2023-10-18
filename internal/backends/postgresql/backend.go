@@ -130,7 +130,6 @@ func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDataba
 	}
 
 	for i, dbName := range list {
-
 		res.Databases[i] = backends.DatabaseInfo{
 			Name: dbName,
 		}

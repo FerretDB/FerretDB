@@ -40,16 +40,18 @@ type stats struct {
 
 // collectionsStats returns statistics about tables and indexes for the given collections.
 //
+// If refresh is true, it calls ANALYZE on the tables of the given list of collections.
+//
 // If the list of collections is empty, then stats filled with zero values is returned.
-func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list []*metadata.Collection, refresh bool) (*stats, error) {
+func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list []*metadata.Collection, refresh bool) (*stats, error) { //nolint:lll // for readability
 	if len(list) == 0 {
 		return new(stats), nil
 	}
+
 	if refresh {
-		var fields []string
-		for _, c := range list {
-			field := pgx.Identifier{dbName, c.TableName}.Sanitize()
-			fields = append(fields, field)
+		fields := make([]string, len(list))
+		for i, c := range list {
+			fields[i] = pgx.Identifier{dbName, c.TableName}.Sanitize()
 		}
 
 		q := fmt.Sprintf(`ANALYZE %s`, strings.Join(fields, ", "))
@@ -71,7 +73,6 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	}
 
 	// The table size is the size used by collection documents. It excludes visibility map,
-
 	// initialization fork, free space map and TOAST. The `main` `pg_relation_size` is
 	// used, however it is not updated immediately after operation such as DELETE
 	// unless VACUUM is called, ANALYZE does not update pg_relation_size in this case.

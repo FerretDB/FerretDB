@@ -48,18 +48,31 @@ type stats struct {
 }
 
 // collectionsStats returns statistics about tables and indexes for the given collections.
+//
+// If refresh is true, it calls ANALYZE on the tables of the given list of collections.
+//
+// If the list of collections is empty, then stats filled with zero values is returned.
 func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection, refresh bool) (*stats, error) {
+	if len(list) == 0 {
+		return new(stats), nil
+	}
+
 	var err error
+
 	if refresh {
-		var fields []string
-		for _, c := range list {
-			fields = append(fields, c.Name)
+		queries := make([]string, len(list))
+		for i, c := range list {
+			queries[i] = fmt.Sprintf("ANALYZE %q;", c.TableName)
 		}
-		q := fmt.Sprintf(`ANALYZE %s`, strings.Join(fields, ", "))
+
+		// SQLite ANALYZE does not allow multiple tables as arguments, hence
+		// build multiple queries such as `ANALYZE 'table1'; ANALYZE 'table2';`.
+		q := strings.Join(queries, "")
 		if _, err = db.ExecContext(ctx, q); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
+
 	placeholders := make([]string, len(list))
 	args := make([]any, len(list))
 
@@ -73,7 +86,6 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 	}
 
 	// The table size is the size used by collection documents. The `pgsize` of `dbstat`
-
 	// table does not include freelist pages, pointer-map pages, and the lock page.
 	//
 	// If rows are deleted from a page but there are other rows on that same page,
