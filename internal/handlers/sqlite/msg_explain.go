@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -79,8 +80,13 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	var qp backends.ExplainParams
-	if !h.DisableFilterPushdown {
-		qp.Filter = params.Filter
+
+	if params.Aggregate {
+		qp.Filter, _ = aggregations.GetPushdownQuery(params.StagesDocs)
+	}
+
+	if h.DisableFilterPushdown {
+		qp.Filter = nil
 	}
 
 	// Skip sorting if there are more than one sort parameters

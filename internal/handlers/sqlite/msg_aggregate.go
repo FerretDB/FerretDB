@@ -259,9 +259,20 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	var iter iterator.Interface[struct{}, *types.Document]
 
 	if len(collStatsDocuments) == len(stagesDocuments) {
-		// TODO https://github.com/FerretDB/FerretDB/issues/3235
-		// TODO https://github.com/FerretDB/FerretDB/issues/3181
-		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{c, stagesDocuments})
+		filter, _ := aggregations.GetPushdownQuery(aggregationStages)
+
+		// only documents stages or no stages - fetch documents from the DB and apply stages to them
+		qp := new(backends.QueryParams)
+
+		if !h.DisableFilterPushdown {
+			qp.Filter = filter
+		}
+
+		//if h.EnableSortPushdown {
+		//	qp.Sort = sort
+		//}
+
+		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{c, qp, stagesDocuments})
 	} else {
 		// TODO https://github.com/FerretDB/FerretDB/issues/2423
 		statistics := stages.GetStatistics(collStatsDocuments)
@@ -323,12 +334,13 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 // stagesDocumentsParams contains the parameters for processStagesDocuments.
 type stagesDocumentsParams struct {
 	c      backends.Collection
+	qp     *backends.QueryParams
 	stages []aggregations.Stage
 }
 
 // processStagesDocuments retrieves the documents from the database and then processes them through the stages.
 func processStagesDocuments(ctx context.Context, closer *iterator.MultiCloser, p *stagesDocumentsParams) (types.DocumentsIterator, error) { //nolint:lll // for readability
-	queryRes, err := p.c.Query(ctx, nil)
+	queryRes, err := p.c.Query(ctx, p.qp)
 	if err != nil {
 		closer.Close()
 		return nil, lazyerrors.Error(err)
