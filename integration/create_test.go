@@ -246,6 +246,8 @@ func TestCreateStressSameCollection(t *testing.T) {
 func TestCreateCapped(t *testing.T) {
 	t.Parallel()
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3458
+
 	t.Run("NoSize", func(t *testing.T) {
 		t.Parallel()
 
@@ -259,6 +261,4 @@ func TestCreateCapped(t *testing.T) {
 		}
 		AssertEqualCommandError(t, expected, err)
 	})
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/3458
 }
