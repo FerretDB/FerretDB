@@ -210,7 +210,6 @@ func (a *Array) Contains(filterValue any) bool {
 	case *Document, *Array:
 		// filterValue is a composite type, so either a and filterValue must be equal
 		// or at least one element of a must be equal with filterValue.
-		// TODO: Compare might be inaccurate for some corner cases, we might want to fix it later.
 
 		if res := Compare(a, filterValue); res == Equal {
 			return true

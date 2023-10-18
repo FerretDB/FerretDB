@@ -78,12 +78,6 @@ func insertMany(ctx context.Context, dbPool *hanadb.Pool, qp *hanadb.QueryParams
 	var inserted int32
 	var insErrors commonerrors.WriteErrors
 
-	// TODO: Bulk Insert
-	// Attempt to insert all the documents in the same request to make insert faster.
-	/*if err := dbPool.InsertManyDocuments(ctx, qp docs); err == nil {
-		return int32(docs.Len()), &insErrors
-	}*/
-
 	// If the transaction failed, attempt to insert each document separately.
 	for i := 0; i < docs.Len(); i++ {
 		doc := must.NotFail(docs.Get(i))
@@ -130,19 +124,6 @@ func insertOne(ctx context.Context, dbPool *hanadb.Pool, qp *hanadb.QueryParams,
 		msg := fmt.Sprintf("Invalid namespace: %s.%s", qp.DB, qp.Collection)
 		return commonerrors.NewCommandErrorMsg(commonerrors.ErrInvalidNamespace, msg)
 
-	// TODO: set up some sort of metadata table to keep track of '_ids' so we can track duplicates
-	/*case errors.Is(err, hanzdb.ErrUniqueViolation):
-	// TODO Extend message for non-_id unique indexes in https://github.com/FerretDB/FerretDB/issues/2045
-	idMasrshaled := must.NotFail(json.Marshal(must.NotFail(d.Get("_id"))))
-
-	return commonerrors.NewWriteErrorMsg(
-		commonerrors.ErrDuplicateKey,
-		fmt.Sprintf(
-			`E11000 duplicate key error collection: %s.%s index: _id_ dup key: { _id: %s }`,
-			qp.DB, qp.Collection, idMasrshaled,
-		),
-	)
-	*/
 	default:
 		return lazyerrors.Error(err)
 	}

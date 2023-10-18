@@ -197,8 +197,8 @@ func setupCompatCollections(tb testtb.TB, ctx context.Context, client *mongo.Cli
 		span.End()
 	}
 
-	// TODO opts.AddNonExistentCollection is not needed, always add a non-existent collection
-	// https://github.com/FerretDB/FerretDB/issues/1545
+	// opts.AddNonExistentCollection is not needed, always add a non-existent collection
+	// TODO https://github.com/FerretDB/FerretDB/issues/1545
 	if opts.AddNonExistentCollection {
 		nonExistedCollectionName := opts.baseCollectionName + "-non-existent"
 		collection := database.Collection(nonExistedCollectionName)
