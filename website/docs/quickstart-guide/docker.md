@@ -99,7 +99,7 @@ The following steps describe the setup for SQLite:
        ports:
          - 27017:27017
        volumes:
-         - /state/
+         - ./state:/state
        environment:
          - FERRETDB_HANDLER=sqlite
          - FERRETDB_SQLITE_URL=file:/state/
