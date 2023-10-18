@@ -82,6 +82,7 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 
 	var done int
 	results := make(map[string]*testResult, 250)
+	outputs := make([]string, 3)
 
 	d := json.NewDecoder(p)
 	d.DisallowUnknownFields()
@@ -132,12 +133,26 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 			}
 
 			logger.Info(msg)
+			if event.Action == "fail" {
+				for _, item := range outputs {
+					logger.Info(item)
+				}
+			}
+
+			// delete test outputs end of cycle
+			outputs = []string{}
 
 		case "start": // the test binary is about to be executed
 		case "run": // the test has started running
+			// delete test outputs start of cycle
+			outputs = []string{}
 		case "pause": // the test has been paused
 		case "cont": // the test has continued running
 		case "output": // the test printed output
+			if event.Test != "" {
+				outputs = append(outputs, fmt.Sprintf("  %s", strings.TrimSpace(event.Output)))
+			}
+
 		case "bench": // the benchmark printed log output but did not fail
 
 		default:
