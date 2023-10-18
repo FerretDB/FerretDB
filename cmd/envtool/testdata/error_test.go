@@ -16,23 +16,6 @@ package testdata
 
 import "testing"
 
-func TestFailed1(t *testing.T) {
-	t.Run("Parallel", func(t *testing.T) {
-		t.Parallel()
-	})
-
-	t.Run("NotParallel", func(t *testing.T) {
-	})
-}
-
-func TestFailed2(t *testing.T) {
-	t.Parallel()
-
-	t.Run("NotParallel", func(t *testing.T) {
-		t.Error("FAILED")
-	})
-
-	t.Run("Parallel", func(t *testing.T) {
-		t.Parallel()
-	})
+func TestError1(t *testing.T) {
+	t.Error("Error 1")
 }

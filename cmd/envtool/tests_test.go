@@ -16,7 +16,9 @@ package main
 
 import (
 	"context"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,7 +64,30 @@ func TestRunGoTest(t *testing.T) {
 			"PASS TestNormal2 (2/2)",
 			"PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata (2/2)",
 		}
-		assert.Equal(t, expected, actual)
+		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
+	})
+
+	t.Run("Error", func(t *testing.T) {
+		t.Parallel()
+
+		var actual []string
+		logger, err := makeTestLogger(&actual)
+		require.NoError(t, err)
+
+		err = runGoTest(context.TODO(), []string{"./testdata", "-run=TestError"}, 1, logger.Sugar())
+
+		var exitErr *exec.ExitError
+		require.ErrorAs(t, err, &exitErr)
+		assert.Equal(t, 1, exitErr.ExitCode())
+
+		expected := []string{
+			"FAIL TestError1 (1/1)",
+			"  === RUN   TestError1",
+			"  error_test.go:20: Error 1",
+			"  --- FAIL: TestError1 (0.00s)",
+			"FAIL github.com/FerretDB/FerretDB/cmd/envtool/testdata (1/1)",
+		}
+		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
 	})
 }
 
@@ -108,30 +133,5 @@ func TestShardTestFuncs(t *testing.T) {
 		assert.NotEqual(t, testFuncs[0], res[0])
 		assert.NotEqual(t, testFuncs[1], res[0])
 		assert.Equal(t, testFuncs[2], res[0])
-	})
-}
-
-func TestRunGoFailed(t *testing.T) {
-	t.Parallel()
-
-	t.Run("Normal", func(t *testing.T) {
-		t.Parallel()
-
-		var actual []string
-		logger, err := makeTestLogger(&actual)
-		require.NoError(t, err)
-
-		err = runGoTest(context.TODO(), []string{"./testdata", "-run=TestFailed"}, 2, logger.Sugar())
-
-		expected := []string{
-			"PASS TestFailed1/NotParallel",
-			"PASS TestFailed1/Parallel",
-			"PASS TestFailed1 (1/2)",
-			"FAIL TestFailed2/NotParallel",
-			"PASS TestFailed2/Parallel",
-			"FAIL TestFailed2 (2/2)",
-			"FAIL github.com/FerretDB/FerretDB/cmd/envtool/testdata (2/2)",
-		}
-		assert.Equal(t, expected, actual)
 	})
 }

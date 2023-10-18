@@ -487,6 +487,12 @@ func main() {
 			printDiagnosticData(err, logger)
 		}
 
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			logger.Error(exitErr)
+			os.Exit(exitErr.ExitCode())
+		}
+
 		logger.Fatal(err)
 	}
 }
