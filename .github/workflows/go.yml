@@ -285,6 +285,8 @@ jobs:
 
       - name: Run linters
         uses: FerretDB/github-actions/linters@main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   fuzz-short:
     name: Fuzz short
