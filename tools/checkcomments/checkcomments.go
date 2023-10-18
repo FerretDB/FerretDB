@@ -16,16 +16,12 @@
 package main
 
 import (
-	"context"
-	"errors"
 	"log"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/FerretDB/gh"
-	"github.com/google/go-github/v56/github"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
@@ -68,12 +64,6 @@ func run(pass *analysis.Pass) (any, error) {
 					line, _, _ = strings.Cut(line, ` // want "`)
 				}
 
-				// skip comments without URLs for now
-				// TODO https://github.com/FerretDB/FerretDB/issues/2733
-				if !strings.Contains(line, "https://") {
-					continue
-				}
-
 				match := todoRE.FindStringSubmatch(line)
 
 				if match == nil {
@@ -81,36 +71,42 @@ func run(pass *analysis.Pass) (any, error) {
 					continue
 				}
 
-				n, err := strconv.Atoi(match[1])
-				if err != nil {
-					log.Fatal(err)
-				}
+				// `go vet -vettool` runs checkcomments once per package.
+				// That causes same issues to be checked multiple times,
+				// and that easily pushes us over the rate limit.
+				// We should cache check results using lockedfile.
+				// TODO https://github.com/FerretDB/FerretDB/issues/2733
 
-				open, ok := issues[n]
-				if !ok {
-					issue, _, err := client.Issues.Get(context.TODO(), "FerretDB", "FerretDB", n)
+				/*
+					n, err := strconv.Atoi(match[1])
 					if err != nil {
-						if errors.As(err, new(*github.RateLimitError)) && token == "" {
-							log.Printf(
-								"%[1]T %[1]s\n%[2]s %[3]s",
-								err,
-								"Please set a GITHUB_TOKEN as described at",
-								"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token",
-							)
-
-							return nil, nil
-						}
-
-						log.Fatalf("%[1]T %[1]s", err)
+						log.Fatal(err)
 					}
 
-					open = issue.GetState() == "open"
-					issues[n] = open
-				}
+					open, ok := issues[n]
+					if !ok {
+						issue, _, err := client.Issues.Get(context.TODO(), "FerretDB", "FerretDB", n)
+						if err != nil {
+							if errors.As(err, new(*github.RateLimitError)) && token == "" {
+								log.Println(
+									"Rate limit reached. Please set a GITHUB_TOKEN as described at",
+									"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token",
+								)
 
-				if !open {
-					pass.Reportf(c.Pos(), "invalid TODO: linked issue is closed")
-				}
+								return nil, nil
+							}
+
+							log.Fatalf("%[1]T %[1]s", err)
+						}
+
+						open = issue.GetState() == "open"
+						issues[n] = open
+					}
+
+					if !open {
+						pass.Reportf(c.Pos(), "invalid TODO: linked issue is closed")
+					}
+				*/
 			}
 		}
 	}
