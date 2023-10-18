@@ -248,13 +248,17 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}, nil
 	}
 
+	if params == nil {
+		params = new(backends.ExplainParams)
+	}
+
 	var queryPushdown bool
 	var whereClause string
 	var args []any
 
 	// that logic should exist in one place
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	if params != nil && params.Filter.Len() == 1 {
+	if params.Filter.Len() == 1 {
 		v, _ := params.Filter.Get("_id")
 		if v != nil {
 			if id, ok := v.(types.ObjectID); ok {
