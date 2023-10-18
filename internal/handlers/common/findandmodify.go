@@ -120,7 +120,6 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 		case *types.Document:
 			params.Update = updateParam
 		case *types.Array:
-			// TODO aggregation pipeline stages metrics
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,
 				"Aggregation pipelines are not supported yet",
