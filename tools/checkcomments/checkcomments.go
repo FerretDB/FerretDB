@@ -85,10 +85,8 @@ func run(pass *analysis.Pass) (any, error) {
 					issue, _, err := client.Issues.Get(context.TODO(), "FerretDB", "FerretDB", n)
 					if err != nil {
 						if errors.As(err, new(*github.RateLimitError)) && token == "" {
-							log.Printf(
-								"%[1]T %[1]s\n%[2]s %[3]s",
-								err,
-								"Please set a GITHUB_TOKEN as described at",
+							log.Println(
+								"Rate limit reached. Please set a GITHUB_TOKEN as described at",
 								"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token",
 							)
 
