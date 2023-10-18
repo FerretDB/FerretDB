@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	sqlite3 "modernc.org/sqlite"
@@ -450,10 +451,9 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 		}
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3589
-	// slices.SortFunc(res.Indexes, func(a, b backends.IndexInfo) int {
-	// 	return cmp.Compare(a.Name, b.Name)
-	// })
+	sort.Slice(res.Indexes, func(i, j int) bool {
+		return res.Indexes[i].Name < res.Indexes[j].Name
+	})
 
 	return &res, nil
 }

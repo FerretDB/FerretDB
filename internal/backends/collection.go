@@ -18,7 +18,6 @@ import (
 	"cmp"
 	"context"
 	"slices"
-	"sort"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -319,10 +318,6 @@ func (cc *collectionContract) ListIndexes(ctx context.Context, params *ListIndex
 	checkError(err, ErrorCodeCollectionDoesNotExist)
 
 	if res != nil && len(res.Indexes) > 0 {
-		sort.Slice(res.Indexes, func(i, j int) bool {
-			return res.Indexes[i].Name < res.Indexes[j].Name
-		})
-
 		must.BeTrue(slices.IsSortedFunc(res.Indexes, func(a, b IndexInfo) int {
 			return cmp.Compare(a.Name, b.Name)
 		}))
