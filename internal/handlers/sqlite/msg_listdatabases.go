@@ -19,6 +19,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -73,7 +74,7 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			continue
 		}
 
-		stats, err := db.Stats(ctx, nil)
+		stats, err := db.Stats(ctx, &backends.DatabaseStatsParams{Refresh: true})
 		if err != nil {
 			h.L.Warn("Failed to get database stats", zap.Error(err))
 			continue
