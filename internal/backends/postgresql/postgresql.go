@@ -32,11 +32,10 @@ import (
 
 // stats represents information about statistics of tables and indexes.
 type stats struct {
-	countDocuments       int64
-	sizeIndexes          int64
-	sizeTables           int64
-	sizeFreeStorage      int64
-	sizeIndexFreeStorage int64
+	countDocuments  int64
+	sizeIndexes     int64
+	sizeTables      int64
+	sizeFreeStorage int64
 }
 
 // collectionsStats returns statistics about tables and indexes for the given collections.
@@ -96,25 +95,6 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 
 	row := p.QueryRow(ctx, q, args...)
 	if err = row.Scan(&s.countDocuments, &s.sizeTables, &s.sizeFreeStorage, &s.sizeIndexes); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	// The free index storage size is the size of free space map of index relation
-	// according to below documentations. However, it returns zero after inserting documents,
-	// then creating and deleting indexes.
-	// See https://www.postgresql.org/docs/current/functions-admin.html
-	// and https://www.postgresql.org/docs/current/storage-fsm.html.
-	q = fmt.Sprintf(`
-		SELECT
-			COALESCE(SUM(pg_relation_size(quote_ident(schemaname)|| '.' || quote_ident(indexname), 'fsm')), 0)
-		FROM pg_indexes
-		WHERE schemaname = $1 AND tablename IN (%s)
-		`,
-		strings.Join(placeholders, ", "),
-	)
-
-	row = p.QueryRow(ctx, q, args...)
-	if err := row.Scan(&s.sizeIndexFreeStorage); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

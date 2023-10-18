@@ -17,7 +17,6 @@ package sqlite
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -96,7 +95,6 @@ func TestDatabaseStatsFreeStorage(t *testing.T) {
 
 			t.Logf("freeStorage size: %d", res.SizeFreeStorage)
 			require.Zero(t, res.SizeFreeStorage)
-			assert.Zero(t, res.SizeIndexFreeStorage)
 
 			c, err := db.Collection(cNames[0])
 			require.NoError(t, err)
@@ -120,7 +118,6 @@ func TestDatabaseStatsFreeStorage(t *testing.T) {
 
 			t.Logf("freeStorage size: %d", res.SizeFreeStorage)
 			require.NotZero(t, res.SizeFreeStorage)
-			assert.Zero(t, res.SizeIndexFreeStorage)
 		})
 	}
 }

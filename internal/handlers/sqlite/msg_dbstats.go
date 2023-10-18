@@ -139,11 +139,8 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		"indexSize", stats.SizeIndexes/scale,
 	)
 
-	if freeStorage {
-		pairs = append(pairs,
-			"indexFreeStorageSize", stats.SizeIndexFreeStorage/scale,
-		)
-	}
+	// add indexFreeStorageSize
+	// TODO https://github.com/FerretDB/FerretDB/issues/2447
 
 	pairs = append(pairs,
 		"totalSize", stats.SizeTotal/scale,
@@ -151,7 +148,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	if freeStorage {
 		pairs = append(pairs,
-			"totalFreeStorageSize", (stats.SizeFreeStorage+stats.SizeIndexFreeStorage)/scale,
+			"totalFreeStorageSize", (stats.SizeFreeStorage)/scale,
 		)
 	}
 
