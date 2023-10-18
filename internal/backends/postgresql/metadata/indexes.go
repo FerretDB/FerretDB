@@ -16,8 +16,7 @@ package metadata
 
 import (
 	"errors"
-
-	"golang.org/x/exp/slices"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"

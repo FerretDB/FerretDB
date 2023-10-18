@@ -17,6 +17,7 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -25,7 +26,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -83,6 +83,8 @@ func testCollection(t *testing.T, ctx context.Context, r *Registry, db *pgxpool.
 // createDatabase creates a new provider and registry required for creating a database and
 // returns registry, db pool and created database name.
 func createDatabase(t *testing.T, ctx context.Context) (r *Registry, db *pgxpool.Pool, dbName string) {
+	t.Helper()
+
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 

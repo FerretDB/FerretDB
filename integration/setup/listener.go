@@ -213,13 +213,13 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		})
 	}
 
-	p, err := state.NewProvider("")
+	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
 
 	handlerOpts := &registry.NewHandlerOpts{
 		Logger:        logger,
 		ConnMetrics:   listenerMetrics.ConnMetrics,
-		StateProvider: p,
+		StateProvider: sp,
 
 		PostgreSQLURL: postgreSQLURLF,
 		SQLiteURL:     sqliteURL,
@@ -230,7 +230,6 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 			EnableSortPushdown:    *enableSortPushdownF,
 			EnableOplog:           *enableOplogF,
 
-			UseNewPG:   true,
 			UseNewHana: *useNewHanaF,
 		},
 	}

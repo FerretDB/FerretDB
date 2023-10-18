@@ -100,7 +100,7 @@ tasks:
         {{.SERVICES}}
 
   env-setup:
-    deps: [gen-version]
+    deps: [gen-version, build-envtool]
     cmds:
       - bin/envtool{{exeExt}} setup
 
@@ -143,6 +143,7 @@ tasks:
       - go generate -x ./build/version
 
   build-envtool:
+    run: once
     cmds:
       - go build -v -o bin/ ./cmd/envtool/
 
@@ -151,6 +152,7 @@ tasks:
     run: once
     deps: [gen-version]
     cmds:
+      - echo 'build-host' > build/version/package.txt
       - go build -v -o=bin/ferretdb{{exeExt}} {{.RACE_FLAG}} -tags={{.BUILD_TAGS}} -coverpkg=./... ./cmd/ferretdb
       - bin/envtool{{exeExt}} shell mkdir tmp/cover
 
@@ -345,6 +347,20 @@ tasks:
         --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         --test-records-dir=tmp/records
 
+  run-old:
+    desc: "Run FerretDB with old `pg` handler"
+    deps: [build-host]
+    cmds:
+      - >
+        bin/ferretdb{{exeExt}}
+        --listen-addr=:27017
+        --proxy-addr=127.0.0.1:47017
+        --mode=diff-normal
+        --handler=pg
+        --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
+        --postgresql-old=true
+        --test-records-dir=tmp/records
+
   run-sqlite:
     desc: "Run FerretDB with `sqlite` backend"
     deps: [build-host]
@@ -507,6 +523,15 @@ tasks:
         ignore_error: true
       - docker buildx ls
 
+  docker-cleanup:
+    cmds:
+      - docker system df
+      - cmd: docker buildx --builder=ferretdb du
+        ignore_error: true
+      - cmd: docker buildx --builder=ferretdb rm --force
+        ignore_error: true
+      - docker system df
+
   docker-build:
     deps: [gen-version, docker-init]
     cmds:
@@ -526,6 +551,15 @@ tasks:
       COMMIT:
         sh: bin/envtool{{exeExt}} shell read build/version/commit.txt
 
+  build-move-check:
+    cmds:
+      - mv tmp/build/linux_{{.DIR_ARCH}}/ferretdb tmp/{{.BIN_DIR}}/{{.BIN_FILE}}
+      - >
+        docker run --rm --platform=linux/{{.DOCKER_ARCH}} -v ./tmp/{{.BIN_DIR}}:/bins ubuntu
+        /bins/{{.BIN_FILE}} --version
+    requires:
+      vars: [DOCKER_ARCH, DIR_ARCH, BIN_FILE, BIN_DIR]
+
   build-development:
     desc: "Build development debug binaries"
     cmds:
@@ -536,10 +570,15 @@ tasks:
         vars:
           FILE: development
           TARGET: development-binary
-          PLATFORM: linux/amd64,linux/arm64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=local,dest=tmp/build
-      - mv tmp/build/linux_amd64/ferretdb tmp/bin-dev/ferretdb-dev-linux-amd64
-      - mv tmp/build/linux_arm64/ferretdb tmp/bin-dev/ferretdb-dev-linux-arm64
+      - for: [amd64, arm64, arm/v7]
+        task: build-move-check
+        vars:
+          DOCKER_ARCH: "{{.ITEM}}" # arm/v7
+          DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
+          BIN_FILE: 'ferretdb-dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          BIN_DIR: bin-dev
 
   build-production:
     desc: "Build production non-debug binaries"
@@ -551,10 +590,15 @@ tasks:
         vars:
           FILE: production
           TARGET: production-binary
-          PLATFORM: linux/amd64,linux/arm64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=local,dest=tmp/build
-      - mv tmp/build/linux_amd64/ferretdb tmp/bin/ferretdb-linux-amd64
-      - mv tmp/build/linux_arm64/ferretdb tmp/bin/ferretdb-linux-arm64
+      - for: [amd64, arm64, arm/v7]
+        task: build-move-check
+        vars:
+          DOCKER_ARCH: "{{.ITEM}}" # arm/v7
+          DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
+          BIN_FILE: 'ferretdb-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          BIN_DIR: bin
 
   docker-local:
     desc: "Build `ferretdb-local` Docker image for the host platform"
@@ -588,7 +632,7 @@ tasks:
         vars:
           FILE: development
           TARGET: development
-          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=image,push=true
     requires:
       vars: [DOCKER_IMAGES]
@@ -601,18 +645,75 @@ tasks:
         vars:
           FILE: production
           TARGET: production
-          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=image,push=true
     requires:
       vars: [DOCKER_IMAGES]
 
   packages:
+    desc: "Build .deb and .rpm packages"
     cmds:
-      - task: packages-deb
-      - task: packages-rpm
+      - task: packages-deb-development
+      - task: packages-deb-production
+      - task: packages-rpm-development
+      - task: packages-rpm-production
       # TODO https://github.com/FerretDB/FerretDB/issues/2172
 
-  packages-deb:
+  packages-build:
+    cmds:
+      - >
+        bin/nfpm{{exeExt}} package
+        --config=build/nfpm.yml
+        --packager={{.PACKAGER}}
+        --target=tmp/{{.PACKAGER}}s/ferretdb-{{.FILE_SUFFIX}}.{{.PACKAGER}}
+    env:
+      PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
+      PACKAGE_ARCH: "{{.PACKAGE_ARCH}}"
+      DIR_ARCH: "{{.DIR_ARCH}}"
+    requires:
+      vars: [PACKAGER, PACKAGE_VERSION, PACKAGE_ARCH, DIR_ARCH, FILE_SUFFIX]
+
+  packages-deb-check:
+    cmds:
+      - >
+        docker run --rm --platform=linux/{{.DOCKER_ARCH}} -v ./tmp/debs:/debs ubuntu
+        /bin/sh -c '
+        dpkg-deb --info /debs/ferretdb-{{.FILE_SUFFIX}}.deb &&
+        dpkg --install /debs/ferretdb-{{.FILE_SUFFIX}}.deb &&
+        ferretdb --version
+        '
+    requires:
+      vars: [DOCKER_ARCH, FILE_SUFFIX]
+
+  packages-deb-development:
+    cmds:
+      - echo 'deb-development' > build/version/package.txt
+      - bin/envtool{{exeExt}} shell rmdir tmp/build
+      - bin/envtool{{exeExt}} shell mkdir tmp/debs
+      - task: docker-build
+        vars:
+          FILE: development
+          TARGET: development-binary
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
+          OUTPUT: type=local,dest=tmp/build
+      - for: [amd64, arm64, arm/v7]
+        task: packages-build
+        vars:
+          PACKAGER: deb
+          PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
+          PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
+          DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+      - for: [amd64, arm64, arm/v7]
+        task: packages-deb-check
+        vars:
+          DOCKER_ARCH: "{{.ITEM}}" # arm/v7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+    vars:
+      PACKAGE_VERSION:
+        sh: bin/envtool{{exeExt}} package-version
+
+  packages-deb-production:
     cmds:
       - echo 'deb' > build/version/package.txt
       - bin/envtool{{exeExt}} shell rmdir tmp/build
@@ -621,18 +722,66 @@ tasks:
         vars:
           FILE: production
           TARGET: production-binary
-          PLATFORM: linux/amd64,linux/arm64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=local,dest=tmp/build
-      - bin/nfpm{{exeExt}} package --config=build/nfpm-amd64.yml --packager=deb --target=tmp/debs/ferretdb-amd64.deb
-      - bin/nfpm{{exeExt}} package --config=build/nfpm-arm64.yml --packager=deb --target=tmp/debs/ferretdb-arm64.deb
-      - docker compose run --rm ubuntu /bin/sh -c 'dpkg -i /debs/ferretdb-{{ARCH}}.deb && ferretdb --version'
-    env:
-      # nfpm parameters
-      VERSION:
+      - for: [amd64, arm64, arm/v7]
+        task: packages-build
+        vars:
+          PACKAGER: deb
+          PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
+          PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
+          DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
+          FILE_SUFFIX: '{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+      - for: [amd64, arm64, arm/v7]
+        task: packages-deb-check
+        vars:
+          DOCKER_ARCH: "{{.ITEM}}" # arm/v7
+          FILE_SUFFIX: '{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+    vars:
+      PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
-      POSTGRES_PACKAGE: postgresql
 
-  packages-rpm:
+  packages-rpm-check:
+    cmds:
+      - >
+        docker run --rm --platform=linux/{{.DOCKER_ARCH}} -v ./tmp/rpms:/rpms opensuse/tumbleweed
+        /bin/sh -c '
+        rpm --query --info --package /rpms/ferretdb-{{.FILE_SUFFIX}}.rpm &&
+        rpm --install /rpms/ferretdb-{{.FILE_SUFFIX}}.rpm &&
+        ferretdb --version
+        '
+    requires:
+      vars: [DOCKER_ARCH, FILE_SUFFIX]
+
+  packages-rpm-development:
+    cmds:
+      - echo 'rpm-development' > build/version/package.txt
+      - bin/envtool{{exeExt}} shell rmdir tmp/build
+      - bin/envtool{{exeExt}} shell mkdir tmp/rpms
+      - task: docker-build
+        vars:
+          FILE: development
+          TARGET: development-binary
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
+          OUTPUT: type=local,dest=tmp/build
+      - for: [amd64, arm64, arm/v7]
+        task: packages-build
+        vars:
+          PACKAGER: rpm
+          PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
+          PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
+          DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+      - for: [amd64, arm64, arm/v7]
+        task: packages-rpm-check
+        vars:
+          DOCKER_ARCH: "{{.ITEM}}" # arm/v7
+          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+    vars:
+      PACKAGE_VERSION:
+        sh: bin/envtool{{exeExt}} package-version
+
+  packages-rpm-production:
     cmds:
       - echo 'rpm' > build/version/package.txt
       - bin/envtool{{exeExt}} shell rmdir tmp/build
@@ -641,16 +790,24 @@ tasks:
         vars:
           FILE: production
           TARGET: production-binary
-          PLATFORM: linux/amd64,linux/arm64 # TODO https://github.com/FerretDB/FerretDB/issues/2171
+          PLATFORM: linux/amd64,linux/arm64,linux/arm/v7 # TODO https://github.com/FerretDB/FerretDB/issues/3354
           OUTPUT: type=local,dest=tmp/build
-      - bin/nfpm{{exeExt}} package --config=build/nfpm-amd64.yml --packager=rpm --target=tmp/rpms/ferretdb-amd64.rpm
-      - bin/nfpm{{exeExt}} package --config=build/nfpm-arm64.yml --packager=rpm --target=tmp/rpms/ferretdb-arm64.rpm
-      - docker compose run --rm ubi /bin/sh -c 'rpm -i /rpms/ferretdb-{{ARCH}}.rpm && ferretdb --version'
-    env:
-      # nfpm parameters
-      VERSION:
+      - for: [amd64, arm64, arm/v7]
+        task: packages-build
+        vars:
+          PACKAGER: rpm
+          PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
+          PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
+          DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
+          FILE_SUFFIX: '{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+      - for: [amd64, arm64, arm/v7]
+        task: packages-rpm-check
+        vars:
+          DOCKER_ARCH: "{{.ITEM}}" # arm/v7
+          FILE_SUFFIX: '{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+    vars:
+      PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
-      POSTGRES_PACKAGE: postgresql
 
   fmt-yaml:
     desc: "Format YAML files"

@@ -39,7 +39,7 @@ func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.O
 
 	res.Set("catalogStats", must.NotFail(types.NewDocument(
 		"collections", stats.CountCollections,
-		"capped", int32(0),
+		"capped", stats.CountCappedCollections,
 		"clustered", int32(0),
 		"timeseries", int32(0),
 		"views", int32(0),

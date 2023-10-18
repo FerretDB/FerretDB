@@ -347,7 +347,6 @@ func run() {
 				P:              stateProvider,
 				ConnMetrics:    metrics.ConnMetrics,
 				L:              logger.Named("telemetry"),
-				Handler:        cli.Handler,
 				UndecidedDelay: cli.Test.Telemetry.UndecidedDelay,
 				ReportInterval: cli.Test.Telemetry.ReportInterval,
 				ReportTimeout:  cli.Test.Telemetry.ReportTimeout,
@@ -371,7 +370,7 @@ func run() {
 			EnableSortPushdown:    cli.Test.EnableSortPushdown,
 			EnableOplog:           cli.Test.EnableOplog,
 
-			UseNewPG:   !postgreSQLFlags.PostgreSQLOld,
+			UseOldPG:   postgreSQLFlags.PostgreSQLOld,
 			UseNewHana: cli.Test.UseNewHana,
 		},
 	})
