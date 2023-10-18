@@ -98,11 +98,10 @@ The following steps describe the setup for SQLite:
        restart: on-failure
        ports:
          - 27017:27017
-       volumes:
-         - ./state:/state
        environment:
          - FERRETDB_HANDLER=sqlite
-         - FERRETDB_SQLITE_URL=file:/state/
+       volumes:
+         - ./state:/state
 
    networks:
      default:
