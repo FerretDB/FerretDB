@@ -99,17 +99,17 @@ The following steps describe the setup for SQLite:
        ports:
          - 27017:27017
        volumes:
-         - ./data:/data/
+         - /state/
        environment:
          - FERRETDB_HANDLER=sqlite
-         - FERRETDB_SQLITE_URL=file:/data/
+         - FERRETDB_SQLITE_URL=file:/state/
 
    networks:
      default:
        name: ferretdb
    ```
 
-   Unlike PostgreSQL, SQLite operates serverlessly so it doesn not require its own service in Docker Compose.
+   Unlike PostgreSQL, SQLite operates serverlessly so it does not require its own service in Docker Compose.
    :::note
    At the moment, authentication is not available for the SQLite backend ([See Issue here](https://github.com/FerretDB/FerretDB/issues/3008)).
    :::
