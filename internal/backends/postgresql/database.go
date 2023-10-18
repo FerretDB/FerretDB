@@ -178,7 +178,6 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		SizeCollections:      stats.sizeTables,
 		SizeFreeStorage:      stats.sizeFreeStorage,
 		SizeIndexFreeStorage: stats.sizeIndexFreeStorage,
-		SizeTotalFreeStorage: stats.sizeFreeStorage + stats.sizeIndexFreeStorage,
 	}, nil
 }
 

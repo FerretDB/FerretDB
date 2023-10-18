@@ -44,16 +44,16 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	scale := int64(1)
 
-	var v any
-	if v, _ = document.Get("scale"); v != nil {
-		if scale, err = commonparams.GetValidatedNumberParamWithMinValue(command, "scale", v, 1); err != nil {
+	var s any
+	if s, err = document.Get("scale"); err == nil {
+		if scale, err = commonparams.GetValidatedNumberParamWithMinValue(command, "scale", s, 1); err != nil {
 			return nil, err
 		}
 	}
 
 	var freeStorage bool
 
-	if v, _ = document.Get("freeStorage"); v != nil {
+	if v, _ := document.Get("freeStorage"); v != nil {
 		if freeStorage, err = commonparams.GetBoolOptionalParam("freeStorage", v); err != nil {
 			return nil, err
 		}
@@ -154,7 +154,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	if freeStorage {
 		pairs = append(pairs,
-			"totalFreeStorageSize", stats.SizeTotalFreeStorage/scale,
+			"totalFreeStorageSize", (stats.SizeFreeStorage+stats.SizeIndexFreeStorage)/scale,
 		)
 	}
 

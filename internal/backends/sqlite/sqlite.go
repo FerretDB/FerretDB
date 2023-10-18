@@ -45,7 +45,7 @@ type stats struct {
 	countDocuments  int64
 	sizeIndexes     int64
 	sizeTables      int64
-	sizeFreeStorage int64
+	sizeFreeStorage int64 // free storage for entire database
 }
 
 // collectionsStats returns statistics about tables and indexes for the given collections.
@@ -138,8 +138,6 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 	}
 
 	// https://www.sqlite.org/pragma.html#pragma_page_size
-	// https://www.sqlite.org/fileformat.html
-	// > All pages within the same database are the same size.
 	q = `PRAGMA page_size`
 
 	var pageSize int64
@@ -147,6 +145,11 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 		return nil, lazyerrors.Error(err)
 	}
 
+	// SQLite is unable to provide free storage size per collection,
+	// hence compute it for entire database.
+	//
+	// https://www.sqlite.org/fileformat.html
+	// > All pages within the same database are the same size.
 	stats.sizeFreeStorage = freeListCount * pageSize
 
 	return stats, nil

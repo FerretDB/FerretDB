@@ -153,7 +153,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		SizeIndexes:          stats.sizeIndexes,
 		SizeCollections:      stats.sizeTables,
 		SizeFreeStorage:      stats.sizeFreeStorage,
-		SizeTotalFreeStorage: stats.sizeFreeStorage,
+		SizeIndexFreeStorage: 0, // sqlite is unable to provide index specific free storage
 	}, nil
 }
 

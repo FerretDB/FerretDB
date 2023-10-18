@@ -208,7 +208,6 @@ type DatabaseStatsResult struct {
 	SizeTotal            int64
 	SizeIndexes          int64
 	SizeCollections      int64
-	SizeTotalFreeStorage int64
 	SizeIndexFreeStorage int64
 	SizeFreeStorage      int64
 }
