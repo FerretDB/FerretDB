@@ -69,10 +69,17 @@ func CollectionContract(c Collection) Collection {
 	}
 }
 
+// SortField consists of a field name and a sort order that are used in queries.
+type SortField struct {
+	Key        string
+	Descending bool
+}
+
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Filter        *types.Document
+	Sort          *SortField
 	OnlyRecordIDs bool   // TODO https://github.com/FerretDB/FerretDB/issues/3490
 	Comment       string // TODO https://github.com/FerretDB/FerretDB/issues/3573
 }
@@ -199,6 +206,7 @@ func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllPa
 type ExplainParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Filter *types.Document
+	Sort   *SortField
 }
 
 // ExplainResult represents the results of Collection.Explain method.
@@ -206,6 +214,7 @@ type ExplainResult struct {
 	QueryPlanner *types.Document
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	QueryPushdown bool
+	SortPushdown  bool
 }
 
 // Explain return a backend-specific execution plan for the given query.

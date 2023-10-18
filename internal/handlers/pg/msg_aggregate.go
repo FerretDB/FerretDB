@@ -185,8 +185,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		switch d.Command() {
 		case "$collStats":
 			if i > 0 {
-				// Add a test to cover this error.
-				// TODO https://github.com/FerretDB/FerretDB/issues/2349
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrCollStatsIsNotFirstStage,
 					"$collStats is only valid as the first stage in a pipeline",

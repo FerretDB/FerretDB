@@ -18,8 +18,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
-
-	"golang.org/x/exp/slices"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
