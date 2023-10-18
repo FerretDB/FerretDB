@@ -129,9 +129,6 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		indexSizes.Set(indexSize.Name, indexSize.Size/scale)
 	}
 
-	// add freeStorageSize
-	// TODO https://github.com/FerretDB/FerretDB/issues/2447
-
 	// MongoDB uses "numbers" that could be int32 or int64,
 	// FerretDB always returns int64 for simplicity.
 	pairs = append(pairs,

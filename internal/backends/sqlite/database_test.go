@@ -17,9 +17,12 @@ package sqlite
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -51,5 +54,31 @@ func TestDatabaseStats(t *testing.T) {
 		require.NotZero(t, res.SizeTotal)
 		require.NotZero(t, res.SizeCollections)
 		require.Zero(t, res.CountDocuments)
+	})
+
+	t.Run("FreeStorageSize", func(t *testing.T) {
+		c, err := db.Collection(cNames[0])
+		require.NoError(t, err)
+
+		n := 50
+		ids := make([]any, n)
+		docs := make([]*types.Document, n)
+		for i := 0; i < n; i++ {
+			ids[i] = types.NewObjectID()
+			docs[i] = must.NotFail(types.NewDocument("_id", ids[i], "v", "foo"))
+		}
+
+		require.NoError(t, err)
+		_, err = c.InsertAll(ctx, &backends.InsertAllParams{Docs: docs})
+		require.NoError(t, err)
+
+		_, err = c.DeleteAll(ctx, &backends.DeleteAllParams{IDs: ids[10:40]})
+		require.NoError(t, err)
+
+		res, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+		require.NoError(t, err)
+
+		t.Logf("freeStorage size: %d", res.SizeFreeStorage)
+		assert.NotZero(t, res.SizeFreeStorage)
 	})
 }
