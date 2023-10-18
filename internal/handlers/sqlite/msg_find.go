@@ -80,6 +80,24 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		qp.Filter = params.Filter
 	}
 
+	// Skip sorting if there are more than one sort parameters
+	if h.EnableSortPushdown && params.Sort.Len() == 1 {
+		var order types.SortType
+
+		k := params.Sort.Keys()[0]
+		v := params.Sort.Values()[0]
+
+		order, err = common.GetSortType(k, v)
+		if err != nil {
+			return nil, err
+		}
+
+		qp.Sort = &backends.SortField{
+			Key:        k,
+			Descending: order == types.Descending,
+		}
+	}
+
 	cancel := func() {}
 	if params.MaxTimeMS != 0 {
 		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).

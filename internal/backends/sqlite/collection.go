@@ -71,11 +71,10 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	if params != nil && params.Filter.Len() == 1 {
 		v, _ := params.Filter.Get("_id")
-		if v != nil {
-			if id, ok := v.(types.ObjectID); ok {
-				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
-			}
+		switch v.(type) {
+		case string, types.ObjectID:
+			whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+			args = []any{string(must.NotFail(sjson.MarshalSingleValue(v)))}
 		}
 	}
 
@@ -98,8 +97,6 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	if _, err := c.r.CollectionCreate(ctx, c.dbName, c.name); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/2750
 
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
@@ -249,12 +246,11 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	if params != nil && params.Filter.Len() == 1 {
 		v, _ := params.Filter.Get("_id")
-		if v != nil {
-			if id, ok := v.(types.ObjectID); ok {
-				queryPushdown = true
-				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
-			}
+		switch v.(type) {
+		case string, types.ObjectID:
+			queryPushdown = true
+			whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+			args = []any{string(must.NotFail(sjson.MarshalSingleValue(v)))}
 		}
 	}
 
@@ -320,12 +316,66 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		return nil, lazyerrors.Error(err)
 	}
 
+	placeholders := make([]string, 0, len(coll.Settings.Indexes))
+	args := make([]any, 0, len(coll.Settings.Indexes))
+	indexMap := map[string]string{}
+
+	for _, index := range coll.Settings.Indexes {
+		placeholders = append(placeholders, "?")
+		args = append(args, coll.TableName+"_"+index.Name)
+		indexMap[coll.TableName+"_"+index.Name] = index.Name
+	}
+
+	q := fmt.Sprintf(`
+		SELECT
+			name,
+			pgsize
+		FROM dbstat
+		WHERE name IN (%s) AND aggregate = TRUE`,
+		strings.Join(placeholders, ", "),
+	)
+
+	rows, err := db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	defer rows.Close()
+
+	indexSizes := make([]backends.IndexSize, len(indexMap))
+	var i int
+
+	for rows.Next() {
+		var name string
+		var size int64
+
+		if err = rows.Scan(&name, &size); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		indexName, ok := indexMap[name]
+		if !ok {
+			// new index have been created since fetching metadata
+			continue
+		}
+
+		indexSizes[i] = backends.IndexSize{
+			Name: indexName,
+			Size: size,
+		}
+		i++
+	}
+
+	if rows.Err() != nil {
+		return nil, lazyerrors.Error(rows.Err())
+	}
+
 	return &backends.CollectionStatsResult{
-		CountObjects:   stats.countRows,
-		CountIndexes:   stats.countIndexes,
+		CountDocuments: stats.countDocuments,
 		SizeTotal:      stats.sizeTables + stats.sizeIndexes,
 		SizeIndexes:    stats.sizeIndexes,
 		SizeCollection: stats.sizeTables,
+		IndexSizes:     indexSizes,
 	}, nil
 }
 
@@ -397,6 +447,11 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 			}
 		}
 	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3589
+	// slices.SortFunc(res.Indexes, func(a, b backends.IndexInfo) int {
+	// 	return cmp.Compare(a.Name, b.Name)
+	// })
 
 	return &res, nil
 }
