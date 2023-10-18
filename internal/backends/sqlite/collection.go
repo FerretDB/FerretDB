@@ -64,12 +64,16 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
+	if params == nil {
+		params = new(backends.QueryParams)
+	}
+
 	var whereClause string
 	var args []any
 
 	// that logic should exist in one place
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	if params != nil && params.Filter.Len() == 1 {
+	if params.Filter.Len() == 1 {
 		v, _ := params.Filter.Get("_id")
 		if v != nil {
 			if id, ok := v.(types.ObjectID); ok {
