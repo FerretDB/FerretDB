@@ -252,7 +252,6 @@ func compareOrdered[T constraints.Ordered](a, b T) CompareResult {
 
 // compareNumbers compares BSON numbers.
 func compareNumbers(a float64, b int64) CompareResult {
-	// TODO figure out correct precision
 	bigA := new(big.Float).SetFloat64(a).SetPrec(100000)
 	bigB := new(big.Float).SetInt64(b).SetPrec(100000)
 

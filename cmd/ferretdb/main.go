@@ -370,7 +370,7 @@ func run() {
 			EnableSortPushdown:    cli.Test.EnableSortPushdown,
 			EnableOplog:           cli.Test.EnableOplog,
 
-			UseNewPG:   !postgreSQLFlags.PostgreSQLOld,
+			UseOldPG:   postgreSQLFlags.PostgreSQLOld,
 			UseNewHana: cli.Test.UseNewHana,
 		},
 	})
