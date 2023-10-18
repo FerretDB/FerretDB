@@ -193,7 +193,6 @@ func deleteDocuments(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam
 		return err
 	})
 	if err != nil {
-		// TODO check error code
 		return 0, commonerrors.NewCommandError(commonerrors.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
 	}
 

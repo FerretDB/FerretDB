@@ -65,24 +65,32 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
+	if params == nil {
+		params = new(backends.QueryParams)
+	}
+
 	var whereClause string
 	var args []any
 
 	// that logic should exist in one place
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	if params != nil && params.Filter.Len() == 1 {
+	if params.Filter.Len() == 1 {
 		v, _ := params.Filter.Get("_id")
-		if v != nil {
-			if id, ok := v.(types.ObjectID); ok {
-				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
-			}
+		switch v.(type) {
+		case string, types.ObjectID:
+			whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+			args = []any{string(must.NotFail(sjson.MarshalSingleValue(v)))}
 		}
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3490
 
 	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+
+	if params.Limit != 0 {
+		q += ` LIMIT ?`
+		args = append(args, params.Limit)
+	}
 
 	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
@@ -240,26 +248,37 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}, nil
 	}
 
+	if params == nil {
+		params = new(backends.ExplainParams)
+	}
+
 	var queryPushdown bool
 	var whereClause string
 	var args []any
 
 	// that logic should exist in one place
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	if params != nil && params.Filter.Len() == 1 {
+	if params.Filter.Len() == 1 {
 		v, _ := params.Filter.Get("_id")
-		if v != nil {
-			if id, ok := v.(types.ObjectID); ok {
-				queryPushdown = true
-				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-				args = []any{string(must.NotFail(sjson.MarshalSingleValue(id)))}
-			}
+		switch v.(type) {
+		case string, types.ObjectID:
+			queryPushdown = true
+			whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+			args = []any{string(must.NotFail(sjson.MarshalSingleValue(v)))}
 		}
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3490
 
 	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+
+	var limitPushdown bool
+
+	if params.Limit != 0 {
+		q += ` LIMIT ?`
+		args = append(args, params.Limit)
+		limitPushdown = true
+	}
 
 	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
@@ -293,6 +312,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	return &backends.ExplainResult{
 		QueryPlanner:  must.NotFail(types.NewDocument("Plan", queryPlan)),
 		QueryPushdown: queryPushdown,
+		LimitPushdown: limitPushdown,
 	}, nil
 }
 

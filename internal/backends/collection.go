@@ -82,6 +82,7 @@ type QueryParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Filter        *types.Document
 	Sort          *SortField
+	Limit         int64  // if 0 no limit pushdown is applied
 	OnlyRecordIDs bool   // TODO https://github.com/FerretDB/FerretDB/issues/3490
 	Comment       string // TODO https://github.com/FerretDB/FerretDB/issues/3573
 }
@@ -209,6 +210,7 @@ type ExplainParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Filter *types.Document
 	Sort   *SortField
+	Limit  int64 // if 0 no limit pushdown is applied
 }
 
 // ExplainResult represents the results of Collection.Explain method.
@@ -217,6 +219,7 @@ type ExplainResult struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	QueryPushdown bool
 	SortPushdown  bool
+	LimitPushdown bool
 }
 
 // Explain return a backend-specific execution plan for the given query.
