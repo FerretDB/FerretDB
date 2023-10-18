@@ -86,7 +86,12 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	defer docsIter.Close()
 
 	var inserted int32
+
 	writeErrors := types.MakeArray(0)
+
+	batchSize := 100
+	docIdxMap := make(map[*types.Document]int32)
+	docs := []*types.Document{}
 
 	for {
 		i, d, err := docsIter.Next()
@@ -136,33 +141,32 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 			continue
 		}
+		docIdxMap[doc] = int32(i)
+		docs = append(docs, doc)
 
-		// use bigger batches on a happy path, downgrade to one-document batches on error
-		// TODO https://github.com/FerretDB/FerretDB/issues/3271
-
-		_, err = c.InsertAll(ctx, &backends.InsertAllParams{
-			Docs: []*types.Document{doc},
-		})
-		if err != nil {
-			if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
-				we := &writeError{
-					index:  int32(i),
-					code:   commonerrors.ErrDuplicateKeyInsert,
-					errmsg: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
-				}
-				writeErrors.Append(we.Document())
-
-				if params.Ordered {
-					break
-				}
-
-				continue
-			}
-
-			return nil, lazyerrors.Error(err)
+		if i < params.Docs.Len()-1 && len(docs) < batchSize {
+			continue
 		}
 
-		inserted++
+		_, err = c.InsertAll(ctx, &backends.InsertAllParams{
+			Docs: docs,
+		})
+		if err != nil {
+			cnt, insertErr := insertOneByOneFailFastOrdered(c, ctx, docIdxMap, params, writeErrors)
+			inserted += int32(cnt)
+
+			if insertErr != nil {
+				if !backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
+					return nil, lazyerrors.Error(err)
+				}
+
+				break
+			}
+		} else {
+			inserted += int32(len(docs))
+		}
+		docs = nil
+		docIdxMap = make(map[*types.Document]int32)
 	}
 
 	res := must.NotFail(types.NewDocument(
@@ -181,4 +185,40 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}))
 
 	return &reply, nil
+}
+
+func insertOneByOneFailFastOrdered(coll backends.Collection,
+	ctx context.Context,
+	docIdxMap map[*types.Document]int32,
+	params *common.InsertParams,
+	writeErrors *types.Array,
+) (int, error) {
+	insertedDocCnt := 0
+
+	for doc, idx := range docIdxMap {
+		_, err := coll.InsertAll(ctx, &backends.InsertAllParams{
+			Docs: []*types.Document{doc},
+		})
+		if err != nil {
+			if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
+				we := &writeError{
+					index:  int32(idx),
+					code:   commonerrors.ErrDuplicateKeyInsert,
+					errmsg: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
+				}
+				writeErrors.Append(we.Document())
+
+				if params.Ordered {
+					return insertedDocCnt, err
+				}
+
+				continue
+			}
+
+			return insertedDocCnt, err
+		}
+		insertedDocCnt++
+	}
+
+	return insertedDocCnt, nil
 }
