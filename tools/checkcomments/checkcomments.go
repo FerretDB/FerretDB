@@ -16,12 +16,10 @@
 package main
 
 import (
-	"log"
-	"os"
 	"regexp"
 	"strings"
 
-	"github.com/FerretDB/gh"
+	_ "github.com/FerretDB/gh" // TODO https://github.com/FerretDB/FerretDB/issues/2733
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
@@ -41,14 +39,17 @@ func main() {
 
 // run analyses TODO comments.
 func run(pass *analysis.Pass) (any, error) {
-	token := os.Getenv("GITHUB_TOKEN")
+	// TODO https://github.com/FerretDB/FerretDB/issues/2733
+	/*
+		token := os.Getenv("GITHUB_TOKEN")
 
-	client, err := gh.NewRESTClient(token, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+		client, err := gh.NewRESTClient(token, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	issues := make(map[int]bool)
+		issues := make(map[int]bool)
+	*/
 
 	for _, f := range pass.Files {
 		for _, cg := range f.Comments {
