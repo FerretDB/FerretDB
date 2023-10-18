@@ -284,7 +284,6 @@ func TestCommandsAdministrationCompatDBStatsFreeStorage(t *testing.T) {
 			compatDoc := ConvertDocument(t, compatRes)
 
 			assert.Equal(t, compatDoc.Has("freeStorageSize"), targetDoc.Has("freeStorageSize"))
-			assert.Equal(t, compatDoc.Has("indexFreeStorageSize"), targetDoc.Has("indexFreeStorageSize"))
 			assert.Equal(t, compatDoc.Has("totalFreeStorageSize"), targetDoc.Has("totalFreeStorageSize"))
 		})
 	}

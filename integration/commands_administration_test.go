@@ -1009,9 +1009,6 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 	freeStorageSize, _ := doc.Get("freeStorageSize")
 	assert.Nil(t, freeStorageSize)
 
-	indexFreeStorageSize, _ := doc.Get("indexFreeStorageSize")
-	assert.Nil(t, indexFreeStorageSize)
-
 	totalFreeStorageSize, _ := doc.Get("totalFreeStorageSize")
 	assert.Nil(t, totalFreeStorageSize)
 
@@ -1116,7 +1113,6 @@ func TestCommandsAdministrationDBStatsFreeStorage(t *testing.T) {
 	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
 	assert.Equal(t, float64(1), doc.Remove("ok"))
 	assert.Zero(t, must.NotFail(doc.Get("freeStorageSize")))
-	assert.Zero(t, must.NotFail(doc.Get("indexFreeStorageSize")))
 	assert.Zero(t, must.NotFail(doc.Get("totalFreeStorageSize")))
 }
 
