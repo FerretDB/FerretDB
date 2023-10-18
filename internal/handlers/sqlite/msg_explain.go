@@ -79,18 +79,18 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	var qp backends.ExplainParams
-
-	if params.Aggregate {
-		qp.Filter, _ = aggregations.GetPushdownQuery(params.StagesDocs)
+	qp := backends.ExplainParams{
+		Filter: params.Filter,
 	}
 
-	if h.DisableFilterPushdown {
-		qp.Filter = nil
+	sort := params.Sort
+
+	if params.Aggregate {
+		qp.Filter, sort = aggregations.GetPushdownQuery(params.StagesDocs)
 	}
 
 	// Skip sorting if there are more than one sort parameters
-	if h.EnableSortPushdown && params.Sort.Len() == 1 {
+	if h.EnableSortPushdown && sort.Len() == 1 {
 		var order types.SortType
 
 		k := params.Sort.Keys()[0]
@@ -105,6 +105,14 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			Key:        k,
 			Descending: order == types.Descending,
 		}
+	}
+
+	if h.DisableFilterPushdown {
+		qp.Filter = nil
+	}
+
+	if !h.EnableSortPushdown {
+		qp.Sort = nil
 	}
 
 	res, err := coll.Explain(ctx, &qp)
