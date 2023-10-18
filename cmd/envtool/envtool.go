@@ -140,9 +140,7 @@ func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 		return err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3310
-	// eval := `'rs.initiate({_id: "mongodb-rs", members: [{_id: 0, host: "localhost:47017" }]})'`
-	eval := `db.serverStatus()`
+	eval := `'rs.initiate({_id: "mongodb-rs", members: [{_id: 0, host: "localhost:47017" }]})'`
 	args := []string{"compose", "exec", "-T", "mongodb", "mongosh", "--port=47017", "--eval", eval}
 
 	var buf bytes.Buffer
