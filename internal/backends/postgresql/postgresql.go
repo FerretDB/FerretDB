@@ -72,6 +72,8 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	// used, however it is not updated immediately after operation such as DELETE
 	// unless VACUUM is called, ANALYZE does not update pg_relation_size in this case.
 	//
+	// The free storage size is the size of free space map (fsm) of table relation.
+	//
 	// The smallest difference in size that `pg_relation_size` reports appears to be 8KB.
 	// Because of that inserting or deleting a single small object may not change the size.
 	//
@@ -93,10 +95,15 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	)
 
 	row := p.QueryRow(ctx, q, args...)
-	if err := row.Scan(&s.countDocuments, &s.sizeTables, &s.sizeFreeStorage, &s.sizeIndexes); err != nil {
+	if err = row.Scan(&s.countDocuments, &s.sizeTables, &s.sizeFreeStorage, &s.sizeIndexes); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
+	// The free index storage size is the size of free space map of index relation
+	// according to below documentations. However, it returns zero after inserting documents,
+	// then creating and deleting indexes.
+	// See https://www.postgresql.org/docs/current/functions-admin.html
+	// and https://www.postgresql.org/docs/current/storage-fsm.html.
 	q = fmt.Sprintf(`
 		SELECT
 			COALESCE(SUM(pg_relation_size(quote_ident(schemaname)|| '.' || quote_ident(indexname), 'fsm')), 0)

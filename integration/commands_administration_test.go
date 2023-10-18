@@ -1104,43 +1104,20 @@ func TestCommandsAdministrationDBStatsEmptyWithScale(t *testing.T) {
 func TestCommandsAdministrationDBStatsFreeStorage(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
+	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
+
+	var res bson.D
 	command := bson.D{{"dbStats", int32(1)}, {"freeStorage", int32(1)}}
-	n := int32(10)
+	err := collection.Database().RunCommand(ctx, command).Decode(&res)
+	require.NoError(t, err)
 
-	t.Run("SizeAfterInsertMany", func(t *testing.T) {
-		arr, _ := generateDocuments(0, n)
-		_, err := collection.InsertMany(ctx, arr)
-		require.NoError(t, err)
+	doc := ConvertDocument(t, res)
 
-		var res bson.D
-		err = collection.Database().RunCommand(ctx, command).Decode(&res)
-		require.NoError(t, err)
-
-		doc := ConvertDocument(t, res)
-
-		assert.Equal(t, float64(1), doc.Remove("ok"))
-		assert.Zero(t, must.NotFail(doc.Get("freeStorageSize")))
-		assert.Zero(t, must.NotFail(doc.Get("indexFreeStorageSize")))
-		assert.Zero(t, must.NotFail(doc.Get("totalFreeStorageSize")))
-	})
-
-	t.Run("SizeAfterDelete", func(t *testing.T) {
-		ra, err := collection.DeleteMany(ctx, bson.D{{"v", "foo"}})
-		require.NoError(t, err)
-		require.Equal(t, int64(n), ra.DeletedCount)
-
-		var res bson.D
-		err = collection.Database().RunCommand(ctx, command).Decode(&res)
-		require.NoError(t, err)
-
-		doc := ConvertDocument(t, res)
-
-		assert.Equal(t, float64(1), doc.Remove("ok"))
-		assert.NotZero(t, must.NotFail(doc.Get("freeStorageSize")))
-		//	assert.NotZero(t, must.NotFail(doc.Get("indexFreeStorageSize")))
-		assert.NotZero(t, must.NotFail(doc.Get("totalFreeStorageSize")))
-	})
+	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
+	assert.Equal(t, float64(1), doc.Remove("ok"))
+	assert.Zero(t, must.NotFail(doc.Get("freeStorageSize")))
+	assert.Zero(t, must.NotFail(doc.Get("indexFreeStorageSize")))
+	assert.Zero(t, must.NotFail(doc.Get("totalFreeStorageSize")))
 }
 
 //nolint:paralleltest // we test a global server status

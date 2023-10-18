@@ -17,8 +17,6 @@ package postgresql
 import (
 	"context"
 
-	"github.com/AlekSi/pointer"
-
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -156,24 +154,20 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	// See https://www.postgresql.org/docs/15/functions-admin.html#FUNCTIONS-ADMIN-DBOBJECT.
 	q := `
 		SELECT
-			SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))
+			COALESCE(SUM(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename))), 0)
 		FROM pg_tables
 		WHERE schemaname = $1`
 	args := []any{db.name}
 	row := p.QueryRow(ctx, q, args...)
 
-	var schemaSize *int64
-	if err := row.Scan(&schemaSize); err != nil {
+	var sizeTotal int64
+	if err := row.Scan(&sizeTotal); err != nil {
 		return nil, lazyerrors.Error(err)
-	}
-
-	if schemaSize == nil {
-		schemaSize = pointer.ToInt64(0)
 	}
 
 	return &backends.DatabaseStatsResult{
 		CountDocuments:       stats.countDocuments,
-		SizeTotal:            *schemaSize,
+		SizeTotal:            sizeTotal,
 		SizeIndexes:          stats.sizeIndexes,
 		SizeCollections:      stats.sizeTables,
 		SizeFreeStorage:      stats.sizeFreeStorage,

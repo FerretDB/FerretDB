@@ -94,19 +94,18 @@ func TestDatabaseStats(t *testing.T) {
 		c, err := db.Collection(cNames[0])
 		require.NoError(t, err)
 
-		n := 50
-		ids := make([]any, n)
-		docs := make([]*types.Document, n)
-		for i := 0; i < n; i++ {
+		nInsert, deleteFromIndex, deleteToIndex := 50, 10, 40
+		ids := make([]any, nInsert)
+		toInsert := make([]*types.Document, nInsert)
+		for i := 0; i < nInsert; i++ {
 			ids[i] = types.NewObjectID()
-			docs[i] = must.NotFail(types.NewDocument("_id", ids[i], "v", "foo"))
+			toInsert[i] = must.NotFail(types.NewDocument("_id", ids[i], "v", "foo"))
 		}
 
-		require.NoError(t, err)
-		_, err = c.InsertAll(ctx, &backends.InsertAllParams{Docs: docs})
+		_, err = c.InsertAll(ctx, &backends.InsertAllParams{Docs: toInsert})
 		require.NoError(t, err)
 
-		_, err = c.DeleteAll(ctx, &backends.DeleteAllParams{IDs: ids[10:40]})
+		_, err = c.DeleteAll(ctx, &backends.DeleteAllParams{IDs: ids[deleteFromIndex:deleteToIndex]})
 		require.NoError(t, err)
 
 		res, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
