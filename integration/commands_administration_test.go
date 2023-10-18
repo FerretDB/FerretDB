@@ -727,7 +727,7 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.InDelta(t, 2_400, must.NotFail(doc.Get("avgObjSize")), 2_370)
 	assert.InDelta(t, 40_000, must.NotFail(doc.Get("storageSize")), 39_900)
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("freeStorageSize")))
-	assert.Zero(t, must.NotFail(doc.Get("nindexes")))
+	assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
 	assert.InDelta(t, 12_000, must.NotFail(doc.Get("totalIndexSize")), 11_000)
 	assert.InDelta(t, 32_000, must.NotFail(doc.Get("totalSize")), 30_000)
 
