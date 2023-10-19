@@ -18,7 +18,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -33,11 +32,12 @@ type queryIterator struct {
 
 	ctx   context.Context
 	rows  *fsql.Rows // protected by m
+	s     scanner
 	token *resource.Token
 	m     sync.Mutex
 }
 
-// newQueryIterator returns a new queryIterator for the given *sql.Rows.
+// newQueryIteratorWithScanner returns a new queryIterator for the given *sql.Rows.
 //
 // Iterator's Close method closes rows.
 // They are also closed by the Next method on any error, including context cancellation,
@@ -46,15 +46,23 @@ type queryIterator struct {
 //
 // Nil rows are possible and return already done iterator.
 // It still should be Close'd.
-func newQueryIterator(ctx context.Context, rows *fsql.Rows) types.DocumentsIterator {
+func newQueryIteratorWithScanner(ctx context.Context, rows *fsql.Rows, s scanner) types.DocumentsIterator {
 	iter := &queryIterator{
 		ctx:   ctx,
 		rows:  rows,
+		s:     s,
 		token: resource.NewToken(),
 	}
 	resource.Track(iter, iter.token)
 
 	return iter
+}
+
+// newQueryIterator returns a new queryIterator for the given *sql.Rows.
+//
+// It creates documentScanner to scan a single column of rows to *types.Document.
+func newQueryIterator(ctx context.Context, rows *fsql.Rows) types.DocumentsIterator {
+	return newQueryIteratorWithScanner(ctx, rows, new(documentScanner))
 }
 
 // Next implements iterator.Interface.
@@ -88,13 +96,7 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	var b []byte
-	if err := iter.rows.Scan(&b); err != nil {
-		iter.close()
-		return unused, nil, lazyerrors.Error(err)
-	}
-
-	doc, err := sjson.Unmarshal(b)
+	doc, err := iter.s.Scan(iter.rows)
 	if err != nil {
 		iter.close()
 		return unused, nil, lazyerrors.Error(err)

@@ -66,6 +66,20 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
+	d := newDatabase(c.r, c.dbName)
+
+	list, err := d.ListCollections(ctx, new(backends.ListCollectionsParams))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var cInfo backends.CollectionInfo
+	if i, found := slices.BinarySearchFunc(list.Collections, c.name, func(e backends.CollectionInfo, t string) int {
+		return cmp.Compare(e.Name, t)
+	}); found {
+		cInfo = list.Collections[i]
+	}
+
 	if params == nil {
 		params = new(backends.QueryParams)
 	}
@@ -84,9 +98,10 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3490
-
 	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+	if cInfo.Capped() {
+		q = fmt.Sprintf(`SELECT %s,%s FROM %q`+whereClause, metadata.RecordIDColumn, metadata.DefaultColumn, meta.TableName)
+	}
 
 	if params.Limit != 0 {
 		q += ` LIMIT ?`
@@ -96,6 +111,12 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if cInfo.Capped() {
+		return &backends.QueryResult{
+			Iter: newQueryIteratorWithScanner(ctx, rows, new(recordIDScanner)),
+		}, nil
 	}
 
 	return &backends.QueryResult{
