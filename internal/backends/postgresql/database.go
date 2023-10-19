@@ -130,6 +130,10 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 
 // Stats implements backends.Database interface.
 func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsParams) (*backends.DatabaseStatsResult, error) {
+	if params == nil {
+		params = new(backends.DatabaseStatsParams)
+	}
+
 	p, err := db.r.DatabaseGetExisting(ctx, db.name)
 	if err != nil {
 		return nil, lazyerrors.Error(err)

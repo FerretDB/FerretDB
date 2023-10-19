@@ -101,7 +101,7 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	)
 
 	row := p.QueryRow(ctx, q, args...)
-	if err = row.Scan(&s.countDocuments, &s.sizeTables, &s.sizeFreeStorage, &s.sizeIndexes); err != nil {
+	if err := row.Scan(&s.countDocuments, &s.sizeTables, &s.sizeFreeStorage, &s.sizeIndexes); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
