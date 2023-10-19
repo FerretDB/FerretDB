@@ -93,7 +93,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		cInfo = list.Collections[i]
 	}
 
-	q := prepareSelectClause(c.dbName, meta.TableName, cInfo.Capped())
+	q := prepareSelectClause(c.dbName, meta.TableName, cInfo.Capped(), params.OnlyRecordIDs)
 
 	var placeholder metadata.Placeholder
 
@@ -116,6 +116,12 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	rows, err := p.Query(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if params.OnlyRecordIDs {
+		return &backends.QueryResult{
+			Iter: newQueryIteratorWithScanner(ctx, rows, new(onlyRecordIDScanner)),
+		}, nil
 	}
 
 	if cInfo.Capped() {
@@ -362,7 +368,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	res := new(backends.ExplainResult)
 
-	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName, cInfo.Capped())
+	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName, cInfo.Capped(), false)
 
 	var placeholder metadata.Placeholder
 

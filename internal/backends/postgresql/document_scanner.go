@@ -20,6 +20,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // scanner scans one or more columns from rows and returns *types.Document.
@@ -63,6 +64,23 @@ func (s *recordIDScanner) Scan(rows pgx.Rows) (*types.Document, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
+	doc.SetRecordID(recordID)
+
+	return doc, nil
+}
+
+// onlyRecordIDScanner scans recordID column only.
+type onlyRecordIDScanner struct{}
+
+// Scan scans recordID from rows and creates new *types.Document with recordID.
+func (s *onlyRecordIDScanner) Scan(rows pgx.Rows) (*types.Document, error) {
+	var recordID types.Timestamp
+
+	if err := rows.Scan(&recordID); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	doc := must.NotFail(types.NewDocument())
 	doc.SetRecordID(recordID)
 
 	return doc, nil
