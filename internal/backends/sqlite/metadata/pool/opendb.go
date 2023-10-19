@@ -40,6 +40,8 @@ func openDB(name, uri string, memory bool, l *zap.Logger, sp *state.Provider) (*
 
 	db.SetConnMaxIdleTime(0)
 	db.SetConnMaxLifetime(0)
+	db.SetMaxIdleConns(10)
+	db.SetMaxOpenConns(0)
 
 	// Each connection to in-memory database uses its own database.
 	// See https://www.sqlite.org/inmemorydb.html.
