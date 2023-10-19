@@ -221,3 +221,70 @@ func TestCommandsAdministrationCompatDBStatsWithScale(t *testing.T) {
 		})
 	}
 }
+
+func TestCommandsAdministrationCompatDBStatsFreeStorage(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers:                []shareddata.Provider{shareddata.DocumentsDocuments},
+		AddNonExistentCollection: true,
+	})
+
+	ctx, targetCollection, compatCollection := s.Ctx, s.TargetCollections[0], s.CompatCollections[0]
+
+	for name, tc := range map[string]struct { //nolint:vet // for readability
+		command bson.D // required, command to run
+		skip    string // optional, skip test with a specified reason
+	}{
+		"Unset": {
+			command: bson.D{{"dbStats", int32(1)}},
+		},
+		"Int32Zero": {
+			command: bson.D{{"dbStats", int32(1)}, {"freeStorage", int32(0)}},
+		},
+		"Int32One": {
+			command: bson.D{{"dbStats", int32(1)}, {"freeStorage", int32(1)}},
+		},
+		"Int32Negative": {
+			command: bson.D{{"dbStats", int32(1)}, {"freeStorage", int32(-1)}},
+		},
+		"True": {
+			command: bson.D{{"dbStats", int32(1)}, {"freeStorage", true}},
+		},
+		"False": {
+			command: bson.D{{"dbStats", int32(1)}, {"freeStorage", false}},
+		},
+		"Nil": {
+			command: bson.D{{"dbStats", int32(1)}, {"freeStorage", nil}},
+		},
+	} {
+		name, tc := name, tc
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var targetRes bson.D
+			targetErr := targetCollection.Database().RunCommand(ctx, tc.command).Decode(&targetRes)
+
+			var compatRes bson.D
+			compatErr := compatCollection.Database().RunCommand(ctx, tc.command).Decode(&compatRes)
+
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
+
+				return
+			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
+
+			targetDoc := ConvertDocument(t, targetRes)
+			compatDoc := ConvertDocument(t, compatRes)
+
+			assert.Equal(t, compatDoc.Has("freeStorageSize"), targetDoc.Has("freeStorageSize"))
+			assert.Equal(t, compatDoc.Has("totalFreeStorageSize"), targetDoc.Has("totalFreeStorageSize"))
+		})
+	}
+}
