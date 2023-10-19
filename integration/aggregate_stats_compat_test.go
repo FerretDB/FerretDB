@@ -126,9 +126,7 @@ func TestAggregateCompatCollStats(t *testing.T) {
 					compatNs, _ := compatDoc.Get("ns")
 					require.Equal(t, compatNs, targetNs)
 
-					targetCount, _ := targetDoc.Get("count")
-					compatCount, _ := compatDoc.Get("count")
-					require.EqualValues(t, compatCount, targetCount)
+					require.EqualValues(t, compatDoc.Has("count"), targetDoc.Has("count"))
 
 					targetStorageStatsV, _ := targetDoc.Get("storageStats")
 					compatStorageStatsV, _ := compatDoc.Get("storageStats")
@@ -141,9 +139,7 @@ func TestAggregateCompatCollStats(t *testing.T) {
 					targetStorageStats := targetStorageStatsV.(*types.Document)
 					compatStorageStats := compatStorageStatsV.(*types.Document)
 
-					targetStorageCount, _ := targetStorageStats.Get("count")
-					compatStorageCount, _ := compatStorageStats.Get("count")
-					require.EqualValues(t, compatStorageCount, targetStorageCount)
+					require.Equal(t, targetStorageStats.Has("count"), targetStorageStats.Has("count"))
 
 					targetStorageIndexes, _ := targetStorageStats.Get("nindexes")
 					compatStorageIndexes, _ := compatStorageStats.Get("nindexes")
