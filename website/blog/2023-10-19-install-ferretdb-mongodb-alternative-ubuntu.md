@@ -11,11 +11,11 @@ tags: [tutorial, product, open source]
 ![How to install FerretDB on Ubuntu](/img/blog/install-ferretdb-ubuntu.jpg)
 
 FerretDB is an open-source document database that allows you to run MongoDB commands and queries with options to use either PostgreSQL or SQLite as the backend.
-While you can run FerretDB on many operating systems including Ubuntu, there are separate requirements for each.
+While you can run FerretDB on many operating systems including Ubuntu, there are separate requirements for each OS.
 
 <!--truncate-->
 
-Installing FerretDB on Ubuntu can be a tad tricky, especially when you setting up your backend choice, or `systemd` service.
+Installing FerretDB on Ubuntu can be a tad tricky, especially when setting up your backend choice, or `systemd` service.
 
 In this tutorial, you will learn to install FerretDB on Ubuntu, and how to set it using a `systemd` file.
 
@@ -47,9 +47,9 @@ sudo apt install postgresql
 
 Run `psql --version` to confirm that PostgreSQL is installed correctly.
 
-Before connecting to a PostgreSQL instance, do note that FerretDB requires that you have a `ferretdb` database on `PostgreSQL`, associated with a username and password credential.
+Before connecting to a PostgreSQL instance, do note that FerretDB requires that you have a `ferretdb` database on `PostgreSQL` associated with an authentication credential.
 
-To do this, we need to connect to the root instance of PostgreSQL with the user as `postgres`:
+To do this, we need to connect to the default PostgreSQL instance:
 
 ```sh
 sudo -u postgres psql
@@ -65,11 +65,10 @@ Type "help" for help.
 postgres=#
 ```
 
-Create a new user and password.
-Be sure to update the credentials with the correct details before running:
+Create a new user and password (make sure to update the credentials with the correct details before running the command):
 
 ```sql
-CREATE ROLE username WITH PASSWORD 'password';
+CREATE ROLE <username> WITH PASSWORD '<password>';
 ```
 
 Create a new database named `ferretdb` and grant all privileges to the created user.
@@ -81,15 +80,15 @@ CREATE DATABASE ferretdb;
 Grant all privileges to the user:
 
 ```sql
-GRANT ALL PRIVILEGES ON DATABASE ferretdb TO username;
+GRANT ALL PRIVILEGES ON DATABASE ferretdb TO <username>;
 ```
 
 Our PostgreSQL backend is ready!
 
-Exit the PostgreSQL prompt with `\q`, and then connect back to the `ferretdb` database using the username and the password created.
+Exit the PostgreSQL prompt with `\q`, and then connect back to the `ferretdb` database using the username and the password you created.
 
 ```sh
-psql -h localhost -U username -d ferretdb
+psql -h localhost -U <username> -d ferretdb
 ```
 
 ```text
@@ -195,7 +194,7 @@ Flags:
 
 We will explore two ways to start FerretDB: via terminal and using a `systemd` file.
 
-#### Start FerretDB in terminal
+#### Start FerretDB via terminal
 
 Before we create a `systemd` for FerretDB, let's try running it via terminal by providing the appropriate flags, including `--postgresql-url`:
 
@@ -203,7 +202,7 @@ Before we create a `systemd` for FerretDB, let's try running it via terminal by 
 ferretdb --postgresql-url="postgresql://username:password@localhost/ferretdb"
 ```
 
-Update the PostgreSQL credentials to match the ones you created before.
+Update the PostgreSQL credentials to match the one you created before.
 Other necessary flags are set to their default values: `--mode="normal"`, `--listen-addr="127.0.0.1:27017"`.
 
 ```text
@@ -218,7 +217,7 @@ Other necessary flags are set to their default values: `--mode="normal"`, `--lis
 
 Creating a `systemd` service file for FerretDB will allow the database be managed by the `systemd` system and service manager.
 
-To create a systemd service file, open a new file in the `/etc/systemd/system` directory.
+To create a `systemd` service file, open a new file in the `/etc/systemd/system` directory.
 
 ```sh
 sudo nano /etc/systemd/system/ferretdb.service
@@ -266,7 +265,7 @@ Check the status of your service to be sure it's running:
 sudo systemctl status ferretdb
 ```
 
-To check the logs for the service, run this command:
+To check the logs for the FerretDB service, run this command:
 
 ```sh
 sudo journalctl -u ferretdb -f
@@ -360,8 +359,8 @@ We can see the result of the document we just created and how it appears in Post
 
 ## Bonus: Run FerretDB with the SQLite backend on Ubuntu
 
-Apart from the PostgreSQL backend, FerretDB also gives you an option to use the SQLite backend.
-But unlike PostgreSQL, SQLite is serverless, meaning it operates without the need for a separate server process or system.
+Apart from the PostgreSQL backend, FerretDB also gives you the option to use the SQLite backend.
+But unlike PostgreSQL, SQLite is serverless – it operates without the need for a separate server process or system.
 
 You can run FerretDB with the SQLite backend by providing the `--handler="sqlite"` flag when running FerretDB.
 
