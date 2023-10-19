@@ -83,7 +83,7 @@ func TestAggregateCompatCollStats(t *testing.T) {
 				t.Run(targetCollection.Name(), func(t *testing.T) {
 					require.Equal(t, compatCollection.Name(), targetCollection.Name())
 
-					// call validate to get updated statistics
+					// call validate to updated statistics
 					command := bson.D{{"validate", targetCollection.Name()}}
 					targetErr := targetCollection.Database().RunCommand(ctx, command).Err()
 					compatErr := compatCollection.Database().RunCommand(ctx, command).Err()

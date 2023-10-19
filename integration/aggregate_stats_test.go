@@ -33,7 +33,7 @@ func TestAggregateCollStats(t *testing.T) {
 
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
-	// call validate to get updated statistics
+	// call validate to updated statistics
 	err := collection.Database().RunCommand(ctx, bson.D{{"validate", collection.Name()}}).Err()
 	require.NoError(t, err)
 
