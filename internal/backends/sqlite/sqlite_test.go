@@ -32,7 +32,7 @@ func TestCollectionsStats(t *testing.T) {
 	require.NoError(t, err)
 
 	dbName := testutil.DatabaseName(t)
-	r, err := metadata.NewRegistry("file:./?mode=memory", testutil.Logger(t), sp)
+	r, err := metadata.NewRegistry("file:"+t.TempDir()+"/", testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
