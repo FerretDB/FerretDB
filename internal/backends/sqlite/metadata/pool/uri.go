@@ -80,8 +80,6 @@ func parseURI(u string) (*url.URL, error) {
 }
 
 // setDefaultValue sets default query parameters.
-//
-// Keep it in sync with docs.
 func setDefaultValues(values url.Values) {
 	var autoVacuum, busyTimeout bool
 
@@ -94,6 +92,8 @@ func setDefaultValues(values url.Values) {
 			busyTimeout = true
 		}
 	}
+
+	// keep it in sync with docs
 
 	if !autoVacuum {
 		values.Add("_pragma", "auto_vacuum(none)") // TODO https://github.com/FerretDB/FerretDB/issues/3612
