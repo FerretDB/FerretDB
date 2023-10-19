@@ -15,9 +15,11 @@
 package postgresql
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/jackc/pgerrcode"
@@ -132,6 +134,20 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 		return nil, lazyerrors.Error(err)
 	}
 
+	d := newDatabase(c.r, c.dbName)
+
+	list, err := d.ListCollections(ctx, new(backends.ListCollectionsParams))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var cInfo backends.CollectionInfo
+	if i, found := slices.BinarySearchFunc(list.Collections, c.name, func(e backends.CollectionInfo, t string) int {
+		return cmp.Compare(e.Name, t)
+	}); found {
+		cInfo = list.Collections[i]
+	}
+
 	err = pool.InTransaction(ctx, p, func(tx pgx.Tx) error {
 		for _, doc := range params.Docs {
 			var b []byte
@@ -140,7 +156,25 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 				return lazyerrors.Error(err)
 			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3490
+			if cInfo.Capped() {
+				q := fmt.Sprintf(
+					`INSERT INTO %s (%s,%s) VALUES ($1,$2)`,
+					pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
+					metadata.RecordIDColumn,
+					metadata.DefaultColumn,
+				)
+
+				if _, err = tx.Exec(ctx, q, doc.RecordID(), string(b)); err != nil {
+					var pgErr *pgconn.PgError
+					if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+						return backends.NewError(backends.ErrorCodeInsertDuplicateID, err)
+					}
+
+					return lazyerrors.Error(err)
+				}
+
+				continue
+			}
 
 			// use batches: INSERT INTO %s %s VALUES (?), (?), (?), ... up to, say, 100 documents
 			// TODO https://github.com/FerretDB/FerretDB/issues/3271
