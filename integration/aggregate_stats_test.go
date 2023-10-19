@@ -55,7 +55,7 @@ func TestAggregateCollStats(t *testing.T) {
 
 	assert.NotZero(t, must.NotFail(storageStats.Get("size")))
 	assert.NotZero(t, must.NotFail(storageStats.Get("count")))
-	assert.True(t, storageStats.Has("avgObjSize"))
+	assert.NotZero(t, must.NotFail(storageStats.Get("avgObjSize")))
 	assert.NotZero(t, must.NotFail(storageStats.Get("storageSize")))
 	assert.Zero(t, must.NotFail(storageStats.Get("freeStorageSize")))
 	assert.Equal(t, false, must.NotFail(storageStats.Get("capped")))
