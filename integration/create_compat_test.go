@@ -17,10 +17,6 @@ package integration
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
-	"go.mongodb.org/mongo-driver/mongo/options"
-
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -62,55 +58,4 @@ func TestCreateCompat(t *testing.T) {
 	require.NoError(t, compatErr)
 	require.Equal(t, targetErr, compatErr)
 	require.Equal(t, targetNames, compatNames)
-}
-
-// TestCreateCappedInvalidCommandCompat checks that invalid create capped collection commands are handled correctly.
-// For valid test cases see collStats for capped collections tests.
-func TestCreateCappedInvalidCommandCompat(t *testing.T) {
-	t.Parallel()
-
-	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		Providers: []shareddata.Provider{}, // collections are not needed for this test
-	})
-
-	targetDB := s.TargetCollections[0].Database()
-	compatDB := s.CompatCollections[0].Database()
-
-	for name, tc := range map[string]struct {
-		collectionName string
-		opts           *options.CreateCollectionOptions
-	}{
-		"NoSize": {
-			collectionName: "no_size",
-			opts:           options.CreateCollection().SetCapped(true).SetMaxDocuments(10),
-		},
-		"NoMax": {
-			collectionName: "no_max",
-			opts:           options.CreateCollection().SetCapped(true).SetSizeInBytes(512),
-		},
-		"SizeAndMax": {
-			collectionName: "size_and_max",
-			opts:           options.CreateCollection().SetCapped(true).SetSizeInBytes(512).SetMaxDocuments(10),
-		},
-	} {
-		tc, name := tc, name
-
-		t.Run(name, func(t *testing.T) {
-			t.Helper()
-			t.Parallel()
-
-			targetErr := targetDB.CreateCollection(s.Ctx, tc.collectionName, tc.opts)
-			compatErr := compatDB.CreateCollection(s.Ctx, tc.collectionName, tc.opts)
-
-			if targetErr != nil {
-				t.Logf("Target error: %v", targetErr)
-				targetErr = UnsetRaw(t, targetErr)
-				compatErr = UnsetRaw(t, compatErr)
-				assert.Equal(t, compatErr, targetErr)
-				return
-			}
-
-			require.NoError(t, compatErr, "compat error; target returned no error")
-		})
-	}
 }
