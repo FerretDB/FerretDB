@@ -510,11 +510,14 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 		Capped:    capped,
 	}
 
-	q := fmt.Sprintf(
-		`CREATE TABLE %s (%s jsonb)`,
-		pgx.Identifier{dbName, tableName}.Sanitize(),
-		DefaultColumn,
-	)
+	q := fmt.Sprintf(`CREATE TABLE %s (`, pgx.Identifier{dbName, tableName}.Sanitize())
+
+	if capped != nil {
+		q += fmt.Sprintf(`%s bigint PRIMARY KEY, `, RecordIDColumn)
+	}
+
+	q += fmt.Sprintf(`%s jsonb)`, DefaultColumn)
+
 	if _, err = p.Exec(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}

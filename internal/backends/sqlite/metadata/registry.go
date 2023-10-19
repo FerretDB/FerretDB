@@ -284,7 +284,14 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 		s++
 	}
 
-	q := fmt.Sprintf("CREATE TABLE %[1]q (%[2]s TEXT NOT NULL CHECK(%[2]s != '')) STRICT", tableName, DefaultColumn)
+	q := fmt.Sprintf("CREATE TABLE %q (", tableName)
+
+	if capped != nil {
+		q += fmt.Sprintf("%s INTEGER PRIMARY KEY, ", RecordIDColumn)
+	}
+
+	q += fmt.Sprintf("%[1]s TEXT NOT NULL CHECK(%[1]s != '')) STRICT", DefaultColumn)
+
 	if _, err = db.ExecContext(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}
