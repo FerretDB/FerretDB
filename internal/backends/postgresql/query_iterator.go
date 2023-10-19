@@ -20,7 +20,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -98,13 +97,7 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	var b []byte
-	if err := iter.rows.Scan(&b); err != nil {
-		iter.close()
-		return unused, nil, lazyerrors.Error(err)
-	}
-
-	doc, err := sjson.Unmarshal(b)
+	doc, err := iter.s.Scan(iter.rows)
 	if err != nil {
 		iter.close()
 		return unused, nil, lazyerrors.Error(err)

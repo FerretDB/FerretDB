@@ -104,18 +104,9 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	q += where
 
-	if params.Sort != nil {
-		var sort string
-		var sortArgs []any
-
-		sort, sortArgs, err = prepareOrderByClause(&placeholder, params.Sort.Key, params.Sort.Descending)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		q += sort
-		args = append(args, sortArgs...)
-	}
+	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, cInfo.Capped())
+	q += sort
+	args = append(args, sortArgs...)
 
 	if params.Limit != 0 {
 		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
@@ -382,20 +373,10 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	res.QueryPushdown = where != ""
 
-	if params.Sort != nil {
-		var sort string
-		var sortArgs []any
-
-		sort, sortArgs, err = prepareOrderByClause(&placeholder, params.Sort.Key, params.Sort.Descending)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		q += sort
-		args = append(args, sortArgs...)
-
-		res.SortPushdown = sort != ""
-	}
+	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, cInfo.Capped())
+	q += sort
+	args = append(args, sortArgs...)
+	res.SortPushdown = sort != ""
 
 	q += where
 
