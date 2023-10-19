@@ -98,7 +98,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}
 	}
 
-	q := prepareSelectClause(meta.TableName, cInfo.Capped()) + whereClause
+	q := prepareSelectClause(meta.TableName, cInfo.Capped(), params.OnlyRecordIDs) + whereClause
 
 	q += prepareOrderByClause(cInfo.Capped())
 
@@ -110,6 +110,12 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	rows, err := db.QueryContext(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if params.OnlyRecordIDs {
+		return &backends.QueryResult{
+			Iter: newQueryIteratorWithScanner(ctx, rows, new(onlyRecordIDScanner)),
+		}, nil
 	}
 
 	if cInfo.Capped() {
@@ -319,7 +325,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		params = new(backends.ExplainParams)
 	}
 
-	selectClause := prepareSelectClause(meta.TableName, cInfo.Capped())
+	selectClause := prepareSelectClause(meta.TableName, cInfo.Capped(), false)
 
 	var queryPushdown bool
 	var whereClause string

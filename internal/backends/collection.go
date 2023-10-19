@@ -80,8 +80,8 @@ type QueryParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Filter        *types.Document
 	Sort          *SortField
-	Limit         int64  // if 0 no limit pushdown is applied
-	OnlyRecordIDs bool   // TODO https://github.com/FerretDB/FerretDB/issues/3490
+	Limit         int64 // if 0 no limit pushdown is applied
+	OnlyRecordIDs bool
 	Comment       string // TODO https://github.com/FerretDB/FerretDB/issues/3573
 }
 
