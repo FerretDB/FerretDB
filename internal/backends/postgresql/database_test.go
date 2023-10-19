@@ -65,7 +65,9 @@ func TestDatabaseStats(t *testing.T) {
 	}
 
 	t.Run("DatabaseWithEmptyCollections", func(t *testing.T) {
-		res, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+		res, err := db.Stats(ctx, &backends.DatabaseStatsParams{
+			Refresh: true,
+		})
 		require.NoError(t, err)
 		require.NotZero(t, res.SizeTotal)
 		require.Zero(t, res.SizeCollections)
@@ -82,7 +84,9 @@ func TestDatabaseStats(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		res, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+		res, err := db.Stats(ctx, &backends.DatabaseStatsParams{
+			Refresh: true,
+		})
 		require.NoError(t, err)
 		require.NotZero(t, res.SizeTotal)
 		require.NotZero(t, res.SizeCollections)
