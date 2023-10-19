@@ -899,9 +899,13 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 
 		ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
+		// call validate to get updated statistics
+		err := collection.Database().RunCommand(ctx, bson.D{{"validate", collection.Name()}}).Err()
+		require.NoError(t, err)
+
 		var actual bson.D
 		command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
-		err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+		err = collection.Database().RunCommand(ctx, command).Decode(&actual)
 		require.NoError(t, err)
 
 		doc := ConvertDocument(t, actual)

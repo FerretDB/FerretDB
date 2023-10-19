@@ -33,6 +33,10 @@ func TestAggregateCollStats(t *testing.T) {
 
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
+	// call validate to get updated statistics
+	err := collection.Database().RunCommand(ctx, bson.D{{"validate", collection.Name()}}).Err()
+	require.NoError(t, err)
+
 	pipeline := bson.A{bson.D{{"$collStats", bson.D{{"storageStats", bson.D{}}}}}}
 
 	cursor, err := collection.Aggregate(ctx, pipeline)

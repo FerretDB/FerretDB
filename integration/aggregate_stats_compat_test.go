@@ -81,6 +81,21 @@ func TestAggregateCompatCollStats(t *testing.T) {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
 				t.Run(targetCollection.Name(), func(t *testing.T) {
+					require.Equal(t, compatCollection.Name(), targetCollection.Name())
+
+					// call validate to get updated statistics
+					command := bson.D{{"validate", targetCollection.Name()}}
+					targetErr := targetCollection.Database().RunCommand(ctx, command).Err()
+					compatErr := compatCollection.Database().RunCommand(ctx, command).Err()
+
+					if targetErr != nil {
+						t.Logf("Target error: %v", targetErr)
+						t.Logf("Compat error: %v", compatErr)
+
+						// error messages are intentionally not compared
+						AssertMatchesCommandError(t, compatErr, targetErr)
+					}
+
 					targetCursor, targetErr := targetCollection.Aggregate(ctx, tc.pipeline)
 					compatCursor, compatErr := compatCollection.Aggregate(ctx, tc.pipeline)
 
