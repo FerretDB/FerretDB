@@ -784,7 +784,6 @@ func filterFieldRegex(fieldValue any, regex types.Regex) (bool, error) {
 
 	re, err := regex.Compile()
 	if err != nil && err == types.ErrOptionNotImplemented {
-		// TODO: options can be set both in $options or $regex so it's hard to specify here the valid field
 		return false, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrNotImplemented,
 			`option 'x' not implemented`,

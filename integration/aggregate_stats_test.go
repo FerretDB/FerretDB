@@ -33,6 +33,10 @@ func TestAggregateCollStats(t *testing.T) {
 
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
+	// call validate to updated statistics
+	err := collection.Database().RunCommand(ctx, bson.D{{"validate", collection.Name()}}).Err()
+	require.NoError(t, err)
+
 	pipeline := bson.A{bson.D{{"$collStats", bson.D{{"storageStats", bson.D{}}}}}}
 
 	cursor, err := collection.Aggregate(ctx, pipeline)
@@ -57,15 +61,13 @@ func TestAggregateCollStats(t *testing.T) {
 	assert.NotZero(t, must.NotFail(storageStats.Get("count")))
 	assert.NotZero(t, must.NotFail(storageStats.Get("avgObjSize")))
 	assert.NotZero(t, must.NotFail(storageStats.Get("storageSize")))
-	// TODO https://github.com/FerretDB/FerretDB/issues/2447
-	// assert.NotZero(t, must.NotFail(storageStats.Get("freeStorageSize")))
+	assert.Zero(t, must.NotFail(storageStats.Get("freeStorageSize")))
 	assert.Equal(t, false, must.NotFail(storageStats.Get("capped")))
 	assert.NotZero(t, must.NotFail(storageStats.Get("nindexes")))
 	assert.NotZero(t, must.NotFail(storageStats.Get("totalIndexSize")))
 	assert.NotZero(t, must.NotFail(storageStats.Get("totalSize")))
 	assert.NotZero(t, must.NotFail(storageStats.Get("indexSizes")))
-	// TODO https://github.com/FerretDB/FerretDB/issues/2447
-	// assert.Equal(t, int32(1), must.NotFail(storageStats.Get("scaleFactor")))
+	assert.Equal(t, int32(1), must.NotFail(storageStats.Get("scaleFactor")))
 }
 
 func TestAggregateCollStatsCommandErrors(t *testing.T) {

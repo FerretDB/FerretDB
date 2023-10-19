@@ -134,6 +134,10 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 
 // Stats implements backends.Database interface.
 func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsParams) (*backends.DatabaseStatsResult, error) {
+	if params == nil {
+		params = new(backends.DatabaseStatsParams)
+	}
+
 	d := db.r.DatabaseGetExisting(ctx, db.name)
 	if d == nil {
 		return nil, backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, lazyerrors.Errorf("no database %s", db.name))
@@ -144,7 +148,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := collectionsStats(ctx, d, list)
+	stats, err := collectionsStats(ctx, d, list, params.Refresh)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -166,6 +170,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		SizeTotal:       totalSize,
 		SizeIndexes:     stats.sizeIndexes,
 		SizeCollections: stats.sizeTables,
+		SizeFreeStorage: stats.sizeFreeStorage,
 	}, nil
 }
 

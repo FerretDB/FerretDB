@@ -34,8 +34,8 @@ func (v *ValidationError) Error() string {
 
 // newValidationError returns new ValidationError.
 //
-// TODO remote and make callers use validateValue only?
-// https://github.com/FerretDB/FerretDB/issues/2412
+// Remove and make callers use validateValue only?
+// TODO https://github.com/FerretDB/FerretDB/issues/2412
 func newValidationError(err error) error {
 	return &ValidationError{err: err}
 }
