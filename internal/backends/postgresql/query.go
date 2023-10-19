@@ -30,8 +30,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// prepareSelectClause returns simple SELECT clause for provided db and table name,
-// that can be used to construct the SQL query.
+// prepareSelectClause returns SELECT clause for default column of provided db and table name.
+//
+// For capped table, it returns select clause for recordID column and default column.
 func prepareSelectClause(db, table string, capped bool) string {
 	if capped {
 		return fmt.Sprintf(

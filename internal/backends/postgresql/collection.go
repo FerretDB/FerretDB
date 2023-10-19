@@ -406,9 +406,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	var b []byte
-	err = p.QueryRow(ctx, q, args...).Scan(&b)
-
-	if err != nil {
+	if err = p.QueryRow(ctx, q, args...).Scan(&b); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
