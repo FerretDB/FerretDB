@@ -49,13 +49,29 @@ type stats struct {
 }
 
 // collectionsStats returns statistics about tables and indexes for the given collections.
-func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection) (*stats, error) {
+//
+// If refresh is true, it calls ANALYZE on the tables of the given list of collections.
+//
+// If the list of collections is empty, then stats filled with zero values is returned.
+func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collection, refresh bool) (*stats, error) {
+	if len(list) == 0 {
+		return new(stats), nil
+	}
+
 	var err error
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3518
-	q := `ANALYZE`
-	if _, err = db.ExecContext(ctx, q); err != nil {
-		return nil, lazyerrors.Error(err)
+	if refresh {
+		queries := make([]string, len(list))
+		for i, c := range list {
+			queries[i] = fmt.Sprintf("ANALYZE %q;", c.TableName)
+		}
+
+		// SQLite ANALYZE does not allow multiple tables as arguments, hence
+		// build multiple queries such as `ANALYZE 'table1'; ANALYZE 'table2';`.
+		q := strings.Join(queries, "")
+		if _, err = db.ExecContext(ctx, q); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	placeholders := make([]string, len(list))
@@ -80,7 +96,7 @@ func collectionsStats(ctx context.Context, db *fsql.DB, list []*metadata.Collect
 	// Because of that inserting or deleting a single small object may not change the size.
 	//
 	// See https://www.sqlite.org/dbstat.html and https://www.sqlite.org/fileformat.html.
-	q = fmt.Sprintf(`
+	q := fmt.Sprintf(`
 		SELECT SUM(pgsize)
 		FROM dbstat
 		WHERE name IN (%s) AND aggregate = TRUE`,
