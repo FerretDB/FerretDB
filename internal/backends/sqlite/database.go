@@ -55,6 +55,11 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 		res[i] = backends.CollectionInfo{
 			Name: c.Name,
 		}
+
+		if c.Settings.Capped != nil {
+			res[i].CappedSize = c.Settings.Capped.Size
+			res[i].CappedDocuments = c.Settings.Capped.Docs
+		}
 	}
 
 	return &backends.ListCollectionsResult{

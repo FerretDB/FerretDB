@@ -445,7 +445,7 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 // If collection already exists, (false, nil) is returned.
 //
 // If the user is not authenticated, it returns error.
-func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
+func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName string, capped *Capped) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	p, err := r.getPool(ctx)
@@ -456,7 +456,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	return r.collectionCreate(ctx, p, dbName, collectionName)
+	return r.collectionCreate(ctx, p, dbName, collectionName, capped)
 }
 
 // collectionCreate creates a collection in the database.
@@ -466,7 +466,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 // If collection already exists, (false, nil) is returned.
 //
 // It does not hold the lock.
-func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName, collectionName string) (bool, error) {
+func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName, collectionName string, capped *Capped) (bool, error) { //nolint:lll // for readability
 	defer observability.FuncCall(ctx)()
 
 	_, err := r.databaseGetOrCreate(ctx, p, dbName)
@@ -507,6 +507,7 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 	c := &Collection{
 		Name:      collectionName,
 		TableName: tableName,
+		Capped:    capped,
 	}
 
 	q := fmt.Sprintf(
@@ -737,7 +738,7 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, collectionName string, indexes []IndexInfo) error {
 	defer observability.FuncCall(ctx)()
 
-	_, err := r.collectionCreate(ctx, p, dbName, collectionName)
+	_, err := r.collectionCreate(ctx, p, dbName, collectionName, nil)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

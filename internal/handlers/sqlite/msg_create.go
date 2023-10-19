@@ -18,11 +18,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
-
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -82,7 +81,9 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	if capped {
 		// size param is required
-		size, err := document.Get("size")
+		var size any
+
+		size, err = document.Get("size")
 		if err != nil {
 			return nil, err
 		}
@@ -93,11 +94,13 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		if params.CappedSize%256 != 0 {
-			params.CappedSize = (params.CappedSize/256 + 1) * 256 // there is a requirement to round up to 256 bytes
+			params.CappedSize = (params.CappedSize/256 + 1) * 256 // there is a requirement to round up to 256 bytes' multiplier
 		}
 
 		// max param is optional
-		if max, err := document.Get("max"); err == nil {
+		var max any
+
+		if max, err = document.Get("max"); err == nil {
 			params.CappedDocuments, err = commonparams.GetWholeNumberParam(max)
 			if err != nil {
 				return nil, err
