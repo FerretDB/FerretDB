@@ -94,7 +94,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 // InsertAll implements backends.Collection interface.
 func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
-	if _, err := c.r.CollectionCreate(ctx, c.dbName, c.name); err != nil {
+	if _, err := c.r.CollectionCreate(ctx, c.dbName, c.name, nil); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

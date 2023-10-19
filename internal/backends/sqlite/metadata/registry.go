@@ -234,13 +234,13 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 //
 // Returned boolean value indicates whether the collection was created.
 // If collection already exists, (false, nil) is returned.
-func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
+func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName string, capped *Capped) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	return r.collectionCreate(ctx, dbName, collectionName)
+	return r.collectionCreate(ctx, dbName, collectionName, capped)
 }
 
 // collectionCreate creates a collection in the database.
@@ -250,7 +250,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 // If collection already exists, (false, nil) is returned.
 //
 // It does not hold the lock.
-func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
+func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName string, capped *Capped) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	db, err := r.databaseGetOrCreate(ctx, dbName)
@@ -301,6 +301,10 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 	r.colls[dbName][collectionName] = &Collection{
 		Name:      collectionName,
 		TableName: tableName,
+	}
+
+	if capped != nil {
+		r.colls[dbName][collectionName].Settings.Capped = capped
 	}
 
 	err = r.indexesCreate(ctx, dbName, collectionName, []IndexInfo{{
@@ -445,7 +449,7 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
 	defer observability.FuncCall(ctx)()
 
-	_, err := r.collectionCreate(ctx, dbName, collectionName)
+	_, err := r.collectionCreate(ctx, dbName, collectionName, nil)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

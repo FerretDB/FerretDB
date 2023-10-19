@@ -64,7 +64,9 @@ func TestCreateCompat(t *testing.T) {
 	require.Equal(t, targetNames, compatNames)
 }
 
-func TestCreateCappedCompat(t *testing.T) {
+// TestCreateCappedInvalidCommandCompat checks that invalid create capped collection commands are handled correctly.
+// For valid test cases see collStats for capped collections tests.
+func TestCreateCappedInvalidCommandCompat(t *testing.T) {
 	t.Parallel()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
@@ -77,12 +79,10 @@ func TestCreateCappedCompat(t *testing.T) {
 	for name, tc := range map[string]struct {
 		collectionName string
 		opts           *options.CreateCollectionOptions
-		resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	}{
 		"NoSize": {
 			collectionName: "no_size",
 			opts:           options.CreateCollection().SetCapped(true).SetMaxDocuments(10),
-			resultType:     emptyResult,
 		},
 		"NoMax": {
 			collectionName: "no_max",

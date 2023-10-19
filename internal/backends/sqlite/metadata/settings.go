@@ -26,6 +26,13 @@ import (
 // Settings represents collection settings.
 type Settings struct {
 	Indexes []IndexInfo `json:"indexes"`
+	Capped  *Capped     `json:"capped,omitempty"` // nil if not capped
+}
+
+// Capped represents capped collection settings.
+type Capped struct {
+	Size int64 `json:"size"`
+	Docs int64 `json:"docs"` // 0 if not set
 }
 
 // IndexInfo represents information about a single index.
@@ -53,9 +60,18 @@ func (s Settings) deepCopy() Settings {
 		}
 	}
 
-	return Settings{
+	settings := Settings{
 		Indexes: indexes,
 	}
+
+	if s.Capped != nil {
+		settings.Capped = &Capped{
+			Size: s.Capped.Size,
+			Docs: s.Capped.Docs,
+		}
+	}
+
+	return settings
 }
 
 // Value implements driver.Valuer interface.

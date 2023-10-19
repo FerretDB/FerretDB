@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -37,8 +39,6 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	unimplementedFields := []string{
 		"timeseries",
 		"expireAfterSeconds",
-		"size",
-		"max",
 		"validator",
 		"validationLevel",
 		"validationAction",
@@ -81,19 +81,28 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	if capped {
-		size, err := common.GetRequiredParam[int64](document, "size")
+		// size param is required
+		size, err := document.Get("size")
 		if err != nil {
 			return nil, err
 		}
 
-		params.CappedSize = size
-
-		max, err := common.GetOptionalParam[int64](document, "max", 0)
+		params.CappedSize, err = commonparams.GetWholeNumberParam(size)
 		if err != nil {
 			return nil, err
 		}
 
-		params.CappedDocuments = max
+		if params.CappedSize%256 != 0 {
+			params.CappedSize = (params.CappedSize/256 + 1) * 256 // there is a requirement to round up to 256 bytes
+		}
+
+		// max param is optional
+		if max, err := document.Get("max"); err == nil {
+			params.CappedDocuments, err = commonparams.GetWholeNumberParam(max)
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
 
 	db, err := h.b.Database(dbName)
