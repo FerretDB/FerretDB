@@ -37,8 +37,8 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	unimplementedFields := []string{
 		"timeseries",
 		"expireAfterSeconds",
-		"size", // TODO https://github.com/FerretDB/FerretDB/issues/3458
-		"max",  // TODO https://github.com/FerretDB/FerretDB/issues/3458
+		"size",
+		"max",
 		"validator",
 		"validationLevel",
 		"validationAction",
@@ -47,14 +47,6 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		"collation",
 	}
 	if err = common.Unimplemented(document, unimplementedFields...); err != nil {
-		return nil, err
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/3458
-	if err = common.UnimplementedNonDefault(document, "capped", func(v any) bool {
-		b, ok := v.(bool)
-		return ok && !b
-	}); err != nil {
 		return nil, err
 	}
 
@@ -79,6 +71,31 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
+	params := backends.CreateCollectionParams{
+		Name: collectionName,
+	}
+
+	capped, err := common.GetOptionalParam[bool](document, "capped", false)
+	if err != nil {
+		return nil, err
+	}
+
+	if capped {
+		size, err := common.GetRequiredParam[int64](document, "size")
+		if err != nil {
+			return nil, err
+		}
+
+		params.CappedSize = size
+
+		max, err := common.GetOptionalParam[int64](document, "max", 0)
+		if err != nil {
+			return nil, err
+		}
+
+		params.CappedDocuments = max
+	}
+
 	db, err := h.b.Database(dbName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
@@ -89,9 +106,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
-		Name: collectionName,
-	})
+	err = db.CreateCollection(ctx, &params)
 
 	switch {
 	case err == nil:

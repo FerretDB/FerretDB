@@ -87,8 +87,8 @@ type ListCollectionsResult struct {
 // CollectionInfo represents information about a single collection.
 type CollectionInfo struct {
 	Name            string
-	CappedSize      int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
-	CappedDocuments int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
+	CappedSize      int64
+	CappedDocuments int64
 }
 
 // Capped returns true if collection is capped.
@@ -119,8 +119,8 @@ func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCo
 // CreateCollectionParams represents the parameters of Database.CreateCollection method.
 type CreateCollectionParams struct {
 	Name            string
-	CappedSize      int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
-	CappedDocuments int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
+	CappedSize      int64
+	CappedDocuments int64
 }
 
 // Capped returns true if capped collection creation is requested.
