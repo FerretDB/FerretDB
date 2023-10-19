@@ -83,7 +83,7 @@ func parseURI(u string) (*url.URL, error) {
 //
 // Keep it in sync with docs.
 func setDefaultValues(values url.Values) {
-	var autoVacuum, busyTimeout, journalMode bool
+	var autoVacuum, busyTimeout bool
 
 	for _, v := range values["_pragma"] {
 		if strings.HasPrefix(v, "auto_vacuum") {
@@ -93,21 +93,13 @@ func setDefaultValues(values url.Values) {
 		if strings.HasPrefix(v, "busy_timeout") {
 			busyTimeout = true
 		}
-
-		if strings.HasPrefix(v, "journal_mode") {
-			journalMode = true
-		}
 	}
 
 	if !autoVacuum {
-		values.Add("_pragma", "auto_vacuum(none)")
+		values.Add("_pragma", "auto_vacuum(none)") // TODO https://github.com/FerretDB/FerretDB/issues/3612
 	}
 
 	if !busyTimeout {
 		values.Add("_pragma", "busy_timeout(10000)")
-	}
-
-	if !journalMode {
-		values.Add("_pragma", "journal_mode(wal)")
 	}
 }

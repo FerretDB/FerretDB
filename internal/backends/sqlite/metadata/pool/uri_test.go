@@ -52,9 +52,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "./",
 				Path:     "./",
 				OmitHost: true,
-				RawQuery: "_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
+				RawQuery: "_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29",
 			},
-			out: "file:./?_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
+			out: "file:./?_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29",
 		},
 		"LocalSubDirectory": {
 			in: "file:./tmp/",
@@ -63,9 +63,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "./tmp/",
 				Path:     "./tmp/",
 				OmitHost: true,
-				RawQuery: "_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
+				RawQuery: "_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29",
 			},
-			out: "file:./tmp/?_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
+			out: "file:./tmp/?_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29",
 		},
 		"LocalSubSubDirectory": {
 			in: "file:./tmp/dir/",
@@ -74,9 +74,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "./tmp/dir/",
 				Path:     "./tmp/dir/",
 				OmitHost: true,
-				RawQuery: "_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
+				RawQuery: "_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29",
 			},
-			out: "file:./tmp/dir/?_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
+			out: "file:./tmp/dir/?_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29",
 		},
 		"LocalDirectoryWithParameters": {
 			in: "file:./tmp/?mode=memory",
@@ -85,11 +85,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "./tmp/",
 				Path:     "./tmp/",
 				OmitHost: true,
-				RawQuery: "_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29" +
-					"&_pragma=journal_mode%28wal%29&mode=memory",
+				RawQuery: "_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29&mode=memory",
 			},
-			out: "file:./tmp/?_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29" +
-				"&_pragma=journal_mode%28wal%29&mode=memory",
+			out: "file:./tmp/?_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29&mode=memory",
 		},
 		"AbsoluteDirectory": {
 			in: "file:/tmp/",
@@ -98,9 +96,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "/tmp/",
 				Path:     "/tmp/",
 				OmitHost: true,
-				RawQuery: "_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
+				RawQuery: "_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29",
 			},
-			out: "file:/tmp/?_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
+			out: "file:/tmp/?_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29",
 		},
 		"WithEmptyAuthority": {
 			in: "file:///tmp/",
@@ -109,9 +107,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "/tmp/",
 				Path:     "/tmp/",
 				OmitHost: true,
-				RawQuery: "_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
+				RawQuery: "_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29",
 			},
-			out: "file:/tmp/?_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29&_pragma=journal_mode%28wal%29",
+			out: "file:/tmp/?_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29",
 		},
 		"WithEmptyAuthorityAndQuery": {
 			in: "file:///tmp/?mode=memory",
@@ -120,11 +118,9 @@ func TestParseURI(t *testing.T) {
 				Opaque:   "/tmp/",
 				Path:     "/tmp/",
 				OmitHost: true,
-				RawQuery: "_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29" +
-					"&_pragma=journal_mode%28wal%29&mode=memory",
+				RawQuery: "_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29&mode=memory",
 			},
-			out: "file:/tmp/?_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29" +
-				"&_pragma=journal_mode%28wal%29&mode=memory",
+			out: "file:/tmp/?_pragma=auto_vacuum%28none%29&_pragma=busy_timeout%2810000%29&mode=memory",
 		},
 		"HostIsNotEmpty": {
 			in:  "file://localhost/./tmp/?mode=memory",
