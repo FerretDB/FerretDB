@@ -98,10 +98,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}
 	}
 
-	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
-	if cInfo.Capped() {
-		q = fmt.Sprintf(`SELECT %s,%s FROM %q`+whereClause, metadata.RecordIDColumn, metadata.DefaultColumn, meta.TableName)
-	}
+	q := prepareSelectClause(meta.TableName, cInfo.Capped()) + whereClause
 
 	if params.Limit != 0 {
 		q += ` LIMIT ?`
@@ -302,9 +299,25 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}, nil
 	}
 
+	d := newDatabase(c.r, c.dbName)
+
+	list, err := d.ListCollections(ctx, new(backends.ListCollectionsParams))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var cInfo backends.CollectionInfo
+	if i, found := slices.BinarySearchFunc(list.Collections, c.name, func(e backends.CollectionInfo, t string) int {
+		return cmp.Compare(e.Name, t)
+	}); found {
+		cInfo = list.Collections[i]
+	}
+
 	if params == nil {
 		params = new(backends.ExplainParams)
 	}
+
+	selectClause := prepareSelectClause(meta.TableName, cInfo.Capped())
 
 	var queryPushdown bool
 	var whereClause string
@@ -322,9 +335,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3490
-
-	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+	q := `EXPLAIN QUERY PLAN ` + selectClause + whereClause
 
 	var limitPushdown bool
 
