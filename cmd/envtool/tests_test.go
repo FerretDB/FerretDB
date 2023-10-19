@@ -74,18 +74,28 @@ func TestRunGoTest(t *testing.T) {
 		logger, err := makeTestLogger(&actual)
 		require.NoError(t, err)
 
-		err = runGoTest(context.TODO(), []string{"./testdata", "-run=TestError"}, 1, logger.Sugar())
+		err = runGoTest(context.TODO(), []string{"./testdata", "-run=TestError"}, 2, logger.Sugar())
 
 		var exitErr *exec.ExitError
 		require.ErrorAs(t, err, &exitErr)
 		assert.Equal(t, 1, exitErr.ExitCode())
 
 		expected := []string{
-			"FAIL TestError1 (1/1)",
+			"FAIL TestError1 (1/2)",
 			"  === RUN   TestError1",
 			"  error_test.go:20: Error 1",
 			"  --- FAIL: TestError1 (0.00s)",
-			"FAIL github.com/FerretDB/FerretDB/cmd/envtool/testdata (1/1)",
+			"PASS TestError2/NotParallel",
+			"FAIL TestError2/Parallel",
+			"  === RUN   TestError2/Parallel",
+			"  === PAUSE TestError2/Parallel",
+			"  === CONT  TestError2/Parallel",
+			"  error_test.go:26: Error 2",
+			"  --- FAIL: TestError2/Parallel (0.00s)",
+			"FAIL TestError2 (2/2)",
+			"  === RUN   TestError2",
+			"  --- FAIL: TestError2 (0.00s)",
+			"FAIL github.com/FerretDB/FerretDB/cmd/envtool/testdata (2/2)",
 		}
 		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
 	})

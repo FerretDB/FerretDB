@@ -19,3 +19,13 @@ import "testing"
 func TestError1(t *testing.T) {
 	t.Error("Error 1")
 }
+
+func TestError2(t *testing.T) {
+	t.Run("Parallel", func(t *testing.T) {
+		t.Parallel()
+		t.Error("Error 2")
+	})
+
+	t.Run("NotParallel", func(t *testing.T) {
+	})
+}
