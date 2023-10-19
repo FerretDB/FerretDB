@@ -1251,7 +1251,7 @@ func TestAggregateCompatMatch(t *testing.T) {
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"ID": {
 			pipeline:       bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
-			resultPushdown: pgPushdown,
+			resultPushdown: allPushdown,
 		},
 		"Int": {
 			pipeline: bson.A{
