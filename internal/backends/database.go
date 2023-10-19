@@ -207,6 +207,7 @@ type DatabaseStatsResult struct {
 	SizeTotal       int64
 	SizeIndexes     int64
 	SizeCollections int64
+	SizeFreeStorage int64
 }
 
 // Stats returns statistic estimations about the database.

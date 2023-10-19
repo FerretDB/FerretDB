@@ -93,4 +93,29 @@ func TestDatabaseStats(t *testing.T) {
 		require.Equal(t, int64(1), res.CountDocuments)
 		require.NotZero(t, res.SizeIndexes)
 	})
+
+	t.Run("FreeStorageSize", func(t *testing.T) {
+		c, err := db.Collection(cNames[0])
+		require.NoError(t, err)
+
+		nInsert, deleteFromIndex, deleteToIndex := 50, 10, 40
+		ids := make([]any, nInsert)
+		toInsert := make([]*types.Document, nInsert)
+		for i := 0; i < nInsert; i++ {
+			ids[i] = types.NewObjectID()
+			toInsert[i] = must.NotFail(types.NewDocument("_id", ids[i], "v", "foo"))
+		}
+
+		_, err = c.InsertAll(ctx, &backends.InsertAllParams{Docs: toInsert})
+		require.NoError(t, err)
+
+		_, err = c.DeleteAll(ctx, &backends.DeleteAllParams{IDs: ids[deleteFromIndex:deleteToIndex]})
+		require.NoError(t, err)
+
+		res, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+		require.NoError(t, err)
+
+		t.Logf("freeStorage size: %d", res.SizeFreeStorage)
+		require.NotZero(t, res.SizeFreeStorage)
+	})
 }

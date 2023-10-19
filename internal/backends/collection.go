@@ -80,6 +80,7 @@ type QueryParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Filter        *types.Document
 	Sort          *SortField
+	Limit         int64  // if 0 no limit pushdown is applied
 	OnlyRecordIDs bool   // TODO https://github.com/FerretDB/FerretDB/issues/3490
 	Comment       string // TODO https://github.com/FerretDB/FerretDB/issues/3573
 }
@@ -207,6 +208,7 @@ type ExplainParams struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Filter *types.Document
 	Sort   *SortField
+	Limit  int64 // if 0 no limit pushdown is applied
 }
 
 // ExplainResult represents the results of Collection.Explain method.
@@ -215,6 +217,7 @@ type ExplainResult struct {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	QueryPushdown bool
 	SortPushdown  bool
+	LimitPushdown bool
 }
 
 // Explain return a backend-specific execution plan for the given query.
@@ -237,11 +240,12 @@ type CollectionStatsParams struct {
 
 // CollectionStatsResult represents the results of Collection.Stats method.
 type CollectionStatsResult struct {
-	CountDocuments int64
-	SizeTotal      int64
-	SizeIndexes    int64
-	SizeCollection int64
-	IndexSizes     []IndexSize
+	CountDocuments  int64
+	SizeTotal       int64
+	SizeIndexes     int64
+	SizeCollection  int64
+	SizeFreeStorage int64
+	IndexSizes      []IndexSize
 }
 
 // IndexSize represents the name and the size of an index.
