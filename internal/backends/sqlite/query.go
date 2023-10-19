@@ -30,3 +30,14 @@ func prepareSelectClause(table string, capped bool) string {
 
 	return fmt.Sprintf(`SELECT %s FROM %q`, metadata.DefaultColumn, table)
 }
+
+// prepareOrderByClause returns ORDER BY clause.
+//
+// For capped collection, it returns ORDER BY recordID.
+func prepareOrderByClause(capped bool) string {
+	if capped {
+		return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn)
+	}
+
+	return ""
+}

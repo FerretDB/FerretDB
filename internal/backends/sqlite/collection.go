@@ -100,6 +100,8 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	q := prepareSelectClause(meta.TableName, cInfo.Capped()) + whereClause
 
+	q += prepareOrderByClause(cInfo.Capped())
+
 	if params.Limit != 0 {
 		q += ` LIMIT ?`
 		args = append(args, params.Limit)
@@ -335,7 +337,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}
 	}
 
-	q := `EXPLAIN QUERY PLAN ` + selectClause + whereClause
+	q := `EXPLAIN QUERY PLAN ` + selectClause + whereClause + prepareOrderByClause(cInfo.Capped())
 
 	var limitPushdown bool
 
