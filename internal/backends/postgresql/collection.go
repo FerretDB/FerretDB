@@ -79,7 +79,21 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	q := prepareSelectClause(c.dbName, meta.TableName)
+	d := newDatabase(c.r, c.dbName)
+
+	list, err := d.ListCollections(ctx, new(backends.ListCollectionsParams))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var cInfo backends.CollectionInfo
+	if i, found := slices.BinarySearchFunc(list.Collections, c.name, func(e backends.CollectionInfo, t string) int {
+		return cmp.Compare(e.Name, t)
+	}); found {
+		cInfo = list.Collections[i]
+	}
+
+	q := prepareSelectClause(c.dbName, meta.TableName, cInfo.Capped())
 
 	var placeholder metadata.Placeholder
 
@@ -111,6 +125,12 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	rows, err := p.Query(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
+	}
+
+	if cInfo.Capped() {
+		return &backends.QueryResult{
+			Iter: newQueryIteratorWithScanner(ctx, rows, new(recordIDScanner)),
+		}, nil
 	}
 
 	return &backends.QueryResult{
@@ -335,9 +355,23 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}, nil
 	}
 
+	d := newDatabase(c.r, c.dbName)
+
+	list, err := d.ListCollections(ctx, new(backends.ListCollectionsParams))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var cInfo backends.CollectionInfo
+	if i, found := slices.BinarySearchFunc(list.Collections, c.name, func(e backends.CollectionInfo, t string) int {
+		return cmp.Compare(e.Name, t)
+	}); found {
+		cInfo = list.Collections[i]
+	}
+
 	res := new(backends.ExplainResult)
 
-	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName)
+	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName, cInfo.Capped())
 
 	var placeholder metadata.Placeholder
 

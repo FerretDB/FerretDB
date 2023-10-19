@@ -32,7 +32,16 @@ import (
 
 // prepareSelectClause returns simple SELECT clause for provided db and table name,
 // that can be used to construct the SQL query.
-func prepareSelectClause(db, table string) string {
+func prepareSelectClause(db, table string, capped bool) string {
+	if capped {
+		return fmt.Sprintf(
+			`SELECT %s,%s FROM %s`,
+			metadata.RecordIDColumn,
+			metadata.DefaultColumn,
+			pgx.Identifier{db, table}.Sanitize(),
+		)
+	}
+
 	// TODO https://github.com/FerretDB/FerretDB/issues/3573
 	return fmt.Sprintf(
 		`SELECT %s FROM %s`,

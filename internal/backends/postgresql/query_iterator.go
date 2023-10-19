@@ -34,11 +34,12 @@ type queryIterator struct {
 
 	ctx   context.Context
 	rows  pgx.Rows // protected by m
+	s     scanner
 	token *resource.Token
 	m     sync.Mutex
 }
 
-// newQueryIterator returns a new queryIterator for the given Rows.
+// newQueryIteratorWithScanner returns a new queryIterator for the given Rows.
 //
 // Iterator's Close method closes rows.
 // They are also closed by the Next method on any error, including context cancellation,
@@ -47,15 +48,23 @@ type queryIterator struct {
 //
 // Nil rows are possible and return already done iterator.
 // It still should be Close'd.
-func newQueryIterator(ctx context.Context, rows pgx.Rows) types.DocumentsIterator {
+func newQueryIteratorWithScanner(ctx context.Context, rows pgx.Rows, s scanner) types.DocumentsIterator {
 	iter := &queryIterator{
 		ctx:   ctx,
 		rows:  rows,
+		s:     s,
 		token: resource.NewToken(),
 	}
 	resource.Track(iter, iter.token)
 
 	return iter
+}
+
+// newQueryIterator returns a new queryIterator for the given *sql.Rows.
+//
+// It creates documentScanner to scan a single column of rows to *types.Document.
+func newQueryIterator(ctx context.Context, rows pgx.Rows) types.DocumentsIterator {
+	return newQueryIteratorWithScanner(ctx, rows, new(documentScanner))
 }
 
 // Next implements iterator.Interface.
