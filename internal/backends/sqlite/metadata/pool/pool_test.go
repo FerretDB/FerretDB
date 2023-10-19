@@ -95,8 +95,8 @@ func TestCreateDropStress(t *testing.T) {
 	})
 
 	for testName, uri := range map[string]string{
-		"file":             "file:./" + dir + "/",
-		"file-immediate":   "file:./" + dir + "/?_txlock=immediate",
+		"dir":              "file:./" + dir + "/",
+		"dir-immediate":    "file:./" + dir + "/?_txlock=immediate",
 		"memory":           "file:./" + dir + "/?mode=memory",
 		"memory-immediate": "file:./" + dir + "/?mode=memory&_txlock=immediate",
 	} {

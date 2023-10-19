@@ -69,7 +69,7 @@ func testBackends(t *testing.T) map[string]*testBackend {
 		require.NoError(t, err)
 
 		b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
-			URI: "file:./?mode=memory",
+			URI: "file:" + t.TempDir() + "/",
 			L:   l.Named("sqlite"),
 			P:   sp,
 		})
