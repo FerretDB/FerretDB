@@ -17,8 +17,7 @@ package backends
 import (
 	"cmp"
 	"context"
-
-	"golang.org/x/exp/slices"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
@@ -199,7 +198,7 @@ func (dbc *databaseContract) RenameCollection(ctx context.Context, params *Renam
 
 // DatabaseStatsParams represents the parameters of Database.Stats method.
 type DatabaseStatsParams struct {
-	Refresh bool // TODO https://github.com/FerretDB/FerretDB/issues/3518
+	Refresh bool
 }
 
 // DatabaseStatsResult represents the results of Database.Stats method.
@@ -208,6 +207,7 @@ type DatabaseStatsResult struct {
 	SizeTotal       int64
 	SizeIndexes     int64
 	SizeCollections int64
+	SizeFreeStorage int64
 }
 
 // Stats returns statistic estimations about the database.

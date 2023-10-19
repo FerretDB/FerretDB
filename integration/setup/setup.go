@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"runtime/trace"
+	"slices"
 	"strings"
 
 	"github.com/stretchr/testify/require"
@@ -29,7 +30,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"

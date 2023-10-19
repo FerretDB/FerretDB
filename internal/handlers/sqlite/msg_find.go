@@ -80,6 +80,33 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		qp.Filter = params.Filter
 	}
 
+	// Skip sorting if there are more than one sort parameters
+	if h.EnableSortPushdown && params.Sort.Len() == 1 {
+		var order types.SortType
+
+		k := params.Sort.Keys()[0]
+		v := params.Sort.Values()[0]
+
+		order, err = common.GetSortType(k, v)
+		if err != nil {
+			return nil, err
+		}
+
+		qp.Sort = &backends.SortField{
+			Key:        k,
+			Descending: order == types.Descending,
+		}
+	}
+
+	// Limit pushdown is not applied if:
+	//  - `filter` is set, it must fetch all documents to filter them in memory;
+	//  - `sort` is set but `EnableSortPushdown` is not set, it must fetch all documents
+	//  and sort them in memory;
+	//  - `skip` is non-zero value, skip pushdown is not supported yet.
+	if params.Filter.Len() == 0 && (params.Sort.Len() == 0 || h.EnableSortPushdown) && params.Skip == 0 {
+		qp.Limit = params.Limit
+	}
+
 	cancel := func() {}
 	if params.MaxTimeMS != 0 {
 		// It is not clear if maxTimeMS affects only find, or both find and getMore (as the current code does).

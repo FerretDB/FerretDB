@@ -18,8 +18,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
-
-	"golang.org/x/exp/slices"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -84,8 +83,11 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
+	var i int
+	var found bool
 	var cInfo backends.CollectionInfo
-	if i, found := slices.BinarySearchFunc(collections.Collections, collection, func(e backends.CollectionInfo, t string) int {
+
+	if i, found = slices.BinarySearchFunc(collections.Collections, collection, func(e backends.CollectionInfo, t string) int {
 		return cmp.Compare(e.Name, t)
 	}); found {
 		cInfo = collections.Collections[i]
@@ -101,7 +103,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := c.Stats(ctx, new(backends.CollectionStatsParams))
+	stats, err := c.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 		stats = new(backends.CollectionStatsResult)
 		err = nil
@@ -127,13 +129,19 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		indexSizes.Set(indexSize.Name, indexSize.Size/scale)
 	}
 
-	// add freeStorageSize
-	// TODO https://github.com/FerretDB/FerretDB/issues/2447
-
 	// MongoDB uses "numbers" that could be int32 or int64,
 	// FerretDB always returns int64 for simplicity.
 	pairs = append(pairs,
 		"storageSize", stats.SizeCollection/scale,
+	)
+
+	if found {
+		pairs = append(pairs,
+			"freeStorageSize", stats.SizeFreeStorage/scale,
+		)
+	}
+
+	pairs = append(pairs,
 		"nindexes", int64(len(indexes.Indexes)),
 		"totalIndexSize", stats.SizeIndexes/scale,
 		"totalSize", stats.SizeTotal/scale,

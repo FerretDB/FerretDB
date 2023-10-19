@@ -146,7 +146,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		require.True(tb, u.Path != "")
 		require.True(tb, u.Opaque == "")
 
-		// TODO port logging, tracing; merge with openDB?
+		// port logging, tracing; merge with openDB?
 		// TODO https://github.com/FerretDB/FerretDB/issues/3554
 
 		config, err := pgxpool.ParseConfig(postgreSQLURLF)
@@ -230,7 +230,6 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 			EnableSortPushdown:    *enableSortPushdownF,
 			EnableOplog:           *enableOplogF,
 
-			UseNewPG:   true,
 			UseNewHana: *useNewHanaF,
 		},
 	}
