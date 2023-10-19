@@ -84,8 +84,12 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3601
+
+	var i int
+	var found bool
 	var cInfo backends.CollectionInfo
-	if i, found := slices.BinarySearchFunc(collections.Collections, collection, func(e backends.CollectionInfo, t string) int {
+
+	if i, found = slices.BinarySearchFunc(collections.Collections, collection, func(e backends.CollectionInfo, t string) int {
 		return cmp.Compare(e.Name, t)
 	}); found {
 		cInfo = collections.Collections[i]
@@ -127,13 +131,19 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		indexSizes.Set(indexSize.Name, indexSize.Size/scale)
 	}
 
-	// add freeStorageSize
-	// TODO https://github.com/FerretDB/FerretDB/issues/2447
-
 	// MongoDB uses "numbers" that could be int32 or int64,
 	// FerretDB always returns int64 for simplicity.
 	pairs = append(pairs,
 		"storageSize", stats.SizeCollection/scale,
+	)
+
+	if found {
+		pairs = append(pairs,
+			"freeStorageSize", stats.SizeFreeStorage/scale,
+		)
+	}
+
+	pairs = append(pairs,
 		"nindexes", int64(len(indexes.Indexes)),
 		"totalIndexSize", stats.SizeIndexes/scale,
 		"totalSize", stats.SizeTotal/scale,

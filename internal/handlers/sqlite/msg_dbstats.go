@@ -51,6 +51,14 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 	}
 
+	var freeStorage bool
+
+	if v, _ := document.Get("freeStorage"); v != nil {
+		if freeStorage, err = commonparams.GetBoolOptionalParam("freeStorage", v); err != nil {
+			return nil, err
+		}
+	}
+
 	db, err := h.b.Database(dbName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
@@ -115,15 +123,36 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		pairs = append(pairs, "avgObjSize", stats.SizeCollections/stats.CountDocuments)
 	}
 
-	// add freeStorageSize, indexFreeStorageSize and totalFreeStorageSize when freeStorage parameter is 1
-	// TODO https://github.com/FerretDB/FerretDB/issues/2447
-
 	pairs = append(pairs,
 		"dataSize", stats.SizeCollections/scale,
 		"storageSize", stats.SizeCollections/scale,
+	)
+
+	if freeStorage {
+		pairs = append(pairs,
+			"freeStorageSize", stats.SizeFreeStorage/scale,
+		)
+	}
+
+	pairs = append(pairs,
 		"indexes", nIndexes,
 		"indexSize", stats.SizeIndexes/scale,
+	)
+
+	// add indexFreeStorageSize
+	// TODO https://github.com/FerretDB/FerretDB/issues/2447
+
+	pairs = append(pairs,
 		"totalSize", stats.SizeTotal/scale,
+	)
+
+	if freeStorage {
+		pairs = append(pairs,
+			"totalFreeStorageSize", (stats.SizeFreeStorage)/scale,
+		)
+	}
+
+	pairs = append(pairs,
 		"scaleFactor", float64(scale),
 		"ok", float64(1),
 	)
