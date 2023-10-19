@@ -15,9 +15,11 @@
 package sqlite
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
 	sqlite3 "modernc.org/sqlite"
@@ -110,14 +112,46 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 
-	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
+	d := newDatabase(c.r, c.dbName)
+
+	list, err := d.ListCollections(ctx, new(backends.ListCollectionsParams))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var cInfo backends.CollectionInfo
+	if i, found := slices.BinarySearchFunc(list.Collections, c.name, func(e backends.CollectionInfo, t string) int {
+		return cmp.Compare(e.Name, t)
+	}); found {
+		cInfo = list.Collections[i]
+	}
+
+	err = db.InTransaction(ctx, func(tx *fsql.Tx) error {
 		for _, doc := range params.Docs {
 			b, err := sjson.Marshal(doc)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3490
+			if cInfo.Capped() {
+				q := fmt.Sprintf(
+					`INSERT INTO %q (%s,%s) VALUES (?,?)`,
+					metadata.RecordIDColumn,
+					meta.TableName,
+					metadata.DefaultColumn,
+				)
+
+				if _, err = tx.ExecContext(ctx, q, doc.RecordID(), string(b)); err != nil {
+					var se *sqlite3.Error
+					if errors.As(err, &se) && se.Code() == sqlite3lib.SQLITE_CONSTRAINT_UNIQUE {
+						return backends.NewError(backends.ErrorCodeInsertDuplicateID, err)
+					}
+
+					return lazyerrors.Error(err)
+				}
+
+				continue
+			}
 
 			// use batches: INSERT INTO %q %s VALUES (?), (?), (?), ... up to, say, 100 documents
 			// TODO https://github.com/FerretDB/FerretDB/issues/3271
