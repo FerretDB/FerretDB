@@ -269,12 +269,12 @@ func TestDefaults(t *testing.T) {
 		"PRAGMA auto_vacuum":        "0",
 		"PRAGMA busy_timeout":       "10000",
 		"PRAGMA encoding":           "UTF-8",
-		"PRAGMA journal_mode":       "delete",
+		"PRAGMA journal_mode":       "wal",
 		"PRAGMA locking_mode":       "normal",
 	} {
 		q, expected := q, expected
 		t.Run(q, func(t *testing.T) {
-			t.Parallel()
+			// PRAGMAs can't be checked in parallel
 
 			var actual string
 			err := db.QueryRowContext(ctx, q).Scan(&actual)

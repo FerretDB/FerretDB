@@ -81,7 +81,7 @@ func parseURI(u string) (*url.URL, error) {
 
 // setDefaultValue sets default query parameters.
 func setDefaultValues(values url.Values) {
-	var autoVacuum, busyTimeout bool
+	var autoVacuum, busyTimeout, journalMode bool
 
 	for _, v := range values["_pragma"] {
 		if strings.HasPrefix(v, "auto_vacuum") {
@@ -101,5 +101,9 @@ func setDefaultValues(values url.Values) {
 
 	if !busyTimeout {
 		values.Add("_pragma", "busy_timeout(10000)")
+	}
+
+	if !journalMode {
+		values.Add("_pragma", "journal_mode(wal)")
 	}
 }

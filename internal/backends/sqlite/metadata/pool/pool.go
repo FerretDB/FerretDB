@@ -78,7 +78,7 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, map[string]*fsql.D
 		uri:   *uri,
 		l:     l,
 		sp:    sp,
-		dbs:   make(map[string]*fsql.DB),
+		dbs:   map[string]*fsql.DB{},
 		token: resource.NewToken(),
 	}
 
