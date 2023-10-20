@@ -10,8 +10,8 @@ tags: [tutorial, product, open source]
 
 ![How to install FerretDB on Ubuntu](/img/blog/install-ferretdb-ubuntu.jpg)
 
-FerretDB is an open-source document database that allows you to run MongoDB commands and queries with options to use either PostgreSQL or SQLite as the backend.
-While you can run FerretDB on many operating systems including Ubuntu, there are separate requirements for each OS.
+[FerretDB](https://www.ferretdb.io/) is an open-source document database that allows you to run MongoDB commands and queries with options to use either [PostgreSQL](https://www.postgresql.org/) or [SQLite](https://www.sqlite.org/) as the backend.
+While you can run FerretDB on many operating systems including [Ubuntu](https://ubuntu.com/), there are separate requirements for each OS.
 
 <!--truncate-->
 
@@ -21,7 +21,7 @@ In this tutorial, you will learn to install FerretDB on Ubuntu, and how to set i
 
 ## Prerequisites
 
-- Ubuntu OS: This tutorial is based on Ubuntu 22.1.0 arm64.
+- [Ubuntu OS](https://ubuntu.com/desktop): This tutorial is based on Ubuntu 22.1.0 arm64.
   Before you start, it's always a good idea to have a non-root user account with `sudo` privileges configured on your Ubuntu system.
 - `mongosh`
 
@@ -39,7 +39,7 @@ sudo apt upgrade
 
 ### Step 1: Install PostgreSQL
 
-Since we are setting up FerretDB to use the PostgreSQL backend, we'll need to install PostgreSQL, if it's not already installed.
+Since we are setting up FerretDB to use the PostgreSQL backend, we'll need to [install PostgreSQL](https://www.postgresql.org/download/), if it's not already installed.
 
 ```sh
 sudo apt install postgresql
@@ -135,7 +135,7 @@ package: deb
 debugBuild: false
 ```
 
-FerretDB provides numerous configuration flags that you can tailor to your needs.
+FerretDB provides numerous [configuration flags](https://docs.ferretdb.io/configuration/flags/) that you can tailor to your needs.
 Get a full list of the flags by running `ferretdb --help`.
 
 ```text
@@ -365,7 +365,7 @@ But unlike PostgreSQL, SQLite is serverless – it operates without the need for
 You can run FerretDB with the SQLite backend by providing the `--handler="sqlite"` flag when running FerretDB.
 
 With FerretDB installed, run this command in your terminal to start FerretDB.
-You may need to create a folder name "data" before running the command if it doesn't exist already.
+You may need to create a folder named "data" before running the command if it doesn't exist already.
 
 ```sh
 ferretdb --handler="sqlite"
@@ -405,7 +405,7 @@ In this detailed tutorial, we've guided you through the process of installing Fe
 Besides that, it also includes how to set up the PostgreSQL backend and connect to your FerretDB instance via mongosh.
 
 As a bonus for those interested in experimenting with the SQLite backend, the tutorial includes a basic section on how to set it up.
-You can also check out how to start FerretDB locally on Docker.
+You can also check out [how to start FerretDB locally on Docker](https://blog.ferretdb.io/how-to-start-ferretdb-locally-with-docker/).
 
 As an open source project, FerretDB welcomes all [contributions](https://docs.ferretdb.io/contributing/).
-You can contribute to the development of FerretDB by contributing to code and documentation, submitting bug reports and feature requests, and even a writing a blog post, so if you would like to publish an article on FerretDB, please contact us on any of our community channels.
+You can contribute to the development of FerretDB by contributing to code and documentation, submitting bug reports and feature requests, and even a writing a blog post, so if you would like to publish an article on FerretDB, please contact us on [any of our community channels](https://docs.ferretdb.io/#community).
