@@ -314,6 +314,8 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	res.QueryPushdown = where != ""
 
+	q += where
+
 	if params.Sort != nil {
 		var sort string
 		var sortArgs []any
@@ -328,8 +330,6 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 		res.SortPushdown = sort != ""
 	}
-
-	q += where
 
 	if params.Limit != 0 {
 		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
