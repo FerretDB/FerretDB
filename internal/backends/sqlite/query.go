@@ -42,7 +42,7 @@ func prepareSelectClause(table string, capped, onlyRecordIDs bool) string {
 // For capped collection, it returns ORDER BY recordID.
 func prepareOrderByClause(capped bool) string {
 	if capped {
-		return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn)
+		return fmt.Sprintf(` ORDER BY %s`, metadata.RecordIDColumn)
 	}
 
 	return ""

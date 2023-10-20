@@ -55,20 +55,18 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil),
+			Iter: newQueryIterator(ctx, nil, nil),
 		}, nil
 	}
 
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil),
+			Iter: newQueryIterator(ctx, nil, nil),
 		}, nil
 	}
 
-	d := newDatabase(c.r, c.dbName)
-
-	list, err := d.ListCollections(ctx, new(backends.ListCollectionsParams))
+	list, err := newDatabase(c.r, c.dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -112,20 +110,17 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		return nil, lazyerrors.Error(err)
 	}
 
+	var s scanner = new(documentScanner)
 	if params.OnlyRecordIDs {
-		return &backends.QueryResult{
-			Iter: newQueryIteratorWithScanner(ctx, rows, new(onlyRecordIDScanner)),
-		}, nil
+		s = new(onlyRecordIDScanner)
 	}
 
 	if cInfo.Capped() {
-		return &backends.QueryResult{
-			Iter: newQueryIteratorWithScanner(ctx, rows, new(recordIDScanner)),
-		}, nil
+		s = new(recordIDScanner)
 	}
 
 	return &backends.QueryResult{
-		Iter: newQueryIterator(ctx, rows),
+		Iter: newQueryIterator(ctx, rows, s),
 	}, nil
 }
 
@@ -138,9 +133,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 
-	d := newDatabase(c.r, c.dbName)
-
-	list, err := d.ListCollections(ctx, new(backends.ListCollectionsParams))
+	list, err := newDatabase(c.r, c.dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -159,31 +152,23 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 				return lazyerrors.Error(err)
 			}
 
+			// use batches: INSERT INTO %q %s VALUES (?), (?), (?), ... up to, say, 100 documents
+			// TODO https://github.com/FerretDB/FerretDB/issues/3271
+			q := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
+
+			var args []any
 			if cInfo.Capped() {
-				q := fmt.Sprintf(
+				q = fmt.Sprintf(
 					`INSERT INTO %q (%s,%s) VALUES (?,?)`,
 					metadata.RecordIDColumn,
 					meta.TableName,
 					metadata.DefaultColumn,
 				)
-
-				if _, err = tx.ExecContext(ctx, q, doc.RecordID(), string(b)); err != nil {
-					var se *sqlite3.Error
-					if errors.As(err, &se) && se.Code() == sqlite3lib.SQLITE_CONSTRAINT_UNIQUE {
-						return backends.NewError(backends.ErrorCodeInsertDuplicateID, err)
-					}
-
-					return lazyerrors.Error(err)
-				}
-
-				continue
+				args = append(args, doc.RecordID())
 			}
 
-			// use batches: INSERT INTO %q %s VALUES (?), (?), (?), ... up to, say, 100 documents
-			// TODO https://github.com/FerretDB/FerretDB/issues/3271
-			q := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
-
-			if _, err = tx.ExecContext(ctx, q, string(b)); err != nil {
+			args = append(args, string(b))
+			if _, err = tx.ExecContext(ctx, q, args...); err != nil {
 				var se *sqlite3.Error
 				if errors.As(err, &se) && se.Code() == sqlite3lib.SQLITE_CONSTRAINT_UNIQUE {
 					return backends.NewError(backends.ErrorCodeInsertDuplicateID, err)
@@ -307,9 +292,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}, nil
 	}
 
-	d := newDatabase(c.r, c.dbName)
-
-	list, err := d.ListCollections(ctx, new(backends.ListCollectionsParams))
+	list, err := newDatabase(c.r, c.dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

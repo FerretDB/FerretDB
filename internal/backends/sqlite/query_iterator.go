@@ -37,7 +37,8 @@ type queryIterator struct {
 	m     sync.Mutex
 }
 
-// newQueryIteratorWithScanner returns a new queryIterator for the given *sql.Rows.
+// newQueryIterator returns a new queryIterator for the given *sql.Rows
+// by scanning one or more columns using scanner.
 //
 // Iterator's Close method closes rows.
 // They are also closed by the Next method on any error, including context cancellation,
@@ -46,7 +47,7 @@ type queryIterator struct {
 //
 // Nil rows are possible and return already done iterator.
 // It still should be Close'd.
-func newQueryIteratorWithScanner(ctx context.Context, rows *fsql.Rows, s scanner) types.DocumentsIterator {
+func newQueryIterator(ctx context.Context, rows *fsql.Rows, s scanner) types.DocumentsIterator {
 	iter := &queryIterator{
 		ctx:   ctx,
 		rows:  rows,
@@ -56,13 +57,6 @@ func newQueryIteratorWithScanner(ctx context.Context, rows *fsql.Rows, s scanner
 	resource.Track(iter, iter.token)
 
 	return iter
-}
-
-// newQueryIterator returns a new queryIterator for the given *sql.Rows.
-//
-// It creates documentScanner to scan a single column of rows to *types.Document.
-func newQueryIterator(ctx context.Context, rows *fsql.Rows) types.DocumentsIterator {
-	return newQueryIteratorWithScanner(ctx, rows, new(documentScanner))
 }
 
 // Next implements iterator.Interface.

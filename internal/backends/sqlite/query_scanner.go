@@ -12,27 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package postgresql
+package sqlite
 
 import (
-	"github.com/jackc/pgx/v5"
-
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // scanner scans one or more columns from rows and returns *types.Document.
 type scanner interface {
-	Scan(rows pgx.Rows) (*types.Document, error)
+	Scan(rows *fsql.Rows) (*types.Document, error)
 }
 
-// documentScanner scans a single bytes column of rows.
+// documentScanner scans a single column of bytes.
 type documentScanner struct{}
 
-// Scan scans bytes from rows and unmarshals bytes to *types.Document.
-func (s *documentScanner) Scan(rows pgx.Rows) (*types.Document, error) {
+// Scan scans bytes and unmarshals bytes to *types.Document.
+func (s *documentScanner) Scan(rows *fsql.Rows) (*types.Document, error) {
 	var b []byte
 	if err := rows.Scan(&b); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -51,7 +50,7 @@ type recordIDScanner struct{}
 
 // Scan scans recordID and bytes from rows and unmarshals bytes to *types.Document
 // then sets recordID to the document.
-func (s *recordIDScanner) Scan(rows pgx.Rows) (*types.Document, error) {
+func (s *recordIDScanner) Scan(rows *fsql.Rows) (*types.Document, error) {
 	var recordID types.Timestamp
 	var b []byte
 
@@ -69,13 +68,12 @@ func (s *recordIDScanner) Scan(rows pgx.Rows) (*types.Document, error) {
 	return doc, nil
 }
 
-// onlyRecordIDScanner scans recordID column only.
+// onlyRecordIDScanner scans recordID column.
 type onlyRecordIDScanner struct{}
 
-// Scan scans recordID from rows and creates new *types.Document with recordID.
-func (s *onlyRecordIDScanner) Scan(rows pgx.Rows) (*types.Document, error) {
+// Scan scans recordID from rows and creates *types.Document with recordID.
+func (s *onlyRecordIDScanner) Scan(rows *fsql.Rows) (*types.Document, error) {
 	var recordID types.Timestamp
-
 	if err := rows.Scan(&recordID); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
