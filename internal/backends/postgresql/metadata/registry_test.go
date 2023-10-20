@@ -106,29 +106,30 @@ func createDatabase(t *testing.T, ctx context.Context) (r *Registry, db *pgxpool
 	return r, db, dbName
 }
 
-func TestCheckAuth(t *testing.T) {
+func TestAuth(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping in -short mode")
 	}
 
-	connInfo := conninfo.New()
-	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 
 	for name, tc := range map[string]struct {
 		uri string
 		err string
 	}{
-		"Auth": {
-			uri: "postgres://username:password@127.0.0.1:5432/ferretdb",
-			err: "",
-		},
 		"NoAuth": {
 			uri: "postgres://127.0.0.1:5432/ferretdb",
 			err: "failed to connect to `host=127.0.0.1 user=", // username is the current user running the test
 		},
-		"NonExistingUser": {
+		"WrongUser": {
 			uri: "postgres://wrong-user:wrong-password@127.0.0.1:5432/ferretdb",
-			err: "failed to connect to `host=127.0.0.1 user=wrong-user database=ferretdb`",
+			err: "failed to connect to `host=127.0.0.1 user=wrong-user database=ferretdb`: " +
+				`server error (FATAL: role "wrong-user" does not exist (SQLSTATE 28000))`,
+		},
+		"WrongDatabase": {
+			uri: "postgres://username:password@127.0.0.1:5432/wrong-database",
+			err: "failed to connect to `host=127.0.0.1 user=username database=wrong-database`: " +
+				`server error (FATAL: database "wrong-database" does not exist (SQLSTATE 3D000))`,
 		},
 	} {
 		name, tc := name, tc
@@ -141,12 +142,7 @@ func TestCheckAuth(t *testing.T) {
 			t.Cleanup(r.Close)
 
 			_, err = r.getPool(ctx)
-			if tc.err != "" {
-				require.ErrorContains(t, err, tc.err)
-				return
-			}
-
-			require.NoError(t, err)
+			require.ErrorContains(t, err, tc.err)
 		})
 	}
 }
