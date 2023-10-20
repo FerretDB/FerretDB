@@ -609,8 +609,9 @@ tasks:
         vars:
           DOCKER_IMAGES: ferretdb-local
           OUTPUT: type=docker
+          TARGET: "{{.FILE}}"
     requires:
-      vars: [FILE, TARGET]
+      vars: [FILE]
 
   # TODO https://github.com/FerretDB/FerretDB/issues/2212
   docker-all-in-one-push:

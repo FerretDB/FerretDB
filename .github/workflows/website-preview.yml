@@ -58,7 +58,7 @@ jobs:
           BRANCH: ${{ github.head_ref }} # see https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
         run: git checkout -b $BRANCH
 
-      # no actionsdesk/lfs-warning due to https://github.com/ActionsDesk/lfs-warning/issues/150
+      # no ppremk/lfs-warning due to https://github.com/ppremk/lfs-warning/issues/150
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
@@ -128,7 +128,7 @@ jobs:
           BRANCH: ${{ github.head_ref }} # see https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
         run: git checkout -b $BRANCH
 
-      # no actionsdesk/lfs-warning due to https://github.com/ActionsDesk/lfs-warning/issues/150
+      # no ppremk/lfs-warning due to https://github.com/ppremk/lfs-warning/issues/150
 
       - name: Setup Go
         uses: FerretDB/github-actions/setup-go@main
