@@ -295,6 +295,7 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'create.size' is the wrong type 'string', expected types '[long, int, decimal, double']",
 			},
+			altMessage: "BSON field 'create.size' is the wrong type 'string', expected types '[long, int, decimal, double]'",
 		},
 		"WrongMaxType": {
 			collectionName: "wrong_max",
@@ -306,6 +307,7 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'create.max' is the wrong type 'string', expected types '[long, int, decimal, double']",
 			},
+			altMessage: "BSON field 'create.max' is the wrong type 'string', expected types '[long, int, decimal, double]'",
 		},
 		"WrongCappedType": {
 			collectionName: "wrong_capped",
@@ -315,6 +317,7 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'create.capped' is the wrong type 'string', expected types '[bool, long, int, decimal, double']",
 			},
+			altMessage: "BSON field 'capped' is the wrong type 'string', expected type 'bool'",
 		},
 		"NegativeSize": {
 			collectionName: "negative_size",

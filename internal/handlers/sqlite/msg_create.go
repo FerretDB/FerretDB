@@ -88,7 +88,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		params.CappedSize, err = commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "size", size, 0)
+		params.CappedSize, err = commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "size", size, 1)
 		if err != nil {
 			return nil, err
 		}
