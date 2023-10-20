@@ -15,13 +15,16 @@
 package oplog
 
 import (
+	"cmp"
 	"context"
+	"slices"
 	"time"
 
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
@@ -65,39 +68,32 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 		return nil, err
 	}
 
-	oplogDocs := make([]*types.Document, len(params.Docs))
+	if oplogC := c.oplogCollection(ctx); oplogC != nil {
+		oplogDocs := make([]*types.Document, len(params.Docs))
 
-	var oplogDoc *types.Document
-	now := time.Now()
+		var oplogDoc *types.Document
+		now := time.Now()
 
-	for i, doc := range params.Docs {
-		d := &document{
-			o:  doc,
-			ns: c.dbName + "." + c.name,
-			op: "i",
+		for i, doc := range params.Docs {
+			d := &document{
+				o:  doc,
+				ns: c.dbName + "." + c.name,
+				op: "i",
+			}
+			if oplogDoc, err = d.marshal(now); err != nil {
+				c.l.Error("Failed to create document", zap.Error(err))
+				return res, nil
+			}
+
+			oplogDocs[i] = oplogDoc
 		}
 
-		if oplogDoc, err = d.marshal(now); err != nil {
-			c.l.Error("Failed to create oplog document", zap.Error(err))
-			return res, nil
+		_, err = oplogC.InsertAll(ctx, &backends.InsertAllParams{
+			Docs: oplogDocs,
+		})
+		if err != nil {
+			c.l.Error("Failed to insert documents", zap.Error(err))
 		}
-
-		oplogDocs[i] = oplogDoc
-	}
-
-	var oplogDB backends.Database
-	var oplogC backends.Collection
-
-	if oplogDB, err = c.origB.Database(oplogDatabase); err == nil {
-		if oplogC, err = oplogDB.Collection(oplogCollection); err == nil {
-			_, err = oplogC.InsertAll(ctx, &backends.InsertAllParams{
-				Docs: oplogDocs,
-			})
-		}
-	}
-
-	if err != nil {
-		c.l.Error("Failed to insert oplog documents", zap.Error(err))
 	}
 
 	return res, nil
@@ -112,7 +108,33 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 		return nil, err
 	}
 
-	_ = res
+	if oplogC := c.oplogCollection(ctx); oplogC != nil {
+		oplogDocs := make([]*types.Document, len(params.Docs))
+
+		var oplogDoc *types.Document
+		now := time.Now()
+
+		for i, doc := range params.Docs {
+			d := &document{
+				o:  doc,
+				ns: c.dbName + "." + c.name,
+				op: "u",
+			}
+			if oplogDoc, err = d.marshal(now); err != nil {
+				c.l.Error("Failed to create document", zap.Error(err))
+				return res, nil
+			}
+
+			oplogDocs[i] = oplogDoc
+		}
+
+		_, err = oplogC.InsertAll(ctx, &backends.InsertAllParams{
+			Docs: oplogDocs,
+		})
+		if err != nil {
+			c.l.Error("Failed to insert documents", zap.Error(err))
+		}
+	}
 
 	return res, nil
 }
@@ -126,44 +148,37 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 		return nil, err
 	}
 
-	oplogDocs := make([]*types.Document, len(params.IDs))
+	if oplogC := c.oplogCollection(ctx); oplogC != nil {
+		oplogDocs := make([]*types.Document, len(params.IDs))
 
-	var idDoc, oplogDoc *types.Document
-	now := time.Now()
+		var oplogDoc *types.Document
+		now := time.Now()
 
-	for i, id := range params.IDs {
-		if idDoc, err = types.NewDocument("_id", id); err != nil {
-			c.l.Error("Failed to create oplog _id document", zap.Error(err))
-			return res, nil
+		for i, id := range params.IDs {
+			if oplogDoc, err = types.NewDocument("_id", id); err != nil {
+				c.l.Error("Failed to create _id document", zap.Error(err))
+				return res, nil
+			}
+
+			d := &document{
+				o:  oplogDoc,
+				ns: c.dbName + "." + c.name,
+				op: "d",
+			}
+			if oplogDoc, err = d.marshal(now); err != nil {
+				c.l.Error("Failed to create document", zap.Error(err))
+				return res, nil
+			}
+
+			oplogDocs[i] = oplogDoc
 		}
 
-		d := &document{
-			o:  idDoc,
-			ns: c.dbName + "." + c.name,
-			op: "d",
+		_, err = oplogC.InsertAll(ctx, &backends.InsertAllParams{
+			Docs: oplogDocs,
+		})
+		if err != nil {
+			c.l.Error("Failed to insert documents", zap.Error(err))
 		}
-
-		if oplogDoc, err = d.marshal(now); err != nil {
-			c.l.Error("Failed to create oplog document", zap.Error(err))
-			return res, nil
-		}
-
-		oplogDocs[i] = oplogDoc
-	}
-
-	var oplogDB backends.Database
-	var oplogC backends.Collection
-
-	if oplogDB, err = c.origB.Database(oplogDatabase); err == nil {
-		if oplogC, err = oplogDB.Collection(oplogCollection); err == nil {
-			_, err = oplogC.InsertAll(ctx, &backends.InsertAllParams{
-				Docs: oplogDocs,
-			})
-		}
-	}
-
-	if err != nil {
-		c.l.Error("Failed to insert oplog documents", zap.Error(err))
 	}
 
 	return res, nil
@@ -197,6 +212,43 @@ func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateI
 // DropIndexes implements backends.Collection interface.
 func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
 	return c.origC.DropIndexes(ctx, params)
+}
+
+// oplogCollection returns the OpLog collection if it exist.
+func (c *collection) oplogCollection(ctx context.Context) backends.Collection {
+	dbList, err := c.origB.ListDatabases(ctx, nil)
+	if err != nil {
+		c.l.Error("Failed to list databases", zap.Error(err))
+		return nil
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3601
+	_, found := slices.BinarySearchFunc(dbList.Databases, oplogDatabase, func(e backends.DatabaseInfo, t string) int {
+		return cmp.Compare(e.Name, t)
+	})
+	if !found {
+		c.l.Debug("Database not found")
+		return nil
+	}
+
+	db := must.NotFail(c.origB.Database(oplogDatabase))
+
+	cList, err := db.ListCollections(ctx, nil)
+	if err != nil {
+		c.l.Error("Failed to list collections", zap.Error(err))
+		return nil
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3601
+	_, found = slices.BinarySearchFunc(cList.Collections, oplogCollection, func(e backends.CollectionInfo, t string) int {
+		return cmp.Compare(e.Name, t)
+	})
+	if !found {
+		c.l.Debug("Collection not found")
+		return nil
+	}
+
+	return must.NotFail(db.Collection(oplogCollection))
 }
 
 // check interfaces
