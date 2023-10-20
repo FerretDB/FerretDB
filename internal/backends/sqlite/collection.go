@@ -110,13 +110,13 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		return nil, lazyerrors.Error(err)
 	}
 
-	var s scanner = new(documentScanner)
+	var s scanner = new(queryScanner)
 	if cInfo.Capped() && params.OnlyRecordIDs {
-		s = new(onlyRecordIDScanner)
+		s = new(recordIDScanner)
 	}
 
 	if cInfo.Capped() {
-		s = new(recordIDScanner)
+		s = new(cappedScanner)
 	}
 
 	return &backends.QueryResult{

@@ -15,7 +15,9 @@
 package integration
 
 import (
+	"cmp"
 	"math"
+	"slices"
 	"testing"
 
 	"github.com/AlekSi/pointer"
@@ -28,6 +30,8 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // queryCompatTestCase describes query compatibility test case.
@@ -190,6 +194,120 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 	t.Helper()
 
 	testQueryCompatWithProviders(t, shareddata.AllProviders(), testCases)
+}
+
+func TestQueryCappedCollectionCompat(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers:                []shareddata.Provider{},
+		AddNonExistentCollection: true,
+	})
+	ctx, targetDB, compatDB := s.Ctx, s.TargetCollections[0].Database(), s.CompatCollections[0].Database()
+
+	cName := testutil.CollectionName(t)
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000)
+
+	targetErr := targetDB.CreateCollection(s.Ctx, cName, opts)
+	require.NoError(t, targetErr)
+
+	compatErr := compatDB.CreateCollection(s.Ctx, cName, opts)
+	require.NoError(t, compatErr)
+
+	targetCollection := targetDB.Collection(cName)
+	compatCollection := compatDB.Collection(cName)
+
+	// documents inserted are sorted by ID
+	scalars := shareddata.Scalars.Docs()
+	slices.SortFunc(scalars, func(a, b bson.D) int {
+		aID := must.NotFail(ConvertDocument(t, a).Get("_id")).(string)
+		bID := must.NotFail(ConvertDocument(t, b).Get("_id")).(string)
+		return cmp.Compare(aID, bID)
+	})
+
+	insert := make([]any, len(scalars))
+	for i, doc := range scalars {
+		insert[i] = doc
+	}
+
+	targetInsertRes, targetErr := targetCollection.InsertMany(ctx, insert)
+	require.NoError(t, targetErr)
+
+	compatInsertRes, compatErr := compatCollection.InsertMany(ctx, insert)
+	require.NoError(t, compatErr)
+
+	require.Equal(t, compatInsertRes, targetInsertRes)
+
+	for name, tc := range map[string]struct {
+		filter bson.D
+		sort   bson.D
+
+		sortPushdown resultPushdown
+	}{
+		"NoSort": {
+			filter:       bson.D{{"v", int32(42)}},
+			sortPushdown: allPushdown,
+		},
+		"Sort": {
+			filter:       bson.D{},
+			sort:         bson.D{{"_id", int32(-1)}},
+			sortPushdown: allPushdown,
+		},
+		"FilterSort": {
+			filter:       bson.D{{"v", int32(42)}},
+			sort:         bson.D{{"_id", int32(-1)}},
+			sortPushdown: allPushdown,
+		},
+	} {
+		name, tc := name, tc
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			explainQuery := bson.D{
+				{"find", targetCollection.Name()},
+				{"filter", tc.filter},
+			}
+
+			if tc.sort != nil {
+				explainQuery = append(explainQuery, bson.E{Key: "sort", Value: tc.sort})
+			}
+
+			var explainRes bson.D
+			require.NoError(t, targetCollection.Database().RunCommand(ctx, bson.D{{"explain", explainQuery}}).Decode(&explainRes))
+
+			doc := ConvertDocument(t, explainRes)
+			sortPushdown, _ := doc.Get("sortingPushdown")
+			assert.Equal(t, tc.sortPushdown.SortPushdownExpected(t), sortPushdown)
+
+			findOpts := options.Find()
+			if tc.sort != nil {
+				findOpts.SetSort(tc.sort)
+			}
+
+			targetCursor, targetErr := targetCollection.Find(ctx, tc.filter, findOpts)
+			require.NoError(t, targetErr)
+
+			compatCursor, compatErr := compatCollection.Find(ctx, tc.filter, findOpts)
+			require.NoError(t, compatErr)
+
+			var targetFindRes []bson.D
+			targetErr = targetCursor.All(ctx, &targetFindRes)
+			require.NoError(t, targetCursor.Close(ctx))
+			require.NoError(t, targetErr)
+
+			var compatFindRes []bson.D
+			compatErr = targetCursor.All(ctx, &compatFindRes)
+			require.NoError(t, compatCursor.Close(ctx))
+			require.NoError(t, compatErr)
+
+			require.Equal(t, len(compatFindRes), len(targetFindRes))
+
+			for i := range compatFindRes {
+				AssertEqualDocuments(t, compatFindRes[i], targetFindRes[i])
+			}
+		})
+	}
 }
 
 func TestQueryCompatFilter(t *testing.T) {

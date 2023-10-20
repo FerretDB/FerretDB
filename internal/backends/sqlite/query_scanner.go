@@ -27,11 +27,11 @@ type scanner interface {
 	Scan(rows *fsql.Rows) (*types.Document, error)
 }
 
-// documentScanner scans a single column of bytes.
-type documentScanner struct{}
+// queryScanner scans a single column of bytes.
+type queryScanner struct{}
 
 // Scan scans bytes and unmarshals bytes to *types.Document.
-func (s *documentScanner) Scan(rows *fsql.Rows) (*types.Document, error) {
+func (s *queryScanner) Scan(rows *fsql.Rows) (*types.Document, error) {
 	var b []byte
 	if err := rows.Scan(&b); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -45,12 +45,12 @@ func (s *documentScanner) Scan(rows *fsql.Rows) (*types.Document, error) {
 	return doc, nil
 }
 
-// recordIDScanner scans recordID column and bytes column.
-type recordIDScanner struct{}
+// cappedScanner scans recordID column and bytes column.
+type cappedScanner struct{}
 
 // Scan scans recordID and bytes from rows and unmarshals bytes to *types.Document
 // then sets recordID to the document.
-func (s *recordIDScanner) Scan(rows *fsql.Rows) (*types.Document, error) {
+func (s *cappedScanner) Scan(rows *fsql.Rows) (*types.Document, error) {
 	var recordID types.Timestamp
 	var b []byte
 
@@ -68,11 +68,11 @@ func (s *recordIDScanner) Scan(rows *fsql.Rows) (*types.Document, error) {
 	return doc, nil
 }
 
-// onlyRecordIDScanner scans recordID column.
-type onlyRecordIDScanner struct{}
+// recordIDScanner scans recordID column.
+type recordIDScanner struct{}
 
 // Scan scans recordID from rows and creates *types.Document with recordID.
-func (s *onlyRecordIDScanner) Scan(rows *fsql.Rows) (*types.Document, error) {
+func (s *recordIDScanner) Scan(rows *fsql.Rows) (*types.Document, error) {
 	var recordID types.Timestamp
 	if err := rows.Scan(&recordID); err != nil {
 		return nil, lazyerrors.Error(err)
