@@ -83,19 +83,43 @@ func TestRunGoTest(t *testing.T) {
 		expected := []string{
 			"FAIL TestError1 (1/2)",
 			"  === RUN   TestError1",
-			"  error_test.go:20: Error 1",
+			"  error_test.go:20: not hidden",
+			"  error_test.go:22: Error 1",
 			"  --- FAIL: TestError1 (0.00s)",
 			"PASS TestError2/NotParallel",
 			"FAIL TestError2/Parallel",
 			"  === RUN   TestError2/Parallel",
+			"  error_test.go:27: not hidden",
 			"  === PAUSE TestError2/Parallel",
 			"  === CONT  TestError2/Parallel",
-			"  error_test.go:26: Error 2",
+			"  error_test.go:31: not hidden",
+			"  error_test.go:33: Error 2",
 			"  --- FAIL: TestError2/Parallel (0.00s)",
 			"FAIL TestError2 (2/2)",
 			"  === RUN   TestError2",
 			"  --- FAIL: TestError2 (0.00s)",
 			"FAIL github.com/FerretDB/FerretDB/cmd/envtool/testdata (2/2)",
+		}
+		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
+	})
+
+	t.Run("Skip", func(t *testing.T) {
+		t.Parallel()
+
+		var actual []string
+		logger, err := makeTestLogger(&actual)
+		require.NoError(t, err)
+
+		err = runGoTest(context.TODO(), []string{"./testdata", "-run=TestSkip"}, 1, logger.Sugar())
+		require.NoError(t, err)
+
+		expected := []string{
+			"SKIP TestSkip1 (1/1)",
+			"  === RUN   TestSkip1",
+			"  skip_test.go:20: not hidden",
+			"  skip_test.go:22: Skip Test 1",
+			"  --- SKIP: TestSkip1 (0.00s)",
+			"PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata (1/1)",
 		}
 		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
 	})

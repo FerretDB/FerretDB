@@ -53,7 +53,7 @@ func (te testEvent) Elapsed() time.Duration {
 
 // testResult represents the outcome of a single test.
 type testResult struct {
-	output string
+	outputs []string
 }
 
 // topLevelName returns a top-level test function name.
@@ -81,8 +81,7 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 	defer cmd.Cancel() //nolint:errcheck // safe to ignore
 
 	var done int
-	results := make(map[string]*testResult, 250)
-	failedOutputs := make(map[string][]string)
+	results := make(map[string]*testResult, 275)
 
 	d := json.NewDecoder(p)
 	d.DisallowUnknownFields()
@@ -104,8 +103,6 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 			res = new(testResult)
 			results[event.Test] = res
 		}
-
-		res.output += event.Output
 
 		topLevel := topLevelName(event.Test) == event.Test
 
@@ -133,8 +130,8 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 			}
 
 			logger.Info(msg)
-			if event.Action == "fail" {
-				for _, item := range failedOutputs[event.Test] {
+			if event.Action == "fail" || event.Action == "skip" {
+				for _, item := range results[event.Test].outputs {
 					logger.Info(item)
 				}
 			}
@@ -145,7 +142,7 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 		case "cont": // the test has continued running
 		case "output": // the test printed output
 			if event.Test != "" {
-				failedOutputs[event.Test] = append(failedOutputs[event.Test], fmt.Sprintf("  %s", strings.TrimSpace(event.Output)))
+				results[event.Test].outputs = append(results[event.Test].outputs, fmt.Sprintf("  %s", strings.TrimSpace(event.Output)))
 			}
 
 		case "bench": // the benchmark printed log output but did not fail

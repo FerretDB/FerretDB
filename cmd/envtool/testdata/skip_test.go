@@ -16,24 +16,8 @@ package testdata
 
 import "testing"
 
-func TestError1(t *testing.T) {
+func TestSkip1(t *testing.T) {
 	t.Log("not hidden")
 
-	t.Error("Error 1")
-}
-
-func TestError2(t *testing.T) {
-	t.Run("Parallel", func(t *testing.T) {
-		t.Log("not hidden")
-
-		t.Parallel()
-
-		t.Log("not hidden")
-
-		t.Error("Error 2")
-	})
-
-	t.Run("NotParallel", func(t *testing.T) {
-		t.Log("not hidden")
-	})
+	t.Skip("Skip Test 1")
 }
