@@ -438,10 +438,10 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 	return res, nil
 }
 
-// CreateCollectionParams are parameters for CollectionCreate.
-type CreateCollectionParams struct {
+// CollectionCreateParams are parameters for CollectionCreate.
+type CollectionCreateParams struct {
 	DBName          string
-	CollectionName  string
+	Name            string
 	CappedSize      int64
 	CappedDocuments int64
 }
@@ -453,7 +453,7 @@ type CreateCollectionParams struct {
 // If collection already exists, (false, nil) is returned.
 //
 // If the user is not authenticated, it returns error.
-func (r *Registry) CollectionCreate(ctx context.Context, params CreateCollectionParams) (bool, error) {
+func (r *Registry) CollectionCreate(ctx context.Context, params *CollectionCreateParams) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	p, err := r.getPool(ctx)
@@ -474,10 +474,10 @@ func (r *Registry) CollectionCreate(ctx context.Context, params CreateCollection
 // If collection already exists, (false, nil) is returned.
 //
 // It does not hold the lock.
-func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, params CreateCollectionParams) (bool, error) { //nolint:lll // for readability
+func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, params *CollectionCreateParams) (bool, error) { //nolint:lll // for readability
 	defer observability.FuncCall(ctx)()
 
-	dbName, collectionName := params.DBName, params.CollectionName
+	dbName, collectionName := params.DBName, params.Name
 
 	_, err := r.databaseGetOrCreate(ctx, p, dbName)
 	if err != nil {
@@ -752,7 +752,7 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, collectionName string, indexes []IndexInfo) error {
 	defer observability.FuncCall(ctx)()
 
-	_, err := r.collectionCreate(ctx, p, CreateCollectionParams{dbName, collectionName, 0, 0})
+	_, err := r.collectionCreate(ctx, p, &CollectionCreateParams{dbName, collectionName, 0, 0})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

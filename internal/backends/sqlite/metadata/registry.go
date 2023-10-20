@@ -229,6 +229,14 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 	return res, nil
 }
 
+// CollectionCreteParams contains parameters for CollectionCreate.
+type CollectionCreteParams struct {
+	DBName          string
+	CollectionName  string
+	CappedSize      int64
+	CappedDocuments int64
+}
+
 // CollectionCreate creates a collection in the database.
 // Database will be created automatically if needed.
 //
