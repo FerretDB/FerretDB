@@ -154,7 +154,7 @@ func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
 
 			assert.Equal(t, must.NotFail(compatDoc.Get("capped")), must.NotFail(targetDoc.Get("capped")))
 
-			// FerretDB always returns int64 (while MongoDB can return int32), so it's enough to compare values, not types
+			// TODO https://github.com/FerretDB/FerretDB/issues/3582
 			assert.Equal(t, int64(1024), must.NotFail(targetDoc.Get("maxSize"))) // size was rounded up to 1024 bytes
 			assert.EqualValues(t, must.NotFail(compatDoc.Get("maxSize")), must.NotFail(targetDoc.Get("maxSize")))
 			assert.EqualValues(t, must.NotFail(compatDoc.Get("max")), must.NotFail(targetDoc.Get("max")))
