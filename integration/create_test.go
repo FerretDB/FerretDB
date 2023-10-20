@@ -21,14 +21,13 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/integration/shareddata"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestCreateStress(t *testing.T) {
@@ -258,6 +257,16 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 		err        *mongo.CommandError // required, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 	}{
+		"ZeroSize": {
+			collectionName: "zero_size",
+			capped:         true,
+			size:           0,
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'size' value must be >= 1, actual value '0'",
+			},
+		},
 		"NoSize": {
 			collectionName: "no_size",
 			capped:         true,
