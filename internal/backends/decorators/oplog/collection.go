@@ -216,21 +216,6 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 
 // oplogCollection returns the OpLog collection if it exist.
 func (c *collection) oplogCollection(ctx context.Context) backends.Collection {
-	dbList, err := c.origB.ListDatabases(ctx, nil)
-	if err != nil {
-		c.l.Error("Failed to list databases", zap.Error(err))
-		return nil
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/3601
-	_, found := slices.BinarySearchFunc(dbList.Databases, oplogDatabase, func(e backends.DatabaseInfo, t string) int {
-		return cmp.Compare(e.Name, t)
-	})
-	if !found {
-		c.l.Debug("Database not found")
-		return nil
-	}
-
 	db := must.NotFail(c.origB.Database(oplogDatabase))
 
 	cList, err := db.ListCollections(ctx, nil)
@@ -240,7 +225,7 @@ func (c *collection) oplogCollection(ctx context.Context) backends.Collection {
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3601
-	_, found = slices.BinarySearchFunc(cList.Collections, oplogCollection, func(e backends.CollectionInfo, t string) int {
+	_, found := slices.BinarySearchFunc(cList.Collections, oplogCollection, func(e backends.CollectionInfo, t string) int {
 		return cmp.Compare(e.Name, t)
 	})
 	if !found {
