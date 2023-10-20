@@ -79,7 +79,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
-	if capped {
+	if h.EnableOplog && capped {
 		// size param is required
 		var size any
 
@@ -88,7 +88,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, err
 		}
 
-		params.CappedSize, err = commonparams.GetWholeNumberParam(size)
+		params.CappedSize, err = commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "size", size, 0)
 		if err != nil {
 			return nil, err
 		}
@@ -101,7 +101,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		var max any
 
 		if max, err = document.Get("max"); err == nil {
-			params.CappedDocuments, err = commonparams.GetWholeNumberParam(max)
+			params.CappedDocuments, err = commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "max", max, 0)
 			if err != nil {
 				return nil, err
 			}
