@@ -17,7 +17,6 @@ package setup
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/url"
 	"os"
 	"path"
@@ -29,6 +28,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
@@ -156,15 +156,9 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		require.NoError(tb, err)
 
 		name := testutil.DirectoryName(tb)
-		template := "template1"
 
-		q := "DROP DATABASE IF EXISTS " + pgx.Identifier{name}.Sanitize()
-		_, err = p.Exec(ctx, q)
-		require.NoError(tb, err)
-
-		q = fmt.Sprintf("CREATE DATABASE %s TEMPLATE %s", pgx.Identifier{name}.Sanitize(), pgx.Identifier{template}.Sanitize())
-		_, err = p.Exec(ctx, q)
-		require.NoError(tb, err)
+		require.NoError(tb, pool.DropDatabase(ctx, p, name))
+		require.NoError(tb, pool.CreateDatabase(ctx, p, name))
 
 		p.Reset()
 

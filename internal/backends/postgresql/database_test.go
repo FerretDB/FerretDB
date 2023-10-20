@@ -40,7 +40,7 @@ func TestDatabaseStats(t *testing.T) {
 	require.NoError(t, err)
 
 	params := NewBackendParams{
-		URI: "postgres://username:password@127.0.0.1:5432/ferretdb",
+		URI: "postgres://username:password@127.0.0.1:5432/ferretdb", // FIXME
 		L:   testutil.Logger(t),
 		P:   sp,
 	}

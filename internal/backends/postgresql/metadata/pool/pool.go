@@ -18,9 +18,11 @@
 package pool
 
 import (
+	"context"
 	"net/url"
 	"sync"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -44,6 +46,8 @@ type Pool struct {
 	l       *zap.Logger
 	sp      *state.Provider
 
+	dbName string
+
 	rw    sync.RWMutex
 	pools map[string]*pgxpool.Pool // by full URI
 
@@ -60,6 +64,21 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, error) {
 	values := baseURI.Query()
 	setDefaultValues(values)
 	baseURI.RawQuery = values.Encode()
+
+	// if baseURI.Path != "" {
+	// 	p, err := openDB(u, l, sp)
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+
+	// 	name := baseURI.Path
+	// 	q := fmt.Sprintf("CREATE DATABASE %s TEMPLATE template1", pgx.Identifier{name}.Sanitize())
+	// 	if _, err := p.Exec(context.TODO(), q); err != nil {
+	// 		return nil, lazyerrors.Error(err)
+	// 	}
+
+	// 	panic(baseURI.Path)
+	// }
 
 	p := &Pool{
 		baseURI: *baseURI,
@@ -86,6 +105,38 @@ func (p *Pool) Close() {
 	p.pools = nil
 
 	resource.Untrack(p, p.token)
+}
+
+// Close closes all connections in the pool and drops PostgreSQL database.
+//
+// Should be used only by tests.
+func (p *Pool) CloseAndDrop() error {
+	p.rw.Lock()
+	defer p.rw.Unlock()
+
+	var dropped bool
+	for _, pool := range p.pools {
+		if p.dbName != "" && !dropped {
+			q := "DROP DATABASE IF EXISTS " + pgx.Identifier{p.dbName}.Sanitize()
+			if _, err := pool.Exec(context.TODO(), q); err != nil {
+				p.l.Debug("Pool: failed to drop database", zap.String("name", p.dbName), zap.Error(err))
+			} else {
+				dropped = true
+			}
+		}
+
+		pool.Close()
+	}
+
+	p.pools = nil
+
+	resource.Untrack(p, p.token)
+
+	if p.dbName != "" && !dropped {
+		p.l.Error("Pool: failed to drop database", zap.String("name", p.dbName))
+	}
+
+	return nil
 }
 
 // Get returns a pool of connections to PostgreSQL database for that username/password combination.
