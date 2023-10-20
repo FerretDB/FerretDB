@@ -111,7 +111,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}
 
 	var s scanner = new(documentScanner)
-	if params.OnlyRecordIDs {
+	if cInfo.Capped() && params.OnlyRecordIDs {
 		s = new(onlyRecordIDScanner)
 	}
 

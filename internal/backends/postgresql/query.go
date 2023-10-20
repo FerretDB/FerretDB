@@ -33,11 +33,11 @@ import (
 
 // prepareSelectClause returns SELECT clause for default column of provided db and table name.
 //
-// For onlyRecordIDs true, it returns select clause for recordID column.
+// For capped collection with onlyRecordIDs, it returns select clause for recordID column.
 //
 // For capped collection, it returns select clause for recordID column and default column.
 func prepareSelectClause(db, table string, capped, onlyRecordIDs bool) string {
-	if onlyRecordIDs {
+	if capped && onlyRecordIDs {
 		return fmt.Sprintf(
 			`SELECT %s FROM %s`,
 			metadata.RecordIDColumn,

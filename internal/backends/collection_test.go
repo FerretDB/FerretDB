@@ -24,9 +24,116 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
+
+func TestCollectionQuery(t *testing.T) {
+	t.Parallel()
+
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+
+	for name, b := range testBackends(t) {
+		name, b := name, b
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			dbName := testutil.DatabaseName(t)
+			collName, cappedCollName := testutil.CollectionName(t), testutil.CollectionName(t)+"capped"
+			cleanupDatabase(t, ctx, b, dbName)
+
+			db, err := b.Database(dbName)
+			require.NoError(t, err)
+
+			coll, err := db.Collection(collName)
+			require.NoError(t, err)
+
+			err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
+				Name:       cappedCollName,
+				CappedSize: 8192,
+			})
+			require.NoError(t, err)
+
+			cappedColl, err := db.Collection(cappedCollName)
+			require.NoError(t, err)
+
+			insertDoc := must.NotFail(types.NewDocument("_id", int32(42)))
+			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{
+				Docs: []*types.Document{
+					insertDoc,
+				},
+			})
+			require.NoError(t, err)
+
+			_, err = cappedColl.InsertAll(ctx, &backends.InsertAllParams{
+				Docs: []*types.Document{
+					insertDoc,
+				},
+			})
+			require.NoError(t, err)
+
+			t.Run("CappedCollection", func(t *testing.T) {
+				t.Parallel()
+
+				queryRes, err := cappedColl.Query(ctx, new(backends.QueryParams))
+				require.NoError(t, err)
+
+				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
+				require.NoError(t, err)
+
+				require.Len(t, docs, 1)
+				assert.NotEmpty(t, docs[0].RecordID())
+				assert.Equal(t, insertDoc.Keys(), docs[0].Keys())
+				assert.Equal(t, insertDoc.Values(), docs[0].Values())
+			})
+
+			t.Run("CappedCollectionOnlyRecordIDs", func(t *testing.T) {
+				t.Parallel()
+
+				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{OnlyRecordIDs: true})
+				require.NoError(t, err)
+
+				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
+				require.NoError(t, err)
+
+				require.Len(t, docs, 1)
+				assert.NotEmpty(t, docs[0].RecordID())
+				assert.Empty(t, docs[0].Keys())
+			})
+
+			t.Run("NonCappedCollection", func(t *testing.T) {
+				t.Parallel()
+
+				queryRes, err := coll.Query(ctx, new(backends.QueryParams))
+				require.NoError(t, err)
+
+				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
+				require.NoError(t, err)
+
+				require.Len(t, docs, 1)
+				assert.Empty(t, docs[0].RecordID())
+				assert.Equal(t, insertDoc.Keys(), docs[0].Keys())
+				assert.Equal(t, insertDoc.Values(), docs[0].Values())
+			})
+
+			t.Run("NonCappedCollectionOnlyRecordID", func(t *testing.T) {
+				t.Parallel()
+
+				queryRes, err := coll.Query(ctx, &backends.QueryParams{OnlyRecordIDs: true})
+				require.NoError(t, err)
+
+				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
+				require.NoError(t, err)
+
+				require.Len(t, docs, 1)
+				assert.Empty(t, docs[0].RecordID())
+				assert.Equal(t, insertDoc.Keys(), docs[0].Keys())
+				assert.Equal(t, insertDoc.Values(), docs[0].Values())
+			})
+		})
+	}
+}
 
 func TestCollectionUpdateAll(t *testing.T) {
 	t.Parallel()
