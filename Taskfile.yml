@@ -63,7 +63,6 @@ tasks:
       - go mod tidy
       - go mod verify
       - task: gen-version
-      - task: build-envtool
 
   env-reset:
     desc: "Clean ALL Go and Docker data (caches, images, volumes), and reset environment"
@@ -100,7 +99,7 @@ tasks:
         {{.SERVICES}}
 
   env-setup:
-    deps: [gen-version, build-envtool]
+    deps: [gen-version]
     cmds:
       - bin/envtool{{exeExt}} setup
 
@@ -140,11 +139,8 @@ tasks:
   gen-version:
     run: once
     cmds:
+      # those two should always be in sync
       - go generate -x ./build/version
-
-  build-envtool:
-    run: once
-    cmds:
       - go build -v -o bin/ ./cmd/envtool/
 
   build-host:
@@ -200,6 +196,7 @@ tasks:
 
   test-integration-postgresql:
     desc: "Run integration tests for `postgresql` backend"
+    deps: [gen-version]
     dir: integration
     cmds:
       - >
@@ -225,6 +222,7 @@ tasks:
 
   test-integration-sqlite:
     desc: "Run integration tests for `sqlite` backend"
+    deps: [gen-version]
     dir: integration
     cmds:
       - >
@@ -250,6 +248,7 @@ tasks:
 
   test-integration-hana:
     desc: "Run integration tests for `hana` handler"
+    deps: [gen-version]
     dir: integration
     cmds:
       - >
@@ -276,6 +275,7 @@ tasks:
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
+    deps: [gen-version]
     dir: integration
     cmds:
       - >
@@ -329,6 +329,7 @@ tasks:
 
   fuzz-corpus:
     desc: "Sync seed and generated fuzz corpora with FUZZ_CORPUS"
+    deps: [gen-version]
     cmds:
       - bin/envtool{{exeExt}} fuzz corpus generated {{.FUZZ_CORPUS}}
       - bin/envtool{{exeExt}} fuzz corpus seed {{.FUZZ_CORPUS}}
@@ -608,8 +609,9 @@ tasks:
         vars:
           DOCKER_IMAGES: ferretdb-local
           OUTPUT: type=docker
+          TARGET: "{{.FILE}}"
     requires:
-      vars: [FILE, TARGET]
+      vars: [FILE]
 
   # TODO https://github.com/FerretDB/FerretDB/issues/2212
   docker-all-in-one-push:
