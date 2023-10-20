@@ -16,10 +16,14 @@ package pool
 
 import (
 	"fmt"
+	"os"
 	"sync/atomic"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	sqlite3 "modernc.org/sqlite"
+	sqlite3lib "modernc.org/sqlite/lib"
 
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -83,11 +87,19 @@ func TestCreateDropStress(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
+	dir := testutil.DirectoryName(t)
+	require.NoError(t, os.RemoveAll(dir))
+	require.NoError(t, os.MkdirAll(dir, 0o777))
+
+	t.Cleanup(func() {
+		require.NoError(t, os.Remove(dir), "directory should be empty after tests")
+	})
+
 	for testName, uri := range map[string]string{
-		"file":             "file:./",
-		"file-immediate":   "file:./?_txlock=immediate",
-		"memory":           "file:./?mode=memory",
-		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
+		"dir":              "file:./" + dir + "/",
+		"dir-immediate":    "file:./" + dir + "/?_txlock=immediate",
+		"memory":           "file:./" + dir + "/?mode=memory",
+		"memory-immediate": "file:./" + dir + "/?mode=memory&_txlock=immediate",
 	} {
 		t.Run(testName, func(t *testing.T) {
 			p, _, err := New(uri, testutil.Logger(t), sp)
@@ -142,6 +154,76 @@ func TestCreateDropStress(t *testing.T) {
 	}
 }
 
+func TestMemory(t *testing.T) {
+	t.Parallel()
+	ctx := testutil.Ctx(t)
+
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	dir := testutil.DirectoryName(t)
+	require.NoError(t, os.RemoveAll(dir))
+	require.NoError(t, os.MkdirAll(dir, 0o777))
+
+	t.Cleanup(func() {
+		require.NoError(t, os.RemoveAll(dir))
+	})
+
+	dbName := testutil.DatabaseName(t) + "1"
+
+	p0, dbs, err := New("file:./"+dir+"/", testutil.Logger(t), sp)
+	require.NoError(t, err)
+	assert.Empty(t, dbs)
+	t.Cleanup(p0.Close)
+
+	_, created, err := p0.GetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+	assert.True(t, created)
+
+	p1, dbs, err := New("file:./"+dir+"/?mode=memory", testutil.Logger(t), sp)
+	require.NoError(t, err)
+	assert.Empty(t, dbs, "dir content should be ignored for mode=memory")
+	t.Cleanup(p1.Close)
+
+	db1, created, err := p1.GetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+	assert.True(t, created)
+
+	_, err = db1.ExecContext(ctx, "CREATE TABLE test (id INT) STRICT")
+	require.NoError(t, err)
+
+	db2, created, err := p1.GetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+	assert.False(t, created, "the same database should be returned for the same name")
+	assert.Same(t, db1, db2)
+
+	_, err = db2.ExecContext(ctx, "CREATE TABLE test (id INT) STRICT")
+	var se *sqlite3.Error
+	require.ErrorAs(t, err, &se)
+	assert.Equal(t, sqlite3lib.SQLITE_ERROR, se.Code())
+
+	db2, created, err = p1.GetOrCreate(ctx, testutil.DatabaseName(t)+"2")
+	require.NoError(t, err)
+	assert.True(t, created, "different database should be returned for different name")
+	assert.NotSame(t, db1, db2)
+
+	_, err = db2.ExecContext(ctx, "CREATE TABLE test (id INT) STRICT")
+	require.NoError(t, err)
+
+	p2, dbs, err := New("file:./"+dir+"/?mode=memory", testutil.Logger(t), sp)
+	require.NoError(t, err)
+	assert.Empty(t, dbs)
+	t.Cleanup(p2.Close)
+
+	db2, created, err = p2.GetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+	assert.True(t, created, "different database should be returned for the same name, but different pool")
+	assert.NotSame(t, db1, db2)
+
+	_, err = db2.ExecContext(ctx, "CREATE TABLE test (id INT) STRICT")
+	require.NoError(t, err)
+}
+
 func TestDefaults(t *testing.T) {
 	t.Parallel()
 	ctx := testutil.Ctx(t)
@@ -149,15 +231,11 @@ func TestDefaults(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	p, _, err := New("file:./", testutil.Logger(t), sp)
+	p, _, err := New("file:"+t.TempDir()+"/", testutil.Logger(t), sp)
 	require.NoError(t, err)
+	t.Cleanup(p.Close)
 
 	dbName := testutil.DatabaseName(t)
-
-	t.Cleanup(func() {
-		p.Drop(ctx, dbName)
-		p.Close()
-	})
 
 	db, _, err := p.GetOrCreate(ctx, dbName)
 	require.NoError(t, err)
@@ -193,10 +271,11 @@ func TestDefaults(t *testing.T) {
 		"PRAGMA busy_timeout":       "10000",
 		"PRAGMA encoding":           "UTF-8",
 		"PRAGMA journal_mode":       "wal",
+		"PRAGMA locking_mode":       "normal",
 	} {
 		q, expected := q, expected
 		t.Run(q, func(t *testing.T) {
-			t.Parallel()
+			// PRAGMAs can't be checked in parallel
 
 			var actual string
 			err := db.QueryRowContext(ctx, q).Scan(&actual)
