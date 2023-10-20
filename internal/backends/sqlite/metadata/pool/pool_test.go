@@ -38,7 +38,7 @@ func TestCreateDrop(t *testing.T) {
 	require.NoError(t, err)
 
 	// that also tests that query parameters are preserved by using non-writable directory
-	p, _, err := New("file:/?mode=memory", testutil.Logger(t), sp)
+	p, _, err := New("file:/?mode=memory&_pragma=journal_mode(wal)", testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(p.Close)
 
@@ -65,6 +65,7 @@ func TestCreateDrop(t *testing.T) {
 	_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE TABLE %q (id INT) STRICT", t.Name()))
 	require.NoError(t, err)
 
+	// journal_mode is silently ignored for mode=memory
 	var res string
 	err = db.QueryRowContext(ctx, "PRAGMA journal_mode").Scan(&res)
 	require.NoError(t, err)
