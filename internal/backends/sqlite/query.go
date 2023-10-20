@@ -24,7 +24,7 @@ import (
 //
 // For onlyRecordIDs true, it returns select clause for recordID column.
 //
-// For capped table, it returns select clause for recordID column and default column.
+// For capped collection, it returns select clause for recordID column and default column.
 func prepareSelectClause(table string, capped, onlyRecordIDs bool) string {
 	if onlyRecordIDs {
 		return fmt.Sprintf(`SELECT %s FROM %q`, metadata.RecordIDColumn, table)
