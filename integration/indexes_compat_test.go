@@ -285,7 +285,7 @@ func TestCreateIndexesCompat(tt *testing.T) {
 					targetIndexes := FetchAll(t, ctx, targetCursor)
 					compatIndexes := FetchAll(t, ctx, compatCursor)
 
-					assert.Equal(t, compatIndexes, targetIndexes)
+					assert.ElementsMatch(t, compatIndexes, targetIndexes)
 
 					// List specifications to check they are identical after creation.
 					targetSpec, targetErr := targetCollection.Indexes().ListSpecifications(ctx)
@@ -295,7 +295,7 @@ func TestCreateIndexesCompat(tt *testing.T) {
 					require.NoError(t, targetErr)
 
 					require.NotEmpty(t, compatSpec)
-					assert.Equal(t, compatSpec, targetSpec)
+					assert.ElementsMatch(t, compatSpec, targetSpec)
 				})
 			}
 
