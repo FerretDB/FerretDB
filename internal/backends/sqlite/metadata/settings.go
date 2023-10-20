@@ -26,8 +26,8 @@ import (
 // Settings represents collection settings.
 type Settings struct {
 	Indexes         []IndexInfo `json:"indexes"`
-	CappedSize      int64       `json:"cappedSize"` // 0 if not capped
-	CappedDocuments int64       `json:"cappedDocs"` // 0 if the limit is not set
+	CappedSize      int64       `json:"cappedSize"`      // 0 if not capped
+	CappedDocuments int64       `json:"cappedDocuments"` // 0 if the limit is not set
 }
 
 // IndexInfo represents information about a single index.

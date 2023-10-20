@@ -42,11 +42,11 @@ const (
 // Collection value should be immutable to avoid data races.
 // Use [deepCopy] to replace the whole value instead of modifying fields of existing value.
 type Collection struct {
-	Name       string
-	TableName  string
-	Indexes    Indexes
-	CappedSize int64 // 0 if not capped
-	CappedDocs int64 // 0 if the limit is not set
+	Name            string
+	TableName       string
+	Indexes         Indexes
+	CappedSize      int64 // 0 if not capped
+	CappedDocuments int64 // 0 if the limit is not set
 }
 
 // deepCopy returns a deep copy.
@@ -56,11 +56,11 @@ func (c *Collection) deepCopy() *Collection {
 	}
 
 	return &Collection{
-		Name:       c.Name,
-		TableName:  c.TableName,
-		Indexes:    c.Indexes.deepCopy(),
-		CappedSize: c.CappedSize,
-		CappedDocs: c.CappedDocs,
+		Name:            c.Name,
+		TableName:       c.TableName,
+		Indexes:         c.Indexes.deepCopy(),
+		CappedSize:      c.CappedSize,
+		CappedDocuments: c.CappedDocuments,
 	}
 }
 
@@ -109,7 +109,7 @@ func (c *Collection) marshal() *types.Document {
 		"table", c.TableName,
 		"indexes", c.Indexes.marshal(),
 		"cappedSize", c.CappedSize,
-		"cappedDocs", c.CappedDocs,
+		"cappedDocs", c.CappedDocuments,
 	))
 }
 
@@ -145,7 +145,7 @@ func (c *Collection) unmarshal(doc *types.Document) error {
 	}
 
 	if v, _ := doc.Get("cappedDocs"); v != nil {
-		c.CappedDocs = v.(int64)
+		c.CappedDocuments = v.(int64)
 	}
 
 	return nil

@@ -58,7 +58,7 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 
 		if c.CappedSize > 0 {
 			res[i].CappedSize = c.CappedSize
-			res[i].CappedDocuments = c.CappedDocs
+			res[i].CappedDocuments = c.CappedDocuments
 		}
 	}
 

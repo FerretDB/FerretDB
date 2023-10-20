@@ -438,7 +438,7 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 	return res, nil
 }
 
-// CollectionCreateParams are parameters for CollectionCreate.
+// CollectionCreateParams contains parameters for CollectionCreate.
 type CollectionCreateParams struct {
 	DBName          string
 	Name            string
@@ -474,7 +474,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, params *CollectionCreat
 // If collection already exists, (false, nil) is returned.
 //
 // It does not hold the lock.
-func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, params *CollectionCreateParams) (bool, error) { //nolint:lll // for readability
+func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, params *CollectionCreateParams) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	dbName, collectionName := params.DBName, params.Name
@@ -515,10 +515,10 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, params
 	}
 
 	c := &Collection{
-		Name:       collectionName,
-		TableName:  tableName,
-		CappedSize: params.CappedSize,
-		CappedDocs: params.CappedDocuments,
+		Name:            collectionName,
+		TableName:       tableName,
+		CappedSize:      params.CappedSize,
+		CappedDocuments: params.CappedDocuments,
 	}
 
 	q := fmt.Sprintf(`CREATE TABLE %s (`, pgx.Identifier{dbName, tableName}.Sanitize())
