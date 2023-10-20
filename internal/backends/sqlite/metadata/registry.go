@@ -229,10 +229,10 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 	return res, nil
 }
 
-// CollectionCreteParams contains parameters for CollectionCreate.
-type CollectionCreteParams struct {
+// CollectionCreateParams contains parameters for CollectionCreate.
+type CollectionCreateParams struct {
 	DBName          string
-	CollectionName  string
+	Name            string
 	CappedSize      int64
 	CappedDocuments int64
 }
@@ -242,13 +242,13 @@ type CollectionCreteParams struct {
 //
 // Returned boolean value indicates whether the collection was created.
 // If collection already exists, (false, nil) is returned.
-func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName string, capped *Capped) (bool, error) {
+func (r *Registry) CollectionCreate(ctx context.Context, params *CollectionCreateParams) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	return r.collectionCreate(ctx, dbName, collectionName, capped)
+	return r.collectionCreate(ctx, params)
 }
 
 // collectionCreate creates a collection in the database.
@@ -258,8 +258,10 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 // If collection already exists, (false, nil) is returned.
 //
 // It does not hold the lock.
-func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName string, capped *Capped) (bool, error) {
+func (r *Registry) collectionCreate(ctx context.Context, params *CollectionCreateParams) (bool, error) {
 	defer observability.FuncCall(ctx)()
+
+	dbName, collectionName := params.DBName, params.Name
 
 	db, err := r.databaseGetOrCreate(ctx, dbName)
 	if err != nil {
@@ -294,7 +296,7 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 
 	q := fmt.Sprintf("CREATE TABLE %q (", tableName)
 
-	if capped != nil {
+	if params.CappedSize > 0 {
 		q += fmt.Sprintf("%s INTEGER PRIMARY KEY, ", RecordIDColumn)
 	}
 
@@ -316,9 +318,11 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 	r.colls[dbName][collectionName] = &Collection{
 		Name:      collectionName,
 		TableName: tableName,
+		Settings: Settings{
+			CappedSize:      params.CappedSize,
+			CappedDocuments: params.CappedDocuments,
+		},
 	}
-
-	r.colls[dbName][collectionName].Settings.Capped = capped
 
 	err = r.indexesCreate(ctx, dbName, collectionName, []IndexInfo{{
 		Name:   backends.DefaultIndexName,
@@ -462,7 +466,7 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName string, indexes []IndexInfo) error {
 	defer observability.FuncCall(ctx)()
 
-	_, err := r.collectionCreate(ctx, dbName, collectionName, nil)
+	_, err := r.collectionCreate(ctx, &CollectionCreateParams{dbName, collectionName, 0, 0})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

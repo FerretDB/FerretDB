@@ -43,7 +43,8 @@ func TestCollectionsStats(t *testing.T) {
 	colls := make([]*metadata.Collection, len(cNames))
 
 	for i, cName := range cNames {
-		_, err = r.CollectionCreate(ctx, dbName, cName, nil)
+		params := &metadata.CollectionCreateParams{DBName: dbName, Name: cName}
+		_, err = r.CollectionCreate(ctx, params)
 		require.NoError(t, err)
 		colls[i] = r.CollectionGet(ctx, dbName, cName)
 	}
