@@ -381,7 +381,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		)
 	}
 
-	stats, err := collectionsStats(ctx, p, c.dbName, []*metadata.Collection{coll})
+	stats, err := collectionsStats(ctx, p, c.dbName, []*metadata.Collection{coll}, params.Refresh)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -470,13 +470,11 @@ func (c *collection) Compact(ctx context.Context, params *backends.CompactParams
 		)
 	}
 
-	var full string
-
+	q := "VACUUM ANALYZE "
 	if params != nil && params.Full {
-		full = " FULL"
+		q = "VACUUM FULL ANALYZE "
 	}
-
-	q := fmt.Sprintf(`VACUUM%s ANALYZE %s`, full, pgx.Identifier{c.dbName, coll.TableName}.Sanitize())
+	q += pgx.Identifier{c.dbName, coll.TableName}.Sanitize()
 
 	if _, err = db.Exec(ctx, q); err != nil {
 		return nil, lazyerrors.Error(err)

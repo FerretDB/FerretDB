@@ -99,7 +99,7 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		nIndexes += int64(len(iList.Indexes))
 	}
 
-	stats, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+	stats, err := db.Stats(ctx, &backends.DatabaseStatsParams{Refresh: true})
 	if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
 		stats = new(backends.DatabaseStatsResult)
 		err = nil

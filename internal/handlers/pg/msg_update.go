@@ -130,7 +130,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				continue
 			}
 
-			if len(resDocs) > 1 && !u.Multi { // lalala
+			if len(resDocs) > 1 && !u.Multi {
 				resDocs = resDocs[:1]
 			}
 
