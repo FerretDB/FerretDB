@@ -83,14 +83,12 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		Filter: params.Filter,
 	}
 
-	sort := params.Sort
-
 	if params.Aggregate {
-		qp.Filter, sort = aggregations.GetPushdownQuery(params.StagesDocs)
+		qp.Filter, params.Sort = aggregations.GetPushdownQuery(params.StagesDocs)
 	}
 
 	// Skip sorting if there are more than one sort parameters
-	if h.EnableSortPushdown && sort.Len() == 1 {
+	if h.EnableSortPushdown && params.Sort.Len() == 1 {
 		var order types.SortType
 
 		k := params.Sort.Keys()[0]
