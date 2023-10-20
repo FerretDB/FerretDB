@@ -310,9 +310,7 @@ func (r *Registry) collectionCreate(ctx context.Context, dbName, collectionName 
 		TableName: tableName,
 	}
 
-	if capped != nil {
-		r.colls[dbName][collectionName].Settings.Capped = capped
-	}
+	r.colls[dbName][collectionName].Settings.Capped = capped
 
 	err = r.indexesCreate(ctx, dbName, collectionName, []IndexInfo{{
 		Name:   backends.DefaultIndexName,
