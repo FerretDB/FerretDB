@@ -317,7 +317,7 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 				Name:    "TypeMismatch",
 				Message: "BSON field 'create.capped' is the wrong type 'string', expected types '[bool, long, int, decimal, double']",
 			},
-			altMessage: "BSON field 'capped' is the wrong type 'string', expected type 'bool'",
+			altMessage: "BSON field 'capped' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
 		},
 		"NegativeSize": {
 			collectionName: "negative_size",

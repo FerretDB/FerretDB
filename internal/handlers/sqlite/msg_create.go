@@ -74,18 +74,25 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		Name: collectionName,
 	}
 
-	capped, err := common.GetOptionalParam[bool](document, "capped", false)
-	if err != nil {
-		return nil, err
+	var capped bool
+	if v, _ := document.Get("capped"); v != nil {
+		capped, err = commonparams.GetBoolOptionalParam("capped", v)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if h.EnableOplog && capped {
-		// size param is required
 		var size any
 
 		size, err = document.Get("size")
 		if err != nil {
 			return nil, err
+		}
+
+		if _, ok := size.(types.NullType); ok {
+			msg := "the 'size' field is required when 'capped' is true"
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidOptions, msg, "create")
 		}
 
 		params.CappedSize, err = commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "size", size, 1)
@@ -94,13 +101,10 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		if params.CappedSize%256 != 0 {
-			params.CappedSize = (params.CappedSize/256 + 1) * 256 // there is a requirement to round up to 256 bytes' multiplier
+			params.CappedSize = (params.CappedSize/256 + 1) * 256
 		}
 
-		// max param is optional
-		var max any
-
-		if max, err = document.Get("max"); err == nil {
+		if max, _ := document.Get("max"); max != nil {
 			params.CappedDocuments, err = commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "max", max, 0)
 			if err != nil {
 				return nil, err
