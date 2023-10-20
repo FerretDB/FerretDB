@@ -42,16 +42,11 @@ const (
 // Collection value should be immutable to avoid data races.
 // Use [deepCopy] to replace the whole value instead of modifying fields of existing value.
 type Collection struct {
-	Name      string
-	TableName string
-	Indexes   Indexes
-	Capped    *Capped // nil if collection is not capped
-}
-
-// Capped represents capped collection metadata.
-type Capped struct {
-	Size int64
-	Docs int64 // 0 if not set
+	Name       string
+	TableName  string
+	Indexes    Indexes
+	CappedSize int64 // 0 if not capped
+	CappedDocs int64 // 0 if the limit is not set
 }
 
 // deepCopy returns a deep copy.
@@ -60,20 +55,13 @@ func (c *Collection) deepCopy() *Collection {
 		return nil
 	}
 
-	coll := Collection{
-		Name:      c.Name,
-		TableName: c.TableName,
-		Indexes:   c.Indexes.deepCopy(),
+	return &Collection{
+		Name:       c.Name,
+		TableName:  c.TableName,
+		Indexes:    c.Indexes.deepCopy(),
+		CappedSize: c.CappedSize,
+		CappedDocs: c.CappedDocs,
 	}
-
-	if c.Capped != nil {
-		coll.Capped = &Capped{
-			Size: c.Capped.Size,
-			Docs: c.Capped.Docs,
-		}
-	}
-
-	return &coll
 }
 
 // Value implements driver.Valuer interface.
@@ -116,20 +104,13 @@ func (c *Collection) Scan(src any) error {
 
 // marshal returns [*types.Document] for that collection.
 func (c *Collection) marshal() *types.Document {
-	doc := must.NotFail(types.NewDocument(
+	return must.NotFail(types.NewDocument(
 		"_id", c.Name,
 		"table", c.TableName,
 		"indexes", c.Indexes.marshal(),
+		"cappedSize", c.CappedSize,
+		"cappedDocs", c.CappedDocs,
 	))
-
-	if c.Capped != nil {
-		doc.Set("capped", must.NotFail(types.NewDocument(
-			"size", c.Capped.Size,
-			"docs", c.Capped.Docs,
-		)))
-	}
-
-	return doc
 }
 
 // unmarshal sets collection metadata from [*types.Document].
@@ -159,12 +140,12 @@ func (c *Collection) unmarshal(doc *types.Document) error {
 		return lazyerrors.Error(err)
 	}
 
-	if doc.Has("capped") {
-		v, _ = doc.Get("capped")
-		c.Capped = &Capped{
-			Size: must.NotFail(v.(*types.Document).Get("size")).(int64),
-			Docs: must.NotFail(v.(*types.Document).Get("docs")).(int64),
-		}
+	if v, _ := doc.Get("cappedSize"); v != nil {
+		c.CappedSize = v.(int64)
+	}
+
+	if v, _ := doc.Get("cappedDocs"); v != nil {
+		c.CappedDocs = v.(int64)
 	}
 
 	return nil
