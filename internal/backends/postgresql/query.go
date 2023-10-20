@@ -219,10 +219,10 @@ func prepareOrderByClause(p *metadata.Placeholder, sort *backends.SortField, cap
 
 	var order string
 	if sort.Descending {
-		order = "DESC"
+		order = " DESC"
 	}
 
-	return fmt.Sprintf(" ORDER BY %s->%s %s", metadata.DefaultColumn, p.Next(), order), []any{sort.Key}
+	return fmt.Sprintf(" ORDER BY %s->%s%s", metadata.DefaultColumn, p.Next(), order), []any{sort.Key}
 }
 
 // filterEqual returns the proper SQL filter with arguments that filters documents
