@@ -267,7 +267,7 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 				Message: "BSON field 'size' value must be >= 1, actual value '0'",
 			},
 		},
-		"NoSize": {
+		"EmptySize": {
 			collectionName: "no_size",
 			capped:         true,
 			err: &mongo.CommandError{
@@ -276,7 +276,7 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 				Message: "the 'size' field is required when 'capped' is true",
 			},
 		},
-		"NoSizeWithMax": {
+		"EmptySizeWithMax": {
 			collectionName: "no_size_with_max",
 			capped:         true,
 			max:            500,
@@ -351,6 +351,23 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 			require.Nil(t, res)
 
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+
+			// In addition, checking a case when size is not set at all (the error is the same as for empty size)
+			if tc.size == nil {
+				command := bson.D{
+					{"create", tc.collectionName},
+					{"capped", tc.capped},
+					{"max", tc.max},
+				}
+
+				var res bson.D
+				err := collection.Database().RunCommand(ctx, command).Decode(&res)
+
+				require.Error(t, err)
+				require.Nil(t, res)
+
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			}
 		})
 	}
 }
