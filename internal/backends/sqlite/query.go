@@ -45,5 +45,6 @@ func prepareOrderByClause(capped bool) string {
 		return fmt.Sprintf(` ORDER BY %s`, metadata.RecordIDColumn)
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3181
 	return ""
 }
