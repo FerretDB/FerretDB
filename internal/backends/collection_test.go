@@ -107,10 +107,6 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 					assert.NotEmpty(t, doc.RecordID())
 					assert.Empty(t, doc.Keys())
 				}
-
-				explainRes, err := cappedColl.Explain(ctx, new(backends.ExplainParams))
-				require.NoError(t, err)
-				assert.True(t, explainRes.SortPushdown)
 			})
 
 			t.Run("CappedCollectionSortAsc", func(t *testing.T) {
@@ -138,7 +134,7 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				assert.Equal(t, insertDocs[1].Keys(), docs[2].Keys())
 				assert.Equal(t, insertDocs[1].Values(), docs[2].Values())
 
-				explainRes, err := cappedColl.Explain(ctx, new(backends.ExplainParams))
+				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &sort})
 				require.NoError(t, err)
 				assert.True(t, explainRes.SortPushdown)
 			})
@@ -168,7 +164,7 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				assert.Equal(t, insertDocs[2].Keys(), docs[2].Keys())
 				assert.Equal(t, insertDocs[2].Values(), docs[2].Values())
 
-				explainRes, err := cappedColl.Explain(ctx, new(backends.ExplainParams))
+				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &sort})
 				require.NoError(t, err)
 				assert.True(t, explainRes.SortPushdown)
 			})
@@ -188,7 +184,7 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 					assert.Empty(t, doc.RecordID())
 				}
 
-				explainRes, err := cappedColl.Explain(ctx, new(backends.ExplainParams))
+				explainRes, err := coll.Explain(ctx, new(backends.ExplainParams))
 				require.NoError(t, err)
 				assert.False(t, explainRes.SortPushdown)
 			})

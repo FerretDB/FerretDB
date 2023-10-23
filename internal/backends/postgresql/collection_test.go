@@ -110,7 +110,7 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 		assert.Equal(t, insertDocs[1].Keys(), docs[2].Keys())
 		assert.Equal(t, insertDocs[1].Values(), docs[2].Values())
 
-		explainRes, err := cappedColl.Explain(ctx, new(backends.ExplainParams))
+		explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &sort})
 		require.NoError(t, err)
 		assert.True(t, explainRes.SortPushdown)
 	})
@@ -138,7 +138,7 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 		assert.Equal(t, insertDocs[2].Keys(), docs[2].Keys())
 		assert.Equal(t, insertDocs[2].Values(), docs[2].Values())
 
-		explainRes, err := cappedColl.Explain(ctx, new(backends.ExplainParams))
+		explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &sort})
 		require.NoError(t, err)
 		assert.True(t, explainRes.SortPushdown)
 	})
