@@ -16,13 +16,26 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
+	"log"
+	"os"
+	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
-	_ "github.com/FerretDB/gh" // TODO https://github.com/FerretDB/FerretDB/issues/2733
+	"github.com/FerretDB/gh"
+	"github.com/google/go-github/v56/github"
+	"github.com/rogpeppe/go-internal/lockedfile"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
+
+type IssueCache struct {
+	Issues map[string]bool `json:"Issues"`
+}
 
 // todoRE represents correct // TODO comment format.
 var todoRE = regexp.MustCompile(`^// TODO \Qhttps://github.com/FerretDB/FerretDB/issues/\E(\d+)$`)
@@ -39,17 +52,42 @@ func main() {
 
 // run analyses TODO comments.
 func run(pass *analysis.Pass) (any, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/2733
-	/*
-		token := os.Getenv("GITHUB_TOKEN")
+	current_path, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 
-		client, err := gh.NewRESTClient(token, nil)
-		if err != nil {
-			log.Fatal(err)
-		}
+	cache_path := getCacheFilePath(current_path)
 
-		issues := make(map[int]bool)
-	*/
+	cf, err := lockedfile.OpenFile(cache_path, os.O_RDWR|os.O_CREATE, 0o666)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	cfs, err := cf.Stat()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	buffer := make([]byte, cfs.Size())
+	_, err = cf.Read(buffer)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	iCache := &IssueCache{}
+	json.Unmarshal(buffer, iCache)
+
+	if len(iCache.Issues) == 0 {
+		iCache.Issues = make(map[string]bool)
+	}
+
+	token := os.Getenv("GITHUB_TOKEN")
+
+	client, err := gh.NewRESTClient(token, nil)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 
 	for _, f := range pass.Files {
 		for _, cg := range f.Comments {
@@ -72,45 +110,67 @@ func run(pass *analysis.Pass) (any, error) {
 					continue
 				}
 
-				// `go vet -vettool` runs checkcomments once per package.
-				// That causes same issues to be checked multiple times,
-				// and that easily pushes us over the rate limit.
-				// We should cache check results using lockedfile.
-				// TODO https://github.com/FerretDB/FerretDB/issues/2733
+				iNum := match[1]
 
-				/*
-					n, err := strconv.Atoi(match[1])
+				_, ok := iCache.Issues[iNum]
+
+				if !ok {
+					n, err := strconv.Atoi(iNum)
 					if err != nil {
 						log.Fatal(err)
 					}
 
-					open, ok := issues[n]
-					if !ok {
-						issue, _, err := client.Issues.Get(context.TODO(), "FerretDB", "FerretDB", n)
-						if err != nil {
-							if errors.As(err, new(*github.RateLimitError)) && token == "" {
-								log.Println(
-									"Rate limit reached. Please set a GITHUB_TOKEN as described at",
-									"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token",
-								)
-
-								return nil, nil
-							}
-
-							log.Fatalf("%[1]T %[1]s", err)
-						}
-
-						open = issue.GetState() == "open"
-						issues[n] = open
+					isOpen, err := isIssueOpen(client, n)
+					if err != nil {
+						log.Fatal(err)
 					}
 
-					if !open {
-						pass.Reportf(c.Pos(), "invalid TODO: linked issue is closed")
+					if !isOpen {
 					}
-				*/
+
+					iCache.Issues[iNum] = isOpen
+				}
+
+				if !iCache.Issues[iNum] {
+					pass.Reportf(c.Pos(), "invalid TODO: linked issue is closed")
+				}
 			}
 		}
 	}
 
+	jsonb, err := json.Marshal(iCache)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	cf.WriteAt(jsonb, 0)
+
 	return nil, nil
+}
+
+func isIssueOpen(client *github.Client, n int) (bool, error) {
+	issue, _, err := client.Issues.Get(context.TODO(), "FerretDB", "FerretDB", n)
+	if err != nil {
+		if errors.As(err, new(*github.RateLimitError)) && os.Getenv("GITHUB_TOKEN") == "" {
+			log.Println(
+				"Rate limit reached. Please set a GITHUB_TOKEN as described at",
+				"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token",
+			)
+			return false, err
+		}
+	}
+	return issue.GetState() == "open", nil
+}
+
+func getCacheFilePath(p string) string {
+	path := filepath.Dir(p)
+
+	readmePath := filepath.Join(path, "README.md")
+
+	_, err := os.Stat(readmePath)
+
+	if os.IsNotExist(err) {
+		return getCacheFilePath(path)
+	}
+
+	return filepath.Join(path, "tmp", "issue_cache.json")
 }

@@ -13,6 +13,7 @@ require (
 	github.com/google/go-github/v56 v56.0.0
 	github.com/goreleaser/nfpm/v2 v2.33.1
 	github.com/quasilyte/go-consistent v0.6.0
+	github.com/rogpeppe/go-internal v1.10.1-0.20230524175051-ec119421bb97
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/oauth2 v0.13.0
 	golang.org/x/perf v0.0.0-20231006134539-cd219cffda85

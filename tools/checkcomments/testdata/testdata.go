@@ -28,7 +28,7 @@ func testIncorrectFormat() {
 }
 
 func testCorrectForNow() {
-	// TODO https://github.com/FerretDB/FerretDB/issues/1
+	// TODO https://github.com/FerretDB/FerretDB/issues/1 // want "invalid TODO: linked issue is closed"
 }
 
 func testIncorrectFormatClosed() {
