@@ -37,6 +37,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/build/version"
+	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -97,8 +98,28 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		return err
 	}
 
-	
+	var pgPool *pool.Pool
 
+	var retry int64
+	for ctx.Err() == nil {
+		if pgPool, err = pool.New(uri, logger.Desugar(), sp); err == nil {
+			break
+		}
+
+		logger.Infof("%s: %s", uri, err)
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	defer pgPool.Close()
+
+	return nil
+}
 
 // setupPostgres configures `postgres` container.
 func setupPostgres(ctx context.Context, logger *zap.SugaredLogger) error {
