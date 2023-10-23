@@ -140,10 +140,12 @@ func (c *Collection) unmarshal(doc *types.Document) error {
 		return lazyerrors.Error(err)
 	}
 
+	// For compatibility with older FerretDB versions where cappedSize didn't exist.
 	if v, _ := doc.Get("cappedSize"); v != nil {
 		c.CappedSize = v.(int64)
 	}
 
+	// For compatibility with older FerretDB versions where cappedDocs didn't exist.
 	if v, _ := doc.Get("cappedDocs"); v != nil {
 		c.CappedDocuments = v.(int64)
 	}
