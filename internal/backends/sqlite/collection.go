@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"sort"
 	"strings"
 
 	sqlite3 "modernc.org/sqlite"
@@ -460,9 +461,6 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 
 // Compact implements backends.Collection interface.
 func (c *collection) Compact(ctx context.Context, params *backends.CompactParams) (*backends.CompactResult, error) {
-	var err error
-	q := `PRAGMA incremental_vacuum`
-
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
 		return nil, backends.NewError(
@@ -479,11 +477,12 @@ func (c *collection) Compact(ctx context.Context, params *backends.CompactParams
 		)
 	}
 
+	q := `PRAGMA incremental_vacuum`
 	if params != nil && params.Full {
 		q = `VACUUM`
 	}
 
-	if _, err = db.ExecContext(ctx, q); err != nil {
+	if _, err := db.ExecContext(ctx, q); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -527,10 +526,9 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 		}
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3589
-	// slices.SortFunc(res.Indexes, func(a, b backends.IndexInfo) int {
-	// 	return cmp.Compare(a.Name, b.Name)
-	// })
+	sort.Slice(res.Indexes, func(i, j int) bool {
+		return res.Indexes[i].Name < res.Indexes[j].Name
+	})
 
 	return &res, nil
 }

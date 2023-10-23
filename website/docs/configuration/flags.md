@@ -91,6 +91,7 @@ Supported URL parameters are documented there:
 
 Additionally:
 
+- `_pragma=auto_vacuum(none)` parameter is set if that PRAGMA is not present;
 - `_pragma=busy_timeout(10000)` parameter is set if that PRAGMA is not present;
 - `_pragma=journal_mode(wal)` parameter is set if that PRAGMA is not present.
 
