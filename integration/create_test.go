@@ -27,7 +27,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
-	"github.com/FerretDB/FerretDB/integration/shareddata"
 )
 
 func TestCreateStress(t *testing.T) {
@@ -334,8 +333,7 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			// one provider is enough to check for errors
-			ctx, collection := setup.Setup(t, shareddata.ArrayDocuments)
+			ctx, collection := setup.Setup(t)
 
 			command := bson.D{
 				{"create", tc.collectionName},
