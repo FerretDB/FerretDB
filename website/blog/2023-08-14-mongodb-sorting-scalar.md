@@ -51,19 +51,19 @@ For example, Null BSON type has the lowest order of comparison 1, so Null is les
 Boolean BSON type on the other hand has the order of comparison 8, a BSON type such as ObjectId with a lower order of comparison is less than a Boolean value
 and a BSON type such as Timestamp with a higher order of comparison is greater than a Boolean value.
 
-Comparing different BSON types is merely looking up the order of comparison table for each BSON type and comparing the predefined order.
+Comparing different BSON types is merely looking up the order of comparison table for each BSON type.
 There is an exception for Array values, we will be discussing them in another blog post.
 
 ### Number comparison
 
 Although numbers have different BSON types, namely Integer, Long, Double and Decimal, they are considered the equivalent BSON type for the purpose of comparison.
 That means comparing numbers consider their values but whether they are Integer, Long, Double or Decimal are not relevant.
-For instance, an Integer value 0 is equivalent to Double 0.0 as far as comparison is concerned.
+For instance, an Integer value 0 is equivalent to Double 0.0.
 
 ### Null and non-existent field comparison
 
 For the comparison purpose, a non-existent field is equivalent to Null.
-This means that a field `v` with Null value `{:v null}` and a non-existent `v` field in `{}` are equal as far as comparison is concerned.
+This means that a field `v` with Null value `{:v null}` and a non-existent `v` field in `{}` are equivalent.
 
 ## Examples showcasing sorting for scalar values
 
@@ -101,11 +101,11 @@ db.outfits.find().sort({ size: 1 })
 The output is sorted and the first document is `slippers` which is missing the `size` field.
 A [non-existent field is equivalent to Null](#null-and-non-existent-field-comparison), so it has the lowest BSON type.
 
-Then the next documents are Numbers.
-The numbers have higher BSON order of comparison than Null BSON type, so they come after `slippers` of the missing field.
+Then the next documents have `size` field value of Numbers.
+The Numbers have higher BSON order of comparison than Null BSON type, so they come after `slippers` of the missing field.
 The documents with numbers are `boots` with Integer BSON type, `sneaker` with Double BSON type and `sandals` with Integer BSON type.
 Notice that Integer BSON type is followed by Double BSON type then by another Integer BSON type?
-The numbers are considered [equivalent BSON types](#number-comparison) so only the values of each number are compared regardless of its specific BSON number type.
+The Numbers are considered [equivalent BSON types](#number-comparison) so only the values of each number are compared regardless of its specific BSON number type.
 The document `boots` has a `size` field value of 8 which is less than 8.5 of `sneakers` or 9 of `sandals`, so `boots` comes after that.
 Then the document `sneakers` comes next.
 
