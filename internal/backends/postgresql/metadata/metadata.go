@@ -45,8 +45,8 @@ type Collection struct {
 	Name            string
 	TableName       string
 	Indexes         Indexes
-	CappedSize      int64 // 0 if not capped
-	CappedDocuments int64 // 0 if the limit is not set
+	CappedSize      int64
+	CappedDocuments int64
 }
 
 // deepCopy returns a deep copy.
