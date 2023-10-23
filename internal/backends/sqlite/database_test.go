@@ -66,8 +66,8 @@ func TestDatabaseStatsFreeStorage(t *testing.T) {
 	require.NoError(t, err)
 
 	for name, u := range map[string]string{
-		"Memory":         "file:./?mode=memory",
-		"LocalDirectory": "file:" + t.TempDir() + "/",
+		"dir":    "file:" + t.TempDir() + "/",
+		"memory": "file:./?mode=memory",
 	} {
 		name, u := name, u
 		t.Run(name, func(t *testing.T) {

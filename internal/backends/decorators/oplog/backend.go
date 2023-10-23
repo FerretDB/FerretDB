@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package oplog provides decorators that add OpLog functionality to the backend.
 package oplog
 
 import (
@@ -26,58 +25,58 @@ import (
 
 // backend implements backends.Backend interface by delegating all methods to the wrapped backend.
 type backend struct {
-	b backends.Backend
-	l *zap.Logger
+	origB backends.Backend
+	l     *zap.Logger
 }
 
 // NewBackend creates a new backend that wraps the given backend.
-func NewBackend(b backends.Backend, l *zap.Logger) backends.Backend {
+func NewBackend(origB backends.Backend, l *zap.Logger) backends.Backend {
 	return &backend{
-		b: b,
-		l: l,
+		origB: origB,
+		l:     l,
 	}
 }
 
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
-	b.b.Close()
+	b.origB.Close()
 }
 
 // Status implements backends.Backend interface.
 func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*backends.StatusResult, error) {
-	return b.b.Status(ctx, params)
+	return b.origB.Status(ctx, params)
 }
 
 // Database implements backends.Backend interface.
 func (b *backend) Database(name string) (backends.Database, error) {
-	db, err := b.b.Database(name)
+	origDB, err := b.origB.Database(name)
 	if err != nil {
 		return nil, err
 	}
 
-	return newDatabase(db, name, b.l), nil
+	return newDatabase(origDB, name, b, b.l), nil
 }
 
 // ListDatabases implements backends.Backend interface.
 //
 //nolint:lll // for readability
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
-	return b.b.ListDatabases(ctx, params)
+	return b.origB.ListDatabases(ctx, params)
 }
 
 // DropDatabase implements backends.Backend interface.
 func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabaseParams) error {
-	return b.b.DropDatabase(ctx, params)
+	return b.origB.DropDatabase(ctx, params)
 }
 
 // Describe implements prometheus.Collector.
 func (b *backend) Describe(ch chan<- *prometheus.Desc) {
-	b.b.Describe(ch)
+	b.origB.Describe(ch)
 }
 
 // Collect implements prometheus.Collector.
 func (b *backend) Collect(ch chan<- prometheus.Metric) {
-	b.b.Collect(ch)
+	b.origB.Collect(ch)
 }
 
 // check interfaces

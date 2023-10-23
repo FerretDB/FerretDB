@@ -75,7 +75,7 @@ func TestCreateDrop(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	r, err := NewRegistry("file:./?mode=memory", testutil.Logger(t), sp)
+	r, err := NewRegistry("file:"+t.TempDir()+"/", testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
@@ -88,10 +88,6 @@ func TestCreateDrop(t *testing.T) {
 	state := sp.Get()
 	require.Equal(t, "SQLite", state.BackendName)
 	require.Equal(t, "3.41.2", state.BackendVersion)
-
-	t.Cleanup(func() {
-		r.DatabaseDrop(ctx, dbName)
-	})
 
 	collectionName := testutil.CollectionName(t)
 
@@ -110,8 +106,8 @@ func TestCreateDropStress(t *testing.T) {
 	require.NoError(t, err)
 
 	for testName, uri := range map[string]string{
-		"file":             "file:./",
-		"file-immediate":   "file:./?_txlock=immediate",
+		"dir":              "file:" + t.TempDir() + "/",
+		"dir-immediate":    "file:" + t.TempDir() + "/?_txlock=immediate",
 		"memory":           "file:./?mode=memory",
 		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
 	} {
@@ -121,15 +117,10 @@ func TestCreateDropStress(t *testing.T) {
 			t.Cleanup(r.Close)
 
 			dbName := "db"
-			r.DatabaseDrop(ctx, dbName)
 
 			db, err := r.DatabaseGetOrCreate(ctx, dbName)
 			require.NoError(t, err)
 			require.NotNil(t, db)
-
-			t.Cleanup(func() {
-				r.DatabaseDrop(ctx, dbName)
-			})
 
 			var i atomic.Int32
 
@@ -159,8 +150,8 @@ func TestCreateSameStress(t *testing.T) {
 	require.NoError(t, err)
 
 	for testName, uri := range map[string]string{
-		"file":             "file:./",
-		"file-immediate":   "file:./?_txlock=immediate",
+		"dir":              "file:" + t.TempDir() + "/",
+		"dir-immediate":    "file:" + t.TempDir() + "/?_txlock=immediate",
 		"memory":           "file:./?mode=memory",
 		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
 	} {
@@ -170,15 +161,10 @@ func TestCreateSameStress(t *testing.T) {
 			t.Cleanup(r.Close)
 
 			dbName := "db"
-			r.DatabaseDrop(ctx, dbName)
 
 			db, err := r.DatabaseGetOrCreate(ctx, dbName)
 			require.NoError(t, err)
 			require.NotNil(t, db)
-
-			t.Cleanup(func() {
-				r.DatabaseDrop(ctx, dbName)
-			})
 
 			collectionName := "collection"
 
@@ -232,8 +218,8 @@ func TestDropSameStress(t *testing.T) {
 	require.NoError(t, err)
 
 	for testName, uri := range map[string]string{
-		"file":             "file:./",
-		"file-immediate":   "file:./?_txlock=immediate",
+		"dir":              "file:" + t.TempDir() + "/",
+		"dir-immediate":    "file:" + t.TempDir() + "/?_txlock=immediate",
 		"memory":           "file:./?mode=memory",
 		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
 	} {
@@ -243,15 +229,10 @@ func TestDropSameStress(t *testing.T) {
 			t.Cleanup(r.Close)
 
 			dbName := "db"
-			r.DatabaseDrop(ctx, dbName)
 
 			db, err := r.DatabaseGetOrCreate(ctx, dbName)
 			require.NoError(t, err)
 			require.NotNil(t, db)
-
-			t.Cleanup(func() {
-				r.DatabaseDrop(ctx, dbName)
-			})
 
 			collectionName := "collection"
 
@@ -289,8 +270,8 @@ func TestCreateDropSameStress(t *testing.T) {
 	require.NoError(t, err)
 
 	for testName, uri := range map[string]string{
-		"file":             "file:./",
-		"file-immediate":   "file:./?_txlock=immediate",
+		"dir":              "file:" + t.TempDir() + "/",
+		"dir-immediate":    "file:" + t.TempDir() + "/?_txlock=immediate",
 		"memory":           "file:./?mode=memory",
 		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
 	} {
@@ -300,15 +281,10 @@ func TestCreateDropSameStress(t *testing.T) {
 			t.Cleanup(r.Close)
 
 			dbName := "db"
-			r.DatabaseDrop(ctx, dbName)
 
 			db, err := r.DatabaseGetOrCreate(ctx, dbName)
 			require.NoError(t, err)
 			require.NotNil(t, db)
-
-			t.Cleanup(func() {
-				r.DatabaseDrop(ctx, dbName)
-			})
 
 			collectionName := "collection"
 
@@ -349,7 +325,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	r, err := NewRegistry("file:./?mode=memory", testutil.Logger(t), sp)
+	r, err := NewRegistry("file:"+t.TempDir()+"/", testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
@@ -358,10 +334,6 @@ func TestIndexesCreateDrop(t *testing.T) {
 	db, err := r.DatabaseGetOrCreate(ctx, dbName)
 	require.NoError(t, err)
 	require.NotNil(t, db)
-
-	t.Cleanup(func() {
-		r.DatabaseDrop(ctx, dbName)
-	})
 
 	collectionName := testutil.CollectionName(t)
 
