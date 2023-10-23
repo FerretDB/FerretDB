@@ -29,7 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestCollectionInsertAllQuery(t *testing.T) {
+func TestCollectionInsertAllQueryExplain(t *testing.T) {
 	t.Parallel()
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
@@ -86,6 +86,10 @@ func TestCollectionInsertAllQuery(t *testing.T) {
 					assert.Equal(t, insertDocs[i].Keys(), doc.Keys())
 					assert.Equal(t, insertDocs[i].Values(), doc.Values())
 				}
+
+				explainRes, err := cappedColl.Explain(ctx, new(backends.ExplainParams))
+				require.NoError(t, err)
+				assert.True(t, explainRes.SortPushdown)
 			})
 
 			t.Run("CappedCollectionOnlyRecordIDs", func(t *testing.T) {
@@ -103,6 +107,10 @@ func TestCollectionInsertAllQuery(t *testing.T) {
 					assert.NotEmpty(t, doc.RecordID())
 					assert.Empty(t, doc.Keys())
 				}
+
+				explainRes, err := cappedColl.Explain(ctx, new(backends.ExplainParams))
+				require.NoError(t, err)
+				assert.True(t, explainRes.SortPushdown)
 			})
 
 			t.Run("CappedCollectionSortAsc", func(t *testing.T) {
@@ -129,6 +137,10 @@ func TestCollectionInsertAllQuery(t *testing.T) {
 				assert.NotEmpty(t, docs[1].RecordID())
 				assert.Equal(t, insertDocs[1].Keys(), docs[2].Keys())
 				assert.Equal(t, insertDocs[1].Values(), docs[2].Values())
+
+				explainRes, err := cappedColl.Explain(ctx, new(backends.ExplainParams))
+				require.NoError(t, err)
+				assert.True(t, explainRes.SortPushdown)
 			})
 
 			t.Run("CappedCollectionSortDesc", func(t *testing.T) {
@@ -155,6 +167,10 @@ func TestCollectionInsertAllQuery(t *testing.T) {
 				assert.NotEmpty(t, docs[1].RecordID())
 				assert.Equal(t, insertDocs[2].Keys(), docs[2].Keys())
 				assert.Equal(t, insertDocs[2].Values(), docs[2].Values())
+
+				explainRes, err := cappedColl.Explain(ctx, new(backends.ExplainParams))
+				require.NoError(t, err)
+				assert.True(t, explainRes.SortPushdown)
 			})
 
 			t.Run("NonCappedCollectionOnlyRecordID", func(t *testing.T) {
@@ -171,6 +187,10 @@ func TestCollectionInsertAllQuery(t *testing.T) {
 				for _, doc := range docs {
 					assert.Empty(t, doc.RecordID())
 				}
+
+				explainRes, err := cappedColl.Explain(ctx, new(backends.ExplainParams))
+				require.NoError(t, err)
+				assert.False(t, explainRes.SortPushdown)
 			})
 		})
 	}
