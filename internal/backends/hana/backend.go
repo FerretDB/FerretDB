@@ -44,7 +44,6 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 
 // Close implements backends.Backend interface.
 func (b *backend) Close() {
-	// TODO
 }
 
 // Status implements backends.Backend interface.
@@ -71,12 +70,10 @@ func (b *backend) DropDatabase(ctx context.Context, params *backends.DropDatabas
 
 // Describe implements prometheus.Collector.
 func (b *backend) Describe(ch chan<- *prometheus.Desc) {
-	// TODO
 }
 
 // Collect implements prometheus.Collector.
 func (b *backend) Collect(ch chan<- prometheus.Metric) {
-	// TODO
 }
 
 // check interfaces

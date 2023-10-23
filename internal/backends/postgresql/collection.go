@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/jackc/pgerrcode"
@@ -87,6 +88,24 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}
 
 	q += where
+
+	if params.Sort != nil {
+		var sort string
+		var sortArgs []any
+
+		sort, sortArgs, err = prepareOrderByClause(&placeholder, params.Sort.Key, params.Sort.Descending)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		q += sort
+		args = append(args, sortArgs...)
+	}
+
+	if params.Limit != 0 {
+		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
+		args = append(args, params.Limit)
+	}
 
 	rows, err := p.Query(ctx, q, args...)
 	if err != nil {
@@ -296,7 +315,28 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	res.QueryPushdown = where != ""
 
+	if params.Sort != nil {
+		var sort string
+		var sortArgs []any
+
+		sort, sortArgs, err = prepareOrderByClause(&placeholder, params.Sort.Key, params.Sort.Descending)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		q += sort
+		args = append(args, sortArgs...)
+
+		res.SortPushdown = sort != ""
+	}
+
 	q += where
+
+	if params.Limit != 0 {
+		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
+		args = append(args, params.Limit)
+		res.LimitPushdown = true
+	}
 
 	var b []byte
 	err = p.QueryRow(ctx, q, args...).Scan(&b)
@@ -341,7 +381,7 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		)
 	}
 
-	stats, err := collectionsStats(ctx, p, c.dbName, []*metadata.Collection{coll})
+	stats, err := collectionsStats(ctx, p, c.dbName, []*metadata.Collection{coll}, params.Refresh)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -395,17 +435,51 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 	}
 
 	return &backends.CollectionStatsResult{
-		CountDocuments: stats.countDocuments,
-		SizeTotal:      stats.sizeTables + stats.sizeIndexes,
-		SizeIndexes:    stats.sizeIndexes,
-		SizeCollection: stats.sizeTables,
-		IndexSizes:     indexSizes,
+		CountDocuments:  stats.countDocuments,
+		SizeTotal:       stats.sizeTables + stats.sizeIndexes,
+		SizeIndexes:     stats.sizeIndexes,
+		SizeCollection:  stats.sizeTables,
+		SizeFreeStorage: stats.sizeFreeStorage,
+		IndexSizes:      indexSizes,
 	}, nil
 }
 
 // Compact implements backends.Collection interface.
 func (c *collection) Compact(ctx context.Context, params *backends.CompactParams) (*backends.CompactResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3484
+	db, err := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if db == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeDatabaseDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	coll, err := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if coll == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	q := "VACUUM ANALYZE "
+	if params != nil && params.Full {
+		q = "VACUUM FULL ANALYZE "
+	}
+	q += pgx.Identifier{c.dbName, coll.TableName}.Sanitize()
+
+	if _, err = db.Exec(ctx, q); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	return new(backends.CompactResult), nil
 }
 
@@ -454,10 +528,9 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 		}
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3589
-	// slices.SortFunc(res.Indexes, func(a, b backends.IndexInfo) int {
-	// 	return cmp.Compare(a.Name, b.Name)
-	// })
+	sort.Slice(res.Indexes, func(i, j int) bool {
+		return res.Indexes[i].Name < res.Indexes[j].Name
+	})
 
 	return &res, nil
 }

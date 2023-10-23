@@ -52,10 +52,8 @@ func Validate(ctx context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.OpMsg,
 			"ns", db+"."+collection,
 			"nInvalidDocuments", int32(0),
 			"nNonCompliantDocuments", int32(0),
-			"nrecords", int32(-1), // TODO
-			"nIndexes", int32(1),
-			// "keysPerIndex", TODO
-			// "indexDetails", TODO
+			"nrecords", int32(-1), // TODO https://github.com/FerretDB/FerretDB/issues/419
+			"nIndexes", int32(1), // TODO https://github.com/FerretDB/FerretDB/issues/419
 			"valid", true,
 			"repaired", false,
 			"warnings", types.MakeArray(0),
