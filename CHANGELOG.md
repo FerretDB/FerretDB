@@ -95,7 +95,7 @@ We now provide `linux/arm/v7` binaries, Docker images, and `.deb` / `.rpm` packa
 - @pvinoda made their first contribution in https://github.com/FerretDB/FerretDB/pull/3593
 
 [All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/55?closed=1).
-[All commits](https://github.com/FerretDB/FerretDB/compare/v1.12.1...v1.13.1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.12.1...v1.13.0).
 
 ## [v1.12.1](https://github.com/FerretDB/FerretDB/releases/tag/v1.12.1) (2023-10-10)
 
