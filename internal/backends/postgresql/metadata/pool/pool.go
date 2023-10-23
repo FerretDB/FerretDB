@@ -19,6 +19,7 @@ package pool
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"sync"
 
@@ -46,7 +47,7 @@ type Pool struct {
 	l       *zap.Logger
 	sp      *state.Provider
 
-	dbName string
+	ownDBName string
 
 	rw    sync.RWMutex
 	pools map[string]*pgxpool.Pool // by full URI
@@ -65,20 +66,20 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, error) {
 	setDefaultValues(values)
 	baseURI.RawQuery = values.Encode()
 
-	// if baseURI.Path != "" {
-	// 	p, err := openDB(u, l, sp)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
+	if baseURI.Path != "" {
+		p, err := openDB(u, l, sp)
+		if err != nil {
+			panic(err)
+		}
 
-	// 	name := baseURI.Path
-	// 	q := fmt.Sprintf("CREATE DATABASE %s TEMPLATE template1", pgx.Identifier{name}.Sanitize())
-	// 	if _, err := p.Exec(context.TODO(), q); err != nil {
-	// 		return nil, lazyerrors.Error(err)
-	// 	}
+		name := baseURI.Path
+		q := fmt.Sprintf("CREATE DATABASE %s TEMPLATE template1", pgx.Identifier{name}.Sanitize())
+		if _, err := p.Exec(context.TODO(), q); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 
-	// 	panic(baseURI.Path)
-	// }
+		panic(baseURI.Path)
+	}
 
 	p := &Pool{
 		baseURI: *baseURI,
@@ -107,36 +108,28 @@ func (p *Pool) Close() {
 	resource.Untrack(p, p.token)
 }
 
-// Close closes all connections in the pool and drops PostgreSQL database.
+// Drop drops PostgreSQL database.
 //
 // Should be used only by tests.
-func (p *Pool) CloseAndDrop() error {
+func (p *Pool) Drop() {
 	p.rw.Lock()
 	defer p.rw.Unlock()
 
-	var dropped bool
+	if p.ownDBName == "" {
+		panic("database is not created by this pool")
+	}
+
 	for _, pool := range p.pools {
-		if p.dbName != "" && !dropped {
-			q := "DROP DATABASE IF EXISTS " + pgx.Identifier{p.dbName}.Sanitize()
-			if _, err := pool.Exec(context.TODO(), q); err != nil {
-				p.l.Debug("Pool: failed to drop database", zap.String("name", p.dbName), zap.Error(err))
-			} else {
-				dropped = true
-			}
+		q := "DROP DATABASE " + pgx.Identifier{p.ownDBName}.Sanitize()
+		if _, err := pool.Exec(context.TODO(), q); err != nil {
+			p.l.Error("Pool: failed to drop database", zap.String("name", p.ownDBName), zap.Error(err))
+			continue
 		}
 
-		pool.Close()
+		return
 	}
 
-	p.pools = nil
-
-	resource.Untrack(p, p.token)
-
-	if p.dbName != "" && !dropped {
-		p.l.Error("Pool: failed to drop database", zap.String("name", p.dbName))
-	}
-
-	return nil
+	panic("failed to drop database")
 }
 
 // Get returns a pool of connections to PostgreSQL database for that username/password combination.

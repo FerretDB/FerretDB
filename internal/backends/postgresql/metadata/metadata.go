@@ -50,9 +50,9 @@ func (c *Collection) deepCopy() *Collection {
 	}
 
 	return &Collection{
-		Name:      c.Name,
-		TableName: c.TableName,
-		Indexes:   c.Indexes.deepCopy(),
+		c.Name,
+		c.TableName,
+		c.Indexes.deepCopy(),
 	}
 }
 

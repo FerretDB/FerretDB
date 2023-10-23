@@ -146,7 +146,10 @@ func TestAuth(t *testing.T) {
 
 			r, err := NewRegistry(tc.uri, testutil.Logger(t), sp)
 			require.NoError(t, err)
-			t.Cleanup(r.Close)
+			t.Cleanup(func() {
+				r.p.Drop()
+				r.Close()
+			})
 
 			_, err = r.getPool(ctx)
 			if tc.err == "" {
