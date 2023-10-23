@@ -8,7 +8,7 @@ replace github.com/goreleaser/nfpm/v2 => github.com/AlekSi/nfpm/v2 v2.33.2-0.202
 
 require (
 	github.com/BurntSushi/go-sumtype v0.0.0-20221020234012-480526a59796
-	github.com/FerretDB/gh v0.0.0-20231017052058-110a65393a76
+	github.com/FerretDB/gh v0.1.0
 	github.com/go-task/task/v3 v3.31.0
 	github.com/google/go-github/v56 v56.0.0
 	github.com/goreleaser/nfpm/v2 v2.33.1
