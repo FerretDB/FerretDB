@@ -135,6 +135,8 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 							sjson.GetTypeOfValue(v),
 						))
 
+						// merge with the case below?
+						// TODO https://github.com/FerretDB/FerretDB/issues/3626
 						args = append(args, rootKey, v)
 
 					case string, types.ObjectID, time.Time:
@@ -146,6 +148,8 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 							sjson.GetTypeOfValue(v),
 						))
 
+						// merge with the case above?
+						// TODO https://github.com/FerretDB/FerretDB/issues/3626
 						args = append(args, rootKey, string(must.NotFail(sjson.MarshalSingleValue(v))))
 
 					default:
@@ -210,6 +214,7 @@ func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args 
 
 	case float64:
 		// If value is not safe double, fetch all numbers out of safe range.
+		// TODO https://github.com/FerretDB/FerretDB/issues/3626
 		switch {
 		case v > types.MaxSafeDouble:
 			sql = `%[1]s->%[2]s > %[3]s`
@@ -226,16 +231,23 @@ func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args 
 		args = append(args, k, v)
 
 	case string, types.ObjectID, time.Time:
+		// merge with the case below?
+		// TODO https://github.com/FerretDB/FerretDB/issues/3626
+
 		// don't change the default eq query
 		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
 		args = append(args, k, string(must.NotFail(sjson.MarshalSingleValue(v))))
 
 	case bool, int32:
+		// merge with the case above?
+		// TODO https://github.com/FerretDB/FerretDB/issues/3626
+
 		// don't change the default eq query
 		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
 		args = append(args, k, v)
 
 	case int64:
+		// TODO https://github.com/FerretDB/FerretDB/issues/3626
 		maxSafeDouble := int64(types.MaxSafeDouble)
 
 		// If value cannot be safe double, fetch all numbers out of the safe range.

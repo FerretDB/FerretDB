@@ -144,7 +144,7 @@ func TestPrepareWhereClause(t *testing.T) {
 		},
 		"EqDoubleBigInt64": {
 			filter: must.NotFail(types.NewDocument(
-				"v", must.NotFail(types.NewDocument("$eq", float64(2<<61))),
+				"v", must.NotFail(types.NewDocument("$eq", float64(2<<61))), // TODO https://github.com/FerretDB/FerretDB/issues/3626
 			)),
 			args:     []any{`v`, types.MaxSafeDouble},
 			expected: whereGt,
