@@ -29,8 +29,6 @@ import (
 
 // MsgPing implements HandlerInterface.
 func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	var reply wire.OpMsg
-
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -41,8 +39,7 @@ func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, err
 	}
 
-	db, err := h.b.Database(dbName)
-	if err != nil {
+	if _, err = h.b.Database(dbName); err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid namespace specified '%s'", dbName)
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "ping")
@@ -50,12 +47,12 @@ func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 		return nil, lazyerrors.Error(err)
 	}
-	defer db.Close()
 
-	if _, err := db.ListCollections(ctx, nil); err != nil {
+	if _, err = h.b.Status(ctx, nil); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
+	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"ok", float64(1),

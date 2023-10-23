@@ -50,10 +50,10 @@ func TestSaslStartPlain(t *testing.T) {
 			),
 		},
 		"wrongTypePayload": {
-			doc: must.NotFail(types.NewDocument("payload", 42)),
+			doc: must.NotFail(types.NewDocument("payload", int32(42))),
 			err: commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
-				`required parameter "payload" has type int (expected types.Binary)`,
+				`required parameter "payload" has type int32 (expected types.Binary)`,
 				"payload",
 			),
 		},

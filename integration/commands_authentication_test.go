@@ -41,12 +41,10 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 	assert.Equal(t, bson.D{{"ok", float64(1)}}, res)
 }
 
-func TestCommandsAuthenticationLogoutTLS(tt *testing.T) {
-	tt.Parallel()
+func TestCommandsAuthenticationLogoutTLS(t *testing.T) {
+	setup.SkipForMongoDB(t, "tls is not enabled for mongodb backend")
 
-	setup.SkipForMongoDB(tt, "tls is not enabled for mongodb backend")
-
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3008")
+	t.Parallel()
 
 	ctx, collection := setup.Setup(t)
 	db := collection.Database()

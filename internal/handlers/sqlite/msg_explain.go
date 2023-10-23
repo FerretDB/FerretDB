@@ -16,10 +16,13 @@ package sqlite
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/FerretDB/FerretDB/build/version"
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -55,22 +58,76 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	cmd := params.Command
 	cmd.Set("$db", params.DB)
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3050
+	db, err := h.b.Database(params.DB)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
+		}
 
-	queryPlanner := types.MakeDocument(0)
+		return nil, lazyerrors.Error(err)
+	}
+
+	coll, err := db.Collection(params.Collection)
+	if err != nil {
+		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
+			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
+
+	var qp backends.ExplainParams
+	if !h.DisableFilterPushdown {
+		qp.Filter = params.Filter
+	}
+
+	// Skip sorting if there are more than one sort parameters
+	if h.EnableSortPushdown && params.Sort.Len() == 1 {
+		var order types.SortType
+
+		k := params.Sort.Keys()[0]
+		v := params.Sort.Values()[0]
+
+		order, err = common.GetSortType(k, v)
+		if err != nil {
+			return nil, err
+		}
+
+		qp.Sort = &backends.SortField{
+			Key:        k,
+			Descending: order == types.Descending,
+		}
+	}
+
+	// Limit pushdown is not applied if:
+	//  - `filter` is set, it must fetch all documents to filter them in memory;
+	//  - `sort` is set but `EnableSortPushdown` is not set, it must fetch all documents
+	//  and sort them in memory;
+	//  - `skip` is non-zero value, skip pushdown is not supported yet.
+	if params.Filter.Len() == 0 && (params.Sort.Len() == 0 || h.EnableSortPushdown) && params.Skip == 0 {
+		qp.Limit = params.Limit
+	}
+
+	res, err := coll.Explain(ctx, &qp)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"queryPlanner", queryPlanner,
+			"queryPlanner", res.QueryPlanner,
 			"explainVersion", "1",
 			"command", cmd,
 			"serverInfo", serverInfo,
 
 			// our extensions
-			"pushdown", !h.DisableFilterPushdown,
-			"sortingPushdown", false,
-			"limitPushdown", false,
+			// TODO https://github.com/FerretDB/FerretDB/issues/3235
+			"pushdown", res.QueryPushdown,
+			"sortingPushdown", res.SortPushdown,
+			"limitPushdown", res.LimitPushdown,
 
 			"ok", float64(1),
 		))},

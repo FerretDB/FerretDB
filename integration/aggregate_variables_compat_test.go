@@ -51,6 +51,40 @@ func TestAggregateVariablesCompatRoot(t *testing.T) {
 			},
 			skip: "https://github.com/FerretDB/FerretDB/issues/1992",
 		},
+		"GroupIDFieldID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{{"_id", "$$ROOT._id"}}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/1992",
+		},
+		"GroupIDFieldValue": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$$ROOT.v"},
+					// set first _id of the documents as group's unique value
+					{"unique", bson.D{{"$first", "$_id"}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"unique", 1}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2185",
+		},
+		"GroupIDFieldDotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{{"_id", "$$ROOT.v.foo"}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/1992",
+		},
+		"GroupIDFieldArrayDotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{{"_id", "$$ROOT.v.0"}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/1992",
+		},
 		"GroupIDExpression": {
 			pipeline: bson.A{
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},

@@ -1,7 +1,7 @@
 ---
 slug: new-release-ferretdb-0-6-1
 title: 'New release: FerretDB 0.6.1!'
-author: Alexander Fashakin
+authors: [alex]
 description: We are happy to inform you that FerretDB is currently in Alpha, and we have a new release - FerretDB 0.6.1.
 image: /img/blog/six-ferrets-1024x917.jpg
 tags: [release]

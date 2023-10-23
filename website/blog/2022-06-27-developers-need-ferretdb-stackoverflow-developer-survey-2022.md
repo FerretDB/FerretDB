@@ -1,7 +1,7 @@
 ---
 slug: developers-need-ferretdb-stackoverflow-developer-survey-2022
 title: 'Developers need FerretDB: StackOverflow Developer Survey 2022'
-author: Peter Farkas
+authors: [peter]
 description: The annual StackOverflow Developer Survey is a great way to check the current adoption of different technologies out there.
 tags: [open source, document databases, mongodb compatible, community, sspl]
 ---

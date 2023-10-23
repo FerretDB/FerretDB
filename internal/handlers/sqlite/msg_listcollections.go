@@ -64,7 +64,6 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 
 		return nil, lazyerrors.Error(err)
 	}
-	defer db.Close()
 
 	res, err := db.ListCollections(ctx, nil)
 	if err != nil {
@@ -98,7 +97,6 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 	}
 
 	var reply wire.OpMsg
-
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
 			"cursor", must.NotFail(types.NewDocument(

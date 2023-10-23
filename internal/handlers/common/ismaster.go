@@ -15,15 +15,21 @@
 package common
 
 import (
+	"context"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // IsMaster is a common implementation of the isMaster command used by deprecated OP_QUERY message.
-func IsMaster() (*wire.OpReply, error) {
+func IsMaster(ctx context.Context, query *types.Document) (*wire.OpReply, error) {
+	if err := CheckClientMetadata(ctx, query); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	return &wire.OpReply{
 		NumberReturned: 1,
 		Documents:      IsMasterDocuments(),

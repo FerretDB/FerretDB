@@ -18,10 +18,9 @@ package projection
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
-
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
@@ -214,6 +213,10 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 		}
 
 		if *projectionVal != result {
+			if key == "_id" {
+				continue
+			}
+
 			if *projectionVal {
 				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrProjectionExIn,

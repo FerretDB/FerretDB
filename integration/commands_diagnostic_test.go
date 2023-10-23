@@ -74,10 +74,8 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3050")
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
 			var actual bson.D
 
@@ -186,14 +184,12 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
+			t.Parallel()
 
 			require.NotNil(t, tc.command, "command must not be nil")
 
@@ -425,9 +421,9 @@ func TestCommandWhatsMyURIConnection(t *testing.T) {
 	t.Run("SameClientStress", func(t *testing.T) {
 		t.Parallel()
 
-		ports := make(chan string, teststress.NumGoroutines)
+		ports := make(chan string, 10)
 
-		teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+		teststress.StressN(t, len(ports), func(ready chan<- struct{}, start <-chan struct{}) {
 			ready <- struct{}{}
 			<-start
 

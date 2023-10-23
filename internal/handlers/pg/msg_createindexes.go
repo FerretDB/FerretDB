@@ -235,7 +235,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 		)
 	case errors.Is(err, pgdb.ErrIndexNameAlreadyExist):
 		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
+			commonerrors.ErrIndexKeySpecsConflict,
 			"One of the specified indexes already exists with a different key",
 			document.Command(),
 		)
@@ -382,7 +382,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrTypeMismatch,
 					fmt.Sprintf(
-						"Error in specification { key: %s, name: \"%s\", unique: %s } "+
+						"Error in specification { key: %s, name: %q, unique: %s } "+
 							":: caused by :: "+
 							"The field 'unique' has value unique: %[3]s, which is not convertible to bool",
 						types.FormatAnyValue(must.NotFail(indexDoc.Get("key"))),
@@ -396,7 +396,7 @@ func processIndexOptions(indexDoc *types.Document) (*pgdb.Index, error) {
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrInvalidIndexSpecificationOption,
 					fmt.Sprintf("The field 'unique' is not valid for an _id index specification. "+
-						"Specification: { key: %s, name: \"%s\", unique: true, v: 2 }",
+						"Specification: { key: %s, name: %q, unique: true, v: 2 }",
 						types.FormatAnyValue(must.NotFail(indexDoc.Get("key"))), index.Name,
 					),
 					"createIndexes",
@@ -468,7 +468,7 @@ func processIndexKey(keyDoc *types.Document) (pgdb.IndexKey, error) {
 		if orderParam, err = commonparams.GetWholeNumberParam(order); err != nil {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrIndexNotFound,
-				fmt.Sprintf("can't find index with key: { %s: \"%s\" }", field, order),
+				fmt.Sprintf("can't find index with key: { %s: %q }", field, order),
 				"createIndexes",
 			)
 		}

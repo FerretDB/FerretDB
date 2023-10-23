@@ -1,0 +1,63 @@
+---
+# Integration tests that need access to secrets.
+
+name: Go Trusted
+on:
+  pull_request_target:
+    types:
+      # not for "labeled" to prevent two builds for "labeled" and "unlabeled" when labels are changed
+      - unlabeled # if GitHub Actions stuck, add and remove "not ready" label to force rebuild
+      - opened
+      - reopened
+      - synchronize
+  push:
+    branches:
+      - main
+      - releases/*
+  schedule:
+    - cron: "12 1 * * *" # after Go workflow to reuse "Setup Go" cache
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org
+  GOTOOLCHAIN: local
+
+jobs:
+  integration:
+    # job name must be unique; make it unique and nice
+    name: ${{ matrix.task }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
+
+    # Do not run this job in parallel for any PR change or branch push
+    # to save some resources.
+    concurrency:
+      group: ${{ github.workflow }}-integration-${{ matrix.task }}-${{ matrix.shard_index }}-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
+
+    if: >
+      github.event_name != 'pull_request_target' ||
+      (
+        contains(github.event.pull_request.labels.*.name, 'trust') &&
+        !contains(github.event.pull_request.labels.*.name, 'not ready')
+      )
+
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [hana]
+        shard_index: [1]
+        shard_total: [1]
+
+    # Do not submit to coveralls because it can't handle parallel workflows:
+    # https://github.com/lemurheavy/coveralls-public/issues/1636#issuecomment-1529460515
+    uses: ./.github/workflows/_integration.yml
+    with:
+      task: ${{ matrix.task }}
+      shard_index: ${{ matrix.shard_index }}
+      shard_total: ${{ matrix.shard_total }}
+      checkout_ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || ''}}
+      coveralls: false
+    secrets:
+      FERRETDB_HANA_URL: ${{ secrets.FERRETDB_HANA_URL }}

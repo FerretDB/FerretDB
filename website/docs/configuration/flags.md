@@ -10,7 +10,7 @@ To make user experience cloud native, every flag has its environment variable eq
 There is no configuration file.
 
 :::info
-Some default values are overridden in [our Docker image](quickstart-guide/docker.md).
+Some default values are overridden in [our Docker image](../quickstart-guide/docker.md).
 :::
 
 <!-- Keep order in sync with the `--help` output -->
@@ -54,6 +54,11 @@ Some default values are overridden in [our Docker image](quickstart-guide/docker
 | Flag               | Description                     | Environment Variable      | Default Value                        |
 | ------------------ | ------------------------------- | ------------------------- | ------------------------------------ |
 | `--postgresql-url` | PostgreSQL URL for 'pg' handler | `FERRETDB_POSTGRESQL_URL` | `postgres://127.0.0.1:5432/ferretdb` |
+| `--postgresql-new` | Use new PostgreSQL backend      | `FERRETDB_POSTGRESQL_NEW` | `false`                              |
+
+The `--postgresql-new` flag enables the use of a new PostgreSQL backend (currently a release candidate).
+It is fully compatible with existing databases and collections and will be enabled by default soon.
+Read more about it [in this blog post](https://blog.ferretdb.io/ferretdb-v1-10-production-ready-sqlite/).
 
 FerretDB uses [pgx v5](https://github.com/jackc/pgx) library for connecting to PostgreSQL.
 Supported URL parameters are documented there:
@@ -66,17 +71,16 @@ Additionally:
 
 - `pool_max_conns` parameter is set to 50 if it is unset in the URL;
 - `application_name` is always set to "FerretDB";
-- `timezone` is always set to "UTC";
-- `search_path` is set to the empty string in debug builds only.
+- `timezone` is always set to "UTC".
 
-### SQLite (beta)
+### SQLite
 
-[SQLite backend](../understanding-ferretdb.md#sqlite-beta) can be enabled by
+[SQLite backend](../understanding-ferretdb.md#sqlite) can be enabled by
 `--handler=sqlite` flag or `FERRETDB_HANDLER=sqlite` environment variable.
 
-| Flag           | Description                                 | Environment Variable  | Default Value |
-| -------------- | ------------------------------------------- | --------------------- | ------------- |
-| `--sqlite-url` | SQLite URI (directory) for 'sqlite' handler | `FERRETDB_SQLITE_URL` | `file:data/`  |
+| Flag           | Description                                 | Environment Variable  | Default Value                                     |
+| -------------- | ------------------------------------------- | --------------------- | ------------------------------------------------- |
+| `--sqlite-url` | SQLite URI (directory) for 'sqlite' handler | `FERRETDB_SQLITE_URL` | `file:data/` `.`<br />(`file:/state/` for Docker) |
 
 FerretDB uses [modernc.org/sqlite](https://gitlab.com/cznic/sqlite) library for accessing SQLite database files.
 Supported URL parameters are documented there:
@@ -87,6 +91,7 @@ Supported URL parameters are documented there:
 
 Additionally:
 
+- `_pragma=auto_vacuum(none)` parameter is set if that PRAGMA is not present;
 - `_pragma=busy_timeout(10000)` parameter is set if that PRAGMA is not present;
 - `_pragma=journal_mode(wal)` parameter is set if that PRAGMA is not present.
 

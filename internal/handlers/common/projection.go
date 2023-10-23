@@ -17,10 +17,9 @@ package common
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
-
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -200,6 +199,9 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 		}
 
 		if *inclusion != inclusionField {
+			if key == "_id" {
+				continue
+			}
 			if *inclusion {
 				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrProjectionExIn,
@@ -475,11 +477,7 @@ func includeProjection(path types.Path, curIndex int, source any, projected, fil
 				// in source.
 				var v any
 
-				v, err = arr.Get(i)
-				if err != nil {
-					panic(err)
-				}
-
+				v, _ = arr.Get(i)
 				docVal, ok := v.(*types.Document)
 				if !ok {
 					panic("projected field must be a document")

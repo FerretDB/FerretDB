@@ -60,7 +60,7 @@ const config = {
         logo: {
           alt: 'FerretDB Logo',
           src: 'img/logo-dark.jpg',
-          srcDark:'img/logo-light.png'
+          srcDark: 'img/logo-light.png'
         },
         items: [
           {
@@ -144,7 +144,14 @@ const config = {
         darkTheme: darkCodeTheme,
         additionalLanguages: ['go', 'json5', 'sql'],
       },
+      mermaid: {
+        theme: {light: 'default', dark: 'dark'},
+      },
     }),
+  markdown: {
+    mermaid: true,
+  },
+  themes: ['@docusaurus/theme-mermaid'],
 };
 
 module.exports = config;

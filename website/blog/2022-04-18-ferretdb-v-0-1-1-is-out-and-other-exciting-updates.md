@@ -1,7 +1,7 @@
 ---
 slug: ferretdb-v-0-1-1-is-out-and-other-exciting-updates
 title: FerretDB v.0.1.1 is out, and other exciting updates
-author: Peter Farkas
+authors: [peter]
 description: We released v.0.1.1, with further enhancements and fixes on top of FerretDB v.0.1.0, which introduced exciting changes, enhancing our ability to match the behavior of MongoDB as closely as possible.
 tags: [release]
 ---

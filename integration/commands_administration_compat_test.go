@@ -21,10 +21,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
@@ -62,11 +64,10 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 	} {
 		name, tc := name, tc
 
-		t.Run(name, func(tt *testing.T) {
-			tt.Helper()
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
 
-			tt.Parallel()
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
+			t.Parallel()
 
 			var targetRes bson.D
 			targetCommand := bson.D{{"collStats", targetCollection.Name()}, {"scale", tc.scale}}
@@ -98,6 +99,73 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 	}
 }
 
+func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/2447")
+
+	t.Parallel()
+
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers:                []shareddata.Provider{},
+		AddNonExistentCollection: true,
+	})
+
+	ctx, targetCollection, compatCollection := s.Ctx, s.TargetCollections[0], s.CompatCollections[0]
+
+	for name, tc := range map[string]struct { //nolint:vet // for readability
+		sizeInBytes  int64 // also sets capped true if it is greater than zero
+		maxDocuments int64 // maxDocuments is set if sizeInBytes is greater than zero
+	}{
+		"Size": {
+			sizeInBytes: 1000,
+		},
+		"MaxDocuments": {
+			sizeInBytes:  1000,
+			maxDocuments: 10,
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			cName := testutil.CollectionName(t) + name
+			opts := options.CreateCollection()
+
+			if tc.sizeInBytes > 0 {
+				opts.SetCapped(true)
+				opts.SetSizeInBytes(tc.sizeInBytes)
+
+				if tc.maxDocuments > 0 {
+					opts.SetMaxDocuments(tc.maxDocuments)
+				}
+			}
+
+			targetErr := targetCollection.Database().CreateCollection(ctx, cName, opts)
+			require.NoError(t, targetErr)
+
+			compatErr := compatCollection.Database().CreateCollection(ctx, cName, opts)
+			require.NoError(t, compatErr)
+
+			require.Equal(t, compatCollection.Name(), targetCollection.Name())
+			command := bson.D{{"collStats", targetCollection.Name()}}
+
+			var targetRes bson.D
+			targetErr = targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
+			require.NoError(t, targetErr)
+
+			var compatRes bson.D
+			targetErr = compatCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
+			require.NoError(t, targetErr)
+
+			targetDoc := ConvertDocument(t, targetRes)
+			compatDoc := ConvertDocument(t, compatRes)
+
+			assert.Equal(t, must.NotFail(compatDoc.Get("capped")), must.NotFail(targetDoc.Get("capped")))
+			assert.Equal(t, must.NotFail(compatDoc.Get("max")), must.NotFail(targetDoc.Get("max")))
+			assert.Equal(t, must.NotFail(compatDoc.Get("maxSize")), must.NotFail(targetDoc.Get("maxSize")))
+		})
+	}
+}
+
 func TestCommandsAdministrationCompatDBStatsWithScale(t *testing.T) {
 	t.Parallel()
 
@@ -119,12 +187,10 @@ func TestCommandsAdministrationCompatDBStatsWithScale(t *testing.T) {
 	} {
 		name, tc := name, tc
 
-		t.Run(name, func(tt *testing.T) {
-			tt.Helper()
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
 
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
+			t.Parallel()
 
 			var targetRes bson.D
 			targetCommand := bson.D{{"dbStats", int32(1)}, {"scale", tc.scale}}
@@ -152,6 +218,73 @@ func TestCommandsAdministrationCompatDBStatsWithScale(t *testing.T) {
 			compatFactor := must.NotFail(compatDoc.Get("scaleFactor"))
 
 			assert.Equal(t, compatFactor, targetFactor)
+		})
+	}
+}
+
+func TestCommandsAdministrationCompatDBStatsFreeStorage(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
+		Providers:                []shareddata.Provider{shareddata.DocumentsDocuments},
+		AddNonExistentCollection: true,
+	})
+
+	ctx, targetCollection, compatCollection := s.Ctx, s.TargetCollections[0], s.CompatCollections[0]
+
+	for name, tc := range map[string]struct { //nolint:vet // for readability
+		command bson.D // required, command to run
+		skip    string // optional, skip test with a specified reason
+	}{
+		"Unset": {
+			command: bson.D{{"dbStats", int32(1)}},
+		},
+		"Int32Zero": {
+			command: bson.D{{"dbStats", int32(1)}, {"freeStorage", int32(0)}},
+		},
+		"Int32One": {
+			command: bson.D{{"dbStats", int32(1)}, {"freeStorage", int32(1)}},
+		},
+		"Int32Negative": {
+			command: bson.D{{"dbStats", int32(1)}, {"freeStorage", int32(-1)}},
+		},
+		"True": {
+			command: bson.D{{"dbStats", int32(1)}, {"freeStorage", true}},
+		},
+		"False": {
+			command: bson.D{{"dbStats", int32(1)}, {"freeStorage", false}},
+		},
+		"Nil": {
+			command: bson.D{{"dbStats", int32(1)}, {"freeStorage", nil}},
+		},
+	} {
+		name, tc := name, tc
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			var targetRes bson.D
+			targetErr := targetCollection.Database().RunCommand(ctx, tc.command).Decode(&targetRes)
+
+			var compatRes bson.D
+			compatErr := compatCollection.Database().RunCommand(ctx, tc.command).Decode(&compatRes)
+
+			if targetErr != nil {
+				t.Logf("Target error: %v", targetErr)
+				t.Logf("Compat error: %v", compatErr)
+
+				// error messages are intentionally not compared
+				AssertMatchesCommandError(t, compatErr, targetErr)
+
+				return
+			}
+			require.NoError(t, compatErr, "compat error; target returned no error")
+
+			targetDoc := ConvertDocument(t, targetRes)
+			compatDoc := ConvertDocument(t, compatRes)
+
+			assert.Equal(t, compatDoc.Has("freeStorageSize"), targetDoc.Has("freeStorageSize"))
+			assert.Equal(t, compatDoc.Has("totalFreeStorageSize"), targetDoc.Has("totalFreeStorageSize"))
 		})
 	}
 }

@@ -31,8 +31,6 @@ type insertCompatTestCase struct {
 	insert     []any                    // required, slice of bson.D to be insert
 	ordered    bool                     // defaults to false
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
-
-	skipForSQLite string // optional, if set, the case is skipped for SQLite due to given issue
 }
 
 // testInsertCompat tests insert compatibility test cases.
@@ -41,10 +39,6 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-
-		if tc.skipForSQLite != "" && setup.IsSQLite(t) {
-			t.Skipf(tc.skipForSQLite)
-		}
 
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
@@ -111,7 +105,6 @@ func testInsertCompat(t *testing.T, testCases map[string]insertCompatTestCase) {
 				for i := range targetCollections {
 					targetCollection := targetCollections[i]
 					compatCollection := compatCollections[i]
-
 					t.Run(targetCollection.Name(), func(t *testing.T) {
 						t.Helper()
 
@@ -174,14 +167,12 @@ func TestInsertCompat(t *testing.T) {
 		},
 
 		"IDArray": {
-			insert:        []any{bson.D{{"_id", bson.A{"foo", "bar"}}}},
-			resultType:    emptyResult,
-			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/2750",
+			insert:     []any{bson.D{{"_id", bson.A{"foo", "bar"}}}},
+			resultType: emptyResult,
 		},
 		"IDRegex": {
-			insert:        []any{bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}}},
-			resultType:    emptyResult,
-			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/2750",
+			insert:     []any{bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}}},
+			resultType: emptyResult,
 		},
 
 		"OrderedAllErrors": {
@@ -189,18 +180,16 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", bson.A{"foo", "bar"}}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 			},
-			ordered:       true,
-			resultType:    emptyResult,
-			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/2750",
+			ordered:    true,
+			resultType: emptyResult,
 		},
 		"UnorderedAllErrors": {
 			insert: []any{
 				bson.D{{"_id", bson.A{"foo", "bar"}}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 			},
-			ordered:       false,
-			resultType:    emptyResult,
-			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/2750",
+			ordered:    false,
+			resultType: emptyResult,
 		},
 
 		"OrderedOneError": {
@@ -209,8 +198,7 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 				bson.D{{"_id", "2"}},
 			},
-			ordered:       true,
-			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/2750",
+			ordered: true,
 		},
 		"UnorderedOneError": {
 			insert: []any{
@@ -219,8 +207,7 @@ func TestInsertCompat(t *testing.T) {
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 				bson.D{{"_id", "2"}},
 			},
-			ordered:       false,
-			skipForSQLite: "https://github.com/FerretDB/FerretDB/issues/2750",
+			ordered: false,
 		},
 	}
 

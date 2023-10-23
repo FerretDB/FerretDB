@@ -17,13 +17,35 @@ package sqlite
 import (
 	"context"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgSASLStart implements HandlerInterface.
 func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	dbName, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3008
+
+	// database name typically is either "$external" or "admin"
+	// we can't use it to query the database
+	_ = dbName
+
+	if err = common.SASLStart(ctx, document); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	var emptyPayload types.Binary
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{

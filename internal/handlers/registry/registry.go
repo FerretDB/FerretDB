@@ -41,7 +41,7 @@ type NewHandlerOpts struct {
 	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider
 
-	// for `pg` handler
+	// for `postgresql` handler
 	PostgreSQLURL string
 
 	// for `sqlite` handler
@@ -57,12 +57,21 @@ type NewHandlerOpts struct {
 type TestOpts struct {
 	DisableFilterPushdown bool
 	EnableSortPushdown    bool
+	EnableOplog           bool
+
+	UseOldPG   bool
+	UseNewHana bool
 }
 
 // NewHandler constructs a new handler.
 func NewHandler(name string, opts *NewHandlerOpts) (handlers.Interface, error) {
 	if opts == nil {
 		return nil, fmt.Errorf("opts is nil")
+	}
+
+	// handle deprecated variant
+	if name == "pg" {
+		name = "postgresql"
 	}
 
 	newHandler := registry[name]
@@ -78,7 +87,7 @@ func Handlers() []string {
 	res := make([]string, 0, len(registry))
 
 	// double check registered names and return them in the right order
-	for _, h := range []string{"pg", "sqlite", "hana"} {
+	for _, h := range []string{"postgresql", "sqlite", "hana"} {
 		if _, ok := registry[h]; !ok {
 			continue
 		}

@@ -37,8 +37,8 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	unimplementedFields := []string{
 		"timeseries",
 		"expireAfterSeconds",
-		"size",
-		"max",
+		"size", // TODO https://github.com/FerretDB/FerretDB/issues/3458
+		"max",  // TODO https://github.com/FerretDB/FerretDB/issues/3458
 		"validator",
 		"validationLevel",
 		"validationAction",
@@ -50,6 +50,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3458
 	if err = common.UnimplementedNonDefault(document, "capped", func(v any) bool {
 		b, ok := v.(bool)
 		return ok && !b
@@ -87,7 +88,6 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		return nil, lazyerrors.Error(err)
 	}
-	defer db.Close()
 
 	err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
 		Name: collectionName,

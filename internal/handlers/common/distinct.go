@@ -33,7 +33,7 @@ import (
 //nolint:vet // for readability
 type DistinctParams struct {
 	DB         string          `ferretdb:"$db"`
-	Collection string          `ferretdb:"collection"`
+	Collection string          `ferretdb:"distinct,collection"`
 	Key        string          `ferretdb:"key"`
 	Filter     *types.Document `ferretdb:"-"`
 	Comment    string          `ferretdb:"comment,opt"`

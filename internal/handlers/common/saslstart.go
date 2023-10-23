@@ -36,7 +36,6 @@ func SASLStart(ctx context.Context, doc *types.Document) error {
 	switch mechanism {
 	case "PLAIN":
 		username, password, err = saslStartPlain(doc)
-
 		if err != nil {
 			return err
 		}
@@ -44,13 +43,7 @@ func SASLStart(ctx context.Context, doc *types.Document) error {
 	default:
 		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
 			"See https://docs.ferretdb.io/security/authentication/ for more details."
-		err = commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrAuthenticationFailed,
-			msg,
-			"mechanism",
-		)
-
-		return err
+		return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrAuthenticationFailed, msg, "mechanism")
 	}
 
 	conninfo.Get(ctx).SetAuth(username, password)

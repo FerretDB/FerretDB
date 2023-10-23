@@ -24,6 +24,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 const (
@@ -33,7 +34,8 @@ const (
 
 // Common interface with types.Document.
 //
-// TODO Remove it.
+// Remove it.
+// TODO https://github.com/FerretDB/FerretDB/issues/260
 type document interface {
 	Keys() []string
 	Values() []any
@@ -55,7 +57,8 @@ type field struct {
 // ConvertDocument converts types.Document to bson.Document and validates it.
 // It references the same data without copying it.
 //
-// TODO Remove it.
+// Remove it.
+// TODO https://github.com/FerretDB/FerretDB/issues/260
 func ConvertDocument(d document) (*Document, error) {
 	keys := d.Keys()
 	values := d.Values()
@@ -87,15 +90,6 @@ func ConvertDocument(d document) (*Document, error) {
 	}
 
 	return &doc, nil
-}
-
-// MustConvertDocument is a ConvertDocument that panics in case of error.
-func MustConvertDocument(d document) *Document {
-	doc, err := ConvertDocument(d)
-	if err != nil {
-		panic(err)
-	}
-	return doc
 }
 
 func (doc *Document) bsontype() {}
@@ -476,9 +470,7 @@ func (doc Document) MarshalBinary() ([]byte, error) {
 	var res bytes.Buffer
 	l := int32(elist.Len() + 5)
 	binary.Write(&res, binary.LittleEndian, l)
-	if _, err := elist.WriteTo(&res); err != nil {
-		panic(err)
-	}
+	must.NotFail(elist.WriteTo(&res))
 	res.WriteByte(0)
 	if int32(res.Len()) != l {
 		panic(fmt.Sprintf("got %d, expected %d", res.Len(), l))

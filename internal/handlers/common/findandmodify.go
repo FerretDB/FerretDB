@@ -44,7 +44,7 @@ const (
 // FindAndModifyParams represent parameters for the findAndModify command.
 type FindAndModifyParams struct {
 	DB                string          `ferretdb:"$db"`
-	Collection        string          `ferretdb:"collection"`
+	Collection        string          `ferretdb:"findAndModify,collection"`
 	Comment           string          `ferretdb:"comment,opt"`
 	Query             *types.Document `ferretdb:"query,opt"`
 	Sort              *types.Document `ferretdb:"sort,opt"`
@@ -120,7 +120,6 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 		case *types.Document:
 			params.Update = updateParam
 		case *types.Array:
-			// TODO aggregation pipeline stages metrics
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrNotImplemented,
 				"Aggregation pipelines are not supported yet",

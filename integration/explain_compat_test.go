@@ -23,7 +23,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // explainCompatTestCase describes explain compatibility test case.
@@ -33,8 +32,7 @@ type explainCompatTestCase struct {
 	pipeline   bson.A                   // ignored if nil
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 
-	skip           string // skip test for all handlers, must have issue number mentioned
-	failsForSQLite string // optional, if set, the case is expected to fail for SQLite due to given issue}
+	skip string // skip test for all handlers, must have issue number mentioned
 }
 
 // testExplainCompatError tests explain compatibility test cases.
@@ -43,10 +41,10 @@ type explainCompatTestCase struct {
 // If you see following error, use `testAggregateStagesCompat` test instead.
 //
 //	`(FailedToParse) The 'cursor' option is required, except for aggregate with the explain argument`
-func testExplainCompatError(tt *testing.T, testCases map[string]explainCompatTestCase) {
-	tt.Helper()
+func testExplainCompatError(t *testing.T, testCases map[string]explainCompatTestCase) {
+	t.Helper()
 
-	s := setup.SetupCompatWithOpts(tt, &setup.SetupCompatOpts{
+	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
 		// Use a provider that works for all handlers.
 		Providers: []shareddata.Provider{shareddata.Int32s},
 	})
@@ -57,22 +55,17 @@ func testExplainCompatError(tt *testing.T, testCases map[string]explainCompatTes
 
 	for name, tc := range testCases {
 		name, tc := name, tc
-		tt.Run(name, func(tt *testing.T) {
-			tt.Helper()
+		t.Run(name, func(t *testing.T) {
+			t.Helper()
 
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
+			t.Parallel()
 
-			tt.Run(targetCollection.Name(), func(tt *testing.T) {
-				tt.Helper()
-
-				var t testtb.TB = tt
-				if tc.failsForSQLite != "" {
-					t = setup.FailsForSQLite(tt, tc.failsForSQLite)
-				}
+			t.Run(targetCollection.Name(), func(t *testing.T) {
+				t.Helper()
 
 				explainTarget := bson.D{{tc.command, targetCollection.Name()}}
 				explainCompat := bson.D{{tc.command, compatCollection.Name()}}
@@ -149,13 +142,11 @@ func TestExplainCompatError(t *testing.T) {
 			pipeline: bson.A{1},
 		},
 		"Count": {
-			command:        "count",
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3050",
+			command: "count",
 		},
 		"Find": {
-			command:        "find",
-			filter:         bson.D{{"v", int32(42)}},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3050",
+			command: "find",
+			filter:  bson.D{{"v", int32(42)}},
 		},
 		"InvalidCommandGetLog": {
 			command: "create",

@@ -134,14 +134,12 @@ func (c *conn) run(ctx context.Context) (err error) {
 		cancel(lazyerrors.Errorf("run exits: %w", err))
 	}()
 
-	connInfo := conninfo.NewConnInfo()
-	defer connInfo.Close()
-
+	connInfo := conninfo.New()
 	if c.netConn.RemoteAddr().Network() != "unix" {
 		connInfo.PeerAddr = c.netConn.RemoteAddr().String()
 	}
 
-	ctx = conninfo.WithConnInfo(ctx, connInfo)
+	ctx = conninfo.Ctx(ctx, connInfo)
 
 	done := make(chan struct{})
 
@@ -482,7 +480,14 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			}))
 			resBody = &res
 
-			result = protoErr.Code().String()
+			switch protoErr := protoErr.(type) {
+			case *commonerrors.CommandError:
+				result = protoErr.Code().String()
+			case *commonerrors.WriteErrors:
+				result = "write-error"
+			default:
+				panic(fmt.Errorf("unexpected error type %T", protoErr))
+			}
 
 			if info := protoErr.Info(); info != nil {
 				argument = info.Argument
@@ -528,8 +533,8 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 		}
 	}
 
-	// TODO Don't call MarshalBinary there. Fix header in the caller?
-	// https://github.com/FerretDB/FerretDB/issues/273
+	// Don't call MarshalBinary there. Fix header in the caller?
+	// TODO https://github.com/FerretDB/FerretDB/issues/273
 	b, err := resBody.MarshalBinary()
 	if err != nil {
 		result = ""
@@ -553,7 +558,6 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
 	if cmd, ok := commoncommands.Commands[command]; ok {
 		if cmd.Handler != nil {
-			// TODO move it to route, closer to Prometheus metrics
 			defer observability.FuncCall(ctx)()
 
 			defer pprof.SetGoroutineLabels(ctx)

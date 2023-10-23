@@ -1,0 +1,39 @@
+---
+name: Cleanup
+on:
+  schedule:
+    - cron: "10 0 * * 1"
+  workflow_dispatch:
+
+env:
+  GOPATH: /home/runner/go
+  GOCACHE: /home/runner/go/cache
+  GOLANGCI_LINT_CACHE: /home/runner/go/cache/lint
+  GOMODCACHE: /home/runner/go/mod
+  GOPROXY: https://proxy.golang.org
+  GOTOOLCHAIN: local
+
+jobs:
+  cleanup:
+    name: Cleanup
+    runs-on: server
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Setup Go
+        uses: FerretDB/github-actions/setup-go@main
+
+      - name: Install Task
+        run: go generate -x
+        working-directory: tools
+
+      - name: Run docker-cleanup
+        run: bin/task docker-cleanup
+
+      - name: Clean Go caches
+        run: go clean -cache -testcache -modcache -fuzzcache

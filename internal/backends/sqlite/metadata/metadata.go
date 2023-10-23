@@ -12,8 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package metadata provides access to SQLite databases and collections information.
+// Package metadata provides access to databases and collections information.
 package metadata
+
+import "github.com/FerretDB/FerretDB/internal/backends"
 
 // Collection will probably have a method for getting column name / SQLite path expression for the given document field
 // once we implement field extraction.
@@ -21,16 +23,32 @@ package metadata
 // TODO https://github.com/FerretDB/FerretDB/issues/226
 
 const (
-	// IDColumn is a SQLite path expression for _id field.
-	IDColumn = "_ferretdb_sjson->'$._id'"
+	// DefaultColumn is a column name for all fields.
+	DefaultColumn = backends.ReservedPrefix + "sjson"
 
-	// DefaultColumn is a column name for all fields expect _id.
-	DefaultColumn = "_ferretdb_sjson"
+	// IDColumn is a SQLite path expression for _id field.
+	IDColumn = DefaultColumn + "->'$._id'"
 )
 
 // Collection represents collection metadata.
+//
+// Collection value should be immutable to avoid data races.
+// Use [deepCopy] to replace the whole value instead of modifying fields of existing value.
 type Collection struct {
 	Name      string
 	TableName string
-	Settings  string
+	Settings  Settings
+}
+
+// deepCopy returns a deep copy.
+func (c *Collection) deepCopy() *Collection {
+	if c == nil {
+		return nil
+	}
+
+	return &Collection{
+		Name:      c.Name,
+		TableName: c.TableName,
+		Settings:  c.Settings.deepCopy(),
+	}
 }

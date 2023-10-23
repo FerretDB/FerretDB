@@ -100,6 +100,26 @@ func AssertType[T types.Type](value any) (T, error) {
 	return res, nil
 }
 
+// GetLimitParam returns limit value from provided query document.
+func GetLimitParam(doc *types.Document) (int64, error) {
+	v, _ := doc.Get("limit")
+	if v == nil {
+		return 0, nil
+	}
+
+	res, err := commonparams.GetWholeNumberParam(v)
+	if err != nil {
+		msg := fmt.Sprintf(
+			`BSON field '%s' is the wrong type '%s', expected type '%s'`,
+			"limit", commonparams.AliasFromType(v), commonparams.AliasFromType(res),
+		)
+
+		return res, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrTypeMismatch, msg, "limit")
+	}
+
+	return res, nil
+}
+
 // GetLimitStageParam returns $limit stage argument from the provided value.
 // It returns the proper error if value doesn't meet requirements.
 func GetLimitStageParam(value any) (int64, error) {
@@ -462,4 +482,100 @@ func multiplyLongSafely(v1, v2 int64) (int64, error) {
 	}
 
 	return res, nil
+}
+
+// performBitLogic returns the result of a bitwise operation on two Integer(int32/int64) values.
+// It only supports 'and', 'or' and 'xor' bitwise operators.
+//
+// The result produced will be the broader type: int32 & int64 = int64.
+func performBitLogic(bitOp string, v1, v2 any) (any, error) {
+	switch bitOp {
+	case "and":
+		switch v1 := v1.(type) {
+		case int32:
+			switch v2 := v2.(type) {
+			case int32:
+				return v1 & v2, nil
+			case int64:
+				return int64(v1) & v2, nil
+			default:
+				return nil, commonparams.ErrUnexpectedRightOpType
+			}
+
+		case int64:
+			switch v2 := v2.(type) {
+			case int32:
+				return v1 & int64(v2), nil
+			case int64:
+				return v1 & v2, nil
+			default:
+				return nil, commonparams.ErrUnexpectedRightOpType
+			}
+
+		default:
+			return nil, commonparams.ErrUnexpectedLeftOpType
+		}
+
+	case "or":
+		switch v1 := v1.(type) {
+		case int32:
+			switch v2 := v2.(type) {
+			case int32:
+				return v1 | v2, nil
+			case int64:
+				return int64(v1) | v2, nil
+			default:
+				return nil, commonparams.ErrUnexpectedRightOpType
+			}
+
+		case int64:
+			switch v2 := v2.(type) {
+			case int32:
+				return v1 | int64(v2), nil
+
+			case int64:
+				return v1 | v2, nil
+			default:
+				return nil, commonparams.ErrUnexpectedRightOpType
+			}
+
+		default:
+			return nil, commonparams.ErrUnexpectedLeftOpType
+		}
+
+	case "xor":
+		switch v1 := v1.(type) {
+		case int32:
+			switch v2 := v2.(type) {
+			case int32:
+				return v1 ^ v2, nil
+			case int64:
+				return int64(v1) ^ v2, nil
+			default:
+				return nil, commonparams.ErrUnexpectedRightOpType
+			}
+
+		case int64:
+			switch v2 := v2.(type) {
+			case int32:
+				return v1 ^ int64(v2), nil
+			case int64:
+				return v1 ^ v2, nil
+			default:
+				return nil, commonparams.ErrUnexpectedRightOpType
+			}
+
+		default:
+			return nil, commonparams.ErrUnexpectedLeftOpType
+		}
+
+	default:
+		return nil, fmt.Errorf(
+			`The $bit modifier only supports 'and', 'or', and 'xor', not '%s'`+
+				` which is an unknown operator: {%s: %v}`,
+			bitOp,
+			bitOp,
+			types.FormatAnyValue(v1),
+		)
+	}
 }

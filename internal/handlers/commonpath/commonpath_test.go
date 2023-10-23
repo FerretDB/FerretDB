@@ -28,8 +28,8 @@ func TestFindValues(t *testing.T) {
 
 	t.Run("Array", func(t *testing.T) {
 		array := must.NotFail(types.NewDocument("foo", must.NotFail(types.NewArray(
-			must.NotFail(types.NewDocument("bar", 0)),
-			must.NotFail(types.NewDocument("bar", 1)),
+			must.NotFail(types.NewDocument("bar", int32(0))),
+			must.NotFail(types.NewDocument("bar", int32(1))),
 		))))
 
 		for name, tc := range map[string]struct {
@@ -45,7 +45,7 @@ func TestFindValues(t *testing.T) {
 					FindArrayIndex:     true,
 					FindArrayDocuments: true,
 				},
-				res: []any{0, 1},
+				res: []any{int32(0), int32(1)},
 			},
 			"DistinctCommandIndexDotNotation": {
 				doc:  array,
@@ -54,7 +54,7 @@ func TestFindValues(t *testing.T) {
 					FindArrayIndex:     true,
 					FindArrayDocuments: true,
 				},
-				res: []any{must.NotFail(types.NewDocument("bar", 1))},
+				res: []any{must.NotFail(types.NewDocument("bar", int32(1)))},
 			},
 			"DistinctCommandNestedIndexDotNotation": {
 				doc:  array,
@@ -63,7 +63,7 @@ func TestFindValues(t *testing.T) {
 					FindArrayIndex:     true,
 					FindArrayDocuments: true,
 				},
-				res: []any{1},
+				res: []any{int32(1)},
 			},
 
 			"AggregationOperatorDotNotation": {
@@ -73,7 +73,7 @@ func TestFindValues(t *testing.T) {
 					FindArrayIndex:     false,
 					FindArrayDocuments: true,
 				},
-				res: []any{0, 1},
+				res: []any{int32(0), int32(1)},
 			},
 			"AggregationOperatorIndexDotNotation": {
 				doc:  array,
@@ -138,7 +138,7 @@ func TestFindValues(t *testing.T) {
 					FindArrayIndex:     true,
 					FindArrayDocuments: false,
 				},
-				res: []any{must.NotFail(types.NewDocument("bar", 1))},
+				res: []any{must.NotFail(types.NewDocument("bar", int32(1)))},
 			},
 			"GetByPathNestedIndexDotNotation": {
 				doc:  array,
@@ -147,7 +147,7 @@ func TestFindValues(t *testing.T) {
 					FindArrayIndex:     true,
 					FindArrayDocuments: false,
 				},
-				res: []any{1},
+				res: []any{int32(1)},
 			},
 		} {
 			name, tc := name, tc
@@ -162,7 +162,7 @@ func TestFindValues(t *testing.T) {
 	})
 
 	t.Run("Document", func(t *testing.T) {
-		doc := must.NotFail(types.NewDocument("foo", must.NotFail(types.NewDocument("bar", 0))))
+		doc := must.NotFail(types.NewDocument("foo", must.NotFail(types.NewDocument("bar", int32(0)))))
 
 		for name, tc := range map[string]struct {
 			doc  *types.Document
@@ -182,7 +182,7 @@ func TestFindValues(t *testing.T) {
 					FindArrayIndex:     true,
 					FindArrayDocuments: true,
 				},
-				res: []any{0},
+				res: []any{int32(0)},
 			},
 			"AggregationOperatorDotNotation": {
 				doc:  doc,
@@ -191,7 +191,7 @@ func TestFindValues(t *testing.T) {
 					FindArrayIndex:     false,
 					FindArrayDocuments: true,
 				},
-				res: []any{0},
+				res: []any{int32(0)},
 			},
 			"UnwindDotNotation": {
 				doc:  doc,
@@ -200,7 +200,7 @@ func TestFindValues(t *testing.T) {
 					FindArrayIndex:     false,
 					FindArrayDocuments: false,
 				},
-				res: []any{0},
+				res: []any{int32(0)},
 			},
 			"GetByPathDotNotation": {
 				doc:  doc,
@@ -209,7 +209,7 @@ func TestFindValues(t *testing.T) {
 					FindArrayIndex:     true,
 					FindArrayDocuments: false,
 				},
-				res: []any{0},
+				res: []any{int32(0)},
 			},
 		} {
 			name, tc := name, tc

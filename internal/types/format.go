@@ -21,58 +21,61 @@ import (
 	"time"
 )
 
-// FormatAnyValue formats value for error message output.
-func FormatAnyValue(v any) string {
-	switch v := v.(type) {
+// FormatAnyValue formats BSON value for error message output.
+func FormatAnyValue(value any) string {
+	assertType(value)
+
+	switch value := value.(type) {
 	case *Document:
-		return formatDocument(v)
+		return formatDocument(value)
 	case *Array:
-		return formatArray(v)
+		return formatArray(value)
+
 	case float64:
 		switch {
-		case math.IsNaN(v):
+		case math.IsNaN(value):
 			return "nan.0"
 
-		case math.IsInf(v, -1):
+		case math.IsInf(value, -1):
 			return "-inf.0"
-		case math.IsInf(v, +1):
+		case math.IsInf(value, +1):
 			return "inf.0"
-		case v == 0 && math.Signbit(v):
+		case value == 0 && math.Signbit(value):
 			return "-0.0"
-		case v == 0.0:
+		case value == 0.0:
 			return "0.0"
-		case v > 1000 || v < -1000 || v == math.SmallestNonzeroFloat64:
-			return fmt.Sprintf("%.15e", v)
-		case math.Trunc(v) == v:
-			return fmt.Sprintf("%d.0", int64(v))
+		case value > 1000 || value < -1000 || value == math.SmallestNonzeroFloat64:
+			return fmt.Sprintf("%.15e", value)
+		case math.Trunc(value) == value:
+			return fmt.Sprintf("%d.0", int64(value))
 		default:
-			res := fmt.Sprintf("%.2f", v)
+			res := fmt.Sprintf("%.2f", value)
 
 			return strings.TrimSuffix(res, "0")
 		}
 
 	case string:
-		return fmt.Sprintf(`"%v"`, v)
+		return fmt.Sprintf(`"%v"`, value)
 	case Binary:
-		return fmt.Sprintf("BinData(%d, %X)", v.Subtype, v.B)
+		return fmt.Sprintf("BinData(%d, %X)", value.Subtype, value.B)
 	case ObjectID:
-		return fmt.Sprintf("ObjectId('%x')", v)
+		return fmt.Sprintf("ObjectId('%x')", value)
 	case bool:
-		return fmt.Sprintf("%v", v)
+		return fmt.Sprintf("%v", value)
 	case time.Time:
-		return fmt.Sprintf("new Date(%d)", v.UnixMilli())
+		return fmt.Sprintf("new Date(%d)", value.UnixMilli())
 	case NullType:
 		return "null"
 	case Regex:
-		return fmt.Sprintf("/%s/%s", v.Pattern, v.Options)
+		return fmt.Sprintf("/%s/%s", value.Pattern, value.Options)
 	case int32:
-		return fmt.Sprintf("%d", v)
+		return fmt.Sprintf("%d", value)
 	case Timestamp:
-		return fmt.Sprintf("Timestamp(%v, %v)", int64(v)>>32, int32(v))
+		return fmt.Sprintf("Timestamp(%v, %v)", int64(value)>>32, int32(value))
 	case int64:
-		return fmt.Sprintf("%d", v)
+		return fmt.Sprintf("%d", value)
 	default:
-		panic(fmt.Sprintf("unknown type %T", v))
+		panic(fmt.Sprintf("unknown type %T", value))
 	}
 }
 

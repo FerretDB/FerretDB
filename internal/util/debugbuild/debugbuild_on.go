@@ -18,7 +18,7 @@ package debugbuild
 
 // Enabled is true if that's a debug build.
 //
-// See build/version package documentation for more details.
+// See [build/version] package documentation for more details.
 //
 // It is a constant to allow the compiler to optimize away the code.
 const Enabled = true

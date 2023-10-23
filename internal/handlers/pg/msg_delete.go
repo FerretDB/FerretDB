@@ -60,7 +60,6 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	// process every delete filter
 	for i, deleteParams := range params.Deletes {
 		qp.Filter = deleteParams.Filter
-		qp.Comment = deleteParams.Comment
 
 		del, err := execDelete(ctx, &execDeleteParams{
 			dbPool,
@@ -194,7 +193,6 @@ func deleteDocuments(ctx context.Context, dbPool *pgdb.Pool, qp *pgdb.QueryParam
 		return err
 	})
 	if err != nil {
-		// TODO check error code
 		return 0, commonerrors.NewCommandError(commonerrors.ErrNamespaceNotFound, fmt.Errorf("delete: ns not found: %w", err))
 	}
 
