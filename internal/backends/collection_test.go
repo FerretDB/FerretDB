@@ -59,9 +59,9 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 			require.NoError(t, err)
 
 			insertDocs := []*types.Document{
-				must.NotFail(types.NewDocument("_id", int32(2))),
-				must.NotFail(types.NewDocument("_id", int32(3))),
-				must.NotFail(types.NewDocument("_id", int32(1))),
+				must.NotFail(types.NewDocument("_id", types.ObjectID{2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})),
+				must.NotFail(types.NewDocument("_id", types.ObjectID{3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})),
+				must.NotFail(types.NewDocument("_id", types.ObjectID{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})),
 			}
 
 			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: insertDocs})
@@ -78,7 +78,6 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 
 				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
 				require.NoError(t, err)
-
 				require.Len(t, docs, len(insertDocs))
 
 				for i, doc := range docs {
@@ -100,13 +99,13 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 
 				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
 				require.NoError(t, err)
+				require.Len(t, docs, 1)
+				assert.NotEmpty(t, docs[0].RecordID())
+				assert.Empty(t, docs[0].Keys())
 
-				require.Len(t, docs, len(insertDocs))
-
-				for _, doc := range docs {
-					assert.NotEmpty(t, doc.RecordID())
-					assert.Empty(t, doc.Keys())
-				}
+				explainRes, err := cappedColl.Explain(ctx, new(backends.ExplainParams))
+				require.NoError(t, err)
+				assert.True(t, explainRes.SortPushdown)
 			})
 
 			t.Run("CappedCollectionSortAsc", func(t *testing.T) {
@@ -169,6 +168,25 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				assert.True(t, explainRes.SortPushdown)
 			})
 
+			t.Run("CappedCollectionFilter", func(t *testing.T) {
+				t.Parallel()
+
+				filter := must.NotFail(types.NewDocument("_id", types.ObjectID{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}))
+				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{Filter: filter})
+				require.NoError(t, err)
+
+				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
+				require.NoError(t, err)
+				require.Len(t, docs, 1)
+				assert.NotEmpty(t, docs[0].RecordID())
+				assert.Empty(t, docs[0].Keys())
+
+				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Filter: filter})
+				require.NoError(t, err)
+				assert.True(t, explainRes.QueryPushdown)
+				assert.True(t, explainRes.SortPushdown)
+			})
+
 			t.Run("NonCappedCollectionOnlyRecordID", func(t *testing.T) {
 				t.Parallel()
 
@@ -177,7 +195,6 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 
 				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
 				require.NoError(t, err)
-
 				require.Len(t, docs, len(insertDocs))
 
 				for _, doc := range docs {
