@@ -136,7 +136,7 @@ func TestAuth(t *testing.T) {
 				`server error (FATAL: role "wrong-user" does not exist (SQLSTATE 28000))`,
 		},
 		"NewDatabase": {
-			uri: "postgres://username:password@127.0.0.1:5432/" + dbName,
+			uri: "postgres://username:password@127.0.0.1:5432/" + dbName, // FIXME
 		},
 	} {
 		name, tc := name, tc
