@@ -525,7 +525,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 | --------------------------------- | ------------------------------ | ------------------------- | ------ | --------------------------------------------------------- |
 | `listCollections`                 |                                |                           | ✅     |                                                           |
 |                                   | `filter`                       |                           | ✅     |                                                           |
-|                                   | `nameOnly`                     |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/301)  |
+|                                   | `nameOnly`                     |                           | ✅     |                                                           |
 |                                   | `comment`                      |                           | ⚠️     | Ignored                                                   |
 |                                   | `authorizedCollections`        |                           | ⚠️     | Ignored                                                   |
 | `cloneCollectionAsCapped`         |                                |                           | ❌     |                                                           |
@@ -559,7 +559,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 |                                   | `writeConcern`                 |                           | ⚠️     |                                                           |
 |                                   | `comment`                      |                           | ⚠️     |                                                           |
 | `create`                          |                                |                           | ✅     |                                                           |
-|                                   | `capped`                       |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/3458) |
+|                                   | `capped`                       |                           | ✅️    |                                                           |
 |                                   | `timeseries`                   |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/177)  |
 |                                   |                                | `timeField`               | ⚠️     |                                                           |
 |                                   |                                | `metaField`               | ⚠️     |                                                           |
@@ -568,8 +568,8 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 |                                   | `clusteredIndex`               |                           | ⚠️     |                                                           |
 |                                   | `changeStreamPreAndPostImages` |                           | ⚠️     |                                                           |
 |                                   | `autoIndexId`                  |                           | ⚠️     | Ignored                                                   |
-|                                   | `size`                         |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/3458) |
-|                                   | `max`                          |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/3458) |
+|                                   | `size`                         |                           | ✅️    |                                                           |
+|                                   | `max`                          |                           | ✅     |                                                           |
 |                                   | `storageEngine`                |                           | ⚠️     | Ignored                                                   |
 |                                   | `validator`                    |                           | ⚠️     | Not implemented in PostgreSQL                             |
 |                                   | `validationLevel`              |                           | ⚠️     | Unimplemented                                             |

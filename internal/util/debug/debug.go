@@ -25,6 +25,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/arl/statsviz"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
@@ -45,10 +46,20 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		}),
 	))
 
-	handlers := []string{
-		"/debug/metrics", // from http.Handle above
-		"/debug/vars",    // from expvar
-		"/debug/pprof",   // from net/http/pprof
+	opts := []statsviz.Option{
+		statsviz.Root("/debug/graphs"),
+		// TODO https://github.com/FerretDB/FerretDB/issues/3600
+	}
+	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
+
+	handlers := map[string]string{
+		// custom handlers registered above
+		"/debug/graphs":  "Visualize metrics",
+		"/debug/metrics": "Metrics in Prometheus format",
+
+		// stdlib handlers
+		"/debug/vars":  "Expvar package metrics",
+		"/debug/pprof": "Runtime profiling data for pprof",
 	}
 
 	var page bytes.Buffer
@@ -56,8 +67,8 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	<html>
 	<body>
 	<ul>
-	{{range .}}
-		<li><a href="{{.}}">{{.}}</a></li>
+	{{range $key, $value := .}}
+		<li><a href="{{$key}}">{{$key}}</a>: {{$value}}</li>
 	{{end}}
 	</ul>
 	</body>

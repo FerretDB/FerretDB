@@ -29,10 +29,6 @@ func TestTests(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, tests, "TestQueryCompatLimit")
 
-	// TODO enable once subdirectories are used
-	// https://github.com/FerretDB/engineering/issues/66
-	// assert.Contains(t, tests, "TestSubDir")
-
 	t.Run("ShardTestsInvalidIndex", func(t *testing.T) {
 		t.Parallel()
 

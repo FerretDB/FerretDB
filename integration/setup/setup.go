@@ -22,6 +22,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"runtime/trace"
+	"slices"
 	"strings"
 
 	"github.com/stretchr/testify/require"
@@ -29,7 +30,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -61,7 +61,6 @@ var (
 
 	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
 	enableSortPushdownF    = flag.Bool("enable-sort-pushdown", false, "enable sort pushdown")
-	enableOplogF           = flag.Bool("enable-oplog", false, "enable OpLog")
 
 	useNewHanaF = flag.Bool("use-new-hana", false, "use new SAP HANA backend")
 )
