@@ -62,17 +62,14 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	collName, cappedCollName := testutil.CollectionName(t), testutil.CollectionName(t)+"capped"
-	coll, err := db.Collection(collName)
-	require.NoError(t, err)
-
+	cName := testutil.CollectionName(t)
 	err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
-		Name:       cappedCollName,
+		Name:       cName,
 		CappedSize: 8192,
 	})
 	require.NoError(t, err)
 
-	cappedColl, err := db.Collection(cappedCollName)
+	cappedColl, err := db.Collection(cName)
 	require.NoError(t, err)
 
 	insertDocs := []*types.Document{
@@ -80,9 +77,6 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 		must.NotFail(types.NewDocument("_id", int32(3))),
 		must.NotFail(types.NewDocument("_id", int32(1))),
 	}
-
-	_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: insertDocs})
-	require.NoError(t, err)
 
 	_, err = cappedColl.InsertAll(ctx, &backends.InsertAllParams{Docs: insertDocs})
 	require.NoError(t, err)
@@ -96,18 +90,16 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 
 		docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
 		require.NoError(t, err)
-
 		require.Len(t, docs, len(insertDocs))
-		assert.NotEmpty(t, docs[0].RecordID())
-		assert.Equal(t, insertDocs[2].Keys(), docs[0].Keys())
+
+		// inserted doc is frozen, queried doc is not frozen hence compare each value
+		assert.Equal(t, insertDocs[2].RecordID(), docs[0].RecordID())
 		assert.Equal(t, insertDocs[2].Values(), docs[0].Values())
 
-		assert.NotEmpty(t, docs[1].RecordID())
-		assert.Equal(t, insertDocs[0].Keys(), docs[1].Keys())
+		assert.Equal(t, insertDocs[0].RecordID(), docs[1].RecordID())
 		assert.Equal(t, insertDocs[0].Values(), docs[1].Values())
 
-		assert.NotEmpty(t, docs[1].RecordID())
-		assert.Equal(t, insertDocs[1].Keys(), docs[2].Keys())
+		assert.Equal(t, insertDocs[1].RecordID(), docs[2].RecordID())
 		assert.Equal(t, insertDocs[1].Values(), docs[2].Values())
 
 		explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &sort})
@@ -124,18 +116,16 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 
 		docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
 		require.NoError(t, err)
-
 		require.Len(t, docs, len(insertDocs))
-		assert.NotEmpty(t, docs[0].RecordID())
-		assert.Equal(t, insertDocs[1].Keys(), docs[0].Keys())
+
+		// inserted doc is frozen, queried doc is not frozen hence compare each value
+		assert.Equal(t, insertDocs[1].RecordID(), docs[0].RecordID())
 		assert.Equal(t, insertDocs[1].Values(), docs[0].Values())
 
-		assert.NotEmpty(t, docs[1].RecordID())
-		assert.Equal(t, insertDocs[0].Keys(), docs[1].Keys())
+		assert.Equal(t, insertDocs[0].RecordID(), docs[1].RecordID())
 		assert.Equal(t, insertDocs[0].Values(), docs[1].Values())
 
-		assert.NotEmpty(t, docs[1].RecordID())
-		assert.Equal(t, insertDocs[2].Keys(), docs[2].Keys())
+		assert.Equal(t, insertDocs[2].RecordID(), docs[2].RecordID())
 		assert.Equal(t, insertDocs[2].Values(), docs[2].Values())
 
 		explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &sort})

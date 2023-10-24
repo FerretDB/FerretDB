@@ -28,7 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestCollectionInsertAllQueryExplain(t *testing.T) {
+func TestCappedCollectionInsertAllQueryExplain(t *testing.T) {
 	// remove this test
 	// TODO https://github.com/FerretDB/FerretDB/issues/3181
 
@@ -46,17 +46,14 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 	db, err := b.Database(testutil.DatabaseName(t))
 	require.NoError(t, err)
 
-	collName, cappedCollName := testutil.CollectionName(t), testutil.CollectionName(t)+"capped"
-	coll, err := db.Collection(collName)
-	require.NoError(t, err)
-
+	cName := testutil.CollectionName(t)
 	err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
-		Name:       cappedCollName,
+		Name:       cName,
 		CappedSize: 8192,
 	})
 	require.NoError(t, err)
 
-	cappedColl, err := db.Collection(cappedCollName)
+	cappedColl, err := db.Collection(cName)
 	require.NoError(t, err)
 
 	insertDocs := []*types.Document{
@@ -64,9 +61,6 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 		must.NotFail(types.NewDocument("_id", int32(3))),
 		must.NotFail(types.NewDocument("_id", int32(1))),
 	}
-
-	_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: insertDocs})
-	require.NoError(t, err)
 
 	_, err = cappedColl.InsertAll(ctx, &backends.InsertAllParams{Docs: insertDocs})
 	require.NoError(t, err)
@@ -80,10 +74,11 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 
 		docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
 		require.NoError(t, err)
-
 		require.Len(t, docs, len(insertDocs))
+
+		// inserted doc is frozen, queried doc is not frozen hence compare each value
 		for i, doc := range docs {
-			assert.NotEmpty(t, doc.RecordID())
+			assert.Equal(t, insertDocs[i].RecordID(), doc.RecordID())
 			assert.Equal(t, insertDocs[i].Keys(), doc.Keys())
 			assert.Equal(t, insertDocs[i].Values(), doc.Values())
 		}

@@ -111,13 +111,15 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		return nil, lazyerrors.Error(err)
 	}
 
-	var s scanner = new(queryScanner)
-	if cInfo.Capped() && params.OnlyRecordIDs {
-		s = new(recordIDScanner)
-	}
+	var s scanner
 
-	if cInfo.Capped() {
+	switch {
+	case cInfo.Capped() && params.OnlyRecordIDs:
+		s = new(recordIDScanner)
+	case cInfo.Capped():
 		s = new(cappedScanner)
+	default:
+		s = new(queryScanner)
 	}
 
 	return &backends.QueryResult{
@@ -161,8 +163,8 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 			if cInfo.Capped() {
 				q = fmt.Sprintf(
 					`INSERT INTO %q (%s,%s) VALUES (?,?)`,
-					metadata.RecordIDColumn,
 					meta.TableName,
+					metadata.RecordIDColumn,
 					metadata.DefaultColumn,
 				)
 				args = append(args, doc.RecordID())
@@ -327,7 +329,10 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}
 	}
 
-	q := `EXPLAIN QUERY PLAN ` + selectClause + whereClause + prepareOrderByClause(cInfo.Capped())
+	orderByClause := prepareOrderByClause(cInfo.Capped())
+	sortPushdown := orderByClause != ""
+
+	q := `EXPLAIN QUERY PLAN ` + selectClause + whereClause + orderByClause
 
 	var limitPushdown bool
 
@@ -369,6 +374,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	return &backends.ExplainResult{
 		QueryPlanner:  must.NotFail(types.NewDocument("Plan", queryPlan)),
 		QueryPushdown: queryPushdown,
+		SortPushdown:  sortPushdown,
 		LimitPushdown: limitPushdown,
 	}, nil
 }

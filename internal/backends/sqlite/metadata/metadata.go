@@ -26,11 +26,11 @@ const (
 	// DefaultColumn is a column name for all fields.
 	DefaultColumn = backends.ReservedPrefix + "sjson"
 
-	// RecordIDColumn is a primary key column name.
-	RecordIDColumn = backends.ReservedPrefix + "record_id"
-
 	// IDColumn is a SQLite path expression for _id field.
 	IDColumn = DefaultColumn + "->'$._id'"
+
+	// RecordIDColumn is a name for RecordID column to store capped collection record id.
+	RecordIDColumn = backends.ReservedPrefix + "record_id"
 )
 
 // Collection represents collection metadata.

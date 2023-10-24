@@ -55,12 +55,7 @@ func (res resultPushdown) PushdownExpected(t testtb.TB) bool {
 }
 
 // SortPushdownExpected returns true if sort pushdown is expected for currently running backend.
-// It checks if sort pushdown is enabled by flag.
 func (res resultPushdown) SortPushdownExpected(t testtb.TB) bool {
-	if !setup.IsSortPushdownEnabled() {
-		res = noPushdown
-	}
-
 	return res.pushdownExpected(t)
 }
 

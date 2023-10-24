@@ -219,16 +219,16 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 	targetCollection := targetDB.Collection(cName)
 	compatCollection := compatDB.Collection(cName)
 
-	// documents inserted are sorted by ID
-	scalars := shareddata.Scalars.Docs()
-	slices.SortFunc(scalars, func(a, b bson.D) int {
+	// documents inserted are sorted to ensure the insertion order of capped collection
+	docs := shareddata.Doubles.Docs()
+	slices.SortFunc(docs, func(a, b bson.D) int {
 		aID := must.NotFail(ConvertDocument(t, a).Get("_id")).(string)
 		bID := must.NotFail(ConvertDocument(t, b).Get("_id")).(string)
 		return cmp.Compare(aID, bID)
 	})
 
-	insert := make([]any, len(scalars))
-	for i, doc := range scalars {
+	insert := make([]any, len(docs))
+	for i, doc := range docs {
 		insert[i] = doc
 	}
 
@@ -246,12 +246,14 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 
 		sortPushdown resultPushdown
 	}{
-		"NoSort": {
+		"NoSortNoFilter": {
+			sortPushdown: allPushdown,
+		},
+		"Filter": {
 			filter:       bson.D{{"v", int32(42)}},
 			sortPushdown: allPushdown,
 		},
 		"Sort": {
-			filter:       bson.D{},
 			sort:         bson.D{{"_id", int32(-1)}},
 			sortPushdown: allPushdown,
 		},
@@ -268,7 +270,10 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 
 			explainQuery := bson.D{
 				{"find", targetCollection.Name()},
-				{"filter", tc.filter},
+			}
+
+			if tc.filter != nil {
+				explainQuery = append(explainQuery, bson.E{Key: "filter", Value: tc.filter})
 			}
 
 			if tc.sort != nil {
@@ -287,21 +292,26 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 				findOpts.SetSort(tc.sort)
 			}
 
-			targetCursor, targetErr := targetCollection.Find(ctx, tc.filter, findOpts)
+			filter := bson.D{}
+			if tc.filter != nil {
+				filter = tc.filter
+			}
+
+			targetCursor, targetErr := targetCollection.Find(ctx, filter, findOpts)
 			require.NoError(t, targetErr)
 
-			compatCursor, compatErr := compatCollection.Find(ctx, tc.filter, findOpts)
+			compatCursor, compatErr := compatCollection.Find(ctx, filter, findOpts)
 			require.NoError(t, compatErr)
 
 			var targetFindRes []bson.D
 			targetErr = targetCursor.All(ctx, &targetFindRes)
-			require.NoError(t, targetCursor.Close(ctx))
 			require.NoError(t, targetErr)
+			require.NoError(t, targetCursor.Close(ctx))
 
 			var compatFindRes []bson.D
-			compatErr = targetCursor.All(ctx, &compatFindRes)
-			require.NoError(t, compatCursor.Close(ctx))
+			compatErr = compatCursor.All(ctx, &compatFindRes)
 			require.NoError(t, compatErr)
+			require.NoError(t, compatCursor.Close(ctx))
 
 			require.Equal(t, len(compatFindRes), len(targetFindRes))
 
