@@ -19,6 +19,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -33,7 +34,8 @@ import (
 	"golang.org/x/tools/go/analysis/singlechecker"
 )
 
-type IssueCache struct {
+// struct used to hold open status of issues, true if open otherwise false.
+type issueCache struct {
 	Issues map[string]bool `json:"Issues"`
 }
 
@@ -52,33 +54,45 @@ func main() {
 
 // run analyses TODO comments.
 func run(pass *analysis.Pass) (any, error) {
+	var iCache issueCache
+
 	current_path, err := os.Getwd()
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	cache_path := getCacheFilePath(current_path)
 
 	cf, err := lockedfile.OpenFile(cache_path, os.O_RDWR|os.O_CREATE, 0o666)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
-	cfs, err := cf.Stat()
+	defer func() {
+		cerr := cf.Close()
+		if cerr != nil {
+			log.Fatal(cerr)
+		}
+	}()
+
+	stat, err := cf.Stat()
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
-	buffer := make([]byte, cfs.Size())
-	_, err = cf.Read(buffer)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	if stat.Size() > 0 {
+		buffer := make([]byte, stat.Size())
 
-	iCache := &IssueCache{}
-	json.Unmarshal(buffer, iCache)
+		_, err = cf.Read(buffer)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-	if len(iCache.Issues) == 0 {
+		err = json.Unmarshal(buffer, &iCache)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
 		iCache.Issues = make(map[string]bool)
 	}
 
@@ -86,7 +100,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 	client, err := gh.NewRESTClient(token, nil)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.Fatal(err)
 	}
 
 	for _, f := range pass.Files {
@@ -115,34 +129,38 @@ func run(pass *analysis.Pass) (any, error) {
 				_, ok := iCache.Issues[iNum]
 
 				if !ok {
-					n, err := strconv.Atoi(iNum)
-					if err != nil {
-						log.Fatal(err)
+					n, inErr := strconv.Atoi(iNum)
+					if inErr != nil {
+						log.Fatal(inErr)
 					}
 
-					isOpen, err := isIssueOpen(client, n)
+					isOpen, inErr := isIssueOpen(client, n)
 					if err != nil {
-						log.Fatal(err)
-					}
-
-					if !isOpen {
+						log.Fatal(inErr)
 					}
 
 					iCache.Issues[iNum] = isOpen
 				}
 
 				if !iCache.Issues[iNum] {
-					pass.Reportf(c.Pos(), "invalid TODO: linked issue is closed")
+					message := fmt.Sprintf("invalid TODO: linked issue %s is closed", iNum)
+					pass.Reportf(c.Pos(), message)
 				}
 			}
 		}
 	}
 
-	jsonb, err := json.Marshal(iCache)
-	if err != nil {
-		log.Fatal(err.Error())
+	if len(iCache.Issues) > 0 {
+		jsonb, err := json.Marshal(iCache)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		_, err = cf.WriteAt(jsonb, 0)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
-	cf.WriteAt(jsonb, 0)
 
 	return nil, nil
 }
@@ -155,10 +173,14 @@ func isIssueOpen(client *github.Client, n int) (bool, error) {
 				"Rate limit reached. Please set a GITHUB_TOKEN as described at",
 				"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token",
 			)
+
 			return false, err
 		}
 	}
-	return issue.GetState() == "open", nil
+
+	isOpen := issue.GetState() == "open"
+
+	return isOpen, nil
 }
 
 func getCacheFilePath(p string) string {
@@ -172,5 +194,5 @@ func getCacheFilePath(p string) string {
 		return getCacheFilePath(path)
 	}
 
-	return filepath.Join(path, "tmp", "issue_cache.json")
+	return filepath.Join(path, "tmp", "checkcomments", "cache.json")
 }
