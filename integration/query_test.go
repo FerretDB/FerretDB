@@ -29,6 +29,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
@@ -1062,4 +1063,88 @@ func TestQueryIDDoc(t *testing.T) {
 	expected = []bson.D{}
 	actual = FilterAll(t, ctx, collection, bson.D{{"_id", bson.D{{"z", int32(4)}, {"a", int32(3)}}}})
 	AssertEqualDocumentsSlice(t, expected, actual)
+}
+
+func TestQueryShowRecordID(t *testing.T) {
+	t.Parallel()
+
+	provider := shareddata.Scalars
+	ctx, collection := setup.Setup(t, provider)
+
+	cName := testutil.CollectionName(t) + "capped"
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000)
+
+	err := collection.Database().CreateCollection(ctx, cName, opts)
+	assert.NoError(t, err)
+
+	cappedCollection := collection.Database().Collection(cName)
+
+	res, err := cappedCollection.InsertMany(ctx, shareddata.Docs(provider))
+	require.NoError(t, err)
+	require.Len(t, res.InsertedIDs, len(provider.Docs()))
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		collection   *mongo.Collection
+		showRecordID bool
+
+		zeroRecordID   bool
+		skipForMongoDB string
+	}{
+		"ShowRecordID": {
+			showRecordID:   true,
+			collection:     collection,
+			zeroRecordID:   true, // non capped collection has recordID field with zero value
+			skipForMongoDB: "MongoDB sets recordID for all collections",
+		},
+		"ShowRecordIDFalse": {
+			showRecordID: false,
+			collection:   collection,
+		},
+		"CappedCollectionShowRecordID": {
+			showRecordID: true,
+			collection:   cappedCollection,
+			zeroRecordID: false,
+		},
+		"CappedCollectionShowRecordIDFalse": {
+			showRecordID: false,
+			collection:   cappedCollection,
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skipForMongoDB != "" {
+				setup.SkipForMongoDB(t, tc.skipForMongoDB)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.collection, "collection must be set")
+
+			// batch size is set to check getMore also sets recordID
+			opts := options.Find().SetShowRecordID(tc.showRecordID).SetBatchSize(2)
+			cursor, err := tc.collection.Find(ctx, bson.D{}, opts)
+			require.NoError(t, err)
+
+			var res []bson.D
+			err = cursor.All(ctx, &res)
+			require.NoError(t, cursor.Close(ctx))
+			require.NoError(t, err)
+
+			for i, r := range res {
+				doc := ConvertDocument(t, r)
+				recordID, _ := doc.Get("$recordId")
+				t.Logf("%dth document with recordID %v", i, recordID)
+
+				if !tc.showRecordID {
+					require.Nil(t, recordID)
+					return
+				}
+
+				require.NotNil(t, recordID, "%dth document has recordID of %#v", i, recordID)
+				if !tc.zeroRecordID {
+					require.NotZero(t, recordID, "%dth document has recordID of %#v", i, recordID)
+				}
+			}
+		})
+	}
 }
