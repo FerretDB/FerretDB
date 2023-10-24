@@ -235,6 +235,12 @@ type CollectionCreateParams struct {
 	Name            string
 	CappedSize      int64
 	CappedDocuments int64
+	_               struct{} // prevent unkeyed literals
+}
+
+// Capped returns true if capped collection creation is requested.
+func (ccp *CollectionCreateParams) Capped() bool {
+	return ccp.CappedSize > 0 // TODO https://github.com/FerretDB/FerretDB/issues/3631
 }
 
 // CollectionCreate creates a collection in the database.
@@ -296,7 +302,7 @@ func (r *Registry) collectionCreate(ctx context.Context, params *CollectionCreat
 
 	q := fmt.Sprintf("CREATE TABLE %q (", tableName)
 
-	if params.CappedSize > 0 {
+	if params.Capped() {
 		q += fmt.Sprintf("%s INTEGER PRIMARY KEY, ", RecordIDColumn)
 	}
 
