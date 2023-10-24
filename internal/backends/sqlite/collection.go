@@ -15,11 +15,9 @@
 package sqlite
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"sort"
 	"strings"
 
@@ -67,18 +65,6 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	list, err := newDatabase(c.r, c.dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	var cInfo backends.CollectionInfo
-	if i, found := slices.BinarySearchFunc(list.Collections, c.name, func(e backends.CollectionInfo, t string) int {
-		return cmp.Compare(e.Name, t)
-	}); found {
-		cInfo = list.Collections[i]
-	}
-
 	if params == nil {
 		params = new(backends.QueryParams)
 	}
@@ -97,9 +83,10 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}
 	}
 
-	q := prepareSelectClause(meta.TableName, cInfo.Capped(), params.OnlyRecordIDs) + whereClause
+	capped := meta.Settings.CappedSize > 0
+	q := prepareSelectClause(meta.TableName, capped, params.OnlyRecordIDs) + whereClause
 
-	q += prepareOrderByClause(cInfo.Capped())
+	q += prepareOrderByClause(capped)
 
 	if params.Limit != 0 {
 		q += ` LIMIT ?`
@@ -114,9 +101,9 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	var s scanner
 
 	switch {
-	case cInfo.Capped() && params.OnlyRecordIDs:
+	case capped && params.OnlyRecordIDs:
 		s = new(recordIDScanner)
-	case cInfo.Capped():
+	case capped:
 		s = new(cappedScanner)
 	default:
 		s = new(queryScanner)
@@ -136,19 +123,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 
-	list, err := newDatabase(c.r, c.dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	var cInfo backends.CollectionInfo
-	if i, found := slices.BinarySearchFunc(list.Collections, c.name, func(e backends.CollectionInfo, t string) int {
-		return cmp.Compare(e.Name, t)
-	}); found {
-		cInfo = list.Collections[i]
-	}
-
-	err = db.InTransaction(ctx, func(tx *fsql.Tx) error {
+	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
 		for _, doc := range params.Docs {
 			b, err := sjson.Marshal(doc)
 			if err != nil {
@@ -160,7 +135,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 			q := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
 
 			var args []any
-			if cInfo.Capped() {
+			if meta.Settings.CappedSize > 0 {
 				q = fmt.Sprintf(
 					`INSERT INTO %q (%s,%s) VALUES (?,?)`,
 					meta.TableName,
@@ -295,23 +270,12 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}, nil
 	}
 
-	list, err := newDatabase(c.r, c.dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	var cInfo backends.CollectionInfo
-	if i, found := slices.BinarySearchFunc(list.Collections, c.name, func(e backends.CollectionInfo, t string) int {
-		return cmp.Compare(e.Name, t)
-	}); found {
-		cInfo = list.Collections[i]
-	}
-
 	if params == nil {
 		params = new(backends.ExplainParams)
 	}
 
-	selectClause := prepareSelectClause(meta.TableName, cInfo.Capped(), false)
+	capped := meta.Settings.CappedSize > 0
+	selectClause := prepareSelectClause(meta.TableName, capped, false)
 
 	var queryPushdown bool
 	var whereClause string
@@ -329,7 +293,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}
 	}
 
-	orderByClause := prepareOrderByClause(cInfo.Capped())
+	orderByClause := prepareOrderByClause(capped)
 	sortPushdown := orderByClause != ""
 
 	q := `EXPLAIN QUERY PLAN ` + selectClause + whereClause + orderByClause

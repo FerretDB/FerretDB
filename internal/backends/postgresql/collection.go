@@ -15,11 +15,9 @@
 package postgresql
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"sort"
 	"strings"
 
@@ -80,19 +78,8 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	list, err := newDatabase(c.r, c.dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	var cInfo backends.CollectionInfo
-	if i, found := slices.BinarySearchFunc(list.Collections, c.name, func(e backends.CollectionInfo, t string) int {
-		return cmp.Compare(e.Name, t)
-	}); found {
-		cInfo = list.Collections[i]
-	}
-
-	q := prepareSelectClause(c.dbName, meta.TableName, cInfo.Capped(), params.OnlyRecordIDs)
+	capped := meta.CappedSize > 0
+	q := prepareSelectClause(c.dbName, meta.TableName, capped, params.OnlyRecordIDs)
 
 	var placeholder metadata.Placeholder
 
@@ -103,7 +90,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	q += where
 
-	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, cInfo.Capped())
+	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, capped)
 	q += sort
 	args = append(args, sortArgs...)
 
@@ -120,9 +107,9 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	var s scanner
 
 	switch {
-	case cInfo.Capped() && params.OnlyRecordIDs:
+	case capped && params.OnlyRecordIDs:
 		s = new(recordIDScanner)
-	case cInfo.Capped():
+	case capped:
 		s = new(cappedScanner)
 	default:
 		s = new(queryScanner)
@@ -152,18 +139,6 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 		return nil, lazyerrors.Error(err)
 	}
 
-	list, err := newDatabase(c.r, c.dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	var cInfo backends.CollectionInfo
-	if i, found := slices.BinarySearchFunc(list.Collections, c.name, func(e backends.CollectionInfo, t string) int {
-		return cmp.Compare(e.Name, t)
-	}); found {
-		cInfo = list.Collections[i]
-	}
-
 	err = pool.InTransaction(ctx, p, func(tx pgx.Tx) error {
 		for _, doc := range params.Docs {
 			var b []byte
@@ -181,7 +156,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 			)
 
 			var args []any
-			if cInfo.Capped() {
+			if meta.CappedSize > 0 {
 				q = fmt.Sprintf(
 					`INSERT INTO %s (%s,%s) VALUES ($1,$2)`,
 					pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
@@ -343,21 +318,10 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}, nil
 	}
 
-	list, err := newDatabase(c.r, c.dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	var cInfo backends.CollectionInfo
-	if i, found := slices.BinarySearchFunc(list.Collections, c.name, func(e backends.CollectionInfo, t string) int {
-		return cmp.Compare(e.Name, t)
-	}); found {
-		cInfo = list.Collections[i]
-	}
-
 	res := new(backends.ExplainResult)
 
-	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName, cInfo.Capped(), false)
+	capped := meta.CappedSize > 0
+	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName, capped, false)
 
 	var placeholder metadata.Placeholder
 
@@ -370,7 +334,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	q += where
 
-	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, cInfo.Capped())
+	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, capped)
 	q += sort
 	args = append(args, sortArgs...)
 	res.SortPushdown = sort != ""
