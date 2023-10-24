@@ -1377,7 +1377,7 @@ func TestCommandsAdministrationCompactForce(t *testing.T) {
 		err            *mongo.CommandError // optional
 		altMessage     string              // optional, alternative error message
 		skip           string              // optional, skip test with a specified reason
-		skipForMongoDB string              //optional, skip test for mongoDB with a specific reason
+		skipForMongoDB string              // optional, skip test for mongoDB with a specific reason
 	}{
 		"True": {
 			force: true,
