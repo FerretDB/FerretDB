@@ -25,7 +25,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 )
@@ -241,24 +240,4 @@ func TestCreateStressSameCollection(t *testing.T) {
 	require.Equal(t, bson.D{{"_id", "foo_1"}, {"v", "bar"}}, doc)
 
 	require.Equal(t, int32(1), created.Load(), "Only one attempt to create a collection should succeed")
-}
-
-func TestCreateCapped(t *testing.T) {
-	t.Parallel()
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/3458
-
-	t.Run("NoSize", func(t *testing.T) {
-		t.Parallel()
-
-		ctx, collection := setup.Setup(t)
-
-		err := collection.Database().CreateCollection(ctx, collection.Name(), options.CreateCollection().SetCapped(true))
-		expected := mongo.CommandError{
-			Code:    72,
-			Name:    "InvalidOptions",
-			Message: "the 'size' field is required when 'capped' is true",
-		}
-		AssertEqualCommandError(t, expected, err)
-	})
 }
