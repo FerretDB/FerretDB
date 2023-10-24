@@ -320,8 +320,6 @@ func TestAggregateCompatOptions(t *testing.T) {
 }
 
 func TestAggregateCompatStages(t *testing.T) {
-	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3520")
-
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -904,8 +902,6 @@ func TestAggregateCompatGroupCount(t *testing.T) {
 }
 
 func TestAggregateCompatLimit(t *testing.T) {
-	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3520")
-
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{
@@ -1247,8 +1243,6 @@ func TestAggregateCompatGroupSum(t *testing.T) {
 }
 
 func TestAggregateCompatMatch(t *testing.T) {
-	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3520")
-
 	t.Parallel()
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2291
@@ -1257,7 +1251,7 @@ func TestAggregateCompatMatch(t *testing.T) {
 	testCases := map[string]aggregateStagesCompatTestCase{
 		"ID": {
 			pipeline:       bson.A{bson.D{{"$match", bson.D{{"_id", "string"}}}}},
-			resultPushdown: pgPushdown,
+			resultPushdown: allPushdown,
 		},
 		"Int": {
 			pipeline: bson.A{
@@ -1510,8 +1504,6 @@ func TestAggregateCompatUnwind(t *testing.T) {
 }
 
 func TestAggregateCompatSkip(t *testing.T) {
-	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3520")
-
 	t.Parallel()
 
 	testCases := map[string]aggregateStagesCompatTestCase{

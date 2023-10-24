@@ -363,12 +363,12 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	res.QueryPushdown = where != ""
 
+	q += where
+
 	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, cInfo.Capped())
 	q += sort
 	args = append(args, sortArgs...)
 	res.SortPushdown = sort != ""
-
-	q += where
 
 	if params.Limit != 0 {
 		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
