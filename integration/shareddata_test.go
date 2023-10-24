@@ -30,8 +30,7 @@ import (
 )
 
 func TestEnvData(t *testing.T) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3442
-	// t.Parallel()
+	t.Parallel()
 
 	for _, p := range shareddata.AllProviders() {
 		p := p
