@@ -64,7 +64,7 @@ var Commands = map[string]command{
 		Handler: handlers.Interface.MsgCollStats,
 	},
 	"compact": {
-		Help:    "Rewrites and defragments all data and indexes in a collection",
+		Help:    "Reduces the disk space collection takes and refreshes its statistics.",
 		Handler: handlers.Interface.MsgCompact,
 	},
 	"connectionStatus": {

@@ -21,6 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -74,31 +75,28 @@ func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	var forceParam any
+	var force bool
 
-	if forceParam, err = document.Get("force"); err != nil {
-		return nil, err
-	}
-
-	force, ok := forceParam.(bool)
-	if !ok {
-		force = false
+	if v, _ := document.Get("force"); v != nil {
+		if force, err = commonparams.GetBoolOptionalParam("force", v); err != nil {
+			return nil, err
+		}
 	}
 
 	statsBefore, err := c.Stats(ctx, new(backends.CollectionStatsParams))
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
-		statsBefore = new(backends.CollectionStatsResult)
-		err = nil
+		return nil, commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrNamespaceNotFound,
+			fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection),
+			command,
+		)
 	}
 
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	_, err = c.Compact(ctx, &backends.CompactParams{
-		Full: force,
-	})
-	if err != nil {
+	if _, err = c.Compact(ctx, &backends.CompactParams{Full: force}); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
