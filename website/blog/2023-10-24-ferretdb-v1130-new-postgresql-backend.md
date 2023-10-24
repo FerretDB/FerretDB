@@ -35,24 +35,22 @@ In addition, the new version of FerretDB now offers `linux/arm/v7` binaries, Doc
 
 ## Other changes
 
-In line with improving performance on FerretDB, we've implemented more pushdowns for the PostgreSQL backend in this release.
+There were a lot of exciting changes in this release, and while we've not touched on everything in this blog post, you can [find the rest of the changes here](https://github.com/FerretDB/FerretDB/releases/tag/v1.13.0).
+
+In our ongoing efforts to enhance FerretDB performance, this release introduces additional pushdowns for the PostgreSQL backend.
 We've also added a filter pushdown for `_id: <string>` for the SQLite backend.
 See here to [learn about pushdowns on FerretDB](https://blog.ferretdb.io/ferretdb-v-0-9-3-improved-aggregation-pipeline-support/).
 
-We've also implemented some of the missing fields for `collStats`, `dbStats`, and `aggregate` `$collStats`.
-
 Additionally, we've resolved the bug caused by invalid validation for the `_id` field, where attempting to insert a document such as this `db.test.insertOne({_id: 1, v:{_id: ["foo", "bar"]}})` returns an error that the "`_id` value cannot be of type array".
 
-This release also includes basic logging for the PostgreSQL backend.
-
-There were a lot of changes in this release, and while we've not touched on everything in this blog post, you can [find the rest of the changes here](https://github.com/FerretDB/FerretDB/releases/tag/v1.13.0).
+This release also includes some of the missing fields for `collStats`, `dbStats`, and `aggregate` `$collStats`, along with basic logging for the PostgreSQL backend.
 
 ## An eventful season for open source!
 
-As we wind down the Hacktoberfest event, it's been an incredible period for the open-source community as many new entrants made their first contribution to an open-source project.
+As we wind down the Hacktoberfest season, it's been an incredible period for the open-source community as many new entrants made their first contribution to an open-source project.
 At FerretDB, we've seen a remarkable uptick in contributors, with many contributing for the first time.
 In this new release, we had 5 new contributors: [@Akhil-2001](https://github.com/Akhil-2001), [@sid-js](https://github.com/sid-js), [@codenoid](https://github.com/codenoid), [@chanon-mike](https://github.com/chanon-mike), and [@pvinoda](https://github.com/pvinoda).
 We appreciate all the contributions, bug reports, and feedback from everyone.
 
-Please know you are always welcome to contribute to FerretDB any time, and we can't wait to welcome more open-source enthusiasts in the coming weeks and months.
+Please know you are always welcome to contribute to FerretDB _any time_, and we can't wait to welcome more open-source enthusiasts in the coming weeks and months.
 If you don't know what to start with, [reach out to us on any of our community channels](https://docs.ferretdb.io/#community) and we'll be happy to help you get started.
