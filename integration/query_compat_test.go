@@ -197,8 +197,6 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 }
 
 func TestQueryCappedCollectionCompat(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/3467")
-
 	t.Parallel()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
