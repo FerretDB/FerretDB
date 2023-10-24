@@ -19,7 +19,6 @@ import (
 	"database/sql"
 	"database/sql/driver"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -29,9 +28,6 @@ import (
 const (
 	// DefaultColumn is a column name for all fields.
 	DefaultColumn = "_jsonb"
-
-	// RecordIDColumn is a column name for RecordID.
-	RecordIDColumn = backends.ReservedPrefix + "record_id"
 
 	// IDColumn is a PostgreSQL path expression for _id field.
 	IDColumn = DefaultColumn + "->'_id'"
