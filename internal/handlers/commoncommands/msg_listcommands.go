@@ -63,6 +63,10 @@ var Commands = map[string]command{
 		Help:    "Returns storage data for a collection.",
 		Handler: handlers.Interface.MsgCollStats,
 	},
+	"compact": {
+		Help:    "Reduces the disk space collection takes and refreshes its statistics.",
+		Handler: handlers.Interface.MsgCompact,
+	},
 	"connectionStatus": {
 		Help: "Returns information about the current connection, " +
 			"specifically the state of authenticated users and their available permissions.",
