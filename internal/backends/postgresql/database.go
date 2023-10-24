@@ -53,12 +53,9 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 	res := make([]backends.CollectionInfo, len(list))
 	for i, c := range list {
 		res[i] = backends.CollectionInfo{
-			Name: c.Name,
-		}
-
-		if c.CappedSize > 0 {
-			res[i].CappedSize = c.CappedSize
-			res[i].CappedDocuments = c.CappedDocuments
+			Name:            c.Name,
+			CappedSize:      c.CappedSize,
+			CappedDocuments: c.CappedDocuments,
 		}
 	}
 
