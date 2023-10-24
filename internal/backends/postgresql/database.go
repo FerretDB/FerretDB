@@ -53,7 +53,9 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 	res := make([]backends.CollectionInfo, len(list))
 	for i, c := range list {
 		res[i] = backends.CollectionInfo{
-			Name: c.Name,
+			Name:            c.Name,
+			CappedSize:      c.CappedSize,
+			CappedDocuments: c.CappedDocuments,
 		}
 	}
 
@@ -64,7 +66,12 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	created, err := db.r.CollectionCreate(ctx, db.name, params.Name)
+	created, err := db.r.CollectionCreate(ctx, &metadata.CollectionCreateParams{
+		DBName:          db.name,
+		Name:            params.Name,
+		CappedSize:      params.CappedSize,
+		CappedDocuments: params.CappedDocuments,
+	})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}

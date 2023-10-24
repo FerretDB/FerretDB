@@ -438,6 +438,14 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 	return res, nil
 }
 
+// CollectionCreateParams contains parameters for CollectionCreate.
+type CollectionCreateParams struct {
+	DBName          string
+	Name            string
+	CappedSize      int64
+	CappedDocuments int64
+}
+
 // CollectionCreate creates a collection in the database.
 // Database will be created automatically if needed.
 //
@@ -445,7 +453,7 @@ func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collec
 // If collection already exists, (false, nil) is returned.
 //
 // If the user is not authenticated, it returns error.
-func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName string) (bool, error) {
+func (r *Registry) CollectionCreate(ctx context.Context, params *CollectionCreateParams) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
 	p, err := r.getPool(ctx)
@@ -456,7 +464,7 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
-	return r.collectionCreate(ctx, p, dbName, collectionName)
+	return r.collectionCreate(ctx, p, params)
 }
 
 // collectionCreate creates a collection in the database.
@@ -466,8 +474,10 @@ func (r *Registry) CollectionCreate(ctx context.Context, dbName, collectionName 
 // If collection already exists, (false, nil) is returned.
 //
 // It does not hold the lock.
-func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName, collectionName string) (bool, error) {
+func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, params *CollectionCreateParams) (bool, error) {
 	defer observability.FuncCall(ctx)()
+
+	dbName, collectionName := params.DBName, params.Name
 
 	_, err := r.databaseGetOrCreate(ctx, p, dbName)
 	if err != nil {
@@ -505,15 +515,20 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, dbName
 	}
 
 	c := &Collection{
-		Name:      collectionName,
-		TableName: tableName,
+		Name:            collectionName,
+		TableName:       tableName,
+		CappedSize:      params.CappedSize,
+		CappedDocuments: params.CappedDocuments,
 	}
 
-	q := fmt.Sprintf(
-		`CREATE TABLE %s (%s jsonb)`,
-		pgx.Identifier{dbName, tableName}.Sanitize(),
-		DefaultColumn,
-	)
+	q := fmt.Sprintf(`CREATE TABLE %s (`, pgx.Identifier{dbName, tableName}.Sanitize())
+
+	if params.CappedSize > 0 {
+		q += fmt.Sprintf(`%s bigint PRIMARY KEY, `, RecordIDColumn)
+	}
+
+	q += fmt.Sprintf(`%s jsonb)`, DefaultColumn)
+
 	if _, err = p.Exec(ctx, q); err != nil {
 		return false, lazyerrors.Error(err)
 	}
@@ -737,7 +752,7 @@ func (r *Registry) IndexesCreate(ctx context.Context, dbName, collectionName str
 func (r *Registry) indexesCreate(ctx context.Context, p *pgxpool.Pool, dbName, collectionName string, indexes []IndexInfo) error {
 	defer observability.FuncCall(ctx)()
 
-	_, err := r.collectionCreate(ctx, p, dbName, collectionName)
+	_, err := r.collectionCreate(ctx, p, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
