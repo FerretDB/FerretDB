@@ -1022,6 +1022,8 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 					return
 				}
 
+				defer cursor.Close(ctx)
+
 				require.NoError(t, err)
 
 				docs := FetchAll(t, ctx, cursor)
