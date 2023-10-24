@@ -40,16 +40,17 @@ import (
 type Cursor struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
-	created    time.Time
-	iter       types.DocumentsIterator
-	r          *Registry
-	token      *resource.Token
-	closed     chan struct{}
-	DB         string
-	Collection string
-	Username   string
-	ID         int64
-	closeOnce  sync.Once
+	created      time.Time
+	iter         types.DocumentsIterator
+	r            *Registry
+	token        *resource.Token
+	closed       chan struct{}
+	DB           string
+	Collection   string
+	Username     string
+	ID           int64
+	closeOnce    sync.Once
+	lastRecordID types.Timestamp
 }
 
 // newCursor creates a new cursor.
@@ -73,7 +74,12 @@ func newCursor(id int64, db, collection, username string, iter types.DocumentsIt
 
 // Next implements types.DocumentsIterator interface.
 func (c *Cursor) Next() (struct{}, *types.Document, error) {
-	return c.iter.Next()
+	zero, doc, err := c.iter.Next()
+	if doc != nil {
+		c.lastRecordID = doc.RecordID()
+	}
+
+	return zero, doc, err
 }
 
 // Close implements types.DocumentsIterator interface.
