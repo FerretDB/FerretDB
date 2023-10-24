@@ -21,6 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -37,8 +38,6 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	unimplementedFields := []string{
 		"timeseries",
 		"expireAfterSeconds",
-		"size", // TODO https://github.com/FerretDB/FerretDB/issues/3458
-		"max",  // TODO https://github.com/FerretDB/FerretDB/issues/3458
 		"validator",
 		"validationLevel",
 		"validationAction",
@@ -47,14 +46,6 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		"collation",
 	}
 	if err = common.Unimplemented(document, unimplementedFields...); err != nil {
-		return nil, err
-	}
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/3458
-	if err = common.UnimplementedNonDefault(document, "capped", func(v any) bool {
-		b, ok := v.(bool)
-		return ok && !b
-	}); err != nil {
 		return nil, err
 	}
 
@@ -79,6 +70,49 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, err
 	}
 
+	params := backends.CreateCollectionParams{
+		Name: collectionName,
+	}
+
+	var capped bool
+	if v, _ := document.Get("capped"); v != nil {
+		capped, err = commonparams.GetBoolOptionalParam("capped", v)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if h.EnableOplog && capped {
+		var size any
+
+		size, _ = document.Get("size")
+		if size == nil {
+			msg := "the 'size' field is required when 'capped' is true"
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidOptions, msg, "create")
+		}
+
+		if _, ok := size.(types.NullType); ok {
+			msg := "the 'size' field is required when 'capped' is true"
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidOptions, msg, "create")
+		}
+
+		params.CappedSize, err = commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "size", size, 1)
+		if err != nil {
+			return nil, err
+		}
+
+		if params.CappedSize%256 != 0 {
+			params.CappedSize = (params.CappedSize/256 + 1) * 256
+		}
+
+		if max, _ := document.Get("max"); max != nil {
+			params.CappedDocuments, err = commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "max", max, 0)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	db, err := h.b.Database(dbName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
@@ -89,9 +123,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
-		Name: collectionName,
-	})
+	err = db.CreateCollection(ctx, &params)
 
 	switch {
 	case err == nil:

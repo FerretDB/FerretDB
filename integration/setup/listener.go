@@ -222,7 +222,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown: *disableFilterPushdownF,
 			EnableSortPushdown:    *enableSortPushdownF,
-			EnableOplog:           *enableOplogF,
+			EnableOplog:           true,
 
 			UseNewHana: *useNewHanaF,
 		},

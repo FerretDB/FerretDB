@@ -241,3 +241,116 @@ func TestCreateStressSameCollection(t *testing.T) {
 
 	require.Equal(t, int32(1), created.Load(), "Only one attempt to create a collection should succeed")
 }
+
+// TestCreateCappedCommandInvalidSpec checks that invalid create capped collection commands are handled correctly.
+// For valid test cases see collStats for capped collections tests.
+func TestCreateCappedCommandInvalidSpec(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		capped    any
+		size      any
+		max       any
+		unsetSize bool // optional, if true size field is unset
+
+		err        *mongo.CommandError // required, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+	}{
+		"ZeroSize": {
+			capped: true,
+			size:   0,
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'size' value must be >= 1, actual value '0'",
+			},
+		},
+		"EmptySize": {
+			capped: true,
+			err: &mongo.CommandError{
+				Code:    72,
+				Name:    "InvalidOptions",
+				Message: "the 'size' field is required when 'capped' is true",
+			},
+		},
+		"MissingSizeField": {
+			capped:    true,
+			unsetSize: true,
+			err: &mongo.CommandError{
+				Code:    72,
+				Name:    "InvalidOptions",
+				Message: "the 'size' field is required when 'capped' is true",
+			},
+		},
+		"EmptySizeWithMax": {
+			capped: true,
+			max:    500,
+			err: &mongo.CommandError{
+				Code:    72,
+				Name:    "InvalidOptions",
+				Message: "the 'size' field is required when 'capped' is true",
+			},
+		},
+		"WrongSizeType": {
+			capped: true,
+			size:   "foo",
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'create.size' is the wrong type 'string', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'create.size' is the wrong type 'string', expected types '[long, int, decimal, double]'",
+		},
+		"WrongMaxType": {
+			capped: true,
+			size:   500,
+			max:    "foo",
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'create.max' is the wrong type 'string', expected types '[long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'create.max' is the wrong type 'string', expected types '[long, int, decimal, double]'",
+		},
+		"WrongCappedType": {
+			capped: "foo",
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'create.capped' is the wrong type 'string', expected types '[bool, long, int, decimal, double']",
+			},
+			altMessage: "BSON field 'capped' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
+		},
+		"NegativeSize": {
+			capped: true,
+			size:   -500,
+			err: &mongo.CommandError{
+				Code:    51024,
+				Name:    "Location51024",
+				Message: "BSON field 'size' value must be >= 1, actual value '-500'",
+			},
+		},
+	} {
+		tc, name := tc, name
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx, collection := setup.Setup(t)
+
+			command := bson.D{
+				{"create", collection.Name()},
+				{"capped", tc.capped},
+				{"max", tc.max},
+			}
+
+			if !tc.unsetSize {
+				command = append(command, bson.E{Key: "size", Value: tc.size})
+			}
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, command).Decode(&res)
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			require.Nil(t, res)
+		})
+	}
+}
