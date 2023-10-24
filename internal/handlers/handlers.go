@@ -58,6 +58,9 @@ type Interface interface {
 	// MsgCollStats returns storage data for a collection.
 	MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
 
+	// MsgCompact reduces the disk space collection takes and refreshes its statistics.
+	MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)
+
 	// MsgConnectionStatus returns information about the current connection,
 	// specifically the state of authenticated users and their available permissions.
 	MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error)

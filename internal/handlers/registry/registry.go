@@ -59,7 +59,7 @@ type TestOpts struct {
 	EnableSortPushdown    bool
 	EnableOplog           bool
 
-	UseNewPG   bool
+	UseOldPG   bool
 	UseNewHana bool
 }
 

@@ -20,6 +20,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -86,6 +87,26 @@ func TestInsertCommandErrors(t *testing.T) {
 				Code:    14,
 				Name:    "TypeMismatch",
 				Message: "BSON field 'insert.documents.1' is the wrong type 'array', expected type 'object'",
+			},
+		},
+		"InsertArrayAsDocumentID": {
+			toInsert: []any{
+				bson.D{{"_id", bson.A{int32(42), int32(42)}}},
+			},
+			ordered: false,
+			werr: &mongo.WriteError{
+				Code:    53,
+				Message: "The '_id' value cannot be of type array",
+			},
+		},
+		"InsertRegexAsDocumentID": {
+			toInsert: []any{
+				bson.D{{"_id", primitive.Regex{Pattern: "foo", Options: "i"}}},
+			},
+			ordered: false,
+			werr: &mongo.WriteError{
+				Code:    53,
+				Message: "The '_id' value cannot be of type regex",
 			},
 		},
 	} {

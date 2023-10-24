@@ -28,6 +28,9 @@ const (
 
 	// IDColumn is a SQLite path expression for _id field.
 	IDColumn = DefaultColumn + "->'$._id'"
+
+	// RecordIDColumn is a name for RecordID column to store capped collection record id.
+	RecordIDColumn = backends.ReservedPrefix + "record_id"
 )
 
 // Collection represents collection metadata.

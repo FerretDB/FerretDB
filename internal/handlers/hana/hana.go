@@ -81,7 +81,7 @@ func (h *Handler) Close() {
 //
 // Pool is not closed when ctx is canceled.
 func (h *Handler) DBPool(ctx context.Context) (*hanadb.Pool, error) {
-	// TODO make real implementation; the current one is a stub.
+	// Make real implementation; the current one is a stub.
 	// Used for the basic setup for connecting to HANA
 	url := h.HANAURL
 
@@ -113,12 +113,10 @@ func (h *Handler) DBPool(ctx context.Context) (*hanadb.Pool, error) {
 
 // Describe implements handlers.Interface.
 func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
-	// TODO
 }
 
 // Collect implements handlers.Interface.
 func (h *Handler) Collect(ch chan<- prometheus.Metric) {
-	// TODO
 }
 
 // check interfaces

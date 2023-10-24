@@ -6,6 +6,7 @@ require (
 	github.com/AlekSi/pointer v1.2.0
 	github.com/SAP/go-hdb v1.5.7
 	github.com/alecthomas/kong v0.8.1
+	github.com/arl/statsviz v0.6.0
 	github.com/google/uuid v1.3.1
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
 	github.com/jackc/pgx-zap v0.0.0-20221202020421-94b1cb2f889f
@@ -33,6 +34,7 @@ require (
 	github.com/go-logr/logr v1.2.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect

@@ -16,10 +16,9 @@ package types
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
-
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -27,7 +26,8 @@ import (
 
 // Common interface with bson.Document.
 //
-// TODO Remove this type.
+// Remove this type.
+// TODO https://github.com/FerretDB/FerretDB/issues/260
 type document interface {
 	Keys() []string
 	Values() []any

@@ -15,11 +15,11 @@
 package backends_test // to avoid import cycle
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
@@ -204,17 +204,19 @@ func TestCollectionStats(t *testing.T) {
 					require.NoError(t, err)
 				}
 
-				dbStatsRes, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+				dbStatsRes, err := db.Stats(ctx, &backends.DatabaseStatsParams{
+					Refresh: true,
+				})
 				require.NoError(t, err)
-
-				res, err := c.Stats(ctx, new(backends.CollectionStatsParams))
+				res, err := c.Stats(ctx, &backends.CollectionStatsParams{
+					Refresh: true,
+				})
 				require.NoError(t, err)
 				require.NotZero(t, res.SizeTotal)
 				require.Less(t, res.SizeTotal, dbStatsRes.SizeTotal)
 				require.NotZero(t, res.SizeCollection)
 				require.Less(t, res.SizeCollection, dbStatsRes.SizeCollections)
-				require.Equal(t, res.CountObjects, int64(1))
-				require.NotZero(t, res.CountIndexes)
+				require.Equal(t, res.CountDocuments, int64(1))
 				require.NotZero(t, res.SizeIndexes)
 			})
 		})
@@ -222,8 +224,6 @@ func TestCollectionStats(t *testing.T) {
 }
 
 func TestCollectionCompact(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/3484")
-
 	t.Parallel()
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())

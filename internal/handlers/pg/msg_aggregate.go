@@ -185,8 +185,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		switch d.Command() {
 		case "$collStats":
 			if i > 0 {
-				// Add a test to cover this error.
-				// TODO https://github.com/FerretDB/FerretDB/issues/2349
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrCollStatsIsNotFirstStage,
 					"$collStats is only valid as the first stage in a pipeline",
@@ -438,15 +436,15 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 				"count", collStats.CountObjects,
 				"avgObjSize", avgObjSize,
 				"storageSize", collStats.SizeCollection,
-				"freeStorageSize", int64(0), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"capped", false, // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"wiredTiger", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"freeStorageSize", int64(0),
+				"capped", false,
+				"wiredTiger", must.NotFail(types.NewDocument()),
 				"nindexes", collStats.CountIndexes,
-				"indexDetails", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"indexDetails", must.NotFail(types.NewDocument()),
+				"indexBuilds", must.NotFail(types.NewDocument()),
 				"totalIndexSize", collStats.SizeIndexes,
 				"totalSize", collStats.SizeTotal,
-				"indexSizes", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				"indexSizes", must.NotFail(types.NewDocument()),
 			)),
 		)
 	}
