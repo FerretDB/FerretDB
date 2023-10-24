@@ -100,8 +100,6 @@ func TestCommandsAdministrationCompatCollStatsWithScale(t *testing.T) {
 }
 
 func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/2447")
-
 	t.Parallel()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
@@ -109,18 +107,27 @@ func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
 		AddNonExistentCollection: true,
 	})
 
-	ctx, targetCollection, compatCollection := s.Ctx, s.TargetCollections[0], s.CompatCollections[0]
+	targetDB := s.TargetCollections[0].Database()
+	compatDB := s.CompatCollections[0].Database()
 
-	for name, tc := range map[string]struct { //nolint:vet // for readability
-		sizeInBytes  int64 // also sets capped true if it is greater than zero
-		maxDocuments int64 // maxDocuments is set if sizeInBytes is greater than zero
+	for name, tc := range map[string]struct {
+		sizeInBytes  int64
+		maxDocuments int64
+
+		expectedSize int64
 	}{
 		"Size": {
-			sizeInBytes: 1000,
+			sizeInBytes:  256,
+			expectedSize: 256,
+		},
+		"SizeRounded": {
+			sizeInBytes:  1000,
+			expectedSize: 1024,
 		},
 		"MaxDocuments": {
-			sizeInBytes:  1000,
+			sizeInBytes:  1,
 			maxDocuments: 10,
+			expectedSize: 256,
 		},
 	} {
 		name, tc := name, tc
@@ -128,40 +135,37 @@ func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
 			t.Parallel()
 
 			cName := testutil.CollectionName(t) + name
-			opts := options.CreateCollection()
+			opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(tc.sizeInBytes)
 
-			if tc.sizeInBytes > 0 {
-				opts.SetCapped(true)
-				opts.SetSizeInBytes(tc.sizeInBytes)
-
-				if tc.maxDocuments > 0 {
-					opts.SetMaxDocuments(tc.maxDocuments)
-				}
+			if tc.maxDocuments > 0 {
+				opts.SetMaxDocuments(tc.maxDocuments)
 			}
 
-			targetErr := targetCollection.Database().CreateCollection(ctx, cName, opts)
+			targetErr := targetDB.CreateCollection(s.Ctx, cName, opts)
 			require.NoError(t, targetErr)
 
-			compatErr := compatCollection.Database().CreateCollection(ctx, cName, opts)
+			compatErr := compatDB.CreateCollection(s.Ctx, cName, opts)
 			require.NoError(t, compatErr)
 
-			require.Equal(t, compatCollection.Name(), targetCollection.Name())
-			command := bson.D{{"collStats", targetCollection.Name()}}
+			command := bson.D{{"collStats", cName}}
 
 			var targetRes bson.D
-			targetErr = targetCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
+			targetErr = targetDB.RunCommand(s.Ctx, command).Decode(&targetRes)
 			require.NoError(t, targetErr)
 
 			var compatRes bson.D
-			targetErr = compatCollection.Database().RunCommand(ctx, command).Decode(&targetRes)
-			require.NoError(t, targetErr)
+			compatErr = compatDB.RunCommand(s.Ctx, command).Decode(&compatRes)
+			require.NoError(t, compatErr)
 
 			targetDoc := ConvertDocument(t, targetRes)
 			compatDoc := ConvertDocument(t, compatRes)
 
 			assert.Equal(t, must.NotFail(compatDoc.Get("capped")), must.NotFail(targetDoc.Get("capped")))
-			assert.Equal(t, must.NotFail(compatDoc.Get("max")), must.NotFail(targetDoc.Get("max")))
-			assert.Equal(t, must.NotFail(compatDoc.Get("maxSize")), must.NotFail(targetDoc.Get("maxSize")))
+
+			// TODO https://github.com/FerretDB/FerretDB/issues/3582
+			assert.EqualValues(t, tc.expectedSize, must.NotFail(targetDoc.Get("maxSize")))
+			assert.EqualValues(t, must.NotFail(compatDoc.Get("maxSize")), must.NotFail(targetDoc.Get("maxSize")))
+			assert.EqualValues(t, must.NotFail(compatDoc.Get("max")), must.NotFail(targetDoc.Get("max")))
 		})
 	}
 }
