@@ -85,8 +85,8 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if h.EnableOplog && capped {
 		var size any
 
-		size, err = document.Get("size")
-		if err != nil {
+		size, _ = document.Get("size")
+		if size == nil {
 			msg := "the 'size' field is required when 'capped' is true"
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidOptions, msg, "create")
 		}

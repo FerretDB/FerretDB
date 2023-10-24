@@ -247,19 +247,18 @@ func TestCreateStressSameCollection(t *testing.T) {
 func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 	t.Parallel()
 
-	for name, tc := range map[string]struct {
-		collectionName any
-		capped         any
-		size           any
-		max            any
+	for name, tc := range map[string]struct { //nolint:vet // used for testing only
+		capped    any
+		size      any
+		max       any
+		unsetSize bool // optional, if true size field is unset
 
 		err        *mongo.CommandError // required, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
 	}{
 		"ZeroSize": {
-			collectionName: "zero_size",
-			capped:         true,
-			size:           0,
+			capped: true,
+			size:   0,
 			err: &mongo.CommandError{
 				Code:    51024,
 				Name:    "Location51024",
@@ -267,8 +266,16 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 			},
 		},
 		"EmptySize": {
-			collectionName: "no_size",
-			capped:         true,
+			capped: true,
+			err: &mongo.CommandError{
+				Code:    72,
+				Name:    "InvalidOptions",
+				Message: "the 'size' field is required when 'capped' is true",
+			},
+		},
+		"MissingSizeField": {
+			capped:    true,
+			unsetSize: true,
 			err: &mongo.CommandError{
 				Code:    72,
 				Name:    "InvalidOptions",
@@ -276,9 +283,8 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 			},
 		},
 		"EmptySizeWithMax": {
-			collectionName: "no_size_with_max",
-			capped:         true,
-			max:            500,
+			capped: true,
+			max:    500,
 			err: &mongo.CommandError{
 				Code:    72,
 				Name:    "InvalidOptions",
@@ -286,9 +292,8 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 			},
 		},
 		"WrongSizeType": {
-			collectionName: "wrong_size",
-			capped:         true,
-			size:           "foo",
+			capped: true,
+			size:   "foo",
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
@@ -297,10 +302,9 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 			altMessage: "BSON field 'create.size' is the wrong type 'string', expected types '[long, int, decimal, double]'",
 		},
 		"WrongMaxType": {
-			collectionName: "wrong_max",
-			capped:         true,
-			size:           500,
-			max:            "foo",
+			capped: true,
+			size:   500,
+			max:    "foo",
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
@@ -309,8 +313,7 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 			altMessage: "BSON field 'create.max' is the wrong type 'string', expected types '[long, int, decimal, double]'",
 		},
 		"WrongCappedType": {
-			collectionName: "wrong_capped",
-			capped:         "foo",
+			capped: "foo",
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
@@ -319,9 +322,8 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 			altMessage: "BSON field 'capped' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
 		},
 		"NegativeSize": {
-			collectionName: "negative_size",
-			capped:         true,
-			size:           -500,
+			capped: true,
+			size:   -500,
 			err: &mongo.CommandError{
 				Code:    51024,
 				Name:    "Location51024",
@@ -336,36 +338,19 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 			ctx, collection := setup.Setup(t)
 
 			command := bson.D{
-				{"create", tc.collectionName},
+				{"create", collection.Name()},
 				{"capped", tc.capped},
-				{"size", tc.size},
 				{"max", tc.max},
+			}
+
+			if !tc.unsetSize {
+				command = append(command, bson.E{Key: "size", Value: tc.size})
 			}
 
 			var res bson.D
 			err := collection.Database().RunCommand(ctx, command).Decode(&res)
-
-			require.Error(t, err)
-			require.Nil(t, res)
-
 			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-
-			// In addition, checking a case when size is not set at all (the error is the same as for empty size)
-			if tc.size == nil {
-				command := bson.D{
-					{"create", tc.collectionName},
-					{"capped", tc.capped},
-					{"max", tc.max},
-				}
-
-				var res bson.D
-				err := collection.Database().RunCommand(ctx, command).Decode(&res)
-
-				require.Error(t, err)
-				require.Nil(t, res)
-
-				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
-			}
+			require.Nil(t, res)
 		})
 	}
 }

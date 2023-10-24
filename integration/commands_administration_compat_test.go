@@ -113,13 +113,21 @@ func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
 	for name, tc := range map[string]struct {
 		sizeInBytes  int64
 		maxDocuments int64
+
+		expectedSize int64
 	}{
 		"Size": {
-			sizeInBytes: 1000,
+			sizeInBytes:  256,
+			expectedSize: 256,
+		},
+		"SizeRounded": {
+			sizeInBytes:  1000,
+			expectedSize: 1024,
 		},
 		"MaxDocuments": {
-			sizeInBytes:  1000,
+			sizeInBytes:  1,
 			maxDocuments: 10,
+			expectedSize: 256,
 		},
 	} {
 		name, tc := name, tc
@@ -155,7 +163,7 @@ func TestCommandsAdministrationCompatCollStatsCappedCollection(t *testing.T) {
 			assert.Equal(t, must.NotFail(compatDoc.Get("capped")), must.NotFail(targetDoc.Get("capped")))
 
 			// TODO https://github.com/FerretDB/FerretDB/issues/3582
-			assert.Equal(t, int64(1024), must.NotFail(targetDoc.Get("maxSize")))
+			assert.EqualValues(t, tc.expectedSize, must.NotFail(targetDoc.Get("maxSize")))
 			assert.EqualValues(t, must.NotFail(compatDoc.Get("maxSize")), must.NotFail(targetDoc.Get("maxSize")))
 			assert.EqualValues(t, must.NotFail(compatDoc.Get("max")), must.NotFail(targetDoc.Get("max")))
 		})

@@ -66,14 +66,12 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	mparams := metadata.CollectionCreateParams{
+	created, err := db.r.CollectionCreate(ctx, &metadata.CollectionCreateParams{
 		DBName:          db.name,
 		Name:            params.Name,
 		CappedSize:      params.CappedSize,
 		CappedDocuments: params.CappedDocuments,
-	}
-
-	created, err := db.r.CollectionCreate(ctx, &mparams)
+	})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
