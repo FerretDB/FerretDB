@@ -1087,35 +1087,28 @@ func TestQueryShowRecordID(t *testing.T) {
 		collection   *mongo.Collection
 		showRecordID bool
 
-		zeroRecordID   bool
-		skipForMongoDB string
+		nonZeroRecordID bool // if true, checks recordID is not zero
 	}{
-		"ShowRecordID": {
-			showRecordID:   true,
-			collection:     collection,
-			zeroRecordID:   true, // non capped collection has recordID field with zero value
-			skipForMongoDB: "MongoDB sets recordID for all collections",
-		},
-		"ShowRecordIDFalse": {
-			showRecordID: false,
-			collection:   collection,
-		},
 		"CappedCollectionShowRecordID": {
-			showRecordID: true,
-			collection:   cappedCollection,
-			zeroRecordID: false,
+			showRecordID:    true,
+			collection:      cappedCollection,
+			nonZeroRecordID: true,
 		},
 		"CappedCollectionShowRecordIDFalse": {
 			showRecordID: false,
 			collection:   cappedCollection,
 		},
+		"ShowRecordID": {
+			showRecordID: true,
+			collection:   collection,
+		},
+		"ShowRecordIDFalse": {
+			showRecordID: false,
+			collection:   collection,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skipForMongoDB != "" {
-				setup.SkipForMongoDB(t, tc.skipForMongoDB)
-			}
-
 			t.Parallel()
 
 			require.NotNil(t, tc.collection, "collection must be set")
@@ -1141,7 +1134,7 @@ func TestQueryShowRecordID(t *testing.T) {
 				}
 
 				require.NotNil(t, recordID, "%dth document has recordID of %#v", i, recordID)
-				if !tc.zeroRecordID {
+				if tc.nonZeroRecordID {
 					require.NotZero(t, recordID, "%dth document has recordID of %#v", i, recordID)
 				}
 			}
