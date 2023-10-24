@@ -42,9 +42,11 @@ const (
 // Collection value should be immutable to avoid data races.
 // Use [deepCopy] to replace the whole value instead of modifying fields of existing value.
 type Collection struct {
-	Name      string
-	TableName string
-	Indexes   Indexes
+	Name            string
+	TableName       string
+	Indexes         Indexes
+	CappedSize      int64
+	CappedDocuments int64
 }
 
 // deepCopy returns a deep copy.
@@ -54,9 +56,11 @@ func (c *Collection) deepCopy() *Collection {
 	}
 
 	return &Collection{
-		Name:      c.Name,
-		TableName: c.TableName,
-		Indexes:   c.Indexes.deepCopy(),
+		Name:            c.Name,
+		TableName:       c.TableName,
+		Indexes:         c.Indexes.deepCopy(),
+		CappedSize:      c.CappedSize,
+		CappedDocuments: c.CappedDocuments,
 	}
 }
 
@@ -104,6 +108,8 @@ func (c *Collection) marshal() *types.Document {
 		"_id", c.Name,
 		"table", c.TableName,
 		"indexes", c.Indexes.marshal(),
+		"cappedSize", c.CappedSize,
+		"cappedDocs", c.CappedDocuments,
 	))
 }
 
@@ -132,6 +138,16 @@ func (c *Collection) unmarshal(doc *types.Document) error {
 
 	if err := c.Indexes.unmarshal(i); err != nil {
 		return lazyerrors.Error(err)
+	}
+
+	// For compatibility with older FerretDB versions where cappedSize didn't exist.
+	if v, _ := doc.Get("cappedSize"); v != nil {
+		c.CappedSize = v.(int64)
+	}
+
+	// For compatibility with older FerretDB versions where cappedDocs didn't exist.
+	if v, _ := doc.Get("cappedDocs"); v != nil {
+		c.CappedDocuments = v.(int64)
 	}
 
 	return nil
