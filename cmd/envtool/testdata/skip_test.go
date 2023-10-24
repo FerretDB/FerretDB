@@ -17,7 +17,9 @@ package testdata
 import "testing"
 
 func TestSkip1(t *testing.T) {
-	t.Log("not hidden")
+	t.Log("not hidden 1")
 
-	t.Skip("Skip Test 1")
+	t.Skip("Skip 1")
+
+	t.Log("not run")
 }
