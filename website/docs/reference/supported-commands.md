@@ -525,7 +525,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 | --------------------------------- | ------------------------------ | ------------------------- | ------ | --------------------------------------------------------- |
 | `listCollections`                 |                                |                           | ✅     |                                                           |
 |                                   | `filter`                       |                           | ✅     |                                                           |
-|                                   | `nameOnly`                     |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/301)  |
+|                                   | `nameOnly`                     |                           | ✅     |                                                           |
 |                                   | `comment`                      |                           | ⚠️     | Ignored                                                   |
 |                                   | `authorizedCollections`        |                           | ⚠️     | Ignored                                                   |
 | `cloneCollectionAsCapped`         |                                |                           | ❌     |                                                           |
