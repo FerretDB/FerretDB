@@ -1087,7 +1087,7 @@ func TestQueryShowRecordID(t *testing.T) {
 		collection   *mongo.Collection
 		showRecordID bool
 
-		nonZeroRecordID bool // if true, checks recordID is not zero
+		nonZeroRecordID bool // if true, asserts recordID is not zero
 	}{
 		"CappedCollectionShowRecordID": {
 			showRecordID:    true,
@@ -1113,7 +1113,7 @@ func TestQueryShowRecordID(t *testing.T) {
 
 			require.NotNil(t, tc.collection, "collection must be set")
 
-			// batch size is set to check getMore also sets recordID
+			// small batch size is set to ensure getMore sets recordID
 			opts := options.Find().SetShowRecordID(tc.showRecordID).SetBatchSize(2)
 			cursor, err := tc.collection.Find(ctx, bson.D{}, opts)
 			require.NoError(t, err)
@@ -1133,11 +1133,73 @@ func TestQueryShowRecordID(t *testing.T) {
 					return
 				}
 
-				require.NotNil(t, recordID, "%dth document has recordID of %#v", i, recordID)
+				require.NotNil(t, recordID)
 				if tc.nonZeroRecordID {
-					require.NotZero(t, recordID, "%dth document has recordID of %#v", i, recordID)
+					require.NotZero(t, recordID)
 				}
 			}
+		})
+	}
+}
+
+func TestQueryShowRecordIDErrors(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000)
+	err := collection.Database().CreateCollection(ctx, testutil.CollectionName(t), opts)
+	assert.NoError(t, err)
+
+	for name, tc := range map[string]struct {
+		showRecordID any
+
+		err        *mongo.CommandError // optional, expected error from MongoDB
+		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"Nil": {
+			showRecordID: nil,
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "Field 'showRecordId' should be a boolean value, but found: null",
+			},
+			altMessage: "BSON field 'find.showRecordId' is the wrong type 'null', expected type 'bool'",
+		},
+		"Int32": {
+			showRecordID: int32(0),
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "Field 'showRecordId' should be a boolean value, but found: int",
+			},
+			altMessage: "BSON field 'find.showRecordId' is the wrong type 'int', expected type 'bool'",
+		},
+		"String": {
+			showRecordID: "string",
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "Field 'showRecordId' should be a boolean value, but found: string",
+			},
+			altMessage: "BSON field 'find.showRecordId' is the wrong type 'string', expected type 'bool'",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			var res bson.D
+			err := collection.Database().RunCommand(ctx, bson.D{
+				{"find", collection.Name()},
+				{"showRecordId", tc.showRecordID},
+			}).Decode(&res)
+
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			require.Nil(t, res)
 		})
 	}
 }
