@@ -47,6 +47,17 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=ferretdb
 
+  cockroachdb:
+    build:
+      context: ./build/deps
+      dockerfile: cockroachdb.Dockerfile
+    container_name: ferretdb_cockroachdb
+    ports:
+      - 26257:26257
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: start-single-node --insecure
+
   mongodb:
     build:
       context: ./build/deps
