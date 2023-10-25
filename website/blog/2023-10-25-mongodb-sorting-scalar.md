@@ -7,7 +7,7 @@ description: >
 keywords:
   - mongodb sorting
   - bson comparison order
-image: /img/blog/post-cover-image.jpg
+image: /img/blog/mongodb-sorting-scalar.jpg
 tags: [community, product, tutorial]
 ---
 
