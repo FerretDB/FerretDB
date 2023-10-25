@@ -35,11 +35,11 @@ func testCollection(t *testing.T, ctx context.Context, r *Registry, db *fsql.DB,
 	c := r.CollectionGet(ctx, dbName, collectionName)
 	require.Nil(t, c)
 
-	created, err := r.CollectionCreate(ctx, dbName, collectionName)
+	created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 	require.NoError(t, err)
 	require.True(t, created)
 
-	created, err = r.CollectionCreate(ctx, dbName, collectionName)
+	created, err = r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 	require.NoError(t, err)
 	require.False(t, created)
 
@@ -176,13 +176,13 @@ func TestCreateSameStress(t *testing.T) {
 				ready <- struct{}{}
 				<-start
 
-				created, err := r.CollectionCreate(ctx, dbName, collectionName)
+				created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 				require.NoError(t, err)
 				if created {
 					createdTotal.Add(1)
 				}
 
-				created, err = r.CollectionCreate(ctx, dbName, collectionName)
+				created, err = r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 				require.NoError(t, err)
 				require.False(t, created)
 
@@ -236,7 +236,7 @@ func TestDropSameStress(t *testing.T) {
 
 			collectionName := "collection"
 
-			created, err := r.CollectionCreate(ctx, dbName, collectionName)
+			created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 			require.NoError(t, err)
 			require.True(t, created)
 
@@ -297,7 +297,7 @@ func TestCreateDropSameStress(t *testing.T) {
 				<-start
 
 				if id%2 == 0 {
-					created, err := r.CollectionCreate(ctx, dbName, collectionName)
+					created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 					require.NoError(t, err)
 					if created {
 						createdTotal.Add(1)

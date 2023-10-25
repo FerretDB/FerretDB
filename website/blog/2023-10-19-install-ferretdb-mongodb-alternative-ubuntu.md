@@ -199,14 +199,14 @@ We will explore two ways to start FerretDB: via terminal and using a `systemd` f
 Before we create a `systemd` for FerretDB, let's try running it via terminal by providing the appropriate flags, including `--postgresql-url`:
 
 ```sh
-ferretdb --postgresql-url="postgresql://username:password@localhost/ferretdb"
+ferretdb --postgresql-url="postgres://username:password@localhost/ferretdb"
 ```
 
 Update the PostgreSQL credentials to match the one you created before.
 Other necessary flags are set to their default values: `--mode="normal"`, `--listen-addr="127.0.0.1:27017"`.
 
 ```text
-~$ ferretdb --postgresql-url="postgresql://username:password@localhost/ferretdb"
+~$ ferretdb --postgresql-url="postgres://username:password@localhost/ferretdb"
 2023-10-19T12:48:23.202+0100    INFO    ferretdb/main.go:253    Starting FerretDB v1.12.1...    {"version": "v1.12.1", "commit": "d1486f2b5d86eadfa6d148752b14fdde49cb5db9", "branch": "unknown", "dirty": true, "package": "deb", "debugBuild": false, "buildEnvironment": {"-buildmode":"exe","-compiler":"gc","CGO_ENABLED":"0","GOARCH":"arm64","GOOS":"linux","go.version":"go1.21.2","vcs":"git","vcs.time":"2023-10-10T12:15:18Z"}, "uuid": "d66f7807-aec3-406a-9779-2b5ec190e65a"}
 2023-10-19T12:48:23.214+0100    INFO    telemetry   telemetry/reporter.go:148   The telemetry state is undecided; the first report will be sent in 1h0m0s. Read more about FerretDB telemetry and how to opt out at https://beacon.ferretdb.io.
 2023-10-19T12:48:23.217+0100    INFO    debug   debug/debug.go:86   Starting debug server on http://127.0.0.1:8088/
@@ -233,7 +233,7 @@ Wants=network-online.target
 
 [Service]
 User=ferret
-ExecStart=/usr/bin/ferretdb --postgresql-url="postgresql://username:password@127.0.0.1:5432/ferretdb"
+ExecStart=/usr/bin/ferretdb --postgresql-url="postgres://username:password@127.0.0.1:5432/ferretdb"
 Restart=always
 
 [Install]
