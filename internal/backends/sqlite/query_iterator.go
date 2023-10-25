@@ -16,6 +16,7 @@ package sqlite
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"sync"
 
@@ -97,38 +98,29 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	hasDefaultColumn := slices.ContainsFunc(columns, func(column string) bool {
-		return column == metadata.DefaultColumn
-	})
-
-	hasRecordIDColumn := slices.ContainsFunc(columns, func(column string) bool {
-		return column == metadata.RecordIDColumn
-	})
-
 	var recordID types.Timestamp
 	var b []byte
+	var dest []any
 
 	switch {
-	case hasRecordIDColumn && hasDefaultColumn:
-		if err = iter.rows.Scan(&recordID, &b); err != nil {
-			iter.close()
-			return unused, nil, lazyerrors.Error(err)
-		}
-	case hasRecordIDColumn:
-		if err = iter.rows.Scan(&recordID); err != nil {
-			iter.close()
-			return unused, nil, lazyerrors.Error(err)
-		}
+	case slices.Equal(columns, []string{metadata.RecordIDColumn, metadata.DefaultColumn}):
+		dest = append(dest, &recordID, &b)
+	case slices.Equal(columns, []string{metadata.RecordIDColumn}):
+		dest = append(dest, &recordID)
+	case slices.Equal(columns, []string{metadata.DefaultColumn}):
+		dest = append(dest, &b)
 	default:
-		if err = iter.rows.Scan(&b); err != nil {
-			iter.close()
-			return unused, nil, lazyerrors.Error(err)
-		}
+		panic(fmt.Sprintf("cannot scan unknown columns: %v", columns))
+	}
+
+	if err = iter.rows.Scan(dest...); err != nil {
+		iter.close()
+		return unused, nil, lazyerrors.Error(err)
 	}
 
 	doc := must.NotFail(types.NewDocument())
 
-	if hasDefaultColumn {
+	if slices.ContainsFunc(columns, func(c string) bool { return c == metadata.DefaultColumn }) {
 		if doc, err = sjson.Unmarshal(b); err != nil {
 			iter.close()
 			return unused, nil, lazyerrors.Error(err)

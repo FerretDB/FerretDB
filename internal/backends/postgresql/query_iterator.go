@@ -16,11 +16,11 @@ package postgresql
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
@@ -93,40 +93,35 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	columns := iter.rows.FieldDescriptions()
-	hasDefaultColumn := slices.ContainsFunc(columns, func(description pgconn.FieldDescription) bool {
-		return description.Name == metadata.DefaultColumn
-	})
-
-	hasRecordIDColumn := slices.ContainsFunc(columns, func(description pgconn.FieldDescription) bool {
-		return description.Name == metadata.RecordIDColumn
-	})
+	columns := make([]string, len(iter.rows.FieldDescriptions()))
+	for i, description := range iter.rows.FieldDescriptions() {
+		columns[i] = description.Name
+	}
 
 	var recordID types.Timestamp
 	var b []byte
+	var dest []any
 
 	switch {
-	case hasRecordIDColumn && hasDefaultColumn:
-		if err := iter.rows.Scan(&recordID, &b); err != nil {
-			iter.close()
-			return unused, nil, lazyerrors.Error(err)
-		}
-	case hasRecordIDColumn:
-		if err := iter.rows.Scan(&recordID); err != nil {
-			iter.close()
-			return unused, nil, lazyerrors.Error(err)
-		}
+	case slices.Equal(columns, []string{metadata.RecordIDColumn, metadata.DefaultColumn}):
+		dest = append(dest, &recordID, &b)
+	case slices.Equal(columns, []string{metadata.RecordIDColumn}):
+		dest = append(dest, &recordID)
+	case slices.Equal(columns, []string{metadata.DefaultColumn}):
+		dest = append(dest, &b)
 	default:
-		if err := iter.rows.Scan(&b); err != nil {
-			iter.close()
-			return unused, nil, lazyerrors.Error(err)
-		}
+		panic(fmt.Sprintf("cannot scan unknown columns: %v", columns))
 	}
 
-	doc := must.NotFail(types.NewDocument())
-	var err error
+	if err := iter.rows.Scan(dest...); err != nil {
+		iter.close()
+		return unused, nil, lazyerrors.Error(err)
+	}
 
-	if hasDefaultColumn {
+	var err error
+	doc := must.NotFail(types.NewDocument())
+
+	if slices.ContainsFunc(columns, func(c string) bool { return c == metadata.DefaultColumn }) {
 		if doc, err = sjson.Unmarshal(b); err != nil {
 			iter.close()
 			return unused, nil, lazyerrors.Error(err)
