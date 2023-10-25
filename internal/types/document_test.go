@@ -112,7 +112,7 @@ func TestDocument(t *testing.T) {
 		assert.False(t, doc.Has("bar"))
 
 		assert.PanicsWithValue(t, "types.Document.Get: key is duplicated: foo", func() {
-			doc.Get("foo")
+			_, _ = doc.Get("foo")
 		})
 		assert.PanicsWithValue(t, "types.Document.Set: key is duplicated: foo", func() {
 			doc.Set("foo", int32(3))

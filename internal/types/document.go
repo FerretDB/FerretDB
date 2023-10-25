@@ -276,6 +276,7 @@ func (d *Document) Command() string {
 	if d == nil || len(d.fields) == 0 {
 		return ""
 	}
+
 	return d.fields[0].key
 }
 
@@ -468,6 +469,7 @@ func (d *Document) moveIDToTheFirstIndex() {
 	}
 
 	var idIdx int
+
 	for i, field := range d.fields {
 		if field.key == "_id" {
 			idIdx = i
