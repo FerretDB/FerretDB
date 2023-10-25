@@ -36,10 +36,11 @@ import (
 type queryIterator struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
-	ctx   context.Context
-	rows  pgx.Rows // protected by m
-	token *resource.Token
-	m     sync.Mutex
+	ctx           context.Context
+	rows          pgx.Rows // protected by m
+	onlyRecordIDs bool
+	token         *resource.Token
+	m             sync.Mutex
 }
 
 // newQueryIterator returns a new queryIterator for the given Rows.
@@ -51,11 +52,12 @@ type queryIterator struct {
 //
 // Nil rows are possible and return already done iterator.
 // It still should be Close'd.
-func newQueryIterator(ctx context.Context, rows pgx.Rows) types.DocumentsIterator {
+func newQueryIterator(ctx context.Context, rows pgx.Rows, onlyRecordIDs bool) types.DocumentsIterator {
 	iter := &queryIterator{
-		ctx:   ctx,
-		rows:  rows,
-		token: resource.NewToken(),
+		ctx:           ctx,
+		rows:          rows,
+		onlyRecordIDs: onlyRecordIDs,
+		token:         resource.NewToken(),
 	}
 	resource.Track(iter, iter.token)
 
@@ -121,7 +123,7 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 	var err error
 	doc := must.NotFail(types.NewDocument())
 
-	if slices.ContainsFunc(columns, func(c string) bool { return c == metadata.DefaultColumn }) {
+	if !iter.onlyRecordIDs {
 		if doc, err = sjson.Unmarshal(b); err != nil {
 			iter.close()
 			return unused, nil, lazyerrors.Error(err)

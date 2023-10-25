@@ -54,14 +54,14 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil),
+			Iter: newQueryIterator(ctx, nil, params.OnlyRecordIDs),
 		}, nil
 	}
 
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil),
+			Iter: newQueryIterator(ctx, nil, params.OnlyRecordIDs),
 		}, nil
 	}
 
@@ -98,7 +98,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}
 
 	return &backends.QueryResult{
-		Iter: newQueryIterator(ctx, rows),
+		Iter: newQueryIterator(ctx, rows, params.OnlyRecordIDs),
 	}, nil
 }
 

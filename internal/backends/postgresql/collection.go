@@ -63,7 +63,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	if p == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil),
+			Iter: newQueryIterator(ctx, nil, params.OnlyRecordIDs),
 		}, nil
 	}
 
@@ -74,7 +74,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	if meta == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil),
+			Iter: newQueryIterator(ctx, nil, params.OnlyRecordIDs),
 		}, nil
 	}
 
@@ -104,7 +104,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}
 
 	return &backends.QueryResult{
-		Iter: newQueryIterator(ctx, rows),
+		Iter: newQueryIterator(ctx, rows, params.OnlyRecordIDs),
 	}, nil
 }
 

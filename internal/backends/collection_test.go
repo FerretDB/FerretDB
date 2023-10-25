@@ -208,8 +208,9 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				require.Len(t, docs, len(insertDocs))
 
 				// inserted doc is frozen, queried doc is not frozen hence compare each value
-				for _, doc := range docs {
+				for i, doc := range docs {
 					assert.Zero(t, doc.RecordID())
+					assert.Empty(t, docs[i].Values())
 				}
 
 				explainRes, err := coll.Explain(ctx, new(backends.ExplainParams))
