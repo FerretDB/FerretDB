@@ -5,13 +5,13 @@ authors: [chi]
 description: >
   In this blog post, we explore how MongoDB sorting works for scalar values.
 keywords:
-  - MongoDB sorting
-  - BSON comparison order
+  - mongodb sorting
+  - bson comparison order
 image: /img/blog/post-cover-image.jpg
 tags: [community, product, tutorial]
 ---
 
-![MongoDB sorting works for scalar values](/img/blog/mongodb-sorting-scalar.jpg)
+![How MongoDB Sorting Works for Scalar Values](/img/blog/mongodb-sorting-scalar.jpg)
 
 In this blog post, we explore how MongoDB sorting works for scalar values.
 
