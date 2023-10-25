@@ -43,12 +43,10 @@ func TestAggregateCollStats(t *testing.T) {
 
 	cursor, err := collection.Aggregate(ctx, pipeline)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		cursor.Close(ctx)
-	})
 
 	var res []bson.D
 	err = cursor.All(ctx, &res)
+	require.NoError(t, cursor.Close(ctx))
 	require.NoError(t, err)
 
 	require.Len(t, res, 1)
@@ -82,11 +80,9 @@ func TestAggregateCollStats(t *testing.T) {
 	cappedCollection := collection.Database().Collection(cappedCollectionName)
 	cursor, err = cappedCollection.Aggregate(ctx, pipeline)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		cursor.Close(ctx)
-	})
 
 	err = cursor.All(ctx, &res)
+	require.NoError(t, cursor.Close(ctx))
 	require.NoError(t, err)
 
 	require.Len(t, res, 1)
