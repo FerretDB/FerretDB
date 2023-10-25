@@ -78,8 +78,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	capped := meta.CappedSize > 0
-	q := prepareSelectClause(c.dbName, meta.TableName, capped, params.OnlyRecordIDs)
+	q := prepareSelectClause(c.dbName, meta.TableName, meta.Capped(), params.OnlyRecordIDs)
 
 	var placeholder metadata.Placeholder
 
@@ -90,7 +89,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	q += where
 
-	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, capped)
+	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
 	q += sort
 	args = append(args, sortArgs...)
 
@@ -145,7 +144,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 			)
 
 			var args []any
-			if meta.CappedSize > 0 {
+			if meta.Capped() {
 				q = fmt.Sprintf(
 					`INSERT INTO %s (%s,%s) VALUES ($1,$2)`,
 					pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
@@ -309,8 +308,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	res := new(backends.ExplainResult)
 
-	capped := meta.CappedSize > 0
-	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName, capped, false)
+	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName, meta.Capped(), false)
 
 	var placeholder metadata.Placeholder
 
@@ -323,7 +321,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	q += where
 
-	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, capped)
+	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
 	q += sort
 	args = append(args, sortArgs...)
 	res.SortPushdown = sort != ""

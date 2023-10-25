@@ -83,10 +83,9 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}
 	}
 
-	capped := meta.Settings.CappedSize > 0
-	q := prepareSelectClause(meta.TableName, capped, params.OnlyRecordIDs) + whereClause
+	q := prepareSelectClause(meta.TableName, meta.Capped(), params.OnlyRecordIDs) + whereClause
 
-	q += prepareOrderByClause(capped)
+	q += prepareOrderByClause(meta.Capped())
 
 	if params.Limit != 0 {
 		q += ` LIMIT ?`
@@ -101,9 +100,9 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	var s scanner
 
 	switch {
-	case capped && params.OnlyRecordIDs:
+	case meta.Capped() && params.OnlyRecordIDs:
 		s = new(recordIDScanner)
-	case capped:
+	case meta.Capped():
 		s = new(cappedScanner)
 	default:
 		s = new(queryScanner)
@@ -135,7 +134,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 			q := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
 
 			var args []any
-			if meta.Settings.CappedSize > 0 {
+			if meta.Capped() {
 				q = fmt.Sprintf(
 					`INSERT INTO %q (%s,%s) VALUES (?,?)`,
 					meta.TableName,
@@ -274,8 +273,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		params = new(backends.ExplainParams)
 	}
 
-	capped := meta.Settings.CappedSize > 0
-	selectClause := prepareSelectClause(meta.TableName, capped, false)
+	selectClause := prepareSelectClause(meta.TableName, meta.Capped(), false)
 
 	var queryPushdown bool
 	var whereClause string
@@ -293,7 +291,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}
 	}
 
-	orderByClause := prepareOrderByClause(capped)
+	orderByClause := prepareOrderByClause(meta.Capped())
 	sortPushdown := orderByClause != ""
 
 	q := `EXPLAIN QUERY PLAN ` + selectClause + whereClause + orderByClause
