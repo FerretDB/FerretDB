@@ -57,13 +57,13 @@ import (
 )
 
 // fjsontype is a type that can be marshaled to FJSON.
+//
+//sumtype:decl
 type fjsontype interface {
-	fjsontype() // seal for go-sumtype
+	fjsontype() // seal for sumtype
 
 	json.Marshaler
 }
-
-//go-sumtype:decl fjsontype
 
 // fromFJSON converts fjsontype value to matching built-in or types' package value.
 func fromFJSON(v fjsontype) any {
@@ -96,7 +96,7 @@ func fromFJSON(v fjsontype) any {
 		return int64(*v)
 	}
 
-	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
+	panic(fmt.Sprintf("not reached: %T", v)) // for sumtype to work
 }
 
 // toFJSON converts built-in or types' package value to fjsontype value.
@@ -130,7 +130,7 @@ func toFJSON(v any) fjsontype {
 		return pointer.To(int64Type(v))
 	}
 
-	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
+	panic(fmt.Sprintf("not reached: %T", v)) // for sumtype to work
 }
 
 // Marshal encodes given built-in or types' package value into fjson.
