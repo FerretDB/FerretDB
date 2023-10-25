@@ -8,7 +8,7 @@ authors:
     image_url: /img/blog/marcin-gwozdz.jpeg
   - name: Mike Biondi
     title: Engineering Manager of Cloud Native at Vultr
-    image_url: /img/blog/mike-bbiondi.jpeg
+    image_url: /img/blog/mike-biondi.jpeg
 description: >
   We enjoyed talking with Mike Biondi from Vultr about why they decided to build a MongoDB-compatible service using FerretDB.
 image: /img/blog/ferretdb-vultr.jpg
