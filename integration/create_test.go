@@ -247,11 +247,12 @@ func TestCreateStressSameCollection(t *testing.T) {
 func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 	t.Parallel()
 
+	unset := struct{}{}
+
 	for name, tc := range map[string]struct { //nolint:vet // used for testing only
-		capped    any
-		size      any
-		max       any
-		unsetSize bool // optional, if true size field is unset
+		capped any
+		size   any
+		max    any
 
 		err        *mongo.CommandError // required, expected error from MongoDB
 		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
@@ -274,8 +275,8 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 			},
 		},
 		"MissingSizeField": {
-			capped:    true,
-			unsetSize: true,
+			capped: true,
+			size:   unset,
 			err: &mongo.CommandError{
 				Code:    72,
 				Name:    "InvalidOptions",
@@ -343,7 +344,7 @@ func TestCreateCappedCommandInvalidSpec(t *testing.T) {
 				{"max", tc.max},
 			}
 
-			if !tc.unsetSize {
+			if tc.size != unset {
 				command = append(command, bson.E{Key: "size", Value: tc.size})
 			}
 
