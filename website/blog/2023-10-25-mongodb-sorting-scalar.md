@@ -106,8 +106,8 @@ The Numbers have higher BSON order of comparison than Null BSON type, so they co
 The documents with numbers are `boots` with Integer BSON type, `sneaker` with Double BSON type and `sandals` with Integer BSON type.
 Notice that Integer BSON type is followed by Double BSON type then by another Integer BSON type?
 The Numbers are considered [equivalent BSON types](#number-comparison) so only the values of each number are compared regardless of its specific BSON number type.
-The document `boots` has a `size` field value of 8 which is less than 8.5 of `sneakers` or 9 of `sandals`, so `boots` comes after that.
-Then the document `sneakers` comes next.
+The document `boots` has a `size` field value of 8 which is less than 8.5 of `sneakers` or 9 of `sandals`, so `boots` comes next.
+Then the document `sneakers` comes and `sandals` comes after that.
 
 Finally, `flip flops` with String BSON type which has a higher BSON order of comparison than Numbers comes last.
 
@@ -128,6 +128,8 @@ db.outfits.find().sort({ size: -1 })
 ```
 
 This time, the output is sorted first by `flip flops` with String `size` field, then by `size` field with Numbers `sandals`, `sneakers` and `boots` and finally `slippers` with a non-existent `size` field.
+
+### Using `_id` as the second sort field
 
 Suppose you want to return documents sorted by `color` field.
 There are more than one document with color `blue`, and also there is a document with Null and missing `color` field.
@@ -155,9 +157,9 @@ db.outfits.find().sort({ color: 1, _id: 1 })
 ```
 
 The output shows that the document `sandals` is sorted before `slippers` even though they have equivalent `color` field value.
-It is because it uses the second sort field `_id` and `sandals` has a lower `_id`.
+It is because it uses the second sort field `_id` and `sandals` has a lower value than `slippers`.
 Similarly, `flip flops` and `sneakers` have the same `color` field value.
-But `flip flops` is sorted before because it has a lower `_id`.
+But `flip flops` is sorted before because its `_id` has a lower value than `sneakers`.
 
 ## Roundup
 
