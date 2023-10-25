@@ -57,6 +57,10 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     command: start-single-node --insecure
+    environment:
+      - COCKROACH_USER=username
+      - COCKROACH_PASSWORD=password
+      - COCKROACH_DATABASE=ferretdb
 
   mongodb:
     build:
