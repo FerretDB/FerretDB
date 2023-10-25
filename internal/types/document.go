@@ -15,9 +15,9 @@
 package types
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
-	"sort"
 	"strconv"
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -40,6 +40,7 @@ type document interface {
 // that is not a field and can't be accessed by most methods.
 // It use used to locate the document in the backend.
 type Document struct {
+	keys     map[string]int
 	fields   []field
 	frozen   bool
 	recordID Timestamp
@@ -71,20 +72,17 @@ func ConvertDocument(d document) (*Document, error) {
 		panic(fmt.Sprintf("document must have the same number of keys and values (keys: %d, values: %d)", len(keys), len(values)))
 	}
 
-	// If values are not set, we don't need to allocate memory for fields.
-	if len(values) == 0 {
-		return new(Document), nil
-	}
+	doc := MakeDocument(len(keys))
 
-	fields := make([]field, len(keys))
-	for i, key := range d.Keys() {
-		fields[i] = field{
+	for i, key := range keys {
+		doc.keys[key]++
+		doc.fields[i] = field{
 			key:   key,
 			value: values[i],
 		}
 	}
 
-	return &Document{fields: fields}, nil
+	return doc, nil
 }
 
 // MakeDocument creates an empty document with set capacity.
@@ -94,6 +92,7 @@ func MakeDocument(capacity int) *Document {
 	}
 
 	return &Document{
+		keys:   make(map[string]int, capacity),
 		fields: make([]field, 0, capacity),
 	}
 }
@@ -107,10 +106,6 @@ func NewDocument(pairs ...any) (*Document, error) {
 
 	doc := MakeDocument(l / 2)
 
-	if l == 0 {
-		return doc, nil
-	}
-
 	for i := 0; i < l; i += 2 {
 		key, ok := pairs[i].(string)
 		if !ok {
@@ -120,6 +115,7 @@ func NewDocument(pairs ...any) (*Document, error) {
 		value := pairs[i+1]
 		assertType(value)
 
+		doc.keys[key]++
 		doc.fields = append(doc.fields, field{key: key, value: value})
 	}
 
@@ -257,22 +253,16 @@ func (d *Document) FindDuplicateKey() (string, bool) {
 // Command returns the first document's key. This is often used as a command name.
 // It returns an empty string if document is nil or empty.
 func (d *Document) Command() string {
-	keys := d.Keys()
-	if len(keys) == 0 {
+	if d == nil || len(d.fields) == 0 {
 		return ""
 	}
-	return keys[0]
+	return d.fields[0].key
 }
 
 // Has returns true if the given key is present in the document.
 func (d *Document) Has(key string) bool {
-	for _, field := range d.fields {
-		if field.key == key {
-			return true
-		}
-	}
-
-	return false
+	_, ok := d.keys[key]
+	return ok
 }
 
 // Get returns a value at the given key.
@@ -325,6 +315,11 @@ func (d *Document) Set(key string, value any) {
 		}
 	}
 
+	if d.keys == nil {
+		d.keys = make(map[string]int, 1)
+	}
+	d.keys[key]++
+
 	d.fields = append(d.fields, field{key: key, value: value})
 }
 
@@ -339,6 +334,7 @@ func (d *Document) Remove(key string) any {
 
 	for i, field := range d.fields {
 		if field.key == key {
+			delete(d.keys, key)
 			d.fields = slices.Delete(d.fields, i, i+1)
 			return field.value
 		}
@@ -430,25 +426,15 @@ func (d *Document) RemoveByPath(path Path) {
 func (d *Document) SortFieldsByKey() {
 	d.checkFrozen()
 
-	sort.Slice(d.fields, func(i, j int) bool { return d.fields[i].key < d.fields[j].key })
+	slices.SortFunc(d.fields, func(a, b field) int {
+		return cmp.Compare(a.key, b.key)
+	})
 }
 
 // isKeyDuplicate returns true if the target key is duplicated in the document and false otherwise.
 // If the key is not found, it returns false.
 func (d *Document) isKeyDuplicate(targetKey string) bool {
-	var found bool
-
-	for _, key := range d.Keys() {
-		if key == targetKey {
-			if found {
-				return true
-			}
-
-			found = true
-		}
-	}
-
-	return false
+	return d.keys[targetKey] > 1
 }
 
 // moveIDToTheFirstIndex sets the _id field of the document at the first position.
@@ -458,17 +444,16 @@ func (d *Document) moveIDToTheFirstIndex() {
 		return
 	}
 
-	idIdx := 0
-
-	if d.fields[idIdx].key == "_id" {
-		return
-	}
-
-	for i, key := range d.Keys() {
-		if key == "_id" {
+	var idIdx int
+	for i, field := range d.fields {
+		if field.key == "_id" {
 			idIdx = i
 			break
 		}
+	}
+
+	if idIdx == 0 {
+		return
 	}
 
 	d.checkFrozen()
