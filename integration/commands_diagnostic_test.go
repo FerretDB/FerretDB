@@ -110,7 +110,7 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 			assert.NotEmpty(t, host)
 
 			assert.NotEmpty(t, gitVersion)
-			assert.Regexp(t, `^6\.0\.`, version)
+			assert.Regexp(t, `^7\.0\.`, version)
 
 			assert.NotEmpty(t, explainResult["queryPlanner"])
 			assert.IsType(t, bson.D{}, explainResult["queryPlanner"])

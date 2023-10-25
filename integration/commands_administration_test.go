@@ -630,7 +630,7 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 	doc := ConvertDocument(t, actual)
 
 	assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
-	assert.Regexp(t, `^6\.0\.`, must.NotFail(doc.Get("version")))
+	assert.Regexp(t, `^7\.0\.`, must.NotFail(doc.Get("version")))
 	assert.NotEmpty(t, must.NotFail(doc.Get("gitVersion")))
 
 	_, ok := must.NotFail(doc.Get("modules")).(*types.Array)
@@ -640,7 +640,7 @@ func TestCommandsAdministrationBuildInfo(t *testing.T) {
 
 	versionArray, ok := must.NotFail(doc.Get("versionArray")).(*types.Array)
 	assert.True(t, ok)
-	assert.Equal(t, int32(6), must.NotFail(versionArray.Get(0)))
+	assert.Equal(t, int32(7), must.NotFail(versionArray.Get(0)))
 	assert.Equal(t, int32(0), must.NotFail(versionArray.Get(1)))
 
 	assert.Equal(t, int32(strconv.IntSize), must.NotFail(doc.Get("bits")))
@@ -1138,7 +1138,7 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.NotEmpty(t, must.NotFail(freeMonitoring.(*types.Document).Get("state")))
 
 	assert.NotEmpty(t, must.NotFail(doc.Get("host")))
-	assert.Regexp(t, `^6\.0\.`, must.NotFail(doc.Get("version")))
+	assert.Regexp(t, `^7\.0\.`, must.NotFail(doc.Get("version")))
 	assert.NotEmpty(t, must.NotFail(doc.Get("process")))
 
 	assert.GreaterOrEqual(t, must.NotFail(doc.Get("pid")), int64(1))
