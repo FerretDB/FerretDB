@@ -16,13 +16,18 @@ package postgresql
 
 import (
 	"context"
+	"slices"
 	"sync"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
+	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
@@ -33,13 +38,11 @@ type queryIterator struct {
 
 	ctx   context.Context
 	rows  pgx.Rows // protected by m
-	s     scanner
 	token *resource.Token
 	m     sync.Mutex
 }
 
-// newQueryIterator returns a new queryIterator for the given Rows
-// by scanning one or more columns using scanner.
+// newQueryIterator returns a new queryIterator for the given Rows.
 //
 // Iterator's Close method closes rows.
 // They are also closed by the Next method on any error, including context cancellation,
@@ -48,11 +51,10 @@ type queryIterator struct {
 //
 // Nil rows are possible and return already done iterator.
 // It still should be Close'd.
-func newQueryIterator(ctx context.Context, rows pgx.Rows, s scanner) types.DocumentsIterator {
+func newQueryIterator(ctx context.Context, rows pgx.Rows) types.DocumentsIterator {
 	iter := &queryIterator{
 		ctx:   ctx,
 		rows:  rows,
-		s:     s,
 		token: resource.NewToken(),
 	}
 	resource.Track(iter, iter.token)
@@ -91,11 +93,47 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	doc, err := iter.s.Scan(iter.rows)
-	if err != nil {
-		iter.close()
-		return unused, nil, lazyerrors.Error(err)
+	columns := iter.rows.FieldDescriptions()
+	hasDefaultColumn := slices.ContainsFunc(columns, func(description pgconn.FieldDescription) bool {
+		return description.Name == metadata.DefaultColumn
+	})
+
+	hasRecordIDColumn := slices.ContainsFunc(columns, func(description pgconn.FieldDescription) bool {
+		return description.Name == metadata.RecordIDColumn
+	})
+
+	var recordID types.Timestamp
+	var b []byte
+
+	switch {
+	case hasRecordIDColumn && hasDefaultColumn:
+		if err := iter.rows.Scan(&recordID, &b); err != nil {
+			iter.close()
+			return unused, nil, lazyerrors.Error(err)
+		}
+	case hasRecordIDColumn:
+		if err := iter.rows.Scan(&recordID); err != nil {
+			iter.close()
+			return unused, nil, lazyerrors.Error(err)
+		}
+	default:
+		if err := iter.rows.Scan(&b); err != nil {
+			iter.close()
+			return unused, nil, lazyerrors.Error(err)
+		}
 	}
+
+	doc := must.NotFail(types.NewDocument())
+	var err error
+
+	if hasDefaultColumn {
+		if doc, err = sjson.Unmarshal(b); err != nil {
+			iter.close()
+			return unused, nil, lazyerrors.Error(err)
+		}
+	}
+
+	doc.SetRecordID(recordID)
 
 	return unused, doc, nil
 }

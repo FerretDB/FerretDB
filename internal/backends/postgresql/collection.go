@@ -63,7 +63,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	if p == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil, nil),
+			Iter: newQueryIterator(ctx, nil),
 		}, nil
 	}
 
@@ -74,7 +74,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	if meta == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil, nil),
+			Iter: newQueryIterator(ctx, nil),
 		}, nil
 	}
 
@@ -104,19 +104,8 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		return nil, lazyerrors.Error(err)
 	}
 
-	var s scanner
-
-	switch {
-	case capped && params.OnlyRecordIDs:
-		s = new(recordIDScanner)
-	case capped:
-		s = new(cappedScanner)
-	default:
-		s = new(queryScanner)
-	}
-
 	return &backends.QueryResult{
-		Iter: newQueryIterator(ctx, rows, s),
+		Iter: newQueryIterator(ctx, rows),
 	}, nil
 }
 
