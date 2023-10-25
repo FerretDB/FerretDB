@@ -67,22 +67,31 @@ func ConvertDocument(d document) (*Document, error) {
 
 	keys := d.Keys()
 	values := d.Values()
+	l := len(keys)
 
-	if len(keys) != len(values) {
-		panic(fmt.Sprintf("document must have the same number of keys and values (keys: %d, values: %d)", len(keys), len(values)))
+	if lv := len(values); l != lv {
+		panic(fmt.Sprintf("document must have the same number of keys and values (keys: %d, values: %d)", l, lv))
 	}
 
-	doc := MakeDocument(len(keys))
+	if l == 0 {
+		return new(Document), nil
+	}
+
+	docKeys := make(map[string]int, l)
+	docFields := make([]field, l)
 
 	for i, key := range keys {
-		doc.keys[key]++
-		doc.fields[i] = field{
+		docKeys[key]++
+		docFields[i] = field{
 			key:   key,
 			value: values[i],
 		}
 	}
 
-	return doc, nil
+	return &Document{
+		keys:   docKeys,
+		fields: docFields,
+	}, nil
 }
 
 // MakeDocument creates an empty document with set capacity.
@@ -104,7 +113,12 @@ func NewDocument(pairs ...any) (*Document, error) {
 		return nil, fmt.Errorf("types.NewDocument: invalid number of arguments: %d", l)
 	}
 
-	doc := MakeDocument(l / 2)
+	if l == 0 {
+		return new(Document), nil
+	}
+
+	docKeys := make(map[string]int, l/2)
+	docFields := make([]field, l/2)
 
 	for i := 0; i < l; i += 2 {
 		key, ok := pairs[i].(string)
@@ -115,11 +129,17 @@ func NewDocument(pairs ...any) (*Document, error) {
 		value := pairs[i+1]
 		assertType(value)
 
-		doc.keys[key]++
-		doc.fields = append(doc.fields, field{key: key, value: value})
+		docKeys[key]++
+		docFields[i/2] = field{
+			key:   key,
+			value: value,
+		}
 	}
 
-	return doc, nil
+	return &Document{
+		keys:   docKeys,
+		fields: docFields,
+	}, nil
 }
 
 func (*Document) compositeType() {}
@@ -320,7 +340,10 @@ func (d *Document) Set(key string, value any) {
 	}
 	d.keys[key]++
 
-	d.fields = append(d.fields, field{key: key, value: value})
+	d.fields = append(d.fields, field{
+		key:   key,
+		value: value,
+	})
 }
 
 // Remove the given key and return its value, or nil if the key does not exist.
@@ -458,7 +481,10 @@ func (d *Document) moveIDToTheFirstIndex() {
 
 	d.checkFrozen()
 
-	d.fields = slices.Insert(d.fields, 0, field{key: d.fields[idIdx].key, value: d.fields[idIdx].value})
+	d.fields = slices.Insert(d.fields, 0, field{
+		key:   d.fields[idIdx].key,
+		value: d.fields[idIdx].value,
+	})
 
 	d.fields = slices.Delete(d.fields, idIdx+1, idIdx+2)
 }
