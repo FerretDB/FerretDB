@@ -44,11 +44,7 @@ func TestAggregateCollStats(t *testing.T) {
 	cursor, err := collection.Aggregate(ctx, pipeline)
 	require.NoError(t, err)
 
-	var res []bson.D
-	err = cursor.All(ctx, &res)
-	require.NoError(t, cursor.Close(ctx))
-	require.NoError(t, err)
-
+	res := FetchAll(t, ctx, cursor)
 	require.Len(t, res, 1)
 	doc := ConvertDocument(t, res[0])
 
@@ -81,10 +77,7 @@ func TestAggregateCollStats(t *testing.T) {
 	cursor, err = cappedCollection.Aggregate(ctx, pipeline)
 	require.NoError(t, err)
 
-	err = cursor.All(ctx, &res)
-	require.NoError(t, cursor.Close(ctx))
-	require.NoError(t, err)
-
+	res = FetchAll(t, ctx, cursor)
 	require.Len(t, res, 1)
 	v, _ = ConvertDocument(t, res[0]).Get("storageStats")
 	require.NotNil(t, v)
