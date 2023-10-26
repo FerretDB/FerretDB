@@ -134,6 +134,53 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 	return setupAnyPostgres(ctx, logger.Named("postgres_secured"), "postgres://username:password@127.0.0.1:5433/ferretdb")
 }
 
+// TODO
+// setupAnyCockroachDB configures given CockroachDB.
+func setupAnyCockroachDB(ctx context.Context, logger *zap.SugaredLogger, uri string) error {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return err
+	}
+
+	port, err := strconv.ParseUint(u.Port(), 10, 16)
+	if err != nil {
+		return err
+	}
+
+	if err = waitForPort(ctx, logger, uint16(port)); err != nil {
+		return err
+	}
+
+	sp, err := state.NewProvider("")
+	if err != nil {
+		return err
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3452
+
+	var pgPool *pgdb.Pool
+
+	var retry int64
+	for ctx.Err() == nil {
+		if pgPool, err = pgdb.NewPool(ctx, uri, logger.Desugar(), sp); err == nil {
+			break
+		}
+
+		logger.Infof("%s: %s", uri, err)
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	defer pgPool.Close()
+
+	return nil
+}
+
 // setupMongodb configures `mongodb` container.
 func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 	if err := waitForPort(ctx, logger.Named("mongodb"), 47017); err != nil {
