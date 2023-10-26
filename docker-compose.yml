@@ -56,7 +56,7 @@ services:
       - 26257:26257
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    command: start-single-node --insecure
+    command: start-single-node
     environment:
       - COCKROACH_USER=username
       - COCKROACH_PASSWORD=password
