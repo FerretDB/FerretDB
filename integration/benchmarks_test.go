@@ -134,13 +134,19 @@ func BenchmarkInsertMany(b *testing.B) {
 	ctx, collection := setup.Setup(b)
 
 	for _, provider := range shareddata.AllBenchmarkProviders() {
+		total, err := iterator.ConsumeCount(provider.NewIterator())
+		require.NoError(b, err)
+
+		var batchSizes []int
 		for _, batchSize := range []int{1, 10, 100, 1000} {
+			if batchSize <= total {
+				batchSizes = append(batchSizes, batchSize)
+			}
+		}
+
+		for _, batchSize := range batchSizes {
 			b.Run(fmt.Sprintf("%s/Batch%d", provider.Name(), batchSize), func(b *testing.B) {
 				b.StopTimer()
-
-				total, err := iterator.ConsumeCount(provider.NewIterator())
-				require.NoError(b, err)
-				require.GreaterOrEqual(b, total, batchSize)
 
 				for i := 0; i < b.N; i++ {
 					require.NoError(b, collection.Drop(ctx))
