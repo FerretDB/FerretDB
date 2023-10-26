@@ -56,15 +56,14 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+//sumtype:decl
 type bsontype interface {
-	bsontype() // seal for go-sumtype
+	bsontype() // seal for sumtype
 
 	ReadFrom(*bufio.Reader) error
 	WriteTo(*bufio.Writer) error
 	encoding.BinaryMarshaler
 }
-
-//go-sumtype:decl bsontype
 
 // TODO https://github.com/FerretDB/FerretDB/issues/260
 func fromBSON(v bsontype) any {
@@ -99,7 +98,7 @@ func fromBSON(v bsontype) any {
 		panic("CString should not be there")
 	}
 
-	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
+	panic(fmt.Sprintf("not reached: %T", v)) // for sumtype to work
 }
 
 // TODO https://github.com/FerretDB/FerretDB/issues/260
@@ -135,5 +134,5 @@ func toBSON(v any) bsontype {
 		return pointer.To(int64Type(v))
 	}
 
-	panic(fmt.Sprintf("not reached: %T", v)) // for go-sumtype to work
+	panic(fmt.Sprintf("not reached: %T", v)) // for sumtype to work
 }
