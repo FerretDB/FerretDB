@@ -47,9 +47,10 @@ var (
 	targetTLSF        = flag.Bool("target-tls", false, "in-process FerretDB: use TLS")
 	targetUnixSocketF = flag.Bool("target-unix-socket", false, "in-process FerretDB: use Unix socket")
 
-	postgreSQLURLF = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'postgresql' handler.")
-	sqliteURLF     = flag.String("sqlite-url", "", "in-process FerretDB: SQLite URI for 'sqlite' handler.")
-	hanaURLF       = flag.String("hana-url", "", "in-process FerretDB: Hana URL for 'hana' handler.")
+	postgreSQLURLF  = flag.String("postgresql-url", "", "in-process FerretDB: PostgreSQL URL for 'postgresql' handler.")
+	sqliteURLF      = flag.String("sqlite-url", "", "in-process FerretDB: SQLite URI for 'sqlite' handler.")
+	hanaURLF        = flag.String("hana-url", "", "in-process FerretDB: Hana URL for 'hana' handler.")
+	cockroachdbURLF = flag.String("cockroachdb-url", "", "in-process FerretDB: Cockroachdb URL for 'postgresql' handler.")
 
 	compatURLF = flag.String("compat-url", "", "compat system's (MongoDB) URL for compatibility tests; if empty, they are skipped")
 
@@ -67,7 +68,7 @@ var (
 
 // Other globals.
 var (
-	allBackends = []string{"ferretdb-postgresql", "ferretdb-sqlite", "ferretdb-hana", "mongodb"}
+	allBackends = []string{"ferretdb-postgresql", "ferretdb-sqlite", "ferretdb-hana", "ferretdb-cockroachdb", "mongodb"}
 
 	CertsRoot = filepath.Join("..", "build", "certs") // relative to `integration` directory
 )
