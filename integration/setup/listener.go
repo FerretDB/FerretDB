@@ -146,6 +146,11 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		panic("not reached")
 	}
 
+	// cockroachdb uses the postgreSQL backend for now
+	if cockroachdbURLF != nil {
+		postgreSQLURLF = cockroachdbURLF
+	}
+
 	// use per-test PostgreSQL database to prevent handler's/backend's metadata registry
 	// read schemas owned by concurrent tests
 	postgreSQLURLF := *postgreSQLURLF
