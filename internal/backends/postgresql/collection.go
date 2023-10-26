@@ -146,7 +146,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 			var args []any
 			if meta.Capped() {
 				q = fmt.Sprintf(
-					`INSERT INTO %s (%s,%s) VALUES ($1,$2)`,
+					`INSERT INTO %s (%s, %s) VALUES ($1, $2)`,
 					pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
 					metadata.RecordIDColumn,
 					metadata.DefaultColumn,

@@ -57,9 +57,9 @@ func TestCappedCollectionInsertAllQueryExplain(t *testing.T) {
 	require.NoError(t, err)
 
 	insertDocs := []*types.Document{
-		must.NotFail(types.NewDocument("_id", int32(2))),
-		must.NotFail(types.NewDocument("_id", int32(3))),
-		must.NotFail(types.NewDocument("_id", int32(1))),
+		must.NotFail(types.NewDocument("_id", types.ObjectID{2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})),
+		must.NotFail(types.NewDocument("_id", types.ObjectID{3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})),
+		must.NotFail(types.NewDocument("_id", types.ObjectID{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})),
 	}
 
 	_, err = cappedColl.InsertAll(ctx, &backends.InsertAllParams{Docs: insertDocs})
@@ -74,13 +74,10 @@ func TestCappedCollectionInsertAllQueryExplain(t *testing.T) {
 
 		docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
 		require.NoError(t, err)
-		require.Len(t, docs, len(insertDocs))
-
-		// inserted doc is frozen, queried doc is not frozen hence compare each value
+		testutil.AssertEqualSlices(t, insertDocs, docs)
 		for i, doc := range docs {
 			assert.Equal(t, insertDocs[i].RecordID(), doc.RecordID())
-			assert.Equal(t, insertDocs[i].Keys(), doc.Keys())
-			assert.Equal(t, insertDocs[i].Values(), doc.Values())
+			assert.NotZero(t, doc.RecordID())
 		}
 
 		explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &sort})

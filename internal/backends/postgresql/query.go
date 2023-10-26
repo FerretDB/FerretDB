@@ -31,26 +31,26 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// prepareSelectClause returns SELECT clause for default column of provided db and table name.
+// prepareSelectClause returns SELECT clause for default column of provided schema and table name.
 //
 // For capped collection with onlyRecordIDs, it returns select clause for recordID column.
 //
 // For capped collection, it returns select clause for recordID column and default column.
-func prepareSelectClause(db, table string, capped, onlyRecordIDs bool) string {
+func prepareSelectClause(schema, table string, capped, onlyRecordIDs bool) string {
 	if capped && onlyRecordIDs {
 		return fmt.Sprintf(
 			`SELECT %s FROM %s`,
 			metadata.RecordIDColumn,
-			pgx.Identifier{db, table}.Sanitize(),
+			pgx.Identifier{schema, table}.Sanitize(),
 		)
 	}
 
 	if capped {
 		return fmt.Sprintf(
-			`SELECT %s,%s FROM %s`,
+			`SELECT %s, %s FROM %s`,
 			metadata.RecordIDColumn,
 			metadata.DefaultColumn,
-			pgx.Identifier{db, table}.Sanitize(),
+			pgx.Identifier{schema, table}.Sanitize(),
 		)
 	}
 
@@ -58,7 +58,7 @@ func prepareSelectClause(db, table string, capped, onlyRecordIDs bool) string {
 	return fmt.Sprintf(
 		`SELECT %s FROM %s`,
 		metadata.DefaultColumn,
-		pgx.Identifier{db, table}.Sanitize(),
+		pgx.Identifier{schema, table}.Sanitize(),
 	)
 }
 

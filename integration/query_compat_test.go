@@ -283,7 +283,7 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 
 			doc := ConvertDocument(t, explainRes)
 			sortPushdown, _ := doc.Get("sortingPushdown")
-			assert.Equal(t, tc.sortPushdown.SortPushdownExpected(t), sortPushdown)
+			assert.Equal(t, tc.sortPushdown.SortPushdownExpected(t, true), sortPushdown)
 
 			findOpts := options.Find()
 			if tc.sort != nil {

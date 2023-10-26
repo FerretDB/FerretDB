@@ -31,7 +31,7 @@ func prepareSelectClause(table string, capped, onlyRecordIDs bool) string {
 	}
 
 	if capped {
-		return fmt.Sprintf(`SELECT %s,%s FROM %q`, metadata.RecordIDColumn, metadata.DefaultColumn, table)
+		return fmt.Sprintf(`SELECT %s, %s FROM %q`, metadata.RecordIDColumn, metadata.DefaultColumn, table)
 	}
 
 	return fmt.Sprintf(`SELECT %s FROM %q`, metadata.DefaultColumn, table)

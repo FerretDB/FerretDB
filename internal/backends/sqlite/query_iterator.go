@@ -106,11 +106,11 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 
 	switch {
 	case slices.Equal(columns, []string{metadata.RecordIDColumn, metadata.DefaultColumn}):
-		dest = append(dest, &recordID, &b)
+		dest = []any{&recordID, &b}
 	case slices.Equal(columns, []string{metadata.RecordIDColumn}):
-		dest = append(dest, &recordID)
+		dest = []any{&recordID}
 	case slices.Equal(columns, []string{metadata.DefaultColumn}):
-		dest = append(dest, &b)
+		dest = []any{&b}
 	default:
 		panic(fmt.Sprintf("cannot scan unknown columns: %v", columns))
 	}

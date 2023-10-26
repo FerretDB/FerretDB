@@ -125,7 +125,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 			var args []any
 			if meta.Capped() {
 				q = fmt.Sprintf(
-					`INSERT INTO %q (%s,%s) VALUES (?,?)`,
+					`INSERT INTO %q (%s, %s) VALUES (?, ?)`,
 					meta.TableName,
 					metadata.RecordIDColumn,
 					metadata.DefaultColumn,
