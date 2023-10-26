@@ -24,7 +24,7 @@ On the market, we can find managed service providers (MSPs) with different offer
 
 By building a technology stack around open-source software, MSPs can offer developers precisely what they are looking for and be up to date with the latest trends.
 
-We enjoyed talking with Mike Biondi from Vultr about why they decided to build a MongoDB-compatible service using [FerretD](https://www.ferretdb.com).
+We enjoyed talking with Mike Biondi from Vultr about why they decided to build a MongoDB-compatible service using [FerretDB](https://www.ferretdb.com).
 
 ## What is Vultr?
 
