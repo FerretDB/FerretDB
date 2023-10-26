@@ -91,6 +91,10 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		return err
 	}
 
+	if u.User == nil {
+		return lazyerrors.New("No username specified")
+	}
+
 	if err = waitForPort(ctx, logger, uint16(port)); err != nil {
 		return err
 	}
@@ -105,25 +109,15 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 	var retry int64
 	for ctx.Err() == nil {
 		var p *pool.Pool
-		if p, err = pool.New(uri, logger.Desugar(), sp); err == nil {
-			break
-		}
-
-		u, err := url.Parse(uri)
-		if err != nil {
+		if p, err = pool.New(uri, logger.Desugar(), sp); err != nil {
 			return err
-		}
-
-		if u.User == nil {
-			return lazyerrors.New("No username specified")
 		}
 
 		username := u.User.Username()
 		password, _ := u.User.Password()
 
-		pgPool, err = p.Get(username, password)
-		if err != nil {
-			return err
+		if pgPool, err = p.Get(username, password); err == nil {
+			break
 		}
 
 		logger.Infof("%s: %s", uri, err)
