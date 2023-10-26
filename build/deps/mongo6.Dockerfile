@@ -1,4 +1,4 @@
-FROM mongo:6.0.9
+FROM mongo:7.0.2
 
 # If you encounter an "unknown instruction" error there,
 # please update Docker to the latest version.
