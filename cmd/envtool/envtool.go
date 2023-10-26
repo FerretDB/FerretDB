@@ -41,6 +41,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
@@ -108,7 +109,19 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 			break
 		}
 
-		pgPool, err = p.Get("username", "password")
+		u, err := url.Parse(uri)
+		if err != nil {
+			return err
+		}
+
+		if u.User == nil {
+			return lazyerrors.New("No username specified")
+		}
+
+		username := u.User.Username()
+		password, _ := u.User.Password()
+
+		pgPool, err = p.Get(username, password)
 		if err != nil {
 			return err
 		}
