@@ -114,19 +114,29 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		require.NotEmpty(tb, *postgreSQLURLF, "-postgresql-url must be set for %q", *targetBackendF)
 		require.Empty(tb, *sqliteURLF, "-sqlite-url must be empty for %q", *targetBackendF)
 		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
+		require.Empty(tb, *cockroachdbURLF, "-cockroachdb-url must be empty for %q", *targetBackendF)
 		handler = "postgresql"
 
 	case "ferretdb-sqlite":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
 		require.NotEmpty(tb, *sqliteURLF, "-sqlite-url must be set for %q", *targetBackendF)
 		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
+		require.Empty(tb, *cockroachdbURLF, "-cockroachdb-url must be empty for %q", *targetBackendF)
 		handler = "sqlite"
 
 	case "ferretdb-hana":
 		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
 		require.Empty(tb, *sqliteURLF, "-sqlite-url must be empty for %q", *targetBackendF)
 		require.NotEmpty(tb, *hanaURLF, "-hana-url must be set for %q", *targetBackendF)
+		require.Empty(tb, *cockroachdbURLF, "-cockroachdb-url must be empty for %q", *targetBackendF)
 		handler = "hana"
+
+	case "ferretdb-cockroachdb":
+		require.Empty(tb, *postgreSQLURLF, "-postgresql-url must be empty for %q", *targetBackendF)
+		require.Empty(tb, *sqliteURLF, "-sqlite-url must be empty for %q", *targetBackendF)
+		require.Empty(tb, *hanaURLF, "-hana-url must be empty for %q", *targetBackendF)
+		require.NotEmpty(tb, *cockroachdbURLF, "-cockroachdb-url must be set for %q", *targetBackendF)
+		handler = "postgresql"
 
 	case "mongodb":
 		tb.Fatal("can't start in-process MongoDB")
