@@ -33,6 +33,7 @@ import (
 	"time"
 
 	"github.com/alecthomas/kong"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 
@@ -98,12 +99,18 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		return err
 	}
 
-	var pgPool *pool.Pool
+	var pgPool *pgxpool.Pool
 
 	var retry int64
 	for ctx.Err() == nil {
-		if pgPool, err = pool.New(uri, logger.Desugar(), sp); err == nil {
+		var p *pool.Pool
+		if p, err = pool.New(uri, logger.Desugar(), sp); err == nil {
 			break
+		}
+
+		pgPool, err = p.Get("username", "password")
+		if err != nil {
+			return err
 		}
 
 		logger.Infof("%s: %s", uri, err)
