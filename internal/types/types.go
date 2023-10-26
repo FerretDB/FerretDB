@@ -54,6 +54,7 @@ package types
 
 import (
 	"fmt"
+	"maps"
 	"time"
 )
 
@@ -137,6 +138,7 @@ func deepCopy(value any) any {
 
 		return &Document{
 			fields:   fields,
+			keys:     maps.Clone(value.keys),
 			recordID: value.recordID,
 		}
 
