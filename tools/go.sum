@@ -4,8 +4,6 @@ github.com/AlekSi/nfpm/v2 v2.33.2-0.20231013044354-8ee96782f9c2 h1:Zfuzws6NhMp8k
 github.com/AlekSi/nfpm/v2 v2.33.2-0.20231013044354-8ee96782f9c2/go.mod h1:I8uMqxOcHU7jfFbB8fUGMEVQRQ9Kvhhi6vCKSZ0uwD8=
 github.com/AlekSi/pointer v1.2.0 h1:glcy/gc4h8HnG2Z3ZECSzZ1IX1x2JxRVuDzaJwQE0+w=
 github.com/AlekSi/pointer v1.2.0/go.mod h1:gZGfd3dpW4vEc/UlyfKKi1roIqcCgwOIvb0tSNSBle0=
-github.com/BurntSushi/go-sumtype v0.0.0-20221020234012-480526a59796 h1:LkyKOzdmNBpJs/9iWbF7Dx4q0Ue0wESKUVLaUgcbpg8=
-github.com/BurntSushi/go-sumtype v0.0.0-20221020234012-480526a59796/go.mod h1:V4gPjiBeLsr++PoZh39o+6fZ++EbypxSUmMplhmBNRY=
 github.com/DataDog/zstd v1.4.5 h1:EndNeuB0l9syBZhut0wns3gV1hL8zX8LIu6ZiVHWLIQ=
 github.com/DataDog/zstd v1.4.5/go.mod h1:1jcaCB/ufaK+sKp1NBhlGmpz41jOoPQ35bpF36t7BBo=
 github.com/FerretDB/gh v0.1.0 h1:VM65yqCX/KqYJSoUFhfWtVqzw0qEq0XmXpClISLzYlQ=
