@@ -111,22 +111,22 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	batchSize := 100
-	batch := make([]interface{}, 0)
 
 	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
-		for idx, doc := range params.Docs {
-			b, err := sjson.Marshal(doc)
+		// TODO https://github.com/FerretDB/FerretDB/issues/3490
+
+		var j int
+		for i := 0; i < len(params.Docs); i += batchSize {
+			if j += batchSize; j > len(params.Docs) {
+				j = len(params.Docs)
+			}
+
+			q, args, err := prepareInsertStatement(meta.TableName, meta.Settings.CappedSize > 0, params.Docs[i:j])
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
-			batch = append(batch, string(b))
-			if idx < len(params.Docs)-1 && len(batch) < batchSize {
-				continue
-			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3490
-			q := generateBatchInsertQuery(meta.TableName, metadata.DefaultColumn, len(batch))
-			if _, err = tx.ExecContext(ctx, q, batch...); err != nil {
+			if _, err = tx.ExecContext(ctx, q, args...); err != nil {
 				var se *sqlite3.Error
 				if errors.As(err, &se) && se.Code() == sqlite3lib.SQLITE_CONSTRAINT_UNIQUE {
 					return backends.NewError(backends.ErrorCodeInsertDuplicateID, err)
@@ -134,7 +134,6 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 				return lazyerrors.Error(err)
 			}
-			batch = nil
 		}
 
 		return nil
@@ -513,16 +512,6 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 	}
 
 	return new(backends.DropIndexesResult), nil
-}
-
-func generateBatchInsertQuery(tableName, column string, batchSize int) string {
-	var valuePlaceHolders string
-	for i := 0; i < batchSize; i++ {
-		valuePlaceHolders += "(?), "
-	}
-	valuePlaceHolders = strings.TrimRight(valuePlaceHolders, ", ")
-
-	return fmt.Sprintf("INSERT INTO %q (%s) VALUES %s", tableName, column, valuePlaceHolders)
 }
 
 // check interfaces

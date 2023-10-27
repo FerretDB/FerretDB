@@ -15,9 +15,11 @@
 package sqlite
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -86,95 +88,129 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	defer docsIter.Close()
 
 	var inserted int32
-
-	writeErrors := types.MakeArray(0)
-
+	var done bool
 	batchSize := 100
-	docIdxMap := make(map[*types.Document]int32)
-	docs := []*types.Document{}
+	var writeErrors []*writeError
 
 	for {
-		i, d, err := docsIter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
+		if done {
 			break
 		}
 
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		var docs []*types.Document
+		var docsIndexes []int32
 
-		doc := d.(*types.Document)
+		for j := 0; j < batchSize; j++ {
+			var i int
+			var d any
 
-		if !doc.Has("_id") {
-			doc.Set("_id", types.NewObjectID())
-		}
-
-		// TODO https://github.com/FerretDB/FerretDB/issues/3454
-		if err = doc.ValidateData(); err != nil {
-			var ve *types.ValidationError
-
-			if !errors.As(err, &ve) {
-				return nil, lazyerrors.Error(err)
-			}
-
-			var code commonerrors.ErrorCode
-
-			switch ve.Code() {
-			case types.ErrValidation, types.ErrIDNotFound:
-				code = commonerrors.ErrBadValue
-			case types.ErrWrongIDType:
-				code = commonerrors.ErrInvalidID
-			default:
-				panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
-			}
-
-			we := &writeError{
-				index:  int32(i),
-				code:   code,
-				errmsg: ve.Error(),
-			}
-			writeErrors.Append(we.Document())
-
-			if params.Ordered {
+			i, d, err = docsIter.Next()
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				done = true
 				break
 			}
 
-			continue
-		}
-		docIdxMap[doc] = int32(i)
-		docs = append(docs, doc)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
 
-		if i < params.Docs.Len()-1 && len(docs) < batchSize {
-			continue
+			doc := d.(*types.Document)
+
+			if !doc.Has("_id") {
+				doc.Set("_id", types.NewObjectID())
+			}
+
+			// TODO https://github.com/FerretDB/FerretDB/issues/3454
+			if err = doc.ValidateData(); err != nil {
+				var ve *types.ValidationError
+
+				if !errors.As(err, &ve) {
+					return nil, lazyerrors.Error(err)
+				}
+
+				var code commonerrors.ErrorCode
+
+				switch ve.Code() {
+				case types.ErrValidation, types.ErrIDNotFound:
+					code = commonerrors.ErrBadValue
+				case types.ErrWrongIDType:
+					code = commonerrors.ErrInvalidID
+				default:
+					panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
+				}
+
+				writeErrors = append(writeErrors, &writeError{
+					index:  int32(i),
+					code:   code,
+					errmsg: ve.Error(),
+				})
+
+				if params.Ordered {
+					break
+				}
+			} else {
+				docs = append(docs, doc)
+				docsIndexes = append(docsIndexes, int32(i))
+			}
 		}
 
 		_, err = c.InsertAll(ctx, &backends.InsertAllParams{
 			Docs: docs,
 		})
-		if err != nil {
-			cnt, insertErr := insertOneByOneFailFastOrdered(c, ctx, docIdxMap, params, writeErrors)
-			inserted += int32(cnt)
 
-			if insertErr != nil {
-				if !backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
-					return nil, lazyerrors.Error(err)
-				}
+		if err == nil {
+			inserted += int32(len(docs))
 
+			if params.Ordered && len(writeErrors) > 0 {
 				break
 			}
-		} else {
-			inserted += int32(len(docs))
+
+			continue
 		}
-		docs = nil
-		docIdxMap = make(map[*types.Document]int32)
+
+		// insert doc one by one upon failing on batch insertion
+		for j, doc := range docs {
+			_, err = c.InsertAll(ctx, &backends.InsertAllParams{
+				Docs: []*types.Document{doc},
+			})
+
+			if err != nil {
+				if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
+					writeErrors = append(writeErrors, &writeError{
+						index:  docsIndexes[j],
+						code:   commonerrors.ErrDuplicateKeyInsert,
+						errmsg: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
+					})
+
+					if params.Ordered {
+						break
+					}
+
+					continue
+				}
+
+				return nil, lazyerrors.Error(err)
+			}
+
+			inserted++
+		}
 	}
 
 	res := must.NotFail(types.NewDocument(
 		"n", inserted,
 	))
 
-	if writeErrors.Len() > 0 {
-		res.Set("writeErrors", writeErrors)
+	if len(writeErrors) > 0 {
+		slices.SortFunc(writeErrors, func(a, b *writeError) int {
+			return cmp.Compare(a.index, b.index)
+		})
+
+		array := types.MakeArray(len(writeErrors))
+		for _, we := range writeErrors {
+			array.Append(we.Document())
+		}
+
+		res.Set("writeErrors", array)
 	}
 
 	res.Set("ok", float64(1))
@@ -185,40 +221,4 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}))
 
 	return &reply, nil
-}
-
-func insertOneByOneFailFastOrdered(coll backends.Collection,
-	ctx context.Context,
-	docIdxMap map[*types.Document]int32,
-	params *common.InsertParams,
-	writeErrors *types.Array,
-) (int, error) {
-	insertedDocCnt := 0
-
-	for doc, idx := range docIdxMap {
-		_, err := coll.InsertAll(ctx, &backends.InsertAllParams{
-			Docs: []*types.Document{doc},
-		})
-		if err != nil {
-			if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
-				we := &writeError{
-					index:  int32(idx),
-					code:   commonerrors.ErrDuplicateKeyInsert,
-					errmsg: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
-				}
-				writeErrors.Append(we.Document())
-
-				if params.Ordered {
-					return insertedDocCnt, err
-				}
-
-				continue
-			}
-
-			return insertedDocCnt, err
-		}
-		insertedDocCnt++
-	}
-
-	return insertedDocCnt, nil
 }

@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"sort"
 	"strings"
 
@@ -138,25 +137,25 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	}
 
 	batchSize := 100
-	batch := make([]interface{}, 0)
 
 	err = pool.InTransaction(ctx, p, func(tx pgx.Tx) error {
-		for idx, doc := range params.Docs {
-			var b []byte
-			b, err = sjson.Marshal(doc)
+		// TODO https://github.com/FerretDB/FerretDB/issues/3490
+
+		var j int
+		for i := 0; i < len(params.Docs); i += batchSize {
+			if j += batchSize; j > len(params.Docs) {
+				j = len(params.Docs)
+			}
+
+			var q string
+			var args []any
+
+			q, args, err = prepareInsertStatement(c.dbName, meta.TableName, meta.CappedSize > 0, params.Docs[i:j])
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
-			batch = append(batch, string(b))
-			if idx < len(params.Docs)-1 && len(batch) < batchSize {
-				continue
-			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3490
-
-			q := generateBatchInsertQuery(pgx.Identifier{c.dbName, meta.TableName}.Sanitize(), metadata.DefaultColumn, len(batch))
-
-			if _, err = tx.Exec(ctx, q, batch...); err != nil {
+			if _, err = tx.Exec(ctx, q, args...); err != nil {
 				var pgErr *pgconn.PgError
 				if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 					return backends.NewError(backends.ErrorCodeInsertDuplicateID, err)
@@ -164,9 +163,7 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 				return lazyerrors.Error(err)
 			}
-			batch = nil
 		}
-
 		return nil
 	})
 
@@ -575,16 +572,6 @@ func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndex
 	}
 
 	return new(backends.DropIndexesResult), nil
-}
-
-func generateBatchInsertQuery(identifier, column string, batchSize int) string {
-	var valuePlaceHolders string
-	for i := 1; i <= batchSize; i++ {
-		valuePlaceHolders += "($" + strconv.Itoa(i) + "), "
-	}
-	valuePlaceHolders = strings.TrimRight(valuePlaceHolders, ", ")
-
-	return fmt.Sprintf(`INSERT INTO %s (%s) VALUES %s`, identifier, column, valuePlaceHolders)
 }
 
 // check interfaces
