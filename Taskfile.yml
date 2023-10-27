@@ -9,7 +9,7 @@ vars:
   SHARD_INDEX: 1
   SHARD_TOTAL: 1
   DISABLE_FILTER_PUSHDOWN: false
-  ENABLE_SORT_PUSHDOWN: false
+  ENABLE_UNSAFE_SORT_PUSHDOWN: false
   TEST_RUN: ""
   TEST_TIMEOUT: 35m
   BENCH_TIME: 5s
@@ -218,7 +218,7 @@ tasks:
         -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
         -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
-        -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
+        -enable-sort-pushdown={{.ENABLE_UNSAFE_SORT_PUSHDOWN}}
 
   test-integration-sqlite:
     desc: "Run integration tests for `sqlite` backend"
@@ -244,7 +244,7 @@ tasks:
         -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
         -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
-        -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
+        -enable-sort-pushdown={{.ENABLE_UNSAFE_SORT_PUSHDOWN}}
 
   test-integration-hana:
     desc: "Run integration tests for `hana` handler"
@@ -271,14 +271,14 @@ tasks:
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
         -use-new-hana
         -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
-        -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
+        -enable-sort-pushdown={{.ENABLE_UNSAFE_SORT_PUSHDOWN}}
 
   test-integration-cockroachdb:
     desc: "Run integration tests for CockroachDB"
     deps: [gen-version]
     dir: integration
     cmds:
-      - > 
+      - >
         ../bin/envtool{{exeExt}} tests run
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
@@ -297,8 +297,7 @@ tasks:
         -cockroachdb-url='postgres://username@127.0.0.1:26257/ferretdb?search_path='
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
         -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
-        -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
-
+        -enable-sort-pushdown={{.ENABLE_UNSAFE_SORT_PUSHDOWN}}
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
