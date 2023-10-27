@@ -54,6 +54,7 @@ package types
 
 import (
 	"fmt"
+	"maps"
 	"time"
 )
 
@@ -79,16 +80,16 @@ type Type interface {
 }
 
 // CompositeTypeInterface consists of Document and Array.
+//
+//sumtype:decl
 type CompositeTypeInterface interface {
+	compositeType() // seal for sumtype
+
 	CompositeType
 
 	GetByPath(path Path) (any, error)
 	RemoveByPath(path Path)
-
-	compositeType() // seal for go-sumtype
 }
-
-//go-sumtype:decl CompositeTypeInterface
 
 // assertType panics if value is not a BSON type (scalar or composite).
 //
@@ -137,6 +138,7 @@ func deepCopy(value any) any {
 
 		return &Document{
 			fields:   fields,
+			keys:     maps.Clone(value.keys),
 			recordID: value.recordID,
 		}
 
