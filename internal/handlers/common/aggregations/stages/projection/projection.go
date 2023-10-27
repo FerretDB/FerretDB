@@ -116,7 +116,8 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 		if slices.Contains(strings.Split(prefixTrimmed, "."), "$") {
 			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrWrongPositionalOperatorLocation,
-				"Invalid $project :: caused by :: Positional projection may only be used at the end, "+
+				"Invalid $project :: caused by :: "+
+					"Positional projection may only be used at the end, "+
 					"for example: a.b.$. If the query previously used a form "+
 					"like a.b.$.d, remove the parts following the '$' and "+
 					"the results will be equivalent.",
