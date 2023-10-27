@@ -21,7 +21,7 @@ import (
 )
 
 // resultPushdown stores the information about expected pushdown results for a single or multiple backends.
-// For example if both pg and SQlite backends are expected to pushdown, the `pgPushdown | sqlitePushdown` operation
+// For example if both PostgreSQL and SQLite backends are expected to pushdown, the `pgPushdown | sqlitePushdown` operation
 // can be used.
 type resultPushdown uint8
 

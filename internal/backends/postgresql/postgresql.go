@@ -31,6 +31,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
+// Vendor represents a variant of PostgreSQL or PostgreSQL-compatible database that uses this backend.
+type Vendor int
+
+const (
+	_ Vendor = iota
+	PostgreSQL
+	CockroachDB
+)
+
 // stats represents information about statistics of tables and indexes.
 type stats struct {
 	countDocuments  int64

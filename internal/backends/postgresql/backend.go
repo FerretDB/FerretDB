@@ -28,27 +28,36 @@ import (
 
 // backend implements backends.Backend interface.
 type backend struct {
-	r *metadata.Registry
+	r      *metadata.Registry
+	vendor Vendor
+	_      struct{} // prevent unkeyed literals
 }
 
 // NewBackendParams represents the parameters of NewBackend function.
 //
 //nolint:vet // for readability
 type NewBackendParams struct {
-	URI string
-	L   *zap.Logger
-	P   *state.Provider
+	URI    string
+	Vendor Vendor
+	L      *zap.Logger
+	P      *state.Provider
+	_      struct{} // prevent unkeyed literals
 }
 
 // NewBackend creates a new backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
+	if params.Vendor == 0 {
+		panic("unset vendor")
+	}
+
 	r, err := metadata.NewRegistry(params.URI, params.L, params.P)
 	if err != nil {
 		return nil, err
 	}
 
 	return backends.BackendContract(&backend{
-		r: r,
+		r:      r,
+		vendor: params.Vendor,
 	}), nil
 }
 
@@ -77,7 +86,7 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 
 		res.CountCollections += int64(len(cs))
 
-		colls, err := newDatabase(b.r, dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
+		colls, err := newDatabase(b.r, b.vendor, dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -113,7 +122,7 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 
 // Database implements backends.Backend interface.
 func (b *backend) Database(name string) (backends.Database, error) {
-	return newDatabase(b.r, name), nil
+	return newDatabase(b.r, b.vendor, name), nil
 }
 
 // ListDatabases implements backends.Backend interface.

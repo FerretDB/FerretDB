@@ -37,14 +37,17 @@ import (
 // collection implements backends.Collection interface.
 type collection struct {
 	r      *metadata.Registry
+	vendor Vendor
 	dbName string
 	name   string
+	_      struct{} // prevent unkeyed literals
 }
 
 // newCollection creates a new Collection.
-func newCollection(r *metadata.Registry, dbName, name string) backends.Collection {
+func newCollection(r *metadata.Registry, vendor Vendor, dbName, name string) backends.Collection {
 	return backends.CollectionContract(&collection{
 		r:      r,
+		vendor: vendor,
 		dbName: dbName,
 		name:   name,
 	})
@@ -307,7 +310,13 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	res := new(backends.ExplainResult)
 
-	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName)
+	q := `EXPLAIN (VERBOSE true, FORMAT JSON) `
+	if c.vendor == CockroachDB {
+		// TODO https://github.com/FerretDB/FerretDB/issues/3660
+		q = `EXPLAIN (VERBOSE) `
+	}
+
+	q += prepareSelectClause(c.dbName, meta.TableName)
 
 	var placeholder metadata.Placeholder
 
@@ -348,7 +357,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return nil, lazyerrors.Error(err)
 	}
 
-	queryPlan, err := unmarshalExplain(b)
+	queryPlan, err := unmarshalExplain(b, c.vendor)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

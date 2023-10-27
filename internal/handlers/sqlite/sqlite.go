@@ -66,9 +66,10 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	switch opts.Backend {
 	case "postgresql":
 		b, err = postgresql.NewBackend(&postgresql.NewBackendParams{
-			URI: opts.URI,
-			L:   opts.L,
-			P:   opts.StateProvider,
+			URI:    opts.URI,
+			Vendor: postgresql.PostgreSQL,
+			L:      opts.L,
+			P:      opts.StateProvider,
 		})
 	case "sqlite":
 		b, err = sqlite.NewBackend(&sqlite.NewBackendParams{

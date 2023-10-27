@@ -25,9 +25,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// unmarshalExplain unmarshalls the plan from EXPLAIN postgreSQL command.
-// EXPLAIN result is not sjson, so it cannot be unmarshalled by sjson.Unmarshal.
-func unmarshalExplain(b []byte) (*types.Document, error) {
+// unmarshalExplain unmarshals the plan from EXPLAIN result.
+func unmarshalExplain(b []byte, vendor Vendor) (*types.Document, error) {
+	if vendor == CockroachDB {
+		// TODO https://github.com/FerretDB/FerretDB/issues/3660
+		return types.NewDocument("explain", string(b))
+	}
+
 	var plans []map[string]any
 	if err := json.Unmarshal(b, &plans); err != nil {
 		return nil, lazyerrors.Error(err)

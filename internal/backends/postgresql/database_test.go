@@ -39,12 +39,13 @@ func TestDatabaseStats(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	params := NewBackendParams{
-		URI: "postgres://username:password@127.0.0.1:5432/ferretdb",
-		L:   testutil.Logger(t),
-		P:   sp,
+	params := &NewBackendParams{
+		URI:    "postgres://username:password@127.0.0.1:5432/ferretdb",
+		Vendor: PostgreSQL,
+		L:      testutil.Logger(t),
+		P:      sp,
 	}
-	b, err := NewBackend(&params)
+	b, err := NewBackend(params)
 	require.NoError(t, err)
 	t.Cleanup(b.Close)
 

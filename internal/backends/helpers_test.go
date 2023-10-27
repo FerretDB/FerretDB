@@ -53,9 +53,10 @@ func testBackends(t *testing.T) map[string]*testBackend {
 		require.NoError(t, err)
 
 		b, err := postgresql.NewBackend(&postgresql.NewBackendParams{
-			URI: "postgres://username:password@127.0.0.1:5432/ferretdb",
-			L:   l.Named("postgresql"),
-			P:   sp,
+			URI:    "postgres://username:password@127.0.0.1:5432/ferretdb",
+			Vendor: postgresql.PostgreSQL,
+			L:      l.Named("postgresql"),
+			P:      sp,
 		})
 		require.NoError(t, err)
 		t.Cleanup(b.Close)
