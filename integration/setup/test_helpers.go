@@ -35,13 +35,6 @@ func IsSQLite(tb testtb.TB) bool {
 	return *targetBackendF == "ferretdb-sqlite"
 }
 
-// IsCockroachDB returns true if the current test is running for CockroachDB backend.
-//
-// This function should not be used lightly.
-func IsCockroachDB(tb testtb.TB) bool {
-	return *targetBackendF == "ferretdb-cockroachdb"
-}
-
 // IsMongoDB returns true if the current test is running for MongoDB.
 //
 // This function should not be used lightly.

@@ -27,9 +27,8 @@ type resultPushdown uint8
 
 const (
 	// List of supported backends.
-	pgPushdown          resultPushdown = 1 << iota // 0000 0001
-	sqlitePushdown                                 // 0000 0010
-	cockroachdbPushdown                            // 0000 0100
+	pgPushdown     resultPushdown = 1 << iota // 0000 0001
+	sqlitePushdown                            // 0000 0010
 
 	// No pushdown expected.
 	noPushdown resultPushdown = 0 // 0000 0000
@@ -56,8 +55,6 @@ func (res resultPushdown) PushdownExpected(t testtb.TB) bool {
 		return res&pgPushdown == pgPushdown
 	case setup.IsSQLite(t):
 		return res&sqlitePushdown == sqlitePushdown
-	case setup.IsCockroachDB(t):
-		return res&cockroachdbPushdown == cockroachdbPushdown
 	case setup.IsMongoDB(t):
 		return false
 	default:
