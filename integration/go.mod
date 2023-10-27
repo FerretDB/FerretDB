@@ -22,7 +22,7 @@ require (
 )
 
 require (
-	github.com/SAP/go-hdb v1.5.7 // indirect
+	github.com/SAP/go-hdb v1.5.8 // indirect
 	github.com/arl/statsviz v0.6.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
