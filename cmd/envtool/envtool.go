@@ -107,6 +107,7 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 	if err != nil {
 		return err
 	}
+
 	defer p.Close()
 
 	username := u.User.Username()
