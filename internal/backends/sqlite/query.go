@@ -42,10 +42,8 @@ func prepareSelectClause(table string, capped, onlyRecordIDs bool) string {
 //
 // For capped collection, it returns ORDER BY recordID only if sort field is nil.
 func prepareOrderByClause(sort *backends.SortField, capped bool) string {
-	if sort == nil {
-		if capped {
-			return fmt.Sprintf(` ORDER BY %s`, metadata.RecordIDColumn)
-		}
+	if sort == nil && capped {
+		return fmt.Sprintf(` ORDER BY %s`, metadata.RecordIDColumn)
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3181

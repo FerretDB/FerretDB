@@ -31,6 +31,14 @@ func TestPrepareOrderByClause(t *testing.T) {
 
 		orderBy string
 	}{
+		"Ascending": {
+			sort:    &backends.SortField{Key: "field", Descending: false},
+			orderBy: "",
+		},
+		"Descending": {
+			sort:    &backends.SortField{Key: "field", Descending: true},
+			orderBy: "",
+		},
 		"SortNil": {
 			orderBy: "",
 		},
