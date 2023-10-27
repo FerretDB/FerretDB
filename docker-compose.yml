@@ -56,10 +56,9 @@ services:
       - 26257:26257
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    command: start-single-node
+    command: start-single-node --listen-addr=:26257 --insecure
     environment:
       - COCKROACH_USER=username
-      - COCKROACH_PASSWORD=password
       - COCKROACH_DATABASE=ferretdb
 
   mongodb:

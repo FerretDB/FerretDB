@@ -242,7 +242,7 @@ tasks:
         .
         -target-backend=ferretdb-postgresql
         -target-tls
-        -postgresql-url='postgres://username@127.0.0.1:26257/ferretdb?search_path='
+        -postgresql-url='postgres://username@127.0.0.1:26257/ferretdb'
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
         -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
         -enable-sort-pushdown={{.ENABLE_UNSAFE_SORT_PUSHDOWN}}

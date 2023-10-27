@@ -156,13 +156,12 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		require.NoError(tb, err)
 
 		name := testutil.DirectoryName(tb)
-		template := "template1"
 
 		q := "DROP DATABASE IF EXISTS " + pgx.Identifier{name}.Sanitize()
 		_, err = p.Exec(ctx, q)
 		require.NoError(tb, err)
 
-		q = fmt.Sprintf("CREATE DATABASE %s TEMPLATE %s", pgx.Identifier{name}.Sanitize(), pgx.Identifier{template}.Sanitize())
+		q = fmt.Sprintf("CREATE DATABASE %s", pgx.Identifier{name}.Sanitize())
 		_, err = p.Exec(ctx, q)
 		require.NoError(tb, err)
 
