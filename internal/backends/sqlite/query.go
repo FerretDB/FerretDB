@@ -17,6 +17,7 @@ package sqlite
 import (
 	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 )
 
@@ -39,10 +40,12 @@ func prepareSelectClause(table string, capped, onlyRecordIDs bool) string {
 
 // prepareOrderByClause returns ORDER BY clause.
 //
-// For capped collection, it returns ORDER BY recordID.
-func prepareOrderByClause(capped bool) string {
-	if capped {
-		return fmt.Sprintf(` ORDER BY %s`, metadata.RecordIDColumn)
+// For capped collection, it returns ORDER BY recordID only if sort field is nil.
+func prepareOrderByClause(sort *backends.SortField, capped bool) string {
+	if sort == nil {
+		if capped {
+			return fmt.Sprintf(` ORDER BY %s`, metadata.RecordIDColumn)
+		}
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3181

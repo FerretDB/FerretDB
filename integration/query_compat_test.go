@@ -260,6 +260,10 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 			sort:         bson.D{{"_id", int32(-1)}},
 			sortPushdown: allPushdown,
 		},
+		"MultipleSortFields": {
+			sort:         bson.D{{"v", 1}, {"_id", int32(-1)}},
+			sortPushdown: allPushdown,
+		},
 	} {
 		name, tc := name, tc
 
