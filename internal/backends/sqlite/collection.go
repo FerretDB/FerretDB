@@ -113,14 +113,13 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	batchSize := 100
 
 	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
-		// TODO https://github.com/FerretDB/FerretDB/issues/3490
-
 		var j int
 		for i := 0; i < len(params.Docs); i += batchSize {
 			if j += batchSize; j > len(params.Docs) {
 				j = len(params.Docs)
 			}
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3490
 			q, args, err := prepareInsertStatement(meta.TableName, meta.Settings.CappedSize > 0, params.Docs[i:j])
 			if err != nil {
 				return lazyerrors.Error(err)

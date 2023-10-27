@@ -24,11 +24,9 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
-// prepareInsertStatement returns a statement and arguments for inserting the given documents
-// marshalled in bytes into default column.
+// prepareInsertStatement returns a statement and arguments for inserting the given documents.
 //
-// If capped is true, the statement and arguments corresponds for inserting record ID and bytes
-// into record ID column and default column.
+// If capped is true, it returns a statement and arguments for inserting record IDs and documents.
 func prepareInsertStatement(tableName string, capped bool, docs []*types.Document) (string, []any, error) {
 	var args []any
 	rows := make([]string, len(docs))
@@ -42,6 +40,8 @@ func prepareInsertStatement(tableName string, capped bool, docs []*types.Documen
 		if capped {
 			rows[i] = "(?, ?)"
 			args = append(args, doc.RecordID(), string(b))
+
+			continue
 		}
 
 		rows[i] = "(?)"
