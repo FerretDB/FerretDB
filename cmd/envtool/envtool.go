@@ -104,19 +104,19 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		return err
 	}
 
+	var p *pool.Pool
+
+	if p, err = pool.New(uri, logger.Desugar(), sp); err != nil {
+		return err
+	}
+
 	var pgPool *pgxpool.Pool
+
+	username := u.User.Username()
+	password, _ := u.User.Password()
 
 	var retry int64
 	for ctx.Err() == nil {
-		var p *pool.Pool
-
-		if p, err = pool.New(uri, logger.Desugar(), sp); err != nil {
-			return err
-		}
-
-		username := u.User.Username()
-		password, _ := u.User.Password()
-
 		if pgPool, err = p.Get(username, password); err == nil {
 			break
 		}
