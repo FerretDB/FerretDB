@@ -145,7 +145,7 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 
 // setupCockroachDB configures `cockroachdb` container.
 func setupCockroachDB(ctx context.Context, logger *zap.SugaredLogger) error {
-	return setupAnyPostgres(ctx, logger.Named("cockroachdb"), "postgres://username:password@127.0.0.1:26257/ferretdb")
+	return setupAnyPostgres(ctx, logger.Named("cockroachdb"), "postgres://username@127.0.0.1:26257/ferretdb")
 }
 
 // setupMongodb configures `mongodb` container.
