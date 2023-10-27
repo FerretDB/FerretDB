@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sort"
 	"strings"
 
 	"github.com/jackc/pgerrcode"
@@ -119,7 +120,10 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 // InsertAll implements backends.Collection interface.
 func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
-	if _, err := c.r.CollectionCreate(ctx, c.dbName, c.name); err != nil {
+	if _, err := c.r.CollectionCreate(ctx, &metadata.CollectionCreateParams{
+		DBName: c.dbName,
+		Name:   c.name,
+	}); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -317,6 +321,8 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	res.QueryPushdown = where != ""
 
+	q += where
+
 	if params.Sort != nil {
 		var sort string
 		var sortArgs []any
@@ -331,8 +337,6 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 		res.SortPushdown = sort != ""
 	}
-
-	q += where
 
 	if params.Limit != 0 {
 		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
@@ -472,13 +476,11 @@ func (c *collection) Compact(ctx context.Context, params *backends.CompactParams
 		)
 	}
 
-	var full string
-
+	q := "VACUUM ANALYZE "
 	if params != nil && params.Full {
-		full = " FULL"
+		q = "VACUUM FULL ANALYZE "
 	}
-
-	q := fmt.Sprintf(`VACUUM%s ANALYZE %s`, full, pgx.Identifier{c.dbName, coll.TableName}.Sanitize())
+	q += pgx.Identifier{c.dbName, coll.TableName}.Sanitize()
 
 	if _, err = db.Exec(ctx, q); err != nil {
 		return nil, lazyerrors.Error(err)
@@ -532,10 +534,9 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 		}
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3589
-	// slices.SortFunc(res.Indexes, func(a, b backends.IndexInfo) int {
-	// 	return cmp.Compare(a.Name, b.Name)
-	// })
+	sort.Slice(res.Indexes, func(i, j int) bool {
+		return res.Indexes[i].Name < res.Indexes[j].Name
+	})
 
 	return &res, nil
 }

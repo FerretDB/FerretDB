@@ -31,11 +31,11 @@ func TestCollectionsStats(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	dbName := testutil.DatabaseName(t)
 	r, err := metadata.NewRegistry("file:"+t.TempDir()+"/", testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
+	dbName := testutil.DatabaseName(t)
 	d, err := r.DatabaseGetOrCreate(ctx, dbName)
 	require.NoError(t, err)
 
@@ -43,7 +43,7 @@ func TestCollectionsStats(t *testing.T) {
 	colls := make([]*metadata.Collection, len(cNames))
 
 	for i, cName := range cNames {
-		_, err = r.CollectionCreate(ctx, dbName, cName)
+		_, err = r.CollectionCreate(ctx, &metadata.CollectionCreateParams{DBName: dbName, Name: cName})
 		require.NoError(t, err)
 		colls[i] = r.CollectionGet(ctx, dbName, cName)
 	}
