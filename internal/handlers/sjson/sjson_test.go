@@ -419,6 +419,8 @@ func unmarshalJSON(v sjsontype, tc *testCase) error {
 		err = v.UnmarshalJSON([]byte(tc.j))
 	case *dateTimeType:
 		err = v.UnmarshalJSON([]byte(tc.j))
+	case *nullType:
+		panic("not implemented")
 	case *regexType:
 		err = v.UnmarshalJSONWithSchema([]byte(tc.j), tc.sch)
 	case *int32Type:
@@ -428,7 +430,7 @@ func unmarshalJSON(v sjsontype, tc *testCase) error {
 	case *int64Type:
 		err = v.UnmarshalJSON([]byte(tc.j))
 	default:
-		panic(fmt.Sprintf("testing is not implemented for the type %T", v))
+		panic(fmt.Sprintf("not reached: %T", v)) // for sumtype to work
 	}
 
 	return err

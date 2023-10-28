@@ -51,6 +51,14 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 	}
 
+	var freeStorage bool
+
+	if v, _ := document.Get("freeStorage"); v != nil {
+		if freeStorage, err = commonparams.GetBoolOptionalParam("freeStorage", v); err != nil {
+			return nil, err
+		}
+	}
+
 	db, err := h.b.Database(dbName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
@@ -61,7 +69,37 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+	list, err := db.ListCollections(ctx, new(backends.ListCollectionsParams))
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	var nIndexes int64
+
+	for _, cInfo := range list.Collections {
+		var c backends.Collection
+
+		c, err = db.Collection(cInfo.Name)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		var iList *backends.ListIndexesResult
+
+		iList, err = c.ListIndexes(ctx, new(backends.ListIndexesParams))
+		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
+			iList = new(backends.ListIndexesResult)
+			err = nil
+		}
+
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		nIndexes += int64(len(iList.Indexes))
+	}
+
+	stats, err := db.Stats(ctx, &backends.DatabaseStatsParams{Refresh: true})
 	if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseDoesNotExist) {
 		stats = new(backends.DatabaseStatsResult)
 		err = nil
@@ -75,22 +113,46 @@ func (h *Handler) MsgDBStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	// FerretDB always returns int64 for simplicity.
 	pairs := []any{
 		"db", dbName,
-		"collections", stats.CountCollections,
+		"collections", int64(len(list.Collections)),
 		// TODO https://github.com/FerretDB/FerretDB/issues/176
 		"views", int32(0),
-		"objects", stats.CountObjects,
+		"objects", stats.CountDocuments,
 	}
 
-	if stats.CountObjects > 0 {
-		pairs = append(pairs, "avgObjSize", stats.SizeCollections/stats.CountObjects)
+	if stats.CountDocuments > 0 {
+		pairs = append(pairs, "avgObjSize", stats.SizeCollections/stats.CountDocuments)
 	}
 
 	pairs = append(pairs,
 		"dataSize", stats.SizeCollections/scale,
 		"storageSize", stats.SizeCollections/scale,
-		"indexes", stats.CountIndexes,
+	)
+
+	if freeStorage {
+		pairs = append(pairs,
+			"freeStorageSize", stats.SizeFreeStorage/scale,
+		)
+	}
+
+	pairs = append(pairs,
+		"indexes", nIndexes,
 		"indexSize", stats.SizeIndexes/scale,
+	)
+
+	// add indexFreeStorageSize
+	// TODO https://github.com/FerretDB/FerretDB/issues/2447
+
+	pairs = append(pairs,
 		"totalSize", stats.SizeTotal/scale,
+	)
+
+	if freeStorage {
+		pairs = append(pairs,
+			"totalFreeStorageSize", (stats.SizeFreeStorage)/scale,
+		)
+	}
+
+	pairs = append(pairs,
 		"scaleFactor", float64(scale),
 		"ok", float64(1),
 	)

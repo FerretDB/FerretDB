@@ -16,20 +16,28 @@ package backends_test // to avoid import cycle
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/hana"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
+// testBackend contains information about backend under test.
+type testBackend struct {
+	backends.Backend
+	sp *state.Provider
+}
+
 // testBackends returns all backends configured for testing contracts.
-func testBackends(t *testing.T) []backends.Backend {
+func testBackends(t *testing.T) map[string]*testBackend {
 	t.Helper()
 
 	if testing.Short() {
@@ -38,36 +46,60 @@ func testBackends(t *testing.T) []backends.Backend {
 
 	l := testutil.Logger(t)
 
-	var res []backends.Backend
+	res := map[string]*testBackend{}
 
 	{
-		p, err := state.NewProvider("")
+		sp, err := state.NewProvider("")
 		require.NoError(t, err)
 
 		b, err := postgresql.NewBackend(&postgresql.NewBackendParams{
 			URI: "postgres://username:password@127.0.0.1:5432/ferretdb",
 			L:   l.Named("postgresql"),
-			P:   p,
+			P:   sp,
 		})
 		require.NoError(t, err)
 		t.Cleanup(b.Close)
 
-		res = append(res, b)
+		res["postgresql"] = &testBackend{
+			Backend: b,
+			sp:      sp,
+		}
 	}
 
 	{
-		p, err := state.NewProvider("")
+		sp, err := state.NewProvider("")
 		require.NoError(t, err)
 
 		b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
-			URI: "file:./?mode=memory",
+			URI: "file:" + t.TempDir() + "/",
 			L:   l.Named("sqlite"),
-			P:   p,
+			P:   sp,
 		})
 		require.NoError(t, err)
 		t.Cleanup(b.Close)
 
-		res = append(res, b)
+		res["sqlite"] = &testBackend{
+			Backend: b,
+			sp:      sp,
+		}
+	}
+
+	if hanaURL := os.Getenv("FERRETDB_HANA_URL"); hanaURL != "" {
+		sp, err := state.NewProvider("")
+		require.NoError(t, err)
+
+		b, err := hana.NewBackend(&hana.NewBackendParams{
+			URI: hanaURL,
+			L:   l.Named("hana"),
+			P:   sp,
+		})
+		require.NoError(t, err)
+		t.Cleanup(b.Close)
+
+		res["hana"] = &testBackend{
+			Backend: b,
+			sp:      sp,
+		}
 	}
 
 	return res

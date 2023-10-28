@@ -18,10 +18,9 @@ package projection
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
-
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations/operators"
@@ -47,6 +46,8 @@ import (
 //   - `ErrAggregatePositionalProject` when `$` is used in the suffix key;
 //   - `ErrAggregatePositionalProject` when positional projection contains empty path;
 //   - `ErrNotImplemented` when there is unimplemented projection operators and expressions.
+//
+//nolint:goconst // remove it when you change it
 func ValidateProjection(projection *types.Document) (*types.Document, bool, error) {
 	validated := types.MakeDocument(0)
 

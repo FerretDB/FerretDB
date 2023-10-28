@@ -40,6 +40,8 @@ func openDB(name, uri string, memory bool, l *zap.Logger, sp *state.Provider) (*
 
 	db.SetConnMaxIdleTime(0)
 	db.SetConnMaxLifetime(0)
+	db.SetMaxIdleConns(100)
+	db.SetMaxOpenConns(100)
 
 	// Each connection to in-memory database uses its own database.
 	// See https://www.sqlite.org/inmemorydb.html.
@@ -54,10 +56,13 @@ func openDB(name, uri string, memory bool, l *zap.Logger, sp *state.Provider) (*
 		return nil, lazyerrors.Error(err)
 	}
 
-	if sp.Get().HandlerVersion == "" {
+	// do it only once because version can't change
+	if sp.Get().BackendVersion == "" {
 		err := sp.Update(func(s *state.State) {
+			s.BackendName = "SQLite"
+
 			row := db.QueryRowContext(context.Background(), "SELECT sqlite_version()")
-			if err := row.Scan(&s.HandlerVersion); err != nil {
+			if err := row.Scan(&s.BackendVersion); err != nil {
 				l.Error("sqlite.metadata.pool.openDB: failed to query SQLite version", zap.Error(err))
 			}
 		})

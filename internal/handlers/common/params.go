@@ -100,6 +100,26 @@ func AssertType[T types.Type](value any) (T, error) {
 	return res, nil
 }
 
+// GetLimitParam returns limit value from provided query document.
+func GetLimitParam(doc *types.Document) (int64, error) {
+	v, _ := doc.Get("limit")
+	if v == nil {
+		return 0, nil
+	}
+
+	res, err := commonparams.GetWholeNumberParam(v)
+	if err != nil {
+		msg := fmt.Sprintf(
+			`BSON field '%s' is the wrong type '%s', expected type '%s'`,
+			"limit", commonparams.AliasFromType(v), commonparams.AliasFromType(res),
+		)
+
+		return res, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrTypeMismatch, msg, "limit")
+	}
+
+	return res, nil
+}
+
 // GetLimitStageParam returns $limit stage argument from the provided value.
 // It returns the proper error if value doesn't meet requirements.
 func GetLimitStageParam(value any) (int64, error) {

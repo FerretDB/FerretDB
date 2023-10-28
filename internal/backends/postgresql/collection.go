@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/jackc/pgerrcode"
@@ -88,6 +89,24 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	q += where
 
+	if params.Sort != nil {
+		var sort string
+		var sortArgs []any
+
+		sort, sortArgs, err = prepareOrderByClause(&placeholder, params.Sort.Key, params.Sort.Descending)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		q += sort
+		args = append(args, sortArgs...)
+	}
+
+	if params.Limit != 0 {
+		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
+		args = append(args, params.Limit)
+	}
+
 	rows, err := p.Query(ctx, q, args...)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -100,7 +119,10 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 // InsertAll implements backends.Collection interface.
 func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
-	if _, err := c.r.CollectionCreate(ctx, c.dbName, c.name); err != nil {
+	if _, err := c.r.CollectionCreate(ctx, &metadata.CollectionCreateParams{
+		DBName: c.dbName,
+		Name:   c.name,
+	}); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
@@ -261,13 +283,15 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
 	p, err := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
 	}
 
-	res := new(backends.ExplainResult)
-
 	if p == nil {
-		return res, nil
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
 	}
 
 	meta, err := c.r.CollectionGet(ctx, c.dbName, c.name)
@@ -276,9 +300,12 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	if meta == nil {
-		res.QueryPlanner = must.NotFail(types.NewDocument())
-		return res, nil
+		return &backends.ExplainResult{
+			QueryPlanner: must.NotFail(types.NewDocument()),
+		}, nil
 	}
+
+	res := new(backends.ExplainResult)
 
 	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName)
 
@@ -292,6 +319,27 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	res.QueryPushdown = where != ""
 
 	q += where
+
+	if params.Sort != nil {
+		var sort string
+		var sortArgs []any
+
+		sort, sortArgs, err = prepareOrderByClause(&placeholder, params.Sort.Key, params.Sort.Descending)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		q += sort
+		args = append(args, sortArgs...)
+
+		res.SortPushdown = sort != ""
+	}
+
+	if params.Limit != 0 {
+		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
+		args = append(args, params.Limit)
+		res.LimitPushdown = true
+	}
 
 	var b []byte
 	err = p.QueryRow(ctx, q, args...).Scan(&b)
@@ -336,23 +384,105 @@ func (c *collection) Stats(ctx context.Context, params *backends.CollectionStats
 		)
 	}
 
-	stats, err := collectionsStats(ctx, p, c.dbName, []*metadata.Collection{coll})
+	stats, err := collectionsStats(ctx, p, c.dbName, []*metadata.Collection{coll}, params.Refresh)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
+	indexMap := map[string]string{}
+	for _, index := range coll.Indexes {
+		indexMap[index.PgIndex] = index.Name
+	}
+
+	q := `
+		SELECT
+			indexname,
+			pg_relation_size(quote_ident(schemaname)|| '.' || quote_ident(indexname), 'main')
+		FROM pg_indexes
+		WHERE schemaname = $1 AND tablename IN ($2)
+		`
+
+	rows, err := p.Query(ctx, q, c.dbName, coll.TableName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	defer rows.Close()
+
+	indexSizes := make([]backends.IndexSize, len(indexMap))
+	var i int
+
+	for rows.Next() {
+		var name string
+		var size int64
+
+		if err = rows.Scan(&name, &size); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		indexName, ok := indexMap[name]
+		if !ok {
+			// new index have been created since fetching metadata
+			continue
+		}
+
+		indexSizes[i] = backends.IndexSize{
+			Name: indexName,
+			Size: size,
+		}
+		i++
+	}
+
+	if rows.Err() != nil {
+		return nil, lazyerrors.Error(rows.Err())
+	}
+
 	return &backends.CollectionStatsResult{
-		CountObjects:   stats.countRows,
-		CountIndexes:   stats.countIndexes,
-		SizeTotal:      stats.sizeTables + stats.sizeIndexes,
-		SizeIndexes:    stats.sizeIndexes,
-		SizeCollection: stats.sizeTables,
+		CountDocuments:  stats.countDocuments,
+		SizeTotal:       stats.sizeTables + stats.sizeIndexes,
+		SizeIndexes:     stats.sizeIndexes,
+		SizeCollection:  stats.sizeTables,
+		SizeFreeStorage: stats.sizeFreeStorage,
+		IndexSizes:      indexSizes,
 	}, nil
 }
 
 // Compact implements backends.Collection interface.
 func (c *collection) Compact(ctx context.Context, params *backends.CompactParams) (*backends.CompactResult, error) {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3484
+	db, err := c.r.DatabaseGetExisting(ctx, c.dbName)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if db == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeDatabaseDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	coll, err := c.r.CollectionGet(ctx, c.dbName, c.name)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if coll == nil {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
+		)
+	}
+
+	q := "VACUUM ANALYZE "
+	if params != nil && params.Full {
+		q = "VACUUM FULL ANALYZE "
+	}
+	q += pgx.Identifier{c.dbName, coll.TableName}.Sanitize()
+
+	if _, err = db.Exec(ctx, q); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
 	return new(backends.CompactResult), nil
 }
 
@@ -400,6 +530,10 @@ func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndex
 			}
 		}
 	}
+
+	sort.Slice(res.Indexes, func(i, j int) bool {
+		return res.Indexes[i].Name < res.Indexes[j].Name
+	})
 
 	return &res, nil
 }

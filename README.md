@@ -59,12 +59,10 @@ docker run -d --rm --name ferretdb -p 27017:27017 ghcr.io/ferretdb/all-in-one
 Alternatively, run this command to start FerretDB with SQLite backend:
 
 ```sh
-docker run -d --rm --name ferretdb -p 27017:27017 \
-  -v ./data:/data/ -e FERRETDB_HANDLER=sqlite -e FERRETDB_SQLITE_URL=file:/data/ \
-  ghcr.io/ferretdb/all-in-one
+docker run -d --rm --name ferretdb -p 27017:27017 -e FERRETDB_HANDLER=sqlite ghcr.io/ferretdb/all-in-one
 ```
 
-This command will start a container with FerretDB, PostgreSQL, and MongoDB Shell for quick testing and experiments.
+This command will start a container with FerretDB, PostgreSQL/SQLite, and MongoDB Shell for quick testing and experiments.
 However, it is unsuitable for production use cases because it keeps all data inside and loses it on shutdown.
 See our [Docker quickstart guide](https://docs.ferretdb.io/quickstart-guide/docker/) for instructions
 that don't have those problems.
@@ -74,13 +72,15 @@ With that container running, you can:
 - Connect to it with any MongoDB client application using MongoDB URI `mongodb://127.0.0.1:27017/`.
 - Connect to it using MongoDB Shell by just running `mongosh`.
   If you don't have it installed locally, you can run `docker exec -it ferretdb mongosh`.
-- For PostgreSQL backend, connect to it by running `docker exec -it ferretdb psql -U username ferretdb`.
+- For the PostgreSQL backend, connect to it by running `docker exec -it ferretdb psql -U username ferretdb`.
   FerretDB uses PostgreSQL schemas for MongoDB databases.
   So, if you created some collections in the `test` database using any MongoDB client,
   you can switch to it by running `SET search_path = 'test';` query
   and see a list of PostgreSQL tables by running `\d` `psql` command.
-- For the SQLite backend, database files will be created on a host in the `data` directory.
-  You can access them by running `sqlite3 data/<filename>.sqlite` after some data is inserted into FerretDB.
+- For the SQLite backend, connect to it by running `docker exec -it ferretdb sqlite3 /state/<database>.sqlite`.
+  So, if you created some collections in the `test` database using any MongoDB client,
+  run `docker exec -it ferretdb sqlite3 /state/test.sqlite`
+  and see a list of SQLite tables by running `.tables` command.
 
 You can stop the container with `docker stop ferretdb`.
 

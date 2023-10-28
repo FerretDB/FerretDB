@@ -15,7 +15,9 @@
 package backends
 
 import (
+	"cmp"
 	"context"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
@@ -85,23 +87,32 @@ type ListCollectionsResult struct {
 // CollectionInfo represents information about a single collection.
 type CollectionInfo struct {
 	Name            string
-	CappedSize      int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
-	CappedDocuments int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
+	CappedSize      int64
+	CappedDocuments int64
+	_               struct{} // prevent unkeyed literals
 }
 
 // Capped returns true if collection is capped.
 func (ci *CollectionInfo) Capped() bool {
-	return ci.CappedSize > 0 || ci.CappedDocuments > 0
+	return ci.CappedSize > 0 // TODO https://github.com/FerretDB/FerretDB/issues/3631
 }
 
-// ListCollections returns information about collections in the database.
+// ListCollections returns a list collections in the database sorted by name.
 //
 // Database may not exist; that's not an error.
+//
+// Contract ensures that returned list is sorted by name.
 func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCollectionsParams) (*ListCollectionsResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	res, err := dbc.db.ListCollections(ctx, params)
 	checkError(err)
+
+	if res != nil && len(res.Collections) > 0 {
+		must.BeTrue(slices.IsSortedFunc(res.Collections, func(a, b CollectionInfo) int {
+			return cmp.Compare(a.Name, b.Name)
+		}))
+	}
 
 	return res, err
 }
@@ -109,13 +120,14 @@ func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCo
 // CreateCollectionParams represents the parameters of Database.CreateCollection method.
 type CreateCollectionParams struct {
 	Name            string
-	CappedSize      int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
-	CappedDocuments int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
+	CappedSize      int64
+	CappedDocuments int64
+	_               struct{} // prevent unkeyed literals
 }
 
 // Capped returns true if capped collection creation is requested.
 func (ccp *CreateCollectionParams) Capped() bool {
-	return ccp.CappedSize > 0 || ccp.CappedDocuments > 0
+	return ccp.CappedSize > 0 // TODO https://github.com/FerretDB/FerretDB/issues/3631
 }
 
 // CreateCollection creates a new collection with valid name in the database; it should not already exist.
@@ -188,24 +200,20 @@ func (dbc *databaseContract) RenameCollection(ctx context.Context, params *Renam
 
 // DatabaseStatsParams represents the parameters of Database.Stats method.
 type DatabaseStatsParams struct {
-	Refresh bool // TODO https://github.com/FerretDB/FerretDB/issues/3518
+	Refresh bool
 }
 
 // DatabaseStatsResult represents the results of Database.Stats method.
-//
-// CountObjects is an estimate of the number of documents.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/2447
 type DatabaseStatsResult struct {
-	CountCollections int64
-	CountObjects     int64
-	CountIndexes     int64
-	SizeTotal        int64
-	SizeIndexes      int64
-	SizeCollections  int64
+	CountDocuments  int64
+	SizeTotal       int64
+	SizeIndexes     int64
+	SizeCollections int64
+	SizeFreeStorage int64
 }
 
-// Stats returns statistics about the database.
+// Stats returns statistic estimations about the database.
+// All returned values are not exact, but might be more accurate when Stats is called with `Refresh: true`.
 func (dbc *databaseContract) Stats(ctx context.Context, params *DatabaseStatsParams) (*DatabaseStatsResult, error) {
 	defer observability.FuncCall(ctx)()
 

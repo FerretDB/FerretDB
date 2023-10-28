@@ -17,6 +17,7 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -25,7 +26,6 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -41,11 +41,11 @@ func testCollection(t *testing.T, ctx context.Context, r *Registry, db *pgxpool.
 	require.NoError(t, err)
 	require.Nil(t, c)
 
-	created, err := r.CollectionCreate(ctx, dbName, collectionName)
+	created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 	require.NoError(t, err)
 	require.True(t, created)
 
-	created, err = r.CollectionCreate(ctx, dbName, collectionName)
+	created, err = r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 	require.NoError(t, err)
 	require.False(t, created)
 
@@ -83,6 +83,8 @@ func testCollection(t *testing.T, ctx context.Context, r *Registry, db *pgxpool.
 // createDatabase creates a new provider and registry required for creating a database and
 // returns registry, db pool and created database name.
 func createDatabase(t *testing.T, ctx context.Context) (r *Registry, db *pgxpool.Pool, dbName string) {
+	t.Helper()
+
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
@@ -194,13 +196,13 @@ func TestCreateSameStress(t *testing.T) {
 		ready <- struct{}{}
 		<-start
 
-		created, err := r.CollectionCreate(ctx, dbName, collectionName)
+		created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 		require.NoError(t, err)
 		if created {
 			createdTotal.Add(1)
 		}
 
-		created, err = r.CollectionCreate(ctx, dbName, collectionName)
+		created, err = r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 		require.NoError(t, err)
 		require.False(t, created)
 
@@ -236,7 +238,7 @@ func TestDropSameStress(t *testing.T) {
 
 	r, _, dbName := createDatabase(t, ctx)
 	collectionName := testutil.CollectionName(t)
-	created, err := r.CollectionCreate(ctx, dbName, collectionName)
+	created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 	require.NoError(t, err)
 	require.True(t, created)
 
@@ -275,7 +277,7 @@ func TestCreateDropSameStress(t *testing.T) {
 		<-start
 
 		if id%2 == 0 {
-			created, err := r.CollectionCreate(ctx, dbName, collectionName)
+			created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 			require.NoError(t, err)
 			if created {
 				createdTotal.Add(1)
@@ -318,7 +320,7 @@ func TestCheckDatabaseUpdated(t *testing.T) {
 	})
 
 	collectionName := testutil.CollectionName(t)
-	created, err := r.CollectionCreate(ctx, dbName, collectionName)
+	created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 	require.NoError(t, err)
 	require.True(t, created)
 
@@ -377,7 +379,7 @@ func TestRenameCollection(t *testing.T) {
 	oldCollectionName := testutil.CollectionName(t)
 	newCollectionName := "new"
 
-	created, err := r.CollectionCreate(ctx, dbName, oldCollectionName)
+	created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: oldCollectionName})
 	require.NoError(t, err)
 	require.True(t, created)
 

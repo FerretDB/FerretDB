@@ -193,8 +193,6 @@ func testQueryCompat(t *testing.T, testCases map[string]queryCompatTestCase) {
 }
 
 func TestQueryCompatFilter(t *testing.T) {
-	setup.SkipForPostgreSQL(t, "https://github.com/FerretDB/FerretDB/issues/3526")
-
 	t.Parallel()
 
 	testCases := map[string]queryCompatTestCase{
@@ -211,7 +209,7 @@ func TestQueryCompatFilter(t *testing.T) {
 		},
 		"IDString": {
 			filter:         bson.D{{"_id", "string"}},
-			resultPushdown: pgPushdown,
+			resultPushdown: allPushdown,
 		},
 		"IDNilObjectID": {
 			filter:         bson.D{{"_id", primitive.NilObjectID}},

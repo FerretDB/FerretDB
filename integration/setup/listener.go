@@ -146,7 +146,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		require.True(tb, u.Path != "")
 		require.True(tb, u.Opaque == "")
 
-		// TODO port logging, tracing; merge with openDB?
+		// port logging, tracing; merge with openDB?
 		// TODO https://github.com/FerretDB/FerretDB/issues/3554
 
 		config, err := pgxpool.ParseConfig(postgreSQLURLF)
@@ -213,13 +213,13 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		})
 	}
 
-	p, err := state.NewProvider("")
+	sp, err := state.NewProvider("")
 	require.NoError(tb, err)
 
 	handlerOpts := &registry.NewHandlerOpts{
 		Logger:        logger,
 		ConnMetrics:   listenerMetrics.ConnMetrics,
-		StateProvider: p,
+		StateProvider: sp,
 
 		PostgreSQLURL: postgreSQLURLF,
 		SQLiteURL:     sqliteURL,
@@ -228,9 +228,8 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown: *disableFilterPushdownF,
 			EnableSortPushdown:    *enableSortPushdownF,
-			EnableOplog:           *enableOplogF,
+			EnableOplog:           true,
 
-			UseNewPG:   true,
 			UseNewHana: *useNewHanaF,
 		},
 	}

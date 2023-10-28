@@ -102,8 +102,8 @@ func testUpdateCompat(t *testing.T, testCases map[string]updateCompatTestCase) {
 							var targetUpdateRes, compatUpdateRes *mongo.UpdateResult
 							var targetErr, compatErr error
 
-							// TODO replace with UpdateMany/ReplaceMany
-							// https://github.com/FerretDB/FerretDB/issues/1507
+							// Replace with UpdateMany/ReplaceMany.
+							// TODO https://github.com/FerretDB/FerretDB/issues/1507
 							if update != nil {
 								targetUpdateRes, targetErr = targetCollection.UpdateOne(ctx, filter, update, tc.updateOpts)
 								compatUpdateRes, compatErr = compatCollection.UpdateOne(ctx, filter, update, tc.updateOpts)

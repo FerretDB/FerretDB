@@ -100,8 +100,8 @@ func (msg *OpMsg) Document() (*types.Document, error) {
 	for _, doc := range docs {
 		values := doc.Values()
 
-		// TODO move that check to validateValue?
-		// https://github.com/FerretDB/FerretDB/issues/2412
+		// move that check to validateValue?
+		// TODO https://github.com/FerretDB/FerretDB/issues/2412
 		for i, k := range doc.Keys() {
 			if res.Has(k) {
 				return nil, newValidationError(fmt.Errorf("wire.OpMsg.Document: duplicate key %q", k))
