@@ -117,6 +117,7 @@ linters:
     - gosec
     - grouper
     - ifshort
+    - inamedparam
     - ireturn
     - maintidx
     - makezero
@@ -128,14 +129,18 @@ linters:
     - nonamedreturns
     - nosprintfhostport
     - paralleltest
+    - perfsprint
     - prealloc
     - predeclared
     - promlinter
+    - protogetter
     - rowserrcheck
+    - sloglint
     - sqlclosecheck
     - stylecheck
     - tagliatelle
     - tenv
+    - testifylint
     - thelper
     - tparallel
     - typecheck
@@ -145,6 +150,7 @@ linters:
     - varnamelen
     - wastedassign
     - wrapcheck
+    - zerologlint
 
     # deprecated
     - golint
