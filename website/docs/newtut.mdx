@@ -113,17 +113,11 @@ Now we have 4 teams in the league: _Arsenal_, _Barcelona_, _Bayern_ and _PSG_.
 
 Read operations in FerretDB are similar to those in MongoDB. We'll explore two basic methods for querying records in a collection: `find()` and `findOne()`.
 
-### find()
-
-In each read operation, you must filter the documents according to some criteria. The `find()` method filters and selects all the documents in a collection that match the query parameters.
-
-First, let's select all the teams in the league:
-
 ```js
 db.league.find({});
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" status-running="Running example..." status-done="✓ Done">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="insert-2.js">
 </codapi-snippet>
 
 With an empty query parameter, the method returns all documents in the `league` collection.
@@ -134,7 +128,7 @@ Now, let's add a query parameter to the `find()` operation to filter for a speci
 db.league.find({ club: "PSG" });
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" status-running="Running example..." status-done="✓ Done">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="insert-2.js">
 </codapi-snippet>
 
 You can also filter a collection in FerretDB using any of the common MongoDB operators:
@@ -162,7 +156,7 @@ Let's filter the `league` data for teams with 80 or 60 `points`:
 db.league.find({ points: { $in: [80, 60] } });
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" status-running="Running example..." status-done="✓ Done">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="insert-2.js">
 </codapi-snippet>
 
 That would be _Arsenal_ and _Barcelona_.
@@ -175,7 +169,7 @@ The `$lt` operator filters a collection for records that are less than a specifi
 db.league.find({ points: { $lt: 60 } });
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" status-running="Running example..." status-done="✓ Done">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="insert-2.js">
 </codapi-snippet>
 
 It seems that _PSG_ is not doing so well.
@@ -188,7 +182,7 @@ The `findOne()` method selects the first document that matches a given set of qu
 db.league.findOne({ qualified: true });
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" status-running="Running example..." status-done="✓ Done">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="insert-2.js">
 </codapi-snippet>
 
 Even though two documents match this query (_Arsenal_ and _Bayern_), `findOne` only returns the first one (_Arsenal_).
@@ -213,7 +207,7 @@ Let's increase the number of points for the _PSG_ team to 35 (not that it helps,
 db.league.updateOne({ club: "PSG" }, { $set: { points: 35 } });
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" template="insert-2.js" status-running="Running example..." status-done="✓ Done">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="insert-2.js">
 </codapi-snippet>
 
 This update operation only affects the first document that's retrieved from the collection. If the operation is successful, the queried document is updated (`modifiedCount` equals to 1).
