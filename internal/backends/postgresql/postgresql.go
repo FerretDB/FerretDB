@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
@@ -32,25 +33,32 @@ import (
 
 // stats represents information about statistics of tables and indexes.
 type stats struct {
-	countDocuments int64
-	sizeIndexes    int64
-	sizeTables     int64
+	countDocuments  int64
+	sizeIndexes     int64
+	sizeTables      int64
+	sizeFreeStorage int64
 }
 
 // collectionsStats returns statistics about tables and indexes for the given collections.
 //
+// If refresh is true, it calls ANALYZE on the tables of the given list of collections.
+//
 // If the list of collections is empty, then stats filled with zero values is returned.
-func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list []*metadata.Collection) (*stats, error) {
+func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list []*metadata.Collection, refresh bool) (*stats, error) { //nolint:lll // for readability
 	if len(list) == 0 {
 		return new(stats), nil
 	}
 
-	var err error
+	if refresh {
+		fields := make([]string, len(list))
+		for i, c := range list {
+			fields[i] = pgx.Identifier{dbName, c.TableName}.Sanitize()
+		}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3518
-	q := `ANALYZE`
-	if _, err = p.Exec(ctx, q); err != nil {
-		return nil, lazyerrors.Error(err)
+		q := fmt.Sprintf(`ANALYZE %s`, strings.Join(fields, ", "))
+		if _, err := p.Exec(ctx, q); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 	}
 
 	var s stats
@@ -70,6 +78,8 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	// used, however it is not updated immediately after operation such as DELETE
 	// unless VACUUM is called, ANALYZE does not update pg_relation_size in this case.
 	//
+	// The free storage size is the size of free space map (fsm) of table relation.
+	//
 	// The smallest difference in size that `pg_relation_size` reports appears to be 8KB.
 	// Because of that inserting or deleting a single small object may not change the size.
 	//
@@ -78,10 +88,11 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	// initialization fork https://www.postgresql.org/docs/current/storage-init.html,
 	// free space map https://www.postgresql.org/docs/current/storage-fsm.html and
 	// TOAST https://www.postgresql.org/docs/current/storage-toast.html.
-	q = fmt.Sprintf(`
+	q := fmt.Sprintf(`
 		SELECT
 			COALESCE(SUM(c.reltuples), 0),
 			COALESCE(SUM(pg_relation_size(c.oid,'main')), 0),
+			COALESCE(SUM(pg_relation_size(c.oid,'fsm')), 0),
 			COALESCE(SUM(pg_indexes_size(c.oid)), 0)
 		FROM pg_tables AS t
 			LEFT JOIN pg_class AS c ON c.relname = t.tablename AND c.relnamespace = quote_ident(t.schemaname)::regnamespace
@@ -90,7 +101,7 @@ func collectionsStats(ctx context.Context, p *pgxpool.Pool, dbName string, list 
 	)
 
 	row := p.QueryRow(ctx, q, args...)
-	if err := row.Scan(&s.countDocuments, &s.sizeTables, &s.sizeIndexes); err != nil {
+	if err := row.Scan(&s.countDocuments, &s.sizeTables, &s.sizeFreeStorage, &s.sizeIndexes); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 

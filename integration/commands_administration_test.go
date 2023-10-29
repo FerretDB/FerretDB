@@ -690,8 +690,7 @@ func TestCommandsAdministrationCollStatsEmpty(t *testing.T) {
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("size")))
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("count")))
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("storageSize")))
-	// add assertion for freeStorageSize
-	// TODO https://github.com/FerretDB/FerretDB/issues/2447
+	assert.False(t, doc.Has("freeStorageSize"))
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("nindexes")))
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("totalIndexSize")))
 	assert.EqualValues(t, 0, must.NotFail(doc.Get("totalSize")))
@@ -727,8 +726,7 @@ func TestCommandsAdministrationCollStats(t *testing.T) {
 	assert.InDelta(t, 40_000, must.NotFail(doc.Get("size")), 39_900)
 	assert.InDelta(t, 2_400, must.NotFail(doc.Get("avgObjSize")), 2_370)
 	assert.InDelta(t, 40_000, must.NotFail(doc.Get("storageSize")), 39_900)
-	// add assertion for freeStorageSize
-	// TODO https://github.com/FerretDB/FerretDB/issues/2447
+	assert.EqualValues(t, 0, must.NotFail(doc.Get("freeStorageSize")))
 	assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
 	assert.InDelta(t, 12_000, must.NotFail(doc.Get("totalIndexSize")), 11_000)
 	assert.InDelta(t, 32_000, must.NotFail(doc.Get("totalSize")), 30_000)
@@ -768,8 +766,7 @@ func TestCommandsAdministrationCollStatsWithScale(t *testing.T) {
 	assert.InDelta(t, 16, must.NotFail(doc.Get("size")), 16)
 	assert.InDelta(t, 2_400, must.NotFail(doc.Get("avgObjSize")), 2_370)
 	assert.InDelta(t, 24, must.NotFail(doc.Get("storageSize")), 24)
-	// add assertion for freeStorageSize
-	// TODO https://github.com/FerretDB/FerretDB/issues/2447
+	assert.Zero(t, must.NotFail(doc.Get("freeStorageSize")))
 	assert.EqualValues(t, 1, must.NotFail(doc.Get("nindexes")))
 	assert.InDelta(t, 8, must.NotFail(doc.Get("totalIndexSize")), 8)
 	assert.InDelta(t, 24, must.NotFail(doc.Get("totalSize")), 24)
@@ -902,9 +899,13 @@ func TestCommandsAdministrationDataSize(t *testing.T) {
 
 		ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
+		// call validate to updated statistics
+		err := collection.Database().RunCommand(ctx, bson.D{{"validate", collection.Name()}}).Err()
+		require.NoError(t, err)
+
 		var actual bson.D
 		command := bson.D{{"dataSize", collection.Database().Name() + "." + collection.Name()}}
-		err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+		err = collection.Database().RunCommand(ctx, command).Decode(&actual)
 		require.NoError(t, err)
 
 		doc := ConvertDocument(t, actual)
@@ -1012,9 +1013,6 @@ func TestCommandsAdministrationDBStats(t *testing.T) {
 	freeStorageSize, _ := doc.Get("freeStorageSize")
 	assert.Nil(t, freeStorageSize)
 
-	indexFreeStorageSize, _ := doc.Get("indexFreeStorageSize")
-	assert.Nil(t, indexFreeStorageSize)
-
 	totalFreeStorageSize, _ := doc.Get("totalFreeStorageSize")
 	assert.Nil(t, totalFreeStorageSize)
 
@@ -1109,17 +1107,17 @@ func TestCommandsAdministrationDBStatsFreeStorage(t *testing.T) {
 
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
-	var actual bson.D
+	var res bson.D
 	command := bson.D{{"dbStats", int32(1)}, {"freeStorage", int32(1)}}
-	err := collection.Database().RunCommand(ctx, command).Decode(&actual)
+	err := collection.Database().RunCommand(ctx, command).Decode(&res)
 	require.NoError(t, err)
 
-	doc := ConvertDocument(t, actual)
+	doc := ConvertDocument(t, res)
 
 	assert.Equal(t, float64(1), doc.Remove("scaleFactor"))
 	assert.Equal(t, float64(1), doc.Remove("ok"))
-	// assert freeStorageSize, indexFreeStorageSize and totalFreeStorageSize
-	// TODO https://github.com/FerretDB/FerretDB/issues/2447
+	assert.Zero(t, must.NotFail(doc.Get("freeStorageSize")))
+	assert.Zero(t, must.NotFail(doc.Get("totalFreeStorageSize")))
 }
 
 //nolint:paralleltest // we test a global server status
@@ -1161,8 +1159,6 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("timeseries")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("views")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("internalViews")))
-
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/2447")
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
 
 	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000).SetMaxDocuments(10)
@@ -1315,7 +1311,7 @@ func TestCommandsAdministrationServerStatusFreeMonitoring(t *testing.T) {
 }
 
 func TestCommandsAdministrationServerStatusStress(t *testing.T) {
-	// TODO rewrite using teststress.Stress
+	// It should be rewritten to use teststress.Stress.
 
 	ctx, collection := setup.Setup(t) // no providers there, we will create collections concurrently
 	client := collection.Database().Client()
@@ -1363,6 +1359,148 @@ func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 	close(start)
 
 	wg.Wait()
+}
+
+func TestCommandsAdministrationCompactForce(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		DatabaseName: "admin",
+		Providers:    []shareddata.Provider{shareddata.DocumentsStrings},
+	})
+
+	for name, tc := range map[string]struct {
+		force any // optional, defaults to unset
+
+		err            *mongo.CommandError // optional
+		altMessage     string              // optional, alternative error message
+		skip           string              // optional, skip test with a specified reason
+		skipForMongoDB string              // optional, skip test for mongoDB with a specific reason
+	}{
+		"True": {
+			force: true,
+		},
+		"False": {
+			force: false,
+		},
+		"Int32": {
+			force: int32(1),
+		},
+		"Int32Zero": {
+			force: int32(0),
+		},
+		"Int64": {
+			force: int64(1),
+		},
+		"Int64Zero": {
+			force: int64(0),
+		},
+		"Double": {
+			force: float64(1),
+		},
+		"DoubleZero": {
+			force: float64(0),
+		},
+		"Unset": {},
+		"String": {
+			force: "foo",
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'force' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
+			},
+			skipForMongoDB: "force is FerretDB specific field",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			if tc.skipForMongoDB != "" {
+				setup.SkipForMongoDB(t, tc.skipForMongoDB)
+			}
+
+			t.Parallel()
+
+			command := bson.D{{"compact", s.Collection.Name()}}
+			if tc.force != nil {
+				command = append(command, bson.E{Key: "force", Value: tc.force})
+			}
+
+			var res bson.D
+			err := s.Collection.Database().RunCommand(
+				s.Ctx,
+				command,
+			).Decode(&res)
+
+			if tc.err != nil {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			doc := ConvertDocument(t, res)
+			assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+			assert.NotNil(t, must.NotFail(doc.Get("bytesFreed")))
+		})
+	}
+}
+
+func TestCommandsAdministrationCompactErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		dbName string
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"NonExistentDB": {
+			dbName: "non-existent",
+			err: &mongo.CommandError{
+				Code:    26,
+				Name:    "NamespaceNotFound",
+				Message: "database does not exist",
+			},
+			altMessage: "Invalid namespace specified 'non-existent.non-existent'",
+		},
+		"NonExistentCollection": {
+			dbName: "admin",
+			err: &mongo.CommandError{
+				Code:    26,
+				Name:    "NamespaceNotFound",
+				Message: "collection does not exist",
+			},
+			altMessage: "Invalid namespace specified 'admin.non-existent'",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			s := setup.SetupWithOpts(t, &setup.SetupOpts{
+				DatabaseName: tc.dbName,
+			})
+
+			var res bson.D
+			err := s.Collection.Database().RunCommand(
+				s.Ctx,
+				bson.D{{"compact", "non-existent"}},
+			).Decode(&res)
+
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
 }
 
 func TestCommandsAdministrationCurrentOp(t *testing.T) {

@@ -21,11 +21,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestAggregateCollStats(t *testing.T) {
@@ -33,15 +35,16 @@ func TestAggregateCollStats(t *testing.T) {
 
 	ctx, collection := setup.Setup(t, shareddata.DocumentsStrings)
 
+	// call validate to updated statistics
+	err := collection.Database().RunCommand(ctx, bson.D{{"validate", collection.Name()}}).Err()
+	require.NoError(t, err)
+
 	pipeline := bson.A{bson.D{{"$collStats", bson.D{{"storageStats", bson.D{}}}}}}
 
 	cursor, err := collection.Aggregate(ctx, pipeline)
 	require.NoError(t, err)
 
-	var res []bson.D
-	err = cursor.All(ctx, &res)
-	require.NoError(t, err)
-
+	res := FetchAll(t, ctx, cursor)
 	require.Len(t, res, 1)
 	doc := ConvertDocument(t, res[0])
 
@@ -57,15 +60,31 @@ func TestAggregateCollStats(t *testing.T) {
 	assert.NotZero(t, must.NotFail(storageStats.Get("count")))
 	assert.NotZero(t, must.NotFail(storageStats.Get("avgObjSize")))
 	assert.NotZero(t, must.NotFail(storageStats.Get("storageSize")))
-	// TODO https://github.com/FerretDB/FerretDB/issues/2447
-	// assert.NotZero(t, must.NotFail(storageStats.Get("freeStorageSize")))
+	assert.Zero(t, must.NotFail(storageStats.Get("freeStorageSize")))
 	assert.Equal(t, false, must.NotFail(storageStats.Get("capped")))
 	assert.NotZero(t, must.NotFail(storageStats.Get("nindexes")))
 	assert.NotZero(t, must.NotFail(storageStats.Get("totalIndexSize")))
 	assert.NotZero(t, must.NotFail(storageStats.Get("totalSize")))
 	assert.NotZero(t, must.NotFail(storageStats.Get("indexSizes")))
-	// TODO https://github.com/FerretDB/FerretDB/issues/2447
-	// assert.Equal(t, int32(1), must.NotFail(storageStats.Get("scaleFactor")))
+	assert.Equal(t, int32(1), must.NotFail(storageStats.Get("scaleFactor")))
+
+	cappedCollectionName := testutil.CollectionName(t) + "capped"
+	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000).SetMaxDocuments(10)
+	err = collection.Database().CreateCollection(ctx, cappedCollectionName, opts)
+	require.NoError(t, err)
+
+	cappedCollection := collection.Database().Collection(cappedCollectionName)
+	cursor, err = cappedCollection.Aggregate(ctx, pipeline)
+	require.NoError(t, err)
+
+	res = FetchAll(t, ctx, cursor)
+	require.Len(t, res, 1)
+	v, _ = ConvertDocument(t, res[0]).Get("storageStats")
+	require.NotNil(t, v)
+
+	storageStats, ok = v.(*types.Document)
+	require.True(t, ok)
+	assert.Equal(t, true, must.NotFail(storageStats.Get("capped")))
 }
 
 func TestAggregateCollStatsCommandErrors(t *testing.T) {

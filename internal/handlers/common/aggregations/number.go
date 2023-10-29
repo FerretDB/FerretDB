@@ -30,8 +30,8 @@ func SumNumbers(vs ...any) any {
 	// use big.Int to accumulate values larger than math.MaxInt64.
 	intSum := big.NewInt(0)
 
-	// TODO: handle accumulation of doubles close to max precision.
-	// https://github.com/FerretDB/FerretDB/issues/2300
+	// handle accumulation of doubles close to max precision.
+	// TODO https://github.com/FerretDB/FerretDB/issues/2300
 	var floatSum float64
 
 	var hasFloat64, hasInt64 bool

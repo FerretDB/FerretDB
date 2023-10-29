@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
+	"github.com/FerretDB/FerretDB/internal/handlers/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -78,9 +79,12 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	var qp backends.ExplainParams
-	if !h.DisableFilterPushdown {
-		qp.Filter = params.Filter
+	qp := backends.ExplainParams{
+		Filter: params.Filter,
+	}
+
+	if params.Aggregate {
+		qp.Filter, params.Sort = aggregations.GetPushdownQuery(params.StagesDocs)
 	}
 
 	// Skip sorting if there are more than one sort parameters
@@ -101,6 +105,23 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		}
 	}
 
+	// Limit pushdown is not applied if:
+	//  - `filter` is set, it must fetch all documents to filter them in memory;
+	//  - `sort` is set but `EnableSortPushdown` is not set, it must fetch all documents
+	//  and sort them in memory;
+	//  - `skip` is non-zero value, skip pushdown is not supported yet.
+	if params.Filter.Len() == 0 && (params.Sort.Len() == 0 || h.EnableSortPushdown) && params.Skip == 0 {
+		qp.Limit = params.Limit
+	}
+
+	if h.DisableFilterPushdown {
+		qp.Filter = nil
+	}
+
+	if !h.EnableSortPushdown {
+		qp.Sort = nil
+	}
+
 	res, err := coll.Explain(ctx, &qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -118,7 +139,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 			// TODO https://github.com/FerretDB/FerretDB/issues/3235
 			"pushdown", res.QueryPushdown,
 			"sortingPushdown", res.SortPushdown,
-			"limitPushdown", false,
+			"limitPushdown", res.LimitPushdown,
 
 			"ok", float64(1),
 		))},

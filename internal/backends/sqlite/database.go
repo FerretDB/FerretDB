@@ -53,7 +53,9 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 	res := make([]backends.CollectionInfo, len(list))
 	for i, c := range list {
 		res[i] = backends.CollectionInfo{
-			Name: c.Name,
+			Name:            c.Name,
+			CappedSize:      c.Settings.CappedSize,
+			CappedDocuments: c.Settings.CappedDocuments,
 		}
 	}
 
@@ -64,7 +66,12 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	created, err := db.r.CollectionCreate(ctx, db.name, params.Name)
+	created, err := db.r.CollectionCreate(ctx, &metadata.CollectionCreateParams{
+		DBName:          db.name,
+		Name:            params.Name,
+		CappedSize:      params.CappedSize,
+		CappedDocuments: params.CappedDocuments,
+	})
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -120,6 +127,10 @@ func (db *database) RenameCollection(ctx context.Context, params *backends.Renam
 
 // Stats implements backends.Database interface.
 func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsParams) (*backends.DatabaseStatsResult, error) {
+	if params == nil {
+		params = new(backends.DatabaseStatsParams)
+	}
+
 	d := db.r.DatabaseGetExisting(ctx, db.name)
 	if d == nil {
 		return nil, backends.NewError(backends.ErrorCodeDatabaseDoesNotExist, lazyerrors.Errorf("no database %s", db.name))
@@ -130,7 +141,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		return nil, lazyerrors.Error(err)
 	}
 
-	stats, err := collectionsStats(ctx, d, list)
+	stats, err := collectionsStats(ctx, d, list, params.Refresh)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -152,6 +163,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 		SizeTotal:       totalSize,
 		SizeIndexes:     stats.sizeIndexes,
 		SizeCollections: stats.sizeTables,
+		SizeFreeStorage: stats.sizeFreeStorage,
 	}, nil
 }
 

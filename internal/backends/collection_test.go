@@ -204,10 +204,13 @@ func TestCollectionStats(t *testing.T) {
 					require.NoError(t, err)
 				}
 
-				dbStatsRes, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
+				dbStatsRes, err := db.Stats(ctx, &backends.DatabaseStatsParams{
+					Refresh: true,
+				})
 				require.NoError(t, err)
-
-				res, err := c.Stats(ctx, new(backends.CollectionStatsParams))
+				res, err := c.Stats(ctx, &backends.CollectionStatsParams{
+					Refresh: true,
+				})
 				require.NoError(t, err)
 				require.NotZero(t, res.SizeTotal)
 				require.Less(t, res.SizeTotal, dbStatsRes.SizeTotal)
@@ -221,8 +224,6 @@ func TestCollectionStats(t *testing.T) {
 }
 
 func TestCollectionCompact(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/3484")
-
 	t.Parallel()
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())

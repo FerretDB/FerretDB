@@ -87,13 +87,14 @@ type ListCollectionsResult struct {
 // CollectionInfo represents information about a single collection.
 type CollectionInfo struct {
 	Name            string
-	CappedSize      int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
-	CappedDocuments int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
+	CappedSize      int64
+	CappedDocuments int64
+	_               struct{} // prevent unkeyed literals
 }
 
 // Capped returns true if collection is capped.
 func (ci *CollectionInfo) Capped() bool {
-	return ci.CappedSize > 0 || ci.CappedDocuments > 0
+	return ci.CappedSize > 0 // TODO https://github.com/FerretDB/FerretDB/issues/3631
 }
 
 // ListCollections returns a list collections in the database sorted by name.
@@ -119,13 +120,14 @@ func (dbc *databaseContract) ListCollections(ctx context.Context, params *ListCo
 // CreateCollectionParams represents the parameters of Database.CreateCollection method.
 type CreateCollectionParams struct {
 	Name            string
-	CappedSize      int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
-	CappedDocuments int64 // TODO https://github.com/FerretDB/FerretDB/issues/3458
+	CappedSize      int64
+	CappedDocuments int64
+	_               struct{} // prevent unkeyed literals
 }
 
 // Capped returns true if capped collection creation is requested.
 func (ccp *CreateCollectionParams) Capped() bool {
-	return ccp.CappedSize > 0 || ccp.CappedDocuments > 0
+	return ccp.CappedSize > 0 // TODO https://github.com/FerretDB/FerretDB/issues/3631
 }
 
 // CreateCollection creates a new collection with valid name in the database; it should not already exist.
@@ -198,7 +200,7 @@ func (dbc *databaseContract) RenameCollection(ctx context.Context, params *Renam
 
 // DatabaseStatsParams represents the parameters of Database.Stats method.
 type DatabaseStatsParams struct {
-	Refresh bool // TODO https://github.com/FerretDB/FerretDB/issues/3518
+	Refresh bool
 }
 
 // DatabaseStatsResult represents the results of Database.Stats method.
@@ -207,6 +209,7 @@ type DatabaseStatsResult struct {
 	SizeTotal       int64
 	SizeIndexes     int64
 	SizeCollections int64
+	SizeFreeStorage int64
 }
 
 // Stats returns statistic estimations about the database.

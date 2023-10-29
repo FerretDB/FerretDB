@@ -259,9 +259,34 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	var iter iterator.Interface[struct{}, *types.Document]
 
 	if len(collStatsDocuments) == len(stagesDocuments) {
-		// TODO https://github.com/FerretDB/FerretDB/issues/3235
-		// TODO https://github.com/FerretDB/FerretDB/issues/3181
-		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{c, stagesDocuments})
+		filter, sort := aggregations.GetPushdownQuery(aggregationStages)
+
+		// only documents stages or no stages - fetch documents from the DB and apply stages to them
+		qp := new(backends.QueryParams)
+
+		if !h.DisableFilterPushdown {
+			qp.Filter = filter
+		}
+
+		// Skip sorting if there are more than one sort parameters
+		if h.EnableSortPushdown && sort.Len() == 1 {
+			var order types.SortType
+
+			k := sort.Keys()[0]
+			v := sort.Values()[0]
+
+			order, err = common.GetSortType(k, v)
+			if err != nil {
+				return nil, err
+			}
+
+			qp.Sort = &backends.SortField{
+				Key:        k,
+				Descending: order == types.Descending,
+			}
+		}
+
+		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{c, qp, stagesDocuments})
 	} else {
 		// TODO https://github.com/FerretDB/FerretDB/issues/2423
 		statistics := stages.GetStatistics(collStatsDocuments)
@@ -323,12 +348,13 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 // stagesDocumentsParams contains the parameters for processStagesDocuments.
 type stagesDocumentsParams struct {
 	c      backends.Collection
+	qp     *backends.QueryParams
 	stages []aggregations.Stage
 }
 
 // processStagesDocuments retrieves the documents from the database and then processes them through the stages.
 func processStagesDocuments(ctx context.Context, closer *iterator.MultiCloser, p *stagesDocumentsParams) (types.DocumentsIterator, error) { //nolint:lll // for readability
-	queryRes, err := p.c.Query(ctx, nil)
+	queryRes, err := p.c.Query(ctx, p.qp)
 	if err != nil {
 		closer.Close()
 		return nil, lazyerrors.Error(err)
@@ -442,12 +468,13 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 				"count", collStats.CountDocuments,
 				"avgObjSize", avgObjSize,
 				"storageSize", collStats.SizeCollection,
-				// TODO https://github.com/FerretDB/FerretDB/issues/2447
-				"freeStorageSize", int64(0),
+				"freeStorageSize", collStats.SizeFreeStorage,
 				"capped", cInfo.Capped(),
 				"nindexes", nIndexes,
-				"indexDetails", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
-				"indexBuilds", must.NotFail(types.NewDocument()), // TODO https://github.com/FerretDB/FerretDB/issues/2342
+				// TODO https://github.com/FerretDB/FerretDB/issues/2447
+				"indexDetails", must.NotFail(types.NewDocument()),
+				// TODO https://github.com/FerretDB/FerretDB/issues/2447
+				"indexBuilds", must.NotFail(types.NewDocument()),
 				"totalIndexSize", collStats.SizeIndexes,
 				"totalSize", collStats.SizeTotal,
 				"indexSizes", indexSizes,
