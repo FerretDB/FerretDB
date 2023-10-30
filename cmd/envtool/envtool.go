@@ -377,6 +377,7 @@ var cli struct {
 // makeLogger returns a human-friendly logger.
 func makeLogger(level zapcore.Level, output []string) (*zap.Logger, error) {
 	start := time.Now()
+
 	return zap.Config{
 		Level:             zap.NewAtomicLevelAt(level),
 		Development:       true,
