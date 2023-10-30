@@ -1159,8 +1159,6 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("timeseries")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("views")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("internalViews")))
-
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/2447")
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
 
 	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000).SetMaxDocuments(10)
@@ -1361,6 +1359,148 @@ func TestCommandsAdministrationServerStatusStress(t *testing.T) {
 	close(start)
 
 	wg.Wait()
+}
+
+func TestCommandsAdministrationCompactForce(t *testing.T) {
+	t.Parallel()
+
+	s := setup.SetupWithOpts(t, &setup.SetupOpts{
+		DatabaseName: "admin",
+		Providers:    []shareddata.Provider{shareddata.DocumentsStrings},
+	})
+
+	for name, tc := range map[string]struct {
+		force any // optional, defaults to unset
+
+		err            *mongo.CommandError // optional
+		altMessage     string              // optional, alternative error message
+		skip           string              // optional, skip test with a specified reason
+		skipForMongoDB string              // optional, skip test for mongoDB with a specific reason
+	}{
+		"True": {
+			force: true,
+		},
+		"False": {
+			force: false,
+		},
+		"Int32": {
+			force: int32(1),
+		},
+		"Int32Zero": {
+			force: int32(0),
+		},
+		"Int64": {
+			force: int64(1),
+		},
+		"Int64Zero": {
+			force: int64(0),
+		},
+		"Double": {
+			force: float64(1),
+		},
+		"DoubleZero": {
+			force: float64(0),
+		},
+		"Unset": {},
+		"String": {
+			force: "foo",
+			err: &mongo.CommandError{
+				Code:    14,
+				Name:    "TypeMismatch",
+				Message: "BSON field 'force' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
+			},
+			skipForMongoDB: "force is FerretDB specific field",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			if tc.skipForMongoDB != "" {
+				setup.SkipForMongoDB(t, tc.skipForMongoDB)
+			}
+
+			t.Parallel()
+
+			command := bson.D{{"compact", s.Collection.Name()}}
+			if tc.force != nil {
+				command = append(command, bson.E{Key: "force", Value: tc.force})
+			}
+
+			var res bson.D
+			err := s.Collection.Database().RunCommand(
+				s.Ctx,
+				command,
+			).Decode(&res)
+
+			if tc.err != nil {
+				AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+				return
+			}
+
+			require.NoError(t, err)
+
+			doc := ConvertDocument(t, res)
+			assert.Equal(t, float64(1), must.NotFail(doc.Get("ok")))
+			assert.NotNil(t, must.NotFail(doc.Get("bytesFreed")))
+		})
+	}
+}
+
+func TestCommandsAdministrationCompactErrors(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		dbName string
+
+		err        *mongo.CommandError // required
+		altMessage string              // optional, alternative error message
+		skip       string              // optional, skip test with a specified reason
+	}{
+		"NonExistentDB": {
+			dbName: "non-existent",
+			err: &mongo.CommandError{
+				Code:    26,
+				Name:    "NamespaceNotFound",
+				Message: "database does not exist",
+			},
+			altMessage: "Invalid namespace specified 'non-existent.non-existent'",
+		},
+		"NonExistentCollection": {
+			dbName: "admin",
+			err: &mongo.CommandError{
+				Code:    26,
+				Name:    "NamespaceNotFound",
+				Message: "collection does not exist",
+			},
+			altMessage: "Invalid namespace specified 'admin.non-existent'",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			t.Parallel()
+
+			require.NotNil(t, tc.err, "err must not be nil")
+
+			s := setup.SetupWithOpts(t, &setup.SetupOpts{
+				DatabaseName: tc.dbName,
+			})
+
+			var res bson.D
+			err := s.Collection.Database().RunCommand(
+				s.Ctx,
+				bson.D{{"compact", "non-existent"}},
+			).Decode(&res)
+
+			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+		})
+	}
 }
 
 func TestCommandsAdministrationCurrentOp(t *testing.T) {
