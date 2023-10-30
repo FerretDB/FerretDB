@@ -281,7 +281,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	orderByClause := prepareOrderByClause(params.Sort, meta.Capped())
-	sortPushdown := orderByClause != ""
+	unsafeSortPushdown := orderByClause != ""
 
 	q := `EXPLAIN QUERY PLAN ` + selectClause + whereClause + orderByClause
 
@@ -323,10 +323,10 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	return &backends.ExplainResult{
-		QueryPlanner:  must.NotFail(types.NewDocument("Plan", queryPlan)),
-		QueryPushdown: queryPushdown,
-		SortPushdown:  sortPushdown,
-		LimitPushdown: limitPushdown,
+		QueryPlanner:       must.NotFail(types.NewDocument("Plan", queryPlan)),
+		QueryPushdown:      queryPushdown,
+		UnsafeSortPushdown: unsafeSortPushdown,
+		LimitPushdown:      limitPushdown,
 	}, nil
 }
 

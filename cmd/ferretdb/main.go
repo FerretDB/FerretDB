@@ -85,7 +85,7 @@ var cli struct {
 		RecordsDir string `default:"" help:"Testing: directory for record files."`
 
 		DisableFilterPushdown bool `default:"false" help:"Experimental: disable filter pushdown."`
-		EnableSortPushdown    bool `default:"false" help:"Experimental: enable sort pushdown."`
+		UnsafeSortPushdown    bool `default:"false" help:"Experimental: enable unsafe sort pushdown."`
 		EnableOplog           bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
 
 		UseNewHana bool `default:"false" help:"Experimental: use new SAP HANA backend." hidden:""`
@@ -367,7 +367,7 @@ func run() {
 
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
-			EnableSortPushdown:    cli.Test.EnableSortPushdown,
+			UnsafeSortPushdown:    cli.Test.UnsafeSortPushdown,
 			EnableOplog:           cli.Test.EnableOplog,
 
 			UseNewHana: cli.Test.UseNewHana,

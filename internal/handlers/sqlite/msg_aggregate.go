@@ -269,7 +269,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 		// Skip sorting if there are more than one sort parameters
-		if h.EnableSortPushdown && sort.Len() == 1 {
+		if h.UnsafeSortPushdown && sort.Len() == 1 {
 			var order types.SortType
 
 			k := sort.Keys()[0]

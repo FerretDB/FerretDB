@@ -173,8 +173,8 @@ Flags:
                                          ($FERRETDB_TEST_RECORDS_DIR).
       --test-disable-filter-pushdown     Experimental: disable filter pushdown
                                          ($FERRETDB_TEST_DISABLE_FILTER_PUSHDOWN).
-      --test-enable-sort-pushdown        Experimental: enable sort pushdown
-                                         ($FERRETDB_TEST_ENABLE_SORT_PUSHDOWN).
+      --test-unsafe-sort-pushdown        Experimental: unsafe sort pushdown
+                                         ($FERRETDB_TEST_UNSAFE_SORT_PUSHDOWN).
       --test-telemetry-url="https://beacon.ferretdb.io/"
                                          Telemetry: reporting URL ($FERRETDB_TEST_TELEMETRY_URL).
       --test-telemetry-undecided-delay=1h

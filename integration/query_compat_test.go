@@ -242,29 +242,29 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 		filter bson.D
 		sort   bson.D
 
-		sortPushdown resultPushdown
+		unsafeSortPushdown resultPushdown
 	}{
 		"NoSortNoFilter": {
-			sortPushdown: allPushdown,
+			unsafeSortPushdown: allPushdown,
 		},
 		"Filter": {
-			filter:       bson.D{{"v", int32(42)}},
-			sortPushdown: allPushdown,
+			filter:             bson.D{{"v", int32(42)}},
+			unsafeSortPushdown: allPushdown,
 		},
 		"Sort": {
-			sort:         bson.D{{"_id", int32(-1)}},
-			sortPushdown: pgPushdown,
+			sort:               bson.D{{"_id", int32(-1)}},
+			unsafeSortPushdown: pgPushdown,
 		},
 		"FilterSort": {
-			filter:       bson.D{{"v", int32(42)}},
-			sort:         bson.D{{"_id", int32(-1)}},
-			sortPushdown: pgPushdown,
+			filter:             bson.D{{"v", int32(42)}},
+			sort:               bson.D{{"_id", int32(-1)}},
+			unsafeSortPushdown: pgPushdown,
 		},
 		"MultipleSortFields": {
 			sort: bson.D{{"v", 1}, {"_id", int32(-1)}},
 			// multiple sort fields are skipped by handler and no sort pushdown
 			// is set on handler, so record ID pushdown is done.
-			sortPushdown: allPushdown,
+			unsafeSortPushdown: allPushdown,
 		},
 	} {
 		name, tc := name, tc
@@ -288,8 +288,8 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 			require.NoError(t, targetCollection.Database().RunCommand(ctx, bson.D{{"explain", explainQuery}}).Decode(&explainRes))
 
 			doc := ConvertDocument(t, explainRes)
-			sortPushdown, _ := doc.Get("sortingPushdown")
-			assert.Equal(t, tc.sortPushdown.SortPushdownExpected(t, true), sortPushdown)
+			unsafeSortPushdown, _ := doc.Get("sortingPushdown")
+			assert.Equal(t, tc.unsafeSortPushdown.UnsafeSortPushdownExpected(t, true), unsafeSortPushdown)
 
 			findOpts := options.Find()
 			if tc.sort != nil {

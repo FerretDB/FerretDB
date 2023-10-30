@@ -54,11 +54,11 @@ func (res resultPushdown) PushdownExpected(t testtb.TB) bool {
 	return res.pushdownExpected(t)
 }
 
-// SortPushdownExpected returns true if sort pushdown is expected for currently running backend.
+// UnsafeSortPushdownExpected returns true if sort pushdown is expected for currently running backend.
 // It checks if pushdown is enabled by flag.
 // For capped collection, pushdown for recordID is done even if pushdown is not enabled by flag.
-func (res resultPushdown) SortPushdownExpected(t testtb.TB, cappedCollection bool) bool {
-	if !setup.IsSortPushdownEnabled() && cappedCollection {
+func (res resultPushdown) UnsafeSortPushdownExpected(t testtb.TB, cappedCollection bool) bool {
+	if !setup.IsUnsafeSortPushdownEnabled() && cappedCollection {
 		res = allPushdown
 	}
 
