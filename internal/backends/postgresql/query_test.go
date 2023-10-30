@@ -241,7 +241,7 @@ func TestPrepareWhereClause(t *testing.T) {
 				t.Skip(tc.skip)
 			}
 
-			actual, args, err := prepareWhereClause(new(metadata.Placeholder), tc.filter)
+			actual, args, _, err := prepareWhereClause(new(metadata.Placeholder), tc.filter)
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.expected, actual)
@@ -306,7 +306,7 @@ func TestPrepareOrderByClause(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			orderBy, args := prepareOrderByClause(new(metadata.Placeholder), tc.sort, tc.capped)
+			orderBy, args, _ := prepareOrderByClause(new(metadata.Placeholder), tc.sort, tc.capped)
 			assert.Equal(t, tc.orderBy, orderBy)
 			assert.Equal(t, tc.args, args)
 		})

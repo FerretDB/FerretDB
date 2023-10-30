@@ -69,6 +69,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		params = new(backends.QueryParams)
 	}
 
+	var queryPushdown bool
 	var whereClause string
 	var args []any
 
@@ -78,6 +79,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		v, _ := params.Filter.Get("_id")
 		switch v.(type) {
 		case string, types.ObjectID:
+			queryPushdown = true
 			whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
 			args = []any{string(must.NotFail(sjson.MarshalSingleValue(v)))}
 		}
@@ -87,7 +89,9 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	q += prepareOrderByClause(params.Sort, meta.Capped())
 
-	if params.Limit != 0 {
+	// Limit pushdown is applied when pushdown can apply to filter since sqlite does not
+	// support sort pushdown
+	if params.Limit != 0 && params.Sort == nil && (params.Filter.Len() == 0 || queryPushdown) {
 		q += ` LIMIT ?`
 		args = append(args, params.Limit)
 	}
@@ -287,7 +291,9 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	var limitPushdown bool
 
-	if params.Limit != 0 {
+	// Limit pushdown is applied when pushdown can apply to filter since sqlite does not
+	// support sort pushdown
+	if params.Limit != 0 && params.Sort == nil && (params.Filter.Len() == 0 || queryPushdown) {
 		q += ` LIMIT ?`
 		args = append(args, params.Limit)
 		limitPushdown = true

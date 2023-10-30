@@ -63,9 +63,12 @@ func prepareSelectClause(schema, table string, capped, onlyRecordIDs bool) strin
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
-func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (string, []any, error) {
+func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (string, []any, bool, error) {
 	var filters []string
 	var args []any
+	var filterPushdownAll bool
+
+	filterPushdownAll = true
 
 	iter := sqlFilters.Iterator()
 	defer iter.Close()
@@ -78,7 +81,7 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 				break
 			}
 
-			return "", nil, lazyerrors.Error(err)
+			return "", nil, filterPushdownAll, lazyerrors.Error(err)
 		}
 
 		// Is the comment below correct? Does it also skip things like $or?
@@ -98,12 +101,13 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 			// Handle dot notation.
 			// TODO https://github.com/FerretDB/FerretDB/issues/2069
 			if path.Len() > 1 {
+				filterPushdownAll = false
 				continue
 			}
 		case errors.As(err, &pe):
 			// ignore empty key error, otherwise return error
 			if pe.Code() != types.ErrPathElementEmpty {
-				return "", nil, lazyerrors.Error(err)
+				return "", nil, filterPushdownAll, lazyerrors.Error(err)
 			}
 		default:
 			panic("Invalid error type: PathError expected")
@@ -122,7 +126,7 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 						break
 					}
 
-					return "", nil, lazyerrors.Error(err)
+					return "", nil, filterPushdownAll, lazyerrors.Error(err)
 				}
 
 				switch k {
@@ -146,6 +150,7 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 					case *types.Document, *types.Array, types.Binary,
 						types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
+						filterPushdownAll = false
 
 					case float64, bool, int32, int64:
 						filters = append(filters, fmt.Sprintf(
@@ -176,12 +181,14 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 				default:
 					// $gt and $lt
 					// TODO https://github.com/FerretDB/FerretDB/issues/1875
+					filterPushdownAll = false
 					continue
 				}
 			}
 
 		case *types.Array, types.Binary, types.NullType, types.Regex, types.Timestamp:
 			// type not supported for pushdown
+			filterPushdownAll = false
 
 		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
 			if f, a := filterEqual(p, rootKey, v); f != "" {
@@ -199,24 +206,24 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 		filter = ` WHERE ` + strings.Join(filters, " AND ")
 	}
 
-	return filter, args, nil
+	return filter, args, filterPushdownAll, nil
 }
 
 // prepareOrderByClause returns ORDER BY clause for given sort field and returns the query and arguments.
 //
 // For capped collection, it returns ORDER BY recordID only if sort field is nil.
-func prepareOrderByClause(p *metadata.Placeholder, sort *backends.SortField, capped bool) (string, []any) {
+func prepareOrderByClause(p *metadata.Placeholder, sort *backends.SortField, capped bool) (string, []any, bool) {
 	if sort == nil {
 		if capped {
-			return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil
+			return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil, true
 		}
 
-		return "", nil
+		return "", nil, true
 	}
 
 	// Skip sorting dot notation
 	if strings.ContainsRune(sort.Key, '.') {
-		return "", nil
+		return "", nil, false
 	}
 
 	var order string
@@ -224,7 +231,7 @@ func prepareOrderByClause(p *metadata.Placeholder, sort *backends.SortField, cap
 		order = " DESC"
 	}
 
-	return fmt.Sprintf(" ORDER BY %s->%s%s", metadata.DefaultColumn, p.Next(), order), []any{sort.Key}
+	return fmt.Sprintf(" ORDER BY %s->%s%s", metadata.DefaultColumn, p.Next(), order), []any{sort.Key}, true
 }
 
 // filterEqual returns the proper SQL filter with arguments that filters documents

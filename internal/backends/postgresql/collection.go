@@ -82,18 +82,19 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	var placeholder metadata.Placeholder
 
-	where, args, err := prepareWhereClause(&placeholder, params.Filter)
+	where, args, filterPushdownAll, err := prepareWhereClause(&placeholder, params.Filter)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	q += where
 
-	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
+	sort, sortArgs, sortPushdownAll := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
 	q += sort
 	args = append(args, sortArgs...)
 
-	if params.Limit != 0 {
+	// Limit pushdown is applied when pushdown can apply to all filter and sort
+	if params.Limit != 0 && filterPushdownAll && sortPushdownAll {
 		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
 		args = append(args, params.Limit)
 	}
@@ -312,7 +313,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	var placeholder metadata.Placeholder
 
-	where, args, err := prepareWhereClause(&placeholder, params.Filter)
+	where, args, filterPushdownAll, err := prepareWhereClause(&placeholder, params.Filter)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -321,12 +322,13 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	q += where
 
-	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
+	sort, sortArgs, sortPushdownAll := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
 	q += sort
 	args = append(args, sortArgs...)
 	res.SortPushdown = sort != ""
 
-	if params.Limit != 0 {
+	// Limit pushdown is applied when pushdown can apply to all filter and sort
+	if params.Limit != 0 && filterPushdownAll && sortPushdownAll {
 		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
 		args = append(args, params.Limit)
 		res.LimitPushdown = true
