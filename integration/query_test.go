@@ -842,34 +842,29 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 		failsForSQLite string              // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"Simple": {
-			limit:          1,
-			len:            1,
-			limitPushdown:  true,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
+			limit:         1,
+			len:           1,
+			limitPushdown: true,
 		},
 		"AlmostAll": {
-			limit:          int64(len(shareddata.Composites.Docs()) - 1),
-			len:            len(shareddata.Composites.Docs()) - 1,
-			limitPushdown:  true,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
+			limit:         int64(len(shareddata.Composites.Docs()) - 1),
+			len:           len(shareddata.Composites.Docs()) - 1,
+			limitPushdown: true,
 		},
 		"All": {
-			limit:          int64(len(shareddata.Composites.Docs())),
-			len:            len(shareddata.Composites.Docs()),
-			limitPushdown:  true,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
+			limit:         int64(len(shareddata.Composites.Docs())),
+			len:           len(shareddata.Composites.Docs()),
+			limitPushdown: true,
 		},
 		"More": {
-			limit:          int64(len(shareddata.Composites.Docs()) + 1),
-			len:            len(shareddata.Composites.Docs()),
-			limitPushdown:  true,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
+			limit:         int64(len(shareddata.Composites.Docs()) + 1),
+			len:           len(shareddata.Composites.Docs()),
+			limitPushdown: true,
 		},
 		"Big": {
-			limit:          1000,
-			len:            len(shareddata.Composites.Docs()),
-			limitPushdown:  true,
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3181",
+			limit:         1000,
+			len:           len(shareddata.Composites.Docs()),
+			limitPushdown: true,
 		},
 		"Zero": {
 			limit:         0,
@@ -880,7 +875,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			filter:        bson.D{{"_id", "array"}},
 			limit:         3,
 			len:           1,
-			queryPushdown: pgPushdown,
+			queryPushdown: allPushdown,
 			limitPushdown: false,
 		},
 		"ValueFilter": {
@@ -917,7 +912,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			sort:          bson.D{{"_id", 1}},
 			limit:         3,
 			len:           1,
-			queryPushdown: pgPushdown,
+			queryPushdown: allPushdown,
 			limitPushdown: false,
 		},
 		"ValueFilterSort": {

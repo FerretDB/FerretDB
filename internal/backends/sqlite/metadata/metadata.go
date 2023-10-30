@@ -28,6 +28,9 @@ const (
 
 	// IDColumn is a SQLite path expression for _id field.
 	IDColumn = DefaultColumn + "->'$._id'"
+
+	// RecordIDColumn is a name for RecordID column to store capped collection record id.
+	RecordIDColumn = backends.ReservedPrefix + "record_id"
 )
 
 // Collection represents collection metadata.
@@ -38,6 +41,11 @@ type Collection struct {
 	Name      string
 	TableName string
 	Settings  Settings
+}
+
+// Capped returns true if collection is capped.
+func (c Collection) Capped() bool {
+	return c.Settings.CappedSize > 0
 }
 
 // deepCopy returns a deep copy.

@@ -15,27 +15,197 @@
 package backends_test // to avoid import cycle
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
+
+// assertEqualRecordID asserts recordIDs of slices are equal and not zero.
+func assertEqualRecordID(t *testing.T, expected, actual []*types.Document) {
+	require.Len(t, actual, len(expected))
+
+	for i, doc := range actual {
+		assert.Equal(t, expected[i].RecordID(), doc.RecordID())
+		assert.NotZero(t, doc.RecordID())
+	}
+}
+
+func TestCollectionInsertAllQueryExplain(t *testing.T) {
+	t.Parallel()
+
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+
+	for name, b := range testBackends(t) {
+		name, b := name, b
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			dbName := testutil.DatabaseName(t)
+			collName, cappedCollName := testutil.CollectionName(t), testutil.CollectionName(t)+"capped"
+			cleanupDatabase(t, ctx, b, dbName)
+
+			db, err := b.Database(dbName)
+			require.NoError(t, err)
+
+			coll, err := db.Collection(collName)
+			require.NoError(t, err)
+
+			err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
+				Name:       cappedCollName,
+				CappedSize: 8192,
+			})
+			require.NoError(t, err)
+
+			cappedColl, err := db.Collection(cappedCollName)
+			require.NoError(t, err)
+
+			insertDocs := []*types.Document{
+				must.NotFail(types.NewDocument("_id", types.ObjectID{2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})),
+				must.NotFail(types.NewDocument("_id", types.ObjectID{3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})),
+				must.NotFail(types.NewDocument("_id", types.ObjectID{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})),
+			}
+
+			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: insertDocs})
+			require.NoError(t, err)
+
+			_, err = cappedColl.InsertAll(ctx, &backends.InsertAllParams{Docs: insertDocs})
+			require.NoError(t, err)
+
+			t.Run("CappedCollection", func(t *testing.T) {
+				t.Parallel()
+
+				queryRes, err := cappedColl.Query(ctx, new(backends.QueryParams))
+				require.NoError(t, err)
+
+				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
+				require.NoError(t, err)
+				require.Len(t, docs, len(insertDocs))
+				testutil.AssertEqualSlices(t, insertDocs, docs)
+				assertEqualRecordID(t, insertDocs, docs)
+
+				explainRes, err := cappedColl.Explain(ctx, new(backends.ExplainParams))
+				require.NoError(t, err)
+				assert.True(t, explainRes.SortPushdown)
+			})
+
+			t.Run("CappedCollectionOnlyRecordIDs", func(t *testing.T) {
+				t.Parallel()
+
+				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{OnlyRecordIDs: true})
+				require.NoError(t, err)
+
+				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
+				require.NoError(t, err)
+				testutil.AssertEqualSlices(t, []*types.Document{{}, {}, {}}, docs)
+				assertEqualRecordID(t, insertDocs, docs)
+
+				explainRes, err := cappedColl.Explain(ctx, new(backends.ExplainParams))
+				require.NoError(t, err)
+				assert.True(t, explainRes.SortPushdown)
+			})
+
+			t.Run("CappedCollectionSortAsc", func(t *testing.T) {
+				if name == "sqlite" {
+					t.Skip("https://github.com/FerretDB/FerretDB/issues/3181")
+				}
+
+				t.Parallel()
+
+				sort := backends.SortField{Key: "_id"}
+				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{Sort: &sort})
+				require.NoError(t, err)
+
+				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
+				require.NoError(t, err)
+				expectedDocs := []*types.Document{insertDocs[2], insertDocs[0], insertDocs[1]}
+				testutil.AssertEqualSlices(t, expectedDocs, docs)
+				assertEqualRecordID(t, expectedDocs, docs)
+
+				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &sort})
+				require.NoError(t, err)
+				assert.True(t, explainRes.SortPushdown)
+			})
+
+			t.Run("CappedCollectionSortDesc", func(t *testing.T) {
+				if name == "sqlite" {
+					t.Skip("https://github.com/FerretDB/FerretDB/issues/3181")
+				}
+
+				t.Parallel()
+
+				sort := backends.SortField{Key: "_id", Descending: true}
+				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{Sort: &sort})
+				require.NoError(t, err)
+
+				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
+				require.NoError(t, err)
+				expectedDocs := []*types.Document{insertDocs[1], insertDocs[0], insertDocs[2]}
+				testutil.AssertEqualSlices(t, expectedDocs, docs)
+				assertEqualRecordID(t, expectedDocs, docs)
+
+				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &sort})
+				require.NoError(t, err)
+				assert.True(t, explainRes.SortPushdown)
+			})
+
+			t.Run("CappedCollectionFilter", func(t *testing.T) {
+				t.Parallel()
+
+				filter := must.NotFail(types.NewDocument("_id", types.ObjectID{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}))
+				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{Filter: filter})
+				require.NoError(t, err)
+
+				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
+				require.NoError(t, err)
+				testutil.AssertEqualSlices(t, []*types.Document{filter}, docs)
+				expectedDocs := []*types.Document{insertDocs[2]}
+				testutil.AssertEqualSlices(t, expectedDocs, docs)
+				assertEqualRecordID(t, expectedDocs, docs)
+
+				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Filter: filter})
+				require.NoError(t, err)
+				assert.True(t, explainRes.QueryPushdown)
+				assert.True(t, explainRes.SortPushdown)
+			})
+
+			t.Run("NonCappedCollectionOnlyRecordID", func(t *testing.T) {
+				t.Parallel()
+
+				queryRes, err := coll.Query(ctx, &backends.QueryParams{OnlyRecordIDs: true})
+				require.NoError(t, err)
+
+				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
+				require.NoError(t, err)
+				testutil.AssertEqualSlices(t, []*types.Document{{}, {}, {}}, docs)
+				for _, doc := range docs {
+					assert.Zero(t, doc.RecordID())
+				}
+
+				explainRes, err := coll.Explain(ctx, new(backends.ExplainParams))
+				require.NoError(t, err)
+				assert.False(t, explainRes.SortPushdown)
+			})
+		})
+	}
+}
 
 func TestCollectionUpdateAll(t *testing.T) {
 	t.Parallel()
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 
-	for _, b := range testBackends(t) {
-		b := b
-		t.Run(b.Name(), func(t *testing.T) {
+	for name, b := range testBackends(t) {
+		name, b := name, b
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			t.Run("DatabaseDoesNotExist", func(t *testing.T) {
@@ -138,9 +308,9 @@ func TestCollectionStats(t *testing.T) {
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 
-	for _, b := range testBackends(t) {
-		b := b
-		t.Run(b.Name(), func(t *testing.T) {
+	for name, b := range testBackends(t) {
+		name, b := name, b
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			t.Run("DatabaseDoesNotExist", func(t *testing.T) {
@@ -189,32 +359,34 @@ func TestCollectionStats(t *testing.T) {
 				db, err := b.Database(dbName)
 				require.NoError(t, err)
 
+				var c backends.Collection
 				cNames := []string{"collectionOne", "collectionTwo"}
 				for _, cName := range cNames {
 					err = db.CreateCollection(ctx, &backends.CreateCollectionParams{Name: cName})
 					require.NoError(t, err)
+
+					c, err = db.Collection(cName)
+					require.NoError(t, err)
+
+					_, err = c.InsertAll(ctx, &backends.InsertAllParams{
+						Docs: []*types.Document{must.NotFail(types.NewDocument("_id", types.NewObjectID()))},
+					})
+					require.NoError(t, err)
 				}
 
-				c, err := db.Collection(cNames[0])
-				require.NoError(t, err)
-
-				_, err = c.InsertAll(ctx, &backends.InsertAllParams{
-					Docs: []*types.Document{must.NotFail(types.NewDocument("_id", types.NewObjectID()))},
+				dbStatsRes, err := db.Stats(ctx, &backends.DatabaseStatsParams{
+					Refresh: true,
 				})
 				require.NoError(t, err)
-
-				dbStatsRes, err := db.Stats(ctx, new(backends.DatabaseStatsParams))
-				require.NoError(t, err)
-
-				res, err := c.Stats(ctx, new(backends.CollectionStatsParams))
+				res, err := c.Stats(ctx, &backends.CollectionStatsParams{
+					Refresh: true,
+				})
 				require.NoError(t, err)
 				require.NotZero(t, res.SizeTotal)
 				require.Less(t, res.SizeTotal, dbStatsRes.SizeTotal)
 				require.NotZero(t, res.SizeCollection)
 				require.Less(t, res.SizeCollection, dbStatsRes.SizeCollections)
-				require.Equal(t, res.CountObjects, int64(1))
-				// TODO https://github.com/FerretDB/FerretDB/issues/3394
-				// require.NotZero(t, res.CountIndexes)
+				require.Equal(t, res.CountDocuments, int64(1))
 				require.NotZero(t, res.SizeIndexes)
 			})
 		})
@@ -222,16 +394,13 @@ func TestCollectionStats(t *testing.T) {
 }
 
 func TestCollectionCompact(t *testing.T) {
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/3484")
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/3469")
-
 	t.Parallel()
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 
-	for _, b := range testBackends(t) {
-		b := b
-		t.Run(b.Name(), func(t *testing.T) {
+	for name, b := range testBackends(t) {
+		name, b := name, b
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			t.Run("DatabaseDoesNotExist", func(t *testing.T) {

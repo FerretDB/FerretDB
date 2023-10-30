@@ -91,7 +91,7 @@ func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, 
 
 	var limit, skip int64
 
-	if limit, err = GetOptionalParam(explain, "limit", limit); err != nil {
+	if limit, err = GetLimitParam(explain); err != nil {
 		return nil, err
 	}
 

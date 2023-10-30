@@ -38,7 +38,7 @@ labels:
     description: Issues about metrics, logs, traces, pprof, etc
   - name: area/oplog
     color: "#09D521"
-    description: Issues about OpLog
+    description: Issues about OpLog and capped collections
   - name: area/params
     color: "#FBCA04"
     description: Issues about command parameters extraction
@@ -89,7 +89,11 @@ labels:
 
   - name: badly estimated
     color: "#FF3333"
-    description: Scope, difficulty and/or clarify were different
+    description: Scope, difficulty and/or clarify of the issue were different
+
+  - name: community
+    color: "#297252"
+    description: Issues and PRs assigned to community members
 
   - name: conflict
     color: "#FF0000"
