@@ -43,6 +43,11 @@ type Collection struct {
 	Settings  Settings
 }
 
+// Capped returns true if collection is capped.
+func (c Collection) Capped() bool {
+	return c.Settings.CappedSize > 0
+}
+
 // deepCopy returns a deep copy.
 func (c *Collection) deepCopy() *Collection {
 	if c == nil {

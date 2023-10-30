@@ -44,7 +44,6 @@ linters-settings:
           - "!**/internal/backends/sqlite/*.go"
           - "!**/internal/backends/postgresql/*.go"
           - "!**/internal/backends/postgresql/metadata/*.go"
-          - "!**/internal/handlers/pg/pgdb/*.go"
           - "!**/internal/handlers/hana/hanadb/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handlers/sjson
@@ -53,13 +52,6 @@ linters-settings:
           - "**/internal/backends/**/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handlers/common
-      pgdb:
-        files:
-          - $all
-          - "!**/internal/handlers/pg/*.go"
-          - "!**/cmd/envtool/*.go"
-        deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb
       commonerrors:
         files:
           - $all

@@ -1,7 +1,7 @@
 github.com/AlekSi/pointer v1.2.0 h1:glcy/gc4h8HnG2Z3ZECSzZ1IX1x2JxRVuDzaJwQE0+w=
 github.com/AlekSi/pointer v1.2.0/go.mod h1:gZGfd3dpW4vEc/UlyfKKi1roIqcCgwOIvb0tSNSBle0=
-github.com/SAP/go-hdb v1.5.7 h1:a3gN7JJj02O3EkTX/GFMsZ9CR0C7I+LTK9+yeF8Jmco=
-github.com/SAP/go-hdb v1.5.7/go.mod h1:t53ajMEV43IrGUgNBtYAy6gRxcGLe3de+meYoHBtkIo=
+github.com/SAP/go-hdb v1.5.8 h1:X1iZsafvuvg4sFdKD1vS5tDMQmEVXwjdnXgioGU18A4=
+github.com/SAP/go-hdb v1.5.8/go.mod h1:WgYcu6vgcCsFcmwM6U1cJkc6F0X+kNgh8BSQx8JrjNo=
 github.com/arl/statsviz v0.6.0 h1:jbW1QJkEYQkufd//4NDYRSNBpwJNrdzPahF7ZmoGdyE=
 github.com/arl/statsviz v0.6.0/go.mod h1:0toboo+YGSUXDaS4g1D5TVS4dXs7S7YYT5J/qnW2h8s=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
