@@ -29,6 +29,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
+	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	_ "golang.org/x/crypto/x509roots/fallback" // register root TLS certificates for production Docker image
@@ -313,6 +314,10 @@ func run() {
 	metricsRegisterer := setupMetrics(stateProvider)
 
 	logger := setupLogger(stateProvider)
+
+	if _, err := maxprocs.Set(maxprocs.Logger(logger.Sugar().Debugf)); err != nil {
+		logger.Sugar().Warnf("Failed to set GOMAXPROCS: %s.", err)
+	}
 
 	ctx, stop := notifyAppTermination(context.Background())
 

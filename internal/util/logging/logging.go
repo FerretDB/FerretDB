@@ -66,11 +66,11 @@ func Setup(level zapcore.Level, uuid string) {
 		return nil
 	}))
 
-	setupWithLogger(logger)
+	SetupWithLogger(logger)
 }
 
-// setupWithLogger initializes logging with a given logger and its level.
-func setupWithLogger(logger *zap.Logger) {
+// SetupWithLogger initializes logging with a given logger and its level.
+func SetupWithLogger(logger *zap.Logger) {
 	zap.ReplaceGlobals(logger)
 
 	if _, err := zap.RedirectStdLogAt(logger, zap.InfoLevel); err != nil {
