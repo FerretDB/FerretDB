@@ -137,9 +137,14 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 				continue
 			}
 
+			top := levelTest(event.Test) == 0
+			if !top && event.Action == "pass" {
+				continue
+			}
+
 			msg := strings.ToTitle(event.Action) + " " + event.Test
 
-			if levelTest(event.Test) == 0 {
+			if top {
 				done++
 				msg += fmt.Sprintf(" (%d/%d)", done, total)
 			}
@@ -149,8 +154,7 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 				continue
 			}
 
-			logger.Info("")
-			logger.Info(msg)
+			logger.Info(msg + ":")
 
 			for _, l := range results[event.Test].outputs {
 				logger.Info(l)

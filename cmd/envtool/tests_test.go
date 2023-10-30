@@ -56,11 +56,7 @@ func TestRunGoTest(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := []string{
-			"PASS TestNormal1/NotParallel",
-			"PASS TestNormal1/Parallel",
 			"PASS TestNormal1 (1/2)",
-			"PASS TestNormal2/NotParallel",
-			"PASS TestNormal2/Parallel",
 			"PASS TestNormal2 (2/2)",
 			"PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
 		}
@@ -81,17 +77,14 @@ func TestRunGoTest(t *testing.T) {
 		assert.Equal(t, 1, exitErr.ExitCode())
 
 		expected := []string{
-			"",
-			"FAIL TestError1 (1/2)",
+			"FAIL TestError1 (1/2):",
 			"  === RUN   TestError1",
 			"  error_test.go:20: not hidden 1",
 			"  error_test.go:22: Error 1",
 			"  error_test.go:24: not hidden 2",
 			"  --- FAIL: TestError1 (0.00s)",
 			"",
-			"PASS TestError2/NotParallel",
-			"",
-			"FAIL TestError2/Parallel",
+			"FAIL TestError2/Parallel:",
 			"    === RUN   TestError2/Parallel",
 			"    error_test.go:35: not hidden 5",
 			"    === PAUSE TestError2/Parallel",
@@ -101,8 +94,7 @@ func TestRunGoTest(t *testing.T) {
 			"    error_test.go:43: not hidden 7",
 			"    --- FAIL: TestError2/Parallel (0.00s)",
 			"",
-			"",
-			"FAIL TestError2 (2/2)",
+			"FAIL TestError2 (2/2):",
 			"  === RUN   TestError2",
 			"  error_test.go:28: not hidden 3",
 			"  === PAUSE TestError2",
@@ -137,8 +129,7 @@ func TestRunGoTest(t *testing.T) {
 		require.NoError(t, err)
 
 		expected := []string{
-			"",
-			"SKIP TestSkip1 (1/1)",
+			"SKIP TestSkip1 (1/1):",
 			"  === RUN   TestSkip1",
 			"  skip_test.go:20: not hidden 1",
 			"  skip_test.go:22: Skip 1",
