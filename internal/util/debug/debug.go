@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"context"
 	_ "expvar" // for metrics
+	"fmt"
 	"log"
 	"math/rand"
 	"net"
@@ -27,26 +28,33 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/arl/statsviz"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	io_prometheus_client "github.com/prometheus/client_model/go"
 	"go.uber.org/zap"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // RunHandler runs debug handler.
 func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger) {
 	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
 
-	http.Handle("/debug/metrics", promhttp.InstrumentMetricHandler(
+	metricHandler := promhttp.InstrumentMetricHandler(
 		r, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
 			ErrorLog:          stdL,
 			ErrorHandling:     promhttp.ContinueOnError,
 			Registry:          r,
 			EnableOpenMetrics: true,
 		}),
-	))
+	)
+	prometheus_metrics, err := prometheus.DefaultGatherer.Gather()
+	fmt.Printf("prometheus_metrics: %v\n", prometheus_metrics)
+	if err != nil {
+		log.Fatalf("error in Gathering prometheus metrics: %v", err)
+	}
+
+	http.Handle("/debug/metrics", metricHandler)
 
 	opts := []statsviz.Option{
 		statsviz.Root("/debug/graphs"),
@@ -117,11 +125,12 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	l.Sugar().Info("Debug server stopped.")
 }
 
+// gauge
 func promhttp_metric_handler_requests_in_flight_scatterPlot() statsviz.TimeSeriesPlot {
 	scrapes := statsviz.TimeSeries{
 		Name:     "prometheus http scrape",
 		Unitfmt:  "%{y:.4s}B",
-		GetValue: updateScrapes,
+		GetValue: flightReqgaugeMetric,
 	}
 
 	plot, err := statsviz.TimeSeriesPlotConfig{
@@ -138,11 +147,12 @@ func promhttp_metric_handler_requests_in_flight_scatterPlot() statsviz.TimeSerie
 	return plot
 }
 
+// gauge
 func ferretdb_postgresql_metadata_databases_barPlot() statsviz.TimeSeriesPlot {
 	databaseCount := statsviz.TimeSeries{
 		Name:     "Database count",
 		Unitfmt:  "%{y:.4s}",
-		GetValue: dbCount,
+		GetValue: metadataDbgaugeMetric,
 	}
 	plot, err := statsviz.TimeSeriesPlotConfig{
 		Name:       "dbCount",
@@ -157,11 +167,12 @@ func ferretdb_postgresql_metadata_databases_barPlot() statsviz.TimeSeriesPlot {
 	return plot
 }
 
+// gauge
 func ferretdb_postgresql_pool_size_barPlot() statsviz.TimeSeriesPlot {
 	poolSize := statsviz.TimeSeries{
 		Name:     "Postgresql Pool size",
 		Unitfmt:  "%{y:.4s}",
-		GetValue: poolSize,
+		GetValue: poolSizegaugeMetric,
 	}
 	plot, err := statsviz.TimeSeriesPlotConfig{
 		Name:       "poolSize",
@@ -176,7 +187,9 @@ func ferretdb_postgresql_pool_size_barPlot() statsviz.TimeSeriesPlot {
 	return plot
 }
 
+// counter metric
 func promhttp_metric_handler_requests_total_stackPlot() statsviz.TimeSeriesPlot {
+
 	code200 := statsviz.TimeSeries{
 		Name:     "Code 200",
 		Unitfmt:  "%{y:.4s}B",
@@ -241,19 +254,60 @@ func promhttp_metric_handler_requests_total_stackPlot() statsviz.TimeSeriesPlot 
 	return plot
 }
 
-// dummy functions for simulating prometheus metrics, spot refactoring TBD with actual expanded metrics.
-func updateScrapes() float64 {
-	return rand.Float64() * 100
-}
-
-func dbCount() float64 {
-	return rand.Float64() * 10
-}
-
-func poolSize() float64 {
-	return rand.Float64()
-}
-
 func codeCountGen() float64 {
 	return rand.Float64()
 }
+
+func metricRetriever(prometheus_metrics []*io_prometheus_client.MetricFamily, metricName string) *io_prometheus_client.Metric {
+	for _, specificMetric := range prometheus_metrics {
+		if specificMetric.GetName() == metricName {
+			finalMetricSlice := specificMetric.GetMetric()
+			for _, x := range finalMetricSlice {
+				return x
+			}
+		}
+	}
+	return nil
+}
+
+func prometheusGather() []*io_prometheus_client.MetricFamily {
+	prometheus_metrics, err := prometheus.DefaultGatherer.Gather()
+	if err != nil {
+		log.Fatalf("error in Gathering prometheus metrics: %v", err)
+	}
+	return prometheus_metrics
+}
+
+func poolSizegaugeMetric() float64 {
+	str := "ferretdb_postgresql_pool_size"
+	p := prometheusGather()
+	m := metricRetriever(p, str)
+	return *m.Gauge.Value
+}
+
+func metadataDbgaugeMetric() float64 {
+	str := "ferretdb_postgresql_metadata_databases"
+	p := prometheusGather()
+	m := metricRetriever(p, str)
+	return *m.Gauge.Value
+}
+
+func flightReqgaugeMetric() float64 {
+	str := "promhttp_metric_handler_requests_in_flight"
+	p := prometheusGather()
+	m := metricRetriever(p, str)
+	return *m.Gauge.Value
+}
+
+// func counterMetric(value string) float64 {
+// 	str := "promhttp_metric_handler_requests_total"
+// 	p := prometheusGather()
+// 	m := metricRetriever(p, str)
+// 	x := "code"
+// 	for i, label := range m.Label {
+// 		if label.Name == &x && label.Value == &value {
+// 			return *m.Counter[i].Value
+// 		}
+// 	}
+// 	return *m.Counter.Value
+// }
