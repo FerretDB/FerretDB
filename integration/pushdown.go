@@ -45,11 +45,28 @@ func init() {
 }
 
 // PushdownExpected returns true if the pushdown is expected for currently running backend.
+// It checks if pushdown is disabled by flag.
 func (res resultPushdown) PushdownExpected(t testtb.TB) bool {
 	if setup.IsPushdownDisabled() {
 		res = noPushdown
 	}
 
+	return res.pushdownExpected(t)
+}
+
+// SortPushdownExpected returns true if sort pushdown is expected for currently running backend.
+// It checks if pushdown is enabled by flag.
+// For capped collection, pushdown for recordID is done even if pushdown is not enabled by flag.
+func (res resultPushdown) SortPushdownExpected(t testtb.TB, cappedCollection bool) bool {
+	if !setup.IsSortPushdownEnabled() && cappedCollection {
+		res = allPushdown
+	}
+
+	return res.pushdownExpected(t)
+}
+
+// pushdownExpected returns true if pushdown is expected for currently running backend.
+func (res resultPushdown) pushdownExpected(t testtb.TB) bool {
 	switch {
 	case setup.IsPostgreSQL(t):
 		return res&pgPushdown == pgPushdown
