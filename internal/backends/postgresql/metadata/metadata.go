@@ -64,6 +64,11 @@ func (c *Collection) deepCopy() *Collection {
 	}
 }
 
+// Capped returns true if collection is capped.
+func (c Collection) Capped() bool {
+	return c.CappedSize > 0
+}
+
 // Value implements driver.Valuer interface.
 func (c Collection) Value() (driver.Value, error) {
 	b, err := sjson.Marshal(c.marshal())
