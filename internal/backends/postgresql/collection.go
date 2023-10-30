@@ -329,7 +329,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	if params.Limit != 0 {
 		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
 		args = append(args, params.Limit)
-		res.LimitPushdown = true
+		res.UnsafeLimitPushdown = true
 	}
 
 	var b []byte

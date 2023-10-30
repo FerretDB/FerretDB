@@ -285,12 +285,12 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	q := `EXPLAIN QUERY PLAN ` + selectClause + whereClause + orderByClause
 
-	var limitPushdown bool
+	var unsafeLimitPushdown bool
 
 	if params.Limit != 0 {
 		q += ` LIMIT ?`
 		args = append(args, params.Limit)
-		limitPushdown = true
+		unsafeLimitPushdown = true
 	}
 
 	rows, err := db.QueryContext(ctx, q, args...)
@@ -323,10 +323,10 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	return &backends.ExplainResult{
-		QueryPlanner:       must.NotFail(types.NewDocument("Plan", queryPlan)),
-		QueryPushdown:      queryPushdown,
-		UnsafeSortPushdown: unsafeSortPushdown,
-		LimitPushdown:      limitPushdown,
+		QueryPlanner:        must.NotFail(types.NewDocument("Plan", queryPlan)),
+		QueryPushdown:       queryPushdown,
+		UnsafeSortPushdown:  unsafeSortPushdown,
+		UnsafeLimitPushdown: unsafeLimitPushdown,
 	}, nil
 }
 
