@@ -34,7 +34,7 @@ As a member of the [MACH Alliance](https://the.machalliance.org/book/vultr), Vul
 
 - **Vultr Cloud Compute:**
   Spin up and scale best-in-class VMs and Bare Metal in a few clicks in 32 cloud data center locations worldwide.
-  Cloud Compute, powered by the latest-generation AMD and Dell CPUs, puts global developers and businesses in the driver's seat, providing on-demand enterprise-grade cloud computing at industry-leading price-to-performance.
+  Cloud Compute, powered by the latest-generation AMD and Intel CPUs, puts global developers and businesses in the driver's seat, providing on-demand enterprise-grade cloud computing at industry-leading price-to-performance.
   Easily deploy and scale shared or dedicated VMs and Bare Metal at any of Vultr's cloud data centers, paying only for what you use.
 
 - **Vultr Cloud GPU:**
