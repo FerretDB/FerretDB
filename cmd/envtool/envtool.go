@@ -376,6 +376,7 @@ var cli struct {
 
 // makeLogger returns a human-friendly logger.
 func makeLogger(level zapcore.Level, output []string) (*zap.Logger, error) {
+	start := time.Now()
 	return zap.Config{
 		Level:             zap.NewAtomicLevelAt(level),
 		Development:       true,
@@ -384,16 +385,18 @@ func makeLogger(level zapcore.Level, output []string) (*zap.Logger, error) {
 		Sampling:          nil,
 		Encoding:          "console",
 		EncoderConfig: zapcore.EncoderConfig{
-			TimeKey:        "T",
-			LevelKey:       "L",
-			NameKey:        "N",
-			CallerKey:      zapcore.OmitKey,
-			FunctionKey:    zapcore.OmitKey,
-			MessageKey:     "M",
-			StacktraceKey:  "S",
-			LineEnding:     zapcore.DefaultLineEnding,
-			EncodeLevel:    zapcore.CapitalLevelEncoder,
-			EncodeTime:     zapcore.ISO8601TimeEncoder,
+			TimeKey:       "T",
+			LevelKey:      zapcore.OmitKey,
+			NameKey:       "N",
+			CallerKey:     zapcore.OmitKey,
+			FunctionKey:   zapcore.OmitKey,
+			MessageKey:    "M",
+			StacktraceKey: "S",
+			LineEnding:    zapcore.DefaultLineEnding,
+			EncodeLevel:   zapcore.CapitalLevelEncoder,
+			EncodeTime: func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+				enc.AppendString(fmt.Sprintf("%7.2fs", t.Sub(start).Seconds()))
+			},
 			EncodeDuration: zapcore.StringDurationEncoder,
 			EncodeCaller:   zapcore.ShortCallerEncoder,
 		},
