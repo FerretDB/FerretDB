@@ -58,7 +58,7 @@ Arrays are an exception, and we'll talk about them in another blog post.
 
 ### Number comparison
 
-Even though numbers come in various BSON types – Integer, Long, Double, and Decimal – they're treated as the same type when comparing.
+Even though Numbers come in various BSON types – Integer, Long, Double, and Decimal – they're treated as the same type when comparing.
 This means the focus is on the actual numerical values, not on whether they're Integer, Long, Double, or Decimal.
 For example, an Integer value of 0 is seen as the same as a Double value of 0.0 when comparing them.
 
@@ -107,12 +107,12 @@ Next in line are documents with Number values in the `size` field.
 Numbers hold a higher BSON comparison order than Null, so they appear after `slippers` document with the missing `size` field.
 Specifically, we see `boots` with an Integer BSON type, followed by `sneakers` with a Double BSON type, and then `sandals` also with an Integer BSON type.
 Why this particular order?
-Because all numbers, regardless of their BSON type, are [considered equivalent for comparison](#number-comparison).
+Because all Numbers, regardless of their BSON type, are [considered equivalent for comparison](#number-comparison).
 Only the actual numerical values matter.
 In this case, `boots` with a size of 8 comes before `sneakers` with a size of 8.5, which in turn precedes `sandals` with a size of 9.
 
 Lastly, we have `flip flops` with a String BSON type.
-Strings have a higher BSON comparison order than numbers, so this document comes at the end of our sorted list.
+Strings have a higher BSON comparison order than Numbers, so this document comes at the end of our sorted list.
 
 To sort the documents in descending order by the `size` field, you would use a sorting order of -1 and execute the following query.
 
