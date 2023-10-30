@@ -143,7 +143,7 @@ In situations like this, the default order in which the records were retrieved f
 
 To maintain a consistent sort order, it's advised to use `_id` as a secondary sorting option.
 In this setup, if multiple documents have the same or equivalent `color` values, it will rely on the `_id` field for sorting.
-The unique nature of the `_id` field ensures that the sorted output remains consistent.
+The `_id` field value is unique within the collection which ensures that the sorted output remains consistent.
 
 ```js
 db.outfits.find().sort({ color: 1, _id: 1 })
