@@ -56,10 +56,22 @@ type testResult struct {
 	outputs []string
 }
 
-// topLevelName returns a top-level test function name.
-func topLevelName(fullTestName string) string {
-	res, _, _ := strings.Cut(fullTestName, "/")
-	return res
+// levelTest returns test level (starting from 0) for the given (sub)test name.
+func levelTest(testName string) int {
+	if testName == "" {
+		panic("empty test name")
+	}
+
+	return strings.Count(testName, "/")
+}
+
+// parentTest returns parent test name for the given subtest, or empty string.
+func parentTest(testName string) string {
+	if i := strings.LastIndex(testName, "/"); i >= 0 {
+		return testName[:i]
+	}
+
+	return ""
 }
 
 // runGoTest runs `go test` with given extra args.
@@ -81,7 +93,7 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 	defer cmd.Cancel() //nolint:errcheck // safe to ignore
 
 	var done int
-	results := make(map[string]*testResult, 275)
+	results := make(map[string]*testResult, 300)
 
 	d := json.NewDecoder(p)
 	d.DisallowUnknownFields()
@@ -98,13 +110,19 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 
 		// logger.Desugar().Debug("decoded event", zap.Any("event", event))
 
-		res := results[event.Test]
-		if res == nil {
-			res = new(testResult)
-			results[event.Test] = res
-		}
+		for t := event.Test; t != ""; t = parentTest(t) {
+			res := results[t]
+			if res == nil {
+				res = &testResult{
+					outputs: make([]string, 0, 2),
+				}
+				results[t] = res
+			}
 
-		topLevel := topLevelName(event.Test) == event.Test
+			if out := strings.TrimSpace(event.Output); out != "" {
+				res.outputs = append(res.outputs, strings.Repeat("  ", levelTest(t)+1)+out)
+			}
+		}
 
 		switch event.Action {
 		case "pass": // the test passed
@@ -114,38 +132,39 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 			fallthrough
 
 		case "skip": // the test was skipped or the package contained no tests
-			msg := strings.ToTitle(event.Action)
-
 			if event.Test == "" {
-				msg += " " + event.Package
-			} else {
-				msg += " " + event.Test
+				logger.Info(strings.ToTitle(event.Action) + " " + event.Package)
+				continue
 			}
 
-			if topLevel {
-				if event.Test != "" {
-					done++
-				}
+			msg := strings.ToTitle(event.Action) + " " + event.Test
+
+			if levelTest(event.Test) == 0 {
+				done++
 				msg += fmt.Sprintf(" (%d/%d)", done, total)
 			}
 
-			logger.Info(msg)
-			if event.Action == "fail" || event.Action == "skip" {
-				for _, item := range results[event.Test].outputs {
-					logger.Info(item)
-				}
+			if event.Action == "pass" {
+				logger.Info(msg)
+				continue
 			}
+
+			logger.Info("")
+			logger.Info(msg)
+
+			for _, l := range results[event.Test].outputs {
+				logger.Info(l)
+			}
+
+			logger.Info("")
+
+		case "output": // the test printed output
+		case "bench": // the benchmark printed log output but did not fail
 
 		case "start": // the test binary is about to be executed
 		case "run": // the test has started running
 		case "pause": // the test has been paused
 		case "cont": // the test has continued running
-		case "output": // the test printed output
-			if event.Test != "" {
-				results[event.Test].outputs = append(results[event.Test].outputs, fmt.Sprintf("  %s", strings.TrimSpace(event.Output)))
-			}
-
-		case "bench": // the benchmark printed log output but did not fail
 
 		default:
 			return lazyerrors.Errorf("unknown action %q", event.Action)

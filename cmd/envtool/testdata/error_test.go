@@ -44,6 +44,6 @@ func TestError2(t *testing.T) {
 	})
 
 	t.Run("NotParallel", func(t *testing.T) {
-		t.Log("hidden")
+		t.Log("not hidden for parent")
 	})
 }
