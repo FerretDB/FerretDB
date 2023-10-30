@@ -38,9 +38,10 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/build/version"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb"
+	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -91,6 +92,10 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		return err
 	}
 
+	if u.User == nil {
+		return lazyerrors.New("No username specified")
+	}
+
 	if err = waitForPort(ctx, logger, uint16(port)); err != nil {
 		return err
 	}
@@ -100,13 +105,19 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 		return err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3452
+	p, err := pool.New(uri, logger.Desugar(), sp)
+	if err != nil {
+		return err
+	}
 
-	var pgPool *pgdb.Pool
+	defer p.Close()
+
+	username := u.User.Username()
+	password, _ := u.User.Password()
 
 	var retry int64
 	for ctx.Err() == nil {
-		if pgPool, err = pgdb.NewPool(ctx, uri, logger.Desugar(), sp); err == nil {
+		if _, err = p.Get(username, password); err == nil {
 			break
 		}
 
@@ -119,8 +130,6 @@ func setupAnyPostgres(ctx context.Context, logger *zap.SugaredLogger, uri string
 	if ctx.Err() != nil {
 		return ctx.Err()
 	}
-
-	defer pgPool.Close()
 
 	return nil
 }

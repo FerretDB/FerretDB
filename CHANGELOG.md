@@ -2,6 +2,14 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.14.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.14.0) (TBD)
+
+### What's Changed
+
+#### Old PostgreSQL backend
+
+Is removed.
+
 ## [v1.13.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.13.0) (2023-10-23)
 
 ### What's Changed
