@@ -54,14 +54,14 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil),
+			Iter: newQueryIterator(ctx, nil, params.OnlyRecordIDs),
 		}, nil
 	}
 
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil),
+			Iter: newQueryIterator(ctx, nil, params.OnlyRecordIDs),
 		}, nil
 	}
 
@@ -83,9 +83,9 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3490
+	q := prepareSelectClause(meta.TableName, meta.Capped(), params.OnlyRecordIDs) + whereClause
 
-	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+	q += prepareOrderByClause(params.Sort, meta.Capped())
 
 	if params.Limit != 0 {
 		q += ` LIMIT ?`
@@ -98,7 +98,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}
 
 	return &backends.QueryResult{
-		Iter: newQueryIterator(ctx, rows),
+		Iter: newQueryIterator(ctx, rows, params.OnlyRecordIDs),
 	}, nil
 }
 
@@ -253,6 +253,8 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		params = new(backends.ExplainParams)
 	}
 
+	selectClause := prepareSelectClause(meta.TableName, meta.Capped(), false)
+
 	var queryPushdown bool
 	var whereClause string
 	var args []any
@@ -269,9 +271,10 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3490
+	orderByClause := prepareOrderByClause(params.Sort, meta.Capped())
+	sortPushdown := orderByClause != ""
 
-	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+	q := `EXPLAIN QUERY PLAN ` + selectClause + whereClause + orderByClause
 
 	var limitPushdown bool
 
@@ -313,6 +316,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	return &backends.ExplainResult{
 		QueryPlanner:  must.NotFail(types.NewDocument("Plan", queryPlan)),
 		QueryPushdown: queryPushdown,
+		SortPushdown:  sortPushdown,
 		LimitPushdown: limitPushdown,
 	}, nil
 }
