@@ -10,19 +10,22 @@ tags: [community, product, tutorial]
 
 ![How MongoDB Sorting Works for Scalar Values](/img/blog/mongodb-sorting-scalar.jpg)
 
-In this blog post, we explore how MongoDB sorting works for scalar values.
+In this blog post, we delve into the process of sorting scalar values in MongoDB.
 
 <!--truncate-->
 
-Sorting compares BSON values to determine which value is equal, greater or less than the other to return them in the ascending or descending order.
-For comparing different BSON types, [BSON comparison order](#bson-comparison-order) is used.
+Sorting in MongoDB involves comparing BSON values to ascertain their relative order – whether one value is equal to, greater than, or less than another.
+The resultant sorted array can be in either ascending or descending order.
+
+When comparing different BSON types, the [BSON comparison order](#bson-comparison-order) is used.
 
 ## BSON comparison order
 
-If two BSON values share the same BSON type, their values are compared to determine which value is greater or less.
+If two BSON values share the same type, their values are compared to determine which is greater or less.
+
 However, if the BSON types are different, a predefined BSON comparison order is used.
 
-Below table shows the predefined BSON comparison order for each BSON type.
+The table below shows the predefined BSON comparison order for each BSON type.
 
 <!-- use newline in column header for appropriate spacing of columns -->
 <!-- markdownlint-disable MD033 -->
@@ -43,24 +46,26 @@ Below table shows the predefined BSON comparison order for each BSON type.
 
 ## Comparison of values with different BSON types
 
-To compare values of different BSON types, use the predefined order of comparison assigned to each BSON type.
-For example, Null BSON type has the lowest order of comparison 1, so Null is less than any other BSON values.
-Boolean BSON type on the other hand has the order of comparison 8, a BSON type such as ObjectId with a lower order of comparison is less than a Boolean value
-and a BSON type such as Timestamp with a higher order of comparison is greater than a Boolean value.
+To compare values of different BSON types, look at the predefined comparison order given to each type.
+For example, the Null BSON type has the lowest order, which is 1.
+This means Null is less than any other BSON values.
+The Boolean BSON type has an order of 8.
+So, if you're comparing it with an ObjectId type that has a lower order, the Boolean is greater.
+But if you're comparing it with a Timestamp type that has a higher order, the Boolean is less.
 
-Comparing different BSON types is merely looking up the order of comparison table for each BSON type.
-There is an exception for Array values, we will be discussing them in another blog post.
+The key to comparing different BSON types is simply to check their predefined orders.
+Arrays are an exception, and we'll talk about them in another blog post.
 
 ### Number comparison
 
-Although numbers have different BSON types, namely Integer, Long, Double and Decimal, they are considered the equivalent BSON type for the purpose of comparison.
-That means comparing numbers consider their values but whether they are Integer, Long, Double or Decimal are not relevant.
-For instance, an Integer value 0 is equivalent to Double 0.0.
+Even though numbers come in various BSON types – Integer, Long, Double, and Decimal – they're treated as the same type when comparing.
+This means the focus is on the actual numerical values, not on whether they're Integer, Long, Double, or Decimal.
+For example, an Integer value of 0 is seen as the same as a Double value of 0.0 when comparing them.
 
 ### Null and non-existent field comparison
 
-For the comparison purpose, a non-existent field is equivalent to Null.
-This means that a field `v` with Null value `{:v null}` and a non-existent `v` field in `{}` are equivalent.
+For comparison, a non-existent field is equivalent to Null.
+This means that a field `v` with Null value `{:v null}` is considered the same as a non-existent `v` field in `{}`.
 
 ## Examples showcasing sorting for scalar values
 
@@ -76,10 +81,10 @@ db.outfits.insertMany([
 ])
 ```
 
-The `outfits` collection has a `size` field, and it contains different BSON types.
-The document `flip flops` has String field value, `sandals` and `boots` have Integer field values,
-`sneakers` has Double field value and `slippers` is missing the field `size`.
-To return the documents in ascending order by `size` field, sorting order 1 is used and the following query is run.
+The `outfits` collection includes a `size` field that represents various BSON types.
+For instance, the document for `flip flops` contains a String value in this field, while `sandals` and `boots` have Integer values.
+The `sneakers` document has the `size` field as a Double value, and the `slippers` document lacks the `size` field altogether.
+To sort these documents in ascending order based on the `size` field, you would use a sorting order of 1 and execute the following query.
 
 ```js
 db.outfits.find().sort({ size: 1 })
@@ -95,20 +100,21 @@ db.outfits.find().sort({ size: 1 })
 ]
 ```
 
-The output is sorted and the first document is `slippers` which is missing the `size` field.
-A [non-existent field is equivalent to Null](#null-and-non-existent-field-comparison), so it has the lowest BSON type.
+The sorted output starts with the `slippers` document, which lacks a `size` field.
+According to our earlier discussion on [how Null and non-existent fields are equivalent](#null-and-non-existent-field-comparison), it has the lowest BSON type and appears first.
 
-Then the next documents have `size` field value of Numbers.
-The Numbers have higher BSON order of comparison than Null BSON type, so they come after `slippers` of the missing field.
-The documents with numbers are `boots` with Integer BSON type, `sneaker` with Double BSON type and `sandals` with Integer BSON type.
-Notice that Integer BSON type is followed by Double BSON type then by another Integer BSON type?
-The Numbers are considered [equivalent BSON types](#number-comparison) so only the values of each number are compared regardless of its specific BSON number type.
-The document `boots` has a `size` field value of 8 which is less than 8.5 of `sneakers` or 9 of `sandals`, so `boots` comes next.
-Then the document `sneakers` comes and `sandals` comes after that.
+Next in line are documents with Number values in the `size` field.
+Numbers hold a higher BSON comparison order than Null, so they appear after `slippers` document with the missing `size` field.
+Specifically, we see `boots` with an Integer BSON type, followed by `sneakers` with a Double BSON type, and then `sandals` also with an Integer BSON type.
+Why this particular order?
+Because all numbers, regardless of their BSON type, are [considered equivalent for comparison](#number-comparison).
+Only the actual numerical values matter.
+In this case, `boots` with a size of 8 comes before `sneakers` with a size of 8.5, which in turn precedes `sandals` with a size of 9.
 
-Finally, `flip flops` with String BSON type which has a higher BSON order of comparison than Numbers comes last.
+Lastly, we have `flip flops` with a String BSON type.
+Strings have a higher BSON comparison order than numbers, so this document comes at the end of our sorted list.
 
-Similarly, to return the documents in descending order by `size` field, sorting order -1 is used and the following query is run.
+To sort the documents in descending order by the `size` field, you would use a sorting order of -1 and execute the following query.
 
 ```js
 db.outfits.find().sort({ size: -1 })
@@ -128,16 +134,16 @@ This time, the output is sorted first by `flip flops` with String `size` field, 
 
 ### Using `_id` as the second sort field
 
-Suppose you want to return documents sorted by `color` field.
-There are more than one document with color `blue`, and also there is a document with Null and missing `color` field.
+Suppose you want to sort the documents by the `color` field.
+You encounter multiple documents with the color `blue`, and one document has a Null value for this field while another is missing it altogether.
 
-For example, `flip flops` has a Null value for `color` field and `slippers` is missing the field.
-Null and non-existent field is considered equivalent so either of them can be the first.
-In such a scenario, the default order that results were found from the database is used.
+For instance, `flip flops` has a Null value in the `color` field, and the `slippers` document lacks this field.
+Since Null and non-existent fields are considered equivalent in sorting, either could appear first.
+In situations like this, the default order in which the records were retrieved from the database is applied.
 
-To consistently preserve the same sorting order, it is recommended to use `_id` as the second field of sorting order.
-Such case, if the `color` field has an equivalent value, it uses the `_id` field to sort them, allowing consistent output.
-The uniqueness property of the `_id` field makes the sorting output consistent.
+To maintain a consistent sort order, it's advised to use `_id` as a secondary sorting option.
+In this setup, if multiple documents have the same or equivalent `color` values, it will rely on the `_id` field for sorting.
+The unique nature of the `_id` field ensures that the sorted output remains consistent.
 
 ```js
 db.outfits.find().sort({ color: 1, _id: 1 })
@@ -153,13 +159,14 @@ db.outfits.find().sort({ color: 1, _id: 1 })
 ]
 ```
 
-The output shows that the document `sandals` is sorted before `slippers` even though they have equivalent `color` field value.
-It is because it uses the second sort field `_id` and `sandals` has a lower value than `slippers`.
-Similarly, `flip flops` and `sneakers` have the same `color` field value.
-But `flip flops` is sorted before because its `_id` has a lower value than `sneakers`.
+The output shows that the `sandals` document is sorted before `slippers`, despite both having equivalent values in the `color` field.
+This is because the sort mechanism uses the secondary `_id` field for ordering, and `sandals` has a lower `_id` value than `slippers`.
+
+Likewise, both `flip flops` and `sneakers` have the same `color` value, but `flip flops` comes first because its `_id` value is lower than that of `sneakers`.
 
 ## Roundup
 
-In this blog post, it shows how BSON comparison order is used in sorting and how scalar values are compared.
-We will explain about how Array and Object sorting works in an upcoming blog post.
+This blog post has shown how BSON comparison order functions in sorting and how scalar values are compared against each other.
+In an upcoming blog post, we will delve into how sorting of Arrays and Objects works.
+
 Stay tuned!
