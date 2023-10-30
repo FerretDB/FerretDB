@@ -119,7 +119,6 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 				j = len(params.Docs)
 			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3490
 			q, args, err := prepareInsertStatement(meta.TableName, meta.Settings.CappedSize > 0, params.Docs[i:j])
 			if err != nil {
 				return lazyerrors.Error(err)
