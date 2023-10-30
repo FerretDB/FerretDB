@@ -15,7 +15,7 @@ In this blog post, we delve into the process of sorting scalar values in MongoDB
 <!--truncate-->
 
 Sorting in MongoDB involves comparing BSON values to ascertain their relative order – whether one value is equal to, greater than, or less than another.
-The resultant sorted array can be in either ascending or descending order.
+The resultant sorted values can be in either ascending or descending order.
 
 When comparing different BSON types, the [BSON comparison order](#bson-comparison-order) is used.
 
