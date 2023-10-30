@@ -141,6 +141,21 @@ func TestRunGoTest(t *testing.T) {
 	})
 }
 
+func TestListTestFuncs(t *testing.T) {
+	t.Parallel()
+
+	actual, err := listTestFuncs("./testdata")
+	require.NoError(t, err)
+	expected := []string{
+		"TestError1",
+		"TestError2",
+		"TestNormal1",
+		"TestNormal2",
+		"TestSkip1",
+	}
+	assert.Equal(t, expected, actual)
+}
+
 func TestShardTestFuncs(t *testing.T) {
 	t.Parallel()
 
