@@ -17,6 +17,7 @@ require (
 	github.com/prometheus/common v0.45.0
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/otel v1.19.0
+	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/zap v1.26.0
 	golang.org/x/crypto v0.14.0 // indirect; always use @latest
 	golang.org/x/crypto/x509roots/fallback v0.0.0-20231024071259-cf8dcb0f7d1e
