@@ -58,7 +58,7 @@ func (res resultPushdown) PushdownExpected(t testtb.TB) bool {
 // It checks if pushdown is enabled by flag.
 // For capped collection, pushdown for recordID is done even if pushdown is not enabled by flag.
 func (res resultPushdown) UnsafeSortPushdownExpected(t testtb.TB, cappedCollection bool) bool {
-	if !setup.IsUnsafeSortPushdownEnabled() && cappedCollection {
+	if !setup.IsUnsafeSortPushdown() && cappedCollection {
 		res = allPushdown
 	}
 

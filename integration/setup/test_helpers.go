@@ -101,7 +101,7 @@ func IsPushdownDisabled() bool {
 	return *disableFilterPushdownF
 }
 
-// IsUnsafeSortPushdownEnabled returns true if sort pushdown is enabled.
-func IsUnsafeSortPushdownEnabled() bool {
+// IsUnsafeSortPushdown returns true if unsafe sort pushdown is enabled.
+func IsUnsafeSortPushdown() bool {
 	return *unsafeSortPushdownF
 }
