@@ -78,7 +78,7 @@ func parentTest(testName string) string {
 }
 
 // runGoTest runs `go test` with given extra args.
-func runGoTest(ctx context.Context, args []string, total int, logger *zap.SugaredLogger) error {
+func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger) error {
 	cmd := exec.CommandContext(ctx, "go", append([]string{"test", "-json"}, args...)...)
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
@@ -171,26 +171,26 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 
 			res := results[event.Test]
 
-			msg := fmt.Sprintf(
-				"%s %s (%.2fs",
-				strings.ToTitle(event.Action), event.Test,
-				event.Time.Sub(res.cont).Seconds(),
-			)
+			msg := strings.ToTitle(event.Action) + " " + event.Test
 
-			if res.run != res.cont {
-				msg += fmt.Sprintf("/%.2fs", event.Time.Sub(res.run).Seconds())
-			}
+			if times {
+				msg += fmt.Sprintf(" (%.2fs", event.Time.Sub(res.cont).Seconds())
 
-			if event.ElapsedSeconds > 0 {
-				msg += fmt.Sprintf("/%.2fs", event.ElapsedSeconds)
+				if res.run != res.cont {
+					msg += fmt.Sprintf("/%.2fs", event.Time.Sub(res.run).Seconds())
+				}
+
+				if event.ElapsedSeconds > 0 {
+					msg += fmt.Sprintf("/%.2fs", event.ElapsedSeconds)
+				}
+
+				msg += ")"
 			}
 
 			if top {
 				done++
-				msg += fmt.Sprintf(", %d/%s", done, totalTests)
+				msg += fmt.Sprintf(" %d/%s", done, totalTests)
 			}
-
-			msg += ")"
 
 			if event.Action == "pass" {
 				logger.Info(msg)
@@ -246,7 +246,7 @@ func testsRun(index, total uint, run string, args []string, logger *zap.SugaredL
 		run += ")$"
 	}
 
-	return runGoTest(context.TODO(), append([]string{"-run=" + run}, args...), totalTest, logger)
+	return runGoTest(context.TODO(), append([]string{"-run=" + run}, args...), totalTest, true, logger)
 }
 
 // listTestFuncs returns a sorted slice of all top-level test functions (tests, benchmarks, examples, fuzz functions)

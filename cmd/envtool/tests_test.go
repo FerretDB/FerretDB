@@ -52,12 +52,12 @@ func TestRunGoTest(t *testing.T) {
 		logger, err := makeTestLogger(&actual)
 		require.NoError(t, err)
 
-		err = runGoTest(context.TODO(), []string{"./testdata", "-run=TestNormal"}, 2, logger.Sugar())
+		err = runGoTest(context.TODO(), []string{"./testdata", "-run=TestNormal"}, 2, false, logger.Sugar())
 		require.NoError(t, err)
 
 		expected := []string{
-			"PASS TestNormal1 (1/2)",
-			"PASS TestNormal2 (2/2)",
+			"PASS TestNormal1 1/2",
+			"PASS TestNormal2 2/2",
 			"PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
 		}
 		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
@@ -70,14 +70,14 @@ func TestRunGoTest(t *testing.T) {
 		logger, err := makeTestLogger(&actual)
 		require.NoError(t, err)
 
-		err = runGoTest(context.TODO(), []string{"./testdata", "-run=TestError"}, 2, logger.Sugar())
+		err = runGoTest(context.TODO(), []string{"./testdata", "-run=TestError"}, 2, false, logger.Sugar())
 
 		var exitErr *exec.ExitError
 		require.ErrorAs(t, err, &exitErr)
 		assert.Equal(t, 1, exitErr.ExitCode())
 
 		expected := []string{
-			"FAIL TestError1 (1/2):",
+			"FAIL TestError1 1/2:",
 			"  === RUN   TestError1",
 			"  error_test.go:20: not hidden 1",
 			"  error_test.go:22: Error 1",
@@ -94,7 +94,7 @@ func TestRunGoTest(t *testing.T) {
 			"    error_test.go:43: not hidden 7",
 			"    --- FAIL: TestError2/Parallel (0.00s)",
 			"",
-			"FAIL TestError2 (2/2):",
+			"FAIL TestError2 2/2:",
 			"  === RUN   TestError2",
 			"  error_test.go:28: not hidden 3",
 			"  === PAUSE TestError2",
@@ -125,11 +125,11 @@ func TestRunGoTest(t *testing.T) {
 		logger, err := makeTestLogger(&actual)
 		require.NoError(t, err)
 
-		err = runGoTest(context.TODO(), []string{"./testdata", "-run=TestSkip"}, 1, logger.Sugar())
+		err = runGoTest(context.TODO(), []string{"./testdata", "-run=TestSkip"}, 1, false, logger.Sugar())
 		require.NoError(t, err)
 
 		expected := []string{
-			"SKIP TestSkip1 (1/1):",
+			"SKIP TestSkip1 1/1:",
 			"  === RUN   TestSkip1",
 			"  skip_test.go:20: not hidden 1",
 			"  skip_test.go:22: Skip 1",
