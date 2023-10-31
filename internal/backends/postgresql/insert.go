@@ -41,13 +41,13 @@ func prepareInsertStatement(schema, tableName string, capped bool, docs []*types
 		}
 
 		if capped {
-			rows[i] = fmt.Sprintf("(%s, %s)", placeholder.Next(), placeholder.Next())
+			rows[i] = "(" + placeholder.Next() + ", " + placeholder.Next() + ")"
 			args = append(args, doc.RecordID(), string(b))
 
 			continue
 		}
 
-		rows[i] = fmt.Sprintf("(%s)", placeholder.Next())
+		rows[i] = "(" + placeholder.Next() + ")"
 		args = append(args, string(b))
 	}
 

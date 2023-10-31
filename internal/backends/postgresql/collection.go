@@ -127,14 +127,14 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 		return nil, lazyerrors.Error(err)
 	}
 
-	batchSize := 100
-
 	err = pool.InTransaction(ctx, p, func(tx pgx.Tx) error {
+		var batch []*types.Document
 		docs := params.Docs
+		const batchSize = 100
+
 		for len(docs) > 0 {
 			i := min(batchSize, len(docs))
-			batch := docs[:i]
-			docs = docs[i:]
+			batch, docs = docs[:i], docs[i:]
 
 			var q string
 			var args []any

@@ -110,14 +110,15 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
-	batchSize := 100
 
 	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
+		var batch []*types.Document
 		docs := params.Docs
+		const batchSize = 100
+
 		for len(docs) > 0 {
 			i := min(batchSize, len(docs))
-			batch := docs[:i]
-			docs = docs[i:]
+			batch, docs = docs[:i], docs[i:]
 
 			q, args, err := prepareInsertStatement(meta.TableName, meta.Capped(), batch)
 			if err != nil {
