@@ -150,9 +150,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 		}
 
-		if _, err = c.InsertAll(ctx, &backends.InsertAllParams{
-			Docs: docs,
-		}); err == nil {
+		if _, err = c.InsertAll(ctx, &backends.InsertAllParams{Docs: docs}); err == nil {
 			inserted += int32(len(docs))
 
 			if params.Ordered && len(writeErrors) > 0 {
@@ -164,29 +162,27 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 		// insert doc one by one upon failing on batch insertion
 		for j, doc := range docs {
-			_, err = c.InsertAll(ctx, &backends.InsertAllParams{
+			if _, err = c.InsertAll(ctx, &backends.InsertAllParams{
 				Docs: []*types.Document{doc},
-			})
+			}); err == nil {
+				inserted++
 
-			if err != nil {
-				if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
-					writeErrors = append(writeErrors, &writeError{
-						index:  docsIndexes[j],
-						code:   commonerrors.ErrDuplicateKeyInsert,
-						errmsg: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
-					})
+				continue
+			}
 
-					if params.Ordered {
-						break
-					}
-
-					continue
-				}
-
+			if !backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
 				return nil, lazyerrors.Error(err)
 			}
 
-			inserted++
+			writeErrors = append(writeErrors, &writeError{
+				index:  docsIndexes[j],
+				code:   commonerrors.ErrDuplicateKeyInsert,
+				errmsg: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
+			})
+
+			if params.Ordered {
+				break
+			}
 		}
 	}
 
