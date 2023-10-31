@@ -65,7 +65,7 @@ For example, an Integer value of 0 is seen as the same as a Double value of 0.0 
 ### Null and non-existent field comparison
 
 For comparison, a non-existent field is equivalent to Null.
-This means that a field `v` with Null value `{:v null}` is considered the same as a non-existent `v` field in `{}`.
+This means that a field `v` with Null value `{v: null}` is considered the same as a non-existent `v` field in `{}`.
 
 ## Examples showcasing sorting for scalar values
 
