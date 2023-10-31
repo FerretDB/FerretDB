@@ -24,14 +24,8 @@ const config = {
   },
 
   scripts: [
-    { src: 'https://unpkg.com/@antonz/codapi@0.6.0/dist/snippet.js' },
-  ],
-
-  stylesheets: [
-    {
-      href: "https://unpkg.com/@antonz/codapi@0.6.0/dist/snippet.css",
-      type: 'text/css',
-    },
+    {src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io"},
+    { src: 'https://unpkg.com/@antonz/codapi@0.6.0/dist/snippet.js' }
   ],
 
   plugins: [
@@ -184,7 +178,7 @@ const config = {
         additionalLanguages: ['go', 'json5', 'sql'],
       },
       mermaid: {
-        theme: { light: 'default', dark: 'dark' },
+        theme: {light: 'default', dark: 'dark'},
       },
     }),
   markdown: {
