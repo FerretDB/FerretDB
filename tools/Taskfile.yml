@@ -8,9 +8,9 @@ vars:
 tasks:
   tools-test:
     cmds:
+      - ../bin/envtool{{exeExt}} shell rmdir ../tmp/checkcomments
       - ../bin/envtool{{exeExt}} shell mkdir ../tmp/checkcomments
       - go test -short {{.RACE_FLAG}} -shuffle=on -coverprofile=cover.txt -coverpkg=./... ./checkcomments/... ./checkdocs/... ./checkswitch/...
-      - ../bin/envtool{{exeExt}} shell rmdir ../tmp/checkcomments
 
   lint:
     desc: "Run linters"
