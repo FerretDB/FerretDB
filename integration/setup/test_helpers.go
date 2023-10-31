@@ -68,21 +68,6 @@ func FailsForSQLite(tb testtb.TB, reason string) testtb.TB {
 	return tb
 }
 
-// SkipForPostgreSQL skips the current test for PostgreSQL backend.
-//
-// This function should not be used lightly and always with an reason provided.
-// It should be removed when a new PG handler is fully supported.
-// TODO https://github.com/FerretDB/FerretDB/issues/3435
-func SkipForPostgreSQL(tb testtb.TB, reason string) {
-	tb.Helper()
-
-	if IsPostgreSQL(tb) {
-		require.NotEmpty(tb, reason, "reason must not be empty")
-
-		tb.Skipf("Skipping for PostgreSQL: %s.", reason)
-	}
-}
-
 // SkipForMongoDB skips the current test for MongoDB.
 //
 // This function should not be used lightly and always with an issue URL.
