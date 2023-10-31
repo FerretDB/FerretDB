@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -53,6 +54,8 @@ func (te testEvent) Elapsed() time.Duration {
 
 // testResult represents the outcome of a single test.
 type testResult struct {
+	run     time.Time
+	cont    time.Time
 	outputs []string
 }
 
@@ -75,7 +78,7 @@ func parentTest(testName string) string {
 }
 
 // runGoTest runs `go test` with given extra args.
-func runGoTest(ctx context.Context, args []string, total int, logger *zap.SugaredLogger) error {
+func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger) error {
 	cmd := exec.CommandContext(ctx, "go", append([]string{"test", "-json"}, args...)...)
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
@@ -97,6 +100,11 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 
 	d := json.NewDecoder(p)
 	d.DisallowUnknownFields()
+
+	totalTests := "?"
+	if total > 0 {
+		totalTests = strconv.Itoa(total)
+	}
 
 	for {
 		var event testEvent
@@ -125,6 +133,25 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 		}
 
 		switch event.Action {
+		case "start": // the test binary is about to be executed
+			// nothing
+
+		case "run": // the test has started running
+			results[event.Test].run = event.Time
+			results[event.Test].cont = event.Time
+
+		case "pause": // the test has been paused
+			// nothing
+
+		case "cont": // the test has continued running
+			results[event.Test].cont = event.Time
+
+		case "output": // the test printed output
+			// nothing
+
+		case "bench": // the benchmark printed log output but did not fail
+			// nothing
+
 		case "pass": // the test passed
 			fallthrough
 
@@ -142,11 +169,27 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 				continue
 			}
 
+			res := results[event.Test]
+
 			msg := strings.ToTitle(event.Action) + " " + event.Test
+
+			if times {
+				msg += fmt.Sprintf(" (%.2fs", event.Time.Sub(res.cont).Seconds())
+
+				if res.run != res.cont {
+					msg += fmt.Sprintf("/%.2fs", event.Time.Sub(res.run).Seconds())
+				}
+
+				if event.ElapsedSeconds > 0 {
+					msg += fmt.Sprintf("/%.2fs", event.ElapsedSeconds)
+				}
+
+				msg += ")"
+			}
 
 			if top {
 				done++
-				msg += fmt.Sprintf(" (%d/%d)", done, total)
+				msg += fmt.Sprintf(" %d/%s", done, totalTests)
 			}
 
 			if event.Action == "pass" {
@@ -154,21 +197,14 @@ func runGoTest(ctx context.Context, args []string, total int, logger *zap.Sugare
 				continue
 			}
 
-			logger.Info(msg + ":")
+			msg += ":"
+			logger.Info(msg)
 
 			for _, l := range results[event.Test].outputs {
 				logger.Info(l)
 			}
 
 			logger.Info("")
-
-		case "output": // the test printed output
-		case "bench": // the benchmark printed log output but did not fail
-
-		case "start": // the test binary is about to be executed
-		case "run": // the test has started running
-		case "pause": // the test has been paused
-		case "cont": // the test has continued running
 
 		default:
 			return lazyerrors.Errorf("unknown action %q", event.Action)
@@ -210,7 +246,7 @@ func testsRun(index, total uint, run string, args []string, logger *zap.SugaredL
 		run += ")$"
 	}
 
-	return runGoTest(context.TODO(), append([]string{"-run=" + run}, args...), totalTest, logger)
+	return runGoTest(context.TODO(), append([]string{"-run=" + run}, args...), totalTest, true, logger)
 }
 
 // listTestFuncs returns a sorted slice of all top-level test functions (tests, benchmarks, examples, fuzz functions)
