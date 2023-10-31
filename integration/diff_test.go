@@ -1,16 +1,17 @@
-// Copyright 2023 FerretDB Inc.
+// Copyright 2021 FerretDB Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//	http://www.apache.org/licenses/LICENSE-2.0
+//     http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package integration
 
 import (
@@ -34,7 +35,7 @@ func TestInsertDuplicateKeys(t *testing.T) {
 	})
 	ctx, collection := s.Ctx, s.Collection
 
-	tests := []struct {
+	tests := []struct { //nolint:vet // used for testing only
 		name        string
 		expectedErr mongo.WriteException
 		doc         interface{}
@@ -51,73 +52,86 @@ func TestInsertDuplicateKeys(t *testing.T) {
 	}
 
 	for _, tc := range tests {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			_, err := collection.InsertOne(ctx, tc.doc)
-			assert.Equal(t, tc.expectedErr, unsetRaw(t, err))
+
+			if setup.IsMongoDB(t) {
+				require.NoError(t, err)
+				return
+			}
+
+			assert.Equal(t, tc.expectedErr, UnsetRaw(t, err))
 		})
 	}
 }
 
 func TestNestedArrays(t *testing.T) {
 	t.Parallel()
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		DatabaseName:   "testnestedarrays",
-		CollectionName: "nested-arrays",
-	})
-	ctx, collection := s.Ctx, s.Collection
 
-	tests := []struct {
-		name        string
-		expectedErr error
-		testFn      func(t *testing.T) error
-	}{
-		{
-			name: "insert with nested arrays",
-			expectedErr: mongo.WriteException{WriteErrors: []mongo.WriteError{{
-				Index:   0,
-				Code:    2,
-				Message: `invalid value: { "foo": [ [ "bar" ] ] } (nested arrays are not supported)`,
-			}}},
-			testFn: func(t *testing.T) error {
-				_, err := collection.InsertOne(ctx, bson.D{{"foo", bson.A{bson.A{"bar"}}}})
-				return err
-			},
-		},
-		{
-			name: "update with nested arrays",
-			expectedErr: mongo.CommandError{
-				Code:    2,
-				Name:    "BadValue",
-				Message: `invalid value: { "foo1": [ [ "bar1" ] ] } (nested arrays are not supported)`,
-			},
-			testFn: func(t *testing.T) error {
-				// initiate a collection with a valid document, so we have something to update
-				_, err := collection.InsertOne(ctx, bson.D{{"_id", "valid"}, {"v", int32(42)}})
-				require.NoError(t, err)
+	t.Run("Insert", func(t *testing.T) {
+		t.Parallel()
 
-				_, err = collection.UpdateOne(ctx, bson.D{}, bson.D{{"$set", bson.D{{"foo1", bson.A{bson.A{"bar1"}}}}}})
-				return err
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			err := tc.testFn(t)
-			assert.Equal(t, tc.expectedErr, unsetRaw(t, err))
+		s := setup.SetupWithOpts(t, &setup.SetupOpts{
+			DatabaseName:   "testnestedarrays",
+			CollectionName: "nested-arrays",
 		})
-	}
+		ctx, collection := s.Ctx, s.Collection
+
+		_, err := collection.InsertOne(ctx, bson.D{{"foo", bson.A{bson.A{"bar"}}}})
+
+		if setup.IsMongoDB(t) {
+			require.NoError(t, err)
+			return
+		}
+
+		expected := mongo.WriteException{WriteErrors: []mongo.WriteError{{
+			Index:   0,
+			Code:    2,
+			Message: `invalid value: { "foo": [ [ "bar" ] ] } (nested arrays are not supported)`,
+		}}}
+
+		assert.Equal(t, expected, UnsetRaw(t, err))
+	})
+
+	t.Run("Update", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, collection := setup.Setup(t)
+
+		_, err := collection.InsertOne(ctx, bson.D{
+			{"_id", "valid"},
+			{"v", int32(42)},
+		})
+		require.NoError(t, err)
+
+		_, err = collection.UpdateOne(ctx, bson.D{}, bson.D{{"$set", bson.D{{"foo", bson.A{bson.A{"bar"}}}}}})
+
+		if setup.IsMongoDB(t) {
+			require.NoError(t, err)
+			return
+		}
+
+		expected := mongo.WriteError{
+			Code:    2,
+			Message: `invalid value: { "foo": [ [ "bar" ] ] } (nested arrays are not supported)`,
+		}
+
+		AssertEqualWriteError(t, expected, err)
+	})
 }
 
-func TestDatabaseCollectionName(t *testing.T) {
+func TestDiffDatabaseName(t *testing.T) {
 	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
 	testCases := []struct {
 		name           string
 		dbName         string
 		collectionName string
-		expectedErr    error
+		expectedErr    mongo.CommandError
 	}{
 		{
 			name:           "DB name with reserved prefix",
@@ -139,6 +153,40 @@ func TestDatabaseCollectionName(t *testing.T) {
 				Message: `Invalid namespace specified 'データベース.test'`,
 			},
 		},
+	}
+
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			err := collection.Database().Client().Database(tc.dbName).CreateCollection(ctx, tc.collectionName)
+
+			if setup.IsMongoDB(t) {
+				require.NoError(t, err)
+
+				err = collection.Database().Client().Database(tc.dbName).Drop(ctx)
+				require.NoError(t, err)
+
+				return
+			}
+
+			AssertEqualCommandError(t, tc.expectedErr, err)
+		})
+	}
+}
+
+func TestDiffCollectionName(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	testCases := []struct {
+		name           string
+		dbName         string
+		collectionName string
+		expectedErr    mongo.CommandError
+	}{
 		{
 			name:           "Collection name with reserved prefix",
 			dbName:         "testcollectionnamereservedprefix",
@@ -162,13 +210,18 @@ func TestDatabaseCollectionName(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			setup.SetupWithOpts(t, &setup.SetupOpts{
-				DatabaseName:   tc.dbName,
-				CollectionName: tc.collectionName,
-			})
-			// TODO: run test and see how we can verify
+
+			err := collection.Database().CreateCollection(ctx, tc.collectionName)
+
+			if setup.IsMongoDB(t) {
+				require.NoError(t, err)
+				return
+			}
+
+			AssertEqualCommandError(t, tc.expectedErr, err)
 		})
 	}
 }
@@ -187,10 +240,18 @@ func TestNullStrings(t *testing.T) {
 			expectedErrPattern: "^.* unsupported Unicode escape sequence .*$",
 		},
 	}
+
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			_, err := collection.InsertOne(ctx, tc.doc)
+
+			if setup.IsMongoDB(t) {
+				require.NoError(t, err)
+				return
+			}
+
 			require.Error(t, err)
 			assert.Regexp(t, tc.expectedErrPattern, err.Error())
 		})
@@ -205,7 +266,7 @@ func TestNegativeZero(t *testing.T) {
 	})
 	ctx, collection := s.Ctx, s.Collection
 
-	testCases := []struct {
+	testCases := []struct { //nolint:vet // used for testing only
 		name      string
 		insertDoc interface{}
 		updateDoc interface{}
@@ -231,6 +292,7 @@ func TestNegativeZero(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			_, err := collection.InsertOne(ctx, tc.insertDoc)
@@ -290,6 +352,7 @@ func TestUpdateProduceInfinity(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -298,7 +361,7 @@ func TestUpdateProduceInfinity(t *testing.T) {
 
 			_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
 
-			assertEqualError(t, tc.expected, err)
+			AssertEqualCommandError(t, tc.expected, err)
 		})
 	}
 }
@@ -311,9 +374,10 @@ func TestDocumentValidation(t *testing.T) {
 		CollectionName: "doc-validation",
 	})
 	ctx, collection := s.Ctx, s.Collection
+
 	t.Run("Insert", func(t *testing.T) {
 		t.Parallel()
-		testCases := []struct {
+		testCases := []struct { //nolint:vet // used for testing only
 			name     string
 			doc      bson.D
 			expected error
@@ -365,10 +429,11 @@ func TestDocumentValidation(t *testing.T) {
 		}
 
 		for _, tc := range testCases {
+			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
 				t.Parallel()
 				_, err := collection.InsertOne(ctx, tc.doc)
-				assert.Equal(t, tc.expected, unsetRaw(t, err))
+				assert.Equal(t, tc.expected, UnsetRaw(t, err))
 			})
 		}
 	})
@@ -399,7 +464,7 @@ func TestDocumentValidation(t *testing.T) {
 				require.NoError(t, err)
 
 				_, err = collection.UpdateOne(ctx, bson.D{}, tc.doc)
-				assertEqualError(t, tc.expected, err)
+				AssertEqualCommandError(t, tc.expected, err)
 			})
 		}
 	})
@@ -429,6 +494,7 @@ func TestDocumentValidation(t *testing.T) {
 		}
 
 		for _, tc := range testCases {
+			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
 				t.Parallel()
 
@@ -437,7 +503,7 @@ func TestDocumentValidation(t *testing.T) {
 
 				err := collection.Database().RunCommand(ctx, command)
 
-				assertEqualError(t, tc.expected, err.Err())
+				AssertEqualCommandError(t, tc.expected, err.Err())
 			})
 		}
 	})
@@ -445,6 +511,7 @@ func TestDocumentValidation(t *testing.T) {
 
 func TestDBStatsScale(t *testing.T) {
 	t.Parallel()
+
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "testerrormgs",
 	})
@@ -509,11 +576,12 @@ func TestDBStatsScale(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			err := db.RunCommand(ctx, bson.D{{"dbStats", int32(1)}, {"scale", tc.scale}}).Err()
 			require.Error(t, err)
-			assertEqualError(t, tc.expectedFerretDBErr, err)
+			AssertEqualCommandError(t, tc.expectedFerretDBErr, err)
 		})
 	}
 }
@@ -525,7 +593,7 @@ func TestErrorMessages(t *testing.T) {
 	})
 	ctx, db := s.Ctx, s.Collection.Database()
 
-	testCases := []struct {
+	testCases := []struct { //nolint:vet // used for testing only
 		name   string
 		testFn func(t *testing.T)
 	}{
@@ -544,12 +612,13 @@ func TestErrorMessages(t *testing.T) {
 					Name:    "TypeMismatch",
 					Message: "BSON field 'allParameters' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
 				}
-				assertEqualError(t, expectedErr, actual)
+				AssertEqualCommandError(t, expectedErr, actual)
 			},
 		},
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			tc.testFn(t)
