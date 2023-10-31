@@ -88,13 +88,13 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	defer docsIter.Close()
 
 	var inserted int32
-	var done bool
-	batchSize := 100
 	var writeErrors []*writeError
 
+	var done bool
 	for !done {
-		var docs []*types.Document
-		var docsIndexes []int32
+		const batchSize = 1000
+		docs := make([]*types.Document, 0, batchSize)
+		docsIndexes := make([]int32, 0, batchSize)
 
 		for j := 0; j < batchSize; j++ {
 			var i int
