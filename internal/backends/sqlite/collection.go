@@ -113,13 +113,13 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	batchSize := 100
 
 	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
-		var j int
-		for i := 0; i < len(params.Docs); i += batchSize {
-			if j += batchSize; j > len(params.Docs) {
-				j = len(params.Docs)
-			}
+		docs := params.Docs
+		for len(docs) > 0 {
+			i := min(batchSize, len(docs))
+			batch := docs[:i]
+			docs = docs[i:]
 
-			q, args, err := prepareInsertStatement(meta.TableName, meta.Settings.CappedSize > 0, params.Docs[i:j])
+			q, args, err := prepareInsertStatement(meta.TableName, meta.Capped(), batch)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}

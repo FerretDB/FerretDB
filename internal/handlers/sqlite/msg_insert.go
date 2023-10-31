@@ -92,11 +92,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	batchSize := 100
 	var writeErrors []*writeError
 
-	for {
-		if done {
-			break
-		}
-
+	for !done {
 		var docs []*types.Document
 		var docsIndexes []int32
 
@@ -121,44 +117,42 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			}
 
 			// TODO https://github.com/FerretDB/FerretDB/issues/3454
-			if err = doc.ValidateData(); err != nil {
-				var ve *types.ValidationError
-
-				if !errors.As(err, &ve) {
-					return nil, lazyerrors.Error(err)
-				}
-
-				var code commonerrors.ErrorCode
-
-				switch ve.Code() {
-				case types.ErrValidation, types.ErrIDNotFound:
-					code = commonerrors.ErrBadValue
-				case types.ErrWrongIDType:
-					code = commonerrors.ErrInvalidID
-				default:
-					panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
-				}
-
-				writeErrors = append(writeErrors, &writeError{
-					index:  int32(i),
-					code:   code,
-					errmsg: ve.Error(),
-				})
-
-				if params.Ordered {
-					break
-				}
-			} else {
+			if err = doc.ValidateData(); err == nil {
 				docs = append(docs, doc)
 				docsIndexes = append(docsIndexes, int32(i))
+
+				continue
+			}
+
+			var ve *types.ValidationError
+			if !errors.As(err, &ve) {
+				return nil, lazyerrors.Error(err)
+			}
+
+			var code commonerrors.ErrorCode
+			switch ve.Code() {
+			case types.ErrValidation, types.ErrIDNotFound:
+				code = commonerrors.ErrBadValue
+			case types.ErrWrongIDType:
+				code = commonerrors.ErrInvalidID
+			default:
+				panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
+			}
+
+			writeErrors = append(writeErrors, &writeError{
+				index:  int32(i),
+				code:   code,
+				errmsg: ve.Error(),
+			})
+
+			if params.Ordered {
+				break
 			}
 		}
 
-		_, err = c.InsertAll(ctx, &backends.InsertAllParams{
+		if _, err = c.InsertAll(ctx, &backends.InsertAllParams{
 			Docs: docs,
-		})
-
-		if err == nil {
+		}); err == nil {
 			inserted += int32(len(docs))
 
 			if params.Ordered && len(writeErrors) > 0 {
