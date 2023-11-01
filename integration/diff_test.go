@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
@@ -46,6 +47,38 @@ func TestDiffInsertDuplicateKeys(t *testing.T) {
 		Index:   0,
 		Code:    2,
 		Message: `invalid key: "foo" (duplicate keys are not allowed)`,
+	}
+	AssertEqualWriteError(t, expected, err)
+}
+
+func TestDiffInsertObjectIDHexString(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	hex := "000102030405060708091011"
+
+	objID, err := primitive.ObjectIDFromHex(hex)
+	require.NoError(t, err)
+
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", objID},
+	})
+	require.NoError(t, err)
+
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", hex},
+	})
+
+	if setup.IsMongoDB(t) {
+		require.NoError(t, err)
+		return
+	}
+
+	expected := mongo.WriteError{
+		Index:   0,
+		Code:    11000,
+		Message: `E11000 duplicate key error collection: TestDiffInsertObjectIDHexString.TestDiffInsertObjectIDHexString`,
 	}
 	AssertEqualWriteError(t, expected, err)
 }
@@ -130,33 +163,70 @@ func TestDiffDatabaseName(t *testing.T) {
 func TestDiffCollectionName(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t)
-
 	testcases := map[string]string{
 		"ReservedPrefix": "_ferretdb_xxx",
 		"NonUTF-8":       string([]byte{0xff, 0xfe, 0xfd}),
 	}
 
-	for name, cName := range testcases {
-		name, cName := name, cName
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
+	t.Run("CreateCollection", func(t *testing.T) {
+		for name, cName := range testcases {
+			name, cName := name, cName
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
 
-			err := collection.Database().CreateCollection(ctx, cName)
+				ctx, collection := setup.Setup(t)
 
-			if setup.IsMongoDB(t) {
+				err := collection.Database().CreateCollection(ctx, cName)
+
+				if setup.IsMongoDB(t) {
+					require.NoError(t, err)
+					return
+				}
+
+				expected := mongo.CommandError{
+					Name:    "InvalidNamespace",
+					Code:    73,
+					Message: fmt.Sprintf(`Invalid collection name: %s`, cName),
+				}
+				AssertEqualCommandError(t, expected, err)
+			})
+		}
+	})
+
+	t.Run("RenameCollection", func(t *testing.T) {
+		for name, toName := range testcases {
+			name, toName := name, toName
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
+
+				ctx, collection := setup.Setup(t)
+
+				fromName := testutil.CollectionName(t)
+				err := collection.Database().CreateCollection(ctx, fromName)
 				require.NoError(t, err)
-				return
-			}
 
-			expected := mongo.CommandError{
-				Name:    "InvalidNamespace",
-				Code:    73,
-				Message: fmt.Sprintf(`Invalid collection name: %s`, cName),
-			}
-			AssertEqualCommandError(t, expected, err)
-		})
-	}
+				dbName := collection.Database().Name()
+				command := bson.D{
+					{"renameCollection", dbName + "." + fromName},
+					{"to", dbName + "." + toName},
+				}
+
+				err = collection.Database().Client().Database("admin").RunCommand(ctx, command).Err()
+
+				if setup.IsMongoDB(t) {
+					require.NoError(t, err)
+					return
+				}
+
+				expected := mongo.CommandError{
+					Name:    "IllegalOperation",
+					Code:    20,
+					Message: fmt.Sprintf(`error with target namespace: Invalid collection name: %s`, toName),
+				}
+				AssertEqualCommandError(t, expected, err)
+			})
+		}
+	})
 }
 
 func TestDiffNullStrings(t *testing.T) {
