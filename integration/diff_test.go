@@ -25,59 +25,38 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
-func TestInsertDuplicateKeys(t *testing.T) {
+func TestDiffInsertDuplicateKeys(t *testing.T) {
 	t.Parallel()
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		DatabaseName:   "testduplicatekeys",
-		CollectionName: "insert-duplicate-keys",
-	})
-	ctx, collection := s.Ctx, s.Collection
 
-	tests := []struct { //nolint:vet // used for testing only
-		name        string
-		expectedErr mongo.WriteException
-		doc         interface{}
-	}{
-		{
-			name: "simple duplicate key",
-			doc:  bson.D{{"_id", "duplicate_keys"}, {"foo", "bar"}, {"foo", "baz"}},
-			expectedErr: mongo.WriteException{WriteErrors: []mongo.WriteError{{
-				Index:   0,
-				Code:    2,
-				Message: `invalid key: "foo" (duplicate keys are not allowed)`,
-			}}},
-		},
+	ctx, collection := setup.Setup(t)
+
+	doc := bson.D{{"_id", "duplicate_keys"}, {"foo", "bar"}, {"foo", "baz"}}
+	_, err := collection.InsertOne(ctx, doc)
+
+	if setup.IsMongoDB(t) {
+		require.NoError(t, err)
+		return
 	}
 
-	for _, tc := range tests {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			_, err := collection.InsertOne(ctx, tc.doc)
-
-			if setup.IsMongoDB(t) {
-				require.NoError(t, err)
-				return
-			}
-
-			assert.Equal(t, tc.expectedErr, UnsetRaw(t, err))
-		})
+	expected := mongo.WriteError{
+		Index:   0,
+		Code:    2,
+		Message: `invalid key: "foo" (duplicate keys are not allowed)`,
 	}
+	AssertEqualWriteError(t, expected, err)
 }
 
-func TestNestedArrays(t *testing.T) {
+func TestDiffNestedArrays(t *testing.T) {
 	t.Parallel()
+
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
 	t.Run("Insert", func(t *testing.T) {
 		t.Parallel()
-
-		s := setup.SetupWithOpts(t, &setup.SetupOpts{
-			DatabaseName:   "testnestedarrays",
-			CollectionName: "nested-arrays",
-		})
-		ctx, collection := s.Ctx, s.Collection
 
 		_, err := collection.InsertOne(ctx, bson.D{{"foo", bson.A{bson.A{"bar"}}}})
 
@@ -86,27 +65,18 @@ func TestNestedArrays(t *testing.T) {
 			return
 		}
 
-		expected := mongo.WriteException{WriteErrors: []mongo.WriteError{{
+		expected := mongo.WriteError{
 			Index:   0,
 			Code:    2,
 			Message: `invalid value: { "foo": [ [ "bar" ] ] } (nested arrays are not supported)`,
-		}}}
-
-		assert.Equal(t, expected, UnsetRaw(t, err))
+		}
+		AssertEqualWriteError(t, expected, err)
 	})
 
 	t.Run("Update", func(t *testing.T) {
 		t.Parallel()
 
-		ctx, collection := setup.Setup(t)
-
-		_, err := collection.InsertOne(ctx, bson.D{
-			{"_id", "valid"},
-			{"v", int32(42)},
-		})
-		require.NoError(t, err)
-
-		_, err = collection.UpdateOne(ctx, bson.D{}, bson.D{{"$set", bson.D{{"foo", bson.A{bson.A{"bar"}}}}}})
+		_, err := collection.UpdateOne(ctx, bson.D{}, bson.D{{"$set", bson.D{{"foo", bson.A{bson.A{"bar"}}}}}})
 
 		if setup.IsMongoDB(t) {
 			require.NoError(t, err)
@@ -117,7 +87,6 @@ func TestNestedArrays(t *testing.T) {
 			Code:    2,
 			Message: `invalid value: { "foo": [ [ "bar" ] ] } (nested arrays are not supported)`,
 		}
-
 		AssertEqualWriteError(t, expected, err)
 	})
 }
@@ -127,51 +96,33 @@ func TestDiffDatabaseName(t *testing.T) {
 
 	ctx, collection := setup.Setup(t)
 
-	testCases := []struct {
-		name           string
-		dbName         string
-		collectionName string
-		expectedErr    mongo.CommandError
-	}{
-		{
-			name:           "DB name with reserved prefix",
-			dbName:         "_ferretdb_xxx",
-			collectionName: "test",
-			expectedErr: mongo.CommandError{
-				Name:    "InvalidNamespace",
-				Code:    73,
-				Message: `Invalid namespace specified '_ferretdb_xxx.test'`,
-			},
-		},
-		{
-			name:           "DB name with non-latin characters",
-			dbName:         "データベース",
-			collectionName: "test",
-			expectedErr: mongo.CommandError{
-				Name:    "InvalidNamespace",
-				Code:    73,
-				Message: `Invalid namespace specified 'データベース.test'`,
-			},
-		},
-	}
-
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	for name, dbName := range map[string]string{
+		"ReservedPrefix": "_ferretdb_xxx",
+		"NonLatin":       "データベース",
+	} {
+		name, dbName := name, dbName
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			err := collection.Database().Client().Database(tc.dbName).CreateCollection(ctx, tc.collectionName)
+			cName := testutil.CollectionName(t)
+
+			err := collection.Database().Client().Database(dbName).CreateCollection(ctx, cName)
 
 			if setup.IsMongoDB(t) {
 				require.NoError(t, err)
 
-				err = collection.Database().Client().Database(tc.dbName).Drop(ctx)
+				err = collection.Database().Client().Database(dbName).Drop(ctx)
 				require.NoError(t, err)
 
 				return
 			}
 
-			AssertEqualCommandError(t, tc.expectedErr, err)
+			expected := mongo.CommandError{
+				Name:    "InvalidNamespace",
+				Code:    73,
+				Message: fmt.Sprintf(`Invalid namespace specified '%s.%s'`, dbName, cName),
+			}
+			AssertEqualCommandError(t, expected, err)
 		})
 	}
 }
@@ -181,125 +132,86 @@ func TestDiffCollectionName(t *testing.T) {
 
 	ctx, collection := setup.Setup(t)
 
-	testCases := []struct {
-		name           string
-		dbName         string
-		collectionName string
-		expectedErr    mongo.CommandError
-	}{
-		{
-			name:           "Collection name with reserved prefix",
-			dbName:         "testcollectionnamereservedprefix",
-			collectionName: "_ferretdb_xxx",
-			expectedErr: mongo.CommandError{
-				Name:    "InvalidNamespace",
-				Code:    73,
-				Message: fmt.Sprintf(`Invalid collection name: %s`, "_ferretdb_xxx"),
-			},
-		},
-		{
-			name:           "Collection name with non-latin characters",
-			dbName:         "testcollectionnamenonlatichars",
-			collectionName: string([]byte{0xff, 0xfe, 0xfd}),
-			expectedErr: mongo.CommandError{
-				Name:    "InvalidNamespace",
-				Code:    73,
-				Message: fmt.Sprintf(`Invalid collection name: %s`, string([]byte{0xff, 0xfe, 0xfd})),
-			},
-		},
+	testcases := map[string]string{
+		"ReservedPrefix": "_ferretdb_xxx",
+		"NonUTF-8":       string([]byte{0xff, 0xfe, 0xfd}),
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	for name, cName := range testcases {
+		name, cName := name, cName
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			err := collection.Database().CreateCollection(ctx, tc.collectionName)
+			err := collection.Database().CreateCollection(ctx, cName)
 
 			if setup.IsMongoDB(t) {
 				require.NoError(t, err)
 				return
 			}
 
-			AssertEqualCommandError(t, tc.expectedErr, err)
-		})
-	}
-}
-
-func TestNullStrings(t *testing.T) {
-	t.Parallel()
-	ctx, collection := setup.Setup(t)
-	testCases := []struct {
-		name               string
-		doc                interface{}
-		expectedErrPattern string
-	}{
-		{
-			name:               "Null Strings value",
-			doc:                bson.D{{"_id", "document"}, {"a", string([]byte{0})}},
-			expectedErrPattern: "^.* unsupported Unicode escape sequence .*$",
-		},
-	}
-
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			_, err := collection.InsertOne(ctx, tc.doc)
-
-			if setup.IsMongoDB(t) || setup.IsSQLite(t) {
-				require.NoError(t, err)
-				return
+			expected := mongo.CommandError{
+				Name:    "InvalidNamespace",
+				Code:    73,
+				Message: fmt.Sprintf(`Invalid collection name: %s`, cName),
 			}
-
-			require.Error(t, err)
-			assert.Regexp(t, tc.expectedErrPattern, err.Error())
+			AssertEqualCommandError(t, expected, err)
 		})
 	}
 }
 
-func TestNegativeZero(t *testing.T) {
+func TestDiffNullStrings(t *testing.T) {
 	t.Parallel()
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		DatabaseName:   "testnegativezero",
-		CollectionName: "negative-zero",
-	})
-	ctx, collection := s.Ctx, s.Collection
 
-	testCases := []struct { //nolint:vet // used for testing only
-		name      string
-		insertDoc interface{}
-		updateDoc interface{}
-		filter    interface{}
-	}{
-		{
-			name:      "Insert negative zero",
-			insertDoc: bson.D{{"_id", "1"}, {"v", math.Copysign(0.0, -1)}},
-			filter:    bson.D{{"_id", "1"}},
-		},
-		{
-			name:      "Multiply zero by negative",
-			insertDoc: bson.D{{"_id", "zero"}, {"v", int32(0)}},
-			updateDoc: bson.D{{"$mul", bson.D{{"v", float64(-1)}}}},
-			filter:    bson.D{{"_id", "zero"}},
-		},
-		{
-			name:      "Multiple negative by zero",
-			insertDoc: bson.D{{"_id", "negative"}, {"v", int64(-1)}},
-			updateDoc: bson.D{{"$mul", bson.D{{"v", float64(0)}}}},
-			filter:    bson.D{{"_id", "negative"}},
-		},
+	ctx, collection := setup.Setup(t)
+
+	_, err := collection.InsertOne(ctx, bson.D{
+		{"_id", "document"},
+		{"a", string([]byte{0})},
+	})
+
+	if setup.IsMongoDB(t) || setup.IsSQLite(t) {
+		require.NoError(t, err)
+		return
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	require.Error(t, err)
+	assert.Regexp(t, "^.* unsupported Unicode escape sequence .*$", err.Error())
+}
+
+func TestDiffNegativeZero(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	for name, tc := range map[string]struct {
+		insert bson.D
+		update bson.D
+		filter bson.D
+	}{
+		"Insert": {
+			insert: bson.D{{"_id", "1"}, {"v", math.Copysign(0.0, -1)}},
+			filter: bson.D{{"_id", "1"}},
+		},
+		"UpdateZeroMulNegative": {
+			insert: bson.D{{"_id", "zero"}, {"v", int32(0)}},
+			update: bson.D{{"$mul", bson.D{{"v", float64(-1)}}}},
+			filter: bson.D{{"_id", "zero"}},
+		},
+		"UpdateNegativeMulZero": {
+			insert: bson.D{{"_id", "negative"}, {"v", int64(-1)}},
+			update: bson.D{{"$mul", bson.D{{"v", float64(0)}}}},
+			filter: bson.D{{"_id", "negative"}},
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			_, err := collection.InsertOne(ctx, tc.insertDoc)
+
+			_, err := collection.InsertOne(ctx, tc.insert)
 			require.NoError(t, err)
 
-			if tc.updateDoc != nil {
-				_, err = collection.UpdateOne(ctx, tc.filter, tc.updateDoc)
+			if tc.update != nil {
+				_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
 				require.NoError(t, err)
 			}
 
@@ -323,122 +235,86 @@ func TestNegativeZero(t *testing.T) {
 	}
 }
 
-func TestUpdateProduceInfinity(t *testing.T) {
+func TestDiffUpdateProduceInfinity(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		DatabaseName:   "testupdateproduceinfiity",
-		CollectionName: "produce-infinity",
-	})
-	ctx, collection := s.Ctx, s.Collection
+	ctx, collection := setup.Setup(t)
+	_, err := collection.InsertOne(ctx, bson.D{{"_id", "number"}, {"v", int32(42)}})
+	require.NoError(t, err)
 
-	testCases := []struct {
-		name     string
-		filter   bson.D
-		insert   bson.D
-		update   bson.D
-		expected mongo.CommandError
-	}{
-		{
-			name:   "MulInf",
-			filter: bson.D{{"_id", "number"}},
-			insert: bson.D{{"_id", "number"}, {"v", int32(42)}},
-			update: bson.D{{"$mul", bson.D{{"v", math.MaxFloat64}}}},
-			expected: mongo.CommandError{
-				Code: 2,
-				Name: "BadValue",
-				Message: `update produces invalid value: { "v": +Inf }` +
-					` (update operations that produce infinity values are not allowed)`,
-			},
-		},
+	_, err = collection.UpdateOne(ctx, bson.D{{"_id", "number"}}, bson.D{{"$mul", bson.D{{"v", math.MaxFloat64}}}})
+
+	if setup.IsMongoDB(t) {
+		require.NoError(t, err)
+		return
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			_, err := collection.InsertOne(ctx, tc.insert)
-			require.NoError(t, err)
-
-			_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
-
-			if setup.IsMongoDB(t) {
-				require.NoError(t, err)
-				return
-			}
-
-			AssertEqualCommandError(t, tc.expected, err)
-		})
+	expected := mongo.CommandError{
+		Code: 2,
+		Name: "BadValue",
+		Message: `update produces invalid value: { "v": +Inf }` +
+			` (update operations that produce infinity values are not allowed)`,
 	}
+	AssertEqualCommandError(t, expected, err)
 }
 
-func TestDocumentValidation(t *testing.T) {
+func TestDiffDocumentValidation(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		DatabaseName:   "testdocumentvalidation",
-		CollectionName: "doc-validation",
-	})
-	ctx, collection := s.Ctx, s.Collection
+	ctx, collection := setup.Setup(t, shareddata.Scalars)
 
 	t.Run("Insert", func(t *testing.T) {
 		t.Parallel()
-		testCases := []struct { //nolint:vet // used for testing only
-			name     string
-			doc      bson.D
-			expected error
+
+		for name, tc := range map[string]struct { //nolint:vet // use only for testing
+			doc bson.D
+
+			err error
 		}{
-			{
-				name: "DollarSign",
-				doc:  bson.D{{"$foo", "bar"}},
-				expected: mongo.WriteException{WriteErrors: []mongo.WriteError{{
+			"DollarSign": {
+				doc: bson.D{{"$foo", "bar"}},
+				err: mongo.WriteException{WriteErrors: []mongo.WriteError{{
 					Index:   0,
 					Code:    2,
 					Message: `invalid key: "$foo" (key must not start with '$' sign)`,
 				}}},
 			},
-			{
-				name: "DotSign",
-				doc:  bson.D{{"foo.bar", "baz"}},
-				expected: mongo.WriteException{WriteErrors: []mongo.WriteError{{
+			"DotSign": {
+				doc: bson.D{{"foo.bar", "baz"}},
+				err: mongo.WriteException{WriteErrors: []mongo.WriteError{{
 					Index:   0,
 					Code:    2,
 					Message: `invalid key: "foo.bar" (key must not contain '.' sign)`,
 				}}},
 			},
-			{
-				name: "Infinity",
-				doc:  bson.D{{"foo", math.Inf(1)}},
-				expected: mongo.WriteException{WriteErrors: []mongo.WriteError{{
+			"Infinity": {
+				doc: bson.D{{"foo", math.Inf(1)}},
+				err: mongo.WriteException{WriteErrors: []mongo.WriteError{{
 					Code:    2,
 					Message: `invalid value: { "foo": +Inf } (infinity values are not allowed)`,
 				}}},
 			},
-			{
-				name: "NegativeInfinity",
-				doc:  bson.D{{"foo", math.Inf(-1)}},
-				expected: mongo.WriteException{WriteErrors: []mongo.WriteError{{
+			"NegativeInfinity": {
+				doc: bson.D{{"foo", math.Inf(-1)}},
+				err: mongo.WriteException{WriteErrors: []mongo.WriteError{{
 					Code:    2,
 					Message: `invalid value: { "foo": -Inf } (infinity values are not allowed)`,
 				}}},
 			},
-			{
-				name: "NaN",
-				doc:  bson.D{{"_id", "1"}, {"foo", math.NaN()}},
-				expected: mongo.CommandError{
+			"NaN": {
+				doc: bson.D{{"_id", "nan"}, {"foo", math.NaN()}},
+				err: mongo.CommandError{
 					Code: 2,
 					Name: "BadValue",
-					Message: `wire.OpMsg.Document: validation failed for { insert: "doc-validation", ordered: true, ` +
-						`$db: "testdocumentvalidation", documents: [ { _id: "1", foo: nan.0 } ] } with: NaN is not supported`,
+					Message: `wire.OpMsg.Document: validation failed for { insert: "TestDiffDocumentValidation", ordered: true, ` +
+						`$db: "TestDiffDocumentValidation", documents: [ { _id: "nan", foo: nan.0 } ] } with: NaN is not supported`,
 				},
 			},
-		}
-
-		for _, tc := range testCases {
-			tc := tc
-			t.Run(tc.name, func(t *testing.T) {
+		} {
+			name, tc := name, tc
+			t.Run(name, func(t *testing.T) {
 				t.Parallel()
+
 				_, err := collection.InsertOne(ctx, tc.doc)
 
 				if setup.IsMongoDB(t) {
@@ -446,7 +322,7 @@ func TestDocumentValidation(t *testing.T) {
 					return
 				}
 
-				assert.Equal(t, tc.expected, UnsetRaw(t, err))
+				assert.Equal(t, tc.err, UnsetRaw(t, err))
 			})
 		}
 	})
@@ -454,56 +330,46 @@ func TestDocumentValidation(t *testing.T) {
 	t.Run("Update", func(t *testing.T) {
 		t.Parallel()
 
-		testCases := []struct {
-			name     string
-			doc      bson.D
-			expected mongo.WriteError
+		for name, tc := range map[string]struct {
+			doc bson.D
+			err mongo.WriteError
 		}{
-			{
-				name: "",
-				doc:  bson.D{{"$set", bson.D{{"foo", bson.D{{"bar.baz", "qaz"}}}}}},
-				expected: mongo.WriteError{
+			"DotSign": {
+				doc: bson.D{{"$set", bson.D{{"foo", bson.D{{"bar.baz", "qaz"}}}}}},
+				err: mongo.WriteError{
 					Code:    2,
 					Message: `invalid key: "bar.baz" (key must not contain '.' sign)`,
 				},
 			},
-		}
+		} {
+			name, tc := name, tc
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
 
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				// initiate a collection with a valid document, so we have something to update
-				_, err := collection.InsertOne(ctx, bson.D{{"_id", "valid"}, {"v", int32(42)}})
-				require.NoError(t, err)
-
-				_, err = collection.UpdateOne(ctx, bson.D{}, tc.doc)
+				_, err := collection.UpdateOne(ctx, bson.D{}, tc.doc)
 
 				if setup.IsMongoDB(t) {
 					require.NoError(t, err)
 					return
 				}
 
-				AssertEqualWriteError(t, tc.expected, err)
+				AssertEqualWriteError(t, tc.err, err)
 			})
 		}
 	})
 }
 
-func TestDBStatsScale(t *testing.T) {
+func TestDiffDBStatsScale(t *testing.T) {
 	t.Parallel()
 
-	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		DatabaseName: "testerrormgs",
-	})
-	ctx, db := s.Ctx, s.Collection.Database()
+	ctx, collection := setup.Setup(t)
 
-	testCases := []struct {
-		name                string
+	testCases := map[string]struct {
 		scale               any
 		expectedMongoDBErr  string
 		expectedFerretDBErr mongo.CommandError
 	}{
-		{
-			name:               "Zero",
+		"Zero": {
 			scale:              int32(0),
 			expectedMongoDBErr: "scale has to be > 0",
 			expectedFerretDBErr: mongo.CommandError{
@@ -512,8 +378,7 @@ func TestDBStatsScale(t *testing.T) {
 				Message: "BSON field 'scale' value must be >= 1, actual value '0'",
 			},
 		},
-		{
-			name:               "Negative",
+		"Negative": {
 			scale:              int32(-100),
 			expectedMongoDBErr: "scale has to be > 0",
 			expectedFerretDBErr: mongo.CommandError{
@@ -522,8 +387,7 @@ func TestDBStatsScale(t *testing.T) {
 				Message: "BSON field 'scale' value must be >= 1, actual value '-100'",
 			},
 		},
-		{
-			name:               "MinFloat",
+		"MinFloat": {
 			scale:              -math.MaxFloat64,
 			expectedMongoDBErr: "scale has to be > 0",
 			expectedFerretDBErr: mongo.CommandError{
@@ -532,8 +396,7 @@ func TestDBStatsScale(t *testing.T) {
 				Message: "BSON field 'scale' value must be >= 1, actual value '-9223372036854775808'",
 			},
 		},
-		{
-			name:               "String",
+		"String": {
 			scale:              "1",
 			expectedMongoDBErr: "scale has to be a number > 0",
 			expectedFerretDBErr: mongo.CommandError{
@@ -542,8 +405,7 @@ func TestDBStatsScale(t *testing.T) {
 				Message: "BSON field 'dbStats.scale' is the wrong type 'string', expected types '[long, int, decimal, double]'",
 			},
 		},
-		{
-			name:               "Object",
+		"Object": {
 			scale:              bson.D{{"a", 1}},
 			expectedMongoDBErr: "scale has to be a number > 0",
 			expectedFerretDBErr: mongo.CommandError{
@@ -554,11 +416,12 @@ func TestDBStatsScale(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+	for name, tc := range testCases {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			err := db.RunCommand(ctx, bson.D{{"dbStats", int32(1)}, {"scale", tc.scale}}).Err()
+
+			err := collection.Database().RunCommand(ctx, bson.D{{"dbStats", int32(1)}, {"scale", tc.scale}}).Err()
 			require.Error(t, err)
 
 			if setup.IsMongoDB(t) {
@@ -578,17 +441,13 @@ func TestDBStatsScale(t *testing.T) {
 
 func TestDiffErrorMessages(t *testing.T) {
 	t.Parallel()
+
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
 		DatabaseName: "admin",
 	})
 	ctx, db := s.Ctx, s.Collection.Database()
 
-	var doc bson.D
-	err := db.RunCommand(ctx, bson.D{{"getParameter", bson.D{{"allParameters", "1"}}}}).Decode(&doc)
-	var actual mongo.CommandError
-	require.ErrorAs(t, err, &actual)
-	assert.Equal(t, int32(14), actual.Code)
-	assert.Equal(t, "TypeMismatch", actual.Name)
+	err := db.RunCommand(ctx, bson.D{{"getParameter", bson.D{{"allParameters", "1"}}}}).Err()
 
 	if setup.IsMongoDB(t) {
 		expected := mongo.CommandError{
@@ -597,7 +456,7 @@ func TestDiffErrorMessages(t *testing.T) {
 			Message: "BSON field 'getParameter.allParameters' is the wrong type 'string', " +
 				"expected types '[bool, long, int, decimal, double']",
 		}
-		AssertEqualCommandError(t, expected, actual)
+		AssertEqualCommandError(t, expected, err)
 
 		return
 	}
@@ -607,5 +466,5 @@ func TestDiffErrorMessages(t *testing.T) {
 		Name:    "TypeMismatch",
 		Message: "BSON field 'allParameters' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
 	}
-	AssertEqualCommandError(t, expected, actual)
+	AssertEqualCommandError(t, expected, err)
 }
