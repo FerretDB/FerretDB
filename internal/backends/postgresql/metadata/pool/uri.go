@@ -17,7 +17,7 @@ package pool
 import "net/url"
 
 // setDefaultValue sets default query parameters.
-//
+// k
 // Keep it in sync with docs.
 func setDefaultValues(values url.Values) {
 	// the default is too low

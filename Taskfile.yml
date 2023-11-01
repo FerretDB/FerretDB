@@ -377,6 +377,20 @@ tasks:
         --test-records-dir=tmp/records
         --test-enable-oplog
 
+  run-mysql:
+    desc: "Run FerretDB with `mysql` backend"
+    deps: [build-host]
+    cmds:
+      - >
+        bin/ferretdb{{exeExt}}
+        --listen-addr=:27017
+        --proxy-addr=127.0.0.1:47017
+        --mode=diff-normal
+        --handler=mysql
+        --mysql-url='mysql://username@127.0.0.1:3306/ferretdb'
+        --test-records-dir=tmp/records
+      
+
   # set FERRETDB_HANA_URL environment variable to use it
   run-hana:
     desc: "Run FerretDB with `hana` handler"
