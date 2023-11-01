@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
@@ -99,15 +100,43 @@ func TestDiffDocumentValidation(t *testing.T) {
 	t.Run("Update", func(t *testing.T) {
 		t.Parallel()
 
-		for name, tc := range map[string]struct {
-			doc bson.D
-			err mongo.WriteError
+		for name, tc := range map[string]struct { //nolint:vet // used only for testing
+			filter bson.D
+			update bson.D
+			opts   *options.UpdateOptions
+
+			werr *mongo.WriteError
+			cerr *mongo.CommandError
 		}{
 			"DotSign": {
-				doc: bson.D{{"$set", bson.D{{"foo", bson.D{{"bar.baz", "qaz"}}}}}},
-				err: mongo.WriteError{
+				filter: bson.D{},
+				update: bson.D{{"$set", bson.D{{"foo", bson.D{{"bar.baz", "qaz"}}}}}},
+				werr: &mongo.WriteError{
 					Code:    2,
 					Message: `invalid key: "bar.baz" (key must not contain '.' sign)`,
+				},
+			},
+			"NaN": {
+				filter: bson.D{{"_id", "2"}},
+				update: bson.D{{"$set", bson.D{{"foo", math.NaN()}}}},
+				cerr: &mongo.CommandError{
+					Code: 2,
+					Name: "BadValue",
+					Message: `wire.OpMsg.Document: validation failed for { update: "TestDiffDocumentValidation", ` +
+						`ordered: true, $db: "TestDiffDocumentValidation", updates: [ { q: { _id: "2" }, ` +
+						`u: { $set: { foo: nan.0 } } } ] } with: NaN is not supported`,
+				},
+			},
+			"NaNWithUpsert": {
+				filter: bson.D{{"_id", "3"}},
+				update: bson.D{{"$set", bson.D{{"foo", math.NaN()}}}},
+				opts:   options.Update().SetUpsert(true),
+				cerr: &mongo.CommandError{
+					Code: 2,
+					Name: "BadValue",
+					Message: `wire.OpMsg.Document: validation failed for { update: "TestDiffDocumentValidation", ` +
+						`ordered: true, $db: "TestDiffDocumentValidation", updates: [ { q: { _id: "3" }, ` +
+						`u: { $set: { foo: nan.0 } }, upsert: true } ] } with: NaN is not supported`,
 				},
 			},
 		} {
@@ -115,14 +144,61 @@ func TestDiffDocumentValidation(t *testing.T) {
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 
-				_, err := collection.UpdateOne(ctx, bson.D{}, tc.doc)
+				_, err := collection.UpdateOne(ctx, tc.filter, tc.update, tc.opts)
 
 				if setup.IsMongoDB(t) {
 					require.NoError(t, err)
 					return
 				}
 
-				AssertEqualWriteError(t, tc.err, err)
+				if tc.werr != nil {
+					AssertEqualWriteError(t, *tc.werr, err)
+					return
+				}
+
+				AssertEqualCommandError(t, *tc.cerr, err)
+			})
+		}
+	})
+
+	t.Run("FindAndModify", func(t *testing.T) {
+		t.Parallel()
+
+		for name, tc := range map[string]struct {
+			filter bson.D
+			update bson.D
+			err    mongo.CommandError
+		}{
+			"NaN": {
+				filter: bson.D{{"_id", "4"}},
+				update: bson.D{{"$set", bson.D{{"foo", math.NaN()}}}},
+				err: mongo.CommandError{
+					Code: 2,
+					Name: "BadValue",
+					Message: `wire.OpMsg.Document: validation failed for { findAndModify: "TestDiffDocumentValidation", ` +
+						`query: { _id: "4" }, update: { $set: { foo: nan.0 } }, $db: "TestDiffDocumentValidation" } with: NaN ` +
+						`is not supported`,
+				},
+			},
+		} {
+			name, tc := name, tc
+
+			t.Run(name, func(t *testing.T) {
+				t.Parallel()
+
+				_, err := collection.InsertOne(ctx, tc.filter)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				err = collection.FindOneAndUpdate(ctx, tc.filter, tc.update).Err()
+
+				if setup.IsMongoDB(t) {
+					require.NoError(t, err)
+					return
+				}
+
+				AssertEqualCommandError(t, tc.err, err)
 			})
 		}
 	})
