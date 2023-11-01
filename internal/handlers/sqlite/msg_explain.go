@@ -107,13 +107,16 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	// Limit pushdown is not applied if:
 	//  - `filter` is set but can not be applied pushdown entirely,
+	//  or `filter` is set and `DisableFilterPushdown` is set,
 	//  it must fetch all documents to filter them in memory;
 	//  - `sort` is set but can not be applied pushdown entirely,
 	//  or `sort` is set but `EnableSortPushdown` is not set,
 	//  it must fetch all documents and sort them in memory;
 	//  - `skip` is non-zero value, skip pushdown is not supported yet.
 	// More checks are performed when preparing LIMIT clause.
-	if (params.Sort.Len() == 0 || h.EnableSortPushdown) && params.Skip == 0 {
+	if (params.Filter.Len() == 0 || !h.DisableFilterPushdown) &&
+		(params.Sort.Len() == 0 || (h.EnableSortPushdown && params.Sort.Len() == 1)) &&
+		params.Skip == 0 {
 		qp.Limit = params.Limit
 	}
 

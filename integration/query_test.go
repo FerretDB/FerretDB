@@ -905,7 +905,14 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			limit:         2,
 			len:           2,
 			queryPushdown: noPushdown,
-			limitPushdown: allPushdown,
+			limitPushdown: pgPushdown,
+		},
+		"MoreSort": {
+			sort:          bson.D{bson.E{"_id", 1}, bson.E{"v", -1}},
+			limit:         2,
+			len:           2,
+			queryPushdown: noPushdown,
+			limitPushdown: noPushdown,
 		},
 		"IDFilterSort": {
 			filter:        bson.D{{"_id", "array"}},
@@ -913,7 +920,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			limit:         3,
 			len:           1,
 			queryPushdown: allPushdown,
-			limitPushdown: noPushdown,
+			limitPushdown: pgPushdown,
 		},
 		"ValueFilterSort": {
 			filter:        bson.D{{"v", 42}},
@@ -998,6 +1005,10 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 					tc.limitPushdown = noPushdown
 					msg = "Sort pushdown is disabled, but target resulted with limitPushdown"
 				}
+				if setup.IsPushdownDisabled() && tc.filter != nil {
+					tc.limitPushdown = noPushdown
+					msg = "Query pushdown is disabled, but target resulted with limitPushdown"
+				}
 
 				queryResultPushdown := tc.queryPushdown
 				limitResultPushdown := tc.limitPushdown
@@ -1009,7 +1020,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 
 				doc := ConvertDocument(t, res)
 				limitPushdown, _ := doc.Get("limitPushdown")
-				assert.Equal(t, limitResultPushdown.PushdownExpected(t), limitPushdown, msg)
+				assert.Equal(t, limitResultPushdown.LimitPushdownExpected(t), limitPushdown, msg)
 
 				queryPushdown, _ := doc.Get("pushdown")
 				assert.Equal(t, queryResultPushdown.PushdownExpected(t), queryPushdown, msg)

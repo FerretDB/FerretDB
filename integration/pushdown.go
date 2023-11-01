@@ -65,6 +65,11 @@ func (res resultPushdown) SortPushdownExpected(t testtb.TB, cappedCollection boo
 	return res.pushdownExpected(t)
 }
 
+// LimitPushdownExpected returns true if the limit pushdown is expected for currently running backend.
+func (res resultPushdown) LimitPushdownExpected(t testtb.TB) bool {
+	return res.pushdownExpected(t)
+}
+
 // pushdownExpected returns true if pushdown is expected for currently running backend.
 func (res resultPushdown) pushdownExpected(t testtb.TB) bool {
 	switch {

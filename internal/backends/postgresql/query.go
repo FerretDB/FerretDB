@@ -211,8 +211,8 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 }
 
 // prepareOrderByClause returns ORDER BY clause for given sort field and returns the query and arguments.
-// It returns false if pushdown for provided field couldn't be applied. Otherwise, if pushdown was applied, or field is nil, it returns true.
-//
+// It returns false if pushdown for provided field couldn't be applied.
+// Otherwise, if pushdown was applied, or field is nil, it returns true.
 // For capped collection, it returns ORDER BY recordID only if sort field is nil.
 func prepareOrderByClause(p *metadata.Placeholder, sort *backends.SortField, capped bool) (string, []any, bool) {
 	if sort == nil {
