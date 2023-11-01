@@ -109,6 +109,17 @@ func TestInsertCommandErrors(t *testing.T) {
 				Message: "The '_id' value cannot be of type regex",
 			},
 		},
+		"InsertDuplicateID": {
+			toInsert: []any{
+				bson.D{{"_id", "foo"}, {"_id", "bar"}},
+			},
+			ordered: false,
+			werr: &mongo.WriteError{
+				Code:    2,
+				Message: "can't have multiple _id fields in one document",
+			},
+			altMessage: `invalid key: "_id" (duplicate keys are not allowed)`,
+		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
