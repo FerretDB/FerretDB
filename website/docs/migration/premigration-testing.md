@@ -23,9 +23,9 @@ You would do the following:
 
 1. Start FerretDB in `diff-normal` mode.
 
-   This can be achieved by using the `--mode` [flag](../configuration/flags.md) or by setting the `FERRETDB_MODE` environment variable to `diff-normal`.
-   By default, FerretDB starts in normal mode (`--mode=normal`) mode.
-   For more details, refer to the [operation modes](../configuration/operation-modes.md).
+   This can be achieved by setting the `--mode` [flag](../configuration/flags.md) or `FERRETDB_MODE` environment variable to `diff-normal`.
+   By default, FerretDB starts in normal mode (`--mode=normal`/`FERRETDB_MODE=normal`).
+   For more details, see [operation modes](../configuration/operation-modes.md).
 
    Ensure to specify `--listen-addr` and `--proxy-addr` flags or set the `FERRETDB_LISTEN_ADDR` and `FERRETDB_PROXY_ADDR` environment variables.
    Specify the address of your MongoDB instance for `--proxy-addr` flag or `FERRETDB_PROXY_ADDR` environment variable.
