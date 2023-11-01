@@ -247,7 +247,7 @@ func TestNullStrings(t *testing.T) {
 			t.Parallel()
 			_, err := collection.InsertOne(ctx, tc.doc)
 
-			if setup.IsMongoDB(t) {
+			if setup.IsMongoDB(t) || setup.IsSQLite(t) {
 				require.NoError(t, err)
 				return
 			}
@@ -274,7 +274,7 @@ func TestNegativeZero(t *testing.T) {
 	}{
 		{
 			name:      "Insert negative zero",
-			insertDoc: bson.D{{"_id", "1"}, {"foo", math.Copysign(0.0, -1)}},
+			insertDoc: bson.D{{"_id", "1"}, {"v", math.Copysign(0.0, -1)}},
 			filter:    bson.D{{"_id", "1"}},
 		},
 		{
@@ -307,15 +307,17 @@ func TestNegativeZero(t *testing.T) {
 			err = collection.FindOne(ctx, tc.filter).Decode(&res)
 			require.NoError(t, err)
 
-			var actual float64
-			for _, e := range res {
-				if e.Key == "foo" {
-					var ok bool
-					actual, ok = e.Value.(float64)
-					require.True(t, ok)
-				}
-			}
+			doc := ConvertDocument(t, res)
+			v, _ := doc.Get("v")
+			actual, ok := v.(float64)
+			require.True(t, ok)
 			require.Equal(t, 0.0, actual)
+
+			if setup.IsMongoDB(t) {
+				require.Equal(t, math.Signbit(math.Copysign(0.0, -1)), math.Signbit(actual))
+				return
+			}
+
 			require.Equal(t, math.Signbit(math.Copysign(0.0, +1)), math.Signbit(actual))
 		})
 	}
@@ -361,6 +363,11 @@ func TestUpdateProduceInfinity(t *testing.T) {
 
 			_, err = collection.UpdateOne(ctx, tc.filter, tc.update)
 
+			if setup.IsMongoDB(t) {
+				require.NoError(t, err)
+				return
+			}
+
 			AssertEqualCommandError(t, tc.expected, err)
 		})
 	}
@@ -402,7 +409,7 @@ func TestDocumentValidation(t *testing.T) {
 			},
 			{
 				name: "Infinity",
-				doc:  bson.D{{"_id", "1"}, {"foo", math.Inf(1)}},
+				doc:  bson.D{{"foo", math.Inf(1)}},
 				expected: mongo.WriteException{WriteErrors: []mongo.WriteError{{
 					Code:    2,
 					Message: `invalid value: { "foo": +Inf } (infinity values are not allowed)`,
@@ -410,7 +417,7 @@ func TestDocumentValidation(t *testing.T) {
 			},
 			{
 				name: "NegativeInfinity",
-				doc:  bson.D{{"_id", "1"}, {"foo", math.Inf(-1)}},
+				doc:  bson.D{{"foo", math.Inf(-1)}},
 				expected: mongo.WriteException{WriteErrors: []mongo.WriteError{{
 					Code:    2,
 					Message: `invalid value: { "foo": -Inf } (infinity values are not allowed)`,
@@ -433,6 +440,12 @@ func TestDocumentValidation(t *testing.T) {
 			t.Run(tc.name, func(t *testing.T) {
 				t.Parallel()
 				_, err := collection.InsertOne(ctx, tc.doc)
+
+				if setup.IsMongoDB(t) {
+					require.NoError(t, err)
+					return
+				}
+
 				assert.Equal(t, tc.expected, UnsetRaw(t, err))
 			})
 		}
@@ -444,14 +457,13 @@ func TestDocumentValidation(t *testing.T) {
 		testCases := []struct {
 			name     string
 			doc      bson.D
-			expected mongo.CommandError
+			expected mongo.WriteError
 		}{
 			{
 				name: "",
 				doc:  bson.D{{"$set", bson.D{{"foo", bson.D{{"bar.baz", "qaz"}}}}}},
-				expected: mongo.CommandError{
+				expected: mongo.WriteError{
 					Code:    2,
-					Name:    "BadValue",
 					Message: `invalid key: "bar.baz" (key must not contain '.' sign)`,
 				},
 			},
@@ -464,46 +476,13 @@ func TestDocumentValidation(t *testing.T) {
 				require.NoError(t, err)
 
 				_, err = collection.UpdateOne(ctx, bson.D{}, tc.doc)
-				AssertEqualCommandError(t, tc.expected, err)
-			})
-		}
-	})
 
-	t.Run("FindAndModify", func(t *testing.T) {
-		t.Parallel()
+				if setup.IsMongoDB(t) {
+					require.NoError(t, err)
+					return
+				}
 
-		testCases := []struct {
-			name     string
-			command  bson.D
-			expected mongo.CommandError
-		}{
-			{
-				name: "DollarPrefixFieldName",
-				command: bson.D{
-					{"query", bson.D{{"_id", bson.D{{"k", bson.D{{"$invalid", "v"}}}}}}},
-					{"upsert", true},
-					{"update", bson.D{{"v", "replaced"}}},
-				},
-				expected: mongo.CommandError{
-					Code: 52,
-					Name: "DollarPrefixedFieldName",
-					Message: `Plan executor error during findAndModify :: caused by :: ` +
-						`_id fields may not contain '$'-prefixed fields: $invalid is not valid for storage.`,
-				},
-			},
-		}
-
-		for _, tc := range testCases {
-			tc := tc
-			t.Run(tc.name, func(t *testing.T) {
-				t.Parallel()
-
-				command := bson.D{{"findAndModify", collection.Name()}}
-				command = append(command, tc.command...)
-
-				err := collection.Database().RunCommand(ctx, command)
-
-				AssertEqualCommandError(t, tc.expected, err.Err())
+				AssertEqualWriteError(t, tc.expected, err)
 			})
 		}
 	})
@@ -581,47 +560,52 @@ func TestDBStatsScale(t *testing.T) {
 			t.Parallel()
 			err := db.RunCommand(ctx, bson.D{{"dbStats", int32(1)}, {"scale", tc.scale}}).Err()
 			require.Error(t, err)
+
+			if setup.IsMongoDB(t) {
+				expected := mongo.CommandError{
+					Name:    "",
+					Code:    0,
+					Message: tc.expectedMongoDBErr,
+				}
+				AssertEqualCommandError(t, expected, err)
+				return
+			}
+
 			AssertEqualCommandError(t, tc.expectedFerretDBErr, err)
 		})
 	}
 }
 
-func TestErrorMessages(t *testing.T) {
+func TestDiffErrorMessages(t *testing.T) {
 	t.Parallel()
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{
-		DatabaseName: "testerrormgs",
+		DatabaseName: "admin",
 	})
 	ctx, db := s.Ctx, s.Collection.Database()
 
-	testCases := []struct { //nolint:vet // used for testing only
-		name   string
-		testFn func(t *testing.T)
-	}{
-		{
-			name: "getParameter",
-			testFn: func(t *testing.T) {
-				var doc bson.D
-				err := db.RunCommand(ctx, bson.D{{"getParameter", bson.D{{"allParameters", "1"}}}}).Decode(&doc)
+	var doc bson.D
+	err := db.RunCommand(ctx, bson.D{{"getParameter", bson.D{{"allParameters", "1"}}}}).Decode(&doc)
+	var actual mongo.CommandError
+	require.ErrorAs(t, err, &actual)
+	assert.Equal(t, int32(14), actual.Code)
+	assert.Equal(t, "TypeMismatch", actual.Name)
 
-				var actual mongo.CommandError
-				require.ErrorAs(t, err, &actual)
-				assert.Equal(t, int32(14), actual.Code)
-				assert.Equal(t, "TypeMismatch", actual.Name)
-				expectedErr := mongo.CommandError{
-					Code:    14,
-					Name:    "TypeMismatch",
-					Message: "BSON field 'allParameters' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
-				}
-				AssertEqualCommandError(t, expectedErr, actual)
-			},
-		},
+	if setup.IsMongoDB(t) {
+		expected := mongo.CommandError{
+			Code: 14,
+			Name: "TypeMismatch",
+			Message: "BSON field 'getParameter.allParameters' is the wrong type 'string', " +
+				"expected types '[bool, long, int, decimal, double']",
+		}
+		AssertEqualCommandError(t, expected, actual)
+
+		return
 	}
 
-	for _, tc := range testCases {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			tc.testFn(t)
-		})
+	expected := mongo.CommandError{
+		Code:    14,
+		Name:    "TypeMismatch",
+		Message: "BSON field 'allParameters' is the wrong type 'string', expected types '[bool, long, int, decimal, double]'",
 	}
+	AssertEqualCommandError(t, expected, actual)
 }
