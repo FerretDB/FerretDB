@@ -63,6 +63,7 @@ func prepareSelectClause(schema, table string, capped, onlyRecordIDs bool) strin
 }
 
 // prepareWhereClause adds WHERE clause with given filters to the query and returns the query and arguments.
+// It returns false if pushdown for at least one filter couldn't be applied.
 func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (string, []any, bool, error) {
 	var filters []string
 	var args []any
