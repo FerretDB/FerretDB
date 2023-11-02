@@ -14,3 +14,5 @@
 
 // Package hana provides backend for SAP HANA.
 package hana
+
+import _ "github.com/SAP/go-hdb/driver" // register database/sql driver

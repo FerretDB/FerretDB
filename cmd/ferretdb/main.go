@@ -89,8 +89,6 @@ var cli struct {
 		EnableSortPushdown    bool `default:"false" help:"Experimental: enable sort pushdown."`
 		EnableOplog           bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
 
-		UseNewHana bool `default:"false" help:"Experimental: use new SAP HANA backend." hidden:""`
-
 		//nolint:lll // for readability
 		Telemetry struct {
 			URL            string        `default:"https://beacon.ferretdb.io/" help:"Telemetry: reporting URL."`
@@ -374,8 +372,6 @@ func run() {
 			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
 			EnableSortPushdown:    cli.Test.EnableSortPushdown,
 			EnableOplog:           cli.Test.EnableOplog,
-
-			UseNewHana: cli.Test.UseNewHana,
 		},
 	})
 	if err != nil {
