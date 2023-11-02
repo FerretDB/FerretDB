@@ -30,7 +30,7 @@ const config = {
 
   stylesheets: [
     {
-      href: '/codeapi/snippet.css'
+      href: 'https://unpkg.com/@antonz/codapi@0.6.1/dist/snippet.css'
     }
 
   ],
