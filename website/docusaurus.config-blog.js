@@ -25,7 +25,7 @@ const config = {
 
   scripts: [
     {src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io"},
-    {src: "/codapi/snippet.js", async: false }
+    {src: "/codapi/snippet.js", defer: true }
   ],
 
   stylesheets: [
