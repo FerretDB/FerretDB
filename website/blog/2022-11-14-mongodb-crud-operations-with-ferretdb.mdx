@@ -153,7 +153,7 @@ The `find()` method filters and selects all the documents in a collection that m
 If there is no query parameter for the method, all the records present in the collection are returned.
 First, let's select all the documents in the **league** collection created earlier.
 
-<script id="insert-1" type="text/plain">
+<script id="insert-1.js" type="text/plain">
   {`
     db.league.insertMany([
     {
@@ -192,7 +192,7 @@ db.league.insertOne({
 db.league.find({})
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" template="#insert-1">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="#insert-1.js">
 </codapi-snippet>
 
 This operation retrieves and displays all the documents present in the collection.
@@ -231,7 +231,7 @@ Let's filter the `league` data for teams with 80 or 60 `points`:
 db.league.find({ points: { $in: [80, 60] } })
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" template="#insert-1">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="#insert-1.js">
 </codapi-snippet>
 
 #### Find documents using the `$lt` operator
@@ -243,7 +243,7 @@ For example, let's select the documents with less than 60 _points_ :
 db.league.find({ points: { $lt: 60 } })
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" template="#insert-1">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="#insert-1.js">
 </codapi-snippet>
 
 ### findOne()
@@ -255,7 +255,7 @@ For instance, let's filter the collection for documents with the _qualified_ set
 db.league.findOne({ qualified: true })
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" template="#insert-1">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="#insert-1.js">
 </codapi-snippet>
 
 Even though two documents match this query, the result only displays the first document.
@@ -282,7 +282,7 @@ This update operation will only affect the first document that's retrieved in th
 db.league.updateOne({ club: 'PSG' }, { $set: { points: 35 } })
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" template="#insert-1">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="#insert-1.js">
 </codapi-snippet>
 
 ### updateMany()
