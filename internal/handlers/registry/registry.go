@@ -58,8 +58,6 @@ type TestOpts struct {
 	DisableFilterPushdown bool
 	UnsafeSortPushdown    bool
 	EnableOplog           bool
-
-	UseNewHana bool
 }
 
 // NewHandler constructs a new handler.
