@@ -25,17 +25,14 @@ const config = {
 
   scripts: [
     {src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io"},
-    {src: "/codapi/snippet.js", defer: true, async: false}
+    {src: "/codapi/snippet.js", async: false}
   ],
 
-  // stylesheets: [
-  //   {
-  //     href: 'https://unpkg.com/@antonz/codapi@0.6.1/dist/snippet.css',
-  //     type: 'text/css',
-  //     rel: 'stylesheet',
-  //   }
-
-  // ],
+  stylesheets: [
+    {
+      href: '/codapi/snippet.css',
+    }
+  ],
 
   plugins: [
     [
