@@ -61,8 +61,6 @@ var (
 
 	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
 	enableSortPushdownF    = flag.Bool("enable-sort-pushdown", false, "enable sort pushdown")
-
-	useNewHanaF = flag.Bool("use-new-hana", false, "use new SAP HANA backend")
 )
 
 // Other globals.

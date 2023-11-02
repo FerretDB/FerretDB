@@ -29,6 +29,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
+	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	_ "golang.org/x/crypto/x509roots/fallback" // register root TLS certificates for production Docker image
@@ -87,8 +88,6 @@ var cli struct {
 		DisableFilterPushdown bool `default:"false" help:"Experimental: disable filter pushdown."`
 		EnableSortPushdown    bool `default:"false" help:"Experimental: enable sort pushdown."`
 		EnableOplog           bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
-
-		UseNewHana bool `default:"false" help:"Experimental: use new SAP HANA backend." hidden:""`
 
 		//nolint:lll // for readability
 		Telemetry struct {
@@ -314,6 +313,10 @@ func run() {
 
 	logger := setupLogger(stateProvider)
 
+	if _, err := maxprocs.Set(maxprocs.Logger(logger.Sugar().Debugf)); err != nil {
+		logger.Sugar().Warnf("Failed to set GOMAXPROCS: %s.", err)
+	}
+
 	ctx, stop := notifyAppTermination(context.Background())
 
 	go func() {
@@ -369,9 +372,6 @@ func run() {
 			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
 			EnableSortPushdown:    cli.Test.EnableSortPushdown,
 			EnableOplog:           cli.Test.EnableOplog,
-
-			UseOldPG:   postgreSQLFlags.PostgreSQLOld,
-			UseNewHana: cli.Test.UseNewHana,
 		},
 	})
 	if err != nil {

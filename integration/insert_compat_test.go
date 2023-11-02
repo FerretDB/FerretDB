@@ -200,12 +200,34 @@ func TestInsertCompat(t *testing.T) {
 			},
 			ordered: true,
 		},
-		"UnorderedOneError": {
+		"UnorderedTwoErrors": {
 			insert: []any{
 				bson.D{{"_id", "1"}},
-				bson.D{{"_id", "1"}}, // to test duplicate key error
+				bson.D{{"_id", "1"}},
 				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
 				bson.D{{"_id", "2"}},
+			},
+			ordered: false,
+		},
+		"OrderedThreeErrors": {
+			insert: []any{
+				bson.D{{"_id", "1"}},
+				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+				bson.D{{"_id", "2"}},
+				bson.D{{"_id", "1"}},
+				bson.D{{"_id", "3"}},
+				bson.D{{"_id", "4"}, {"_id", "4"}},
+			},
+			ordered: true,
+		},
+		"UnorderedThreeErrors": {
+			insert: []any{
+				bson.D{{"_id", "1"}},
+				bson.D{{"_id", primitive.Regex{Pattern: "^regex$", Options: "i"}}},
+				bson.D{{"_id", "2"}},
+				bson.D{{"_id", "1"}},
+				bson.D{{"_id", "3"}},
+				bson.D{{"_id", "4"}, {"_id", "4"}},
 			},
 			ordered: false,
 		},

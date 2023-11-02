@@ -12,7 +12,44 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package hana provides backend for SAP HANA.
-package hana
+package testdata
 
-import _ "github.com/SAP/go-hdb/driver" // register database/sql driver
+import "testing"
+
+func TestNormal1(t *testing.T) {
+	t.Log("hidden")
+
+	t.Run("Parallel", func(t *testing.T) {
+		t.Log("hidden")
+
+		t.Parallel()
+
+		t.Log("hidden")
+	})
+
+	t.Run("NotParallel", func(t *testing.T) {
+		t.Log("hidden")
+	})
+
+	t.Log("hidden")
+}
+
+func TestNormal2(t *testing.T) {
+	t.Log("hidden")
+
+	t.Parallel()
+
+	t.Log("hidden")
+
+	t.Run("NotParallel", func(t *testing.T) {
+		t.Log("hidden")
+	})
+
+	t.Run("Parallel", func(t *testing.T) {
+		t.Log("hidden")
+
+		t.Parallel()
+
+		t.Log("hidden")
+	})
+}

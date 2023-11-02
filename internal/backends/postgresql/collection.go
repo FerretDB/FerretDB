@@ -63,7 +63,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	if p == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil),
+			Iter: newQueryIterator(ctx, nil, params.OnlyRecordIDs),
 		}, nil
 	}
 
@@ -74,11 +74,11 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	if meta == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil),
+			Iter: newQueryIterator(ctx, nil, params.OnlyRecordIDs),
 		}, nil
 	}
 
-	q := prepareSelectClause(c.dbName, meta.TableName)
+	q := prepareSelectClause(c.dbName, meta.TableName, meta.Capped(), params.OnlyRecordIDs)
 
 	var placeholder metadata.Placeholder
 
@@ -89,18 +89,9 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	q += where
 
-	if params.Sort != nil {
-		var sort string
-		var sortArgs []any
-
-		sort, sortArgs, err = prepareOrderByClause(&placeholder, params.Sort.Key, params.Sort.Descending)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		q += sort
-		args = append(args, sortArgs...)
-	}
+	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
+	q += sort
+	args = append(args, sortArgs...)
 
 	if params.Limit != 0 {
 		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
@@ -113,7 +104,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}
 
 	return &backends.QueryResult{
-		Iter: newQueryIterator(ctx, rows),
+		Iter: newQueryIterator(ctx, rows, params.OnlyRecordIDs),
 	}, nil
 }
 
@@ -137,24 +128,23 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	}
 
 	err = pool.InTransaction(ctx, p, func(tx pgx.Tx) error {
-		for _, doc := range params.Docs {
-			var b []byte
-			b, err = sjson.Marshal(doc)
+		var batch []*types.Document
+		docs := params.Docs
+		const batchSize = 100
+
+		for len(docs) > 0 {
+			i := min(batchSize, len(docs))
+			batch, docs = docs[:i], docs[i:]
+
+			var q string
+			var args []any
+
+			q, args, err = prepareInsertStatement(c.dbName, meta.TableName, meta.Capped(), batch)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3490
-
-			// use batches: INSERT INTO %s %s VALUES (?), (?), (?), ... up to, say, 100 documents
-			// TODO https://github.com/FerretDB/FerretDB/issues/3271
-			q := fmt.Sprintf(
-				`INSERT INTO %s (%s) VALUES ($1)`,
-				pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
-				metadata.DefaultColumn,
-			)
-
-			if _, err = tx.Exec(ctx, q, string(b)); err != nil {
+			if _, err = tx.Exec(ctx, q, args...); err != nil {
 				var pgErr *pgconn.PgError
 				if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 					return backends.NewError(backends.ErrorCodeInsertDuplicateID, err)
@@ -307,7 +297,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	res := new(backends.ExplainResult)
 
-	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName)
+	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName, meta.Capped(), false)
 
 	var placeholder metadata.Placeholder
 
@@ -320,20 +310,10 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	q += where
 
-	if params.Sort != nil {
-		var sort string
-		var sortArgs []any
-
-		sort, sortArgs, err = prepareOrderByClause(&placeholder, params.Sort.Key, params.Sort.Descending)
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		q += sort
-		args = append(args, sortArgs...)
-
-		res.SortPushdown = sort != ""
-	}
+	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
+	q += sort
+	args = append(args, sortArgs...)
+	res.SortPushdown = sort != ""
 
 	if params.Limit != 0 {
 		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
@@ -342,9 +322,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	var b []byte
-	err = p.QueryRow(ctx, q, args...).Scan(&b)
-
-	if err != nil {
+	if err = p.QueryRow(ctx, q, args...).Scan(&b); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
