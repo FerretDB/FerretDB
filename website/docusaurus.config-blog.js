@@ -28,12 +28,14 @@ const config = {
     {src: "/codapi/snippet.js", defer: true, async: false}
   ],
 
-  // stylesheets: [
-  //   {
-  //     href: 'https://unpkg.com/@antonz/codapi@0.6.1/dist/snippet.css'
-  //   }
+  stylesheets: [
+    {
+      href: 'https://unpkg.com/@antonz/codapi@0.6.1/dist/snippet.css',
+      type: 'text/css',
+      rel: 'stylesheet',
+    }
 
-  // ],
+  ],
 
   plugins: [
     [
