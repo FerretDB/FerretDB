@@ -1063,3 +1063,28 @@ func TestQueryIDDoc(t *testing.T) {
 	actual = FilterAll(t, ctx, collection, bson.D{{"_id", bson.D{{"z", int32(4)}, {"a", int32(3)}}}})
 	AssertEqualDocumentsSlice(t, expected, actual)
 }
+
+func TestQueryTailableCursors(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	//command := bson.D{
+	//	{"create", collection.Name()},
+	//	{"capped", tc.capped},
+	//	{"max", tc.max},
+	//	{"size", tc.size},
+	//}
+
+	//var res bson.D
+	//err := collection.Database().RunCommand(ctx, command).Decode(&res)
+	//require.NoError(t, err)
+	//require.Nil(t, res)
+
+	collection.InsertOne(ctx, bson.D{{"v", int32(42)}})
+
+	cur, err := collection.Find(ctx, bson.D{{}}, options.Find().SetCursorType(options.Tailable))
+	require.NoError(t, err)
+
+	cur.Close(ctx)
+}
