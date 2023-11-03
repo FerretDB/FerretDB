@@ -132,12 +132,20 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 
 				switch k {
 				case "$eq":
-					if f, a := filterEqual(p, rootKey, v); f != "" {
+					if f, a, e := filterEqual(p, rootKey, v); f != "" {
 						filters = append(filters, f)
 						args = append(args, a...)
+						// if equal filter is best-effort match, filter pushdown is not applied entirely
+						if !e {
+							filterPushdownAll = false
+						}
+					} else {
+						filterPushdownAll = false
 					}
 
 				case "$ne":
+					// $ne filter pushdown is best-effort match, filter pushdown is not applied entirely
+					filterPushdownAll = false
 					sql := `NOT ( ` +
 						// does document contain the key,
 						// it is necessary, as NOT won't work correctly if the key does not exist.
@@ -151,7 +159,6 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 					case *types.Document, *types.Array, types.Binary,
 						types.NullType, types.Regex, types.Timestamp:
 						// type not supported for pushdown
-						filterPushdownAll = false
 
 					case float64, bool, int32, int64:
 						filters = append(filters, fmt.Sprintf(
@@ -192,9 +199,15 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 			filterPushdownAll = false
 
 		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
-			if f, a := filterEqual(p, rootKey, v); f != "" {
+			if f, a, e := filterEqual(p, rootKey, v); f != "" {
 				filters = append(filters, f)
 				args = append(args, a...)
+				// if equal filter is best-effort match, filter pushdown is not considered as applied entirely
+				if !e {
+					filterPushdownAll = false
+				}
+			} else {
+				filterPushdownAll = false
 			}
 
 		default:
@@ -237,10 +250,12 @@ func prepareOrderByClause(p *metadata.Placeholder, sort *backends.SortField, cap
 }
 
 // filterEqual returns the proper SQL filter with arguments that filters documents
-// where the value under k is equal to v.
-func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args []any) {
+// where the value under k is equal to v, exactMatch returns true if the filter is exact match,
+// returns false if it is best-effort match.
+func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args []any, exactMatch bool) {
 	// Select if value under the key is equal to provided value.
 	sql := `%[1]s->%[2]s @> %[3]s`
+	exactMatch = false
 
 	switch v := v.(type) {
 	case *types.Document, *types.Array, types.Binary,
@@ -259,6 +274,7 @@ func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args 
 			v = -types.MaxSafeDouble
 		default:
 			// don't change the default eq query
+			exactMatch = true
 		}
 
 		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
@@ -266,11 +282,13 @@ func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args 
 
 	case string, types.ObjectID, time.Time:
 		// don't change the default eq query
+		exactMatch = true
 		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
 		args = append(args, k, string(must.NotFail(sjson.MarshalSingleValue(v))))
 
 	case bool, int32:
 		// don't change the default eq query
+		exactMatch = true
 		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
 		args = append(args, k, v)
 
@@ -288,6 +306,7 @@ func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args 
 			v = -maxSafeDouble
 		default:
 			// don't change the default eq query
+			exactMatch = true
 		}
 
 		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
