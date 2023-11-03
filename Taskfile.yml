@@ -269,7 +269,6 @@ tasks:
         -target-tls
         -hana-url=$FERRETDB_HANA_URL
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-        -use-new-hana
         -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
         -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
 
@@ -382,7 +381,6 @@ tasks:
     desc: "Run FerretDB with `hana` handler"
     deps: [build-host]
     cmds:
-      # TODO --use-new-hana
       - >
         bin/ferretdb{{exeExt}}
         --listen-addr=:27017
