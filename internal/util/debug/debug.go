@@ -21,7 +21,6 @@ import (
 	_ "expvar" // for metrics
 	"fmt"
 	"log"
-	"math/rand"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // for profiling
@@ -60,18 +59,33 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 		statsviz.Root("/debug/graphs"),
 		statsviz.TimeseriesPlot(ferretdb_postgresql_metadata_databases_barPlot()),
 		statsviz.TimeseriesPlot(ferretdb_postgresql_pool_size_barPlot()),
-		statsviz.TimeseriesPlot(promhttp_metric_handler_requests_total_stackPlot()),
+		//statsviz.TimeseriesPlot(promhttp_metric_handler_requests_total_stackPlot()),
 		statsviz.TimeseriesPlot(promhttp_metric_handler_requests_in_flight_scatterPlot()),
 		statsviz.TimeseriesPlot(go_goroutines_scatterPlot()),
 		statsviz.TimeseriesPlot(go_memstats_alloc_bytes_barPlot()),
+		statsviz.TimeseriesPlot(go_memstats_alloc_bytes_total_barPlot()),
 		statsviz.TimeseriesPlot(go_memstats_frees_total_barplot()),
 		statsviz.TimeseriesPlot(go_memstats_heap_alloc_bytes_collection()),
+		statsviz.TimeseriesPlot(go_memstats_heap_sys()),
 		statsviz.TimeseriesPlot(go_memstats_heap_objects()),
 		statsviz.TimeseriesPlot(go_memstats_last_gc_time_seconds_scatterPlot()),
 		statsviz.TimeseriesPlot(go_memstats_lookups_total_barPlot()),
 		statsviz.TimeseriesPlot(go_memstats_mallocs_total_scatterPlot()),
 		statsviz.TimeseriesPlot(go_memstats_mcache_bytes_barPlot()),
 		statsviz.TimeseriesPlot(go_memstats_mspan_bytes_barPlot()),
+		statsviz.TimeseriesPlot(go_memstats_next_gc_bytes_scatterPlot()),
+		statsviz.TimeseriesPlot(go_memstats_other_sys_bytes_scatterPlot()),
+		statsviz.TimeseriesPlot(go_memstats_stack_bytes_scatterPlot()),
+		statsviz.TimeseriesPlot(go_memstats_sys_bytes_barPlot()),
+		statsviz.TimeseriesPlot(go_threads_scatterPlot()),
+		statsviz.TimeseriesPlot(process_cpu_seconds_total_scatterPlot()),
+		statsviz.TimeseriesPlot(process_max_fds_barPlot()),
+		statsviz.TimeseriesPlot(process_open_fds_scatterPlot()),
+		statsviz.TimeseriesPlot(process_resident_memory_bytes_barPlot()),
+		statsviz.TimeseriesPlot(process_start_time_seconds_scatterPlot()),
+		statsviz.TimeseriesPlot(process_virtual_memory_bytes_scatterPlot()),
+		statsviz.TimeseriesPlot(process_virtual_memory_max_bytes_barPlot()),
+		//statsviz.TimeseriesPlot(promhttp_metric_handler_errors_total_barPlot()),
 	}
 	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
 
@@ -178,19 +192,31 @@ func go_goroutines_scatterPlot() statsviz.TimeSeriesPlot {
 	return plot
 }
 
-//gauge
+// gauge
+func go_memstats_alloc_bytes_total_barPlot() statsviz.TimeSeriesPlot {
+	TotalbytesAllocated := statsviz.TimeSeries{
+		Name:     "Total Bytes Allocated Even if freed",
+		Unitfmt:  "%{y:.4s}",
+		GetValue: memstats_byte_alloc_total,
+	}
+	plot, err := statsviz.TimeSeriesPlotConfig{
+		Name:       "total bytes allocated",
+		Title:      "Bytes Allocated Even if freed",
+		Type:       statsviz.Bar,
+		YAxisTitle: "Bytes",
+		Series:     []statsviz.TimeSeries{TotalbytesAllocated},
+	}.Build()
+	if err != nil {
+		log.Fatalf("failed to build timeseries plot: %v", err)
+	}
+	return plot
+}
 
 func go_memstats_alloc_bytes_barPlot() statsviz.TimeSeriesPlot {
 	bytesAllocated := statsviz.TimeSeries{
 		Name:     "Bytes Allocated and still in use",
 		Unitfmt:  "%{y:.4s}",
 		GetValue: memstats_byte_alloc,
-	}
-
-	TotalbytesAllocated := statsviz.TimeSeries{
-		Name:     "Total Bytes Allocated Even if freed",
-		Unitfmt:  "%{y:.4s}",
-		GetValue: memstats_byte_alloc_total,
 	}
 
 	BytesAllocBuckHash := statsviz.TimeSeries{
@@ -211,7 +237,7 @@ func go_memstats_alloc_bytes_barPlot() statsviz.TimeSeriesPlot {
 		Type:       statsviz.Bar,
 		BarMode:    statsviz.Group,
 		YAxisTitle: "Bytes",
-		Series:     []statsviz.TimeSeries{bytesAllocated, TotalbytesAllocated, BytesAllocBuckHash, bytesGcSysMetadata},
+		Series:     []statsviz.TimeSeries{bytesAllocated, BytesAllocBuckHash, bytesGcSysMetadata},
 	}.Build()
 	if err != nil {
 		log.Fatalf("failed to build timeseries plot: %v", err)
@@ -231,6 +257,26 @@ func go_memstats_frees_total_barplot() statsviz.TimeSeriesPlot {
 		Type:       statsviz.Bar,
 		YAxisTitle: "frees",
 		Series:     []statsviz.TimeSeries{frees},
+	}.Build()
+	if err != nil {
+		log.Fatalf("failed to build timeseries plot: %v", err)
+	}
+	return plot
+}
+
+func go_memstats_heap_sys() statsviz.TimeSeriesPlot {
+	heap_SysBytes := statsviz.TimeSeries{
+		Name:     "heap bytes obtained from system", //separate
+		Unitfmt:  "%{y:.4s}",
+		GetValue: memstats_heap_sys,
+	}
+	plot, err := statsviz.TimeSeriesPlotConfig{
+		Name:       "System Heap Bytes Collection",
+		Title:      "Heap Bytes Obtained from system",
+		Type:       statsviz.Bar,
+		BarMode:    statsviz.Group,
+		YAxisTitle: "heap bytes",
+		Series:     []statsviz.TimeSeries{heap_SysBytes},
 	}.Build()
 	if err != nil {
 		log.Fatalf("failed to build timeseries plot: %v", err)
@@ -259,18 +305,14 @@ func go_memstats_heap_alloc_bytes_collection() statsviz.TimeSeriesPlot {
 		Unitfmt:  "%{y:.4s}",
 		GetValue: memstats_heap_bytes_released,
 	}
-	heap_SysBytes := statsviz.TimeSeries{
-		Name:     "heap bytes obtained from system",
-		Unitfmt:  "%{y:.4s}",
-		GetValue: memstats_heap_sys,
-	}
+
 	plot, err := statsviz.TimeSeriesPlotConfig{
 		Name:       "Heap Bytes Collection",
 		Title:      "Heap Bytes Stats",
 		Type:       statsviz.Bar,
 		BarMode:    statsviz.Group,
 		YAxisTitle: "heap bytes",
-		Series:     []statsviz.TimeSeries{heap_bytesStillUse, heap_bytesWaiting, heap_bytesInUse, heap_bytesReleased, heap_SysBytes},
+		Series:     []statsviz.TimeSeries{heap_bytesStillUse, heap_bytesWaiting, heap_bytesInUse, heap_bytesReleased},
 	}.Build()
 	if err != nil {
 		log.Fatalf("failed to build timeseries plot: %v", err)
@@ -344,21 +386,21 @@ func promhttp_metric_handler_requests_total_stackPlot() statsviz.TimeSeriesPlot 
 		Name:     "Code 200",
 		Unitfmt:  "%{y:.4s}B",
 		Type:     statsviz.Bar,
-		GetValue: codeCountGen,
+		GetValue: codeCounter200,
 	}
 
 	code503 := statsviz.TimeSeries{
 		Name:     "Code 503",
 		Unitfmt:  "%{y:.4s}B",
 		Type:     statsviz.Bar,
-		GetValue: codeCountGen,
+		GetValue: codeCounter503,
 	}
 
 	code500 := statsviz.TimeSeries{
 		Name:     "Code 500",
 		Unitfmt:  "%{y:.4s}B",
 		Type:     statsviz.Bar,
-		GetValue: codeCountGen,
+		GetValue: codeCounter500,
 	}
 
 	// code201 := statsviz.TimeSeries{
@@ -509,10 +551,400 @@ func go_memstats_mspan_bytes_barPlot() statsviz.TimeSeriesPlot {
 	return plot
 }
 
+func go_memstats_next_gc_bytes_scatterPlot() statsviz.TimeSeriesPlot {
+	heapBytes := statsviz.TimeSeries{
+		Name:     "Heap bytes when next GC will take place",
+		Unitfmt:  "%{y:.4s}",
+		GetValue: get_memstats_next_gc_bytes,
+	}
+	plot, err := statsviz.TimeSeriesPlotConfig{
+		Name:       " Number of heap bytes when next garbage collection will take place.",
+		Title:      "heap bytes count when next GC takes place",
+		Type:       statsviz.Scatter,
+		YAxisTitle: "heap Bytes",
+		Series:     []statsviz.TimeSeries{heapBytes},
+	}.Build()
+	if err != nil {
+		log.Fatalf("failed to build timeseries plot :%v", err)
+	}
+	return plot
+}
+
+func go_memstats_other_sys_bytes_scatterPlot() statsviz.TimeSeriesPlot {
+	sysAllocBytes := statsviz.TimeSeries{
+		Name:     "byte count for other system allocations",
+		Unitfmt:  "%{y:1s}",
+		GetValue: get_memstats_other_sys_bytes,
+	}
+	plot, err := statsviz.TimeSeriesPlotConfig{
+		Name:       "Number of bytes used for other system allocations.",
+		Title:      "byte count for other system allocations",
+		Type:       statsviz.Scatter,
+		YAxisTitle: "Bytes",
+		Series:     []statsviz.TimeSeries{sysAllocBytes},
+	}.Build()
+	if err != nil {
+		log.Fatalf("failed to build timeseries plot :%v", err)
+	}
+	return plot
+}
+
+func go_memstats_stack_bytes_scatterPlot() statsviz.TimeSeriesPlot {
+	stackAllocBytes := statsviz.TimeSeries{
+		Name:     "Number of bytes in use by the stack allocator",
+		Unitfmt:  "%{y:.4s}",
+		GetValue: get_memstats_stack_inuse_bytes,
+	}
+	stackSysAllocBytes := statsviz.TimeSeries{
+		Name:     "Number of bytes obtained from system for stack allocator.",
+		Unitfmt:  "%{y:.4s}",
+		GetValue: get_memstats_stack_sys_bytes,
+	}
+	plot, err := statsviz.TimeSeriesPlotConfig{
+		Name:       "Number of bytes related to stack allocator",
+		Title:      "byte count related to stack allocator",
+		Type:       statsviz.Scatter,
+		BarMode:    statsviz.Overlay,
+		YAxisTitle: "Bytes",
+		Series:     []statsviz.TimeSeries{stackAllocBytes, stackSysAllocBytes},
+	}.Build()
+	if err != nil {
+		log.Fatalf("failed to build timeseries plot :%v", err)
+	}
+	return plot
+}
+
+func go_memstats_sys_bytes_barPlot() statsviz.TimeSeriesPlot {
+	sysBytes := statsviz.TimeSeries{
+		Name:     "Number of bytes obtained from system",
+		Unitfmt:  "%{y:.4s}",
+		GetValue: getSysBytes,
+	}
+	plot, err := statsviz.TimeSeriesPlotConfig{
+		Name:       "Number of bytes obtained from system",
+		Title:      "Number of bytes obained from system",
+		Type:       statsviz.Bar,
+		YAxisTitle: "bytes",
+		Series:     []statsviz.TimeSeries{sysBytes},
+	}.Build()
+	if err != nil {
+		log.Fatalf("Failed to build timeseries plot :%v", err)
+	}
+	return plot
+}
+
+func go_threads_scatterPlot() statsviz.TimeSeriesPlot {
+	threads := statsviz.TimeSeries{
+		Name:     "Os threads",
+		Unitfmt:  "%{y:.4s}",
+		GetValue: getThreads,
+	}
+	plot, err := statsviz.TimeSeriesPlotConfig{
+		Name:       "Os threads",
+		Title:      "Number of OS threads created",
+		Type:       statsviz.Scatter,
+		YAxisTitle: "Threads",
+		Series:     []statsviz.TimeSeries{threads},
+	}.Build()
+	if err != nil {
+		log.Fatalf("Failed to build timeseries plot :%v", err)
+	}
+	return plot
+}
+func process_cpu_seconds_total_scatterPlot() statsviz.TimeSeriesPlot {
+	time := statsviz.TimeSeries{
+		Name:     "Total User & System CPU time is seconds",
+		Unitfmt:  "%{y:.4s}",
+		GetValue: getProcessCpuTime,
+	}
+	plot, err := statsviz.TimeSeriesPlotConfig{
+		Name:       "Total user and system CPU time spent in seconds",
+		Title:      "User & System CPU Time spent",
+		Type:       statsviz.Scatter,
+		YAxisTitle: "Time",
+		Series:     []statsviz.TimeSeries{time},
+	}.Build()
+	if err != nil {
+		log.Fatalf("Failed to build timeseries plot :%v", err)
+	}
+	return plot
+}
+
+func process_max_fds_barPlot() statsviz.TimeSeriesPlot {
+	maxOpenFDS := statsviz.TimeSeries{
+		Name:     "Max Number of Open file descriptors",
+		Unitfmt:  "%{y:.4s}",
+		GetValue: getMaxOpenFDS,
+	}
+	plot, err := statsviz.TimeSeriesPlotConfig{
+		Name:       "Max number of Open file descriptors",
+		Title:      "Maximum Number of Open File descriptors",
+		Type:       statsviz.Bar,
+		YAxisTitle: "Open Fds",
+		Series:     []statsviz.TimeSeries{maxOpenFDS},
+	}.Build()
+	if err != nil {
+		log.Fatalf("failed to build timeseries plot :%v", err)
+	}
+	return plot
+}
+
+func process_open_fds_scatterPlot() statsviz.TimeSeriesPlot {
+	OpenFDS := statsviz.TimeSeries{
+		Name:     "Number of open file descriptors",
+		Unitfmt:  "%{y:.4s}",
+		GetValue: getOpenFDS,
+	}
+	plot, err := statsviz.TimeSeriesPlotConfig{
+		Name:       "Number of open file descriptors",
+		Title:      "Number of Open File descriptors",
+		Type:       statsviz.Scatter,
+		YAxisTitle: "Open FDS",
+		Series:     []statsviz.TimeSeries{OpenFDS},
+	}.Build()
+	if err != nil {
+		log.Fatalf("Failed to build timeseries plot :%v", err)
+	}
+	return plot
+}
+
+func process_resident_memory_bytes_barPlot() statsviz.TimeSeriesPlot {
+	bytes := statsviz.TimeSeries{
+		Name:     "Resident memory size in bytes",
+		Unitfmt:  "%{y:.4s}",
+		GetValue: getResidentMemoryBytes,
+	}
+	plot, err := statsviz.TimeSeriesPlotConfig{
+		Name:       "Resident memory size in bytes",
+		Title:      "Resident Memory size",
+		Type:       statsviz.Bar,
+		YAxisTitle: "Bytes",
+		Series:     []statsviz.TimeSeries{bytes},
+	}.Build()
+	if err != nil {
+		log.Fatalf("Failed to build timeseries plot :%v", err)
+	}
+	return plot
+}
+
+func process_start_time_seconds_scatterPlot() statsviz.TimeSeriesPlot {
+	startTime := statsviz.TimeSeries{
+		Name:     "Start time of process since unix epoch",
+		Unitfmt:  "%{y:.4s}",
+		GetValue: getStartTimeSecs,
+	}
+	plot, err := statsviz.TimeSeriesPlotConfig{
+		Name:       "Start time of the process since unix epoch in seconds",
+		Title:      "Start time of process since unix epoch",
+		Type:       statsviz.Scatter,
+		YAxisTitle: "time",
+		Series:     []statsviz.TimeSeries{startTime},
+	}.Build()
+	if err != nil {
+		log.Fatalf("Failed to build timeseries plot :%v", err)
+	}
+	return plot
+
+}
+
+func process_virtual_memory_bytes_scatterPlot() statsviz.TimeSeriesPlot {
+	VmemorySize := statsviz.TimeSeries{
+		Name:     "Virtual memory size in bytes",
+		Unitfmt:  "%{y:.4s}",
+		GetValue: getVmemorySize,
+	}
+	plot, err := statsviz.TimeSeriesPlotConfig{
+		Name:       "Virtual memory size in bytes",
+		Title:      "Virtual memory size",
+		Type:       statsviz.Scatter,
+		YAxisTitle: "bytes",
+		Series:     []statsviz.TimeSeries{VmemorySize},
+	}.Build()
+	if err != nil {
+		log.Fatalf("Failed to build timeseries plot :%v", err)
+	}
+	return plot
+}
+
+func process_virtual_memory_max_bytes_barPlot() statsviz.TimeSeriesPlot {
+	MaxVmemorySize := statsviz.TimeSeries{
+		Name:     "Maximum amount of virtual memory available in bytes",
+		Unitfmt:  "%{y:.4s}",
+		GetValue: getMaxVmemorySize,
+	}
+	plot, err := statsviz.TimeSeriesPlotConfig{
+		Name:       "Maximum amount of virtual memory available in bytes",
+		Title:      "Maximum Virtual Memory",
+		Type:       statsviz.Bar,
+		YAxisTitle: "bytes",
+		Series:     []statsviz.TimeSeries{MaxVmemorySize},
+	}.Build()
+	if err != nil {
+		log.Fatalf("Failed to build timeseries plot :%v", err)
+	}
+	return plot
+}
+
+func promhttp_metric_handler_errors_total_barPlot() statsviz.TimeSeriesPlot {
+	encodingCause := statsviz.TimeSeries{
+		Name:     "Cause Encoding",
+		Unitfmt:  "%{y:.4s}",
+		GetValue: getEncodingCounter,
+	}
+	gatheringCause := statsviz.TimeSeries{
+		Name:     "Cause Gathering",
+		Unitfmt:  "%{y:.4s}",
+		GetValue: getGatheringCounter,
+	}
+	plot, err := statsviz.TimeSeriesPlotConfig{
+		Name:       "Total number of internal errors encountered by the promhttp metric handler.",
+		Title:      "Total Internal Errors detected by promhttp metric handler",
+		Type:       statsviz.Bar,
+		YAxisTitle: "Errors",
+		Series:     []statsviz.TimeSeries{encodingCause, gatheringCause},
+	}.Build()
+	if err != nil {
+		log.Fatalf("Failed to build timeseries plot :%v", err)
+	}
+	return plot
+}
+
 //GetValueFunctions Beyond this point
 
-func codeCountGen() float64 {
-	return rand.Float64()
+func get_memstats_next_gc_bytes() float64 {
+	str := "go_memstats_next_gc_bytes"
+	p := prometheusGather()
+	m := metricRetriever(p, str)
+	return *m.Gauge.Value
+}
+
+func get_memstats_other_sys_bytes() float64 {
+	str := "go_memstats_other_sys_bytes"
+	p := prometheusGather()
+	m := metricRetriever(p, str)
+	return *m.Gauge.Value
+}
+
+func get_memstats_stack_inuse_bytes() float64 {
+	str := "go_memstats_stack_inuse_bytes"
+	p := prometheusGather()
+	m := metricRetriever(p, str)
+	return *m.Gauge.Value
+}
+
+func get_memstats_stack_sys_bytes() float64 {
+	str := "go_memstats_stack_sys_bytes"
+	p := prometheusGather()
+	m := metricRetriever(p, str)
+	return *m.Gauge.Value
+}
+
+func getSysBytes() float64 {
+	str := "go_memstats_sys_bytes"
+	p := prometheusGather()
+	m := metricRetriever(p, str)
+	return *m.Gauge.Value
+}
+
+func getThreads() float64 {
+	str := "go_threads"
+	p := prometheusGather()
+	m := metricRetriever(p, str)
+	return *m.Gauge.Value
+}
+
+func getProcessCpuTime() float64 {
+	str := "process_cpu_seconds_total"
+	p := prometheusGather()
+	m := metricRetriever(p, str)
+	return *m.Counter.Value
+}
+
+func getMaxOpenFDS() float64 {
+	str := "process_max_fds"
+	p := prometheusGather()
+	m := metricRetriever(p, str)
+	return *m.Gauge.Value
+}
+
+func getOpenFDS() float64 {
+	str := "process_open_fds"
+	p := prometheusGather()
+	m := metricRetriever(p, str)
+	return *m.Gauge.Value
+}
+
+func getResidentMemoryBytes() float64 {
+	str := "process_resident_memory_bytes"
+	p := prometheusGather()
+	m := metricRetriever(p, str)
+	return *m.Gauge.Value
+}
+
+func getStartTimeSecs() float64 {
+	str := "process_start_time_seconds"
+	p := prometheusGather()
+	m := metricRetriever(p, str)
+	return *m.Gauge.Value
+}
+
+func getVmemorySize() float64 {
+	str := "process_virtual_memory_bytes"
+	p := prometheusGather()
+	m := metricRetriever(p, str)
+	return *m.Gauge.Value
+}
+
+func getMaxVmemorySize() float64 {
+	str := "process_virtual_memory_max_bytes"
+	p := prometheusGather()
+	m := metricRetriever(p, str)
+	return *m.Gauge.Value
+}
+
+func getEncodingCounter() float64 {
+	str := "promhttp_metric_handler_errors_total"
+	c := "cause"
+	v := "encoding"
+	p := prometheusGather()
+	m := counterMetricRetriever(p, str, c, v)
+	return *m.Counter.Value
+}
+
+func getGatheringCounter() float64 {
+	str := "promhttp_metric_handler_errors_total"
+	c := "cause"
+	v := "gathering"
+	p := prometheusGather()
+	m := counterMetricRetriever(p, str, c, v)
+	return *m.Counter.Value
+}
+
+func codeCounter200() float64 {
+	str := "promhttp_metric_handler_requests_total"
+	c := "code"
+	v := "200"
+	p := prometheusGather()
+	m := counterMetricRetriever(p, str, c, v)
+	return *m.Counter.Value
+}
+
+func codeCounter503() float64 {
+	str := "promhttp_metric_handler_requests_total"
+	c := "code"
+	v := "503"
+	p := prometheusGather()
+	m := counterMetricRetriever(p, str, c, v)
+	return *m.Counter.Value
+}
+
+func codeCounter500() float64 {
+	str := "promhttp_metric_handler_requests_total"
+	c := "code"
+	v := "500"
+	p := prometheusGather()
+	m := counterMetricRetriever(p, str, c, v)
+	return *m.Counter.Value
 }
 
 func metricRetriever(prometheus_metrics []*io_prometheus_client.MetricFamily, metricName string) *io_prometheus_client.Metric {
@@ -521,6 +953,22 @@ func metricRetriever(prometheus_metrics []*io_prometheus_client.MetricFamily, me
 			finalMetricSlice := specificMetric.GetMetric()
 			for _, x := range finalMetricSlice {
 				return x
+			}
+		}
+	}
+	return nil
+}
+
+func counterMetricRetriever(prometheus_metrics []*io_prometheus_client.MetricFamily, metricName string, labelName string, labelValue string) *io_prometheus_client.Metric {
+	for _, specificMetric := range prometheus_metrics {
+		if specificMetric.GetName() == metricName {
+			finalMetricSlice := specificMetric.GetMetric()
+			for _, x := range finalMetricSlice {
+				for _, y := range x.Label {
+					if y.Name == &labelName && y.Value == &labelValue {
+						return x
+					}
+				}
 			}
 		}
 	}
@@ -554,13 +1002,6 @@ func flightReqgaugeMetric() float64 {
 	p := prometheusGather()
 	m := metricRetriever(p, str)
 	return *m.Gauge.Value
-}
-
-func counterMetric(value string) float64 {
-	str := "promhttp_metric_handler_requests_total"
-	p := prometheusGather()
-	m := metricRetriever(p, str)
-	return *m.Counter.Value
 }
 
 func getGoroutines() float64 {
