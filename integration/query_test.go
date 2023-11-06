@@ -1067,17 +1067,22 @@ func TestQueryIDDoc(t *testing.T) {
 func TestQueryTailableCursors(t *testing.T) {
 	t.Parallel()
 
-	// to return proper error we need to implement tailable cursors
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/2283")
-
 	ctx, collection := setup.Setup(t)
 
 	collection.InsertOne(ctx, bson.D{{"v", int32(42)}})
 
 	expectedErr := mongo.CommandError{
-		Code:    2,
-		Message: "error processing query: ns=TestQueryTailableCursors.TestQueryTailableCursorsTree:  $eq null\nSort: {}\nProj: {}\n tailable cursor requested on non capped collection",
-		Name:    "BadValue",
+		Code:    238,
+		Message: "find: support for field \"tailable\" with non-default value true is not implemented yet",
+		Name:    "NotImplemented",
+	}
+
+	if setup.IsMongoDB(t) {
+		expectedErr = mongo.CommandError{
+			Code:    2,
+			Message: "error processing query: ns=TestQueryTailableCursors.TestQueryTailableCursorsTree:  $eq null\nSort: {}\nProj: {}\n tailable cursor requested on non capped collection",
+			Name:    "BadValue",
+		}
 	}
 
 	_, err := collection.Find(ctx, bson.D{{}}, options.Find().SetCursorType(options.Tailable))
