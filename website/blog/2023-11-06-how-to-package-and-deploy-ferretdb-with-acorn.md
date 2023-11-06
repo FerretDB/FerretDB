@@ -3,18 +3,20 @@ slug: how-to-package-and-deploy-ferretdb-with-acorn
 title: 'How to Package and Deploy FerretDB with Acorn'
 authors: [alex]
 description: >
-  In this blog post, we will explore how to build, package, and deploy a Python application with FerretDB as the database using Acorn.
+  In this blog post, we will explore how to build, package, and deploy a Python application that uses FerretDB database with Acorn.
 image: /img/blog/ferretdb-acorn.jpg
 tags: [compatible applications, tutorial, cloud]
 ---
 
 ![How to Package and Deploy FerretDB with Acorn](/img/blog/ferretdb-acorn.jpg)
 
-In this blog post, we will explore how to build, package, and deploy a Python application with [FerretDB](https://www.ferretdb.com/) as the database using [Acorn](https://www.acorn.io/).
+In this blog post, we will explore how to build, package, and deploy a Python application that uses a [FerretDB](https://www.ferretdb.com/) database with [Acorn](https://www.acorn.io/).
 
 <!--truncate-->
 
-FerretDB is an open-source document database alternative for MongoDB that provides PostgreSQL or SQLite as the database backend options. This means you can [use FerretDB for your production applications without worrying about vendor lock-in](https://blog.ferretdb.io/5-ways-to-avoid-database-vendor-lock-in/). And by using Acorn, you can easily make deployments easier.
+FerretDB is an open-source document database alternative for MongoDB that provides PostgreSQL or SQLite as the database backend options.
+This means you can [use FerretDB for production environments without worrying about vendor lock-in](https://blog.ferretdb.io/5-ways-to-avoid-database-vendor-lock-in/).
+And by using Acorn, you can easily make deployments easier.
 
 Acorn is a simplified Kubernetes-based application deployment framework for developers and software engineers.
 Suppose you have a Python application with FerretDB as the database; you can easily deploy it using Acorn.
@@ -30,7 +32,7 @@ Let's get into it.
 We will set up a Python application with FerretDB as the database and deploy it with Acorn.
 This blog post is adapted from the [Acorn setup guide for a MySQL database](https://docs.acorn.io/getting-started).
 
-For this blog post, we'll need the following:
+For the guide, we'll need the following:
 
 - Acorn CLI (GitHub account to sign up for the Acorn platform)
 
@@ -72,8 +74,8 @@ cd my-todo
 touch app.py requirements.txt templates/template.html Dockerfile Acornfile
 ```
 
-Here, we've created `app.py` file that will contain our python application.
-This should be the structure of your directory.
+Here, we've created the `app.py` file that will contain our python application.
+The structure of the directory should look like this.
 
 ```text
 my-ferret/
@@ -212,7 +214,7 @@ pymongo
 To containerize our Python application, we'll use a Dockerfile containing all the commands needed to build a Docker image.
 The Dockerfile creates a container image that sets up the environment, installs dependencies, and configures the Flask application to run within an isolated Docker container.
 
-```Dockerfile
+```dockerfile
 FROM cgr.dev/chainguard/python:latest-dev
 
 WORKDIR /app
@@ -313,7 +315,7 @@ Once it's finished building, you'll get a URL to connect to the app endpoint.
 With the URL, we can access the todo application.
 From the application, when we add a new task, it is inserted into our FerretDB database with PostgreSQL as the backend.
 
-![todo image](/img/blog/todo-image.png)
+![todo app image](/img/blog/todo-image.png)
 
 We can also perform other CRUD operations on the database to delete or update the state as marked or unmarked.
 
