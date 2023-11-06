@@ -1069,7 +1069,8 @@ func TestQueryTailableCursors(t *testing.T) {
 
 	ctx, collection := setup.Setup(t)
 
-	collection.InsertOne(ctx, bson.D{{"v", int32(42)}})
+	_, err := collection.InsertOne(ctx, bson.D{{"v", int32(42)}})
+	require.NoError(t, err)
 
 	expectedErr := mongo.CommandError{
 		Code:    238,
@@ -1086,6 +1087,6 @@ func TestQueryTailableCursors(t *testing.T) {
 		}
 	}
 
-	_, err := collection.Find(ctx, bson.D{{}}, options.Find().SetCursorType(options.Tailable))
+	_, err = collection.Find(ctx, bson.D{{}}, options.Find().SetCursorType(options.Tailable))
 	AssertEqualCommandError(t, expectedErr, err)
 }
