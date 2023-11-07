@@ -2,13 +2,64 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
-## [v1.14.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.14.0) (TBD)
+## [v1.15.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.15.0) (TBD)
+
+### What's Changed
+
+#### Packages naming scheme
+
+Added `linux`.
+
+## [v1.14.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.14.0) (2023-11-07)
 
 ### What's Changed
 
 #### Old PostgreSQL backend
 
-Is removed.
+As mentioned in the previous release changes, the old PostgreSQL backend code is completely removed.
+PostgreSQL remains our main backend, just with a new code base.
+
+### New Features 🎉
+
+- Implement `compact` command by @adetunjii in https://github.com/FerretDB/FerretDB/pull/3559
+
+### Enhancements 🛠
+
+- Optimize detection of duplicate fields by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3645
+- Optimize `insert` performance by batching by @princejha95 in https://github.com/FerretDB/FerretDB/pull/3621
+
+### Documentation 📄
+
+- Fix incorrect schema by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3635
+- Add blogpost for FerretDB v1.13.0 by @Fashander in https://github.com/FerretDB/FerretDB/pull/3639
+- Add Vultr blog post by @Fashander in https://github.com/FerretDB/FerretDB/pull/3646
+- Update blog post on Ubuntu by @Fashander in https://github.com/FerretDB/FerretDB/pull/3658
+- Add blog post on MongoDB sorting for scalar values by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3200
+
+### Other Changes 🤖
+
+- Disallow capped collection creation when disabled by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3636
+- Run backend tests for SAP HANA by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3657
+- Update `golangci-lint` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3651
+- Remove `pgdb` from `envtool` by @ShatilKhan in https://github.com/FerretDB/FerretDB/pull/3586
+- Remove old `pg` handler by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3661
+- Add test for capped collection in `aggregate` `$collStats` by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3643
+- Enable `GOMAXPROCS` autotuning by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3105
+- Add integration tests progress reporting by @rubiagatra in https://github.com/FerretDB/FerretDB/pull/3471
+- Add timing information to `envtool` output by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3664
+- Remove old SAP HANA handler by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3674
+- Rename main_postgeresql to main_postgresql by @gen1us2k in https://github.com/FerretDB/FerretDB/pull/3668
+- (WIP) Support `create` for capped collections by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/3614
+- (WIP) Support `InsertAll` and `FindAll` for capped collections by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3610
+
+### New Contributors
+
+- @ShatilKhan made their first contribution in https://github.com/FerretDB/FerretDB/pull/3586
+- @rubiagatra made their first contribution in https://github.com/FerretDB/FerretDB/pull/3471
+- @gen1us2k made their first contribution in https://github.com/FerretDB/FerretDB/pull/3668
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/56?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.13.0...v1.14.0).
 
 ## [v1.13.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.13.0) (2023-10-23)
 
