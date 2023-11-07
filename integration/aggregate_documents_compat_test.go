@@ -115,7 +115,7 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 
 					var msg string
 					// TODO https://github.com/FerretDB/FerretDB/issues/3386
-					if setup.IsPushdownDisabled() {
+					if setup.FilterPushdownDisabled() {
 						resultPushdown = noPushdown
 						msg = "Query pushdown is disabled, but target resulted with pushdown"
 					}

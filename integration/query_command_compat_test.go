@@ -102,7 +102,7 @@ func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompa
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
 
 					var msg string
-					if setup.IsPushdownDisabled() {
+					if setup.FilterPushdownDisabled() {
 						tc.resultPushdown = noPushdown
 						msg = "Query pushdown is disabled, but target resulted with pushdown"
 					}

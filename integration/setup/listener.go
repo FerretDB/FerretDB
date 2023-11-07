@@ -226,9 +226,9 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		HANAURL:       *hanaURLF,
 
 		TestOpts: registry.TestOpts{
-			DisableFilterPushdown: *disableFilterPushdownF,
-			UnsafeSortPushdown:    *unsafeSortPushdownF,
-			EnableOplog:           true,
+			DisableFilterPushdown:    *disableFilterPushdownF,
+			EnableUnsafeSortPushdown: *enableUnsafeSortPushdownF,
+			EnableOplog:              true,
 		},
 	}
 	h, err := registry.NewHandler(handler, handlerOpts)

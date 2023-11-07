@@ -19,7 +19,7 @@ on:
         required: false
         type: boolean
         default: false
-      unsafe_sort_pushdown:
+      enable_unsafe_sort_pushdown:
         required: false
         type: boolean
         default: false
@@ -92,14 +92,14 @@ jobs:
       - name: >
           Run ${{ inputs.task }} tests
           (${{ inputs.shard_index }}/${{ inputs.shard_total }},
-          filter=${{ !inputs.disable_filter_pushdown }}, sort=${{ inputs.unsafe_sort_pushdown }})
+          filter=${{ !inputs.disable_filter_pushdown }}, sort=${{ inputs.enable_unsafe_sort_pushdown }})
         run: >
           bin/task test-integration-${{ inputs.task }}
           SHARD_INDEX=${{ inputs.shard_index }}
           SHARD_TOTAL=${{ inputs.shard_total }}
           TEST_TIMEOUT=15m
           DISABLE_FILTER_PUSHDOWN=${{ inputs.disable_filter_pushdown }}
-          UNSAFE_SORT_PUSHDOWN=${{ inputs.unsafe_sort_pushdown }}
+          ENABLE_UNSAFE_SORT_PUSHDOWN=${{ inputs.enable_unsafe_sort_pushdown }}
         env:
           GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
           FERRETDB_HANA_URL: ${{ secrets.FERRETDB_HANA_URL }}
@@ -117,7 +117,7 @@ jobs:
         with:
           token: 22159d7c-856d-4fe9-8fdb-5d9ecff35514
           files: ./integration/integration-${{ inputs.task }}.txt
-          flags: integration,${{ inputs.task }}-${{ inputs.shard_index }},filter-${{ !inputs.disable_filter_pushdown }},sort-${{ inputs.unsafe_sort_pushdown }}
+          flags: integration,${{ inputs.task }}-${{ inputs.shard_index }},filter-${{ !inputs.disable_filter_pushdown }},sort-${{ inputs.enable_unsafe_sort_pushdown }}
           fail_ci_if_error: true
           verbose: true
 
@@ -126,7 +126,7 @@ jobs:
         uses: coverallsapp/github-action@v2
         with:
           file: ./integration/integration-${{ inputs.task }}.txt
-          flag-name: integration-${{ inputs.task }}-${{ inputs.shard_index }}-filter-${{ !inputs.disable_filter_pushdown }}-sort-${{ inputs.unsafe_sort_pushdown }}
+          flag-name: integration-${{ inputs.task }}-${{ inputs.shard_index }}-filter-${{ !inputs.disable_filter_pushdown }}-sort-${{ inputs.enable_unsafe_sort_pushdown }}
           parallel: true
 
       # we don't want them on CI

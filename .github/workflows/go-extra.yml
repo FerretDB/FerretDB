@@ -19,11 +19,11 @@ jobs:
     # job name must be unique; make it unique and nice
     name: >
       ${{ matrix.task }} ${{ matrix.shard_index }}/${{ matrix.shard_total }}
-      (filter=${{ matrix.disable_filter_pushdown }}, sort=${{ matrix.unsafe_sort_pushdown }})
+      (filter=${{ matrix.disable_filter_pushdown }}, sort=${{ matrix.enable_unsafe_sort_pushdown }})
 
     # To avoid conflict with go.yml.
     concurrency:
-      group: ${{ github.workflow }}-integration-${{ matrix.task }}-${{ matrix.shard_index }}-${{ matrix.disable_filter_pushdown }}-${{ matrix.unsafe_sort_pushdown }}-${{ github.head_ref || github.ref_name }}
+      group: ${{ github.workflow }}-integration-${{ matrix.task }}-${{ matrix.shard_index }}-${{ matrix.disable_filter_pushdown }}-${{ matrix.enable_unsafe_sort_pushdown }}-${{ github.head_ref || github.ref_name }}
       cancel-in-progress: true
 
     strategy:
@@ -33,7 +33,7 @@ jobs:
         shard_index: [1, 2, 3]
         shard_total: [3]
         disable_filter_pushdown: [false, true]
-        unsafe_sort_pushdown: [false, true]
+        enable_unsafe_sort_pushdown: [false, true]
 
     # Do not submit to coveralls because it can't handle parallel workflows:
     # https://github.com/lemurheavy/coveralls-public/issues/1636#issuecomment-1529460515
@@ -43,5 +43,5 @@ jobs:
       shard_index: ${{ matrix.shard_index }}
       shard_total: ${{ matrix.shard_total }}
       disable_filter_pushdown: ${{ matrix.disable_filter_pushdown }}
-      unsafe_sort_pushdown: ${{ matrix.unsafe_sort_pushdown }}
+      enable_unsafe_sort_pushdown: ${{ matrix.enable_unsafe_sort_pushdown }}
       coveralls: false

@@ -131,7 +131,7 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 					resultPushdown := tc.resultPushdown
 
 					var msg string
-					if setup.IsPushdownDisabled() {
+					if setup.FilterPushdownDisabled() {
 						resultPushdown = noPushdown
 						msg = "Query pushdown is disabled, but target resulted with pushdown"
 					}

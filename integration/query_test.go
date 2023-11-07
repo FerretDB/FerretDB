@@ -995,14 +995,14 @@ func TestQueryCommandUnsafeLimitPushDown(t *testing.T) {
 
 				var msg string
 
-				if !setup.IsUnsafeSortPushdown() && tc.sort != nil {
+				if !setup.UnsafeSortPushdownEnabled() && tc.sort != nil {
 					tc.unsafeLimitPushdown = false
 					msg = "Sort pushdown is disabled, but target resulted with limitPushdown"
 				}
 
 				resultPushdown := tc.queryPushdown
 
-				if setup.IsPushdownDisabled() {
+				if setup.FilterPushdownDisabled() {
 					resultPushdown = noPushdown
 					msg = "Query pushdown is disabled, but target resulted with pushdown"
 				}
