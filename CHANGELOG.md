@@ -6,6 +6,10 @@
 
 ### What's Changed
 
+#### Packages naming scheme
+
+Added `linux`.
+
 ## [v1.14.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.14.0) (2023-11-07)
 
 ### What's Changed
