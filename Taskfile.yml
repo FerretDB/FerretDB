@@ -702,12 +702,12 @@ tasks:
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
       - for: [amd64, arm64, arm/v7]
         task: packages-deb-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
@@ -730,12 +730,12 @@ tasks:
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: '{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
       - for: [amd64, arm64, arm/v7]
         task: packages-deb-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: '{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
@@ -770,12 +770,12 @@ tasks:
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
       - for: [amd64, arm64, arm/v7]
         task: packages-rpm-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
@@ -798,12 +798,12 @@ tasks:
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: '{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
       - for: [amd64, arm64, arm/v7]
         task: packages-rpm-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: '{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version

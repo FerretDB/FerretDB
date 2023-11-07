@@ -2,6 +2,14 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.15.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.15.0) (TBD)
+
+### What's Changed
+
+#### Packages naming scheme
+
+Added `linux`.
+
 ## [v1.14.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.14.0) (2023-11-07)
 
 ### What's Changed
@@ -44,7 +52,7 @@ PostgreSQL remains our main backend, just with a new code base.
 - (WIP) Support `create` for capped collections by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/3614
 - (WIP) Support `InsertAll` and `FindAll` for capped collections by @chilagrow in https://github.com/FerretDB/FerretDB/pull/3610
 
-## New Contributors
+### New Contributors
 
 - @ShatilKhan made their first contribution in https://github.com/FerretDB/FerretDB/pull/3586
 - @rubiagatra made their first contribution in https://github.com/FerretDB/FerretDB/pull/3471
