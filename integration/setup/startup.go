@@ -46,7 +46,7 @@ var exporter *otlptrace.Exporter
 
 // Startup initializes things that should be initialized only once.
 func Startup() {
-	logging.Setup(zap.DebugLevel, "")
+	logging.Setup(zap.DebugLevel, "console", "")
 
 	// https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables
 	if t, _ := strconv.ParseBool(os.Getenv("RUNNER_DEBUG")); t {
