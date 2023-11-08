@@ -17,6 +17,7 @@ package integration
 import (
 	"net"
 	"net/url"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -247,19 +248,23 @@ func TestCommandsDiagnosticListCommands(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	var actual bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{{"listCommands", 42}}).Decode(&actual)
+	var a bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"listCommands", 42}}).Decode(&a)
 	require.NoError(t, err)
 
-	m := actual.Map()
-	t.Log(m)
+	actual := ConvertDocument(t, a)
 
-	assert.Equal(t, float64(1), m["ok"])
-	assert.Equal(t, []string{"commands", "ok"}, CollectKeys(t, actual))
+	assert.Equal(t, float64(1), must.NotFail(actual.Get("ok")))
 
-	commands := m["commands"].(bson.D)
-	listCommands := commands.Map()["listCommands"].(bson.D)
-	assert.NotEmpty(t, listCommands.Map()["help"].(string))
+	keys := CollectKeys(t, a)
+	keys = slices.DeleteFunc(keys, func(val string) bool {
+		return val == "$clusterTime" || val == "operationTime"
+	})
+	assert.Equal(t, []string{"commands", "ok"}, keys)
+
+	commands := must.NotFail(actual.Get("commands")).(*types.Document)
+	listCommands := must.NotFail(commands.Get("listCommands")).(*types.Document)
+	assert.NotEmpty(t, must.NotFail(listCommands.Get("help")).(string))
 }
 
 func TestCommandsDiagnosticValidate(t *testing.T) {
