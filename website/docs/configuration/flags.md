@@ -54,11 +54,6 @@ Some default values are overridden in [our Docker image](../quickstart-guide/doc
 | Flag               | Description                     | Environment Variable      | Default Value                        |
 | ------------------ | ------------------------------- | ------------------------- | ------------------------------------ |
 | `--postgresql-url` | PostgreSQL URL for 'pg' handler | `FERRETDB_POSTGRESQL_URL` | `postgres://127.0.0.1:5432/ferretdb` |
-| `--postgresql-old` | Use old PostgreSQL backend      | `FERRETDB_POSTGRESQL_OLD` | `false`                              |
-
-The new PostgreSQL backend is now enabled by default.
-The `--postgresql-old` flag enables the use of the old PostgreSQL backend.
-It will be removed in the next release.
 
 FerretDB uses [pgx v5](https://github.com/jackc/pgx) library for connecting to PostgreSQL.
 Supported URL parameters are documented there:
