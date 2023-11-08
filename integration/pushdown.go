@@ -44,10 +44,10 @@ func init() {
 	must.BeTrue(allPushdown == 0b11111111)
 }
 
-// PushdownExpected returns true if the pushdown is expected for currently running backend.
-// It checks if pushdown is disabled by flag.
-func (res resultPushdown) PushdownExpected(t testtb.TB) bool {
-	if setup.IsPushdownDisabled() {
+// FilterPushdownExpected returns true if the filter pushdown is expected for currently running backend.
+// It checks if filter pushdown is disabled by flag.
+func (res resultPushdown) FilterPushdownExpected(t testtb.TB) bool {
+	if setup.FilterPushdownDisabled() {
 		res = noPushdown
 	}
 
@@ -58,7 +58,7 @@ func (res resultPushdown) PushdownExpected(t testtb.TB) bool {
 // It checks if pushdown is enabled by flag.
 // For capped collection, pushdown for recordID is done even if pushdown is not enabled by flag.
 func (res resultPushdown) SortPushdownExpected(t testtb.TB, cappedCollection bool) bool {
-	if !setup.IsSortPushdownEnabled() && cappedCollection {
+	if !setup.UnsafeSortPushdownEnabled() && cappedCollection {
 		res = allPushdown
 	}
 

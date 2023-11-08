@@ -81,7 +81,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	// Skip sorting if there are more than one sort parameters
-	if h.EnableSortPushdown && params.Sort.Len() == 1 {
+	if h.EnableUnsafeSortPushdown && params.Sort.Len() == 1 {
 		var order types.SortType
 
 		k := params.Sort.Keys()[0]
@@ -100,10 +100,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	// Limit pushdown is not applied if:
 	//  - `filter` is set, it must fetch all documents to filter them in memory;
-	//  - `sort` is set but `EnableSortPushdown` is not set, it must fetch all documents
+	//  - `sort` is set but `UnsafeSortPushdown` is not set, it must fetch all documents
 	//  and sort them in memory;
 	//  - `skip` is non-zero value, skip pushdown is not supported yet.
-	if params.Filter.Len() == 0 && (params.Sort.Len() == 0 || h.EnableSortPushdown) && params.Skip == 0 {
+	if params.Filter.Len() == 0 && (params.Sort.Len() == 0 || h.EnableUnsafeSortPushdown) && params.Skip == 0 {
 		qp.Limit = params.Limit
 	}
 
@@ -156,10 +156,11 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	// Combine iterators chain and closer into a cursor to pass around.
 	// The context will be canceled when client disconnects or after maxTimeMS.
 	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
-		Iter:       iterator.WithClose(iterator.Interface[struct{}, *types.Document](iter), closer.Close),
-		DB:         params.DB,
-		Collection: params.Collection,
-		Username:   username,
+		Iter:         iterator.WithClose(iterator.Interface[struct{}, *types.Document](iter), closer.Close),
+		DB:           params.DB,
+		Collection:   params.Collection,
+		Username:     username,
+		ShowRecordID: params.ShowRecordId,
 	})
 
 	cursorID := cursor.ID
@@ -172,6 +173,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	firstBatch := types.MakeArray(len(firstBatchDocs))
 	for _, doc := range firstBatchDocs {
+		if params.ShowRecordId {
+			doc.Set("$recordId", doc.RecordID())
+		}
+
 		firstBatch.Append(doc)
 	}
 

@@ -115,9 +115,10 @@ labels:
     color: "#5319E7"
     description: Good issues for new external contributors
 
-  - name: hacktoberfest
-    color: "#FEFBA2"
-    description: Good issues for Hacktoberfest
+  # until the next time
+  # - name: hacktoberfest
+  #   color: "#FEFBA2"
+  #   description: Good issues for Hacktoberfest
 
   - name: help wanted
     color: "#006B75"
