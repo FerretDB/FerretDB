@@ -65,6 +65,11 @@ func (c *collection) Compact(ctx context.Context, params *backends.CompactParams
 	return c.c.Compact(ctx, params)
 }
 
+// Capped implements backends.Collection interface.
+func (c *collection) Capped(ctx context.Context) (bool, error) {
+	return c.c.Capped(ctx)
+}
+
 // ListIndexes implements backends.Collection interface.
 func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
 	return c.c.ListIndexes(ctx, params)

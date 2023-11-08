@@ -67,7 +67,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	if params.Tailable {
-		capped, err := c.Capped(ctx)
+		var capped bool
+
+		capped, err = c.Capped(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -75,8 +77,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		if !capped {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
-				fmt.Sprintf("error processing query: ns=%s.%sTree:"+
-					"  $eq null\nSort: {}\nProj: {}\n tailable cursor requested on non capped collection", params.DB, params.Collection),
+				fmt.Sprintf(
+					"error processing query: ns=%s.%sTree:"+
+						"  $eq null\nSort: {}\nProj: {}\n tailable cursor requested on non capped collection",
+					params.DB,
+					params.Collection,
+				),
 				"find",
 			)
 		}

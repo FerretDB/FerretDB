@@ -199,7 +199,7 @@ func (c *collection) Compact(ctx context.Context, params *backends.CompactParams
 	return c.origC.Compact(ctx, params)
 }
 
-// DropIndexes implements backends.Collection interface.
+// Capped implements backends.Collection interface.
 func (c *collection) Capped(ctx context.Context) (bool, error) {
 	return c.origC.Capped(ctx)
 }
