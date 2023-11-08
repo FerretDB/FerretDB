@@ -48,6 +48,7 @@ type Collection interface {
 
 	Stats(context.Context, *CollectionStatsParams) (*CollectionStatsResult, error)
 	Compact(context.Context, *CompactParams) (*CompactResult, error)
+	Capped(context.Context) (bool, error)
 
 	ListIndexes(context.Context, *ListIndexesParams) (*ListIndexesResult, error)
 	CreateIndexes(context.Context, *CreateIndexesParams) (*CreateIndexesResult, error)
@@ -284,6 +285,18 @@ func (cc *collectionContract) Compact(ctx context.Context, params *CompactParams
 
 	res, err := cc.c.Compact(ctx, params)
 	checkError(err, ErrorCodeDatabaseDoesNotExist, ErrorCodeCollectionDoesNotExist)
+
+	return res, err
+}
+
+// Capped returns true if collection is capped.
+//
+// The errors for non-existing database and non-existing collection are the same.
+func (cc *collectionContract) Capped(ctx context.Context) (bool, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := cc.c.Capped(ctx)
+	checkError(err, ErrorCodeCollectionDoesNotExist)
 
 	return res, err
 }
