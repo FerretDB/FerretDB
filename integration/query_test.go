@@ -1213,7 +1213,7 @@ func TestQueryTailableCursors(t *testing.T) {
 
 	expectedErr := mongo.CommandError{
 		Code: 2,
-		Message: "error processing query: ns=TestQueryTailableCursors.TestQueryTailableCursors:" +
+		Message: "error processing query: ns=TestQueryTailableCursors.TestQueryTailableCursorsTree:" +
 			"  $eq null\nSort: {}\nProj: {}\n tailable cursor requested on non capped collection",
 		Name: "BadValue",
 	}
