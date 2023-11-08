@@ -66,6 +66,24 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
+	if params.Tailable {
+		capped, err := c.Capped(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		if capped {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf("error processing query: ns=%s.%s:"+
+					"  $eq null\nSort: {}\nProj: {}\n tailable cursor requested on non capped collection", params.DB, params.Collection),
+				"find",
+			)
+		}
+
+		return nil, common.Unimplemented(document, "tailable")
+	}
+
 	qp := &backends.QueryParams{
 		Comment: params.Comment,
 	}
