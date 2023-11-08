@@ -138,7 +138,7 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 
 					doc := ConvertDocument(t, explainRes)
 					pushdown, _ := doc.Get("pushdown")
-					assert.Equal(t, resultPushdown.PushdownExpected(t), pushdown, msg)
+					assert.Equal(t, resultPushdown.FilterPushdownExpected(t), pushdown, msg)
 
 					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
 					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
@@ -289,7 +289,7 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 
 			doc := ConvertDocument(t, explainRes)
 			unsafeSortPushdown, _ := doc.Get("sortingPushdown")
-			assert.Equal(t, tc.unsafeSortPushdown.UnsafeSortPushdownExpected(t, true), unsafeSortPushdown)
+			assert.Equal(t, tc.unsafeSortPushdown.SortPushdownExpected(t, true), unsafeSortPushdown)
 
 			findOpts := options.Find()
 			if tc.sort != nil {

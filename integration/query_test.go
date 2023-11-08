@@ -1012,7 +1012,7 @@ func TestQueryCommandUnsafeLimitPushDown(t *testing.T) {
 				assert.Equal(t, tc.unsafeLimitPushdown, unsafeLimitPushdown, msg)
 
 				queryPushdown, _ := ConvertDocument(t, res).Get("pushdown")
-				assert.Equal(t, resultPushdown.PushdownExpected(t), queryPushdown, msg)
+				assert.Equal(t, resultPushdown.FilterPushdownExpected(t), queryPushdown, msg)
 			})
 
 			t.Run("Find", func(t *testing.T) {

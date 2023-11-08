@@ -122,7 +122,7 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 
 					doc := ConvertDocument(t, explainRes)
 					pushdown, _ := doc.Get("pushdown")
-					assert.Equal(t, resultPushdown.PushdownExpected(t), pushdown, msg)
+					assert.Equal(t, resultPushdown.FilterPushdownExpected(t), pushdown, msg)
 
 					targetCursor, targetErr := targetCollection.Aggregate(ctx, pipeline, opts)
 					compatCursor, compatErr := compatCollection.Aggregate(ctx, pipeline, opts)
