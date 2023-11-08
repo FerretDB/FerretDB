@@ -1081,7 +1081,7 @@ func TestQueryTailableCursors(t *testing.T) {
 	//if setup.IsMongoDB(t) {
 	expectedErr := mongo.CommandError{
 		Code: 2,
-		Message: "error processing query: ns=TestQueryTailableCursors.TestQueryTailableCursorsTree:" +
+		Message: "error processing query: ns=TestQueryTailableCursors.TestQueryTailableCursors:" +
 			"  $eq null\nSort: {}\nProj: {}\n tailable cursor requested on non capped collection",
 		Name: "BadValue",
 	}
