@@ -22,6 +22,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -30,14 +31,34 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// prepareSelectClause returns simple SELECT clause for provided db and table name,
-// that can be used to construct the SQL query.
-func prepareSelectClause(db, table string) string {
+// prepareSelectClause returns SELECT clause for default column of provided schema and table name.
+//
+// For capped collection with onlyRecordIDs, it returns select clause for recordID column.
+//
+// For capped collection, it returns select clause for recordID column and default column.
+func prepareSelectClause(schema, table string, capped, onlyRecordIDs bool) string {
+	if capped && onlyRecordIDs {
+		return fmt.Sprintf(
+			`SELECT %s FROM %s`,
+			metadata.RecordIDColumn,
+			pgx.Identifier{schema, table}.Sanitize(),
+		)
+	}
+
+	if capped {
+		return fmt.Sprintf(
+			`SELECT %s, %s FROM %s`,
+			metadata.RecordIDColumn,
+			metadata.DefaultColumn,
+			pgx.Identifier{schema, table}.Sanitize(),
+		)
+	}
+
 	// TODO https://github.com/FerretDB/FerretDB/issues/3573
 	return fmt.Sprintf(
 		`SELECT %s FROM %s`,
 		metadata.DefaultColumn,
-		pgx.Identifier{db, table}.Sanitize(),
+		pgx.Identifier{schema, table}.Sanitize(),
 	)
 }
 
@@ -181,20 +202,29 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 	return filter, args, nil
 }
 
-// prepareOrderByClause adds ORDER BY clause with given sort document and returns the query and arguments.
-func prepareOrderByClause(p *metadata.Placeholder, key string, descending bool) (string, []any, error) {
+// prepareOrderByClause returns ORDER BY clause for given sort field and returns the query and arguments.
+//
+// For capped collection, it returns ORDER BY recordID only if sort field is nil.
+func prepareOrderByClause(p *metadata.Placeholder, sort *backends.SortField, capped bool) (string, []any) {
+	if sort == nil {
+		if capped {
+			return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil
+		}
+
+		return "", nil
+	}
+
 	// Skip sorting dot notation
-	if strings.ContainsRune(key, '.') {
-		return "", nil, nil
+	if strings.ContainsRune(sort.Key, '.') {
+		return "", nil
 	}
 
-	sqlOrder := "ASC"
-
-	if descending {
-		sqlOrder = "DESC"
+	var order string
+	if sort.Descending {
+		order = " DESC"
 	}
 
-	return fmt.Sprintf(" ORDER BY %s->%s %s", metadata.DefaultColumn, p.Next(), sqlOrder), []any{key}, nil
+	return fmt.Sprintf(" ORDER BY %s->%s%s", metadata.DefaultColumn, p.Next(), order), []any{sort.Key}
 }
 
 // filterEqual returns the proper SQL filter with arguments that filters documents

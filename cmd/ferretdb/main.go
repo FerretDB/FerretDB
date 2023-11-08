@@ -29,6 +29,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/common/expfmt"
+	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	_ "golang.org/x/crypto/x509roots/fallback" // register root TLS certificates for production Docker image
@@ -84,11 +85,9 @@ var cli struct {
 	Test struct {
 		RecordsDir string `default:"" help:"Testing: directory for record files."`
 
-		DisableFilterPushdown bool `default:"false" help:"Experimental: disable filter pushdown."`
-		EnableSortPushdown    bool `default:"false" help:"Experimental: enable sort pushdown."`
-		EnableOplog           bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
-
-		UseNewHana bool `default:"false" help:"Experimental: use new SAP HANA backend." hidden:""`
+		DisableFilterPushdown    bool `default:"false" help:"Experimental: disable filter pushdown."`
+		EnableUnsafeSortPushdown bool `default:"false" help:"Experimental: enable unsafe sort pushdown."`
+		EnableOplog              bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
 
 		//nolint:lll // for readability
 		Telemetry struct {
@@ -314,6 +313,10 @@ func run() {
 
 	logger := setupLogger(stateProvider)
 
+	if _, err := maxprocs.Set(maxprocs.Logger(logger.Sugar().Debugf)); err != nil {
+		logger.Sugar().Warnf("Failed to set GOMAXPROCS: %s.", err)
+	}
+
 	ctx, stop := notifyAppTermination(context.Background())
 
 	go func() {
@@ -366,11 +369,9 @@ func run() {
 		HANAURL: hanaFlags.HANAURL,
 
 		TestOpts: registry.TestOpts{
-			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
-			EnableSortPushdown:    cli.Test.EnableSortPushdown,
-			EnableOplog:           cli.Test.EnableOplog,
-
-			UseNewHana: cli.Test.UseNewHana,
+			DisableFilterPushdown:    cli.Test.DisableFilterPushdown,
+			EnableUnsafeSortPushdown: cli.Test.EnableUnsafeSortPushdown,
+			EnableOplog:              cli.Test.EnableOplog,
 		},
 	})
 	if err != nil {

@@ -186,6 +186,10 @@ func GetMore(ctx context.Context, msg *wire.OpMsg, registry *cursor.Registry) (*
 
 	nextBatch := types.MakeArray(len(resDocs))
 	for _, doc := range resDocs {
+		if cursor.ShowRecordID {
+			doc.Set("$recordId", doc.RecordID())
+		}
+
 		nextBatch.Append(doc)
 	}
 

@@ -35,6 +35,7 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
@@ -42,6 +43,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -216,12 +218,12 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 }
 
 // printDiagnosticData prints diagnostic data and error template on stdout.
-func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
-	runCommand("docker", []string{"compose", "logs"}, os.Stdout, logger)
+func printDiagnosticData(w io.Writer, setupError error, logger *zap.SugaredLogger) error {
+	_ = runCommand("docker", []string{"compose", "logs"}, w, logger)
 
-	runCommand("docker", []string{"compose", "ps", "--all"}, os.Stdout, logger)
+	_ = runCommand("docker", []string{"compose", "ps", "--all"}, w, logger)
 
-	runCommand("docker", []string{"stats", "--all", "--no-stream"}, os.Stdout, logger)
+	_ = runCommand("docker", []string{"stats", "--all", "--no-stream"}, w, logger)
 
 	var buf bytes.Buffer
 
@@ -252,7 +254,7 @@ func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
 
 	info := version.Get()
 
-	errorTemplate.Execute(os.Stdout, map[string]any{
+	return errorTemplate.Execute(w, map[string]any{
 		"Error": setupError,
 
 		"GOOS":   runtime.GOOS,
@@ -370,6 +372,42 @@ var cli struct {
 	} `cmd:""`
 }
 
+// makeLogger returns a human-friendly logger.
+func makeLogger(level zapcore.Level, output []string) (*zap.Logger, error) {
+	start := time.Now()
+
+	return zap.Config{
+		Level:             zap.NewAtomicLevelAt(level),
+		Development:       true,
+		DisableCaller:     true,
+		DisableStacktrace: false,
+		Sampling:          nil,
+		Encoding:          "console",
+		EncoderConfig: zapcore.EncoderConfig{
+			MessageKey:    "M",
+			LevelKey:      zapcore.OmitKey,
+			TimeKey:       "T",
+			NameKey:       "N",
+			CallerKey:     zapcore.OmitKey,
+			FunctionKey:   zapcore.OmitKey,
+			StacktraceKey: "S",
+			LineEnding:    zapcore.DefaultLineEnding,
+			EncodeLevel:   zapcore.CapitalLevelEncoder,
+			EncodeTime: func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+				enc.AppendString(fmt.Sprintf("%7.2fs", t.Sub(start).Seconds()))
+			},
+			EncodeDuration:      zapcore.StringDurationEncoder,
+			EncodeCaller:        zapcore.ShortCallerEncoder,
+			EncodeName:          nil,
+			NewReflectedEncoder: nil,
+			ConsoleSeparator:    "  ",
+		},
+		OutputPaths:      output,
+		ErrorOutputPaths: []string{"stderr"},
+		InitialFields:    nil,
+	}.Build()
+}
+
 func main() {
 	kongCtx := kong.Parse(&cli)
 
@@ -383,7 +421,8 @@ func main() {
 		level = zap.DebugLevel
 	}
 
-	logging.Setup(level, "")
+	logging.SetupWithLogger(must.NotFail(makeLogger(level, []string{"stderr"})))
+
 	logger := zap.S()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
@@ -409,7 +448,10 @@ func main() {
 		err = shellRead(os.Stdout, cli.Shell.Read.Paths...)
 
 	case "tests run <args>":
-		err = testsRun(os.Stdout, cli.Tests.Run.ShardIndex, cli.Tests.Run.ShardTotal, cli.Tests.Run.Run, cli.Tests.Run.Args)
+		err = testsRun(
+			cli.Tests.Run.ShardIndex, cli.Tests.Run.ShardTotal, cli.Tests.Run.Run, cli.Tests.Run.Args,
+			logger,
+		)
 
 	case "fuzz corpus <src> <dst>":
 		var seedCorpus, generatedCorpus string
@@ -456,7 +498,13 @@ func main() {
 
 	if err != nil {
 		if cmd == "setup" {
-			printDiagnosticData(err, logger)
+			_ = printDiagnosticData(os.Stderr, err, logger)
+		}
+
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			logger.Error(exitErr)
+			os.Exit(exitErr.ExitCode())
 		}
 
 		logger.Fatal(err)

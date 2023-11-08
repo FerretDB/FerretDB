@@ -115,14 +115,14 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 
 					var msg string
 					// TODO https://github.com/FerretDB/FerretDB/issues/3386
-					if setup.IsPushdownDisabled() {
+					if setup.FilterPushdownDisabled() {
 						resultPushdown = noPushdown
 						msg = "Query pushdown is disabled, but target resulted with pushdown"
 					}
 
 					doc := ConvertDocument(t, explainRes)
 					pushdown, _ := doc.Get("pushdown")
-					assert.Equal(t, resultPushdown.PushdownExpected(t), pushdown, msg)
+					assert.Equal(t, resultPushdown.FilterPushdownExpected(t), pushdown, msg)
 
 					targetCursor, targetErr := targetCollection.Aggregate(ctx, pipeline, opts)
 					compatCursor, compatErr := compatCollection.Aggregate(ctx, pipeline, opts)

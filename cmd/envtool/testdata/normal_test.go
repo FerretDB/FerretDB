@@ -12,16 +12,44 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package hana
+package testdata
 
-import (
-	"context"
+import "testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
+func TestNormal1(t *testing.T) {
+	t.Log("hidden")
 
-// MsgListCollections implements HandlerInterface.
-func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	t.Run("Parallel", func(t *testing.T) {
+		t.Log("hidden")
+
+		t.Parallel()
+
+		t.Log("hidden")
+	})
+
+	t.Run("NotParallel", func(t *testing.T) {
+		t.Log("hidden")
+	})
+
+	t.Log("hidden")
+}
+
+func TestNormal2(t *testing.T) {
+	t.Log("hidden")
+
+	t.Parallel()
+
+	t.Log("hidden")
+
+	t.Run("NotParallel", func(t *testing.T) {
+		t.Log("hidden")
+	})
+
+	t.Run("Parallel", func(t *testing.T) {
+		t.Log("hidden")
+
+		t.Parallel()
+
+		t.Log("hidden")
+	})
 }
