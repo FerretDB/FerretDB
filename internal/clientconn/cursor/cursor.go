@@ -40,30 +40,32 @@ import (
 type Cursor struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
-	created    time.Time
-	iter       types.DocumentsIterator
-	r          *Registry
-	token      *resource.Token
-	closed     chan struct{}
-	DB         string
-	Collection string
-	Username   string
-	ID         int64
-	closeOnce  sync.Once
+	created      time.Time
+	iter         types.DocumentsIterator
+	r            *Registry
+	token        *resource.Token
+	closed       chan struct{}
+	DB           string
+	Collection   string
+	Username     string
+	ID           int64
+	closeOnce    sync.Once
+	ShowRecordID bool
 }
 
 // newCursor creates a new cursor.
-func newCursor(id int64, db, collection, username string, iter types.DocumentsIterator, r *Registry) *Cursor {
+func newCursor(id int64, db, collection, username string, showRecordID bool, iter types.DocumentsIterator, r *Registry) *Cursor {
 	c := &Cursor{
-		ID:         id,
-		DB:         db,
-		Collection: collection,
-		Username:   username,
-		iter:       iter,
-		r:          r,
-		created:    time.Now(),
-		closed:     make(chan struct{}),
-		token:      resource.NewToken(),
+		ID:           id,
+		DB:           db,
+		Collection:   collection,
+		Username:     username,
+		ShowRecordID: showRecordID,
+		iter:         iter,
+		r:            r,
+		created:      time.Now(),
+		closed:       make(chan struct{}),
+		token:        resource.NewToken(),
 	}
 
 	resource.Track(c, c.token)
