@@ -9,7 +9,7 @@ description: Observability
 
 The log level and format can be adjusted by [configuration flags](flags.md#miscellaneous).
 
-Please note that the structured log format is not stable yet; field names and formatting of the values might change in minor releases.
+Please note that the structured log format is not stable yet; field names and formatting of values might change in minor releases.
 
 ### Docker logs
 
@@ -41,3 +41,5 @@ FerretDB writes logs to the standard error (`stderr`) stream.
 FerretDB exposes metrics in Prometheus format on the debug handler on `http://127.0.0.1:8088/debug/metrics` by default.
 There is no need to use an external exporter.
 The host and port can be changed with [`--debug-addr` flag](flags.md#interfaces).
+
+Please note that the set of metrics is not stable yet; metric and label names and formatting of values might change in minor releases.
