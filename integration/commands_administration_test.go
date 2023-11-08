@@ -1381,27 +1381,33 @@ func TestCommandsAdministrationCompactForce(t *testing.T) {
 			force: true,
 		},
 		"False": {
-			force: false,
+			force:          false,
+			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
 		},
 		"Int32": {
 			force: int32(1),
 		},
 		"Int32Zero": {
-			force: int32(0),
+			force:          int32(0),
+			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
 		},
 		"Int64": {
 			force: int64(1),
 		},
 		"Int64Zero": {
-			force: int64(0),
+			force:          int64(0),
+			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
 		},
 		"Double": {
 			force: float64(1),
 		},
 		"DoubleZero": {
-			force: float64(0),
+			force:          float64(0),
+			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
 		},
-		"Unset": {},
+		"Unset": {
+			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
+		},
 		"String": {
 			force: "foo",
 			err: &mongo.CommandError{
