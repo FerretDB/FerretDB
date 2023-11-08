@@ -12,16 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package hana
+package testdata
 
-import (
-	"context"
+import "testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
+func TestSkip1(t *testing.T) {
+	t.Log("not hidden 1")
 
-// MsgCreateIndexes implements HandlerInterface.
-func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, notImplemented(must.NotFail(msg.Document()).Command())
+	t.Skip("Skip 1")
+
+	t.Log("not run")
 }

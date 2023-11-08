@@ -112,28 +112,19 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 
 	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
-		for _, doc := range params.Docs {
-			b, err := sjson.Marshal(doc)
+		var batch []*types.Document
+		docs := params.Docs
+		const batchSize = 100
+
+		for len(docs) > 0 {
+			i := min(batchSize, len(docs))
+			batch, docs = docs[:i], docs[i:]
+
+			q, args, err := prepareInsertStatement(meta.TableName, meta.Capped(), batch)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
 
-			// use batches: INSERT INTO %q %s VALUES (?), (?), (?), ... up to, say, 100 documents
-			// TODO https://github.com/FerretDB/FerretDB/issues/3271
-			q := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
-
-			var args []any
-			if meta.Capped() {
-				q = fmt.Sprintf(
-					`INSERT INTO %q (%s, %s) VALUES (?, ?)`,
-					meta.TableName,
-					metadata.RecordIDColumn,
-					metadata.DefaultColumn,
-				)
-				args = append(args, doc.RecordID())
-			}
-
-			args = append(args, string(b))
 			if _, err = tx.ExecContext(ctx, q, args...); err != nil {
 				var se *sqlite3.Error
 				if errors.As(err, &se) && se.Code() == sqlite3lib.SQLITE_CONSTRAINT_UNIQUE {
@@ -281,16 +272,16 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	orderByClause := prepareOrderByClause(params.Sort, meta.Capped())
-	sortPushdown := orderByClause != ""
+	unsafeSortPushdown := orderByClause != ""
 
 	q := `EXPLAIN QUERY PLAN ` + selectClause + whereClause + orderByClause
 
-	var limitPushdown bool
+	var unsafeLimitPushdown bool
 
 	if params.Limit != 0 {
 		q += ` LIMIT ?`
 		args = append(args, params.Limit)
-		limitPushdown = true
+		unsafeLimitPushdown = true
 	}
 
 	rows, err := db.QueryContext(ctx, q, args...)
@@ -323,10 +314,10 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	return &backends.ExplainResult{
-		QueryPlanner:  must.NotFail(types.NewDocument("Plan", queryPlan)),
-		QueryPushdown: queryPushdown,
-		SortPushdown:  sortPushdown,
-		LimitPushdown: limitPushdown,
+		QueryPlanner:        must.NotFail(types.NewDocument("Plan", queryPlan)),
+		QueryPushdown:       queryPushdown,
+		UnsafeSortPushdown:  unsafeSortPushdown,
+		UnsafeLimitPushdown: unsafeLimitPushdown,
 	}, nil
 }
 

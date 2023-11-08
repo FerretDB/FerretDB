@@ -128,33 +128,22 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	}
 
 	err = pool.InTransaction(ctx, p, func(tx pgx.Tx) error {
-		for _, doc := range params.Docs {
-			var b []byte
-			b, err = sjson.Marshal(doc)
+		var batch []*types.Document
+		docs := params.Docs
+		const batchSize = 100
+
+		for len(docs) > 0 {
+			i := min(batchSize, len(docs))
+			batch, docs = docs[:i], docs[i:]
+
+			var q string
+			var args []any
+
+			q, args, err = prepareInsertStatement(c.dbName, meta.TableName, meta.Capped(), batch)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
 
-			// use batches: INSERT INTO %s %s VALUES (?), (?), (?), ... up to, say, 100 documents
-			// TODO https://github.com/FerretDB/FerretDB/issues/3271
-			q := fmt.Sprintf(
-				`INSERT INTO %s (%s) VALUES ($1)`,
-				pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
-				metadata.DefaultColumn,
-			)
-
-			var args []any
-			if meta.Capped() {
-				q = fmt.Sprintf(
-					`INSERT INTO %s (%s, %s) VALUES ($1, $2)`,
-					pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
-					metadata.RecordIDColumn,
-					metadata.DefaultColumn,
-				)
-				args = append(args, doc.RecordID())
-			}
-
-			args = append(args, string(b))
 			if _, err = tx.Exec(ctx, q, args...); err != nil {
 				var pgErr *pgconn.PgError
 				if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
@@ -324,12 +313,12 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
 	q += sort
 	args = append(args, sortArgs...)
-	res.SortPushdown = sort != ""
+	res.UnsafeSortPushdown = sort != ""
 
 	if params.Limit != 0 {
 		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
 		args = append(args, params.Limit)
-		res.LimitPushdown = true
+		res.UnsafeLimitPushdown = true
 	}
 
 	var b []byte

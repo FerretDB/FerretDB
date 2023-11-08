@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.21.3-1 AS development-build
+FROM ghcr.io/ferretdb/golang:1.21.4-1 AS development-build
 
 ARG TARGETARCH
 
@@ -45,7 +45,7 @@ RUN --mount=type=cache,target=/cache <<EOF
 set -ex
 
 # copy cached stdlib builds from base image
-flock --verbose /cache/ cp -Rnv /root/.cache/go-build/. /cache/gocache
+flock --verbose /cache/ cp -Rn /root/.cache/go-build/. /cache/gocache
 
 # TODO https://github.com/FerretDB/FerretDB/issues/2170
 # That command could be run only once by using a separate stage;
@@ -85,7 +85,7 @@ COPY --from=development-build /src/bin/ferretdb /ferretdb
 
 # final stage
 
-FROM golang:1.21.3 AS development
+FROM golang:1.21.4 AS development
 
 ENV GOCOVERDIR=/tmp/cover
 ENV GORACE=halt_on_error=1,history_size=2
