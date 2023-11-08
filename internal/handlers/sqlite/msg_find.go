@@ -75,7 +75,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		if !capped {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
-				fmt.Sprintf("error processing query: ns=%s.%s:"+
+				fmt.Sprintf("error processing query: ns=%s.%sTree:"+
 					"  $eq null\nSort: {}\nProj: {}\n tailable cursor requested on non capped collection", params.DB, params.Collection),
 				"find",
 			)
