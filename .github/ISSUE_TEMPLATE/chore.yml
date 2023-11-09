@@ -30,7 +30,8 @@ body:
       label: Definition of Done
       description: What should be done to consider this issue done? List everything that applies.
       value: |
-        - all handlers updated;
+        - handler updated;
+        - all backends updated;
         - unit tests added/updated;
         - integration/compatibility tests added/updated;
         - spot refactorings done;
