@@ -87,6 +87,7 @@ func TestCreateDropStress(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
+	// FIXME
 	dir := testutil.DirectoryName(t)
 	require.NoError(t, os.RemoveAll(dir))
 	require.NoError(t, os.MkdirAll(dir, 0o777))
@@ -161,6 +162,7 @@ func TestMemory(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
+	// FIXME
 	dir := testutil.DirectoryName(t)
 	require.NoError(t, os.RemoveAll(dir))
 	require.NoError(t, os.MkdirAll(dir, 0o777))
