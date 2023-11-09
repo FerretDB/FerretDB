@@ -319,6 +319,54 @@ From the application, when we add a new task, it is inserted into our FerretDB d
 
 We can also perform other CRUD operations on the database to delete or update the state as marked or unmarked.
 
+## Building and Publishing Acorn Images
+
+When the development phase ends and we're ready to share the `my-ferret` app, we can also package it into a container image using Acorn.
+Acorn makes this possible using commands that are simple and similar to traditional Docker workflows.
+
+To create an Acorn container image for the `my-ferret` app, use the following convention with your desired registry, organization, application name, and version:
+
+```sh
+acorn build -t <registry>/<organization>/<app-name>:<version> .
+```
+
+In that case, if we want to tag an image for Docker Hub, run the build command within the same project directory:
+
+```sh
+acorn build -t index.docker.io/<organization>/my-ferret:v1.0 .
+```
+
+This command compiles the application source, along with any dependencies defined in the `Acornfile`, into a container image.
+The `-t` flag assigns a tag to the image.
+Ensure to replace the registry if you're not using Docker Hub, and also specify the organization or username for the account.
+
+Before pushing the image to a registry, log in using the `acorn login` command:
+
+```sh
+acorn login index.docker.io
+```
+
+Once you're logged in successfully, use the `acorn push` command to upload the image to the desired registry:
+
+```sh
+acorn push index.docker.io/<organization>/my-ferret:v1.0
+```
+
+Once the image is available in a registry, it can be deployed to any environment with access to the registry.
+The `acorn run` command will retrieve and deploy the image:
+
+```sh
+acorn run index.docker.io/<organization>/my-ferret:v1.0
+```
+
+Alternatively, if you need to manually pull the image to your local machine, use:
+
+```sh
+acorn pull index.docker.io/<organization>/my-ferret:v1.0
+```
+
+Following these steps ensures that our todo app, built using FerretDB, is correctly containerized, tagged, and ready for deployment across your production environments with Acorn.
+
 ## Cleanup
 
 Once we're done, clean up and delete the application by running:
