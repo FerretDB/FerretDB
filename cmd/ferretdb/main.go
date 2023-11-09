@@ -86,9 +86,10 @@ var cli struct {
 	Test struct {
 		RecordsDir string `default:"" help:"Testing: directory for record files."`
 
-		DisableFilterPushdown    bool `default:"false" help:"Experimental: disable filter pushdown."`
-		EnableUnsafeSortPushdown bool `default:"false" help:"Experimental: enable unsafe sort pushdown."`
-		EnableOplog              bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
+		DisableFilterPushdown bool `default:"false" help:"Experimental: disable filter pushdown."`
+		EnableSortPushdown    bool `default:"false" help:"Experimental: enable sort pushdown."`
+		EnableUnsafePushdown  bool `default:"false" help:"Experimental: enable unsafe pushdown for both filter and sort."`
+		EnableOplog           bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
 
 		//nolint:lll // for readability
 		Telemetry struct {
@@ -373,9 +374,10 @@ func run() {
 		HANAURL: hanaFlags.HANAURL,
 
 		TestOpts: registry.TestOpts{
-			DisableFilterPushdown:    cli.Test.DisableFilterPushdown,
-			EnableUnsafeSortPushdown: cli.Test.EnableUnsafeSortPushdown,
-			EnableOplog:              cli.Test.EnableOplog,
+			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
+			EnableSortPushdown:    cli.Test.EnableSortPushdown,
+			EnableUnsafePushdown:  cli.Test.EnableUnsafePushdown,
+			EnableOplog:           cli.Test.EnableOplog,
 		},
 	})
 	if err != nil {

@@ -272,16 +272,16 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	orderByClause := prepareOrderByClause(params.Sort, meta.Capped())
-	unsafeSortPushdown := orderByClause != ""
+	sortPushdown := orderByClause != ""
 
 	q := `EXPLAIN QUERY PLAN ` + selectClause + whereClause + orderByClause
 
-	var unsafeLimitPushdown bool
+	var limitPushdown bool
 
 	if params.Limit != 0 {
 		q += ` LIMIT ?`
 		args = append(args, params.Limit)
-		unsafeLimitPushdown = true
+		limitPushdown = true
 	}
 
 	rows, err := db.QueryContext(ctx, q, args...)
@@ -314,10 +314,10 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	return &backends.ExplainResult{
-		QueryPlanner:        must.NotFail(types.NewDocument("Plan", queryPlan)),
-		FilterPushdown:      filterPushdown,
-		UnsafeSortPushdown:  unsafeSortPushdown,
-		UnsafeLimitPushdown: unsafeLimitPushdown,
+		QueryPlanner:   must.NotFail(types.NewDocument("Plan", queryPlan)),
+		FilterPushdown: filterPushdown,
+		SortPushdown:   sortPushdown,
+		LimitPushdown:  limitPushdown,
 	}, nil
 }
 

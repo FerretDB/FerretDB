@@ -94,7 +94,7 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 
 				explainRes, err := cappedColl.Explain(ctx, new(backends.ExplainParams))
 				require.NoError(t, err)
-				assert.True(t, explainRes.UnsafeSortPushdown)
+				assert.True(t, explainRes.SortPushdown)
 			})
 
 			t.Run("CappedCollectionOnlyRecordIDs", func(t *testing.T) {
@@ -110,7 +110,7 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 
 				explainRes, err := cappedColl.Explain(ctx, new(backends.ExplainParams))
 				require.NoError(t, err)
-				assert.True(t, explainRes.UnsafeSortPushdown)
+				assert.True(t, explainRes.SortPushdown)
 			})
 
 			t.Run("CappedCollectionSortAsc", func(t *testing.T) {
@@ -132,7 +132,7 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 
 				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &sort})
 				require.NoError(t, err)
-				assert.True(t, explainRes.UnsafeSortPushdown)
+				assert.True(t, explainRes.SortPushdown)
 			})
 
 			t.Run("CappedCollectionSortDesc", func(t *testing.T) {
@@ -154,7 +154,7 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 
 				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &sort})
 				require.NoError(t, err)
-				assert.True(t, explainRes.UnsafeSortPushdown)
+				assert.True(t, explainRes.SortPushdown)
 			})
 
 			t.Run("CappedCollectionFilter", func(t *testing.T) {
@@ -174,7 +174,7 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Filter: filter})
 				require.NoError(t, err)
 				assert.True(t, explainRes.FilterPushdown)
-				assert.True(t, explainRes.UnsafeSortPushdown)
+				assert.True(t, explainRes.SortPushdown)
 			})
 
 			t.Run("NonCappedCollectionOnlyRecordID", func(t *testing.T) {
@@ -192,7 +192,7 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 
 				explainRes, err := coll.Explain(ctx, new(backends.ExplainParams))
 				require.NoError(t, err)
-				assert.False(t, explainRes.UnsafeSortPushdown)
+				assert.False(t, explainRes.SortPushdown)
 			})
 		})
 	}
