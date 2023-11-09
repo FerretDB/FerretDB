@@ -9,10 +9,10 @@ require (
 	github.com/goreleaser/nfpm/v2 v2.34.0
 	github.com/quasilyte/go-consistent v0.6.0
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/oauth2 v0.13.0
-	golang.org/x/perf v0.0.0-20231006134539-cd219cffda85
-	golang.org/x/pkgsite v0.0.0-20231009172822-5f0513d53cff
-	golang.org/x/tools v0.14.0
+	golang.org/x/oauth2 v0.14.0
+	golang.org/x/perf v0.0.0-20231108231503-cb71e802ccb8
+	golang.org/x/pkgsite v0.0.0-20231108193206-a4adca6c8b46
+	golang.org/x/tools v0.15.0
 	golang.org/x/vuln v1.0.1
 	mvdan.cc/gofumpt v0.5.0
 )
@@ -100,14 +100,14 @@ require (
 	github.com/yuin/goldmark-emoji v1.0.1 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	gitlab.com/digitalxero/go-conventional-commit v1.0.7 // indirect
-	golang.org/x/crypto v0.14.0 // indirect
+	golang.org/x/crypto v0.15.0 // indirect
 	golang.org/x/exp v0.0.0-20230212135524-a684f29349b6 // indirect
-	golang.org/x/mod v0.13.0 // indirect
-	golang.org/x/net v0.17.0 // indirect
-	golang.org/x/sync v0.4.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
-	golang.org/x/term v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/mod v0.14.0 // indirect
+	golang.org/x/net v0.18.0 // indirect
+	golang.org/x/sync v0.5.0 // indirect
+	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/term v0.14.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
