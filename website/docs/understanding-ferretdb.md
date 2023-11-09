@@ -45,7 +45,7 @@ PostgreSQL backend is our main backend and is fully supported.
 PostgreSQL should be configured with `UTF8` encoding and one of the following locales:
 `POSIX`, `C`, `C.UTF8`, `en_US.UTF8`.
 
-MongoDB databases are mapped to PostgreSQL schemas in a single PostgreSQL database.
+MongoDB databases are mapped to PostgreSQL schemas in a single PostgreSQL database that should be created in advance.
 MongoDB collections are mapped to PostgreSQL tables.
 MongoDB documents are mapped to rows with a single [JSONB](https://www.postgresql.org/docs/current/datatype-json.html) column.
 Those mappings will change as we work on improving compatibility and performance,
