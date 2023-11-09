@@ -14,7 +14,7 @@ In this blog post, we will explore how to build, package, and deploy a Python ap
 
 <!--truncate-->
 
-FerretDB is an open-source document database alternative for MongoDB that provides PostgreSQL or SQLite as the database backend options.
+FerretDB is an open-source document database alternative for MongoDB that provides PostgreSQL or SQLite as database backend options.
 This means you can [use FerretDB for production environments without worrying about vendor lock-in](https://blog.ferretdb.io/5-ways-to-avoid-database-vendor-lock-in/).
 And by using Acorn, you can easily make deployments easier.
 
