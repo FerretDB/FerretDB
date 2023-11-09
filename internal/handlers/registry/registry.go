@@ -55,12 +55,9 @@ type NewHandlerOpts struct {
 
 // TestOpts represents experimental configuration options.
 type TestOpts struct {
-	DisableFilterPushdown bool
-	EnableSortPushdown    bool
-	EnableOplog           bool
-
-	UseOldPG   bool
-	UseNewHana bool
+	DisableFilterPushdown    bool
+	EnableUnsafeSortPushdown bool
+	EnableOplog              bool
 }
 
 // NewHandler constructs a new handler.

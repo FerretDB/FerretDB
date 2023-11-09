@@ -89,11 +89,12 @@ type CollectionInfo struct {
 	Name            string
 	CappedSize      int64
 	CappedDocuments int64
+	_               struct{} // prevent unkeyed literals
 }
 
 // Capped returns true if collection is capped.
 func (ci *CollectionInfo) Capped() bool {
-	return ci.CappedSize > 0 || ci.CappedDocuments > 0
+	return ci.CappedSize > 0 // TODO https://github.com/FerretDB/FerretDB/issues/3631
 }
 
 // ListCollections returns a list collections in the database sorted by name.
@@ -121,11 +122,12 @@ type CreateCollectionParams struct {
 	Name            string
 	CappedSize      int64
 	CappedDocuments int64
+	_               struct{} // prevent unkeyed literals
 }
 
 // Capped returns true if capped collection creation is requested.
 func (ccp *CreateCollectionParams) Capped() bool {
-	return ccp.CappedSize > 0 || ccp.CappedDocuments > 0
+	return ccp.CappedSize > 0 // TODO https://github.com/FerretDB/FerretDB/issues/3631
 }
 
 // CreateCollection creates a new collection with valid name in the database; it should not already exist.

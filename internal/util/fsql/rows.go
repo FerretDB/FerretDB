@@ -60,6 +60,11 @@ func (rows *Rows) Next() bool {
 	return rows.sqlRows.Next()
 }
 
+// Columns calls [*sql.Rows.Columns].
+func (rows *Rows) Columns() ([]string, error) {
+	return rows.sqlRows.Columns()
+}
+
 // Scan calls [*sql.Rows.Scan].
 func (rows *Rows) Scan(dest ...any) error {
 	return rows.sqlRows.Scan(dest...)

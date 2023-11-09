@@ -16,12 +16,14 @@ package backends_test // to avoid import cycle
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/hana"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -78,6 +80,24 @@ func testBackends(t *testing.T) map[string]*testBackend {
 		t.Cleanup(b.Close)
 
 		res["sqlite"] = &testBackend{
+			Backend: b,
+			sp:      sp,
+		}
+	}
+
+	if hanaURL := os.Getenv("FERRETDB_HANA_URL"); hanaURL != "" {
+		sp, err := state.NewProvider("")
+		require.NoError(t, err)
+
+		b, err := hana.NewBackend(&hana.NewBackendParams{
+			URI: hanaURL,
+			L:   l.Named("hana"),
+			P:   sp,
+		})
+		require.NoError(t, err)
+		t.Cleanup(b.Close)
+
+		res["hana"] = &testBackend{
 			Backend: b,
 			sp:      sp,
 		}

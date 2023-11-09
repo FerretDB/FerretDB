@@ -217,13 +217,36 @@ Other necessary flags are set to their default values: `--mode="normal"`, `--lis
 
 Creating a `systemd` service file for FerretDB will allow the database be managed by the `systemd` system and service manager.
 
+:::warning
+Please ensure to have a non-root user configured with `sudo` privileges.
+
+Incase you don't, let's create a new user `ferret` with `sudo` privileges:
+
+```sh
+sudo adduser ferret
+```
+
+Once it's created, add the user to the `sudo` group:
+
+```sh
+sudo usermod -aG sudo ferret
+```
+
+You can switch to the new user:
+
+```sh
+su - ferret
+```
+
+:::
+
 To create a `systemd` service file, open a new file in the `/etc/systemd/system` directory.
 
 ```sh
 sudo nano /etc/systemd/system/ferretdb.service
 ```
 
-Add the following content to the file:
+Add the following content to the file (`User=` should be set to the non-root user):
 
 ```text
 [Unit]

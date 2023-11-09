@@ -64,6 +64,11 @@ func (c *Collection) deepCopy() *Collection {
 	}
 }
 
+// Capped returns true if collection is capped.
+func (c Collection) Capped() bool {
+	return c.CappedSize > 0
+}
+
 // Value implements driver.Valuer interface.
 func (c Collection) Value() (driver.Value, error) {
 	b, err := sjson.Marshal(c.marshal())
@@ -140,12 +145,10 @@ func (c *Collection) unmarshal(doc *types.Document) error {
 		return lazyerrors.Error(err)
 	}
 
-	// For compatibility with older FerretDB versions where cappedSize didn't exist.
+	// those fields do not exist in older versions of FerretDB
 	if v, _ := doc.Get("cappedSize"); v != nil {
 		c.CappedSize = v.(int64)
 	}
-
-	// For compatibility with older FerretDB versions where cappedDocs didn't exist.
 	if v, _ := doc.Get("cappedDocs"); v != nil {
 		c.CappedDocuments = v.(int64)
 	}

@@ -40,7 +40,7 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `max`                      | ⚠️     | Ignored                                                   |
 |                 | `min`                      | ⚠️     | Ignored                                                   |
 |                 | `returnKey`                | ❌     | Unimplemented                                             |
-|                 | `showRecordId`             | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/3467) |
+|                 | `showRecordId`             | ✅     |                                                           |
 |                 | `tailable`                 | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/2283) |
 |                 | `oplogReplay`              | ❌     | Unimplemented                                             |
 |                 | `noCursorTimeout`          | ❌     | Unimplemented                                             |
@@ -525,7 +525,7 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 | --------------------------------- | ------------------------------ | ------------------------- | ------ | --------------------------------------------------------- |
 | `listCollections`                 |                                |                           | ✅     |                                                           |
 |                                   | `filter`                       |                           | ✅     |                                                           |
-|                                   | `nameOnly`                     |                           | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/301)  |
+|                                   | `nameOnly`                     |                           | ✅     |                                                           |
 |                                   | `comment`                      |                           | ⚠️     | Ignored                                                   |
 |                                   | `authorizedCollections`        |                           | ⚠️     | Ignored                                                   |
 | `cloneCollectionAsCapped`         |                                |                           | ❌     |                                                           |

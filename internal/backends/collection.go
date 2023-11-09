@@ -79,11 +79,10 @@ type SortField struct {
 
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Filter        *types.Document
 	Sort          *SortField
-	Limit         int64  // if 0 no limit pushdown is applied
-	OnlyRecordIDs bool   // TODO https://github.com/FerretDB/FerretDB/issues/3490
+	Limit         int64
+	OnlyRecordIDs bool
 	Comment       string // TODO https://github.com/FerretDB/FerretDB/issues/3573
 }
 
@@ -207,19 +206,17 @@ func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllPa
 
 // ExplainParams represents the parameters of Collection.Explain method.
 type ExplainParams struct {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	Filter *types.Document
 	Sort   *SortField
-	Limit  int64 // if 0 no limit pushdown is applied
+	Limit  int64
 }
 
 // ExplainResult represents the results of Collection.Explain method.
 type ExplainResult struct {
-	QueryPlanner *types.Document
-	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	QueryPushdown bool
-	SortPushdown  bool
-	LimitPushdown bool
+	QueryPlanner        *types.Document
+	QueryPushdown       bool
+	UnsafeSortPushdown  bool
+	UnsafeLimitPushdown bool
 }
 
 // Explain return a backend-specific execution plan for the given query.

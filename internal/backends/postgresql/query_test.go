@@ -22,6 +22,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -249,6 +250,64 @@ func TestPrepareWhereClause(t *testing.T) {
 				return
 			}
 
+			assert.Equal(t, tc.args, args)
+		})
+	}
+}
+
+func TestPrepareOrderByClause(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		sort   *backends.SortField
+		capped bool
+
+		orderBy string
+		args    []any
+	}{
+		"Ascending": {
+			sort:    &backends.SortField{Key: "field", Descending: false},
+			orderBy: ` ORDER BY _jsonb->$1`,
+			args:    []any{"field"},
+		},
+		"Descending": {
+			sort:    &backends.SortField{Key: "field", Descending: true},
+			orderBy: ` ORDER BY _jsonb->$1 DESC`,
+			args:    []any{"field"},
+		},
+		"SortNil": {
+			orderBy: "",
+			args:    nil,
+		},
+		"SortDotNotation": {
+			sort:    &backends.SortField{Key: "field.embedded", Descending: true},
+			orderBy: "",
+			args:    nil,
+		},
+		"Capped": {
+			capped:  true,
+			orderBy: ` ORDER BY _ferretdb_record_id`,
+			args:    nil,
+		},
+		"CappedWithSort": {
+			sort:    &backends.SortField{Key: "field", Descending: true},
+			capped:  true,
+			orderBy: ` ORDER BY _jsonb->$1 DESC`,
+			args:    []any{"field"},
+		},
+		"CappedWithSortDotNotation": {
+			sort:    &backends.SortField{Key: "field.embedded", Descending: true},
+			capped:  true,
+			orderBy: "",
+			args:    nil,
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			orderBy, args := prepareOrderByClause(new(metadata.Placeholder), tc.sort, tc.capped)
+			assert.Equal(t, tc.orderBy, orderBy)
 			assert.Equal(t, tc.args, args)
 		})
 	}

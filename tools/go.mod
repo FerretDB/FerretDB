@@ -2,16 +2,11 @@ module github.com/FerretDB/FerretDB/tools
 
 go 1.21
 
-// Until https://github.com/goreleaser/nfpm/issues/719 is resolved and released.
-// See https://github.com/goreleaser/nfpm/pull/721.
-replace github.com/goreleaser/nfpm/v2 => github.com/AlekSi/nfpm/v2 v2.33.2-0.20231013044354-8ee96782f9c2
-
 require (
-	github.com/BurntSushi/go-sumtype v0.0.0-20221020234012-480526a59796
 	github.com/FerretDB/gh v0.1.0
 	github.com/go-task/task/v3 v3.31.0
 	github.com/google/go-github/v56 v56.0.0
-	github.com/goreleaser/nfpm/v2 v2.33.1
+	github.com/goreleaser/nfpm/v2 v2.34.0
 	github.com/quasilyte/go-consistent v0.6.0
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/oauth2 v0.13.0
@@ -72,7 +67,7 @@ require (
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/kisielk/gotool v1.0.0 // indirect
-	github.com/klauspost/compress v1.17.0 // indirect
+	github.com/klauspost/compress v1.17.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect

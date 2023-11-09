@@ -16,30 +16,12 @@ package registry
 
 import (
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/pg"
 	"github.com/FerretDB/FerretDB/internal/handlers/sqlite"
 )
 
 // init registers "postgresql" handler.
 func init() {
 	registry["postgresql"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		if opts.UseOldPG {
-			opts.Logger.Warn("Old PostgreSQL handler is deprecated and will be removed in the next release.")
-
-			handlerOpts := &pg.NewOpts{
-				PostgreSQLURL: opts.PostgreSQLURL,
-
-				L:             opts.Logger,
-				ConnMetrics:   opts.ConnMetrics,
-				StateProvider: opts.StateProvider,
-
-				DisableFilterPushdown: opts.DisableFilterPushdown,
-				EnableSortPushdown:    opts.EnableSortPushdown,
-			}
-
-			return pg.New(handlerOpts)
-		}
-
 		handlerOpts := &sqlite.NewOpts{
 			Backend: "postgresql",
 			URI:     opts.PostgreSQLURL,
@@ -48,9 +30,9 @@ func init() {
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 
-			DisableFilterPushdown: opts.DisableFilterPushdown,
-			EnableSortPushdown:    opts.EnableSortPushdown,
-			EnableOplog:           opts.EnableOplog,
+			DisableFilterPushdown:    opts.DisableFilterPushdown,
+			EnableUnsafeSortPushdown: opts.EnableUnsafeSortPushdown,
+			EnableOplog:              opts.EnableOplog,
 		}
 
 		return sqlite.New(handlerOpts)

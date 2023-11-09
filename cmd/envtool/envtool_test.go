@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
@@ -28,8 +29,10 @@ func TestPrintDiagnosticData(t *testing.T) {
 	t.Parallel()
 
 	assert.NotPanics(t, func() {
+		var buf bytes.Buffer
 		l := testutil.Logger(t)
-		printDiagnosticData(nil, l.Sugar())
+		err := printDiagnosticData(&buf, nil, l.Sugar())
+		require.NoError(t, err)
 	})
 }
 

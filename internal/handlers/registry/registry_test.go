@@ -58,6 +58,8 @@ func tagPackages(t *testing.T, tag string) []string {
 // TestDeps ensures that some packages are imported
 // only when the corresponding backend handler is enabled via Go build tag.
 func TestDeps(t *testing.T) {
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/3662")
+
 	t.Parallel()
 
 	t.Run("Hana", func(t *testing.T) {
