@@ -25,6 +25,10 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
+// TestSQLiteURI returns SQLite URI with test-specific directory.
+// It will be created before test and dropped after unless test fails.
+//
+// Base URI may be empty.
 func TestSQLiteURI(tb testtb.TB, baseURI string) string {
 	tb.Helper()
 

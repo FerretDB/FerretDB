@@ -31,8 +31,7 @@ func TestCollectionsStats(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	// FIXME
-	r, err := metadata.NewRegistry("file:"+t.TempDir()+"/", testutil.Logger(t), sp)
+	r, err := metadata.NewRegistry(testutil.TestSQLiteURI(t, ""), testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 

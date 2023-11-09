@@ -33,8 +33,7 @@ func TestDatabaseStats(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	// FIXME
-	b, err := NewBackend(&NewBackendParams{URI: "file:" + t.TempDir() + "/", L: testutil.Logger(t), P: sp})
+	b, err := NewBackend(&NewBackendParams{URI: testutil.TestSQLiteURI(t, ""), L: testutil.Logger(t), P: sp})
 	require.NoError(t, err)
 	t.Cleanup(b.Close)
 
@@ -66,14 +65,14 @@ func TestDatabaseStatsFreeStorage(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	// FIXME
-	for name, u := range map[string]string{
-		"dir":    "file:" + t.TempDir() + "/",
-		"memory": "file:./?mode=memory",
+	for name, params := range map[string]string{
+		"dir":    "",
+		"memory": "" + "/?mode=memory",
 	} {
-		name, u := name, u
+		name, params := name, params
 		t.Run(name, func(t *testing.T) {
-			b, err := NewBackend(&NewBackendParams{URI: u, L: testutil.Logger(t), P: sp})
+			uri := testutil.TestSQLiteURI(t, "") + params
+			b, err := NewBackend(&NewBackendParams{URI: uri, L: testutil.Logger(t), P: sp})
 			require.NoError(t, err)
 
 			t.Cleanup(b.Close)

@@ -22,7 +22,7 @@ linters-settings:
             desc: use `github.com/jackc/pgx/v5/pgproto3` package instead
           - pkg: github.com/jackc/pgtype
             desc: use `github.com/jackc/pgx/v5/pgtype` package instead
-          - pkg: github.com/jackc/pgx
+          - pkg: github.com/jackc/pgx$
             desc: use `github.com/jackc/pgx/v5` package instead
           - pkg: github.com/jackc/pgx/v4
             desc: use `github.com/jackc/pgx/v5` package instead
