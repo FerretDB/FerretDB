@@ -37,8 +37,6 @@ import (
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
-
-	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 type metric struct {
