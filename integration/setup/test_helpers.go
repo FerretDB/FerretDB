@@ -108,5 +108,5 @@ func SortPushdownEnabled() bool {
 
 // UnsafePushdwon returns true if unsafe pushdown is enabled.
 func UnsafePushdown() bool {
-	return *enableUnsafePushdown
+	return *enableUnsafePushdownF
 }
