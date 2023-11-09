@@ -67,14 +67,25 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	if params.Tailable {
-		var capped bool
-
-		capped, err = c.Capped(ctx)
+		// TODO https://github.com/FerretDB/FerretDB/issues/3601
+		res, err := db.ListCollections(ctx, &backends.ListCollectionsParams{})
 		if err != nil {
 			return nil, err
 		}
 
-		if !capped {
+		var collInfo *backends.CollectionInfo
+
+		for _, coll := range res.Collections {
+			if coll.Name == params.Collection {
+				collInfo = &coll
+			}
+		}
+
+		if collInfo == nil {
+			// coll doesnt exist
+		}
+
+		if !collInfo.Capped() {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
