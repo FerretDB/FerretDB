@@ -61,7 +61,7 @@ var (
 
 	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
 	enableSortPushdownF    = flag.Bool("enable-sort-pushdown", false, "enable unsafe sort pushdown")
-	enableUnsafePushdown   = flag.Bool("enabe-unsafe-pushdown", false, "enable unsafe pushdown for both filter and sort")
+	enableUnsafePushdownF  = flag.Bool("enabe-unsafe-pushdown", false, "enable unsafe pushdown for both filter and sort")
 )
 
 // Other globals.
