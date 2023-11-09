@@ -315,7 +315,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	return &backends.ExplainResult{
 		QueryPlanner:        must.NotFail(types.NewDocument("Plan", queryPlan)),
-		QueryPushdown:       queryPushdown,
+		FilterPushdown:      queryPushdown,
 		UnsafeSortPushdown:  unsafeSortPushdown,
 		UnsafeLimitPushdown: unsafeLimitPushdown,
 	}, nil

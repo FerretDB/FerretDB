@@ -173,7 +173,7 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 
 				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Filter: filter})
 				require.NoError(t, err)
-				assert.True(t, explainRes.QueryPushdown)
+				assert.True(t, explainRes.FilterPushdown)
 				assert.True(t, explainRes.UnsafeSortPushdown)
 			})
 

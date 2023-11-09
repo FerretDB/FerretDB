@@ -824,7 +824,7 @@ func TestQueryCommandSingleBatch(t *testing.T) {
 func TestQueryCommandUnsafeLimitPushDown(t *testing.T) {
 	t.Parallel()
 
-	// must use a collection of documents which does not support query pushdown to test limit pushdown
+	// must use a collection of documents which does not support filter pushdown to test limit pushdown
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{Providers: []shareddata.Provider{shareddata.Composites}})
 	ctx, collection := s.Ctx, s.Collection
 
@@ -1004,7 +1004,7 @@ func TestQueryCommandUnsafeLimitPushDown(t *testing.T) {
 
 				if setup.FilterPushdownDisabled() {
 					resultPushdown = noPushdown
-					msg = "Query pushdown is disabled, but target resulted with pushdown"
+					msg = "Filter pushdown is disabled, but target resulted with pushdown"
 				}
 
 				doc := ConvertDocument(t, res)

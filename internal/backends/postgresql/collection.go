@@ -306,7 +306,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return nil, lazyerrors.Error(err)
 	}
 
-	res.QueryPushdown = where != ""
+	res.FilterPushdown = where != ""
 
 	q += where
 

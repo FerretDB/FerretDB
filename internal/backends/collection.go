@@ -214,7 +214,7 @@ type ExplainParams struct {
 // ExplainResult represents the results of Collection.Explain method.
 type ExplainResult struct {
 	QueryPlanner        *types.Document
-	QueryPushdown       bool
+	FilterPushdown      bool
 	UnsafeSortPushdown  bool
 	UnsafeLimitPushdown bool
 }
