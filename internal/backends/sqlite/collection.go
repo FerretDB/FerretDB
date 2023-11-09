@@ -255,7 +255,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	selectClause := prepareSelectClause(meta.TableName, meta.Capped(), false)
 
-	var queryPushdown bool
+	var filterPushdown bool
 	var whereClause string
 	var args []any
 
@@ -265,7 +265,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		v, _ := params.Filter.Get("_id")
 		switch v.(type) {
 		case string, types.ObjectID:
-			queryPushdown = true
+			filterPushdown = true
 			whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
 			args = []any{string(must.NotFail(sjson.MarshalSingleValue(v)))}
 		}
@@ -315,7 +315,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	return &backends.ExplainResult{
 		QueryPlanner:        must.NotFail(types.NewDocument("Plan", queryPlan)),
-		FilterPushdown:      queryPushdown,
+		FilterPushdown:      filterPushdown,
 		UnsafeSortPushdown:  unsafeSortPushdown,
 		UnsafeLimitPushdown: unsafeLimitPushdown,
 	}, nil

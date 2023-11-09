@@ -835,7 +835,7 @@ func TestQueryCommandUnsafeLimitPushDown(t *testing.T) {
 		optSkip *int64 // optional, nil to leave optSkip unset
 
 		len                 int                 // expected length of results
-		queryPushdown       resultPushdown      // optional, defaults to noPushdown
+		filterPushdown      resultPushdown      // optional, defaults to noPushdown
 		unsafeLimitPushdown bool                // optional, set true for expected pushdown for limit
 		err                 *mongo.CommandError // optional, expected error from MongoDB
 		altMessage          string              // optional, alternative error message for FerretDB, ignored if empty
@@ -876,7 +876,7 @@ func TestQueryCommandUnsafeLimitPushDown(t *testing.T) {
 			filter:              bson.D{{"_id", "array"}},
 			limit:               3,
 			len:                 1,
-			queryPushdown:       allPushdown,
+			filterPushdown:      allPushdown,
 			unsafeLimitPushdown: false,
 		},
 		"ValueFilter": {
@@ -884,28 +884,28 @@ func TestQueryCommandUnsafeLimitPushDown(t *testing.T) {
 			sort:                bson.D{{"_id", 1}},
 			limit:               3,
 			len:                 3,
-			queryPushdown:       pgPushdown,
+			filterPushdown:      pgPushdown,
 			unsafeLimitPushdown: false,
 		},
 		"DotNotationFilter": {
 			filter:              bson.D{{"v.foo", 42}},
 			limit:               3,
 			len:                 3,
-			queryPushdown:       noPushdown,
+			filterPushdown:      noPushdown,
 			unsafeLimitPushdown: false,
 		},
 		"ObjectFilter": {
 			filter:              bson.D{{"v", bson.D{{"foo", nil}}}},
 			limit:               3,
 			len:                 1,
-			queryPushdown:       noPushdown,
+			filterPushdown:      noPushdown,
 			unsafeLimitPushdown: false,
 		},
 		"Sort": {
 			sort:                bson.D{{"_id", 1}},
 			limit:               2,
 			len:                 2,
-			queryPushdown:       noPushdown,
+			filterPushdown:      noPushdown,
 			unsafeLimitPushdown: true,
 		},
 		"IDFilterSort": {
@@ -913,7 +913,7 @@ func TestQueryCommandUnsafeLimitPushDown(t *testing.T) {
 			sort:                bson.D{{"_id", 1}},
 			limit:               3,
 			len:                 1,
-			queryPushdown:       allPushdown,
+			filterPushdown:      allPushdown,
 			unsafeLimitPushdown: false,
 		},
 		"ValueFilterSort": {
@@ -921,7 +921,7 @@ func TestQueryCommandUnsafeLimitPushDown(t *testing.T) {
 			sort:                bson.D{{"_id", 1}},
 			limit:               3,
 			len:                 3,
-			queryPushdown:       pgPushdown,
+			filterPushdown:      pgPushdown,
 			unsafeLimitPushdown: false,
 		},
 		"DotNotationFilterSort": {
@@ -929,7 +929,7 @@ func TestQueryCommandUnsafeLimitPushDown(t *testing.T) {
 			sort:                bson.D{{"_id", 1}},
 			limit:               3,
 			len:                 3,
-			queryPushdown:       noPushdown,
+			filterPushdown:      noPushdown,
 			unsafeLimitPushdown: false,
 		},
 		"ObjectFilterSort": {
@@ -937,7 +937,7 @@ func TestQueryCommandUnsafeLimitPushDown(t *testing.T) {
 			sort:                bson.D{{"_id", 1}},
 			limit:               3,
 			len:                 1,
-			queryPushdown:       noPushdown,
+			filterPushdown:      noPushdown,
 			unsafeLimitPushdown: false,
 		},
 		"Skip": {
@@ -1000,7 +1000,7 @@ func TestQueryCommandUnsafeLimitPushDown(t *testing.T) {
 					msg = "Sort pushdown is disabled, but target resulted with limitPushdown"
 				}
 
-				resultPushdown := tc.queryPushdown
+				resultPushdown := tc.filterPushdown
 
 				if setup.FilterPushdownDisabled() {
 					resultPushdown = noPushdown
@@ -1011,8 +1011,8 @@ func TestQueryCommandUnsafeLimitPushDown(t *testing.T) {
 				unsafeLimitPushdown, _ := doc.Get("limitPushdown")
 				assert.Equal(t, tc.unsafeLimitPushdown, unsafeLimitPushdown, msg)
 
-				queryPushdown, _ := ConvertDocument(t, res).Get("pushdown")
-				assert.Equal(t, resultPushdown.FilterPushdownExpected(t), queryPushdown, msg)
+				filterPushdown, _ := ConvertDocument(t, res).Get("pushdown")
+				assert.Equal(t, resultPushdown.FilterPushdownExpected(t), filterPushdown, msg)
 			})
 
 			t.Run("Find", func(t *testing.T) {
