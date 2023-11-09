@@ -39,7 +39,7 @@ func TestPostgreSQLURI(tb testtb.TB, ctx context.Context, baseURI string) string
 	}
 
 	if baseURI == "" {
-		baseURI = "postgres://username:password@127.0.0.1:5432/ferretdb"
+		baseURI = "postgres://username@127.0.0.1:5432/ferretdb?search_path="
 	}
 
 	u, err := url.Parse(baseURI)

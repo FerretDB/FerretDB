@@ -39,6 +39,7 @@ func TestCappedCollectionInsertAllQueryExplain(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
+	// FIXME
 	b, err := NewBackend(&NewBackendParams{URI: "file:" + t.TempDir() + "/", L: testutil.Logger(t), P: sp})
 	require.NoError(t, err)
 	t.Cleanup(b.Close)

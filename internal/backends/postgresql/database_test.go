@@ -36,11 +36,13 @@ func TestDatabaseStats(t *testing.T) {
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 
+	uri := testutil.TestPostgreSQLURI(t, ctx, "")
+
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
 	params := NewBackendParams{
-		URI: "postgres://username:password@127.0.0.1:5432/" + testutil.DirectoryName(t), // FIXME
+		URI: uri,
 		L:   testutil.Logger(t),
 		P:   sp,
 	}
@@ -51,11 +53,6 @@ func TestDatabaseStats(t *testing.T) {
 	dbName := testutil.DatabaseName(t)
 	db, err := b.Database(dbName)
 	require.NoError(t, err)
-
-	t.Cleanup(func() {
-		err = b.DropDatabase(ctx, &backends.DropDatabaseParams{Name: dbName})
-		require.NoError(t, err)
-	})
 
 	cNames := []string{"collectionOne", "collectionTwo"}
 	for _, cName := range cNames {

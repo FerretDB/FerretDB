@@ -28,7 +28,9 @@ import (
 func TestSQLiteURI(tb testtb.TB, baseURI string) string {
 	tb.Helper()
 
-	require.NotEmpty(tb, baseURI)
+	if baseURI == "" {
+		baseURI = "file:./"
+	}
 
 	u, err := url.Parse(baseURI)
 	require.NoError(tb, err)
