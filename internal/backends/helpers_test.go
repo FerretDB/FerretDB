@@ -45,7 +45,6 @@ func testBackends(t *testing.T) map[string]*testBackend {
 	}
 
 	l := testutil.Logger(t)
-	dir := testutil.DirectoryName(t)
 
 	res := map[string]*testBackend{}
 
@@ -54,7 +53,7 @@ func testBackends(t *testing.T) map[string]*testBackend {
 		require.NoError(t, err)
 
 		b, err := postgresql.NewBackend(&postgresql.NewBackendParams{
-			URI: "postgres://username:password@127.0.0.1:5432/" + dir, // FIXME
+			URI: testutil.TestPostgreSQLURI(t, context.TODO(), ""),
 			L:   l.Named("postgresql"),
 			P:   sp,
 		})
@@ -72,7 +71,7 @@ func testBackends(t *testing.T) map[string]*testBackend {
 		require.NoError(t, err)
 
 		b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
-			URI: "file:./" + dir + "/",
+			URI: testutil.TestSQLiteURI(t, ""),
 			L:   l.Named("sqlite"),
 			P:   sp,
 		})
