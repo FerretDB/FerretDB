@@ -17,6 +17,8 @@ package testutil
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"testing"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -25,14 +27,44 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
-func CreatePostgreSQLDatabase(tb testtb.TB, ctx context.Context, p *pgxpool.Pool, name string) {
-	q := fmt.Sprintf("CREATE DATABASE %s TEMPLATE template1", pgx.Identifier{name}.Sanitize())
-	_, err := p.Exec(ctx, q)
-	require.NoError(tb, err)
-}
+func TestPostgreSQLURI(tb testtb.TB, ctx context.Context, baseURI string) string {
+	if testing.Short() {
+		tb.Skip("skipping in -short mode")
+	}
 
-func DropPostgreSQLDatabase(tb testtb.TB, ctx context.Context, p *pgxpool.Pool, name string) {
-	q := fmt.Sprintf("DROP DATABASE %s", pgx.Identifier{name}.Sanitize())
-	_, err := p.Exec(ctx, q)
+	if baseURI == "" {
+		baseURI = "postgres://username:password@127.0.0.1:5432/ferretdb"
+	}
+
+	u, err := url.Parse(baseURI)
 	require.NoError(tb, err)
+
+	name := DirectoryName(tb)
+	u.Path = name
+
+	p, err := pgxpool.New(ctx, baseURI)
+	require.NoError(tb, err)
+
+	q := fmt.Sprintf("DROP DATABASE IF EXISTS %s", pgx.Identifier{name}.Sanitize())
+	_, err = p.Exec(ctx, q)
+	require.NoError(tb, err)
+
+	q = fmt.Sprintf("CREATE DATABASE %s", pgx.Identifier{name}.Sanitize())
+	_, err = p.Exec(ctx, q)
+	require.NoError(tb, err)
+
+	p.Reset()
+
+	tb.Cleanup(func() {
+		if tb.Failed() {
+			tb.Logf("Keeping database %s (%s) for debugging.", name, u.String())
+			return
+		}
+
+		q = fmt.Sprintf("DROP DATABASE %s", pgx.Identifier{name}.Sanitize())
+		_, err = p.Exec(context.Background(), q)
+		require.NoError(tb, err)
+	})
+
+	return u.String()
 }

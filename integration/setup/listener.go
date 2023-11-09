@@ -28,7 +28,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/handlers/registry"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
@@ -155,12 +154,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		p, err := pgxpool.NewWithConfig(ctx, config)
 		require.NoError(tb, err)
 
-		name := testutil.DirectoryName(tb)
-
-		require.NoError(tb, pool.DropDatabase(ctx, p, name))
-		require.NoError(tb, pool.CreateDatabase(ctx, p, name))
-
-		p.Reset()
+		name := testutil.TestPostgreSQLURI(tb, ctx, p)
 
 		u.Path = name
 		postgreSQLURLF = u.String()

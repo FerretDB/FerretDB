@@ -18,12 +18,9 @@
 package pool
 
 import (
-	"context"
-	"fmt"
 	"net/url"
 	"sync"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
@@ -63,21 +60,6 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, error) {
 	values := baseURI.Query()
 	setDefaultValues(values)
 	baseURI.RawQuery = values.Encode()
-
-	if baseURI.Path != "" {
-		p, err := openDB(u, l, sp)
-		if err != nil {
-			panic(err)
-		}
-
-		name := baseURI.Path
-		q := fmt.Sprintf("CREATE DATABASE %s TEMPLATE template1", pgx.Identifier{name}.Sanitize())
-		if _, err := p.Exec(context.TODO(), q); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
-
-		panic(baseURI.Path)
-	}
 
 	p := &Pool{
 		baseURI: *baseURI,

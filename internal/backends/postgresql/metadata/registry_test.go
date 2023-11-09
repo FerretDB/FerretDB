@@ -83,26 +83,17 @@ func testCollection(t *testing.T, ctx context.Context, r *Registry, p *pgxpool.P
 
 // createDatabase creates a new provider and registry required for creating a database and
 // returns registry, db pool and created database name.
-// FIXME
 func createDatabase(t *testing.T, ctx context.Context) (*Registry, *pgxpool.Pool, string) {
 	t.Helper()
+
+	u := testutil.TestPostgreSQLURI(t, ctx, "")
 
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	name := testutil.DirectoryName(t)
-	u := "postgres://username:password@127.0.0.1:5432/" + name
 	r, err := NewRegistry(u, testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
-
-	pgxP, err := r.getPool(ctx)
-	require.NoError(t, err)
-
-	testutil.CreatePostgreSQLDatabase(t, ctx, pgxP, name)
-	t.Cleanup(func() {
-		testutil.DropPostgreSQLDatabase(t, ctx, pgxP, name)
-	})
 
 	dbName := testutil.DatabaseName(t)
 	p, err := r.DatabaseGetOrCreate(ctx, dbName)
@@ -124,8 +115,6 @@ func TestAuth(t *testing.T) {
 		username = u.Username
 	}
 
-	dbName := testutil.DirectoryName(t)
-
 	for name, tc := range map[string]struct {
 		uri string
 		err string
@@ -140,8 +129,10 @@ func TestAuth(t *testing.T) {
 			err: "failed to connect to `host=127.0.0.1 user=wrong-user database=ferretdb`: " +
 				`server error (FATAL: role "wrong-user" does not exist (SQLSTATE 28000))`,
 		},
-		"NewDatabase": {
-			uri: "postgres://username:password@127.0.0.1:5432/" + dbName, // FIXME
+		"WrongDatabase": {
+			uri: "postgres://username:password@127.0.0.1:5432/wrong-database",
+			err: "failed to connect to `host=127.0.0.1 user=username database=wrong-database`: " +
+				`server error (FATAL: database "wrong-database" does not exist (SQLSTATE 3D000))`,
 		},
 	} {
 		name, tc := name, tc
@@ -154,27 +145,14 @@ func TestAuth(t *testing.T) {
 			t.Cleanup(r.Close)
 
 			_, err = r.getPool(ctx)
-			if tc.err == "" {
-				require.NoError(t, err)
-			} else {
-				require.ErrorContains(t, err, tc.err)
-			}
+			require.ErrorContains(t, err, tc.err)
 		})
 	}
 }
 
 func TestCreateDropStress(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
-
 	r, db, dbName := createDatabase(t, ctx)
-
-	t.Cleanup(func() {
-		_, _ = r.DatabaseDrop(ctx, dbName)
-	})
 
 	var i atomic.Int32
 
@@ -189,12 +167,7 @@ func TestCreateDropStress(t *testing.T) {
 }
 
 func TestCreateSameStress(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
-
 	r, db, dbName := createDatabase(t, ctx)
 	collectionName := testutil.CollectionName(t)
 
@@ -239,14 +212,10 @@ func TestCreateSameStress(t *testing.T) {
 }
 
 func TestDropSameStress(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
-
 	r, _, dbName := createDatabase(t, ctx)
 	collectionName := testutil.CollectionName(t)
+
 	created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: dbName, Name: collectionName})
 	require.NoError(t, err)
 	require.True(t, created)
@@ -268,14 +237,10 @@ func TestDropSameStress(t *testing.T) {
 }
 
 func TestCreateDropSameStress(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
-
 	r, _, dbName := createDatabase(t, ctx)
 	collectionName := testutil.CollectionName(t)
+
 	var i, createdTotal, droppedTotal atomic.Int32
 
 	teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
@@ -304,14 +269,9 @@ func TestCreateDropSameStress(t *testing.T) {
 }
 
 func TestCheckDatabaseUpdated(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
 	t.Parallel()
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
-
 	r, db, dbName := createDatabase(t, ctx)
 
 	var err error
@@ -370,16 +330,9 @@ func TestCheckDatabaseUpdated(t *testing.T) {
 }
 
 func TestRenameCollection(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
-	t.Skip("https://github.com/FerretDB/FerretDB/issues/3409")
-
 	t.Parallel()
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
-
 	r, db, dbName := createDatabase(t, ctx)
 
 	oldCollectionName := testutil.CollectionName(t)
@@ -416,14 +369,9 @@ func TestRenameCollection(t *testing.T) {
 }
 
 func TestMetadataIndexes(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
 	t.Parallel()
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
-
 	_, db, dbName := createDatabase(t, ctx)
 
 	var sql string
@@ -455,14 +403,9 @@ func TestMetadataIndexes(t *testing.T) {
 }
 
 func TestIndexesCreateDrop(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
 	t.Parallel()
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
-
 	r, db, dbName := createDatabase(t, ctx)
 	collectionName := testutil.CollectionName(t)
 
@@ -658,14 +601,9 @@ func TestIndexesCreateDrop(t *testing.T) {
 }
 
 func TestLongIndexNames(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in -short mode")
-	}
-
 	t.Parallel()
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
-
 	r, _, dbName := createDatabase(t, ctx)
 
 	batch1 := []IndexInfo{{
