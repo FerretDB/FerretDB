@@ -162,7 +162,7 @@ func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 	for ctx.Err() == nil {
 		buf.Reset()
 
-		err := runCommand("docker", args, &buf, logger)
+		err := runCommand(ctx, "docker", args, &buf, logger)
 		if err == nil {
 			break
 		}
@@ -201,7 +201,7 @@ func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 }
 
 // runCommand runs command with given arguments.
-func runCommand(command string, args []string, stdout io.Writer, logger *zap.SugaredLogger) error {
+func runCommand(ctx context.Context, command string, args []string, stdout io.Writer, logger *zap.SugaredLogger) error {
 	bin, err := exec.LookPath(command)
 	if err != nil {
 		return err
@@ -213,6 +213,10 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
+		// Check if the error was due to a context cancellation.
+		if ctx.Err() != nil {
+			return fmt.Errorf("%s canceled: %s", strings.Join(cmd.Args, " "), err)
+		}
 		return fmt.Errorf("%s failed: %s", strings.Join(cmd.Args, " "), err)
 	}
 
@@ -220,17 +224,17 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 }
 
 // printDiagnosticData prints diagnostic data and error template on stdout.
-func printDiagnosticData(w io.Writer, setupError error, logger *zap.SugaredLogger) error {
-	_ = runCommand("docker", []string{"compose", "logs"}, w, logger)
+func printDiagnosticData(ctx context.Context, w io.Writer, setupError error, logger *zap.SugaredLogger) error {
+	_ = runCommand(ctx, "docker", []string{"compose", "logs"}, w, logger)
 
-	_ = runCommand("docker", []string{"compose", "ps", "--all"}, w, logger)
+	_ = runCommand(ctx, "docker", []string{"compose", "ps", "--all"}, w, logger)
 
-	_ = runCommand("docker", []string{"stats", "--all", "--no-stream"}, w, logger)
+	_ = runCommand(ctx, "docker", []string{"stats", "--all", "--no-stream"}, w, logger)
 
 	var buf bytes.Buffer
 
 	var gitVersion string
-	if err := runCommand("git", []string{"version"}, &buf, logger); err != nil {
+	if err := runCommand(ctx, "git", []string{"version"}, &buf, logger); err != nil {
 		gitVersion = err.Error()
 	} else {
 		gitVersion = buf.String()
@@ -239,7 +243,7 @@ func printDiagnosticData(w io.Writer, setupError error, logger *zap.SugaredLogge
 	buf.Reset()
 
 	var dockerVersion string
-	if err := runCommand("docker", []string{"version"}, &buf, logger); err != nil {
+	if err := runCommand(ctx, "docker", []string{"version"}, &buf, logger); err != nil {
 		dockerVersion = err.Error()
 	} else {
 		dockerVersion = buf.String()
@@ -248,7 +252,7 @@ func printDiagnosticData(w io.Writer, setupError error, logger *zap.SugaredLogge
 	buf.Reset()
 
 	var composeVersion string
-	if err := runCommand("docker", []string{"compose", "version"}, &buf, logger); err != nil {
+	if err := runCommand(ctx, "docker", []string{"compose", "version"}, &buf, logger); err != nil {
 		composeVersion = err.Error()
 	} else {
 		composeVersion = buf.String()
@@ -305,10 +309,13 @@ func shellRmDir(paths ...string) error {
 }
 
 // shellRead will show the content of a file.
-func shellRead(w io.Writer, paths ...string) error {
+func shellRead(ctx context.Context, w io.Writer, paths ...string) error {
 	for _, path := range paths {
 		b, err := os.ReadFile(path)
 		if err != nil {
+			if ctx.Err() != nil {
+				return fmt.Errorf("read canceled: %s", err)
+			}
 			return err
 		}
 
@@ -319,7 +326,7 @@ func shellRead(w io.Writer, paths ...string) error {
 }
 
 // packageVersion will print out FerretDB's package version (omitting leading v).
-func packageVersion(w io.Writer, file string) error {
+func packageVersion(ctx context.Context, w io.Writer, file string) error {
 	b, err := os.ReadFile(file)
 	if err != nil {
 		return err
@@ -329,6 +336,12 @@ func packageVersion(w io.Writer, file string) error {
 	v = strings.TrimPrefix(v, "v")
 
 	_, err = fmt.Fprint(w, v)
+	if err != nil {
+		if ctx.Err() != nil {
+			return fmt.Errorf("print canceled: %s", err)
+		}
+		return fmt.Errorf("print failed: %s", err)
+	}
 
 	return err
 }
@@ -440,14 +453,14 @@ func main() {
 		err = setup(ctx, logger)
 
 	case "package-version":
-		err = packageVersion(os.Stdout, versionFile)
+		err = packageVersion(ctx, os.Stdout, versionFile)
 
 	case "shell mkdir <path>":
 		err = shellMkDir(cli.Shell.Mkdir.Paths...)
 	case "shell rmdir <path>":
 		err = shellRmDir(cli.Shell.Rmdir.Paths...)
 	case "shell read <path>":
-		err = shellRead(os.Stdout, cli.Shell.Read.Paths...)
+		err = shellRead(ctx, os.Stdout, cli.Shell.Read.Paths...)
 
 	case "tests run <args>":
 		err = testsRun(
@@ -500,7 +513,7 @@ func main() {
 
 	if err != nil {
 		if cmd == "setup" {
-			_ = printDiagnosticData(os.Stderr, err, logger)
+			_ = printDiagnosticData(ctx, os.Stderr, err, logger)
 		}
 
 		var exitErr *exec.ExitError

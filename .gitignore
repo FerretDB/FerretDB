@@ -14,3 +14,7 @@ vendor/
 website/build/
 
 **/testdata/fuzz/
+
+*.idea
+.idea
+.vscode

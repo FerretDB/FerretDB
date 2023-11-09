@@ -28,10 +28,12 @@ import (
 func TestPrintDiagnosticData(t *testing.T) {
 	t.Parallel()
 
+	ctx := testutil.Ctx(t)
+
 	assert.NotPanics(t, func() {
 		var buf bytes.Buffer
 		l := testutil.Logger(t)
-		err := printDiagnosticData(&buf, nil, l.Sugar())
+		err := printDiagnosticData(ctx, &buf, nil, l.Sugar())
 		require.NoError(t, err)
 	})
 }
@@ -39,7 +41,12 @@ func TestPrintDiagnosticData(t *testing.T) {
 func TestShellMkDirRmDir(t *testing.T) {
 	t.Parallel()
 
+	// Start the span for this test.
+	ctx := testutil.Ctx(t)
+
 	t.Run("Absent", func(t *testing.T) {
+		t.Parallel()
+		_ = testutil.SubTestCtx(ctx, t)
 		err := shellRmDir("absent")
 		assert.NoError(t, err)
 	})
@@ -64,6 +71,9 @@ func TestShellMkDirRmDir(t *testing.T) {
 func TestShellRead(t *testing.T) {
 	t.Parallel()
 
+	// Start the span for this test.
+	ctx := testutil.Ctx(t)
+
 	f, err := os.CreateTemp("", "test_read")
 	assert.NoError(t, err)
 
@@ -72,13 +82,16 @@ func TestShellRead(t *testing.T) {
 	assert.NoError(t, err)
 
 	var output bytes.Buffer
-	err = shellRead(&output, f.Name())
+	err = shellRead(ctx, &output, f.Name())
 	assert.NoError(t, err)
 	assert.Equal(t, s, output.String())
 }
 
 func TestPackageVersion(t *testing.T) {
 	t.Parallel()
+
+	// Start the span for this test.
+	ctx := testutil.Ctx(t)
 
 	f, err := os.CreateTemp("", "test_print_version")
 	assert.NoError(t, err)
@@ -88,7 +101,7 @@ func TestPackageVersion(t *testing.T) {
 	assert.NoError(t, err)
 
 	var output bytes.Buffer
-	err = packageVersion(&output, f.Name())
+	err = packageVersion(ctx, &output, f.Name())
 	assert.NoError(t, err)
 	assert.Equal(t, "1.0.0", output.String())
 }
