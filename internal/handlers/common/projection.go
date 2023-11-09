@@ -236,6 +236,8 @@ func ProjectDocument(doc, projection, filter *types.Document, inclusion bool) (*
 		return nil, err
 	}
 
+	projected.SetRecordID(doc.RecordID())
+
 	if projection.Has("_id") {
 		idValue := must.NotFail(projection.Get("_id"))
 
