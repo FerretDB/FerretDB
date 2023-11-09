@@ -36,13 +36,11 @@ func TestDatabaseStats(t *testing.T) {
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 
-	uri := testutil.TestPostgreSQLURI(t, ctx, "")
-
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
 	params := NewBackendParams{
-		URI: uri,
+		URI: testutil.TestPostgreSQLURI(t, ctx, ""),
 		L:   testutil.Logger(t),
 		P:   sp,
 	}

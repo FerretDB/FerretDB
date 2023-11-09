@@ -105,18 +105,6 @@ func testBackends(t *testing.T) map[string]*testBackend {
 	return res
 }
 
-// cleanupDatabase drops the database with the given name before and after the test.
-func cleanupDatabase(t *testing.T, ctx context.Context, b backends.Backend, dbName string) {
-	t.Helper()
-
-	p := &backends.DropDatabaseParams{Name: dbName}
-	_ = b.DropDatabase(ctx, p)
-
-	t.Cleanup(func() {
-		_ = b.DropDatabase(ctx, p)
-	})
-}
-
 // assertErrorCode asserts that err is *Error with one of the given error codes.
 func assertErrorCode(t *testing.T, err error, code backends.ErrorCode, codes ...backends.ErrorCode) {
 	assert.True(t, backends.ErrorCodeIs(err, code, codes...), "err = %v", err)
