@@ -47,8 +47,6 @@ type Pool struct {
 	l       *zap.Logger
 	sp      *state.Provider
 
-	ownDBName string
-
 	rw    sync.RWMutex
 	pools map[string]*pgxpool.Pool // by full URI
 
@@ -106,30 +104,6 @@ func (p *Pool) Close() {
 	p.pools = nil
 
 	resource.Untrack(p, p.token)
-}
-
-// Drop drops PostgreSQL database.
-//
-// Should be used only by tests.
-func (p *Pool) Drop() {
-	p.rw.Lock()
-	defer p.rw.Unlock()
-
-	if p.ownDBName == "" {
-		panic("database is not created by this pool")
-	}
-
-	for _, pool := range p.pools {
-		q := "DROP DATABASE " + pgx.Identifier{p.ownDBName}.Sanitize()
-		if _, err := pool.Exec(context.TODO(), q); err != nil {
-			p.l.Error("Pool: failed to drop database", zap.String("name", p.ownDBName), zap.Error(err))
-			continue
-		}
-
-		return
-	}
-
-	panic("failed to drop database")
 }
 
 // Get returns a pool of connections to PostgreSQL database for that username/password combination.

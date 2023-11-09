@@ -83,26 +83,31 @@ func testCollection(t *testing.T, ctx context.Context, r *Registry, p *pgxpool.P
 
 // createDatabase creates a new provider and registry required for creating a database and
 // returns registry, db pool and created database name.
-func createDatabase(t *testing.T, ctx context.Context) (r *Registry, p *pgxpool.Pool, dbName string) {
+// FIXME
+func createDatabase(t *testing.T, ctx context.Context) (*Registry, *pgxpool.Pool, string) {
 	t.Helper()
 
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	u := "postgres://username:password@127.0.0.1:5432/ferretdb" // FIXME
-	r, err = NewRegistry(u, testutil.Logger(t), sp)
+	name := testutil.DirectoryName(t)
+	u := "postgres://username:password@127.0.0.1:5432/" + name
+	r, err := NewRegistry(u, testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
-	dbName = testutil.DatabaseName(t)
-	p, err = r.DatabaseGetOrCreate(ctx, dbName)
+	pgxP, err := r.getPool(ctx)
+	require.NoError(t, err)
+
+	testutil.CreatePostgreSQLDatabase(t, ctx, pgxP, name)
+	t.Cleanup(func() {
+		testutil.DropPostgreSQLDatabase(t, ctx, pgxP, name)
+	})
+
+	dbName := testutil.DatabaseName(t)
+	p, err := r.DatabaseGetOrCreate(ctx, dbName)
 	require.NoError(t, err)
 	require.NotNil(t, p)
-
-	t.Cleanup(func() {
-		_, err = r.DatabaseDrop(ctx, dbName)
-		require.NoError(t, err)
-	})
 
 	return r, p, dbName
 }
@@ -146,10 +151,7 @@ func TestAuth(t *testing.T) {
 
 			r, err := NewRegistry(tc.uri, testutil.Logger(t), sp)
 			require.NoError(t, err)
-			t.Cleanup(func() {
-				r.p.Drop()
-				r.Close()
-			})
+			t.Cleanup(r.Close)
 
 			_, err = r.getPool(ctx)
 			if tc.err == "" {
