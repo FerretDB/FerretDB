@@ -278,7 +278,7 @@ containers: {
 
 In the Acornfile, we have declared a `postgres` service that will serve as the PostgreSQL backend for our FerretDB database.
 The Acorn `postgres` runs a single `postgres` container backed by a persistent volume and `admin` credentials.
-The service is not considered hughly available and can be easily replaced with other service interfaces like AWS RDS for PostgreSQL for production environments.
+The service is not considered highly available and can be easily replaced with other service interfaces like AWS RDS for PostgreSQL for production environments.
 
 The `admin` credentials for `postgres` include:
 
@@ -387,4 +387,4 @@ So whether you're tinkering with new ideas or applications for production, Ferre
 
 For more information on FerreDB, check out the [docs](https://docs.ferretdb.io/quickstart-guide/) or contact any of [our community channels](https://docs.ferretdb.io/#community) for help.
 
-Give it a go – deploy your Python app with FerretDB using in Acorn.
+Give it a go – deploy your FerretDB app with Acorn.
