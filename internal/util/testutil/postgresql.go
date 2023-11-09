@@ -52,7 +52,13 @@ func TestPostgreSQLURI(tb testtb.TB, ctx context.Context, baseURI string) string
 	u.Path = name
 	res := u.String()
 
-	p, err := pgxpool.New(ctx, baseURI)
+	cfg, err := pgxpool.ParseConfig(baseURI)
+	require.NoError(tb, err)
+
+	cfg.MinConns = 0
+	cfg.MaxConns = 1
+
+	p, err := pgxpool.NewWithConfig(ctx, cfg)
 	require.NoError(tb, err)
 
 	q := fmt.Sprintf("DROP DATABASE IF EXISTS %s", pgx.Identifier{name}.Sanitize())
@@ -66,6 +72,8 @@ func TestPostgreSQLURI(tb testtb.TB, ctx context.Context, baseURI string) string
 	p.Reset()
 
 	tb.Cleanup(func() {
+		defer p.Close()
+
 		if tb.Failed() {
 			tb.Logf("Keeping database %s (%s) for debugging.", name, res)
 			return
