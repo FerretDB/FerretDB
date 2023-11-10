@@ -16,13 +16,27 @@ package hana
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // collection implements backends.Collection interface by delegating all methods to the wrapped database.
-type collection struct{}
+type collection struct {
+	hdb    *sql.DB
+	dbName string
+	name   string
+}
+
+// newCollection creates a new Collection.
+func newCollection(hdb *sql.DB, dbName, name string) backends.Collection {
+	return backends.CollectionContract(&collection{
+		hdb:    hdb,
+		dbName: dbName,
+		name:   name,
+	})
+}
 
 // Query implements backends.Collection interface.
 func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*backends.QueryResult, error) {

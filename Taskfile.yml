@@ -398,7 +398,7 @@ tasks:
 
   # set FERRETDB_HANA_URL environment variable to use it
   run-hana:
-    desc: "Run FerretDB with `hana` handler"
+    desc: "Run FerretDB with `hana` backend"
     deps: [build-host]
     cmds:
       - >
