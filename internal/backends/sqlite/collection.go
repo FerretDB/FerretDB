@@ -437,27 +437,6 @@ func (c *collection) Compact(ctx context.Context, params *backends.CompactParams
 	return new(backends.CompactResult), nil
 }
 
-// Capped implements backends.Collection interface.
-func (c *collection) Capped(ctx context.Context) (bool, error) {
-	db := c.r.DatabaseGetExisting(ctx, c.dbName)
-	if db == nil {
-		return false, backends.NewError(
-			backends.ErrorCodeCollectionDoesNotExist,
-			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
-		)
-	}
-
-	coll := c.r.CollectionGet(ctx, c.dbName, c.name)
-	if coll == nil {
-		return false, backends.NewError(
-			backends.ErrorCodeCollectionDoesNotExist,
-			lazyerrors.Errorf("no ns %s.%s", c.dbName, c.name),
-		)
-	}
-
-	return coll.Capped(), nil
-}
-
 // ListIndexes implements backends.Collection interface.
 func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
