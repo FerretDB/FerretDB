@@ -430,6 +430,7 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 			return nil, lazyerrors.Error(err)
 		}
 
+		// TODO https://github.com/FerretDB/FerretDB/issues/3601
 		if i, found := slices.BinarySearchFunc(cList.Collections, p.cName, func(e backends.CollectionInfo, t string) int {
 			return cmp.Compare(e.Name, t)
 		}); found {
