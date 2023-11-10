@@ -43,10 +43,11 @@ ARG TARGETARCH TARGETVARIANT
 RUN --mount=type=cache,target=/cache <<EOF
 set -ex
 
-# Do not raise GOAMD64 without providing a separate v1 build
+# Leave GOAMD64 unset for implicit v1
 # because v2+ is problematic for some virtualization platforms and older hardware.
 
-env GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} GOAMD64=v1 \
+flock --verbose /cache/ \
+env GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} \
     go build -v -o=/tmp/ferretdb/$TARGETARCH_$TARGETVARIANT -tags=ferretdb_debug -coverpkg=./... ./cmd/ferretdb
 EOF
 
@@ -68,7 +69,7 @@ ENV GOMODCACHE /cache/gomodcache
 # modules are already downloaded
 ENV GOPROXY off
 
-ENV CGO_ENABLED=1
+ENV CGO_ENABLED=0
 
 ARG TARGETARCH TARGETVARIANT
 
@@ -98,15 +99,15 @@ fi
 
 # Do not trim paths to make debugging with delve easier.
 
-# Do not raise GOAMD64 without providing a separate v1 build
+# Leave GOAMD64 unset for implicit v1
 # because v2+ is problematic for some virtualization platforms and older hardware.
 
-# check that stdlib was cached
-env GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} GOAMD64=v1 \
-    go install -v -race=$RACE std
+# Leave GOARM unset for autodetection.
 
-env GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} GOAMD64=v1 \
-    go build -v -o=bin/ferretdb -race=$RACE -tags=ferretdb_debug -coverpkg=./... ./cmd/ferretdb
+# check that stdlib was cached
+# go install -v -race=$RACE std
+
+go build -v -o=bin/ferretdb -race=$RACE -tags=ferretdb_debug -coverpkg=./... ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version
