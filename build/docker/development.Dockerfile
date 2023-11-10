@@ -14,7 +14,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM ghcr.io/ferretdb/golang:1.21.4-1 AS development-prepare
+FROM --platform=$BUILDPLATFORM ghcr.io/ferretdb/golang:1.21.4-2 AS development-prepare
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
 ENV GOPATH /cache/gopath
@@ -23,8 +23,6 @@ ENV GOMODCACHE /cache/gomodcache
 
 # remove ",direct"
 ENV GOPROXY https://proxy.golang.org
-
-ENV CGO_ENABLED=0
 
 # see .dockerignore
 WORKDIR /src
@@ -49,14 +47,16 @@ set -ex
 # Leave GOAMD64 unset for implicit v1
 # because v2+ is problematic for some virtualization platforms and older hardware.
 
+# Set GOARM explicitly due to https://github.com/docker-library/golang/issues/494.
+
 env GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} \
-    go build -v -o=/tmp/ferretdb/${TARGETARCH}_${TARGETVARIANT} -tags=ferretdb_debug -coverpkg=./... ./cmd/ferretdb
+    go build -v -o=/tmp/ferretdb/${TARGETARCH}_${TARGETVARIANT} ./cmd/ferretdb
 EOF
 
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.21.4-1 AS development-build
+FROM ghcr.io/ferretdb/golang:1.21.4-2 AS development-build
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -105,9 +105,10 @@ fi
 # Leave GOAMD64 unset for implicit v1
 # because v2+ is problematic for some virtualization platforms and older hardware.
 
-# Leave GOARM unset for autodetection.
+# Set GOARM explicitly due to https://github.com/docker-library/golang/issues/494.
 
-go build -v -o=bin/ferretdb -race=$RACE -tags=ferretdb_debug -coverpkg=./... ./cmd/ferretdb
+env GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} \
+    go build -v -o=bin/ferretdb -race=$RACE ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version

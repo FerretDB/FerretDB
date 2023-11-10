@@ -14,7 +14,7 @@ ARG LABEL_COMMIT
 
 # prepare stage
 
-FROM --platform=$BUILDPLATFORM ghcr.io/ferretdb/golang:1.21.4-1 AS all-in-one-prepare
+FROM --platform=$BUILDPLATFORM ghcr.io/ferretdb/golang:1.21.4-2 AS all-in-one-prepare
 
 # use a single directory for all Go caches to simpliy RUN --mount commands below
 ENV GOPATH /cache/gopath
@@ -38,7 +38,7 @@ EOF
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.21.4-1 AS all-in-one-build
+FROM ghcr.io/ferretdb/golang:1.21.4-2 AS all-in-one-build
 
 ARG TARGETARCH
 
@@ -74,7 +74,6 @@ git status
 
 # Disable race detector on arm64 due to https://github.com/golang/go/issues/29948
 # (and that happens on GitHub-hosted Actions runners).
-# Also disable it on arm/v6 and arm/v7 because it is not supported there.
 RACE=false
 if test "$TARGETARCH" = "amd64"
 then
@@ -85,8 +84,6 @@ fi
 
 # Leave GOAMD64 unset for implicit v1
 # because v2+ is problematic for some virtualization platforms and older hardware.
-
-# Leave GOARM unset for autodetection.
 
 # check that stdlib was cached
 go install -v -race=$RACE std
