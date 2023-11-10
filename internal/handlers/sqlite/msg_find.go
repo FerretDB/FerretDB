@@ -81,11 +81,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 			}
 		}
 
-		if collInfo == nil {
-			// coll doesnt exist
-		}
-
-		if !collInfo.Capped() {
+		if collInfo != nil && !collInfo.Capped() {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf(
