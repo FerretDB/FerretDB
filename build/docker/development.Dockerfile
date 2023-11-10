@@ -24,6 +24,8 @@ ENV GOMODCACHE /cache/gomodcache
 # remove ",direct"
 ENV GOPROXY https://proxy.golang.org
 
+ENV CGO_ENABLED=0
+
 # see .dockerignore
 WORKDIR /src
 COPY . .
@@ -38,7 +40,8 @@ go mod verify
 cp -Rn /root/.cache/go-build/. /cache/gocache
 EOF
 
-ARG TARGETARCH TARGETVARIANT
+ARG TARGETARCH
+ARG TARGETVARIANT
 
 RUN --mount=type=cache,target=/cache <<EOF
 set -ex
@@ -46,9 +49,8 @@ set -ex
 # Leave GOAMD64 unset for implicit v1
 # because v2+ is problematic for some virtualization platforms and older hardware.
 
-flock --verbose /cache/ \
 env GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} \
-    go build -v -o=/tmp/ferretdb/$TARGETARCH_$TARGETVARIANT -tags=ferretdb_debug -coverpkg=./... ./cmd/ferretdb
+    go build -v -o=/tmp/ferretdb/${TARGETARCH}_${TARGETVARIANT} -tags=ferretdb_debug -coverpkg=./... ./cmd/ferretdb
 EOF
 
 
@@ -69,12 +71,13 @@ ENV GOMODCACHE /cache/gomodcache
 # modules are already downloaded
 ENV GOPROXY off
 
-ENV CGO_ENABLED=0
+ENV CGO_ENABLED=1
 
-ARG TARGETARCH TARGETVARIANT
+ARG TARGETARCH
+ARG TARGETVARIANT
 
 # to add a dependency
-COPY --from=development-prepare /tmp/ferretdb/$TARGETARCH_$TARGETVARIANT /tmp/ferretdb/
+COPY --from=development-prepare /tmp/ferretdb/${TARGETARCH}_${TARGETVARIANT} /tmp/ferretdb/
 
 # see .dockerignore
 WORKDIR /src
@@ -103,9 +106,6 @@ fi
 # because v2+ is problematic for some virtualization platforms and older hardware.
 
 # Leave GOARM unset for autodetection.
-
-# check that stdlib was cached
-# go install -v -race=$RACE std
 
 go build -v -o=bin/ferretdb -race=$RACE -tags=ferretdb_debug -coverpkg=./... ./cmd/ferretdb
 
