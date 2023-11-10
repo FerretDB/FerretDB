@@ -38,6 +38,7 @@ type NewBackendParams struct {
 	URI string
 	L   *zap.Logger
 	P   *state.Provider
+	_   struct{} // prevent unkeyed literals
 }
 
 // NewBackend creates a new backend.

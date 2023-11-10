@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-We support all FerretDB versions since 1.0.0.
+We support two of the latest minor versions of FerretDB.
 
 ## Reporting a Vulnerability
 
