@@ -1,13 +1,17 @@
 ---
 sidebar_position: 3
-description: Logging
+description: Observability
 ---
 
-# Logging
+# Observability
 
-## Docker logs
+## Logging
 
-Logs from FerretDB running on Docker can be accessed through the container.
+The log level and format can be adjusted by [configuration flags](flags.md#miscellaneous).
+
+Please note that the structured log format is not stable yet; field names and formatting of values might change in minor releases.
+
+### Docker logs
 
 If Docker was launched with [our quick local setup with Docker Compose](../quickstart-guide/docker.md#setup-with-docker-compose),
 the following command can be used to fetch the logs.
@@ -28,7 +32,14 @@ CONTAINER ID   IMAGE                       COMMAND                  CREATED     
 $ docker logs my-ferretdb
 ```
 
-## Binary executable logs
+### Binary executable logs
 
-FerretDB writes logs to the standard error (`stderr`) stream but does not retain them.
-Refer to the [flags](flags.md#miscellaneous) to adjust the log level.
+FerretDB writes logs to the standard error (`stderr`) stream.
+
+## Metrics
+
+FerretDB exposes metrics in Prometheus format on the debug handler on `http://127.0.0.1:8088/debug/metrics` by default.
+There is no need to use an external exporter.
+The host and port can be changed with [`--debug-addr` flag](flags.md#interfaces).
+
+Please note that the set of metrics is not stable yet; metric and label names and formatting of values might change in minor releases.
