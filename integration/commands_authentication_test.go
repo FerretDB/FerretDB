@@ -17,12 +17,11 @@ package integration
 import (
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestCommandsAuthenticationLogout(t *testing.T) {
