@@ -15,12 +15,65 @@
 package sqlite
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 )
+
+func TestPrepareSelectClause(t *testing.T) {
+	t.Parallel()
+	table := "table"
+	comment := "*/ 1; DROP TABLE " + table + " CASCADE -- "
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		capped        bool
+		onlyRecordIDs bool
+
+		expectQuery string
+	}{
+		"CappedRecordID": {
+			capped:        true,
+			onlyRecordIDs: true,
+			expectQuery: fmt.Sprintf(
+				`SELECT %s%s FROM %q`,
+				"/* * / 1; DROP TABLE "+table+" CASCADE --  */ ",
+				metadata.RecordIDColumn,
+				table,
+			),
+		},
+		"Capped": {
+			capped: true,
+			expectQuery: fmt.Sprintf(
+				`SELECT %s%s, %s FROM %q`,
+				"/* * / 1; DROP TABLE "+table+" CASCADE --  */ ",
+				metadata.RecordIDColumn,
+				metadata.DefaultColumn,
+				table,
+			),
+		},
+		"FullRecord": {
+			expectQuery: fmt.Sprintf(
+				`SELECT %s%s FROM %q`,
+				"/* * / 1; DROP TABLE "+table+" CASCADE --  */ ",
+				metadata.DefaultColumn,
+				table,
+			),
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			query := prepareSelectClause(table, comment, tc.capped, tc.onlyRecordIDs)
+			assert.Equal(t, tc.expectQuery, query)
+		})
+	}
+}
 
 func TestPrepareOrderByClause(t *testing.T) {
 	t.Parallel()

@@ -16,6 +16,7 @@ package sqlite
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
@@ -26,16 +27,22 @@ import (
 // For capped collection with onlyRecordIDs, it returns select clause for recordID column.
 //
 // For capped collection, it returns select clause for recordID column and default column.
-func prepareSelectClause(table string, capped, onlyRecordIDs bool) string {
+func prepareSelectClause(table, comment string, capped, onlyRecordIDs bool) string {
+	if comment != "" {
+		comment = strings.ReplaceAll(comment, "/*", "/ *")
+		comment = strings.ReplaceAll(comment, "*/", "* /")
+		comment = `/* ` + comment + ` */` + ` `
+	}
+
 	if capped && onlyRecordIDs {
-		return fmt.Sprintf(`SELECT %s FROM %q`, metadata.RecordIDColumn, table)
+		return fmt.Sprintf(`SELECT %s%s FROM %q`, comment, metadata.RecordIDColumn, table)
 	}
 
 	if capped {
-		return fmt.Sprintf(`SELECT %s, %s FROM %q`, metadata.RecordIDColumn, metadata.DefaultColumn, table)
+		return fmt.Sprintf(`SELECT %s%s, %s FROM %q`, comment, metadata.RecordIDColumn, metadata.DefaultColumn, table)
 	}
 
-	return fmt.Sprintf(`SELECT %s FROM %q`, metadata.DefaultColumn, table)
+	return fmt.Sprintf(`SELECT %s%s FROM %q`, comment, metadata.DefaultColumn, table)
 }
 
 // prepareOrderByClause returns ORDER BY clause.

@@ -37,7 +37,6 @@ import (
 //
 // For capped collection, it returns select clause for recordID column and default column.
 func prepareSelectClause(schema, table, comment string, capped, onlyRecordIDs bool) string {
-
 	if comment != "" {
 		comment = strings.ReplaceAll(comment, "/*", "/ *")
 		comment = strings.ReplaceAll(comment, "*/", "* /")
