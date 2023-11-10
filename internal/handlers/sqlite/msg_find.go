@@ -68,7 +68,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	if params.Tailable {
 		// TODO https://github.com/FerretDB/FerretDB/issues/3601
-		res, err := db.ListCollections(ctx, &backends.ListCollectionsParams{})
+		res, err := db.ListCollections(ctx, nil)
 		if err != nil {
 			return nil, err
 		}
