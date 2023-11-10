@@ -36,10 +36,18 @@ import (
 // For capped collection with onlyRecordIDs, it returns select clause for recordID column.
 //
 // For capped collection, it returns select clause for recordID column and default column.
-func prepareSelectClause(schema, table string, capped, onlyRecordIDs bool) string {
+func prepareSelectClause(schema, table, comment string, capped, onlyRecordIDs bool) string {
+
+	if comment != "" {
+		comment = strings.ReplaceAll(comment, "/*", "/ *")
+		comment = strings.ReplaceAll(comment, "*/", "* /")
+		comment = `/* ` + comment + ` */` + ` `
+	}
+
 	if capped && onlyRecordIDs {
 		return fmt.Sprintf(
-			`SELECT %s FROM %s`,
+			`SELECT %s%s FROM %s`,
+			comment,
 			metadata.RecordIDColumn,
 			pgx.Identifier{schema, table}.Sanitize(),
 		)
@@ -47,16 +55,17 @@ func prepareSelectClause(schema, table string, capped, onlyRecordIDs bool) strin
 
 	if capped {
 		return fmt.Sprintf(
-			`SELECT %s, %s FROM %s`,
+			`SELECT %s%s, %s FROM %s`,
+			comment,
 			metadata.RecordIDColumn,
 			metadata.DefaultColumn,
 			pgx.Identifier{schema, table}.Sanitize(),
 		)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3573
 	return fmt.Sprintf(
-		`SELECT %s FROM %s`,
+		`SELECT %s%s FROM %s`,
+		comment,
 		metadata.DefaultColumn,
 		pgx.Identifier{schema, table}.Sanitize(),
 	)
