@@ -29,6 +29,9 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
@@ -79,6 +82,15 @@ func parentTest(testName string) string {
 
 // runGoTest runs `go test` with given extra args.
 func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger) error {
+	ctx, span := otel.Tracer("").Start(ctx, "runGoTest")
+	defer span.End()
+
+	span.AddEvent("runGoTest", trace.WithAttributes(
+		attribute.String("args", strings.Join(args, " ")),
+		attribute.String("total", strconv.Itoa(total)),
+		attribute.Bool("times", times),
+	))
+
 	cmd := exec.CommandContext(ctx, "go", append([]string{"test", "-json"}, args...)...)
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
@@ -214,8 +226,18 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 
 // testsRun runs tests specified by the shard index and total or by the run regex
 // using `go test` with given extra args.
-func testsRun(index, total uint, run string, args []string, logger *zap.SugaredLogger) error {
+func testsRun(ctx context.Context, index, total uint, run string, args []string, logger *zap.SugaredLogger) error {
 	logger.Debugf("testsRun: index=%d, total=%d, run=%q, args=%q", index, total, run, args)
+
+	ctx, span := otel.Tracer("").Start(ctx, "testsRun")
+	defer span.End()
+
+	span.AddEvent("testsRun", trace.WithAttributes(
+		attribute.String("index", strconv.Itoa(int(index))),
+		attribute.String("total", strconv.Itoa(int(total))),
+		attribute.String("run", run),
+		attribute.String("args", strings.Join(args, " ")),
+	))
 
 	var totalTest int
 	if run == "" {
@@ -246,7 +268,7 @@ func testsRun(index, total uint, run string, args []string, logger *zap.SugaredL
 		run += ")$"
 	}
 
-	return runGoTest(context.TODO(), append([]string{"-run=" + run}, args...), totalTest, true, logger)
+	return runGoTest(ctx, append([]string{"-run=" + run}, args...), totalTest, true, logger)
 }
 
 // listTestFuncs returns a sorted slice of all top-level test functions (tests, benchmarks, examples, fuzz functions)

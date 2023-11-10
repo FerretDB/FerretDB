@@ -56,27 +56,13 @@ func Ctx(tb testtb.TB) context.Context {
 		}
 	}()
 
-	ctx, parentSpan := otel.Tracer("").Start(signalsCtx, tb.Name())
+	ctx, span := otel.Tracer("").Start(signalsCtx, tb.Name())
 	tb.Cleanup(func() {
-		parentSpan.End()
+		span.End()
 	})
 
 	ctx, task := trace.NewTask(ctx, tb.Name())
 	tb.Cleanup(task.End)
-
-	return ctx
-}
-
-// SubTestCtx returns a test context with OpenTelemetry tracing for subtests.
-// It creates a child span of the parent test span.
-func SubTestCtx(parentCtx context.Context, tb testtb.TB) context.Context {
-	tb.Helper()
-
-	// Start a new span for the subtest, which is a child of the parent test span.
-	ctx, childSpan := otel.Tracer("").Start(parentCtx, "SubTest: "+tb.Name())
-	tb.Cleanup(func() {
-		childSpan.End()
-	})
 
 	return ctx
 }
