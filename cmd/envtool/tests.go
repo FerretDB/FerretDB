@@ -82,14 +82,12 @@ func parentTest(testName string) string {
 
 // runGoTest runs `go test` with given extra args.
 func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger) error {
-	ctx, span := otel.Tracer("").Start(ctx, "runGoTest")
-	defer span.End()
-
-	span.AddEvent("runGoTest", trace.WithAttributes(
+	ctx, span := otel.Tracer("").Start(ctx, "runGoTest", trace.WithAttributes(
 		attribute.String("args", strings.Join(args, " ")),
 		attribute.String("total", strconv.Itoa(total)),
 		attribute.Bool("times", times),
 	))
+	defer span.End()
 
 	cmd := exec.CommandContext(ctx, "go", append([]string{"test", "-json"}, args...)...)
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
@@ -129,6 +127,14 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 		}
 
 		// logger.Desugar().Debug("decoded event", zap.Any("event", event))
+
+		span.AddEvent("decoded event", trace.WithAttributes(
+			attribute.String("action", event.Action),
+			attribute.String("package", event.Package),
+			attribute.String("test", event.Test),
+			attribute.String("output", event.Output),
+			attribute.Float64("elapsed seconds", event.ElapsedSeconds),
+		))
 
 		for t := event.Test; t != ""; t = parentTest(t) {
 			res := results[t]
@@ -229,15 +235,13 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 func testsRun(ctx context.Context, index, total uint, run string, args []string, logger *zap.SugaredLogger) error {
 	logger.Debugf("testsRun: index=%d, total=%d, run=%q, args=%q", index, total, run, args)
 
-	ctx, span := otel.Tracer("").Start(ctx, "testsRun")
-	defer span.End()
-
-	span.AddEvent("testsRun", trace.WithAttributes(
+	ctx, span := otel.Tracer("").Start(ctx, "testsRun", trace.WithAttributes(
 		attribute.String("index", strconv.Itoa(int(index))),
 		attribute.String("total", strconv.Itoa(int(total))),
 		attribute.String("run", run),
 		attribute.String("args", strings.Join(args, " ")),
 	))
+	defer span.End()
 
 	var totalTest int
 	if run == "" {
