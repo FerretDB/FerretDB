@@ -90,7 +90,6 @@ fi
 # Do not trim paths to make debugging with delve easier.
 
 # check that stdlib was cached
-# env GODEBUG=gocachehash=1 go install -v -race=$RACE std
 go install -v -race=$RACE std
 
 go build -v -o=bin/ferretdb -race=$RACE -tags=ferretdb_debug -coverpkg=./... ./cmd/ferretdb

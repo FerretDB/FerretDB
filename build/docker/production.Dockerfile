@@ -57,7 +57,6 @@ git status
 # Do not trim paths to reuse build cache.
 
 # check that stdlib was cached
-# env GODEBUG=gocachehash=1 go install -v std
 go install -v std
 
 go build -v -o=bin/ferretdb ./cmd/ferretdb
