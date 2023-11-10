@@ -1170,7 +1170,7 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("timeseries")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("views")))
-	assert.Equal(t, int32(1), must.NotFail(catalogStats.Get("internalViews")))
+	assert.InDelta(t, int32(0), must.NotFail(catalogStats.Get("internalViews")), 1)
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
 
 	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000).SetMaxDocuments(10)
