@@ -1,6 +1,8 @@
 # syntax=docker/dockerfile:1
 
-# for development releases (`ferret-dev` image)
+# Dockerfile for development releases (`ferret-dev` image).
+# It uses cross-compilation at first,
+# the re-builds binaries with a race detector if possible.
 
 # While we already know commit and version from commit.txt and version.txt inside image,
 # it is not possible to use them in LABELs for the final image.
@@ -10,11 +12,48 @@ ARG LABEL_VERSION
 ARG LABEL_COMMIT
 
 
+# prepare stage
+
+FROM --platform=$BUILDPLATFORM ghcr.io/ferretdb/golang:1.21.4-1 AS development-prepare
+
+# use a single directory for all Go caches to simpliy RUN --mount commands below
+ENV GOPATH /cache/gopath
+ENV GOCACHE /cache/gocache
+ENV GOMODCACHE /cache/gomodcache
+
+# remove ",direct"
+ENV GOPROXY https://proxy.golang.org
+
+# see .dockerignore
+WORKDIR /src
+COPY . .
+
+RUN --mount=type=cache,target=/cache <<EOF
+set -ex
+
+go mod download
+go mod verify
+
+# copy cached stdlib builds from base image
+cp -Rn /root/.cache/go-build/. /cache/gocache
+EOF
+
+ARG TARGETARCH TARGETVARIANT
+
+RUN --mount=type=cache,target=/cache <<EOF
+set -ex
+
+# Do not raise GOAMD64 without providing a separate v1 build
+# because v2+ is problematic for some virtualization platforms and older hardware.
+
+env GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} GOAMD64=v1 \
+    go build -v -o=/tmp/ferretdb/$TARGETARCH_$TARGETVARIANT -tags=ferretdb_debug -coverpkg=./... ./cmd/ferretdb
+EOF
+
+
 # build stage
 
 FROM ghcr.io/ferretdb/golang:1.21.4-1 AS development-build
-
-ARG TARGETARCH
 
 ARG LABEL_VERSION
 ARG LABEL_COMMIT
@@ -26,16 +65,15 @@ ENV GOPATH /cache/gopath
 ENV GOCACHE /cache/gocache
 ENV GOMODCACHE /cache/gomodcache
 
-# remove ",direct"
-ENV GOPROXY https://proxy.golang.org
-
-# do not raise it from the default value of v1 without providing a separate v1 build
-# because v2+ is problematic for some virtualization platforms and older hardware
-# ENV GOAMD64=v1
-
-# leave GOARM unset for autodetection
+# modules are already downloaded
+ENV GOPROXY off
 
 ENV CGO_ENABLED=1
+
+ARG TARGETARCH TARGETVARIANT
+
+# to add a dependency
+COPY --from=development-prepare /tmp/ferretdb/$TARGETARCH_$TARGETVARIANT /tmp/ferretdb/
 
 # see .dockerignore
 WORKDIR /src
@@ -46,11 +84,6 @@ set -ex
 
 # copy cached stdlib builds from base image
 flock --verbose /cache/ cp -Rn /root/.cache/go-build/. /cache/gocache
-
-# TODO https://github.com/FerretDB/FerretDB/issues/2170
-# That command could be run only once by using a separate stage;
-# see https://www.docker.com/blog/faster-multi-platform-builds-dockerfile-cross-compilation-guide/
-flock --verbose /cache/ go mod download
 
 git status
 
@@ -65,11 +98,15 @@ fi
 
 # Do not trim paths to make debugging with delve easier.
 
-# check that stdlib was cached
-# env GODEBUG=gocachehash=1 go install -v -race=$RACE std
-go install -v -race=$RACE std
+# Do not raise GOAMD64 without providing a separate v1 build
+# because v2+ is problematic for some virtualization platforms and older hardware.
 
-go build -v -o=bin/ferretdb -race=$RACE -tags=ferretdb_debug -coverpkg=./... ./cmd/ferretdb
+# check that stdlib was cached
+env GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} GOAMD64=v1 \
+    go install -v -race=$RACE std
+
+env GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} GOAMD64=v1 \
+    go build -v -o=bin/ferretdb -race=$RACE -tags=ferretdb_debug -coverpkg=./... ./cmd/ferretdb
 
 go version -m bin/ferretdb
 bin/ferretdb --version

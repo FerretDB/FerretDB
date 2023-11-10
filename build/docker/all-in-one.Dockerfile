@@ -55,12 +55,6 @@ ENV GOMODCACHE /cache/gomodcache
 # modules are already downloaded
 ENV GOPROXY off
 
-# do not raise it from the default value of v1 without providing a separate v1 build
-# because v2+ is problematic for some virtualization platforms and older hardware
-# ENV GOAMD64=v1
-
-# leave GOARM unset for autodetection
-
 ENV CGO_ENABLED=1
 
 # to add a dependency
@@ -88,6 +82,11 @@ then
 fi
 
 # Do not trim paths to make debugging with delve easier.
+
+# Leave GOAMD64 unset for implicit v1
+# because v2+ is problematic for some virtualization platforms and older hardware.
+
+# Leave GOARM unset for autodetection.
 
 # check that stdlib was cached
 go install -v -race=$RACE std
