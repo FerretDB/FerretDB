@@ -59,11 +59,6 @@ func (c *collection) Compact(ctx context.Context, params *backends.CompactParams
 	return nil, lazyerrors.New("not implemented yet")
 }
 
-// Capped implements backends.Collection interface.
-func (c *collection) Capped(ctx context.Context) (bool, error) {
-	return false, lazyerrors.New("not implemented yet")
-}
-
 // ListIndexes implements backends.Collection interface.
 func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
 	return nil, lazyerrors.New("not implemented yet")
