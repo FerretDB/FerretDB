@@ -17,6 +17,8 @@ package integration
 import (
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -151,7 +153,13 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 
 			require.NoError(t, err)
 
-			AssertEqualDocuments(t, tc.expectedRes, res)
+			actual := ConvertDocument(t, res)
+			actual.Remove("$clusterTime")
+			actual.Remove("operationTime")
+
+			expected := ConvertDocument(t, tc.expectedRes)
+
+			testutil.AssertEqual(t, expected, actual)
 
 			if tc.expectedStatus != "" {
 				var actual bson.D

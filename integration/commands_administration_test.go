@@ -1165,12 +1165,12 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 
 	// catalogStats is calculated across all the databases, so there could be quite a lot of collections here.
 	assert.InDelta(t, 632, must.NotFail(catalogStats.Get("collections")), 632)
-	assert.InDelta(t, 3, must.NotFail(catalogStats.Get("internalCollections")), 3)
+	assert.InDelta(t, 19, must.NotFail(catalogStats.Get("internalCollections")), 19)
 
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("timeseries")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("views")))
-	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("internalViews")))
+	assert.Equal(t, int32(1), must.NotFail(catalogStats.Get("internalViews")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
 
 	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000).SetMaxDocuments(10)

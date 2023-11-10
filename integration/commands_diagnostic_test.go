@@ -222,21 +222,24 @@ func TestCommandsDiagnosticHostInfo(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	var actual bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{{"hostInfo", 42}}).Decode(&actual)
+	var a bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"hostInfo", 42}}).Decode(&a)
 	require.NoError(t, err)
 
-	m := actual.Map()
-	t.Log(m)
+	actual := ConvertDocument(t, a)
+	assert.Equal(t, float64(1), must.NotFail(actual.Get("ok")))
 
-	assert.Equal(t, float64(1), m["ok"])
-	assert.Equal(t, []string{"system", "os", "extra", "ok"}, CollectKeys(t, actual))
+	keys := actual.Keys()
+	keys = slices.DeleteFunc(keys, func(val string) bool {
+		return val == "$clusterTime" || val == "operationTime"
+	})
+	assert.Equal(t, []string{"system", "os", "extra", "ok"}, keys)
 
-	os := m["os"].(bson.D)
-	assert.Equal(t, []string{"type", "name", "version"}, CollectKeys(t, os))
+	os := must.NotFail(actual.Get("os")).(*types.Document)
+	assert.Equal(t, []string{"type", "name", "version"}, os.Keys())
 
-	system := m["system"].(bson.D)
-	keys := CollectKeys(t, system)
+	system := must.NotFail(actual.Get("system")).(*types.Document)
+	keys = system.Keys()
 	assert.Contains(t, keys, "currentTime")
 	assert.Contains(t, keys, "hostname")
 	assert.Contains(t, keys, "cpuAddrSize")
@@ -253,10 +256,9 @@ func TestCommandsDiagnosticListCommands(t *testing.T) {
 	require.NoError(t, err)
 
 	actual := ConvertDocument(t, a)
-
 	assert.Equal(t, float64(1), must.NotFail(actual.Get("ok")))
 
-	keys := CollectKeys(t, a)
+	keys := actual.Keys()
 	keys = slices.DeleteFunc(keys, func(val string) bool {
 		return val == "$clusterTime" || val == "operationTime"
 	})
@@ -296,6 +298,9 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 
 	actual.Remove("keysPerIndex")
 	actual.Remove("indexDetails")
+	actual.Remove("$clusterTime")
+	actual.Remove("operationTime")
+
 	testutil.CompareAndSetByPathNum(t, expected, actual, 39, types.NewStaticPath("nrecords"))
 	testutil.AssertEqual(t, expected, actual)
 }

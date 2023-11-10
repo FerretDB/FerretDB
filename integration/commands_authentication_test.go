@@ -17,6 +17,8 @@ package integration
 import (
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 
@@ -33,12 +35,23 @@ func TestCommandsAuthenticationLogout(t *testing.T) {
 	var res bson.D
 	err := db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
 	assert.NoError(t, err)
-	assert.Equal(t, bson.D{{"ok", float64(1)}}, res)
+
+	actual := ConvertDocument(t, res)
+	actual.Remove("$clusterTime")
+	actual.Remove("operationTime")
+
+	expected := ConvertDocument(t, bson.D{{"ok", float64(1)}})
+	testutil.AssertEqual(t, expected, actual)
 
 	// the test user logs out again, it has no effect
 	err = db.RunCommand(ctx, bson.D{{"logout", 1}}).Decode(&res)
 	assert.NoError(t, err)
-	assert.Equal(t, bson.D{{"ok", float64(1)}}, res)
+
+	actual = ConvertDocument(t, res)
+	actual.Remove("$clusterTime")
+	actual.Remove("operationTime")
+
+	testutil.AssertEqual(t, expected, actual)
 }
 
 func TestCommandsAuthenticationLogoutTLS(t *testing.T) {
