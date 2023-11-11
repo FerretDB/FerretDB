@@ -216,7 +216,7 @@ func generateGraphAll(metricSlice *io_prometheus_client.Metric, metricFamily *io
 	return plot
 }
 
-//random string combination generated solves " panic : Duplicate plot name error for metric with different labelPair values"
+//random string combination generated solves" panic : Duplicate plot name error for metric with different labelPair values"
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
