@@ -40,8 +40,10 @@ import (
 )
 
 type metric struct {
-	metricName string
-	metricType int
+	metricName       string
+	metricType       int
+	metricLabel      string
+	metricLabelValue string
 }
 
 // RunHandler runs debug handler.
@@ -69,13 +71,7 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	}
 	for _, metricFamily := range prometheus_metrics {
 		for _, metricSlice := range metricFamily.Metric {
-			if metricSlice.Label != nil {
-				for _, metricLabel := range metricSlice.Label {
-					graphPlot := generateGraph(metricSlice, metricFamily, metricLabel)
-					opts = append(opts, statsviz.TimeseriesPlot(graphPlot))
-				}
-			}
-			graphPlot := generateGraphNonLable(metricSlice, metricFamily)
+			graphPlot := generateGraphAll(metricSlice, metricFamily)
 			opts = append(opts, statsviz.TimeseriesPlot(graphPlot))
 		}
 	}
@@ -151,48 +147,39 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 
 func (obj metric) getValue() float64 {
 	x := prometheusGather()
-	y := metricRetriever(x, obj.metricName)
-	switch obj.metricType {
-	case 0:
-		return *y.Counter.Value
-	case 1:
-		return *y.Gauge.Value
-	case 2:
-		return *y.Summary.SampleSum
-	case 3:
-		return *y.Untyped.Value
-	case 4:
-		return *y.Histogram.SampleCountFloat
+	if obj.metricLabel == "" {
+		y := metricRetriever(x, obj.metricName)
+		switch obj.metricType {
+		case 0:
+			return *y.Counter.Value
+		case 1:
+			return *y.Gauge.Value
+		case 2:
+			return *y.Summary.SampleSum
+		case 3:
+			return *y.Untyped.Value
+		case 4:
+			return *y.Histogram.SampleCountFloat
+		}
+	} else {
+		y := counterMetricRet(x, obj.metricName, obj)
+		switch obj.metricType {
+		case 0:
+			return *y.Counter.Value
+		case 1:
+			return *y.Gauge.Value
+		case 2:
+			return *y.Summary.SampleSum
+		case 3:
+			return *y.Untyped.Value
+		case 4:
+			return *y.Histogram.SampleCountFloat
+		}
 	}
 	return 0
 }
 
-func generateGraph(metricSlice *io_prometheus_client.Metric, metricFamily *io_prometheus_client.MetricFamily, metricLabel *io_prometheus_client.LabelPair) statsviz.TimeSeriesPlot {
-	key := fmt.Sprintf("%s %s %s", *metricLabel.Name, ":", *metricLabel.Value)
-
-	finalMetricObj := new(metric)
-	finalMetricObj.metricName = *metricFamily.Name
-	finalMetricObj.metricType = int(*metricFamily.Type)
-
-	GenericPlot := statsviz.TimeSeries{
-		Name:     key,
-		Unitfmt:  "%{y:.4s}",
-		GetValue: finalMetricObj.getValue,
-	}
-	plot, err := statsviz.TimeSeriesPlotConfig{
-		Name:       *metricLabel.Name + *metricLabel.Value + *metricFamily.Name,
-		Title:      *metricFamily.Help,
-		Type:       statsviz.Scatter,
-		Series:     []statsviz.TimeSeries{GenericPlot},
-		YAxisTitle: metricFamily.Type.String(),
-	}.Build()
-	if err != nil {
-		log.Fatalf("Failed to build timeseries plot :%v", err)
-	}
-	return plot
-}
-
-func generateGraphNonLable(metricSlice *io_prometheus_client.Metric, metricFamily *io_prometheus_client.MetricFamily) statsviz.TimeSeriesPlot {
+func generateGraphAll(metricSlice *io_prometheus_client.Metric, metricFamily *io_prometheus_client.MetricFamily) statsviz.TimeSeriesPlot {
 
 	finalMetricObj := new(metric)
 	finalMetricObj.metricName = *metricFamily.Name
@@ -204,13 +191,24 @@ func generateGraphNonLable(metricSlice *io_prometheus_client.Metric, metricFamil
 		GetValue: finalMetricObj.getValue,
 	}
 
+	if metricSlice.Label != nil {
+		for _, yu := range metricSlice.Label {
+			finalMetricObj.metricLabel = *yu.Name
+			finalMetricObj.metricLabelValue = *yu.Value
+		}
+		GenericPlot.Name = finalMetricObj.metricLabel + " : " + finalMetricObj.metricLabelValue
+	}
+
+	finalMetricObj.metricLabel = ""
+	finalMetricObj.metricLabelValue = ""
+
 	x := generateRandomString(5)
 	plot, err := statsviz.TimeSeriesPlotConfig{
 		Name:       *metricFamily.Name + x,
 		Title:      *metricFamily.Help,
 		Type:       statsviz.Scatter,
 		Series:     []statsviz.TimeSeries{GenericPlot},
-		YAxisTitle: "Quantity", //Temporay Modification : To be replaced with
+		YAxisTitle: "", //Temporay Modification : To be replaced with
 	}.Build()
 	if err != nil {
 		log.Fatalf("Failed to build timeseries plot :%v", err)
@@ -238,6 +236,21 @@ func metricRetriever(prometheus_metrics []*io_prometheus_client.MetricFamily, me
 			finalMetricSlice := specificMetric.GetMetric()
 			for _, x := range finalMetricSlice {
 				return x
+			}
+		}
+	}
+	return nil
+}
+
+func counterMetricRet(prometheus_metrics []*io_prometheus_client.MetricFamily, metricName string, obj metric) *io_prometheus_client.Metric {
+	for _, specificMetric := range prometheus_metrics {
+		if specificMetric.GetName() == metricName {
+			for _, x := range specificMetric.Metric {
+				for _, y := range x.Label {
+					if y.Value == &obj.metricLabelValue {
+						return x
+					}
+				}
 			}
 		}
 	}
