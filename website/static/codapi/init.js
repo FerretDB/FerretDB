@@ -1,5 +1,5 @@
 function initCodapi() {
-    document.querySelectorAll(".codapi-snippet").forEach((el) => {
+    document.querySelectorAll("codapi-snippet").forEach((el) => {
         const snippet = document.createElement("codapi-snippet");
         setAttribute(snippet, el, "sandbox");
         setAttribute(snippet, el, "editor");

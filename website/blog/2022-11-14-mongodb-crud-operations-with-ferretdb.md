@@ -46,8 +46,8 @@ And if the database does not exist, FerretDB creates a new database.
 use league
 ```
 
-<div className="codapi-snippet" sandbox="ferretdb" editor="basic">
-</div>
+<codapi-snippet sandbox="ferretdb" editor="basic">
+</codapi-snippet>
 
 If there's no existing database with this name, a new database (**league**) is created in your FerretDB storage backend on PostgreSQL.
 Read on to learn more about all the basic MongoDB commands or operations you can perform with FerretDB.
@@ -78,8 +78,8 @@ db.league.insertOne({
 })
 ```
 
-<div className="codapi-snippet" sandbox="ferretdb" editor="basic">
-</div>
+<codapi-snippet sandbox="ferretdb" editor="basic">
+</codapi-snippet>
 
 This line of code creates a new document in your collection.
 If the operation is successful, you'll get a response with `acknowledged` set as 'true', and the id of the inserted document (`insertedID`) containing the ObjectId.
@@ -130,8 +130,8 @@ db.league.insertMany([
 ])
 ```
 
-<div className="codapi-snippet" sandbox="ferretdb" editor="basic">
-</div>
+<codapi-snippet sandbox="ferretdb" editor="basic">
+</codapi-snippet>
 
 ## Read operation
 
@@ -150,8 +150,8 @@ First, let's select all the documents in the **league** collection created earli
 db.league.find({})
 ```
 
-<div className="codapi-snippet" sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.js">
-</div>
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.js">
+</codapi-snippet>
 
 This operation retrieves and displays all the documents present in the collection.
 Now, let's add a query parameter to the `find()` operation to filter for a specific item.
@@ -160,8 +160,8 @@ Now, let's add a query parameter to the `find()` operation to filter for a speci
 db.league.find({ club: 'PSG' })
 ```
 
-<div className="codapi-snippet" sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.js">
-</div>
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.js">
+</codapi-snippet>
 
 You can also filter a collection in FerretDB using any of the commonly used MongoDB operators:
 
@@ -189,8 +189,8 @@ Let's filter the `league` data for teams with 80 or 60 `points`:
 db.league.find({ points: { $in: [80, 60] } })
 ```
 
-<div className="codapi-snippet" sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.js">
-</div>
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.js">
+</codapi-snippet>
 
 #### Find documents using the `$lt` operator
 
@@ -201,8 +201,8 @@ For example, let's select the documents with less than 60 _points_ :
 db.league.find({ points: { $lt: 60 } })
 ```
 
-<div className="codapi-snippet" sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.js">
-</div>
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.js">
+</codapi-snippet>
 
 ### findOne()
 
@@ -213,8 +213,8 @@ For instance, let's filter the collection for documents with the _qualified_ set
 db.league.findOne({ qualified: true })
 ```
 
-<div className="codapi-snippet" sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.js">
-</div>
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.js">
+</codapi-snippet>
 
 Even though two documents match this query, the result only displays the first document.
 
@@ -240,8 +240,8 @@ This update operation will only affect the first document that's retrieved in th
 db.league.updateOne({ club: 'PSG' }, { $set: { points: 35 } })
 ```
 
-<div className="codapi-snippet" sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.js">
-</div>
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.js">
+</codapi-snippet>
 
 ### updateMany()
 
@@ -252,8 +252,8 @@ For example, let's update all documents with a _points_ field that's less than o
 db.league.updateMany({ points: { $lte: 90 } }, { $set: { qualified: false } })
 ```
 
-<div className="codapi-snippet" sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/update-1.js">
-</div>
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/update-1.js">
+</codapi-snippet>
 
 ### replaceOne()
 
@@ -272,8 +272,8 @@ db.league.replaceOne(
 )
 ```
 
-<div className="codapi-snippet" sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/update-2.js">
-</div>
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/update-2.js">
+</codapi-snippet>
 
 ## Delete operation
 
@@ -289,8 +289,8 @@ Note that this operation only deletes the first document that matches the query 
 db.league.deleteOne({ club: 'Arsenal' })
 ```
 
-<div className="codapi-snippet" sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/update-3.js">
-</div>
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/update-3.js">
+</codapi-snippet>
 
 This operation deletes one document from the collection:
 
@@ -307,8 +307,8 @@ The operation takes in a query and then filters and deletes all the documents ma
 db.league.deleteMany({ qualified: false })
 ```
 
-<div className="codapi-snippet" sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/delete-1.js">
-</div>
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/delete-1.js">
+</codapi-snippet>
 
 ## Get started with FerretDB
 
