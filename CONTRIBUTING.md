@@ -345,26 +345,27 @@ Before submitting a pull request, please make sure that:
 
 #### Submitting PR
 
-1. If the pull request is related to some issues,
-   please mention the issue number in the pull request **description** like `Closes #<issue_number>.`
+1. Please follow the pull request template.
+2. If the pull request is related to some issue,
+   please mention the issue number in the pull request description like `Closes #<issue_number>.`
    or `Closes FerretDB/<repo>#<issue_number>.`
-   (You can just follow the pull request template).
    Please do not use URLs like `https://github.com/FerretDB/<repo>/issue/<issue_number>`
    or paths like `FerretDB/<repo>/issue/<issue_number>` even if they are rendered the same on GitHub.
    If you propose a tiny fix, there is no needed to create a new issue.
-2. There is no need to use draft pull requests.
+3. There is no need to use draft pull requests.
    If you want to get feedback on something you are working on,
    please create a normal pull request, even if it is not "fully" ready yet.
-3. In the pull request review conversations,
+4. In the pull request review conversations,
    please either leave a new comment or resolve (close) the conversation,
-   which ensures the other people can read all comments.
-   But **do not** do that simultaneously.
-4. During your development,
-   commit messages (both titles and bodies) are not important and can be "WIP" or anything else.
+   which ensures other people can read all comments.
+   But do not do that simultaneously.
+   Conversations should typically be resolved by the conversation starter, not the PR author.
+5. During development in a branch/PR,
+   commit messages (both titles and bodies) are not important and can be anything.
    All commits are always squashed on merge by GitHub.
    Please **do not** squash them manually, amend them, and/or force push them -
    that makes the review process harder.
-5. Please don't forget to click
+6. Please don't forget to click
    ["re-request review" buttons](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/requesting-a-pull-request-review)
    once PR is ready for re-review.
 
