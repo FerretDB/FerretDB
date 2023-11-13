@@ -124,7 +124,7 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 	actual.Remove("$clusterTime")
 	actual.Remove("operationTime")
 
-	expected := ConvertDocument(t, bson.D{{"ok", 1.0}})
+	expected := ConvertDocument(t, bson.D{{"ok", float64(1)}})
 
 	testutil.AssertEqual(t, expected, actual)
 
