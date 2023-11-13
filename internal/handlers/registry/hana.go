@@ -18,7 +18,6 @@ package registry
 
 import (
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/hana"
 	"github.com/FerretDB/FerretDB/internal/handlers/sqlite"
 )
 
@@ -27,30 +26,19 @@ func init() {
 	registry["hana"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
 		opts.Logger.Warn("HANA handler is in alpha. It is not supported yet.")
 
-		if opts.UseNewHana {
-			handlerOpts := &sqlite.NewOpts{
-				Backend: "hana",
-				URI:     opts.HANAURL,
+		handlerOpts := &sqlite.NewOpts{
+			Backend: "hana",
+			URI:     opts.HANAURL,
 
-				L:             opts.Logger.Named("hana"),
-				ConnMetrics:   opts.ConnMetrics,
-				StateProvider: opts.StateProvider,
-
-				DisableFilterPushdown: opts.DisableFilterPushdown,
-				EnableSortPushdown:    opts.EnableSortPushdown,
-				EnableOplog:           opts.EnableOplog,
-			}
-
-			return sqlite.New(handlerOpts)
-		}
-
-		handlerOpts := &hana.NewOpts{
-			HANAURL:       opts.HANAURL,
-			L:             opts.Logger,
+			L:             opts.Logger.Named("hana"),
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
+
+			DisableFilterPushdown:    opts.DisableFilterPushdown,
+			EnableUnsafeSortPushdown: opts.EnableUnsafeSortPushdown,
+			EnableOplog:              opts.EnableOplog,
 		}
 
-		return hana.New(handlerOpts)
+		return sqlite.New(handlerOpts)
 	}
 }

@@ -91,7 +91,7 @@ Vultr is an excellent proposition for companies who want to provide developers w
 Vultr aims to make high-performance cloud computing easy to use, affordable, and locally accessible for businesses and developers worldwide.
 Vultr has served over 1.5 million customers across 185 countries with flexible, scalable, global Cloud Compute, Cloud GPU, Bare Metal, and Cloud Storage solutions.
 Founded by David Aninowsky and completely bootstrapped, Vultr has become the world's largest privately-held cloud computing company without raising equity financing.
-Learn more at [Vulr](https://www.vultr.com).
+Learn more at [Vultr](https://www.vultr.com).
 
 ### About FerretDB
 

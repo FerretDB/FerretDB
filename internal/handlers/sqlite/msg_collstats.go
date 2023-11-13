@@ -87,6 +87,7 @@ func (h *Handler) MsgCollStats(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	var found bool
 	var cInfo backends.CollectionInfo
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3601
 	if i, found = slices.BinarySearchFunc(collections.Collections, collection, func(e backends.CollectionInfo, t string) int {
 		return cmp.Compare(e.Name, t)
 	}); found {

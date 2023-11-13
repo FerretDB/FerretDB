@@ -81,12 +81,12 @@ func SkipForMongoDB(tb testtb.TB, reason string) {
 	}
 }
 
-// IsPushdownDisabled returns true if FerretDB pushdowns are disabled.
-func IsPushdownDisabled() bool {
+// FilterPushdownDisabled returns true if FerretDB filter pushdown is disabled.
+func FilterPushdownDisabled() bool {
 	return *disableFilterPushdownF
 }
 
-// IsSortPushdownEnabled returns true if sort pushdown is enabled.
-func IsSortPushdownEnabled() bool {
-	return *enableSortPushdownF
+// UnsafeSortPushdownEnabled returns true if unsafe sort pushdown is enabled.
+func UnsafeSortPushdownEnabled() bool {
+	return *enableUnsafeSortPushdownF
 }

@@ -39,7 +39,7 @@ func TestCappedCollectionInsertAllQueryExplain(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	b, err := NewBackend(&NewBackendParams{URI: "file:" + t.TempDir() + "/", L: testutil.Logger(t), P: sp})
+	b, err := NewBackend(&NewBackendParams{URI: testutil.TestSQLiteURI(t, ""), L: testutil.Logger(t), P: sp})
 	require.NoError(t, err)
 	t.Cleanup(b.Close)
 
@@ -82,6 +82,6 @@ func TestCappedCollectionInsertAllQueryExplain(t *testing.T) {
 
 		explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &sort})
 		require.NoError(t, err)
-		assert.False(t, explainRes.SortPushdown)
+		assert.False(t, explainRes.UnsafeSortPushdown)
 	})
 }

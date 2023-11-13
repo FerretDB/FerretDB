@@ -100,8 +100,9 @@ See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version) for m
 
 ## Managed FerretDB at cloud providers
 
-- [Civo](https://www.civo.com) (see [here](https://www.civo.com/marketplace/FerretDB)).
-- [Scaleway](https://www.scaleway.com/) (request access [here](https://www.scaleway.com/en/betas/#managed-document-database)).
+- [Civo](https://www.civo.com/marketplace/FerretDB)
+- [Scaleway](https://www.scaleway.com/en/managed-document-database/)
+- [Vultr](https://www.vultr.com/products/managed-databases/ferretDB/)
 
 ## Documentation
 

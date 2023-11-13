@@ -40,7 +40,7 @@ Use ❌ for commands and arguments that are not implemented at all.
 |                 | `max`                      | ⚠️     | Ignored                                                   |
 |                 | `min`                      | ⚠️     | Ignored                                                   |
 |                 | `returnKey`                | ❌     | Unimplemented                                             |
-|                 | `showRecordId`             | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/3467) |
+|                 | `showRecordId`             | ✅     |                                                           |
 |                 | `tailable`                 | ❌     | [Issue](https://github.com/FerretDB/FerretDB/issues/2283) |
 |                 | `oplogReplay`              | ❌     | Unimplemented                                             |
 |                 | `noCursorTimeout`          | ❌     | Unimplemented                                             |

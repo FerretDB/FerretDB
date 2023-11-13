@@ -9,7 +9,7 @@ vars:
   SHARD_INDEX: 1
   SHARD_TOTAL: 1
   DISABLE_FILTER_PUSHDOWN: false
-  ENABLE_SORT_PUSHDOWN: false
+  ENABLE_UNSAFE_SORT_PUSHDOWN: false
   TEST_RUN: ""
   TEST_TIMEOUT: 35m
   BENCH_TIME: 5s
@@ -218,7 +218,7 @@ tasks:
         -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
         -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
-        -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
+        -enable-unsafe-sort-pushdown={{.ENABLE_UNSAFE_SORT_PUSHDOWN}}
 
   test-integration-sqlite:
     desc: "Run integration tests for `sqlite` backend"
@@ -244,7 +244,7 @@ tasks:
         -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
         -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
-        -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
+        -enable-unsafe-sort-pushdown={{.ENABLE_UNSAFE_SORT_PUSHDOWN}}
 
   test-integration-hana:
     desc: "Run integration tests for `hana` handler"
@@ -269,9 +269,8 @@ tasks:
         -target-tls
         -hana-url=$FERRETDB_HANA_URL
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-        -use-new-hana
         -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
-        -enable-sort-pushdown={{.ENABLE_SORT_PUSHDOWN}}
+        -enable-unsafe-sort-pushdown={{.ENABLE_UNSAFE_SORT_PUSHDOWN}}
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -348,20 +347,6 @@ tasks:
         --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         --test-records-dir=tmp/records
 
-  run-old:
-    desc: "Run FerretDB with old `pg` handler"
-    deps: [build-host]
-    cmds:
-      - >
-        bin/ferretdb{{exeExt}}
-        --listen-addr=:27017
-        --proxy-addr=127.0.0.1:47017
-        --mode=diff-normal
-        --handler=pg
-        --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
-        --postgresql-old=true
-        --test-records-dir=tmp/records
-
   run-sqlite:
     desc: "Run FerretDB with `sqlite` backend"
     deps: [build-host]
@@ -382,7 +367,6 @@ tasks:
     desc: "Run FerretDB with `hana` handler"
     deps: [build-host]
     cmds:
-      # TODO --use-new-hana
       - >
         bin/ferretdb{{exeExt}}
         --listen-addr=:27017
@@ -520,6 +504,8 @@ tasks:
           --use=false
           --config=./build/docker/buildkitd.toml
           --driver=docker-container
+          --driver-opt network=host
+          --driver-opt env.JAEGER_TRACE=127.0.0.1:6831
           --driver-opt env.BUILDKIT_STEP_LOG_MAX_SIZE=-1
           --driver-opt env.BUILDKIT_STEP_LOG_MAX_SPEED=-1
         ignore_error: true
@@ -706,12 +692,12 @@ tasks:
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
       - for: [amd64, arm64, arm/v7]
         task: packages-deb-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
@@ -734,12 +720,12 @@ tasks:
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: '{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
       - for: [amd64, arm64, arm/v7]
         task: packages-deb-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: '{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
@@ -774,12 +760,12 @@ tasks:
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
       - for: [amd64, arm64, arm/v7]
         task: packages-rpm-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: 'dev-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'dev-linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
@@ -802,12 +788,12 @@ tasks:
           PACKAGE_VERSION: "{{.PACKAGE_VERSION}}"
           PACKAGE_ARCH: '{{replace "/" "" .ITEM | replace "v" ""}}' # arm/v7 -> arm7
           DIR_ARCH: '{{replace "/" "_" .ITEM}}' # arm/v7 -> arm_v7
-          FILE_SUFFIX: '{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
       - for: [amd64, arm64, arm/v7]
         task: packages-rpm-check
         vars:
           DOCKER_ARCH: "{{.ITEM}}" # arm/v7
-          FILE_SUFFIX: '{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
+          FILE_SUFFIX: 'linux-{{replace "/" "" .ITEM}}' # arm/v7 -> armv7
     vars:
       PACKAGE_VERSION:
         sh: bin/envtool{{exeExt}} package-version
