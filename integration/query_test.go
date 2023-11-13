@@ -1085,7 +1085,7 @@ func TestQueryIDDoc(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, int64(1), res.MatchedCount)
 
-		cursor, err := collection.Find(ctx, bson.D{{"_id.a", int32(1)}})
+		cursor, err := collection.Find(ctx, bson.D{{"_id.z", int32(2)}})
 		require.NoError(t, err)
 
 		expected := []bson.D{{
