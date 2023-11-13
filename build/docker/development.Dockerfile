@@ -49,6 +49,10 @@ set -ex
 
 # Set GOARM explicitly due to https://github.com/docker-library/golang/issues/494.
 
+# check that stdlib was cached
+env GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} \
+    go install -v std
+
 env GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} \
     go build -v -o=/tmp/ferretdb/${TARGETARCH}_${TARGETVARIANT} ./cmd/ferretdb
 EOF
@@ -106,6 +110,10 @@ fi
 # because v2+ is problematic for some virtualization platforms and older hardware.
 
 # Set GOARM explicitly due to https://github.com/docker-library/golang/issues/494.
+
+# check that stdlib was cached
+env GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} \
+    go install -v -race=$RACE std
 
 env GOARCH=$TARGETARCH GOARM=${TARGETVARIANT#v} \
     go build -v -o=bin/ferretdb -race=$RACE ./cmd/ferretdb
