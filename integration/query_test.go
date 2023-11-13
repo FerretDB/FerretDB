@@ -1036,7 +1036,7 @@ func TestQueryCommandUnsafeLimitPushDown(t *testing.T) {
 	}
 }
 
-// TestQueryIDDoc checks that the order of fields in the _id document matters.
+// TestQueryIDDoc checks that the order of fields in the _id document matters, find and update commands work correctly.
 func TestQueryIDDoc(t *testing.T) {
 	t.Parallel()
 
@@ -1063,6 +1063,16 @@ func TestQueryIDDoc(t *testing.T) {
 	expected = []bson.D{}
 	actual = FilterAll(t, ctx, collection, bson.D{{"_id", bson.D{{"z", int32(4)}, {"a", int32(3)}}}})
 	AssertEqualDocumentsSlice(t, expected, actual)
+
+	cursor, err := collection.Find(ctx, bson.D{{"_id.a", int32(3)}})
+	require.NoError(t, err)
+
+	expected = []bson.D{{
+		{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
+		{"v", int32(2)},
+	}}
+	actual = FetchAll(t, ctx, cursor)
+	assert.Equal(t, expected, actual)
 }
 
 func TestQueryShowRecordID(t *testing.T) {
