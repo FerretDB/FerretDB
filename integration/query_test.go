@@ -1036,7 +1036,7 @@ func TestQueryCommandUnsafeLimitPushDown(t *testing.T) {
 	}
 }
 
-// TestQueryIDDoc checks that the order of fields in the _id document matters, find and update commands work correctly.
+// TestQueryIDDoc checks that the order of fields in the _id document matters, find and update commands work.
 func TestQueryIDDoc(t *testing.T) {
 	t.Parallel()
 
@@ -1053,26 +1053,48 @@ func TestQueryIDDoc(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	expected := []bson.D{{
-		{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
-		{"v", int32(2)},
-	}}
-	actual := FilterAll(t, ctx, collection, bson.D{{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}}})
-	AssertEqualDocumentsSlice(t, expected, actual)
+	t.Run("CorrectFieldOrder", func(t *testing.T) {
+		expected := []bson.D{{
+			{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
+			{"v", int32(2)},
+		}}
+		actual := FilterAll(t, ctx, collection, bson.D{{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}}})
+		AssertEqualDocumentsSlice(t, expected, actual)
+	})
 
-	expected = []bson.D{}
-	actual = FilterAll(t, ctx, collection, bson.D{{"_id", bson.D{{"z", int32(4)}, {"a", int32(3)}}}})
-	AssertEqualDocumentsSlice(t, expected, actual)
+	t.Run("WrongFieldOrder", func(t *testing.T) {
+		expected := []bson.D{}
+		actual := FilterAll(t, ctx, collection, bson.D{{"_id", bson.D{{"z", int32(4)}, {"a", int32(3)}}}})
+		AssertEqualDocumentsSlice(t, expected, actual)
+	})
 
-	cursor, err := collection.Find(ctx, bson.D{{"_id.a", int32(3)}})
-	require.NoError(t, err)
+	t.Run("PartialID", func(t *testing.T) {
+		cursor, err := collection.Find(ctx, bson.D{{"_id.a", int32(3)}})
+		require.NoError(t, err)
 
-	expected = []bson.D{{
-		{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
-		{"v", int32(2)},
-	}}
-	actual = FetchAll(t, ctx, cursor)
-	assert.Equal(t, expected, actual)
+		expected := []bson.D{{
+			{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
+			{"v", int32(2)},
+		}}
+		actual := FetchAll(t, ctx, cursor)
+		assert.Equal(t, expected, actual)
+	})
+
+	t.Run("Update", func(t *testing.T) {
+		res, err := collection.UpdateOne(ctx, bson.D{{"_id.a", int32(1)}}, bson.D{{"$set", bson.D{{"v", int32(3)}}}})
+		require.NoError(t, err)
+		assert.Equal(t, int64(1), res.MatchedCount)
+
+		cursor, err := collection.Find(ctx, bson.D{{"_id.a", int32(1)}})
+		require.NoError(t, err)
+
+		expected := []bson.D{{
+			{"_id", bson.D{{"a", int32(1)}, {"z", int32(2)}}},
+			{"v", int32(3)},
+		}}
+		actual := FetchAll(t, ctx, cursor)
+		assert.Equal(t, expected, actual)
+	})
 }
 
 func TestQueryShowRecordID(t *testing.T) {
