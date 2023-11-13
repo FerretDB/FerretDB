@@ -1473,9 +1473,10 @@ func TestCommandsAdministrationCompactErrors(t *testing.T) {
 	for name, tc := range map[string]struct {
 		dbName string
 
-		err        *mongo.CommandError // required
-		altMessage string              // optional, alternative error message
-		skip       string              // optional, skip test with a specified reason
+		err            *mongo.CommandError // required
+		altMessage     string              // optional, alternative error message
+		skip           string              // optional, skip test with a specified reason
+		skipForMongoDB string              // optional, skip test for MongoDB backend with a specific reason
 	}{
 		"NonExistentDB": {
 			dbName: "non-existent",
@@ -1484,8 +1485,8 @@ func TestCommandsAdministrationCompactErrors(t *testing.T) {
 				Name:    "NamespaceNotFound",
 				Message: "database does not exist",
 			},
-			altMessage: "Invalid namespace specified 'non-existent.non-existent'",
-			skip:       "FIXME",
+			altMessage:     "Invalid namespace specified 'non-existent.non-existent'",
+			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
 		},
 		"NonExistentCollection": {
 			dbName: "admin",
@@ -1494,14 +1495,18 @@ func TestCommandsAdministrationCompactErrors(t *testing.T) {
 				Name:    "NamespaceNotFound",
 				Message: "collection does not exist",
 			},
-			altMessage: "Invalid namespace specified 'admin.non-existent'",
-			skip:       "FIXME",
+			altMessage:     "Invalid namespace specified 'admin.non-existent'",
+			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
+			}
+
+			if tc.skipForMongoDB != "" {
+				setup.SkipForMongoDB(t, tc.skipForMongoDB)
 			}
 
 			t.Parallel()
