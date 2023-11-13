@@ -20,9 +20,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
-
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 )
 
 func TestPrepareSelectClause(t *testing.T) {
