@@ -331,12 +331,14 @@ func run() {
 
 	var wg sync.WaitGroup
 
-	wg.Add(1)
+	if cli.DebugAddr != "" {
+		wg.Add(1)
 
-	go func() {
-		defer wg.Done()
-		debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
-	}()
+		go func() {
+			defer wg.Done()
+			debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
+		}()
+	}
 
 	metrics := connmetrics.NewListenerMetrics()
 
