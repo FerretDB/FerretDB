@@ -216,6 +216,6 @@ func init() {
 		l = zap.DebugLevel
 	}
 
-	logging.Setup(l, "")
+	logging.Setup(l, "console", "")
 	logger = zap.L()
 }

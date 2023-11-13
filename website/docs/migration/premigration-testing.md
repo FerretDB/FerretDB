@@ -22,8 +22,25 @@ As an example, let us say that your application performs some complex query and 
 You would do the following:
 
 1. Start FerretDB in `diff-normal` mode.
-   This can be achieved by using the `--mode` [flag](../configuration/flags.md) or by setting the `FERRETDB_MODE` environment variable.
-2. Run `mongosh` and insert some documents.
+
+   This can be achieved by setting the `--mode` [flag](../configuration/flags.md) or `FERRETDB_MODE` environment variable to `diff-normal`.
+   By default, FerretDB starts in normal mode (`--mode=normal`/`FERRETDB_MODE=normal`).
+   For more details, see [operation modes](../configuration/operation-modes.md).
+
+   Ensure to specify `--listen-addr` and `--proxy-addr` flags or set the `FERRETDB_LISTEN_ADDR` and `FERRETDB_PROXY_ADDR` environment variables.
+   Specify the address of your MongoDB instance for `--proxy-addr` flag or `FERRETDB_PROXY_ADDR` environment variable.
+   [See docs for more details](https://docs.ferretdb.io/configuration/flags/#interfaces). For example:
+
+   ```sh
+   ferretdb --mode=diff-normal \
+         --proxy-addr=<mongodb-URI> \
+         --listen-addr=<ferretdb-listen-address> \
+         --postgresql-url=<postgres_connection>
+   ```
+
+   The `--listen-addr` flag or the `FERRERDB_LISTEN_ADDR` environment variable is set to `127.0.0.1:27017` by default.
+
+2. Run `mongosh` to connect to the `--listen-addr` and then insert some documents.
 3. Run a query to fetch the first post from each author sorted by date and author.
 
    Please note that due to running in `diff-normal` mode, any error returned from FerretDB will be transmitted to the client, allowing us to promptly identify the issue.
@@ -83,8 +100,8 @@ You would do the following:
 Continuing with the same example above, we can further examine the diff output while in `diff-proxy` mode.
 
 1. Run FerretDB in `diff-proxy` mode.
-   This can again be achieved by using the `--mode` [flag](../configuration/flags.md) or by setting the `FERRETDB_MODE` environment variable as already shown.
-2. Re-run the query.
+   This can again be achieved by using the `--mode` [flag](../configuration/flags.md) or by setting the `FERRETDB_MODE` environment variable to `diff-proxy`.
+2. Follow the same instructions as the one for `diff-normal` above to run FerretDB in `diff-proxy` mode and re-run the query.
 
    ```js
    db.posts.aggregate([

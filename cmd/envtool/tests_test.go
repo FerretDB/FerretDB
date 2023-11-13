@@ -18,6 +18,7 @@ import (
 	"context"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -44,6 +45,9 @@ func makeTestLogger(messages *[]string) (*zap.Logger, error) {
 
 func TestRunGoTest(t *testing.T) {
 	t.Parallel()
+
+	// sometimes it is "(0.01s)" on CI
+	timingRe := regexp.MustCompile(` \(\d+\.\d+s\)$`)
 
 	t.Run("Normal", func(t *testing.T) {
 		t.Parallel()
@@ -82,7 +86,7 @@ func TestRunGoTest(t *testing.T) {
 			"  error_test.go:20: not hidden 1",
 			"  error_test.go:22: Error 1",
 			"  error_test.go:24: not hidden 2",
-			"  --- FAIL: TestError1 (0.00s)",
+			"  --- FAIL: TestError1",
 			"",
 			"FAIL TestError2/Parallel:",
 			"    === RUN   TestError2/Parallel",
@@ -92,7 +96,7 @@ func TestRunGoTest(t *testing.T) {
 			"    error_test.go:39: not hidden 6",
 			"    error_test.go:41: Error 2",
 			"    error_test.go:43: not hidden 7",
-			"    --- FAIL: TestError2/Parallel (0.00s)",
+			"    --- FAIL: TestError2/Parallel",
 			"",
 			"FAIL TestError2 2/2:",
 			"  === RUN   TestError2",
@@ -105,16 +109,21 @@ func TestRunGoTest(t *testing.T) {
 			"  === PAUSE TestError2/Parallel",
 			"  === RUN   TestError2/NotParallel",
 			"  error_test.go:47: not hidden for parent",
-			"  --- PASS: TestError2/NotParallel (0.00s)",
+			"  --- PASS: TestError2/NotParallel",
 			"  === CONT  TestError2/Parallel",
 			"  error_test.go:39: not hidden 6",
 			"  error_test.go:41: Error 2",
 			"  error_test.go:43: not hidden 7",
-			"  --- FAIL: TestError2/Parallel (0.00s)",
-			"  --- FAIL: TestError2 (0.00s)",
+			"  --- FAIL: TestError2/Parallel",
+			"  --- FAIL: TestError2",
 			"",
 			"FAIL github.com/FerretDB/FerretDB/cmd/envtool/testdata",
 		}
+
+		for i, line := range expected {
+			actual[i] = timingRe.ReplaceAllString(line, "")
+		}
+
 		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
 	})
 
@@ -133,10 +142,15 @@ func TestRunGoTest(t *testing.T) {
 			"  === RUN   TestSkip1",
 			"  skip_test.go:20: not hidden 1",
 			"  skip_test.go:22: Skip 1",
-			"  --- SKIP: TestSkip1 (0.00s)",
+			"  --- SKIP: TestSkip1",
 			"",
 			"PASS github.com/FerretDB/FerretDB/cmd/envtool/testdata",
 		}
+
+		for i, line := range expected {
+			actual[i] = timingRe.ReplaceAllString(line, "")
+		}
+
 		assert.Equal(t, expected, actual, "actual:\n%s", strings.Join(actual, "\n"))
 	})
 }
