@@ -347,20 +347,6 @@ tasks:
         --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         --test-records-dir=tmp/records
 
-  run-old:
-    desc: "Run FerretDB with old `pg` handler"
-    deps: [build-host]
-    cmds:
-      - >
-        bin/ferretdb{{exeExt}}
-        --listen-addr=:27017
-        --proxy-addr=127.0.0.1:47017
-        --mode=diff-normal
-        --handler=pg
-        --postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
-        --postgresql-old=true
-        --test-records-dir=tmp/records
-
   run-sqlite:
     desc: "Run FerretDB with `sqlite` backend"
     deps: [build-host]
@@ -516,6 +502,8 @@ tasks:
           --use=false
           --config=./build/docker/buildkitd.toml
           --driver=docker-container
+          --driver-opt network=host
+          --driver-opt env.JAEGER_TRACE=127.0.0.1:6831
           --driver-opt env.BUILDKIT_STEP_LOG_MAX_SIZE=-1
           --driver-opt env.BUILDKIT_STEP_LOG_MAX_SPEED=-1
         ignore_error: true

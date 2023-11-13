@@ -19,9 +19,11 @@ import (
 	"bytes"
 	"context"
 	_ "expvar" // for metrics
+	"fmt"
 	"net"
 	"net/http"
 	_ "net/http/pprof" // for profiling
+	"slices"
 	"text/template"
 	"time"
 
@@ -29,6 +31,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -67,8 +70,8 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	<html>
 	<body>
 	<ul>
-	{{range $key, $value := .}}
-		<li><a href="{{$key}}">{{$key}}</a>: {{$value}}</li>
+	{{range $path, $desc := .}}
+		<li><a href="{{$path}}">{{$path}}</a>: {{$desc}}</li>
 	{{end}}
 	</ul>
 	</body>
@@ -94,7 +97,16 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	go func() {
 		lis := must.NotFail(net.Listen("tcp", addr))
 
-		l.Sugar().Infof("Starting debug server on http://%s/", lis.Addr())
+		root := fmt.Sprintf("http://%s", lis.Addr())
+
+		l.Sugar().Infof("Starting debug server on %s ...", root)
+
+		paths := maps.Keys(handlers)
+		slices.Sort(paths)
+
+		for _, path := range paths {
+			l.Sugar().Infof("%s%s - %s", root, path, handlers[path])
+		}
 
 		if err := s.Serve(lis); err != http.ErrServerClosed {
 			panic(err)
