@@ -103,9 +103,7 @@ linters-settings:
     local-prefixes: github.com/FerretDB/FerretDB
   gomodguard:
     blocked:
-      modules:
-        - go.mongodb.org/mongo-driver:
-            reason: "FerretDB should not depend on MongoDB Go driver."
+      modules: []
   gosimple:
     checks: ["all"]
   govet:
