@@ -94,7 +94,12 @@ func Track(obj any, token *Token) {
 func Untrack(obj any, token *Token) {
 	checkArgs(obj, token)
 
-	pprof.Lookup(profileName(obj)).Remove(token)
+	p := pprof.Lookup(profileName(obj))
+	if p == nil {
+		panic("object is not tracked")
+	}
+
+	p.Remove(token)
 
 	runtime.SetFinalizer(obj, nil)
 }

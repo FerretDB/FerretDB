@@ -175,7 +175,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	}
 }
 
-// Setup setups a single collection for all providers, if the are present.
+// Setup setups a single collection for all providers, if they are present.
 func Setup(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
 	tb.Helper()
 
