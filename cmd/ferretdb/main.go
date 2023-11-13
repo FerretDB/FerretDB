@@ -191,9 +191,13 @@ func defaultLogLevel() zapcore.Level {
 
 // setupState setups state provider.
 func setupState() *state.Provider {
-	f, err := filepath.Abs(filepath.Join(cli.StateDir, "state.json"))
-	if err != nil {
-		log.Fatalf("Failed to get path for state file: %s.", err)
+	var f string
+
+	if cli.StateDir != "" {
+		var err error
+		if f, err = filepath.Abs(filepath.Join(cli.StateDir, "state.json")); err != nil {
+			log.Fatalf("Failed to get path for state file: %s.", err)
+		}
 	}
 
 	sp, err := state.NewProvider(f)
