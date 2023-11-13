@@ -39,7 +39,7 @@ import (
 // TODO https://github.com/FerretDB/FerretDB/issues/3263
 func WriteErrorDocument(we *mongo.WriteError) *types.Document {
 	return must.NotFail(types.NewDocument(
-		"index", we.Index,
+		"index", int32(we.Index),
 		"code", int32(we.Code),
 		"errmsg", we.Message,
 	))
