@@ -192,6 +192,7 @@ func defaultLogLevel() zapcore.Level {
 // setupState setups state provider.
 func setupState() *state.Provider {
 	var f string
+
 	if cli.StateDir != "" {
 		var err error
 		if f, err = filepath.Abs(filepath.Join(cli.StateDir, "state.json")); err != nil {
