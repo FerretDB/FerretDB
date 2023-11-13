@@ -193,7 +193,8 @@ func defaultLogLevel() zapcore.Level {
 func setupState() *state.Provider {
 	var f string
 
-	if cli.StateDir != "" {
+	// https://github.com/alecthomas/kong/issues/389
+	if cli.StateDir != "" && cli.StateDir != "-" {
 		var err error
 		if f, err = filepath.Abs(filepath.Join(cli.StateDir, "state.json")); err != nil {
 			log.Fatalf("Failed to get path for state file: %s.", err)
@@ -335,7 +336,8 @@ func run() {
 
 	var wg sync.WaitGroup
 
-	if cli.DebugAddr != "" {
+	// https://github.com/alecthomas/kong/issues/389
+	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
 		wg.Add(1)
 
 		go func() {
