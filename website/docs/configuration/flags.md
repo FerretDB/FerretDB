@@ -31,16 +31,16 @@ Some default values are overridden in [our Docker image](../quickstart-guide/doc
 
 ## Interfaces
 
-| Flag                     | Description                                                     | Environment Variable            | Default Value                                |
-| ------------------------ | --------------------------------------------------------------- | ------------------------------- | -------------------------------------------- |
-| `--listen-addr`          | Listen TCP address                                              | `FERRETDB_LISTEN_ADDR`          | `127.0.0.1:27017`<br />(`:27017` for Docker) |
-| `--listen-unix`          | Listen Unix domain socket path                                  | `FERRETDB_LISTEN_UNIX`          |                                              |
-| `--listen-tls`           | Listen TLS address (see [here](../security/tls-connections.md)) | `FERRETDB_LISTEN_TLS`           |                                              |
-| `--listen-tls-cert-file` | TLS cert file path                                              | `FERRETDB_LISTEN_TLS_CERT_FILE` |                                              |
-| `--listen-tls-key-file`  | TLS key file path                                               | `FERRETDB_LISTEN_TLS_KEY_FILE`  |                                              |
-| `--listen-tls-ca-file`   | TLS CA file path                                                | `FERRETDB_LISTEN_TLS_CA_FILE`   |                                              |
-| `--proxy-addr`           | Proxy address                                                   | `FERRETDB_PROXY_ADDR`           |                                              |
-| `--debug-addr`           | Listen address for HTTP handlers for metrics, pprof, etc        | `FERRETDB_DEBUG_ADDR`           | `127.0.0.1:8088`<br />(`:8088` for Docker)   |
+| Flag                     | Description                                                                                 | Environment Variable            | Default Value                                |
+| ------------------------ | ------------------------------------------------------------------------------------------- | ------------------------------- | -------------------------------------------- |
+| `--listen-addr`          | Listen TCP address                                                                          | `FERRETDB_LISTEN_ADDR`          | `127.0.0.1:27017`<br />(`:27017` for Docker) |
+| `--listen-unix`          | Listen Unix domain socket path                                                              | `FERRETDB_LISTEN_UNIX`          |                                              |
+| `--listen-tls`           | Listen TLS address (see [here](../security/tls-connections.md))                             | `FERRETDB_LISTEN_TLS`           |                                              |
+| `--listen-tls-cert-file` | TLS cert file path                                                                          | `FERRETDB_LISTEN_TLS_CERT_FILE` |                                              |
+| `--listen-tls-key-file`  | TLS key file path                                                                           | `FERRETDB_LISTEN_TLS_KEY_FILE`  |                                              |
+| `--listen-tls-ca-file`   | TLS CA file path                                                                            | `FERRETDB_LISTEN_TLS_CA_FILE`   |                                              |
+| `--proxy-addr`           | Proxy address                                                                               | `FERRETDB_PROXY_ADDR`           |                                              |
+| `--debug-addr`           | Listen address for HTTP handlers for metrics, pprof, etc. Set to a blank string to disable. | `FERRETDB_DEBUG_ADDR`           | `127.0.0.1:8088`<br />(`:8088` for Docker)   |
 
 ## Backend handlers
 
@@ -54,11 +54,6 @@ Some default values are overridden in [our Docker image](../quickstart-guide/doc
 | Flag               | Description                     | Environment Variable      | Default Value                        |
 | ------------------ | ------------------------------- | ------------------------- | ------------------------------------ |
 | `--postgresql-url` | PostgreSQL URL for 'pg' handler | `FERRETDB_POSTGRESQL_URL` | `postgres://127.0.0.1:5432/ferretdb` |
-| `--postgresql-old` | Use old PostgreSQL backend      | `FERRETDB_POSTGRESQL_OLD` | `false`                              |
-
-The new PostgreSQL backend is now enabled by default.
-The `--postgresql-old` flag enables the use of the old PostgreSQL backend.
-It will be removed in the next release.
 
 FerretDB uses [pgx v5](https://github.com/jackc/pgx) library for connecting to PostgreSQL.
 Supported URL parameters are documented there:

@@ -83,7 +83,7 @@ You can improve that setup by:
 
 Find out more about:
 
-- [getting logs](../configuration/logging.md#docker-logs).
+- [getting logs](../configuration/observability.md#docker-logs).
 
 ### SQLite Setup with Docker Compose
 
