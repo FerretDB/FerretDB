@@ -14,7 +14,7 @@ Here are some of the current FerretDB projects that you can fork and contribute 
 - [github-actions](https://github.com/FerretDB/github-actions): This repository houses our shared GitHub Actions for FerretDB, dance, and other repositories.
 
 For those taking their first steps in contributing to an open source project.
-Please take a look at this post on [how to contribute to open source software](https://www.ferretdb.io/how-to-contribute-to-open-source-2022/).
+Please take a look at this post on [how to contribute to open source software](https://blog.ferretdb.io/how-to-contribute-to-open-source-2022/).
 
 ## Get started
 
