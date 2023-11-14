@@ -24,9 +24,9 @@ require (
 	golang.org/x/exp v0.0.0-20231108232855-2478ac86f678
 	golang.org/x/sys v0.14.0
 	modernc.org/sqlite v1.27.0
+	go.opentelemetry.io/otel/trace v1.19.0
 )
 
-require go.opentelemetry.io/otel/trace v1.19.0
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect

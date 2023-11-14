@@ -82,13 +82,6 @@ func parentTest(testName string) string {
 
 // runGoTest runs `go test` with given extra args.
 func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger) error {
-	ctx, span := otel.Tracer("").Start(ctx, "runGoTest", trace.WithAttributes(
-		attribute.String("args", strings.Join(args, " ")),
-		attribute.String("total", strconv.Itoa(total)),
-		attribute.Bool("times", times),
-	))
-	defer span.End()
-
 	cmd := exec.CommandContext(ctx, "go", append([]string{"test", "-json"}, args...)...)
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
@@ -107,6 +100,8 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 
 	var done int
 	results := make(map[string]*testResult, 300)
+	contexts := make(map[string]context.Context)
+	spans := make(map[string]trace.Span)
 
 	d := json.NewDecoder(p)
 	d.DisallowUnknownFields()
@@ -128,14 +123,6 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 
 		// logger.Desugar().Debug("decoded event", zap.Any("event", event))
 
-		span.AddEvent("decoded event", trace.WithAttributes(
-			attribute.String("action", event.Action),
-			attribute.String("package", event.Package),
-			attribute.String("test", event.Test),
-			attribute.String("output", event.Output),
-			attribute.Float64("elapsed seconds", event.ElapsedSeconds),
-		))
-
 		for t := event.Test; t != ""; t = parentTest(t) {
 			res := results[t]
 			if res == nil {
@@ -155,14 +142,37 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 			// nothing
 
 		case "run": // the test has started running
+			// Start a new span for the test or subtest
+			var newCtx context.Context
+			var span trace.Span
+
+			if levelTest(event.Test) == 0 {
+				newCtx, span = otel.Tracer("").Start(ctx, event.Test)
+			} else {
+				parentCtx := contexts[parentTest(event.Test)]
+				newCtx, span = otel.Tracer("").Start(parentCtx, event.Test)
+			}
+			contexts[event.Test] = newCtx
 			results[event.Test].run = event.Time
 			results[event.Test].cont = event.Time
+
+			// Add an event to the span at the start of the test.
+			span.AddEvent("Test Started", trace.WithTimestamp(event.Time), trace.WithAttributes(
+				attribute.String("test.name", event.Test),
+				attribute.String("test.action", event.Action),
+			))
+			spans[event.Test] = span
 
 		case "pause": // the test has been paused
 			// nothing
 
 		case "cont": // the test has continued running
 			results[event.Test].cont = event.Time
+			span := spans[event.Test]
+			span.AddEvent("Test Continued", trace.WithTimestamp(event.Time), trace.WithAttributes(
+				attribute.String("test.name", event.Test),
+				attribute.String("test.action", event.Action),
+			))
 
 		case "output": // the test printed output
 			// nothing
@@ -171,9 +181,23 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 			// nothing
 
 		case "pass": // the test passed
+			// End the span for the test or subtest.
+			if span, ok := spans[event.Test]; ok {
+				span.End(trace.WithTimestamp(event.Time))
+				delete(spans, event.Test)
+			}
 			fallthrough
 
 		case "fail": // the test or benchmark failed
+			// End the span for the test or subtest.
+			if span, ok := spans[event.Test]; ok {
+				span.AddEvent("Test Failed", trace.WithTimestamp(event.Time), trace.WithAttributes(
+					attribute.String("test.name", event.Test),
+					attribute.String("test.action", event.Action),
+				))
+				span.End(trace.WithTimestamp(event.Time))
+				delete(spans, event.Test)
+			}
 			fallthrough
 
 		case "skip": // the test was skipped or the package contained no tests
@@ -224,6 +248,12 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 
 			logger.Info("")
 
+			// End the span for the test or subtest.
+			if span, ok := spans[event.Test]; ok {
+				span.End(trace.WithTimestamp(event.Time))
+				delete(spans, event.Test)
+			}
+
 		default:
 			return lazyerrors.Errorf("unknown action %q", event.Action)
 		}
@@ -234,14 +264,6 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 // using `go test` with given extra args.
 func testsRun(ctx context.Context, index, total uint, run string, args []string, logger *zap.SugaredLogger) error {
 	logger.Debugf("testsRun: index=%d, total=%d, run=%q, args=%q", index, total, run, args)
-
-	ctx, span := otel.Tracer("").Start(ctx, "testsRun", trace.WithAttributes(
-		attribute.String("index", strconv.Itoa(int(index))),
-		attribute.String("total", strconv.Itoa(int(total))),
-		attribute.String("run", run),
-		attribute.String("args", strings.Join(args, " ")),
-	))
-	defer span.End()
 
 	var totalTest int
 	if run == "" {
