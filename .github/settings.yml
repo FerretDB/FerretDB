@@ -42,6 +42,9 @@ labels:
   - name: area/params
     color: "#FBCA04"
     description: Issues about command parameters extraction
+  - name: area/performance
+    color: "#D02FE8"
+    description: Issues about performance
   - name: area/pushdown
     color: "#83F7BA"
     description: Issues about query pushdown
