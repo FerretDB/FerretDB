@@ -94,6 +94,10 @@ labels:
     color: "#FF3333"
     description: Scope, difficulty and/or clarify of the issue were different
 
+  - name: bench
+    color: "#9DB6DF"
+    description: PRs that can benchmarks
+
   - name: community
     color: "#297252"
     description: Issues and PRs assigned to community members

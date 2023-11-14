@@ -220,7 +220,7 @@ jobs:
     if: >
       github.event_name != 'pull_request' ||
       (
-        contains(github.event.pull_request.labels.*.name, 'trust') &&
+        contains(github.event.pull_request.labels.*.name, 'bench') &&
         !contains(github.event.pull_request.labels.*.name, 'not ready')
       )
 
