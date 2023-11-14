@@ -19,6 +19,8 @@ import (
 	"errors"
 	"fmt"
 
+	"go.mongodb.org/mongo-driver/mongo"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -72,13 +74,13 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		if err != nil {
 			var ce *commonerrors.CommandError
 			if errors.As(err, &ce) {
-				we := &writeError{
-					index:  int32(i),
-					code:   ce.Code(),
-					errmsg: ce.Err().Error(),
+				we := &mongo.WriteError{
+					Index:   i,
+					Code:    int(ce.Code()),
+					Message: ce.Err().Error(),
 				}
 
-				writeErrors.Append(we.Document())
+				writeErrors.Append(WriteErrorDocument(we))
 
 				if params.Ordered {
 					break

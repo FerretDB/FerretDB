@@ -119,7 +119,14 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 	var res bson.D
 	err = db.RunCommand(ctx, bson.D{{"dropDatabase", 1}}).Decode(&res)
 	require.NoError(t, err)
-	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
+
+	actual := ConvertDocument(t, res)
+	actual.Remove("$clusterTime")
+	actual.Remove("operationTime")
+
+	expected := ConvertDocument(t, bson.D{{"ok", float64(1)}})
+
+	testutil.AssertEqual(t, expected, actual)
 
 	// there is no explicit command to create database, so create collection instead
 	err = db.Client().Database(name).CreateCollection(ctx, collection.Name())
@@ -136,7 +143,12 @@ func TestCommandsAdministrationCreateDropListDatabases(t *testing.T) {
 	// drop manually to check error
 	err = db.RunCommand(ctx, bson.D{{"dropDatabase", 1}}).Decode(&res)
 	require.NoError(t, err)
-	assert.Equal(t, bson.D{{"ok", 1.0}}, res)
+
+	actual = ConvertDocument(t, res)
+	actual.Remove("$clusterTime")
+	actual.Remove("operationTime")
+
+	testutil.AssertEqual(t, expected, actual)
 }
 
 func TestCommandsAdministrationListDatabases(t *testing.T) {
@@ -1153,12 +1165,12 @@ func TestCommandsAdministrationServerStatus(t *testing.T) {
 
 	// catalogStats is calculated across all the databases, so there could be quite a lot of collections here.
 	assert.InDelta(t, 632, must.NotFail(catalogStats.Get("collections")), 632)
-	assert.InDelta(t, 3, must.NotFail(catalogStats.Get("internalCollections")), 3)
+	assert.InDelta(t, 19, must.NotFail(catalogStats.Get("internalCollections")), 19)
 
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("timeseries")))
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("views")))
-	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("internalViews")))
+	assert.InDelta(t, int32(0), must.NotFail(catalogStats.Get("internalViews")), 1)
 	assert.Equal(t, int32(0), must.NotFail(catalogStats.Get("capped")))
 
 	opts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1000).SetMaxDocuments(10)
@@ -1381,27 +1393,33 @@ func TestCommandsAdministrationCompactForce(t *testing.T) {
 			force: true,
 		},
 		"False": {
-			force: false,
+			force:          false,
+			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
 		},
 		"Int32": {
 			force: int32(1),
 		},
 		"Int32Zero": {
-			force: int32(0),
+			force:          int32(0),
+			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
 		},
 		"Int64": {
 			force: int64(1),
 		},
 		"Int64Zero": {
-			force: int64(0),
+			force:          int64(0),
+			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
 		},
 		"Double": {
 			force: float64(1),
 		},
 		"DoubleZero": {
-			force: float64(0),
+			force:          float64(0),
+			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
 		},
-		"Unset": {},
+		"Unset": {
+			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
+		},
 		"String": {
 			force: "foo",
 			err: &mongo.CommandError{
@@ -1455,9 +1473,10 @@ func TestCommandsAdministrationCompactErrors(t *testing.T) {
 	for name, tc := range map[string]struct {
 		dbName string
 
-		err        *mongo.CommandError // required
-		altMessage string              // optional, alternative error message
-		skip       string              // optional, skip test with a specified reason
+		err            *mongo.CommandError // required
+		altMessage     string              // optional, alternative error message
+		skip           string              // optional, skip test with a specified reason
+		skipForMongoDB string              // optional, skip test for MongoDB backend with a specific reason
 	}{
 		"NonExistentDB": {
 			dbName: "non-existent",
@@ -1466,7 +1485,8 @@ func TestCommandsAdministrationCompactErrors(t *testing.T) {
 				Name:    "NamespaceNotFound",
 				Message: "database does not exist",
 			},
-			altMessage: "Invalid namespace specified 'non-existent.non-existent'",
+			altMessage:     "Invalid namespace specified 'non-existent.non-existent'",
+			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
 		},
 		"NonExistentCollection": {
 			dbName: "admin",
@@ -1475,13 +1495,18 @@ func TestCommandsAdministrationCompactErrors(t *testing.T) {
 				Name:    "NamespaceNotFound",
 				Message: "collection does not exist",
 			},
-			altMessage: "Invalid namespace specified 'admin.non-existent'",
+			altMessage:     "Invalid namespace specified 'admin.non-existent'",
+			skipForMongoDB: "Only {force:true} can be run on active replica set primary",
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
 				t.Skip(tc.skip)
+			}
+
+			if tc.skipForMongoDB != "" {
+				setup.SkipForMongoDB(t, tc.skipForMongoDB)
 			}
 
 			t.Parallel()
