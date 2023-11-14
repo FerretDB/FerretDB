@@ -5,7 +5,7 @@ authors: [alex]
 description: >
   This blog post is a guide to help you migrate data from MongoDB to FerretDB.
 image: /img/blog/ferretdb-v1.13.0.png
-tags: [release]
+tags: [community, product, tutorial]
 ---
 
 Intro
