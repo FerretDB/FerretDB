@@ -15,15 +15,25 @@
 package registry
 
 import (
+	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/sqlite"
+	handler "github.com/FerretDB/FerretDB/internal/handlers/sqlite"
 )
 
 // init registers "sqlite" handler.
 func init() {
 	registry["sqlite"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
-		handlerOpts := &sqlite.NewOpts{
-			Backend: "sqlite",
+		b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
+			URI: opts.SQLiteURL,
+			L:   opts.Logger.Named("sqlite"),
+			P:   opts.StateProvider,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		handlerOpts := &handler.NewOpts{
+			Backend: b,
 			URI:     opts.SQLiteURL,
 
 			L:             opts.Logger.Named("sqlite"),
@@ -35,6 +45,6 @@ func init() {
 			EnableOplog:              opts.EnableOplog,
 		}
 
-		return sqlite.New(handlerOpts)
+		return handler.New(handlerOpts)
 	}
 }

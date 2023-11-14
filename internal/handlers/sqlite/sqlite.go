@@ -23,9 +23,6 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/decorators/oplog"
-	"github.com/FerretDB/FerretDB/internal/backends/hana"
-	"github.com/FerretDB/FerretDB/internal/backends/postgresql"
-	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handlers"
@@ -45,7 +42,7 @@ type Handler struct {
 //
 //nolint:vet // for readability
 type NewOpts struct {
-	Backend string
+	Backend backends.Backend
 	URI     string
 
 	L             *zap.Logger
@@ -60,35 +57,37 @@ type NewOpts struct {
 
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
-	var b backends.Backend
-	var err error
+	/*	var b backends.Backend
+		var err error
 
-	switch opts.Backend {
-	case "postgresql":
-		b, err = postgresql.NewBackend(&postgresql.NewBackendParams{
-			URI: opts.URI,
-			L:   opts.L,
-			P:   opts.StateProvider,
-		})
-	case "sqlite":
-		b, err = sqlite.NewBackend(&sqlite.NewBackendParams{
-			URI: opts.URI,
-			L:   opts.L,
-			P:   opts.StateProvider,
-		})
-	case "hana":
-		b, err = hana.NewBackend(&hana.NewBackendParams{
-			URI: opts.URI,
-			L:   opts.L,
-			P:   opts.StateProvider,
-		})
-	default:
-		panic("unknown backend: " + opts.Backend)
-	}
+		switch opts.Backend {
+		case "postgresql":
+			b, err = postgresql.NewBackend(&postgresql.NewBackendParams{
+				URI: opts.URI,
+				L:   opts.L,
+				P:   opts.StateProvider,
+			})
+		case "sqlite":
+			b, err = sqlite.NewBackend(&sqlite.NewBackendParams{
+				URI: opts.URI,
+				L:   opts.L,
+				P:   opts.StateProvider,
+			})
+		case "hana":
+			b, err = hana.NewBackend(&hana.NewBackendParams{
+				URI: opts.URI,
+				L:   opts.L,
+				P:   opts.StateProvider,
+			})
+		default:
+			panic("unknown backend: " + opts.Backend)
+		}
 
-	if err != nil {
-		return nil, err
-	}
+		if err != nil {
+			return nil, err
+		}*/
+
+	b := opts.Backend
 
 	if opts.EnableOplog {
 		b = oplog.NewBackend(b, opts.L.Named("oplog"))

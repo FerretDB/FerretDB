@@ -26,8 +26,17 @@ func init() {
 	registry["hana"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
 		opts.Logger.Warn("HANA handler is in alpha. It is not supported yet.")
 
+		b, err := hana.NewBackend(&hana.NewBackendParams{
+			URI: opts.URI,
+			L:   opts.L,
+			P:   opts.StateProvider,
+		})
+		if err != nil {
+			return nil, err
+		}
+
 		handlerOpts := &sqlite.NewOpts{
-			Backend: "hana",
+			Backend: b,
 			URI:     opts.HANAURL,
 
 			L:             opts.Logger.Named("hana"),
