@@ -83,7 +83,7 @@ type QueryParams struct {
 	Sort          *SortField
 	Limit         int64
 	OnlyRecordIDs bool
-	Comment       string // TODO https://github.com/FerretDB/FerretDB/issues/3573
+	Comment       string
 }
 
 // QueryResult represents the results of Collection.Query method.
