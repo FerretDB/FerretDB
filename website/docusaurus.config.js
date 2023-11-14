@@ -23,10 +23,7 @@ const config = {
     locales: ['en'],
   },
 
-  scripts: [
-    {src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io"},
-    { src: 'https://unpkg.com/@antonz/codapi@0.6.0/dist/snippet.js' }
-  ],
+  scripts: [{src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "docs.ferretdb.io"}],
 
   plugins: [
     [

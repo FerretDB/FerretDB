@@ -7,13 +7,6 @@ description: In this tutorial, we will show you how to pass basic MongoDB CRUD o
 tags: [mongodb compatible, open source, tutorial]
 ---
 
-<head>
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/@antonz/codapi@0.6.1/dist/snippet.css"
-  />
-</head>
-
 In this tutorial, we will show you how to pass basic MongoDB CRUD operations in FerretDB - the open source MongoDB alternative.
 
 ![Pass Basic CRUD Operations in FerretDB](/img/blog/uriel-sc-11KDtiUWRq4-unsplash-1024x680.jpg)
@@ -153,46 +146,11 @@ The `find()` method filters and selects all the documents in a collection that m
 If there is no query parameter for the method, all the records present in the collection are returned.
 First, let's select all the documents in the **league** collection created earlier.
 
-<script id="insert-1.js" type="text/plain">
-  {`
-    db.league.insertMany([
-    {
-        club: "Arsenal",
-        points: 80,
-        average_age: 24,
-        discipline: { red: 2, yellow: 15 },
-        qualified: true,
-    },
-    {
-        club: "Barcelona",
-        points: 60,
-        average_age: 31,
-        discipline: { red: 0, yellow: 7 },
-        qualified: false,
-    },
-    {
-        club: "Bayern",
-        points: 84,
-        average_age: 29,
-        discipline: { red: 1, yellow: 20 },
-        qualified: true,
-    },
-]);
-db.league.insertOne({
-        club: "PSG",
-        points: 30,
-        average_age: 30,
-        discipline: { red: 5, yellow: 30 },
-    });
-  `}
-##CODE##
-</script>
-
 ```js
 db.league.find({})
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" template="#insert-1.js">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.js">
 </codapi-snippet>
 
 This operation retrieves and displays all the documents present in the collection.
@@ -202,7 +160,7 @@ Now, let's add a query parameter to the `find()` operation to filter for a speci
 db.league.find({ club: 'PSG' })
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" template="#insert-1">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.js">
 </codapi-snippet>
 
 You can also filter a collection in FerretDB using any of the commonly used MongoDB operators:
@@ -231,7 +189,7 @@ Let's filter the `league` data for teams with 80 or 60 `points`:
 db.league.find({ points: { $in: [80, 60] } })
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" template="#insert-1.js">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.js">
 </codapi-snippet>
 
 #### Find documents using the `$lt` operator
@@ -243,7 +201,7 @@ For example, let's select the documents with less than 60 _points_ :
 db.league.find({ points: { $lt: 60 } })
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" template="#insert-1.js">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.js">
 </codapi-snippet>
 
 ### findOne()
@@ -255,7 +213,7 @@ For instance, let's filter the collection for documents with the _qualified_ set
 db.league.findOne({ qualified: true })
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" template="#insert-1.js">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.js">
 </codapi-snippet>
 
 Even though two documents match this query, the result only displays the first document.
@@ -282,7 +240,7 @@ This update operation will only affect the first document that's retrieved in th
 db.league.updateOne({ club: 'PSG' }, { $set: { points: 35 } })
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" template="#insert-1.js">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/insert-2.js">
 </codapi-snippet>
 
 ### updateMany()
@@ -290,91 +248,16 @@ db.league.updateOne({ club: 'PSG' }, { $set: { points: 35 } })
 The `updateMany()` method can take a query and make updates to many documents at once.
 For example, let's update all documents with a _points_ field that's less than or equal to 90 and set the `qualified` field to false.
 
-<script id="update-1" type="text/plain">
-  {`
-db.league.insertOne({
-    club: "PSG",
-    points: 30,
-    average_age: 30,
-    discipline: { red: 5, yellow: 30 },
-    qualified: false,
-});
-db.league.insertMany([
-    {
-        club: "Arsenal",
-        points: 80,
-        average_age: 24,
-        discipline: { red: 2, yellow: 15 },
-        qualified: true,
-    },
-    {
-        club: "Barcelona",
-        points: 60,
-        average_age: 31,
-        discipline: { red: 0, yellow: 7 },
-        qualified: false,
-    },
-    {
-        club: "Bayern",
-        points: 84,
-        average_age: 29,
-        discipline: { red: 1, yellow: 20 },
-        qualified: true,
-    },
-]);
-db.league.updateOne({ club: "PSG" }, { $set: { points: 35 } });
-  `}
-##CODE##
-</script>
-
 ```js
 db.league.updateMany({ points: { $lte: 90 } }, { $set: { qualified: false } })
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" template="#update-1">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/update-1.js">
 </codapi-snippet>
 
 ### replaceOne()
 
 The replaceOne() method is ideal if you intend to replace an entire document at once.
-
-<script id="update-2" type="text/plain">
-  {`
-db.league.insertOne({
-    club: "PSG",
-    points: 30,
-    average_age: 30,
-    discipline: { red: 5, yellow: 30 },
-    qualified: false,
-});
-db.league.insertMany([
-    {
-        club: "Arsenal",
-        points: 80,
-        average_age: 24,
-        discipline: { red: 2, yellow: 15 },
-        qualified: true,
-    },
-    {
-        club: "Barcelona",
-        points: 60,
-        average_age: 31,
-        discipline: { red: 0, yellow: 7 },
-        qualified: false,
-    },
-    {
-        club: "Bayern",
-        points: 84,
-        average_age: 29,
-        discipline: { red: 1, yellow: 20 },
-        qualified: true,
-    },
-]);
-db.league.updateOne({ club: "PSG" }, { $set: { points: 35 } });
-db.league.updateMany({ points: { $lte: 90 } }, { $set: { qualified: false } });
-  `}
-##CODE##
-</script>
 
 ```js
 db.league.replaceOne(
@@ -389,7 +272,7 @@ db.league.replaceOne(
 )
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" template="#update-2">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/update-2.js">
 </codapi-snippet>
 
 ## Delete operation
@@ -402,59 +285,11 @@ Let's check out two methods for deleting documents in a collection: deleteOne() 
 The `deleteOne()` method takes in a query parameter that filters a collection for a particular document and then deletes it from the record.
 Note that this operation only deletes the first document that matches the query in the collection.
 
-<script id="delete-1" type="text/plain">
-  {`
-db.league.insertOne({
-    club: "PSG",
-    points: 30,
-    average_age: 30,
-    discipline: { red: 5, yellow: 30 },
-    qualified: false,
-});
-db.league.insertMany([
-    {
-        club: "Arsenal",
-        points: 80,
-        average_age: 24,
-        discipline: { red: 2, yellow: 15 },
-        qualified: true,
-    },
-    {
-        club: "Barcelona",
-        points: 60,
-        average_age: 31,
-        discipline: { red: 0, yellow: 7 },
-        qualified: false,
-    },
-    {
-        club: "Bayern",
-        points: 84,
-        average_age: 29,
-        discipline: { red: 1, yellow: 20 },
-        qualified: true,
-    },
-]);
-db.league.updateOne({ club: "PSG" }, { $set: { points: 35 } });
-db.league.updateMany({ points: { $lte: 90 } }, { $set: { qualified: false } });
-db.league.replaceOne(
-    { club: "Barcelona" },
-    {
-        club: "Inter",
-        points: 83,
-        average_age: 32,
-        discipline: { red: 2, yellow: 10 },
-        qualified: true,
-    }
-);
-  `}
-##CODE##
-</script>
-
 ```js
 db.league.deleteOne({ club: 'Arsenal' })
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" template="#delete-1">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/update-3.js">
 </codapi-snippet>
 
 This operation deletes one document from the collection:
@@ -468,60 +303,11 @@ This operation deletes one document from the collection:
 The deleteMany() method is used for deleting multiple documents in a collection.
 The operation takes in a query and then filters and deletes all the documents matching the query.
 
-<script id="delete-2" type="text/plain">
-  {`
-db.league.insertOne({
-    club: "PSG",
-    points: 30,
-    average_age: 30,
-    discipline: { red: 5, yellow: 30 },
-    qualified: false,
-});
-db.league.insertMany([
-    {
-        club: "Arsenal",
-        points: 80,
-        average_age: 24,
-        discipline: { red: 2, yellow: 15 },
-        qualified: true,
-    },
-    {
-        club: "Barcelona",
-        points: 60,
-        average_age: 31,
-        discipline: { red: 0, yellow: 7 },
-        qualified: false,
-    },
-    {
-        club: "Bayern",
-        points: 84,
-        average_age: 29,
-        discipline: { red: 1, yellow: 20 },
-        qualified: true,
-    },
-]);
-db.league.updateOne({ club: "PSG" }, { $set: { points: 35 } });
-db.league.updateMany({ points: { $lte: 90 } }, { $set: { qualified: false } });
-db.league.replaceOne(
-    { club: "Barcelona" },
-    {
-        club: "Inter",
-        points: 83,
-        average_age: 32,
-        discipline: { red: 2, yellow: 10 },
-        qualified: true,
-    }
-);
-db.league.deleteOne({ club: "Arsenal" });
-  `}
-##CODE##
-</script>
-
 ```js
 db.league.deleteMany({ qualified: false })
 ```
 
-<codapi-snippet sandbox="ferretdb" editor="basic" template="#delete-2">
+<codapi-snippet sandbox="ferretdb" editor="basic" template="/blog/2022-11-14/delete-1.js">
 </codapi-snippet>
 
 ## Get started with FerretDB
