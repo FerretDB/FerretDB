@@ -47,22 +47,29 @@ var (
 	cleanupTimingRe    = regexp.MustCompile(`(\d+\.\d+)s`)                   // duration are different
 	cleanupGoroutineRe = regexp.MustCompile(`goroutine (\d+)`)               // goroutine IDs are different
 	cleanupPathRe      = regexp.MustCompile(`^\t(.+)/cmd/envtool/testdata/`) // absolute file paths are different
+	cleanupAddrRe      = regexp.MustCompile(` (\+0x[0-9a-f]+)$`)             // addresses are different
 )
 
 // cleanup removes variable parts of the output.
 func cleanup(lines []string) {
 	for i, line := range lines {
 		if loc := cleanupTimingRe.FindStringSubmatchIndex(line); loc != nil {
-			lines[i] = line[:loc[2]] + "<SEC>" + line[loc[3]:]
+			line = line[:loc[2]] + "<SEC>" + line[loc[3]:]
 		}
 
 		if loc := cleanupGoroutineRe.FindStringSubmatchIndex(line); loc != nil {
-			lines[i] = line[:loc[2]] + "<ID>" + line[loc[3]:]
+			line = line[:loc[2]] + "<ID>" + line[loc[3]:]
 		}
 
 		if loc := cleanupPathRe.FindStringSubmatchIndex(line); loc != nil {
-			lines[i] = line[:loc[2]] + "<DIR>" + line[loc[3]:]
+			line = line[:loc[2]] + "<DIR>" + line[loc[3]:]
 		}
+
+		if loc := cleanupAddrRe.FindStringSubmatchIndex(line); loc != nil {
+			line = line[:loc[2]] + "<ADDR>" + line[loc[3]:]
+		}
+
+		lines[i] = line
 	}
 }
 
@@ -188,9 +195,9 @@ func TestRunGoTest(t *testing.T) {
 			"",
 			"goroutine <ID> [running]:",
 			"github.com/FerretDB/FerretDB/cmd/envtool/testdata.TestPanic1.func1()",
-			"	<DIR>/cmd/envtool/testdata/panic_test.go:25 +0x3c",
+			"	<DIR>/cmd/envtool/testdata/panic_test.go:25 <ADDR>",
 			"created by github.com/FerretDB/FerretDB/cmd/envtool/testdata.TestPanic1 in goroutine <ID>",
-			"	<DIR>/cmd/envtool/testdata/panic_test.go:23 +0x24",
+			"	<DIR>/cmd/envtool/testdata/panic_test.go:23 <ADDR>",
 			"",
 		}
 
