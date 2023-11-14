@@ -1203,3 +1203,21 @@ func TestQueryShowRecordIDErrors(t *testing.T) {
 		})
 	}
 }
+
+func TestQueryTailableCursors(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+	_, err := collection.InsertOne(ctx, bson.D{{"v", int32(42)}})
+	require.NoError(t, err)
+
+	expectedErr := mongo.CommandError{
+		Code: 2,
+		Message: "error processing query: ns=TestQueryTailableCursors.TestQueryTailableCursorsTree:" +
+			"  $eq null\nSort: {}\nProj: {}\n tailable cursor requested on non capped collection",
+		Name: "BadValue",
+	}
+
+	_, err = collection.Find(ctx, bson.D{{}}, options.Find().SetCursorType(options.Tailable))
+	AssertEqualCommandError(t, expectedErr, err)
+}
