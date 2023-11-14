@@ -249,7 +249,7 @@ jobs:
         run: bin/task init
 
       - name: Run benchmarks
-        run: bin/task bench-unit BENCH_TIME=5s
+        run: bin/task bench-unit BENCH_TIME=1s
         env:
           GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
 
