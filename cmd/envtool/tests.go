@@ -132,6 +132,9 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 			}
 		}
 
+		// We should also handle the output without a test name (for example, for panics);
+		// see https://github.com/golang/go/issues/38382.
+
 		switch event.Action {
 		case "start": // the test binary is about to be executed
 			// nothing
