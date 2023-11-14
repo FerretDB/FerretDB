@@ -28,6 +28,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestMostCommandsAreCaseSensitive(t *testing.T) {
@@ -603,7 +604,7 @@ func TestPingCommand(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 	db := collection.Database()
 
-	expectedRes := bson.D{{"ok", float64(1)}}
+	expected := ConvertDocument(t, bson.D{{"ok", float64(1)}})
 
 	t.Run("Multiple", func(t *testing.T) {
 		t.Parallel()
@@ -615,7 +616,11 @@ func TestPingCommand(t *testing.T) {
 			err := res.Decode(&actualRes)
 			require.NoError(t, err)
 
-			assert.Equal(t, expectedRes, actualRes)
+			actual := ConvertDocument(t, actualRes)
+			actual.Remove("$clusterTime")
+			actual.Remove("operationTime")
+
+			testutil.AssertEqual(t, expected, actual)
 		}
 	})
 
@@ -634,7 +639,13 @@ func TestPingCommand(t *testing.T) {
 		err = res.Decode(&actualRes)
 		require.NoError(t, err)
 
-		assert.Equal(t, expectedRes, actualRes)
+		actual := ConvertDocument(t, actualRes)
+		actual.Remove("$clusterTime")
+		actual.Remove("operationTime")
+
+		expected := ConvertDocument(t, bson.D{{"ok", float64(1)}})
+
+		testutil.AssertEqual(t, expected, actual)
 
 		// Ensure that we don't create database on ping
 		// This also means that no collection is created during ping.
