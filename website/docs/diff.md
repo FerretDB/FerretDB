@@ -27,7 +27,6 @@ slug: /diff/ # referenced in README.md and beacon
    - collection name must be valid UTF-8 characters;
 9. FerretDB offers the same validation rules for the `scale` parameter in both the `collStats` and `dbStats` commands.
    If an invalid `scale` value is provided in the `dbStats` command, the same error codes will be triggered as with the `collStats` command.
-10. FerretDB offers `debugError` command to return error for debugging.
 
 If you encounter some other difference in behavior,
 please [join our community](/#community) to report a problem.
