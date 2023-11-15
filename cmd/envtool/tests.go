@@ -124,6 +124,7 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 				}
 			}
 
+			results[event.Test].context = ctx
 			results[event.Test].lastAction = event.Action
 		}
 
@@ -135,35 +136,31 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 			must.NotBeZero(event.Test)
 
 			// Start a new span for the test or subtest
-			var newCtx context.Context
-			var span trace.Span
-
 			if parentTest(event.Test) == "" {
-				newCtx, span = otel.Tracer("").Start(ctx, event.Test)
+				results[event.Test].context, results[event.Test].span = otel.Tracer("").Start(ctx, event.Test)
 			} else {
 				parentCtx := results[parentTest(event.Test)].context
-				newCtx, span = otel.Tracer("").Start(parentCtx, event.Test)
+				if parentCtx != nil {
+					results[event.Test].context, results[event.Test].span = otel.Tracer("").Start(parentCtx, event.Test)
+				}
 			}
 
-			results[event.Test].context = newCtx
 			results[event.Test].run = event.Time
 			results[event.Test].cont = event.Time
 
 			// Add an event to the span at the start of the test.
-			span.AddEvent("Test Started", trace.WithTimestamp(event.Time), trace.WithAttributes(
+			results[event.Test].span.AddEvent("Test Started", trace.WithTimestamp(event.Time), trace.WithAttributes(
 				attribute.String("test.name", event.Test),
 				attribute.String("test.action", event.Action),
 			))
-			results[event.Test].span = span
-
 		case "pause": // the test has been paused
 			// nothing
 
 		case "cont": // the test has continued running
 			must.NotBeZero(event.Test)
 			results[event.Test].cont = event.Time
-			span := results[event.Test].span
-			span.AddEvent("Test Continued", trace.WithTimestamp(event.Time), trace.WithAttributes(
+
+			results[event.Test].span.AddEvent("Test Continued", trace.WithTimestamp(event.Time), trace.WithAttributes(
 				attribute.String("test.name", event.Test),
 				attribute.String("test.action", event.Action),
 			))
@@ -183,23 +180,9 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 			// nothing
 
 		case "pass": // the test passed
-			// End the span for the test or subtest.
-			if span := results[event.Test].span; span != nil {
-				span.End(trace.WithTimestamp(event.Time))
-				results[event.Test].span = nil
-			}
 			fallthrough
 
 		case "fail": // the test or benchmark failed
-			// End the span for the test or subtest.
-			if span := results[event.Test].span; span != nil {
-				span.AddEvent("Test Failed", trace.WithTimestamp(event.Time), trace.WithAttributes(
-					attribute.String("test.name", event.Test),
-					attribute.String("test.action", event.Action),
-				))
-				span.End(trace.WithTimestamp(event.Time))
-				results[event.Test].span = nil
-			}
 			fallthrough
 
 		case "skip": // the test was skipped or the package contained no tests
@@ -249,12 +232,6 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 			}
 
 			logger.Warn("")
-
-			// End the span for the test or subtest.
-			if span := results[event.Test].span; span != nil {
-				span.End(trace.WithTimestamp(event.Time))
-				results[event.Test].span = nil
-			}
 
 		default:
 			return lazyerrors.Errorf("unknown action %q", event.Action)
