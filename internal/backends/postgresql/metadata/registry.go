@@ -311,7 +311,7 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *pgxpool.Pool, dbN
 	}
 
 	q := fmt.Sprintf(
-		`CREATE SCHEMA %s`,
+		`CREATE SCHEMA IF NOT EXISTS %s`,
 		pgx.Identifier{dbName}.Sanitize(),
 	)
 
