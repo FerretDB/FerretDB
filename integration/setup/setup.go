@@ -59,8 +59,9 @@ var (
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
-	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
-	enableSortPushdownF    = flag.Bool("enable-sort-pushdown", false, "enable sort pushdown")
+	disableFilterPushdownF    = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
+	enableSortPushdownF       = flag.Bool("enable-sort-pushdown", false, "enable sort pushdown")
+	enableUnsafeSortPushdownF = flag.Bool("enable-unsafe-sort-pushdown", false, "enable unsafe sort pushdown")
 )
 
 // Other globals.

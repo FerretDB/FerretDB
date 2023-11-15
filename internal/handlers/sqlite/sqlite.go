@@ -53,9 +53,10 @@ type NewOpts struct {
 	StateProvider *state.Provider
 
 	// test options
-	DisableFilterPushdown bool
-	EnableSortPushdown    bool
-	EnableOplog           bool
+	DisableFilterPushdown    bool
+	EnableSortPushdown       bool
+	EnableUnsafeSortPushdown bool
+	EnableOplog              bool
 }
 
 // New returns a new handler.

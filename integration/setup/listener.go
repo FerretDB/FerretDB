@@ -159,9 +159,10 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		HANAURL:       *hanaURLF,
 
 		TestOpts: registry.TestOpts{
-			DisableFilterPushdown: *disableFilterPushdownF,
-			EnableSortPushdown:    *enableSortPushdownF,
-			EnableOplog:           true,
+			DisableFilterPushdown:    *disableFilterPushdownF,
+			EnableSortPushdown:       *enableSortPushdownF,
+			EnableUnsafeSortPushdown: *enableUnsafeSortPushdownF,
+			EnableOplog:              true,
 		},
 	}
 	h, err := registry.NewHandler(handler, handlerOpts)
@@ -182,6 +183,10 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 
 	if *targetTLSF && *targetUnixSocketF {
 		tb.Fatal("Both -target-tls and -target-unix-socket are set.")
+	}
+
+	if *enableSortPushdownF && *enableUnsafeSortPushdownF {
+		tb.Fatal("Both -enable-sort-pushdown and -enable-unsafe-sort-pushdown are set.")
 	}
 
 	switch {
