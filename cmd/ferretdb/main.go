@@ -74,8 +74,9 @@ var cli struct {
 	kong.Plugins
 
 	Log struct {
-		Level string `default:"${default_log_level}" help:"${help_log_level}"`
-		UUID  bool   `default:"false"                help:"Add instance UUID to all log messages." negatable:""`
+		Level  string `default:"${default_log_level}" help:"${help_log_level}"`
+		Format string `default:"console"              help:"${help_log_format}"                     enum:"${enum_log_format}"`
+		UUID   bool   `default:"false"                help:"Add instance UUID to all log messages." negatable:""`
 	} `embed:"" prefix:"log-"`
 
 	MetricsUUID bool `default:"false" help:"Add instance UUID to all metrics." negatable:""`
@@ -107,7 +108,6 @@ var cli struct {
 //nolint:lll // some tags are long
 var postgreSQLFlags struct {
 	PostgreSQLURL string `name:"postgresql-url" default:"postgres://127.0.0.1:5432/ferretdb" help:"PostgreSQL URL for 'postgresql' handler."`
-	PostgreSQLOld bool   `name:"postgresql-old" default:"false"                              help:"Use old PostgreSQL handler."`
 }
 
 // The sqliteFlags struct represents flags that are used by the "sqlite" backend.
@@ -154,16 +154,20 @@ var (
 		zap.ErrorLevel.String(),
 	}
 
+	logFormats = []string{"console", "json"}
+
 	kongOptions = []kong.Option{
 		kong.Vars{
 			"default_log_level": defaultLogLevel().String(),
 			"default_mode":      clientconn.AllModes[0],
 
-			"help_log_level": fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
-			"help_mode":      fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
-			"help_handler":   fmt.Sprintf("Backend handler: '%s'.", strings.Join(registry.Handlers(), "', '")),
+			"enum_log_format": strings.Join(logFormats, ","),
+			"enum_mode":       strings.Join(clientconn.AllModes, ","),
 
-			"enum_mode": strings.Join(clientconn.AllModes, ","),
+			"help_handler":    fmt.Sprintf("Backend handler: '%s'.", strings.Join(registry.Handlers(), "', '")),
+			"help_log_format": fmt.Sprintf("Log format: '%s'.", strings.Join(logFormats, "', '")),
+			"help_log_level":  fmt.Sprintf("Log level: '%s'.", strings.Join(logLevels, "', '")),
+			"help_mode":       fmt.Sprintf("Operation mode: '%s'.", strings.Join(clientconn.AllModes, "', '")),
 		},
 		kong.DefaultEnvars("FERRETDB"),
 	}
@@ -187,9 +191,14 @@ func defaultLogLevel() zapcore.Level {
 
 // setupState setups state provider.
 func setupState() *state.Provider {
-	f, err := filepath.Abs(filepath.Join(cli.StateDir, "state.json"))
-	if err != nil {
-		log.Fatalf("Failed to get path for state file: %s.", err)
+	var f string
+
+	// https://github.com/alecthomas/kong/issues/389
+	if cli.StateDir != "" && cli.StateDir != "-" {
+		var err error
+		if f, err = filepath.Abs(filepath.Join(cli.StateDir, "state.json")); err != nil {
+			log.Fatalf("Failed to get path for state file: %s.", err)
+		}
 	}
 
 	sp, err := state.NewProvider(f)
@@ -221,7 +230,7 @@ func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 }
 
 // setupLogger setups zap logger.
-func setupLogger(stateProvider *state.Provider) *zap.Logger {
+func setupLogger(stateProvider *state.Provider, format string) *zap.Logger {
 	info := version.Get()
 
 	startupFields := []zap.Field{
@@ -246,7 +255,7 @@ func setupLogger(stateProvider *state.Provider) *zap.Logger {
 		log.Fatal(err)
 	}
 
-	logging.Setup(level, logUUID)
+	logging.Setup(level, format, logUUID)
 	l := zap.L()
 
 	l.Info("Starting FerretDB "+info.Version+"...", startupFields...)
@@ -311,7 +320,7 @@ func run() {
 
 	metricsRegisterer := setupMetrics(stateProvider)
 
-	logger := setupLogger(stateProvider)
+	logger := setupLogger(stateProvider, cli.Log.Format)
 
 	if _, err := maxprocs.Set(maxprocs.Logger(logger.Sugar().Debugf)); err != nil {
 		logger.Sugar().Warnf("Failed to set GOMAXPROCS: %s.", err)
@@ -327,12 +336,15 @@ func run() {
 
 	var wg sync.WaitGroup
 
-	wg.Add(1)
+	// https://github.com/alecthomas/kong/issues/389
+	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
+		wg.Add(1)
 
-	go func() {
-		defer wg.Done()
-		debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
-	}()
+		go func() {
+			defer wg.Done()
+			debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
+		}()
+	}
 
 	metrics := connmetrics.NewListenerMetrics()
 
@@ -357,7 +369,7 @@ func run() {
 		)
 	}()
 
-	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
+	h, closeBackend, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
 		Logger:        logger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: stateProvider,
@@ -377,6 +389,8 @@ func run() {
 	if err != nil {
 		logger.Sugar().Fatalf("Failed to construct handler: %s.", err)
 	}
+
+	defer closeBackend()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		TCP:         cli.Listen.Addr,

@@ -66,6 +66,38 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
+	if params.Tailable {
+		var res *backends.ListCollectionsResult
+		var collInfo *backends.CollectionInfo
+
+		res, err = db.ListCollections(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/3601
+		for _, coll := range res.Collections {
+			if coll.Name == params.Collection {
+				collInfo = &coll
+			}
+		}
+
+		if collInfo != nil && !collInfo.Capped() {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrBadValue,
+				fmt.Sprintf(
+					"error processing query: ns=%s.%sTree:"+
+						"  $eq null\nSort: {}\nProj: {}\n tailable cursor requested on non capped collection",
+					params.DB,
+					params.Collection,
+				),
+				"find",
+			)
+		}
+
+		return nil, common.Unimplemented(document, "tailable")
+	}
+
 	qp := &backends.QueryParams{
 		Comment: params.Comment,
 	}

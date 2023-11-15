@@ -40,10 +40,7 @@ func TestVersion(t *testing.T) {
 			assert.Empty(t, s.BackendName)
 			assert.Empty(t, s.BackendVersion)
 
-			dbName := testutil.DatabaseName(t)
-			cleanupDatabase(t, ctx, b, dbName)
-
-			db, err := b.Database(dbName)
+			db, err := b.Database(testutil.DatabaseName(t))
 			require.NoError(t, err)
 
 			err = db.CreateCollection(ctx, &backends.CreateCollectionParams{

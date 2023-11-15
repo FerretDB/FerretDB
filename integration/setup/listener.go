@@ -17,14 +17,10 @@ package setup
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
@@ -140,77 +136,14 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 	// read schemas owned by concurrent tests
 	postgreSQLURLF := *postgreSQLURLF
 	if postgreSQLURLF != "" {
-		u, err := url.Parse(postgreSQLURLF)
-		require.NoError(tb, err)
-
-		require.True(tb, u.Path != "")
-		require.True(tb, u.Opaque == "")
-
-		// port logging, tracing; merge with openDB?
-		// TODO https://github.com/FerretDB/FerretDB/issues/3554
-
-		config, err := pgxpool.ParseConfig(postgreSQLURLF)
-		require.NoError(tb, err)
-
-		p, err := pgxpool.NewWithConfig(ctx, config)
-		require.NoError(tb, err)
-
-		name := testutil.DirectoryName(tb)
-		template := "template1"
-
-		q := "DROP DATABASE IF EXISTS " + pgx.Identifier{name}.Sanitize()
-		_, err = p.Exec(ctx, q)
-		require.NoError(tb, err)
-
-		q = fmt.Sprintf("CREATE DATABASE %s TEMPLATE %s", pgx.Identifier{name}.Sanitize(), pgx.Identifier{template}.Sanitize())
-		_, err = p.Exec(ctx, q)
-		require.NoError(tb, err)
-
-		p.Reset()
-
-		u.Path = name
-		postgreSQLURLF = u.String()
-
-		tb.Cleanup(func() {
-			defer p.Close()
-
-			if tb.Failed() {
-				tb.Logf("Keeping %s (%s) for debugging.", name, postgreSQLURLF)
-				return
-			}
-
-			q := "DROP DATABASE " + pgx.Identifier{name}.Sanitize()
-			_, err = p.Exec(context.Background(), q)
-			require.NoError(tb, err)
-		})
+		postgreSQLURLF = testutil.TestPostgreSQLURI(tb, ctx, postgreSQLURLF)
 	}
 
 	// use per-test directory to prevent handler's/backend's metadata registry
 	// read databases owned by concurrent tests
 	sqliteURL := *sqliteURLF
 	if sqliteURL != "" {
-		u, err := url.Parse(sqliteURL)
-		require.NoError(tb, err)
-
-		require.True(tb, u.Path == "")
-		require.True(tb, u.Opaque != "")
-
-		u.Opaque = path.Join(u.Opaque, testutil.DirectoryName(tb)) + "/"
-		sqliteURL = u.String()
-
-		dir, err := filepath.Abs(u.Opaque)
-		require.NoError(tb, err)
-		require.NoError(tb, os.RemoveAll(dir))
-		require.NoError(tb, os.MkdirAll(dir, 0o777))
-
-		tb.Cleanup(func() {
-			if tb.Failed() {
-				tb.Logf("Keeping %s (%s) for debugging.", dir, sqliteURL)
-				return
-			}
-
-			require.NoError(tb, os.RemoveAll(dir))
-		})
+		sqliteURL = testutil.TestSQLiteURI(tb, sqliteURL)
 	}
 
 	sp, err := state.NewProvider("")
@@ -231,8 +164,10 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 			EnableOplog:              true,
 		},
 	}
-	h, err := registry.NewHandler(handler, handlerOpts)
+	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)
 	require.NoError(tb, err)
+
+	tb.Cleanup(closeBackend)
 
 	listenerOpts := clientconn.NewListenerOpts{
 		ProxyAddr:      *targetProxyAddrF,
