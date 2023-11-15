@@ -64,6 +64,8 @@ type TestOpts struct {
 }
 
 // NewHandler constructs a new handler.
+//
+// The caller is responsible to call CloseBackendFunc when the handler is no longer needed.
 func NewHandler(name string, opts *NewHandlerOpts) (handlers.Interface, CloseBackendFunc, error) {
 	if opts == nil {
 		return nil, nil, fmt.Errorf("opts is nil")

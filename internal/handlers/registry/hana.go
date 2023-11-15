@@ -17,25 +17,26 @@
 package registry
 
 import (
+	"github.com/FerretDB/FerretDB/internal/backends/hana"
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/sqlite"
+	handler "github.com/FerretDB/FerretDB/internal/handlers/sqlite"
 )
 
 // init registers "hana" handler for Hana when "ferretdb_hana" build tag is provided.
 func init() {
-	registry["hana"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
+	registry["hana"] = func(opts *NewHandlerOpts) (handlers.Interface, CloseBackendFunc, error) {
 		opts.Logger.Warn("HANA handler is in alpha. It is not supported yet.")
 
 		b, err := hana.NewBackend(&hana.NewBackendParams{
-			URI: opts.URI,
-			L:   opts.L,
+			URI: opts.HANAURL,
+			L:   opts.Logger.Named("hana"),
 			P:   opts.StateProvider,
 		})
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
-		handlerOpts := &sqlite.NewOpts{
+		handlerOpts := &handler.NewOpts{
 			Backend: b,
 			URI:     opts.HANAURL,
 
@@ -48,6 +49,11 @@ func init() {
 			EnableOplog:              opts.EnableOplog,
 		}
 
-		return sqlite.New(handlerOpts)
+		h, err := handler.New(handlerOpts)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return h, b.Close, nil
 	}
 }
