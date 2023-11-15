@@ -22,14 +22,14 @@ import (
 
 // init registers "sqlite" handler.
 func init() {
-	registry["sqlite"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
+	registry["sqlite"] = func(opts *NewHandlerOpts) (handlers.Interface, CloseBackendFunc, error) {
 		b, err := sqlite.NewBackend(&sqlite.NewBackendParams{
 			URI: opts.SQLiteURL,
 			L:   opts.Logger.Named("sqlite"),
 			P:   opts.StateProvider,
 		})
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		handlerOpts := &handler.NewOpts{
@@ -45,6 +45,11 @@ func init() {
 			EnableOplog:              opts.EnableOplog,
 		}
 
-		return handler.New(handlerOpts)
+		h, err := handler.New(handlerOpts)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return h, b.Close, nil
 	}
 }

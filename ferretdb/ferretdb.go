@@ -111,7 +111,7 @@ func New(config *Config) (*FerretDB, error) {
 
 	metrics := connmetrics.NewListenerMetrics()
 
-	h, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
+	h, closeBackend, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
 		Logger:        logger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: sp,
@@ -123,6 +123,8 @@ func New(config *Config) (*FerretDB, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct handler: %s", err)
 	}
+
+	defer closeBackend()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		TCP:         config.Listener.TCP,
