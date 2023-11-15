@@ -23,6 +23,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
@@ -151,7 +152,13 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 
 			require.NoError(t, err)
 
-			AssertEqualDocuments(t, tc.expectedRes, res)
+			actual := ConvertDocument(t, res)
+			actual.Remove("$clusterTime")
+			actual.Remove("operationTime")
+
+			expected := ConvertDocument(t, tc.expectedRes)
+
+			testutil.AssertEqual(t, expected, actual)
 
 			if tc.expectedStatus != "" {
 				var actual bson.D
