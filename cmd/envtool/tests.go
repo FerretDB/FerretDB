@@ -24,6 +24,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -36,6 +37,7 @@ import (
 	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // testEvent represents a single even emitted by `go test -json`.
@@ -57,18 +59,10 @@ func (te testEvent) Elapsed() time.Duration {
 
 // testResult represents the outcome of a single test.
 type testResult struct {
-	run     time.Time
-	cont    time.Time
-	outputs []string
-}
-
-// levelTest returns test level (starting from 0) for the given (sub)test name.
-func levelTest(testName string) int {
-	if testName == "" {
-		panic("empty test name")
-	}
-
-	return strings.Count(testName, "/")
+	run        time.Time
+	cont       time.Time
+	outputs    []string
+	lastAction string
 }
 
 // parentTest returns parent test name for the given subtest, or empty string.
@@ -114,31 +108,24 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 	for {
 		var event testEvent
 		if err = d.Decode(&event); err != nil {
-			if errors.Is(err, io.EOF) {
-				return cmd.Wait()
+			if !errors.Is(err, io.EOF) {
+				return lazyerrors.Error(err)
 			}
 
-			return lazyerrors.Error(err)
+			break
 		}
 
-		// logger.Desugar().Debug("decoded event", zap.Any("event", event))
+		// logger.Desugar().Info("decoded event", zap.Any("event", event))
 
-		for t := event.Test; t != ""; t = parentTest(t) {
-			res := results[t]
-			if res == nil {
-				res = &testResult{
+		if event.Test != "" {
+			if results[event.Test] == nil {
+				results[event.Test] = &testResult{
 					outputs: make([]string, 0, 2),
 				}
-				results[t] = res
 			}
 
-			if out := strings.TrimSpace(event.Output); out != "" {
-				res.outputs = append(res.outputs, strings.Repeat("  ", levelTest(t)+1)+out)
-			}
+			results[event.Test].lastAction = event.Action
 		}
-
-		// We should also handle the output without a test name (for example, for panics);
-		// see https://github.com/golang/go/issues/38382.
 
 		switch event.Action {
 		case "start": // the test binary is about to be executed
@@ -156,6 +143,7 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 				newCtx, span = otel.Tracer("").Start(parentCtx, event.Test)
 			}
 			contexts[event.Test] = newCtx
+			must.NotBeZero(event.Test)
 			results[event.Test].run = event.Time
 			results[event.Test].cont = event.Time
 
@@ -170,6 +158,7 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 			// nothing
 
 		case "cont": // the test has continued running
+			must.NotBeZero(event.Test)
 			results[event.Test].cont = event.Time
 			span := spans[event.Test]
 			span.AddEvent("Test Continued", trace.WithTimestamp(event.Time), trace.WithAttributes(
@@ -178,7 +167,15 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 			))
 
 		case "output": // the test printed output
-			// nothing
+			out := strings.TrimSuffix(event.Output, "\n")
+
+			// initial setup output or early panic
+			if event.Test == "" {
+				logger.Info(out)
+				continue
+			}
+
+			results[event.Test].outputs = append(results[event.Test].outputs, out)
 
 		case "bench": // the benchmark printed log output but did not fail
 			// nothing
@@ -209,7 +206,7 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 				continue
 			}
 
-			top := levelTest(event.Test) == 0
+			top := parentTest(event.Test) == ""
 			if !top && event.Action == "pass" {
 				continue
 			}
@@ -243,13 +240,13 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 			}
 
 			msg += ":"
-			logger.Info(msg)
+			logger.Warn(msg)
 
-			for _, l := range results[event.Test].outputs {
-				logger.Info(l)
+			for _, l := range res.outputs {
+				logger.Warn(l)
 			}
 
-			logger.Info("")
+			logger.Warn("")
 
 			// End the span for the test or subtest.
 			if span, ok := spans[event.Test]; ok {
@@ -261,6 +258,68 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 			return lazyerrors.Errorf("unknown action %q", event.Action)
 		}
 	}
+
+	var unfinished []string
+
+	for t, res := range results {
+		switch res.lastAction {
+		case "pass", "fail", "skip":
+			continue
+		}
+
+		unfinished = append(unfinished, t)
+	}
+
+	if unfinished == nil {
+		return cmd.Wait()
+	}
+
+	slices.Sort(unfinished)
+
+	logger.Error("")
+
+	logger.Error("Some tests did not finish:")
+
+	for _, t := range unfinished {
+		logger.Errorf("  %s", t)
+	}
+
+	logger.Error("")
+
+	// On panic, the last event will not be "fail"; see https://github.com/golang/go/issues/38382.
+	// Try to provide the best possible output in that case.
+
+	var panicked string
+
+	for _, t := range unfinished {
+		if !slices.ContainsFunc(results[t].outputs, func(s string) bool {
+			return strings.Contains(s, "panic: ")
+		}) {
+			continue
+		}
+
+		if panicked != "" {
+			break
+		}
+
+		panicked = t
+	}
+
+	for _, t := range unfinished {
+		if panicked != "" && t != panicked {
+			continue
+		}
+
+		logger.Errorf("%s:", t)
+
+		for _, l := range results[t].outputs {
+			logger.Error(l)
+		}
+
+		logger.Error("")
+	}
+
+	return cmd.Wait()
 }
 
 // testsRun runs tests specified by the shard index and total or by the run regex
