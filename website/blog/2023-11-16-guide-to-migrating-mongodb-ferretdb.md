@@ -29,20 +29,25 @@ For many, it is an opportunity to contribute to and influence the direction of o
 For others, it may simply be a way to reduce costs.
 Whatever the reason may be, it's important to identify it and ensure that FerretDB is the right fit for your use case.
 
-### Evaluate your existing MongoDB setup with FerretDB
+### Plan your migration process
 
-FerretDB is a good alternative for MongoDB in many use cases, but not all.
-In that case, it is probably a good idea to evaluate your existing MongoDB setup with FerretDB to ensure that it is a good fit for your application.
-This approach would help you identify if there are any potential challenges that could impact migration.
-If there are, it would be a nice starting point when communicating with the FerretDB team on finding a solution.
-
-For example, FerretDB does not support all MongoDB features, so it is important to check that the features you need are supported [see list of supported features here](https://docs.ferretdb.io/reference/supported-commands/).
-There are also some differences in usage that you should be aware of, and you can [take a look at those differences here](https://docs.ferretdb.io/diff/).
-
+Of course, migration is not something you want to do in a hurry.
+It requires careful planning and execution.
+So it's important to plan your migration process to ensure that it goes smoothly.
 You probably want to run FerretDB with your application in a test environment for a period of time before migrating your production data.
 This will help you identify any potential migration issues.
 You can also use this opportunity to test your application against FerretDB to ensure that it works as expected.
-Check out the pre-migration planning process to FerretDB on how to achieve this.
+Check out the [pre-migration planning process](https://docs.ferretdb.io/migration/premigration-testing/) to FerretDB on how to achieve this.
+
+### Evaluate your existing MongoDB setup with FerretDB
+
+FerretDB is a good alternative for MongoDB in many use cases, but not all.
+As such, it is probably a good idea to evaluate your existing MongoDB setup with FerretDB to ensure that it is a good fit for your application.
+This approach would help you identify if there are any potential challenges that could impact migration.
+If there are, it would be a nice starting point when communicating with the FerretDB team on finding a solution.
+
+For example, FerretDB does not support all MongoDB features, so it is important to check that the features you need are supported ([see list of supported features here](https://docs.ferretdb.io/reference/supported-commands/)).
+There are also some differences in usage that you should be aware of – [take a look at those differences here](https://docs.ferretdb.io/diff/).
 
 ### Backup your data
 
@@ -56,15 +61,19 @@ The FerretDB team is always happy to help and can provide you with the necessary
 Besides, FerretDB has a growing community so you can also get help from the experience of other users.
 
 Asides that, FerretDB is an open source software, so you can always improve it by contributing to the code yourself, submitting bug reports, or even requesting new features.
-That's the beauty of open source software!
-
-## Prerequisites
-
-- `mongodump`/`mongorestore`, `mongoimport`/`mongoexport`
+That's the joy of open source!
 
 ## A guide to migrating data from MongoDB to FerretDB
 
-### Step 1: Pre-Migration Planning
+### Prerequisites
+
+Before starting any migration processs, you should have the following:
+
+- MongoDB connection URI
+- FerretDB connection URI
+- MongoDB native tools (`mongodump`/`mongorestore`, `mongoimport`/`mongoexport`)
+
+### Step 1: Pre-migration planning
 
 Before migrating to FerretDB, you need to confirm its suitability for your application's use case.
 While FerretDB is the ideal open-source alternative to MongoDB in many use cases, it's important to evaluate your current application set up to be sure that FerretDB supports all the essential features needed.
@@ -73,9 +82,9 @@ FerretDB provides different operation modes to run FerretDB: `normal`, `proxy`, 
 These modes describe how FerretDB processes incoming requests.
 The `diff` modes forward requests to the FerretDB and the FerretDB proxy, which is another MongoDB-compatible database, and log the difference between them.
 
-To test your application against FerretDB, follow the guide on the [pre-migration planning process].
+To test your application against FerretDB, follow the guide on the [pre-migration planning process](https://docs.ferretdb.io/migration/premigration-testing/).
 
-Once you are satisfied that the pre-migrating testing was successful, proceed to the next stage.
+Once you are satisfied that the pre-migration testing was successful, proceed to the next stage.
 
 ### Step 2: Set up FerretDB
 
@@ -87,7 +96,7 @@ For more information on how to set up FerretDB, check out the [FerretDB official
 
 FerretDB is also available as a managed service on [Civo](https://www.civo.com/marketplace/FerretDB), [Scaleway](https://www.scaleway.com/en/managed-document-database/), and [Vultr](https://www.vultr.com/products/managed-databases/ferretDB/), so you can easily get started with FerretDB without having to worry about the setup process.
 
-### Step 3: Backup and Restore data using MongoDB native tools
+### Step 3: Backup and restore data using MongoDB native tools
 
 By now, it's assumed that you've set up a FerretDB instance.
 Before migration, you should backup your existing data and then restore them on FerretDB.
@@ -144,7 +153,7 @@ To import the data using the `mongoimport`, run the following command:
 mongoimport --uri="mongodb://username:password@127.0.0.1:27018/?authMechanism=PLAIN" --db=maindb --collection=testcoll --file=testcoll.json
 ```
 
-## Conclusion
+## Start your journey with FerretDB
 
 In this guide, you've learned the crucial steps of migrating from MongoDB to FerretDB, including the best practices for migrating from MongoDB to FerretDB, and how to ensure a successful migration.
 All software migrations come with their own challenges, so it's important to be prepared for them.
