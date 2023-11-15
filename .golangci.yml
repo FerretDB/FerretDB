@@ -103,9 +103,7 @@ linters-settings:
     local-prefixes: github.com/FerretDB/FerretDB
   gomodguard:
     blocked:
-      modules:
-        - go.mongodb.org/mongo-driver:
-            reason: "FerretDB should not depend on MongoDB Go driver."
+      modules: []
   gosimple:
     checks: ["all"]
   govet:
@@ -126,6 +124,8 @@ linters-settings:
         alias: sqlite3
       - pkg: modernc.org/sqlite/lib
         alias: sqlite3lib
+      - pkg: github.com/FerretDB/FerretDB/internal/handlers/sqlite
+        alias: handler
   # ineffassign
   lll:
     line-length: 130
