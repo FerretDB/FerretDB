@@ -81,6 +81,8 @@ type ListenerConfig struct {
 type FerretDB struct {
 	config *Config
 
+	closeBackend func()
+
 	l *clientconn.Listener
 }
 
@@ -111,7 +113,7 @@ func New(config *Config) (*FerretDB, error) {
 
 	metrics := connmetrics.NewListenerMetrics()
 
-	h, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
+	h, closeBackend, err := registry.NewHandler(config.Handler, &registry.NewHandlerOpts{
 		Logger:        logger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: sp,
@@ -139,8 +141,9 @@ func New(config *Config) (*FerretDB, error) {
 	})
 
 	return &FerretDB{
-		config: config,
-		l:      l,
+		config:       config,
+		closeBackend: closeBackend,
+		l:            l,
 	}, nil
 }
 
@@ -152,6 +155,8 @@ func New(config *Config) (*FerretDB, error) {
 // IP address and port. Calling methods which require the listener's address (eg: [*FerretDB.MongoDBURI]
 // requires it for configuring its Host URL) before calling this method might result in a deadlock.
 func (f *FerretDB) Run(ctx context.Context) error {
+	defer f.closeBackend()
+
 	err := f.l.Run(ctx)
 	if errors.Is(err, context.Canceled) {
 		err = nil
