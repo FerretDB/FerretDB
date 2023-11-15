@@ -390,7 +390,7 @@ func makeLogger(level zapcore.Level, output []string) (*zap.Logger, error) {
 			NameKey:       "N",
 			CallerKey:     zapcore.OmitKey,
 			FunctionKey:   zapcore.OmitKey,
-			StacktraceKey: "S",
+			StacktraceKey: zapcore.OmitKey,
 			LineEnding:    zapcore.DefaultLineEnding,
 			EncodeLevel:   zapcore.CapitalLevelEncoder,
 			EncodeTime: func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
