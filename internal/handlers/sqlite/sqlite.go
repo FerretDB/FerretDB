@@ -43,7 +43,6 @@ type Handler struct {
 //nolint:vet // for readability
 type NewOpts struct {
 	Backend backends.Backend
-	URI     string
 
 	L             *zap.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
@@ -57,36 +56,6 @@ type NewOpts struct {
 
 // New returns a new handler.
 func New(opts *NewOpts) (handlers.Interface, error) {
-	/*	var b backends.Backend
-		var err error
-
-		switch opts.Backend {
-		case "postgresql":
-			b, err = postgresql.NewBackend(&postgresql.NewBackendParams{
-				URI: opts.URI,
-				L:   opts.L,
-				P:   opts.StateProvider,
-			})
-		case "sqlite":
-			b, err = sqlite.NewBackend(&sqlite.NewBackendParams{
-				URI: opts.URI,
-				L:   opts.L,
-				P:   opts.StateProvider,
-			})
-		case "hana":
-			b, err = hana.NewBackend(&hana.NewBackendParams{
-				URI: opts.URI,
-				L:   opts.L,
-				P:   opts.StateProvider,
-			})
-		default:
-			panic("unknown backend: " + opts.Backend)
-		}
-
-		if err != nil {
-			return nil, err
-		}*/
-
 	b := opts.Backend
 
 	if opts.EnableOplog {

@@ -34,7 +34,6 @@ func init() {
 
 		handlerOpts := &handler.NewOpts{
 			Backend: b,
-			URI:     opts.SQLiteURL,
 
 			L:             opts.Logger.Named("sqlite"),
 			ConnMetrics:   opts.ConnMetrics,

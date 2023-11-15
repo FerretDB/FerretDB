@@ -34,7 +34,6 @@ func init() {
 
 		handlerOpts := &handler.NewOpts{
 			Backend: b,
-			URI:     opts.PostgreSQLURL,
 
 			L:             opts.Logger.Named("postgresql"),
 			ConnMetrics:   opts.ConnMetrics,

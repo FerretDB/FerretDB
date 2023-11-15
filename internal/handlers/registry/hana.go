@@ -38,7 +38,6 @@ func init() {
 
 		handlerOpts := &handler.NewOpts{
 			Backend: b,
-			URI:     opts.HANAURL,
 
 			L:             opts.Logger.Named("hana"),
 			ConnMetrics:   opts.ConnMetrics,
