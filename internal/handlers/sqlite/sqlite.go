@@ -72,7 +72,6 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 // Close implements handlers.Interface.
 func (h *Handler) Close() {
 	h.cursors.Close()
-	h.b.Close()
 }
 
 // Describe implements handlers.Interface.
