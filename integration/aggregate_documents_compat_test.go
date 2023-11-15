@@ -141,18 +141,18 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 					var explainRes bson.D
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainCommand).Decode(&explainRes))
 
-					resultPushdown := tc.resultPushdown
+					resPushdown := tc.resultPushdown
 
 					var msg string
 					// TODO https://github.com/FerretDB/FerretDB/issues/3386
 					if setup.FilterPushdownDisabled() {
-						resultPushdown = noPushdown
+						resPushdown = noPushdown
 						msg = "Fitler pushdown is disabled, but target resulted with pushdown"
 					}
 
 					doc := ConvertDocument(t, explainRes)
 					pushdown, _ := doc.Get("pushdown")
-					assert.Equal(t, resultPushdown.FilterPushdownExpected(t), pushdown, msg)
+					assert.Equal(t, resPushdown.FilterPushdownExpected(t), pushdown, msg)
 				})
 			}
 
