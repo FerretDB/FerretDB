@@ -84,7 +84,7 @@ jobs:
           Run ${{ inputs.task }}
           filter=${{ !inputs.disable_filter_pushdown }}, unsafe-sort=${{ inputs.enable_unsafe_sort_pushdown }})
         run: >
-          bin/task bench-integration-${{ inputs.task }}
+          ../bin/task bench-integration-${{ inputs.task }}
           DISABLE_FILTER_PUSHDOWN=${{ inputs.disable_filter_pushdown }}
           ENABLE_UNSAFE_SORT_PUSHDOWN=${{ inputs.enable_unsafe_sort_pushdown }}
         working-directory: integration
