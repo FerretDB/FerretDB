@@ -134,27 +134,25 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 						nonEmptyResults = true
 					}
 
-					if targetErr == nil {
-						explainCommand := bson.D{{"explain", bson.D{
-							{"aggregate", targetCollection.Name()},
-							{"pipeline", pipeline},
-						}}}
-						var explainRes bson.D
-						require.NoError(t, targetCollection.Database().RunCommand(ctx, explainCommand).Decode(&explainRes))
+					explainCommand := bson.D{{"explain", bson.D{
+						{"aggregate", targetCollection.Name()},
+						{"pipeline", pipeline},
+					}}}
+					var explainRes bson.D
+					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainCommand).Decode(&explainRes))
 
-						resultPushdown := tc.resultPushdown
+					resultPushdown := tc.resultPushdown
 
-						var msg string
-						// TODO https://github.com/FerretDB/FerretDB/issues/3386
-						if setup.FilterPushdownDisabled() {
-							resultPushdown = noPushdown
-							msg = "Fitler pushdown is disabled, but target resulted with pushdown"
-						}
-
-						doc := ConvertDocument(t, explainRes)
-						pushdown, _ := doc.Get("pushdown")
-						assert.Equal(t, resultPushdown.FilterPushdownExpected(t), pushdown, msg)
+					var msg string
+					// TODO https://github.com/FerretDB/FerretDB/issues/3386
+					if setup.FilterPushdownDisabled() {
+						resultPushdown = noPushdown
+						msg = "Fitler pushdown is disabled, but target resulted with pushdown"
 					}
+
+					doc := ConvertDocument(t, explainRes)
+					pushdown, _ := doc.Get("pushdown")
+					assert.Equal(t, resultPushdown.FilterPushdownExpected(t), pushdown, msg)
 				})
 			}
 
