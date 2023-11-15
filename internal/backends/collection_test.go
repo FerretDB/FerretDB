@@ -436,3 +436,61 @@ func TestCollectionCompact(t *testing.T) {
 		})
 	}
 }
+
+func TestCappedCollectionDeleteAll(t *testing.T) {
+	t.Parallel()
+
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+
+	for name, b := range testBackends(t) {
+		name, b := name, b
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			dbName := testutil.DatabaseName(t)
+			collName := testutil.CollectionName(t)
+
+			db, err := b.Database(dbName)
+			require.NoError(t, err)
+
+			err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
+				Name:       collName,
+				CappedSize: 8192,
+			})
+			require.NoError(t, err)
+
+			coll, err := db.Collection(collName)
+			require.NoError(t, err)
+
+			insertDocs := []*types.Document{
+				must.NotFail(types.NewDocument("_id", int32(1))),
+				must.NotFail(types.NewDocument("_id", int32(2))),
+				must.NotFail(types.NewDocument("_id", int32(3))),
+			}
+
+			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: insertDocs})
+			require.NoError(t, err)
+
+			res, err := coll.Query(ctx, nil)
+			require.NoError(t, err)
+
+			docs, err := iterator.ConsumeValues[struct{}, *types.Document](res.Iter)
+			require.NoError(t, err)
+			require.Equal(t, 3, len(docs))
+
+			params := &backends.DeleteAllParams{
+				RecordIDs: []types.Timestamp{docs[0].RecordID(), docs[2].RecordID()},
+			}
+			del, err := coll.DeleteAll(ctx, params)
+			require.NoError(t, err)
+			require.Equal(t, int32(2), del.Deleted)
+
+			res, err = coll.Query(ctx, nil)
+			require.NoError(t, err)
+
+			docs, err = iterator.ConsumeValues[struct{}, *types.Document](res.Iter)
+			require.NoError(t, err)
+			assertEqualRecordID(t, []*types.Document{insertDocs[1]}, docs)
+		})
+	}
+}
