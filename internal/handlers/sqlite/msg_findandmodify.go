@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"time"
 
+	"go.mongodb.org/mongo-driver/mongo"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -218,13 +220,13 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 		// TODO https://github.com/FerretDB/FerretDB/issues/3454
 		if err = doc.ValidateData(); err != nil {
 			// TODO https://github.com/FerretDB/FerretDB/issues/2168
-			var we *writeError
+			var we *mongo.WriteError
 
 			if we, err = handleValidationError(err); err != nil {
 				return nil, err
 			}
 
-			writeErrors.Append(we.Document())
+			writeErrors.Append(WriteErrorDocument(we))
 		}
 
 		if _, err = c.InsertAll(ctx, &backends.InsertAllParams{
@@ -232,12 +234,12 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 		}); err != nil {
 			if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
 				// TODO https://github.com/FerretDB/FerretDB/issues/2168
-				we := &writeError{
-					index:  int32(0),
-					code:   commonerrors.ErrDuplicateKeyInsert,
-					errmsg: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
+				we := &mongo.WriteError{
+					Index:   0,
+					Code:    int(commonerrors.ErrDuplicateKeyInsert),
+					Message: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
 				}
-				writeErrors.Append(we.Document())
+				writeErrors.Append(WriteErrorDocument(we))
 			}
 
 			return nil, lazyerrors.Error(err)
@@ -309,13 +311,13 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 	// TODO https://github.com/FerretDB/FerretDB/issues/3454
 	if err = doc.ValidateData(); err != nil {
 		// TODO https://github.com/FerretDB/FerretDB/issues/2168
-		var we *writeError
+		var we *mongo.WriteError
 
 		if we, err = handleValidationError(err); err != nil {
 			return nil, err
 		}
 
-		writeErrors.Append(we.Document())
+		writeErrors.Append(WriteErrorDocument(we))
 	}
 
 	updateRes, err := c.UpdateAll(ctx, &backends.UpdateAllParams{Docs: []*types.Document{doc}})
@@ -337,7 +339,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 }
 
 // handleValidationError checks validation error code and returns *writeError.
-func handleValidationError(err error) (*writeError, error) {
+func handleValidationError(err error) (*mongo.WriteError, error) {
 	var ve *types.ValidationError
 
 	if !errors.As(err, &ve) {
@@ -355,9 +357,9 @@ func handleValidationError(err error) (*writeError, error) {
 		panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
 	}
 
-	return &writeError{
-		index:  int32(0),
-		code:   code,
-		errmsg: ve.Error(),
+	return &mongo.WriteError{
+		Index:   0,
+		Code:    int(code),
+		Message: ve.Error(),
 	}, nil
 }
