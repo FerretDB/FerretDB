@@ -20,8 +20,10 @@ import (
 	"net/url"
 	"testing"
 
+	zapadapter "github.com/jackc/pgx-zap"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/jackc/pgx/v5/tracelog"
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
@@ -57,6 +59,11 @@ func TestPostgreSQLURI(tb testtb.TB, ctx context.Context, baseURI string) string
 
 	cfg.MinConns = 0
 	cfg.MaxConns = 1
+
+	cfg.ConnConfig.Tracer = &tracelog.TraceLog{
+		Logger:   zapadapter.NewLogger(Logger(tb)),
+		LogLevel: tracelog.LogLevelTrace,
+	}
 
 	p, err := pgxpool.NewWithConfig(ctx, cfg)
 	require.NoError(tb, err)
