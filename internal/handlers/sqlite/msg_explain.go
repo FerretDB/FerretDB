@@ -110,7 +110,9 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	//  - `sort` is set but sort pushdown is not enabled, it must fetch all documents
 	//  and sort them in memory;
 	//  - `skip` is non-zero value, skip pushdown is not supported yet.
-	if params.Filter.Len() == 0 && (params.Sort.Len() == 0 || h.EnableSortPushdown || h.EnableUnsafeSortPushdown) && params.Skip == 0 {
+	if params.Filter.Len() == 0 &&
+		(params.Sort.Len() == 0 || h.EnableSortPushdown || h.EnableUnsafeSortPushdown) &&
+		params.Skip == 0 {
 		qp.Limit = params.Limit
 	}
 

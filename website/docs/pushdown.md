@@ -17,6 +17,18 @@ To make this process more efficient, we minimize the amount of incoming data, by
 You can learn more about query pushdown in our [blog post](https://blog.ferretdb.io/ferretdb-fetches-data-query-pushdown/).
 :::
 
+## Types of pushdown
+
+Currently we support 3 different types of pushdown.
+
+The **Filter pushdown**, which is enabled by default, sends supported filters directly to the underlying database.
+It can be disabled with `--disable-filter-pushdown`.
+The **Sort Pushdown**, which can be enabled with `--enable-sort-pushdown`, pushes down sorting, `limit`, and `skip` methods.
+
+There might be some cases, though, where FerretDB needs to fetch more data to make sure
+that it'll apply methods such as sorting correctly, as for some parts of the query pushdown cannot be applied.
+If you have a need to sort pushdown anyway, you can enable **Unsafe Sort Pushdown** with `--enable-unsafe-sort-pushdown`.
+
 ## Supported types and operators
 
 The following table shows all operators and types that FerretDB pushdowns on PostgreSQL backend.
