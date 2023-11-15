@@ -1,25 +1,24 @@
 ---
 slug: guide-to-migrating-mongodb-ferretdb
-title: Guide to Migrating from MongoDB to FerretDB
+title: A Guide on Migrating from MongoDB to FerretDB
 authors: [alex]
 description: >
   This blog post is a guide to help you migrate data from MongoDB to FerretDB.
-image: /img/blog/ferretdb-v1.13.0.png
+image: /img/blog/migrating-mongodb-ferretdb.jpg
 tags: [community, product, tutorial]
 ---
 
-Intro
+![A Guide on Migrating from MongoDB to FerretDB](/img/blog/migrating-mongodb-ferretdb.jpg)
 
-- Why migration to FerretDB is important (open source, no vendor lock-in, etc)
-- _Reasons for migrating from MongoDB to FerretDB_
-- _Scope and target audience of the guide_
-- Compatibility considerations
+This blog post is a guide to help you migrate data from MongoDB to FerretDB.
 
-This blog post is a comprehensive guide to help you migrate data from MongoDB to FerretDB.
+<!--truncate-->
 
-- _-- Why migration to FerretDB is important (open source, no vendor lock-in, etc)_
+As more businesses favor open-source software as a way to beat vendor lock-in and reduce costs, understanding the critical steps to migrate to an open source software has become increasingly important.
+According to [The 2023 State of Open Source Report](https://www.openlogic.com/resources/2023-state-open-source-report), over 80% of respondents reported an increase in the usage of open source software at their organization within the past year.
+So for those looking to migrate from MongoDB to a truly open-source document database that works for many MongoDB use cases, FerretDB is a great option to consider.
 
-In this guide, we are going to show you:
+In this guide, you'll learn:
 
 - How to prepare for migration to FerretDB
 - How to migrate your data from MongoDB to FerretDB
