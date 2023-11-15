@@ -72,7 +72,7 @@ jobs:
         working-directory: tools
 
       - name: Start environment
-        run: bin/task env-up-detach
+        run: bin/task env-pull env-up-detach
 
       - name: Run init
         run: bin/task init
@@ -91,6 +91,10 @@ jobs:
         env:
           GOFLAGS: ${{ runner.debug == '1' && '-v' || '' }}
           FERRETDB_HANA_URL: ${{ secrets.FERRETDB_HANA_URL }}
+
+      - name: Stop environment
+        if: always()
+        run: bin/task env-down
 
       # we don't want them on CI
       - name: Clean test and fuzz caches
