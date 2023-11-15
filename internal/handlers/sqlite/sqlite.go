@@ -55,7 +55,6 @@ type NewOpts struct {
 	// test options
 	DisableFilterPushdown bool
 	EnableSortPushdown    bool
-	EnableUnsafePushdown  bool
 	EnableOplog           bool
 }
 

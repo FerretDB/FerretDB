@@ -36,7 +36,6 @@ func init() {
 
 			DisableFilterPushdown: opts.DisableFilterPushdown,
 			EnableSortPushdown:    opts.EnableSortPushdown,
-			EnableUnsafePushdown:  opts.EnableUnsafePushdown,
 			EnableOplog:           opts.EnableOplog,
 		}
 

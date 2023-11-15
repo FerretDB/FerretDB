@@ -57,7 +57,6 @@ type NewHandlerOpts struct {
 type TestOpts struct {
 	DisableFilterPushdown bool
 	EnableSortPushdown    bool
-	EnableUnsafePushdown  bool
 	EnableOplog           bool
 }
 

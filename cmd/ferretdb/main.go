@@ -88,7 +88,6 @@ var cli struct {
 
 		DisableFilterPushdown bool `default:"false" help:"Experimental: disable filter pushdown."`
 		EnableSortPushdown    bool `default:"false" help:"Experimental: enable sort pushdown."`
-		EnableUnsafePushdown  bool `default:"false" help:"Experimental: enable unsafe pushdown for both filter and sort."`
 		EnableOplog           bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
 
 		//nolint:lll // for readability
@@ -384,7 +383,6 @@ func run() {
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
 			EnableSortPushdown:    cli.Test.EnableSortPushdown,
-			EnableUnsafePushdown:  cli.Test.EnableUnsafePushdown,
 			EnableOplog:           cli.Test.EnableOplog,
 		},
 	})
