@@ -516,6 +516,7 @@ tasks:
         ignore_error: true
       - cmd: docker buildx --builder=ferretdb rm --force
         ignore_error: true
+      - docker system prune --force
       - docker system df
 
   docker-build:
