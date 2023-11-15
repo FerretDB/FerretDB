@@ -1,5 +1,5 @@
 ---
-name: Integration # visible at https://github.com/FerretDB/FerretDB/actions
+name: Test Integration # visible at https://github.com/FerretDB/FerretDB/actions
 on:
   workflow_call:
     inputs:

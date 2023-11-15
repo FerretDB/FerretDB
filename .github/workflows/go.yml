@@ -182,7 +182,7 @@ jobs:
         include:
           - { task: "mongodb", shard_index: 1, shard_total: 1 }
 
-    uses: ./.github/workflows/_integration.yml
+    uses: ./.github/workflows/_test-integration.yml
     with:
       task: ${{ matrix.task }}
       shard_index: ${{ matrix.shard_index }}
@@ -262,6 +262,31 @@ jobs:
         run: |
           git status
           git diff --exit-code
+
+  bench-integration:
+    name: Benchmark ${{ matrix.task }}
+
+    # Do not run this job in parallel for any PR change or branch push
+    # to save some resources.
+    concurrency:
+      group: ${{ github.workflow }}-bench-${{ matrix.task }}-${{ github.head_ref || github.ref_name }}
+      cancel-in-progress: true
+
+    if: >
+      github.event_name != 'pull_request' ||
+      (
+        contains(github.event.pull_request.labels.*.name, 'bench') &&
+        !contains(github.event.pull_request.labels.*.name, 'not ready')
+      )
+
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [postgresql, sqlite, mongodb]
+
+    uses: ./.github/workflows/_bench-integration.yml
+    with:
+      task: ${{ matrix.task }}
 
   env-data:
     name: env-data
