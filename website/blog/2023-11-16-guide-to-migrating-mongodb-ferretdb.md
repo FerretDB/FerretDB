@@ -14,7 +14,10 @@ This blog post is a guide to help you migrate data from MongoDB to FerretDB.
 
 <!--truncate-->
 
-As more businesses favor open-source software as a way to beat vendor lock-in and reduce costs, understanding the critical steps to migrate to an open source software has become increasingly important.
+More and more users favor open source software, as it provides a way to avoid vendor lock-in and reduce costs.
+However, the complexity and cost of migration should also be a factor to consider.
+Fortunately, with FerretDB, migration from a MongoDB-compatible database is easy.
+
 According to [The 2023 State of Open Source Report](https://www.openlogic.com/resources/2023-state-open-source-report), over 80% of respondents reported an increase in the usage of open source software at their organization within the past year.
 So for those looking to migrate from MongoDB to a truly open-source document database that works for many MongoDB use cases, FerretDB is a great option to consider.
 
@@ -155,10 +158,10 @@ mongoimport --uri="mongodb://username:password@127.0.0.1:27018/?authMechanism=PL
 
 ## Start your journey with FerretDB
 
-In this guide, you've learned the crucial steps of migrating from MongoDB to FerretDB, including the best practices for migrating from MongoDB to FerretDB, and how to ensure a successful migration.
+In this guide, you've learned the crucial steps of migrating from MongoDB to FerretDB, including the best practices, and how to ensure a successful migration.
 All software migrations come with their own challenges, so it's important to be prepared for them.
 But with the right preparation, you can ensure a smooth migration process.
-Besides, the FerretDB team is alway happy to help you with any issues you discover or requests you may have.
+Besides, the FerretDB team is always happy to help you with any issues you discover or requests you may have.
 Contact us on any of our [community channels](https://docs.ferretdb.io/#community)!
 
 For more detailed and technical insights on FerretDB, check out the [FerretDB official documentation](https://docs.ferretdb.io/).
