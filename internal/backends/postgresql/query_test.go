@@ -77,7 +77,14 @@ func TestPrepareSelectClause(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			query := prepareSelectClause(schema, table, comment, tc.capped, tc.onlyRecordIDs)
+			query := prepareSelectClause(&selectParams{
+				Schema:        schema,
+				Table:         table,
+				Comment:       comment,
+				Capped:        tc.capped,
+				OnlyRecordIDs: tc.onlyRecordIDs,
+			})
+
 			assert.Equal(t, tc.expectQuery, query)
 		})
 	}
