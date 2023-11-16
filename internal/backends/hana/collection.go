@@ -23,24 +23,41 @@ import (
 )
 
 // collection implements backends.Collection interface by delegating all methods to the wrapped database.
+// A collection in HANA is either stored in a table or as a column of a table. The column representation
+// not supported yet.
 type collection struct {
 	hdb    *sql.DB
-	dbName string
-	name   string
+	schema string
+	table  string
+	// column string
 }
 
 // newCollection creates a new Collection.
-func newCollection(hdb *sql.DB, dbName, name string) backends.Collection {
+func newCollection(hdb *sql.DB, schema, table string) backends.Collection {
 	return backends.CollectionContract(&collection{
 		hdb:    hdb,
-		dbName: dbName,
-		name:   name,
+		schema: schema,
+		table:  table,
 	})
 }
 
 // Query implements backends.Collection interface.
 func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*backends.QueryResult, error) {
-	return nil, lazyerrors.New("not implemented yet")
+
+	selectClause := prepareSelectClause(c.schema, c.table)
+
+	// TODO: add Filters
+
+	querySql := selectClause
+
+	rows, err := c.hdb.QueryContext(ctx, querySql)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return &backends.QueryResult{
+		Iter: newQueryIterator(ctx, rows),
+	}, nil
 }
 
 // InsertAll implements backends.Collection interface.

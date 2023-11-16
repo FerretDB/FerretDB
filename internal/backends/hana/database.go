@@ -27,34 +27,33 @@ import (
 
 // database implements backends.Database.
 type database struct {
-	hdb  *sql.DB
-	name string
+	hdb    *sql.DB
+	schema string
 }
 
 // newDatabase creates a new Database.
 func newDatabase(hdb *sql.DB, name string) backends.Database {
 	return backends.DatabaseContract(&database{
-		hdb:  hdb,
-		name: name,
+		hdb: hdb,
 	})
 }
 
 // Collection implements backends.Database interface.
 func (db *database) Collection(name string) (backends.Collection, error) {
-	return newCollection(db.hdb, db.name, name), nil
+	return newCollection(db.hdb, db.schema, name), nil
 }
 
 // ListCollections implements backends.Database interface.
-//
-//nolint:lll // for readability
 func (db *database) ListCollections(ctx context.Context, params *backends.ListCollectionsParams) (*backends.ListCollectionsResult, error) {
-	sqlStmt := "SELECT TABLE_NAME FROM M_TABLES WHERE SCHEMA_NAME = $1 AND TABLE_TYPE = 'COLLECTION'"
-	rows, err := db.hdb.QueryContext(ctx, sqlStmt, db.name)
+	sqlStmt := "SELECT TABLE_NAME FROM M_TABLES" +
+		" WHERE SCHEMA_NAME = $1 AND TABLE_TYPE = 'COLLECTION'"
+	rows, err := db.hdb.QueryContext(ctx, sqlStmt, db.schema)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 	defer rows.Close()
 
+	// TODO: add propper limits for collection sizes.
 	var res []backends.CollectionInfo
 	for rows.Next() {
 		var name string
@@ -83,7 +82,7 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	sql := fmt.Sprintf("CREATE COLLECTION %q.%q", db.name, params.Name)
+	sql := fmt.Sprintf("CREATE COLLECTION %q.%q", db.schema, params.Name)
 
 	_, err := db.hdb.ExecContext(ctx, sql)
 
@@ -92,7 +91,7 @@ func (db *database) CreateCollection(ctx context.Context, params *backends.Creat
 
 // DropCollection implements backends.Database interface.
 func (db *database) DropCollection(ctx context.Context, params *backends.DropCollectionParams) error {
-	sql := fmt.Sprintf("DROP COLLECTION %q.%q", db.name, params.Name)
+	sql := fmt.Sprintf("DROP COLLECTION %q.%q", db.schema, params.Name)
 
 	_, err := db.hdb.ExecContext(ctx, sql)
 
@@ -102,7 +101,7 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
 	// Todo check if collection exists
-	sqlStmt := fmt.Sprintf("RENAME COLLECTION %s.%s to %s", db.name, params.OldName, params.NewName)
+	sqlStmt := fmt.Sprintf("RENAME COLLECTION %s.%s to %s", db.schema, params.OldName, params.NewName)
 	_, err := db.hdb.ExecContext(ctx, sqlStmt)
 	if err != nil {
 		return lazyerrors.Error(err)
@@ -119,20 +118,19 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 
 	// Todo: should we load unloaded schemas?
 
-	queryCountDocuments := "SELECT SUM(RECORD_COUNT) FROM M_TABLES " +
-		"WHERE TABLE_TYPE = 'COLLECTION' " +
-		"AND SCHEMA_NAME = " + db.name
+	queryCountDocuments := "SELECT COALESCE(SUM(RECORD_COUNT),0) FROM M_TABLES " +
+		"WHERE TABLE_TYPE = 'COLLECTION' AND SCHEMA_NAME = $1"
 
-	rowCount := db.hdb.QueryRowContext(ctx, queryCountDocuments)
+	rowCount := db.hdb.QueryRowContext(ctx, queryCountDocuments, db.schema)
 	var countDocuments int64
 	if err := rowCount.Scan(&countDocuments); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	querySizeTotal := "SELECT SUM(TABLE_SIZE) FROM M_TABLES " +
-		"WHERE TABLE_TYPE = 'COLLECTION' AND SCHEMA_NAME = " + db.name
+	querySizeTotal := "SELECT COALESCE(SUM(TABLE_SIZE),0) FROM M_TABLES " +
+		"WHERE TABLE_TYPE = 'COLLECTION' AND SCHEMA_NAME = $1"
 
-	rowSizeTotal := db.hdb.QueryRowContext(ctx, querySizeTotal)
+	rowSizeTotal := db.hdb.QueryRowContext(ctx, querySizeTotal, db.schema)
 
 	var sizeTotal int64
 	if err := rowSizeTotal.Scan(&sizeTotal); err != nil {
