@@ -28,9 +28,10 @@ type gatherer struct {
 	g prometheus.Gatherer
 	l *zap.Logger
 
-	rw sync.RWMutex
-	t  time.Time
-	m  []*dto.MetricFamily
+	rw  sync.RWMutex
+	t   time.Time
+	mfs []*dto.MetricFamily
+	m   map[string]*dto.MetricFamily
 }
 
 // newGatherer returns a new gatherer.
@@ -50,9 +51,9 @@ func (g *gatherer) Gather() ([]*dto.MetricFamily, error) {
 	g.rw.RLock()
 
 	if time.Since(g.t) < time.Second {
-		m := g.m
+		mfs := g.mfs
 		g.rw.RUnlock()
-		return m, nil
+		return mfs, nil
 	}
 
 	g.rw.RUnlock()
@@ -64,20 +65,59 @@ func (g *gatherer) Gather() ([]*dto.MetricFamily, error) {
 
 	// a concurrent call might have updated metrics already
 	if time.Since(g.t) < time.Second {
-		return g.m, nil
+		return g.mfs, nil
 	}
 
 	g.l.Debug("Gathering Prometheus metrics")
-	m, err := g.g.Gather()
+	mfs, err := g.g.Gather()
 	if err != nil {
-		g.l.Warn("Failed to gather Prometheus metrics", zap.Error(err), zap.Int("metrics", len(m)))
-		g.m, g.t = nil, time.Now()
+		g.l.Warn("Failed to gather Prometheus metrics", zap.Error(err), zap.Int("metrics", len(mfs)))
+		g.mfs, g.m, g.t = nil, nil, time.Now()
 		return nil, nil
 	}
 
-	g.l.Debug("Gathered Prometheus metrics", zap.Int("metrics", len(m)))
-	g.m, g.t = m, time.Now()
-	return m, nil
+	g.l.Debug("Gathered Prometheus metrics", zap.Int("metrics", len(mfs)))
+	g.mfs, g.m, g.t = mfs, nil, time.Now()
+	return mfs, nil
+}
+
+// GatherMap returns Prometheus metric families as a map.
+func (g *gatherer) GatherMap() map[string]*dto.MetricFamily {
+	// fast path
+
+	g.rw.RLock()
+
+	if g.m != nil && time.Since(g.t) < time.Second {
+		m := g.m
+		g.rw.RUnlock()
+		return m
+	}
+
+	g.rw.RUnlock()
+
+	// slow path
+
+	g.Gather()
+
+	g.rw.Lock()
+	defer g.rw.Unlock()
+
+	// a concurrent call might have updated metrics already
+	if g.m != nil && time.Since(g.t) < time.Second {
+		return g.m
+	}
+
+	g.m = make(map[string]*dto.MetricFamily, len(g.mfs))
+	for _, mf := range g.mfs {
+		if g.m[*mf.Name] != nil {
+			g.l.Warn("Duplicate Prometheus metric name", zap.String("name", *mf.Name))
+			continue
+		}
+
+		g.m[*mf.Name] = mf
+	}
+
+	return g.m
 }
 
 // check interfaces
