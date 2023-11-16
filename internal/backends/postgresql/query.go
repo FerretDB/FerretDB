@@ -31,42 +31,57 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// selectParams contains params that specify how prepareSelectClause function will
+// build the SELECT SQL query.
+type selectParams struct {
+	Schema  string
+	Table   string
+	Comment string
+
+	Capped        bool
+	OnlyRecordIDs bool
+}
+
 // prepareSelectClause returns SELECT clause for default column of provided schema and table name.
 //
 // For capped collection with onlyRecordIDs, it returns select clause for recordID column.
 //
 // For capped collection, it returns select clause for recordID column and default column.
-func prepareSelectClause(schema, table, comment string, capped, onlyRecordIDs bool) string {
-	if comment != "" {
-		comment = strings.ReplaceAll(comment, "/*", "/ *")
-		comment = strings.ReplaceAll(comment, "*/", "* /")
-		comment = `/* ` + comment + ` */`
+func prepareSelectClause(params *selectParams) string {
+	if params == nil {
+		params = &selectParams{}
 	}
 
-	if capped && onlyRecordIDs {
+	if params.Comment != "" {
+		params.Comment = strings.ReplaceAll(params.Comment, "/*", "/ *")
+		params.Comment = strings.ReplaceAll(params.Comment, "*/", "* /")
+		params.Comment = `/* ` + params.Comment + ` */`
+	}
+
+	if params.Capped && params.OnlyRecordIDs {
 		return fmt.Sprintf(
 			`SELECT %s %s FROM %s`,
-			comment,
+			params.Comment,
 			metadata.RecordIDColumn,
-			pgx.Identifier{schema, table}.Sanitize(),
+			pgx.Identifier{params.Schema, params.Table}.Sanitize(),
 		)
 	}
 
-	if capped {
+	if params.Capped {
 		return fmt.Sprintf(
 			`SELECT %s %s, %s FROM %s`,
-			comment,
+			params.Comment,
 			metadata.RecordIDColumn,
 			metadata.DefaultColumn,
-			pgx.Identifier{schema, table}.Sanitize(),
+			pgx.Identifier{params.Schema, params.Table}.Sanitize(),
 		)
 	}
 
 	return fmt.Sprintf(
 		`SELECT %s %s FROM %s`,
-		comment,
+		params.Comment,
 		metadata.DefaultColumn,
-		pgx.Identifier{schema, table}.Sanitize(),
+		pgx.Identifier{params.Schema, params.Table}.Sanitize(),
 	)
 }
 
