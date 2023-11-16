@@ -268,6 +268,25 @@ func TestCreateDropSameStress(t *testing.T) {
 	require.Less(t, int32(1), droppedTotal.Load())
 }
 
+func TestDefaultEmptySchema(t *testing.T) {
+	t.Parallel()
+
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+	r, _, dbName := createDatabase(t, ctx)
+
+	list, err := r.DatabaseList(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, []string{dbName}, list)
+
+	created, err := r.CollectionCreate(ctx, &CollectionCreateParams{DBName: "public", Name: testutil.CollectionName(t)})
+	require.NoError(t, err)
+	assert.True(t, created)
+
+	list, err = r.DatabaseList(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, []string{dbName, "public"}, list)
+}
+
 func TestCheckDatabaseUpdated(t *testing.T) {
 	t.Parallel()
 
