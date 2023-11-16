@@ -47,7 +47,7 @@ import (
 // other than passing metricName through interface method.
 type metric struct {
 	metricName       string
-	metricType       int
+	metricType       dto.MetricType
 	metricLabel      string
 	metricLabelValue string
 }
@@ -160,32 +160,33 @@ func (obj metric) getValue() float64 {
 	if obj.metricLabel == "" {
 		Individualmetric := metricRetriever(prometheus_metrics, obj.metricName)
 		switch obj.metricType {
-		case 0:
+		case dto.MetricType_COUNTER:
 			return *Individualmetric.Counter.Value
-		case 1:
+		case dto.MetricType_GAUGE:
 			return *Individualmetric.Gauge.Value
-		case 2:
+		case dto.MetricType_SUMMARY:
 			return *Individualmetric.Summary.SampleSum
-		case 3:
+		case dto.MetricType_UNTYPED:
 			return *Individualmetric.Untyped.Value
-		case 4:
+		case dto.MetricType_HISTOGRAM:
 			return *Individualmetric.Histogram.SampleCountFloat
 		}
 	} else {
 		Individualmetric := LabelledMetricRetriever(prometheus_metrics, obj.metricName, obj)
 		switch obj.metricType {
-		case 0:
+		case dto.MetricType_COUNTER:
 			return *Individualmetric.Counter.Value
-		case 1:
+		case dto.MetricType_GAUGE:
 			return *Individualmetric.Gauge.Value
-		case 2:
+		case dto.MetricType_SUMMARY:
 			return *Individualmetric.Summary.SampleSum
-		case 3:
+		case dto.MetricType_UNTYPED:
 			return *Individualmetric.Untyped.Value
-		case 4:
+		case dto.MetricType_HISTOGRAM:
 			return *Individualmetric.Histogram.SampleCountFloat
 		}
 	}
+
 	return 0
 }
 
@@ -194,7 +195,7 @@ func generateGraphAll(metricSlice *dto.Metric,
 ) statsviz.TimeSeriesPlot {
 	finalMetricObj := new(metric)
 	finalMetricObj.metricName = *metricFamily.Name
-	finalMetricObj.metricType = int(*metricFamily.Type)
+	finalMetricObj.metricType = *metricFamily.Type
 
 	GenericPlot := statsviz.TimeSeries{
 		Name:     *metricFamily.Name,
