@@ -29,13 +29,14 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/arl/statsviz"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	dto "github.com/prometheus/client_model/go"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // struct metric stores respective information about each metricFamily instance
@@ -189,7 +190,8 @@ func (obj metric) getValue() float64 {
 }
 
 func generateGraphAll(metricSlice *dto.Metric,
-	metricFamily *dto.MetricFamily) statsviz.TimeSeriesPlot {
+	metricFamily *dto.MetricFamily,
+) statsviz.TimeSeriesPlot {
 	finalMetricObj := new(metric)
 	finalMetricObj.metricName = *metricFamily.Name
 	finalMetricObj.metricType = int(*metricFamily.Type)
@@ -253,7 +255,8 @@ func metricRetriever(prometheus_metrics []*dto.MetricFamily, metricName string) 
 }
 
 func LabelledMetricRetriever(prometheus_metrics []*dto.MetricFamily,
-	metricName string, obj metric) *dto.Metric {
+	metricName string, obj metric,
+) *dto.Metric {
 	for _, specificMetric := range prometheus_metrics {
 		if *specificMetric.Name == metricName {
 			for _, x := range specificMetric.Metric {
