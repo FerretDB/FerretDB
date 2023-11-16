@@ -46,25 +46,37 @@ import (
 // passing the metricFamily name is not possible by any other way
 // other than passing metricName through interface method.
 type metric struct {
+	h                *handler
 	metricName       string
 	metricType       dto.MetricType
 	metricLabel      string
 	metricLabelValue string
 }
 
+type handler struct {
+	g prometheus.Gatherer
+}
+
 // RunHandler runs debug handler.
 func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger) {
 	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
 
+	g := newGatherer(prometheus.DefaultGatherer, l)
+
+	h := &handler{
+		g: g,
+	}
+
 	metricHandler := promhttp.InstrumentMetricHandler(
-		r, promhttp.HandlerFor(prometheus.DefaultGatherer, promhttp.HandlerOpts{
+		r, promhttp.HandlerFor(g, promhttp.HandlerOpts{
 			ErrorLog:          stdL,
 			ErrorHandling:     promhttp.ContinueOnError,
 			Registry:          r,
 			EnableOpenMetrics: true,
 		}),
 	)
-	prometheus_metrics, err := prometheus.DefaultGatherer.Gather()
+
+	prometheus_metrics, err := g.Gather()
 	must.NoError(err)
 
 	http.Handle("/debug/metrics", metricHandler)
@@ -76,7 +88,7 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	// However there can be multiple MetricFamily elements with same Name but with different Label-pair values.
 	for _, metricFamily := range prometheus_metrics {
 		for _, metricSlice := range metricFamily.Metric {
-			graphPlot := generateGraphAll(metricSlice, metricFamily)
+			graphPlot := h.generateGraphAll(metricSlice, metricFamily)
 			opts = append(opts, statsviz.TimeseriesPlot(graphPlot))
 		}
 	}
@@ -110,7 +122,7 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	})
 
 	http.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
-		http.Redirect(rw, req, "/debug", http.StatusSeeOther)
+		http.Redirect(rw, req, "/debug", 303)
 	})
 
 	s := http.Server{
@@ -156,9 +168,10 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 // the switch block checks the metric type based on int32 type standard
 // mentioned at https://pkg.go.dev/github.com/prometheus/client_model@v0.5.0/go#MetricType
 func (obj metric) getValue() float64 {
-	prometheus_metrics := prometheusGather()
+	m := must.NotFail(obj.h.g.Gather())
+
 	if obj.metricLabel == "" {
-		Individualmetric := metricRetriever(prometheus_metrics, obj.metricName)
+		Individualmetric := obj.h.metricRetriever(m, obj.metricName)
 		switch obj.metricType {
 		case dto.MetricType_COUNTER:
 			return *Individualmetric.Counter.Value
@@ -172,7 +185,7 @@ func (obj metric) getValue() float64 {
 			return *Individualmetric.Histogram.SampleCountFloat
 		}
 	} else {
-		Individualmetric := LabelledMetricRetriever(prometheus_metrics, obj.metricName, obj)
+		Individualmetric := obj.h.labelledMetricRetriever(m, obj.metricName, obj)
 		switch obj.metricType {
 		case dto.MetricType_COUNTER:
 			return *Individualmetric.Counter.Value
@@ -190,10 +203,9 @@ func (obj metric) getValue() float64 {
 	return 0
 }
 
-func generateGraphAll(metricSlice *dto.Metric,
-	metricFamily *dto.MetricFamily,
-) statsviz.TimeSeriesPlot {
+func (h *handler) generateGraphAll(metricSlice *dto.Metric, metricFamily *dto.MetricFamily) statsviz.TimeSeriesPlot {
 	finalMetricObj := new(metric)
+	finalMetricObj.h = h
 	finalMetricObj.metricName = *metricFamily.Name
 	finalMetricObj.metricType = *metricFamily.Type
 
@@ -243,7 +255,7 @@ func generateRandomString(length int) string {
 }
 
 // metricRetriever returns *io_prometheus_client.Metric whose Name matches provided input.
-func metricRetriever(prometheus_metrics []*dto.MetricFamily, metricName string) *dto.Metric {
+func (h *handler) metricRetriever(prometheus_metrics []*dto.MetricFamily, metricName string) *dto.Metric {
 	for _, specificMetric := range prometheus_metrics {
 		if *specificMetric.Name == metricName {
 			finalMetricSlice := specificMetric.GetMetric()
@@ -255,9 +267,7 @@ func metricRetriever(prometheus_metrics []*dto.MetricFamily, metricName string) 
 	return nil
 }
 
-func LabelledMetricRetriever(prometheus_metrics []*dto.MetricFamily,
-	metricName string, obj metric,
-) *dto.Metric {
+func (h *handler) labelledMetricRetriever(prometheus_metrics []*dto.MetricFamily, metricName string, obj metric) *dto.Metric {
 	for _, specificMetric := range prometheus_metrics {
 		if *specificMetric.Name == metricName {
 			for _, x := range specificMetric.Metric {
@@ -270,12 +280,4 @@ func LabelledMetricRetriever(prometheus_metrics []*dto.MetricFamily,
 		}
 	}
 	return nil
-}
-
-func prometheusGather() []*dto.MetricFamily {
-	prometheus_metrics, err := prometheus.DefaultGatherer.Gather()
-	if err != nil {
-		log.Fatalf("error in Gathering prometheus metrics: %v", err)
-	}
-	return prometheus_metrics
 }
