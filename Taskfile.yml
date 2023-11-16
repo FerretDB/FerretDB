@@ -423,6 +423,8 @@ tasks:
   lint:
     desc: "Run linters"
     cmds:
+      - bin/envtool{{exeExt}} shell rmdir tmp/checkcomments
+      - bin/envtool{{exeExt}} shell mkdir tmp/checkcomments
       - bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
       - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
