@@ -133,7 +133,7 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 					var msg string
 					if setup.FilterPushdownDisabled() {
 						resultPushdown = noPushdown
-						msg = "Query pushdown is disabled, but target resulted with pushdown"
+						msg = "Filter pushdown is disabled, but target resulted with pushdown"
 					}
 
 					doc := ConvertDocument(t, explainRes)
@@ -242,29 +242,29 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 		filter bson.D
 		sort   bson.D
 
-		unsafeSortPushdown resultPushdown
+		sortPushdown resultPushdown
 	}{
 		"NoSortNoFilter": {
-			unsafeSortPushdown: allPushdown,
+			sortPushdown: allPushdown,
 		},
 		"Filter": {
-			filter:             bson.D{{"v", int32(42)}},
-			unsafeSortPushdown: allPushdown,
+			filter:       bson.D{{"v", int32(42)}},
+			sortPushdown: allPushdown,
 		},
 		"Sort": {
-			sort:               bson.D{{"_id", int32(-1)}},
-			unsafeSortPushdown: pgPushdown,
+			sort:         bson.D{{"_id", int32(-1)}},
+			sortPushdown: pgPushdown,
 		},
 		"FilterSort": {
-			filter:             bson.D{{"v", int32(42)}},
-			sort:               bson.D{{"_id", int32(-1)}},
-			unsafeSortPushdown: pgPushdown,
+			filter:       bson.D{{"v", int32(42)}},
+			sort:         bson.D{{"_id", int32(-1)}},
+			sortPushdown: pgPushdown,
 		},
 		"MultipleSortFields": {
 			sort: bson.D{{"v", 1}, {"_id", int32(-1)}},
 			// multiple sort fields are skipped by handler and no sort pushdown
 			// is set on handler, so record ID pushdown is done.
-			unsafeSortPushdown: allPushdown,
+			sortPushdown: allPushdown,
 		},
 	} {
 		name, tc := name, tc
@@ -288,8 +288,8 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 			require.NoError(t, targetCollection.Database().RunCommand(ctx, bson.D{{"explain", explainQuery}}).Decode(&explainRes))
 
 			doc := ConvertDocument(t, explainRes)
-			unsafeSortPushdown, _ := doc.Get("sortingPushdown")
-			assert.Equal(t, tc.unsafeSortPushdown.SortPushdownExpected(t, true), unsafeSortPushdown)
+			sortPushdown, _ := doc.Get("sortingPushdown")
+			assert.Equal(t, tc.sortPushdown.SortPushdownExpected(t, true), sortPushdown)
 
 			findOpts := options.Find()
 			if tc.sort != nil {

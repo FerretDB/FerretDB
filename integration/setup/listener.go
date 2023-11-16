@@ -160,6 +160,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown:    *disableFilterPushdownF,
+			EnableSortPushdown:       *enableSortPushdownF,
 			EnableUnsafeSortPushdown: *enableUnsafeSortPushdownF,
 			EnableOplog:              true,
 		},
@@ -184,6 +185,10 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 
 	if *targetTLSF && *targetUnixSocketF {
 		tb.Fatal("Both -target-tls and -target-unix-socket are set.")
+	}
+
+	if *enableSortPushdownF && *enableUnsafeSortPushdownF {
+		tb.Fatal("Both -enable-sort-pushdown and -enable-unsafe-sort-pushdown are set.")
 	}
 
 	switch {

@@ -255,7 +255,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	selectClause := prepareSelectClause(meta.TableName, meta.Capped(), false)
 
-	var queryPushdown bool
+	var filterPushdown bool
 	var whereClause string
 	var args []any
 
@@ -265,23 +265,23 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		v, _ := params.Filter.Get("_id")
 		switch v.(type) {
 		case string, types.ObjectID:
-			queryPushdown = true
+			filterPushdown = true
 			whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
 			args = []any{string(must.NotFail(sjson.MarshalSingleValue(v)))}
 		}
 	}
 
 	orderByClause := prepareOrderByClause(params.Sort, meta.Capped())
-	unsafeSortPushdown := orderByClause != ""
+	sortPushdown := orderByClause != ""
 
 	q := `EXPLAIN QUERY PLAN ` + selectClause + whereClause + orderByClause
 
-	var unsafeLimitPushdown bool
+	var limitPushdown bool
 
 	if params.Limit != 0 {
 		q += ` LIMIT ?`
 		args = append(args, params.Limit)
-		unsafeLimitPushdown = true
+		limitPushdown = true
 	}
 
 	rows, err := db.QueryContext(ctx, q, args...)
@@ -314,10 +314,10 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	return &backends.ExplainResult{
-		QueryPlanner:        must.NotFail(types.NewDocument("Plan", queryPlan)),
-		QueryPushdown:       queryPushdown,
-		UnsafeSortPushdown:  unsafeSortPushdown,
-		UnsafeLimitPushdown: unsafeLimitPushdown,
+		QueryPlanner:   must.NotFail(types.NewDocument("Plan", queryPlan)),
+		FilterPushdown: filterPushdown,
+		SortPushdown:   sortPushdown,
+		LimitPushdown:  limitPushdown,
 	}, nil
 }
 
