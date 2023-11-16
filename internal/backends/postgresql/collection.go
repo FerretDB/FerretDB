@@ -78,7 +78,13 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	q := prepareSelectClause(c.dbName, meta.TableName, params.Comment, meta.Capped(), params.OnlyRecordIDs)
+	q := prepareSelectClause(&selectParams{
+		Schema:        c.dbName,
+		Table:         meta.TableName,
+		Comment:       params.Comment,
+		Capped:        meta.Capped(),
+		OnlyRecordIDs: params.OnlyRecordIDs,
+	})
 
 	var placeholder metadata.Placeholder
 
@@ -297,7 +303,13 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	res := new(backends.ExplainResult)
 
-	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName, "", meta.Capped(), false)
+	opts := &selectParams{
+		Schema: c.dbName,
+		Table:  meta.TableName,
+		Capped: meta.Capped(),
+	}
+
+	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(opts)
 
 	var placeholder metadata.Placeholder
 
