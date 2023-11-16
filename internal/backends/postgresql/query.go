@@ -49,7 +49,7 @@ type selectParams struct {
 // For capped collection, it returns select clause for recordID column and default column.
 func prepareSelectClause(params *selectParams) string {
 	if params == nil {
-		params = &selectParams{}
+		params = new(selectParams)
 	}
 
 	if params.Comment != "" {
