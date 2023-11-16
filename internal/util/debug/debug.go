@@ -58,10 +58,10 @@ type handler struct {
 }
 
 // RunHandler runs debug handler.
-func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *zap.Logger) {
+func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, g prometheus.Gatherer, l *zap.Logger) {
 	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
 
-	g := newGatherer(prometheus.DefaultGatherer, l)
+	g = newGatherer(g, l)
 
 	h := &handler{
 		g: g,
@@ -122,7 +122,7 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, l *za
 	})
 
 	http.HandleFunc("/", func(rw http.ResponseWriter, req *http.Request) {
-		http.Redirect(rw, req, "/debug", 303)
+		http.Redirect(rw, req, "/debug", http.StatusSeeOther)
 	})
 
 	s := http.Server{

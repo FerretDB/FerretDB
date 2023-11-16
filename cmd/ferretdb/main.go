@@ -209,8 +209,8 @@ func setupState() *state.Provider {
 	return sp
 }
 
-// setupMetrics setups Prometheus metrics registerer with some metrics.
-func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
+// setupMetrics setups Prometheus metrics registerer and gatherer with some metrics.
+func setupMetrics(stateProvider *state.Provider) (prometheus.Registerer, prometheus.Gatherer) {
 	r := prometheus.DefaultRegisterer
 	m := stateProvider.MetricsCollector(true)
 
@@ -226,7 +226,7 @@ func setupMetrics(stateProvider *state.Provider) prometheus.Registerer {
 
 	r.MustRegister(m)
 
-	return r
+	return r, prometheus.DefaultGatherer
 }
 
 // setupLogger setups zap logger.
@@ -278,8 +278,8 @@ func runTelemetryReporter(ctx context.Context, opts *telemetry.NewReporterOpts) 
 }
 
 // dumpMetrics dumps all Prometheus metrics to stderr.
-func dumpMetrics() {
-	mfs := must.NotFail(prometheus.DefaultGatherer.Gather())
+func dumpMetrics(g prometheus.Gatherer) {
+	mfs := must.NotFail(g.Gather())
 
 	for _, mf := range mfs {
 		must.NotFail(expfmt.MetricFamilyToText(os.Stderr, mf))
@@ -318,7 +318,7 @@ func run() {
 
 	stateProvider := setupState()
 
-	metricsRegisterer := setupMetrics(stateProvider)
+	metricsRegisterer, metricsGatherer := setupMetrics(stateProvider)
 
 	logger := setupLogger(stateProvider, cli.Log.Format)
 
@@ -342,7 +342,7 @@ func run() {
 
 		go func() {
 			defer wg.Done()
-			debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
+			debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, metricsGatherer, logger.Named("debug"))
 		}()
 	}
 
@@ -422,6 +422,6 @@ func run() {
 	wg.Wait()
 
 	if info.DebugBuild {
-		dumpMetrics()
+		dumpMetrics(metricsGatherer)
 	}
 }
