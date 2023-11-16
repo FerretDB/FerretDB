@@ -88,7 +88,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	// Skip sorting if there are more than one sort parameters
-	if (h.EnableSortPushdown || h.EnableUnsafeSortPushdown) && params.Sort.Len() == 1 {
+	if h.EnableUnsafeSortPushdown && params.Sort.Len() == 1 {
 		var order types.SortType
 
 		k := params.Sort.Keys()[0]
@@ -107,12 +107,10 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	// Limit pushdown is not applied if:
 	//  - `filter` is set, it must fetch all documents to filter them in memory;
-	//  - `sort` is set but sort pushdown is not enabled, it must fetch all documents
+	//  - `sort` is set but `UnsafeSortPushdown` is not set, it must fetch all documents
 	//  and sort them in memory;
 	//  - `skip` is non-zero value, skip pushdown is not supported yet.
-	if params.Filter.Len() == 0 &&
-		(params.Sort.Len() == 0 || h.EnableSortPushdown || h.EnableUnsafeSortPushdown) &&
-		params.Skip == 0 {
+	if params.Filter.Len() == 0 && (params.Sort.Len() == 0 || h.EnableUnsafeSortPushdown) && params.Skip == 0 {
 		qp.Limit = params.Limit
 	}
 
@@ -120,7 +118,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Filter = nil
 	}
 
-	if !h.EnableSortPushdown {
+	if !h.EnableUnsafeSortPushdown {
 		qp.Sort = nil
 	}
 

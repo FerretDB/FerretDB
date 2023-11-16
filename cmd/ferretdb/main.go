@@ -87,7 +87,6 @@ var cli struct {
 		RecordsDir string `default:"" help:"Testing: directory for record files."`
 
 		DisableFilterPushdown    bool `default:"false" help:"Experimental: disable filter pushdown."`
-		EnableSortPushdown       bool `default:"false" help:"Experimental: enable sort pushdown."`
 		EnableUnsafeSortPushdown bool `default:"false" help:"Experimental: enable unsafe sort pushdown."`
 		EnableOplog              bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
 
@@ -383,7 +382,6 @@ func run() {
 
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown:    cli.Test.DisableFilterPushdown,
-			EnableSortPushdown:       cli.Test.EnableSortPushdown,
 			EnableUnsafeSortPushdown: cli.Test.EnableUnsafeSortPushdown,
 			EnableOplog:              cli.Test.EnableOplog,
 		},
