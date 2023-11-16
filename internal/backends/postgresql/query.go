@@ -40,12 +40,12 @@ func prepareSelectClause(schema, table, comment string, capped, onlyRecordIDs bo
 	if comment != "" {
 		comment = strings.ReplaceAll(comment, "/*", "/ *")
 		comment = strings.ReplaceAll(comment, "*/", "* /")
-		comment = `/* ` + comment + ` */` + ` `
+		comment = `/* ` + comment + ` */`
 	}
 
 	if capped && onlyRecordIDs {
 		return fmt.Sprintf(
-			`SELECT %s%s FROM %s`,
+			`SELECT %s %s FROM %s`,
 			comment,
 			metadata.RecordIDColumn,
 			pgx.Identifier{schema, table}.Sanitize(),
@@ -54,7 +54,7 @@ func prepareSelectClause(schema, table, comment string, capped, onlyRecordIDs bo
 
 	if capped {
 		return fmt.Sprintf(
-			`SELECT %s%s, %s FROM %s`,
+			`SELECT %s %s, %s FROM %s`,
 			comment,
 			metadata.RecordIDColumn,
 			metadata.DefaultColumn,
@@ -63,7 +63,7 @@ func prepareSelectClause(schema, table, comment string, capped, onlyRecordIDs bo
 	}
 
 	return fmt.Sprintf(
-		`SELECT %s%s FROM %s`,
+		`SELECT %s %s FROM %s`,
 		comment,
 		metadata.DefaultColumn,
 		pgx.Identifier{schema, table}.Sanitize(),

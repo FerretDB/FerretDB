@@ -31,18 +31,18 @@ func prepareSelectClause(table, comment string, capped, onlyRecordIDs bool) stri
 	if comment != "" {
 		comment = strings.ReplaceAll(comment, "/*", "/ *")
 		comment = strings.ReplaceAll(comment, "*/", "* /")
-		comment = `/* ` + comment + ` */` + ` `
+		comment = `/* ` + comment + ` */`
 	}
 
 	if capped && onlyRecordIDs {
-		return fmt.Sprintf(`SELECT %s%s FROM %q`, comment, metadata.RecordIDColumn, table)
+		return fmt.Sprintf(`SELECT %s %s FROM %q`, comment, metadata.RecordIDColumn, table)
 	}
 
 	if capped {
-		return fmt.Sprintf(`SELECT %s%s, %s FROM %q`, comment, metadata.RecordIDColumn, metadata.DefaultColumn, table)
+		return fmt.Sprintf(`SELECT %s %s, %s FROM %q`, comment, metadata.RecordIDColumn, metadata.DefaultColumn, table)
 	}
 
-	return fmt.Sprintf(`SELECT %s%s FROM %q`, comment, metadata.DefaultColumn, table)
+	return fmt.Sprintf(`SELECT %s %s FROM %q`, comment, metadata.DefaultColumn, table)
 }
 
 // prepareOrderByClause returns ORDER BY clause.
