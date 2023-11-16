@@ -227,7 +227,7 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 
 		for i, id := range params.RecordIDs {
 			placeholders[i] = "?"
-			args[i] = string(must.NotFail(sjson.MarshalSingleValue(id)))
+			args[i] = fmt.Sprintf("%d", id)
 		}
 
 		column = metadata.RecordIDColumn
