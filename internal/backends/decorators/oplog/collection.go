@@ -43,7 +43,7 @@ type collection struct {
 	l      *zap.Logger
 }
 
-// newCollection creates a new collection that wraps the given collection.
+// newCollection creates a new Collection that wraps the given collection.
 func newCollection(origC backends.Collection, name, dbName string, origB backends.Backend, l *zap.Logger) backends.Collection {
 	return &collection{
 		origC:  origC,

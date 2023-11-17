@@ -37,7 +37,7 @@ type NewBackendParams struct {
 	P   *state.Provider
 }
 
-// NewBackend creates a new backend.
+// NewBackend creates a new Backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 	return nil, lazyerrors.New("not implemented yet")
 }
