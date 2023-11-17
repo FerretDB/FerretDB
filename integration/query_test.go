@@ -836,7 +836,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 
 		len            int                 // expected length of results
 		filterPushdown resultPushdown      // optional, defaults to noPushdown
-		limitPushdown  bool                // optional, set true for expected pushdown for limit
+		limitPushdown  resultPushdown      // optional, defaults to noPushdown
 		err            *mongo.CommandError // optional, expected error from MongoDB
 		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
 		skip           string              // optional, skip test with a specified reason
@@ -845,39 +845,39 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 		"Simple": {
 			limit:         1,
 			len:           1,
-			limitPushdown: true,
+			limitPushdown: pgPushdown,
 		},
 		"AlmostAll": {
 			limit:         int64(len(shareddata.Composites.Docs()) - 1),
 			len:           len(shareddata.Composites.Docs()) - 1,
-			limitPushdown: true,
+			limitPushdown: pgPushdown,
 		},
 		"All": {
 			limit:         int64(len(shareddata.Composites.Docs())),
 			len:           len(shareddata.Composites.Docs()),
-			limitPushdown: true,
+			limitPushdown: pgPushdown,
 		},
 		"More": {
 			limit:         int64(len(shareddata.Composites.Docs()) + 1),
 			len:           len(shareddata.Composites.Docs()),
-			limitPushdown: true,
+			limitPushdown: pgPushdown,
 		},
 		"Big": {
 			limit:         1000,
 			len:           len(shareddata.Composites.Docs()),
-			limitPushdown: true,
+			limitPushdown: pgPushdown,
 		},
 		"Zero": {
 			limit:         0,
 			len:           len(shareddata.Composites.Docs()),
-			limitPushdown: false,
+			limitPushdown: noPushdown,
 		},
 		"IDFilter": {
 			filter:         bson.D{{"_id", "array"}},
 			limit:          3,
 			len:            1,
 			filterPushdown: allPushdown,
-			limitPushdown:  false,
+			limitPushdown:  noPushdown,
 		},
 		"ValueFilter": {
 			filter:         bson.D{{"v", 42}},
@@ -885,28 +885,28 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			limit:          3,
 			len:            3,
 			filterPushdown: pgPushdown,
-			limitPushdown:  false,
+			limitPushdown:  noPushdown,
 		},
 		"DotNotationFilter": {
 			filter:         bson.D{{"v.foo", 42}},
 			limit:          3,
 			len:            3,
 			filterPushdown: noPushdown,
-			limitPushdown:  false,
+			limitPushdown:  noPushdown,
 		},
 		"ObjectFilter": {
 			filter:         bson.D{{"v", bson.D{{"foo", nil}}}},
 			limit:          3,
 			len:            1,
 			filterPushdown: noPushdown,
-			limitPushdown:  false,
+			limitPushdown:  noPushdown,
 		},
 		"Sort": {
 			sort:           bson.D{{"_id", 1}},
 			limit:          2,
 			len:            2,
 			filterPushdown: noPushdown,
-			limitPushdown:  true,
+			limitPushdown:  pgPushdown,
 		},
 		"IDFilterSort": {
 			filter:         bson.D{{"_id", "array"}},
@@ -914,7 +914,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			limit:          3,
 			len:            1,
 			filterPushdown: allPushdown,
-			limitPushdown:  false,
+			limitPushdown:  noPushdown,
 		},
 		"ValueFilterSort": {
 			filter:         bson.D{{"v", 42}},
@@ -922,7 +922,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			limit:          3,
 			len:            3,
 			filterPushdown: pgPushdown,
-			limitPushdown:  false,
+			limitPushdown:  noPushdown,
 		},
 		"DotNotationFilterSort": {
 			filter:         bson.D{{"v.foo", 42}},
@@ -930,7 +930,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			limit:          3,
 			len:            3,
 			filterPushdown: noPushdown,
-			limitPushdown:  false,
+			limitPushdown:  noPushdown,
 		},
 		"ObjectFilterSort": {
 			filter:         bson.D{{"v", bson.D{{"foo", nil}}}},
@@ -938,13 +938,13 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			limit:          3,
 			len:            1,
 			filterPushdown: noPushdown,
-			limitPushdown:  false,
+			limitPushdown:  noPushdown,
 		},
 		"Skip": {
 			optSkip:       pointer.ToInt64(1),
 			limit:         2,
 			len:           2,
-			limitPushdown: false,
+			limitPushdown: noPushdown,
 		},
 	} {
 		tc, name := tc, name
@@ -996,23 +996,19 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				var msg string
 
 				if !setup.UnsafeSortPushdownEnabled() && tc.sort != nil {
-					tc.limitPushdown = false
 					msg = "Sort pushdown is disabled, but target resulted with limitPushdown"
-				}
-
-				resultPushdown := tc.filterPushdown
-
-				if setup.FilterPushdownDisabled() {
-					resultPushdown = noPushdown
-					msg = "Filter pushdown is disabled, but target resulted with pushdown"
 				}
 
 				doc := ConvertDocument(t, res)
 				limitPushdown, _ := doc.Get("limitPushdown")
-				assert.Equal(t, tc.limitPushdown, limitPushdown, msg)
+				assert.Equal(t, tc.limitPushdown.SortPushdownExpected(t, false), limitPushdown, msg)
+
+				if setup.FilterPushdownDisabled() {
+					msg = "Filter pushdown is disabled, but target resulted with pushdown"
+				}
 
 				filterPushdown, _ := ConvertDocument(t, res).Get("pushdown")
-				assert.Equal(t, resultPushdown.FilterPushdownExpected(t), filterPushdown, msg)
+				assert.Equal(t, tc.filterPushdown.FilterPushdownExpected(t), filterPushdown, msg)
 			})
 
 			t.Run("Find", func(t *testing.T) {

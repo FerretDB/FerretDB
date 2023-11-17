@@ -137,8 +137,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 			// our extensions
 			// TODO https://github.com/FerretDB/FerretDB/issues/3235
-			"pushdown", res.FilterPushdown,
-			"sortingPushdown", res.SortPushdown,
+			"filterPushdown", res.FilterPushdown,
+			"sortPushdown", res.SortPushdown,
 			"limitPushdown", res.LimitPushdown,
 
 			"ok", float64(1),
