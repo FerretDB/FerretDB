@@ -97,7 +97,7 @@ That could be running it on a local machine, a Docker container, on the cloud â€
 
 For more information on how to set up FerretDB, check out the [FerretDB official documentation](https://docs.ferretdb.io/quickstart-guide/).
 
-FerretDB is also available as a managed service on [Civo](https://www.civo.com/marketplace/FerretDB), [Scaleway](https://www.scaleway.com/en/managed-document-database/), and [Vultr](https://www.vultr.com/products/managed-databases/ferretDB/), so you can easily get started with FerretDB without having to worry about the setup process.
+FerretDB is also available as a managed service on [Civo](https://www.civo.com/marketplace/FerretDB), [Scaleway](https://www.scaleway.com/en/managed-document-database/), and [Vultr](https://www.vultr.com/products/managed-databases/ferretdb/), so you can easily get started with FerretDB without having to worry about the setup process.
 
 ### Step 3: Backup and restore data using MongoDB native tools
 
