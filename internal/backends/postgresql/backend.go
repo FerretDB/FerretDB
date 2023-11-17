@@ -41,7 +41,7 @@ type NewBackendParams struct {
 	_   struct{} // prevent unkeyed literals
 }
 
-// NewBackend creates a new backend.
+// NewBackend creates a new Backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 	r, err := metadata.NewRegistry(params.URI, params.L, params.P)
 	if err != nil {
