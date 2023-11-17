@@ -83,7 +83,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}
 	}
 
-	q := prepareSelectClause(meta.TableName, meta.Capped(), params.OnlyRecordIDs) + whereClause
+	q := prepareSelectClause(meta.TableName, params.Comment, meta.Capped(), params.OnlyRecordIDs) + whereClause
 
 	q += prepareOrderByClause(params.Sort, meta.Capped())
 
@@ -253,7 +253,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		params = new(backends.ExplainParams)
 	}
 
-	selectClause := prepareSelectClause(meta.TableName, meta.Capped(), false)
+	selectClause := prepareSelectClause(meta.TableName, "", meta.Capped(), false)
 
 	var queryPushdown bool
 	var whereClause string

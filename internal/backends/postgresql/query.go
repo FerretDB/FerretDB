@@ -31,34 +31,57 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
+// selectParams contains params that specify how prepareSelectClause function will
+// build the SELECT SQL query.
+type selectParams struct {
+	Schema  string
+	Table   string
+	Comment string
+
+	Capped        bool
+	OnlyRecordIDs bool
+}
+
 // prepareSelectClause returns SELECT clause for default column of provided schema and table name.
 //
 // For capped collection with onlyRecordIDs, it returns select clause for recordID column.
 //
 // For capped collection, it returns select clause for recordID column and default column.
-func prepareSelectClause(schema, table string, capped, onlyRecordIDs bool) string {
-	if capped && onlyRecordIDs {
+func prepareSelectClause(params *selectParams) string {
+	if params == nil {
+		params = new(selectParams)
+	}
+
+	if params.Comment != "" {
+		params.Comment = strings.ReplaceAll(params.Comment, "/*", "/ *")
+		params.Comment = strings.ReplaceAll(params.Comment, "*/", "* /")
+		params.Comment = `/* ` + params.Comment + ` */`
+	}
+
+	if params.Capped && params.OnlyRecordIDs {
 		return fmt.Sprintf(
-			`SELECT %s FROM %s`,
+			`SELECT %s %s FROM %s`,
+			params.Comment,
 			metadata.RecordIDColumn,
-			pgx.Identifier{schema, table}.Sanitize(),
+			pgx.Identifier{params.Schema, params.Table}.Sanitize(),
 		)
 	}
 
-	if capped {
+	if params.Capped {
 		return fmt.Sprintf(
-			`SELECT %s, %s FROM %s`,
+			`SELECT %s %s, %s FROM %s`,
+			params.Comment,
 			metadata.RecordIDColumn,
 			metadata.DefaultColumn,
-			pgx.Identifier{schema, table}.Sanitize(),
+			pgx.Identifier{params.Schema, params.Table}.Sanitize(),
 		)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3573
 	return fmt.Sprintf(
-		`SELECT %s FROM %s`,
+		`SELECT %s %s FROM %s`,
+		params.Comment,
 		metadata.DefaultColumn,
-		pgx.Identifier{schema, table}.Sanitize(),
+		pgx.Identifier{params.Schema, params.Table}.Sanitize(),
 	)
 }
 
@@ -81,10 +104,9 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 			return "", nil, lazyerrors.Error(err)
 		}
 
-		// Is the comment below correct? Does it also skip things like $or?
-		// TODO https://github.com/FerretDB/FerretDB/issues/3573
-
-		// don't pushdown $comment, it's attached to query in handlers
+		// don't pushdown $comment, as it's attached to query with select clause
+		//
+		// all of the other top-level operators such as `$or` do not support pushdown yet
 		if strings.HasPrefix(rootKey, "$") {
 			continue
 		}
