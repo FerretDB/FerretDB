@@ -191,9 +191,14 @@ func defaultLogLevel() zapcore.Level {
 
 // setupState setups state provider.
 func setupState() *state.Provider {
-	f, err := filepath.Abs(filepath.Join(cli.StateDir, "state.json"))
-	if err != nil {
-		log.Fatalf("Failed to get path for state file: %s.", err)
+	var f string
+
+	// https://github.com/alecthomas/kong/issues/389
+	if cli.StateDir != "" && cli.StateDir != "-" {
+		var err error
+		if f, err = filepath.Abs(filepath.Join(cli.StateDir, "state.json")); err != nil {
+			log.Fatalf("Failed to get path for state file: %s.", err)
+		}
 	}
 
 	sp, err := state.NewProvider(f)
@@ -331,12 +336,15 @@ func run() {
 
 	var wg sync.WaitGroup
 
-	wg.Add(1)
+	// https://github.com/alecthomas/kong/issues/389
+	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
+		wg.Add(1)
 
-	go func() {
-		defer wg.Done()
-		debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
-	}()
+		go func() {
+			defer wg.Done()
+			debug.RunHandler(ctx, cli.DebugAddr, metricsRegisterer, logger.Named("debug"))
+		}()
+	}
 
 	metrics := connmetrics.NewListenerMetrics()
 
@@ -361,7 +369,7 @@ func run() {
 		)
 	}()
 
-	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
+	h, closeBackend, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
 		Logger:        logger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: stateProvider,
@@ -381,6 +389,8 @@ func run() {
 	if err != nil {
 		logger.Sugar().Fatalf("Failed to construct handler: %s.", err)
 	}
+
+	defer closeBackend()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		TCP:         cli.Listen.Addr,

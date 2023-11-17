@@ -164,8 +164,10 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 			EnableOplog:              true,
 		},
 	}
-	h, err := registry.NewHandler(handler, handlerOpts)
+	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)
 	require.NoError(tb, err)
+
+	tb.Cleanup(closeBackend)
 
 	listenerOpts := clientconn.NewListenerOpts{
 		ProxyAddr:      *targetProxyAddrF,
