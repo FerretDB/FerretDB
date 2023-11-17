@@ -845,27 +845,27 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 		"Simple": {
 			limit:         1,
 			len:           1,
-			limitPushdown: pgPushdown,
+			limitPushdown: allPushdown,
 		},
 		"AlmostAll": {
 			limit:         int64(len(shareddata.Composites.Docs()) - 1),
 			len:           len(shareddata.Composites.Docs()) - 1,
-			limitPushdown: pgPushdown,
+			limitPushdown: allPushdown,
 		},
 		"All": {
 			limit:         int64(len(shareddata.Composites.Docs())),
 			len:           len(shareddata.Composites.Docs()),
-			limitPushdown: pgPushdown,
+			limitPushdown: allPushdown,
 		},
 		"More": {
 			limit:         int64(len(shareddata.Composites.Docs()) + 1),
 			len:           len(shareddata.Composites.Docs()),
-			limitPushdown: pgPushdown,
+			limitPushdown: allPushdown,
 		},
 		"Big": {
 			limit:         1000,
 			len:           len(shareddata.Composites.Docs()),
-			limitPushdown: pgPushdown,
+			limitPushdown: allPushdown,
 		},
 		"Zero": {
 			limit:         0,
@@ -906,7 +906,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			limit:          2,
 			len:            2,
 			filterPushdown: noPushdown,
-			limitPushdown:  pgPushdown,
+			limitPushdown:  allPushdown,
 		},
 		"IDFilterSort": {
 			filter:         bson.D{{"_id", "array"}},
