@@ -996,6 +996,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				var msg string
 
 				if !setup.UnsafeSortPushdownEnabled() && tc.sort != nil {
+					tc.limitPushdown = noPushdown
 					msg = "Sort pushdown is disabled, but target resulted with limitPushdown"
 				}
 
@@ -1004,6 +1005,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				assert.Equal(t, tc.limitPushdown.SortPushdownExpected(t, false), limitPushdown, msg)
 
 				if setup.FilterPushdownDisabled() {
+					tc.filterPushdown = noPushdown
 					msg = "Filter pushdown is disabled, but target resulted with pushdown"
 				}
 
