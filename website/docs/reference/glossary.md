@@ -146,12 +146,6 @@ See [Operation modes](../configuration/operation-modes.md) for more details.
 An open source relational database.
 FerretDB uses PostgreSQL as a database engine.
 
-#### Pushdown
-
-The method of optimizing a query by reducing the amount of data read and processed in FerretDB, by moving some logic
-to underlying backend.
-See [Query pushdown](../pushdown.md) for more details.
-
 ### S
 
 #### SQLite
