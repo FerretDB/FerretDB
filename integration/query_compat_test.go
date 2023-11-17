@@ -137,7 +137,7 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 					}
 
 					doc := ConvertDocument(t, explainRes)
-					pushdown, _ := doc.Get("pushdown")
+					pushdown, _ := doc.Get("filterPushdown")
 					assert.Equal(t, resultPushdown.FilterPushdownExpected(t), pushdown, msg)
 
 					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
@@ -288,7 +288,7 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 			require.NoError(t, targetCollection.Database().RunCommand(ctx, bson.D{{"explain", explainQuery}}).Decode(&explainRes))
 
 			doc := ConvertDocument(t, explainRes)
-			sortPushdown, _ := doc.Get("sortingPushdown")
+			sortPushdown, _ := doc.Get("sortPushdown")
 			assert.Equal(t, tc.sortPushdown.SortPushdownExpected(t, true), sortPushdown)
 
 			findOpts := options.Find()

@@ -108,7 +108,7 @@ func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompa
 					}
 
 					doc := ConvertDocument(t, explainRes)
-					pushdown, _ := doc.Get("pushdown")
+					pushdown, _ := doc.Get("filterPushdown")
 					assert.Equal(t, tc.filterPushdown.FilterPushdownExpected(t), pushdown, msg)
 
 					targetCommand := append(

@@ -151,7 +151,7 @@ func testAggregateStagesCompatWithProviders(t *testing.T, providers shareddata.P
 					}
 
 					doc := ConvertDocument(t, explainRes)
-					pushdown, _ := doc.Get("pushdown")
+					pushdown, _ := doc.Get("filterPushdown")
 					assert.Equal(t, resPushdown.FilterPushdownExpected(t), pushdown, msg)
 				})
 			}
