@@ -160,7 +160,7 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown:    *disableFilterPushdownF,
-			EnableSortPushdown:       *enableSortPushdownF,
+			DisableSortPushdown:      *disableSortPushdownF,
 			EnableUnsafeSortPushdown: *enableUnsafeSortPushdownF,
 			EnableOplog:              true,
 		},
@@ -187,8 +187,9 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		tb.Fatal("Both -target-tls and -target-unix-socket are set.")
 	}
 
-	if *enableSortPushdownF && *enableUnsafeSortPushdownF {
-		tb.Fatal("Both -enable-sort-pushdown and -enable-unsafe-sort-pushdown are set.")
+	// TODO same for cmd/ferretdb/main.go
+	if *disableSortPushdownF && *enableUnsafeSortPushdownF {
+		tb.Fatal("Both -disable-sort-pushdown and -enable-unsafe-sort-pushdown are set.")
 	}
 
 	switch {

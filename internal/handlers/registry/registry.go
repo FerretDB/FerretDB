@@ -59,7 +59,7 @@ type NewHandlerOpts struct {
 // TestOpts represents experimental configuration options.
 type TestOpts struct {
 	DisableFilterPushdown    bool
-	EnableSortPushdown       bool
+	DisableSortPushdown      bool
 	EnableUnsafeSortPushdown bool
 	EnableOplog              bool
 }

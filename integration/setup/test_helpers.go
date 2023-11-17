@@ -86,7 +86,7 @@ func FilterPushdownDisabled() bool {
 	return *disableFilterPushdownF
 }
 
-// SortPushdownEnabled returns true if sort pushdown is enabled.
-func SortPushdownEnabled() bool {
-	return *enableSortPushdownF
+// SortPushdownDisabled returns true if sort pushdown is disabled.
+func SortPushdownDisabled() bool {
+	return *disableSortPushdownF
 }

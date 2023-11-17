@@ -60,7 +60,7 @@ var (
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
 	disableFilterPushdownF    = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
-	enableSortPushdownF       = flag.Bool("enable-sort-pushdown", false, "enable sort pushdown")
+	disableSortPushdownF      = flag.Bool("disable-sort-pushdown", false, "disable sort pushdown")
 	enableUnsafeSortPushdownF = flag.Bool("enable-unsafe-sort-pushdown", false, "enable unsafe sort pushdown")
 )
 
