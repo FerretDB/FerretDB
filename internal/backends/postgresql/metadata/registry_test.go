@@ -35,7 +35,7 @@ import (
 )
 
 // testCollection creates, tests, and drops a unique collection in existing database.
-func testCollection(t *testing.T, ctx context.Context, r *Registry, db *pgxpool.Pool, dbName, collectionName string) {
+func testCollection(t *testing.T, ctx context.Context, r *Registry, p *pgxpool.Pool, dbName, collectionName string) {
 	t.Helper()
 
 	c, err := r.CollectionGet(ctx, dbName, collectionName)
