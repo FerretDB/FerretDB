@@ -187,7 +187,6 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		tb.Fatal("Both -target-tls and -target-unix-socket are set.")
 	}
 
-	// TODO same for cmd/ferretdb/main.go
 	if *disableSortPushdownF && *enableUnsafeSortPushdownF {
 		tb.Fatal("Both -disable-sort-pushdown and -enable-unsafe-sort-pushdown are set.")
 	}

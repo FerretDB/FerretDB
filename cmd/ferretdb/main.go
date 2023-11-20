@@ -337,6 +337,10 @@ func run() {
 
 	var wg sync.WaitGroup
 
+	if cli.Test.DisableSortPushdown && cli.Test.EnableUnsafeSortPushdown {
+		logger.Sugar().Fatal("Both -test-disable-sort-pushdown and -test-enable-unsafe-sort-pushdown are set.")
+	}
+
 	// https://github.com/alecthomas/kong/issues/389
 	if cli.DebugAddr != "" && cli.DebugAddr != "-" {
 		wg.Add(1)
