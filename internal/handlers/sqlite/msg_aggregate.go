@@ -269,7 +269,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 		// Skip sorting if there are more than one sort parameters
-		// TODO if "safe" sort pushdown is applied only for capped collection without sort then it shouldn't be applied here
 		if h.EnableUnsafeSortPushdown && sort.Len() == 1 {
 			var order types.SortType
 

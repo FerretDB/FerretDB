@@ -88,7 +88,6 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	// Skip sorting if there are more than one sort parameters
-	// TODO if "safe" sort pushdown is applied only for capped collection without sort then it shouldn't be applied here
 	if h.EnableUnsafeSortPushdown && params.Sort.Len() == 1 {
 		var order types.SortType
 
@@ -113,8 +112,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	//  - `skip` is non-zero value, skip pushdown is not supported yet.
 	if params.Filter.Len() == 0 &&
 
-		// TODO if "safe" sort pushdown is applied only for capped collection without sort then it shouldn't be applied here
-		(params.Sort.Len() == 0 || !h.DisableSortPushdown || h.EnableUnsafeSortPushdown) &&
+		(params.Sort.Len() == 0 || h.EnableUnsafeSortPushdown) &&
 		params.Skip == 0 {
 		qp.Limit = params.Limit
 	}
