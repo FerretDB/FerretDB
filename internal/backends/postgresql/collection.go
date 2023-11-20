@@ -320,19 +320,19 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return nil, lazyerrors.Error(err)
 	}
 
-	res.QueryPushdown = where != ""
+	res.FilterPushdown = where != ""
 
 	q += where
 
 	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
 	q += sort
 	args = append(args, sortArgs...)
-	res.UnsafeSortPushdown = sort != ""
+	res.SortPushdown = sort != ""
 
 	if params.Limit != 0 {
 		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
 		args = append(args, params.Limit)
-		res.UnsafeLimitPushdown = true
+		res.LimitPushdown = true
 	}
 
 	var b []byte
