@@ -26,7 +26,7 @@ const hanaSchemaSymbol = "_$"
 func UnmarshalHana(data []byte) (*types.Document, error) {
 
 	re := regexp.MustCompile(`\$([a-z])`)
-	replacedData := re.ReplaceAllString(string(data), hanaSchemaSymbol+"$1")
+	replacedData := re.ReplaceAllString(string(data), hanaSchemaSymbol+"$$1")
 
 	doc, err := sjson.Unmarshal([]byte(replacedData))
 
@@ -41,7 +41,7 @@ func MarshalHana(doc *types.Document) ([]byte, error) {
 	str := string(data)
 
 	re := regexp.MustCompile(`\$([a-z])`)
-	replacedStr := re.ReplaceAllString(str, hanaSchemaSymbol+"$1")
+	replacedStr := re.ReplaceAllString(str, hanaSchemaSymbol+"$$1")
 
 	return []byte(replacedStr), nil
 }

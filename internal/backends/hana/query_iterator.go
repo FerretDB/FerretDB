@@ -17,12 +17,12 @@ package hana
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"sync"
 
 	"github.com/SAP/go-hdb/driver"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
@@ -31,13 +31,13 @@ import (
 
 // queryIterator implements iterator.Interface to fetch documents from the database.
 type queryIterator struct {
-	rows  *sql.Rows
+	rows  *fsql.Rows
 	token *resource.Token
 	ctx   context.Context
 	m     sync.Mutex
 }
 
-func newQueryIterator(ctx context.Context, rows *sql.Rows) types.DocumentsIterator {
+func newQueryIterator(ctx context.Context, rows *fsql.Rows) types.DocumentsIterator {
 	iter := &queryIterator{
 		rows:  rows,
 		token: resource.NewToken(),

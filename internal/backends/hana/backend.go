@@ -24,13 +24,15 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // backend implements backends.Backend interface.
 type backend struct {
-	hdb *sql.DB
+	hdb *fsql.DB
+	l   *zap.Logger
 }
 
 // NewBackendParams represents the parameters of NewBackend function.
@@ -44,13 +46,16 @@ type NewBackendParams struct {
 
 // NewBackend creates a new Backend.
 func NewBackend(params *NewBackendParams) (backends.Backend, error) {
-	hdb, err := sql.Open("hdb", params.URI)
+	db, err := sql.Open("hdb", params.URI)
 	if err != nil {
 		return nil, err
 	}
 
+	hdb := fsql.WrapDB(db, "hana", params.L)
+
 	return backends.BackendContract(&backend{
 		hdb: hdb,
+		l:   params.L,
 	}), nil
 }
 
@@ -72,7 +77,7 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 
 	var res backends.StatusResult
 
-	var pingSucceeded bool
+	//var pingSucceeded bool
 
 	for rows.Next() {
 		// db name is schema name from here on out
@@ -94,15 +99,16 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 			}
 		}
 
-		if pingSucceeded {
-			continue
-		}
+		//TODO: figure out how to ping db.
+		// if pingSucceeded {
+		// 	continue
+		// }
 
-		if err = b.hdb.PingContext(ctx); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		// if err = b.hdb.PingContext(ctx); err != nil {
+		// 	return nil, lazyerrors.Error(err)
+		// }
 
-		pingSucceeded = true
+		// pingSucceeded = true
 	}
 
 	if err = rows.Err(); err != nil {

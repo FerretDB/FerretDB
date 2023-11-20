@@ -14,12 +14,36 @@
 
 package hana
 
-import "fmt"
+import (
+	"strings"
 
-func prepareSelectClause(schema, table string) string {
-	return fmt.Sprintf(
-		`SELECT * FROM %s.%s`,
-		schema,
-		table,
-	)
+	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/types"
+)
+
+func prepareSelectClause(schema, table string) (string, []any) {
+	args := []any{schema, table}
+	return "SELECT * FROM %q.%q", args
+}
+
+func prepareWhereClause(filter *types.Document) (string, []any, error) {
+	var filters []string
+	var args []any
+
+	// iter := filter.Iterator()
+	// defer iter.Close()
+
+	whereClause := ""
+	if len(filters) > 0 {
+		whereClause = " WHERE " + strings.Join(filters, " AND ")
+	}
+
+	return whereClause, args, nil
+}
+
+func prepareOrderByClause(sort *backends.SortField) (string, []any, error) {
+	var args []any
+	orderByClause := ""
+
+	return orderByClause, args, nil
 }

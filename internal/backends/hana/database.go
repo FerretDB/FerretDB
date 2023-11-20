@@ -16,25 +16,26 @@ package hana
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"math"
 	"sort"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // database implements backends.Database.
 type database struct {
-	hdb    *sql.DB
+	hdb    *fsql.DB
 	schema string
 }
 
 // newDatabase creates a new Database.
-func newDatabase(hdb *sql.DB, name string) backends.Database {
+func newDatabase(hdb *fsql.DB, name string) backends.Database {
 	return backends.DatabaseContract(&database{
-		hdb: hdb,
+		hdb:    hdb,
+		schema: name,
 	})
 }
 
@@ -46,7 +47,7 @@ func (db *database) Collection(name string) (backends.Collection, error) {
 // ListCollections implements backends.Database interface.
 func (db *database) ListCollections(ctx context.Context, params *backends.ListCollectionsParams) (*backends.ListCollectionsResult, error) {
 	sqlStmt := "SELECT TABLE_NAME FROM M_TABLES" +
-		" WHERE SCHEMA_NAME = $1 AND TABLE_TYPE = 'COLLECTION'"
+		" WHERE SCHEMA_NAME = ? AND TABLE_TYPE = 'COLLECTION'"
 	rows, err := db.hdb.QueryContext(ctx, sqlStmt, db.schema)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -119,7 +120,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	// Todo: should we load unloaded schemas?
 
 	queryCountDocuments := "SELECT COALESCE(SUM(RECORD_COUNT),0) FROM M_TABLES " +
-		"WHERE TABLE_TYPE = 'COLLECTION' AND SCHEMA_NAME = $1"
+		"WHERE TABLE_TYPE = 'COLLECTION' AND SCHEMA_NAME = ?"
 
 	rowCount := db.hdb.QueryRowContext(ctx, queryCountDocuments, db.schema)
 	var countDocuments int64
@@ -128,7 +129,7 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	}
 
 	querySizeTotal := "SELECT COALESCE(SUM(TABLE_SIZE),0) FROM M_TABLES " +
-		"WHERE TABLE_TYPE = 'COLLECTION' AND SCHEMA_NAME = $1"
+		"WHERE TABLE_TYPE = 'COLLECTION' AND SCHEMA_NAME = ?"
 
 	rowSizeTotal := db.hdb.QueryRowContext(ctx, querySizeTotal, db.schema)
 

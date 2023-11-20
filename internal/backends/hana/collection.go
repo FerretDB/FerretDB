@@ -16,9 +16,10 @@ package hana
 
 import (
 	"context"
-	"database/sql"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
@@ -26,14 +27,14 @@ import (
 // A collection in HANA is either stored in a table or as a column of a table. The column representation
 // not supported yet.
 type collection struct {
-	hdb    *sql.DB
+	hdb    *fsql.DB
 	schema string
 	table  string
 	// column string
 }
 
 // newCollection creates a new Collection.
-func newCollection(hdb *sql.DB, schema, table string) backends.Collection {
+func newCollection(hdb *fsql.DB, schema, table string) backends.Collection {
 	return backends.CollectionContract(&collection{
 		hdb:    hdb,
 		schema: schema,
@@ -44,13 +45,30 @@ func newCollection(hdb *sql.DB, schema, table string) backends.Collection {
 // Query implements backends.Collection interface.
 func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*backends.QueryResult, error) {
 
-	selectClause := prepareSelectClause(c.schema, c.table)
+	var args []any
 
-	// TODO: add Filters
+	selectClause, selectArgs := prepareSelectClause(c.schema, c.table)
+	args = append(args, selectArgs...)
 
-	querySql := selectClause
+	whereClause, whereArgs, err := prepareWhereClause(params.Filter)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	rows, err := c.hdb.QueryContext(ctx, querySql)
+	sql := selectClause + whereClause
+	args = append(args, whereArgs...)
+
+	orderByClause, orderByArgs, err := prepareOrderByClause(params.Sort)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	sql += orderByClause
+	args = append(args, orderByArgs...)
+
+	sql = fmt.Sprintf(sql, args...)
+
+	rows, err := c.hdb.QueryContext(ctx, sql)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -62,7 +80,23 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 // InsertAll implements backends.Collection interface.
 func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
-	return nil, lazyerrors.New("not implemented yet")
+	// TODO: Create schema&collection if not exists.
+
+	insertSql := "INSERT INTO %q.%q values('%s')"
+
+	for _, doc := range params.Docs {
+		jsonBytes, err := MarshalHana(doc)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+		line := fmt.Sprintf(insertSql, c.schema, c.table, jsonBytes)
+		_, err = c.hdb.ExecContext(ctx, line)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	return new(backends.InsertAllResult), nil
 }
 
 // UpdateAll implements backends.Collection interface.
