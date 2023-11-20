@@ -18,14 +18,15 @@
 package pool
 
 import (
+	"net/url"
+	"sync"
+
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
-	"net/url"
-	"sync"
 )
 
 // Parts of Prometheus metric names.
@@ -55,8 +56,6 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	//values := baseURI.Query()
-
 	p := &Pool{
 		baseURI: *baseURI,
 		l:       l,
@@ -80,6 +79,44 @@ func (p *Pool) Close() {
 	p.pools = nil
 
 	resource.Untrack(p, p.token)
+}
+
+func (p *Pool) Get(username, password string) (*fsql.DB, error) {
+	uri := p.baseURI
+	if username != "" {
+		uri.User = url.UserPassword(username, password)
+	}
+
+	u := uri.String()
+
+	p.rw.RLock()
+	res := p.pools[u]
+	p.rw.RUnlock()
+
+	if res != nil {
+		p.l.Debug("Pool: found existing pool", zap.String("username", username))
+		return res, nil
+	}
+
+	p.rw.Lock()
+	defer p.rw.Unlock()
+
+	// check again to see if a concurrent connection created a pool already
+	if res = p.pools[u]; res != nil {
+		p.l.Debug("Pool: found existing pool (after acquiring lock)", zap.String("username", username))
+		return res, nil
+	}
+
+	res, err := openDB(u, p.l, p.sp)
+	if err != nil {
+		p.l.Warn("Pool: connection failed", zap.String("username", username), zap.Error(err))
+		return nil, lazyerrors.Error(err)
+	}
+
+	p.l.Info("Pool: connection succeeded", zap.String("username", username))
+	p.pools[u] = res
+
+	return res, nil
 }
 
 // Describe implements prometheus.Collector

@@ -54,7 +54,6 @@ func prepareSelectClause(schema, table string, capped, onlyRecordIDs bool) strin
 		)
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3573
 	return fmt.Sprintf(
 		`SELECT %s FROM %s`,
 		metadata.DefaultColumn,

@@ -15,9 +15,20 @@
 // Package metadata provides access to databases and collections information.
 package metadata
 
-import (
-	"database/sql"
-	"database/sql/driver"
+import "github.com/FerretDB/FerretDB/internal/backends"
+
+const (
+	// DefaultColumn is a column name for all fields.
+	DefaultColumn = backends.ReservedPrefix + "sjson"
+
+	// IDColumn is a MySQL path expression for _id field.
+	IDColumn = DefaultColumn + "->'$._id'"
+
+	// TableIdxColumn is a column name for MySQL generated column
+	TableIdxColumn = DefaultColumn + "_table"
+
+	// RecordIDColumn is a name for RecordID column to store capped collection record id.
+	RecordIDColumn = backends.ReservedPrefix + "record_id"
 )
 
 // Collection represents collection metadata.
@@ -25,11 +36,15 @@ import (
 // Collection value should be immutable to avoid data races.
 // Use [deepCopy] to replace the whole value instead of modifying fields of existing value.
 type Collection struct {
-	Name      string
-	TableName string
-	//Indexes         Indexes
+	Name            string
+	TableName       string
 	CappedSize      int64
 	CappedDocuments int64
+}
+
+// Capped returns true if collection is capped.
+func (c Collection) Capped() bool {
+	return c.CappedSize > 0
 }
 
 // deepCopy returns a deep copy.
@@ -45,18 +60,3 @@ func (c *Collection) deepCopy() *Collection {
 		CappedDocuments: c.CappedDocuments,
 	}
 }
-
-func (c Collection) Value() (driver.Value, error) {
-
-	return nil, nil
-}
-
-func (c *Collection) Scan(src any) error {
-	return nil
-}
-
-// check interfaces
-var (
-	_ driver.Valuer = Collection{}
-	_ sql.Scanner   = (*Collection)(nil)
-)

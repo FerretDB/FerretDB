@@ -33,7 +33,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/teststress"
 )
 
-// testCollection creates, tests, and drops an unique collection in existing database.
+// testCollection creates, tests, and drops a unique collection in existing database.
 func testCollection(t *testing.T, ctx context.Context, r *Registry, db *pgxpool.Pool, dbName, collectionName string) {
 	t.Helper()
 

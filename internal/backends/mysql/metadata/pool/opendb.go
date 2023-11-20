@@ -17,6 +17,7 @@ package pool
 import (
 	"context"
 	"database/sql"
+
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
@@ -25,7 +26,7 @@ import (
 )
 
 // openDB opens existing database connections or creates a new one.
-func openDB(uri string, l *zap.Logger, sp *state.Provider) (any, error) {
+func openDB(uri string, l *zap.Logger, sp *state.Provider) (*fsql.DB, error) {
 	db, err := sql.Open("mysql", uri)
 	if err != nil {
 		return nil, lazyerrors.Error(err)

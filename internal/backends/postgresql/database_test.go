@@ -46,7 +46,7 @@ func TestDatabaseStats(t *testing.T) {
 	}
 	b, err := NewBackend(&params)
 	require.NoError(t, err)
-	t.Cleanup(b.Close)
+	// t.Cleanup(b.Close)
 
 	dbName := testutil.DatabaseName(t)
 	db, err := b.Database(dbName)

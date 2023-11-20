@@ -497,6 +497,11 @@ tasks:
     cmds:
       - sqlite3 tmp/sqlite/*.sqlite
 
+  mysql:
+    desc: "Run mysql"
+    cmds:
+      - docker compose exec -e MYSQL_PASSWORD=password mysql mysql -u username -ppassword ferretdb
+
   mongosh:
     desc: "Run MongoDB shell (`mongosh`)"
     cmds:
