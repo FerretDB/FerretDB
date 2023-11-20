@@ -146,7 +146,7 @@ func (r *Registry) initDBs(ctx context.Context, db *fsql.DB) ([]string, error) {
 			SELECT EXISTS (
 				SELECT 1
 				FROM information_schema.columns
-				WHERE table_schema = $1 AND table_name = $2
+				WHERE table_schema = ? AND table_name = ?
 			)
 		`)
 

@@ -33,7 +33,7 @@ func createDatabase(t *testing.T, ctx context.Context) (r *Registry, db *fsql.DB
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	u := "mysql://username:password@127.0.0.1:3306/ferretdb"
+	u := "username:password@tcp(127.0.0.1:3306)/ferretdb"
 	r, err = NewRegistry(u, testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
@@ -56,20 +56,23 @@ func TestCheckAuth(t *testing.T) {
 		t.Skip("skipping in -short mode")
 	}
 
-	connInfo := conninfo.New()
-	ctx := conninfo.Ctx(testutil.Ctx(t), connInfo)
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 
 	for name, tc := range map[string]struct {
 		uri string
 		err string
 	}{
 		"Auth": {
-			uri: "mysql://username:password@127.0.0.1:3306/ferretdb",
+			uri: "username:password@tcp(127.0.0.1:3306)/ferretdb",
 			err: "",
 		},
-		"NoAuth": {
-			uri: "mysql://127.0.0.1:3306/ferretdb",
-			err: "failed to connect to `host=127.0.0.1 user=`",
+		"WrongUser": {
+			uri: "wrong-user:wrong-password@tcp(127.0.0.1:3306)/ferretdb",
+			err: "Error 1045 (28000): Access denied for user 'wrong-user'@'172.19.0.1' (using password: YES)",
+		},
+		"WrongDatabase": {
+			uri: "username:password@tcp(127.0.0.1:3306)/wrong-database",
+			err: "Error 1049 (42000): Unknown database 'wrong-database'",
 		},
 	} {
 		name, tc := name, tc

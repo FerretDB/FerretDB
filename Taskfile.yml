@@ -374,7 +374,6 @@ tasks:
         --handler=mysql
         --mysql-url='mysql://username@127.0.0.1:3306/ferretdb'
         --test-records-dir=tmp/records
-      
 
   # set FERRETDB_HANA_URL environment variable to use it
   run-hana:

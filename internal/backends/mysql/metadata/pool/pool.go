@@ -64,6 +64,8 @@ func New(u string, l *zap.Logger, sp *state.Provider) (*Pool, error) {
 		token:   resource.NewToken(),
 	}
 
+	resource.Track(p, p.token)
+
 	return p, nil
 }
 
