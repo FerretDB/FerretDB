@@ -25,7 +25,7 @@ type database struct {
 	db backends.Database
 }
 
-// newDatabase creates a new database that wraps the given database.
+// newDatabase creates a new Database that wraps the given database.
 func newDatabase(db backends.Database) backends.Database {
 	return &database{db: db}
 }
