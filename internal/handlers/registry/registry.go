@@ -26,7 +26,10 @@ import (
 )
 
 // newHandlerFunc represents a function that constructs a new handler.
-type newHandlerFunc func(opts *NewHandlerOpts) (handlers.Interface, error)
+type newHandlerFunc func(opts *NewHandlerOpts) (handlers.Interface, CloseBackendFunc, error)
+
+// CloseBackendFunc represents a function that closes a backend.
+type CloseBackendFunc func()
 
 // registry maps handler names to constructors.
 //
@@ -55,18 +58,17 @@ type NewHandlerOpts struct {
 
 // TestOpts represents experimental configuration options.
 type TestOpts struct {
-	DisableFilterPushdown bool
-	EnableSortPushdown    bool
-	EnableOplog           bool
-
-	UseOldPG   bool
-	UseNewHana bool
+	DisableFilterPushdown    bool
+	EnableUnsafeSortPushdown bool
+	EnableOplog              bool
 }
 
 // NewHandler constructs a new handler.
-func NewHandler(name string, opts *NewHandlerOpts) (handlers.Interface, error) {
+//
+// The caller is responsible to call CloseBackendFunc when the handler is no longer needed.
+func NewHandler(name string, opts *NewHandlerOpts) (handlers.Interface, CloseBackendFunc, error) {
 	if opts == nil {
-		return nil, fmt.Errorf("opts is nil")
+		return nil, nil, fmt.Errorf("opts is nil")
 	}
 
 	// handle deprecated variant
@@ -76,7 +78,7 @@ func NewHandler(name string, opts *NewHandlerOpts) (handlers.Interface, error) {
 
 	newHandler := registry[name]
 	if newHandler == nil {
-		return nil, fmt.Errorf("unknown handler %q", name)
+		return nil, nil, fmt.Errorf("unknown handler %q", name)
 	}
 
 	return newHandler(opts)

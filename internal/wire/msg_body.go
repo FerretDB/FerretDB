@@ -27,16 +27,16 @@ import (
 )
 
 // MsgBody is a wire protocol message body.
+//
+//sumtype:decl
 type MsgBody interface {
+	msgbody() // seal for sumtype
+
 	readFrom(*bufio.Reader) error
 	encoding.BinaryUnmarshaler
 	encoding.BinaryMarshaler
 	fmt.Stringer
-
-	msgbody() // seal for go-sumtype
 }
-
-//go-sumtype:decl MsgBody
 
 // ErrZeroRead is returned when zero bytes was read from connection,
 // indicating that connection was closed by the client.

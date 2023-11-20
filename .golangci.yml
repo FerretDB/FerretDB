@@ -22,6 +22,8 @@ linters-settings:
             desc: use `github.com/jackc/pgx/v5/pgproto3` package instead
           - pkg: github.com/jackc/pgtype
             desc: use `github.com/jackc/pgx/v5/pgtype` package instead
+          - pkg: github.com/jackc/pgx$
+            desc: use `github.com/jackc/pgx/v5` package instead
           - pkg: github.com/jackc/pgx/v4
             desc: use `github.com/jackc/pgx/v5` package instead
       fjson:
@@ -44,7 +46,6 @@ linters-settings:
           - "!**/internal/backends/sqlite/*.go"
           - "!**/internal/backends/postgresql/*.go"
           - "!**/internal/backends/postgresql/metadata/*.go"
-          - "!**/internal/handlers/pg/pgdb/*.go"
           - "!**/internal/handlers/hana/hanadb/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handlers/sjson
@@ -53,13 +54,6 @@ linters-settings:
           - "**/internal/backends/**/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handlers/common
-      pgdb:
-        files:
-          - $all
-          - "!**/internal/handlers/pg/*.go"
-          - "!**/cmd/envtool/*.go"
-        deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/handlers/pg/pgdb
       commonerrors:
         files:
           - $all
@@ -80,7 +74,6 @@ linters-settings:
   godot:
     scope: toplevel
     exclude:
-      - go-sumtype:decl
       - check interfaces
     capital: true
   godox:
@@ -110,9 +103,7 @@ linters-settings:
     local-prefixes: github.com/FerretDB/FerretDB
   gomodguard:
     blocked:
-      modules:
-        - go.mongodb.org/mongo-driver:
-            reason: "FerretDB should not depend on MongoDB Go driver."
+      modules: []
   gosimple:
     checks: ["all"]
   govet:
@@ -133,6 +124,8 @@ linters-settings:
         alias: sqlite3
       - pkg: modernc.org/sqlite/lib
         alias: sqlite3lib
+      - pkg: github.com/FerretDB/FerretDB/internal/handlers/sqlite
+        alias: handler
   # ineffassign
   lll:
     line-length: 130
@@ -166,6 +159,7 @@ linters:
     - depguard
     - exhaustive
     - gci
+    - gochecksumtype
     - goconst
     - godot
     - godox

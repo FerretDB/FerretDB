@@ -22,6 +22,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -30,14 +31,57 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
-// prepareSelectClause returns simple SELECT clause for provided db and table name,
-// that can be used to construct the SQL query.
-func prepareSelectClause(db, table string) string {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3573
+// selectParams contains params that specify how prepareSelectClause function will
+// build the SELECT SQL query.
+type selectParams struct {
+	Schema  string
+	Table   string
+	Comment string
+
+	Capped        bool
+	OnlyRecordIDs bool
+}
+
+// prepareSelectClause returns SELECT clause for default column of provided schema and table name.
+//
+// For capped collection with onlyRecordIDs, it returns select clause for recordID column.
+//
+// For capped collection, it returns select clause for recordID column and default column.
+func prepareSelectClause(params *selectParams) string {
+	if params == nil {
+		params = new(selectParams)
+	}
+
+	if params.Comment != "" {
+		params.Comment = strings.ReplaceAll(params.Comment, "/*", "/ *")
+		params.Comment = strings.ReplaceAll(params.Comment, "*/", "* /")
+		params.Comment = `/* ` + params.Comment + ` */`
+	}
+
+	if params.Capped && params.OnlyRecordIDs {
+		return fmt.Sprintf(
+			`SELECT %s %s FROM %s`,
+			params.Comment,
+			metadata.RecordIDColumn,
+			pgx.Identifier{params.Schema, params.Table}.Sanitize(),
+		)
+	}
+
+	if params.Capped {
+		return fmt.Sprintf(
+			`SELECT %s %s, %s FROM %s`,
+			params.Comment,
+			metadata.RecordIDColumn,
+			metadata.DefaultColumn,
+			pgx.Identifier{params.Schema, params.Table}.Sanitize(),
+		)
+	}
+
 	return fmt.Sprintf(
-		`SELECT %s FROM %s`,
+		`SELECT %s %s FROM %s`,
+		params.Comment,
 		metadata.DefaultColumn,
-		pgx.Identifier{db, table}.Sanitize(),
+		pgx.Identifier{params.Schema, params.Table}.Sanitize(),
 	)
 }
 
@@ -60,10 +104,9 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 			return "", nil, lazyerrors.Error(err)
 		}
 
-		// Is the comment below correct? Does it also skip things like $or?
-		// TODO https://github.com/FerretDB/FerretDB/issues/3573
-
-		// don't pushdown $comment, it's attached to query in handlers
+		// don't pushdown $comment, as it's attached to query with select clause
+		//
+		// all of the other top-level operators such as `$or` do not support pushdown yet
 		if strings.HasPrefix(rootKey, "$") {
 			continue
 		}
@@ -135,6 +178,8 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 							sjson.GetTypeOfValue(v),
 						))
 
+						// merge with the case below?
+						// TODO https://github.com/FerretDB/FerretDB/issues/3626
 						args = append(args, rootKey, v)
 
 					case string, types.ObjectID, time.Time:
@@ -146,6 +191,8 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 							sjson.GetTypeOfValue(v),
 						))
 
+						// merge with the case above?
+						// TODO https://github.com/FerretDB/FerretDB/issues/3626
 						args = append(args, rootKey, string(must.NotFail(sjson.MarshalSingleValue(v))))
 
 					default:
@@ -181,20 +228,29 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 	return filter, args, nil
 }
 
-// prepareOrderByClause adds ORDER BY clause with given sort document and returns the query and arguments.
-func prepareOrderByClause(p *metadata.Placeholder, key string, descending bool) (string, []any, error) {
+// prepareOrderByClause returns ORDER BY clause for given sort field and returns the query and arguments.
+//
+// For capped collection, it returns ORDER BY recordID only if sort field is nil.
+func prepareOrderByClause(p *metadata.Placeholder, sort *backends.SortField, capped bool) (string, []any) {
+	if sort == nil {
+		if capped {
+			return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil
+		}
+
+		return "", nil
+	}
+
 	// Skip sorting dot notation
-	if strings.ContainsRune(key, '.') {
-		return "", nil, nil
+	if strings.ContainsRune(sort.Key, '.') {
+		return "", nil
 	}
 
-	sqlOrder := "ASC"
-
-	if descending {
-		sqlOrder = "DESC"
+	var order string
+	if sort.Descending {
+		order = " DESC"
 	}
 
-	return fmt.Sprintf(" ORDER BY %s->%s %s", metadata.DefaultColumn, p.Next(), sqlOrder), []any{key}, nil
+	return fmt.Sprintf(" ORDER BY %s->%s%s", metadata.DefaultColumn, p.Next(), order), []any{sort.Key}
 }
 
 // filterEqual returns the proper SQL filter with arguments that filters documents
@@ -210,6 +266,7 @@ func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args 
 
 	case float64:
 		// If value is not safe double, fetch all numbers out of safe range.
+		// TODO https://github.com/FerretDB/FerretDB/issues/3626
 		switch {
 		case v > types.MaxSafeDouble:
 			sql = `%[1]s->%[2]s > %[3]s`
@@ -226,16 +283,23 @@ func filterEqual(p *metadata.Placeholder, k string, v any) (filter string, args 
 		args = append(args, k, v)
 
 	case string, types.ObjectID, time.Time:
+		// merge with the case below?
+		// TODO https://github.com/FerretDB/FerretDB/issues/3626
+
 		// don't change the default eq query
 		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
 		args = append(args, k, string(must.NotFail(sjson.MarshalSingleValue(v))))
 
 	case bool, int32:
+		// merge with the case above?
+		// TODO https://github.com/FerretDB/FerretDB/issues/3626
+
 		// don't change the default eq query
 		filter = fmt.Sprintf(sql, metadata.DefaultColumn, p.Next(), p.Next())
 		args = append(args, k, v)
 
 	case int64:
+		// TODO https://github.com/FerretDB/FerretDB/issues/3626
 		maxSafeDouble := int64(types.MaxSafeDouble)
 
 		// If value cannot be safe double, fetch all numbers out of the safe range.

@@ -25,27 +25,30 @@ import (
 )
 
 // Setup initializes logging with a given level.
-func Setup(level zapcore.Level, uuid string) {
+func Setup(level zapcore.Level, encoding, uuid string) {
 	config := zap.Config{
 		Level:             zap.NewAtomicLevelAt(level),
 		Development:       debugbuild.Enabled,
 		DisableCaller:     false,
 		DisableStacktrace: false,
 		Sampling:          nil,
-		Encoding:          "console",
+		Encoding:          encoding,
 		EncoderConfig: zapcore.EncoderConfig{
-			TimeKey:        "T",
-			LevelKey:       "L",
-			NameKey:        "N",
-			CallerKey:      "C",
-			FunctionKey:    zapcore.OmitKey,
-			MessageKey:     "M",
-			StacktraceKey:  "S",
-			LineEnding:     zapcore.DefaultLineEnding,
-			EncodeLevel:    zapcore.CapitalLevelEncoder,
-			EncodeTime:     zapcore.ISO8601TimeEncoder,
-			EncodeDuration: zapcore.StringDurationEncoder,
-			EncodeCaller:   zapcore.ShortCallerEncoder,
+			MessageKey:          "M",
+			LevelKey:            "L",
+			TimeKey:             "T",
+			NameKey:             "N",
+			CallerKey:           "C",
+			FunctionKey:         zapcore.OmitKey,
+			StacktraceKey:       "S",
+			LineEnding:          zapcore.DefaultLineEnding,
+			EncodeLevel:         zapcore.CapitalLevelEncoder,
+			EncodeTime:          zapcore.ISO8601TimeEncoder,
+			EncodeDuration:      zapcore.StringDurationEncoder,
+			EncodeCaller:        zapcore.ShortCallerEncoder,
+			EncodeName:          nil,
+			NewReflectedEncoder: nil,
+			ConsoleSeparator:    "\t",
 		},
 		OutputPaths:      []string{"stderr"},
 		ErrorOutputPaths: []string{"stderr"},
@@ -66,11 +69,11 @@ func Setup(level zapcore.Level, uuid string) {
 		return nil
 	}))
 
-	setupWithLogger(logger)
+	SetupWithLogger(logger)
 }
 
-// setupWithLogger initializes logging with a given logger and its level.
-func setupWithLogger(logger *zap.Logger) {
+// SetupWithLogger initializes logging with a given logger and its level.
+func SetupWithLogger(logger *zap.Logger) {
 	zap.ReplaceGlobals(logger)
 
 	if _, err := zap.RedirectStdLogAt(logger, zap.InfoLevel); err != nil {

@@ -176,7 +176,7 @@ func TestUpdateFieldCompatIncComplex(t *testing.T) {
 			update: bson.D{{"$inc", bson.D{{"v", float64(-42.13)}}}},
 		},
 		"DoubleDoubleBigIncrement": {
-			update: bson.D{{"$inc", bson.D{{"v", float64(1 << 61)}}}},
+			update: bson.D{{"$inc", bson.D{{"v", float64(1 << 61)}}}}, // TODO https://github.com/FerretDB/FerretDB/issues/3626
 		},
 		"DoubleIncOnNullValue": {
 			update: bson.D{{"$inc", bson.D{{"v", float64(1)}}}},
@@ -1070,7 +1070,7 @@ func TestUpdateFieldCompatMul(t *testing.T) {
 			providers: providers,
 		},
 		"DoubleBig": {
-			update:    bson.D{{"$mul", bson.D{{"v", float64(1 << 61)}}}},
+			update:    bson.D{{"$mul", bson.D{{"v", float64(1 << 61)}}}}, // TODO https://github.com/FerretDB/FerretDB/issues/3626
 			providers: providers,
 		},
 		"Empty": {

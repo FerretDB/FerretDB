@@ -54,14 +54,14 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	db := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if db == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil),
+			Iter: newQueryIterator(ctx, nil, params.OnlyRecordIDs),
 		}, nil
 	}
 
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 	if meta == nil {
 		return &backends.QueryResult{
-			Iter: newQueryIterator(ctx, nil),
+			Iter: newQueryIterator(ctx, nil, params.OnlyRecordIDs),
 		}, nil
 	}
 
@@ -83,9 +83,9 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3490
+	q := prepareSelectClause(meta.TableName, params.Comment, meta.Capped(), params.OnlyRecordIDs) + whereClause
 
-	q := fmt.Sprintf(`SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+	q += prepareOrderByClause(params.Sort, meta.Capped())
 
 	if params.Limit != 0 {
 		q += ` LIMIT ?`
@@ -98,7 +98,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}
 
 	return &backends.QueryResult{
-		Iter: newQueryIterator(ctx, rows),
+		Iter: newQueryIterator(ctx, rows, params.OnlyRecordIDs),
 	}, nil
 }
 
@@ -112,19 +112,22 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 
 	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
-		for _, doc := range params.Docs {
-			b, err := sjson.Marshal(doc)
+		// TODO https://github.com/FerretDB/FerretDB/issues/3708
+		const batchSize = 100
+
+		var batch []*types.Document
+		docs := params.Docs
+
+		for len(docs) > 0 {
+			i := min(batchSize, len(docs))
+			batch, docs = docs[:i], docs[i:]
+
+			q, args, err := prepareInsertStatement(meta.TableName, meta.Capped(), batch)
 			if err != nil {
 				return lazyerrors.Error(err)
 			}
 
-			// TODO https://github.com/FerretDB/FerretDB/issues/3490
-
-			// use batches: INSERT INTO %q %s VALUES (?), (?), (?), ... up to, say, 100 documents
-			// TODO https://github.com/FerretDB/FerretDB/issues/3271
-			q := fmt.Sprintf(`INSERT INTO %q (%s) VALUES (?)`, meta.TableName, metadata.DefaultColumn)
-
-			if _, err = tx.ExecContext(ctx, q, string(b)); err != nil {
+			if _, err = tx.ExecContext(ctx, q, args...); err != nil {
 				var se *sqlite3.Error
 				if errors.As(err, &se) && se.Code() == sqlite3lib.SQLITE_CONSTRAINT_UNIQUE {
 					return backends.NewError(backends.ErrorCodeInsertDuplicateID, err)
@@ -252,6 +255,8 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		params = new(backends.ExplainParams)
 	}
 
+	selectClause := prepareSelectClause(meta.TableName, "", meta.Capped(), false)
+
 	var queryPushdown bool
 	var whereClause string
 	var args []any
@@ -268,16 +273,17 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3490
+	orderByClause := prepareOrderByClause(params.Sort, meta.Capped())
+	unsafeSortPushdown := orderByClause != ""
 
-	q := fmt.Sprintf(`EXPLAIN QUERY PLAN SELECT %s FROM %q`+whereClause, metadata.DefaultColumn, meta.TableName)
+	q := `EXPLAIN QUERY PLAN ` + selectClause + whereClause + orderByClause
 
-	var limitPushdown bool
+	var unsafeLimitPushdown bool
 
 	if params.Limit != 0 {
 		q += ` LIMIT ?`
 		args = append(args, params.Limit)
-		limitPushdown = true
+		unsafeLimitPushdown = true
 	}
 
 	rows, err := db.QueryContext(ctx, q, args...)
@@ -310,9 +316,10 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	return &backends.ExplainResult{
-		QueryPlanner:  must.NotFail(types.NewDocument("Plan", queryPlan)),
-		QueryPushdown: queryPushdown,
-		LimitPushdown: limitPushdown,
+		QueryPlanner:        must.NotFail(types.NewDocument("Plan", queryPlan)),
+		QueryPushdown:       queryPushdown,
+		UnsafeSortPushdown:  unsafeSortPushdown,
+		UnsafeLimitPushdown: unsafeLimitPushdown,
 	}, nil
 }
 

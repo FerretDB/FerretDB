@@ -311,7 +311,7 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *pgxpool.Pool, dbN
 	}
 
 	q := fmt.Sprintf(
-		`CREATE SCHEMA %s`,
+		`CREATE SCHEMA IF NOT EXISTS %s`,
 		pgx.Identifier{dbName}.Sanitize(),
 	)
 
@@ -976,7 +976,7 @@ func (r *Registry) indexesDrop(ctx context.Context, p *pgxpool.Pool, dbName, col
 // Deprecated: Warning! Avoid using this function unless there is no other way.
 // Ideally, use a placeholder and pass the value as a parameter instead of calling this function.
 //
-// This approach is used in github.com/jackc/pgx/v4@v4.18.1/internal/sanitize/sanitize.go.
+// See https://github.com/jackc/pgx/blob/v5.5.0/internal/sanitize/sanitize.go#L90-L92
 func quoteString(str string) string {
 	// We need "standard_conforming_strings=on" and "client_encoding=UTF8" (checked in checkConnection),
 	// otherwise we can't sanitize safely: https://github.com/jackc/pgx/issues/868#issuecomment-725544647
