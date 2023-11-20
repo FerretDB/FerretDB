@@ -15,6 +15,7 @@
 package postgresql
 
 import (
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -22,10 +23,72 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
+
+func TestPrepareSelectClause(t *testing.T) {
+	t.Parallel()
+	schema := "schema"
+	table := "table"
+	comment := "*/ 1; DROP SCHEMA " + schema + " CASCADE -- "
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		capped        bool
+		onlyRecordIDs bool
+
+		expectQuery string
+	}{
+		"CappedRecordID": {
+			capped:        true,
+			onlyRecordIDs: true,
+			expectQuery: fmt.Sprintf(
+				`SELECT %s %s FROM "%s"."%s"`,
+				"/* * / 1; DROP SCHEMA "+schema+" CASCADE --  */",
+				metadata.RecordIDColumn,
+				schema,
+				table,
+			),
+		},
+		"Capped": {
+			capped: true,
+			expectQuery: fmt.Sprintf(
+				`SELECT %s %s, %s FROM "%s"."%s"`,
+				"/* * / 1; DROP SCHEMA "+schema+" CASCADE --  */",
+				metadata.RecordIDColumn,
+				metadata.DefaultColumn,
+				schema,
+				table,
+			),
+		},
+		"FullRecord": {
+			expectQuery: fmt.Sprintf(
+				`SELECT %s %s FROM "%s"."%s"`,
+				"/* * / 1; DROP SCHEMA "+schema+" CASCADE --  */",
+				metadata.DefaultColumn,
+				schema,
+				table,
+			),
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			query := prepareSelectClause(&selectParams{
+				Schema:        schema,
+				Table:         table,
+				Comment:       comment,
+				Capped:        tc.capped,
+				OnlyRecordIDs: tc.onlyRecordIDs,
+			})
+
+			assert.Equal(t, tc.expectQuery, query)
+		})
+	}
+}
 
 func TestPrepareWhereClause(t *testing.T) {
 	t.Parallel()
@@ -144,6 +207,7 @@ func TestPrepareWhereClause(t *testing.T) {
 		},
 		"EqDoubleBigInt64": {
 			filter: must.NotFail(types.NewDocument(
+				// TODO https://github.com/FerretDB/FerretDB/issues/3626
 				"v", must.NotFail(types.NewDocument("$eq", float64(2<<61))),
 			)),
 			args:     []any{`v`, types.MaxSafeDouble},
@@ -249,6 +313,64 @@ func TestPrepareWhereClause(t *testing.T) {
 				return
 			}
 
+			assert.Equal(t, tc.args, args)
+		})
+	}
+}
+
+func TestPrepareOrderByClause(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		sort   *backends.SortField
+		capped bool
+
+		orderBy string
+		args    []any
+	}{
+		"Ascending": {
+			sort:    &backends.SortField{Key: "field", Descending: false},
+			orderBy: ` ORDER BY _jsonb->$1`,
+			args:    []any{"field"},
+		},
+		"Descending": {
+			sort:    &backends.SortField{Key: "field", Descending: true},
+			orderBy: ` ORDER BY _jsonb->$1 DESC`,
+			args:    []any{"field"},
+		},
+		"SortNil": {
+			orderBy: "",
+			args:    nil,
+		},
+		"SortDotNotation": {
+			sort:    &backends.SortField{Key: "field.embedded", Descending: true},
+			orderBy: "",
+			args:    nil,
+		},
+		"Capped": {
+			capped:  true,
+			orderBy: ` ORDER BY _ferretdb_record_id`,
+			args:    nil,
+		},
+		"CappedWithSort": {
+			sort:    &backends.SortField{Key: "field", Descending: true},
+			capped:  true,
+			orderBy: ` ORDER BY _jsonb->$1 DESC`,
+			args:    []any{"field"},
+		},
+		"CappedWithSortDotNotation": {
+			sort:    &backends.SortField{Key: "field.embedded", Descending: true},
+			capped:  true,
+			orderBy: "",
+			args:    nil,
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			orderBy, args := prepareOrderByClause(new(metadata.Placeholder), tc.sort, tc.capped)
+			assert.Equal(t, tc.orderBy, orderBy)
 			assert.Equal(t, tc.args, args)
 		})
 	}

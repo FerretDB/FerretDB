@@ -2,22 +2,18 @@ module github.com/FerretDB/FerretDB/tools
 
 go 1.21
 
-// Until https://github.com/goreleaser/nfpm/issues/719 is resolved and released.
-// See https://github.com/goreleaser/nfpm/pull/721.
-replace github.com/goreleaser/nfpm/v2 => github.com/AlekSi/nfpm/v2 v2.33.2-0.20231013044354-8ee96782f9c2
-
 require (
-	github.com/BurntSushi/go-sumtype v0.0.0-20221020234012-480526a59796
 	github.com/FerretDB/gh v0.1.0
 	github.com/go-task/task/v3 v3.31.0
 	github.com/google/go-github/v56 v56.0.0
-	github.com/goreleaser/nfpm/v2 v2.33.1
+	github.com/goreleaser/nfpm/v2 v2.34.0
 	github.com/quasilyte/go-consistent v0.6.0
+	github.com/rogpeppe/go-internal v1.10.1-0.20230524175051-ec119421bb97
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/oauth2 v0.13.0
-	golang.org/x/perf v0.0.0-20231006134539-cd219cffda85
-	golang.org/x/pkgsite v0.0.0-20231009172822-5f0513d53cff
-	golang.org/x/tools v0.14.0
+	golang.org/x/oauth2 v0.14.0
+	golang.org/x/perf v0.0.0-20231108231503-cb71e802ccb8
+	golang.org/x/pkgsite v0.0.0-20231108193206-a4adca6c8b46
+	golang.org/x/tools v0.15.0
 	golang.org/x/vuln v1.0.1
 	mvdan.cc/gofumpt v0.5.0
 )
@@ -72,7 +68,7 @@ require (
 	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/kisielk/gotool v1.0.0 // indirect
-	github.com/klauspost/compress v1.17.0 // indirect
+	github.com/klauspost/compress v1.17.2 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -105,14 +101,14 @@ require (
 	github.com/yuin/goldmark-emoji v1.0.1 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	gitlab.com/digitalxero/go-conventional-commit v1.0.7 // indirect
-	golang.org/x/crypto v0.14.0 // indirect
+	golang.org/x/crypto v0.15.0 // indirect
 	golang.org/x/exp v0.0.0-20230212135524-a684f29349b6 // indirect
-	golang.org/x/mod v0.13.0 // indirect
-	golang.org/x/net v0.17.0 // indirect
-	golang.org/x/sync v0.4.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
-	golang.org/x/term v0.13.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/mod v0.14.0 // indirect
+	golang.org/x/net v0.18.0 // indirect
+	golang.org/x/sync v0.5.0 // indirect
+	golang.org/x/sys v0.14.0 // indirect
+	golang.org/x/term v0.14.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

@@ -39,6 +39,7 @@ type FindParams struct {
 	SingleBatch bool            `ferretdb:"singleBatch,opt"`
 	Comment     string          `ferretdb:"comment,opt"`
 	MaxTimeMS   int64           `ferretdb:"maxTimeMS,opt,wholePositiveNumber"`
+	Tailable    bool            `ferretdb:"tailable,opt"`
 
 	Collation *types.Document `ferretdb:"collation,unimplemented"`
 	Let       *types.Document `ferretdb:"let,unimplemented"`
@@ -51,8 +52,7 @@ type FindParams struct {
 	LSID         any             `ferretdb:"lsid,ignored"`
 
 	ReturnKey           bool `ferretdb:"returnKey,unimplemented-non-default"`
-	ShowRecordId        bool `ferretdb:"showRecordId,unimplemented-non-default"` //nolint:lll // TODO https://github.com/FerretDB/FerretDB/issues/3467
-	Tailable            bool `ferretdb:"tailable,unimplemented-non-default"`
+	ShowRecordId        bool `ferretdb:"showRecordId,opt"`
 	OplogReplay         bool `ferretdb:"oplogReplay,unimplemented-non-default"`
 	NoCursorTimeout     bool `ferretdb:"noCursorTimeout,unimplemented-non-default"`
 	AwaitData           bool `ferretdb:"awaitData,unimplemented-non-default"`

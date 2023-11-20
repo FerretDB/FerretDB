@@ -174,7 +174,6 @@ The `internal` subpackages contain most of the FerretDB code:
   It is used by backends and old `pg` handler.
 - `handlers/sqlite` contains the implementation of the SQLite handler.
   It is being converted into universal handler for all backends.
-- `handlers/pg` contains the implementation of the old PostgreSQL handler.
 
 #### Running tests
 

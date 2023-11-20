@@ -59,10 +59,8 @@ var (
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
-	disableFilterPushdownF = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
-	enableSortPushdownF    = flag.Bool("enable-sort-pushdown", false, "enable sort pushdown")
-
-	useNewHanaF = flag.Bool("use-new-hana", false, "use new SAP HANA backend")
+	disableFilterPushdownF    = flag.Bool("disable-filter-pushdown", false, "disable filter pushdown")
+	enableUnsafeSortPushdownF = flag.Bool("enable-unsafe-sort-pushdown", false, "enable unsafe sort pushdown")
 )
 
 // Other globals.
@@ -176,7 +174,7 @@ func SetupWithOpts(tb testtb.TB, opts *SetupOpts) *SetupResult {
 	}
 }
 
-// Setup setups a single collection for all providers, if the are present.
+// Setup setups a single collection for all providers, if they are present.
 func Setup(tb testtb.TB, providers ...shareddata.Provider) (context.Context, *mongo.Collection) {
 	tb.Helper()
 

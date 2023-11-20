@@ -106,8 +106,9 @@ services:
     environment:
       - COLLECTOR_OTLP_ENABLED=true
     ports:
+      - 4318:4318 # OTLP over HTTP
+      - 6831:6831/udp # Compact Thrift from BuildKit
       - 16686:16686 # UI on http://127.0.0.1:16686/
-      - 4318:4318 # to recieve spans from OTLP
 
   trivy:
     build:
@@ -194,3 +195,7 @@ services:
       - ./website/sidebars.js:/workdir/docusaurus-docs/sidebars.js:ro
 
       - ./website/build:/workdir/docusaurus-docs/build:rw
+
+networks:
+  default:
+    name: ferretdb

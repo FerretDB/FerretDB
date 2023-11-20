@@ -15,9 +15,13 @@
 package sqlite
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
+	"slices"
+
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
@@ -29,24 +33,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// writeError represents a single write error details.
+// WriteErrorDocument returns a document representation of the write error.
 //
-// Find a better place for this struct.
+// Find a better place for this function.
 // TODO https://github.com/FerretDB/FerretDB/issues/3263
-type writeError struct {
-	// the order of fields is weird to make the struct smaller due to alignment
-
-	errmsg string
-	index  int32
-	code   commonerrors.ErrorCode
-}
-
-// Document returns a document representation of the write error.
-func (we *writeError) Document() *types.Document {
+func WriteErrorDocument(we *mongo.WriteError) *types.Document {
 	return must.NotFail(types.NewDocument(
-		"index", we.index,
-		"code", int32(we.code),
-		"errmsg", we.errmsg,
+		"index", int32(we.Index),
+		"code", int32(we.Code),
+		"errmsg", we.Message,
 	))
 }
 
@@ -86,34 +81,50 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	defer docsIter.Close()
 
 	var inserted int32
-	writeErrors := types.MakeArray(0)
+	var writeErrors []*mongo.WriteError
 
-	for {
-		i, d, err := docsIter.Next()
-		if errors.Is(err, iterator.ErrIteratorDone) {
-			break
-		}
+	var done bool
+	for !done {
+		// TODO https://github.com/FerretDB/FerretDB/issues/3708
+		const batchSize = 1000
 
-		if err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		docs := make([]*types.Document, 0, batchSize)
+		docsIndexes := make([]int, 0, batchSize)
 
-		doc := d.(*types.Document)
+		for j := 0; j < batchSize; j++ {
+			var i int
+			var d any
 
-		if !doc.Has("_id") {
-			doc.Set("_id", types.NewObjectID())
-		}
+			i, d, err = docsIter.Next()
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				done = true
+				break
+			}
 
-		// TODO https://github.com/FerretDB/FerretDB/issues/3454
-		if err = doc.ValidateData(); err != nil {
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			doc := d.(*types.Document)
+
+			if !doc.Has("_id") {
+				doc.Set("_id", types.NewObjectID())
+			}
+
+			// TODO https://github.com/FerretDB/FerretDB/issues/3454
+			if err = doc.ValidateData(); err == nil {
+				docs = append(docs, doc)
+				docsIndexes = append(docsIndexes, i)
+
+				continue
+			}
+
 			var ve *types.ValidationError
-
 			if !errors.As(err, &ve) {
 				return nil, lazyerrors.Error(err)
 			}
 
 			var code commonerrors.ErrorCode
-
 			switch ve.Code() {
 			case types.ErrValidation, types.ErrIDNotFound:
 				code = commonerrors.ErrBadValue
@@ -123,54 +134,68 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
 			}
 
-			we := &writeError{
-				index:  int32(i),
-				code:   code,
-				errmsg: ve.Error(),
-			}
-			writeErrors.Append(we.Document())
+			writeErrors = append(writeErrors, &mongo.WriteError{
+				Index:   i,
+				Code:    int(code),
+				Message: ve.Error(),
+			})
 
 			if params.Ordered {
+				break
+			}
+		}
+
+		if _, err = c.InsertAll(ctx, &backends.InsertAllParams{Docs: docs}); err == nil {
+			inserted += int32(len(docs))
+
+			if params.Ordered && len(writeErrors) > 0 {
 				break
 			}
 
 			continue
 		}
 
-		// use bigger batches on a happy path, downgrade to one-document batches on error
-		// TODO https://github.com/FerretDB/FerretDB/issues/3271
-
-		_, err = c.InsertAll(ctx, &backends.InsertAllParams{
-			Docs: []*types.Document{doc},
-		})
-		if err != nil {
-			if backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
-				we := &writeError{
-					index:  int32(i),
-					code:   commonerrors.ErrDuplicateKeyInsert,
-					errmsg: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
-				}
-				writeErrors.Append(we.Document())
-
-				if params.Ordered {
-					break
-				}
+		// insert doc one by one upon failing on batch insertion
+		for j, doc := range docs {
+			if _, err = c.InsertAll(ctx, &backends.InsertAllParams{
+				Docs: []*types.Document{doc},
+			}); err == nil {
+				inserted++
 
 				continue
 			}
 
-			return nil, lazyerrors.Error(err)
-		}
+			if !backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID) {
+				return nil, lazyerrors.Error(err)
+			}
 
-		inserted++
+			writeErrors = append(writeErrors, &mongo.WriteError{
+				Index:   docsIndexes[j],
+				Code:    int(commonerrors.ErrDuplicateKeyInsert),
+				Message: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
+			})
+
+			if params.Ordered {
+				break
+			}
+		}
 	}
 
 	res := must.NotFail(types.NewDocument(
 		"n", inserted,
 	))
 
-	if writeErrors.Len() > 0 {
-		res.Set("writeErrors", writeErrors)
+	if len(writeErrors) > 0 {
+		slices.SortFunc(writeErrors, func(a, b *mongo.WriteError) int {
+			return cmp.Compare(a.Index, b.Index)
+		})
+
+		array := types.MakeArray(len(writeErrors))
+		for _, we := range writeErrors {
+			array.Append(WriteErrorDocument(we))
+		}
+
+		res.Set("writeErrors", array)
 	}
 
 	res.Set("ok", float64(1))

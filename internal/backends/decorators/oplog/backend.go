@@ -29,7 +29,7 @@ type backend struct {
 	l     *zap.Logger
 }
 
-// NewBackend creates a new backend that wraps the given backend.
+// NewBackend creates a new Backend that wraps the given backend.
 func NewBackend(origB backends.Backend, l *zap.Logger) backends.Backend {
 	return &backend{
 		origB: origB,

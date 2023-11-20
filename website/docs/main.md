@@ -22,7 +22,7 @@ With FerretDB, users can run the same MongoDB protocol queries without needing t
 
 ## Scope and current state
 
-FerretDB is compatible with MongoDB drivers and can be used as a direct replacement for MongoDB.
+FerretDB is compatible with MongoDB drivers and can be used as a direct replacement for MongoDB 5.0+.
 We are constantly adding features to increase compatibility based on user feedback.
 
 See our [public roadmap](https://github.com/orgs/FerretDB/projects/2/views/1),
