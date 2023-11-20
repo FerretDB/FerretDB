@@ -14,7 +14,8 @@ FerretDB is delighted to announce the release of v1.15.0 with support for `showR
 
 <!--truncate-->
 
-FerretDB is an open source document database alternative for many MongoDB use cases, with PostgreSQL and SQLite as its database backend.
+FerretDB is an open source document database alternative for many MongoDB use cases.
+We are enabling [PostgreSQL](https://www.postgresql.org/), [SQLite](https://www.sqlite.org/), and other database backends to run MongoDB workloads.
 
 With the new release of FerretDB v1.15.0, we've changed our artifacts naming scheme; our binaries and packages now include `linux` as part of their file names.
 The purpose of this is to prepare for providing artifacts for other operating systems.
