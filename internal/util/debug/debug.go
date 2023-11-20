@@ -41,7 +41,7 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, g pro
 	stdL := must.NotFail(zap.NewStdLogAt(l, zap.WarnLevel))
 
 	g = newGatherer(g, l)
-	p := newPlotter(g)
+	p := newPlotter(g.(*gatherer), l)
 
 	metricHandler := promhttp.InstrumentMetricHandler(
 		r, promhttp.HandlerFor(g, promhttp.HandlerOpts{
@@ -52,23 +52,21 @@ func RunHandler(ctx context.Context, addr string, r prometheus.Registerer, g pro
 		}),
 	)
 
-	prometheus_metrics, err := g.Gather()
-	must.NoError(err)
-
 	http.Handle("/debug/metrics", metricHandler)
+
+	plots, err := p.plots()
+	if err != nil {
+		l.Error("Failed to build plots.", zap.Error(err))
+	}
 
 	opts := []statsviz.Option{
 		statsviz.Root("/debug/graphs"),
 	}
 
-	// metricFamily exposes individual metrics as a metricFamily
-	// However there can be multiple MetricFamily elements with same Name but with different Label-pair values.
-	for _, metricFamily := range prometheus_metrics {
-		for _, metricSlice := range metricFamily.Metric {
-			graphPlot := p.generateGraphAll(metricSlice, metricFamily)
-			opts = append(opts, statsviz.TimeseriesPlot(graphPlot))
-		}
+	for _, p := range plots {
+		opts = append(opts, statsviz.TimeseriesPlot(p))
 	}
+
 	must.NoError(statsviz.Register(http.DefaultServeMux, opts...))
 
 	handlers := map[string]string{

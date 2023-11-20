@@ -15,30 +15,78 @@
 package debug
 
 import (
-	"log"
-	"math/rand"
-	"time"
+	"strings"
 
-	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/arl/statsviz"
-	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
+	"go.uber.org/zap"
+
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 type plotter struct {
-	g prometheus.Gatherer
+	g *gatherer
+	l *zap.Logger
 }
 
-func newPlotter(g prometheus.Gatherer) *plotter {
+func newPlotter(g *gatherer, l *zap.Logger) *plotter {
 	return &plotter{
 		g: g,
+		l: l,
 	}
 }
 
 func (p *plotter) plots() ([]statsviz.TimeSeriesPlot, error) {
-	return nil, nil
+	var res []statsviz.TimeSeriesPlot
+
+	for name, mf := range p.g.GatherMap() {
+		switch *mf.Type {
+		case dto.MetricType_COUNTER, dto.MetricType_GAUGE:
+			// nothing
+		case dto.MetricType_SUMMARY, dto.MetricType_UNTYPED, dto.MetricType_HISTOGRAM, dto.MetricType_GAUGE_HISTOGRAM:
+			continue
+		default:
+			return nil, lazyerrors.Errorf("unexpected metric type %v", *mf.Type)
+		}
+
+		for _, m := range mf.Metric {
+			help := strings.TrimSuffix(*mf.Help, ".")
+
+			if len(m.Label) == 0 {
+				c := statsviz.TimeSeriesPlotConfig{
+					Name:     name,
+					Title:    help,
+					Type:     statsviz.Scatter,
+					InfoText: name,
+					Series: []statsviz.TimeSeries{{
+						Name:     name,
+						Unitfmt:  "",
+						HoverOn:  "",
+						Type:     statsviz.Scatter,
+						GetValue: newGraph(p.g, p.l, name, help, "", "").getValue,
+					}},
+				}
+
+				p, err := c.Build()
+				if err != nil {
+					return nil, lazyerrors.Error(err)
+				}
+
+				res = append(res, p)
+				continue
+			}
+
+			// make one plot per metric name + label name
+			// TODO
+
+			// make one graph per label value
+		}
+	}
+
+	return res, nil
 }
 
+/*
 // struct metric stores respective information about each metricFamily instance
 // which is used especially for GetValue attribute of the statsviz.Timeseries
 // we need this object construct because GetValue attribute does not allow
@@ -51,47 +99,6 @@ type metric struct {
 	metricType       dto.MetricType
 	metricLabel      string
 	metricLabelValue string
-}
-
-// getValue repeatedly calls prometheusGatherer as the metrics plotted need to be continuously updated
-// the empty quotation check is implemented to return metrics without any label-pair values since
-// metrics without label-pair values have only a single instance
-// the switch block checks the metric type based on int32 type standard
-// mentioned at https://pkg.go.dev/github.com/prometheus/client_model@v0.5.0/go#MetricType
-func (obj metric) getValue() float64 {
-	m := must.NotFail(obj.p.g.Gather())
-
-	if obj.metricLabel == "" {
-		Individualmetric := metricRetriever(m, obj.metricName)
-		switch obj.metricType {
-		case dto.MetricType_COUNTER:
-			return *Individualmetric.Counter.Value
-		case dto.MetricType_GAUGE:
-			return *Individualmetric.Gauge.Value
-		case dto.MetricType_SUMMARY:
-			return *Individualmetric.Summary.SampleSum
-		case dto.MetricType_UNTYPED:
-			return *Individualmetric.Untyped.Value
-		case dto.MetricType_HISTOGRAM:
-			return *Individualmetric.Histogram.SampleCountFloat
-		}
-	} else {
-		Individualmetric := labelledMetricRetriever(m, obj.metricName, obj)
-		switch obj.metricType {
-		case dto.MetricType_COUNTER:
-			return *Individualmetric.Counter.Value
-		case dto.MetricType_GAUGE:
-			return *Individualmetric.Gauge.Value
-		case dto.MetricType_SUMMARY:
-			return *Individualmetric.Summary.SampleSum
-		case dto.MetricType_UNTYPED:
-			return *Individualmetric.Untyped.Value
-		case dto.MetricType_HISTOGRAM:
-			return *Individualmetric.Histogram.SampleCountFloat
-		}
-	}
-
-	return 0
 }
 
 func (p *plotter) generateGraphAll(metricSlice *dto.Metric, metricFamily *dto.MetricFamily) statsviz.TimeSeriesPlot {
@@ -172,3 +179,4 @@ func labelledMetricRetriever(m []*dto.MetricFamily, metricName string, obj metri
 	}
 	return nil
 }
+*/
