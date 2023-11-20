@@ -17,40 +17,42 @@
 package registry
 
 import (
+	"github.com/FerretDB/FerretDB/internal/backends/hana"
 	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/hana"
-	"github.com/FerretDB/FerretDB/internal/handlers/sqlite"
+	handler "github.com/FerretDB/FerretDB/internal/handlers/sqlite"
 )
 
 // init registers "hana" handler for Hana when "ferretdb_hana" build tag is provided.
 func init() {
-	registry["hana"] = func(opts *NewHandlerOpts) (handlers.Interface, error) {
+	registry["hana"] = func(opts *NewHandlerOpts) (handlers.Interface, CloseBackendFunc, error) {
 		opts.Logger.Warn("HANA handler is in alpha. It is not supported yet.")
 
-		if opts.UseNewHana {
-			handlerOpts := &sqlite.NewOpts{
-				Backend: "hana",
-				URI:     opts.HANAURL,
-
-				L:             opts.Logger.Named("hana"),
-				ConnMetrics:   opts.ConnMetrics,
-				StateProvider: opts.StateProvider,
-
-				DisableFilterPushdown: opts.DisableFilterPushdown,
-				EnableSortPushdown:    opts.EnableSortPushdown,
-				EnableOplog:           opts.EnableOplog,
-			}
-
-			return sqlite.New(handlerOpts)
+		b, err := hana.NewBackend(&hana.NewBackendParams{
+			URI: opts.HANAURL,
+			L:   opts.Logger.Named("hana"),
+			P:   opts.StateProvider,
+		})
+		if err != nil {
+			return nil, nil, err
 		}
 
-		handlerOpts := &hana.NewOpts{
-			HANAURL:       opts.HANAURL,
-			L:             opts.Logger,
+		handlerOpts := &handler.NewOpts{
+			Backend: b,
+
+			L:             opts.Logger.Named("hana"),
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
+
+			DisableFilterPushdown:    opts.DisableFilterPushdown,
+			EnableUnsafeSortPushdown: opts.EnableUnsafeSortPushdown,
+			EnableOplog:              opts.EnableOplog,
 		}
 
-		return hana.New(handlerOpts)
+		h, err := handler.New(handlerOpts)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		return h, b.Close, nil
 	}
 }

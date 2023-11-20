@@ -23,7 +23,15 @@ const config = {
     locales: ['en'],
   },
 
-  scripts: [{src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io"}],
+  stylesheets: [
+    {href: "/codapi/snippet.css"},
+  ],
+
+  scripts: [
+    {src: 'https://plausible.io/js/script.js', defer: true, "data-domain": "blog.ferretdb.io"},
+    {src: '/codapi/snippet.js', defer: true},
+    {src: '/codapi/init.js', defer: true},
+  ],
 
   plugins: [
     [

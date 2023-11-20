@@ -51,7 +51,6 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 
 			dbName := testutil.DatabaseName(t)
 			collName, cappedCollName := testutil.CollectionName(t), testutil.CollectionName(t)+"capped"
-			cleanupDatabase(t, ctx, b, dbName)
 
 			db, err := b.Database(dbName)
 			require.NoError(t, err)
@@ -173,7 +172,7 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 
 				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Filter: filter})
 				require.NoError(t, err)
-				assert.True(t, explainRes.QueryPushdown)
+				assert.True(t, explainRes.FilterPushdown)
 				assert.True(t, explainRes.SortPushdown)
 			})
 
@@ -212,7 +211,6 @@ func TestCollectionUpdateAll(t *testing.T) {
 				t.Parallel()
 
 				dbName, collName := testutil.DatabaseName(t), testutil.CollectionName(t)
-				cleanupDatabase(t, ctx, b, dbName)
 
 				db, err := b.Database(dbName)
 				require.NoError(t, err)
@@ -253,7 +251,6 @@ func TestCollectionUpdateAll(t *testing.T) {
 
 				dbName, collName := testutil.DatabaseName(t), testutil.CollectionName(t)
 				otherCollName := collName + "_other"
-				cleanupDatabase(t, ctx, b, dbName)
 
 				db, err := b.Database(dbName)
 				require.NoError(t, err)
@@ -317,7 +314,6 @@ func TestCollectionStats(t *testing.T) {
 				t.Parallel()
 
 				dbName, collName := testutil.DatabaseName(t), testutil.CollectionName(t)
-				cleanupDatabase(t, ctx, b, dbName)
 
 				db, err := b.Database(dbName)
 				require.NoError(t, err)
@@ -334,7 +330,6 @@ func TestCollectionStats(t *testing.T) {
 
 				dbName, collName := testutil.DatabaseName(t), testutil.CollectionName(t)
 				otherCollName := collName + "_other"
-				cleanupDatabase(t, ctx, b, dbName)
 
 				db, err := b.Database(dbName)
 				require.NoError(t, err)
@@ -354,7 +349,6 @@ func TestCollectionStats(t *testing.T) {
 
 			t.Run("Stats", func(t *testing.T) {
 				dbName := testutil.DatabaseName(t)
-				cleanupDatabase(t, ctx, b, dbName)
 
 				db, err := b.Database(dbName)
 				require.NoError(t, err)
@@ -407,7 +401,6 @@ func TestCollectionCompact(t *testing.T) {
 				t.Parallel()
 
 				dbName, collName := testutil.DatabaseName(t), testutil.CollectionName(t)
-				cleanupDatabase(t, ctx, b, dbName)
 
 				db, err := b.Database(dbName)
 				require.NoError(t, err)
@@ -424,7 +417,6 @@ func TestCollectionCompact(t *testing.T) {
 
 				dbName, collName := testutil.DatabaseName(t), testutil.CollectionName(t)
 				otherCollName := collName + "_other"
-				cleanupDatabase(t, ctx, b, dbName)
 
 				db, err := b.Database(dbName)
 				require.NoError(t, err)

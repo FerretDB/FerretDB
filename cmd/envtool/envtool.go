@@ -151,9 +151,7 @@ func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 		return err
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3310
-	// eval := `'rs.initiate({_id: "mongodb-rs", members: [{_id: 0, host: "localhost:47017" }]})'`
-	eval := `db.serverStatus()`
+	eval := `'rs.initiate({_id: "mongodb-rs", members: [{_id: 0, host: "localhost:47017" }]})'`
 	args := []string{"compose", "exec", "-T", "mongodb", "mongosh", "--port=47017", "--eval", eval}
 
 	var buf bytes.Buffer
@@ -220,12 +218,12 @@ func runCommand(command string, args []string, stdout io.Writer, logger *zap.Sug
 }
 
 // printDiagnosticData prints diagnostic data and error template on stdout.
-func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
-	runCommand("docker", []string{"compose", "logs"}, os.Stdout, logger)
+func printDiagnosticData(w io.Writer, setupError error, logger *zap.SugaredLogger) error {
+	_ = runCommand("docker", []string{"compose", "logs"}, w, logger)
 
-	runCommand("docker", []string{"compose", "ps", "--all"}, os.Stdout, logger)
+	_ = runCommand("docker", []string{"compose", "ps", "--all"}, w, logger)
 
-	runCommand("docker", []string{"stats", "--all", "--no-stream"}, os.Stdout, logger)
+	_ = runCommand("docker", []string{"stats", "--all", "--no-stream"}, w, logger)
 
 	var buf bytes.Buffer
 
@@ -256,7 +254,7 @@ func printDiagnosticData(setupError error, logger *zap.SugaredLogger) {
 
 	info := version.Get()
 
-	errorTemplate.Execute(os.Stdout, map[string]any{
+	return errorTemplate.Execute(w, map[string]any{
 		"Error": setupError,
 
 		"GOOS":   runtime.GOOS,
@@ -392,7 +390,7 @@ func makeLogger(level zapcore.Level, output []string) (*zap.Logger, error) {
 			NameKey:       "N",
 			CallerKey:     zapcore.OmitKey,
 			FunctionKey:   zapcore.OmitKey,
-			StacktraceKey: "S",
+			StacktraceKey: zapcore.OmitKey,
 			LineEnding:    zapcore.DefaultLineEnding,
 			EncodeLevel:   zapcore.CapitalLevelEncoder,
 			EncodeTime: func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
@@ -500,7 +498,7 @@ func main() {
 
 	if err != nil {
 		if cmd == "setup" {
-			printDiagnosticData(err, logger)
+			_ = printDiagnosticData(os.Stderr, err, logger)
 		}
 
 		var exitErr *exec.ExitError

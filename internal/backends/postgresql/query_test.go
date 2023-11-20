@@ -15,6 +15,7 @@
 package postgresql
 
 import (
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -27,6 +28,67 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
+
+func TestPrepareSelectClause(t *testing.T) {
+	t.Parallel()
+	schema := "schema"
+	table := "table"
+	comment := "*/ 1; DROP SCHEMA " + schema + " CASCADE -- "
+
+	for name, tc := range map[string]struct { //nolint:vet // used for test only
+		capped        bool
+		onlyRecordIDs bool
+
+		expectQuery string
+	}{
+		"CappedRecordID": {
+			capped:        true,
+			onlyRecordIDs: true,
+			expectQuery: fmt.Sprintf(
+				`SELECT %s %s FROM "%s"."%s"`,
+				"/* * / 1; DROP SCHEMA "+schema+" CASCADE --  */",
+				metadata.RecordIDColumn,
+				schema,
+				table,
+			),
+		},
+		"Capped": {
+			capped: true,
+			expectQuery: fmt.Sprintf(
+				`SELECT %s %s, %s FROM "%s"."%s"`,
+				"/* * / 1; DROP SCHEMA "+schema+" CASCADE --  */",
+				metadata.RecordIDColumn,
+				metadata.DefaultColumn,
+				schema,
+				table,
+			),
+		},
+		"FullRecord": {
+			expectQuery: fmt.Sprintf(
+				`SELECT %s %s FROM "%s"."%s"`,
+				"/* * / 1; DROP SCHEMA "+schema+" CASCADE --  */",
+				metadata.DefaultColumn,
+				schema,
+				table,
+			),
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			query := prepareSelectClause(&selectParams{
+				Schema:        schema,
+				Table:         table,
+				Comment:       comment,
+				Capped:        tc.capped,
+				OnlyRecordIDs: tc.onlyRecordIDs,
+			})
+
+			assert.Equal(t, tc.expectQuery, query)
+		})
+	}
+}
 
 func TestPrepareWhereClause(t *testing.T) {
 	t.Parallel()
@@ -145,6 +207,7 @@ func TestPrepareWhereClause(t *testing.T) {
 		},
 		"EqDoubleBigInt64": {
 			filter: must.NotFail(types.NewDocument(
+				// TODO https://github.com/FerretDB/FerretDB/issues/3626
 				"v", must.NotFail(types.NewDocument("$eq", float64(2<<61))),
 			)),
 			args:     []any{`v`, types.MaxSafeDouble},

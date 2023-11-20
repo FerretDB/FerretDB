@@ -75,7 +75,7 @@ func TestCreateDrop(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	r, err := NewRegistry("file:"+t.TempDir()+"/", testutil.Logger(t), sp)
+	r, err := NewRegistry(testutil.TestSQLiteURI(t, ""), testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 
@@ -105,13 +105,14 @@ func TestCreateDropStress(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	for testName, uri := range map[string]string{
-		"dir":              "file:" + t.TempDir() + "/",
-		"dir-immediate":    "file:" + t.TempDir() + "/?_txlock=immediate",
-		"memory":           "file:./?mode=memory",
-		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
+	for testName, params := range map[string]string{
+		"dir":              "",
+		"dir-immediate":    "?_txlock=immediate",
+		"memory":           "?mode=memory",
+		"memory-immediate": "?mode=memory&_txlock=immediate",
 	} {
 		t.Run(testName, func(t *testing.T) {
+			uri := testutil.TestSQLiteURI(t, "") + params
 			r, err := NewRegistry(uri, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
@@ -149,13 +150,14 @@ func TestCreateSameStress(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	for testName, uri := range map[string]string{
-		"dir":              "file:" + t.TempDir() + "/",
-		"dir-immediate":    "file:" + t.TempDir() + "/?_txlock=immediate",
-		"memory":           "file:./?mode=memory",
-		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
+	for testName, params := range map[string]string{
+		"dir":              "",
+		"dir-immediate":    "?_txlock=immediate",
+		"memory":           "?mode=memory",
+		"memory-immediate": "?mode=memory&_txlock=immediate",
 	} {
 		t.Run(testName, func(t *testing.T) {
+			uri := testutil.TestSQLiteURI(t, "") + params
 			r, err := NewRegistry(uri, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
@@ -217,13 +219,14 @@ func TestDropSameStress(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	for testName, uri := range map[string]string{
-		"dir":              "file:" + t.TempDir() + "/",
-		"dir-immediate":    "file:" + t.TempDir() + "/?_txlock=immediate",
-		"memory":           "file:./?mode=memory",
-		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
+	for testName, params := range map[string]string{
+		"dir":              "",
+		"dir-immediate":    "?_txlock=immediate",
+		"memory":           "?mode=memory",
+		"memory-immediate": "?mode=memory&_txlock=immediate",
 	} {
 		t.Run(testName, func(t *testing.T) {
+			uri := testutil.TestSQLiteURI(t, "") + params
 			r, err := NewRegistry(uri, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
@@ -269,13 +272,14 @@ func TestCreateDropSameStress(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	for testName, uri := range map[string]string{
-		"dir":              "file:" + t.TempDir() + "/",
-		"dir-immediate":    "file:" + t.TempDir() + "/?_txlock=immediate",
-		"memory":           "file:./?mode=memory",
-		"memory-immediate": "file:./?mode=memory&_txlock=immediate",
+	for testName, params := range map[string]string{
+		"dir":              "",
+		"dir-immediate":    "?_txlock=immediate",
+		"memory":           "?mode=memory",
+		"memory-immediate": "?mode=memory&_txlock=immediate",
 	} {
 		t.Run(testName, func(t *testing.T) {
+			uri := testutil.TestSQLiteURI(t, "") + params
 			r, err := NewRegistry(uri, testutil.Logger(t), sp)
 			require.NoError(t, err)
 			t.Cleanup(r.Close)
@@ -325,7 +329,7 @@ func TestIndexesCreateDrop(t *testing.T) {
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	r, err := NewRegistry("file:"+t.TempDir()+"/", testutil.Logger(t), sp)
+	r, err := NewRegistry(testutil.TestSQLiteURI(t, ""), testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
 

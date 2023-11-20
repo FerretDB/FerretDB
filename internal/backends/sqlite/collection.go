@@ -83,7 +83,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}
 	}
 
-	q := prepareSelectClause(meta.TableName, meta.Capped(), params.OnlyRecordIDs) + whereClause
+	q := prepareSelectClause(meta.TableName, params.Comment, meta.Capped(), params.OnlyRecordIDs) + whereClause
 
 	q += prepareOrderByClause(params.Sort, meta.Capped())
 
@@ -112,9 +112,11 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	meta := c.r.CollectionGet(ctx, c.dbName, c.name)
 
 	err := db.InTransaction(ctx, func(tx *fsql.Tx) error {
+		// TODO https://github.com/FerretDB/FerretDB/issues/3708
+		const batchSize = 100
+
 		var batch []*types.Document
 		docs := params.Docs
-		const batchSize = 100
 
 		for len(docs) > 0 {
 			i := min(batchSize, len(docs))
@@ -253,9 +255,9 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		params = new(backends.ExplainParams)
 	}
 
-	selectClause := prepareSelectClause(meta.TableName, meta.Capped(), false)
+	selectClause := prepareSelectClause(meta.TableName, "", meta.Capped(), false)
 
-	var queryPushdown bool
+	var filterPushdown bool
 	var whereClause string
 	var args []any
 
@@ -265,7 +267,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		v, _ := params.Filter.Get("_id")
 		switch v.(type) {
 		case string, types.ObjectID:
-			queryPushdown = true
+			filterPushdown = true
 			whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
 			args = []any{string(must.NotFail(sjson.MarshalSingleValue(v)))}
 		}
@@ -314,10 +316,10 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	}
 
 	return &backends.ExplainResult{
-		QueryPlanner:  must.NotFail(types.NewDocument("Plan", queryPlan)),
-		QueryPushdown: queryPushdown,
-		SortPushdown:  sortPushdown,
-		LimitPushdown: limitPushdown,
+		QueryPlanner:   must.NotFail(types.NewDocument("Plan", queryPlan)),
+		FilterPushdown: filterPushdown,
+		SortPushdown:   sortPushdown,
+		LimitPushdown:  limitPushdown,
 	}, nil
 }
 

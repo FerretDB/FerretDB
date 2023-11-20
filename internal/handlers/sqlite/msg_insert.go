@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"slices"
 
+	"go.mongodb.org/mongo-driver/mongo"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -31,24 +33,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// writeError represents a single write error details.
+// WriteErrorDocument returns a document representation of the write error.
 //
-// Find a better place for this struct.
+// Find a better place for this function.
 // TODO https://github.com/FerretDB/FerretDB/issues/3263
-type writeError struct {
-	// the order of fields is weird to make the struct smaller due to alignment
-
-	errmsg string
-	index  int32
-	code   commonerrors.ErrorCode
-}
-
-// Document returns a document representation of the write error.
-func (we *writeError) Document() *types.Document {
+func WriteErrorDocument(we *mongo.WriteError) *types.Document {
 	return must.NotFail(types.NewDocument(
-		"index", we.index,
-		"code", int32(we.code),
-		"errmsg", we.errmsg,
+		"index", int32(we.Index),
+		"code", int32(we.Code),
+		"errmsg", we.Message,
 	))
 }
 
@@ -88,13 +81,15 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	defer docsIter.Close()
 
 	var inserted int32
-	var writeErrors []*writeError
+	var writeErrors []*mongo.WriteError
 
 	var done bool
 	for !done {
+		// TODO https://github.com/FerretDB/FerretDB/issues/3708
 		const batchSize = 1000
+
 		docs := make([]*types.Document, 0, batchSize)
-		docsIndexes := make([]int32, 0, batchSize)
+		docsIndexes := make([]int, 0, batchSize)
 
 		for j := 0; j < batchSize; j++ {
 			var i int
@@ -119,7 +114,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			// TODO https://github.com/FerretDB/FerretDB/issues/3454
 			if err = doc.ValidateData(); err == nil {
 				docs = append(docs, doc)
-				docsIndexes = append(docsIndexes, int32(i))
+				docsIndexes = append(docsIndexes, i)
 
 				continue
 			}
@@ -139,10 +134,10 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
 			}
 
-			writeErrors = append(writeErrors, &writeError{
-				index:  int32(i),
-				code:   code,
-				errmsg: ve.Error(),
+			writeErrors = append(writeErrors, &mongo.WriteError{
+				Index:   i,
+				Code:    int(code),
+				Message: ve.Error(),
 			})
 
 			if params.Ordered {
@@ -174,10 +169,10 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 				return nil, lazyerrors.Error(err)
 			}
 
-			writeErrors = append(writeErrors, &writeError{
-				index:  docsIndexes[j],
-				code:   commonerrors.ErrDuplicateKeyInsert,
-				errmsg: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
+			writeErrors = append(writeErrors, &mongo.WriteError{
+				Index:   docsIndexes[j],
+				Code:    int(commonerrors.ErrDuplicateKeyInsert),
+				Message: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
 			})
 
 			if params.Ordered {
@@ -191,13 +186,13 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	))
 
 	if len(writeErrors) > 0 {
-		slices.SortFunc(writeErrors, func(a, b *writeError) int {
-			return cmp.Compare(a.index, b.index)
+		slices.SortFunc(writeErrors, func(a, b *mongo.WriteError) int {
+			return cmp.Compare(a.Index, b.Index)
 		})
 
 		array := types.MakeArray(len(writeErrors))
 		for _, we := range writeErrors {
-			array.Append(we.Document())
+			array.Append(WriteErrorDocument(we))
 		}
 
 		res.Set("writeErrors", array)

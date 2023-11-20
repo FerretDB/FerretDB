@@ -19,6 +19,8 @@ import (
 	"errors"
 	"fmt"
 
+	"go.mongodb.org/mongo-driver/mongo"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handlers/common"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
@@ -44,17 +46,17 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	// TODO https://github.com/FerretDB/FerretDB/issues/2612
 	_ = params.Ordered
 
-	var we *writeError
+	var we *mongo.WriteError
 
 	matched, modified, upserted, err := h.updateDocument(ctx, params)
 	if err != nil {
 		switch {
 		case backends.ErrorCodeIs(err, backends.ErrorCodeInsertDuplicateID):
 			// TODO https://github.com/FerretDB/FerretDB/issues/3263
-			we = &writeError{
-				index:  int32(0),
-				code:   commonerrors.ErrDuplicateKeyInsert,
-				errmsg: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
+			we = &mongo.WriteError{
+				Index:   0,
+				Code:    int(commonerrors.ErrDuplicateKeyInsert),
+				Message: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
 			}
 
 		default:
@@ -69,7 +71,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	))
 
 	if we != nil {
-		res.Set("writeErrors", must.NotFail(types.NewArray(we.Document())))
+		res.Set("writeErrors", must.NotFail(types.NewArray(WriteErrorDocument(we))))
 	}
 
 	if upserted.Len() != 0 {

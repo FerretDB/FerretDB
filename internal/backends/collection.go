@@ -83,7 +83,7 @@ type QueryParams struct {
 	Sort          *SortField
 	Limit         int64
 	OnlyRecordIDs bool
-	Comment       string // TODO https://github.com/FerretDB/FerretDB/issues/3573
+	Comment       string
 }
 
 // QueryResult represents the results of Collection.Query method.
@@ -213,10 +213,10 @@ type ExplainParams struct {
 
 // ExplainResult represents the results of Collection.Explain method.
 type ExplainResult struct {
-	QueryPlanner  *types.Document
-	QueryPushdown bool
-	SortPushdown  bool
-	LimitPushdown bool
+	QueryPlanner   *types.Document
+	FilterPushdown bool
+	SortPushdown   bool
+	LimitPushdown  bool
 }
 
 // Explain return a backend-specific execution plan for the given query.
