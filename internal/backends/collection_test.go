@@ -82,7 +82,9 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 			t.Run("CappedCollection", func(t *testing.T) {
 				t.Parallel()
 
-				queryRes, err := cappedColl.Query(ctx, new(backends.QueryParams))
+				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{
+					SortPushdown: true,
+				})
 				require.NoError(t, err)
 
 				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
@@ -91,7 +93,9 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				testutil.AssertEqualSlices(t, insertDocs, docs)
 				assertEqualRecordID(t, insertDocs, docs)
 
-				explainRes, err := cappedColl.Explain(ctx, new(backends.ExplainParams))
+				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{
+					SortPushdown: true,
+				})
 				require.NoError(t, err)
 				assert.True(t, explainRes.SortPushdown)
 			})
@@ -99,7 +103,10 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 			t.Run("CappedCollectionOnlyRecordIDs", func(t *testing.T) {
 				t.Parallel()
 
-				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{OnlyRecordIDs: true})
+				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{
+					OnlyRecordIDs: true,
+					SortPushdown:  true,
+				})
 				require.NoError(t, err)
 
 				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
@@ -107,7 +114,9 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				testutil.AssertEqualSlices(t, []*types.Document{{}, {}, {}}, docs)
 				assertEqualRecordID(t, insertDocs, docs)
 
-				explainRes, err := cappedColl.Explain(ctx, new(backends.ExplainParams))
+				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{
+					SortPushdown: true,
+				})
 				require.NoError(t, err)
 				assert.True(t, explainRes.SortPushdown)
 			})
@@ -120,7 +129,10 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				t.Parallel()
 
 				sort := backends.SortField{Key: "_id"}
-				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{Sort: &sort})
+				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{
+					Sort:         &sort,
+					SortPushdown: true,
+				})
 				require.NoError(t, err)
 
 				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
@@ -129,7 +141,10 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				testutil.AssertEqualSlices(t, expectedDocs, docs)
 				assertEqualRecordID(t, expectedDocs, docs)
 
-				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &sort})
+				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{
+					Sort:         &sort,
+					SortPushdown: true,
+				})
 				require.NoError(t, err)
 				assert.True(t, explainRes.SortPushdown)
 			})
@@ -142,7 +157,10 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				t.Parallel()
 
 				sort := backends.SortField{Key: "_id", Descending: true}
-				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{Sort: &sort})
+				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{
+					Sort:         &sort,
+					SortPushdown: true,
+				})
 				require.NoError(t, err)
 
 				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
@@ -151,7 +169,10 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				testutil.AssertEqualSlices(t, expectedDocs, docs)
 				assertEqualRecordID(t, expectedDocs, docs)
 
-				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &sort})
+				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{
+					Sort:         &sort,
+					SortPushdown: true,
+				})
 				require.NoError(t, err)
 				assert.True(t, explainRes.SortPushdown)
 			})
@@ -160,7 +181,10 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				t.Parallel()
 
 				filter := must.NotFail(types.NewDocument("_id", types.ObjectID{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}))
-				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{Filter: filter})
+				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{
+					Filter:       filter,
+					SortPushdown: true,
+				})
 				require.NoError(t, err)
 
 				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
@@ -170,7 +194,10 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				testutil.AssertEqualSlices(t, expectedDocs, docs)
 				assertEqualRecordID(t, expectedDocs, docs)
 
-				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Filter: filter})
+				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{
+					Filter:       filter,
+					SortPushdown: true,
+				})
 				require.NoError(t, err)
 				assert.True(t, explainRes.FilterPushdown)
 				assert.True(t, explainRes.SortPushdown)
@@ -179,7 +206,10 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 			t.Run("NonCappedCollectionOnlyRecordID", func(t *testing.T) {
 				t.Parallel()
 
-				queryRes, err := coll.Query(ctx, &backends.QueryParams{OnlyRecordIDs: true})
+				queryRes, err := coll.Query(ctx, &backends.QueryParams{
+					OnlyRecordIDs: true,
+					SortPushdown:  true,
+				})
 				require.NoError(t, err)
 
 				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
@@ -189,7 +219,9 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 					assert.Zero(t, doc.RecordID())
 				}
 
-				explainRes, err := coll.Explain(ctx, new(backends.ExplainParams))
+				explainRes, err := coll.Explain(ctx, &backends.ExplainParams{
+					SortPushdown: true,
+				})
 				require.NoError(t, err)
 				assert.False(t, explainRes.SortPushdown)
 			})
