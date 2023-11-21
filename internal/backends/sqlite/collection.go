@@ -69,6 +69,11 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		params = new(backends.QueryParams)
 	}
 
+	if !params.SortPushdown {
+		params.Sort = nil
+		params.Limit = 0
+	}
+
 	var whereClause string
 	var args []any
 
@@ -253,6 +258,11 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	if params == nil {
 		params = new(backends.ExplainParams)
+	}
+
+	if !params.SortPushdown {
+		params.Sort = nil
+		params.Limit = 0
 	}
 
 	selectClause := prepareSelectClause(meta.TableName, "", meta.Capped(), false)

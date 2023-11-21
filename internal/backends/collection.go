@@ -103,6 +103,9 @@ type QueryResult struct {
 // The passed context should be used for canceling the initial query.
 // It also can be used to close the returned iterator and free underlying resources,
 // but doing so is not necessary - the handler will do that anyway.
+//
+// If SortPushdown is set to false, any sort, or limit pushdown won't be perform,
+// even when Sort, or Limit fields are set.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
 	defer observability.FuncCall(ctx)()
 

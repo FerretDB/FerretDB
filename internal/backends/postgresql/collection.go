@@ -61,6 +61,11 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		params = new(backends.QueryParams)
 	}
 
+	if !params.SortPushdown {
+		params.Sort = nil
+		params.Limit = 0
+	}
+
 	if p == nil {
 		return &backends.QueryResult{
 			Iter: newQueryIterator(ctx, nil, params.OnlyRecordIDs),
@@ -314,6 +319,11 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(opts)
 
 	var placeholder metadata.Placeholder
+
+	if !params.SortPushdown {
+		params.Sort = nil
+		params.Limit = 0
+	}
 
 	where, args, err := prepareWhereClause(&placeholder, params.Filter)
 	if err != nil {
