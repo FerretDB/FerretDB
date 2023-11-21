@@ -996,9 +996,6 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				var msg string
 
 				if setup.SortPushdownDisabled() && tc.sort != nil {
-					// =======
-					// 				if !setup.UnsafeSortPushdownEnabled() && tc.sort != nil {
-					// >>>>>>> upstream/main
 					tc.limitPushdown = noPushdown
 					msg = "Sort pushdown is disabled, but target resulted with limitPushdown"
 				}
