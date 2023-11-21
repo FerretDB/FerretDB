@@ -44,6 +44,13 @@ func newCollection(hdb *fsql.DB, schema, table string) backends.Collection {
 
 // Query implements backends.Collection interface.
 func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*backends.QueryResult, error) {
+	s, err := SchemaExists(ctx, c.hdb, c.schema)
+	if !s {
+		return nil, lazyerrors.Errorf("Schema %q does not exist!", c.schema)
+	}
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	var args []any
 
@@ -80,7 +87,15 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 // InsertAll implements backends.Collection interface.
 func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllParams) (*backends.InsertAllResult, error) {
-	// TODO: Create schema&collection if not exists.
+	err := CreateSchemaIfNotExists(ctx, c.hdb, c.schema)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	err = CreateCollectionIfNotExists(ctx, c.hdb, c.schema, c.table)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
 	insertSql := "INSERT INTO %q.%q values('%s')"
 
