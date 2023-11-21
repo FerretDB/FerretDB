@@ -208,9 +208,10 @@ func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllPa
 
 // ExplainParams represents the parameters of Collection.Explain method.
 type ExplainParams struct {
-	Filter *types.Document
-	Sort   *SortField
-	Limit  int64
+	Filter       *types.Document
+	Sort         *SortField
+	Limit        int64
+	SortPushdown bool
 }
 
 // ExplainResult represents the results of Collection.Explain method.
