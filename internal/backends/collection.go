@@ -85,10 +85,10 @@ type QueryParams struct {
 	Comment string
 
 	// If true, the backend might perform safe sort pushdown when possible.
-	SortPushdown bool // defaults to false
+	SortPushdown bool
 
 	// If true, the backend will return only recordID column for capped collection.
-	OnlyRecordIDs bool // defaults to false
+	OnlyRecordIDs bool
 }
 
 // QueryResult represents the results of Collection.Query method.
