@@ -369,7 +369,7 @@ func TestPrepareOrderByClause(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			orderBy, args := prepareOrderByClause(new(metadata.Placeholder), tc.sort, tc.capped)
+			orderBy, args := prepareOrderByClause(new(metadata.Placeholder), tc.sort, tc.capped, true)
 			assert.Equal(t, tc.orderBy, orderBy)
 			assert.Equal(t, tc.args, args)
 		})
