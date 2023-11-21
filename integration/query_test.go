@@ -1005,7 +1005,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 
 				doc := ConvertDocument(t, res)
 				limitPushdown, _ := doc.Get("limitPushdown")
-				assert.Equal(t, tc.limitPushdown.SortPushdownExpected(t, false), limitPushdown, msg)
+				assert.Equal(t, tc.limitPushdown.SortPushdownExpected(t), limitPushdown, msg)
 
 				if setup.FilterPushdownDisabled() {
 					tc.filterPushdown = noPushdown
