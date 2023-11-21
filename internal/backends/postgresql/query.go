@@ -232,8 +232,8 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 //
 // For capped collection, it returns ORDER BY recordID only if sort field is nil.
 func prepareOrderByClause(p *metadata.Placeholder, sort *backends.SortField, capped, pushdown bool) (string, []any) {
-	if sort == nil && pushdown {
-		if capped {
+	if sort == nil {
+		if capped && pushdown {
 			return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil
 		}
 
