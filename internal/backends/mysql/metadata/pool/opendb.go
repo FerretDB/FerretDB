@@ -17,6 +17,7 @@ package pool
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -32,10 +33,9 @@ func openDB(uri string, l *zap.Logger, sp *state.Provider) (*fsql.DB, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	db.SetConnMaxIdleTime(0)
-	db.SetConnMaxLifetime(0)
-	db.SetMaxIdleConns(100)
-	db.SetMaxOpenConns(100)
+	db.SetConnMaxIdleTime(1 * time.Minute)
+	db.SetMaxIdleConns(50)
+	db.SetMaxOpenConns(50)
 
 	if err = db.Ping(); err != nil {
 		_ = db.Close()

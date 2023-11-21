@@ -31,6 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/state"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -39,6 +40,12 @@ const (
 
 	// MySQL max table name length.
 	maxTableNameLength = 64
+)
+
+// Parts of Prometheus metric names.
+const (
+	namespace = "ferretdb"
+	subsystem = "mysql_metadata"
 )
 
 // Registry provides access to MySQL databases and collections information
@@ -392,3 +399,43 @@ func (r *Registry) databaseDrop(ctx context.Context, p *fsql.DB, dbName string) 
 
 	return true, nil
 }
+
+// Describe implements prometheus.Collector.
+func (r *Registry) Describe(ch chan<- *prometheus.Desc) {
+	prometheus.DescribeByCollect(r, ch)
+}
+
+func (r *Registry) Collect(ch chan<- prometheus.Metric) {
+	r.p.Collect(ch)
+
+	r.rw.RLock()
+	defer r.rw.RUnlock()
+
+	ch <- prometheus.MustNewConstMetric(
+		prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, subsystem, "databases"),
+			"The current number of database in the registry.",
+			nil, nil,
+		),
+		prometheus.GaugeValue,
+		float64(len(r.colls)),
+	)
+
+	for db, colls := range r.colls {
+		ch <- prometheus.MustNewConstMetric(
+			prometheus.NewDesc(
+				prometheus.BuildFQName(namespace, subsystem, "collections"),
+				"The current number of collections in the registry.",
+				[]string{"db"}, nil,
+			),
+			prometheus.GaugeValue,
+			float64(len(colls)),
+			db,
+		)
+	}
+}
+
+// check interfaces
+var (
+	_ prometheus.Collector = (*Registry)(nil)
+)
