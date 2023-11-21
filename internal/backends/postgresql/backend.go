@@ -35,10 +35,11 @@ type backend struct {
 //
 //nolint:vet // for readability
 type NewBackendParams struct {
-	URI string
-	L   *zap.Logger
-	P   *state.Provider
-	_   struct{} // prevent unkeyed literals
+	URI        string
+	L          *zap.Logger
+	P          *state.Provider
+	NoContract bool
+	_          struct{} // prevent unkeyed literals
 }
 
 // NewBackend creates a new backend.
@@ -48,9 +49,15 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 		return nil, err
 	}
 
-	return backends.BackendContract(&backend{
+	b := backend{
 		r: r,
-	}), nil
+	}
+
+	if params.NoContract {
+		return &b, nil
+	}
+
+	return backends.BackendContract(&b), nil
 }
 
 // Close implements backends.Backend interface.

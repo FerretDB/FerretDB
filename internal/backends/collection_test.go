@@ -15,8 +15,10 @@
 package backends_test // to avoid import cycle
 
 import (
+	"math"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -193,6 +195,78 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				require.NoError(t, err)
 				assert.False(t, explainRes.UnsafeSortPushdown)
 			})
+		})
+	}
+}
+
+func TestCappedCollectionInsertAllDeleteAll(t *testing.T) {
+	t.Parallel()
+
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+
+	for name, b := range testBackends(t) {
+		name, b := name, b
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			dbName := testutil.DatabaseName(t)
+			collName := testutil.CollectionName(t)
+
+			db, err := b.Database(dbName)
+			require.NoError(t, err)
+
+			err = db.CreateCollection(ctx, &backends.CreateCollectionParams{
+				Name:       collName,
+				CappedSize: 8192,
+			})
+			require.NoError(t, err)
+
+			coll, err := db.Collection(collName)
+			require.NoError(t, err)
+
+			doc1 := must.NotFail(types.NewDocument("_id", int32(1)))
+			doc1.SetRecordID(1)
+
+			docMax := must.NotFail(types.NewDocument("_id", int32(2)))
+			docMax.SetRecordID(math.MaxInt64)
+
+			docMaxUint := must.NotFail(types.NewDocument("_id", int32(3)))
+			docMaxUint.SetRecordID(2*math.MaxInt64 + 1) // see type uint64 godoc
+
+			docEpochalypse := must.NotFail(types.NewDocument("_id", int32(4)))
+			date := time.Date(2038, time.January, 19, 3, 14, 6, 0, time.UTC)
+			docEpochalypse.SetRecordID(types.Timestamp(date.Unix()))
+
+			insertDocs := []*types.Document{doc1, docMax, docMaxUint, docEpochalypse}
+
+			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: insertDocs})
+			require.NoError(t, err)
+
+			res, err := coll.Query(ctx, nil)
+			require.NoError(t, err)
+
+			docs, err := iterator.ConsumeValues[struct{}, *types.Document](res.Iter)
+			require.NoError(t, err)
+			require.Equal(t, 4, len(docs))
+
+			assert.Equal(t, doc1.RecordID(), docs[0].RecordID())
+			assert.Equal(t, docMax.RecordID(), docs[1].RecordID())
+			assert.Equal(t, docMaxUint.RecordID(), docs[2].RecordID())
+			assert.Equal(t, docEpochalypse.RecordID(), docs[3].RecordID())
+
+			params := &backends.DeleteAllParams{
+				RecordIDs: []types.Timestamp{docMax.RecordID(), docMaxUint.RecordID(), docEpochalypse.RecordID()},
+			}
+			del, err := coll.DeleteAll(ctx, params)
+			require.NoError(t, err)
+			require.Equal(t, int32(3), del.Deleted)
+
+			res, err = coll.Query(ctx, nil)
+			require.NoError(t, err)
+
+			docs, err = iterator.ConsumeValues[struct{}, *types.Document](res.Iter)
+			require.NoError(t, err)
+			assertEqualRecordID(t, []*types.Document{doc1}, docs)
 		})
 	}
 }
