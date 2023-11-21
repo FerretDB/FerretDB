@@ -38,7 +38,7 @@ type document interface {
 //
 // Data documents (that are stored in the backend) have a special RecordID property
 // that is not a field and can't be accessed by most methods.
-// It use used to locate the document in the backend.
+// It is used to locate the document in the backend.
 type Document struct {
 	keys     map[string]int
 	fields   []field

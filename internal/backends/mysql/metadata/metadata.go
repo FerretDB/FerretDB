@@ -47,6 +47,7 @@ const (
 type Collection struct {
 	Name            string
 	TableName       string
+	Indexes         Indexes
 	CappedSize      int64
 	CappedDocuments int64
 }
@@ -65,6 +66,7 @@ func (c *Collection) deepCopy() *Collection {
 	return &Collection{
 		Name:            c.Name,
 		TableName:       c.TableName,
+		Indexes:         c.Indexes,
 		CappedSize:      c.CappedSize,
 		CappedDocuments: c.CappedDocuments,
 	}
@@ -112,6 +114,7 @@ func (c *Collection) marshal() *types.Document {
 	return must.NotFail(types.NewDocument(
 		"_id", c.Name,
 		"table", c.TableName,
+		"indexes", c.Indexes.marshal(),
 		"cappedSize", c.CappedSize,
 		"cappedDocs", c.CappedDocuments,
 	))
@@ -134,10 +137,14 @@ func (c *Collection) unmarshal(doc *types.Document) error {
 	}
 
 	v, _ = doc.Get("indexes")
-	i, _ := v.(*types.Array)
+	idx, _ := v.(*types.Array)
 
-	if i == nil {
+	if idx == nil {
 		return lazyerrors.New("indexes are empty")
+	}
+
+	if err := c.Indexes.unmarshal(idx); err != nil {
+		return lazyerrors.Error(err)
 	}
 
 	if v, _ := doc.Get("cappedSize"); v != nil {
