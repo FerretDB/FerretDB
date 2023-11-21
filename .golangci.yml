@@ -47,6 +47,7 @@ linters-settings:
           - "!**/internal/backends/postgresql/*.go"
           - "!**/internal/backends/postgresql/metadata/*.go"
           - "!**/internal/handlers/hana/hanadb/*.go"
+          - "!**/internal/backends/mysql/metadata/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handlers/sjson
       backends:

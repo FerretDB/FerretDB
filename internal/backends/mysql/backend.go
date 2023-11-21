@@ -17,12 +17,13 @@ package mysql
 import (
 	"context"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/mysql/metadata"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
-	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 )
 
 // backend implements backends.Backend interface.
@@ -66,6 +67,8 @@ func (b *backend) Database(name string) (backends.Database, error) {
 }
 
 // ListDatabases implements backends.Database interface.
+//
+//nolint:lll // for readability
 func (b *backend) ListDatabases(ctx context.Context, params *backends.ListDatabasesParams) (*backends.ListDatabasesResult, error) {
 	return nil, lazyerrors.New("not yet implemented")
 }

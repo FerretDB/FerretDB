@@ -126,7 +126,7 @@ var hanaFlags struct {
 
 // The mySQLFlags struct represents flags that are used by the "mysql" backend.
 //
-// See main_mysql.go
+// See main_mysql.go.
 var mySQLFlags struct {
 	MySQLURL string `name:"mysql-url" default:"127.0.0.1:3306/ferretdb" help:"MySQL URL for 'mysql' handler"`
 }

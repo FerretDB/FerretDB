@@ -21,6 +21,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
@@ -31,7 +32,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/state"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -117,6 +117,12 @@ func (r *Registry) getPool(ctx context.Context) (*fsql.DB, error) {
 	}
 
 	r.colls = make(map[string]map[string]*Collection, len(dbNames))
+	for _, dbName := range dbNames {
+		if err = r.initCollections(ctx, dbName, p); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
 	return p, nil
 }
 
@@ -273,7 +279,7 @@ func (r *Registry) DatabaseGetOrCreate(ctx context.Context, dbName string) (*fsq
 //
 // The dbName must be a validated database name.
 //
-// It does not hold the lock
+// It does not hold the lock.
 func (r *Registry) databaseGetOrCreate(ctx context.Context, p *fsql.DB, dbName string) (*fsql.DB, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -309,7 +315,6 @@ func (r *Registry) databaseGetOrCreate(ctx context.Context, p *fsql.DB, dbName s
 	// information that should be indexed.
 	//
 	// https://dev.mysql.com/doc/refman/5.7/en/create-table-secondary-indexes.html#json-column-indirect-index
-
 	q = fmt.Sprintf(
 		`ALTER TABLE %s.%s
 		 ADD COLUMN %s VARCHAR(255) GENERATED ALWAYS AS ((%s)) STORED,
@@ -376,7 +381,7 @@ func (r *Registry) DatabaseDrop(ctx context.Context, dbName string) (bool, error
 // Returned boolean value indicates whether the database was dropped.
 // If database does not exist, (false, nil) is returned.
 //
-// It does not hold the lock
+// It does not hold the lock.
 func (r *Registry) databaseDrop(ctx context.Context, p *fsql.DB, dbName string) (bool, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -398,6 +403,36 @@ func (r *Registry) databaseDrop(ctx context.Context, p *fsql.DB, dbName string) 
 	delete(r.colls, dbName)
 
 	return true, nil
+}
+
+// CollectionList returns a sorted copy of collections in the database.
+//
+// If database does not exists, no error is returned.
+//
+// If the user is not authenticated, it returns error.
+func (r *Registry) CollectionList(ctx context.Context, dbName string) ([]*Collection, error) {
+	defer observability.FuncCall(ctx)()
+
+	if _, err := r.getPool(ctx); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	r.rw.RLock()
+	defer r.rw.RUnlock()
+
+	db := r.colls[dbName]
+	if db == nil {
+		return nil, nil
+	}
+
+	res := make([]*Collection, 0, len(r.colls[dbName]))
+	for _, c := range r.colls[dbName] {
+		res = append(res, c.deepCopy())
+	}
+
+	sort.Slice(res, func(i, j int) bool { return res[i].Name < res[j].Name })
+
+	return res, nil
 }
 
 // Describe implements prometheus.Collector.

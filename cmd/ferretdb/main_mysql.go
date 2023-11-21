@@ -14,7 +14,7 @@
 
 package main
 
-// init adds "mysql" backend flags
+// init adds "mysql" backend flags.
 func init() {
 	handlerFlags["mysql"] = &mySQLFlags
 }

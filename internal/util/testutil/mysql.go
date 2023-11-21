@@ -21,9 +21,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // TestMySQLURI returns MySQL URI with test-specific database.

@@ -21,12 +21,13 @@ import (
 	"net/url"
 	"sync"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 	"github.com/FerretDB/FerretDB/internal/util/state"
-	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
 )
 
 // Parts of Prometheus metric names.
@@ -121,12 +122,12 @@ func (p *Pool) Get(username, password string) (*fsql.DB, error) {
 	return res, nil
 }
 
-// Describe implements prometheus.Collector
+// Describe implements prometheus.Collector.
 func (p *Pool) Describe(ch chan<- *prometheus.Desc) {
 	prometheus.DescribeByCollect(p, ch)
 }
 
-// Collect implements prometheus.Collector
+// Collect implements prometheus.Collector.
 func (p *Pool) Collect(ch chan<- prometheus.Metric) {
 	p.rw.RLock()
 	defer p.rw.RUnlock()

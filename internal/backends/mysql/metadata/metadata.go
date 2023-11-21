@@ -33,7 +33,7 @@ const (
 	// IDColumn is a MySQL path expression for _id field.
 	IDColumn = DefaultColumn + "->'$._id'"
 
-	// TableIdxColumn is a column name for MySQL generated column
+	// TableIdxColumn is a column name for MySQL generated column.
 	TableIdxColumn = DefaultColumn + "_table"
 
 	// RecordIDColumn is a name for RecordID column to store capped collection record id.
@@ -66,7 +66,7 @@ func (c *Collection) deepCopy() *Collection {
 	return &Collection{
 		Name:            c.Name,
 		TableName:       c.TableName,
-		Indexes:         c.Indexes,
+		Indexes:         c.Indexes.deepCopy(),
 		CappedSize:      c.CappedSize,
 		CappedDocuments: c.CappedDocuments,
 	}

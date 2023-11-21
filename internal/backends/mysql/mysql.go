@@ -18,7 +18,7 @@ package mysql
 
 import "context"
 
-// stats represents information about statistics of tables and indexes
+// stats represents information about statistics of tables and indexes.
 type stats struct {
 	countDocuments  int64
 	sizeIndexes     int64

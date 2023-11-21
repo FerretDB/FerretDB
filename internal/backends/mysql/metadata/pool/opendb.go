@@ -19,11 +19,12 @@ import (
 	"database/sql"
 	"time"
 
+	_ "github.com/go-sql-driver/mysql"
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/state"
-	_ "github.com/go-sql-driver/mysql"
-	"go.uber.org/zap"
 )
 
 // openDB opens existing database connections or creates a new one.
