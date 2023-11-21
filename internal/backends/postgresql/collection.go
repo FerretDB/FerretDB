@@ -42,12 +42,18 @@ type collection struct {
 }
 
 // newCollection creates a new Collection.
-func newCollection(r *metadata.Registry, dbName, name string) backends.Collection {
-	return backends.CollectionContract(&collection{
+func newCollection(r *metadata.Registry, dbName, name string, noContract bool) backends.Collection {
+	c := collection{
 		r:      r,
 		dbName: dbName,
 		name:   name,
-	})
+	}
+
+	if noContract {
+		return &c
+	}
+
+	return backends.CollectionContract(&c)
 }
 
 // Query implements backends.Collection interface.

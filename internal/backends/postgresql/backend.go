@@ -28,7 +28,8 @@ import (
 
 // backend implements backends.Backend interface.
 type backend struct {
-	r *metadata.Registry
+	r          *metadata.Registry
+	noContract bool
 }
 
 // NewBackendParams represents the parameters of NewBackend function.
@@ -50,7 +51,8 @@ func NewBackend(params *NewBackendParams) (backends.Backend, error) {
 	}
 
 	b := backend{
-		r: r,
+		r:          r,
+		noContract: params.NoContract,
 	}
 
 	if params.NoContract {
@@ -85,7 +87,7 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 
 		res.CountCollections += int64(len(cs))
 
-		colls, err := newDatabase(b.r, dbName).ListCollections(ctx, new(backends.ListCollectionsParams))
+		colls, err := newDatabase(b.r, dbName, b.noContract).ListCollections(ctx, new(backends.ListCollectionsParams))
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
@@ -121,7 +123,7 @@ func (b *backend) Status(ctx context.Context, params *backends.StatusParams) (*b
 
 // Database implements backends.Backend interface.
 func (b *backend) Database(name string) (backends.Database, error) {
-	return newDatabase(b.r, name), nil
+	return newDatabase(b.r, name, b.noContract), nil
 }
 
 // ListDatabases implements backends.Backend interface.

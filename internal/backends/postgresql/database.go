@@ -24,21 +24,29 @@ import (
 
 // database implements backends.Database interface.
 type database struct {
-	r    *metadata.Registry
-	name string
+	r          *metadata.Registry
+	name       string
+	noContract bool
 }
 
 // newDatabase creates a new Database.
-func newDatabase(r *metadata.Registry, name string) backends.Database {
-	return backends.DatabaseContract(&database{
-		r:    r,
-		name: name,
-	})
+func newDatabase(r *metadata.Registry, name string, noContract bool) backends.Database {
+	d := database{
+		r:          r,
+		name:       name,
+		noContract: noContract,
+	}
+
+	if noContract {
+		return &d
+	}
+
+	return backends.DatabaseContract(&d)
 }
 
 // Collection implements backends.Database interface.
 func (db *database) Collection(name string) (backends.Collection, error) {
-	return newCollection(db.r, db.name, name), nil
+	return newCollection(db.r, db.name, name, db.noContract), nil
 }
 
 // ListCollections implements backends.Database interface.
