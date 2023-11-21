@@ -121,6 +121,8 @@ func (h *Handler) execDelete(ctx context.Context, c backends.Collection, p *comm
 		qp.Filter = p.Filter
 	}
 
+	qp.SortPushdown = !h.DisableSortPushdown
+
 	q, err := c.Query(ctx, &qp)
 	if err != nil {
 		return 0, lazyerrors.Error(err)

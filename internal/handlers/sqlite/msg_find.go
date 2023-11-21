@@ -99,7 +99,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	qp := &backends.QueryParams{
-		Comment: params.Comment,
+		Comment:      params.Comment,
+		SortPushdown: !h.DisableSortPushdown,
 	}
 
 	if params.Filter != nil {

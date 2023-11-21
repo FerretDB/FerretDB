@@ -48,14 +48,8 @@ func prepareSelectClause(table, comment string, capped, onlyRecordIDs bool) stri
 // prepareOrderByClause returns ORDER BY clause.
 //
 // For capped collection, it returns ORDER BY recordID only if sort field is nil.
-func prepareOrderByClause(sort *backends.SortField, capped bool) string {
-	// TODO
-	// also, this function applies ORDER BY recordID in situation where
-	// sort is specified, but not pushed down (for example because of more that 1 sort fields)
-	// technically we don't lose anything, apart from processing time on the backend.
-	//
-	// TODO disabling self pushdown needs to be applied here, that could also solve the above issue
-	if sort == nil && capped {
+func prepareOrderByClause(sort *backends.SortField, capped, pushdown bool) string {
+	if sort == nil && pushdown && capped {
 		return fmt.Sprintf(` ORDER BY %s`, metadata.RecordIDColumn)
 	}
 

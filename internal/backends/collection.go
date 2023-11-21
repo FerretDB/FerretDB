@@ -79,8 +79,10 @@ type SortField struct {
 
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
-	Filter        *types.Document
-	Sort          *SortField
+	Filter       *types.Document
+	Sort         *SortField
+	SortPushdown bool
+
 	Limit         int64
 	OnlyRecordIDs bool
 	Comment       string

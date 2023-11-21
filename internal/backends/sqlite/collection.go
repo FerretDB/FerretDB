@@ -85,7 +85,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	q := prepareSelectClause(meta.TableName, params.Comment, meta.Capped(), params.OnlyRecordIDs) + whereClause
 
-	q += prepareOrderByClause(params.Sort, meta.Capped())
+	q += prepareOrderByClause(params.Sort, meta.Capped(), params.SortPushdown)
 
 	if params.Limit != 0 {
 		q += ` LIMIT ?`

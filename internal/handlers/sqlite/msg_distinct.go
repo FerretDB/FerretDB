@@ -68,6 +68,8 @@ func (h *Handler) MsgDistinct(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		qp.Filter = params.Filter
 	}
 
+	qp.SortPushdown = !h.DisableSortPushdown
+
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235
 	queryRes, err := c.Query(ctx, &qp)
 	if err != nil {

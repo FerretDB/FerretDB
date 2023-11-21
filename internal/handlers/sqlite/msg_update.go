@@ -134,6 +134,8 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdateParam
 			qp.Filter = u.Filter
 		}
 
+		qp.SortPushdown = !h.DisableSortPushdown
+
 		res, err := c.Query(ctx, &qp)
 		if err != nil {
 			return 0, 0, nil, lazyerrors.Error(err)

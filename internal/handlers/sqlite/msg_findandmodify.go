@@ -137,6 +137,8 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 		qp.Filter = params.Query
 	}
 
+	qp.SortPushdown = !h.DisableSortPushdown
+
 	queryRes, err := c.Query(ctx, &qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)

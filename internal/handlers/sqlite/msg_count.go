@@ -66,6 +66,8 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		qp.Filter = params.Filter
 	}
 
+	qp.SortPushdown = !h.DisableSortPushdown
+
 	queryRes, err := c.Query(ctx, &qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
