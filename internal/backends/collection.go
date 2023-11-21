@@ -79,13 +79,16 @@ type SortField struct {
 
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
-	Filter       *types.Document
-	Sort         *SortField
-	SortPushdown bool
+	Filter  *types.Document
+	Sort    *SortField
+	Limit   int64
+	Comment string
 
-	Limit         int64
-	OnlyRecordIDs bool
-	Comment       string
+	// If true, the backend might perform safe sort pushdown when possible.
+	SortPushdown bool // defaults to false
+
+	// If true, the backend will return only recordID column for capped collection.
+	OnlyRecordIDs bool // defaults to false
 }
 
 // QueryResult represents the results of Collection.Query method.
@@ -218,8 +221,12 @@ type ExplainParams struct {
 type ExplainResult struct {
 	QueryPlanner   *types.Document
 	FilterPushdown bool
-	SortPushdown   bool
-	LimitPushdown  bool
+
+	// If true, the backend might perform safe sort pushdown when possible.
+	SortPushdown bool
+
+	// If true, the backend might perform filter pushdown when possible.
+	LimitPushdown bool
 }
 
 // Explain return a backend-specific execution plan for the given query.
