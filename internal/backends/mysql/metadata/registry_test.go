@@ -22,6 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,10 +31,12 @@ import (
 func createDatabase(t *testing.T, ctx context.Context) (r *Registry, db *fsql.DB, dbName string) {
 	t.Helper()
 
+	u := testutil.TestMySQLURI(t, ctx, "")
+	require.NotEmpty(t, u)
+
 	sp, err := state.NewProvider("")
 	require.NoError(t, err)
 
-	u := "username:password@tcp(127.0.0.1:3306)/ferretdb"
 	r, err = NewRegistry(u, testutil.Logger(t), sp)
 	require.NoError(t, err)
 	t.Cleanup(r.Close)
@@ -58,40 +61,56 @@ func TestCheckAuth(t *testing.T) {
 
 	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
 
-	for name, tc := range map[string]struct {
-		uri string
-		err string
-	}{
-		"Auth": {
-			uri: "username:password@tcp(127.0.0.1:3306)/ferretdb",
-			err: "",
-		},
-		"WrongUser": {
-			uri: "wrong-user:wrong-password@tcp(127.0.0.1:3306)/ferretdb",
-			err: "Error 1045 (28000): Access denied for user 'wrong-user'@'172.19.0.1' (using password: YES)",
-		},
-		"WrongDatabase": {
-			uri: "username:password@tcp(127.0.0.1:3306)/wrong-database",
-			err: "Error 1049 (42000): Unknown database 'wrong-database'",
-		},
-	} {
-		name, tc := name, tc
-		t.Run(name, func(t *testing.T) {
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
 
-			sp, err := state.NewProvider("")
-			require.NoError(t, err)
+	t.Run("Auth", func(t *testing.T) {
+		t.Parallel()
 
-			r, err := NewRegistry(tc.uri, testutil.Logger(t), sp)
-			require.NoError(t, err)
-			t.Cleanup(r.Close)
+		r, err := NewRegistry("username:password@tcp(127.0.0.1:3306)/ferretdb", testutil.Logger(t), sp)
+		require.NoError(t, err)
+		t.Cleanup(r.Close)
 
-			_, err = r.getPool(ctx)
-			if tc.err != "" {
-				require.ErrorContains(t, err, tc.err)
-				return
-			}
+		_, err = r.getPool(ctx)
+		require.NoError(t, err)
+	})
 
-			require.NoError(t, err)
-		})
-	}
+	t.Run("WrongUser", func(t *testing.T) {
+		t.Parallel()
+
+		r, err := NewRegistry("wrong-user:wrong-password@tcp(127.0.0.1:3306)/ferretdb", testutil.Logger(t), sp)
+		require.NoError(t, err)
+		t.Cleanup(r.Close)
+
+		_, err = r.getPool(ctx)
+
+		expected := `Error 1045 \(28000\): Access denied for user 'wrong-user*'@'[\d\.]+' \(using password: YES\)`
+		assert.Regexp(t, expected, err)
+	})
+
+	t.Run("WrongDatabase", func(t *testing.T) {
+		t.Parallel()
+
+		r, err := NewRegistry("username:password@tcp(127.0.0.1:3306)/wrong-database", testutil.Logger(t), sp)
+		require.NoError(t, err)
+		t.Cleanup(r.Close)
+
+		_, err = r.getPool(ctx)
+
+		expected := `Error 1049 (42000): Unknown database 'wrong-database'`
+		require.ErrorContains(t, err, expected)
+	})
+}
+
+func TestDefaultEmptySchema(t *testing.T) {
+	t.Parallel()
+
+	ctx := conninfo.Ctx(testutil.Ctx(t), conninfo.New())
+	r, _, dbName := createDatabase(t, ctx)
+
+	list, err := r.DatabaseList(ctx)
+
+	require.NoError(t, err)
+	assert.Equal(t, []string{dbName}, list)
+
 }

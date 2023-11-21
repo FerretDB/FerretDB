@@ -185,7 +185,6 @@ func (r *Registry) initCollections(ctx context.Context, dbName string, db *fsql.
 	for rows.Next() {
 		var c Collection
 
-		// TODO: run test for marshalling and unmarshalling
 		if err := rows.Scan(&c); err != nil {
 			return lazyerrors.Error(err)
 		}
