@@ -85,10 +85,7 @@ type QueryParams struct {
 	Limit   int64
 	Comment string
 
-	// If true, the backend might perform safe sort pushdown when possible.
-	SortPushdown bool
-
-	// If true, the backend will return only recordID column for capped collection.
+	SortPushdown  bool
 	OnlyRecordIDs bool
 }
 
@@ -105,11 +102,6 @@ type QueryResult struct {
 // It also can be used to close the returned iterator and free underlying resources,
 // but doing so is not necessary - the handler will do that anyway.
 //
-// - If SortPushdown is false, any sort, or limit pushdown won't be performed.
-// - If SortPushdown is false, Sort and Limit fields cannot be set.
-// - If SortPushdown is true, but Sort is equal to nil, sort pushdown can still occure
-// for capped collection if recordID is not set.
-//
 // - If Filter is provided, the pushdown will be performed if supported.
 // Results may contain more documents than necessary, those should be filtered out at the handler level.
 // - If Sort is provided, the unsafe sort pushdown will be performed;
@@ -117,6 +109,13 @@ type QueryResult struct {
 // - If Filter and Sort are provided, the unsafe sort pushdown for both will be performed if supported;
 // - Filter and Limit cannot be provided simultaneously;
 // - If Sort and Limit are provided, the unsafe sort pushdown for both will be performed.
+//
+// - If SortPushdown is false, any sort, or limit pushdown won't be performed.
+// - If SortPushdown is false, Sort and Limit fields cannot be set.
+// - If SortPushdown is true, but Sort is equal to nil, sort pushdown can still occure
+// for capped collection if recordID is not set.
+//
+// - If OnlyRecordIDs is true, the backend will return only recordID column for capped collection.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
 	defer observability.FuncCall(ctx)()
 
