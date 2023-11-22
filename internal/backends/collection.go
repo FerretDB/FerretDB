@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
@@ -104,24 +105,16 @@ type QueryResult struct {
 // It also can be used to close the returned iterator and free underlying resources,
 // but doing so is not necessary - the handler will do that anyway.
 //
-// If SortPushdown is set to false, any sort, or limit pushdown won't be performed, // TODO remove that
-// even when Sort, or Limit fields are set.
-
-// If SortPushdown is set to false, neither sort nor limit pushdown CANNOT be set
-//
-// if SortPushdown is true, and sort is nil, recordID pushdown for capped collection may still occure
-// > what about limit?
-// We don't do any default pushdown for limit (and probably won't in the future)
+// If SortPushdown is false, any sort, or limit pushdown won't be performed.
+// If SortPushdown is false, Sort and Limit fields cannot be set.
+// If SortPushdown is true, but Sort is equal to nil, sort pushdown can still occure
+// for capped collection if recordID is not set.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
 	defer observability.FuncCall(ctx)()
 
-	// TODO if params.SortPushdown && sort ...
-
-	// on handler level :
-	// - if filter is set, limit pushdown is not performed
-	// - if sort pushdown is disabled, limit wont perform
-	// - if sort is set, limit will work only if unsafe sort is enabled
-	// - if skip is set limit wont
+	if !params.SortPushdown && (params.Sort != nil || params.Limit != 0) {
+		return nil, lazyerrors.New("Sort and Limit can't be set if SortPushdown is false")
+	}
 
 	res, err := cc.c.Query(ctx, params)
 	checkError(err)
