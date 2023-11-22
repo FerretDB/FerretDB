@@ -110,7 +110,6 @@ type QueryResult struct {
 // - Filter and Limit cannot be provided simultaneously;
 // - If Sort and Limit are provided, the unsafe sort pushdown for both will be performed.
 //
-// - If SortPushdown is false, any sort, or limit pushdown won't be performed.
 // - If SortPushdown is false, Sort and Limit fields cannot be set.
 // - If SortPushdown is true, but Sort is equal to nil, sort pushdown can still occur
 // for capped collection if recordID is not set.
