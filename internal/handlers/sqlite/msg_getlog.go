@@ -27,6 +27,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -99,6 +100,10 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		startupWarnings := []string{
 			fmt.Sprintf("Powered by FerretDB %s%s.", info.Version, b),
 			"Please star us on GitHub: https://github.com/FerretDB/FerretDB.",
+		}
+
+		if debugbuild.Enabled {
+			startupWarnings = append(startupWarnings, "This is debug build. The performance will be affected.")
 		}
 
 		switch {
