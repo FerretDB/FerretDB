@@ -21,6 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // collection implements backends.Collection interface by delegating all methods to the wrapped database.
@@ -116,6 +117,40 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 // UpdateAll implements backends.Collection interface.
 func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllParams) (*backends.UpdateAllResult, error) {
+	s, err := SchemaExists(ctx, c.hdb, c.schema)
+	if !s {
+		return nil, lazyerrors.Errorf("Schema %q does not exist!", c.schema)
+	}
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	col, err := CollectionExists(ctx, c.hdb, c.schema, c.table)
+	if !col {
+		return nil, lazyerrors.Errorf("Collection %q.%q does not exist!", c.schema, c.table)
+	}
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	updateSql := "UPDATE %q.%q SET %q = (%s) WHERE \"_id\" = %q"
+
+	for _, doc := range params.Docs {
+		jsonBytes, err := MarshalHana(doc)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		id, _ := doc.Get("_id")
+		must.NotBeZero(id)
+
+		line := fmt.Sprintf(updateSql, c.schema, c.table, c.table, jsonBytes, id)
+		_, err = c.hdb.ExecContext(ctx, line)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
 	return nil, lazyerrors.New("not implemented yet")
 }
 
