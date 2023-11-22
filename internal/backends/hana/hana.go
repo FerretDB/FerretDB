@@ -94,14 +94,12 @@ func CreateSchema(ctx context.Context, hdb *fsql.DB, schema string) error {
 
 // CreateSchema creates a schema in SAP HANA JSON Document Store if it not exists.
 func CreateSchemaIfNotExists(ctx context.Context, hdb *fsql.DB, schema string) error {
-	err := CreateSchema(ctx, hdb, schema)
-
-	switch {
-	case errors.Is(err, ErrSchemaAlreadyExist):
-		return nil
-	default:
-		return err
+	exists, err := SchemaExists(ctx, hdb, schema)
+	if !exists {
+		err = CreateSchema(ctx, hdb, schema)
 	}
+
+	return err
 }
 
 // DropSchema drops database.
@@ -127,12 +125,18 @@ func CollectionExists(ctx context.Context, hdb *fsql.DB, schema, table string) (
 }
 
 // CreateCollection creates a new SAP HANA JSON Document Store collection.
+// Schema will automatically be created if it does not exist.
 //
 // It returns ErrAlreadyExist if collection already exist.
 func CreateCollection(ctx context.Context, hdb *fsql.DB, schema, table string) error {
+	err := CreateSchemaIfNotExists(ctx, hdb, schema)
+	if err != nil {
+		return err
+	}
+
 	sql := fmt.Sprintf("CREATE COLLECTION %q.%q", schema, table)
 
-	_, err := hdb.ExecContext(ctx, sql)
+	_, err = hdb.ExecContext(ctx, sql)
 
 	return getHanaErrorIfExists(err)
 }
@@ -141,12 +145,18 @@ func CreateCollection(ctx context.Context, hdb *fsql.DB, schema, table string) e
 //
 // Returns nil if collection already exist.
 func CreateCollectionIfNotExists(ctx context.Context, hdb *fsql.DB, schema, table string) error {
-	err := CreateCollection(ctx, hdb, schema, table)
-
-	switch {
-	case errors.Is(err, ErrCollectionAlreadyExist):
-		return nil
-	default:
-		return err
+	exists, err := CollectionExists(ctx, hdb, schema, table)
+	if !exists {
+		err = CreateCollection(ctx, hdb, schema, table)
 	}
+
+	return err
+}
+
+func DropCollection(ctx context.Context, hdb *fsql.DB, schema, table string) error {
+	sql := fmt.Sprintf("CREATE COLLECTION %q.%q CASCADE", schema, table)
+
+	_, err := hdb.ExecContext(ctx, sql)
+
+	return getHanaErrorIfExists(err)
 }

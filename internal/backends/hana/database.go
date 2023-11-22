@@ -83,19 +83,13 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 
 // CreateCollection implements backends.Database interface.
 func (db *database) CreateCollection(ctx context.Context, params *backends.CreateCollectionParams) error {
-	sql := fmt.Sprintf("CREATE COLLECTION %q.%q", db.schema, params.Name)
-
-	_, err := db.hdb.ExecContext(ctx, sql)
-
+	err := CreateCollection(ctx, db.hdb, db.schema, params.Name)
 	return getHanaErrorIfExists(err)
 }
 
 // DropCollection implements backends.Database interface.
 func (db *database) DropCollection(ctx context.Context, params *backends.DropCollectionParams) error {
-	sql := fmt.Sprintf("DROP COLLECTION %q.%q", db.schema, params.Name)
-
-	_, err := db.hdb.ExecContext(ctx, sql)
-
+	err := DropCollection(ctx, db.hdb, db.schema, params.Name)
 	return getHanaErrorIfExists(err)
 }
 
