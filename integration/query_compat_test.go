@@ -131,6 +131,7 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 					resultPushdown := tc.resultPushdown
 
 					var msg string
+					// TODO https://github.com/FerretDB/FerretDB/issues/3386
 					if setup.FilterPushdownDisabled() {
 						resultPushdown = noPushdown
 						msg = "Filter pushdown is disabled, but target resulted with pushdown"
@@ -287,6 +288,7 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 			var explainRes bson.D
 			require.NoError(t, targetCollection.Database().RunCommand(ctx, bson.D{{"explain", explainQuery}}).Decode(&explainRes))
 
+			// TODO https://github.com/FerretDB/FerretDB/issues/3386
 			doc := ConvertDocument(t, explainRes)
 			sortPushdown, _ := doc.Get("sortPushdown")
 			assert.Equal(t, tc.sortPushdown.SortPushdownExpected(t), sortPushdown)

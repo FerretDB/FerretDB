@@ -994,7 +994,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 				assert.NoError(t, err)
 
 				var msg string
-
+				// TODO https://github.com/FerretDB/FerretDB/issues/3386
 				if setup.SortPushdownDisabled() && tc.sort != nil {
 					tc.limitPushdown = noPushdown
 					msg = "Sort pushdown is disabled, but target resulted with limitPushdown"

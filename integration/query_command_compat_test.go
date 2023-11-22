@@ -102,6 +102,7 @@ func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompa
 					require.NoError(t, targetCollection.Database().RunCommand(ctx, explainQuery).Decode(&explainRes))
 
 					var msg string
+					// TODO https://github.com/FerretDB/FerretDB/issues/3386
 					if setup.FilterPushdownDisabled() {
 						tc.filterPushdown = noPushdown
 						msg = "Filter pushdown is disabled, but target resulted with pushdown"
