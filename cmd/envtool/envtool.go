@@ -179,6 +179,35 @@ func setupMongodbSecured(ctx context.Context, logger *zap.SugaredLogger) error {
 	return waitForPort(ctx, logger.Named("mongodb_secured"), 47018)
 }
 
+// setupMySQL
+func setupMySQL(ctx context.Context, logger *zap.SugaredLogger) error {
+	if err := waitForPort(ctx, logger.Named("mysql"), 3306); err != nil {
+		return err
+	}
+
+	eval := "mysql -u root -ppassword -e \"GRANT ALL PRIVILEGES ON *.* TO 'username'@'%';\""
+	args := []string{"compose", "exec", "-T", "mysql", "bash", "-c", eval}
+
+	var buf bytes.Buffer
+	var retry int64
+
+	for ctx.Err() == nil {
+		buf.Reset()
+
+		err := runCommand("docker", args, &buf, logger)
+		if err == nil {
+			break
+		}
+
+		logger.Infof("%s:\n%s", err, buf.String())
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	return ctx.Err()
+}
+
 // setup runs all setup commands.
 func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 	go debug.RunHandler(ctx, "127.0.0.1:8089", prometheus.DefaultRegisterer, logger.Named("debug").Desugar())
@@ -188,6 +217,7 @@ func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 		setupPostgresSecured,
 		setupMongodb,
 		setupMongodbSecured,
+		setupMySQL,
 	} {
 		if err := f(ctx, logger); err != nil {
 			return err

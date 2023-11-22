@@ -47,6 +47,30 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=ferretdb
 
+  mysql:
+    build:
+      context: ./build/deps
+      dockerfile: mysql.Dockerfile
+    container_name: ferretdb_mysql
+    command:
+      - --slow_query_log=1
+      - --long_query_time=1
+      - --log_error_verbosity=2
+      - --max_connections=200
+    ports:
+      - 3306:3306
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # UTC−03:30/−02:30. Set to catch timezone problems.
+      - TZ=America/St_Johns
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_USER=username
+      - MYSQL_PASSWORD=password
+      - MYSQL_DATABASE=ferretdb
+    # volumes:
+    #   - ./build/mysql-init.sql:/docker-entrypoint-initdb.d/mysql-init.sql
+
   mongodb:
     build:
       context: ./build/deps
