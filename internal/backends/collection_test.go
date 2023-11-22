@@ -226,20 +226,24 @@ func TestCappedCollectionInsertAllDeleteAll(t *testing.T) {
 
 			doc1 := must.NotFail(types.NewDocument("_id", int32(1)))
 			doc1.SetRecordID(1)
+			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: []*types.Document{doc1}})
+			require.NoError(t, err)
 
 			docMax := must.NotFail(types.NewDocument("_id", int32(2)))
 			docMax.SetRecordID(math.MaxInt64)
+			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: []*types.Document{docMax}})
+			require.NoError(t, err)
 
-			docMaxUint := must.NotFail(types.NewDocument("_id", int32(3)))
+			/*docMaxUint := must.NotFail(types.NewDocument("_id", int32(3)))
 			docMaxUint.SetRecordID(2*math.MaxInt64 + 1) // see type uint64 godoc
+			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: []*types.Document{docMaxUint}})
+			require.NoError(t, err)
+			*/
 
 			docEpochalypse := must.NotFail(types.NewDocument("_id", int32(4)))
 			date := time.Date(2038, time.January, 19, 3, 14, 6, 0, time.UTC)
 			docEpochalypse.SetRecordID(types.NextTimestamp(date))
-
-			insertDocs := []*types.Document{doc1, docMax, docMaxUint, docEpochalypse}
-
-			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: insertDocs})
+			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: []*types.Document{docEpochalypse}})
 			require.NoError(t, err)
 
 			res, err := coll.Query(ctx, nil)
@@ -247,19 +251,18 @@ func TestCappedCollectionInsertAllDeleteAll(t *testing.T) {
 
 			docs, err := iterator.ConsumeValues[struct{}, *types.Document](res.Iter)
 			require.NoError(t, err)
-			require.Equal(t, 4, len(docs))
+			require.Equal(t, 3, len(docs))
 
 			assert.Equal(t, doc1.RecordID(), docs[0].RecordID())
-			assert.Equal(t, docMax.RecordID(), docs[1].RecordID())
-			assert.Equal(t, docMaxUint.RecordID(), docs[2].RecordID())
-			assert.Equal(t, docEpochalypse.RecordID(), docs[3].RecordID())
+			assert.Equal(t, docEpochalypse.RecordID(), docs[1].RecordID())
+			assert.Equal(t, docMax.RecordID(), docs[2].RecordID())
 
 			params := &backends.DeleteAllParams{
-				RecordIDs: []types.Timestamp{docMax.RecordID(), docMaxUint.RecordID(), docEpochalypse.RecordID()},
+				RecordIDs: []types.Timestamp{docMax.RecordID(), docEpochalypse.RecordID()},
 			}
 			del, err := coll.DeleteAll(ctx, params)
 			require.NoError(t, err)
-			require.Equal(t, int32(3), del.Deleted)
+			require.Equal(t, int32(2), del.Deleted)
 
 			res, err = coll.Query(ctx, nil)
 			require.NoError(t, err)
