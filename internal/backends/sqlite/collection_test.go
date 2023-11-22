@@ -83,7 +83,10 @@ func TestCappedCollectionInsertAllQueryExplain(t *testing.T) {
 			assert.NotZero(t, doc.RecordID())
 		}
 
-		explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &sort})
+		explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{
+			Sort:         &sort,
+			SortPushdown: true,
+		})
 		require.NoError(t, err)
 		assert.False(t, explainRes.SortPushdown)
 	})
