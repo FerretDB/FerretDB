@@ -105,15 +105,27 @@ type QueryResult struct {
 // It also can be used to close the returned iterator and free underlying resources,
 // but doing so is not necessary - the handler will do that anyway.
 //
-// If SortPushdown is false, any sort, or limit pushdown won't be performed.
-// If SortPushdown is false, Sort and Limit fields cannot be set.
-// If SortPushdown is true, but Sort is equal to nil, sort pushdown can still occure
+// - If SortPushdown is false, any sort, or limit pushdown won't be performed.
+// - If SortPushdown is false, Sort and Limit fields cannot be set.
+// - If SortPushdown is true, but Sort is equal to nil, sort pushdown can still occure
 // for capped collection if recordID is not set.
+//
+// - If Filter is provided, the pushdown will be performed if supported.
+// Results may contain more documents than necessary, those should be filtered out at the handler level.
+// - If Sort is provided, the unsafe sort pushdown will be performed;
+// - If Limit is provided standalone, the safe sort pushdown will be performed;
+// - If Filter and Sort are provided, the unsafe sort pushdown for both will be performed if supported;
+// - Filter and Limit cannot be provided simultaneously;
+// - If Sort and Limit are provided, the unsafe sort pushdown for both will be performed; (?)
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	if !params.SortPushdown && (params.Sort != nil || params.Limit != 0) {
 		return nil, lazyerrors.New("Sort and Limit can't be set if SortPushdown is false")
+	}
+
+	if params.Filter != nil && params.Limit != 0 {
+		return nil, lazyerrors.New("Filter and Limit can't be set simultaneously")
 	}
 
 	res, err := cc.c.Query(ctx, params)
