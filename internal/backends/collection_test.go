@@ -250,11 +250,7 @@ func TestCappedCollectionInsertAllDeleteAll(t *testing.T) {
 
 			docs, err := iterator.ConsumeValues[struct{}, *types.Document](res.Iter)
 			require.NoError(t, err)
-			require.Equal(t, 3, len(docs))
-
-			assert.Equal(t, doc1.RecordID(), docs[0].RecordID())
-			assert.Equal(t, docEpochalypse.RecordID(), docs[1].RecordID())
-			assert.Equal(t, docMax.RecordID(), docs[2].RecordID())
+			assertEqualRecordID(t, []*types.Document{doc1, docEpochalypse, docMax}, docs)
 
 			params := &backends.DeleteAllParams{
 				RecordIDs: []types.Timestamp{docMax.RecordID(), docEpochalypse.RecordID()},
