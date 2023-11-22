@@ -112,7 +112,7 @@ type QueryResult struct {
 //
 // - If SortPushdown is false, any sort, or limit pushdown won't be performed.
 // - If SortPushdown is false, Sort and Limit fields cannot be set.
-// - If SortPushdown is true, but Sort is equal to nil, sort pushdown can still occure
+// - If SortPushdown is true, but Sort is equal to nil, sort pushdown can still occur
 // for capped collection if recordID is not set.
 //
 // - If OnlyRecordIDs is true, the backend will return only recordID column for capped collection.
