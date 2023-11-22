@@ -18,7 +18,7 @@ vars:
   TESTJS_PORT: 27017
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   BUILD_TAGS: ferretdb_debug,ferretdb_hana
-  SERVICES: postgres postgres_secured mongodb mongodb_secured jaeger mysql
+  SERVICES: postgres postgres_secured mysql mongodb mongodb_secured jaeger
 
 tasks:
   # invoked when `task` is run without arguments

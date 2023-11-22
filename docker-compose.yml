@@ -68,8 +68,6 @@ services:
       - MYSQL_USER=username
       - MYSQL_PASSWORD=password
       - MYSQL_DATABASE=ferretdb
-    # volumes:
-    #   - ./build/mysql-init.sql:/docker-entrypoint-initdb.d/mysql-init.sql
 
   mongodb:
     build:
