@@ -234,11 +234,10 @@ func TestCappedCollectionInsertAllDeleteAll(t *testing.T) {
 			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: []*types.Document{docMax}})
 			require.NoError(t, err)
 
-			/*docMaxUint := must.NotFail(types.NewDocument("_id", int32(3)))
-			docMaxUint.SetRecordID(2*math.MaxInt64 + 1) // see type uint64 godoc
+			docMaxUint := must.NotFail(types.NewDocument("_id", int32(3)))
+			docMaxUint.SetRecordID(math.MaxUint64)
 			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: []*types.Document{docMaxUint}})
-			require.NoError(t, err)
-			*/
+			require.Error(t, err)
 
 			docEpochalypse := must.NotFail(types.NewDocument("_id", int32(4)))
 			date := time.Date(2038, time.January, 19, 3, 14, 6, 0, time.UTC)
