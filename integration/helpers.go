@@ -475,7 +475,7 @@ func CheckSortPushdown(t testtb.TB, capped bool, explain *types.Document, key st
 
 	if !setup.UnsafeSortPushdownEnabled() {
 		expected = noPushdown
-		msg = "Sort pushdown is disabled, but target resulted with limitPushdown"
+		msg = "Sort pushdown is disabled, but target resulted with " + key
 	}
 
 	actualPushdown, err := explain.Get(key)
@@ -491,7 +491,7 @@ func CheckFilterPushdown(t testtb.TB, explain *types.Document, key string, expec
 
 	if setup.FilterPushdownDisabled() {
 		expected = noPushdown
-		msg = "Filter pushdown is disabled, but target resulted with pushdown"
+		msg = "Filter pushdown is disabled, but target resulted with " + key
 	}
 
 	actualPushdown, err := explain.Get(key)
