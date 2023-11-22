@@ -69,7 +69,10 @@ func TestCappedCollectionInsertAllQueryExplain(t *testing.T) {
 		t.Parallel()
 
 		sort := backends.SortField{Key: "_id"}
-		queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{Sort: &sort})
+		queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{
+			Sort:         &sort,
+			SortPushdown: true,
+		})
 		require.NoError(t, err)
 
 		docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
