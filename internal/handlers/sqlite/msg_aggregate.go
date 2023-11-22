@@ -277,6 +277,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 			order, err = common.GetSortType(k, v)
 			if err != nil {
+				closer.Close()
 				return nil, err
 			}
 
