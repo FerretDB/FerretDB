@@ -242,12 +242,8 @@ type ExplainParams struct {
 type ExplainResult struct {
 	QueryPlanner   *types.Document
 	FilterPushdown bool
-
-	// If true, the backend might perform safe sort pushdown when possible.
-	SortPushdown bool
-
-	// If true, the backend might perform filter pushdown when possible.
-	LimitPushdown bool
+	SortPushdown   bool
+	LimitPushdown  bool
 }
 
 // Explain return a backend-specific execution plan for the given query.
