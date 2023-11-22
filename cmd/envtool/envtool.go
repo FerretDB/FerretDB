@@ -179,7 +179,7 @@ func setupMongodbSecured(ctx context.Context, logger *zap.SugaredLogger) error {
 	return waitForPort(ctx, logger.Named("mongodb_secured"), 47018)
 }
 
-// setupMySQL
+// setupMySQL configures `mysql` container.
 func setupMySQL(ctx context.Context, logger *zap.SugaredLogger) error {
 	if err := waitForPort(ctx, logger.Named("mysql"), 3306); err != nil {
 		return err
