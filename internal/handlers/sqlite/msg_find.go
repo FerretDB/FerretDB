@@ -109,6 +109,12 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
+	if params.Sort != nil {
+		if qp.Sort, err = common.GetOptionalParam(params.Sort, "$natural", qp.Comment); err != nil {
+			return nil, err
+		}
+	}
+
 	if !h.DisableFilterPushdown {
 		qp.Filter = params.Filter
 	}
