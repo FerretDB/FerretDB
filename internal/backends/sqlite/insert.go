@@ -38,16 +38,8 @@ func prepareInsertStatement(tableName string, capped bool, docs []*types.Documen
 		}
 
 		if capped {
-			recordID := doc.RecordID()
-
-			/*// SQLite doesn't return an error if the value overflows the limits of the type but truncates it.
-			// This is not the desired behavior for us, so we check the value and return an error if needed.
-			if recordID > math.MaxInt64 {
-				return "", nil, lazyerrors.Errorf("record id %d is too big", recordID)
-			}*/
-
 			rows[i] = "(?, ?)"
-			args = append(args, recordID, string(b))
+			args = append(args, doc.RecordID(), string(b))
 
 			continue
 		}

@@ -237,7 +237,7 @@ func TestCappedCollectionInsertAllDeleteAll(t *testing.T) {
 			docMaxUint := must.NotFail(types.NewDocument("_id", int32(3)))
 			docMaxUint.SetRecordID(math.MaxUint64)
 			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: []*types.Document{docMaxUint}})
-			require.Error(t, err)
+			require.Error(t, err) // exceeded max int64 supported by databases
 
 			docEpochalypse := must.NotFail(types.NewDocument("_id", int32(4)))
 			date := time.Date(2038, time.January, 19, 3, 14, 6, 0, time.UTC)
