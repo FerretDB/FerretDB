@@ -215,8 +215,7 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 	var placeholders []string
 	var args []any
 
-	switch params.RecordIDs {
-	case nil:
+	if params.RecordIDs == nil {
 		placeholders = make([]string, len(params.IDs))
 		args = make([]any, len(params.IDs))
 
@@ -226,8 +225,7 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 		}
 
 		column = metadata.IDColumn
-
-	default:
+	} else {
 		placeholders = make([]string, len(params.RecordIDs))
 		args = make([]any, len(params.RecordIDs))
 
