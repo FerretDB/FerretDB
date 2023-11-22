@@ -116,7 +116,7 @@ type QueryResult struct {
 // - If Limit is provided standalone, the safe sort pushdown will be performed;
 // - If Filter and Sort are provided, the unsafe sort pushdown for both will be performed if supported;
 // - Filter and Limit cannot be provided simultaneously;
-// - If Sort and Limit are provided, the unsafe sort pushdown for both will be performed; (?)
+// - If Sort and Limit are provided, the unsafe sort pushdown for both will be performed.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -129,6 +129,7 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 	}
 
 	res, err := cc.c.Query(ctx, params)
+
 	checkError(err)
 
 	return res, err
