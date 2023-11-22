@@ -993,24 +993,9 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 
 				assert.NoError(t, err)
 
-				var msg string
-
-				if !setup.UnsafeSortPushdownEnabled() && tc.sort != nil {
-					tc.limitPushdown = noPushdown
-					msg = "Sort pushdown is disabled, but target resulted with limitPushdown"
-				}
-
 				doc := ConvertDocument(t, res)
-				limitPushdown, _ := doc.Get("limitPushdown")
-				assert.Equal(t, tc.limitPushdown.SortPushdownExpected(t, false), limitPushdown, msg)
-
-				if setup.FilterPushdownDisabled() {
-					tc.filterPushdown = noPushdown
-					msg = "Filter pushdown is disabled, but target resulted with pushdown"
-				}
-
-				filterPushdown, _ := ConvertDocument(t, res).Get("filterPushdown")
-				assert.Equal(t, tc.filterPushdown.FilterPushdownExpected(t), filterPushdown, msg)
+				CheckSortPushdown(t, false, doc, "limitPushdown", tc.limitPushdown)
+				CheckFilterPushdown(t, doc, "filterPushdown", tc.filterPushdown)
 			})
 
 			t.Run("Find", func(t *testing.T) {

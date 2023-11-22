@@ -288,8 +288,7 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 			require.NoError(t, targetCollection.Database().RunCommand(ctx, bson.D{{"explain", explainQuery}}).Decode(&explainRes))
 
 			doc := ConvertDocument(t, explainRes)
-			sortPushdown, _ := doc.Get("sortPushdown")
-			assert.Equal(t, tc.sortPushdown.SortPushdownExpected(t, true), sortPushdown)
+			CheckSortPushdown(t, true, doc, "sortPushdown", tc.sortPushdown)
 
 			findOpts := options.Find()
 			if tc.sort != nil {

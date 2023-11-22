@@ -467,3 +467,35 @@ func createNestedDocument(n int, arr bool) any {
 
 	return bson.D{{"v", child}}
 }
+
+func CheckSortPushdown(t testtb.TB, capped bool, explain *types.Document, key string, expected resultPushdown) {
+	t.Helper()
+
+	var msg string
+
+	if !setup.UnsafeSortPushdownEnabled() {
+		expected = noPushdown
+		msg = "Sort pushdown is disabled, but target resulted with limitPushdown"
+	}
+
+	actualPushdown, err := explain.Get(key)
+	require.NoError(t, err)
+
+	assert.Equal(t, expected.SortPushdownExpected(t, capped), actualPushdown, msg)
+}
+
+func CheckFilterPushdown(t testtb.TB, explain *types.Document, key string, expected resultPushdown) {
+	t.Helper()
+
+	var msg string
+
+	if setup.FilterPushdownDisabled() {
+		expected = noPushdown
+		msg = "Filter pushdown is disabled, but target resulted with pushdown"
+	}
+
+	actualPushdown, err := explain.Get(key)
+	require.NoError(t, err)
+
+	assert.Equal(t, expected.FilterPushdownExpected(t), actualPushdown, msg)
+}
