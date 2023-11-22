@@ -123,7 +123,7 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 		return nil, lazyerrors.New("Sort and Limit can't be set if SortPushdown is false")
 	}
 
-	if params.Filter != nil && params.Limit != 0 {
+	if params.Filter.Len() != 0 && params.Limit != 0 {
 		return nil, lazyerrors.New("Filter and Limit can't be set simultaneously")
 	}
 
@@ -257,6 +257,14 @@ type ExplainResult struct {
 // returns the ExplainResult with QueryPlanner.
 func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams) (*ExplainResult, error) {
 	defer observability.FuncCall(ctx)()
+
+	if !params.SortPushdown && (params.Sort != nil || params.Limit != 0) {
+		return nil, lazyerrors.New("Sort and Limit can't be set if SortPushdown is false")
+	}
+
+	if params.Filter.Len() != 0 && params.Limit != 0 {
+		return nil, lazyerrors.New("Filter and Limit can't be set simultaneously")
+	}
 
 	res, err := cc.c.Explain(ctx, params)
 	checkError(err)
