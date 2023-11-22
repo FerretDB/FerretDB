@@ -235,7 +235,7 @@ func TestCappedCollectionInsertAllDeleteAll(t *testing.T) {
 
 			docEpochalypse := must.NotFail(types.NewDocument("_id", int32(4)))
 			date := time.Date(2038, time.January, 19, 3, 14, 6, 0, time.UTC)
-			docEpochalypse.SetRecordID(types.Timestamp(date.Unix()))
+			docEpochalypse.SetRecordID(types.NextTimestamp(date))
 
 			insertDocs := []*types.Document{doc1, docMax, docMaxUint, docEpochalypse}
 
