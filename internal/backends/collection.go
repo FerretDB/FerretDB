@@ -130,7 +130,7 @@ func (cc *collectionContract) InsertAll(ctx context.Context, params *InsertAllPa
 
 	now := time.Now()
 	for _, doc := range params.Docs {
-		doc.SetRecordID(types.NextTimestamp(now))
+		doc.SetRecordID(types.NextTimestamp(now).Signed())
 		doc.Freeze()
 	}
 
