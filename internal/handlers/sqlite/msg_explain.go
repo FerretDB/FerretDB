@@ -87,25 +87,6 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Filter, params.Sort = aggregations.GetPushdownQuery(params.StagesDocs)
 	}
 
-	//// Skip sorting if there are more than one sort parameters
-	//// TODO https://github.com/FerretDB/FerretDB/issues/3742
-	//if h.EnableUnsafeSortPushdown && params.Sort.Len() == 1 {
-	//	var order types.SortType
-
-	//	k := params.Sort.Keys()[0]
-	//	v := params.Sort.Values()[0]
-
-	//	order, err = common.GetSortType(k, v)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-
-	//	qp.Sort = &backends.SortField{
-	//		Key:        k,
-	//		Descending: order == types.Descending,
-	//	}
-	//}
-
 	// Limit pushdown is not applied if:
 	//  - `filter` is set, it must fetch all documents to filter them in memory;
 	//  - `sort` is set, it must fetch all documents and sort them in memory;
