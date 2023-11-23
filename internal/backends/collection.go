@@ -217,7 +217,7 @@ func (cc *collectionContract) UpdateAll(ctx context.Context, params *UpdateAllPa
 // DeleteAllParams represents the parameters of Collection.Delete method.
 type DeleteAllParams struct {
 	IDs       []any
-	RecordIDs []types.Timestamp
+	RecordIDs []int64
 }
 
 // DeleteAllResult represents the results of Collection.Delete method.
