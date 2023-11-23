@@ -249,21 +249,37 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 		return &backends.DeleteAllResult{Deleted: 0}, nil
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3498
-	_ = params.RecordIDs
+	var column string
+	var placeholders []string
+	var args []any
 
-	var placeholder metadata.Placeholder
-	placeholders := make([]string, len(params.IDs))
-	args := make([]any, len(params.IDs))
+	if params.RecordIDs == nil {
+		var placeholder metadata.Placeholder
+		placeholders = make([]string, len(params.IDs))
+		args = make([]any, len(params.IDs))
 
-	for i, id := range params.IDs {
-		placeholders[i] = placeholder.Next()
-		args[i] = string(must.NotFail(sjson.MarshalSingleValue(id)))
+		for i, id := range params.IDs {
+			placeholders[i] = placeholder.Next()
+			args[i] = string(must.NotFail(sjson.MarshalSingleValue(id)))
+		}
+
+		column = metadata.IDColumn
+	} else {
+		var placeholder metadata.Placeholder
+		placeholders = make([]string, len(params.RecordIDs))
+		args = make([]any, len(params.RecordIDs))
+
+		for i, id := range params.RecordIDs {
+			placeholders[i] = placeholder.Next()
+			args[i] = id
+		}
+
+		column = metadata.RecordIDColumn
 	}
 
 	q := fmt.Sprintf(`DELETE FROM %s WHERE %s IN (%s)`,
 		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
-		metadata.IDColumn,
+		column,
 		strings.Join(placeholders, ", "),
 	)
 
