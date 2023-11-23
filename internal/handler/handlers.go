@@ -12,6 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package handlers description should be updated.
-// TODO https://github.com/FerretDB/FerretDB/issues/3662
+// Package handler provides a universal handler implementation for all backends.
 package handler
