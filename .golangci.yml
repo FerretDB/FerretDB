@@ -58,8 +58,7 @@ linters-settings:
         files:
           - $all
           - "!**/internal/clientconn/*.go"
-          - "!**/internal/handler/*.go"
-          - "!**/internal/handler/**/*.go"
+          - "!**/internal/handler/**.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handler/commonerrors
   exhaustive:
