@@ -103,6 +103,7 @@ type QueryResult struct {
 // It also can be used to close the returned iterator and free underlying resources,
 // but doing so is not necessary - the handler will do that anyway.
 //
+// TODO https://github.com/FerretDB/FerretDB/issues/3742
 // The QueryResult's Sorted field is set to true if the backend applied the whole requested sorting.
 // If it was applied only partially or not at all, that field should be set to false.
 // In that case, the handler will perform sorting itself.
@@ -135,6 +136,7 @@ type ExplainResult struct {
 // Database or collection may not exist; that's not an error, it still
 // returns the ExplainResult with QueryPlanner.
 //
+// TODO https://github.com/FerretDB/FerretDB/issues/3742
 // The ExplainResult's SortPushdown field is set to true if the backend could have applied the whole requested sorting.
 // If it was possible to apply it only partially or not at all, that field should be set to false.
 func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams) (*ExplainResult, error) {
