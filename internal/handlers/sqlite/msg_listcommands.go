@@ -18,212 +18,213 @@ import (
 	"context"
 	"sort"
 
+	"golang.org/x/exp/maps"
+
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
-	"golang.org/x/exp/maps"
 )
 
 // command represents a handler command.
 type command struct {
-	// Help is shown in the help function.
-	// If empty, that command is skipped in `listCommands` output.
-	Help string
-
 	// Handler processes this command.
 	//
 	// The passed context is canceled when the client disconnects.
 	Handler func(*Handler, context.Context, *wire.OpMsg) (*wire.OpMsg, error)
+
+	// Help is shown in the help function.
+	// If empty, that command is skipped in `listCommands` output.
+	Help string
 }
 
 // Commands maps commands names to descriptions and implementations.
 var Commands = map[string]command{
 	// sorted alphabetically
 	"aggregate": {
-		Help:    "Returns aggregated data.",
 		Handler: (*Handler).MsgAggregate,
+		Help:    "Returns aggregated data.",
 	},
 	"buildInfo": {
-		Help:    "Returns a summary of the build information.",
 		Handler: (*Handler).MsgBuildInfo,
+		Help:    "Returns a summary of the build information.",
 	},
 	"buildinfo": { // old lowercase variant
 		Handler: (*Handler).MsgBuildInfo,
 	},
 	"collMod": {
-		Help:    "Adds options to a collection or modify view definitions.",
 		Handler: (*Handler).MsgCollMod,
+		Help:    "Adds options to a collection or modify view definitions.",
 	},
 	"collStats": {
-		Help:    "Returns storage data for a collection.",
 		Handler: (*Handler).MsgCollStats,
+		Help:    "Returns storage data for a collection.",
 	},
 	"compact": {
-		Help:    "Reduces the disk space collection takes and refreshes its statistics.",
 		Handler: (*Handler).MsgCompact,
+		Help:    "Reduces the disk space collection takes and refreshes its statistics.",
 	},
 	"connectionStatus": {
+		Handler: (*Handler).MsgConnectionStatus,
 		Help: "Returns information about the current connection, " +
 			"specifically the state of authenticated users and their available permissions.",
-		Handler: (*Handler).MsgConnectionStatus,
 	},
 	"count": {
-		Help:    "Returns the count of documents that's matched by the query.",
 		Handler: (*Handler).MsgCount,
+		Help:    "Returns the count of documents that's matched by the query.",
 	},
 	"create": {
-		Help:    "Creates the collection.",
 		Handler: (*Handler).MsgCreate,
+		Help:    "Creates the collection.",
 	},
 	"createIndexes": {
-		Help:    "Creates indexes on a collection.",
 		Handler: (*Handler).MsgCreateIndexes,
+		Help:    "Creates indexes on a collection.",
 	},
 	"currentOp": {
-		Help:    "Returns information about operations currently in progress.",
 		Handler: (*Handler).MsgCurrentOp,
+		Help:    "Returns information about operations currently in progress.",
 	},
 	"dataSize": {
-		Help:    "Returns the size of the collection in bytes.",
 		Handler: (*Handler).MsgDataSize,
+		Help:    "Returns the size of the collection in bytes.",
 	},
 	"dbStats": {
-		Help:    "Returns the statistics of the database.",
 		Handler: (*Handler).MsgDBStats,
+		Help:    "Returns the statistics of the database.",
 	},
 	"dbstats": { // old lowercase variant
 		Handler: (*Handler).MsgDBStats,
 	},
 	"debugError": {
-		Help:    "Returns error for debugging.",
 		Handler: (*Handler).MsgDebugError,
+		Help:    "Returns error for debugging.",
 	},
 	"delete": {
-		Help:    "Deletes documents matched by the query.",
 		Handler: (*Handler).MsgDelete,
+		Help:    "Deletes documents matched by the query.",
 	},
 	"distinct": {
-		Help:    "Returns an array of distinct values for the given field.",
 		Handler: (*Handler).MsgDistinct,
+		Help:    "Returns an array of distinct values for the given field.",
 	},
 	"drop": {
-		Help:    "Drops the collection.",
 		Handler: (*Handler).MsgDrop,
+		Help:    "Drops the collection.",
 	},
 	"dropDatabase": {
-		Help:    "Drops production database.",
 		Handler: (*Handler).MsgDropDatabase,
+		Help:    "Drops production database.",
 	},
 	"dropIndexes": {
-		Help:    "Drops indexes on a collection.",
 		Handler: (*Handler).MsgDropIndexes,
+		Help:    "Drops indexes on a collection.",
 	},
 	"explain": {
-		Help:    "Returns the execution plan.",
 		Handler: (*Handler).MsgExplain,
+		Help:    "Returns the execution plan.",
 	},
 	"find": {
-		Help:    "Returns documents matched by the query.",
 		Handler: (*Handler).MsgFind,
+		Help:    "Returns documents matched by the query.",
 	},
 	"findAndModify": {
-		Help:    "Docs, updates, or deletes, and returns a document matched by the query.",
 		Handler: (*Handler).MsgFindAndModify,
+		Help:    "Docs, updates, or deletes, and returns a document matched by the query.",
 	},
 	"findandmodify": { // old lowercase variant
 		Handler: (*Handler).MsgFindAndModify,
 	},
 	"getCmdLineOpts": {
-		Help:    "Returns a summary of all runtime and configuration options.",
 		Handler: (*Handler).MsgGetCmdLineOpts,
+		Help:    "Returns a summary of all runtime and configuration options.",
 	},
 	"getFreeMonitoringStatus": {
-		Help:    "Returns a status of the free monitoring.",
 		Handler: (*Handler).MsgGetFreeMonitoringStatus,
+		Help:    "Returns a status of the free monitoring.",
 	},
 	"getLog": {
-		Help:    "Returns the most recent logged events from memory.",
 		Handler: (*Handler).MsgGetLog,
+		Help:    "Returns the most recent logged events from memory.",
 	},
 	"getMore": {
-		Help:    "Returns the next batch of documents from a cursor.",
 		Handler: (*Handler).MsgGetMore,
+		Help:    "Returns the next batch of documents from a cursor.",
 	},
 	"getParameter": {
-		Help:    "Returns the value of the parameter.",
 		Handler: (*Handler).MsgGetParameter,
+		Help:    "Returns the value of the parameter.",
 	},
 	"hello": {
-		Help:    "Returns the role of the FerretDB instance.",
 		Handler: (*Handler).MsgHello,
+		Help:    "Returns the role of the FerretDB instance.",
 	},
 	"hostInfo": {
-		Help:    "Returns a summary of the system information.",
 		Handler: (*Handler).MsgHostInfo,
+		Help:    "Returns a summary of the system information.",
 	},
 	"insert": {
-		Help:    "Docs documents into the database.",
 		Handler: (*Handler).MsgInsert,
+		Help:    "Docs documents into the database.",
 	},
 	"isMaster": {
-		Help:    "Returns the role of the FerretDB instance.",
 		Handler: (*Handler).MsgIsMaster,
+		Help:    "Returns the role of the FerretDB instance.",
 	},
 	"ismaster": { // old lowercase variant
 		Handler: (*Handler).MsgIsMaster,
 	},
 	"killCursors": {
-		Help:    "Closes server cursors.",
 		Handler: (*Handler).MsgKillCursors,
+		Help:    "Closes server cursors.",
 	},
 	"listCollections": {
-		Help:    "Returns the information of the collections and views in the database.",
 		Handler: (*Handler).MsgListCollections,
+		Help:    "Returns the information of the collections and views in the database.",
 	},
 	// listCommands is added by the init() function below.
 	"listDatabases": {
-		Help:    "Returns a summary of all the databases.",
 		Handler: (*Handler).MsgListDatabases,
+		Help:    "Returns a summary of all the databases.",
 	},
 	"listIndexes": {
-		Help:    "Returns a summary of indexes of the specified collection.",
 		Handler: (*Handler).MsgListIndexes,
+		Help:    "Returns a summary of indexes of the specified collection.",
 	},
 	"logout": {
-		Help:    "Logs out from the current session.",
 		Handler: (*Handler).MsgLogout,
+		Help:    "Logs out from the current session.",
 	},
 	"ping": {
-		Help:    "Returns a pong response.",
 		Handler: (*Handler).MsgPing,
+		Help:    "Returns a pong response.",
 	},
 	"renameCollection": {
-		Help:    "Changes the name of an existing collection.",
 		Handler: (*Handler).MsgRenameCollection,
+		Help:    "Changes the name of an existing collection.",
 	},
 	"saslStart": {
-		Help:    "Starts a SASL conversation.",
 		Handler: (*Handler).MsgSASLStart,
+		Help:    "Starts a SASL conversation.",
 	},
 	"serverStatus": {
-		Help:    "Returns an overview of the databases state.",
 		Handler: (*Handler).MsgServerStatus,
+		Help:    "Returns an overview of the databases state.",
 	},
 	"setFreeMonitoring": {
-		Help:    "Toggles free monitoring.",
 		Handler: (*Handler).MsgSetFreeMonitoring,
+		Help:    "Toggles free monitoring.",
 	},
 	"update": {
-		Help:    "Updates documents that are matched by the query.",
 		Handler: (*Handler).MsgUpdate,
+		Help:    "Updates documents that are matched by the query.",
 	},
 	"validate": {
-		Help:    "Validate collection.",
 		Handler: (*Handler).MsgValidate,
+		Help:    "Validate collection.",
 	},
 	"whatsmyuri": {
-		Help:    "Returns peer information.",
 		Handler: (*Handler).MsgWhatsMyURI,
+		Help:    "Returns peer information.",
 	},
 	// please keep sorted alphabetically
 }
@@ -231,8 +232,8 @@ var Commands = map[string]command{
 func init() {
 	// to prevent the initialization cycle
 	Commands["listCommands"] = command{
-		Help:    "Returns a list of currently supported commands.",
 		Handler: (*Handler).MsgListCommands,
+		Help:    "Returns a list of currently supported commands.",
 	}
 }
 
