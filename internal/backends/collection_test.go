@@ -67,14 +67,10 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 			cappedColl, err := db.Collection(cappedCollName)
 			require.NoError(t, err)
 
-			doc1 := must.NotFail(types.NewDocument("_id", types.ObjectID{2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}))
-			doc1.SetRecordID(1)
-			doc2 := must.NotFail(types.NewDocument("_id", types.ObjectID{3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}))
-			doc2.SetRecordID(2)
-			doc3 := must.NotFail(types.NewDocument("_id", types.ObjectID{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}))
-			doc3.SetRecordID(3)
 			insertDocs := []*types.Document{
-				doc1, doc2, doc3,
+				must.NotFail(types.NewDocument("_id", types.ObjectID{2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})),
+				must.NotFail(types.NewDocument("_id", types.ObjectID{3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})),
+				must.NotFail(types.NewDocument("_id", types.ObjectID{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0})),
 			}
 
 			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: insertDocs})
