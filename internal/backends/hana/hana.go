@@ -154,7 +154,7 @@ func CreateCollectionIfNotExists(ctx context.Context, hdb *fsql.DB, schema, tabl
 }
 
 func DropCollection(ctx context.Context, hdb *fsql.DB, schema, table string) error {
-	sql := fmt.Sprintf("CREATE COLLECTION %q.%q CASCADE", schema, table)
+	sql := fmt.Sprintf("DROP COLLECTION %q.%q CASCADE", schema, table)
 
 	_, err := hdb.ExecContext(ctx, sql)
 
