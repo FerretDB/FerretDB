@@ -259,7 +259,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	var iter iterator.Interface[struct{}, *types.Document]
 
 	if len(collStatsDocuments) == len(stagesDocuments) {
-		filter, sort := aggregations.GetPushdownQuery(aggregationStages)
+		filter, _ := aggregations.GetPushdownQuery(aggregationStages)
 
 		// only documents stages or no stages - fetch documents from the DB and apply stages to them
 		qp := new(backends.QueryParams)
@@ -268,24 +268,24 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			qp.Filter = filter
 		}
 
-		// Skip sorting if there are more than one sort parameters
-		if h.EnableUnsafeSortPushdown && sort.Len() == 1 {
-			var order types.SortType
+		//// Skip sorting if there are more than one sort parameters
+		//if h.EnableUnsafeSortPushdown && sort.Len() == 1 {
+		//	var order types.SortType
 
-			k := sort.Keys()[0]
-			v := sort.Values()[0]
+		//	k := sort.Keys()[0]
+		//	v := sort.Values()[0]
 
-			order, err = common.GetSortType(k, v)
-			if err != nil {
-				closer.Close()
-				return nil, err
-			}
+		//	order, err = common.GetSortType(k, v)
+		//	if err != nil {
+		//		closer.Close()
+		//		return nil, err
+		//	}
 
-			qp.Sort = &backends.SortField{
-				Key:        k,
-				Descending: order == types.Descending,
-			}
-		}
+		//	qp.Sort = &backends.SortField{
+		//		Key:        k,
+		//		Descending: order == types.Descending,
+		//	}
+		//}
 
 		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{c, qp, stagesDocuments})
 	} else {
