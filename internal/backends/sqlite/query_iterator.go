@@ -100,7 +100,7 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	var recordID types.Timestamp
+	var recordID int64
 	var b []byte
 	var dest []any
 
