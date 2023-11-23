@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgGetCmdLineOpts implements HandlerInterface.
+// MsgGetCmdLineOpts implements `getCmdLineOpts` command.
 func (h *Handler) MsgGetCmdLineOpts(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return commoncommands.MsgGetCmdLineOpts(ctx, msg)
 }
