@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgConnectionStatus implements HandlerInterface.
+// MsgConnectionStatus implements `connectionStatus` command.
 func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return commoncommands.MsgConnectionStatus(ctx, msg)
 }

@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgGetParameter implements HandlerInterface.
+// MsgGetParameter implements `getParameter` command.
 func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return common.GetParameter(ctx, msg, h.L)
 }

@@ -25,7 +25,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends/decorators/oplog"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
-	"github.com/FerretDB/FerretDB/internal/handlers"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
@@ -55,7 +54,7 @@ type NewOpts struct {
 }
 
 // New returns a new handler.
-func New(opts *NewOpts) (handlers.Interface, error) {
+func New(opts *NewOpts) (*Handler, error) {
 	b := opts.Backend
 
 	if opts.EnableOplog {
@@ -69,24 +68,20 @@ func New(opts *NewOpts) (handlers.Interface, error) {
 	}, nil
 }
 
-// Close implements handlers.Interface.
+// Close gracefully shutdowns handler.
+// It should be called after listener closes all client connections and stops listening.
 func (h *Handler) Close() {
 	h.cursors.Close()
 }
 
-// Describe implements handlers.Interface.
+// Describe implements prometheus.Collector interface.
 func (h *Handler) Describe(ch chan<- *prometheus.Desc) {
 	h.b.Describe(ch)
 	h.cursors.Describe(ch)
 }
 
-// Collect implements handlers.Interface.
+// Collect implements prometheus.Collector interface.
 func (h *Handler) Collect(ch chan<- prometheus.Metric) {
 	h.b.Collect(ch)
 	h.cursors.Collect(ch)
 }
-
-// check interfaces
-var (
-	_ handlers.Interface = (*Handler)(nil)
-)

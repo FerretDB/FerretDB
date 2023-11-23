@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgCollMod implements HandlerInterface.
+// MsgCollMod implements `collMod` command.
 func (h *Handler) MsgCollMod(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return nil, commonerrors.NewCommandErrorMsg(
 		commonerrors.ErrNotImplemented,

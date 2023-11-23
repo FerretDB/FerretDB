@@ -41,7 +41,7 @@ type findAndModifyResult struct {
 	modified       int32
 }
 
-// MsgFindAndModify implements HandlerInterface.
+// MsgFindAndModify implements `findAndModify` command.
 func (h *Handler) MsgFindAndModify(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {

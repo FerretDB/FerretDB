@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgDropDatabase implements HandlerInterface.
+// MsgDropDatabase implements `dropDatabase` command.
 func (h *Handler) MsgDropDatabase(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
