@@ -15,10 +15,8 @@
 package backends_test // to avoid import cycle
 
 import (
-	"math"
 	"slices"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -229,12 +227,8 @@ func TestCappedCollectionInsertAllDeleteAll(t *testing.T) {
 			require.NoError(t, err)
 
 			doc1 := must.NotFail(types.NewDocument("_id", int32(1)))
-			doc1.SetRecordID(1)
 			docMax := must.NotFail(types.NewDocument("_id", int32(2)))
-			docMax.SetRecordID(math.MaxInt64)
 			docEpochalypse := must.NotFail(types.NewDocument("_id", int32(4)))
-			date := time.Date(2038, time.January, 19, 3, 14, 6, 0, time.UTC)
-			docEpochalypse.SetRecordID(types.NextTimestamp(date).Signed())
 
 			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: []*types.Document{doc1, docMax, docEpochalypse}})
 			require.NoError(t, err)
@@ -244,10 +238,10 @@ func TestCappedCollectionInsertAllDeleteAll(t *testing.T) {
 
 			docs, err := iterator.ConsumeValues[struct{}, *types.Document](res.Iter)
 			require.NoError(t, err)
-			assertEqualRecordID(t, []*types.Document{doc1, docEpochalypse, docMax}, docs)
+			assertEqualRecordID(t, []*types.Document{doc1, docMax, docEpochalypse}, docs)
 
 			params := &backends.DeleteAllParams{
-				RecordIDs: []int64{docMax.RecordID(), docEpochalypse.RecordID()},
+				RecordIDs: []int64{doc1.RecordID(), docEpochalypse.RecordID()},
 			}
 			del, err := coll.DeleteAll(ctx, params)
 			require.NoError(t, err)
@@ -258,7 +252,7 @@ func TestCappedCollectionInsertAllDeleteAll(t *testing.T) {
 
 			docs, err = iterator.ConsumeValues[struct{}, *types.Document](res.Iter)
 			require.NoError(t, err)
-			assertEqualRecordID(t, []*types.Document{doc1}, docs)
+			assertEqualRecordID(t, []*types.Document{docMax}, docs)
 		})
 	}
 }
