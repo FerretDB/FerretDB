@@ -223,10 +223,10 @@ func TestCappedCollectionInsertAllDeleteAll(t *testing.T) {
 			require.NoError(t, err)
 
 			doc1 := must.NotFail(types.NewDocument("_id", int32(1)))
-			docMax := must.NotFail(types.NewDocument("_id", int32(2)))
-			docEpochalypse := must.NotFail(types.NewDocument("_id", int32(4)))
+			doc2 := must.NotFail(types.NewDocument("_id", int32(2)))
+			doc3 := must.NotFail(types.NewDocument("_id", int32(4)))
 
-			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: []*types.Document{doc1, docMax, docEpochalypse}})
+			_, err = coll.InsertAll(ctx, &backends.InsertAllParams{Docs: []*types.Document{doc1, doc2, doc3}})
 			require.NoError(t, err)
 
 			res, err := coll.Query(ctx, nil)
@@ -234,10 +234,10 @@ func TestCappedCollectionInsertAllDeleteAll(t *testing.T) {
 
 			docs, err := iterator.ConsumeValues[struct{}, *types.Document](res.Iter)
 			require.NoError(t, err)
-			assertEqualRecordID(t, []*types.Document{doc1, docMax, docEpochalypse}, docs)
+			assertEqualRecordID(t, []*types.Document{doc1, doc2, doc3}, docs)
 
 			params := &backends.DeleteAllParams{
-				RecordIDs: []int64{doc1.RecordID(), docEpochalypse.RecordID()},
+				RecordIDs: []int64{doc1.RecordID(), doc3.RecordID()},
 			}
 			del, err := coll.DeleteAll(ctx, params)
 			require.NoError(t, err)
@@ -248,7 +248,7 @@ func TestCappedCollectionInsertAllDeleteAll(t *testing.T) {
 
 			docs, err = iterator.ConsumeValues[struct{}, *types.Document](res.Iter)
 			require.NoError(t, err)
-			assertEqualRecordID(t, []*types.Document{docMax}, docs)
+			assertEqualRecordID(t, []*types.Document{doc2}, docs)
 		})
 	}
 }
