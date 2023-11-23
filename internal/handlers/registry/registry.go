@@ -53,6 +53,9 @@ type NewHandlerOpts struct {
 	// for `hana` handler
 	HANAURL string
 
+	// for `mysql` handler
+	MySQLURL string
+
 	TestOpts
 }
 
@@ -89,7 +92,7 @@ func Handlers() []string {
 	res := make([]string, 0, len(registry))
 
 	// double check registered names and return them in the right order
-	for _, h := range []string{"postgresql", "sqlite", "hana"} {
+	for _, h := range []string{"postgresql", "sqlite", "hana", "mysql"} {
 		if _, ok := registry[h]; !ok {
 			continue
 		}

@@ -124,6 +124,13 @@ var hanaFlags struct {
 	HANAURL string `name:"hana-url" help:"SAP HANA URL for 'hana' handler"`
 }
 
+// The mySQLFlags struct represents flags that are used by the "mysql" backend.
+//
+// See main_mysql.go.
+var mySQLFlags struct {
+	MySQLURL string `name:"mysql-url" default:"mysql://127.0.0.1:3306/ferretdb" help:"MySQL URL for 'mysql' handler" hidden:""`
+}
+
 // handlerFlags is a map of handler names to their flags.
 var handlerFlags = map[string]any{}
 
@@ -379,6 +386,8 @@ func run() {
 		SQLiteURL: sqliteFlags.SQLiteURL,
 
 		HANAURL: hanaFlags.HANAURL,
+
+		MySQLURL: mySQLFlags.MySQLURL,
 
 		TestOpts: registry.TestOpts{
 			DisableFilterPushdown:    cli.Test.DisableFilterPushdown,
