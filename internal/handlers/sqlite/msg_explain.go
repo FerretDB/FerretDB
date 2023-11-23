@@ -30,7 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgExplain implements HandlerInterface.
+// MsgExplain implements `explain` command.
 func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
@@ -88,6 +88,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	// Skip sorting if there are more than one sort parameters
+	// TODO https://github.com/FerretDB/FerretDB/issues/3742
 	if h.EnableUnsafeSortPushdown && params.Sort.Len() == 1 {
 		var order types.SortType
 

@@ -45,7 +45,7 @@ func WriteErrorDocument(we *mongo.WriteError) *types.Document {
 	))
 }
 
-// MsgInsert implements HandlerInterface.
+// MsgInsert implements `insert` command.
 func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {

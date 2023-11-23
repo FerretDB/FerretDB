@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgCurrentOp implements HandlerInterface.
+// MsgCurrentOp implements `currentOp` command.
 func (h *Handler) MsgCurrentOp(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return commoncommands.MsgCurrentOp(ctx, msg)
 }

@@ -21,12 +21,12 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/handlers"
+	handler "github.com/FerretDB/FerretDB/internal/handlers/sqlite"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
 // newHandlerFunc represents a function that constructs a new handler.
-type newHandlerFunc func(opts *NewHandlerOpts) (handlers.Interface, CloseBackendFunc, error)
+type newHandlerFunc func(opts *NewHandlerOpts) (*handler.Handler, CloseBackendFunc, error)
 
 // CloseBackendFunc represents a function that closes a backend.
 type CloseBackendFunc func()
@@ -53,6 +53,9 @@ type NewHandlerOpts struct {
 	// for `hana` handler
 	HANAURL string
 
+	// for `mysql` handler
+	MySQLURL string
+
 	TestOpts
 }
 
@@ -66,7 +69,7 @@ type TestOpts struct {
 // NewHandler constructs a new handler.
 //
 // The caller is responsible to call CloseBackendFunc when the handler is no longer needed.
-func NewHandler(name string, opts *NewHandlerOpts) (handlers.Interface, CloseBackendFunc, error) {
+func NewHandler(name string, opts *NewHandlerOpts) (*handler.Handler, CloseBackendFunc, error) {
 	if opts == nil {
 		return nil, nil, fmt.Errorf("opts is nil")
 	}
@@ -89,7 +92,7 @@ func Handlers() []string {
 	res := make([]string, 0, len(registry))
 
 	// double check registered names and return them in the right order
-	for _, h := range []string{"postgresql", "sqlite", "hana"} {
+	for _, h := range []string{"postgresql", "sqlite", "hana", "mysql"} {
 		if _, ok := registry[h]; !ok {
 			continue
 		}

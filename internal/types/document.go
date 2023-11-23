@@ -43,7 +43,7 @@ type Document struct {
 	keys     map[string]int
 	fields   []field
 	frozen   bool
-	recordID Timestamp
+	recordID int64
 }
 
 // field represents a field in the document.
@@ -145,12 +145,12 @@ func NewDocument(pairs ...any) (*Document, error) {
 func (*Document) compositeType() {}
 
 // RecordID returns the document's RecordID (that is 0 by default).
-func (d *Document) RecordID() Timestamp {
+func (d *Document) RecordID() int64 {
 	return d.recordID
 }
 
 // SetRecordID sets the document's RecordID.
-func (d *Document) SetRecordID(recordID Timestamp) {
+func (d *Document) SetRecordID(recordID int64) {
 	d.recordID = recordID
 }
 

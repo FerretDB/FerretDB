@@ -32,7 +32,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgFind implements HandlerInterface.
+// MsgFind implements `find` command.
 func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
@@ -113,6 +113,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	// Skip sorting if there are more than one sort parameters
+	// TODO https://github.com/FerretDB/FerretDB/issues/3742
 	if h.EnableUnsafeSortPushdown && params.Sort.Len() == 1 {
 		var order types.SortType
 
@@ -159,6 +160,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	iter := common.FilterIterator(queryRes.Iter, closer, params.Filter)
 
+	// TODO https://github.com/FerretDB/FerretDB/issues/3742
 	iter, err = common.SortIterator(iter, closer, params.Sort)
 	if err != nil {
 		closer.Close()

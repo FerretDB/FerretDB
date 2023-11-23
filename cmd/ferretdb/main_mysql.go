@@ -12,16 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sqlite
+package main
 
-import (
-	"context"
-
-	"github.com/FerretDB/FerretDB/internal/handlers/commoncommands"
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
-
-// MsgDebugError implements `debugError` command.
-func (h *Handler) MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return commoncommands.MsgDebugError(ctx, msg)
+// init adds "mysql" backend flags.
+func init() {
+	handlerFlags["mysql"] = &mySQLFlags
 }

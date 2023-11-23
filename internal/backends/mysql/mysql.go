@@ -12,16 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package sqlite
-
-import (
-	"context"
-
-	"github.com/FerretDB/FerretDB/internal/handlers/commoncommands"
-	"github.com/FerretDB/FerretDB/internal/wire"
-)
-
-// MsgDebugError implements `debugError` command.
-func (h *Handler) MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return commoncommands.MsgDebugError(ctx, msg)
-}
+// Package mysql provides backend for MySQL and compatible databases.
+//
+// # Design principles
+//
+//  1. Metadata is heavily cached to avoid most queries and transactions.
+package mysql
