@@ -18,7 +18,7 @@ package registry
 
 import (
 	"github.com/FerretDB/FerretDB/internal/backends/hana"
-	handler "github.com/FerretDB/FerretDB/internal/handler/sqlite"
+	"github.com/FerretDB/FerretDB/internal/handler"
 )
 
 // init registers "hana" handler for Hana when "ferretdb_hana" build tag is provided.

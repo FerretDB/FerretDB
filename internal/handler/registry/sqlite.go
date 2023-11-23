@@ -16,7 +16,7 @@ package registry
 
 import (
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite"
-	handler "github.com/FerretDB/FerretDB/internal/handler/sqlite"
+	"github.com/FerretDB/FerretDB/internal/handler"
 )
 
 // init registers "sqlite" handler.

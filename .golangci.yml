@@ -46,7 +46,7 @@ linters-settings:
           - "!**/internal/backends/sqlite/*.go"
           - "!**/internal/backends/postgresql/*.go"
           - "!**/internal/backends/postgresql/metadata/*.go"
-          - "!**/internal/handler/hana/hanadb/*.go"
+          - "!**/internal/backends/hana/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handler/sjson
       backends:
@@ -124,8 +124,6 @@ linters-settings:
         alias: sqlite3
       - pkg: modernc.org/sqlite/lib
         alias: sqlite3lib
-      - pkg: github.com/FerretDB/FerretDB/internal/handler/sqlite
-        alias: handler
   # ineffassign
   lll:
     line-length: 130
