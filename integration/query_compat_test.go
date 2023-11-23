@@ -253,12 +253,12 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 		},
 		"Sort": {
 			sort:         bson.D{{"_id", int32(-1)}},
-			sortPushdown: pgPushdown,
+			sortPushdown: allPushdown,
 		},
 		"FilterSort": {
 			filter:       bson.D{{"v", int32(42)}},
 			sort:         bson.D{{"_id", int32(-1)}},
-			sortPushdown: pgPushdown,
+			sortPushdown: allPushdown,
 		},
 		"MultipleSortFields": {
 			sort: bson.D{{"v", 1}, {"_id", int32(-1)}},
@@ -289,7 +289,7 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 
 			doc := ConvertDocument(t, explainRes)
 			sortPushdown, _ := doc.Get("sortPushdown")
-			assert.Equal(t, tc.sortPushdown.SortPushdownExpected(t, true), sortPushdown)
+			assert.Equal(t, tc.sortPushdown.SortPushdownExpected(t), sortPushdown)
 
 			findOpts := options.Find()
 			if tc.sort != nil {
