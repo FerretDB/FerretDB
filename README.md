@@ -10,7 +10,7 @@
 [![Docs](https://github.com/FerretDB/FerretDB/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/FerretDB/FerretDB/actions/workflows/docs.yml)
 
 FerretDB was founded to become the de-facto open-source substitute to MongoDB.
-FerretDB is an open-source proxy, converting the MongoDB 6.0+ wire protocol queries to SQL -
+FerretDB is an open-source proxy, converting the MongoDB 5.0+ wire protocol queries to SQL -
 using PostgreSQL or SQLite as a database engine.
 
 ```mermaid
@@ -40,7 +40,7 @@ Recognizing this, FerretDB is here to fill that gap.
 ## Scope and current state
 
 FerretDB is compatible with MongoDB drivers and popular MongoDB tools.
-It functions as a drop-in replacement for MongoDB 6.0+ in many cases.
+It functions as a drop-in replacement for MongoDB 5.0+ in many cases.
 Features are constantly being added to further increase compatibility and performance.
 
 We welcome all contributors.
@@ -102,7 +102,7 @@ See [there](https://pkg.go.dev/github.com/FerretDB/FerretDB/build/version) for m
 
 - [Civo](https://www.civo.com/marketplace/FerretDB)
 - [Scaleway](https://www.scaleway.com/en/managed-document-database/)
-- [Vultr](https://www.vultr.com/products/managed-databases/ferretDB/)
+- [Vultr](https://www.vultr.com/products/managed-databases/ferretdb/)
 
 ## Documentation
 

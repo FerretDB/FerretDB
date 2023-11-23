@@ -85,7 +85,9 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var done bool
 	for !done {
+		// TODO https://github.com/FerretDB/FerretDB/issues/3708
 		const batchSize = 1000
+
 		docs := make([]*types.Document, 0, batchSize)
 		docsIndexes := make([]int, 0, batchSize)
 

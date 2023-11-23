@@ -100,7 +100,7 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 		columns[i] = description.Name
 	}
 
-	var recordID types.Timestamp
+	var recordID int64
 	var b []byte
 	var dest []any
 

@@ -88,6 +88,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	// Skip sorting if there are more than one sort parameters
+	// TODO https://github.com/FerretDB/FerretDB/issues/3742
 	if h.EnableUnsafeSortPushdown && params.Sort.Len() == 1 {
 		var order types.SortType
 
@@ -137,9 +138,9 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 			// our extensions
 			// TODO https://github.com/FerretDB/FerretDB/issues/3235
-			"pushdown", res.QueryPushdown,
-			"sortingPushdown", res.UnsafeSortPushdown,
-			"limitPushdown", res.UnsafeLimitPushdown,
+			"filterPushdown", res.FilterPushdown,
+			"sortPushdown", res.SortPushdown,
+			"limitPushdown", res.LimitPushdown,
 
 			"ok", float64(1),
 		))},

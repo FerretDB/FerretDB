@@ -124,6 +124,8 @@ linters-settings:
         alias: sqlite3
       - pkg: modernc.org/sqlite/lib
         alias: sqlite3lib
+      - pkg: github.com/FerretDB/FerretDB/internal/handlers/sqlite
+        alias: handler
   # ineffassign
   lll:
     line-length: 130
