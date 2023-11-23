@@ -31,7 +31,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/handlers"
+	handler "github.com/FerretDB/FerretDB/internal/handlers/sqlite"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -63,7 +63,7 @@ type NewListenerOpts struct {
 	ProxyAddr      string
 	Mode           Mode
 	Metrics        *connmetrics.ListenerMetrics
-	Handler        handlers.Interface
+	Handler        *handler.Handler
 	Logger         *zap.Logger
 	TestRecordsDir string // if empty, no records are created
 }

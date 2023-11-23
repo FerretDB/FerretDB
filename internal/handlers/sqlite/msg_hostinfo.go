@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgHostInfo implements HandlerInterface.
+// MsgHostInfo implements `hostInfo` command.
 func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return commoncommands.MsgHostInfo(ctx, msg)
 }

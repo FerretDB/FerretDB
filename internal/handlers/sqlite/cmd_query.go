@@ -26,7 +26,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// CmdQuery implements HandlerInterface.
+// CmdQuery implements deprecated OP_QUERY message handling.
 func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpReply, error) {
 	cmd := query.Query.Command()
 	collection := query.FullCollectionName

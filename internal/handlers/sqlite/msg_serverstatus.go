@@ -25,7 +25,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgServerStatus implements HandlerInterface.
+// MsgServerStatus implements `serverStatus` command.
 func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	res, err := common.ServerStatus(h.StateProvider.Get(), h.ConnMetrics)
 	if err != nil {
