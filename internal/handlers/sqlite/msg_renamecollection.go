@@ -28,7 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgRenameCollection implements HandlerInterface.
+// MsgRenameCollection implements `renameCollection` command.
 func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	var err error
 

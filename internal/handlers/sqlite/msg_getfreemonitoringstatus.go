@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgGetFreeMonitoringStatus implements HandlerInterface.
+// MsgGetFreeMonitoringStatus implements `getFreeMonitoringStatus` command.
 func (h *Handler) MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return common.GetFreeMonitoringStatus(ctx, msg, h.StateProvider.Get())
 }

@@ -16,13 +16,12 @@ package registry
 
 import (
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql"
-	"github.com/FerretDB/FerretDB/internal/handlers"
 	handler "github.com/FerretDB/FerretDB/internal/handlers/sqlite"
 )
 
 // init registers "postgresql" handler.
 func init() {
-	registry["postgresql"] = func(opts *NewHandlerOpts) (handlers.Interface, CloseBackendFunc, error) {
+	registry["postgresql"] = func(opts *NewHandlerOpts) (*handler.Handler, CloseBackendFunc, error) {
 		b, err := postgresql.NewBackend(&postgresql.NewBackendParams{
 			URI: opts.PostgreSQLURL,
 			L:   opts.Logger.Named("postgresql"),

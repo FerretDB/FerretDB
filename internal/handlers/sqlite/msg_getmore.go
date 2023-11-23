@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgGetMore implements handlers.Interface.
+// MsgGetMore implements `getMore` command.
 func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return common.GetMore(ctx, msg, h.cursors)
 }

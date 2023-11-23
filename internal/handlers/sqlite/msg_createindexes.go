@@ -32,7 +32,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgCreateIndexes implements HandlerInterface.
+// MsgCreateIndexes implements `createIndexes` command.
 func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {

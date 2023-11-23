@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgBuildInfo implements HandlerInterface.
+// MsgBuildInfo implements `buildInfo` command.
 func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return commoncommands.MsgBuildInfo(ctx, msg)
 }
