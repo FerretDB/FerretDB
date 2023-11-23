@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package sqlite provides SQLite handler.
-//
-// It is being converted into universal handler for all backends.
+// Package handler provides a universal handler implementation for all backends.
 package handler
 
 import (
@@ -28,7 +26,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
 
-// Handler implements handlers.Interface.
+// Handler provides a set of methods to process clients' requests sent over wire protocol.
+//
+// MsgXXX methods handle OP_MSG commands.
+// CmdQuery handles a limited subset of OP_QUERY messages.
+//
+// Handler is shared between all connections! Be careful when you need connection-specific information.
+// Currently, we pass connection information through context, see `ConnInfo` and its usage.
 type Handler struct {
 	*NewOpts
 
