@@ -106,6 +106,33 @@ tasks:
         | tee new-sqlite.txt
       - ../bin/benchstat{{exeExt}} old-sqlite.txt new-sqlite.txt
 
+  bench-mysql:
+    desc: "Run benchmarks for `mysql` backend"
+    cmds:
+      - > 
+        go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
+        -count={{.BENCH_COUNT}} -bench-{{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
+        -log-level=error
+        -bench-docs={{.BENCH_DOCS}}
+        -target-backend=ferretdb-mysql
+        -mysql-url=mysql://username:password@127.0.0.1:3306/ferretdb
+        | tee new-mysql.txt
+      - ../bin/benchstat{{exeExt}} old-mysql.txt new-mysql.txt
+
+  bench-mysql-no-pushdown:
+    desc: "Run benchmarks for `mysql` with filter pushdown disabled"
+    cmds:
+      - >
+        go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
+        -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
+        -log-level=error
+        -bench-docs={{.BENCH_DOCS}}
+        -target-backend=ferretdb-mysql
+        -mysql-url=mysql://username:password@127.0.0.1:3306/ferretdb  
+        -disable-filter-pushdown
+        | tee new-sqlite.txt
+      - ../bin/benchstat{{exeExt}} old-sqlite.txt new-sqlite.txt
+
   bench-mongodb:
     desc: "Run benchmarks for MongoDB"
     cmds:

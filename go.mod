@@ -27,6 +27,8 @@ require (
 	modernc.org/sqlite v1.27.0
 )
 
+require github.com/go-sql-driver/mysql v1.7.1
+
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
