@@ -17,10 +17,16 @@ package backends
 import (
 	"cmp"
 	"context"
+	"errors"
+	"fmt"
 	"slices"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
@@ -110,10 +116,70 @@ type QueryResult struct {
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
 	defer observability.FuncCall(ctx)()
 
+	if params == nil {
+		params = new(QueryParams)
+	}
+
+	if params.Sort != nil {
+		iter := params.Sort.Iterator()
+		defer iter.Close()
+
+		for {
+			k, v, err := iter.Next()
+			if err != nil {
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
+
+				return nil, lazyerrors.Error(err)
+			}
+
+			if err := validateSort(k, v); err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	res, err := cc.c.Query(ctx, params)
 	checkError(err)
 
 	return res, err
+}
+
+func validateSort(key string, value any) error {
+	sortValue, err := commonparams.GetWholeNumberParam(value)
+	switch {
+	case err == nil:
+		break
+	case errors.Is(err, commonparams.ErrUnexpectedType):
+		if _, ok := value.(types.NullType); ok {
+			value = "null"
+		}
+
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrSortBadValue,
+			fmt.Sprintf(`Illegal key in $sort specification: %v: %v`, key, value),
+			"$sort",
+		)
+	case errors.Is(err, commonparams.ErrNotWholeNumber):
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrSortBadOrder,
+			"$sort key ordering must be 1 (for ascending) or -1 (for descending)",
+			"$sort",
+		)
+	default:
+		return err
+	}
+
+	if sortValue != -1 || sortValue != 1 {
+		return commonerrors.NewCommandErrorMsgWithArgument(
+			commonerrors.ErrSortBadOrder,
+			"$sort key ordering must be 1 (for ascending) or -1 (for descending)",
+			"$sort",
+		)
+	}
+
+	return nil
 }
 
 // ExplainParams represents the parameters of Collection.Explain method.
