@@ -95,7 +95,21 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	q += where
 
-	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
+	sort, sortArgs, err := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
+
+	var fullySorted bool
+
+	switch {
+	case err == nil:
+		if sort != "" {
+			fullySorted = true
+		}
+	case errors.Is(err, ErrSortPushdownNotFullyApplied):
+		fullySorted = false
+	default:
+		return nil, lazyerrors.Error(err)
+	}
+
 	q += sort
 	args = append(args, sortArgs...)
 
@@ -110,7 +124,8 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}
 
 	return &backends.QueryResult{
-		Iter: newQueryIterator(ctx, rows, params.OnlyRecordIDs),
+		Iter:   newQueryIterator(ctx, rows, params.OnlyRecordIDs),
+		Sorted: fullySorted,
 	}, nil
 }
 
