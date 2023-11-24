@@ -22,7 +22,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -231,7 +230,7 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 // prepareOrderByClause returns ORDER BY clause for given sort field and returns the query and arguments.
 //
 // For capped collection, it returns ORDER BY recordID only if sort field is nil.
-func prepareOrderByClause(p *metadata.Placeholder, sort *backends.SortField, capped bool) (string, []any) {
+func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document, capped bool) (string, []any) {
 	if sort == nil {
 		if capped {
 			return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil

@@ -83,7 +83,7 @@ type SortField struct {
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
 	Filter        *types.Document
-	Sort          *SortField // TODO https://github.com/FerretDB/FerretDB/issues/3742
+	Sort          *types.Document
 	Limit         int64
 	OnlyRecordIDs bool
 	Comment       string
@@ -119,7 +119,7 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 // ExplainParams represents the parameters of Collection.Explain method.
 type ExplainParams struct {
 	Filter *types.Document
-	Sort   *SortField // TODO https://github.com/FerretDB/FerretDB/issues/3742
+	Sort   *types.Document
 	Limit  int64
 }
 
