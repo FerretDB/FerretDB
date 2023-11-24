@@ -165,6 +165,7 @@ func run(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
+// isIssueOpen returns true if issue is open otherwise false.
 func isIssueOpen(client *github.Client, n int) (bool, error) {
 	issue, _, err := client.Issues.Get(context.TODO(), "FerretDB", "FerretDB", n)
 	// if error is RateLimitError and token is not set propmt user to provide GITHUB_TOKEN
@@ -187,11 +188,11 @@ func isIssueOpen(client *github.Client, n int) (bool, error) {
 	return isOpen, nil
 }
 
-/*
-* Due to analysis tools changing cwd for each go Package
-* we need to find the root of the project in order to get the common cache file.
-* this is done by recursively traversing the Path up until README.md is found.
- */
+// getCacheFilePath returns the path to the cache file.
+//
+// Due to analysis tools changing cwd for each package they check,
+// we need to find the root of the project in order to get the common cache file.
+// this is done by recursively traversing the current path up until README.md is found.
 func getCacheFilePath(p string) string {
 	path := filepath.Dir(p)
 
