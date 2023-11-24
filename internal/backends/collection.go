@@ -120,7 +120,14 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 		params = new(QueryParams)
 	}
 
-	if params.Sort != nil {
+	switch {
+	case params.Sort == nil:
+		break
+
+	case params.Sort.Len() == 0:
+		params.Sort = nil
+
+	default:
 		iter := params.Sort.Iterator()
 		defer iter.Close()
 

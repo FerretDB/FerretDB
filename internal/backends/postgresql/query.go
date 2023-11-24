@@ -227,29 +227,24 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 	return filter, args, nil
 }
 
-// prepareOrderByClause returns ORDER BY clause for given sort field and returns the query and arguments.
+var ErrSortPushdownNotFullyApplied = errors.New("Sort pushdown wasn't fully applied")
+
+// prepareOrderByClause returns ORDER BY clause for given sort document and returns the query and arguments.
+// If pushdown wasn't fully applied to all sort fields, or wasn't applied at all, it returns
+// ErrSortPushdownNotFullyApplied error.
 //
-// For capped collection, it returns ORDER BY recordID only if sort field is nil.
-func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document, capped bool) (string, []any) {
-	if sort == nil {
-		if capped {
-			return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil
-		}
-
-		return "", nil
+// For capped collection, it returns ORDER BY recordID only if sort document is empty.
+func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document, capped bool) (string, []any, error) {
+	if sort.Len() != 0 {
+		return "", nil, ErrSortPushdownNotFullyApplied
 	}
 
-	// Skip sorting dot notation
-	if strings.ContainsRune(sort.Key, '.') {
-		return "", nil
+	if capped {
+		return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil, nil
 	}
 
-	var order string
-	if sort.Descending {
-		order = " DESC"
-	}
+	return "", nil, ErrSortPushdownNotFullyApplied
 
-	return fmt.Sprintf(" ORDER BY %s->%s%s", metadata.DefaultColumn, p.Next(), order), []any{sort.Key}
 }
 
 // filterEqual returns the proper SQL filter with arguments that filters documents
