@@ -93,7 +93,7 @@ tasks:
       - ../bin/benchstat{{exeExt}} old-sqlite.txt new-sqlite.txt
 
   bench-sqlite-no-pushdown:
-    desc: "Run benchmarks for `sqlite` with query pushdown disabled"
+    desc: "Run benchmarks for `sqlite` with filter pushdown disabled"
     cmds:
       - >
         go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX

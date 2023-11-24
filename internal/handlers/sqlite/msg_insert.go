@@ -45,7 +45,7 @@ func WriteErrorDocument(we *mongo.WriteError) *types.Document {
 	))
 }
 
-// MsgInsert implements HandlerInterface.
+// MsgInsert implements `insert` command.
 func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
@@ -85,7 +85,9 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var done bool
 	for !done {
+		// TODO https://github.com/FerretDB/FerretDB/issues/3708
 		const batchSize = 1000
+
 		docs := make([]*types.Document, 0, batchSize)
 		docsIndexes := make([]int, 0, batchSize)
 

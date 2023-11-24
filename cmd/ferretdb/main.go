@@ -86,9 +86,8 @@ var cli struct {
 	Test struct {
 		RecordsDir string `default:"" help:"Testing: directory for record files."`
 
-		DisableFilterPushdown    bool `default:"false" help:"Experimental: disable filter pushdown."`
-		EnableUnsafeSortPushdown bool `default:"false" help:"Experimental: enable unsafe sort pushdown."`
-		EnableOplog              bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
+		DisableFilterPushdown bool `default:"false" help:"Experimental: disable filter pushdown."`
+		EnableOplog           bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
 
 		//nolint:lll // for readability
 		Telemetry struct {
@@ -122,6 +121,13 @@ var sqliteFlags struct {
 // See main_hana.go.
 var hanaFlags struct {
 	HANAURL string `name:"hana-url" help:"SAP HANA URL for 'hana' handler"`
+}
+
+// The mySQLFlags struct represents flags that are used by the "mysql" backend.
+//
+// See main_mysql.go.
+var mySQLFlags struct {
+	MySQLURL string `name:"mysql-url" default:"mysql://127.0.0.1:3306/ferretdb" help:"MySQL URL for 'mysql' handler" hidden:""`
 }
 
 // handlerFlags is a map of handler names to their flags.
@@ -369,7 +375,7 @@ func run() {
 		)
 	}()
 
-	h, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
+	h, closeBackend, err := registry.NewHandler(cli.Handler, &registry.NewHandlerOpts{
 		Logger:        logger,
 		ConnMetrics:   metrics.ConnMetrics,
 		StateProvider: stateProvider,
@@ -380,15 +386,18 @@ func run() {
 
 		HANAURL: hanaFlags.HANAURL,
 
+		MySQLURL: mySQLFlags.MySQLURL,
+
 		TestOpts: registry.TestOpts{
-			DisableFilterPushdown:    cli.Test.DisableFilterPushdown,
-			EnableUnsafeSortPushdown: cli.Test.EnableUnsafeSortPushdown,
-			EnableOplog:              cli.Test.EnableOplog,
+			DisableFilterPushdown: cli.Test.DisableFilterPushdown,
+			EnableOplog:           cli.Test.EnableOplog,
 		},
 	})
 	if err != nil {
 		logger.Sugar().Fatalf("Failed to construct handler: %s.", err)
 	}
+
+	defer closeBackend()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
 		TCP:         cli.Listen.Addr,

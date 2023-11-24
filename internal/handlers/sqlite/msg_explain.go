@@ -30,7 +30,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgExplain implements HandlerInterface.
+// MsgExplain implements `explain` command.
 func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
@@ -87,39 +87,16 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Filter, params.Sort = aggregations.GetPushdownQuery(params.StagesDocs)
 	}
 
-	// Skip sorting if there are more than one sort parameters
-	if h.EnableUnsafeSortPushdown && params.Sort.Len() == 1 {
-		var order types.SortType
-
-		k := params.Sort.Keys()[0]
-		v := params.Sort.Values()[0]
-
-		order, err = common.GetSortType(k, v)
-		if err != nil {
-			return nil, err
-		}
-
-		qp.Sort = &backends.SortField{
-			Key:        k,
-			Descending: order == types.Descending,
-		}
-	}
-
 	// Limit pushdown is not applied if:
 	//  - `filter` is set, it must fetch all documents to filter them in memory;
-	//  - `sort` is set but `UnsafeSortPushdown` is not set, it must fetch all documents
-	//  and sort them in memory;
+	//  - `sort` is set, it must fetch all documents and sort them in memory;
 	//  - `skip` is non-zero value, skip pushdown is not supported yet.
-	if params.Filter.Len() == 0 && (params.Sort.Len() == 0 || h.EnableUnsafeSortPushdown) && params.Skip == 0 {
+	if params.Filter.Len() == 0 && params.Sort.Len() == 0 && params.Skip == 0 {
 		qp.Limit = params.Limit
 	}
 
 	if h.DisableFilterPushdown {
 		qp.Filter = nil
-	}
-
-	if !h.EnableUnsafeSortPushdown {
-		qp.Sort = nil
 	}
 
 	res, err := coll.Explain(ctx, &qp)
@@ -137,9 +114,9 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 			// our extensions
 			// TODO https://github.com/FerretDB/FerretDB/issues/3235
-			"pushdown", res.QueryPushdown,
-			"sortingPushdown", res.UnsafeSortPushdown,
-			"limitPushdown", res.UnsafeLimitPushdown,
+			"filterPushdown", res.FilterPushdown,
+			"sortPushdown", res.SortPushdown,
+			"limitPushdown", res.LimitPushdown,
 
 			"ok", float64(1),
 		))},

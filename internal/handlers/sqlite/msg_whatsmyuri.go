@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgWhatsMyURI implements HandlerInterface.
+// MsgWhatsMyURI implements `whatsMyURI` command.
 func (h *Handler) MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	return commoncommands.MsgWhatsMyURI(ctx, msg)
 }

@@ -78,7 +78,13 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	q := prepareSelectClause(c.dbName, meta.TableName, meta.Capped(), params.OnlyRecordIDs)
+	q := prepareSelectClause(&selectParams{
+		Schema:        c.dbName,
+		Table:         meta.TableName,
+		Comment:       params.Comment,
+		Capped:        meta.Capped(),
+		OnlyRecordIDs: params.OnlyRecordIDs,
+	})
 
 	var placeholder metadata.Placeholder
 
@@ -128,9 +134,11 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 	}
 
 	err = pool.InTransaction(ctx, p, func(tx pgx.Tx) error {
+		// TODO https://github.com/FerretDB/FerretDB/issues/3708
+		const batchSize = 100
+
 		var batch []*types.Document
 		docs := params.Docs
-		const batchSize = 100
 
 		for len(docs) > 0 {
 			i := min(batchSize, len(docs))
@@ -241,21 +249,37 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 		return &backends.DeleteAllResult{Deleted: 0}, nil
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3498
-	_ = params.RecordIDs
+	var column string
+	var placeholders []string
+	var args []any
 
-	var placeholder metadata.Placeholder
-	placeholders := make([]string, len(params.IDs))
-	args := make([]any, len(params.IDs))
+	if params.RecordIDs == nil {
+		var placeholder metadata.Placeholder
+		placeholders = make([]string, len(params.IDs))
+		args = make([]any, len(params.IDs))
 
-	for i, id := range params.IDs {
-		placeholders[i] = placeholder.Next()
-		args[i] = string(must.NotFail(sjson.MarshalSingleValue(id)))
+		for i, id := range params.IDs {
+			placeholders[i] = placeholder.Next()
+			args[i] = string(must.NotFail(sjson.MarshalSingleValue(id)))
+		}
+
+		column = metadata.IDColumn
+	} else {
+		var placeholder metadata.Placeholder
+		placeholders = make([]string, len(params.RecordIDs))
+		args = make([]any, len(params.RecordIDs))
+
+		for i, id := range params.RecordIDs {
+			placeholders[i] = placeholder.Next()
+			args[i] = id
+		}
+
+		column = metadata.RecordIDColumn
 	}
 
 	q := fmt.Sprintf(`DELETE FROM %s WHERE %s IN (%s)`,
 		pgx.Identifier{c.dbName, meta.TableName}.Sanitize(),
-		metadata.IDColumn,
+		column,
 		strings.Join(placeholders, ", "),
 	)
 
@@ -297,7 +321,13 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	res := new(backends.ExplainResult)
 
-	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(c.dbName, meta.TableName, meta.Capped(), false)
+	opts := &selectParams{
+		Schema: c.dbName,
+		Table:  meta.TableName,
+		Capped: meta.Capped(),
+	}
+
+	q := `EXPLAIN (VERBOSE true, FORMAT JSON) ` + prepareSelectClause(opts)
 
 	var placeholder metadata.Placeholder
 
@@ -306,19 +336,19 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return nil, lazyerrors.Error(err)
 	}
 
-	res.QueryPushdown = where != ""
+	res.FilterPushdown = where != ""
 
 	q += where
 
 	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
 	q += sort
 	args = append(args, sortArgs...)
-	res.UnsafeSortPushdown = sort != ""
+	res.SortPushdown = sort != ""
 
 	if params.Limit != 0 {
 		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
 		args = append(args, params.Limit)
-		res.UnsafeLimitPushdown = true
+		res.LimitPushdown = true
 	}
 
 	var b []byte

@@ -53,7 +53,7 @@ func TestVersion(t *testing.T) {
 
 			switch s.BackendName {
 			case "PostgreSQL":
-				assert.True(t, strings.HasPrefix(s.BackendVersion, "16.0 ("), "%s", s.BackendName)
+				assert.True(t, strings.HasPrefix(s.BackendVersion, "16.1 ("), "%s", s.BackendName)
 			case "SQLite":
 				assert.Equal(t, "3.41.2", s.BackendVersion)
 			default:

@@ -25,7 +25,7 @@ type collection struct {
 	c backends.Collection
 }
 
-// newCollection creates a new collection that wraps the given collection.
+// newCollection creates a new Collection that wraps the given collection.
 func newCollection(c backends.Collection) backends.Collection {
 	return &collection{c: c}
 }

@@ -8,10 +8,11 @@ require (
 	github.com/google/go-github/v56 v56.0.0
 	github.com/goreleaser/nfpm/v2 v2.34.0
 	github.com/quasilyte/go-consistent v0.6.0
+	github.com/rogpeppe/go-internal v1.11.0
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/oauth2 v0.14.0
 	golang.org/x/perf v0.0.0-20231108231503-cb71e802ccb8
-	golang.org/x/pkgsite v0.0.0-20231108193206-a4adca6c8b46
+	golang.org/x/pkgsite v0.0.0-20231116221838-ee1eba0daf64
 	golang.org/x/tools v0.15.0
 	golang.org/x/vuln v1.0.1
 	mvdan.cc/gofumpt v0.5.0
