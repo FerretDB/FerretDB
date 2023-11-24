@@ -9,7 +9,6 @@
 /internal/                  @FerretDB/leads
 
 /internal/backends/         @AlekSi
-/internal/backends/hana/    @AlekSi
 
 # @AlekSi for engineering, @ptrfarkas for marketing.
 # See also Mergify configuration.
