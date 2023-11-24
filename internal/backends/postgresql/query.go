@@ -233,6 +233,8 @@ var ErrSortPushdownNotFullyApplied = errors.New("Sort pushdown wasn't fully appl
 // If pushdown wasn't fully applied to all sort fields, or wasn't applied at all, it returns
 // ErrSortPushdownNotFullyApplied error.
 //
+// The providded sort document should be already validated.
+//
 // For capped collection, it returns ORDER BY recordID only if sort document is empty.
 func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document, capped bool) (string, []any, error) {
 	if sort.Len() != 0 {
@@ -244,7 +246,6 @@ func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document, capped 
 	}
 
 	return "", nil, ErrSortPushdownNotFullyApplied
-
 }
 
 // filterEqual returns the proper SQL filter with arguments that filters documents
