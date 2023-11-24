@@ -56,14 +56,14 @@ func main() {
 func run(pass *analysis.Pass) (any, error) {
 	var iCache issueCache
 
-	current_path, err := os.Getwd()
+	currentPath, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	cache_path := getCacheFilePath(current_path)
+	cachePath := getCacheFilePath(currentPath)
 
-	cf, err := lockedfile.OpenFile(cache_path, os.O_RDWR|os.O_CREATE, 0o666)
+	cf, err := lockedfile.OpenFile(cachePath, os.O_RDWR|os.O_CREATE, 0o666)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -165,7 +165,7 @@ func run(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
-// isIssueOpen returns true if issue is open otherwise false.
+// isIssueOpen returns true if issue is open and false otherwise.
 func isIssueOpen(client *github.Client, n int) (bool, error) {
 	issue, _, err := client.Issues.Get(context.TODO(), "FerretDB", "FerretDB", n)
 	// if error is RateLimitError and token is not set propmt user to provide GITHUB_TOKEN
