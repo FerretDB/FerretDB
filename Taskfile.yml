@@ -284,7 +284,7 @@ tasks:
         {{.RACE_FLAG}}
         -tags={{.BUILD_TAGS}}
         -shuffle=on
-        -coverpkg=../..
+        -coverpkg=../...
         -coverprofile=integration-mysql.txt
         .
         -target-backend=ferretdb-mysql
