@@ -109,7 +109,7 @@ tasks:
   bench-mysql:
     desc: "Run benchmarks for `mysql` backend"
     cmds:
-      - > 
+      - >
         go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
         -count={{.BENCH_COUNT}} -bench-{{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
         -log-level=error
