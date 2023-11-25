@@ -21,7 +21,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )

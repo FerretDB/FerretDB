@@ -296,8 +296,8 @@ tasks:
       - go test -list='Benchmark.*' ./...
       - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/bson/           | tee -a new.txt
       - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/bson/           | tee -a new.txt
-      - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/handlers/sjson/ | tee -a new.txt
-      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/handlers/sjson/ | tee -a new.txt
+      - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/handler/sjson/ | tee -a new.txt
+      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/handler/sjson/ | tee -a new.txt
       - bin/benchstat{{exeExt}} old.txt new.txt
 
   # That's not quite correct: https://github.com/golang/go/issues/15513
@@ -312,10 +312,10 @@ tasks:
     cmds:
       - go test -list='Fuzz.*' ./...
       # TODO https://github.com/FerretDB/FerretDB/issues/1273
-      # - go test -run=XXX -fuzz=FuzzArrayWithFixedSchemas      -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      # - go test -run=XXX -fuzz=FuzzArrayWithFixedDocuments    -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      # - go test -run=XXX -fuzz=FuzzDocumentWithFixedSchemas   -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      # - go test -run=XXX -fuzz=FuzzDocumentWithFixedDocuments -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
+      # - go test -run=XXX -fuzz=FuzzArrayWithFixedSchemas      -fuzztime={{.FUZZ_TIME}} ./internal/handler/sjson/
+      # - go test -run=XXX -fuzz=FuzzArrayWithFixedDocuments    -fuzztime={{.FUZZ_TIME}} ./internal/handler/sjson/
+      # - go test -run=XXX -fuzz=FuzzDocumentWithFixedSchemas   -fuzztime={{.FUZZ_TIME}} ./internal/handler/sjson/
+      # - go test -run=XXX -fuzz=FuzzDocumentWithFixedDocuments -fuzztime={{.FUZZ_TIME}} ./internal/handler/sjson/
       - go test -run=XXX -fuzz=FuzzArray    -fuzztime={{.FUZZ_TIME}} ./internal/bson/
       - go test -run=XXX -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/bson/
       - go test -run=XXX -fuzz=FuzzMsg      -fuzztime={{.FUZZ_TIME}} ./internal/wire/

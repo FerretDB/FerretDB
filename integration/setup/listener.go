@@ -26,7 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/handlers/registry"
+	"github.com/FerretDB/FerretDB/internal/handler/registry"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
