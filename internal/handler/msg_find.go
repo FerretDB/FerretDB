@@ -15,9 +15,11 @@
 package handler
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -67,31 +69,27 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	if params.Tailable {
-		var res *backends.ListCollectionsResult
-		var collInfo *backends.CollectionInfo
+		var cList *backends.ListCollectionsResult
 
-		res, err = db.ListCollections(ctx, nil)
-		if err != nil {
+		if cList, err = db.ListCollections(ctx, nil); err != nil {
 			return nil, err
 		}
 
+		var cInfo backends.CollectionInfo
+
 		// TODO https://github.com/FerretDB/FerretDB/issues/3601
-		for _, coll := range res.Collections {
-			if coll.Name == params.Collection {
-				collInfo = &coll
-			}
+		//nolint:lll // see issue above
+		if i, found := slices.BinarySearchFunc(cList.Collections, params.Collection, func(e backends.CollectionInfo, t string) int {
+			return cmp.Compare(e.Name, t)
+		}); found {
+			cInfo = cList.Collections[i]
 		}
 
-		if collInfo != nil && !collInfo.Capped() {
+		if !cInfo.Capped() {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
-				fmt.Sprintf(
-					"error processing query: ns=%s.%sTree:"+
-						"  $eq null\nSort: {}\nProj: {}\n tailable cursor requested on non capped collection",
-					params.DB,
-					params.Collection,
-				),
-				"find",
+				"tailable cursor requested on non capped collection",
+				"tailable",
 			)
 		}
 
