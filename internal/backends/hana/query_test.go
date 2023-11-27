@@ -18,6 +18,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/stretchr/testify/assert"
@@ -45,7 +46,6 @@ func TestPrepareWhereClause(t *testing.T) {
 	for name, tc := range map[string]struct {
 		filter   *types.Document
 		expected string
-		skip     string
 	}{
 		"EqObjectId": {
 			filter:   must.NotFail(types.NewDocument("_id", objectID)),
@@ -97,14 +97,43 @@ func TestPrepareWhereClause(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			actual, err := prepareWhereClause(tc.filter)
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.expected, actual)
 		})
 	}
+}
+
+func TestPrepareOrderByClause(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		sort     *backends.SortField
+		expected string
+	}{
+		"DontSort": {
+			sort:     nil,
+			expected: "",
+		},
+		"OrderAsc": {
+			sort:     &backends.SortField{Key: "test", Descending: false},
+			expected: " ORDER BY \"test\" ASC",
+		},
+		"OrderDesc": {
+			sort:     &backends.SortField{Key: "test", Descending: true},
+			expected: " ORDER BY \"test\" DESC",
+		},
+	} {
+		name, tc := name, tc
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			actual, err := prepareOrderByClause(tc.sort)
+			require.NoError(t, err)
+
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
+
 }

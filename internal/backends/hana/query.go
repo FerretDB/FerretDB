@@ -158,7 +158,17 @@ func prepareWhereClause(filter *types.Document) (string, error) {
 }
 
 func prepareOrderByClause(sort *backends.SortField) (string, error) {
-	orderByClause := ""
+	if sort == nil {
+		return "", nil
+	}
+
+	var order string
+	order = "ASC"
+	if sort.Descending {
+		order = "DESC"
+	}
+
+	orderByClause := fmt.Sprintf(" ORDER BY %q %s", sort.Key, order)
 
 	return orderByClause, nil
 }
