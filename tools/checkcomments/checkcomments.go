@@ -58,26 +58,25 @@ func run(pass *analysis.Pass) (any, error) {
 
 	currentPath, err := os.Getwd()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	cachePath := getCacheFilePath(currentPath)
 
 	cf, err := lockedfile.OpenFile(cachePath, os.O_RDWR|os.O_CREATE, 0o666)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	defer func() {
-		cerr := cf.Close()
-		if cerr != nil {
-			log.Fatal(cerr)
+		if err := cf.Close(); err != nil {
+			log.Println(err)
 		}
 	}()
 
 	stat, err := cf.Stat()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	if stat.Size() > 0 {
@@ -85,7 +84,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 		_, err = cf.Read(buffer)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 
 		err = json.Unmarshal(buffer, &iCache)
@@ -100,9 +99,30 @@ func run(pass *analysis.Pass) (any, error) {
 
 	client, err := gh.NewRESTClient(token, nil)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
+	if err := checkTodoComments(pass, &iCache, client); err != nil {
+		return nil, err
+	}
+
+	if len(iCache.Issues) > 0 {
+		jsonb, err := json.Marshal(iCache)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		_, err = cf.WriteAt(jsonb, 0)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return nil, nil
+}
+
+// checkTodoComments goes through the given files' comments and checks if TODOs are valid and linked issues are open.
+func checkTodoComments(pass *analysis.Pass, cache *issueCache, client *github.Client) error {
 	for _, f := range pass.Files {
 		for _, cg := range f.Comments {
 			for _, c := range cg.List {
@@ -124,68 +144,56 @@ func run(pass *analysis.Pass) (any, error) {
 					continue
 				}
 
-				iNum := match[1]
+				num := match[1]
 
-				_, ok := iCache.Issues[iNum]
+				_, ok := cache.Issues[num]
 
 				if !ok {
-					n, inErr := strconv.Atoi(iNum)
-					if inErr != nil {
-						log.Fatal(inErr)
-					}
-
-					isOpen, inErr := isIssueOpen(client, n)
+					number, err := strconv.Atoi(num)
 					if err != nil {
-						log.Fatal(inErr)
+						return err
 					}
 
-					iCache.Issues[iNum] = isOpen
+					isOpen, err := isIssueOpen(client, number)
+					if err != nil {
+						if errors.As(err, new(*github.RateLimitError)) {
+							msg := "Rate limit reached."
+
+							if os.Getenv("GITHUB_TOKEN") == "" {
+								msg += "Please set a GITHUB_TOKEN as described at " +
+									"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token"
+							}
+
+							log.Println(msg)
+
+							return nil
+						}
+
+						return err
+					}
+
+					cache.Issues[num] = isOpen
 				}
 
-				if !iCache.Issues[iNum] {
-					message := fmt.Sprintf("invalid TODO: linked issue %s is closed", iNum)
+				if !cache.Issues[num] {
+					message := fmt.Sprintf("invalid TODO: linked issue %s is closed", num)
 					pass.Reportf(c.Pos(), message)
 				}
 			}
 		}
 	}
 
-	if len(iCache.Issues) > 0 {
-		jsonb, err := json.Marshal(iCache)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		_, err = cf.WriteAt(jsonb, 0)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	return nil, nil
+	return nil
 }
 
 // isIssueOpen returns true if issue is open and false otherwise.
-func isIssueOpen(client *github.Client, n int) (bool, error) {
-	issue, _, err := client.Issues.Get(context.TODO(), "FerretDB", "FerretDB", n)
-	// if error is RateLimitError and token is not set propmt user to provide GITHUB_TOKEN
-	// else consider issue open
+func isIssueOpen(client *github.Client, number int) (bool, error) {
+	issue, _, err := client.Issues.Get(context.TODO(), "FerretDB", "FerretDB", number)
 	if err != nil {
-		if errors.As(err, new(*github.RateLimitError)) && os.Getenv("GITHUB_TOKEN") == "" {
-			log.Println(
-				"Rate limit reached. Please set a GITHUB_TOKEN as described at",
-				"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token",
-			)
-
-			return false, err
-		}
-
-		return true, nil
+		return false, err
 	}
 
-	isOpen := issue.GetState() == "open"
-
-	return isOpen, nil
+	return issue.GetState() == "open", nil
 }
 
 // getCacheFilePath returns the path to the cache file.
