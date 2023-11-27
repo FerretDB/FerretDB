@@ -22,7 +22,6 @@ import (
 	"slices"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -109,10 +108,11 @@ type QueryResult struct {
 // It also can be used to close the returned iterator and free underlying resources,
 // but doing so is not necessary - the handler will do that anyway.
 //
-// TODO https://github.com/FerretDB/FerretDB/issues/3742
 // The QueryResult's Sorted field is set to true if the backend applied the whole requested sorting.
 // If it was applied only partially or not at all, that field should be set to false.
 // In that case, the handler will perform sorting itself.
+//
+// Passed sort document should be already validated. If sort document is invalid, function panics.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -141,9 +141,7 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 				return nil, lazyerrors.Error(err)
 			}
 
-			if err := validateSort(k, v); err != nil {
-				return nil, err
-			}
+			validateSort(k, v)
 		}
 	}
 
@@ -153,7 +151,7 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 	return res, err
 }
 
-func validateSort(key string, value any) error {
+func validateSort(key string, value any) {
 	sortValue, err := commonparams.GetWholeNumberParam(value)
 	switch {
 	case err == nil:
@@ -163,30 +161,16 @@ func validateSort(key string, value any) error {
 			value = "null"
 		}
 
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrSortBadValue,
-			fmt.Sprintf(`Illegal key in $sort specification: %v: %v`, key, value),
-			"$sort",
-		)
+		panic(fmt.Sprintf(`Illegal key in $sort specification: %v: %v`, key, value))
 	case errors.Is(err, commonparams.ErrNotWholeNumber):
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrSortBadOrder,
-			"$sort key ordering must be 1 (for ascending) or -1 (for descending)",
-			"$sort",
-		)
+		panic("$sort key ordering must be 1 (for ascending) or -1 (for descending)")
 	default:
-		return err
+		panic(err)
 	}
 
 	if sortValue != -1 || sortValue != 1 {
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrSortBadOrder,
-			"$sort key ordering must be 1 (for ascending) or -1 (for descending)",
-			"$sort",
-		)
+		panic("$sort key ordering must be 1 (for ascending) or -1 (for descending)")
 	}
-
-	return nil
 }
 
 // ExplainParams represents the parameters of Collection.Explain method.
