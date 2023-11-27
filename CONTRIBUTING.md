@@ -163,17 +163,15 @@ The `internal` subpackages contain most of the FerretDB code:
 - `bson` package provides converters from/to BSON for built-in and `types` types.
 - `wire` package provides wire protocol implementation.
 - `clientconn` package provides client connection implementation.
-  It accepts client connections, reads `wire`/`bson` protocol messages, and passes them to `handlers`.
+  It accepts client connections, reads `wire`/`bson` protocol messages, and passes them to `handler`.
   Responses are then converted to `wire`/`bson` messages and sent back to the client.
-- `handlers` contains a common interface for backend handlers that they should implement.
-  Handlers use `types` and `wire` packages, but `bson` package details are hidden.
-- `handlers/common` contains code shared by different handlers.
-- `handlers/sjson` provides converters from/to SJSON for built-in and `types` types.
+- `handler` contains a universal handler implementation for all backends.
+  Handler uses `types` and `wire` packages, but `bson` package details are hidden.
+- `handler/common` contains code used to be shared by different handlers, now used by the common handler only.
+- `handler/sjson` provides converters from/to SJSON for built-in and `types` types.
   SJSON adds some extensions to JSON for keeping object keys in order,
   preserving BSON type information in the values themselves, etc.
   It is used by backends and old `pg` handler.
-- `handlers/sqlite` contains the implementation of the SQLite handler.
-  It is being converted into universal handler for all backends.
 
 #### Running tests
 
