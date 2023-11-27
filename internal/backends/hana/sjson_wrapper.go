@@ -17,7 +17,7 @@ package hana
 import (
 	"regexp"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
