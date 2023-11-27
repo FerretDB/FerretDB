@@ -112,23 +112,13 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		qp.Filter = params.Filter
 	}
 
+	if err := common.ValidateSortDocument(params.Sort); err != nil {
+		return nil, err
+	}
+
 	// Skip sorting if there are more than one sort parameters
-	// TODO https://github.com/FerretDB/FerretDB/issues/3742
 	if h.EnableUnsafeSortPushdown && params.Sort.Len() == 1 {
-		var order types.SortType
-
-		k := params.Sort.Keys()[0]
-		v := params.Sort.Values()[0]
-
-		order, err = common.GetSortType(k, v)
-		if err != nil {
-			return nil, err
-		}
-
-		qp.Sort = &backends.SortField{
-			Key:        k,
-			Descending: order == types.Descending,
-		}
+		qp.Sort = params.Sort
 	}
 
 	// Limit pushdown is not applied if:
