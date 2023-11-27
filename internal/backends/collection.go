@@ -151,6 +151,7 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 	return res, err
 }
 
+// TODO
 func validateSort(key string, value any) {
 	sortValue, err := commonparams.GetWholeNumberParam(value)
 	switch {
@@ -193,11 +194,41 @@ type ExplainResult struct {
 // Database or collection may not exist; that's not an error, it still
 // returns the ExplainResult with QueryPlanner.
 //
-// TODO https://github.com/FerretDB/FerretDB/issues/3742
 // The ExplainResult's SortPushdown field is set to true if the backend could have applied the whole requested sorting.
 // If it was possible to apply it only partially or not at all, that field should be set to false.
+//
+// Passed sort document should be already validated. If sort document is invalid, function panics.
 func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams) (*ExplainResult, error) {
 	defer observability.FuncCall(ctx)()
+
+	if params == nil {
+		params = new(ExplainParams)
+	}
+
+	switch {
+	case params.Sort == nil:
+		break
+
+	case params.Sort.Len() == 0:
+		params.Sort = nil
+
+	default:
+		iter := params.Sort.Iterator()
+		defer iter.Close()
+
+		for {
+			k, v, err := iter.Next()
+			if err != nil {
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
+
+				return nil, lazyerrors.Error(err)
+			}
+
+			validateSort(k, v)
+		}
+	}
 
 	res, err := cc.c.Explain(ctx, params)
 	checkError(err)
