@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package common provides common code for all handlers.
+// Package common contains code used to be shared by different handlers.
+//
+// It should eventually be moved to the parent package or split into multiple smaller packages.
 package common
 
 const (
