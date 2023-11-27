@@ -13,6 +13,14 @@
 // limitations under the License.
 
 // Package cursor provides access to cursor registry.
+//
+// The implementation of the cursor and registry is quite complicated and entangled.
+// That's because there are many cases when cursor / iterator / underlying database connection
+// must be closed to free resources, including when no handler and backend code is running;
+// for example, when the client disconnects between `getMore` commands.
+// At the same time, we want to shift complexity away from the handler and from backend implementations
+// because they are already quite complex.
+// The current design enables ease of use at the expense of the implementation complexity.
 package cursor
 
 import (
@@ -22,14 +30,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
-
-// The implementation of the cursor and registry is quite complicated and entangled.
-// That's because there are many cases when cursor / iterator / underlying database connection
-// must be closed to free resources, including when no handler and backend code is running;
-// for example, when the client disconnects between `getMore` commands.
-// At the same time, we want to shift complexity away from the handler and from backend implementations
-// because they are already quite complex.
-// The current design enables ease of use at the expense of the implementation complexity.
 
 // Cursor allows clients to iterate over a result set.
 //
