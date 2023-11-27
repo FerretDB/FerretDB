@@ -36,6 +36,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/typeutil"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -109,10 +110,10 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	// cannot use other existing commonparams function, they return different error codes
-	maxTimeMS, err := commonparams.GetWholeNumberParam(v)
+	maxTimeMS, err := typeutil.GetWholeNumberParam(v)
 	if err != nil {
 		switch {
-		case errors.Is(err, commonparams.ErrUnexpectedType):
+		case errors.Is(err, typeutil.ErrUnexpectedType):
 			if _, ok = v.(types.NullType); ok {
 				return nil, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrBadValue,
@@ -129,19 +130,19 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 				),
 				document.Command(),
 			)
-		case errors.Is(err, commonparams.ErrNotWholeNumber):
+		case errors.Is(err, typeutil.ErrNotWholeNumber):
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
 				"maxTimeMS has non-integral value",
 				document.Command(),
 			)
-		case errors.Is(err, commonparams.ErrLongExceededPositive):
+		case errors.Is(err, typeutil.ErrLongExceededPositive):
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf("%s value for maxTimeMS is out of range", types.FormatAnyValue(v)),
 				document.Command(),
 			)
-		case errors.Is(err, commonparams.ErrLongExceededNegative):
+		case errors.Is(err, typeutil.ErrLongExceededNegative):
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrValueNegative,
 				fmt.Sprintf("BSON field 'maxTimeMS' value must be >= 0, actual value '%s'", types.FormatAnyValue(v)),

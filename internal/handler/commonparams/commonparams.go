@@ -24,54 +24,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/typeutil"
 )
-
-var (
-	// ErrNotWholeNumber is returned when a non-whole number is given.
-	ErrNotWholeNumber = fmt.Errorf("not a whole number")
-	// ErrUnexpectedLeftOpType is returned when an unexpected left operand type is given.
-	ErrUnexpectedLeftOpType = fmt.Errorf("unexpected left operand type")
-	// ErrUnexpectedRightOpType is returned when an unexpected right operand type is given.
-	ErrUnexpectedRightOpType = fmt.Errorf("unexpected right operand type")
-	// ErrLongExceededPositive is returned when a positive long value is given that exceeds the maximum value.
-	ErrLongExceededPositive = fmt.Errorf("long exceeded - positive value")
-	// ErrLongExceededNegative is returned when a negative long value is given that exceeds the minimum value.
-	ErrLongExceededNegative = fmt.Errorf("long exceeded - negative value")
-	// ErrIntExceeded is returned when an int value is given that exceeds the maximum value.
-	ErrIntExceeded = fmt.Errorf("int exceeded")
-	// ErrInfinity is returned when an infinity value is given.
-	ErrInfinity = fmt.Errorf("infinity")
-	// ErrUnexpectedType is returned when an unexpected type is given.
-	ErrUnexpectedType = fmt.Errorf("unexpected type")
-)
-
-// GetWholeNumberParam checks if the given value is int32, int64, or float64 containing a whole number,
-// such as used in the limit, $size, etc.
-func GetWholeNumberParam(value any) (int64, error) {
-	switch value := value.(type) {
-	// add string support
-	// TODO https://github.com/FerretDB/FerretDB/issues/1089
-	case float64:
-		switch {
-		case math.IsInf(value, 1):
-			return 0, ErrInfinity
-		case value > float64(math.MaxInt64):
-			return 0, ErrLongExceededPositive
-		case value < float64(math.MinInt64):
-			return 0, ErrLongExceededNegative
-		case value != math.Trunc(value):
-			return 0, ErrNotWholeNumber
-		}
-
-		return int64(value), nil
-	case int32:
-		return int64(value), nil
-	case int64:
-		return value, nil
-	default:
-		return 0, ErrUnexpectedType
-	}
-}
 
 // GetValidatedNumberParamWithMinValue converts and validates a value into a number.
 //
@@ -82,11 +36,12 @@ func GetWholeNumberParam(value any) (int64, error) {
 // Error codes list:
 // - ErrTypeMismatch - if the value is not a number;
 // - ErrValueNegative - if the value is negative of lower than the minimum value.
+// TODO
 func GetValidatedNumberParamWithMinValue(command string, param string, value any, minValue int32) (int64, error) {
-	whole, err := GetWholeNumberParam(value)
+	whole, err := typeutil.GetWholeNumberParam(value)
 	if err != nil {
 		switch {
-		case errors.Is(err, ErrUnexpectedType):
+		case errors.Is(err, typeutil.ErrUnexpectedType):
 			if _, ok := value.(types.NullType); ok {
 				return int64(minValue), nil
 			}
@@ -99,7 +54,7 @@ func GetValidatedNumberParamWithMinValue(command string, param string, value any
 				),
 				command,
 			)
-		case errors.Is(err, ErrNotWholeNumber):
+		case errors.Is(err, typeutil.ErrNotWholeNumber):
 			if math.Signbit(value.(float64)) {
 				return 0, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrValueNegative,
@@ -114,10 +69,10 @@ func GetValidatedNumberParamWithMinValue(command string, param string, value any
 			// for non-integer numbers, value is rounded to the greatest integer value less than the given value.
 			return int64(math.Floor(value.(float64))), nil
 
-		case errors.Is(err, ErrLongExceededPositive):
+		case errors.Is(err, typeutil.ErrLongExceededPositive):
 			return math.MaxInt32, nil
 
-		case errors.Is(err, ErrLongExceededNegative):
+		case errors.Is(err, typeutil.ErrLongExceededNegative):
 			return 0, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrValueNegative,
 				fmt.Sprintf(
@@ -148,17 +103,18 @@ func GetValidatedNumberParamWithMinValue(command string, param string, value any
 }
 
 // getOptionalPositiveNumber returns doc's value for key or protocol error for invalid parameter.
+// TODO
 func getOptionalPositiveNumber(key string, value any) (int64, error) {
-	whole, err := GetWholeNumberParam(value)
+	whole, err := typeutil.GetWholeNumberParam(value)
 	if err != nil {
 		switch {
-		case errors.Is(err, ErrUnexpectedType):
+		case errors.Is(err, typeutil.ErrUnexpectedType):
 			return 0, commonerrors.NewCommandErrorMsgWithArgument(
 				commonerrors.ErrBadValue,
 				fmt.Sprintf("%s must be a number", key),
 				key,
 			)
-		case errors.Is(err, ErrNotWholeNumber):
+		case errors.Is(err, typeutil.ErrNotWholeNumber):
 			if _, ok := value.(float64); ok {
 				return 0, commonerrors.NewCommandErrorMsgWithArgument(
 					commonerrors.ErrBadValue,
@@ -200,6 +156,7 @@ func getOptionalPositiveNumber(key string, value any) (int64, error) {
 // Non-zero double, long, and int values return true.
 // Zero values for those types, as well as nulls and missing fields, return false.
 // Other types return a protocol error.
+// TODO
 func GetBoolOptionalParam(key string, v any) (bool, error) {
 	switch v := v.(type) {
 	case float64:
