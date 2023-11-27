@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
@@ -66,4 +67,18 @@ func prepareOrderByClause(sort *types.Document, capped bool) (string, error) {
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3181
 	return "", nil
+}
+
+// prepareExplainOrderByClause returns ORDER BY clause.
+//
+// For capped collection, it returns ORDER BY recordID only if sort field is nil.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3742
+func prepareExplainOrderByClause(sort *backends.SortField, capped bool) string {
+	if sort == nil && capped {
+		return fmt.Sprintf(` ORDER BY %s`, metadata.RecordIDColumn)
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3181
+	return ""
 }
