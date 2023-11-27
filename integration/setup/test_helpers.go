@@ -85,8 +85,3 @@ func SkipForMongoDB(tb testtb.TB, reason string) {
 func FilterPushdownDisabled() bool {
 	return *disableFilterPushdownF
 }
-
-// UnsafeSortPushdownEnabled returns true if unsafe sort pushdown is enabled.
-func UnsafeSortPushdownEnabled() bool {
-	return *enableUnsafeSortPushdownF
-}

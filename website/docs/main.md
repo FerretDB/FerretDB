@@ -40,4 +40,4 @@ and [contributing guidelines](https://github.com/FerretDB/FerretDB/blob/main/CON
 - [Open Office House meeting](https://calendar.google.com/event?action=TEMPLATE&tmeid=NjNkdTkyN3VoNW5zdHRiaHZybXFtb2l1OWtfMjAyMTEyMTNUMTgwMDAwWiBjX24zN3RxdW9yZWlsOWIwMm0wNzQwMDA3MjQ0QGc&tmsrc=c_n37tquoreil9b02m0740007244%40group.calendar.google.com&scp=ALL)
   every Monday at 18:00 UTC at [Google Meet](https://meet.google.com/mcb-arhw-qbq).
 
-If you want to contact FerretDB Inc., please use [this form](https://www.ferretdb.io/contact/).
+If you want to contact FerretDB Inc., please use [this form](https://www.ferretdb.com/contact/).
