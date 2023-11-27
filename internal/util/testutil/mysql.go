@@ -50,6 +50,13 @@ func TestMySQLURI(tb testtb.TB, ctx context.Context, baseURI string) string {
 
 	password, _ := u.User.Password()
 
+	values := u.Query()
+	params := make(map[string]string, len(values))
+
+	for k := range values {
+		params[k] = values.Get(k)
+	}
+
 	// mysql url requires a specified format to work
 	// For example: username:password@tcp(127.0.0.1:3306)/ferretdb
 	cfg := &mysql.Config{
@@ -57,6 +64,7 @@ func TestMySQLURI(tb testtb.TB, ctx context.Context, baseURI string) string {
 		Passwd: password,
 		Addr:   u.Host,
 		DBName: u.Path,
+		Params: params,
 	}
 	mysqlURL := cfg.FormatDSN()
 
