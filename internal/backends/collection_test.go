@@ -119,8 +119,9 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 
 				t.Parallel()
 
-				sort := backends.SortField{Key: "_id"}
-				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{Sort: &sort})
+				sort := must.NotFail(types.NewDocument("_id", int32(1)))
+
+				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{Sort: sort})
 				require.NoError(t, err)
 
 				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
@@ -129,7 +130,11 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				testutil.AssertEqualSlices(t, expectedDocs, docs)
 				assertEqualRecordID(t, expectedDocs, docs)
 
-				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &sort})
+				// TODO https://github.com/FerretDB/FerretDB/issues/3742
+				explainSort := backends.SortField{Key: "_id"}
+
+				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &explainSort})
+
 				require.NoError(t, err)
 				assert.True(t, explainRes.SortPushdown)
 			})
@@ -141,8 +146,9 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 
 				t.Parallel()
 
-				sort := backends.SortField{Key: "_id", Descending: true}
-				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{Sort: &sort})
+				sort := must.NotFail(types.NewDocument("_id", int32(-1)))
+
+				queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{Sort: sort})
 				require.NoError(t, err)
 
 				docs, err := iterator.ConsumeValues[struct{}, *types.Document](queryRes.Iter)
@@ -151,7 +157,10 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				testutil.AssertEqualSlices(t, expectedDocs, docs)
 				assertEqualRecordID(t, expectedDocs, docs)
 
-				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &sort})
+				// TODO https://github.com/FerretDB/FerretDB/issues/3742
+				explainSort := backends.SortField{Key: "_id", Descending: true}
+
+				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &explainSort})
 				require.NoError(t, err)
 				assert.True(t, explainRes.SortPushdown)
 			})

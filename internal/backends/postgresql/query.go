@@ -234,19 +234,39 @@ var ErrSortPushdownNotFullyApplied = errors.New("Sort pushdown wasn't fully appl
 // If pushdown wasn't fully applied to all sort fields, or wasn't applied at all, it returns
 // ErrSortPushdownNotFullyApplied error.
 //
-// The providded sort document should be already validated.
+// The provided sort document should be already validated.
 //
 // For capped collection, it returns ORDER BY recordID only if sort document is empty.
+// For more than one sort fields, it sorts only by the first key provided.
 func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document, capped bool) (string, []any, error) {
-	if sort.Len() != 0 {
+	if sort.Len() == 0 {
+		if capped {
+			return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil, nil
+		}
+
+		return "", nil, nil
+	}
+
+	k := sort.Keys()[0]
+	v := sort.Values()[0].(int64)
+
+	// Skip sorting dot notation
+	if strings.ContainsRune(sort.Keys()[0], '.') {
 		return "", nil, ErrSortPushdownNotFullyApplied
 	}
 
-	if capped {
-		return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil, nil
+	var err error
+	if sort.Len() > 1 {
+		err = ErrSortPushdownNotFullyApplied
 	}
 
-	return "", nil, ErrSortPushdownNotFullyApplied
+	var order string
+
+	if v == -1 {
+		order = " DESC"
+	}
+
+	return fmt.Sprintf(" ORDER BY %s->%s%s", metadata.DefaultColumn, p.Next(), order), []any{k}, err
 }
 
 // prepareExplainOrderByClause returns ORDER BY clause.

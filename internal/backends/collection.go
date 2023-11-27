@@ -171,7 +171,7 @@ func validateSort(key string, value any) {
 		panic(err)
 	}
 
-	if sortValue != -1 || sortValue != 1 {
+	if sortValue != -1 && sortValue != 1 {
 		panic("$sort key ordering must be 1 (for ascending) or -1 (for descending)")
 	}
 }
