@@ -101,9 +101,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	switch {
 	case err == nil:
-		if sort != "" {
-			fullySorted = true
-		}
+		fullySorted = sort != ""
 	case errors.Is(err, ErrSortPushdownNotFullyApplied):
 		fullySorted = false
 	default:
