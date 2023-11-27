@@ -22,6 +22,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
+	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -246,6 +247,34 @@ func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document, capped 
 	}
 
 	return "", nil, ErrSortPushdownNotFullyApplied
+}
+
+// prepareExplainOrderByClause returns ORDER BY clause.
+//
+// For capped collection, it returns ORDER BY recordID only if sort field is nil.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3742
+// Deprecated: Please use prepareOrderByClause instead.
+func prepareExplainOrderByClause(p *metadata.Placeholder, sort *backends.SortField, capped bool) (string, []any) {
+	if sort == nil {
+		if capped {
+			return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil
+		}
+
+		return "", nil
+	}
+
+	// Skip sorting dot notation
+	if strings.ContainsRune(sort.Key, '.') {
+		return "", nil
+	}
+
+	var order string
+	if sort.Descending {
+		order = " DESC"
+	}
+
+	return fmt.Sprintf(" ORDER BY %s->%s%s", metadata.DefaultColumn, p.Next(), order), []any{sort.Key}
 }
 
 // filterEqual returns the proper SQL filter with arguments that filters documents
