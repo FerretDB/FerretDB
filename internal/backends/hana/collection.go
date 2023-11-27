@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
+	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -53,28 +54,21 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		return nil, lazyerrors.Error(err)
 	}
 
-	var args []any
+	selectClause := prepareSelectClause(c.schema, c.table)
 
-	selectClause, selectArgs := prepareSelectClause(c.schema, c.table)
-	args = append(args, selectArgs...)
-
-	whereClause, whereArgs, err := prepareWhereClause(params.Filter)
+	whereClause, err := prepareWhereClause(params.Filter)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	sql := selectClause + whereClause
-	args = append(args, whereArgs...)
 
-	orderByClause, orderByArgs, err := prepareOrderByClause(params.Sort)
+	orderByClause, err := prepareOrderByClause(params.Sort)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	sql += orderByClause
-	args = append(args, orderByArgs...)
-
-	sql = fmt.Sprintf(sql, args...)
 
 	rows, err := c.hdb.QueryContext(ctx, sql)
 	if err != nil {
@@ -117,9 +111,10 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 
 // UpdateAll implements backends.Collection interface.
 func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllParams) (*backends.UpdateAllResult, error) {
+	var res backends.UpdateAllResult
 	s, err := SchemaExists(ctx, c.hdb, c.schema)
 	if !s {
-		return nil, lazyerrors.Errorf("Schema %q does not exist!", c.schema)
+		return &res, nil
 	}
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -127,7 +122,7 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 
 	col, err := CollectionExists(ctx, c.hdb, c.schema, c.table)
 	if !col {
-		return nil, lazyerrors.Errorf("Collection %q.%q does not exist!", c.schema, c.table)
+		return &res, nil
 	}
 	if err != nil {
 		return nil, lazyerrors.Error(err)
@@ -145,18 +140,60 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 		must.NotBeZero(id)
 
 		line := fmt.Sprintf(updateSql, c.schema, c.table, c.table, jsonBytes, id)
-		_, err = c.hdb.ExecContext(ctx, line)
+		execResult, err := c.hdb.ExecContext(ctx, line)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
+
+		numRows, err := execResult.RowsAffected()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res.Updated += int32(numRows)
 	}
 
-	return nil, lazyerrors.New("not implemented yet")
+	return &res, nil
 }
 
 // DeleteAll implements backends.Collection interface.
 func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllParams) (*backends.DeleteAllResult, error) {
-	return nil, lazyerrors.New("not implemented yet")
+	var res backends.DeleteAllResult
+	s, err := SchemaExists(ctx, c.hdb, c.schema)
+	if !s {
+		return &res, nil
+	}
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	col, err := CollectionExists(ctx, c.hdb, c.schema, c.table)
+	if !col {
+		return &res, nil
+	}
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	deleteSql := "DELETE FROM %q.%q WHERE \"_id\" = '%s'"
+
+	for _, id := range params.IDs {
+		idString := string(must.NotFail(sjson.MarshalSingleValue(id)))
+		line := fmt.Sprintf(deleteSql, c.schema, c.table, idString)
+		execResult, err := c.hdb.ExecContext(ctx, line)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		numRows, err := execResult.RowsAffected()
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+
+		res.Deleted += int32(numRows)
+	}
+
+	return &res, nil
 }
 
 // Explain implements backends.Collection interface.
@@ -166,7 +203,30 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 // Stats implements backends.Collection interface.
 func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
-	return nil, lazyerrors.New("not implemented yet")
+	var res backends.CollectionStatsResult
+	s, err := SchemaExists(ctx, c.hdb, c.schema)
+	if !s {
+		return nil, backends.NewError(
+			backends.ErrorCodeDatabaseDoesNotExist,
+			lazyerrors.Errorf("No database (schema) with name %q", c.schema))
+	}
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	col, err := CollectionExists(ctx, c.hdb, c.schema, c.table)
+	if !col {
+		return nil, backends.NewError(
+			backends.ErrorCodeCollectionDoesNotExist,
+			lazyerrors.Errorf("No collection with name %q.%q", c.schema, c.table))
+	}
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// TODO: Fill out collection stats
+
+	return &res, nil
 }
 
 // Compact implements backends.Collection interface.
