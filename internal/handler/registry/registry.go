@@ -39,7 +39,7 @@ var registry = map[string]newHandlerFunc{}
 
 // NewHandlerOpts represents configuration for constructing handlers.
 type NewHandlerOpts struct {
-	// for all handlers
+	// for all backends
 	Logger        *zap.Logger
 	ConnMetrics   *connmetrics.ConnMetrics
 	StateProvider *state.Provider

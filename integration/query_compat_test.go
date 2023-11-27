@@ -46,7 +46,7 @@ type queryCompatTestCase struct {
 	resultPushdown resultPushdown           // defaults to noPushdown
 
 	skipIDCheck bool   // skip check collected IDs, use it when no ids returned from query
-	skip        string // skip test for all handlers, must have issue number mentioned
+	skip        string // always skip this test case, must have issue number mentioned
 }
 
 func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, testCases map[string]queryCompatTestCase) {
