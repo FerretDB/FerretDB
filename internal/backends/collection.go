@@ -18,11 +18,9 @@ import (
 	"cmp"
 	"context"
 	"errors"
-	"fmt"
 	"slices"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -127,14 +125,7 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 		params = new(QueryParams)
 	}
 
-	switch {
-	case params.Sort == nil:
-		break
-
-	case params.Sort.Len() == 0:
-		params.Sort = nil
-
-	default:
+	if params.Sort.Len() != 0 {
 		iter := params.Sort.Iterator()
 		defer iter.Close()
 
@@ -156,32 +147,6 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 	checkError(err)
 
 	return res, err
-}
-
-// validateSort validates if provided key and value are correct parts of the sort document.
-// If they're not, it panics, thus the proper validation with error handling should be done
-// properly on the handler level.
-func validateSort(key string, value any) {
-	sortValue, err := commonparams.GetWholeNumberParam(value)
-
-	switch {
-	case err == nil:
-		break
-	case errors.Is(err, commonparams.ErrUnexpectedType):
-		if _, ok := value.(types.NullType); ok {
-			value = "null"
-		}
-
-		panic(fmt.Sprintf(`Illegal key in $sort specification: %v: %v`, key, value))
-	case errors.Is(err, commonparams.ErrNotWholeNumber):
-		panic("$sort key ordering must be 1 (for ascending) or -1 (for descending)")
-	default:
-		panic(err)
-	}
-
-	if sortValue != -1 && sortValue != 1 {
-		panic("$sort key ordering must be 1 (for ascending) or -1 (for descending)")
-	}
 }
 
 // ExplainParams represents the parameters of Collection.Explain method.

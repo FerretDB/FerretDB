@@ -45,6 +45,10 @@ var (
 	ErrUnexpectedType = fmt.Errorf("unexpected type")
 )
 
+// IDEA: Move all functions like GetWholeNumberParam, which don't extract parameters from document, but
+// rather handle type checking and conversion into the new internal/util/xxx subpackage.
+// That will enable backends to parse provided documents.
+
 // GetWholeNumberParam checks if the given value is int32, int64, or float64 containing a whole number,
 // such as used in the limit, $size, etc.
 func GetWholeNumberParam(value any) (int64, error) {
