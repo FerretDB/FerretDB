@@ -179,7 +179,7 @@ func validateSort(key string, value any) {
 // ExplainParams represents the parameters of Collection.Explain method.
 type ExplainParams struct {
 	Filter *types.Document
-	Sort   *types.Document
+	Sort   *SortField
 	Limit  int64
 }
 

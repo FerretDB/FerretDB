@@ -337,7 +337,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	q += where
 
-	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
+	sort, sortArgs := prepareExplainOrderByClause(&placeholder, params.Sort, meta.Capped())
 	q += sort
 	args = append(args, sortArgs...)
 	res.SortPushdown = sort != ""

@@ -287,7 +287,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}
 	}
 
-	orderByClause, err := prepareOrderByClause(params.Sort, meta.Capped())
+	orderByClause := prepareExplainOrderByClause(params.Sort, meta.Capped())
 	sortPushdown := orderByClause != ""
 
 	q := `EXPLAIN QUERY PLAN ` + selectClause + whereClause + orderByClause
