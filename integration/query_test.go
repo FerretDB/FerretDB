@@ -821,10 +821,10 @@ func TestQueryCommandSingleBatch(t *testing.T) {
 	}
 }
 
-func TestQueryCommandUnsafeLimitPushDown(t *testing.T) {
+func TestQueryCommandLimitPushDown(t *testing.T) {
 	t.Parallel()
 
-	// must use a collection of documents which does not support query pushdown to test limit pushdown
+	// must use a collection of documents which does not support filter pushdown to test limit pushdown
 	s := setup.SetupWithOpts(t, &setup.SetupOpts{Providers: []shareddata.Provider{shareddata.Composites}})
 	ctx, collection := s.Ctx, s.Collection
 
@@ -834,117 +834,117 @@ func TestQueryCommandUnsafeLimitPushDown(t *testing.T) {
 		sort    bson.D // optional, nil to leave sort unset
 		optSkip *int64 // optional, nil to leave optSkip unset
 
-		len                 int                 // expected length of results
-		queryPushdown       resultPushdown      // optional, defaults to noPushdown
-		unsafeLimitPushdown bool                // optional, set true for expected pushdown for limit
-		err                 *mongo.CommandError // optional, expected error from MongoDB
-		altMessage          string              // optional, alternative error message for FerretDB, ignored if empty
-		skip                string              // optional, skip test with a specified reason
-		failsForSQLite      string              // optional, if set, the case is expected to fail for SQLite due to given issue
+		len            int                 // expected length of results
+		filterPushdown resultPushdown      // optional, defaults to noPushdown
+		limitPushdown  resultPushdown      // optional, defaults to noPushdown
+		err            *mongo.CommandError // optional, expected error from MongoDB
+		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
+		skip           string              // optional, skip test with a specified reason
+		failsForSQLite string              // optional, if set, the case is expected to fail for SQLite due to given issue
 	}{
 		"Simple": {
-			limit:               1,
-			len:                 1,
-			unsafeLimitPushdown: true,
+			limit:         1,
+			len:           1,
+			limitPushdown: allPushdown,
 		},
 		"AlmostAll": {
-			limit:               int64(len(shareddata.Composites.Docs()) - 1),
-			len:                 len(shareddata.Composites.Docs()) - 1,
-			unsafeLimitPushdown: true,
+			limit:         int64(len(shareddata.Composites.Docs()) - 1),
+			len:           len(shareddata.Composites.Docs()) - 1,
+			limitPushdown: allPushdown,
 		},
 		"All": {
-			limit:               int64(len(shareddata.Composites.Docs())),
-			len:                 len(shareddata.Composites.Docs()),
-			unsafeLimitPushdown: true,
+			limit:         int64(len(shareddata.Composites.Docs())),
+			len:           len(shareddata.Composites.Docs()),
+			limitPushdown: allPushdown,
 		},
 		"More": {
-			limit:               int64(len(shareddata.Composites.Docs()) + 1),
-			len:                 len(shareddata.Composites.Docs()),
-			unsafeLimitPushdown: true,
+			limit:         int64(len(shareddata.Composites.Docs()) + 1),
+			len:           len(shareddata.Composites.Docs()),
+			limitPushdown: allPushdown,
 		},
 		"Big": {
-			limit:               1000,
-			len:                 len(shareddata.Composites.Docs()),
-			unsafeLimitPushdown: true,
+			limit:         1000,
+			len:           len(shareddata.Composites.Docs()),
+			limitPushdown: allPushdown,
 		},
 		"Zero": {
-			limit:               0,
-			len:                 len(shareddata.Composites.Docs()),
-			unsafeLimitPushdown: false,
+			limit:         0,
+			len:           len(shareddata.Composites.Docs()),
+			limitPushdown: noPushdown,
 		},
 		"IDFilter": {
-			filter:              bson.D{{"_id", "array"}},
-			limit:               3,
-			len:                 1,
-			queryPushdown:       allPushdown,
-			unsafeLimitPushdown: false,
+			filter:         bson.D{{"_id", "array"}},
+			limit:          3,
+			len:            1,
+			filterPushdown: allPushdown,
+			limitPushdown:  noPushdown,
 		},
 		"ValueFilter": {
-			filter:              bson.D{{"v", 42}},
-			sort:                bson.D{{"_id", 1}},
-			limit:               3,
-			len:                 3,
-			queryPushdown:       pgPushdown,
-			unsafeLimitPushdown: false,
+			filter:         bson.D{{"v", 42}},
+			sort:           bson.D{{"_id", 1}},
+			limit:          3,
+			len:            3,
+			filterPushdown: pgPushdown,
+			limitPushdown:  noPushdown,
 		},
 		"DotNotationFilter": {
-			filter:              bson.D{{"v.foo", 42}},
-			limit:               3,
-			len:                 3,
-			queryPushdown:       noPushdown,
-			unsafeLimitPushdown: false,
+			filter:         bson.D{{"v.foo", 42}},
+			limit:          3,
+			len:            3,
+			filterPushdown: noPushdown,
+			limitPushdown:  noPushdown,
 		},
 		"ObjectFilter": {
-			filter:              bson.D{{"v", bson.D{{"foo", nil}}}},
-			limit:               3,
-			len:                 1,
-			queryPushdown:       noPushdown,
-			unsafeLimitPushdown: false,
+			filter:         bson.D{{"v", bson.D{{"foo", nil}}}},
+			limit:          3,
+			len:            1,
+			filterPushdown: noPushdown,
+			limitPushdown:  noPushdown,
 		},
 		"Sort": {
-			sort:                bson.D{{"_id", 1}},
-			limit:               2,
-			len:                 2,
-			queryPushdown:       noPushdown,
-			unsafeLimitPushdown: true,
+			sort:           bson.D{{"_id", 1}},
+			limit:          2,
+			len:            2,
+			filterPushdown: noPushdown,
+			limitPushdown:  noPushdown,
 		},
 		"IDFilterSort": {
-			filter:              bson.D{{"_id", "array"}},
-			sort:                bson.D{{"_id", 1}},
-			limit:               3,
-			len:                 1,
-			queryPushdown:       allPushdown,
-			unsafeLimitPushdown: false,
+			filter:         bson.D{{"_id", "array"}},
+			sort:           bson.D{{"_id", 1}},
+			limit:          3,
+			len:            1,
+			filterPushdown: allPushdown,
+			limitPushdown:  noPushdown,
 		},
 		"ValueFilterSort": {
-			filter:              bson.D{{"v", 42}},
-			sort:                bson.D{{"_id", 1}},
-			limit:               3,
-			len:                 3,
-			queryPushdown:       pgPushdown,
-			unsafeLimitPushdown: false,
+			filter:         bson.D{{"v", 42}},
+			sort:           bson.D{{"_id", 1}},
+			limit:          3,
+			len:            3,
+			filterPushdown: pgPushdown,
+			limitPushdown:  noPushdown,
 		},
 		"DotNotationFilterSort": {
-			filter:              bson.D{{"v.foo", 42}},
-			sort:                bson.D{{"_id", 1}},
-			limit:               3,
-			len:                 3,
-			queryPushdown:       noPushdown,
-			unsafeLimitPushdown: false,
+			filter:         bson.D{{"v.foo", 42}},
+			sort:           bson.D{{"_id", 1}},
+			limit:          3,
+			len:            3,
+			filterPushdown: noPushdown,
+			limitPushdown:  noPushdown,
 		},
 		"ObjectFilterSort": {
-			filter:              bson.D{{"v", bson.D{{"foo", nil}}}},
-			sort:                bson.D{{"_id", 1}},
-			limit:               3,
-			len:                 1,
-			queryPushdown:       noPushdown,
-			unsafeLimitPushdown: false,
+			filter:         bson.D{{"v", bson.D{{"foo", nil}}}},
+			sort:           bson.D{{"_id", 1}},
+			limit:          3,
+			len:            1,
+			filterPushdown: noPushdown,
+			limitPushdown:  noPushdown,
 		},
 		"Skip": {
-			optSkip:             pointer.ToInt64(1),
-			limit:               2,
-			len:                 2,
-			unsafeLimitPushdown: false,
+			optSkip:       pointer.ToInt64(1),
+			limit:         2,
+			len:           2,
+			limitPushdown: noPushdown,
 		},
 	} {
 		tc, name := tc, name
@@ -993,26 +993,19 @@ func TestQueryCommandUnsafeLimitPushDown(t *testing.T) {
 
 				assert.NoError(t, err)
 
+				doc := ConvertDocument(t, res)
+				limitPushdown, _ := doc.Get("limitPushdown")
+				assert.Equal(t, tc.limitPushdown.SortPushdownExpected(t), limitPushdown)
+
 				var msg string
 
-				if !setup.UnsafeSortPushdownEnabled() && tc.sort != nil {
-					tc.unsafeLimitPushdown = false
-					msg = "Sort pushdown is disabled, but target resulted with limitPushdown"
-				}
-
-				resultPushdown := tc.queryPushdown
-
 				if setup.FilterPushdownDisabled() {
-					resultPushdown = noPushdown
-					msg = "Query pushdown is disabled, but target resulted with pushdown"
+					tc.filterPushdown = noPushdown
+					msg = "Filter pushdown is disabled, but target resulted with pushdown"
 				}
 
-				doc := ConvertDocument(t, res)
-				unsafeLimitPushdown, _ := doc.Get("limitPushdown")
-				assert.Equal(t, tc.unsafeLimitPushdown, unsafeLimitPushdown, msg)
-
-				queryPushdown, _ := ConvertDocument(t, res).Get("pushdown")
-				assert.Equal(t, resultPushdown.FilterPushdownExpected(t), queryPushdown, msg)
+				filterPushdown, _ := ConvertDocument(t, res).Get("filterPushdown")
+				assert.Equal(t, tc.filterPushdown.FilterPushdownExpected(t), filterPushdown, msg)
 			})
 
 			t.Run("Find", func(t *testing.T) {

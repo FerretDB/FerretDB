@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.21.4-1 AS all-in-one-build
+FROM ghcr.io/ferretdb/golang:1.21.4-2 AS all-in-one-build
 
 ARG TARGETARCH
 
@@ -78,7 +78,7 @@ EOF
 
 # final stage
 
-FROM postgres:16.0 AS all-in-one
+FROM postgres:16.1 AS all-in-one
 
 COPY --from=all-in-one-build /src/bin/ferretdb /ferretdb
 

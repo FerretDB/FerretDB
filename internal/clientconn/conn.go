@@ -36,10 +36,9 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/handlers"
-	"github.com/FerretDB/FerretDB/internal/handlers/commoncommands"
-	"github.com/FerretDB/FerretDB/internal/handlers/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handlers/proxy"
+	"github.com/FerretDB/FerretDB/internal/handler"
+	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/proxy"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -76,7 +75,7 @@ type conn struct {
 	netConn        net.Conn
 	mode           Mode
 	l              *zap.SugaredLogger
-	h              handlers.Interface
+	h              *handler.Handler
 	m              *connmetrics.ConnMetrics
 	proxy          *proxy.Router
 	lastRequestID  atomic.Int32
@@ -88,7 +87,7 @@ type newConnOpts struct {
 	netConn        net.Conn
 	mode           Mode
 	l              *zap.Logger
-	handler        handlers.Interface
+	handler        *handler.Handler
 	connMetrics    *connmetrics.ConnMetrics
 	proxyAddr      string
 	testRecordsDir string // if empty, no records are created
@@ -556,7 +555,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 //
 // The passed context is canceled when the client disconnects.
 func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
-	if cmd, ok := commoncommands.Commands[command]; ok {
+	if cmd, ok := handler.Commands[command]; ok {
 		if cmd.Handler != nil {
 			defer observability.FuncCall(ctx)()
 

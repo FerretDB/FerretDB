@@ -145,6 +145,36 @@ func setupPostgresSecured(ctx context.Context, logger *zap.SugaredLogger) error 
 	return setupAnyPostgres(ctx, logger.Named("postgres_secured"), "postgres://username:password@127.0.0.1:5433/ferretdb")
 }
 
+// setupMySQL configures `mysql` container.
+func setupMySQL(ctx context.Context, logger *zap.SugaredLogger) error {
+	if err := waitForPort(ctx, logger.Named("mysql"), 3306); err != nil {
+		return err
+	}
+
+	// we should replace with backend code similar to setupAnyPostgres
+	eval := "mysql -u root -ppassword -e \"GRANT ALL PRIVILEGES ON *.* TO 'username'@'%';\""
+	args := []string{"compose", "exec", "-T", "mysql", "bash", "-c", eval}
+
+	var buf bytes.Buffer
+	var retry int64
+
+	for ctx.Err() == nil {
+		buf.Reset()
+
+		err := runCommand("docker", args, &buf, logger)
+		if err == nil {
+			break
+		}
+
+		logger.Infof("%s:\n%s", err, buf.String())
+
+		retry++
+		ctxutil.SleepWithJitter(ctx, time.Second, retry)
+	}
+
+	return ctx.Err()
+}
+
 // setupMongodb configures `mongodb` container.
 func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 	if err := waitForPort(ctx, logger.Named("mongodb"), 47017); err != nil {
@@ -186,6 +216,7 @@ func setup(ctx context.Context, logger *zap.SugaredLogger) error {
 	for _, f := range []func(context.Context, *zap.SugaredLogger) error{
 		setupPostgres,
 		setupPostgresSecured,
+		setupMySQL,
 		setupMongodb,
 		setupMongodbSecured,
 	} {

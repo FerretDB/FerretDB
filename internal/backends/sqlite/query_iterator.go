@@ -21,7 +21,7 @@ import (
 	"sync"
 
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -100,7 +100,7 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 		return unused, nil, lazyerrors.Error(err)
 	}
 
-	var recordID types.Timestamp
+	var recordID int64
 	var b []byte
 	var dest []any
 

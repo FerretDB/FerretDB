@@ -23,7 +23,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -100,7 +100,7 @@ func (iter *queryIterator) Next() (struct{}, *types.Document, error) {
 		columns[i] = description.Name
 	}
 
-	var recordID types.Timestamp
+	var recordID int64
 	var b []byte
 	var dest []any
 

@@ -9,7 +9,6 @@ vars:
   SHARD_INDEX: 1
   SHARD_TOTAL: 1
   DISABLE_FILTER_PUSHDOWN: false
-  ENABLE_UNSAFE_SORT_PUSHDOWN: false
   TEST_RUN: ""
   TEST_TIMEOUT: 35m
   BENCH_TIME: 5s
@@ -18,7 +17,7 @@ vars:
   TESTJS_PORT: 27017
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   BUILD_TAGS: ferretdb_debug,ferretdb_hana
-  SERVICES: postgres postgres_secured mongodb mongodb_secured jaeger
+  SERVICES: postgres postgres_secured mysql mongodb mongodb_secured jaeger
 
 tasks:
   # invoked when `task` is run without arguments
@@ -218,7 +217,6 @@ tasks:
         -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
         -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
-        -enable-unsafe-sort-pushdown={{.ENABLE_UNSAFE_SORT_PUSHDOWN}}
 
   test-integration-sqlite:
     desc: "Run integration tests for `sqlite` backend"
@@ -244,7 +242,6 @@ tasks:
         -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
         -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
-        -enable-unsafe-sort-pushdown={{.ENABLE_UNSAFE_SORT_PUSHDOWN}}
 
   test-integration-hana:
     desc: "Run integration tests for `hana` handler"
@@ -270,7 +267,6 @@ tasks:
         -hana-url=$FERRETDB_HANA_URL
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
         -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
-        -enable-unsafe-sort-pushdown={{.ENABLE_UNSAFE_SORT_PUSHDOWN}}
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"
@@ -300,8 +296,8 @@ tasks:
       - go test -list='Benchmark.*' ./...
       - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/bson/           | tee -a new.txt
       - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/bson/           | tee -a new.txt
-      - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/handlers/sjson/ | tee -a new.txt
-      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/handlers/sjson/ | tee -a new.txt
+      - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/handler/sjson/ | tee -a new.txt
+      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/handler/sjson/ | tee -a new.txt
       - bin/benchstat{{exeExt}} old.txt new.txt
 
   # That's not quite correct: https://github.com/golang/go/issues/15513
@@ -316,10 +312,10 @@ tasks:
     cmds:
       - go test -list='Fuzz.*' ./...
       # TODO https://github.com/FerretDB/FerretDB/issues/1273
-      # - go test -run=XXX -fuzz=FuzzArrayWithFixedSchemas      -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      # - go test -run=XXX -fuzz=FuzzArrayWithFixedDocuments    -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      # - go test -run=XXX -fuzz=FuzzDocumentWithFixedSchemas   -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      # - go test -run=XXX -fuzz=FuzzDocumentWithFixedDocuments -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
+      # - go test -run=XXX -fuzz=FuzzArrayWithFixedSchemas      -fuzztime={{.FUZZ_TIME}} ./internal/handler/sjson/
+      # - go test -run=XXX -fuzz=FuzzArrayWithFixedDocuments    -fuzztime={{.FUZZ_TIME}} ./internal/handler/sjson/
+      # - go test -run=XXX -fuzz=FuzzDocumentWithFixedSchemas   -fuzztime={{.FUZZ_TIME}} ./internal/handler/sjson/
+      # - go test -run=XXX -fuzz=FuzzDocumentWithFixedDocuments -fuzztime={{.FUZZ_TIME}} ./internal/handler/sjson/
       - go test -run=XXX -fuzz=FuzzArray    -fuzztime={{.FUZZ_TIME}} ./internal/bson/
       - go test -run=XXX -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/bson/
       - go test -run=XXX -fuzz=FuzzMsg      -fuzztime={{.FUZZ_TIME}} ./internal/wire/
@@ -361,6 +357,19 @@ tasks:
         --sqlite-url=file:tmp/sqlite/
         --test-records-dir=tmp/records
         --test-enable-oplog
+
+  run-mysql:
+    desc: "Run FerretDB with `mysql` backend"
+    deps: [build-host]
+    cmds:
+      - >
+        bin/ferretdb{{exeExt}}
+        --listen-addr=:27017
+        --proxy-addr=127.0.0.1:47017
+        --mode=diff-normal
+        --handler=mysql
+        --mysql-url='mysql://username@127.0.0.1:3306/ferretdb'
+        --test-records-dir=tmp/records
 
   # set FERRETDB_HANA_URL environment variable to use it
   run-hana:
@@ -468,6 +477,11 @@ tasks:
     desc: "Run sqlite3"
     cmds:
       - sqlite3 tmp/sqlite/*.sqlite
+
+  mysql:
+    desc: "Run mysql"
+    cmds:
+      - docker compose exec -e MYSQL_PASSWORD=password mysql mysql -u username -ppassword ferretdb
 
   mongosh:
     desc: "Run MongoDB shell (`mongosh`)"
