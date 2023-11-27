@@ -92,7 +92,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	switch {
 	case err == nil:
 		fullySorted = sort != ""
-	case errors.Is(err, ErrSortPushdownNotFullyApplied):
+	case errors.Is(err, errSortPushdownNotFullyApplied):
 		fullySorted = false
 	default:
 		return nil, lazyerrors.Error(err)

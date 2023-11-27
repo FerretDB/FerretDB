@@ -47,7 +47,8 @@ func prepareSelectClause(table, comment string, capped, onlyRecordIDs bool) stri
 	return fmt.Sprintf(`SELECT %s %s FROM %q`, comment, metadata.DefaultColumn, table)
 }
 
-var ErrSortPushdownNotFullyApplied = errors.New("Sort pushdown wasn't fully applied")
+// errSortPushdownNotFullyApplied is returned if sort pushdown wasn't fully applied, or wasn't applied at all.
+var errSortPushdownNotFullyApplied = errors.New("Sort pushdown wasn't fully applied")
 
 // prepareOrderByClause returns ORDER BY clause for given sort document and returns.
 // If pushdown wasn't fully applied to all sort fields, or wasn't applied at all, it returns
@@ -58,7 +59,7 @@ var ErrSortPushdownNotFullyApplied = errors.New("Sort pushdown wasn't fully appl
 // For capped collection, it returns ORDER BY recordID only if sort document is empty.
 func prepareOrderByClause(sort *types.Document, capped bool) (string, error) {
 	if sort.Len() != 0 {
-		return "", ErrSortPushdownNotFullyApplied
+		return "", errSortPushdownNotFullyApplied
 	}
 
 	if capped {
@@ -73,8 +74,8 @@ func prepareOrderByClause(sort *types.Document, capped bool) (string, error) {
 //
 // For capped collection, it returns ORDER BY recordID only if sort field is nil.
 //
+// Remove this function.
 // TODO https://github.com/FerretDB/FerretDB/issues/3742
-// Deprecated: Please use prepareOrderByClause instead.
 func prepareExplainOrderByClause(sort *backends.SortField, capped bool) string {
 	if sort == nil && capped {
 		return fmt.Sprintf(` ORDER BY %s`, metadata.RecordIDColumn)

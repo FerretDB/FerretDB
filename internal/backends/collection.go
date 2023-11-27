@@ -80,8 +80,6 @@ func CollectionContract(c Collection) Collection {
 //
 // Remove this type.
 // TODO https://github.com/FerretDB/FerretDB/issues/3742
-//
-// Deprecated: Use whole *types.Document instead.
 type SortField struct {
 	Key        string
 	Descending bool
@@ -153,9 +151,12 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 	return res, err
 }
 
-// TODO
+// validateSort validates if provided key and value are correct parts of the sort document.
+// If they're not, it panics, thus the proper validation with error handling should be done
+// properly on the handler level.
 func validateSort(key string, value any) {
 	sortValue, err := commonparams.GetWholeNumberParam(value)
+
 	switch {
 	case err == nil:
 		break

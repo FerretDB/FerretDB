@@ -346,7 +346,7 @@ func TestPrepareOrderByClause(t *testing.T) {
 			sort:        must.NotFail(types.NewDocument("field.embedded", int64(-1))),
 			orderBy:     "",
 			args:        nil,
-			expectedErr: ErrSortPushdownNotFullyApplied,
+			expectedErr: errSortPushdownNotFullyApplied,
 		},
 		"Capped": {
 			capped:  true,
@@ -364,7 +364,7 @@ func TestPrepareOrderByClause(t *testing.T) {
 			capped:      true,
 			orderBy:     "",
 			args:        nil,
-			expectedErr: ErrSortPushdownNotFullyApplied,
+			expectedErr: errSortPushdownNotFullyApplied,
 		},
 	} {
 		name, tc := name, tc

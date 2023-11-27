@@ -88,12 +88,12 @@ func TestPrepareOrderByClause(t *testing.T) {
 		"Ascending": {
 			sort:        must.NotFail(types.NewDocument("field", int64(1))),
 			orderBy:     "",
-			expectedErr: ErrSortPushdownNotFullyApplied,
+			expectedErr: errSortPushdownNotFullyApplied,
 		},
 		"Descending": {
 			sort:        must.NotFail(types.NewDocument("field", int64(-1))),
 			orderBy:     "",
-			expectedErr: ErrSortPushdownNotFullyApplied,
+			expectedErr: errSortPushdownNotFullyApplied,
 		},
 		"SortNil": {
 			orderBy: "",

@@ -228,7 +228,8 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 	return filter, args, nil
 }
 
-var ErrSortPushdownNotFullyApplied = errors.New("Sort pushdown wasn't fully applied")
+// errSortPushdownNotFullyApplied is returned if sort pushdown wasn't fully applied, or wasn't applied at all.
+var errSortPushdownNotFullyApplied = errors.New("Sort pushdown wasn't fully applied")
 
 // prepareOrderByClause returns ORDER BY clause with arguments for given sort document.
 // If pushdown wasn't fully applied to all sort fields, or wasn't applied at all, it returns
@@ -252,12 +253,12 @@ func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document, capped 
 
 	// Skip sorting dot notation
 	if strings.ContainsRune(sort.Keys()[0], '.') {
-		return "", nil, ErrSortPushdownNotFullyApplied
+		return "", nil, errSortPushdownNotFullyApplied
 	}
 
 	var err error
 	if sort.Len() > 1 {
-		err = ErrSortPushdownNotFullyApplied
+		err = errSortPushdownNotFullyApplied
 	}
 
 	var order string
@@ -273,8 +274,8 @@ func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document, capped 
 //
 // For capped collection, it returns ORDER BY recordID only if sort field is nil.
 //
+// Remove this function.
 // TODO https://github.com/FerretDB/FerretDB/issues/3742
-// Deprecated: Please use prepareOrderByClause instead.
 func prepareExplainOrderByClause(p *metadata.Placeholder, sort *backends.SortField, capped bool) (string, []any) {
 	if sort == nil {
 		if capped {
