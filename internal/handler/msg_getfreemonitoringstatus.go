@@ -24,14 +24,14 @@ import (
 
 // MsgGetFreeMonitoringStatus implements `getFreeMonitoringStatus` command.
 func (h *Handler) MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	telemetryState := h.StateProvider.Get().TelemetryString()
-	telemetryMsg := "monitoring is " + telemetryState
+	state := h.StateProvider.Get().TelemetryString()
+	message := "monitoring is " + state
 
 	var reply wire.OpMsg
 	must.NoError(reply.SetSections(wire.OpMsgSection{
 		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"state", telemetryState,
-			"message", telemetryMsg,
+			"state", state,
+			"message", message,
 			"ok", float64(1),
 		))},
 	}))
