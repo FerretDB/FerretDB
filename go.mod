@@ -7,8 +7,8 @@ require (
 	github.com/SAP/go-hdb v1.6.1
 	github.com/alecthomas/kong v0.8.1
 	github.com/arl/statsviz v0.6.0
-	github.com/google/uuid v1.4.0
 	github.com/go-sql-driver/mysql v1.7.1
+	github.com/google/uuid v1.4.0
 	github.com/jackc/pgerrcode v0.0.0-20220416144525-469b46aa5efa
 	github.com/jackc/pgx-zap v0.0.0-20221202020421-94b1cb2f889f
 	github.com/jackc/pgx/v5 v5.5.0
