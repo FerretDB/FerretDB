@@ -80,6 +80,8 @@ func CollectionContract(c Collection) Collection {
 //
 // Remove this type.
 // TODO https://github.com/FerretDB/FerretDB/issues/3742
+//
+// Deprecated: Use whole *types.Document instead.
 type SortField struct {
 	Key        string
 	Descending bool

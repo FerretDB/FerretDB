@@ -74,6 +74,7 @@ func prepareOrderByClause(sort *types.Document, capped bool) (string, error) {
 // For capped collection, it returns ORDER BY recordID only if sort field is nil.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3742
+// Deprecated: Please use prepareOrderByClause instead.
 func prepareExplainOrderByClause(sort *backends.SortField, capped bool) string {
 	if sort == nil && capped {
 		return fmt.Sprintf(` ORDER BY %s`, metadata.RecordIDColumn)
