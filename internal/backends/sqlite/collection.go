@@ -85,7 +85,20 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	q := prepareSelectClause(meta.TableName, params.Comment, meta.Capped(), params.OnlyRecordIDs) + whereClause
 
-	q += prepareOrderByClause(params.Sort, meta.Capped())
+	sort, err := prepareOrderByClause(params.Sort, meta.Capped())
+
+	var fullySorted bool
+
+	switch {
+	case err == nil:
+		fullySorted = sort != ""
+	case errors.Is(err, ErrSortPushdownNotFullyApplied):
+		fullySorted = false
+	default:
+		return nil, lazyerrors.Error(err)
+	}
+
+	q += sort
 
 	if params.Limit != 0 {
 		q += ` LIMIT ?`
@@ -98,7 +111,8 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	}
 
 	return &backends.QueryResult{
-		Iter: newQueryIterator(ctx, rows, params.OnlyRecordIDs),
+		Iter:   newQueryIterator(ctx, rows, params.OnlyRecordIDs),
+		Sorted: fullySorted,
 	}, nil
 }
 
@@ -273,7 +287,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}
 	}
 
-	orderByClause := prepareOrderByClause(params.Sort, meta.Capped())
+	orderByClause, err := prepareOrderByClause(params.Sort, meta.Capped())
 	sortPushdown := orderByClause != ""
 
 	q := `EXPLAIN QUERY PLAN ` + selectClause + whereClause + orderByClause

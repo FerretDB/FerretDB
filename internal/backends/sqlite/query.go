@@ -15,11 +15,12 @@
 package sqlite
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 // prepareSelectClause returns SELECT clause for default column of provided table name.
@@ -45,14 +46,24 @@ func prepareSelectClause(table, comment string, capped, onlyRecordIDs bool) stri
 	return fmt.Sprintf(`SELECT %s %s FROM %q`, comment, metadata.DefaultColumn, table)
 }
 
-// prepareOrderByClause returns ORDER BY clause.
+var ErrSortPushdownNotFullyApplied = errors.New("Sort pushdown wasn't fully applied")
+
+// prepareOrderByClause returns ORDER BY clause for given sort document and returns.
+// If pushdown wasn't fully applied to all sort fields, or wasn't applied at all, it returns
+// ErrSortPushdownNotFullyApplied error.
 //
-// For capped collection, it returns ORDER BY recordID only if sort field is nil.
-func prepareOrderByClause(sort *backends.SortField, capped bool) string {
-	if sort == nil && capped {
-		return fmt.Sprintf(` ORDER BY %s`, metadata.RecordIDColumn)
+// The providded sort document should be already validated.
+//
+// For capped collection, it returns ORDER BY recordID only if sort document is empty.
+func prepareOrderByClause(sort *types.Document, capped bool) (string, error) {
+	if sort.Len() != 0 {
+		return "", ErrSortPushdownNotFullyApplied
+	}
+
+	if capped {
+		return fmt.Sprintf(` ORDER BY %s`, metadata.RecordIDColumn), nil
 	}
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3181
-	return ""
+	return "", nil
 }

@@ -78,7 +78,7 @@ func CollectionContract(c Collection) Collection {
 
 // SortField consists of a field name and a sort order that are used in queries.
 //
-// Remove this type. TODO why? Doing so requires us to copy paste the same doc parsing code for every backend
+// Remove this type.
 // TODO https://github.com/FerretDB/FerretDB/issues/3742
 type SortField struct {
 	Key        string
