@@ -16,9 +16,12 @@ package handler
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"time"
 
+	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -27,10 +30,58 @@ import (
 
 // MsgServerStatus implements `serverStatus` command.
 func (h *Handler) MsgServerStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	res, err := common.ServerStatus(h.StateProvider.Get(), h.ConnMetrics)
+	host, err := os.Hostname()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
+	exec, err := os.Executable()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	uptime := time.Since(h.StateProvider.Get().Start)
+
+	metricsDoc := types.MakeDocument(0)
+
+	metrics := h.ConnMetrics.GetResponses()
+	for _, commands := range metrics {
+		for command, arguments := range commands {
+			var total, failed int
+			for _, m := range arguments {
+				total += m.Total
+
+				for _, v := range m.Failures {
+					failed += v
+				}
+			}
+
+			d := must.NotFail(types.NewDocument("total", int64(total), "failed", int64(failed)))
+			metricsDoc.Set(command, d)
+		}
+	}
+
+	res := must.NotFail(types.NewDocument(
+		"host", host,
+		"version", version.Get().MongoDBVersion,
+		"process", filepath.Base(exec),
+		"pid", int64(os.Getpid()),
+		"uptime", uptime.Seconds(),
+		"uptimeMillis", uptime.Milliseconds(),
+		"uptimeEstimate", int64(uptime.Seconds()),
+		"localTime", time.Now(),
+		"freeMonitoring", must.NotFail(types.NewDocument(
+			"state", h.StateProvider.Get().TelemetryString(),
+		)),
+		"metrics", must.NotFail(types.NewDocument(
+			"commands", metricsDoc,
+		)),
+
+		// our extensions
+		"ferretdbVersion", version.Get().Version,
+
+		"ok", float64(1),
+	))
 
 	stats, err := h.b.Status(ctx, new(backends.StatusParams))
 	if err != nil {
