@@ -32,7 +32,11 @@ func prepareSelectClause(schema, table string) string {
 	return fmt.Sprintf("SELECT * FROM %q.%q", schema, table)
 }
 
-func makeFilter(key, op string, value any) string {
+func jsonToHanaQueryString(jsonStr string) string {
+	return strings.ReplaceAll(jsonStr, "\"", "'")
+}
+
+func makeFilter(table, key, op string, value any) string {
 	var valStr string
 
 	switch v := value.(type) {
@@ -50,17 +54,22 @@ func makeFilter(key, op string, value any) string {
 		valStr = "NULL"
 	case string, types.ObjectID, time.Time:
 		marshaledValue := string(must.NotFail(sjson.MarshalSingleValue(v)))
-		valStr = strings.ReplaceAll(marshaledValue, "\"", "'")
+		valStr = jsonToHanaQueryString(marshaledValue)
 	default:
 		panic(fmt.Sprintf("Unexpected type of value: %v", v))
 	}
 
 	res := fmt.Sprintf("%q %s %s", key, op, valStr)
 
+	// If table name matches key we need to prefix with "table"."key"
+	if key == table {
+		res = fmt.Sprintf("%q.%s", table, res)
+	}
+
 	return res
 }
 
-func prepareWhereClause(filter *types.Document) (string, error) {
+func prepareWhereClause(table string, filter *types.Document) (string, error) {
 	var filters []string
 
 	iter := filter.Iterator()
@@ -84,26 +93,6 @@ func prepareWhereClause(filter *types.Document) (string, error) {
 			continue
 		}
 
-		path, err := types.NewPathFromString(rootKey)
-
-		var pe *types.PathError
-
-		switch {
-		case err == nil:
-			// Handle dot notation.
-			// TODO https://github.com/FerretDB/FerretDB/issues/2069
-			if path.Len() > 1 {
-				continue
-			}
-		case errors.As(err, &pe):
-			// ignore empty key error, otherwise return error
-			if pe.Code() != types.ErrPathElementEmpty {
-				return "", lazyerrors.Error(err)
-			}
-		default:
-			panic("Invalid error type: PathError expected")
-		}
-
 		switch v := rootVal.(type) {
 		case *types.Document:
 			iter := v.Iterator()
@@ -121,12 +110,12 @@ func prepareWhereClause(filter *types.Document) (string, error) {
 
 				switch k {
 				case "$eq":
-					if f := makeFilter(rootKey, "=", v); f != "" {
+					if f := makeFilter(table, rootKey, "=", v); f != "" {
 						filters = append(filters, f)
 					}
 
 				case "$ne":
-					if f := makeFilter(rootKey, "<>", v); f != "" {
+					if f := makeFilter(table, rootKey, "<>", v); f != "" {
 						filters = append(filters, f)
 					}
 				default:
@@ -140,7 +129,7 @@ func prepareWhereClause(filter *types.Document) (string, error) {
 			// type not supported for pushdown
 
 		case float64, string, types.ObjectID, bool, time.Time, int32, int64:
-			if f := makeFilter(rootKey, "=", v); f != "" {
+			if f := makeFilter(table, rootKey, "=", v); f != "" {
 				filters = append(filters, f)
 			}
 

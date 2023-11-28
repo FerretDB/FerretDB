@@ -56,7 +56,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	selectClause := prepareSelectClause(c.schema, c.table)
 
-	whereClause, err := prepareWhereClause(params.Filter)
+	whereClause, err := prepareWhereClause(c.table, params.Filter)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -175,10 +175,10 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 		return nil, lazyerrors.Error(err)
 	}
 
-	deleteSql := "DELETE FROM %q.%q WHERE \"_id\" = '%s'"
+	deleteSql := "DELETE FROM %q.%q WHERE \"_id\" = %s"
 
 	for _, id := range params.IDs {
-		idString := string(must.NotFail(sjson.MarshalSingleValue(id)))
+		idString := jsonToHanaQueryString(string(must.NotFail(sjson.MarshalSingleValue(id))))
 		line := fmt.Sprintf(deleteSql, c.schema, c.table, idString)
 		execResult, err := c.hdb.ExecContext(ctx, line)
 		if err != nil {

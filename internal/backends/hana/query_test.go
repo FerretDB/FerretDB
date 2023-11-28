@@ -41,6 +41,8 @@ func TestPrepareSelectClause(t *testing.T) {
 func TestPrepareWhereClause(t *testing.T) {
 	t.Parallel()
 
+	tableName := "testtable"
+
 	objectID := types.ObjectID{0x62, 0x56, 0xc5, 0xba, 0x0b, 0xad, 0xc0, 0xff, 0xee, 0xff, 0xff, 0xff}
 
 	for name, tc := range map[string]struct {
@@ -54,6 +56,10 @@ func TestPrepareWhereClause(t *testing.T) {
 		"EqString": {
 			filter:   must.NotFail(types.NewDocument("test", "foo")),
 			expected: " WHERE \"test\" = 'foo'",
+		},
+		"EqStringRequiresPrefix": {
+			filter:   must.NotFail(types.NewDocument("testtable", "foo")),
+			expected: " WHERE \"testtable\".\"testtable\" = 'foo'",
 		},
 		"EqInt32": {
 			filter:   must.NotFail(types.NewDocument("test", int32(123))),
@@ -97,7 +103,7 @@ func TestPrepareWhereClause(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			actual, err := prepareWhereClause(tc.filter)
+			actual, err := prepareWhereClause(tableName, tc.filter)
 			require.NoError(t, err)
 
 			assert.Equal(t, tc.expected, actual)
