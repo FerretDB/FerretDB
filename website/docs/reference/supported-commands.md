@@ -523,11 +523,6 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 
 | Command                           | Argument / Option              | Property                  | Status | Comments                                                  |
 | --------------------------------- | ------------------------------ | ------------------------- | ------ | --------------------------------------------------------- |
-| `listCollections`                 |                                |                           | ✅     |                                                           |
-|                                   | `filter`                       |                           | ✅     |                                                           |
-|                                   | `nameOnly`                     |                           | ✅     |                                                           |
-|                                   | `comment`                      |                           | ⚠️     | Ignored                                                   |
-|                                   | `authorizedCollections`        |                           | ⚠️     | Ignored                                                   |
 | `cloneCollectionAsCapped`         |                                |                           | ❌     |                                                           |
 |                                   | `toCollection`                 |                           | ⚠️     |                                                           |
 |                                   | `size`                         |                           | ⚠️     |                                                           |
@@ -640,14 +635,14 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 |                                   | `op`                           |                           | ⚠️     |                                                           |
 |                                   | `comment`                      |                           | ⚠️     |                                                           |
 | `listCollections`                 |                                |                           | ✅     |                                                           |
-|                                   | `filter`                       |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/1405) |
-|                                   | `nameOnly`                     |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/301)  |
-|                                   | `authorizedCollections`        |                           | ⚠️     |                                                           |
+|                                   | `filter`                       |                           | ✅     |                                                           |
+|                                   | `nameOnly`                     |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/3624) |
+|                                   | `authorizedCollections`        |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/3770) |
 |                                   | `comment`                      |                           | ⚠️     |                                                           |
 | `listDatabases`                   |                                |                           | ✅     |                                                           |
 |                                   | `filter`                       |                           | ✅     |                                                           |
 |                                   | `nameOnly`                     |                           | ✅     |                                                           |
-|                                   | `authorizedDatabases`          |                           | ⚠️     | Ignored                                                   |
+|                                   | `authorizedDatabases`          |                           | ⚠️     | [Issue](https://github.com/FerretDB/FerretDB/issues/3769) |
 |                                   | `comment`                      |                           | ⚠️     | Ignored                                                   |
 | `listIndexes`                     |                                |                           | ✅     |                                                           |
 |                                   | `cursor.batchSize`             |                           | ⚠️     | Ignored                                                   |
