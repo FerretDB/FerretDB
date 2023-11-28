@@ -147,23 +147,20 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	iter := common.FilterIterator(queryRes.Iter, closer, params.Filter)
 
-	// skip sorting if documents were fully sorted by backend.
-	if !queryRes.Sorted {
-		iter, err = common.SortIterator(iter, closer, params.Sort)
-		if err != nil {
-			closer.Close()
+	iter, err = common.SortIterator(iter, closer, params.Sort)
+	if err != nil {
+		closer.Close()
 
-			var pathErr *types.PathError
-			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrPathContainsEmptyElement,
-					"Empty field names in path are not allowed",
-					document.Command(),
-				)
-			}
-
-			return nil, lazyerrors.Error(err)
+		var pathErr *types.PathError
+		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrPathContainsEmptyElement,
+				"Empty field names in path are not allowed",
+				document.Command(),
+			)
 		}
+
+		return nil, lazyerrors.Error(err)
 	}
 
 	iter = common.SkipIterator(iter, closer, params.Skip)
