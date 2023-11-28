@@ -106,8 +106,8 @@ func (r *Registry) Close() {
 	r.wg.Wait()
 }
 
-// NewParams represent parameters for NewCursor.
-type NewParams struct {
+// NewCursorParams represent parameters for NewCursor.
+type NewCursorParams struct {
 	Iter         types.DocumentsIterator
 	DB           string
 	Collection   string
@@ -120,7 +120,7 @@ type NewParams struct {
 //
 // The cursor will be closed automatically when a given context is canceled,
 // even if the cursor is not being used at that time.
-func (r *Registry) NewCursor(ctx context.Context, params *NewParams) *Cursor {
+func (r *Registry) NewCursor(ctx context.Context, params *NewCursorParams) *Cursor {
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
@@ -139,7 +139,7 @@ func (r *Registry) NewCursor(ctx context.Context, params *NewParams) *Cursor {
 
 	r.created.WithLabelValues(params.DB, params.Collection, params.Username).Inc()
 
-	c := newCursor(id, params.DB, params.Collection, params.Username, params.ShowRecordID, params.Iter, r)
+	c := newCursor(id, params, r)
 	r.m[id] = c
 
 	r.wg.Add(1)

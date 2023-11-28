@@ -54,14 +54,14 @@ type Cursor struct {
 }
 
 // newCursor creates a new cursor.
-func newCursor(id int64, db, collection, username string, showRecordID bool, iter types.DocumentsIterator, r *Registry) *Cursor {
+func newCursor(id int64, params *NewCursorParams, r *Registry) *Cursor {
 	c := &Cursor{
 		ID:           id,
-		DB:           db,
-		Collection:   collection,
-		Username:     username,
-		ShowRecordID: showRecordID,
-		iter:         iter,
+		DB:           params.DB,
+		Collection:   params.Collection,
+		Username:     params.Username,
+		ShowRecordID: params.ShowRecordID,
+		iter:         params.Iter,
 		r:            r,
 		created:      time.Now(),
 		closed:       make(chan struct{}),
