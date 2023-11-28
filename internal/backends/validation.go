@@ -15,14 +15,11 @@
 package backends
 
 import (
-	"errors"
 	"fmt"
 	"math"
 	"regexp"
 	"strings"
 	"unicode/utf8"
-
-	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 // databaseNameRe validates database name.
@@ -88,31 +85,17 @@ func validateCollectionName(name string) error {
 // properly on the handler level.
 func validateSort(key string, value any) {
 	sortValue, err := getWholeNumberParam(value)
-
-	switch {
-	case err == nil:
-		break
-	case errors.Is(err, errUnexpectedType):
-		if _, ok := value.(types.NullType); ok {
-			value = "null"
-		}
-	default:
+	if err != nil {
 		panic(err)
 	}
 
 	if sortValue != -1 && sortValue != 1 {
-		panic("$sort key ordering must be 1 (for ascending) or -1 (for descending)")
+		panic("sort key ordering must be 1 (for ascending) or -1 (for descending)")
 	}
 }
 
-var errUnexpectedType = fmt.Errorf("unexpected type")
-
 // getWholeNumberParam checks if the given value is int32, int64, or float64 containing a whole number,
 // such as used in the sort, limit, $size, etc.
-//
-// For most cases it returns simple errors, as validation of document should be done
-// by handler, the only exception is errUnexpectedType, which is returned, when value has
-// unexpected type. It is required, as in some cases they're treated as "null".
 func getWholeNumberParam(value any) (int64, error) {
 	switch value := value.(type) {
 	// add string support
@@ -135,6 +118,6 @@ func getWholeNumberParam(value any) (int64, error) {
 	case int64:
 		return value, nil
 	default:
-		return 0, errUnexpectedType
+		return 0, fmt.Errorf("unexpected type")
 	}
 }
