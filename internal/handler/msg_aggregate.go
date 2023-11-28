@@ -269,6 +269,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 		if err = common.ValidateSortDocument(sort); err != nil {
+			closer.Close()
 			return nil, err
 		}
 
