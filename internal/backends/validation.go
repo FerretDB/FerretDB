@@ -17,11 +17,11 @@ package backends
 import (
 	"errors"
 	"fmt"
+	"math"
 	"regexp"
 	"strings"
 	"unicode/utf8"
 
-	"github.com/FerretDB/FerretDB/internal/handlers/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -87,24 +87,54 @@ func validateCollectionName(name string) error {
 // If they're not, it panics, thus the proper validation with error handling should be done
 // properly on the handler level.
 func validateSort(key string, value any) {
-	sortValue, err := commonparams.GetWholeNumberParam(value)
+	sortValue, err := getWholeNumberParam(value)
 
 	switch {
 	case err == nil:
 		break
-	case errors.Is(err, commonparams.ErrUnexpectedType):
+	case errors.Is(err, errUnexpectedType):
 		if _, ok := value.(types.NullType); ok {
 			value = "null"
 		}
-
-		panic(fmt.Sprintf(`Illegal key in $sort specification: %v: %v`, key, value))
-	case errors.Is(err, commonparams.ErrNotWholeNumber):
-		panic("$sort key ordering must be 1 (for ascending) or -1 (for descending)")
 	default:
 		panic(err)
 	}
 
 	if sortValue != -1 && sortValue != 1 {
 		panic("$sort key ordering must be 1 (for ascending) or -1 (for descending)")
+	}
+}
+
+var errUnexpectedType = fmt.Errorf("unexpected type")
+
+// getWholeNumberParam checks if the given value is int32, int64, or float64 containing a whole number,
+// such as used in the sort, limit, $size, etc.
+//
+// For most cases it returns simple errors, as validation of document should be done
+// by handler, the only exception is errUnexpectedType, which is returned, when value has
+// unexpected type. It is required, as in some cases they're treated as "null".
+func getWholeNumberParam(value any) (int64, error) {
+	switch value := value.(type) {
+	// add string support
+	// TODO https://github.com/FerretDB/FerretDB/issues/1089
+	case float64:
+		switch {
+		case math.IsInf(value, 1):
+			return 0, fmt.Errorf("infinity")
+		case value > float64(math.MaxInt64):
+			return 0, fmt.Errorf("long exceeded - positive value")
+		case value < float64(math.MinInt64):
+			return 0, fmt.Errorf("long exceeded - negative value")
+		case value != math.Trunc(value):
+			return 0, fmt.Errorf("not a whole number")
+		}
+
+		return int64(value), nil
+	case int32:
+		return int64(value), nil
+	case int64:
+		return value, nil
+	default:
+		return 0, errUnexpectedType
 	}
 }
