@@ -154,7 +154,7 @@ func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDataba
 			return cmp.Compare(a.Name, b.Name)
 		}))
 
-		if params.Name != "" {
+		if params != nil && params.Name != "" {
 			must.BeTrue(len(res.Databases) == 1)
 			must.BeTrue(res.Databases[0].Name == params.Name)
 		}
