@@ -27,7 +27,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
@@ -41,7 +40,6 @@ import (
 type Cursor struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
-	qp           *backends.QueryParams
 	created      time.Time
 	iter         types.DocumentsIterator
 	r            *Registry
@@ -56,14 +54,13 @@ type Cursor struct {
 }
 
 // newCursor creates a new cursor.
-func newCursor(id int64, db, collection, username string, showRecordID bool, qp *backends.QueryParams, iter types.DocumentsIterator, r *Registry) *Cursor {
+func newCursor(id int64, db, collection, username string, showRecordID bool, iter types.DocumentsIterator, r *Registry) *Cursor {
 	c := &Cursor{
 		ID:           id,
 		DB:           db,
 		Collection:   collection,
 		Username:     username,
 		ShowRecordID: showRecordID,
-		qp:           qp,
 		iter:         iter,
 		r:            r,
 		created:      time.Now(),

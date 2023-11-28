@@ -25,7 +25,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 )
@@ -109,7 +108,6 @@ func (r *Registry) Close() {
 
 // NewParams represent parameters for NewCursor.
 type NewParams struct {
-	QP           *backends.QueryParams
 	Iter         types.DocumentsIterator
 	DB           string
 	Collection   string
@@ -141,7 +139,7 @@ func (r *Registry) NewCursor(ctx context.Context, params *NewParams) *Cursor {
 
 	r.created.WithLabelValues(params.DB, params.Collection, params.Username).Inc()
 
-	c := newCursor(id, params.DB, params.Collection, params.Username, params.ShowRecordID, params.QP, params.Iter, r)
+	c := newCursor(id, params.DB, params.Collection, params.Username, params.ShowRecordID, params.Iter, r)
 	r.m[id] = c
 
 	r.wg.Add(1)
