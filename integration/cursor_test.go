@@ -30,14 +30,17 @@ import (
 )
 
 func TestCursorStress(t *testing.T) {
-	client, err := mongo.Connect(context.TODO(), nil)
+	ctx := context.Background()
+
+	client, err := mongo.Connect(ctx, nil)
 	if err != nil {
 		t.Error(err)
 	}
 
 	defaultBatchSize := 101
 
-	provider := shareddata.BenchmarkSmallDocuments
+	// use large documents
+	provider := shareddata.BenchmarkSettingsDocuments
 
 	iter := provider.NewIterator()
 
@@ -54,15 +57,16 @@ func TestCursorStress(t *testing.T) {
 			insertDocs[i] = docs[i]
 		}
 
-		_, err = client.Database("test").Collection("foo").InsertMany(context.TODO(), insertDocs)
+		_, err = client.Database("test").Collection("foo").InsertMany(ctx, insertDocs)
 		require.NoError(t, err)
 	}
 
-	t.Cleanup(func() { require.NoError(t, client.Database("test").Drop(context.TODO())) })
+	t.Cleanup(func() { require.NoError(t, client.Database("test").Drop(ctx)) })
+
+	var wg sync.WaitGroup
 
 	N := 10
 
-	var wg sync.WaitGroup
 	for i := 0; i < N; i++ {
 		wg.Add(1)
 
@@ -70,7 +74,7 @@ func TestCursorStress(t *testing.T) {
 			defer wg.Done()
 
 			// create N clients
-			client, err := mongo.Connect(context.TODO(), nil)
+			client, err := mongo.Connect(ctx, nil)
 			if err != nil {
 				t.Error(err)
 			}
@@ -83,13 +87,13 @@ func TestCursorStress(t *testing.T) {
 				Sort:      bson.D{{"_id", 1}},
 			}
 
-			cur, err := coll.Find(context.TODO(), bson.D{}, opts)
+			cur, err := coll.Find(ctx, bson.D{}, opts)
 			require.NoError(t, err)
 
 			// iterate the cursor until it is exhausted or there is an error getting the next document
 			for {
-				if cur.TryNext(context.TODO()) {
-					assert.True(t, cur.Next(context.TODO()))
+				if cur.TryNext(ctx) {
+					assert.True(t, cur.Next(ctx))
 				}
 
 				if err := cur.Err(); err != nil {
