@@ -249,7 +249,7 @@ func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document, capped 
 	}
 
 	k := sort.Keys()[0]
-	v := sort.Values()[0].(int64)
+	v := backends.GetWholeNumber(sort.Values()[0])
 
 	// Skip sorting dot notation
 	if strings.ContainsRune(sort.Keys()[0], '.') {

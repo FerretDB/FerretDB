@@ -15,7 +15,6 @@
 package backends
 
 import (
-	"fmt"
 	"math"
 	"regexp"
 	"strings"
@@ -84,40 +83,40 @@ func validateCollectionName(name string) error {
 // If they're not, it panics, thus the proper validation with error handling should be done
 // properly on the handler level.
 func validateSort(key string, value any) {
-	sortValue, err := getWholeNumberParam(value)
-	if err != nil {
-		panic(err)
-	}
+	sortValue := GetWholeNumber(value)
 
 	if sortValue != -1 && sortValue != 1 {
 		panic("sort key ordering must be 1 (for ascending) or -1 (for descending)")
 	}
 }
 
-// getWholeNumberParam checks if the given value is int32, int64, or float64 containing a whole number,
+// GetWholeNumber checks if the given value is int32, int64, or float64 containing a whole number,
 // such as used in the sort, limit, $size, etc.
-func getWholeNumberParam(value any) (int64, error) {
+//
+// It panics if provided value is invalid, thus the proper validation with error handling should be done
+// properly on the handler level.
+func GetWholeNumber(value any) int64 {
 	switch value := value.(type) {
 	// add string support
 	// TODO https://github.com/FerretDB/FerretDB/issues/1089
 	case float64:
 		switch {
 		case math.IsInf(value, 1):
-			return 0, fmt.Errorf("infinity")
+			panic("infinity")
 		case value > float64(math.MaxInt64):
-			return 0, fmt.Errorf("long exceeded - positive value")
+			panic("long exceeded - positive value")
 		case value < float64(math.MinInt64):
-			return 0, fmt.Errorf("long exceeded - negative value")
+			panic("long exceeded - negative value")
 		case value != math.Trunc(value):
-			return 0, fmt.Errorf("not a whole number")
+			panic("not a whole number")
 		}
 
-		return int64(value), nil
+		return int64(value)
 	case int32:
-		return int64(value), nil
+		return int64(value)
 	case int64:
-		return value, nil
+		return value
 	default:
-		return 0, fmt.Errorf("unexpected type")
+		panic("unexpected type")
 	}
 }
