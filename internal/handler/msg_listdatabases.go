@@ -39,7 +39,10 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	common.Ignored(document, h.L, "comment", "authorizedDatabases")
+	common.Ignored(document, h.L, "comment")
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3769
+	common.Ignored(document, h.L, "authorizedDatabases")
 
 	var nameOnly bool
 
