@@ -270,6 +270,16 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 		if err = common.ValidateSortDocument(sort); err != nil {
 			closer.Close()
+
+			var pathErr *types.PathError
+			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrPathContainsEmptyElement,
+					"Empty field names in path are not allowed",
+					document.Command(),
+				)
+			}
+
 			return nil, err
 		}
 
