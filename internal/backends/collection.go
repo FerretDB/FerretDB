@@ -121,6 +121,10 @@ type QueryResult struct {
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
 	defer observability.FuncCall(ctx)()
 
+	if params == nil {
+		params = new(QueryParams)
+	}
+
 	if params.Sort.Len() != 0 {
 		iter := params.Sort.Iterator()
 		defer iter.Close()
@@ -174,6 +178,10 @@ type ExplainResult struct {
 // If it was possible to apply it only partially or not at all, that field should be set to false.
 func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams) (*ExplainResult, error) {
 	defer observability.FuncCall(ctx)()
+
+	if params == nil {
+		params = new(ExplainParams)
+	}
 
 	res, err := cc.c.Explain(ctx, params)
 	checkError(err)
