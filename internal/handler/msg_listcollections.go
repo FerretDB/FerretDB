@@ -40,7 +40,10 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 		return nil, err
 	}
 
-	common.Ignored(document, h.L, "comment", "authorizedCollections")
+	common.Ignored(document, h.L, "comment")
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3770
+	common.Ignored(document, h.L, "authorizedCollections")
 
 	dbName, err := common.GetRequiredParam[string](document, "$db")
 	if err != nil {
