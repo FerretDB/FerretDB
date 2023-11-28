@@ -12,7 +12,7 @@ ARG LABEL_COMMIT
 
 # build stage
 
-FROM ghcr.io/ferretdb/golang:1.21.4-1 AS production-build
+FROM ghcr.io/ferretdb/golang:1.21.4-2 AS production-build
 
 ARG TARGETARCH
 

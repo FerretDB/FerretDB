@@ -26,7 +26,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn"
-	"github.com/FerretDB/FerretDB/internal/handlers/registry"
+	"github.com/FerretDB/FerretDB/internal/handler/registry"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/util/testutil"
@@ -159,9 +159,8 @@ func setupListener(tb testtb.TB, ctx context.Context, logger *zap.Logger) string
 		HANAURL:       *hanaURLF,
 
 		TestOpts: registry.TestOpts{
-			DisableFilterPushdown:    *disableFilterPushdownF,
-			EnableUnsafeSortPushdown: *enableUnsafeSortPushdownF,
-			EnableOplog:              true,
+			DisableFilterPushdown: *disableFilterPushdownF,
+			EnableOplog:           true,
 		},
 	}
 	h, closeBackend, err := registry.NewHandler(handler, handlerOpts)

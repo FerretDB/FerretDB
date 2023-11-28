@@ -906,7 +906,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 			limit:          2,
 			len:            2,
 			filterPushdown: noPushdown,
-			limitPushdown:  allPushdown,
+			limitPushdown:  noPushdown,
 		},
 		"IDFilterSort": {
 			filter:         bson.D{{"_id", "array"}},
@@ -993,16 +993,11 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 
 				assert.NoError(t, err)
 
-				var msg string
-
-				if !setup.UnsafeSortPushdownEnabled() && tc.sort != nil {
-					tc.limitPushdown = noPushdown
-					msg = "Sort pushdown is disabled, but target resulted with limitPushdown"
-				}
-
 				doc := ConvertDocument(t, res)
 				limitPushdown, _ := doc.Get("limitPushdown")
-				assert.Equal(t, tc.limitPushdown.SortPushdownExpected(t, false), limitPushdown, msg)
+				assert.Equal(t, tc.limitPushdown.SortPushdownExpected(t), limitPushdown)
+
+				var msg string
 
 				if setup.FilterPushdownDisabled() {
 					tc.filterPushdown = noPushdown
@@ -1217,5 +1212,5 @@ func TestQueryTailableCursors(t *testing.T) {
 	}
 
 	_, err = collection.Find(ctx, bson.D{{}}, options.Find().SetCursorType(options.Tailable))
-	AssertEqualCommandError(t, expectedErr, err)
+	AssertEqualAltCommandError(t, expectedErr, "tailable cursor requested on non capped collection", err)
 }

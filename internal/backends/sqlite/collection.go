@@ -26,7 +26,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -207,18 +207,33 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 		return &backends.DeleteAllResult{Deleted: 0}, nil
 	}
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3498
-	_ = params.RecordIDs
+	var column string
+	var placeholders []string
+	var args []any
 
-	placeholders := make([]string, len(params.IDs))
-	args := make([]any, len(params.IDs))
+	if params.RecordIDs == nil {
+		placeholders = make([]string, len(params.IDs))
+		args = make([]any, len(params.IDs))
 
-	for i, id := range params.IDs {
-		placeholders[i] = "?"
-		args[i] = string(must.NotFail(sjson.MarshalSingleValue(id)))
+		for i, id := range params.IDs {
+			placeholders[i] = "?"
+			args[i] = string(must.NotFail(sjson.MarshalSingleValue(id)))
+		}
+
+		column = metadata.IDColumn
+	} else {
+		placeholders = make([]string, len(params.RecordIDs))
+		args = make([]any, len(params.RecordIDs))
+
+		for i, id := range params.RecordIDs {
+			placeholders[i] = "?"
+			args[i] = id
+		}
+
+		column = metadata.RecordIDColumn
 	}
 
-	q := fmt.Sprintf(`DELETE FROM %q WHERE %s IN (%s)`, meta.TableName, metadata.IDColumn, strings.Join(placeholders, ", "))
+	q := fmt.Sprintf(`DELETE FROM %q WHERE %s IN (%s)`, meta.TableName, column, strings.Join(placeholders, ", "))
 
 	res, err := db.ExecContext(ctx, q, args...)
 	if err != nil {

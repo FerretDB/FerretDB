@@ -41,10 +41,10 @@ const DefaultIndexName = "_id_"
 // See collectionContract and its methods for additional details.
 type Collection interface {
 	Query(context.Context, *QueryParams) (*QueryResult, error)
+	Explain(context.Context, *ExplainParams) (*ExplainResult, error)
 	InsertAll(context.Context, *InsertAllParams) (*InsertAllResult, error)
 	UpdateAll(context.Context, *UpdateAllParams) (*UpdateAllResult, error)
 	DeleteAll(context.Context, *DeleteAllParams) (*DeleteAllResult, error)
-	Explain(context.Context, *ExplainParams) (*ExplainResult, error)
 
 	Stats(context.Context, *CollectionStatsParams) (*CollectionStatsResult, error)
 	Compact(context.Context, *CompactParams) (*CompactResult, error)
@@ -72,6 +72,9 @@ func CollectionContract(c Collection) Collection {
 }
 
 // SortField consists of a field name and a sort order that are used in queries.
+//
+// Remove this type.
+// TODO https://github.com/FerretDB/FerretDB/issues/3742
 type SortField struct {
 	Key        string
 	Descending bool
@@ -80,7 +83,7 @@ type SortField struct {
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
 	Filter        *types.Document
-	Sort          *SortField
+	Sort          *SortField // TODO https://github.com/FerretDB/FerretDB/issues/3742
 	Limit         int64
 	OnlyRecordIDs bool
 	Comment       string
@@ -88,7 +91,9 @@ type QueryParams struct {
 
 // QueryResult represents the results of Collection.Query method.
 type QueryResult struct {
-	Iter types.DocumentsIterator
+	Iter     types.DocumentsIterator
+	Filtered bool // TODO https://github.com/FerretDB/FerretDB/issues/3761
+	Sorted   bool // TODO https://github.com/FerretDB/FerretDB/issues/3742
 }
 
 // Query executes a query against the collection.
@@ -98,10 +103,56 @@ type QueryResult struct {
 // The passed context should be used for canceling the initial query.
 // It also can be used to close the returned iterator and free underlying resources,
 // but doing so is not necessary - the handler will do that anyway.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3761
+// The QueryResult's Filtered field is set to true if the backend applied the whole requested filtering.
+// If it was applied only partially or not at all, that field should be set to false.
+// In that case, the handler will perform filtering itself.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3742
+// The QueryResult's Sorted field is set to true if the backend applied the whole requested sorting.
+// If it was applied only partially or not at all, that field should be set to false.
+// In that case, the handler will perform sorting itself.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	res, err := cc.c.Query(ctx, params)
+	checkError(err)
+
+	return res, err
+}
+
+// ExplainParams represents the parameters of Collection.Explain method.
+type ExplainParams struct {
+	Filter *types.Document
+	Sort   *SortField // TODO https://github.com/FerretDB/FerretDB/issues/3742
+	Limit  int64
+}
+
+// ExplainResult represents the results of Collection.Explain method.
+type ExplainResult struct {
+	QueryPlanner   *types.Document
+	FilterPushdown bool
+	SortPushdown   bool // TODO https://github.com/FerretDB/FerretDB/issues/3742
+	LimitPushdown  bool
+}
+
+// Explain return a backend-specific execution plan for the given query.
+//
+// Database or collection may not exist; that's not an error, it still
+// returns the ExplainResult with QueryPlanner.
+//
+// The ExplainResult's FilterPushdown field is set to true if the backend could have applied the requested filtering
+// partially or completely (but safely in any case).
+// If it wasn't possible to apply it safely at least partially, that field should be set to false.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3742
+// The ExplainResult's SortPushdown field is set to true if the backend could have applied the whole requested sorting.
+// If it was possible to apply it only partially or not at all, that field should be set to false.
+func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams) (*ExplainResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	res, err := cc.c.Explain(ctx, params)
 	checkError(err)
 
 	return res, err
@@ -130,7 +181,7 @@ func (cc *collectionContract) InsertAll(ctx context.Context, params *InsertAllPa
 
 	now := time.Now()
 	for _, doc := range params.Docs {
-		doc.SetRecordID(types.NextTimestamp(now))
+		doc.SetRecordID(types.NextTimestamp(now).Signed())
 		doc.Freeze()
 	}
 
@@ -176,7 +227,7 @@ func (cc *collectionContract) UpdateAll(ctx context.Context, params *UpdateAllPa
 // DeleteAllParams represents the parameters of Collection.Delete method.
 type DeleteAllParams struct {
 	IDs       []any
-	RecordIDs []types.Timestamp
+	RecordIDs []int64
 }
 
 // DeleteAllResult represents the results of Collection.Delete method.
@@ -199,34 +250,6 @@ func (cc *collectionContract) DeleteAll(ctx context.Context, params *DeleteAllPa
 	must.BeTrue((params.IDs == nil) != (params.RecordIDs == nil))
 
 	res, err := cc.c.DeleteAll(ctx, params)
-	checkError(err)
-
-	return res, err
-}
-
-// ExplainParams represents the parameters of Collection.Explain method.
-type ExplainParams struct {
-	Filter *types.Document
-	Sort   *SortField
-	Limit  int64
-}
-
-// ExplainResult represents the results of Collection.Explain method.
-type ExplainResult struct {
-	QueryPlanner   *types.Document
-	FilterPushdown bool
-	SortPushdown   bool
-	LimitPushdown  bool
-}
-
-// Explain return a backend-specific execution plan for the given query.
-//
-// Database or collection may not exist; that's not an error, it still
-// returns the ExplainResult with QueryPlanner.
-func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams) (*ExplainResult, error) {
-	defer observability.FuncCall(ctx)()
-
-	res, err := cc.c.Explain(ctx, params)
 	checkError(err)
 
 	return res, err
