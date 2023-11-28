@@ -108,50 +108,21 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		ctx, cancel = context.WithTimeout(ctx, time.Duration(params.MaxTimeMS)*time.Millisecond)
 	}
 
-	// closer accumulates all things that should be closed / canceled.
-	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel))
-
 	queryRes, err := c.Query(ctx, qp)
 	if err != nil {
-		closer.Close()
+		cancel()
 		return nil, lazyerrors.Error(err)
 	}
 
-	closer.Add(queryRes.Iter)
-
-	iter := common.FilterIterator(queryRes.Iter, closer, params.Filter)
-
-	// TODO https://github.com/FerretDB/FerretDB/issues/3742
-	iter, err = common.SortIterator(iter, closer, params.Sort)
+	iter, err := h.findIter(queryRes.Iter, cancel, params)
 	if err != nil {
-		closer.Close()
-
-		var pathErr *types.PathError
-		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrPathContainsEmptyElement,
-				"Empty field names in path are not allowed",
-				document.Command(),
-			)
-		}
-
-		return nil, lazyerrors.Error(err)
-	}
-
-	iter = common.SkipIterator(iter, closer, params.Skip)
-
-	iter = common.LimitIterator(iter, closer, params.Limit)
-
-	iter, err = common.ProjectionIterator(iter, closer, params.Projection, params.Filter)
-	if err != nil {
-		closer.Close()
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	// Combine iterators chain and closer into a cursor to pass around.
 	// The context will be canceled when client disconnects or after maxTimeMS.
 	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
-		Iter:         iterator.WithClose(iter, closer.Close),
+		Iter:         iter,
 		DB:           params.DB,
 		Collection:   params.Collection,
 		Username:     username,
@@ -226,4 +197,44 @@ func (h *Handler) findQueryParams(params *common.FindParams) (*backends.QueryPar
 	}
 
 	return qp, nil
+}
+
+// findIter wraps the given iterator with filtering, sorting, etc according to the given parameters.
+//
+// The returned iterator is closed when cancel function is called or on any error.
+//
+//nolint:lll // for readability
+func (h *Handler) findIter(iter types.DocumentsIterator, cancel context.CancelFunc, params *common.FindParams) (types.DocumentsIterator, error) {
+	closer := iterator.NewMultiCloser(iterator.CloserFunc(cancel), iter)
+
+	iter = common.FilterIterator(iter, closer, params.Filter)
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3742
+	iter, err := common.SortIterator(iter, closer, params.Sort)
+	if err != nil {
+		closer.Close()
+
+		var pathErr *types.PathError
+		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrPathContainsEmptyElement,
+				"Empty field names in path are not allowed",
+				"find",
+			)
+		}
+
+		return nil, lazyerrors.Error(err)
+	}
+
+	iter = common.SkipIterator(iter, closer, params.Skip)
+
+	iter = common.LimitIterator(iter, closer, params.Limit)
+
+	iter, err = common.ProjectionIterator(iter, closer, params.Projection, params.Filter)
+	if err != nil {
+		closer.Close()
+		return nil, lazyerrors.Error(err)
+	}
+
+	return iterator.WithClose(iter, closer.Close), nil
 }
