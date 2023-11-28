@@ -31,6 +31,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
+type Type int
+
+const (
+	_ Type = iota
+	Normal
+	Tailable
+	TailableAwait
+)
+
 // Cursor allows clients to iterate over a result set.
 //
 // It implements types.DocumentsIterator interface by wrapping another iterator with documents
@@ -71,6 +80,10 @@ func newCursor(id int64, params *NewCursorParams, r *Registry) *Cursor {
 	resource.Track(c, c.token)
 
 	return c
+}
+
+func (c *Cursor) Reset(iter types.DocumentsIterator) {
+	c.iter = iter
 }
 
 // Next implements types.DocumentsIterator interface.

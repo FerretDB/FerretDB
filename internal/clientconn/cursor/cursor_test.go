@@ -14,8 +14,61 @@
 
 package cursor
 
-import "testing"
+import (
+	"context"
+	"testing"
+	"time"
 
-func TestDummy(t *testing.T) {
-	// we need at least one test per package to correctly calculate coverage
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+)
+
+func TestCursorNormal(t *testing.T) {
+	t.Parallel()
+
+	r := NewRegistry(testutil.Logger(t))
+	t.Cleanup(r.Close)
+
+	ctx := testutil.Ctx(t)
+
+	doc1 := must.NotFail(types.NewDocument("v", int32(1)))
+	doc2 := must.NotFail(types.NewDocument("v", int32(2)))
+	doc3 := must.NotFail(types.NewDocument("v", int32(3)))
+
+	docs := []*types.Document{doc1, doc2, doc3}
+
+	t.Run("Normal", func(t *testing.T) {
+		t.Parallel()
+
+		c := r.NewCursor(ctx, &NewCursorParams{
+			Iter: iterator.Values(iterator.ForSlice(docs)),
+		})
+
+		actual, err := iterator.ConsumeValues(c)
+		require.NoError(t, err)
+		assert.Equal(t, docs, actual)
+	})
+
+	t.Run("ClosedByContext", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, cancel := context.WithCancel(ctx)
+
+		c := r.NewCursor(ctx, &NewCursorParams{
+			Iter: iterator.Values(iterator.ForSlice(docs)),
+		})
+
+		cancel()
+		<-ctx.Done()
+
+		time.Sleep(time.Second)
+
+		_, _, err := c.Next()
+		assert.Equal(t, context.Canceled, err)
+	})
 }
