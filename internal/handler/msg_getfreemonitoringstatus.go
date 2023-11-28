@@ -17,11 +17,24 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handler/common"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgGetFreeMonitoringStatus implements `getFreeMonitoringStatus` command.
 func (h *Handler) MsgGetFreeMonitoringStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.GetFreeMonitoringStatus(ctx, msg, h.StateProvider.Get())
+	state := h.StateProvider.Get().TelemetryString()
+	message := "monitoring is " + state
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"state", state,
+			"message", message,
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }
