@@ -1212,5 +1212,5 @@ func TestQueryTailableCursors(t *testing.T) {
 	}
 
 	_, err = collection.Find(ctx, bson.D{{}}, options.Find().SetCursorType(options.Tailable))
-	AssertEqualCommandError(t, expectedErr, err)
+	AssertEqualAltCommandError(t, expectedErr, "tailable cursor requested on non capped collection", err)
 }

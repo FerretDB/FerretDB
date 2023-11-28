@@ -39,7 +39,7 @@ func TestAggregateCompatCollStats(t *testing.T) {
 		pipeline bson.A // required
 
 		resultType compatTestCaseResultType // defaults to nonEmptyResult
-		skip       string                   // skip test for all handlers, must have issue number mentioned
+		skip       string                   // always skip this test case, must have issue number mentioned
 	}{
 		"EmptyCollStats": {
 			pipeline: bson.A{bson.D{{"$collStats", bson.D{}}}},

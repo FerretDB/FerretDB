@@ -20,7 +20,7 @@ linters-settings:
         files:
           - $all
         deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/handlers/commonerrors
+          - pkg: github.com/FerretDB/FerretDB/internal/handler/commonerrors
   exhaustive:
     default-signifies-exhaustive: false
   gci:

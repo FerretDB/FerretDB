@@ -32,7 +32,7 @@ type explainCompatTestCase struct {
 	pipeline   bson.A                   // ignored if nil
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 
-	skip string // skip test for all handlers, must have issue number mentioned
+	skip string // always skip this test case, must have issue number mentioned
 }
 
 // testExplainCompatError tests explain compatibility test cases.
@@ -45,7 +45,6 @@ func testExplainCompatError(t *testing.T, testCases map[string]explainCompatTest
 	t.Helper()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		// Use a provider that works for all handlers.
 		Providers: []shareddata.Provider{shareddata.Int32s},
 	})
 
