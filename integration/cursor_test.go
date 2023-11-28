@@ -19,6 +19,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/AlekSi/pointer"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/stretchr/testify/assert"
@@ -59,7 +60,7 @@ func TestCursorStress(t *testing.T) {
 
 	t.Cleanup(func() { require.NoError(t, client.Database("test").Drop(context.TODO())) })
 
-	N := 200
+	N := 10
 
 	var wg sync.WaitGroup
 	for i := 0; i < N; i++ {
@@ -76,10 +77,16 @@ func TestCursorStress(t *testing.T) {
 
 			coll := client.Database("test").Collection("foo")
 
-			cur, err := coll.Find(context.TODO(), bson.D{}, options.Find().SetSort(bson.D{{"_id", 1}}))
+			opts := &options.FindOptions{
+				// set a small batch size to increase the frequency of getMores
+				BatchSize: pointer.ToInt32(20),
+				Sort:      bson.D{{"_id", 1}},
+			}
+
+			cur, err := coll.Find(context.TODO(), bson.D{}, opts)
 			require.NoError(t, err)
 
-			// Iterate the cursor until the cursor is exhausted or there is an error getting the next document
+			// iterate the cursor until it is exhausted or there is an error getting the next document
 			for {
 				if cur.TryNext(context.TODO()) {
 					assert.True(t, cur.Next(context.TODO()))
