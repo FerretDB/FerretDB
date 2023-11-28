@@ -96,26 +96,9 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, common.Unimplemented(document, "tailable")
 	}
 
-	qp := &backends.QueryParams{
-		Comment: params.Comment,
-	}
-
-	if params.Filter != nil {
-		if qp.Comment, err = common.GetOptionalParam(params.Filter, "$comment", qp.Comment); err != nil {
-			return nil, err
-		}
-	}
-
-	if !h.DisableFilterPushdown {
-		qp.Filter = params.Filter
-	}
-
-	// Limit pushdown is not applied if:
-	//  - `filter` is set, it must fetch all documents to filter them in memory;
-	//  - `sort` is set, it must fetch all documents and sort them in memory;
-	//  - `skip` is non-zero value, skip pushdown is not supported yet.
-	if params.Filter.Len() == 0 && params.Sort.Len() == 0 && params.Skip == 0 {
-		qp.Limit = params.Limit
+	qp, err := h.findQueryParams(params)
+	if err != nil {
+		return nil, err
 	}
 
 	cancel := func() {}
@@ -168,6 +151,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	// Combine iterators chain and closer into a cursor to pass around.
 	// The context will be canceled when client disconnects or after maxTimeMS.
 	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
+		QP:           qp,
 		Iter:         iterator.WithClose(iter, closer.Close),
 		DB:           params.DB,
 		Collection:   params.Collection,
@@ -215,4 +199,32 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}))
 
 	return &reply, nil
+}
+
+// findQueryParams makes query parameters from `find` command parameters.
+func (h *Handler) findQueryParams(params *common.FindParams) (*backends.QueryParams, error) {
+	qp := &backends.QueryParams{
+		Comment: params.Comment,
+	}
+
+	if params.Filter != nil {
+		var err error
+		if qp.Comment, err = common.GetOptionalParam(params.Filter, "$comment", qp.Comment); err != nil {
+			return nil, err
+		}
+	}
+
+	if !h.DisableFilterPushdown {
+		qp.Filter = params.Filter
+	}
+
+	// Limit pushdown is not applied if:
+	//  - `filter` is set, it must fetch all documents to filter them in memory;
+	//  - `sort` is set, it must fetch all documents and sort them in memory;
+	//  - `skip` is non-zero value, skip pushdown is not supported yet.
+	if params.Filter.Len() == 0 && params.Sort.Len() == 0 && params.Skip == 0 {
+		qp.Limit = params.Limit
+	}
+
+	return qp, nil
 }

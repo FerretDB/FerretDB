@@ -286,6 +286,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	closer.Add(iter)
 
 	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
+		QP:         nil, // FIXME
 		Iter:       iterator.WithClose(iter, closer.Close),
 		DB:         dbName,
 		Collection: cName,
