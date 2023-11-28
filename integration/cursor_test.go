@@ -15,10 +15,10 @@
 package integration
 
 import (
+	"context"
 	"sync"
 	"testing"
 
-	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/stretchr/testify/assert"
@@ -29,7 +29,10 @@ import (
 )
 
 func TestCursorStress(t *testing.T) {
-	ctx, collection := setup.Setup(t)
+	client, err := mongo.Connect(context.TODO(), nil)
+	if err != nil {
+		t.Error(err)
+	}
 
 	defaultBatchSize := 101
 
@@ -50,11 +53,13 @@ func TestCursorStress(t *testing.T) {
 			insertDocs[i] = docs[i]
 		}
 
-		_, err = collection.InsertMany(ctx, insertDocs)
+		_, err = client.Database("test").Collection("foo").InsertMany(context.TODO(), insertDocs)
 		require.NoError(t, err)
 	}
 
-	N := 10
+	t.Cleanup(func() { require.NoError(t, client.Database("test").Drop(context.TODO())) })
+
+	N := 200
 
 	var wg sync.WaitGroup
 	for i := 0; i < N; i++ {
@@ -64,25 +69,26 @@ func TestCursorStress(t *testing.T) {
 			defer wg.Done()
 
 			// create N clients
-			client, err := mongo.Connect(ctx, nil)
+			client, err := mongo.Connect(context.TODO(), nil)
 			if err != nil {
 				t.Error(err)
 			}
 
-			coll := client.Database("TestCursorStress").Collection(collection.Name())
+			coll := client.Database("test").Collection("foo")
 
-			cur, err := coll.Find(ctx, bson.D{}, options.Find().SetSort(bson.D{{"_id", 1}}))
+			cur, err := coll.Find(context.TODO(), bson.D{}, options.Find().SetSort(bson.D{{"_id", 1}}))
 			require.NoError(t, err)
 
 			// Iterate the cursor until the cursor is exhausted or there is an error getting the next document
 			for {
-				if cur.TryNext(ctx) {
-					assert.True(t, cur.Next(ctx))
+				if cur.TryNext(context.TODO()) {
+					assert.True(t, cur.Next(context.TODO()))
 				}
 
 				if err := cur.Err(); err != nil {
 					t.Error(err)
 				}
+
 				if cur.ID() == 0 {
 					break
 				}
