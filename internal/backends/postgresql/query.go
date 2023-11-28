@@ -270,7 +270,7 @@ func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document, capped 
 	return fmt.Sprintf(" ORDER BY %s->%s%s", metadata.DefaultColumn, p.Next(), order), []any{k}, err
 }
 
-// prepareExplainOrderByClause returns ORDER BY clause.
+// prepareExplainOrderByClause returns ORDER BY clause for explain command.
 //
 // For capped collection, it returns ORDER BY recordID only if sort field is nil.
 //

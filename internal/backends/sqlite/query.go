@@ -70,7 +70,7 @@ func prepareOrderByClause(sort *types.Document, capped bool) (string, error) {
 	return "", nil
 }
 
-// prepareExplainOrderByClause returns ORDER BY clause.
+// prepareExplainOrderByClause returns ORDER BY clause for explain command.
 //
 // For capped collection, it returns ORDER BY recordID only if sort field is nil.
 //
