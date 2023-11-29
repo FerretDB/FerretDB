@@ -127,8 +127,9 @@ func New(config *Config) (*FerretDB, error) {
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		TCP:         config.Listener.TCP,
-		Unix:        config.Listener.Unix,
+		TCP:  config.Listener.TCP,
+		Unix: config.Listener.Unix,
+
 		TLS:         config.Listener.TLS,
 		TLSCertFile: config.Listener.TLSCertFile,
 		TLSKeyFile:  config.Listener.TLSKeyFile,

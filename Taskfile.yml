@@ -429,6 +429,26 @@ tasks:
         --test-records-dir=tmp/records
         --test-enable-oplog
 
+  run-proxy-secured:
+    desc: "Run FerretDB in diff-proxy mode (TLS, auth required)"
+    deps: [build-host]
+    cmds:
+      - >
+        bin/ferretdb{{exeExt}}
+        --listen-addr=''
+        --listen-tls=:27018
+        --listen-tls-cert-file=./build/certs/server-cert.pem
+        --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls-ca-file=./build/certs/rootCA-cert.pem
+        --proxy-addr=127.0.0.1:47018
+        --proxy-tls-cert-file=./build/certs/client-cert.pem
+        --proxy-tls-key-file=./build/certs/client-key.pem
+        --proxy-tls-ca-file=./build/certs/rootCA-cert.pem
+        --mode=diff-proxy
+        --handler=pg
+        --postgresql-url='postgres://username@127.0.0.1:5433/ferretdb?search_path='
+        --test-records-dir=tmp/records
+
   lint:
     desc: "Run linters"
     cmds:
