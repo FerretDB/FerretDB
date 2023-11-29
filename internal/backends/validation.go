@@ -55,7 +55,8 @@ func validateDatabaseName(name string) error {
 //
 // It follows MongoDB restrictions plus:
 //   - allows only UTF-8 characters;
-//   - disallows '.' prefix (MongoDB fails to work with such collections correctly too);
+//   - allows `system.` prefix ("system" collections are just regular collections);
+//   - disallows `.` prefix (MongoDB fails to work with such collections correctly too);
 //   - disallows `_ferretdb_` prefix.
 //
 // That validation is quite lax because
@@ -67,7 +68,7 @@ func validateCollectionName(name string) error {
 		return NewError(ErrorCodeCollectionNameIsInvalid, nil)
 	}
 
-	if strings.HasPrefix(name, ReservedPrefix) || strings.HasPrefix(name, "system.") {
+	if strings.HasPrefix(name, ReservedPrefix) {
 		return NewError(ErrorCodeCollectionNameIsInvalid, nil)
 	}
 
