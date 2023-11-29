@@ -28,11 +28,11 @@ import (
 // MsgListCommands implements `listCommands` command.
 func (h *Handler) MsgListCommands(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	cmdList := must.NotFail(types.NewDocument())
-	names := maps.Keys(h.commands)
+	names := maps.Keys(h.Commands())
 	sort.Strings(names)
 
 	for _, name := range names {
-		cmd := h.commands[name]
+		cmd := h.Commands()[name]
 		if cmd.Help == "" {
 			continue
 		}

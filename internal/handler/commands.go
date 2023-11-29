@@ -32,7 +32,7 @@ type command struct {
 	Help string
 }
 
-// FIXME Commands maps commands names to descriptions and implementations.
+// initCommands initializes the commands map for that handler instance.
 func (h *Handler) initCommands() {
 	h.commands = map[string]command{
 		// sorted alphabetically
@@ -233,17 +233,32 @@ func (h *Handler) initCommands() {
 	}
 
 	if h.EnableNewAuth {
+		// sorted alphabetically
 		h.commands["createUser"] = command{
 			Handler: h.MsgCreateUser,
 			Help:    "Creates a new user.",
+		}
+		h.commands["dropAllUsersFromDatabase"] = command{
+			Handler: h.MsgDropAllUsersFromDatabase,
+			Help:    "Drops all user from database.",
 		}
 		h.commands["dropUser"] = command{
 			Handler: h.MsgDropUser,
 			Help:    "Drops user.",
 		}
+		h.commands["updateUser"] = command{
+			Handler: h.MsgUpdateUser,
+			Help:    "Updates user.",
+		}
+		h.commands["usersInfo"] = command{
+			Handler: h.MsgUpdateUser,
+			Help:    "Returns information about users.",
+		}
+		// please keep sorted alphabetically
 	}
 }
 
+// Commands returns a map of enabled commands.
 func (h *Handler) Commands() map[string]command {
 	return h.commands
 }
