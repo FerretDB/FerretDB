@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package commonerrors providers errors shared by all handlers.
+// Package commonerrors provides handlers errors.
 package commonerrors
 
 import (
@@ -90,7 +90,7 @@ const (
 	// ErrIndexAlreadyExists indicates that identical index already exists.
 	ErrIndexAlreadyExists = ErrorCode(68) // IndexAlreadyExists
 
-	// ErrInvalidOptions indicates that _id index cannot be deleted.
+	// ErrInvalidOptions indicates that invalid options were passed.
 	ErrInvalidOptions = ErrorCode(72) // InvalidOptions
 
 	// ErrInvalidNamespace indicates that the collection name is invalid.

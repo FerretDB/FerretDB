@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package operators provides aggregation operators.
 package operators
 
 // operatorErrorCode represents the type of error.

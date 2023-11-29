@@ -72,7 +72,7 @@ services:
   mongodb:
     build:
       context: ./build/deps
-      dockerfile: ${MONGO_DOCKERFILE:-mongo}.Dockerfile
+      dockerfile: mongo.Dockerfile
     container_name: ferretdb_mongodb
     command: --config /etc/mongodb.conf
     ports:
@@ -89,7 +89,7 @@ services:
   mongodb_secured:
     build:
       context: ./build/deps
-      dockerfile: ${MONGO_DOCKERFILE:-mongo}.Dockerfile
+      dockerfile: mongo.Dockerfile
     container_name: ferretdb_mongodb_secured
     command: --config /etc/mongodb.conf
     ports:
