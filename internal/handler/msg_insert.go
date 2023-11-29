@@ -22,10 +22,11 @@ import (
 	"slices"
 
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
-	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -52,7 +53,7 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	params, err := common.GetInsertParams(document, h.L)
+	params, err := GetInsertParams(document, h.L)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -206,4 +207,46 @@ func (h *Handler) MsgInsert(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}))
 
 	return &reply, nil
+}
+
+// InsertParams represents the parameters for an insert command.
+type InsertParams struct {
+	Docs       *types.Array `ferretdb:"documents,opt"`
+	DB         string       `ferretdb:"$db"`
+	Collection string       `ferretdb:"insert,collection"`
+	Ordered    bool         `ferretdb:"ordered,opt"`
+
+	WriteConcern             any    `ferretdb:"writeConcern,ignored"`
+	BypassDocumentValidation bool   `ferretdb:"bypassDocumentValidation,ignored"`
+	Comment                  string `ferretdb:"comment,ignored"`
+	LSID                     any    `ferretdb:"lsid,ignored"`
+}
+
+// GetInsertParams returns the parameters for an insert command.
+func GetInsertParams(document *types.Document, l *zap.Logger) (*InsertParams, error) {
+	params := InsertParams{
+		Ordered: true,
+	}
+
+	err := commonparams.ExtractParams(document, "insert", &params, l)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := 0; i < params.Docs.Len(); i++ {
+		doc := must.NotFail(params.Docs.Get(i))
+
+		if _, ok := doc.(*types.Document); !ok {
+			return nil, commonerrors.NewCommandErrorMsg(
+				commonerrors.ErrTypeMismatch,
+				fmt.Sprintf(
+					"BSON field 'insert.documents.%d' is the wrong type '%s', expected type 'object'",
+					i,
+					commonparams.AliasFromType(doc),
+				),
+			)
+		}
+	}
+
+	return &params, nil
 }
