@@ -81,7 +81,25 @@ func convertSortDocument(sortDoc *types.Document) (*types.Document, error) {
 		sortField := must.NotFail(sortDoc.Get(sortKey))
 
 		sortValue, err := commonparams.GetWholeNumberParam(sortField)
-		if err != nil {
+		switch {
+		case err == nil:
+		case errors.Is(err, commonparams.ErrUnexpectedType):
+			if _, ok := sortField.(types.NullType); ok {
+				sortField = "null"
+			}
+
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrSortBadValue,
+				fmt.Sprintf(`Illegal key in $sort specification: %v: %v`, sortKey, sortField),
+				"$sort",
+			)
+		case errors.Is(err, commonparams.ErrNotWholeNumber):
+			return nil, commonerrors.NewCommandErrorMsgWithArgument(
+				commonerrors.ErrSortBadOrder,
+				"$sort key ordering must be 1 (for ascending) or -1 (for descending)",
+				"$sort",
+			)
+		default:
 			return nil, err
 		}
 
