@@ -22,11 +22,13 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
+	"go.uber.org/zap"
 )
 
 // MsgCount implements `count` command.
@@ -36,7 +38,7 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 		return nil, lazyerrors.Error(err)
 	}
 
-	params, err := common.GetCountParams(document, h.L)
+	params, err := GetCountParams(document, h.L)
 	if err != nil {
 		return nil, err
 	}
@@ -105,4 +107,35 @@ func (h *Handler) MsgCount(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, e
 	}))
 
 	return &reply, nil
+}
+
+// CountParams represents parameters for the count command.
+type CountParams struct {
+	Filter     *types.Document `ferretdb:"query,opt"`
+	DB         string          `ferretdb:"$db"`
+	Collection string          `ferretdb:"count,collection"`
+
+	Skip  int64 `ferretdb:"skip,opt,positiveNumber"`
+	Limit int64 `ferretdb:"limit,opt,positiveNumber"`
+
+	Collation *types.Document `ferretdb:"collation,unimplemented"`
+
+	Fields any `ferretdb:"fields,ignored"` // legacy MongoDB shell adds it, but it is never actually used
+
+	Hint        any             `ferretdb:"hint,ignored"`
+	ReadConcern *types.Document `ferretdb:"readConcern,ignored"`
+	Comment     string          `ferretdb:"comment,ignored"`
+	LSID        any             `ferretdb:"lsid,ignored"`
+}
+
+// GetCountParams returns the parameters for the count command.
+func GetCountParams(document *types.Document, l *zap.Logger) (*CountParams, error) {
+	var count CountParams
+
+	err := commonparams.ExtractParams(document, "count", &count, l)
+	if err != nil {
+		return nil, err
+	}
+
+	return &count, nil
 }

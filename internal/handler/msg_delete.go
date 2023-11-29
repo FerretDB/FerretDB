@@ -20,10 +20,12 @@ import (
 	"fmt"
 
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -38,7 +40,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		return nil, lazyerrors.Error(err)
 	}
 
-	params, err := common.GetDeleteParams(document, h.L)
+	params, err := GetDeleteParams(document, h.L)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -115,7 +117,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 //
 // It returns a number of deleted documents or error.
 // The error is either a (wrapped) *commonerrors.CommandError or something fatal.
-func (h *Handler) execDelete(ctx context.Context, c backends.Collection, p *common.Delete) (int32, error) {
+func (h *Handler) execDelete(ctx context.Context, c backends.Collection, p *Delete) (int32, error) {
 	var qp backends.QueryParams
 	if !h.DisableFilterPushdown {
 		qp.Filter = p.Filter
@@ -170,4 +172,47 @@ func (h *Handler) execDelete(ctx context.Context, c backends.Collection, p *comm
 	}
 
 	return d.Deleted, nil
+}
+
+// DeleteParams represents parameters for the delete command.
+//
+//nolint:vet // for readability
+type DeleteParams struct {
+	DB         string `ferretdb:"$db"`
+	Collection string `ferretdb:"delete,collection"`
+
+	Deletes []Delete `ferretdb:"deletes,opt"`
+	Comment string   `ferretdb:"comment,opt"`
+	Ordered bool     `ferretdb:"ordered,opt"`
+
+	Let *types.Document `ferretdb:"let,unimplemented"`
+
+	WriteConcern *types.Document `ferretdb:"writeConcern,ignored"`
+	LSID         any             `ferretdb:"lsid,ignored"`
+}
+
+// Delete represents single delete operation parameters.
+//
+//nolint:vet // for readability
+type Delete struct {
+	Filter  *types.Document `ferretdb:"q"`
+	Limited bool            `ferretdb:"limit,zeroOrOneAsBool"`
+
+	Collation *types.Document `ferretdb:"collation,unimplemented"`
+
+	Hint string `ferretdb:"hint,ignored"`
+}
+
+// GetDeleteParams returns parameters for delete operation.
+func GetDeleteParams(document *types.Document, l *zap.Logger) (*DeleteParams, error) {
+	params := DeleteParams{
+		Ordered: true,
+	}
+
+	err := commonparams.ExtractParams(document, "delete", &params, l)
+	if err != nil {
+		return nil, err
+	}
+
+	return &params, nil
 }
