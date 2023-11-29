@@ -83,7 +83,7 @@ func validateCollectionName(name string) error {
 // If they're not, it panics, thus the proper validation with error handling should be done
 // properly on the handler level.
 func validateSort(key string, value any) {
-	sortValue := GetWholeNumber(value)
+	sortValue := getWholeNumber(value)
 
 	if sortValue != -1 && sortValue != 1 {
 		panic("sort key ordering must be 1 (for ascending) or -1 (for descending)")
@@ -95,7 +95,7 @@ func validateSort(key string, value any) {
 //
 // It panics if provided value is invalid, thus the proper validation with error handling should be done
 // properly on the handler level.
-func GetWholeNumber(value any) int64 {
+func getWholeNumber(value any) int64 {
 	switch value := value.(type) {
 	// add string support
 	// TODO https://github.com/FerretDB/FerretDB/issues/1089
