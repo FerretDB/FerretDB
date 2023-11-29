@@ -85,14 +85,12 @@ func convertSortDocument(sortDoc *types.Document) (*types.Document, error) {
 			return nil, err
 		}
 
-		sortPath, err := types.NewPathFromString(sortKey)
+		_, err = types.NewPathFromString(sortKey)
 		if err != nil {
 			return nil, err
 		}
 
-		if err = res.SetByPath(sortPath, sortValue); err != nil {
-			return nil, lazyerrors.Error(err)
-		}
+		res.Set(sortKey, sortValue)
 	}
 
 	return res, nil
