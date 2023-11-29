@@ -25,7 +25,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -60,7 +60,7 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			handlererrors.ErrTypeMismatch,
 			fmt.Errorf(
 				"BSON field 'getLog.getLog' is the wrong type '%s', expected type 'string'",
-				commonparams.AliasFromType(getLog),
+				handlerparams.AliasFromType(getLog),
 			),
 		)
 	}

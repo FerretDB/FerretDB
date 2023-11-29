@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -394,7 +394,7 @@ func processIncFieldExpression(command string, doc *types.Document, updateV any)
 		}
 
 		switch {
-		case errors.Is(err, commonparams.ErrUnexpectedRightOpType):
+		case errors.Is(err, handlerparams.ErrUnexpectedRightOpType):
 			k := incKey
 			if path.Len() > 1 {
 				k = path.Suffix()
@@ -407,11 +407,11 @@ func processIncFieldExpression(command string, doc *types.Document, updateV any)
 						`{_id: %s} has the field '%s' of non-numeric type %s`,
 					types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
 					k,
-					commonparams.AliasFromType(docValue),
+					handlerparams.AliasFromType(docValue),
 				),
 				command,
 			)
-		case errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
+		case errors.Is(err, handlerparams.ErrLongExceededPositive), errors.Is(err, handlerparams.ErrLongExceededNegative):
 			return false, newUpdateError(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf(
@@ -421,7 +421,7 @@ func processIncFieldExpression(command string, doc *types.Document, updateV any)
 				),
 				command,
 			)
-		case errors.Is(err, commonparams.ErrIntExceeded):
+		case errors.Is(err, handlerparams.ErrIntExceeded):
 			return false, newUpdateError(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf(
@@ -655,7 +655,7 @@ func processMulFieldExpression(command string, doc *types.Document, updateV any)
 
 			continue
 
-		case errors.Is(err, commonparams.ErrUnexpectedLeftOpType):
+		case errors.Is(err, handlerparams.ErrUnexpectedLeftOpType):
 			return false, newUpdateError(
 				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf(
@@ -665,7 +665,7 @@ func processMulFieldExpression(command string, doc *types.Document, updateV any)
 				),
 				command,
 			)
-		case errors.Is(err, commonparams.ErrUnexpectedRightOpType):
+		case errors.Is(err, handlerparams.ErrUnexpectedRightOpType):
 			k := mulKey
 			if path.Len() > 1 {
 				k = path.Suffix()
@@ -678,11 +678,11 @@ func processMulFieldExpression(command string, doc *types.Document, updateV any)
 						`{_id: %s} has the field '%s' of non-numeric type %s`,
 					types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
 					k,
-					commonparams.AliasFromType(docValue),
+					handlerparams.AliasFromType(docValue),
 				),
 				command,
 			)
-		case errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
+		case errors.Is(err, handlerparams.ErrLongExceededPositive), errors.Is(err, handlerparams.ErrLongExceededNegative):
 			return false, newUpdateError(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf(
@@ -692,7 +692,7 @@ func processMulFieldExpression(command string, doc *types.Document, updateV any)
 				),
 				command,
 			)
-		case errors.Is(err, commonparams.ErrIntExceeded):
+		case errors.Is(err, handlerparams.ErrIntExceeded):
 			return false, newUpdateError(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf(
@@ -767,7 +767,7 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 				fmt.Sprintf(
 					`The $bit modifier is not compatible with a %s. `+
 						`You must pass in an embedded document: {$bit: {field: {and/or/xor: #}}`,
-					commonparams.AliasFromType(bitValue),
+					handlerparams.AliasFromType(bitValue),
 				),
 				command,
 			)
@@ -814,20 +814,20 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 
 				continue
 
-			case errors.Is(err, commonparams.ErrUnexpectedLeftOpType):
+			case errors.Is(err, handlerparams.ErrUnexpectedLeftOpType):
 				return false, newUpdateError(
 					handlererrors.ErrBadValue,
 					fmt.Sprintf(
 						`The $bit modifier field must be an Integer(32/64 bit); a `+
 							`'%s' is not supported here: {%s: %s}`,
-						commonparams.AliasFromType(bitOpValue),
+						handlerparams.AliasFromType(bitOpValue),
 						bitOp,
 						types.FormatAnyValue(bitOpValue),
 					),
 					command,
 				)
 
-			case errors.Is(err, commonparams.ErrUnexpectedRightOpType):
+			case errors.Is(err, handlerparams.ErrUnexpectedRightOpType):
 				return false, newUpdateError(
 					handlererrors.ErrBadValue,
 					fmt.Sprintf(
@@ -835,7 +835,7 @@ func processBitFieldExpression(command string, doc *types.Document, updateV any)
 							`_id: %s has the field %s of non-integer type %s`,
 						types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
 						path.Suffix(),
-						commonparams.AliasFromType(docValue),
+						handlerparams.AliasFromType(docValue),
 					),
 					command,
 				)
@@ -1082,7 +1082,7 @@ func extractValueFromUpdateOperator(command, op string, update *types.Document) 
 			handlererrors.ErrFailedToParse,
 			fmt.Sprintf(`Modifiers operate on fields but we found type %[1]s instead. `+
 				`For example: {$mod: {<field>: ...}} not {%s: %s}`,
-				commonparams.AliasFromType(updateExpression),
+				handlerparams.AliasFromType(updateExpression),
 				op,
 				types.FormatAnyValue(updateExpression),
 			),
@@ -1220,7 +1220,7 @@ func validateCurrentDateExpression(command string, update *types.Document) error
 			return newUpdateError(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf("%s is not valid type for $currentDate. Please use a boolean ('true') "+
-					"or a $type expression ({$type: 'timestamp/date'}).", commonparams.AliasFromType(setValue),
+					"or a $type expression ({$type: 'timestamp/date'}).", handlerparams.AliasFromType(setValue),
 				),
 				command,
 			)

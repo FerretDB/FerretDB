@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -76,7 +76,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 
 	var capped bool
 	if v, _ := document.Get("capped"); v != nil {
-		capped, err = commonparams.GetBoolOptionalParam("capped", v)
+		capped, err = handlerparams.GetBoolOptionalParam("capped", v)
 		if err != nil {
 			return nil, err
 		}
@@ -93,7 +93,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidOptions, msg, "create")
 		}
 
-		params.CappedSize, err = commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "size", size, 1)
+		params.CappedSize, err = handlerparams.GetValidatedNumberParamWithMinValue(document.Command(), "size", size, 1)
 		if err != nil {
 			return nil, err
 		}
@@ -103,7 +103,7 @@ func (h *Handler) MsgCreate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		}
 
 		if max, _ := document.Get("max"); max != nil {
-			params.CappedDocuments, err = commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "max", max, 0)
+			params.CappedDocuments, err = handlerparams.GetValidatedNumberParamWithMinValue(document.Command(), "max", max, 0)
 			if err != nil {
 				return nil, err
 			}

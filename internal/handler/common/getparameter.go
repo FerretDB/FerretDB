@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -138,14 +138,14 @@ func extractGetParameter(getParameter any) (showDetails, allParameters bool, err
 
 	if param, ok := getParameter.(*types.Document); ok {
 		if v, _ := param.Get("showDetails"); v != nil {
-			showDetails, err = commonparams.GetBoolOptionalParam("showDetails", v)
+			showDetails, err = handlerparams.GetBoolOptionalParam("showDetails", v)
 			if err != nil {
 				return false, false, lazyerrors.Error(err)
 			}
 		}
 
 		if v, _ := param.Get("allParameters"); v != nil {
-			allParameters, err = commonparams.GetBoolOptionalParam("allParameters", v)
+			allParameters, err = handlerparams.GetBoolOptionalParam("allParameters", v)
 			if err != nil {
 				return false, false, lazyerrors.Error(err)
 			}

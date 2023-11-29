@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package commonparams provides functions for parsing handlers parameters.
-package commonparams
+// Package handlerparams provides functions for parsing handlers parameters.
+package handlerparams
 
 import (
 	"errors"

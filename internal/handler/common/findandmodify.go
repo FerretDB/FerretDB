@@ -21,7 +21,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -89,7 +89,7 @@ type UpsertParams struct {
 func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyParams, error) {
 	var params FindAndModifyParams
 
-	err := commonparams.ExtractParams(doc, "findAndModify", &params, l)
+	err := handlerparams.ExtractParams(doc, "findAndModify", &params, l)
 	if err != nil {
 		return nil, err
 	}

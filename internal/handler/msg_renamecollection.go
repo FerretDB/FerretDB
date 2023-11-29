@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -60,7 +60,7 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", commonparams.AliasFromType(from)),
+			fmt.Sprintf("collection name has invalid type %s", handlerparams.AliasFromType(from)),
 			command,
 		)
 	}
@@ -74,12 +74,12 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 		)
 	}
 
-	oldDBName, oldCName, err := commonparams.SplitNamespace(oldName, command)
+	oldDBName, oldCName, err := handlerparams.SplitNamespace(oldName, command)
 	if err != nil {
 		return nil, err
 	}
 
-	newDBName, newCName, err := commonparams.SplitNamespace(newName, command)
+	newDBName, newCName, err := handlerparams.SplitNamespace(newName, command)
 	if err != nil {
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrInvalidNamespace,

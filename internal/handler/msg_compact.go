@@ -21,7 +21,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -78,7 +78,7 @@ func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	var force bool
 
 	if v, _ := document.Get("force"); v != nil {
-		if force, err = commonparams.GetBoolOptionalParam("force", v); err != nil {
+		if force, err = handlerparams.GetBoolOptionalParam("force", v); err != nil {
 			return nil, err
 		}
 	}

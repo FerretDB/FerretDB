@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 )
 
 func TestMultiplyLongSafely(t *testing.T) {
@@ -53,12 +53,12 @@ func TestMultiplyLongSafely(t *testing.T) {
 		"OverflowLarge": {
 			v1:  1 << 60,
 			v2:  42,
-			err: commonparams.ErrLongExceededPositive,
+			err: handlerparams.ErrLongExceededPositive,
 		},
 		"OverflowMax": {
 			v1:  math.MaxInt64,
 			v2:  2,
-			err: commonparams.ErrLongExceededPositive,
+			err: handlerparams.ErrLongExceededPositive,
 		},
 		"MaxMinusOne": {
 			v1:       math.MaxInt64,
@@ -68,17 +68,17 @@ func TestMultiplyLongSafely(t *testing.T) {
 		"OverflowMaxMinusTwo": {
 			v1:  math.MaxInt64,
 			v2:  -2,
-			err: commonparams.ErrLongExceededPositive,
+			err: handlerparams.ErrLongExceededPositive,
 		},
 		"OverflowMin": {
 			v1:  math.MinInt64,
 			v2:  2,
-			err: commonparams.ErrLongExceededNegative,
+			err: handlerparams.ErrLongExceededNegative,
 		},
 		"OverflowMinMinusOne": {
 			v1:  math.MinInt64,
 			v2:  -1,
-			err: commonparams.ErrLongExceededNegative,
+			err: handlerparams.ErrLongExceededNegative,
 		},
 	} {
 		name, tc := name, tc

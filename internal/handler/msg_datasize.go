@@ -22,7 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -52,12 +52,12 @@ func (h *Handler) MsgDataSize(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 	if !ok {
 		return nil, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrBadValue,
-			fmt.Sprintf("collection name has invalid type %s", commonparams.AliasFromType(namespaceParam)),
+			fmt.Sprintf("collection name has invalid type %s", handlerparams.AliasFromType(namespaceParam)),
 			document.Command(),
 		)
 	}
 
-	dbName, cName, err := commonparams.SplitNamespace(namespace, document.Command())
+	dbName, cName, err := handlerparams.SplitNamespace(namespace, document.Command())
 	if err != nil {
 		return nil, err
 	}

@@ -24,7 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -100,7 +100,7 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 			handlererrors.ErrTypeMismatch,
 			fmt.Sprintf(
 				"BSON field 'createIndexes.indexes' is the wrong type '%s', expected type 'array'",
-				commonparams.AliasFromType(v),
+				handlerparams.AliasFromType(v),
 			),
 			document.Command(),
 		)
@@ -200,7 +200,7 @@ func processIndexesArray(command string, indexesArray *types.Array) ([]backends.
 				fmt.Sprintf(
 					"BSON field 'createIndexes.indexes.%d' is the wrong type '%s', expected type 'object'",
 					key,
-					commonparams.AliasFromType(val),
+					handlerparams.AliasFromType(val),
 				),
 				command,
 			)
@@ -275,7 +275,7 @@ func processIndex(command string, indexDoc *types.Document) (*backends.IndexInfo
 			var order int64
 
 			if val, err = keyDoc.Get("_id"); err == nil {
-				if order, err = commonparams.GetWholeNumberParam(val); err == nil && order == -1 {
+				if order, err = handlerparams.GetWholeNumberParam(val); err == nil && order == -1 {
 					return nil, handlererrors.NewCommandErrorMsgWithArgument(
 						handlererrors.ErrBadValue,
 						"The field 'key' for an _id index must be {_id: 1}, but got { _id: -1 }",
@@ -409,7 +409,7 @@ func processIndexKey(command string, keyDoc *types.Document) ([]backends.IndexKe
 
 		var orderParam int64
 
-		if orderParam, err = commonparams.GetWholeNumberParam(order); err != nil {
+		if orderParam, err = handlerparams.GetWholeNumberParam(order); err != nil {
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrIndexNotFound,
 				fmt.Sprintf("can't find index with key: { %s: %q }", field, order),

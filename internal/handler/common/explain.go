@@ -18,7 +18,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -95,7 +95,7 @@ func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, 
 		return nil, err
 	}
 
-	if limit, err = commonparams.GetValidatedNumberParamWithMinValue("explain", "limit", limit, 0); err != nil {
+	if limit, err = handlerparams.GetValidatedNumberParamWithMinValue("explain", "limit", limit, 0); err != nil {
 		return nil, err
 	}
 
@@ -103,7 +103,7 @@ func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, 
 		return nil, err
 	}
 
-	if skip, err = commonparams.GetValidatedNumberParamWithMinValue("explain", "skip", skip, 0); err != nil {
+	if skip, err = handlerparams.GetValidatedNumberParamWithMinValue("explain", "skip", skip, 0); err != nil {
 		return nil, err
 	}
 

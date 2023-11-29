@@ -22,7 +22,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -191,7 +191,7 @@ func processDropIndexOptions(command, ns string, v any, existing []backends.Inde
 					handlererrors.ErrTypeMismatch,
 					fmt.Sprintf(
 						"BSON field 'dropIndexes.index' is the wrong type '%s', expected types '[string, object]'",
-						commonparams.AliasFromType(v),
+						handlerparams.AliasFromType(v),
 					),
 					command,
 				)
@@ -274,7 +274,7 @@ func processDropIndexOptions(command, ns string, v any, existing []backends.Inde
 		handlererrors.ErrTypeMismatch,
 		fmt.Sprintf(
 			"BSON field 'dropIndexes.index' is the wrong type '%s', expected types '[string, object]'",
-			commonparams.AliasFromType(v),
+			handlerparams.AliasFromType(v),
 		),
 		command,
 	)

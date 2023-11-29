@@ -31,7 +31,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations/stages"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -108,11 +108,11 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		v = int64(0)
 	}
 
-	// cannot use other existing commonparams function, they return different error codes
-	maxTimeMS, err := commonparams.GetWholeNumberParam(v)
+	// cannot use other existing handlerparams function, they return different error codes
+	maxTimeMS, err := handlerparams.GetWholeNumberParam(v)
 	if err != nil {
 		switch {
-		case errors.Is(err, commonparams.ErrUnexpectedType):
+		case errors.Is(err, handlerparams.ErrUnexpectedType):
 			if _, ok = v.(types.NullType); ok {
 				return nil, handlererrors.NewCommandErrorMsgWithArgument(
 					handlererrors.ErrBadValue,
@@ -125,23 +125,23 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					`BSON field 'aggregate.maxTimeMS' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
-					commonparams.AliasFromType(v),
+					handlerparams.AliasFromType(v),
 				),
 				document.Command(),
 			)
-		case errors.Is(err, commonparams.ErrNotWholeNumber):
+		case errors.Is(err, handlerparams.ErrNotWholeNumber):
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrBadValue,
 				"maxTimeMS has non-integral value",
 				document.Command(),
 			)
-		case errors.Is(err, commonparams.ErrLongExceededPositive):
+		case errors.Is(err, handlerparams.ErrLongExceededPositive):
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf("%s value for maxTimeMS is out of range", types.FormatAnyValue(v)),
 				document.Command(),
 			)
-		case errors.Is(err, commonparams.ErrLongExceededNegative):
+		case errors.Is(err, handlerparams.ErrLongExceededNegative):
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrValueNegative,
 				fmt.Sprintf("BSON field 'maxTimeMS' value must be >= 0, actual value '%s'", types.FormatAnyValue(v)),
@@ -231,7 +231,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			handlererrors.ErrTypeMismatch,
 			fmt.Sprintf(
 				`BSON field 'cursor' is the wrong type '%s', expected type 'object'`,
-				commonparams.AliasFromType(v),
+				handlerparams.AliasFromType(v),
 			),
 			document.Command(),
 		)
@@ -242,7 +242,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		v = int32(101)
 	}
 
-	batchSize, err := commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "batchSize", v, 0)
+	batchSize, err := handlerparams.GetValidatedNumberParamWithMinValue(document.Command(), "batchSize", v, 0)
 	if err != nil {
 		return nil, err
 	}

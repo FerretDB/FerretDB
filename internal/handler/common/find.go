@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -65,7 +65,7 @@ func GetFindParams(doc *types.Document, l *zap.Logger) (*FindParams, error) {
 		BatchSize: 101,
 	}
 
-	err := commonparams.ExtractParams(doc, "find", &params, l)
+	err := handlerparams.ExtractParams(doc, "find", &params, l)
 
 	var ce *handlererrors.CommandError
 	if errors.As(err, &ce) {

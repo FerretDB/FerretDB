@@ -24,7 +24,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/handler/commonpath"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -867,22 +867,22 @@ func filterFieldExprRegex(fieldValue any, regexValue, optionsValue any) (bool, e
 
 // filterFieldExprSize handles {field: {$size: sizeValue}} filter.
 func filterFieldExprSize(fieldValue any, sizeValue any) (bool, error) {
-	size, err := commonparams.GetWholeNumberParam(sizeValue)
+	size, err := handlerparams.GetWholeNumberParam(sizeValue)
 	if err != nil {
 		switch err {
-		case commonparams.ErrUnexpectedType:
+		case handlerparams.ErrUnexpectedType:
 			return false, handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf(`Failed to parse $size. Expected a number in: $size: %s`, types.FormatAnyValue(sizeValue)),
 				"$size",
 			)
-		case commonparams.ErrNotWholeNumber:
+		case handlerparams.ErrNotWholeNumber:
 			return false, handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf(`Failed to parse $size. Expected an integer: $size: %s`, types.FormatAnyValue(sizeValue)),
 				"$size",
 			)
-		case commonparams.ErrInfinity:
+		case handlerparams.ErrInfinity:
 			return false, handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrBadValue,
 				fmt.Sprintf(
@@ -1253,7 +1253,7 @@ func filterFieldExprExists(fieldExist bool, exprValue any) (bool, error) {
 func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 	switch exprValue := exprValue.(type) {
 	case *types.Array:
-		hasSameType := commonparams.HasSameTypeElements(exprValue)
+		hasSameType := handlerparams.HasSameTypeElements(exprValue)
 
 		for i := 0; i < exprValue.Len(); i++ {
 			exprValue := must.NotFail(exprValue.Get(i))
@@ -1275,7 +1275,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 					)
 				}
 
-				code, err := commonparams.NewTypeCode(int32(exprValue))
+				code, err := handlerparams.NewTypeCode(int32(exprValue))
 				if err != nil {
 					return false, err
 				}
@@ -1293,7 +1293,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 				}
 
 			case string:
-				code, err := commonparams.ParseTypeCode(exprValue)
+				code, err := handlerparams.ParseTypeCode(exprValue)
 				if err != nil {
 					return false, err
 				}
@@ -1305,7 +1305,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 					return true, nil
 				}
 			case int32:
-				code, err := commonparams.NewTypeCode(exprValue)
+				code, err := handlerparams.NewTypeCode(exprValue)
 				if err != nil {
 					return false, err
 				}
@@ -1347,7 +1347,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 			)
 		}
 
-		code, err := commonparams.NewTypeCode(int32(exprValue))
+		code, err := handlerparams.NewTypeCode(int32(exprValue))
 		if err != nil {
 			return false, err
 		}
@@ -1355,7 +1355,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 		return filterFieldValueByTypeCode(fieldValue, code)
 
 	case string:
-		code, err := commonparams.ParseTypeCode(exprValue)
+		code, err := handlerparams.ParseTypeCode(exprValue)
 		if err != nil {
 			return false, err
 		}
@@ -1363,7 +1363,7 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 		return filterFieldValueByTypeCode(fieldValue, code)
 
 	case int32:
-		code, err := commonparams.NewTypeCode(exprValue)
+		code, err := handlerparams.NewTypeCode(exprValue)
 		if err != nil {
 			return false, err
 		}
@@ -1380,9 +1380,9 @@ func filterFieldExprType(fieldValue, exprValue any) (bool, error) {
 }
 
 // filterFieldValueByTypeCode filters fieldValue by given type code.
-func filterFieldValueByTypeCode(fieldValue any, code commonparams.TypeCode) (bool, error) {
+func filterFieldValueByTypeCode(fieldValue any, code handlerparams.TypeCode) (bool, error) {
 	// check types.Array elements for match to given code.
-	if array, ok := fieldValue.(*types.Array); ok && code != commonparams.TypeCodeArray {
+	if array, ok := fieldValue.(*types.Array); ok && code != handlerparams.TypeCodeArray {
 		for i := 0; i < array.Len(); i++ {
 			value, _ := array.Get(i)
 
@@ -1403,59 +1403,59 @@ func filterFieldValueByTypeCode(fieldValue any, code commonparams.TypeCode) (boo
 	}
 
 	switch code {
-	case commonparams.TypeCodeArray:
+	case handlerparams.TypeCodeArray:
 		if _, ok := fieldValue.(*types.Array); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeObject:
+	case handlerparams.TypeCodeObject:
 		if _, ok := fieldValue.(*types.Document); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeDouble:
+	case handlerparams.TypeCodeDouble:
 		if _, ok := fieldValue.(float64); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeString:
+	case handlerparams.TypeCodeString:
 		if _, ok := fieldValue.(string); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeBinData:
+	case handlerparams.TypeCodeBinData:
 		if _, ok := fieldValue.(types.Binary); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeObjectID:
+	case handlerparams.TypeCodeObjectID:
 		if _, ok := fieldValue.(types.ObjectID); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeBool:
+	case handlerparams.TypeCodeBool:
 		if _, ok := fieldValue.(bool); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeDate:
+	case handlerparams.TypeCodeDate:
 		if _, ok := fieldValue.(time.Time); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeNull:
+	case handlerparams.TypeCodeNull:
 		if _, ok := fieldValue.(types.NullType); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeRegex:
+	case handlerparams.TypeCodeRegex:
 		if _, ok := fieldValue.(types.Regex); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeInt:
+	case handlerparams.TypeCodeInt:
 		if _, ok := fieldValue.(int32); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeTimestamp:
+	case handlerparams.TypeCodeTimestamp:
 		if _, ok := fieldValue.(types.Timestamp); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeLong:
+	case handlerparams.TypeCodeLong:
 		if _, ok := fieldValue.(int64); !ok {
 			return false, nil
 		}
-	case commonparams.TypeCodeNumber:
+	case handlerparams.TypeCodeNumber:
 		// TypeCodeNumber should match int32, int64 and float64 types
 		switch fieldValue.(type) {
 		case float64, int32, int64:
@@ -1463,7 +1463,7 @@ func filterFieldValueByTypeCode(fieldValue any, code commonparams.TypeCode) (boo
 		default:
 			return false, nil
 		}
-	case commonparams.TypeCodeDecimal, commonparams.TypeCodeMinKey, commonparams.TypeCodeMaxKey:
+	case handlerparams.TypeCodeDecimal, handlerparams.TypeCodeMinKey, handlerparams.TypeCodeMaxKey:
 		return false, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrNotImplemented,
 			fmt.Sprintf(`Type code %v not implemented`, code),
