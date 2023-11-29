@@ -80,26 +80,8 @@ func convertSortDocument(sortDoc *types.Document) (*types.Document, error) {
 
 		sortField := must.NotFail(sortDoc.Get(sortKey))
 
-		sortValue, err := commonparams.GetWholeNumberParam(sortField)
-		switch {
-		case err == nil:
-		case errors.Is(err, commonparams.ErrUnexpectedType):
-			if _, ok := sortField.(types.NullType); ok {
-				sortField = "null"
-			}
-
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrSortBadValue,
-				fmt.Sprintf(`Illegal key in $sort specification: %v: %v`, sortKey, sortField),
-				"$sort",
-			)
-		case errors.Is(err, commonparams.ErrNotWholeNumber):
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrSortBadOrder,
-				"$sort key ordering must be 1 (for ascending) or -1 (for descending)",
-				"$sort",
-			)
-		default:
+		sortValue, err := getSortValue(sortKey, sortField)
+		if err != nil {
 			return nil, err
 		}
 
@@ -221,6 +203,24 @@ func (ds *docsSorter) Less(i, j int) bool {
 
 // GetSortType determines SortType from input sort value.
 func GetSortType(key string, value any) (types.SortType, error) {
+	sortValue, err := getSortValue(key, value)
+	if err != nil {
+		return 0, err
+	}
+
+	switch sortValue {
+	case 1:
+		return types.Ascending, nil
+	case -1:
+		return types.Descending, nil
+	default:
+		panic("unreachable")
+	}
+}
+
+// getSortValue validates if the value from sort document is the proper sort field,
+// and returns it.
+func getSortValue(key string, value any) (int64, error) {
 	sortValue, err := commonparams.GetWholeNumberParam(value)
 	if err != nil {
 		switch {
@@ -245,16 +245,13 @@ func GetSortType(key string, value any) (types.SortType, error) {
 		}
 	}
 
-	switch sortValue {
-	case 1:
-		return types.Ascending, nil
-	case -1:
-		return types.Descending, nil
-	default:
+	if sortValue != -1 && sortValue != 1 {
 		return 0, commonerrors.NewCommandErrorMsgWithArgument(
 			commonerrors.ErrSortBadOrder,
 			"$sort key ordering must be 1 (for ascending) or -1 (for descending)",
 			"$sort",
 		)
 	}
+
+	return sortValue, nil
 }
