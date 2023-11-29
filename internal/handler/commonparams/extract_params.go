@@ -23,7 +23,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -97,8 +97,8 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 		}
 
 		if fieldIndex == nil {
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrFailedToParse,
 				fmt.Sprintf("%s: unknown field %q", command, key),
 				command,
 			)
@@ -119,7 +119,7 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 				doc.Command(), key, val,
 			)
 
-			return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNotImplemented, msg, key)
+			return handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrNotImplemented, msg, key)
 		}
 
 		if options.nonDefault {
@@ -131,7 +131,7 @@ func ExtractParams(doc *types.Document, command string, value any, l *zap.Logger
 					doc.Command(), key, val,
 				)
 
-				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNotImplemented, msg, key)
+				return handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrNotImplemented, msg, key)
 			}
 		}
 
@@ -283,8 +283,8 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 
 			numeric, err = GetWholeNumberParam(val)
 			if err != nil || numeric < 0 || numeric > 1 {
-				return commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrFailedToParse,
+				return handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrFailedToParse,
 					fmt.Sprintf("The '%s.%s' field must be 0 or 1. Got %v", command, key, types.FormatAnyValue(val)),
 					command,
 				)
@@ -299,8 +299,8 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 	case reflect.Slice:
 		array, ok := val.(*types.Array)
 		if !ok {
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrTypeMismatch,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					`BSON field '%s.%s' is the wrong type '%s', expected type '%s'`,
 					command, key, AliasFromType(val), AliasFromType(fv.Interface()),
@@ -326,8 +326,8 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 
 			doc, ok := arrayDoc.(*types.Document)
 			if !ok {
-				return commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrTypeMismatch,
+				return handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrTypeMismatch,
 					fmt.Sprintf(
 						`BSON field '%s.%s' is the wrong type '%s', expected type '%s'`,
 						command, key, AliasFromType(val), AliasFromType(fv.Interface()),
@@ -360,8 +360,8 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 
 		if v.Type() != fv.Type() {
 			if key == command {
-				return commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrInvalidNamespace,
+				return handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrInvalidNamespace,
 					fmt.Sprintf("collection name has invalid type %s", AliasFromType(settable)),
 					command,
 				)
@@ -372,8 +372,8 @@ func setStructField(elem *reflect.Value, o *tagOptions, i int, command, key stri
 				return nil
 			}
 
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrTypeMismatch,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					`BSON field '%s.%s' is the wrong type '%s', expected type '%s'`,
 					command, key, AliasFromType(val), AliasFromType(fv.Interface()),
@@ -408,7 +408,7 @@ func checkAllRequiredFieldsPopulated(v *reflect.Value, command string, keys []st
 
 		if to.collection {
 			if v.Field(i).IsZero() {
-				return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace,
+				return handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace,
 					fmt.Sprintf("Invalid namespace specified '%s.'", v.FieldByName("DB")),
 					command,
 				)
@@ -424,8 +424,8 @@ func checkAllRequiredFieldsPopulated(v *reflect.Value, command string, keys []st
 
 		// Depending on the driver, the key may be camel case or lower case for a collection name.
 		if !slices.Contains(keys, key) && !slices.Contains(keys, strings.ToLower(key)) {
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrMissingField,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrMissingField,
 				fmt.Sprintf("BSON field '%s.%s' is missing but a required field", command, key),
 				command,
 			)

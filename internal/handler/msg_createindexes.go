@@ -23,7 +23,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -54,8 +54,8 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	db, err := h.b.Database(dbName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrInvalidNamespace,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrInvalidNamespace,
 				fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection),
 				command,
 			)
@@ -67,8 +67,8 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	c, err := db.Collection(collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrInvalidNamespace,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrInvalidNamespace,
 				fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection),
 				command,
 			)
@@ -79,8 +79,8 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 
 	v, _ := document.Get("indexes")
 	if v == nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrMissingField,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrMissingField,
 			"BSON field 'createIndexes.indexes' is missing but a required field",
 			document.Command(),
 		)
@@ -89,15 +89,15 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	idxArr, ok := v.(*types.Array)
 	if !ok {
 		if _, ok = v.(types.NullType); ok {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrIndexesWrongType,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrIndexesWrongType,
 				"invalid parameter: expected an object (indexes)",
 				document.Command(),
 			)
 		}
 
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrTypeMismatch,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrTypeMismatch,
 			fmt.Sprintf(
 				"BSON field 'createIndexes.indexes' is the wrong type '%s', expected type 'array'",
 				commonparams.AliasFromType(v),
@@ -107,8 +107,8 @@ func (h *Handler) MsgCreateIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.
 	}
 
 	if idxArr.Len() == 0 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrBadValue,
 			"Must specify at least one index to create",
 			document.Command(),
 		)
@@ -195,8 +195,8 @@ func processIndexesArray(command string, indexesArray *types.Array) ([]backends.
 
 		indexDoc, ok := val.(*types.Document)
 		if !ok {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrTypeMismatch,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					"BSON field 'createIndexes.indexes.%d' is the wrong type '%s', expected type 'object'",
 					key,
@@ -232,8 +232,8 @@ func processIndex(command string, indexDoc *types.Document) (*backends.IndexInfo
 			// do nothing
 		case errors.Is(err, iterator.ErrIteratorDone):
 			if !hasValue {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrFailedToParse,
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrFailedToParse,
 					fmt.Sprintf(
 						"Error in specification {} :: caused by :: "+
 							"The 'key' field is a required property of an index specification",
@@ -254,16 +254,16 @@ func processIndex(command string, indexDoc *types.Document) (*backends.IndexInfo
 
 		keyDoc, err = common.GetRequiredParam[*types.Document](indexDoc, "key")
 		if err != nil {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrTypeMismatch,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrTypeMismatch,
 				"'key' option must be specified as an object",
 				"createIndexes",
 			)
 		}
 
 		if keyDoc.Len() == 0 {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrCannotCreateIndex,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrCannotCreateIndex,
 				"Must specify at least one field for the index key",
 				"createIndexes",
 			)
@@ -276,8 +276,8 @@ func processIndex(command string, indexDoc *types.Document) (*backends.IndexInfo
 
 			if val, err = keyDoc.Get("_id"); err == nil {
 				if order, err = commonparams.GetWholeNumberParam(val); err == nil && order == -1 {
-					return nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrBadValue,
+					return nil, handlererrors.NewCommandErrorMsgWithArgument(
+						handlererrors.ErrBadValue,
 						"The field 'key' for an _id index must be {_id: 1}, but got { _id: -1 }",
 						"createIndexes",
 					)
@@ -292,8 +292,8 @@ func processIndex(command string, indexDoc *types.Document) (*backends.IndexInfo
 
 		v, _ := indexDoc.Get("name")
 		if v == nil {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrFailedToParse,
 				fmt.Sprintf(
 					"Error in specification { key: %s } :: caused by :: "+
 						"The 'name' field is a required property of an index specification",
@@ -307,8 +307,8 @@ func processIndex(command string, indexDoc *types.Document) (*backends.IndexInfo
 		index.Name, ok = v.(string)
 
 		if !ok {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrTypeMismatch,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrTypeMismatch,
 				"'name' option must be specified as a string",
 				"createIndexes",
 			)
@@ -323,8 +323,8 @@ func processIndex(command string, indexDoc *types.Document) (*backends.IndexInfo
 
 			unique, ok := v.(bool)
 			if !ok {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrTypeMismatch,
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrTypeMismatch,
 					fmt.Sprintf(
 						"Error in specification { key: %s, name: %q, unique: %s } "+
 							":: caused by :: "+
@@ -337,8 +337,8 @@ func processIndex(command string, indexDoc *types.Document) (*backends.IndexInfo
 			}
 
 			if len(index.Key) == 1 && index.Key[0].Field == "_id" {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrInvalidIndexSpecificationOption,
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrInvalidIndexSpecificationOption,
 					fmt.Sprintf("The field 'unique' is not valid for an _id index specification. "+
 						"Specification: { key: %s, name: %q, unique: true, v: 2 }",
 						types.FormatAnyValue(must.NotFail(indexDoc.Get("key"))), index.Name,
@@ -357,15 +357,15 @@ func processIndex(command string, indexDoc *types.Document) (*backends.IndexInfo
 		case "sparse", "partialFilterExpression", "expireAfterSeconds", "hidden", "storageEngine",
 			"weights", "default_language", "language_override", "textIndexVersion", "2dsphereIndexVersion",
 			"bits", "min", "max", "bucketSize", "collation", "wildcardProjection":
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNotImplemented,
 				fmt.Sprintf("Index option %q is not implemented yet", opt),
 				command,
 			)
 
 		default:
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrBadValue,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrBadValue,
 				fmt.Sprintf("Index option %q is unknown", opt),
 				command,
 			)
@@ -395,8 +395,8 @@ func processIndexKey(command string, keyDoc *types.Document) ([]backends.IndexKe
 		}
 
 		if _, ok := duplicateChecker[field]; ok {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrBadValue,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrBadValue,
 				fmt.Sprintf(
 					"Error in specification %s, the field %q appears multiple times",
 					types.FormatAnyValue(keyDoc), field,
@@ -410,8 +410,8 @@ func processIndexKey(command string, keyDoc *types.Document) ([]backends.IndexKe
 		var orderParam int64
 
 		if orderParam, err = commonparams.GetWholeNumberParam(order); err != nil {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrIndexNotFound,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrIndexNotFound,
 				fmt.Sprintf("can't find index with key: { %s: %q }", field, order),
 				command,
 			)
@@ -425,8 +425,8 @@ func processIndexKey(command string, keyDoc *types.Document) ([]backends.IndexKe
 		case -1:
 			descending = true
 		default:
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNotImplemented,
 				fmt.Sprintf("Index key value %q is not implemented yet", orderParam),
 				command,
 			)
@@ -471,7 +471,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 				newKey, newIdx.Name,
 			)
 
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrCannotCreateIndex, msg, command)
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrCannotCreateIndex, msg, command)
 		}
 
 		if newIdx.Name == backends.DefaultIndexName && newKey != "_id: 1" {
@@ -481,7 +481,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 				newKey,
 			)
 
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, command)
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrBadValue, msg, command)
 		}
 
 		// Iterate backwards to check if the current index is a duplicate of any other index provided in the list earlier.
@@ -492,7 +492,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 			if otherName == newIdx.Name && otherKey == newKey {
 				msg := fmt.Sprintf("Identical index already exists: %s", otherName)
 
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexAlreadyExists, msg, command)
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrIndexAlreadyExists, msg, command)
 			}
 
 			if newIdx.Name == otherName {
@@ -504,7 +504,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 					newKey, newIdx.Name, otherKey, otherName,
 				)
 
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexKeySpecsConflict, msg, command)
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrIndexKeySpecsConflict, msg, command)
 			}
 
 			if newKey == otherKey {
@@ -512,7 +512,7 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 					"Index already exists with a different name: %s", otherName,
 				)
 
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexOptionsConflict, msg, command)
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrIndexOptionsConflict, msg, command)
 			}
 		}
 
@@ -535,12 +535,12 @@ func validateIndexesForCreation(command string, existing, toCreate []backends.In
 					newKey, newIdx.Name, existingKey, existingIdx.Name,
 				)
 
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexKeySpecsConflict, msg, command)
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrIndexKeySpecsConflict, msg, command)
 			}
 
 			if newKey == existingKey {
 				msg := fmt.Sprintf("Index already exists with a different name: %s", existingIdx.Name)
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexOptionsConflict, msg, command)
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrIndexOptionsConflict, msg, command)
 			}
 		}
 	}

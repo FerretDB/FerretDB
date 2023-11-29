@@ -20,7 +20,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -45,8 +45,8 @@ func SortDocuments(docs []*types.Document, sortDoc *types.Document) error {
 		fields := strings.Split(sortKey, ".")
 		for _, field := range fields {
 			if strings.HasPrefix(field, "$") {
-				return commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrFieldPathInvalidName,
+				return handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrFieldPathInvalidName,
 					"FieldPath field names may not start with '$'. Consider using $getField or $setField.",
 					"sort",
 				)
@@ -149,14 +149,14 @@ func GetSortType(key string, value any) (types.SortType, error) {
 				value = "null"
 			}
 
-			return 0, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrSortBadValue,
+			return 0, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrSortBadValue,
 				fmt.Sprintf(`Illegal key in $sort specification: %v: %v`, key, value),
 				"$sort",
 			)
 		case errors.Is(err, commonparams.ErrNotWholeNumber):
-			return 0, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrSortBadOrder,
+			return 0, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrSortBadOrder,
 				"$sort key ordering must be 1 (for ascending) or -1 (for descending)",
 				"$sort",
 			)
@@ -171,8 +171,8 @@ func GetSortType(key string, value any) (types.SortType, error) {
 	case -1:
 		return types.Descending, nil
 	default:
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrSortBadOrder,
+		return 0, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrSortBadOrder,
 			"$sort key ordering must be 1 (for ascending) or -1 (for descending)",
 			"$sort",
 		)

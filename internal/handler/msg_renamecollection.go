@@ -20,7 +20,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -58,8 +58,8 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	if err != nil {
 		from, _ := document.Get(command)
 
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrBadValue,
 			fmt.Sprintf("collection name has invalid type %s", commonparams.AliasFromType(from)),
 			command,
 		)
@@ -67,8 +67,8 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 
 	newName, err := common.GetRequiredParam[string](document, "to")
 	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrTypeMismatch,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrTypeMismatch,
 			"'to' must be of type String",
 			command,
 		)
@@ -81,8 +81,8 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 
 	newDBName, newCName, err := commonparams.SplitNamespace(newName, command)
 	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrInvalidNamespace,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrInvalidNamespace,
 			fmt.Sprintf("Invalid target namespace: %s", newName),
 			command,
 		)
@@ -91,16 +91,16 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	// support cross-database rename
 	// TODO https://github.com/FerretDB/FerretDB/issues/2563
 	if oldDBName != newDBName {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrNotImplemented,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrNotImplemented,
 			"Command renameCollection does not support cross-database rename",
 			command,
 		)
 	}
 
 	if oldCName == newCName {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrIllegalOperation,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrIllegalOperation,
 			"Can't rename a collection to itself",
 			command,
 		)
@@ -110,7 +110,7 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid namespace specified '%s'", oldName)
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, command)
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, command)
 		}
 
 		return nil, lazyerrors.Error(err)
@@ -125,20 +125,20 @@ func (h *Handler) MsgRenameCollection(ctx context.Context, msg *wire.OpMsg) (*wi
 	case err == nil:
 	// do nothing
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionAlreadyExists):
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrNamespaceExists,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrNamespaceExists,
 			"target namespace exists",
 			command,
 		)
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist):
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrNamespaceNotFound,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrNamespaceNotFound,
 			fmt.Sprintf("Source collection %s does not exist", oldName),
 			command,
 		)
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrIllegalOperation,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrIllegalOperation,
 			fmt.Sprintf("error with target namespace: Invalid collection name: %s", newCName),
 			command,
 		)

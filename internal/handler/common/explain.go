@@ -17,7 +17,7 @@ package common
 import (
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -114,8 +114,8 @@ func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, 
 
 		pipeline, err = GetRequiredParam[*types.Array](explain, "pipeline")
 		if err != nil {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrMissingField,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrMissingField,
 				"BSON field 'aggregate.pipeline' is missing but a required field",
 				document.Command(),
 			)
@@ -124,8 +124,8 @@ func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, 
 		stagesDocs = must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
 		for _, d := range stagesDocs {
 			if _, ok := d.(*types.Document); !ok {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrTypeMismatch,
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrTypeMismatch,
 					"Each element of the 'pipeline' array must be an object",
 					document.Command(),
 				)

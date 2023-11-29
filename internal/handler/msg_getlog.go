@@ -24,7 +24,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/build/version"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
@@ -49,15 +49,15 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	}
 
 	if _, ok := getLog.(types.NullType); ok {
-		return nil, commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrMissingField,
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrMissingField,
 			`BSON field 'getLog.getLog' is missing but a required field`,
 		)
 	}
 
 	if _, ok := getLog.(string); !ok {
-		return nil, commonerrors.NewCommandError(
-			commonerrors.ErrTypeMismatch,
+		return nil, handlererrors.NewCommandError(
+			handlererrors.ErrTypeMismatch,
 			fmt.Errorf(
 				"BSON field 'getLog.getLog' is the wrong type '%s', expected type 'string'",
 				commonparams.AliasFromType(getLog),
@@ -150,8 +150,8 @@ func (h *Handler) MsgGetLog(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		))
 
 	default:
-		return nil, commonerrors.NewCommandError(
-			commonerrors.ErrOperationFailed,
+		return nil, handlererrors.NewCommandError(
+			handlererrors.ErrOperationFailed,
 			fmt.Errorf("no RecentEntries named: %s", getLog),
 		)
 	}

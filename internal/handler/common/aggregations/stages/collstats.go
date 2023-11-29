@@ -21,7 +21,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -46,8 +46,8 @@ type storageStats struct {
 func newCollStats(stage *types.Document) (aggregations.Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$collStats")
 	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageCollStatsInvalidArg,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageCollStatsInvalidArg,
 			fmt.Sprintf("$collStats must take a nested object but found: %s", types.FormatAnyValue(stage)),
 			"$collStats (stage)",
 		)

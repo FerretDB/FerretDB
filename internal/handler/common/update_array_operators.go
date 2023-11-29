@@ -18,7 +18,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -46,15 +46,15 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 
 		popValue, err := commonparams.GetWholeNumberParam(popValueRaw)
 		if err != nil {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrFailedToParse,
+			return false, handlererrors.NewWriteErrorMsg(
+				handlererrors.ErrFailedToParse,
 				fmt.Sprintf(`Expected a number in: %s: "%v"`, key, popValueRaw),
 			)
 		}
 
 		if popValue != 1 && popValue != -1 {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrFailedToParse,
+			return false, handlererrors.NewWriteErrorMsg(
+				handlererrors.ErrFailedToParse,
 				fmt.Sprintf("$pop expects 1 or -1, found: %d", popValue),
 			)
 		}
@@ -77,8 +77,8 @@ func processPopArrayUpdateExpression(doc *types.Document, update *types.Document
 
 		array, ok := val.(*types.Array)
 		if !ok {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrTypeMismatch,
+			return false, handlererrors.NewWriteErrorMsg(
+				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf("Path '%s' contains an element of non-array type '%s'", key, commonparams.AliasFromType(val)),
 			)
 		}
@@ -126,8 +126,8 @@ func checkUnsuitableValueError(doc *types.Document, key string, path types.Path)
 		}
 
 		// ErrUnsuitableValueType is returned if the document contains prefix.
-		return commonerrors.NewWriteErrorMsg(
-			commonerrors.ErrUnsuitableValueType,
+		return handlererrors.NewWriteErrorMsg(
+			handlererrors.ErrUnsuitableValueType,
 			fmt.Sprintf(
 				"Cannot use the part (%s) of (%s) to traverse the element ({%s: %v})",
 				path.Slice()[1],
@@ -168,8 +168,8 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 
 				each, ok = eachRaw.(*types.Array)
 				if !ok {
-					return false, commonerrors.NewWriteErrorMsg(
-						commonerrors.ErrBadValue,
+					return false, handlererrors.NewWriteErrorMsg(
+						handlererrors.ErrBadValue,
 						fmt.Sprintf(
 							"The argument to $each in $push must be an array but it was of type: %s",
 							commonparams.AliasFromType(eachRaw),
@@ -189,8 +189,8 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 			changed = true
 
 			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
-				return false, commonerrors.NewWriteErrorMsg(
-					commonerrors.ErrUnsuitableValueType,
+				return false, handlererrors.NewWriteErrorMsg(
+					handlererrors.ErrUnsuitableValueType,
 					err.Error(),
 				)
 			}
@@ -203,8 +203,8 @@ func processPushArrayUpdateExpression(doc *types.Document, update *types.Documen
 
 		array, ok := val.(*types.Array)
 		if !ok {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrBadValue,
+			return false, handlererrors.NewWriteErrorMsg(
+				handlererrors.ErrBadValue,
 				fmt.Sprintf(
 					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
 					key, commonparams.AliasFromType(val), types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
@@ -257,8 +257,8 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 
 				each, ok = eachRaw.(*types.Array)
 				if !ok {
-					return false, commonerrors.NewWriteErrorMsg(
-						commonerrors.ErrTypeMismatch,
+					return false, handlererrors.NewWriteErrorMsg(
+						handlererrors.ErrTypeMismatch,
 						fmt.Sprintf(
 							"The argument to $each in $addToSet must be an array but it was of type %s",
 							commonparams.AliasFromType(eachRaw),
@@ -278,8 +278,8 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 			changed = true
 
 			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
-				return false, commonerrors.NewWriteErrorMsg(
-					commonerrors.ErrUnsuitableValueType,
+				return false, handlererrors.NewWriteErrorMsg(
+					handlererrors.ErrUnsuitableValueType,
 					err.Error(),
 				)
 			}
@@ -292,8 +292,8 @@ func processAddToSetArrayUpdateExpression(doc, update *types.Document) (bool, er
 
 		array, ok := val.(*types.Array)
 		if !ok {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrBadValue,
+			return false, handlererrors.NewWriteErrorMsg(
+				handlererrors.ErrBadValue,
 				fmt.Sprintf(
 					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
 					key, commonparams.AliasFromType(val), types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
@@ -352,8 +352,8 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 		// If the path does not exist, create a new array and set it.
 		if !doc.HasByPath(path) {
 			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
-				return false, commonerrors.NewWriteErrorMsg(
-					commonerrors.ErrUnsuitableValueType,
+				return false, handlererrors.NewWriteErrorMsg(
+					handlererrors.ErrUnsuitableValueType,
 					err.Error(),
 				)
 			}
@@ -366,8 +366,8 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 
 		array, ok := val.(*types.Array)
 		if !ok {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrBadValue,
+			return false, handlererrors.NewWriteErrorMsg(
+				handlererrors.ErrBadValue,
 				fmt.Sprintf(
 					"The field '%s' must be an array but is of type '%s' in document {_id: %s}",
 					key, commonparams.AliasFromType(val), types.FormatAnyValue(must.NotFail(doc.Get("_id"))),
@@ -377,8 +377,8 @@ func processPullAllArrayUpdateExpression(doc, update *types.Document) (bool, err
 
 		pullAllArray, ok := pullAllValueRaw.(*types.Array)
 		if !ok {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrBadValue,
+			return false, handlererrors.NewWriteErrorMsg(
+				handlererrors.ErrBadValue,
 				fmt.Sprintf(
 					"The field '%s' must be an array but is of type '%s'",
 					key, commonparams.AliasFromType(pullAllValueRaw),
@@ -447,8 +447,8 @@ func processPullArrayUpdateExpression(doc *types.Document, update *types.Documen
 		// This will deal with cases like $pull on a non-existing field or unset field.
 		if !doc.HasByPath(path) {
 			if err = doc.SetByPath(path, types.MakeArray(1)); err != nil {
-				return false, commonerrors.NewWriteErrorMsg(
-					commonerrors.ErrUnsuitableValueType,
+				return false, handlererrors.NewWriteErrorMsg(
+					handlererrors.ErrUnsuitableValueType,
 					err.Error(),
 				)
 			}
@@ -461,8 +461,8 @@ func processPullArrayUpdateExpression(doc *types.Document, update *types.Documen
 
 		array, ok := val.(*types.Array)
 		if !ok {
-			return false, commonerrors.NewWriteErrorMsg(
-				commonerrors.ErrBadValue,
+			return false, handlererrors.NewWriteErrorMsg(
+				handlererrors.ErrBadValue,
 				"Cannot apply $pull to a non-array value",
 			)
 		}

@@ -20,7 +20,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -52,8 +52,8 @@ func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	db, err := h.b.Database(dbName)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrInvalidNamespace,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrInvalidNamespace,
 				fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection),
 				command,
 			)
@@ -65,8 +65,8 @@ func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	c, err := db.Collection(collection)
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrInvalidNamespace,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrInvalidNamespace,
 				fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection),
 				command,
 			)
@@ -85,8 +85,8 @@ func (h *Handler) MsgCompact(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	statsBefore, err := c.Stats(ctx, new(backends.CollectionStatsParams))
 	if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrNamespaceNotFound,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrNamespaceNotFound,
 			fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection),
 			command,
 		)

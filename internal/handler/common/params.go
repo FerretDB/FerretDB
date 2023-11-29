@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -34,13 +34,13 @@ func GetRequiredParam[T types.Type](doc *types.Document, key string) (T, error) 
 	v, _ := doc.Get(key)
 	if v == nil {
 		msg := fmt.Sprintf("required parameter %q is missing", key)
-		return zero, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, key)
+		return zero, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrBadValue, msg, key)
 	}
 
 	res, ok := v.(T)
 	if !ok {
 		msg := fmt.Sprintf("required parameter %q has type %T (expected %T)", key, v, zero)
-		return zero, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrBadValue, msg, key)
+		return zero, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrBadValue, msg, key)
 	}
 
 	return res, nil
@@ -62,7 +62,7 @@ func GetOptionalParam[T types.Type](doc *types.Document, key string, defaultValu
 			key, commonparams.AliasFromType(v), commonparams.AliasFromType(defaultValue),
 		)
 
-		return defaultValue, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrTypeMismatch, msg, key)
+		return defaultValue, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrTypeMismatch, msg, key)
 	}
 
 	return res, nil
@@ -88,13 +88,13 @@ func GetOptionalNullParam[T types.Type](doc *types.Document, key string, default
 //
 //	d, ok := value.(*types.Document)
 //	if !ok {
-//	  return commonerrors.NewCommandErrorMsg(commonerrors.ErrBadValue, "expected document")
+//	  return handlererrors.NewCommandErrorMsg(handlererrors.ErrBadValue, "expected document")
 //	}
 func AssertType[T types.Type](value any) (T, error) {
 	res, ok := value.(T)
 	if !ok {
 		msg := fmt.Sprintf("got type %T, expected %T", value, res)
-		return res, commonerrors.NewCommandErrorMsg(commonerrors.ErrBadValue, msg)
+		return res, handlererrors.NewCommandErrorMsg(handlererrors.ErrBadValue, msg)
 	}
 
 	return res, nil
@@ -114,7 +114,7 @@ func GetLimitParam(doc *types.Document) (int64, error) {
 			"limit", commonparams.AliasFromType(v), commonparams.AliasFromType(res),
 		)
 
-		return res, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrTypeMismatch, msg, "limit")
+		return res, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrTypeMismatch, msg, "limit")
 	}
 
 	return res, nil
@@ -128,20 +128,20 @@ func GetLimitStageParam(value any) (int64, error) {
 	switch {
 	case err == nil:
 	case errors.Is(err, commonparams.ErrUnexpectedType):
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageLimitInvalidArg,
+		return 0, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Expected a number in: $limit: %#v", value),
 			"$limit (stage)",
 		)
 	case errors.Is(err, commonparams.ErrNotWholeNumber), errors.Is(err, commonparams.ErrInfinity):
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageLimitInvalidArg,
+		return 0, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Expected an integer: $limit: %#v", value),
 			"$limit (stage)",
 		)
 	case errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageLimitInvalidArg,
+		return 0, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Cannot represent as a 64-bit integer: $limit: %#v", value),
 			"$limit (stage)",
 		)
@@ -151,14 +151,14 @@ func GetLimitStageParam(value any) (int64, error) {
 
 	switch {
 	case limit < 0:
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageLimitInvalidArg,
+		return 0, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageLimitInvalidArg,
 			fmt.Sprintf("invalid argument to $limit stage: Expected a non-negative number in: $limit: %#v", limit),
 			"$limit (stage)",
 		)
 	case limit == 0:
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageLimitZero,
+		return 0, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageLimitZero,
 			"The limit must be positive",
 			"$limit (stage)",
 		)
@@ -177,14 +177,14 @@ func GetSkipStageParam(value any) (int64, error) {
 	case errors.Is(err, commonparams.ErrNotWholeNumber),
 		errors.Is(err, commonparams.ErrInfinity),
 		errors.Is(err, commonparams.ErrUnexpectedType):
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageSkipBadValue,
+		return 0, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageSkipBadValue,
 			fmt.Sprintf("invalid argument to $skip stage: Expected an integer: $skip: %#v", value),
 			"$skip (stage)",
 		)
 	case errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageSkipBadValue,
+		return 0, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageSkipBadValue,
 			fmt.Sprintf("invalid argument to $skip stage: Cannot represent as a 64-bit integer: $skip: %#v", value),
 			"$skip (stage)",
 		)
@@ -194,8 +194,8 @@ func GetSkipStageParam(value any) (int64, error) {
 
 	switch {
 	case limit < 0:
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageSkipBadValue,
+		return 0, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageSkipBadValue,
 			fmt.Sprintf("invalid argument to $skip stage: Expected a non-negative number in: $skip: %#v", limit),
 			"$skip (stage)",
 		)
@@ -220,14 +220,14 @@ func getBinaryMaskParam(operator string, mask any) (uint64, error) {
 				switch {
 				case errors.Is(err, commonparams.ErrNotWholeNumber), errors.Is(err, commonparams.ErrInfinity),
 					errors.Is(err, commonparams.ErrLongExceededPositive), errors.Is(err, commonparams.ErrLongExceededNegative):
-					return 0, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrBadValue,
+					return 0, handlererrors.NewCommandErrorMsgWithArgument(
+						handlererrors.ErrBadValue,
 						fmt.Sprintf(`Failed to parse bit position. Expected an integer: %d: %#v`, i, val),
 						operator,
 					)
 				default:
-					return 0, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrBadValue,
+					return 0, handlererrors.NewCommandErrorMsgWithArgument(
+						handlererrors.ErrBadValue,
 						fmt.Sprintf(`Failed to parse bit position. Expected a number in: %d: %#v`, i, val),
 						operator,
 					)
@@ -235,8 +235,8 @@ func getBinaryMaskParam(operator string, mask any) (uint64, error) {
 			}
 
 			if b < 0 {
-				return 0, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrBadValue,
+				return 0, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrBadValue,
 					fmt.Sprintf("Failed to parse bit position. Expected a non-negative number in: %d: %d", i, b),
 					operator,
 				)
@@ -248,16 +248,16 @@ func getBinaryMaskParam(operator string, mask any) (uint64, error) {
 	case float64:
 		// {field: {$bitsAllClear: bitmask}}
 		if mask != math.Trunc(mask) || math.IsInf(mask, 0) {
-			return 0, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
+			return 0, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrFailedToParse,
 				fmt.Sprintf("Expected an integer: %s: %#v", operator, mask),
 				operator,
 			)
 		}
 
 		if mask < 0 {
-			return 0, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
+			return 0, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrFailedToParse,
 				fmt.Sprintf(`Expected a non-negative number in: %s: %.1f`, operator, mask),
 				operator,
 			)
@@ -284,8 +284,8 @@ func getBinaryMaskParam(operator string, mask any) (uint64, error) {
 	case int32:
 		// {field: {$bitsAllClear: bitmask}}
 		if mask < 0 {
-			return 0, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
+			return 0, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrFailedToParse,
 				fmt.Sprintf(`Expected a non-negative number in: %s: %v`, operator, mask),
 				operator,
 			)
@@ -296,8 +296,8 @@ func getBinaryMaskParam(operator string, mask any) (uint64, error) {
 	case int64:
 		// {field: {$bitsAllClear: bitmask}}
 		if mask < 0 {
-			return 0, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
+			return 0, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrFailedToParse,
 				fmt.Sprintf(`Expected a non-negative number in: %s: %v`, operator, mask),
 				operator,
 			)
@@ -306,8 +306,8 @@ func getBinaryMaskParam(operator string, mask any) (uint64, error) {
 		bitmask = uint64(mask)
 
 	default:
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
+		return 0, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrBadValue,
 			fmt.Sprintf(`value takes an Array, a number, or a BinData but received: %s: %#v`, operator, mask),
 			operator,
 		)

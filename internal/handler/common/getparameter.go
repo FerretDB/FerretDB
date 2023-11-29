@@ -20,7 +20,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -81,8 +81,8 @@ func GetParameter(_ context.Context, msg *wire.OpMsg, l *zap.Logger) (*wire.OpMs
 	}
 
 	if resDoc.Len() < 1 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrorCode(0),
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrorCode(0),
 			"no option found to get",
 			document.Command(),
 		)
