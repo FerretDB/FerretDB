@@ -20,15 +20,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// command represents a handler command.
+// command represents a handler for single command.
 type command struct {
 	// Handler processes this command.
 	//
 	// The passed context is canceled when the client disconnects.
 	Handler func(context.Context, *wire.OpMsg) (*wire.OpMsg, error)
 
-	// Help is shown in the help function.
-	// If empty, that command is skipped in `listCommands` output.
+	// Help is shown in the `listCommands` command output.
+	// If empty, that command is hidden, but still can be used.
 	Help string
 }
 
@@ -127,7 +127,7 @@ func (h *Handler) initCommands() {
 		},
 		"findAndModify": {
 			Handler: h.MsgFindAndModify,
-			Help:    "Docs, updates, or deletes, and returns a document matched by the query.",
+			Help:    "Updates or deletes, and returns a document matched by the query.",
 		},
 		"findandmodify": { // old lowercase variant
 			Handler: h.MsgFindAndModify,
@@ -163,7 +163,7 @@ func (h *Handler) initCommands() {
 		},
 		"insert": {
 			Handler: h.MsgInsert,
-			Help:    "Docs documents into the database.",
+			Help:    "Inserts documents into the database.",
 		},
 		"isMaster": {
 			Handler: h.MsgIsMaster,
@@ -223,7 +223,7 @@ func (h *Handler) initCommands() {
 		},
 		"validate": {
 			Handler: h.MsgValidate,
-			Help:    "Validate collection.",
+			Help:    "Validates collection.",
 		},
 		"whatsmyuri": {
 			Handler: h.MsgWhatsMyURI,
