@@ -110,7 +110,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		qp.Filter = params.Filter
 	}
 
-	if err = common.ValidateSortDocument(params.Sort); err != nil {
+	if params.Sort, err = common.ValidateSortDocument(params.Sort); err != nil {
 		var pathErr *types.PathError
 		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
 			return nil, commonerrors.NewCommandErrorMsgWithArgument(

@@ -268,7 +268,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			qp.Filter = filter
 		}
 
-		if err = common.ValidateSortDocument(sort); err != nil {
+		if sort, err = common.ValidateSortDocument(sort); err != nil {
 			closer.Close()
 
 			var pathErr *types.PathError

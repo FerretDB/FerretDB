@@ -49,9 +49,53 @@ func SortDocuments(docs []*types.Document, sortDoc *types.Document) error {
 
 // ValidateSortDocument validates sort documents, and return
 // proper error if it's invalid.
-func ValidateSortDocument(sortDoc *types.Document) error {
-	_, err := unwrapSortDocument(sortDoc)
-	return err
+func ValidateSortDocument(sortDoc *types.Document) (*types.Document, error) {
+	return convertSortDocument(sortDoc)
+}
+
+// unwrapSortDocument takes sort document, validates it, and returns
+// sortFuncs if validation passed.
+func convertSortDocument(sortDoc *types.Document) (*types.Document, error) {
+	if sortDoc.Len() == 0 {
+		return nil, nil
+	}
+
+	if sortDoc.Len() > 32 {
+		return nil, lazyerrors.Errorf("maximum sort keys exceeded: %v", sortDoc.Len())
+	}
+
+	res := types.MakeDocument(sortDoc.Len())
+
+	for _, sortKey := range sortDoc.Keys() {
+		fields := strings.Split(sortKey, ".")
+		for _, field := range fields {
+			if strings.HasPrefix(field, "$") {
+				return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrFieldPathInvalidName,
+					"FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+					"sort",
+				)
+			}
+		}
+
+		sortField := must.NotFail(sortDoc.Get(sortKey))
+
+		sortValue, err := commonparams.GetWholeNumberParam(sortField)
+		if err != nil {
+			return nil, err
+		}
+
+		sortPath, err := types.NewPathFromString(sortKey)
+		if err != nil {
+			return nil, err
+		}
+
+		if err = res.SetByPath(sortPath, sortValue); err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	return res, nil
 }
 
 // unwrapSortDocument takes sort document, validates it, and returns
@@ -65,7 +109,7 @@ func unwrapSortDocument(sortDoc *types.Document) ([]sortFunc, error) {
 		return nil, lazyerrors.Errorf("maximum sort keys exceeded: %v", sortDoc.Len())
 	}
 
-	sortFuncs := make([]sortFunc, len(sortDoc.Keys()))
+	sortFuncs := make([]sortFunc, sortDoc.Len())
 
 	for i, sortKey := range sortDoc.Keys() {
 		fields := strings.Split(sortKey, ".")
