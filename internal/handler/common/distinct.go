@@ -20,9 +20,9 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/FerretDB/FerretDB/internal/handler/commonpath"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
-	"github.com/FerretDB/FerretDB/internal/handler/commonpath"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
