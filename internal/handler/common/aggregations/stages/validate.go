@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -93,8 +93,8 @@ func validateArrayExpression(stage string, arr *types.Array) error {
 func validateFieldPath(stage string, fieldsDoc *types.Document) error {
 	for _, key := range fieldsDoc.Keys() {
 		if strings.HasPrefix(key, "$") {
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFieldPathInvalidName,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrFieldPathInvalidName,
 				fmt.Sprintf(
 					"Invalid %s :: caused by :: FieldPath field names may not start with '$'. "+
 						"Consider using $getField or $setField.",

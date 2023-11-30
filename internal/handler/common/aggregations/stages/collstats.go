@@ -21,8 +21,8 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -46,8 +46,8 @@ type storageStats struct {
 func newCollStats(stage *types.Document) (aggregations.Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$collStats")
 	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageCollStatsInvalidArg,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageCollStatsInvalidArg,
 			fmt.Sprintf("$collStats must take a nested object but found: %s", types.FormatAnyValue(stage)),
 			"$collStats (stage)",
 		)
@@ -74,7 +74,7 @@ func newCollStats(stage *types.Document) (aggregations.Stage, error) {
 
 		var s any
 		if s, err = storageStatsFields.Get("scale"); err == nil {
-			scale, err := commonparams.GetValidatedNumberParamWithMinValue(
+			scale, err := handlerparams.GetValidatedNumberParamWithMinValue(
 				"$collStats.storageStats", "scale", s, 1,
 			)
 			if err != nil {

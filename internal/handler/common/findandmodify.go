@@ -20,8 +20,8 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -89,28 +89,28 @@ type UpsertParams struct {
 func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyParams, error) {
 	var params FindAndModifyParams
 
-	err := commonparams.ExtractParams(doc, "findAndModify", &params, l)
+	err := handlerparams.ExtractParams(doc, "findAndModify", &params, l)
 	if err != nil {
 		return nil, err
 	}
 
 	if params.Collection == "" {
-		return nil, commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrInvalidNamespace,
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrInvalidNamespace,
 			fmt.Sprintf("Invalid namespace specified '%s.'", params.DB),
 		)
 	}
 
 	if params.UpdateValue == nil && !params.Remove {
-		return nil, commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrFailedToParse,
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrFailedToParse,
 			"Either an update or remove=true must be specified",
 		)
 	}
 
 	if params.ReturnNewDocument && params.Remove {
-		return nil, commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrFailedToParse,
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrFailedToParse,
 			"Cannot specify both new=true and remove=true; 'remove' always returns the deleted document",
 		)
 	}
@@ -120,14 +120,14 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 		case *types.Document:
 			params.Update = updateParam
 		case *types.Array:
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNotImplemented,
 				"Aggregation pipelines are not supported yet",
 				"update",
 			)
 		default:
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrFailedToParse,
 				"Update argument must be either an object or an array",
 				"update",
 			)
@@ -135,15 +135,15 @@ func GetFindAndModifyParams(doc *types.Document, l *zap.Logger) (*FindAndModifyP
 	}
 
 	if params.Update != nil && params.Remove {
-		return nil, commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrFailedToParse,
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrFailedToParse,
 			"Cannot specify both an update and remove=true",
 		)
 	}
 
 	if params.Upsert && params.Remove {
-		return nil, commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrFailedToParse,
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrFailedToParse,
 			"Cannot specify both upsert=true and remove=true",
 		)
 	}
@@ -245,8 +245,8 @@ func prepareDocumentForUpdate(docs []*types.Document, params *FindAndModifyParam
 	for _, doc := range docs {
 		id := must.NotFail(doc.Get("_id"))
 		if id != upsertID {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrImmutableField,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrImmutableField,
 				fmt.Sprintf(
 					`Plan executor error during findAndModify :: caused `+
 						`by :: After applying the update, the (immutable) field `+
@@ -315,8 +315,8 @@ func hasFilterOperator(query *types.Document) (string, bool, error) {
 		}
 
 		if hasOp {
-			return "", false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrDollarPrefixedFieldName,
+			return "", false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrDollarPrefixedFieldName,
 				fmt.Sprintf(
 					"Plan executor error during findAndModify :: "+
 						"caused by :: _id fields may not contain '$'-prefixed "+

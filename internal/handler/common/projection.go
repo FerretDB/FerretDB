@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -71,8 +71,8 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 		}
 
 		if key == "" {
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrEmptyFieldPath,
+			return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrEmptyFieldPath,
 				"FieldPath cannot be constructed with empty string",
 				"projection",
 			)
@@ -84,15 +84,15 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 		path, err := types.NewPathFromString(key)
 		if err != nil {
 			if positionalProjection {
-				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrInvalidFieldPath,
+				return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrInvalidFieldPath,
 					"FieldPath must not end with a '.'.",
 					"projection",
 				)
 			}
 
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrPathContainsEmptyElement,
+			return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrPathContainsEmptyElement,
 				"FieldPath field names may not be empty strings.",
 				"projection",
 			)
@@ -100,8 +100,8 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		if path.Len() > 1 && strings.Count(path.TrimSuffix().String(), "$") > 1 {
 			// there cannot be more than one positional operator.
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrWrongPositionalOperatorLocation,
+			return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrWrongPositionalOperatorLocation,
 				"Positional projection may only be used at the end, "+
 					"for example: a.b.$. If the query previously used a form "+
 					"like a.b.$.d, remove the parts following the '$' and "+
@@ -112,8 +112,8 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		if key == "$" || strings.HasPrefix(key, "$") {
 			// positional operator cannot be at the prefix.
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFieldPathInvalidName,
+			return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrFieldPathInvalidName,
 				"FieldPath field names may not start with '$'. Consider using $getField or $setField.",
 				"projection",
 			)
@@ -121,8 +121,8 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		if path.Len() > 1 && slices.Contains(path.TrimSuffix().Slice(), "$") {
 			// there cannot be a positional operator along the path, can only be at the end.
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrWrongPositionalOperatorLocation,
+			return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrWrongPositionalOperatorLocation,
 				"Positional projection may only be used at the end, "+
 					"for example: a.b.$. If the query previously used a form "+
 					"like a.b.$.d, remove the parts following the '$' and "+
@@ -135,8 +135,8 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 			if strings.HasPrefix(k, "$") && k != "$" {
 				// arbitrary `$` cannot exist in the path,
 				// `v.$foo` is invalid, `v.$` and `v.foo$` are fine.
-				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrFieldPathInvalidName,
+				return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrFieldPathInvalidName,
 					"FieldPath field names may not start with '$'. Consider using $getField or $setField.",
 					"projection",
 				)
@@ -147,8 +147,8 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 
 		switch value := value.(type) {
 		case *types.Document:
-			return nil, false, commonerrors.NewCommandErrorMsg(
-				commonerrors.ErrNotImplemented,
+			return nil, false, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrNotImplemented,
 				fmt.Sprintf("projection expression %s is not supported", types.FormatAnyValue(value)),
 			)
 		case *types.Array, string, types.Binary, types.ObjectID,
@@ -180,8 +180,8 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 		}
 
 		if !inclusionField && positionalProjection {
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrExclusionPositionalProjection,
+			return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrExclusionPositionalProjection,
 				"positional projection cannot be used with exclusion",
 				"projection",
 			)
@@ -203,15 +203,15 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 				continue
 			}
 			if *inclusion {
-				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrProjectionExIn,
+				return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrProjectionExIn,
 					fmt.Sprintf("Cannot do exclusion on field %s in inclusion projection", key),
 					"projection",
 				)
 			}
 
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrProjectionInEx,
+			return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrProjectionInEx,
 				fmt.Sprintf("Cannot do inclusion on field %s in exclusion projection", key),
 				"projection",
 			)
@@ -245,8 +245,8 @@ func ProjectDocument(doc, projection, filter *types.Document, inclusion bool) (*
 
 		switch idValue := idValue.(type) {
 		case *types.Document: // field: { $elemMatch: { field2: value }}
-			return nil, commonerrors.NewCommandErrorMsg(
-				commonerrors.ErrCommandNotFound,
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrCommandNotFound,
 				fmt.Sprintf("projection %s is not supported",
 					types.FormatAnyValue(idValue),
 				),
@@ -316,8 +316,8 @@ func projectDocumentWithoutID(doc *types.Document, projection, filter *types.Doc
 
 		switch value := value.(type) { // found in the projection
 		case *types.Document: // field: { $elemMatch: { field2: value }}
-			return nil, commonerrors.NewCommandErrorMsg(
-				commonerrors.ErrCommandNotFound,
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrCommandNotFound,
 				fmt.Sprintf("projection %s is not supported",
 					types.FormatAnyValue(value),
 				),
@@ -502,8 +502,8 @@ func includeProjection(path types.Path, curIndex int, source any, projected, fil
 		if path.Suffix() == "$" && arr.Len() == 0 {
 			// positional projection only handles one array at the suffix,
 			// path prefixes cannot contain array.
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrElementMismatchPositionalProjection,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrElementMismatchPositionalProjection,
 				"Executor error during find command :: caused by :: positional operator '.$' element mismatch",
 				"projection",
 			)

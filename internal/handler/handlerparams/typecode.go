@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package commonparams
+package handlerparams
 
 import (
 	"fmt"
 	"math"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -84,14 +84,14 @@ func NewTypeCode(code int32) (TypeCode, error) {
 		TypeCodeNull, TypeCodeRegex, TypeCodeInt, TypeCodeTimestamp, TypeCodeLong, TypeCodeNumber:
 		return c, nil
 	case TypeCodeDecimal, TypeCodeMinKey, TypeCodeMaxKey:
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrNotImplemented,
+		return 0, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrNotImplemented,
 			fmt.Sprintf(`Type code %v not implemented`, code),
 			"$type",
 		)
 	default:
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
+		return 0, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrBadValue,
 			fmt.Sprintf(`Invalid numerical type code: %d`, code),
 			"$type",
 		)
@@ -192,8 +192,8 @@ func isWholeNumber(v any) bool {
 func ParseTypeCode(alias string) (TypeCode, error) {
 	code, ok := aliasToTypeCode[alias]
 	if !ok {
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
+		return 0, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrBadValue,
 			fmt.Sprintf(`Unknown type name alias: %s`, alias),
 			"$type",
 		)

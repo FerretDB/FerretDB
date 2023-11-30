@@ -25,7 +25,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -46,8 +46,8 @@ type Accumulator interface {
 func NewAccumulator(stage, key string, value any) (Accumulator, error) {
 	accumulation, ok := value.(*types.Document)
 	if !ok || accumulation.Len() == 0 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageGroupInvalidAccumulator,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageGroupInvalidAccumulator,
 			fmt.Sprintf("The field '%s' must be an accumulator object", key),
 			stage+" (stage)",
 		)
@@ -55,8 +55,8 @@ func NewAccumulator(stage, key string, value any) (Accumulator, error) {
 
 	// accumulation document contains only one field.
 	if accumulation.Len() > 1 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageGroupMultipleAccumulator,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageGroupMultipleAccumulator,
 			fmt.Sprintf("The field '%s' must specify one accumulator", key),
 			stage+" (stage)",
 		)
@@ -90,8 +90,8 @@ func NewAccumulator(stage, key string, value any) (Accumulator, error) {
 
 	newAccumulator, ok := Accumulators[operator]
 	if !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrNotImplemented,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrNotImplemented,
 			fmt.Sprintf("%s accumulator %q is not implemented yet", stage, operator),
 			operator+" (accumulator)",
 		)

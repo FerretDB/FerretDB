@@ -116,18 +116,18 @@ var sqliteFlags struct {
 	SQLiteURL string `name:"sqlite-url" default:"file:data/" help:"SQLite URI (directory) for 'sqlite' handler."`
 }
 
-// The hanaFlags struct represents flags that are used by the "hana" handler.
-//
-// See main_hana.go.
-var hanaFlags struct {
-	HANAURL string `name:"hana-url" help:"SAP HANA URL for 'hana' handler"`
-}
-
 // The mySQLFlags struct represents flags that are used by the "mysql" backend.
 //
 // See main_mysql.go.
 var mySQLFlags struct {
 	MySQLURL string `name:"mysql-url" default:"mysql://127.0.0.1:3306/ferretdb" help:"MySQL URL for 'mysql' handler" hidden:""`
+}
+
+// The hanaFlags struct represents flags that are used by the "hana" handler.
+//
+// See main_hana.go.
+var hanaFlags struct {
+	HANAURL string `name:"hana-url" help:"SAP HANA URL for 'hana' handler"`
 }
 
 // handlerFlags is a map of handler names to their flags.
