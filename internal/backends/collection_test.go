@@ -130,10 +130,7 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				testutil.AssertEqualSlices(t, expectedDocs, docs)
 				assertEqualRecordID(t, expectedDocs, docs)
 
-				// TODO https://github.com/FerretDB/FerretDB/issues/3742
-				explainSort := backends.SortField{Key: "_id"}
-
-				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &explainSort})
+				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: sort})
 
 				require.NoError(t, err)
 				assert.True(t, explainRes.SortPushdown)
@@ -157,10 +154,7 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 				testutil.AssertEqualSlices(t, expectedDocs, docs)
 				assertEqualRecordID(t, expectedDocs, docs)
 
-				// TODO https://github.com/FerretDB/FerretDB/issues/3742
-				explainSort := backends.SortField{Key: "_id", Descending: true}
-
-				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: &explainSort})
+				explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: sort})
 				require.NoError(t, err)
 				assert.True(t, explainRes.SortPushdown)
 			})

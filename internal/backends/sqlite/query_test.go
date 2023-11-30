@@ -82,18 +82,15 @@ func TestPrepareOrderByClause(t *testing.T) {
 		sort   *types.Document
 		capped bool
 
-		orderBy     string
-		expectedErr error
+		orderBy string
 	}{
 		"Ascending": {
-			sort:        must.NotFail(types.NewDocument("field", int64(1))),
-			orderBy:     "",
-			expectedErr: errSortPushdownNotFullyApplied,
+			sort:    must.NotFail(types.NewDocument("field", int64(1))),
+			orderBy: "",
 		},
 		"Descending": {
-			sort:        must.NotFail(types.NewDocument("field", int64(-1))),
-			orderBy:     "",
-			expectedErr: errSortPushdownNotFullyApplied,
+			sort:    must.NotFail(types.NewDocument("field", int64(-1))),
+			orderBy: "",
 		},
 		"SortNil": {
 			orderBy: "",
@@ -107,9 +104,8 @@ func TestPrepareOrderByClause(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			orderBy, err := prepareOrderByClause(tc.sort, tc.capped)
+			orderBy := prepareOrderByClause(tc.sort, tc.capped)
 
-			assert.Equal(t, tc.expectedErr, err)
 			assert.Equal(t, tc.orderBy, orderBy)
 		})
 	}
