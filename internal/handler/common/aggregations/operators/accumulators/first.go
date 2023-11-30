@@ -19,7 +19,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations/operators"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -37,8 +37,8 @@ func newFirst(args ...any) (Accumulator, error) {
 	accumulator := new(first)
 
 	if len(args) != 1 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageGroupUnaryOperator,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageGroupUnaryOperator,
 			"The $first accumulator is a unary operator",
 			"$first (accumulator)",
 		)
