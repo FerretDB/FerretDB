@@ -84,12 +84,17 @@ type conn struct {
 
 // newConnOpts represents newConn options.
 type newConnOpts struct {
-	netConn        net.Conn
-	mode           Mode
-	l              *zap.Logger
-	handler        *handler.Handler
-	connMetrics    *connmetrics.ConnMetrics
-	proxyAddr      string
+	netConn     net.Conn
+	mode        Mode
+	l           *zap.Logger
+	handler     *handler.Handler
+	connMetrics *connmetrics.ConnMetrics
+
+	proxyAddr        string
+	proxyTLSCertFile string
+	proxyTLSKeyFile  string
+	proxyTLSCAFile   string
+
 	testRecordsDir string // if empty, no records are created
 }
 
@@ -105,7 +110,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	var p *proxy.Router
 	if opts.mode != NormalMode {
 		var err error
-		if p, err = proxy.New(opts.proxyAddr); err != nil {
+		if p, err = proxy.New(opts.proxyAddr, opts.proxyTLSCertFile, opts.proxyTLSKeyFile, opts.proxyTLSCAFile); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
