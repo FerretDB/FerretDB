@@ -22,7 +22,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations/stages/projection"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -48,8 +48,8 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 	switch fields := fields.(type) {
 	case *types.Array:
 		if fields.Len() == 0 {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrStageUnsetNoPath,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrStageUnsetNoPath,
 				"$unset specification must be a string or an array with at least one field",
 				"$unset (stage)",
 			)
@@ -72,8 +72,8 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 
 			field, ok := v.(string)
 			if !ok {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrStageUnsetArrElementInvalidType,
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrStageUnsetArrElementInvalidType,
 					"$unset specification must be a string or an array containing only string values",
 					"$unset (stage)",
 				)
@@ -90,8 +90,8 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 			if errors.As(err, &pathErr) {
 				if pathErr.Code() == types.ErrPathConflictOverwrite {
 					// the path overwrites one of visitedPaths.
-					return nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrUnsetPathOverwrite,
+					return nil, handlererrors.NewCommandErrorMsgWithArgument(
+						handlererrors.ErrUnsetPathOverwrite,
 						fmt.Sprintf("Invalid $unset :: caused by :: Path collision at %s", field),
 						"$unset (stage)",
 					)
@@ -99,8 +99,8 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 
 				if pathErr.Code() == types.ErrPathConflictCollision {
 					// the path creates collision at one of visitedPaths.
-					return nil, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrUnsetPathCollision,
+					return nil, handlererrors.NewCommandErrorMsgWithArgument(
+						handlererrors.ErrUnsetPathCollision,
 						fmt.Sprintf(
 							"Invalid $unset :: caused by :: Path collision at %s remaining portion %s",
 							path.String(),
@@ -126,8 +126,8 @@ func newUnset(stage *types.Document) (aggregations.Stage, error) {
 
 		exclusion.Set(fields, false)
 	default:
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageUnsetInvalidType,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageUnsetInvalidType,
 			"$unset specification must be a string or an array",
 			"$unset (stage)",
 		)
@@ -147,16 +147,16 @@ func (u *unset) Process(_ context.Context, iter types.DocumentsIterator, closer 
 // validateUnsetField returns error on invalid field value.
 func validateUnsetField(field string) (*types.Path, error) {
 	if field == "" {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrEmptyFieldPath,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrEmptyFieldPath,
 			"Invalid $unset :: caused by :: FieldPath cannot be constructed with empty string",
 			"$unset (stage)",
 		)
 	}
 
 	if strings.HasPrefix(field, "$") {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrFieldPathInvalidName,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrFieldPathInvalidName,
 			"Invalid $unset :: caused by :: FieldPath field names may not start with '$'. "+
 				"Consider using $getField or $setField.",
 			"$unset (stage)",
@@ -164,8 +164,8 @@ func validateUnsetField(field string) (*types.Path, error) {
 	}
 
 	if strings.HasSuffix(field, ".") {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrInvalidFieldPath,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrInvalidFieldPath,
 			"Invalid $unset :: caused by :: FieldPath must not end with a '.'.",
 			"$unset (stage)",
 		)
@@ -173,8 +173,8 @@ func validateUnsetField(field string) (*types.Path, error) {
 
 	path, err := types.NewPathFromString(field)
 	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrPathContainsEmptyElement,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrPathContainsEmptyElement,
 			"Invalid $unset :: caused by :: FieldPath field names may not be empty strings.",
 			"$unset (stage)",
 		)

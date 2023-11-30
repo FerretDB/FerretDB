@@ -12,13 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package handler
+package commoncommands
 
 import (
 	"context"
-	"fmt"
+	"errors"
+	"strconv"
+	"strings"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -27,37 +28,45 @@ import (
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgPing implements `ping` command.
-func (h *Handler) MsgPing(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+// MsgDebugError is a common implementation of the debugError command.
+func MsgDebugError(_ context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	document, err := msg.Document()
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
-	dbName, err := common.GetRequiredParam[string](document, "$db")
+	expected, err := common.GetRequiredParam[string](document, document.Command())
 	if err != nil {
 		return nil, err
 	}
 
-	if _, err = h.b.Database(dbName); err != nil {
-		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
-			msg := fmt.Sprintf("Invalid namespace specified '%s'", dbName)
-			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "ping")
-		}
-
-		return nil, lazyerrors.Error(err)
+	// check if parameter is an error code
+	if n, err := strconv.ParseInt(expected, 10, 32); err == nil {
+		errCode := handlererrors.ErrorCode(n)
+		return nil, errors.New(errCode.String())
 	}
 
-	if _, err = h.b.Status(ctx, nil); err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	switch {
+	case expected == "ok":
+		var reply wire.OpMsg
 
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
+		replyDoc := must.NotFail(types.NewDocument(
 			"ok", float64(1),
-		))},
-	}))
+		))
 
-	return &reply, nil
+		must.NoError(reply.SetSections(wire.OpMsgSection{
+			Documents: []*types.Document{replyDoc},
+		}))
+
+		return &reply, nil
+
+	case strings.HasPrefix(expected, "panic"):
+		panic("debugError " + expected)
+
+	case strings.HasPrefix(expected, "lazy"):
+		return nil, lazyerrors.New(expected)
+
+	default:
+		return nil, errors.New(expected)
+	}
 }
