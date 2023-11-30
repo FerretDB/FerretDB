@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -42,7 +42,7 @@ func (h *Handler) MsgDebugError(ctx context.Context, msg *wire.OpMsg) (*wire.OpM
 
 	// check if parameter is an error code
 	if n, err := strconv.ParseInt(expected, 10, 32); err == nil {
-		errCode := commonerrors.ErrorCode(n)
+		errCode := handlererrors.ErrorCode(n)
 		return nil, errors.New(errCode.String())
 	}
 
