@@ -18,7 +18,7 @@ import (
 	"context"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -31,8 +31,8 @@ func CheckClientMetadata(ctx context.Context, doc *types.Document) error {
 
 	connInfo := conninfo.Get(ctx)
 	if connInfo.MetadataRecv() {
-		return commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrClientMetadataCannotBeMutated,
+		return handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrClientMetadataCannotBeMutated,
 			"The client metadata document may only be sent in the first hello",
 		)
 	}

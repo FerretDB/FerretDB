@@ -22,8 +22,8 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -47,8 +47,8 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	// TODO https://github.com/FerretDB/FerretDB/issues/2859
 	v, _ := document.Get("collection")
 	if v == nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrMissingField,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrMissingField,
 			"BSON field 'getMore.collection' is missing but a required field",
 			document.Command(),
 		)
@@ -56,19 +56,19 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	collection, ok := v.(string)
 	if !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrTypeMismatch,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrTypeMismatch,
 			fmt.Sprintf(
 				"BSON field 'getMore.collection' is the wrong type '%s', expected type 'string'",
-				commonparams.AliasFromType(v),
+				handlerparams.AliasFromType(v),
 			),
 			document.Command(),
 		)
 	}
 
 	if collection == "" {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrInvalidNamespace,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrInvalidNamespace,
 			"Collection names cannot be empty",
 			document.Command(),
 		)
@@ -76,8 +76,8 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	cursorID, err := common.GetRequiredParam[int64](document, document.Command())
 	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrTypeMismatch,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrTypeMismatch,
 			"BSON field 'getMore.getMore' is the wrong type, expected type 'long'",
 			document.Command(),
 		)
@@ -89,36 +89,36 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		v = int64(0)
 	}
 
-	// cannot use other existing commonparams function, they return different error codes
-	maxTimeMS, err := commonparams.GetWholeNumberParam(v)
+	// cannot use other existing handlerparams function, they return different error codes
+	maxTimeMS, err := handlerparams.GetWholeNumberParam(v)
 	if err != nil {
 		switch {
-		case errors.Is(err, commonparams.ErrUnexpectedType):
+		case errors.Is(err, handlerparams.ErrUnexpectedType):
 			if _, ok = v.(types.NullType); ok {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrBadValue,
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrBadValue,
 					"maxTimeMS must be a number",
 					document.Command(),
 				)
 			}
 
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrTypeMismatch,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					`BSON field 'getMore.maxTimeMS' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
-					commonparams.AliasFromType(v),
+					handlerparams.AliasFromType(v),
 				),
 				document.Command(),
 			)
-		case errors.Is(err, commonparams.ErrNotWholeNumber):
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrBadValue,
+		case errors.Is(err, handlerparams.ErrNotWholeNumber):
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrBadValue,
 				"maxTimeMS has non-integral value",
 				document.Command(),
 			)
-		case errors.Is(err, commonparams.ErrLongExceededPositive) || errors.Is(err, commonparams.ErrLongExceededNegative):
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrBadValue,
+		case errors.Is(err, handlerparams.ErrLongExceededPositive) || errors.Is(err, handlerparams.ErrLongExceededNegative):
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrBadValue,
 				fmt.Sprintf("%s value for maxTimeMS is out of range", types.FormatAnyValue(v)),
 				document.Command(),
 			)
@@ -128,8 +128,8 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	if maxTimeMS < int64(0) || maxTimeMS > math.MaxInt32 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrBadValue,
 			fmt.Sprintf("%v value for maxTimeMS is out of range", v),
 			document.Command(),
 		)
@@ -144,8 +144,8 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	// TODO https://github.com/FerretDB/FerretDB/issues/2859
 	cursor := h.cursors.Get(cursorID)
 	if cursor == nil || cursor.Username != username {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrCursorNotFound,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrCursorNotFound,
 			fmt.Sprintf("cursor id %d not found", cursorID),
 			document.Command(),
 		)
@@ -160,14 +160,14 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		v = int32(250)
 	}
 
-	batchSize, err := commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "batchSize", v, 0)
+	batchSize, err := handlerparams.GetValidatedNumberParamWithMinValue(document.Command(), "batchSize", v, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	if cursor.DB != db || cursor.Collection != collection {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrUnauthorized,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrUnauthorized,
 			fmt.Sprintf(
 				"Requested getMore on namespace '%s.%s', but cursor belongs to a different namespace %s.%s",
 				db,

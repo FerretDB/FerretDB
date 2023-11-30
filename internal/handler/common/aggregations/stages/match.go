@@ -20,7 +20,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations/operators"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
@@ -34,8 +34,8 @@ type match struct {
 func newMatch(stage *types.Document) (aggregations.Stage, error) {
 	filter, err := common.GetRequiredParam[*types.Document](stage, "$match")
 	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrMatchBadExpression,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrMatchBadExpression,
 			"the match filter must be an expression in an object",
 			"$match (stage)",
 		)

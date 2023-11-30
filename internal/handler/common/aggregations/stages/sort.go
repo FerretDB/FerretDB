@@ -20,7 +20,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -35,16 +35,16 @@ type sort struct {
 func newSort(stage *types.Document) (aggregations.Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$sort")
 	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrSortBadExpression,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrSortBadExpression,
 			"the $sort key specification must be an object",
 			"$sort (stage)",
 		)
 	}
 
 	if fields.Len() == 0 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrSortMissingKey,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrSortMissingKey,
 			"$sort stage must have at least one sort key",
 			"$sort (stage)",
 		)
@@ -66,8 +66,8 @@ func (s *sort) Process(ctx context.Context, iter types.DocumentsIterator, closer
 		// TODO https://github.com/FerretDB/FerretDB/issues/3125
 		var pathErr *types.PathError
 		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrPathContainsEmptyElement,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrPathContainsEmptyElement,
 				"FieldPath field names may not be empty strings.",
 				"$sort (stage)",
 			)

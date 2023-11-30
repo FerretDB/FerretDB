@@ -17,7 +17,7 @@ package common
 import (
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -60,7 +60,7 @@ type Update struct {
 func GetUpdateParams(document *types.Document, l *zap.Logger) (*UpdateParams, error) {
 	var params UpdateParams
 
-	err := commonparams.ExtractParams(document, "update", &params, l)
+	err := handlerparams.ExtractParams(document, "update", &params, l)
 	if err != nil {
 		return nil, err
 	}

@@ -20,9 +20,9 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
 	"github.com/FerretDB/FerretDB/internal/handler/commonpath"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -50,7 +50,7 @@ type DistinctParams struct {
 func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams, error) {
 	var dp DistinctParams
 
-	err := commonparams.ExtractParams(document, "distinct", &dp, l)
+	err := handlerparams.ExtractParams(document, "distinct", &dp, l)
 	if err != nil {
 		return nil, err
 	}
@@ -61,19 +61,19 @@ func GetDistinctParams(document *types.Document, l *zap.Logger) (*DistinctParams
 	case types.NullType, nil:
 		dp.Filter = types.MakeDocument(0)
 	default:
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrTypeMismatch,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrTypeMismatch,
 			fmt.Sprintf(
 				"BSON field 'distinct.query' is the wrong type '%s', expected type 'object'",
-				commonparams.AliasFromType(dp.Query),
+				handlerparams.AliasFromType(dp.Query),
 			),
 			"distinct",
 		)
 	}
 
 	if dp.Key == "" {
-		return nil, commonerrors.NewCommandErrorMsg(
-			commonerrors.ErrEmptyFieldPath,
+		return nil, handlererrors.NewCommandErrorMsg(
+			handlererrors.ErrEmptyFieldPath,
 			"FieldPath cannot be constructed with empty string",
 		)
 	}

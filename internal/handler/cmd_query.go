@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
@@ -53,8 +53,8 @@ func (h *Handler) CmdQuery(ctx context.Context, query *wire.OpQuery) (*wire.OpRe
 		}, nil
 	}
 
-	return nil, commonerrors.NewCommandErrorMsgWithArgument(
-		commonerrors.ErrNotImplemented,
+	return nil, handlererrors.NewCommandErrorMsgWithArgument(
+		handlererrors.ErrNotImplemented,
 		fmt.Sprintf("CmdQuery: unhandled command %q for collection %q", cmd, collection),
 		"OpQuery: "+cmd,
 	)

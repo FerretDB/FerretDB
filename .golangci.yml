@@ -54,13 +54,13 @@ linters-settings:
           - "**/internal/backends/**/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handler/common
-      commonerrors:
+      handlererrors:
         files:
           - $all
           - "!**/internal/clientconn/*.go"
           - "!**/internal/handler/**.go"
         deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/handler/commonerrors
+          - pkg: github.com/FerretDB/FerretDB/internal/handler/handlererrors
   exhaustive:
     default-signifies-exhaustive: false
   gci:
