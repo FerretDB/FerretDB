@@ -995,7 +995,7 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 
 				doc := ConvertDocument(t, res)
 				limitPushdown, _ := doc.Get("limitPushdown")
-				assert.Equal(t, tc.limitPushdown.SortPushdownExpected(t), limitPushdown)
+				assert.Equal(t, tc.limitPushdown.PushdownExpected(t), limitPushdown)
 
 				var msg string
 
