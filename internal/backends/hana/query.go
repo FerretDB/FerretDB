@@ -48,7 +48,17 @@ func makeFilter(table, key, op string, value any) string {
 	case int32, int64:
 		valStr = fmt.Sprintf("%d", value)
 	case float64:
-		// TODO check for MaxSafeValues
+		// If value is not safe double, fetch all numbers out of safe range.
+		// TODO https://github.com/FerretDB/FerretDB/issues/3626
+		switch {
+		case v > types.MaxSafeDouble:
+			value = types.MaxSafeDouble
+
+		case v < -types.MaxSafeDouble:
+			value = -types.MaxSafeDouble
+		default:
+			// don't change the default eq query
+		}
 		valStr = fmt.Sprintf("%f", value)
 	case nil:
 		valStr = "NULL"
