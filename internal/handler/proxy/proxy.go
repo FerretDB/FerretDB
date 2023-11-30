@@ -18,8 +18,11 @@ package proxy
 import (
 	"bufio"
 	"context"
+	"crypto/tls"
 	"net"
 
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/tlsutil"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -31,10 +34,18 @@ type Router struct {
 }
 
 // New creates a new Router for a service with given address.
-func New(addr string) (*Router, error) {
-	conn, err := net.Dial("tcp", addr)
+func New(addr, certFile, keyFile, caFile string) (*Router, error) {
+	var conn net.Conn
+	var err error
+
+	if certFile != "" {
+		conn, err = dialTLS(addr, certFile, keyFile, caFile)
+	} else {
+		conn, err = net.Dial("tcp", addr)
+	}
+
 	if err != nil {
-		return nil, err
+		return nil, lazyerrors.Error(err)
 	}
 
 	return &Router{
@@ -42,6 +53,25 @@ func New(addr string) (*Router, error) {
 		bufr: bufio.NewReader(conn),
 		bufw: bufio.NewWriter(conn),
 	}, nil
+}
+
+// dialTLS connects to the given address using TLS.
+func dialTLS(addr, certFile, keyFile, caFile string) (net.Conn, error) {
+	config, err := tlsutil.Config(certFile, keyFile, caFile)
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := tls.Dial("tcp", addr, config)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	if err = conn.Handshake(); err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	return conn, nil
 }
 
 // Close stops the handler.
