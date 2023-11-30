@@ -17,14 +17,14 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgCollMod implements `collMod` command.
 func (h *Handler) MsgCollMod(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return nil, commonerrors.NewCommandErrorMsg(
-		commonerrors.ErrNotImplemented,
+	return nil, handlererrors.NewCommandErrorMsg(
+		handlererrors.ErrNotImplemented,
 		"`collMod` command is not implemented yet",
 	)
 }

@@ -22,7 +22,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -64,7 +64,7 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	default:
 		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
 			"See https://docs.ferretdb.io/security/authentication/ for more details."
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrAuthenticationFailed, msg, "mechanism")
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, "mechanism")
 	}
 
 	conninfo.Get(ctx).SetAuth(username, password)
@@ -91,8 +91,8 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 	stringPayload, err := common.GetRequiredParam[string](doc, "payload")
 	if err == nil {
 		if payload, err = base64.StdEncoding.DecodeString(stringPayload); err != nil {
-			return "", "", commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrBadValue,
+			return "", "", handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrBadValue,
 				fmt.Sprintf("Invalid payload: %v", err),
 				"payload",
 			)
@@ -112,8 +112,8 @@ func saslStartPlain(doc *types.Document) (string, string, error) {
 
 	parts := bytes.Split(payload, []byte{0})
 	if l := len(parts); l != 3 {
-		return "", "", commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrTypeMismatch,
+		return "", "", handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrTypeMismatch,
 			fmt.Sprintf("Invalid payload: expected 3 parts, got %d", l),
 			"payload",
 		)
