@@ -50,12 +50,6 @@ func SortDocuments(docs []*types.Document, sortDoc *types.Document) error {
 // ValidateSortDocument validates sort documents, and return
 // proper error if it's invalid.
 func ValidateSortDocument(sortDoc *types.Document) (*types.Document, error) {
-	return convertSortDocument(sortDoc)
-}
-
-// unwrapSortDocument takes sort document, validates it, and returns
-// sortFuncs if validation passed.
-func convertSortDocument(sortDoc *types.Document) (*types.Document, error) {
 	if sortDoc.Len() == 0 {
 		return nil, nil
 	}
