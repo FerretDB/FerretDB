@@ -111,10 +111,11 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	// Limit pushdown is not applied if:
+	//  - pushdown is disabled;
 	//  - `filter` is set, it must fetch all documents to filter them in memory;
 	//  - `sort` is set, it must fetch all documents and sort them in memory;
 	//  - `skip` is non-zero value, skip pushdown is not supported yet.
-	if params.Filter.Len() == 0 && params.Sort.Len() == 0 && params.Skip == 0 {
+	if !h.DisablePushdown && params.Filter.Len() == 0 && params.Sort.Len() == 0 && params.Skip == 0 {
 		qp.Limit = params.Limit
 	}
 

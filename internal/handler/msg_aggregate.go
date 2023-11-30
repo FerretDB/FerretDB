@@ -259,14 +259,16 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	var iter iterator.Interface[struct{}, *types.Document]
 
 	if len(collStatsDocuments) == len(stagesDocuments) {
-		filter, _ := aggregations.GetPushdownQuery(aggregationStages)
+		var filter *types.Document
+
+		if !h.DisablePushdown {
+			filter, _ = aggregations.GetPushdownQuery(aggregationStages)
+		}
 
 		// only documents stages or no stages - fetch documents from the DB and apply stages to them
 		qp := new(backends.QueryParams)
 
-		if !h.DisablePushdown {
-			qp.Filter = filter
-		}
+		qp.Filter = filter
 
 		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{c, qp, stagesDocuments})
 	} else {
