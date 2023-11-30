@@ -38,6 +38,8 @@ func TestCursor(t *testing.T) {
 	cur, err := collection.Find(ctx, bson.D{}, opts)
 	require.NoError(t, err)
 
+	cursorID := cur.ID()
+
 	var wg sync.WaitGroup
 
 	wg.Add(1)
@@ -45,14 +47,39 @@ func TestCursor(t *testing.T) {
 	go func() {
 		defer wg.Done()
 
-		res := []bson.D{}
-		err := cur.All(ctx, &res)
+		cur, err := collection.Database().RunCommandCursor(
+			ctx, bson.D{{"getMore", cursorID}, {"collection", collection.Name()}},
+		)
 		require.NoError(t, err)
+
+		for {
+			if cur.Next(ctx) {
+				continue
+			}
+
+			if err := cur.Err(); err != nil {
+				t.Error(err)
+			}
+
+			if cur.ID() == 0 {
+				break
+			}
+		}
 	}()
 
-	res := []bson.D{}
-	err = cur.All(ctx, &res)
-	require.NoError(t, err)
+	for {
+		if cur.Next(ctx) {
+			continue
+		}
+
+		if err := cur.Err(); err != nil {
+			t.Error(err)
+		}
+
+		if cur.ID() == 0 {
+			break
+		}
+	}
 
 	wg.Wait()
 }
