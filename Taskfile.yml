@@ -243,6 +243,31 @@ tasks:
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
         -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
 
+  test-integration-mysql:
+    desc: "Run integration tests for `mysql` handler"
+    deps: [gen-version]
+    dir: integration
+    cmds:
+      - >
+        ../bin/envtool{{exeExt}} tests run
+        --shard-index={{.SHARD_INDEX}}
+        --shard-total={{.SHARD_TOTAL}}
+        --run='{{.TEST_RUN}}'
+        --
+        -count=1
+        -timeout={{.TEST_TIMEOUT}}
+        {{.RACE_FLAG}}
+        -tags={{.BUILD_TAGS}}
+        -shuffle=on
+        -coverpkg=../...
+        -coverprofile=integration-mysql.txt
+        .
+        -target-backend=ferretdb-mysql
+        -target-tls
+        -mysql-url='mysql://username:password@127.0.0.1:3306/ferretdb'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
+
   test-integration-hana:
     desc: "Run integration tests for `hana` handler"
     deps: [gen-version]
