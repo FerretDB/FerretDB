@@ -69,27 +69,31 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		params = new(backends.QueryParams)
 	}
 
-	var whereClause string
+	q := prepareSelectClause(meta.TableName, params.Comment, meta.Capped(), params.OnlyRecordIDs)
+
 	var args []any
 
-	// that logic should exist in one place
-	// TODO https://github.com/FerretDB/FerretDB/issues/3235
-	if params.Filter.Len() == 1 {
-		v, _ := params.Filter.Get("_id")
-		switch v.(type) {
-		case string, types.ObjectID:
-			whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-			args = []any{string(must.NotFail(sjson.MarshalSingleValue(v)))}
+	if !params.DisableAllPushdown {
+		var whereClause string
+
+		// that logic should exist in one place
+		// TODO https://github.com/FerretDB/FerretDB/issues/3235
+		if params.Filter.Len() == 1 {
+			v, _ := params.Filter.Get("_id")
+			switch v.(type) {
+			case string, types.ObjectID:
+				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+				args = []any{string(must.NotFail(sjson.MarshalSingleValue(v)))}
+			}
 		}
-	}
 
-	q := prepareSelectClause(meta.TableName, params.Comment, meta.Capped(), params.OnlyRecordIDs) + whereClause
+		q += whereClause
+		q += prepareOrderByClause(params.Sort, meta.Capped())
 
-	q += prepareOrderByClause(params.Sort, meta.Capped())
-
-	if params.Limit != 0 {
-		q += ` LIMIT ?`
-		args = append(args, params.Limit)
+		if params.Limit != 0 {
+			q += ` LIMIT ?`
+			args = append(args, params.Limit)
+		}
 	}
 
 	rows, err := db.QueryContext(ctx, q, args...)

@@ -88,20 +88,25 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	var placeholder metadata.Placeholder
 
-	where, args, err := prepareWhereClause(&placeholder, params.Filter)
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
+	var args []any
 
-	q += where
+	if !params.DisableAllPushdown {
+		var where string
+		where, args, err = prepareWhereClause(&placeholder, params.Filter)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
 
-	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
-	q += sort
-	args = append(args, sortArgs...)
+		q += where
 
-	if params.Limit != 0 {
-		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
-		args = append(args, params.Limit)
+		sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
+		q += sort
+		args = append(args, sortArgs...)
+
+		if params.Limit != 0 {
+			q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
+			args = append(args, params.Limit)
+		}
 	}
 
 	rows, err := p.Query(ctx, q, args...)

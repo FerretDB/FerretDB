@@ -108,7 +108,7 @@ type QueryResult struct {
 // but doing so is not necessary - the handler will do that anyway.
 //
 // If DisableAllPushdown is true, no pushdown will be performed.
-// No Filter, nor Sort should be set.
+// In such case Filter, Limit, and Sort cannot be set.
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3761
 // The QueryResult's Filtered field is set to true if the backend applied the whole requested filtering.
@@ -124,7 +124,8 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 
 	if params.DisableAllPushdown &&
 		// TODO replace after merge
-		(params.Filter.Len() != 0 || params.Sort != nil) {
+		(params.Filter.Len() != 0 || params.Limit != 0 || params.Sort != nil) {
+		panic("Filter, Limit and Sort shouldn't be set if pushdown is disabled")
 	}
 
 	res, err := cc.c.Query(ctx, params)
