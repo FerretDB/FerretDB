@@ -92,6 +92,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	if !params.DisableAllPushdown {
 		var where string
+
 		where, args, err = prepareWhereClause(&placeholder, params.Filter)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
