@@ -37,7 +37,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/proxy"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -255,7 +255,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 			// TODO https://github.com/FerretDB/FerretDB/issues/2412
 
 			// get protocol error to return correct error document
-			protoErr := commonerrors.ProtocolError(validationErr)
+			protoErr := handlererrors.ProtocolError(validationErr)
 
 			var res wire.OpMsg
 			must.NoError(res.SetSections(wire.OpMsgSection{
@@ -476,7 +476,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	if err != nil {
 		switch resHeader.OpCode {
 		case wire.OpCodeMsg:
-			protoErr := commonerrors.ProtocolError(err)
+			protoErr := handlererrors.ProtocolError(err)
 
 			var res wire.OpMsg
 			must.NoError(res.SetSections(wire.OpMsgSection{
@@ -485,9 +485,9 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			resBody = &res
 
 			switch protoErr := protoErr.(type) {
-			case *commonerrors.CommandError:
+			case *handlererrors.CommandError:
 				result = protoErr.Code().String()
-			case *commonerrors.WriteErrors:
+			case *handlererrors.WriteErrors:
 				result = "write-error"
 			default:
 				panic(fmt.Errorf("unexpected error type %T", protoErr))
@@ -574,7 +574,7 @@ func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string)
 
 	errMsg := fmt.Sprintf("no such command: '%s'", command)
 
-	return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrCommandNotFound, errMsg)
+	return nil, handlererrors.NewCommandErrorMsg(handlererrors.ErrCommandNotFound, errMsg)
 }
 
 // logResponse logs response's header and body and returns the log level that was used.

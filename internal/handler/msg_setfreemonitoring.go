@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -47,8 +47,8 @@ func (h *Handler) MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*w
 	case "disable":
 		telemetryState = false
 	default:
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrBadValue,
 			fmt.Sprintf(
 				"Enumeration value '%s' for field '%s' is not a valid value.",
 				action,
@@ -59,8 +59,8 @@ func (h *Handler) MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*w
 	}
 
 	if h.StateProvider.Get().TelemetryLocked {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrFreeMonitoringDisabled,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrFreeMonitoringDisabled,
 			"Free Monitoring has been disabled via the command-line and/or config file",
 			action,
 		)
