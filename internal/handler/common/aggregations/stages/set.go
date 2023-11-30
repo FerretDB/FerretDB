@@ -20,7 +20,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -44,8 +44,8 @@ func newSet(stage *types.Document) (aggregations.Stage, error) {
 
 	fieldsDoc, ok := fields.(*types.Document)
 	if !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrSetBadExpression,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrSetBadExpression,
 			fmt.Sprintf("$set specification stage must be an object, got %T", fields),
 			"$set (stage)",
 		)

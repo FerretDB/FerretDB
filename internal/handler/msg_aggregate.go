@@ -30,8 +30,8 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations/stages"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -74,8 +74,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	var cName string
 
 	if cName, ok = collectionParam.(string); !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrFailedToParse,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrFailedToParse,
 			"Invalid command format: the 'aggregate' field must specify a collection name or 1",
 			document.Command(),
 		)
@@ -85,7 +85,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, cName)
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, document.Command())
 		}
 
 		return nil, lazyerrors.Error(err)
@@ -95,7 +95,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", cName)
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, document.Command())
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, document.Command())
 		}
 
 		return nil, lazyerrors.Error(err)
@@ -108,42 +108,42 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		v = int64(0)
 	}
 
-	// cannot use other existing commonparams function, they return different error codes
-	maxTimeMS, err := commonparams.GetWholeNumberParam(v)
+	// cannot use other existing handlerparams function, they return different error codes
+	maxTimeMS, err := handlerparams.GetWholeNumberParam(v)
 	if err != nil {
 		switch {
-		case errors.Is(err, commonparams.ErrUnexpectedType):
+		case errors.Is(err, handlerparams.ErrUnexpectedType):
 			if _, ok = v.(types.NullType); ok {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrBadValue,
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrBadValue,
 					"maxTimeMS must be a number",
 					document.Command(),
 				)
 			}
 
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrTypeMismatch,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					`BSON field 'aggregate.maxTimeMS' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
-					commonparams.AliasFromType(v),
+					handlerparams.AliasFromType(v),
 				),
 				document.Command(),
 			)
-		case errors.Is(err, commonparams.ErrNotWholeNumber):
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrBadValue,
+		case errors.Is(err, handlerparams.ErrNotWholeNumber):
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrBadValue,
 				"maxTimeMS has non-integral value",
 				document.Command(),
 			)
-		case errors.Is(err, commonparams.ErrLongExceededPositive):
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrBadValue,
+		case errors.Is(err, handlerparams.ErrLongExceededPositive):
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrBadValue,
 				fmt.Sprintf("%s value for maxTimeMS is out of range", types.FormatAnyValue(v)),
 				document.Command(),
 			)
-		case errors.Is(err, commonparams.ErrLongExceededNegative):
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrValueNegative,
+		case errors.Is(err, handlerparams.ErrLongExceededNegative):
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrValueNegative,
 				fmt.Sprintf("BSON field 'maxTimeMS' value must be >= 0, actual value '%s'", types.FormatAnyValue(v)),
 				document.Command(),
 			)
@@ -153,16 +153,16 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	if maxTimeMS < int64(0) {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrValueNegative,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrValueNegative,
 			fmt.Sprintf("BSON field 'maxTimeMS' value must be >= 0, actual value '%s'", types.FormatAnyValue(v)),
 			document.Command(),
 		)
 	}
 
 	if maxTimeMS > math.MaxInt32 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrBadValue,
 			fmt.Sprintf("%v value for maxTimeMS is out of range", v),
 			document.Command(),
 		)
@@ -170,8 +170,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	pipeline, err := common.GetRequiredParam[*types.Array](document, "pipeline")
 	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrTypeMismatch,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrTypeMismatch,
 			"'pipeline' option must be specified as an array",
 			document.Command(),
 		)
@@ -185,8 +185,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		var d *types.Document
 
 		if d, ok = v.(*types.Document); !ok {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrTypeMismatch,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrTypeMismatch,
 				"Each element of the 'pipeline' array must be an object",
 				document.Command(),
 			)
@@ -201,8 +201,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		switch d.Command() {
 		case "$collStats":
 			if i > 0 {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrCollStatsIsNotFirstStage,
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrCollStatsIsNotFirstStage,
 					"$collStats is only valid as the first stage in a pipeline",
 					document.Command(),
 				)
@@ -218,8 +218,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	// validate cursor after validating pipeline stages to keep compatibility
 	v, _ = document.Get("cursor")
 	if v == nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrFailedToParse,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrFailedToParse,
 			"The 'cursor' option is required, except for aggregate with the explain argument",
 			document.Command(),
 		)
@@ -227,11 +227,11 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	cursorDoc, ok := v.(*types.Document)
 	if !ok {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrTypeMismatch,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrTypeMismatch,
 			fmt.Sprintf(
 				`BSON field 'cursor' is the wrong type '%s', expected type 'object'`,
-				commonparams.AliasFromType(v),
+				handlerparams.AliasFromType(v),
 			),
 			document.Command(),
 		)
@@ -242,7 +242,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		v = int32(101)
 	}
 
-	batchSize, err := commonparams.GetValidatedNumberParamWithMinValue(document.Command(), "batchSize", v, 0)
+	batchSize, err := handlerparams.GetValidatedNumberParamWithMinValue(document.Command(), "batchSize", v, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -395,8 +395,8 @@ func processStagesStats(ctx context.Context, closer *iterator.MultiCloser, p *st
 	if hasCount || hasStorage {
 		collStats, err = p.c.Stats(ctx, new(backends.CollectionStatsParams))
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNamespaceNotFound,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNamespaceNotFound,
 				fmt.Sprintf("ns not found: %s.%s", p.dbName, p.cName),
 				"aggregate",
 			)

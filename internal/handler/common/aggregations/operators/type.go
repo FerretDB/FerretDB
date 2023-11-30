@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -119,7 +119,7 @@ func (t *typeOp) Process(doc *types.Document) (any, error) {
 		}
 	}
 
-	return commonparams.AliasFromType(res), nil
+	return handlerparams.AliasFromType(res), nil
 }
 
 // check interfaces

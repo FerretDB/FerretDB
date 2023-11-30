@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -80,8 +80,8 @@ var unsupportedStages = map[string]struct{}{
 // NewStage creates a new aggregation stage.
 func NewStage(stage *types.Document) (aggregations.Stage, error) {
 	if stage.Len() != 1 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageInvalid,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageInvalid,
 			"A pipeline stage specification object must contain exactly one field.",
 			"aggregate",
 		)
@@ -100,15 +100,15 @@ func NewStage(stage *types.Document) (aggregations.Stage, error) {
 		return f(stage)
 
 	case !supported && unsupported:
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrNotImplemented,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrNotImplemented,
 			fmt.Sprintf("`aggregate` stage %q is not implemented yet", name),
 			name+" (stage)", // to differentiate update operator $set from aggregation stage $set, etc
 		)
 
 	case !supported && !unsupported:
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageGroupInvalidAccumulator,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageGroupInvalidAccumulator,
 			fmt.Sprintf("Unrecognized pipeline stage name: %q", name),
 			name+" (stage)", // to differentiate update operator $set from aggregation stage $set, etc
 		)

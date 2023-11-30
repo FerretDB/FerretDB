@@ -23,7 +23,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -47,7 +47,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "delete")
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "delete")
 		}
 
 		return nil, lazyerrors.Error(err)
@@ -57,7 +57,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "delete")
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "delete")
 		}
 
 		return nil, lazyerrors.Error(err)
@@ -72,7 +72,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 		deleted += d
 
 		if err != nil {
-			var ce *commonerrors.CommandError
+			var ce *handlererrors.CommandError
 			if errors.As(err, &ce) {
 				we := &mongo.WriteError{
 					Index:   i,
@@ -114,7 +114,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // execDelete performs a single delete operation.
 //
 // It returns a number of deleted documents or error.
-// The error is either a (wrapped) *commonerrors.CommandError or something fatal.
+// The error is either a (wrapped) *handlererrors.CommandError or something fatal.
 func (h *Handler) execDelete(ctx context.Context, c backends.Collection, p *common.Delete) (int32, error) {
 	var qp backends.QueryParams
 	if !h.DisableFilterPushdown {
