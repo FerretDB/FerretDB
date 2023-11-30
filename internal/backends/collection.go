@@ -82,8 +82,11 @@ type SortField struct {
 
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
-	Filter        *types.Document
-	Sort          *SortField // TODO https://github.com/FerretDB/FerretDB/issues/3742
+	Filter *types.Document
+	Sort   *SortField // TODO https://github.com/FerretDB/FerretDB/issues/3742
+
+	DisableAllPushdown bool
+
 	Limit         int64
 	OnlyRecordIDs bool
 	Comment       string
@@ -104,6 +107,9 @@ type QueryResult struct {
 // It also can be used to close the returned iterator and free underlying resources,
 // but doing so is not necessary - the handler will do that anyway.
 //
+// If DisableAllPushdown is true, no pushdown will be performed.
+// No Filter, nor Sort should be set.
+//
 // TODO https://github.com/FerretDB/FerretDB/issues/3761
 // The QueryResult's Filtered field is set to true if the backend applied the whole requested filtering.
 // If it was applied only partially or not at all, that field should be set to false.
@@ -115,6 +121,11 @@ type QueryResult struct {
 // In that case, the handler will perform sorting itself.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
 	defer observability.FuncCall(ctx)()
+
+	if params.DisableAllPushdown &&
+		// TODO replace after merge
+		(params.Filter.Len() != 0 || params.Sort != nil) {
+	}
 
 	res, err := cc.c.Query(ctx, params)
 	checkError(err)
