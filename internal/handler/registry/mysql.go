@@ -38,8 +38,8 @@ func init() {
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 
-			DisableFilterPushdown: opts.DisableFilterPushdown,
-			EnableOplog:           opts.EnableOplog,
+			DisablePushdown: opts.DisablePushdown,
+			EnableOplog:     opts.EnableOplog,
 		}
 
 		h, err := handler.New(handlerOpts)

@@ -999,13 +999,13 @@ func TestQueryCommandLimitPushDown(t *testing.T) {
 
 				var msg string
 
-				if setup.FilterPushdownDisabled() {
+				if setup.PushdownDisabled() {
 					tc.filterPushdown = noPushdown
 					msg = "Filter pushdown is disabled, but target resulted with pushdown"
 				}
 
 				filterPushdown, _ := ConvertDocument(t, res).Get("filterPushdown")
-				assert.Equal(t, tc.filterPushdown.FilterPushdownExpected(t), filterPushdown, msg)
+				assert.Equal(t, tc.filterPushdown.PushdownExpected(t), filterPushdown, msg)
 			})
 
 			t.Run("Find", func(t *testing.T) {

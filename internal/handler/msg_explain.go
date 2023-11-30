@@ -95,7 +95,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Limit = params.Limit
 	}
 
-	if h.DisableFilterPushdown {
+	if h.DisablePushdown {
 		qp.Filter = nil
 	}
 

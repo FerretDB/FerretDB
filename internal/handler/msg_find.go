@@ -106,7 +106,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 	}
 
-	if !h.DisableFilterPushdown {
+	if !h.DisablePushdown {
 		qp.Filter = params.Filter
 	}
 

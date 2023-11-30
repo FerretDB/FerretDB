@@ -264,7 +264,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		// only documents stages or no stages - fetch documents from the DB and apply stages to them
 		qp := new(backends.QueryParams)
 
-		if !h.DisableFilterPushdown {
+		if !h.DisablePushdown {
 			qp.Filter = filter
 		}
 

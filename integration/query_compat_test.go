@@ -131,14 +131,14 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 					resultPushdown := tc.resultPushdown
 
 					var msg string
-					if setup.FilterPushdownDisabled() {
+					if setup.PushdownDisabled() {
 						resultPushdown = noPushdown
 						msg = "Filter pushdown is disabled, but target resulted with pushdown"
 					}
 
 					doc := ConvertDocument(t, explainRes)
 					pushdown, _ := doc.Get("filterPushdown")
-					assert.Equal(t, resultPushdown.FilterPushdownExpected(t), pushdown, msg)
+					assert.Equal(t, resultPushdown.PushdownExpected(t), pushdown, msg)
 
 					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
 					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
