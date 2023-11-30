@@ -47,6 +47,7 @@ type Collection struct {
 	Indexes         Indexes
 	CappedSize      int64
 	CappedDocuments int64
+	UUID            string
 }
 
 // deepCopy returns a deep copy.
@@ -61,6 +62,7 @@ func (c *Collection) deepCopy() *Collection {
 		Indexes:         c.Indexes.deepCopy(),
 		CappedSize:      c.CappedSize,
 		CappedDocuments: c.CappedDocuments,
+		UUID:            c.UUID,
 	}
 }
 
@@ -115,6 +117,7 @@ func (c *Collection) marshal() *types.Document {
 		"indexes", c.Indexes.marshal(),
 		"cappedSize", c.CappedSize,
 		"cappedDocs", c.CappedDocuments,
+		"uuid", c.UUID,
 	))
 }
 
@@ -149,8 +152,13 @@ func (c *Collection) unmarshal(doc *types.Document) error {
 	if v, _ := doc.Get("cappedSize"); v != nil {
 		c.CappedSize = v.(int64)
 	}
+
 	if v, _ := doc.Get("cappedDocs"); v != nil {
 		c.CappedDocuments = v.(int64)
+	}
+
+	if v, _ := doc.Get("uuid"); v != nil {
+		c.UUID = v.(string)
 	}
 
 	return nil

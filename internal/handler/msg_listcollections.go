@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -80,6 +82,21 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 			"name", collection.Name,
 			"type", "collection",
 		))
+
+		if collection.UUID != "" {
+			uuid, err := uuid.Parse(collection.UUID)
+			if err != nil {
+				return nil, lazyerrors.Error(err)
+			}
+
+			path := must.NotFail(types.NewPathFromString("info.uuid"))
+			uuidBinary := types.Binary{
+				Subtype: types.BinaryUUID,
+				B:       must.NotFail(uuid.MarshalBinary()),
+			}
+
+			must.NoError(d.SetByPath(path, uuidBinary))
+		}
 
 		matches, err := common.FilterDocument(d, filter)
 		if err != nil {

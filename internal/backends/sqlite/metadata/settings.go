@@ -28,6 +28,7 @@ type Settings struct {
 	Indexes         []IndexInfo `json:"indexes"`
 	CappedSize      int64       `json:"cappedSize"`
 	CappedDocuments int64       `json:"cappedDocuments"`
+	UUID            string      `json:"uuid"`
 }
 
 // IndexInfo represents information about a single index.
@@ -59,6 +60,7 @@ func (s Settings) deepCopy() Settings {
 		Indexes:         indexes,
 		CappedSize:      s.CappedSize,
 		CappedDocuments: s.CappedDocuments,
+		UUID:            s.UUID,
 	}
 }
 

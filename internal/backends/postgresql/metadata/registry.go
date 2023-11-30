@@ -24,6 +24,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus"
@@ -525,6 +526,7 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, params
 		TableName:       tableName,
 		CappedSize:      params.CappedSize,
 		CappedDocuments: params.CappedDocuments,
+		UUID:            uuid.NewString(),
 	}
 
 	q := fmt.Sprintf(`CREATE TABLE %s (`, pgx.Identifier{dbName, tableName}.Sanitize())

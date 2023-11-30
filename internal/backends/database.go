@@ -91,6 +91,7 @@ type CollectionInfo struct {
 	Name            string
 	CappedSize      int64
 	CappedDocuments int64
+	UUID            string
 	_               struct{} // prevent unkeyed literals
 }
 

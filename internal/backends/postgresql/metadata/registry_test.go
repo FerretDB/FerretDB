@@ -379,6 +379,7 @@ func TestRenameCollection(t *testing.T) {
 			Name:      newCollectionName,
 			TableName: oldCollection.TableName,
 			Indexes:   oldCollection.Indexes,
+			UUID:      oldCollection.UUID,
 		}
 
 		actual, err := r.CollectionGet(ctx, dbName, newCollectionName)
