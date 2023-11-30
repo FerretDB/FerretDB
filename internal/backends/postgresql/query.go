@@ -227,9 +227,6 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 	return filter, args, nil
 }
 
-// errSortPushdownNotFullyApplied is returned if sort pushdown wasn't fully applied, or wasn't applied at all.
-var errSortPushdownNotFullyApplied = errors.New("Sort pushdown wasn't fully applied")
-
 // prepareOrderByClause returns ORDER BY clause with arguments for given sort document.
 //
 // The provided sort document should be already validated.

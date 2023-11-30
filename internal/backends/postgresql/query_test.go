@@ -324,9 +324,8 @@ func TestPrepareOrderByClause(t *testing.T) {
 		sort   *types.Document
 		capped bool
 
-		orderBy     string
-		args        []any
-		expectedErr error
+		orderBy string
+		args    []any
 	}{
 		"Ascending": {
 			sort:    must.NotFail(types.NewDocument("field", int64(1))),
@@ -343,10 +342,9 @@ func TestPrepareOrderByClause(t *testing.T) {
 			args:    nil,
 		},
 		"SortDotNotation": {
-			sort:        must.NotFail(types.NewDocument("field.embedded", int64(-1))),
-			orderBy:     "",
-			args:        nil,
-			expectedErr: errSortPushdownNotFullyApplied,
+			sort:    must.NotFail(types.NewDocument("field.embedded", int64(-1))),
+			orderBy: "",
+			args:    nil,
 		},
 		"Capped": {
 			capped:  true,
@@ -360,11 +358,10 @@ func TestPrepareOrderByClause(t *testing.T) {
 			args:    []any{"field"},
 		},
 		"CappedWithSortDotNotation": {
-			sort:        must.NotFail(types.NewDocument("field.embedded", int64(-1))),
-			capped:      true,
-			orderBy:     "",
-			args:        nil,
-			expectedErr: errSortPushdownNotFullyApplied,
+			sort:    must.NotFail(types.NewDocument("field.embedded", int64(-1))),
+			capped:  true,
+			orderBy: "",
+			args:    nil,
 		},
 	} {
 		name, tc := name, tc

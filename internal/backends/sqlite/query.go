@@ -46,8 +46,6 @@ func prepareSelectClause(table, comment string, capped, onlyRecordIDs bool) stri
 }
 
 // prepareOrderByClause returns ORDER BY clause for given sort document and returns.
-// If pushdown wasn't fully applied to all sort fields, or wasn't applied at all, it returns
-// ErrSortPushdownNotFullyApplied error.
 //
 // For capped collection, it returns ORDER BY recordID only if sort field is nil.
 func prepareOrderByClause(sort *types.Document, capped bool) string {
