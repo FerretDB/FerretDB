@@ -34,6 +34,7 @@ import (
 func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
 	now := time.Now().UTC()
 	hostname, err := os.Hostname()
+
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -48,12 +49,13 @@ func (h *Handler) MsgHostInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		}
 
 		if err == nil {
-			defer file.Close()
+			defer file.Close() //nolint:errcheck // we are only reading it
 			osName, osVersion, _ = parseOSRelease(file)
 		}
 	}
 
 	os := "unknown"
+
 	switch runtime.GOOS {
 	case "linux":
 		os = "Linux"
