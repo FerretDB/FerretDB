@@ -31,9 +31,41 @@ import (
 //
 // If sort path is invalid, it returns a possibly wrapped types.PathError.
 func SortDocuments(docs []*types.Document, sortDoc *types.Document) error {
-	sortFuncs, err := unwrapSortDocument(sortDoc)
-	if err != nil {
-		return err
+	if sortDoc.Len() == 0 {
+		return nil
+	}
+
+	if sortDoc.Len() > 32 {
+		return lazyerrors.Errorf("maximum sort keys exceeded: %v", sortDoc.Len())
+	}
+
+	sortFuncs := make([]sortFunc, sortDoc.Len())
+
+	for i, sortKey := range sortDoc.Keys() {
+		fields := strings.Split(sortKey, ".")
+		for _, field := range fields {
+			if strings.HasPrefix(field, "$") {
+				return commonerrors.NewCommandErrorMsgWithArgument(
+					commonerrors.ErrFieldPathInvalidName,
+					"FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+					"sort",
+				)
+			}
+		}
+
+		sortField := must.NotFail(sortDoc.Get(sortKey))
+
+		sortType, err := GetSortType(sortKey, sortField)
+		if err != nil {
+			return err
+		}
+
+		sortPath, err := types.NewPathFromString(sortKey)
+		if err != nil {
+			return err
+		}
+
+		sortFuncs[i] = lessFunc(sortPath, sortType)
 	}
 
 	if len(sortFuncs) == 0 {
@@ -88,49 +120,6 @@ func ValidateSortDocument(sortDoc *types.Document) (*types.Document, error) {
 	}
 
 	return res, nil
-}
-
-// unwrapSortDocument takes sort document, validates it, and returns
-// sortFuncs if validation passed.
-func unwrapSortDocument(sortDoc *types.Document) ([]sortFunc, error) {
-	if sortDoc.Len() == 0 {
-		return nil, nil
-	}
-
-	if sortDoc.Len() > 32 {
-		return nil, lazyerrors.Errorf("maximum sort keys exceeded: %v", sortDoc.Len())
-	}
-
-	sortFuncs := make([]sortFunc, sortDoc.Len())
-
-	for i, sortKey := range sortDoc.Keys() {
-		fields := strings.Split(sortKey, ".")
-		for _, field := range fields {
-			if strings.HasPrefix(field, "$") {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrFieldPathInvalidName,
-					"FieldPath field names may not start with '$'. Consider using $getField or $setField.",
-					"sort",
-				)
-			}
-		}
-
-		sortField := must.NotFail(sortDoc.Get(sortKey))
-
-		sortType, err := GetSortType(sortKey, sortField)
-		if err != nil {
-			return nil, err
-		}
-
-		sortPath, err := types.NewPathFromString(sortKey)
-		if err != nil {
-			return nil, err
-		}
-
-		sortFuncs[i] = lessFunc(sortPath, sortType)
-	}
-
-	return sortFuncs, nil
 }
 
 // lessFunc takes sort key and type and returns sort.Interface's Less function which
