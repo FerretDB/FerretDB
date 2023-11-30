@@ -130,7 +130,7 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 		defer iter.Close()
 
 		for {
-			k, v, err := iter.Next()
+			_, v, err := iter.Next()
 			if err != nil {
 				if errors.Is(err, iterator.ErrIteratorDone) {
 					break
@@ -139,7 +139,11 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 				return nil, lazyerrors.Error(err)
 			}
 
-			validateSort(k, v)
+			sortValue := v.(int64)
+
+			if sortValue != -1 && sortValue != 1 {
+				panic("sort key ordering must be 1 (for ascending) or -1 (for descending)")
+			}
 		}
 	}
 
