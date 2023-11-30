@@ -62,14 +62,6 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 	databases := types.MakeArray(len(res.Databases))
 
 	for _, dbInfo := range res.Databases {
-		if nameOnly {
-			databases.Append(must.NotFail(types.NewDocument(
-				"name", dbInfo.Name,
-			)))
-
-			continue
-		}
-
 		db, err := h.b.Database(dbInfo.Name)
 		if err != nil {
 			h.L.Warn("Failed to get database", zap.Error(err))
@@ -82,24 +74,28 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			continue
 		}
 
-		d := must.NotFail(types.NewDocument(
-			"name", dbInfo.Name,
-			"sizeOnDisk", stats.SizeTotal,
-			"empty", stats.SizeTotal == 0,
-		))
-
-		totalSize += stats.SizeTotal
+		var d *types.Document
+		if nameOnly {
+			d = must.NotFail(types.NewDocument(
+				"name", dbInfo.Name,
+			))
+		} else {
+			d = must.NotFail(types.NewDocument(
+				"name", dbInfo.Name,
+				"sizeOnDisk", stats.SizeTotal,
+				"empty", stats.SizeTotal == 0,
+			))
+			totalSize += stats.SizeTotal
+		}
 
 		matches, err := common.FilterDocument(d, filter)
 		if err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 
-		if !matches {
-			continue
+		if matches {
+			databases.Append(d)
 		}
-
-		databases.Append(d)
 	}
 
 	var reply wire.OpMsg
