@@ -22,7 +22,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -232,52 +231,13 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 var errSortPushdownNotFullyApplied = errors.New("Sort pushdown wasn't fully applied")
 
 // prepareOrderByClause returns ORDER BY clause with arguments for given sort document.
-// If pushdown wasn't fully applied to all sort fields, or wasn't applied at all, it returns
-// ErrSortPushdownNotFullyApplied error.
 //
 // The provided sort document should be already validated.
 //
 // For capped collection, it returns ORDER BY recordID only if sort document is empty.
 // For more than one sort fields, it sorts only by the first key provided.
-func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document, capped bool) (string, []any, error) {
+func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document, capped bool) (string, []any) {
 	if sort.Len() == 0 {
-		if capped {
-			return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil, nil
-		}
-
-		return "", nil, nil
-	}
-
-	k := sort.Keys()[0]
-	v := sort.Values()[0].(int64)
-
-	// Skip sorting dot notation
-	if strings.ContainsRune(sort.Keys()[0], '.') {
-		return "", nil, errSortPushdownNotFullyApplied
-	}
-
-	var err error
-	if sort.Len() > 1 {
-		err = errSortPushdownNotFullyApplied
-	}
-
-	var order string
-
-	if v == -1 {
-		order = " DESC"
-	}
-
-	return fmt.Sprintf(" ORDER BY %s->%s%s", metadata.DefaultColumn, p.Next(), order), []any{k}, err
-}
-
-// prepareExplainOrderByClause returns ORDER BY clause for explain command.
-//
-// For capped collection, it returns ORDER BY recordID only if sort field is nil.
-//
-// Remove this function.
-// TODO https://github.com/FerretDB/FerretDB/issues/3742
-func prepareExplainOrderByClause(p *metadata.Placeholder, sort *backends.SortField, capped bool) (string, []any) {
-	if sort == nil {
 		if capped {
 			return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil
 		}
@@ -285,17 +245,20 @@ func prepareExplainOrderByClause(p *metadata.Placeholder, sort *backends.SortFie
 		return "", nil
 	}
 
+	k := sort.Keys()[0]
+	v := sort.Values()[0].(int64)
+
 	// Skip sorting dot notation
-	if strings.ContainsRune(sort.Key, '.') {
+	if strings.ContainsRune(k, '.') {
 		return "", nil
 	}
 
 	var order string
-	if sort.Descending {
+	if v == -1 {
 		order = " DESC"
 	}
 
-	return fmt.Sprintf(" ORDER BY %s->%s%s", metadata.DefaultColumn, p.Next(), order), []any{sort.Key}
+	return fmt.Sprintf(" ORDER BY %s->%s%s", metadata.DefaultColumn, p.Next(), order), []any{k}
 }
 
 // filterEqual returns the proper SQL filter with arguments that filters documents

@@ -96,7 +96,6 @@ type QueryParams struct {
 type QueryResult struct {
 	Iter     types.DocumentsIterator
 	Filtered bool // TODO https://github.com/FerretDB/FerretDB/issues/3761
-	Sorted   bool // TODO https://github.com/FerretDB/FerretDB/issues/3742
 }
 
 // Query executes a query against the collection.
@@ -156,7 +155,7 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 // ExplainParams represents the parameters of Collection.Explain method.
 type ExplainParams struct {
 	Filter *types.Document
-	Sort   *SortField
+	Sort   *types.Document
 	Limit  int64
 }
 
@@ -185,6 +184,28 @@ func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams
 
 	if params == nil {
 		params = new(ExplainParams)
+	}
+
+	if params.Sort.Len() != 0 {
+		iter := params.Sort.Iterator()
+		defer iter.Close()
+
+		for {
+			_, v, err := iter.Next()
+			if err != nil {
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
+
+				return nil, lazyerrors.Error(err)
+			}
+
+			sortValue := v.(int64)
+
+			if sortValue != -1 && sortValue != 1 {
+				panic("sort key ordering must be 1 (for ascending) or -1 (for descending)")
+			}
+		}
 	}
 
 	res, err := cc.c.Explain(ctx, params)
