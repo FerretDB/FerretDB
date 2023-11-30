@@ -90,13 +90,13 @@ To sort these documents in ascending order based on the `size` field, you would 
 db.outfits.find().sort({ size: 1 })
 ```
 
-```json5
+```json
 [
-  { _id: 5, name: 'slippers' },
-  { _id: 3, name: 'boots', size: 8, color: 'black' },
-  { _id: 4, name: 'sneakers', size: 8.5, color: 'blue' },
-  { _id: 2, name: 'sandals', size: 9, color: null },
-  { _id: 1, name: 'flip flops', size: 'M', color: 'blue' }
+  { "_id": 5, "name": "slippers" },
+  { "_id": 3, "name": "boots", "size": 8, "color": "black" },
+  { "_id": 4, "name": "sneakers", "size": 8.5, "color": "blue" },
+  { "_id": 2, "name": "sandals", "size": 9, "color": null },
+  { "_id": 1, "name": "flip flops", "size": "M", "color": "blue" }
 ]
 ```
 
@@ -120,13 +120,13 @@ To sort the documents in descending order by the `size` field, you would use a s
 db.outfits.find().sort({ size: -1 })
 ```
 
-```json5
+```json
 [
-  { _id: 1, name: 'flip flops', size: 'M', color: 'blue' },
-  { _id: 2, name: 'sandals', size: 9, color: null },
-  { _id: 4, name: 'sneakers', size: 8.5, color: 'blue' },
-  { _id: 3, name: 'boots', size: 8, color: 'black' },
-  { _id: 5, name: 'slippers' }
+  { "_id": 1, "name": "flip flops", "size": "M", "color": "blue" },
+  { "_id": 2, "name": "sandals", "size": 9, "color": null },
+  { "_id": 4, "name": "sneakers", "size": 8.5, "color": "blue" },
+  { "_id": 3, "name": "boots", "size": 8, "color": "black" },
+  { "_id": 5, "name": "slippers" }
 ]
 ```
 
@@ -149,13 +149,13 @@ The `_id` field value is unique within the collection which ensures that the sor
 db.outfits.find().sort({ color: 1, _id: 1 })
 ```
 
-```json5
+```json
 [
-  { _id: 2, name: 'sandals', size: 9, color: null },
-  { _id: 5, name: 'slippers' },
-  { _id: 3, name: 'boots', size: 8, color: 'black' },
-  { _id: 1, name: 'flip flops', size: 'M', color: 'blue' },
-  { _id: 4, name: 'sneakers', size: 8.5, color: 'blue' }
+  { "_id": 2, "name": "sandals", "size": 9, "color": null },
+  { "_id": 5, "name": "slippers" },
+  { "_id": 3, "name": "boots", "size": 8, "color": "black" },
+  { "_id": 1, "name": "flip flops", "size": "M", "color": "blue" },
+  { "_id": 4, "name": "sneakers", "size": 8.5, "color": "blue" }
 ]
 ```
 

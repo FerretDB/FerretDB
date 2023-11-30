@@ -76,7 +76,7 @@ db.employees.find({
 
 The response returns a single document that matches the query:
 
-```json5
+```json
 [
   {
     _id: ObjectId("639a3cce071b6bed396a8f0e"),
@@ -102,7 +102,7 @@ db.employees.find({
 
 The response returns a single document that matches the query:
 
-```json5
+```json
 [
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
@@ -133,7 +133,7 @@ db.employees.find({
 
 The output:
 
-```json5
+```json
 [
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
@@ -172,7 +172,7 @@ db.employees.find({
 
 The output:
 
-```json5
+```json
 [
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
@@ -219,7 +219,7 @@ db.employees.find({
 
 The output:
 
-```json5
+```json
 [
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
@@ -259,7 +259,7 @@ db.employees.find({
 
 The output:
 
-```json5
+```json
 [
   {
     _id: ObjectId("639a3cce071b6bed396a8f0e"),
@@ -290,7 +290,7 @@ db.employees.find({
 
 The output:
 
-```json5
+```json
 [
   {
     _id: ObjectId("639a3cce071b6bed396a8f0d"),
@@ -329,7 +329,7 @@ db.employees.find({
 
 The output:
 
-```json5
+```json
 [
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),
@@ -369,7 +369,7 @@ db.employees.find({
 
 The output:
 
-```json5
+```json
 [
   {
     _id: ObjectId("639a3cce071b6bed396a8f0c"),

@@ -34,11 +34,11 @@ db.store.updateOne({ _id: 1 }, { $push: { items: 'markers' } })
 
 After the operation, the updated document looks like this:
 
-```json5
+```json
 [
   {
-    _id: 1,
-    items: ['pens', 'pencils', 'paper', 'erasers', 'rulers', 'markers']
+    "_id": 1,
+    "items": ["pens", "pencils", "paper", "erasers", "rulers", "markers"]
   }
 ]
 ```
@@ -62,8 +62,8 @@ db.store.updateOne({ _id: 1 }, { $addToSet: { items: 'paper' } })
 
 The document is subsequently updated with the new element, as depicted below:
 
-```json5
-[{ _id: 1, items: ['pens', 'pencils', 'paper'] }]
+```json
+[{ "_id": 1, "items": ["pens", "pencils", "paper"] }]
 ```
 
 **Example:** Use the `$addToSet` operator to update the array with already existing elements.
@@ -74,8 +74,8 @@ db.store.updateOne({ _id: 1 }, { $addToSet: { items: 'pens' } })
 
 Since the array already contains the element, there won't be any changes.
 
-```json5
-[{ _id: 1, items: ['pens', 'pencils', 'paper'] }]
+```json
+[{ "_id": 1, "items": ["pens", "pencils", "paper"] }]
 ```
 
 :::note
@@ -92,8 +92,8 @@ db.store.updateOne({ _id: 1 }, { $addToSet: { colors: 'red' } })
 
 The updated document looks like this:
 
-```json5
-[{ _id: 1, items: ['pens', 'pencils', 'paper'], colors: ['red'] }]
+```json
+[{ "_id": 1, "items": ["pens", "pencils", "paper"], "colors": ["red"] }]
 ```
 
 ## $pop
@@ -117,11 +117,11 @@ db.products.updateOne({ _id: 1 }, { $pop: { items: -1 } })
 
 The document is subsequently updated with the first element `pens` removed, as depicted below:
 
-```json5
+```json
 [
   {
-    _id: 1,
-    items: ['pencils', 'paper', 'erasers', 'rulers']
+    "_id": 1,
+    "items": ["pencils", "paper", "erasers", "rulers"]
   }
 ]
 ```
@@ -134,11 +134,11 @@ db.products.updateOne({ _id: 1 }, { $pop: { items: 1 } })
 
 The updated now looks like this:
 
-```json5
+```json
 [
   {
-    _id: 1,
-    items: ['pencils', 'paper', 'erasers']
+    "_id": 1,
+    "items": ["pencils", "paper", "erasers"]
   }
 ]
 ```
@@ -166,11 +166,11 @@ db.store.updateOne(
 
 After removing all instances of the specified array elements, the document is updated as follows:
 
-```json5
+```json
 [
   {
-    _id: 1,
-    items: ['erasers', 'rulers']
+    "_id": 1,
+    "items": ["erasers", "rulers"]
   }
 ]
 ```
@@ -210,6 +210,6 @@ db.fruits.update(
 
 The updated document now looks like this:
 
-```json5
-[{ _id: 1, fruits: [{ type: 'orange', color: 'orange' }] }]
+```json
+[{ "_id": 1, "fruits": [{ "type": "orange", "color": "orange" }] }]
 ```

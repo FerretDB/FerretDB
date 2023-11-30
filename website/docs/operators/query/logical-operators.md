@@ -106,7 +106,7 @@ db.catalog.find({
 
 The output:
 
-```json5
+```json
 [
   {
     _id: ObjectId("639ba4a0071b6bed396a8f13"),
@@ -170,7 +170,7 @@ db.catalog.find({
 
 The output:
 
-```json5
+```json
 [
   {
     _id: ObjectId("639ba4a0071b6bed396a8f13"),
@@ -228,7 +228,7 @@ db.catalog.find({
 
 The output:
 
-```json5
+```json
 [
   {
     _id: ObjectId("639ba4a0071b6bed396a8f15"),
@@ -292,7 +292,7 @@ db.catalog.find({
 
 The output:
 
-```json5
+```json
 [
   {
     _id: ObjectId("639ba4a0071b6bed396a8f14"),

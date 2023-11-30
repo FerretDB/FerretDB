@@ -126,7 +126,7 @@ db.electronics.find({
 
 The output:
 
-```json5
+```json
 [
   {
     _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
@@ -196,7 +196,7 @@ db.electronics.find({
 
 The output:
 
-```json5
+```json
 [
   {
     _id: ObjectId("63a32fc7cf72d6203bb45b8e"),
@@ -310,7 +310,7 @@ db.electronics.find({
 
 The output:
 
-```json5
+```json
 [
   {
     _id: ObjectId("63a32fc7cf72d6203bb45b8e"),

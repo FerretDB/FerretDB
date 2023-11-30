@@ -130,7 +130,7 @@ db.demo.find()
 
 Output:
 
-```json5
+```json
 [
   {
     _id: ObjectId("648bc0619df6027209a65b40"),
