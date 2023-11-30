@@ -557,7 +557,11 @@ func filterFieldExpr(doc *types.Document, filterKey, filterSuffix string, expr *
 			// {field: {$in: [value1, value2, ...]}}
 			arr, ok := exprValue.(*types.Array)
 			if !ok {
-				return false, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrBadValue, "$in needs an array", exprKey)
+				return false, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrBadValue,
+					"$in needs an array",
+					exprKey,
+				)
 			}
 
 			var found bool
