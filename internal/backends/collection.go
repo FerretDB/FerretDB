@@ -17,10 +17,13 @@ package backends
 import (
 	"cmp"
 	"context"
+	"errors"
 	"slices"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
@@ -83,7 +86,7 @@ type SortField struct {
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
 	Filter        *types.Document
-	Sort          *SortField // TODO https://github.com/FerretDB/FerretDB/issues/3742
+	Sort          *types.Document
 	Limit         int64
 	OnlyRecordIDs bool
 	Comment       string
@@ -93,7 +96,6 @@ type QueryParams struct {
 type QueryResult struct {
 	Iter     types.DocumentsIterator
 	Filtered bool // TODO https://github.com/FerretDB/FerretDB/issues/3761
-	Sorted   bool // TODO https://github.com/FerretDB/FerretDB/issues/3742
 }
 
 // Query executes a query against the collection.
@@ -113,8 +115,36 @@ type QueryResult struct {
 // The QueryResult's Sorted field is set to true if the backend applied the whole requested sorting.
 // If it was applied only partially or not at all, that field should be set to false.
 // In that case, the handler will perform sorting itself.
+//
+// Passed sort document should be already validated. If sort document is invalid, function panics.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
 	defer observability.FuncCall(ctx)()
+
+	if params == nil {
+		params = new(QueryParams)
+	}
+
+	if params.Sort.Len() != 0 {
+		iter := params.Sort.Iterator()
+		defer iter.Close()
+
+		for {
+			_, v, err := iter.Next()
+			if err != nil {
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
+
+				return nil, lazyerrors.Error(err)
+			}
+
+			sortValue := v.(int64)
+
+			if sortValue != -1 && sortValue != 1 {
+				panic("sort key ordering must be 1 (for ascending) or -1 (for descending)")
+			}
+		}
+	}
 
 	res, err := cc.c.Query(ctx, params)
 	checkError(err)
@@ -125,7 +155,7 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 // ExplainParams represents the parameters of Collection.Explain method.
 type ExplainParams struct {
 	Filter *types.Document
-	Sort   *SortField // TODO https://github.com/FerretDB/FerretDB/issues/3742
+	Sort   *types.Document
 	Limit  int64
 }
 
@@ -151,6 +181,32 @@ type ExplainResult struct {
 // If it was possible to apply it only partially or not at all, that field should be set to false.
 func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams) (*ExplainResult, error) {
 	defer observability.FuncCall(ctx)()
+
+	if params == nil {
+		params = new(ExplainParams)
+	}
+
+	if params.Sort.Len() != 0 {
+		iter := params.Sort.Iterator()
+		defer iter.Close()
+
+		for {
+			_, v, err := iter.Next()
+			if err != nil {
+				if errors.Is(err, iterator.ErrIteratorDone) {
+					break
+				}
+
+				return nil, lazyerrors.Error(err)
+			}
+
+			sortValue := v.(int64)
+
+			if sortValue != -1 && sortValue != 1 {
+				panic("sort key ordering must be 1 (for ascending) or -1 (for descending)")
+			}
+		}
+	}
 
 	res, err := cc.c.Explain(ctx, params)
 	checkError(err)

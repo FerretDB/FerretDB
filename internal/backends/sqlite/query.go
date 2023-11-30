@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/types"
 )
 
 // prepareSelectClause returns SELECT clause for default column of provided table name.
@@ -45,11 +45,11 @@ func prepareSelectClause(table, comment string, capped, onlyRecordIDs bool) stri
 	return fmt.Sprintf(`SELECT %s %s FROM %q`, comment, metadata.DefaultColumn, table)
 }
 
-// prepareOrderByClause returns ORDER BY clause.
+// prepareOrderByClause returns ORDER BY clause for given sort document and returns.
 //
 // For capped collection, it returns ORDER BY recordID only if sort field is nil.
-func prepareOrderByClause(sort *backends.SortField, capped bool) string {
-	if sort == nil && capped {
+func prepareOrderByClause(sort *types.Document, capped bool) string {
+	if sort.Len() == 0 && capped {
 		return fmt.Sprintf(` ORDER BY %s`, metadata.RecordIDColumn)
 	}
 
