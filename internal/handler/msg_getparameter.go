@@ -19,8 +19,8 @@ import (
 	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -80,8 +80,8 @@ func (h *Handler) MsgGetParameter(ctx context.Context, msg *wire.OpMsg) (*wire.O
 	}
 
 	if resDoc.Len() < 1 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrorCode(0),
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrorCode(0),
 			"no option found to get",
 			document.Command(),
 		)
@@ -137,14 +137,14 @@ func extractGetParameter(getParameter any) (showDetails, allParameters bool, err
 
 	if param, ok := getParameter.(*types.Document); ok {
 		if v, _ := param.Get("showDetails"); v != nil {
-			showDetails, err = commonparams.GetBoolOptionalParam("showDetails", v)
+			showDetails, err = handlerparams.GetBoolOptionalParam("showDetails", v)
 			if err != nil {
 				return false, false, lazyerrors.Error(err)
 			}
 		}
 
 		if v, _ := param.Get("allParameters"); v != nil {
-			allParameters, err = commonparams.GetBoolOptionalParam("allParameters", v)
+			allParameters, err = handlerparams.GetBoolOptionalParam("allParameters", v)
 			if err != nil {
 				return false, false, lazyerrors.Error(err)
 			}

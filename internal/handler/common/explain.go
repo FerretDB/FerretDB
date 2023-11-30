@@ -17,8 +17,8 @@ package common
 import (
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -95,7 +95,7 @@ func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, 
 		return nil, err
 	}
 
-	if limit, err = commonparams.GetValidatedNumberParamWithMinValue("explain", "limit", limit, 0); err != nil {
+	if limit, err = handlerparams.GetValidatedNumberParamWithMinValue("explain", "limit", limit, 0); err != nil {
 		return nil, err
 	}
 
@@ -103,7 +103,7 @@ func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, 
 		return nil, err
 	}
 
-	if skip, err = commonparams.GetValidatedNumberParamWithMinValue("explain", "skip", skip, 0); err != nil {
+	if skip, err = handlerparams.GetValidatedNumberParamWithMinValue("explain", "skip", skip, 0); err != nil {
 		return nil, err
 	}
 
@@ -114,8 +114,8 @@ func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, 
 
 		pipeline, err = GetRequiredParam[*types.Array](explain, "pipeline")
 		if err != nil {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrMissingField,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrMissingField,
 				"BSON field 'aggregate.pipeline' is missing but a required field",
 				document.Command(),
 			)
@@ -124,8 +124,8 @@ func GetExplainParams(document *types.Document, l *zap.Logger) (*ExplainParams, 
 		stagesDocs = must.NotFail(iterator.ConsumeValues(pipeline.Iterator()))
 		for _, d := range stagesDocs {
 			if _, ok := d.(*types.Document); !ok {
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrTypeMismatch,
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrTypeMismatch,
 					"Each element of the 'pipeline' array must be an object",
 					document.Command(),
 				)

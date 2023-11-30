@@ -17,7 +17,7 @@ package common
 import (
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
@@ -56,7 +56,7 @@ func GetDeleteParams(document *types.Document, l *zap.Logger) (*DeleteParams, er
 		Ordered: true,
 	}
 
-	err := commonparams.ExtractParams(document, "delete", &params, l)
+	err := handlerparams.ExtractParams(document, "delete", &params, l)
 	if err != nil {
 		return nil, err
 	}

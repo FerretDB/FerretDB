@@ -24,7 +24,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -105,7 +105,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 		// TODO https://github.com/FerretDB/FerretDB/issues/2168
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "findAndModify")
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "findAndModify")
 		}
 
 		return nil, lazyerrors.Error(err)
@@ -116,7 +116,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 		// TODO https://github.com/FerretDB/FerretDB/issues/2168
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "findAndModify")
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "findAndModify")
 		}
 
 		return nil, lazyerrors.Error(err)
@@ -150,8 +150,8 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 	if err != nil {
 		var pathErr *types.PathError
 		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrPathContainsEmptyElement,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrPathContainsEmptyElement,
 				"FieldPath field names may not be empty strings.",
 				"findAndModify",
 			)
@@ -236,7 +236,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 				// TODO https://github.com/FerretDB/FerretDB/issues/2168
 				we := &mongo.WriteError{
 					Index:   0,
-					Code:    int(commonerrors.ErrDuplicateKeyInsert),
+					Code:    int(handlererrors.ErrDuplicateKeyInsert),
 					Message: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
 				}
 				writeErrors.Append(WriteErrorDocument(we))
@@ -293,8 +293,8 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 	}
 
 	if updateID != nil && updateID != id {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrImmutableField,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrImmutableField,
 			fmt.Sprintf(
 				`Plan executor error during findAndModify :: caused `+
 					`by :: After applying the update, the (immutable) field `+
@@ -346,13 +346,13 @@ func handleValidationError(err error) (*mongo.WriteError, error) {
 		return nil, lazyerrors.Error(err)
 	}
 
-	var code commonerrors.ErrorCode
+	var code handlererrors.ErrorCode
 
 	switch ve.Code() {
 	case types.ErrValidation, types.ErrIDNotFound:
-		code = commonerrors.ErrBadValue
+		code = handlererrors.ErrBadValue
 	case types.ErrWrongIDType:
-		code = commonerrors.ErrInvalidID
+		code = handlererrors.ErrInvalidID
 	default:
 		panic(fmt.Sprintf("Unknown error code: %v", ve.Code()))
 	}

@@ -23,7 +23,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -55,7 +55,7 @@ func (h *Handler) MsgUpdate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 			// TODO https://github.com/FerretDB/FerretDB/issues/3263
 			we = &mongo.WriteError{
 				Index:   0,
-				Code:    int(commonerrors.ErrDuplicateKeyInsert),
+				Code:    int(handlererrors.ErrDuplicateKeyInsert),
 				Message: fmt.Sprintf(`E11000 duplicate key error collection: %s.%s`, params.DB, params.Collection),
 			}
 
@@ -98,7 +98,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdateParam
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
-			return 0, 0, nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "update")
+			return 0, 0, nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "update")
 		}
 
 		return 0, 0, nil, lazyerrors.Error(err)
@@ -113,7 +113,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdateParam
 		// nothing
 	case backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid):
 		msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
-		return 0, 0, nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "insert")
+		return 0, 0, nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "insert")
 	default:
 		return 0, 0, nil, lazyerrors.Error(err)
 	}
@@ -123,7 +123,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdateParam
 		if err != nil {
 			if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 				msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
-				return 0, 0, nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "insert")
+				return 0, 0, nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "insert")
 			}
 
 			return 0, 0, nil, lazyerrors.Error(err)

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package commonerrors provides handlers errors.
-package commonerrors
+// Package handlererrors provides handlers errors.
+package handlererrors
 
 import (
 	"errors"

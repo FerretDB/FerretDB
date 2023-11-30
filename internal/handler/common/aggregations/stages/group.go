@@ -24,7 +24,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations/operators"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations/operators/accumulators"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -58,8 +58,8 @@ type groupBy struct {
 func newGroup(stage *types.Document) (aggregations.Stage, error) {
 	fields, err := common.GetRequiredParam[*types.Document](stage, "$group")
 	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageGroupInvalidFields,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageGroupInvalidFields,
 			"a group's fields must be specified in an object",
 			"$group (stage)",
 		)
@@ -103,8 +103,8 @@ func newGroup(stage *types.Document) (aggregations.Stage, error) {
 	}
 
 	if groupKey == nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageGroupMissingID,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageGroupMissingID,
 			"a group specification must include an _id",
 			"$group (stage)",
 		)
@@ -140,8 +140,8 @@ func (g *group) Process(ctx context.Context, iter types.DocumentsIterator, close
 
 			if doc.Has(accumulation.outputField) {
 				// document has duplicate key
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrDuplicateField,
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrDuplicateField,
 					fmt.Sprintf("duplicate field: %s", accumulation.outputField),
 					"$group (stage)",
 				)
@@ -196,8 +196,8 @@ func validateGroupKey(groupKey any) error {
 		}
 
 		if _, ok := fields[k]; ok {
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrGroupDuplicateFieldName,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrGroupDuplicateFieldName,
 				fmt.Sprintf("duplicate field name specified in object literal: %s", types.FormatAnyValue(doc)),
 				"$group (stage)",
 			)
@@ -398,32 +398,32 @@ func processGroupStageError(err error) error {
 	case errors.As(err, &opErr):
 		switch opErr.Code() {
 		case operators.ErrTooManyFields:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrExpressionWrongLenOfFields,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrExpressionWrongLenOfFields,
 				"An object representing an expression must have exactly one field",
 				"$group (stage)",
 			)
 		case operators.ErrNotImplemented:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNotImplemented,
 				"Invalid $group :: caused by :: "+opErr.Error(),
 				"$group (stage)",
 			)
 		case operators.ErrArgsInvalidLen:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrOperatorWrongLenOfArgs,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrOperatorWrongLenOfArgs,
 				opErr.Error(),
 				"$group (stage)",
 			)
 		case operators.ErrInvalidExpression:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrInvalidPipelineOperator,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrInvalidPipelineOperator,
 				opErr.Error(),
 				"$group (stage)",
 			)
 		case operators.ErrInvalidNestedExpression:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrInvalidPipelineOperator,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrInvalidPipelineOperator,
 				opErr.Error(),
 				"$group (stage)",
 			)
@@ -435,27 +435,27 @@ func processGroupStageError(err error) error {
 			// handled by upstream and this should not be reachable for existing expression implementation
 			fallthrough
 		case aggregations.ErrInvalidExpression:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrFailedToParse,
 				"'$' starts with an invalid character for a user variable name",
 				"$group (stage)",
 			)
 		case aggregations.ErrEmptyFieldPath:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrGroupInvalidFieldPath,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrGroupInvalidFieldPath,
 				"'$' by itself is not a valid FieldPath",
 				"$group (stage)",
 			)
 		case aggregations.ErrUndefinedVariable:
 			// TODO https://github.com/FerretDB/FerretDB/issues/2275
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNotImplemented,
 				"Aggregation expression variables are not implemented yet",
 				"$group (stage)",
 			)
 		case aggregations.ErrEmptyVariable:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrFailedToParse,
 				"empty variable names are not allowed",
 				"$group (stage)",
 			)
