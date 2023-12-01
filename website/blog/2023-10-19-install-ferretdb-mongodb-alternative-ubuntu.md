@@ -217,9 +217,8 @@ Other necessary flags are set to their default values: `--mode="normal"`, `--lis
 
 Creating a `systemd` service file for FerretDB will allow the database be managed by the `systemd` system and service manager.
 
-:::warning
+:::caution
 Please ensure to have a non-root user configured with `sudo` privileges.
-
 Incase you don't, let's create a new user `ferret` with `sudo` privileges:
 
 ```sh
