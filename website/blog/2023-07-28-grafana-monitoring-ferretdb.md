@@ -74,7 +74,7 @@ The advantages are endless!
 
 Here's a sample view of a document in the `issues` collection:
 
-```json
+```json5
   {
     _id: ObjectId("64b7e557921f991a8697d6fd"),
     number: 179,

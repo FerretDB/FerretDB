@@ -34,7 +34,7 @@ db.store.updateOne({ _id: 1 }, { $push: { items: 'markers' } })
 
 After the operation, the updated document looks like this:
 
-```json
+```json5
 [
   {
     "_id": 1,
@@ -62,7 +62,7 @@ db.store.updateOne({ _id: 1 }, { $addToSet: { items: 'paper' } })
 
 The document is subsequently updated with the new element, as depicted below:
 
-```json
+```json5
 [{ "_id": 1, "items": ["pens", "pencils", "paper"] }]
 ```
 
@@ -74,7 +74,7 @@ db.store.updateOne({ _id: 1 }, { $addToSet: { items: 'pens' } })
 
 Since the array already contains the element, there won't be any changes.
 
-```json
+```json5
 [{ "_id": 1, "items": ["pens", "pencils", "paper"] }]
 ```
 
@@ -92,7 +92,7 @@ db.store.updateOne({ _id: 1 }, { $addToSet: { colors: 'red' } })
 
 The updated document looks like this:
 
-```json
+```json5
 [{ "_id": 1, "items": ["pens", "pencils", "paper"], "colors": ["red"] }]
 ```
 
@@ -117,7 +117,7 @@ db.products.updateOne({ _id: 1 }, { $pop: { items: -1 } })
 
 The document is subsequently updated with the first element `pens` removed, as depicted below:
 
-```json
+```json5
 [
   {
     "_id": 1,
@@ -134,7 +134,7 @@ db.products.updateOne({ _id: 1 }, { $pop: { items: 1 } })
 
 The updated now looks like this:
 
-```json
+```json5
 [
   {
     "_id": 1,
@@ -166,7 +166,7 @@ db.store.updateOne(
 
 After removing all instances of the specified array elements, the document is updated as follows:
 
-```json
+```json5
 [
   {
     "_id": 1,
@@ -210,6 +210,6 @@ db.fruits.update(
 
 The updated document now looks like this:
 
-```json
+```json5
 [{ "_id": 1, "fruits": [{ "type": "orange", "color": "orange" }] }]
 ```

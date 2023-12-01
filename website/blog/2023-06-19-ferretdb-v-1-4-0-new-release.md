@@ -37,7 +37,7 @@ You can use the `$type` operator in a `$project` stage to return the BSON data t
 
 Suppose you have the following document:
 
-```json
+```json5
 [
   {
     "_id": 1,
@@ -70,7 +70,7 @@ db.employees.aggregate([
 
 The output will be:
 
-```json
+```json5
 [
   { "_id": 1, "name": "John", "age": 35, "ageType": "int" },
   { "_id": 2, "name": "Robert", "age": 42, "ageType": "int" }
@@ -99,7 +99,7 @@ db.employees.aggregate([
 
 The output will be:
 
-```json
+```json5
 [
   {
     "_id": 1,
@@ -134,7 +134,7 @@ db.employees.aggregate([
 
 The output:
 
-```json
+```json5
 [
   {
     "_id": 1,
@@ -165,7 +165,7 @@ db.employees.aggregate([
 
 Output:
 
-```json
+```json5
 [
   { "_id": 1, "name": "John", "age": 35 },
   { "_id": 2, "name": "Robert", "age": 42 }

@@ -85,7 +85,7 @@ db.team.find({
 
 The output:
 
-```json
+```json5
 [
   {
     _id: ObjectId("63a5bb4acf72d6203bb45bb5"),
@@ -121,7 +121,7 @@ db.team.find({
 
 The output:
 
-```json
+```json5
 [
   {
     _id: ObjectId("63aa247e69c82de72bd40b93"),
@@ -153,7 +153,7 @@ db.team.find({
 
 The output:
 
-```json
+```json5
 [
   {
     _id: ObjectId("63aa247e69c82de72bd40b92"),

@@ -60,7 +60,7 @@ db.numbers.find({
 
 The output:
 
-```json
+```json5
 [{ "_id": 2, "value": 56, "binaryValue": "111000" }]
 ```
 
@@ -92,7 +92,7 @@ db.numbers.find({
 
 The output:
 
-```json
+```json5
 [
   { "_id": 1, "value": 23, "binaryValue": "10111" },
   { "_id": 4, "value": 102, "binaryValue": "1100110" }
@@ -119,7 +119,7 @@ db.numbers.find({
 
 The output:
 
-```json
+```json5
 [
   { "_id": 2, "value": 56, "binaryValue": "111000" },
   { "_id": 3, "value": 67, "binaryValue": "1000011" },
@@ -147,7 +147,7 @@ db.numbers.find({
 
 The output:
 
-```json
+```json5
 [
   { "_id": 1, "value": 23, "binaryValue": "10111" },
   { "_id": 3, "value": 67, "binaryValue": "1000011" },

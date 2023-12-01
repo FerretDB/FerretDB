@@ -50,7 +50,7 @@ Finally, the `$sort` stage sorts the documents by the `totalPrice` field in desc
 
 So the above aggregation pipeline operation would return the following result:
 
-```json
+```json5
 [
   { "_id": "Home", "totalPrice": 2700, "productCount": 2 },
   { "_id": "Clothing", "totalPrice": 80, "productCount": 2 },

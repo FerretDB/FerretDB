@@ -70,7 +70,7 @@ db.store.aggregate([
 
 The output document looks like this:
 
-```json
+```json5
 [
   {
     "_id": 1,
@@ -87,7 +87,7 @@ In the new release, we have added support for field projections assignment.
 With this feature, users can now specify which fields to retrieve from the database and assign new values to them in a single query.
 For instance, if we have a `users` collection as shown below:
 
-```json
+```json5
 [
   {
     "_id": 1,
@@ -112,7 +112,7 @@ db.users.find({}, { name: 'Anonymous' })
 
 The query will return:
 
-```json
+```json5
 [
   { "_id": 1, "name": "Anonymous" },
   { "_id": 2, "name": "Anonymous" }

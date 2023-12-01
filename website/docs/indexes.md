@@ -22,7 +22,7 @@ You can create single field indexes or compound indexes.
 
 Suppose a `products` collection contains the following documents:
 
-```json
+```json5
 { _id: 1, name: "iPhone 12", category: "smartphone", price: 799 }
 { _id: 2, name: "iPad Pro", category: "tablet", price: 999 }
 { _id: 3, name: "Galaxy S21", category: "smartphone", price: 699 }

@@ -62,7 +62,7 @@ db.catalog.find({
 
 The output:
 
-```json
+```json5
 [
   {
     _id: ObjectId("63e3ac0184f488929a3f737a"),
@@ -104,7 +104,7 @@ db.catalog.find({
 
 The output:
 
-```json
+```json5
 [
   {
     _id: ObjectId("63e4ce469695494b86bf2b2d"),
@@ -146,7 +146,7 @@ db.catalog.find({
 
 The output:
 
-```json
+```json5
 [
   {
     _id: ObjectId("63e3ac0184f488929a3f7379"),
