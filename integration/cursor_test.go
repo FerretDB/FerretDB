@@ -99,6 +99,7 @@ func TestCursor(t *testing.T) {
 
 	t.Run("CursorClosedAfterIDZero", func(t *testing.T) {
 		// test if an additional getMore is needed when the cursor ID is 0
+		client2.Connect(ctx)
 		cur, err := collection2.Find(ctx, bson.D{}, opts)
 		require.NoError(t, err)
 
