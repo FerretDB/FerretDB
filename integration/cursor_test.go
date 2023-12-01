@@ -47,10 +47,6 @@ func TestCursor(t *testing.T) {
 	databaseName := s.Collection.Database().Name()
 	collectionName := s.Collection.Name()
 
-	arr, _ := generateDocuments(1, 1000)
-	_, err := collection1.InsertMany(ctx, arr)
-	require.NoError(t, err)
-
 	u, err := url.Parse(s.MongoDBURI)
 	require.NoError(t, err)
 
@@ -58,72 +54,47 @@ func TestCursor(t *testing.T) {
 	client2, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
 	require.NoError(t, err)
 
-	defer client2.Disconnect(ctx)
-
 	collection2 := client2.Database(databaseName).Collection(collectionName)
 
-	N := 10
-	for i := 0; i < N; i++ {
-		t.Run("CursorNotFound", func(t *testing.T) {
-			t.Parallel()
+	arr, _ := generateDocuments(0, 100000)
+	_, err = collection2.InsertMany(ctx, arr)
+	require.NoError(t, err)
 
-			var wg sync.WaitGroup
-			wg.Add(2)
+	cur, err := collection2.Find(ctx, bson.D{}, opts)
+	require.NoError(t, err)
 
-			cursorID := int64(1)
+	cursorID := cur.ID()
 
-			go func() {
-				defer wg.Done()
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
 
-				cur1, err := collection1.Find(ctx, bson.D{}, opts)
-				require.NoError(t, err)
+		command := bson.D{
+			{"getMore", cursorID},
+			{"collection", collection1.Name()},
+		}
 
-				t.Log(cur1.ID())
+		cur, err := collection1.Database().RunCommandCursor(ctx, command)
+		require.NoError(t, err)
 
-				for {
-					if cur1.Next(ctx) {
-						continue
-					}
+		for {
+			if cur.Next(ctx) {
+				continue
+			}
 
-					if err := cur1.Err(); err != nil {
-						t.Error(err)
-					}
+			if err := cur.Err(); err != nil {
+				t.Error(err)
+			}
 
-					if cur1.ID() == 0 {
-						break
-					}
-				}
-			}()
+			if cur.ID() == 0 {
+				break
+			}
+		}
+	}()
 
-			go func() {
-				defer wg.Done()
+	err = client2.Disconnect(ctx)
+	require.NoError(t, err)
 
-				cur2, err := collection2.Find(ctx, bson.D{}, opts)
-				require.NoError(t, err)
-
-				t.Log(cur2.ID())
-
-				for {
-					if cur2.ID() == cursorID {
-						t.Fail()
-					}
-
-					if cur2.Next(ctx) {
-						continue
-					}
-
-					if err := cur2.Err(); err != nil {
-						t.Error(err)
-					}
-
-					if cur2.ID() == 0 {
-						break
-					}
-				}
-
-			}()
-
-			wg.Wait()
-		})
-	}
+	wg.Wait()
 }
