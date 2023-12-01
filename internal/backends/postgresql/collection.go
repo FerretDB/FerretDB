@@ -86,7 +86,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	var args []any
 
-	if !params.DisableAllPushdown {
+	if !params.DisablePushdown {
 		var where string
 
 		where, args, err = prepareWhereClause(&placeholder, params.Filter)
@@ -96,7 +96,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 		q += where
 
-		if !params.DisableAllPushdown {
+		if !params.DisablePushdown {
 			sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
 			q += sort
 			args = append(args, sortArgs...)
@@ -344,7 +344,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	q += where
 
-	if !params.DisableAllPushdown {
+	if !params.DisablePushdown {
 		sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
 		res.SortPushdown = sort != ""
 

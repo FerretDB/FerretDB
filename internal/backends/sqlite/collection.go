@@ -73,7 +73,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	var args []any
 
-	if !params.DisableAllPushdown {
+	if !params.DisablePushdown {
 		var whereClause string
 
 		// that logic should exist in one place
