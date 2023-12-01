@@ -22,6 +22,7 @@ import (
 
 	"github.com/AlekSi/pointer"
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -57,39 +58,54 @@ func TestCursor(t *testing.T) {
 
 	collection2 := client2.Database(databaseName).Collection(collectionName)
 
-	arr, _ := generateDocuments(0, 100)
+	arr, _ := generateDocuments(0, 2)
 	_, err = collection2.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
-	cur, err := collection2.Find(ctx, bson.D{}, opts)
-	require.NoError(t, err)
+	t.Run("CursorNotFoundAfterDisconnect", func(t *testing.T) {
+		cur, err := collection2.Find(ctx, bson.D{}, opts)
+		require.NoError(t, err)
 
-	cursorID := cur.ID()
+		cursorID := cur.ID()
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 
-		command := bson.D{
-			{"getMore", cursorID},
-			{"collection", collection1.Name()},
-		}
-
-		for {
-			result := bson.M{}
-			err := collection1.Database().RunCommand(ctx, command).Decode(result)
-			require.NoError(t, err)
-
-			if errors.Is(err, mongo.ErrNoDocuments) {
-				break
+			command := bson.D{
+				{"getMore", cursorID},
+				{"collection", collection1.Name()},
 			}
-		}
 
-	}()
+			for {
+				result := bson.M{}
+				err := collection1.Database().RunCommand(ctx, command).Decode(result)
+				if errors.Is(err, mongo.ErrNoDocuments) {
+					break
+				}
 
-	err = client2.Disconnect(ctx)
-	require.NoError(t, err)
+				require.NoError(t, err)
 
-	wg.Wait()
+			}
+
+		}()
+
+		err = client2.Disconnect(ctx)
+		require.NoError(t, err)
+
+		wg.Wait()
+	})
+
+	t.Run("CursorClosedAfterIDZero", func(t *testing.T) {
+		// test if an additional getMore is needed when the cursor ID is 0
+		cur, err := collection2.Find(ctx, bson.D{}, opts)
+		require.NoError(t, err)
+
+		cur.Next(ctx)
+		cur.Next(ctx)
+
+		assert.False(t, cur.Next(ctx))
+		assert.Equal(t, int64(0), cur.ID())
+	})
 }
