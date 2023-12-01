@@ -159,14 +159,14 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	db := collection.Database()
 	name := db.Name()
 
-	testCases := []struct {
+	testCases := []struct { //nolint:vet // for readability
 		name   string
 		filter any
 		opts   []*options.ListDatabasesOptions
 
-		dbCount  int
 		empty    bool
 		zeroSize bool
+		dbCount  int
 		expected mongo.ListDatabasesResult
 	}{
 		{
@@ -186,8 +186,8 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 			opts: []*options.ListDatabasesOptions{
 				options.ListDatabases().SetNameOnly(true),
 			},
-			dbCount:  1,
 			zeroSize: true,
+			dbCount:  1,
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{{
 					Name: name,
@@ -216,8 +216,8 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 			opts: []*options.ListDatabasesOptions{
 				options.ListDatabases().SetNameOnly(true),
 			},
-			dbCount:  1,
 			zeroSize: true,
+			dbCount:  1,
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{{
 					Name: name,
@@ -269,10 +269,13 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	t.Run("RegexNotFoundNameOnly", func(t *testing.T) {
 		t.Parallel()
 
-		actual, err := db.Client().ListDatabases(ctx, bson.D{
-			{Key: "name", Value: name},
-			{Key: "name", Value: primitive.Regex{Pattern: "^xyz$", Options: "i"}},
-		}, options.ListDatabases().SetNameOnly(true))
+		actual, err := db.Client().ListDatabases(ctx,
+			bson.D{
+				{Key: "name", Value: name},
+				{Key: "name", Value: primitive.Regex{Pattern: "^xyz$", Options: "i"}},
+			},
+			options.ListDatabases().SetNameOnly(true),
+		)
 		require.NoError(t, err)
 		require.Len(t, actual.Databases, 0, "result should contain no databases")
 		assert.Zero(t, actual.TotalSize, "TotalSize should be zero")
