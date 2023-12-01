@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package commonparams
+// Package handlerparams provides functions for parsing handlers parameters.
+package handlerparams
 
 import (
 	"errors"
@@ -20,7 +21,7 @@ import (
 	"math"
 	"strings"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
@@ -77,7 +78,7 @@ func GetWholeNumberParam(value any) (int64, error) {
 // The function checks the type, ensures it can be represented as a whole number,
 // isn't negative and falls within a given minimum value and the limit of a 32-bit integer.
 //
-// It returns the processed integer value, or a commonerrors.CommandError error if the value fails validation.
+// It returns the processed integer value, or a handlererrors.CommandError error if the value fails validation.
 // Error codes list:
 // - ErrTypeMismatch - if the value is not a number;
 // - ErrValueNegative - if the value is negative of lower than the minimum value.
@@ -90,8 +91,8 @@ func GetValidatedNumberParamWithMinValue(command string, param string, value any
 				return int64(minValue), nil
 			}
 
-			return 0, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrTypeMismatch,
+			return 0, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					`BSON field '%s.%s' is the wrong type '%s', expected types '[long, int, decimal, double]'`,
 					command, param, AliasFromType(value),
@@ -100,8 +101,8 @@ func GetValidatedNumberParamWithMinValue(command string, param string, value any
 			)
 		case errors.Is(err, ErrNotWholeNumber):
 			if math.Signbit(value.(float64)) {
-				return 0, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrValueNegative,
+				return 0, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrValueNegative,
 					fmt.Sprintf(
 						"BSON field '%s' value must be >= %d, actual value '%d'",
 						param, minValue, int(math.Ceil(value.(float64))),
@@ -117,8 +118,8 @@ func GetValidatedNumberParamWithMinValue(command string, param string, value any
 			return math.MaxInt32, nil
 
 		case errors.Is(err, ErrLongExceededNegative):
-			return 0, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrValueNegative,
+			return 0, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrValueNegative,
 				fmt.Sprintf(
 					"BSON field '%s' value must be >= %d, actual value '%d'",
 					param, minValue, int(math.Ceil(value.(float64))),
@@ -132,8 +133,8 @@ func GetValidatedNumberParamWithMinValue(command string, param string, value any
 	}
 
 	if whole < int64(minValue) {
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrValueNegative,
+		return 0, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrValueNegative,
 			fmt.Sprintf("BSON field '%s' value must be >= %d, actual value '%d'", param, minValue, whole),
 			command,
 		)
@@ -152,22 +153,22 @@ func getOptionalPositiveNumber(key string, value any) (int64, error) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrUnexpectedType):
-			return 0, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrBadValue,
+			return 0, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrBadValue,
 				fmt.Sprintf("%s must be a number", key),
 				key,
 			)
 		case errors.Is(err, ErrNotWholeNumber):
 			if _, ok := value.(float64); ok {
-				return 0, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrBadValue,
+				return 0, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrBadValue,
 					fmt.Sprintf("%v has non-integral value", key),
 					key,
 				)
 			}
 
-			return 0, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrBadValue,
+			return 0, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrBadValue,
 				fmt.Sprintf("%s must be a whole number", key),
 				key,
 			)
@@ -177,16 +178,16 @@ func getOptionalPositiveNumber(key string, value any) (int64, error) {
 	}
 
 	if whole > math.MaxInt32 || whole < math.MinInt32 {
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
+		return 0, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrBadValue,
 			fmt.Sprintf("%v value for %s is out of range", whole, key),
 			key,
 		)
 	}
 
 	if whole < 0 {
-		return 0, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadValue,
+		return 0, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrBadValue,
 			fmt.Sprintf("%v value for %s is out of range", value, key),
 			key,
 		)
@@ -218,7 +219,7 @@ func GetBoolOptionalParam(key string, v any) (bool, error) {
 			AliasFromType(v),
 		)
 
-		return false, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrTypeMismatch, msg, key)
+		return false, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrTypeMismatch, msg, key)
 	}
 }
 
@@ -227,8 +228,8 @@ func SplitNamespace(ns, argument string) (string, string, error) {
 	parts := strings.Split(ns, ".")
 
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return "", "", commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrInvalidNamespace,
+		return "", "", handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrInvalidNamespace,
 			fmt.Sprintf("Invalid namespace specified '%s'", ns),
 			argument,
 		)

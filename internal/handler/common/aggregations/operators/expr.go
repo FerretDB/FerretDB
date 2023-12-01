@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package operators provides aggregation operators.
 package operators
 
 import (
@@ -20,7 +19,7 @@ import (
 	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -240,32 +239,32 @@ func processExprOperatorErrors(err error, argument string) error {
 	case errors.As(err, &opErr):
 		switch opErr.Code() {
 		case ErrTooManyFields:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrExpressionWrongLenOfFields,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrExpressionWrongLenOfFields,
 				"An object representing an expression must have exactly one field",
 				argument,
 			)
 		case ErrNotImplemented:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNotImplemented,
 				"Invalid $match :: caused by :: "+opErr.Error(),
 				argument,
 			)
 		case ErrArgsInvalidLen:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrOperatorWrongLenOfArgs,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrOperatorWrongLenOfArgs,
 				opErr.Error(),
 				argument,
 			)
 		case ErrInvalidExpression:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrInvalidPipelineOperator,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrInvalidPipelineOperator,
 				fmt.Sprintf("Unrecognized expression '%s'", opErr.Name()),
 				argument,
 			)
 		case ErrInvalidNestedExpression:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrInvalidPipelineOperator,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrInvalidPipelineOperator,
 				opErr.Error(),
 				argument,
 			)
@@ -274,27 +273,27 @@ func processExprOperatorErrors(err error, argument string) error {
 	case errors.As(err, &exErr):
 		switch exErr.Code() {
 		case aggregations.ErrInvalidExpression:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrFailedToParse,
 				fmt.Sprintf("'%s' starts with an invalid character for a user variable name", exErr.Name()),
 				argument,
 			)
 		case aggregations.ErrEmptyFieldPath:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrGroupInvalidFieldPath,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrGroupInvalidFieldPath,
 				"'$' by itself is not a valid FieldPath",
 				argument,
 			)
 		case aggregations.ErrUndefinedVariable:
 			// TODO https://github.com/FerretDB/FerretDB/issues/2275
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNotImplemented,
 				"Aggregation expression variables are not implemented yet",
 				argument,
 			)
 		case aggregations.ErrEmptyVariable:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrFailedToParse,
 				"empty variable names are not allowed",
 				argument,
 			)

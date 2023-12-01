@@ -16,12 +16,72 @@ package handler
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/FerretDB/FerretDB/internal/handler/common"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/state"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgSetFreeMonitoring implements `setFreeMonitoring` command.
 func (h *Handler) MsgSetFreeMonitoring(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.SetFreeMonitoring(ctx, msg, h.StateProvider)
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	action, err := common.GetRequiredParam[string](document, "action")
+	if err != nil {
+		return nil, err
+	}
+
+	var telemetryState bool
+
+	switch action {
+	case "enable":
+		telemetryState = true
+	case "disable":
+		telemetryState = false
+	default:
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrBadValue,
+			fmt.Sprintf(
+				"Enumeration value '%s' for field '%s' is not a valid value.",
+				action,
+				document.Command()+".action",
+			),
+			"action",
+		)
+	}
+
+	if h.StateProvider.Get().TelemetryLocked {
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrFreeMonitoringDisabled,
+			"Free Monitoring has been disabled via the command-line and/or config file",
+			action,
+		)
+	}
+
+	if err := h.StateProvider.Update(func(s *state.State) {
+		if telemetryState {
+			s.EnableTelemetry()
+		} else {
+			s.DisableTelemetry()
+		}
+	}); err != nil {
+		return nil, err
+	}
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }

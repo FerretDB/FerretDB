@@ -16,12 +16,102 @@ package handler
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/iterator"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgKillCursors implements `killCursors` command.
 func (h *Handler) MsgKillCursors(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return common.KillCursors(ctx, msg, h.cursors)
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	command := document.Command()
+
+	db, err := common.GetRequiredParam[string](document, "$db")
+	if err != nil {
+		return nil, err
+	}
+
+	collection, err := common.GetRequiredParam[string](document, command)
+	if err != nil {
+		return nil, err
+	}
+
+	username, _ := conninfo.Get(ctx).Auth()
+
+	cursors, err := common.GetRequiredParam[*types.Array](document, "cursors")
+	if err != nil {
+		return nil, err
+	}
+
+	iter := cursors.Iterator()
+	defer iter.Close()
+
+	var ids []int64
+	cursorsKilled := types.MakeArray(0)
+	cursorsNotFound := types.MakeArray(0)
+	cursorsAlive := types.MakeArray(0)
+	cursorsUnknown := types.MakeArray(0)
+
+	for {
+		i, v, err := iter.Next()
+		if err != nil {
+			if errors.Is(err, iterator.ErrIteratorDone) {
+				break
+			}
+
+			return nil, lazyerrors.Error(err)
+		}
+
+		id, ok := v.(int64)
+		if !ok {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrTypeMismatch,
+				fmt.Sprintf(
+					"BSON field 'killCursors.cursors.%d' is the wrong type '%s', expected type 'long'",
+					i,
+					handlerparams.AliasFromType(v),
+				),
+				command,
+			)
+		}
+
+		ids = append(ids, id)
+	}
+
+	for _, id := range ids {
+		cursor := h.cursors.Get(id)
+		if cursor == nil || cursor.DB != db || cursor.Collection != collection || cursor.Username != username {
+			cursorsNotFound.Append(id)
+			continue
+		}
+
+		cursor.Close()
+		cursorsKilled.Append(id)
+	}
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"cursorsKilled", cursorsKilled,
+			"cursorsNotFound", cursorsNotFound,
+			"cursorsAlive", cursorsAlive,
+			"cursorsUnknown", cursorsUnknown,
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }

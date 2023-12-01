@@ -12,22 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package commoncommands
+package handler
 
 import (
 	"context"
-	"testing"
 
-	"github.com/stretchr/testify/require"
-
+	"github.com/FerretDB/FerretDB/internal/handler/common"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// TestMsgWhatsMyURI checks a special case: if context is not set, it panics.
-// The "normal" cases are covered in integration tests for MsgWhatsMyURI command.
-func TestMsgWhatsMyURI(t *testing.T) {
-	require.Panics(t, func() {
-		_, err := MsgWhatsMyURI(context.Background(), new(wire.OpMsg))
-		require.NoError(t, err)
-	})
+// MsgUsersInfo implements `usersInfo` command.
+func (h *Handler) MsgUsersInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/1497
+	return nil, common.Unimplemented(document, document.Command())
 }

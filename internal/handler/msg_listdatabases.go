@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -39,12 +39,15 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		return nil, err
 	}
 
-	common.Ignored(document, h.L, "comment", "authorizedDatabases")
+	common.Ignored(document, h.L, "comment")
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3769
+	common.Ignored(document, h.L, "authorizedDatabases")
 
 	var nameOnly bool
 
 	if v, _ := document.Get("nameOnly"); v != nil {
-		if nameOnly, err = commonparams.GetBoolOptionalParam("nameOnly", v); err != nil {
+		if nameOnly, err = handlerparams.GetBoolOptionalParam("nameOnly", v); err != nil {
 			return nil, err
 		}
 	}

@@ -38,7 +38,7 @@ type aggregateStagesCompatTestCase struct {
 
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	resultPushdown resultPushdown           // defaults to noPushdown
-	skip           string                   // skip test for all handlers, must have issue number mentioned
+	skip           string                   // always skip this test case, must have issue number mentioned
 }
 
 // testAggregateStagesCompat tests aggregation stages compatibility test cases with all providers.
@@ -173,7 +173,7 @@ type aggregateCommandCompatTestCase struct {
 	command    bson.D                   // required
 	resultType compatTestCaseResultType // defaults to nonEmptyResult
 
-	skip string // skip test for all handlers, must have issue number mentioned
+	skip string // always skip this test case, must have issue number mentioned
 }
 
 // testAggregateCommandCompat tests aggregate pipeline compatibility test cases using one collection.
@@ -182,7 +182,6 @@ func testAggregateCommandCompat(t *testing.T, testCases map[string]aggregateComm
 	t.Helper()
 
 	s := setup.SetupCompatWithOpts(t, &setup.SetupCompatOpts{
-		// Use a provider that works for all handlers.
 		Providers: []shareddata.Provider{shareddata.Int32s},
 	})
 

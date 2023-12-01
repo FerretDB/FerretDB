@@ -15,16 +15,18 @@
 package handler
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -50,7 +52,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", params.DB, params.Collection)
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "find")
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "find")
 		}
 
 		return nil, lazyerrors.Error(err)
@@ -60,38 +62,34 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid collection name: %s", params.Collection)
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, "find")
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, "find")
 		}
 
 		return nil, lazyerrors.Error(err)
 	}
 
 	if params.Tailable {
-		var res *backends.ListCollectionsResult
-		var collInfo *backends.CollectionInfo
+		var cList *backends.ListCollectionsResult
 
-		res, err = db.ListCollections(ctx, nil)
-		if err != nil {
+		if cList, err = db.ListCollections(ctx, nil); err != nil {
 			return nil, err
 		}
 
+		var cInfo backends.CollectionInfo
+
 		// TODO https://github.com/FerretDB/FerretDB/issues/3601
-		for _, coll := range res.Collections {
-			if coll.Name == params.Collection {
-				collInfo = &coll
-			}
+		//nolint:lll // see issue above
+		if i, found := slices.BinarySearchFunc(cList.Collections, params.Collection, func(e backends.CollectionInfo, t string) int {
+			return cmp.Compare(e.Name, t)
+		}); found {
+			cInfo = cList.Collections[i]
 		}
 
-		if collInfo != nil && !collInfo.Capped() {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrBadValue,
-				fmt.Sprintf(
-					"error processing query: ns=%s.%sTree:"+
-						"  $eq null\nSort: {}\nProj: {}\n tailable cursor requested on non capped collection",
-					params.DB,
-					params.Collection,
-				),
-				"find",
+		if !cInfo.Capped() {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrBadValue,
+				"tailable cursor requested on non capped collection",
+				"tailable",
 			)
 		}
 
@@ -110,6 +108,24 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	if !h.DisableFilterPushdown {
 		qp.Filter = params.Filter
+	}
+
+	if params.Sort, err = common.ValidateSortDocument(params.Sort); err != nil {
+		var pathErr *types.PathError
+		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrPathContainsEmptyElement,
+				"Empty field names in path are not allowed",
+				document.Command(),
+			)
+		}
+
+		return nil, err
+	}
+
+	// Skip sorting if there are more than one sort parameters
+	if params.Sort.Len() == 1 {
+		qp.Sort = params.Sort
 	}
 
 	// Limit pushdown is not applied if:
@@ -140,15 +156,14 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	iter := common.FilterIterator(queryRes.Iter, closer, params.Filter)
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3742
 	iter, err = common.SortIterator(iter, closer, params.Sort)
 	if err != nil {
 		closer.Close()
 
 		var pathErr *types.PathError
 		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrPathContainsEmptyElement,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrPathContainsEmptyElement,
 				"Empty field names in path are not allowed",
 				document.Command(),
 			)

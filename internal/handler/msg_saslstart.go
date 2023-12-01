@@ -15,9 +15,14 @@
 package handler
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
+	"fmt"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -42,9 +47,27 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	// we can't use it to query the database
 	_ = dbName
 
-	if err = common.SASLStart(ctx, document); err != nil {
+	mechanism, err := common.GetRequiredParam[string](document, "mechanism")
+	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
+	var username, password string
+
+	switch mechanism {
+	case "PLAIN":
+		username, password, err = saslStartPlain(document)
+		if err != nil {
+			return nil, err
+		}
+
+	default:
+		msg := fmt.Sprintf("Unsupported authentication mechanism %q.\n", mechanism) +
+			"See https://docs.ferretdb.io/security/authentication/ for more details."
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrAuthenticationFailed, msg, "mechanism")
+	}
+
+	conninfo.Get(ctx).SetAuth(username, password)
 
 	var emptyPayload types.Binary
 	var reply wire.OpMsg
@@ -58,4 +81,51 @@ func (h *Handler) MsgSASLStart(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}))
 
 	return &reply, nil
+}
+
+// saslStartPlain extracts username and password from PLAIN `saslStart` payload.
+func saslStartPlain(doc *types.Document) (string, string, error) {
+	var payload []byte
+
+	// some drivers send payload as a string
+	stringPayload, err := common.GetRequiredParam[string](doc, "payload")
+	if err == nil {
+		if payload, err = base64.StdEncoding.DecodeString(stringPayload); err != nil {
+			return "", "", handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrBadValue,
+				fmt.Sprintf("Invalid payload: %v", err),
+				"payload",
+			)
+		}
+	}
+
+	// most drivers follow spec and send payload as a binary
+	binaryPayload, err := common.GetRequiredParam[types.Binary](doc, "payload")
+	if err == nil {
+		payload = binaryPayload.B
+	}
+
+	// as spec's payload should be binary, we return an error mentioned binary as expected type
+	if payload == nil {
+		return "", "", err
+	}
+
+	parts := bytes.Split(payload, []byte{0})
+	if l := len(parts); l != 3 {
+		return "", "", handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrTypeMismatch,
+			fmt.Sprintf("Invalid payload: expected 3 parts, got %d", l),
+			"payload",
+		)
+	}
+
+	authzid, authcid, passwd := parts[0], parts[1], parts[2]
+
+	// Some drivers (Go) send empty authorization identity (authzid),
+	// while others (Java) set it to the same value as authentication identity (authcid)
+	// (see https://www.rfc-editor.org/rfc/rfc4616.html).
+	// Ignore authzid for now.
+	_ = authzid
+
+	return string(authcid), string(passwd), nil
 }

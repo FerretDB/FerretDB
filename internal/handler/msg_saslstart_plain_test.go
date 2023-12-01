@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package common
+package handler
 
 import (
 	"encoding/base64"
@@ -20,7 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -43,32 +43,32 @@ func TestSaslStartPlain(t *testing.T) {
 	}{
 		"emptyPayload": {
 			doc: types.MakeDocument(0),
-			err: commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrBadValue,
+			err: handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrBadValue,
 				`required parameter "payload" is missing`,
 				"payload",
 			),
 		},
 		"wrongTypePayload": {
 			doc: must.NotFail(types.NewDocument("payload", int32(42))),
-			err: commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrBadValue,
+			err: handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrBadValue,
 				`required parameter "payload" has type int32 (expected types.Binary)`,
 				"payload",
 			),
 		},
 		"stringPayloadInvalid": {
 			doc: must.NotFail(types.NewDocument("payload", "ABC")),
-			err: commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrBadValue,
+			err: handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrBadValue,
 				"Invalid payload: illegal base64 data at input byte 0",
 				"payload",
 			),
 		},
 		"binaryPayloadInvalid": {
 			doc: must.NotFail(types.NewDocument("payload", types.Binary{B: []byte("ABC")})),
-			err: commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrTypeMismatch,
+			err: handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrTypeMismatch,
 				"Invalid payload: expected 3 parts, got 1",
 				"payload",
 			),

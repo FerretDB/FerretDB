@@ -39,7 +39,7 @@ type queryCommandCompatTestCase struct {
 	resultType     compatTestCaseResultType // defaults to nonEmptyResult
 	filterPushdown resultPushdown           // defaults to noPushdown
 
-	skip string // skip test for all handlers, must have issue number mentioned
+	skip string // always skip this test case, must have issue number mentioned
 }
 
 // testQueryCompat tests query compatibility test cases.

@@ -40,6 +40,7 @@ func init() {
 
 			DisableFilterPushdown: opts.DisableFilterPushdown,
 			EnableOplog:           opts.EnableOplog,
+			EnableNewAuth:         opts.EnableNewAuth,
 		}
 
 		h, err := handler.New(handlerOpts)

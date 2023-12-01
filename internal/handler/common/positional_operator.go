@@ -17,7 +17,7 @@ package common
 import (
 	"errors"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -39,8 +39,8 @@ import (
 //     If positional projection is `v.$`, the filter must contain `v` in the filter key such as `{v: 42}`.
 func getPositionalProjection(arr *types.Array, filter *types.Document, positionalOperatorPath string) (*types.Array, error) {
 	if arr.Len() == 0 || filter.Len() == 0 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrBadPositionalProjection,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrBadPositionalProjection,
 			"Executor error during find command :: caused by :: positional operator"+
 				" '.$' couldn't find a matching element in the array",
 			"projection",
@@ -76,14 +76,14 @@ func getPositionalProjection(arr *types.Array, filter *types.Document, positiona
 			filterKey, filterVal, err := iter.Next()
 			if errors.Is(err, iterator.ErrIteratorDone) {
 				if !positionalPathFound {
-					return nil, commonerrors.NewCommandErrorMsgWithArgument(
+					return nil, handlererrors.NewCommandErrorMsgWithArgument(
 						// filterKey did not contain path for positional projection.
 						// For example, if the positional operator is "v.$",
 						// the filter must have key `v` such as {"v": 1}.
 						// For nested dot notation such as "v.foo.$",
 						// filter must have key `v.foo` such as {"v.foo": 1},
 						// and just {"v": 1} is not sufficient.
-						commonerrors.ErrBadPositionalProjection,
+						handlererrors.ErrBadPositionalProjection,
 						"Executor error during find command :: caused by :: positional operator"+
 							" '.$' couldn't find a matching element in the array",
 						"projection",

@@ -20,6 +20,9 @@ labels:
   - name: area/aggregations
     color: "#5319E7"
     description: Issues about aggregation pipelines
+  - name: area/auth
+    color: "#E4012C"
+    description: Issues about authentication
   - name: area/build
     color: "#52D58A"
     description: Issues about builds and CI
