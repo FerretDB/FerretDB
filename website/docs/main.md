@@ -31,7 +31,7 @@ and [contributing guidelines](https://github.com/FerretDB/FerretDB/blob/main/CON
 
 ## Community
 
-- Website and blog: [https://ferretdb.io](https://ferretdb.io/).
+- Website and blog: [https://ferretdb.com](https://ferretdb.com/).
 - Twitter: [@ferret_db](https://twitter.com/ferret_db).
 - Mastodon: [@ferretdb@techhub.social](https://techhub.social/@ferretdb).
 - [Slack chat](https://join.slack.com/t/ferretdb/shared_invite/zt-zqe9hj8g-ZcMG3~5Cs5u9uuOPnZB8~A) for quick questions.

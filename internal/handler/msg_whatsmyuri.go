@@ -17,11 +17,21 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commoncommands"
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgWhatsMyURI implements `whatsMyURI` command.
 func (h *Handler) MsgWhatsMyURI(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return commoncommands.MsgWhatsMyURI(ctx, msg)
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"you", conninfo.Get(ctx).PeerAddr,
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }
