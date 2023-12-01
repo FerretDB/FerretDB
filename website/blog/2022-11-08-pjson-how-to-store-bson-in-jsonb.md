@@ -32,8 +32,8 @@ Here the hexadecimal `\x00` notation represents `0000 0000` in bits and similarl
 In BSON, `\x00` is a byte used as a terminator to indicate the end of a document.
 In BSON, field names use `cstring` which are UTF-8 characters followed by `\x00`.
 
-```json5
-{ foo: 'bar' }
+```json
+{ "foo": "bar" }
 ```
 
 |                         |                                                                                                                       |
