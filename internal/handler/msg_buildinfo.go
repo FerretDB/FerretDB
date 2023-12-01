@@ -16,12 +16,44 @@ package handler
 
 import (
 	"context"
+	"strconv"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commoncommands"
+	"github.com/FerretDB/FerretDB/build/version"
+	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations/stages"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgBuildInfo implements `buildInfo` command.
 func (h *Handler) MsgBuildInfo(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return commoncommands.MsgBuildInfo(ctx, msg)
+	aggregationStages := types.MakeArray(len(stages.Stages))
+	for stage := range stages.Stages {
+		aggregationStages.Append(stage)
+	}
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"version", version.Get().MongoDBVersion,
+			"gitVersion", version.Get().Commit,
+			"modules", must.NotFail(types.NewArray()),
+			"sysInfo", "deprecated",
+			"versionArray", version.Get().MongoDBVersionArray,
+			"bits", int32(strconv.IntSize),
+			"debug", version.Get().DebugBuild,
+			"maxBsonObjectSize", int32(types.MaxDocumentLen),
+			"buildEnvironment", version.Get().BuildEnvironment,
+
+			// our extensions
+			"ferretdbVersion", version.Get().Version,
+			"ferretdbFeatures", must.NotFail(types.NewDocument(
+				"aggregationStages", aggregationStages,
+			)),
+
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }
