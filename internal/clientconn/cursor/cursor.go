@@ -59,7 +59,7 @@ type Cursor struct {
 	Username     string
 	ID           int64
 	closeOnce    sync.Once
-	ShowRecordID bool
+	showRecordID bool
 	lastRecordID int64
 }
 
@@ -70,7 +70,7 @@ func newCursor(id int64, params *NewParams, r *Registry) *Cursor {
 		DB:           params.DB,
 		Collection:   params.Collection,
 		Username:     params.Username,
-		ShowRecordID: params.ShowRecordID,
+		showRecordID: params.ShowRecordID,
 		iter:         params.Iter,
 		r:            r,
 		created:      time.Now(),
@@ -92,6 +92,10 @@ func (c *Cursor) Next() (struct{}, *types.Document, error) {
 	zero, doc, err := c.iter.Next()
 	if doc != nil {
 		c.lastRecordID = doc.RecordID()
+
+		if c.showRecordID {
+			doc.Set("$recordId", doc.RecordID())
+		}
 	}
 
 	return zero, doc, err

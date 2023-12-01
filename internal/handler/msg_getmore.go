@@ -187,10 +187,6 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	nextBatch := types.MakeArray(len(resDocs))
 
 	for _, doc := range resDocs {
-		if cursor.ShowRecordID {
-			doc.Set("$recordId", doc.RecordID())
-		}
-
 		nextBatch.Append(doc)
 	}
 
