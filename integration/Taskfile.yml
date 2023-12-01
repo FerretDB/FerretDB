@@ -44,7 +44,12 @@ tasks:
     cmds:
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
-      - ../bin/go-consistent{{exeExt}} -pedantic ./...
+
+      # Stop CI from failing too often; see https://github.com/quasilyte/go-consistent/issues/38.
+      # Still, note the output and fix the issues.
+      - cmd: ../bin/go-consistent{{exeExt}} -pedantic ./...
+        ignore_error: true
+
       - go vet -vettool=../bin/checkswitch{{exeExt}} ./...
       - go vet -vettool=../bin/checkcomments{{exeExt}} ./...
 
@@ -128,7 +133,7 @@ tasks:
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-mysql
-        -mysql-url=mysql://username:password@127.0.0.1:3306/ferretdb  
+        -mysql-url=mysql://username:password@127.0.0.1:3306/ferretdb
         -disable-filter-pushdown
         | tee new-sqlite.txt
       - ../bin/benchstat{{exeExt}} old-sqlite.txt new-sqlite.txt
