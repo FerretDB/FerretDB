@@ -282,10 +282,10 @@ The service is not considered highly available and can be easily replaced with o
 
 The `admin` credentials for `postgres` include:
 
-- POSTGRES_HOST: "@{service.db.address}"
-- POSTGRES_DB: "@{service.db.data.dbName}"
-- POSTGRES_USER: "@{service.db.secrets.admin.username}"
-- POSTGRES_PASSWORD: "@{service.db.secrets.admin.password}"
+- POSTGRES_HOST: `@{service.db.address}`
+- POSTGRES_DB: `@{service.db.data.dbName}`
+- POSTGRES_USER: `@{service.db.secrets.admin.username}`
+- POSTGRES_PASSWORD: `@{service.db.secrets.admin.password}`
 
 The `admin` credentials are then consumed by the `ferretdb` container via `@{service.db.xxx}` variables.
 To connect to the `postgres` backend, we will specify the `postgres` for the `FERRETDB_POSTGRESQL_URL` environment variable.
