@@ -177,6 +177,11 @@ func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams
 		params = new(ExplainParams)
 	}
 
+	if params.DisableAllPushdown &&
+		(params.Filter.Len() != 0 || params.Limit != 0 || params.Sort.Len() != 0) {
+		panic("Filter, Limit and Sort shouldn't be set if pushdown is disabled")
+	}
+
 	if params.Sort.Len() != 0 {
 		iter := params.Sort.Iterator()
 		defer iter.Close()
