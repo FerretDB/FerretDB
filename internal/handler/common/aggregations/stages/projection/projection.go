@@ -24,7 +24,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations/operators"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -52,8 +52,8 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 	validated := types.MakeDocument(0)
 
 	if projection.Len() == 0 {
-		return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrEmptyProject,
+		return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrEmptyProject,
 			"Invalid $project :: caused by :: projection specification must have at least one field",
 			"$project (stage)",
 		)
@@ -71,8 +71,8 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 		}
 
 		if key == "" {
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrEmptyFieldPath,
+			return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrEmptyFieldPath,
 				"Invalid $project :: caused by :: FieldPath cannot be constructed with empty string",
 				"$project (stage)",
 			)
@@ -82,23 +82,23 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 		path, err := types.NewPathFromString(key)
 		if err != nil {
 			if strings.HasSuffix(key, "$") {
-				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrAggregatePositionalProject,
+				return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrAggregatePositionalProject,
 					"Invalid $project :: caused by :: Cannot use positional projection in aggregation projection",
 					"$project (stage)",
 				)
 			}
 
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrPathContainsEmptyElement,
+			return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrPathContainsEmptyElement,
 				"Invalid $project :: caused by :: FieldPath field names may not be empty strings.",
 				"projection",
 			)
 		}
 
 		if key == "$" {
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFieldPathInvalidName,
+			return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrFieldPathInvalidName,
 				"Invalid $project :: caused by :: FieldPath field names may not start with '$'. "+
 					"Consider using $getField or $setField.",
 				"$project (stage)",
@@ -106,8 +106,8 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 		}
 
 		if strings.HasSuffix(key, "$") {
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrAggregatePositionalProject,
+			return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrAggregatePositionalProject,
 				"Invalid $project :: caused by :: Cannot use positional projection in aggregation projection",
 				"$project (stage)",
 			)
@@ -116,8 +116,8 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 		// if `$` is at prefix, it returns ErrFieldPathInvalidName error code instead.
 		prefixTrimmed := strings.TrimPrefix(key, "$")
 		if slices.Contains(strings.Split(prefixTrimmed, "."), "$") {
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrWrongPositionalOperatorLocation,
+			return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrWrongPositionalOperatorLocation,
 				"Invalid $project :: caused by :: "+
 					"Positional projection may only be used at the end, "+
 					"for example: a.b.$. If the query previously used a form "+
@@ -131,8 +131,8 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 			if strings.HasPrefix(k, "$") {
 				// arbitrary `$` cannot exist in the path
 				// `v.$foo` is invalid, `v.$` and `v.foo$` are fine.
-				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrFieldPathInvalidName,
+				return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrFieldPathInvalidName,
 					"Invalid $project :: caused by :: FieldPath field names may not start with '$'. "+
 						"Consider using $getField or $setField.",
 					"$project (stage)",
@@ -146,8 +146,8 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 		case *types.Document:
 			if !operators.IsOperator(value) {
 				if value.Len() == 0 {
-					return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-						commonerrors.ErrEmptySubProject,
+					return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+						handlererrors.ErrEmptySubProject,
 						"Invalid $project :: caused by :: An empty sub-projection is not a valid value."+
 							" Found empty object at path",
 						"$project (stage)",
@@ -220,15 +220,15 @@ func ValidateProjection(projection *types.Document) (*types.Document, bool, erro
 			}
 
 			if *projectionVal {
-				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrProjectionExIn,
+				return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrProjectionExIn,
 					fmt.Sprintf("Cannot do exclusion on field %s in inclusion projection", key),
 					"projection",
 				)
 			}
 
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrProjectionInEx,
+			return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrProjectionInEx,
 				fmt.Sprintf("Cannot do inclusion on field %s in exclusion projection", key),
 				"projection",
 			)
@@ -646,33 +646,33 @@ func processOperatorError(err error) error {
 	case errors.As(err, &opErr):
 		switch opErr.Code() {
 		case operators.ErrTooManyFields:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFieldPathInvalidName,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrFieldPathInvalidName,
 				"Invalid $project :: caused by :: FieldPath field names may not start with '$'."+
 					" Consider using $getField or $setField.",
 				"$project (stage)",
 			)
 		case operators.ErrNotImplemented:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNotImplemented,
 				"Invalid $project :: caused by :: "+opErr.Error(),
 				"$project (stage)",
 			)
 		case operators.ErrArgsInvalidLen:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrOperatorWrongLenOfArgs,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrOperatorWrongLenOfArgs,
 				"Invalid $project :: caused by :: "+opErr.Error(),
 				"$project (stage)",
 			)
 		case operators.ErrInvalidExpression:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrAggregateInvalidExpression,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrAggregateInvalidExpression,
 				"Invalid $project :: caused by :: "+opErr.Error(),
 				"$project (stage)",
 			)
 		case operators.ErrInvalidNestedExpression:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrInvalidPipelineOperator,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrInvalidPipelineOperator,
 				"Invalid $project :: caused by :: "+opErr.Error(),
 				"$project (stage)",
 			)
@@ -684,27 +684,27 @@ func processOperatorError(err error) error {
 			// handled by upstream and this should not be reachable for existing expression implementation
 			fallthrough
 		case aggregations.ErrInvalidExpression:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrFailedToParse,
 				"Invalid $project :: caused by :: '$' starts with an invalid character for a user variable name",
 				"$project (stage)",
 			)
 		case aggregations.ErrEmptyFieldPath:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrGroupInvalidFieldPath,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrGroupInvalidFieldPath,
 				"Invalid $project :: caused by :: '$' by itself is not a valid FieldPath",
 				"$project (stage)",
 			)
 		case aggregations.ErrUndefinedVariable:
 			// TODO https://github.com/FerretDB/FerretDB/issues/2275
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNotImplemented,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNotImplemented,
 				"Aggregation expression variables are not implemented yet",
 				"$project (stage)",
 			)
 		case aggregations.ErrEmptyVariable:
-			return commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrFailedToParse,
+			return handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrFailedToParse,
 				"Invalid $project :: caused by :: empty variable names are not allowed",
 				"$project (stage)",
 			)

@@ -21,8 +21,8 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -53,7 +53,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeDatabaseNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection)
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, command)
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, command)
 		}
 
 		return nil, lazyerrors.Error(err)
@@ -63,7 +63,7 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionNameIsInvalid) {
 			msg := fmt.Sprintf("Invalid namespace specified '%s.%s'", dbName, collection)
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrInvalidNamespace, msg, command)
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrInvalidNamespace, msg, command)
 		}
 
 		return nil, lazyerrors.Error(err)
@@ -71,8 +71,8 @@ func (h *Handler) MsgDropIndexes(ctx context.Context, msg *wire.OpMsg) (*wire.Op
 
 	indexValue, err := document.Get("index")
 	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrMissingField,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrMissingField,
 			"BSON field 'dropIndexes.index' is missing but a required field",
 			command,
 		)
@@ -135,14 +135,14 @@ func processDropIndexOptions(command, ns string, v any, existing []backends.Inde
 		}
 
 		if len(spec) == 1 && spec[0].Field == "_id" && !spec[0].Descending {
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrInvalidOptions, "cannot drop _id index", command,
+			return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrInvalidOptions, "cannot drop _id index", command,
 			)
 		}
 
 		if len(existing) == 0 {
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNamespaceNotFound, fmt.Sprintf("ns not found %s", ns), command,
+			return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNamespaceNotFound, fmt.Sprintf("ns not found %s", ns), command,
 			)
 		}
 
@@ -163,7 +163,7 @@ func processDropIndexOptions(command, ns string, v any, existing []backends.Inde
 
 		msg := fmt.Sprintf("can't find index with key: { %v }", formatIndexKey(spec))
 
-		return nil, false, commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrIndexNotFound, msg, command)
+		return nil, false, handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrIndexNotFound, msg, command)
 
 	case *types.Array:
 		// List of index names is provided to drop multiple indexes.
@@ -187,25 +187,25 @@ func processDropIndexOptions(command, ns string, v any, existing []backends.Inde
 
 			index, ok := val.(string)
 			if !ok {
-				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrTypeMismatch,
+				return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrTypeMismatch,
 					fmt.Sprintf(
 						"BSON field 'dropIndexes.index' is the wrong type '%s', expected types '[string, object]'",
-						commonparams.AliasFromType(v),
+						handlerparams.AliasFromType(v),
 					),
 					command,
 				)
 			}
 
 			if len(existing) == 0 {
-				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrNamespaceNotFound, fmt.Sprintf("ns not found %s", ns), command,
+				return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrNamespaceNotFound, fmt.Sprintf("ns not found %s", ns), command,
 				)
 			}
 
 			if index == backends.DefaultIndexName {
-				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrInvalidOptions, "cannot drop _id index", command,
+				return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrInvalidOptions, "cannot drop _id index", command,
 				)
 			}
 
@@ -221,8 +221,8 @@ func processDropIndexOptions(command, ns string, v any, existing []backends.Inde
 			}
 
 			if !found {
-				return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrIndexNotFound,
+				return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrIndexNotFound,
 					fmt.Sprintf("index not found with name [%s]", index),
 					command,
 				)
@@ -246,14 +246,14 @@ func processDropIndexOptions(command, ns string, v any, existing []backends.Inde
 		}
 
 		if len(existing) == 0 {
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrNamespaceNotFound, fmt.Sprintf("ns not found %s", ns), command,
+			return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrNamespaceNotFound, fmt.Sprintf("ns not found %s", ns), command,
 			)
 		}
 
 		if v == backends.DefaultIndexName {
-			return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrInvalidOptions, "cannot drop _id index", command,
+			return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrInvalidOptions, "cannot drop _id index", command,
 			)
 		}
 
@@ -263,18 +263,18 @@ func processDropIndexOptions(command, ns string, v any, existing []backends.Inde
 			}
 		}
 
-		return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrIndexNotFound,
+		return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrIndexNotFound,
 			fmt.Sprintf("index not found with name [%s]", v),
 			command,
 		)
 	}
 
-	return nil, false, commonerrors.NewCommandErrorMsgWithArgument(
-		commonerrors.ErrTypeMismatch,
+	return nil, false, handlererrors.NewCommandErrorMsgWithArgument(
+		handlererrors.ErrTypeMismatch,
 		fmt.Sprintf(
 			"BSON field 'dropIndexes.index' is the wrong type '%s', expected types '[string, object]'",
-			commonparams.AliasFromType(v),
+			handlerparams.AliasFromType(v),
 		),
 		command,
 	)

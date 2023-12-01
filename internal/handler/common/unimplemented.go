@@ -19,11 +19,11 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 )
 
-// Unimplemented returns commonerrors.ErrNotImplemented if doc has any of the given fields.
+// Unimplemented returns handlererrors.ErrNotImplemented if doc has any of the given fields.
 func Unimplemented(doc *types.Document, fields ...string) error {
 	for _, field := range fields {
 		if v, err := doc.Get(field); err == nil {
@@ -32,14 +32,14 @@ func Unimplemented(doc *types.Document, fields ...string) error {
 				doc.Command(), field, v,
 			)
 
-			return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNotImplemented, msg, field)
+			return handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrNotImplemented, msg, field)
 		}
 	}
 
 	return nil
 }
 
-// UnimplementedNonDefault returns commonerrors.ErrNotImplemented if doc has given field,
+// UnimplementedNonDefault returns handlererrors.ErrNotImplemented if doc has given field,
 // and isDefault, called with the actual value, returns false.
 func UnimplementedNonDefault(doc *types.Document, field string, isDefault func(v any) bool) error {
 	v, err := doc.Get(field)
@@ -56,7 +56,7 @@ func UnimplementedNonDefault(doc *types.Document, field string, isDefault func(v
 		doc.Command(), field, v,
 	)
 
-	return commonerrors.NewCommandErrorMsgWithArgument(commonerrors.ErrNotImplemented, msg, field)
+	return handlererrors.NewCommandErrorMsgWithArgument(handlererrors.ErrNotImplemented, msg, field)
 }
 
 // Ignored logs a message if doc has any of the given fields.
