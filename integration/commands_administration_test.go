@@ -254,6 +254,17 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 		})
 	}
 
+	t.Run("NotFound", func(t *testing.T) {
+		t.Parallel()
+
+		actual, err := db.Client().ListDatabases(ctx, bson.D{
+			{Key: "name", Value: "unknown"},
+		})
+		require.NoError(t, err)
+		require.Len(t, actual.Databases, 0, "result should contain no databases")
+		assert.Zero(t, actual.TotalSize, "TotalSize should be zero")
+	})
+
 	t.Run("RegexNotFound", func(t *testing.T) {
 		t.Parallel()
 
