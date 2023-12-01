@@ -81,7 +81,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	qp := backends.ExplainParams{
-		Filter:             params.Filter,
+		Filter:          params.Filter,
 		DisablePushdown: h.DisablePushdown,
 	}
 

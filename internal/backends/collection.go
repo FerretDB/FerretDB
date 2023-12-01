@@ -145,10 +145,10 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 
 // ExplainParams represents the parameters of Collection.Explain method.
 type ExplainParams struct {
-	Filter             *types.Document
-	Sort               *types.Document
+	Filter          *types.Document
+	Sort            *types.Document
 	DisablePushdown bool
-	Limit              int64
+	Limit           int64
 }
 
 // ExplainResult represents the results of Collection.Explain method.
