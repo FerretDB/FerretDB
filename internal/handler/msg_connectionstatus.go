@@ -17,11 +17,33 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commoncommands"
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgConnectionStatus implements `connectionStatus` command.
 func (h *Handler) MsgConnectionStatus(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return commoncommands.MsgConnectionStatus(ctx, msg)
+	users := types.MakeArray(1)
+
+	if username, _ := conninfo.Get(ctx).Auth(); username != "" {
+		users.Append(must.NotFail(types.NewDocument(
+			"user", username,
+		)))
+	}
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"authInfo", must.NotFail(types.NewDocument(
+				"authenticatedUsers", users,
+				"authenticatedUserRoles", must.NotFail(types.NewArray()),
+				"authenticatedUserPrivileges", must.NotFail(types.NewArray()),
+			)),
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }
