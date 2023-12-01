@@ -64,11 +64,17 @@ var cli struct {
 		TLS         string `default:""                help:"Listen TLS address."`
 		TLSCertFile string `default:""                help:"TLS cert file path."`
 		TLSKeyFile  string `default:""                help:"TLS key file path."`
-		TLSCAFile   string `default:""                help:"TLS CA file path." name:"tls-ca-file"`
+		TLSCaFile   string `default:""                help:"TLS CA file path."`
 	} `embed:"" prefix:"listen-"`
 
-	ProxyAddr string `default:""                help:"Proxy address."`
-	DebugAddr string `default:"127.0.0.1:8088"  help:"Listen address for HTTP handlers for metrics, pprof, etc."`
+	Proxy struct {
+		Addr        string `default:"" help:"Proxy address."`
+		TLSCertFile string `default:"" help:"Proxy TLS cert file path."`
+		TLSKeyFile  string `default:"" help:"Proxy TLS key file path."`
+		TLSCaFile   string `default:"" help:"Proxy TLS CA file path."`
+	} `embed:"" prefix:"proxy-"`
+
+	DebugAddr string `default:"127.0.0.1:8088" help:"Listen address for HTTP handlers for metrics, pprof, etc."`
 
 	// see setCLIPlugins
 	kong.Plugins
@@ -116,18 +122,18 @@ var sqliteFlags struct {
 	SQLiteURL string `name:"sqlite-url" default:"file:data/" help:"SQLite URI (directory) for 'sqlite' handler."`
 }
 
-// The hanaFlags struct represents flags that are used by the "hana" handler.
-//
-// See main_hana.go.
-var hanaFlags struct {
-	HANAURL string `name:"hana-url" help:"SAP HANA URL for 'hana' handler"`
-}
-
 // The mySQLFlags struct represents flags that are used by the "mysql" backend.
 //
 // See main_mysql.go.
 var mySQLFlags struct {
 	MySQLURL string `name:"mysql-url" default:"mysql://127.0.0.1:3306/ferretdb" help:"MySQL URL for 'mysql' handler" hidden:""`
+}
+
+// The hanaFlags struct represents flags that are used by the "hana" handler.
+//
+// See main_hana.go.
+var hanaFlags struct {
+	HANAURL string `name:"hana-url" help:"SAP HANA URL for 'hana' handler"`
 }
 
 // handlerFlags is a map of handler names to their flags.
@@ -400,14 +406,19 @@ func run() {
 	defer closeBackend()
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		TCP:         cli.Listen.Addr,
-		Unix:        cli.Listen.Unix,
+		TCP:  cli.Listen.Addr,
+		Unix: cli.Listen.Unix,
+
 		TLS:         cli.Listen.TLS,
 		TLSCertFile: cli.Listen.TLSCertFile,
 		TLSKeyFile:  cli.Listen.TLSKeyFile,
-		TLSCAFile:   cli.Listen.TLSCAFile,
+		TLSCAFile:   cli.Listen.TLSCaFile,
 
-		ProxyAddr:      cli.ProxyAddr,
+		ProxyAddr:        cli.Proxy.Addr,
+		ProxyTLSCertFile: cli.Proxy.TLSCertFile,
+		ProxyTLSKeyFile:  cli.Proxy.TLSKeyFile,
+		ProxyTLSCAFile:   cli.Proxy.TLSCaFile,
+
 		Mode:           clientconn.Mode(cli.Mode),
 		Metrics:        metrics,
 		Handler:        h,

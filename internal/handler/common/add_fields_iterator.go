@@ -18,7 +18,7 @@ import (
 	"errors"
 
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations/operators"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -102,33 +102,33 @@ func processAddFieldsError(err error) error {
 
 	switch opErr.Code() {
 	case operators.ErrTooManyFields:
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrAddFieldsExpressionWrongAmountOfArgs,
+		return handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrAddFieldsExpressionWrongAmountOfArgs,
 			"Invalid $addFields :: caused by :: FieldPath field names may not start with '$'."+
 				" Consider using $getField or $setField.",
 			"$addFields (stage)",
 		)
 	case operators.ErrNotImplemented:
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrNotImplemented,
+		return handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrNotImplemented,
 			"Invalid $addFields :: caused by :: "+opErr.Error(),
 			"$addFields (stage)",
 		)
 	case operators.ErrArgsInvalidLen:
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrOperatorWrongLenOfArgs,
+		return handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrOperatorWrongLenOfArgs,
 			"Invalid $addFields :: caused by :: "+opErr.Error(),
 			"$addFields (stage)",
 		)
 	case operators.ErrInvalidExpression:
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrInvalidPipelineOperator,
+		return handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrInvalidPipelineOperator,
 			"Invalid $addFields :: caused by :: "+opErr.Error(),
 			"$addFields (stage)",
 		)
 	case operators.ErrInvalidNestedExpression:
-		return commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrInvalidPipelineOperator,
+		return handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrInvalidPipelineOperator,
 			"Invalid $addFields :: caused by :: "+opErr.Error(),
 			"$addFields (stage)",
 		)

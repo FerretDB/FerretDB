@@ -19,8 +19,8 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
-	"github.com/FerretDB/FerretDB/internal/handler/commonparams"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlerparams"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -44,7 +44,7 @@ func GetInsertParams(document *types.Document, l *zap.Logger) (*InsertParams, er
 		Ordered: true,
 	}
 
-	err := commonparams.ExtractParams(document, "insert", &params, l)
+	err := handlerparams.ExtractParams(document, "insert", &params, l)
 	if err != nil {
 		return nil, err
 	}
@@ -53,12 +53,12 @@ func GetInsertParams(document *types.Document, l *zap.Logger) (*InsertParams, er
 		doc := must.NotFail(params.Docs.Get(i))
 
 		if _, ok := doc.(*types.Document); !ok {
-			return nil, commonerrors.NewCommandErrorMsg(
-				commonerrors.ErrTypeMismatch,
+			return nil, handlererrors.NewCommandErrorMsg(
+				handlererrors.ErrTypeMismatch,
 				fmt.Sprintf(
 					"BSON field 'insert.documents.%d' is the wrong type '%s', expected type 'object'",
 					i,
-					commonparams.AliasFromType(doc),
+					handlerparams.AliasFromType(doc),
 				),
 			)
 		}

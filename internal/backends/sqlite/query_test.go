@@ -20,8 +20,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 func TestPrepareSelectClause(t *testing.T) {
@@ -78,17 +79,17 @@ func TestPrepareOrderByClause(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
-		sort   *backends.SortField
+		sort   *types.Document
 		capped bool
 
 		orderBy string
 	}{
 		"Ascending": {
-			sort:    &backends.SortField{Key: "field", Descending: false},
+			sort:    must.NotFail(types.NewDocument("field", int64(1))),
 			orderBy: "",
 		},
 		"Descending": {
-			sort:    &backends.SortField{Key: "field", Descending: true},
+			sort:    must.NotFail(types.NewDocument("field", int64(-1))),
 			orderBy: "",
 		},
 		"SortNil": {
@@ -104,6 +105,7 @@ func TestPrepareOrderByClause(t *testing.T) {
 			t.Parallel()
 
 			orderBy := prepareOrderByClause(tc.sort, tc.capped)
+
 			assert.Equal(t, tc.orderBy, orderBy)
 		})
 	}
