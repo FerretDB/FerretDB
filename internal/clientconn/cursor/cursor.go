@@ -31,6 +31,15 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
+type Type int
+
+const (
+	_ Type = iota
+	Normal
+	Tailable
+	TailableAwait
+)
+
 // Cursor allows clients to iterate over a result set.
 //
 // It implements types.DocumentsIterator interface by wrapping another iterator with documents
@@ -54,14 +63,14 @@ type Cursor struct {
 }
 
 // newCursor creates a new cursor.
-func newCursor(id int64, db, collection, username string, showRecordID bool, iter types.DocumentsIterator, r *Registry) *Cursor {
+func newCursor(id int64, params *NewParams, r *Registry) *Cursor {
 	c := &Cursor{
 		ID:           id,
-		DB:           db,
-		Collection:   collection,
-		Username:     username,
-		ShowRecordID: showRecordID,
-		iter:         iter,
+		DB:           params.DB,
+		Collection:   params.Collection,
+		Username:     params.Username,
+		ShowRecordID: params.ShowRecordID,
+		iter:         params.Iter,
 		r:            r,
 		created:      time.Now(),
 		closed:       make(chan struct{}),
@@ -71,6 +80,10 @@ func newCursor(id int64, db, collection, username string, showRecordID bool, ite
 	resource.Track(c, c.token)
 
 	return c
+}
+
+func (c *Cursor) Reset(iter types.DocumentsIterator) {
+	c.iter = iter
 }
 
 // Next implements types.DocumentsIterator interface.

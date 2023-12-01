@@ -314,7 +314,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	cursorID := cursor.ID
 
-	firstBatchDocs, err := iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor), int(batchSize))
+	firstBatchDocs, err := iterator.ConsumeValuesN(cursor, int(batchSize))
 	if err != nil {
 		cursor.Close()
 		return nil, lazyerrors.Error(err)

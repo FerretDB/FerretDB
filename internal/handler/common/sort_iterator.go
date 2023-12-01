@@ -31,7 +31,7 @@ func SortIterator(iter types.DocumentsIterator, closer *iterator.MultiCloser, so
 		return iter, nil
 	}
 
-	docs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+	docs, err := iterator.ConsumeValues(iter)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

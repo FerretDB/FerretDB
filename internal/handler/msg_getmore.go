@@ -179,7 +179,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		)
 	}
 
-	resDocs, err := iterator.ConsumeValuesN(iterator.Interface[struct{}, *types.Document](cursor), int(batchSize))
+	resDocs, err := iterator.ConsumeValuesN(cursor, int(batchSize))
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
