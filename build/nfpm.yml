@@ -8,7 +8,7 @@ version: ${PACKAGE_VERSION}
 section: database
 maintainer: packages@ferretdb.io
 description: A truly Open Source MongoDB alternative
-homepage: https://ferretdb.io
+homepage: https://www.ferretdb.com/
 license: Apache License 2.0
 
 # https://www.debian.org/doc/debian-policy/ch-relationships.html#binary-dependencies-depends-recommends-suggests-enhances-pre-depends
