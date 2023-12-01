@@ -183,7 +183,6 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	nextBatchDocs, err := iterator.ConsumeValuesN(cursor, int(batchSize))
 	if err != nil {
-		// FIX close cursor there?
 		return nil, lazyerrors.Error(err)
 	}
 

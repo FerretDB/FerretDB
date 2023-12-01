@@ -198,7 +198,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	firstBatchDocs, err := iterator.ConsumeValuesN(cursor, int(params.BatchSize))
 	if err != nil {
-		cursor.Close()
 		return nil, lazyerrors.Error(err)
 	}
 
