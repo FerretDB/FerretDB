@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"math"
 
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
@@ -179,14 +181,19 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		)
 	}
 
-	resDocs, err := iterator.ConsumeValuesN(cursor, int(batchSize))
+	nextBatchDocs, err := iterator.ConsumeValuesN(cursor, int(batchSize))
 	if err != nil {
+		// FIX close cursor there?
 		return nil, lazyerrors.Error(err)
 	}
 
-	nextBatch := types.MakeArray(len(resDocs))
+	h.L.Debug(
+		"Got next batch", zap.Int64("cursor_id", cursorID),
+		zap.Int("count", len(nextBatchDocs)), zap.Int64("batch_size", batchSize),
+	)
 
-	for _, doc := range resDocs {
+	nextBatch := types.MakeArray(len(nextBatchDocs))
+	for _, doc := range nextBatchDocs {
 		nextBatch.Append(doc)
 	}
 
