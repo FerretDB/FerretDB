@@ -96,9 +96,11 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 		q += where
 
-		sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
-		q += sort
-		args = append(args, sortArgs...)
+		if !params.DisableAllPushdown {
+			sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
+			q += sort
+			args = append(args, sortArgs...)
+		}
 
 		if params.Limit != 0 {
 			q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())
@@ -342,11 +344,11 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	q += where
 
-	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
-	q += sort
-
-	args = append(args, sortArgs...)
-	res.SortPushdown = sort != ""
+	if !params.DisableAllPushdown {
+		sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
+		args = append(args, sortArgs...)
+		res.SortPushdown = sort != ""
+	}
 
 	if params.Limit != 0 {
 		q += fmt.Sprintf(` LIMIT %s`, placeholder.Next())

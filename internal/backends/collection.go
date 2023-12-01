@@ -103,16 +103,6 @@ type QueryResult struct {
 // In such case Filter, Limit, and Sort cannot be set.
 //
 // Passed sort document should be already validated. If sort document is invalid, function panics.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/3761
-// The QueryResult's Filtered field is set to true if the backend applied the whole requested filtering.
-// If it was applied only partially or not at all, that field should be set to false.
-// In that case, the handler will perform filtering itself.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/3742
-// The QueryResult's Sorted field is set to true if the backend applied the whole requested sorting.
-// If it was applied only partially or not at all, that field should be set to false.
-// In that case, the handler will perform sorting itself.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
 	defer observability.FuncCall(ctx)()
 
@@ -155,9 +145,10 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 
 // ExplainParams represents the parameters of Collection.Explain method.
 type ExplainParams struct {
-	Filter *types.Document
-	Sort   *types.Document
-	Limit  int64
+	Filter             *types.Document
+	Sort               *types.Document
+	DisableAllPushdown bool
+	Limit              int64
 }
 
 // ExplainResult represents the results of Collection.Explain method.
