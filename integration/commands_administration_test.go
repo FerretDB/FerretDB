@@ -159,8 +159,7 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	db := collection.Database()
 	name := db.Name()
 
-	testCases := []struct { //nolint:vet // for readability
-		name   string
+	testCases := map[string]struct { //nolint:vet // for readability
 		filter any
 		opts   []*options.ListDatabasesOptions
 
@@ -169,8 +168,7 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 		dbCount  int
 		expected mongo.ListDatabasesResult
 	}{
-		{
-			name:    "Exists",
+		"Exists": {
 			filter:  bson.D{{Key: "name", Value: name}},
 			dbCount: 1,
 			expected: mongo.ListDatabasesResult{
@@ -180,8 +178,7 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 				}},
 			},
 		},
-		{
-			name:   "ExistsNameOnly",
+		"ExistsNameOnly": {
 			filter: bson.D{{Key: "name", Value: name}},
 			opts: []*options.ListDatabasesOptions{
 				options.ListDatabases().SetNameOnly(true),
@@ -194,8 +191,7 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 				}},
 			},
 		},
-		{
-			name: "Regex",
+		"Regex": {
 			filter: bson.D{
 				{Key: "name", Value: name},
 				{Key: "name", Value: primitive.Regex{Pattern: "^Test", Options: "i"}},
@@ -207,8 +203,7 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 				}},
 			},
 		},
-		{
-			name: "RegexNameOnly",
+		"RegexNameOnly": {
 			filter: bson.D{
 				{Key: "name", Value: name},
 				{Key: "name", Value: primitive.Regex{Pattern: "^Test", Options: "i"}},
@@ -226,9 +221,9 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
+	for name, tc := range testCases {
 		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			actual, err := db.Client().ListDatabases(ctx, tc.filter, tc.opts...)
