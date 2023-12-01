@@ -16,6 +16,7 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -85,6 +86,24 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	if params.Aggregate {
 		qp.Filter, params.Sort = aggregations.GetPushdownQuery(params.StagesDocs)
+	}
+
+	if params.Sort, err = common.ValidateSortDocument(params.Sort); err != nil {
+		var pathErr *types.PathError
+		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrPathContainsEmptyElement,
+				"Empty field names in path are not allowed",
+				document.Command(),
+			)
+		}
+
+		return nil, err
+	}
+
+	// Skip sorting if there are more than one sort parameters
+	if params.Sort.Len() == 1 {
+		qp.Sort = params.Sort
 	}
 
 	// Limit pushdown is not applied if:

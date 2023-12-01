@@ -270,10 +270,6 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}, nil
 	}
 
-	if params == nil {
-		params = new(backends.ExplainParams)
-	}
-
 	selectClause := prepareSelectClause(meta.TableName, "", meta.Capped(), false)
 
 	var filterPushdown bool

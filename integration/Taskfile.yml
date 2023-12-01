@@ -44,7 +44,12 @@ tasks:
     cmds:
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
-      - ../bin/go-consistent{{exeExt}} -pedantic ./...
+
+      # Stop CI from failing too often; see https://github.com/quasilyte/go-consistent/issues/38.
+      # Still, note the output and fix the issues.
+      - cmd: ../bin/go-consistent{{exeExt}} -pedantic ./...
+        ignore_error: true
+
       - go vet -vettool=../bin/checkswitch{{exeExt}} ./...
       - go vet -vettool=../bin/checkcomments{{exeExt}} ./...
 

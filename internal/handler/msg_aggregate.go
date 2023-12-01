@@ -260,15 +260,36 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	if len(collStatsDocuments) == len(stagesDocuments) {
 		var filter *types.Document
+		var sort *types.Document
 
 		if !h.DisablePushdown {
-			filter, _ = aggregations.GetPushdownQuery(aggregationStages)
+			filter, sort = aggregations.GetPushdownQuery(aggregationStages)
 		}
 
 		// only documents stages or no stages - fetch documents from the DB and apply stages to them
 		qp := new(backends.QueryParams)
 
 		qp.Filter = filter
+
+		if sort, err = common.ValidateSortDocument(sort); err != nil {
+			closer.Close()
+
+			var pathErr *types.PathError
+			if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrPathContainsEmptyElement,
+					"FieldPath field names may not be empty strings.",
+					document.Command(),
+				)
+			}
+
+			return nil, err
+		}
+
+		// Skip sorting if there are more than one sort parameters
+		if sort.Len() == 1 {
+			qp.Sort = sort
+		}
 
 		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{c, qp, stagesDocuments})
 	} else {

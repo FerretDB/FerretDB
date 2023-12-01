@@ -44,6 +44,7 @@ func init() {
 
 			DisablePushdown: opts.DisablePushdown,
 			EnableOplog:     opts.EnableOplog,
+			EnableNewAuth:   opts.EnableNewAuth,
 		}
 
 		h, err := handler.New(handlerOpts)

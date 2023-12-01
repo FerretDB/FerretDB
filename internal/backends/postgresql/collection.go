@@ -57,10 +57,6 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		return nil, lazyerrors.Error(err)
 	}
 
-	if params == nil {
-		params = new(backends.QueryParams)
-	}
-
 	if p == nil {
 		return &backends.QueryResult{
 			Iter: newQueryIterator(ctx, nil, params.OnlyRecordIDs),
@@ -348,6 +344,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
 	q += sort
+
 	args = append(args, sortArgs...)
 	res.SortPushdown = sort != ""
 

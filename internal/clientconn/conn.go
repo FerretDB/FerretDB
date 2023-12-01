@@ -560,7 +560,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 //
 // The passed context is canceled when the client disconnects.
 func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
-	if cmd, ok := handler.Commands[command]; ok {
+	if cmd, ok := c.h.Commands()[command]; ok {
 		if cmd.Handler != nil {
 			defer observability.FuncCall(ctx)()
 
@@ -568,7 +568,7 @@ func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string)
 			ctx = pprof.WithLabels(ctx, pprof.Labels("command", command))
 			pprof.SetGoroutineLabels(ctx)
 
-			return cmd.Handler(c.h, ctx, msg)
+			return cmd.Handler(ctx, msg)
 		}
 	}
 

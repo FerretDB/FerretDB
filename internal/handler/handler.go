@@ -31,14 +31,14 @@ import (
 // MsgXXX methods handle OP_MSG commands.
 // CmdQuery handles a limited subset of OP_QUERY messages.
 //
-// Handler is shared between all connections! Be careful when you need connection-specific information.
-// Currently, we pass connection information through context, see `ConnInfo` and its usage.
+// Handler instance is shared between all client connections.
 type Handler struct {
 	*NewOpts
 
 	b backends.Backend
 
-	cursors *cursor.Registry
+	cursors  *cursor.Registry
+	commands map[string]command
 }
 
 // NewOpts represents handler configuration.
@@ -54,6 +54,7 @@ type NewOpts struct {
 	// test options
 	DisablePushdown bool
 	EnableOplog     bool
+	EnableNewAuth   bool
 }
 
 // New returns a new handler.
@@ -64,11 +65,15 @@ func New(opts *NewOpts) (*Handler, error) {
 		b = oplog.NewBackend(b, opts.L.Named("oplog"))
 	}
 
-	return &Handler{
+	h := &Handler{
 		b:       b,
 		NewOpts: opts,
 		cursors: cursor.NewRegistry(opts.L.Named("cursors")),
-	}, nil
+	}
+
+	h.initCommands()
+
+	return h, nil
 }
 
 // Close gracefully shutdowns handler.

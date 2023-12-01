@@ -94,6 +94,7 @@ var cli struct {
 
 		DisablePushdown bool `default:"false" help:"Experimental: disable all pushdown."`
 		EnableOplog     bool `default:"false" help:"Experimental: enable capped collections, tailable cursors and OpLog." hidden:""`
+		EnableNewAuth   bool `default:"false" help:"Experimental: enable new authentication."                             hidden:""`
 
 		//nolint:lll // for readability
 		Telemetry struct {
@@ -397,6 +398,7 @@ func run() {
 		TestOpts: registry.TestOpts{
 			DisablePushdown: cli.Test.DisablePushdown,
 			EnableOplog:     cli.Test.EnableOplog,
+			EnableNewAuth:   cli.Test.EnableNewAuth,
 		},
 	})
 	if err != nil {
