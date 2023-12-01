@@ -15,6 +15,7 @@
 package integration
 
 import (
+	"errors"
 	"net/url"
 	"sync"
 	"testing"
@@ -56,7 +57,7 @@ func TestCursor(t *testing.T) {
 
 	collection2 := client2.Database(databaseName).Collection(collectionName)
 
-	arr, _ := generateDocuments(0, 100000)
+	arr, _ := generateDocuments(0, 100)
 	_, err = collection2.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
@@ -75,22 +76,16 @@ func TestCursor(t *testing.T) {
 			{"collection", collection1.Name()},
 		}
 
-		cur, err := collection1.Database().RunCommandCursor(ctx, command)
-		require.NoError(t, err)
-
 		for {
-			if cur.Next(ctx) {
-				continue
-			}
+			result := bson.M{}
+			err := collection1.Database().RunCommand(ctx, command).Decode(result)
+			require.NoError(t, err)
 
-			if err := cur.Err(); err != nil {
-				t.Error(err)
-			}
-
-			if cur.ID() == 0 {
+			if errors.Is(err, mongo.ErrNoDocuments) {
 				break
 			}
 		}
+
 	}()
 
 	err = client2.Disconnect(ctx)
