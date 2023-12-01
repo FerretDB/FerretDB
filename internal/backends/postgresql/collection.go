@@ -346,8 +346,10 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	if !params.DisableAllPushdown {
 		sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
-		args = append(args, sortArgs...)
 		res.SortPushdown = sort != ""
+
+		q += sort
+		args = append(args, sortArgs...)
 	}
 
 	if params.Limit != 0 {
