@@ -17,11 +17,22 @@ package handler
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/handler/commoncommands"
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
 // MsgLogout implements `logout` command.
 func (h *Handler) MsgLogout(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
-	return commoncommands.MsgLogout(ctx, msg)
+	conninfo.Get(ctx).SetAuth("", "")
+
+	var reply wire.OpMsg
+	must.NoError(reply.SetSections(wire.OpMsgSection{
+		Documents: []*types.Document{must.NotFail(types.NewDocument(
+			"ok", float64(1),
+		))},
+	}))
+
+	return &reply, nil
 }
