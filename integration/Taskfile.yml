@@ -133,7 +133,7 @@ tasks:
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-mysql
-        -mysql-url=mysql://username:password@127.0.0.1:3306/ferretdb  
+        -mysql-url=mysql://username:password@127.0.0.1:3306/ferretdb
         -disable-pushdown
         | tee new-sqlite.txt
       - ../bin/benchstat{{exeExt}} old-sqlite.txt new-sqlite.txt
