@@ -62,8 +62,8 @@ type NewHandlerOpts struct {
 // TestOpts represents experimental configuration options.
 type TestOpts struct {
 	DisableAllPushdown bool
-	EnableOplog     bool
-	EnableNewAuth   bool
+	EnableOplog        bool
+	EnableNewAuth      bool
 }
 
 // NewHandler constructs a new handler.

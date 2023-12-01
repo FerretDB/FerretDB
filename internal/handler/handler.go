@@ -53,8 +53,8 @@ type NewOpts struct {
 
 	// test options
 	DisableAllPushdown bool
-	EnableOplog     bool
-	EnableNewAuth   bool
+	EnableOplog        bool
+	EnableNewAuth      bool
 }
 
 // New returns a new handler.
