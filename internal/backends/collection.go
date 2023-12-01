@@ -74,15 +74,6 @@ func CollectionContract(c Collection) Collection {
 	}
 }
 
-// SortField consists of a field name and a sort order that are used in queries.
-//
-// Remove this type.
-// TODO https://github.com/FerretDB/FerretDB/issues/3742
-type SortField struct {
-	Key        string
-	Descending bool
-}
-
 // QueryParams represents the parameters of Collection.Query method.
 type QueryParams struct {
 	Filter        *types.Document
@@ -94,8 +85,7 @@ type QueryParams struct {
 
 // QueryResult represents the results of Collection.Query method.
 type QueryResult struct {
-	Iter     types.DocumentsIterator
-	Filtered bool // TODO https://github.com/FerretDB/FerretDB/issues/3761
+	Iter types.DocumentsIterator
 }
 
 // Query executes a query against the collection.
@@ -105,16 +95,6 @@ type QueryResult struct {
 // The passed context should be used for canceling the initial query.
 // It also can be used to close the returned iterator and free underlying resources,
 // but doing so is not necessary - the handler will do that anyway.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/3761
-// The QueryResult's Filtered field is set to true if the backend applied the whole requested filtering.
-// If it was applied only partially or not at all, that field should be set to false.
-// In that case, the handler will perform filtering itself.
-//
-// TODO https://github.com/FerretDB/FerretDB/issues/3742
-// The QueryResult's Sorted field is set to true if the backend applied the whole requested sorting.
-// If it was applied only partially or not at all, that field should be set to false.
-// In that case, the handler will perform sorting itself.
 //
 // Passed sort document should be already validated. If sort document is invalid, function panics.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
@@ -163,7 +143,7 @@ type ExplainParams struct {
 type ExplainResult struct {
 	QueryPlanner   *types.Document
 	FilterPushdown bool
-	SortPushdown   bool // TODO https://github.com/FerretDB/FerretDB/issues/3742
+	SortPushdown   bool
 	LimitPushdown  bool
 }
 
@@ -176,7 +156,6 @@ type ExplainResult struct {
 // partially or completely (but safely in any case).
 // If it wasn't possible to apply it safely at least partially, that field should be set to false.
 //
-// TODO https://github.com/FerretDB/FerretDB/issues/3742
 // The ExplainResult's SortPushdown field is set to true if the backend could have applied the whole requested sorting.
 // If it was possible to apply it only partially or not at all, that field should be set to false.
 func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams) (*ExplainResult, error) {
