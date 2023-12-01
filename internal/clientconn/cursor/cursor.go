@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
@@ -52,10 +53,10 @@ const (
 type Cursor struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
-	ID int64
-	*NewParams
+	ID   int64
 	iter types.DocumentsIterator
-	r    *Registry
+	*NewParams
+	r *Registry
 
 	token        *resource.Token
 	created      time.Time
@@ -81,8 +82,25 @@ func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, r *Reg
 	return c
 }
 
-func (c *Cursor) Reset(iter types.DocumentsIterator) {
+func (c *Cursor) Reset(iter types.DocumentsIterator) error {
+	if c.Type != Tailable && c.Type != TailableAwait {
+		panic("Reset called on non-tailable cursor")
+	}
+
 	c.iter = iter
+
+	recordID := c.lastRecordID.Load()
+	for {
+		_, doc, err := c.Next()
+		if err != nil {
+			// FIXME
+			return lazyerrors.Error(err)
+		}
+
+		if doc.RecordID() == recordID {
+			return nil
+		}
+	}
 }
 
 // Next implements types.DocumentsIterator interface.
