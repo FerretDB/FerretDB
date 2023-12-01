@@ -24,6 +24,8 @@ import (
 	"slices"
 	"time"
 
+	"go.uber.org/zap"
+
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/cursor"
@@ -318,6 +320,11 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
+
+	h.L.Debug(
+		"Got first batch", zap.Int64("cursor_id", cursorID),
+		zap.Int("count", len(firstBatchDocs)), zap.Int64("batch_size", batchSize),
+	)
 
 	firstBatch := types.MakeArray(len(firstBatchDocs))
 	for _, doc := range firstBatchDocs {
