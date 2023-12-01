@@ -8,7 +8,7 @@ env:
 vars:
   SHARD_INDEX: 1
   SHARD_TOTAL: 1
-  DISABLE_ALL_PUSHDOWN: false
+  DISABLE_PUSHDOWN: false
   TEST_RUN: ""
   TEST_TIMEOUT: 35m
   BENCH_TIME: 5s
@@ -216,7 +216,7 @@ tasks:
         -target-tls
         -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-        -disable-all-pushdown={{.DISABLE_ALL_PUSHDOWN}}
+        -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-sqlite:
     desc: "Run integration tests for `sqlite` backend"
@@ -241,7 +241,7 @@ tasks:
         -sqlite-url=file:../tmp/sqlite-tests/
         -target-tls
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-        -disable-all-pushdown={{.DISABLE_ALL_PUSHDOWN}}
+        -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-mysql:
     desc: "Run integration tests for `mysql` handler"
@@ -266,7 +266,7 @@ tasks:
         -target-tls
         -mysql-url='mysql://username:password@127.0.0.1:3306/ferretdb'
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-        -disable-all-pushdown={{.DISABLE_ALL_PUSHDOWN}}
+        -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-hana:
     desc: "Run integration tests for `hana` handler"
@@ -291,7 +291,7 @@ tasks:
         -target-tls
         -hana-url=$FERRETDB_HANA_URL
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
-        -disable-all-pushdown={{.DISABLE_ALL_PUSHDOWN}}
+        -disable-pushdown={{.DISABLE_PUSHDOWN}}
 
   test-integration-mongodb:
     desc: "Run integration tests for MongoDB"

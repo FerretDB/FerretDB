@@ -262,7 +262,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		var filter *types.Document
 		var sort *types.Document
 
-		if !h.DisableAllPushdown {
+		if !h.DisablePushdown {
 			filter, sort = aggregations.GetPushdownQuery(aggregationStages)
 		}
 

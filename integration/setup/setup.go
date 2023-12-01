@@ -60,7 +60,7 @@ var (
 	debugSetupF = flag.Bool("debug-setup", false, "enable debug logs for tests setup")
 	logLevelF   = zap.LevelFlag("log-level", zap.DebugLevel, "log level for tests")
 
-	disableAllPushdownF = flag.Bool("disable-all-pushdown", false, "disable all pushdown")
+	disablePushdownF = flag.Bool("disable-pushdown", false, "disable pushdown")
 )
 
 // Other globals.

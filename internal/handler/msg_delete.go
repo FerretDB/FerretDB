@@ -117,7 +117,7 @@ func (h *Handler) MsgDelete(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, 
 // The error is either a (wrapped) *handlererrors.CommandError or something fatal.
 func (h *Handler) execDelete(ctx context.Context, c backends.Collection, p *common.Delete) (int32, error) {
 	var qp backends.QueryParams
-	if !h.DisableAllPushdown {
+	if !h.DisablePushdown {
 		qp.Filter = p.Filter
 	}
 

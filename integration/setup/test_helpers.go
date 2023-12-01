@@ -83,5 +83,5 @@ func SkipForMongoDB(tb testtb.TB, reason string) {
 
 // PushdownDisabled returns true if FerretDB filter pushdown is disabled.
 func PushdownDisabled() bool {
-	return *disableAllPushdownF
+	return *disablePushdownF
 }

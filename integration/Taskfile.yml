@@ -80,7 +80,7 @@ tasks:
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-postgresql
         -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
-        -disable-all-pushdown
+        -disable-pushdown
         | tee new-postgresql.txt
       - ../bin/benchstat{{exeExt}} old-postgresql.txt new-postgresql.txt
 
@@ -107,7 +107,7 @@ tasks:
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-sqlite
         -sqlite-url=file:../tmp/sqlite-tests/
-        -disable-all-pushdown
+        -disable-pushdown
         | tee new-sqlite.txt
       - ../bin/benchstat{{exeExt}} old-sqlite.txt new-sqlite.txt
 
@@ -134,7 +134,7 @@ tasks:
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-mysql
         -mysql-url=mysql://username:password@127.0.0.1:3306/ferretdb  
-        -disable-all-pushdown
+        -disable-pushdown
         | tee new-sqlite.txt
       - ../bin/benchstat{{exeExt}} old-sqlite.txt new-sqlite.txt
 
