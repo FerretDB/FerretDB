@@ -85,8 +85,10 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		DisablePushdown: h.DisablePushdown,
 	}
 
-	if params.Aggregate {
-		qp.Filter, params.Sort = aggregations.GetPushdownQuery(params.StagesDocs)
+	params.Filter, params.Sort = aggregations.GetPushdownQuery(params.StagesDocs)
+
+	if !h.DisablePushdown {
+		qp.Filter = params.Filter
 	}
 
 	if params.Sort, err = common.ValidateSortDocument(params.Sort); err != nil {
@@ -103,22 +105,17 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	// Skip sorting if there are more than one sort parameters
-	if params.Sort.Len() == 1 {
+	if !h.DisablePushdown && params.Sort.Len() == 1 {
 		qp.Sort = params.Sort
 	}
 
 	// Limit pushdown is not applied if:
+	//  - pushdown is disabled;
 	//  - `filter` is set, it must fetch all documents to filter them in memory;
 	//  - `sort` is set, it must fetch all documents and sort them in memory;
 	//  - `skip` is non-zero value, skip pushdown is not supported yet.
-	if params.Filter.Len() == 0 && params.Sort.Len() == 0 && params.Skip == 0 {
+	if !h.DisablePushdown && params.Filter.Len() == 0 && params.Sort.Len() == 0 && params.Skip == 0 {
 		qp.Limit = params.Limit
-	}
-
-	if h.DisablePushdown {
-		qp.Filter = nil
-		qp.Sort = nil
-		qp.Limit = 0
 	}
 
 	res, err := coll.Explain(ctx, &qp)

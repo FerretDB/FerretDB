@@ -262,14 +262,14 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		var filter *types.Document
 		var sort *types.Document
 
-		if !h.DisablePushdown {
-			filter, sort = aggregations.GetPushdownQuery(aggregationStages)
-		}
+		filter, sort = aggregations.GetPushdownQuery(aggregationStages)
 
 		// only documents stages or no stages - fetch documents from the DB and apply stages to them
 		qp := new(backends.QueryParams)
 
-		qp.Filter = filter
+		if !h.DisablePushdown {
+			qp.Filter = filter
+		}
 
 		if sort, err = common.ValidateSortDocument(sort); err != nil {
 			closer.Close()
@@ -287,7 +287,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 		// Skip sorting if there are more than one sort parameters
-		if sort.Len() == 1 {
+		if !h.DisablePushdown && sort.Len() == 1 {
 			qp.Sort = sort
 		}
 
