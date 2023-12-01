@@ -159,91 +159,100 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	db := collection.Database()
 	name := db.Name()
 
-	t.Run("Exists", func(t *testing.T) {
-		t.Parallel()
+	testCases := []struct {
+		name   string
+		filter any
+		opts   []*options.ListDatabasesOptions
 
-		actual, err := db.Client().ListDatabases(ctx, bson.D{{Key: "name", Value: name}})
-		require.NoError(t, err)
-		require.Len(t, actual.Databases, 1)
+		dbCount  int
+		empty    bool
+		zeroSize bool
+		expected mongo.ListDatabasesResult
+	}{
+		{
+			name:    "Exists",
+			filter:  bson.D{{Key: "name", Value: name}},
+			dbCount: 1,
+			expected: mongo.ListDatabasesResult{
+				Databases: []mongo.DatabaseSpecification{{
+					Name:  name,
+					Empty: false,
+				}},
+			},
+		},
+		{
+			name:   "ExistsNameOnly",
+			filter: bson.D{{Key: "name", Value: name}},
+			opts: []*options.ListDatabasesOptions{
+				options.ListDatabases().SetNameOnly(true),
+			},
+			dbCount:  1,
+			zeroSize: true,
+			expected: mongo.ListDatabasesResult{
+				Databases: []mongo.DatabaseSpecification{{
+					Name: name,
+				}},
+			},
+		},
+		{
+			name: "Regex",
+			filter: bson.D{
+				{Key: "name", Value: name},
+				{Key: "name", Value: primitive.Regex{Pattern: "^Test", Options: "i"}},
+			},
+			dbCount: 1,
+			expected: mongo.ListDatabasesResult{
+				Databases: []mongo.DatabaseSpecification{{
+					Name: name,
+				}},
+			},
+		},
+		{
+			name: "RegexNameOnly",
+			filter: bson.D{
+				{Key: "name", Value: name},
+				{Key: "name", Value: primitive.Regex{Pattern: "^Test", Options: "i"}},
+			},
+			opts: []*options.ListDatabasesOptions{
+				options.ListDatabases().SetNameOnly(true),
+			},
+			dbCount:  1,
+			zeroSize: true,
+			expected: mongo.ListDatabasesResult{
+				Databases: []mongo.DatabaseSpecification{{
+					Name: name,
+				}},
+			},
+		},
+	}
 
-		expected := mongo.ListDatabasesResult{
-			Databases: []mongo.DatabaseSpecification{{
-				Name:       name,
-				SizeOnDisk: actual.Databases[0].SizeOnDisk,
-				Empty:      actual.Databases[0].Empty,
-			}},
-			TotalSize: actual.TotalSize,
-		}
+	for _, tc := range testCases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 
-		assert.Equal(t, expected, actual)
+			actual, err := db.Client().ListDatabases(ctx, tc.filter, tc.opts...)
+			assert.NoError(t, err)
+			assert.Len(t, actual.Databases, tc.dbCount)
+			assert.Equal(t, tc.empty, actual.Databases[0].Empty, "Emptiness should be equal")
 
-		assert.NotZero(t, actual.Databases[0].SizeOnDisk, "%s's SizeOnDisk should be non-zero", name)
-		assert.False(t, actual.Databases[0].Empty, "%s's Empty should be false", name)
-		assert.NotZero(t, actual.TotalSize, "TotalSize should be non-zero")
-	})
+			if tc.zeroSize {
+				assert.Zero(t, actual.Databases[0].SizeOnDisk, "SizeOnDisk should be zero")
+				assert.Zero(t, actual.TotalSize, "TotalSize should be zero")
+			} else {
+				assert.NotZero(t, actual.Databases[0].SizeOnDisk, "SizeOnDisk should be non-zero")
+				assert.NotZero(t, actual.TotalSize, "TotalSize should be non-zero")
+			}
 
-	t.Run("ExistsNameOnly", func(t *testing.T) {
-		t.Parallel()
+			// Reset values of dynamic data received by the server to zero for making comparison viable.
+			for index := range actual.Databases {
+				actual.Databases[index].SizeOnDisk = 0
+			}
+			actual.TotalSize = 0
 
-		actual, err := db.Client().ListDatabases(ctx, bson.D{
-			{Key: "name", Value: name},
-		}, options.ListDatabases().SetNameOnly(true))
-		require.NoError(t, err)
-		require.Len(t, actual.Databases, 1)
-
-		expected := mongo.ListDatabasesResult{
-			Databases: []mongo.DatabaseSpecification{{
-				Name: name,
-			}},
-		}
-
-		assert.Equal(t, expected, actual, "result should contain only names")
-	})
-
-	t.Run("Regex", func(t *testing.T) {
-		t.Parallel()
-
-		actual, err := db.Client().ListDatabases(ctx, bson.D{
-			{Key: "name", Value: name},
-			{Key: "name", Value: primitive.Regex{Pattern: "^Test", Options: "i"}},
+			assert.Equal(t, tc.expected, actual)
 		})
-		require.NoError(t, err)
-		require.Len(t, actual.Databases, 1)
-
-		expected := mongo.ListDatabasesResult{
-			Databases: []mongo.DatabaseSpecification{{
-				Name:       name,
-				SizeOnDisk: actual.Databases[0].SizeOnDisk,
-				Empty:      actual.Databases[0].Empty,
-			}},
-			TotalSize: actual.TotalSize,
-		}
-
-		assert.Equal(t, expected, actual)
-
-		assert.NotZero(t, actual.Databases[0].SizeOnDisk, "%s's SizeOnDisk should be non-zero", name)
-		assert.False(t, actual.Databases[0].Empty, "%s's Empty should be false", name)
-		assert.NotZero(t, actual.TotalSize, "TotalSize should be non-zero")
-	})
-
-	t.Run("RegexNameOnly", func(t *testing.T) {
-		t.Parallel()
-
-		actual, err := db.Client().ListDatabases(ctx, bson.D{
-			{Key: "name", Value: name},
-			{Key: "name", Value: primitive.Regex{Pattern: "^Test", Options: "i"}},
-		}, options.ListDatabases().SetNameOnly(true))
-		require.NoError(t, err)
-		require.Len(t, actual.Databases, 1)
-
-		expected := mongo.ListDatabasesResult{
-			Databases: []mongo.DatabaseSpecification{{
-				Name: name,
-			}},
-		}
-
-		assert.Equal(t, expected, actual, "result should contain only names")
-	})
+	}
 
 	t.Run("RegexNotFound", func(t *testing.T) {
 		t.Parallel()
