@@ -84,12 +84,17 @@ type conn struct {
 
 // newConnOpts represents newConn options.
 type newConnOpts struct {
-	netConn        net.Conn
-	mode           Mode
-	l              *zap.Logger
-	handler        *handler.Handler
-	connMetrics    *connmetrics.ConnMetrics
-	proxyAddr      string
+	netConn     net.Conn
+	mode        Mode
+	l           *zap.Logger
+	handler     *handler.Handler
+	connMetrics *connmetrics.ConnMetrics
+
+	proxyAddr        string
+	proxyTLSCertFile string
+	proxyTLSKeyFile  string
+	proxyTLSCAFile   string
+
 	testRecordsDir string // if empty, no records are created
 }
 
@@ -105,7 +110,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	var p *proxy.Router
 	if opts.mode != NormalMode {
 		var err error
-		if p, err = proxy.New(opts.proxyAddr); err != nil {
+		if p, err = proxy.New(opts.proxyAddr, opts.proxyTLSCertFile, opts.proxyTLSKeyFile, opts.proxyTLSCAFile); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
@@ -555,7 +560,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 //
 // The passed context is canceled when the client disconnects.
 func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
-	if cmd, ok := handler.Commands[command]; ok {
+	if cmd, ok := c.h.Commands()[command]; ok {
 		if cmd.Handler != nil {
 			defer observability.FuncCall(ctx)()
 
@@ -563,7 +568,7 @@ func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string)
 			ctx = pprof.WithLabels(ctx, pprof.Labels("command", command))
 			pprof.SetGoroutineLabels(ctx)
 
-			return cmd.Handler(c.h, ctx, msg)
+			return cmd.Handler(ctx, msg)
 		}
 	}
 

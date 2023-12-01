@@ -110,6 +110,24 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		qp.Filter = params.Filter
 	}
 
+	if params.Sort, err = common.ValidateSortDocument(params.Sort); err != nil {
+		var pathErr *types.PathError
+		if errors.As(err, &pathErr) && pathErr.Code() == types.ErrPathElementEmpty {
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrPathContainsEmptyElement,
+				"Empty field names in path are not allowed",
+				document.Command(),
+			)
+		}
+
+		return nil, err
+	}
+
+	// Skip sorting if there are more than one sort parameters
+	if params.Sort.Len() == 1 {
+		qp.Sort = params.Sort
+	}
+
 	// Limit pushdown is not applied if:
 	//  - `filter` is set, it must fetch all documents to filter them in memory;
 	//  - `sort` is set, it must fetch all documents and sort them in memory;
@@ -138,7 +156,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	iter := common.FilterIterator(queryRes.Iter, closer, params.Filter)
 
-	// TODO https://github.com/FerretDB/FerretDB/issues/3742
 	iter, err = common.SortIterator(iter, closer, params.Sort)
 	if err != nil {
 		closer.Close()

@@ -39,7 +39,7 @@ func SortDocuments(docs []*types.Document, sortDoc *types.Document) error {
 		return lazyerrors.Errorf("maximum sort keys exceeded: %v", sortDoc.Len())
 	}
 
-	sortFuncs := make([]sortFunc, len(sortDoc.Keys()))
+	sortFuncs := make([]sortFunc, sortDoc.Len())
 
 	for i, sortKey := range sortDoc.Keys() {
 		fields := strings.Split(sortKey, ".")
@@ -77,6 +77,49 @@ func SortDocuments(docs []*types.Document, sortDoc *types.Document) error {
 	sort.Sort(sorter)
 
 	return nil
+}
+
+// ValidateSortDocument validates sort documents, and return
+// proper error if it's invalid.
+func ValidateSortDocument(sortDoc *types.Document) (*types.Document, error) {
+	if sortDoc.Len() == 0 {
+		return nil, nil
+	}
+
+	if sortDoc.Len() > 32 {
+		return nil, lazyerrors.Errorf("maximum sort keys exceeded: %v", sortDoc.Len())
+	}
+
+	res := types.MakeDocument(sortDoc.Len())
+
+	for _, sortKey := range sortDoc.Keys() {
+		fields := strings.Split(sortKey, ".")
+		for _, field := range fields {
+			if strings.HasPrefix(field, "$") {
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrFieldPathInvalidName,
+					"FieldPath field names may not start with '$'. Consider using $getField or $setField.",
+					"sort",
+				)
+			}
+		}
+
+		sortField := must.NotFail(sortDoc.Get(sortKey))
+
+		sortValue, err := getSortValue(sortKey, sortField)
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = types.NewPathFromString(sortKey)
+		if err != nil {
+			return nil, err
+		}
+
+		res.Set(sortKey, sortValue)
+	}
+
+	return res, nil
 }
 
 // lessFunc takes sort key and type and returns sort.Interface's Less function which
@@ -141,6 +184,24 @@ func (ds *docsSorter) Less(i, j int) bool {
 
 // GetSortType determines SortType from input sort value.
 func GetSortType(key string, value any) (types.SortType, error) {
+	sortValue, err := getSortValue(key, value)
+	if err != nil {
+		return 0, err
+	}
+
+	switch sortValue {
+	case 1:
+		return types.Ascending, nil
+	case -1:
+		return types.Descending, nil
+	default:
+		panic("unreachable")
+	}
+}
+
+// getSortValue validates if the value from sort document is the proper sort field,
+// and returns it.
+func getSortValue(key string, value any) (int64, error) {
 	sortValue, err := handlerparams.GetWholeNumberParam(value)
 	if err != nil {
 		switch {
@@ -165,16 +226,13 @@ func GetSortType(key string, value any) (types.SortType, error) {
 		}
 	}
 
-	switch sortValue {
-	case 1:
-		return types.Ascending, nil
-	case -1:
-		return types.Descending, nil
-	default:
+	if sortValue != -1 && sortValue != 1 {
 		return 0, handlererrors.NewCommandErrorMsgWithArgument(
 			handlererrors.ErrSortBadOrder,
 			"$sort key ordering must be 1 (for ascending) or -1 (for descending)",
 			"$sort",
 		)
 	}
+
+	return sortValue, nil
 }
