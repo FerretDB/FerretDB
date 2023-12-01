@@ -113,6 +113,7 @@ type NewParams struct {
 	Collection   string
 	Username     string
 	ShowRecordID bool
+	Type         Type
 	_            struct{} // prevent unkeyed literals
 }
 
@@ -135,6 +136,8 @@ func (r *Registry) NewCursor(ctx context.Context, params *NewParams) *Cursor {
 		zap.Int64("id", id),
 		zap.String("db", params.DB),
 		zap.String("collection", params.Collection),
+		zap.String("username", params.Username),
+		zap.String("type", params.Type.String()),
 	)
 
 	r.created.WithLabelValues(params.DB, params.Collection, params.Username).Inc()

@@ -25,11 +25,14 @@ package cursor
 
 import (
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
+
+//go:generate ../../../bin/stringer -linecomment -type Type
 
 type Type int
 
@@ -60,7 +63,7 @@ type Cursor struct {
 	ID           int64
 	closeOnce    sync.Once
 	showRecordID bool
-	lastRecordID int64
+	lastRecordID atomic.Int64
 }
 
 // newCursor creates a new cursor.
@@ -91,10 +94,11 @@ func (c *Cursor) Reset(iter types.DocumentsIterator) {
 func (c *Cursor) Next() (struct{}, *types.Document, error) {
 	zero, doc, err := c.iter.Next()
 	if doc != nil {
-		c.lastRecordID = doc.RecordID()
+		recordID := doc.RecordID()
+		c.lastRecordID.Store(recordID)
 
 		if c.showRecordID {
-			doc.Set("$recordId", doc.RecordID())
+			doc.Set("$recordId", recordID)
 		}
 	}
 
