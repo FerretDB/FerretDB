@@ -130,7 +130,7 @@ func (h *Handler) updateDocument(ctx context.Context, params *common.UpdateParam
 		}
 
 		var qp backends.QueryParams
-		if !h.DisablePushdown {
+		if !h.DisableAllPushdown {
 			qp.Filter = u.Filter
 		}
 

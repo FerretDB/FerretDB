@@ -133,7 +133,7 @@ func (h *Handler) findAndModifyDocument(ctx context.Context, params *common.Find
 	defer closer.Close()
 
 	var qp backends.QueryParams
-	if !h.DisablePushdown {
+	if !h.DisableAllPushdown {
 		qp.Filter = params.Query
 	}
 

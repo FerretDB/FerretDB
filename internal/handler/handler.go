@@ -52,7 +52,7 @@ type NewOpts struct {
 	StateProvider *state.Provider
 
 	// test options
-	DisablePushdown bool
+	DisableAllPushdown bool
 	EnableOplog     bool
 	EnableNewAuth   bool
 }

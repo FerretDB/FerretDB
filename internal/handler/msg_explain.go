@@ -82,7 +82,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	qp := backends.ExplainParams{
 		Filter:             params.Filter,
-		DisableAllPushdown: h.DisablePushdown,
+		DisableAllPushdown: h.DisableAllPushdown,
 	}
 
 	if params.Aggregate {
@@ -115,7 +115,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Limit = params.Limit
 	}
 
-	if h.DisablePushdown {
+	if h.DisableAllPushdown {
 		qp.Filter = nil
 		qp.Sort = nil
 		qp.Limit = 0

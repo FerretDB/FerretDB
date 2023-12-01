@@ -38,7 +38,7 @@ func init() {
 			ConnMetrics:   opts.ConnMetrics,
 			StateProvider: opts.StateProvider,
 
-			DisablePushdown: opts.DisablePushdown,
+			DisableAllPushdown: opts.DisableAllPushdown,
 			EnableOplog:     opts.EnableOplog,
 			EnableNewAuth:   opts.EnableNewAuth,
 		}
