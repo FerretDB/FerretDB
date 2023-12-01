@@ -92,11 +92,11 @@ db.outfits.find().sort({ size: 1 })
 
 ```json5
 [
-  { "_id": 5, "name": "slippers" },
-  { "_id": 3, "name": "boots", "size": 8, "color": "black" },
-  { "_id": 4, "name": "sneakers", "size": 8.5, "color": "blue" },
-  { "_id": 2, "name": "sandals", "size": 9, "color": null },
-  { "_id": 1, "name": "flip flops", "size": "M", "color": "blue" }
+  { _id: 5, name: 'slippers' },
+  { _id: 3, name: 'boots', size: 8, color: 'black' },
+  { _id: 4, name: 'sneakers', size: 8.5, color: 'blue' },
+  { _id: 2, name: 'sandals', size: 9, color: null },
+  { _id: 1, name: 'flip flops', size: 'M', color: 'blue' }
 ]
 ```
 
@@ -122,11 +122,11 @@ db.outfits.find().sort({ size: -1 })
 
 ```json5
 [
-  { "_id": 1, "name": "flip flops", "size": "M", "color": "blue" },
-  { "_id": 2, "name": "sandals", "size": 9, "color": null },
-  { "_id": 4, "name": "sneakers", "size": 8.5, "color": "blue" },
-  { "_id": 3, "name": "boots", "size": 8, "color": "black" },
-  { "_id": 5, "name": "slippers" }
+  { _id: 1, name: 'flip flops', size: 'M', color: 'blue' },
+  { _id: 2, name: 'sandals', size: 9, color: null },
+  { _id: 4, name: 'sneakers', size: 8.5, color: 'blue' },
+  { _id: 3, name: 'boots', size: 8, color: 'black' },
+  { _id: 5, name: 'slippers' }
 ]
 ```
 
@@ -151,11 +151,11 @@ db.outfits.find().sort({ color: 1, _id: 1 })
 
 ```json5
 [
-  { "_id": 2, "name": "sandals", "size": 9, "color": null },
-  { "_id": 5, "name": "slippers" },
-  { "_id": 3, "name": "boots", "size": 8, "color": "black" },
-  { "_id": 1, "name": "flip flops", "size": "M", "color": "blue" },
-  { "_id": 4, "name": "sneakers", "size": 8.5, "color": "blue" }
+  { _id: 2, name: 'sandals', size: 9, color: null },
+  { _id: 5, name: 'slippers' },
+  { _id: 3, name: 'boots', size: 8, color: 'black' },
+  { _id: 1, name: 'flip flops', size: 'M', color: 'blue' },
+  { _id: 4, name: 'sneakers', size: 8.5, color: 'blue' }
 ]
 ```
 

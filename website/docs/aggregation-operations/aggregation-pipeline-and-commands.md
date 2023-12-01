@@ -52,9 +52,9 @@ So the above aggregation pipeline operation would return the following result:
 
 ```json5
 [
-  { "_id": "Home", "totalPrice": 2700, "productCount": 2 },
-  { "_id": "Clothing", "totalPrice": 80, "productCount": 2 },
-  { "_id": "Books", "totalPrice": 60, "productCount": 2 }
+  { _id: 'Home', totalPrice: 2700, productCount: 2 },
+  { _id: 'Clothing', totalPrice: 80, productCount: 2 },
+  { _id: 'Books', totalPrice: 60, productCount: 2 }
 ]
 ```
 

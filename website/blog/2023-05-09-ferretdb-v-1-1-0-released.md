@@ -73,9 +73,9 @@ The output document looks like this:
 ```json5
 [
   {
-    "_id": 1,
-    "category": "Electronics",
-    "inventory": [{ "product": "Laptop", "price": 1200, "quantity": 10 }]
+    _id: 1,
+    category: 'Electronics',
+    inventory: [{ product: 'Laptop', price: 1200, quantity: 10 }]
   }
 ]
 ```
@@ -90,16 +90,16 @@ For instance, if we have a `users` collection as shown below:
 ```json5
 [
   {
-    "_id": 1,
-    "name": "John",
-    "age": 30,
-    "email": "john@example.com"
+    _id: 1,
+    name: 'John',
+    age: 30,
+    email: 'john@example.com'
   },
   {
-    "_id": 2,
-    "name": "Jane",
-    "age": 25,
-    "email": "jane@example.com"
+    _id: 2,
+    name: 'Jane',
+    age: 25,
+    email: 'jane@example.com'
   }
 ]
 ```
@@ -114,8 +114,8 @@ The query will return:
 
 ```json5
 [
-  { "_id": 1, "name": "Anonymous" },
-  { "_id": 2, "name": "Anonymous" }
+  { _id: 1, name: 'Anonymous' },
+  { _id: 2, name: 'Anonymous' }
 ]
 ```
 

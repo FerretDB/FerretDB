@@ -40,16 +40,16 @@ Suppose you have the following document:
 ```json5
 [
   {
-    "_id": 1,
-    "name": "John",
-    "age": 35,
-    "salary": 5000
+    _id: 1,
+    name: 'John',
+    age: 35,
+    salary: 5000
   },
   {
-    "_id": 2,
-    "name": "Robert",
-    "age": 42,
-    "salary": 7000
+    _id: 2,
+    name: 'Robert',
+    age: 42,
+    salary: 7000
   }
 ]
 ```
@@ -72,8 +72,8 @@ The output will be:
 
 ```json5
 [
-  { "_id": 1, "name": "John", "age": 35, "ageType": "int" },
-  { "_id": 2, "name": "Robert", "age": 42, "ageType": "int" }
+  { _id: 1, name: 'John', age: 35, ageType: 'int' },
+  { _id: 2, name: 'Robert', age: 42, ageType: 'int' }
 ]
 ```
 
@@ -102,20 +102,20 @@ The output will be:
 ```json5
 [
   {
-    "_id": 1,
-    "name": "John",
-    "age": 35,
-    "salary": 5000,
-    "department": "HR",
-    "employmentType": "Full-time"
+    _id: 1,
+    name: 'John',
+    age: 35,
+    salary: 5000,
+    department: 'HR',
+    employmentType: 'Full-time'
   },
   {
-    "_id": 2,
-    "name": "Robert",
-    "age": 42,
-    "salary": 7000,
-    "department": "HR",
-    "employmentType": "Full-time"
+    _id: 2,
+    name: 'Robert',
+    age: 42,
+    salary: 7000,
+    department: 'HR',
+    employmentType: 'Full-time'
   }
 ]
 ```
@@ -137,18 +137,18 @@ The output:
 ```json5
 [
   {
-    "_id": 1,
-    "name": "John",
-    "age": 35,
-    "salary": 5000,
-    "department": "Sales"
+    _id: 1,
+    name: 'John',
+    age: 35,
+    salary: 5000,
+    department: 'Sales'
   },
   {
-    "_id": 2,
-    "name": "Robert",
-    "age": 42,
-    "salary": 7000,
-    "department": "Sales"
+    _id: 2,
+    name: 'Robert',
+    age: 42,
+    salary: 7000,
+    department: 'Sales'
   }
 ]
 ```
@@ -167,8 +167,8 @@ Output:
 
 ```json5
 [
-  { "_id": 1, "name": "John", "age": 35 },
-  { "_id": 2, "name": "Robert", "age": 42 }
+  { _id: 1, name: 'John', age: 35 },
+  { _id: 2, name: 'Robert', age: 42 }
 ]
 ```
 
