@@ -97,6 +97,8 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	if h.DisablePushdown {
 		qp.Filter = nil
+		qp.Sort = nil
+		qp.Limit = 0
 	}
 
 	res, err := coll.Explain(ctx, &qp)
