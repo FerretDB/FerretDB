@@ -74,19 +74,11 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 			continue
 		}
 
-		var d *types.Document
-		if nameOnly {
-			d = must.NotFail(types.NewDocument(
-				"name", dbInfo.Name,
-			))
-		} else {
-			d = must.NotFail(types.NewDocument(
-				"name", dbInfo.Name,
-				"sizeOnDisk", stats.SizeTotal,
-				"empty", stats.SizeTotal == 0,
-			))
-			totalSize += stats.SizeTotal
-		}
+		d := must.NotFail(types.NewDocument(
+			"name", dbInfo.Name,
+			"sizeOnDisk", stats.SizeTotal,
+			"empty", stats.SizeTotal == 0,
+		))
 
 		matches, err := common.FilterDocument(d, filter)
 		if err != nil {
@@ -94,6 +86,14 @@ func (h *Handler) MsgListDatabases(ctx context.Context, msg *wire.OpMsg) (*wire.
 		}
 
 		if matches {
+			if nameOnly {
+				d = must.NotFail(types.NewDocument(
+					"name", dbInfo.Name,
+				))
+			} else {
+				totalSize += stats.SizeTotal
+			}
+
 			databases.Append(d)
 		}
 	}

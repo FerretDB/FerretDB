@@ -263,6 +263,45 @@ func TestCollectionUpdateAll(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
+			t.Run("DatabaseWasFiltered", func(t *testing.T) {
+				t.Parallel()
+
+				dbName, collName := testutil.DatabaseName(t), testutil.CollectionName(t)
+
+				db, err := b.Database(dbName)
+				require.NoError(t, err)
+
+				coll, err := db.Collection(collName)
+				require.NoError(t, err)
+
+				updateRes, err := coll.UpdateAll(ctx, &backends.UpdateAllParams{
+					Docs: []*types.Document{
+						must.NotFail(types.NewDocument("_id", int32(42))),
+					},
+				})
+				assert.NoError(t, err)
+				require.NotNil(t, updateRes)
+				assert.Zero(t, updateRes.Updated)
+
+				dbRes, err := b.ListDatabases(ctx, nil)
+				require.NoError(t, err)
+				require.NotNil(t, dbRes)
+
+				present := slices.ContainsFunc(dbRes.Databases, func(di backends.DatabaseInfo) bool {
+					return di.Name == dbName
+				})
+				assert.False(t, present)
+
+				collRes, err := db.ListCollections(ctx, nil)
+				require.NoError(t, err)
+				require.NotNil(t, dbRes)
+
+				present = slices.ContainsFunc(collRes.Collections, func(ci backends.CollectionInfo) bool {
+					return ci.Name == collName
+				})
+				assert.False(t, present)
+			})
+
 			t.Run("DatabaseDoesNotExist", func(t *testing.T) {
 				t.Parallel()
 
