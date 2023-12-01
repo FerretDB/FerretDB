@@ -24,7 +24,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -161,6 +160,8 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	name := db.Name()
 
 	t.Run("Exists", func(t *testing.T) {
+		t.Parallel()
+
 		actual, err := db.Client().ListDatabases(ctx, bson.D{{Key: "name", Value: name}})
 		require.NoError(t, err)
 		require.Len(t, actual.Databases, 1)
@@ -182,12 +183,11 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	})
 
 	t.Run("ExistsNameOnly", func(t *testing.T) {
+		t.Parallel()
+
 		actual, err := db.Client().ListDatabases(ctx, bson.D{
 			{Key: "name", Value: name},
-		},
-			&options.ListDatabasesOptions{
-				NameOnly: pointer.To(true),
-			})
+		}, options.ListDatabases().SetNameOnly(true))
 		require.NoError(t, err)
 		require.Len(t, actual.Databases, 1)
 
@@ -201,6 +201,8 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	})
 
 	t.Run("Regex", func(t *testing.T) {
+		t.Parallel()
+
 		actual, err := db.Client().ListDatabases(ctx, bson.D{
 			{Key: "name", Value: name},
 			{Key: "name", Value: primitive.Regex{Pattern: "^Test", Options: "i"}},
@@ -225,13 +227,12 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	})
 
 	t.Run("RegexNameOnly", func(t *testing.T) {
+		t.Parallel()
+
 		actual, err := db.Client().ListDatabases(ctx, bson.D{
 			{Key: "name", Value: name},
 			{Key: "name", Value: primitive.Regex{Pattern: "^Test", Options: "i"}},
-		},
-			&options.ListDatabasesOptions{
-				NameOnly: pointer.To(true),
-			})
+		}, options.ListDatabases().SetNameOnly(true))
 		require.NoError(t, err)
 		require.Len(t, actual.Databases, 1)
 
@@ -245,6 +246,8 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	})
 
 	t.Run("RegexNotFound", func(t *testing.T) {
+		t.Parallel()
+
 		actual, err := db.Client().ListDatabases(ctx, bson.D{
 			{Key: "name", Value: name},
 			{Key: "name", Value: primitive.Regex{Pattern: "^xyz$", Options: "i"}},
@@ -255,13 +258,12 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 	})
 
 	t.Run("RegexNotFoundNameOnly", func(t *testing.T) {
+		t.Parallel()
+
 		actual, err := db.Client().ListDatabases(ctx, bson.D{
 			{Key: "name", Value: name},
 			{Key: "name", Value: primitive.Regex{Pattern: "^xyz$", Options: "i"}},
-		},
-			&options.ListDatabasesOptions{
-				NameOnly: pointer.To(true),
-			})
+		}, options.ListDatabases().SetNameOnly(true))
 		require.NoError(t, err)
 		require.Len(t, actual.Databases, 0, "result should contain no databases")
 		assert.Zero(t, actual.TotalSize, "TotalSize should be zero")
