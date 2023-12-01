@@ -45,9 +45,7 @@ func TestCursorNormal(t *testing.T) {
 	t.Run("Normal", func(t *testing.T) {
 		t.Parallel()
 
-		c := r.NewCursor(ctx, &NewParams{
-			Iter: iterator.Values(iterator.ForSlice(docs)),
-		})
+		c := r.NewCursor(ctx, iterator.Values(iterator.ForSlice(docs)), &NewParams{})
 
 		actual, err := iterator.ConsumeValues(c)
 		require.NoError(t, err)
@@ -59,9 +57,7 @@ func TestCursorNormal(t *testing.T) {
 
 		ctx, cancel := context.WithCancel(ctx)
 
-		c := r.NewCursor(ctx, &NewParams{
-			Iter: iterator.Values(iterator.ForSlice(docs)),
-		})
+		c := r.NewCursor(ctx, iterator.Values(iterator.ForSlice(docs)), &NewParams{})
 
 		cancel()
 		<-ctx.Done()

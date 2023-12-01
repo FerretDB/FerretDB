@@ -108,12 +108,11 @@ func (r *Registry) Close() {
 
 // NewParams represent parameters for NewCursor.
 type NewParams struct {
-	Iter         types.DocumentsIterator
+	Type         Type
 	DB           string
 	Collection   string
 	Username     string
 	ShowRecordID bool
-	Type         Type
 	_            struct{} // prevent unkeyed literals
 }
 
@@ -121,7 +120,7 @@ type NewParams struct {
 //
 // The cursor will be closed automatically when a given context is canceled,
 // even if the cursor is not being used at that time.
-func (r *Registry) NewCursor(ctx context.Context, params *NewParams) *Cursor {
+func (r *Registry) NewCursor(ctx context.Context, iter types.DocumentsIterator, params *NewParams) *Cursor {
 	r.rw.Lock()
 	defer r.rw.Unlock()
 
@@ -142,7 +141,7 @@ func (r *Registry) NewCursor(ctx context.Context, params *NewParams) *Cursor {
 
 	r.created.WithLabelValues(params.DB, params.Collection, params.Username).Inc()
 
-	c := newCursor(id, params, r)
+	c := newCursor(id, iter, params, r)
 	r.m[id] = c
 
 	r.wg.Add(1)
@@ -186,6 +185,7 @@ func (r *Registry) delete(c *Cursor) {
 		"Deleting",
 		zap.Int("total", len(r.m)),
 		zap.Int64("id", c.ID),
+		zap.String("type", c.Type.String()),
 		zap.Duration("duration", d),
 	)
 

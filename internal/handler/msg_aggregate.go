@@ -307,8 +307,8 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 
 	closer.Add(iter)
 
-	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
-		Iter:       iterator.WithClose(iter, closer.Close),
+	cursor := h.cursors.NewCursor(ctx, iterator.WithClose(iter, closer.Close), &cursor.NewParams{
+		Type:       cursor.Normal,
 		DB:         dbName,
 		Collection: cName,
 		Username:   username,
@@ -322,7 +322,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	}
 
 	h.L.Debug(
-		"Got first batch", zap.Int64("cursor_id", cursorID),
+		"Got first batch", zap.Int64("cursor_id", cursorID), zap.String("type", cursor.Type.String()),
 		zap.Int("count", len(firstBatchDocs)), zap.Int64("batch_size", batchSize),
 	)
 

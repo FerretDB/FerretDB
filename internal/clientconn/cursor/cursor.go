@@ -52,33 +52,28 @@ const (
 type Cursor struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
-	created      time.Time
-	iter         types.DocumentsIterator
-	r            *Registry
+	ID int64
+	*NewParams
+	iter types.DocumentsIterator
+	r    *Registry
+
 	token        *resource.Token
+	created      time.Time
 	closed       chan struct{}
-	DB           string
-	Collection   string
-	Username     string
-	ID           int64
 	closeOnce    sync.Once
-	showRecordID bool
 	lastRecordID atomic.Int64
 }
 
 // newCursor creates a new cursor.
-func newCursor(id int64, params *NewParams, r *Registry) *Cursor {
+func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, r *Registry) *Cursor {
 	c := &Cursor{
-		ID:           id,
-		DB:           params.DB,
-		Collection:   params.Collection,
-		Username:     params.Username,
-		showRecordID: params.ShowRecordID,
-		iter:         params.Iter,
-		r:            r,
-		created:      time.Now(),
-		closed:       make(chan struct{}),
-		token:        resource.NewToken(),
+		ID:        id,
+		iter:      iter,
+		NewParams: params,
+		r:         r,
+		token:     resource.NewToken(),
+		created:   time.Now(),
+		closed:    make(chan struct{}),
 	}
 
 	resource.Track(c, c.token)
@@ -97,7 +92,7 @@ func (c *Cursor) Next() (struct{}, *types.Document, error) {
 		recordID := doc.RecordID()
 		c.lastRecordID.Store(recordID)
 
-		if c.showRecordID {
+		if c.ShowRecordID {
 			doc.Set("$recordId", recordID)
 		}
 	}

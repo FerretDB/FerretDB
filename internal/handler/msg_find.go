@@ -186,8 +186,8 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 
 	// Combine iterators chain and closer into a cursor to pass around.
 	// The context will be canceled when client disconnects or after maxTimeMS.
-	cursor := h.cursors.NewCursor(ctx, &cursor.NewParams{
-		Iter:         iterator.WithClose(iter, closer.Close),
+	cursor := h.cursors.NewCursor(ctx, iterator.WithClose(iter, closer.Close), &cursor.NewParams{
+		Type:         cursor.Normal,
 		DB:           params.DB,
 		Collection:   params.Collection,
 		Username:     username,
@@ -202,7 +202,7 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	}
 
 	h.L.Debug(
-		"Got first batch", zap.Int64("cursor_id", cursorID),
+		"Got first batch", zap.Int64("cursor_id", cursorID), zap.String("type", cursor.Type.String()),
 		zap.Int("count", len(firstBatchDocs)), zap.Int64("batch_size", params.BatchSize),
 		zap.Bool("single_batch", params.SingleBatch),
 	)

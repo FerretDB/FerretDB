@@ -187,7 +187,7 @@ func (h *Handler) MsgGetMore(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	}
 
 	h.L.Debug(
-		"Got next batch", zap.Int64("cursor_id", cursorID),
+		"Got next batch", zap.Int64("cursor_id", cursorID), zap.String("type", cursor.Type.String()),
 		zap.Int("count", len(nextBatchDocs)), zap.Int64("batch_size", batchSize),
 	)
 
