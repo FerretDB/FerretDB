@@ -33,7 +33,7 @@ ENV GOPROXY https://proxy.golang.org
 # because v2+ is problematic for some virtualization platforms and older hardware
 ENV GOAMD64=v1
 
-# GOARM is not because it is ignored for arm64
+# GOARM is not set because it is ignored for arm64
 
 ENV CGO_ENABLED=1
 
