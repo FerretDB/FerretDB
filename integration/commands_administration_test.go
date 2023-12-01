@@ -219,23 +219,65 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 				}},
 			},
 		},
+		"NotFound": {
+			filter:   bson.D{{Key: "name", Value: "unknown"}},
+			empty:    true,
+			zeroSize: true,
+			dbCount:  0,
+			expected: mongo.ListDatabasesResult{
+				Databases: []mongo.DatabaseSpecification{},
+			},
+		},
+		"RegexNotFound": {
+			filter: bson.D{
+				{Key: "name", Value: name},
+				{Key: "name", Value: primitive.Regex{Pattern: "^xyz$", Options: "i"}},
+			},
+			empty:    true,
+			zeroSize: true,
+			dbCount:  0,
+			expected: mongo.ListDatabasesResult{
+				Databases: []mongo.DatabaseSpecification{},
+			},
+		},
+		"RegexNotFoundNameOnly": {
+			filter: bson.D{
+				{Key: "name", Value: name},
+				{Key: "name", Value: primitive.Regex{Pattern: "^xyz$", Options: "i"}},
+			},
+			opts: []*options.ListDatabasesOptions{
+				options.ListDatabases().SetNameOnly(true),
+			},
+			empty:    true,
+			zeroSize: true,
+			dbCount:  0,
+			expected: mongo.ListDatabasesResult{
+				Databases: []mongo.DatabaseSpecification{},
+			},
+		},
 	}
 
 	for name, tc := range testCases {
-		tc := tc
+		tc, name := tc, name
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			actual, err := db.Client().ListDatabases(ctx, tc.filter, tc.opts...)
 			assert.NoError(t, err)
 			assert.Len(t, actual.Databases, tc.dbCount)
-			assert.Equal(t, tc.empty, actual.Databases[0].Empty, "Emptiness should be equal")
+			if tc.dbCount != 0 {
+				assert.Equal(t, tc.empty, actual.Databases[0].Empty, "Emptiness should be equal")
+			}
 
 			if tc.zeroSize {
-				assert.Zero(t, actual.Databases[0].SizeOnDisk, "SizeOnDisk should be zero")
+				if tc.dbCount != 0 || len(actual.Databases) != 0 {
+					assert.Zero(t, actual.Databases[0].SizeOnDisk, "SizeOnDisk should be zero")
+				}
 				assert.Zero(t, actual.TotalSize, "TotalSize should be zero")
 			} else {
-				assert.NotZero(t, actual.Databases[0].SizeOnDisk, "SizeOnDisk should be non-zero")
+				if tc.dbCount != 0 || len(actual.Databases) != 0 {
+					assert.NotZero(t, actual.Databases[0].SizeOnDisk, "SizeOnDisk should be non-zero")
+				}
 				assert.NotZero(t, actual.TotalSize, "TotalSize should be non-zero")
 			}
 
@@ -248,44 +290,6 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 			assert.Equal(t, tc.expected, actual)
 		})
 	}
-
-	t.Run("NotFound", func(t *testing.T) {
-		t.Parallel()
-
-		actual, err := db.Client().ListDatabases(ctx, bson.D{
-			{Key: "name", Value: "unknown"},
-		})
-		require.NoError(t, err)
-		require.Len(t, actual.Databases, 0, "result should contain no databases")
-		assert.Zero(t, actual.TotalSize, "TotalSize should be zero")
-	})
-
-	t.Run("RegexNotFound", func(t *testing.T) {
-		t.Parallel()
-
-		actual, err := db.Client().ListDatabases(ctx, bson.D{
-			{Key: "name", Value: name},
-			{Key: "name", Value: primitive.Regex{Pattern: "^xyz$", Options: "i"}},
-		})
-		require.NoError(t, err)
-		require.Len(t, actual.Databases, 0, "result should contain no databases")
-		assert.Zero(t, actual.TotalSize, "TotalSize should be zero")
-	})
-
-	t.Run("RegexNotFoundNameOnly", func(t *testing.T) {
-		t.Parallel()
-
-		actual, err := db.Client().ListDatabases(ctx,
-			bson.D{
-				{Key: "name", Value: name},
-				{Key: "name", Value: primitive.Regex{Pattern: "^xyz$", Options: "i"}},
-			},
-			options.ListDatabases().SetNameOnly(true),
-		)
-		require.NoError(t, err)
-		require.Len(t, actual.Databases, 0, "result should contain no databases")
-		assert.Zero(t, actual.TotalSize, "TotalSize should be zero")
-	})
 }
 
 func TestCommandsAdministrationListCollections(t *testing.T) {
