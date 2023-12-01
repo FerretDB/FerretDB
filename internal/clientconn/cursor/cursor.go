@@ -60,6 +60,7 @@ type Cursor struct {
 	ID           int64
 	closeOnce    sync.Once
 	ShowRecordID bool
+	lastRecordID int64
 }
 
 // newCursor creates a new cursor.
@@ -88,7 +89,12 @@ func (c *Cursor) Reset(iter types.DocumentsIterator) {
 
 // Next implements types.DocumentsIterator interface.
 func (c *Cursor) Next() (struct{}, *types.Document, error) {
-	return c.iter.Next()
+	zero, doc, err := c.iter.Next()
+	if doc != nil {
+		c.lastRecordID = doc.RecordID()
+	}
+
+	return zero, doc, err
 }
 
 // Close implements types.DocumentsIterator interface.

@@ -1214,3 +1214,62 @@ func TestQueryTailableCursors(t *testing.T) {
 	_, err = collection.Find(ctx, bson.D{{}}, options.Find().SetCursorType(options.Tailable))
 	AssertEqualAltCommandError(t, expectedErr, "tailable cursor requested on non capped collection", err)
 }
+
+func TestQueryTailable(t *testing.T) {
+	t.Parallel()
+
+	t.Run("NonCapped", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, collection := setup.Setup(t, shareddata.Scalars)
+
+		cursor, err := collection.Find(ctx, bson.D{}, options.Find().SetCursorType(options.Tailable))
+		expected := mongo.CommandError{
+			Code: 2,
+			Name: "BadValue",
+			Message: "error processing query: " +
+				"ns=TestQueryTailable-NonCapped.TestQueryTailable-NonCappedTree: " +
+				"$and\nSort: {}\nProj: {}\n " +
+				"tailable cursor requested on non capped collection",
+		}
+		AssertEqualAltCommandError(t, expected, "tailable cursor requested on non capped collection", err)
+		assert.Nil(t, cursor)
+	})
+
+	t.Run("Capped", func(t *testing.T) {
+		t.Parallel()
+
+		ctx, collection := setup.Setup(t)
+
+		createOpts := options.CreateCollection().SetCapped(true).SetSizeInBytes(1)
+		err := collection.Database().CreateCollection(ctx, collection.Name(), createOpts)
+		require.NoError(t, err)
+
+		t.Run("FilterLimitSkip", func(t *testing.T) {
+			t.Parallel()
+
+			opts := options.Find().SetCursorType(options.Tailable).SetLimit(10).SetSkip(5)
+			cursor, err := collection.Find(ctx, bson.D{{"_id", 1}}, opts)
+			require.NoError(t, err)
+
+			defer cursor.Close(ctx)
+		})
+
+		t.Run("Sort", func(t *testing.T) {
+			t.Parallel()
+
+			opts := options.Find().SetCursorType(options.Tailable).SetSort(bson.D{{"_id", 1}})
+			cursor, err := collection.Find(ctx, bson.D{}, opts)
+			expected := mongo.CommandError{
+				Code:    2,
+				Name:    "BadValue",
+				Message: "cannot use tailable option with a sort other than {$natural: 1}",
+			}
+			AssertEqualCommandError(t, expected, err)
+
+			assert.Nil(t, cursor)
+		})
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/2283
+	})
+}
