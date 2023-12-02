@@ -28,8 +28,10 @@
 // The following Go build tags (also known as build constraints) affect all builds of FerretDB,
 // including embedded usage:
 //
-//	ferretdb_debug - enables debug build (see below; implied by builds with race detector)
-//	ferretdb_hana  - enables Hana backend (alpha)
+//	ferretdb_debug			- enables debug build (see below; implied by builds with race detector)
+//	ferretdb_hana			- enables Hana backend (alpha)
+//	ferretdb_no_postgres	- disables postgres backend
+//	ferretdb_no_sqlite		- disables postgres backend
 //
 // # Debug builds
 //

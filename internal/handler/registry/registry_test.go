@@ -66,4 +66,22 @@ func TestDeps(t *testing.T) {
 		diff := tagPackages(t, "ferretdb_hana")
 		assert.Contains(t, diff, "github.com/SAP/go-hdb/driver")
 	})
+
+	t.Run("NoPostgres", func(t *testing.T) {
+		t.Parallel()
+
+		diff := tagPackages(t, "ferretdb_no_postgresql")
+		// TODO: Fix the assert condition
+		// Fix it when the parent test case is rectified.
+		assert.NotContains(t, diff, "<postgres_driver_name>")
+	})
+
+	t.Run("NoSqlite", func(t *testing.T) {
+		t.Parallel()
+
+		diff := tagPackages(t, "ferretdb_no_sqlite")
+		// TODO: Fix the assert condition
+		// Fix it when the parent test case is rectified.
+		assert.NotContains(t, diff, "<sqlite_driver_name>")
+	})
 }
