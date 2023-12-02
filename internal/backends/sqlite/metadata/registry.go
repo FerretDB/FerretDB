@@ -524,8 +524,8 @@ func (r *Registry) indexesCreate(ctx context.Context, dbName, collectionName str
 		c.Settings.Indexes = append(c.Settings.Indexes, index)
 	}
 
-	q := fmt.Sprintf("UPDATE %q SET settings = ? WHERE name = ?", metadataTableName)
-	if _, err := db.ExecContext(ctx, q, c.Settings, collectionName); err != nil {
+	q := fmt.Sprintf("UPDATE %q SET settings = ? WHERE table_name = ?", metadataTableName)
+	if _, err := db.ExecContext(ctx, q, c.Settings, c.TableName); err != nil {
 		_ = r.indexesDrop(ctx, dbName, collectionName, created)
 		return lazyerrors.Error(err)
 	}
@@ -583,8 +583,8 @@ func (r *Registry) indexesDrop(ctx context.Context, dbName, collectionName strin
 		c.Settings.Indexes = slices.Delete(c.Settings.Indexes, i, i+1)
 	}
 
-	q := fmt.Sprintf("UPDATE %q SET settings = ? WHERE name = ?", metadataTableName)
-	if _, err := db.ExecContext(ctx, q, c.Settings, collectionName); err != nil {
+	q := fmt.Sprintf("UPDATE %q SET settings = ? WHERE table_name = ?", metadataTableName)
+	if _, err := db.ExecContext(ctx, q, c.Settings, c.TableName); err != nil {
 		return lazyerrors.Error(err)
 	}
 
