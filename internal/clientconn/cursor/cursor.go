@@ -13,6 +13,14 @@
 // limitations under the License.
 
 // Package cursor provides access to cursor registry.
+//
+// The implementation of the cursor and registry is quite complicated and entangled.
+// That's because there are many cases when cursor / iterator / underlying database connection
+// must be closed to free resources, including when no handler and backend code is running;
+// for example, when the client disconnects between `getMore` commands.
+// At the same time, we want to shift complexity away from the handler and from backend implementations
+// because they are already quite complex.
+// The current design enables ease of use at the expense of the implementation complexity.
 package cursor
 
 import (
@@ -22,14 +30,6 @@ import (
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
-
-// The implementation of the cursor and registry is quite complicated and entangled.
-// That's because there are many cases when cursor / iterator / underlying database connection
-// must be closed to free resources, including when no handler and backend code is running;
-// for example, when the client disconnects between `getMore` commands.
-// At the same time, we want to shift complexity away from the handler and from backend implementations
-// because they are already quite complex.
-// The current design enables ease of use at the expense of the implementation complexity.
 
 // Cursor allows clients to iterate over a result set.
 //
@@ -50,18 +50,18 @@ type Cursor struct {
 	Username     string
 	ID           int64
 	closeOnce    sync.Once
-	ShowRecordID bool
+	showRecordID bool
 }
 
 // newCursor creates a new cursor.
-func newCursor(id int64, db, collection, username string, showRecordID bool, iter types.DocumentsIterator, r *Registry) *Cursor {
+func newCursor(id int64, params *NewParams, r *Registry) *Cursor {
 	c := &Cursor{
 		ID:           id,
-		DB:           db,
-		Collection:   collection,
-		Username:     username,
-		ShowRecordID: showRecordID,
-		iter:         iter,
+		DB:           params.DB,
+		Collection:   params.Collection,
+		Username:     params.Username,
+		showRecordID: params.ShowRecordID,
+		iter:         params.Iter,
 		r:            r,
 		created:      time.Now(),
 		closed:       make(chan struct{}),
@@ -75,7 +75,14 @@ func newCursor(id int64, db, collection, username string, showRecordID bool, ite
 
 // Next implements types.DocumentsIterator interface.
 func (c *Cursor) Next() (struct{}, *types.Document, error) {
-	return c.iter.Next()
+	zero, doc, err := c.iter.Next()
+	if doc != nil {
+		if c.showRecordID {
+			doc.Set("$recordId", doc.RecordID())
+		}
+	}
+
+	return zero, doc, err
 }
 
 // Close implements types.DocumentsIterator interface.
