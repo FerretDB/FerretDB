@@ -89,7 +89,7 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 				return nil, lazyerrors.Error(err)
 			}
 
-			path := must.NotFail(types.NewPathFromString("info.uuid"))
+			path := types.NewStaticPath("info", "uuid")
 			uuidBinary := types.Binary{
 				Subtype: types.BinaryUUID,
 				B:       must.NotFail(uuid.MarshalBinary()),
