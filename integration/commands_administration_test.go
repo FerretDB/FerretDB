@@ -214,59 +214,48 @@ func TestCommandsAdministrationCollectionUUID(t *testing.T) {
 	err := db.CreateCollection(ctx, collName)
 	require.NoError(t, err)
 
-	var collUUID types.Binary
+	cursor, err := db.ListCollections(ctx, bson.D{})
+	require.NoError(t, err)
 
-	t.Run("ValidUUID", func(t *testing.T) {
-		cursor, err := db.ListCollections(ctx, bson.D{})
-		require.NoError(t, err)
+	var res []bson.D
+	err = cursor.All(ctx, &res)
+	require.NoError(t, err)
+	require.Len(t, res, 1)
 
-		var res []bson.D
-		err = cursor.All(ctx, &res)
-		require.NoError(t, err)
-		require.Len(t, res, 1)
+	doc := ConvertDocument(t, res[0])
 
-		doc := ConvertDocument(t, res[0])
+	path := types.NewStaticPath("info", "uuid")
+	uuid, err := doc.GetByPath(path)
+	require.NoError(t, err)
+	require.IsType(t, types.Binary{}, uuid)
 
-		path := types.NewStaticPath("info", "uuid")
-		uuid, err := doc.GetByPath(path)
-		require.NoError(t, err)
-		require.IsType(t, types.Binary{}, uuid)
-
-		collUUID = uuid.(types.Binary)
-		require.Len(t, collUUID.B, 16)
-		require.Equal(t, collUUID.Subtype, types.BinaryUUID)
-	})
+	collUUID := uuid.(types.Binary)
+	require.Len(t, collUUID.B, 16)
+	require.Equal(t, collUUID.Subtype, types.BinaryUUID)
 
 	// collection rename should not change the initial UUID
-	t.Run("CollectionRename", func(t *testing.T) {
-		newName := collName + "_new"
-		command := bson.D{
-			{"renameCollection", db.Name() + "." + collName},
-			{"to", db.Name() + "." + newName},
-		}
 
-		err := collection.Database().Client().Database("admin").RunCommand(ctx, command).Err()
-		require.NoError(t, err)
+	newName := collName + "_new"
+	command := bson.D{
+		{"renameCollection", db.Name() + "." + collName},
+		{"to", db.Name() + "." + newName},
+	}
+	err = collection.Database().Client().Database("admin").RunCommand(ctx, command).Err()
+	require.NoError(t, err)
 
-		cursor, err := db.ListCollections(ctx, bson.D{})
-		require.NoError(t, err)
+	cursor, err = db.ListCollections(ctx, bson.D{})
+	require.NoError(t, err)
 
-		var res []bson.D
-		err = cursor.All(ctx, &res)
-		require.NoError(t, err)
-		require.Len(t, res, 1)
+	err = cursor.All(ctx, &res)
+	require.NoError(t, err)
+	require.Len(t, res, 1)
 
-		doc := ConvertDocument(t, res[0])
-		name, err := doc.Get("name")
-		require.NoError(t, err)
-		require.Equal(t, name, newName)
+	doc = ConvertDocument(t, res[0])
+	name, _ := doc.Get("name")
+	require.Equal(t, name, newName)
 
-		path := types.NewStaticPath("info", "uuid")
-		uuid, err := doc.GetByPath(path)
-		require.NoError(t, err)
-		require.IsType(t, types.Binary{}, uuid)
-		require.Equal(t, uuid, collUUID)
-	})
+	uuid, _ = doc.GetByPath(path)
+	require.Equal(t, uuid, collUUID)
 }
 
 func TestCommandsAdministrationGetParameter(t *testing.T) {
