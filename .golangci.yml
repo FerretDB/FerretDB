@@ -49,18 +49,23 @@ linters-settings:
           - "!**/internal/backends/hana/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handler/sjson
-      backends:
+      common:
         files:
           - "**/internal/backends/**/*.go"
         deny:
           - pkg: github.com/FerretDB/FerretDB/internal/handler/common
-      commonerrors:
+      handlererrors:
         files:
           - $all
           - "!**/internal/clientconn/*.go"
           - "!**/internal/handler/**.go"
         deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/handler/commonerrors
+          - pkg: github.com/FerretDB/FerretDB/internal/handler/handlererrors
+      backends:
+        files:
+          - "**/internal/clientconn/cursor/*.go"
+        deny:
+          - pkg: github.com/FerretDB/FerretDB/internal/backends
   exhaustive:
     default-signifies-exhaustive: false
   gci:

@@ -37,7 +37,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/handler/proxy"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -84,12 +84,17 @@ type conn struct {
 
 // newConnOpts represents newConn options.
 type newConnOpts struct {
-	netConn        net.Conn
-	mode           Mode
-	l              *zap.Logger
-	handler        *handler.Handler
-	connMetrics    *connmetrics.ConnMetrics
-	proxyAddr      string
+	netConn     net.Conn
+	mode        Mode
+	l           *zap.Logger
+	handler     *handler.Handler
+	connMetrics *connmetrics.ConnMetrics
+
+	proxyAddr        string
+	proxyTLSCertFile string
+	proxyTLSKeyFile  string
+	proxyTLSCAFile   string
+
 	testRecordsDir string // if empty, no records are created
 }
 
@@ -105,7 +110,7 @@ func newConn(opts *newConnOpts) (*conn, error) {
 	var p *proxy.Router
 	if opts.mode != NormalMode {
 		var err error
-		if p, err = proxy.New(opts.proxyAddr); err != nil {
+		if p, err = proxy.New(opts.proxyAddr, opts.proxyTLSCertFile, opts.proxyTLSKeyFile, opts.proxyTLSCAFile); err != nil {
 			return nil, lazyerrors.Error(err)
 		}
 	}
@@ -250,7 +255,7 @@ func (c *conn) run(ctx context.Context) (err error) {
 			// TODO https://github.com/FerretDB/FerretDB/issues/2412
 
 			// get protocol error to return correct error document
-			protoErr := commonerrors.ProtocolError(validationErr)
+			protoErr := handlererrors.ProtocolError(validationErr)
 
 			var res wire.OpMsg
 			must.NoError(res.SetSections(wire.OpMsgSection{
@@ -471,7 +476,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 	if err != nil {
 		switch resHeader.OpCode {
 		case wire.OpCodeMsg:
-			protoErr := commonerrors.ProtocolError(err)
+			protoErr := handlererrors.ProtocolError(err)
 
 			var res wire.OpMsg
 			must.NoError(res.SetSections(wire.OpMsgSection{
@@ -480,9 +485,9 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 			resBody = &res
 
 			switch protoErr := protoErr.(type) {
-			case *commonerrors.CommandError:
+			case *handlererrors.CommandError:
 				result = protoErr.Code().String()
-			case *commonerrors.WriteErrors:
+			case *handlererrors.WriteErrors:
 				result = "write-error"
 			default:
 				panic(fmt.Errorf("unexpected error type %T", protoErr))
@@ -555,7 +560,7 @@ func (c *conn) route(ctx context.Context, reqHeader *wire.MsgHeader, reqBody wir
 //
 // The passed context is canceled when the client disconnects.
 func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string) (*wire.OpMsg, error) {
-	if cmd, ok := handler.Commands[command]; ok {
+	if cmd, ok := c.h.Commands()[command]; ok {
 		if cmd.Handler != nil {
 			defer observability.FuncCall(ctx)()
 
@@ -563,13 +568,13 @@ func (c *conn) handleOpMsg(ctx context.Context, msg *wire.OpMsg, command string)
 			ctx = pprof.WithLabels(ctx, pprof.Labels("command", command))
 			pprof.SetGoroutineLabels(ctx)
 
-			return cmd.Handler(c.h, ctx, msg)
+			return cmd.Handler(ctx, msg)
 		}
 	}
 
 	errMsg := fmt.Sprintf("no such command: '%s'", command)
 
-	return nil, commonerrors.NewCommandErrorMsg(commonerrors.ErrCommandNotFound, errMsg)
+	return nil, handlererrors.NewCommandErrorMsg(handlererrors.ErrCommandNotFound, errMsg)
 }
 
 // logResponse logs response's header and body and returns the log level that was used.

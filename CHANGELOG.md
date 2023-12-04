@@ -2,6 +2,49 @@
 
 <!-- markdownlint-disable MD024 MD034 -->
 
+## [v1.16.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.16.0) (2023-12-04)
+
+### Documentation 📄
+
+- Clarify MongoDB version by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3653
+- Add blogpost for release v.1.15 by @Fashander in https://github.com/FerretDB/FerretDB/pull/3728
+- Update domain name in docs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3757
+- Update Docusaurus to v3 by @Fashander in https://github.com/FerretDB/FerretDB/pull/3772
+- Update domain name in more places by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3802
+
+### Other Changes 🤖
+
+- Cleanup pushdown terminology by @noisersup in https://github.com/FerretDB/FerretDB/pull/3691
+- Make RecordID a signed value by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3740
+- Bump deps by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3747
+- Add MySQL into the build system by @adetunjii in https://github.com/FerretDB/FerretDB/pull/3736
+- Add MySQL backend to CI by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3751
+- Remove common `handlers.Interface` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3753
+- Remove unsafe pushdown by @noisersup in https://github.com/FerretDB/FerretDB/pull/3752
+- Support `DeleteAll` for capped collections by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/3718
+- Add startup warning for debug builds by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3735
+- Move `sqlite/*.go` to `internal/handler` by @rumyantseva in https://github.com/FerretDB/FerretDB/pull/3755
+- Add TODOs about pushdowns by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3762
+- Clean-up old code for multiple handlers by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3763
+- Add TODOs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3764
+- Move some commands from `common` to the handler by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3766
+- Add TODOs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3771
+- Allow `system.` prefix for collections for now by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3775
+- Setup MySQL integration tests by @adetunjii in https://github.com/FerretDB/FerretDB/pull/3758
+- Rename `commonerrors` and `commonparams` by @noisersup in https://github.com/FerretDB/FerretDB/pull/3779
+- Add TLS support to proxy mode by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3783
+- Provide sort to backend as the document by @noisersup in https://github.com/FerretDB/FerretDB/pull/3754
+- Add stubs for authentication commands by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3776
+- Move `getParameter` out of `common` package by @noisersup in https://github.com/FerretDB/FerretDB/pull/3789
+- Remove `commoncommands` package by @noisersup in https://github.com/FerretDB/FerretDB/pull/3780
+- Remove done TODOs by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3795
+- Ignore `go-consistent` failures by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3794
+- Log batches for `find`, `aggregate`, `getMore` by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3800
+- Set `GOARM` explicitly by @AlekSi in https://github.com/FerretDB/FerretDB/pull/3796
+
+[All closed issues and pull requests](https://github.com/FerretDB/FerretDB/milestone/58?closed=1).
+[All commits](https://github.com/FerretDB/FerretDB/compare/v1.15.0...v1.16.0).
+
 ## [v1.15.0](https://github.com/FerretDB/FerretDB/releases/tag/v1.15.0) (2023-11-20)
 
 ### What's Changed

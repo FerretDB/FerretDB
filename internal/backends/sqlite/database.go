@@ -54,6 +54,7 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 	for i, c := range list {
 		res[i] = backends.CollectionInfo{
 			Name:            c.Name,
+			UUID:            c.Settings.UUID,
 			CappedSize:      c.Settings.CappedSize,
 			CappedDocuments: c.Settings.CappedDocuments,
 		}

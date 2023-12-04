@@ -21,8 +21,8 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
 	"github.com/FerretDB/FerretDB/internal/handler/commonpath"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -48,8 +48,8 @@ func newUnwind(stage *types.Document) (aggregations.Stage, error) {
 		return nil, common.Unimplemented(stage, "$unwind")
 	case string:
 		if field == "" {
-			return nil, commonerrors.NewCommandErrorMsgWithArgument(
-				commonerrors.ErrStageUnwindNoPath,
+			return nil, handlererrors.NewCommandErrorMsgWithArgument(
+				handlererrors.ErrStageUnwindNoPath,
 				"no path specified to $unwind stage",
 				"$unwind (stage)",
 			)
@@ -71,20 +71,20 @@ func newUnwind(stage *types.Document) (aggregations.Stage, error) {
 
 			switch exprErr.Code() {
 			case aggregations.ErrNotExpression:
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrStageUnwindNoPrefix,
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrStageUnwindNoPrefix,
 					fmt.Sprintf("path option to $unwind stage should be prefixed with a '$': %v", types.FormatAnyValue(field)),
 					"$unwind (stage)",
 				)
 			case aggregations.ErrEmptyFieldPath:
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrEmptyFieldPath,
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrEmptyFieldPath,
 					"Expression cannot be constructed with empty string",
 					"$unwind (stage)",
 				)
 			case aggregations.ErrEmptyVariable, aggregations.ErrInvalidExpression, aggregations.ErrUndefinedVariable:
-				return nil, commonerrors.NewCommandErrorMsgWithArgument(
-					commonerrors.ErrFieldPathInvalidName,
+				return nil, handlererrors.NewCommandErrorMsgWithArgument(
+					handlererrors.ErrFieldPathInvalidName,
 					"Expression field names may not start with '$'. Consider using $getField or $setField",
 					"$unwind (stage)",
 				)
@@ -93,8 +93,8 @@ func newUnwind(stage *types.Document) (aggregations.Stage, error) {
 			}
 		}
 	default:
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageUnwindWrongType,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageUnwindWrongType,
 			fmt.Sprintf(
 				"expected either a string or an object as specification for $unwind stage, got %s",
 				types.FormatAnyValue(field),
@@ -111,7 +111,7 @@ func newUnwind(stage *types.Document) (aggregations.Stage, error) {
 // Process implements Stage interface.
 func (u *unwind) Process(ctx context.Context, iter types.DocumentsIterator, closer *iterator.MultiCloser) (types.DocumentsIterator, error) { //nolint:lll // for readability
 	// TODO https://github.com/FerretDB/FerretDB/issues/2490
-	docs, err := iterator.ConsumeValues(iterator.Interface[struct{}, *types.Document](iter))
+	docs, err := iterator.ConsumeValues(iter)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}

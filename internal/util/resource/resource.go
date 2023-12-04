@@ -91,6 +91,8 @@ func Track(obj any, token *Token) {
 }
 
 // Untrack stops tracking the lifetime of an object.
+//
+// It is safe to call this function multiple times.
 func Untrack(obj any, token *Token) {
 	checkArgs(obj, token)
 

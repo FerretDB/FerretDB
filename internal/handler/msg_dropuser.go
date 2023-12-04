@@ -12,26 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package commoncommands
+package handler
 
 import (
 	"context"
 
-	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/internal/types"
-	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/handler/common"
+	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
-// MsgWhatsMyURI is a common implementation of the whatsMyURI command.
-func MsgWhatsMyURI(ctx context.Context, _ *wire.OpMsg) (*wire.OpMsg, error) {
-	var reply wire.OpMsg
-	must.NoError(reply.SetSections(wire.OpMsgSection{
-		Documents: []*types.Document{must.NotFail(types.NewDocument(
-			"you", conninfo.Get(ctx).PeerAddr,
-			"ok", float64(1),
-		))},
-	}))
+// MsgDropUser implements `dropUser` command.
+func (h *Handler) MsgDropUser(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, error) {
+	document, err := msg.Document()
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
 
-	return &reply, nil
+	// TODO https://github.com/FerretDB/FerretDB/issues/1493
+	return nil, common.Unimplemented(document, document.Command())
 }
