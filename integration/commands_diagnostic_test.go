@@ -310,7 +310,7 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 	t.Run("TwoIndexes", func(t *testing.T) {
 		t.Parallel()
 
-		_, err := collection.Indexes().CreateOne(ctx, *&mongo.IndexModel{Keys: bson.D{{"a", 1}}})
+		_, err := collection.Indexes().CreateOne(ctx, mongo.IndexModel{Keys: bson.D{{"a", 1}}})
 		require.NoError(t, err)
 
 		var doc bson.D
