@@ -377,6 +377,7 @@ func TestRenameCollection(t *testing.T) {
 
 		expected := &Collection{
 			Name:      newCollectionName,
+			UUID:      oldCollection.UUID,
 			TableName: oldCollection.TableName,
 			Indexes:   oldCollection.Indexes,
 		}
