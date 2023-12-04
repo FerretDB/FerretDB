@@ -715,10 +715,11 @@ Related [issue](https://github.com/FerretDB/FerretDB/issues/1917).
 | `serverStatus`       |                  | ✅     | Basic command is fully supported |
 | `shardConnPoolStats` |                  | ❌     | Unimplemented                    |
 | `top`                |                  | ❌     | Unimplemented                    |
-| `validate`           |                  | ❌     | Unimplemented                    |
+| `validate`           |                  | ✅     | Basic command is fully supported |
 |                      | `full`           | ⚠️     |                                  |
 |                      | `repair`         | ⚠️     |                                  |
 |                      | `metadata`       | ⚠️     |                                  |
+|                      | `checkBSONConformance`       | ⚠️     |                                  |
 | `validateDBMetadata` |                  | ❌     | Unimplemented                    |
 |                      | `apiParameters`  | ⚠️     |                                  |
 |                      | `db`             | ⚠️     |                                  |
