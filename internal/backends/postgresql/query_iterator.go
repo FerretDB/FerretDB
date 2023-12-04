@@ -38,9 +38,9 @@ type queryIterator struct {
 
 	ctx           context.Context
 	rows          pgx.Rows // protected by m
-	onlyRecordIDs bool
 	token         *resource.Token
 	m             sync.Mutex
+	onlyRecordIDs bool
 }
 
 // newQueryIterator returns a new queryIterator for the given Rows.

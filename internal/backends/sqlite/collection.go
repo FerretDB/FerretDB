@@ -65,10 +65,6 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	if params == nil {
-		params = new(backends.QueryParams)
-	}
-
 	var whereClause string
 	var args []any
 
@@ -264,10 +260,6 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return &backends.ExplainResult{
 			QueryPlanner: must.NotFail(types.NewDocument()),
 		}, nil
-	}
-
-	if params == nil {
-		params = new(backends.ExplainParams)
 	}
 
 	selectClause := prepareSelectClause(meta.TableName, "", meta.Capped(), false)

@@ -136,7 +136,13 @@ The output:
 
 ```json5
 [
-  { _id: 1, name: 'John', age: 35, salary: 5000, department: 'Sales' },
+  {
+    _id: 1,
+    name: 'John',
+    age: 35,
+    salary: 5000,
+    department: 'Sales'
+  },
   {
     _id: 2,
     name: 'Robert',

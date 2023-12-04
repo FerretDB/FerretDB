@@ -20,7 +20,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/handler/common"
 	"github.com/FerretDB/FerretDB/internal/handler/common/aggregations"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 )
@@ -34,40 +34,40 @@ type count struct {
 func newCount(stage *types.Document) (aggregations.Stage, error) {
 	field, err := common.GetRequiredParam[string](stage, "$count")
 	if err != nil {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageCountNonString,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageCountNonString,
 			"the count field must be a non-empty string",
 			"$count (stage)",
 		)
 	}
 
 	if len(field) == 0 {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageCountNonEmptyString,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageCountNonEmptyString,
 			"the count field must be a non-empty string",
 			"$count (stage)",
 		)
 	}
 
 	if strings.Contains(field, ".") {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageCountBadValue,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageCountBadValue,
 			"the count field cannot contain '.'",
 			"$count (stage)",
 		)
 	}
 
 	if strings.HasPrefix(field, "$") {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageCountBadPrefix,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageCountBadPrefix,
 			"the count field cannot be a $-prefixed path",
 			"$count (stage)",
 		)
 	}
 
 	if field == "_id" {
-		return nil, commonerrors.NewCommandErrorMsgWithArgument(
-			commonerrors.ErrStageGroupID,
+		return nil, handlererrors.NewCommandErrorMsgWithArgument(
+			handlererrors.ErrStageGroupID,
 			"a group's _id may only be specified once",
 			"$count (stage)",
 		)

@@ -21,7 +21,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
-	"github.com/FerretDB/FerretDB/internal/handler/commonerrors"
+	"github.com/FerretDB/FerretDB/internal/handler/handlererrors"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 )
@@ -77,8 +77,8 @@ func TestCheckClientMetadata(t *testing.T) {
 			{document: metadata, recv: true},
 			{
 				document: metadata,
-				err: commonerrors.NewCommandErrorMsg(
-					commonerrors.ErrClientMetadataCannotBeMutated,
+				err: handlererrors.NewCommandErrorMsg(
+					handlererrors.ErrClientMetadataCannotBeMutated,
 					"The client metadata document may only be sent in the first hello",
 				),
 				recv: true,
