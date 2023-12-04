@@ -58,7 +58,7 @@ func (h *Handler) MsgValidate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
-	_, err = c.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
+	stats, err := c.Stats(ctx, &backends.CollectionStatsParams{Refresh: true})
 	if err != nil {
 		if backends.ErrorCodeIs(err, backends.ErrorCodeCollectionDoesNotExist) {
 			msg := fmt.Sprintf("Collection '%s.%s' does not exist to validate.", dbName, collection)
@@ -74,7 +74,7 @@ func (h *Handler) MsgValidate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			"ns", dbName+"."+collection,
 			"nInvalidDocuments", int32(0),
 			"nNonCompliantDocuments", int32(0),
-			"nrecords", int32(-1), // TODO https://github.com/FerretDB/FerretDB/issues/419
+			"nrecords", int32(stats.CountDocuments),
 			"nIndexes", int32(1), // TODO https://github.com/FerretDB/FerretDB/issues/419
 			"valid", true,
 			"repaired", false,
