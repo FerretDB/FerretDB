@@ -158,6 +158,15 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 
 	db := collection.Database()
 	name := db.Name()
+	dbClient := collection.Database().Client()
+
+	// Add an extra DB to help verify if ListDatabases returns multiple databases as intended.
+	extraDB := dbClient.Database(name + "_extra")
+	_, err := extraDB.Collection(collection.Name()+"_extra").InsertOne(ctx, shareddata.DocumentsDoubles)
+	assert.NoError(t, err, "failed to insert document on extra collection")
+	t.Cleanup(func() {
+		assert.NoError(t, extraDB.Drop(ctx), "failed to drop extra DB")
+	})
 
 	testCases := map[string]struct { //nolint:vet // for readability
 		filter any
@@ -239,6 +248,23 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 			expectedNameOnly: true,
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{},
+			},
+		},
+		"Multiple": {
+			filter: bson.D{
+				{Key: "name", Value: primitive.Regex{Pattern: "^" + name, Options: "i"}},
+			},
+			expected: mongo.ListDatabasesResult{
+				Databases: []mongo.DatabaseSpecification{
+					{
+						Name:  name,
+						Empty: false,
+					},
+					{
+						Name:  name + "_extra",
+						Empty: false,
+					},
+				},
 			},
 		},
 	}
