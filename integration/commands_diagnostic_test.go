@@ -283,7 +283,7 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 		"ns", "TestCommandsDiagnosticValidate.TestCommandsDiagnosticValidate",
 		"nInvalidDocuments", int32(0),
 		"nNonCompliantDocuments", int32(0),
-		"nrecords", int32(25), // replaced below
+		"nrecords", int32(25),
 		"nIndexes", int32(1),
 		"valid", true,
 		"repaired", false,
