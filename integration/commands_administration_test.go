@@ -163,14 +163,11 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 		filter any
 		opts   []*options.ListDatabasesOptions
 
-		empty    bool
-		zeroSize bool
-		dbCount  int
-		expected mongo.ListDatabasesResult
+		expectedNameOnly bool
+		expected         mongo.ListDatabasesResult
 	}{
 		"Exists": {
-			filter:  bson.D{{Key: "name", Value: name}},
-			dbCount: 1,
+			filter: bson.D{{Key: "name", Value: name}},
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{{
 					Name:  name,
@@ -183,8 +180,7 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 			opts: []*options.ListDatabasesOptions{
 				options.ListDatabases().SetNameOnly(true),
 			},
-			zeroSize: true,
-			dbCount:  1,
+			expectedNameOnly: true,
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{{
 					Name: name,
@@ -196,7 +192,6 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 				{Key: "name", Value: name},
 				{Key: "name", Value: primitive.Regex{Pattern: "^Test", Options: "i"}},
 			},
-			dbCount: 1,
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{{
 					Name: name,
@@ -211,8 +206,7 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 			opts: []*options.ListDatabasesOptions{
 				options.ListDatabases().SetNameOnly(true),
 			},
-			zeroSize: true,
-			dbCount:  1,
+			expectedNameOnly: true,
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{{
 					Name: name,
@@ -220,10 +214,7 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 			},
 		},
 		"NotFound": {
-			filter:   bson.D{{Key: "name", Value: "unknown"}},
-			empty:    true,
-			zeroSize: true,
-			dbCount:  0,
+			filter: bson.D{{Key: "name", Value: "unknown"}},
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{},
 			},
@@ -233,9 +224,6 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 				{Key: "name", Value: name},
 				{Key: "name", Value: primitive.Regex{Pattern: "^xyz$", Options: "i"}},
 			},
-			empty:    true,
-			zeroSize: true,
-			dbCount:  0,
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{},
 			},
@@ -248,9 +236,7 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 			opts: []*options.ListDatabasesOptions{
 				options.ListDatabases().SetNameOnly(true),
 			},
-			empty:    true,
-			zeroSize: true,
-			dbCount:  0,
+			expectedNameOnly: true,
 			expected: mongo.ListDatabasesResult{
 				Databases: []mongo.DatabaseSpecification{},
 			},
@@ -264,20 +250,10 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 
 			actual, err := db.Client().ListDatabases(ctx, tc.filter, tc.opts...)
 			assert.NoError(t, err)
-			assert.Len(t, actual.Databases, tc.dbCount)
-			if tc.dbCount != 0 {
-				assert.Equal(t, tc.empty, actual.Databases[0].Empty, "Emptiness should be equal")
-			}
-
-			if tc.zeroSize {
-				if tc.dbCount != 0 || len(actual.Databases) != 0 {
-					assert.Zero(t, actual.Databases[0].SizeOnDisk, "SizeOnDisk should be zero")
-				}
+			assert.Len(t, actual.Databases, len(tc.expected.Databases))
+			if tc.expectedNameOnly || len(tc.expected.Databases) == 0 {
 				assert.Zero(t, actual.TotalSize, "TotalSize should be zero")
 			} else {
-				if tc.dbCount != 0 || len(actual.Databases) != 0 {
-					assert.NotZero(t, actual.Databases[0].SizeOnDisk, "SizeOnDisk should be non-zero")
-				}
 				assert.NotZero(t, actual.TotalSize, "TotalSize should be non-zero")
 			}
 
