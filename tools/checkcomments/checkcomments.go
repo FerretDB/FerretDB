@@ -63,6 +63,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 	cachePath := getCacheFilePath(currentPath)
 
+	// lockedfile is used to coordinate multiple invocations using the same cache file.
 	cf, err := lockedfile.OpenFile(cachePath, os.O_RDWR|os.O_CREATE, 0o666)
 	if err != nil {
 		return nil, err
@@ -89,7 +90,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 		err = json.Unmarshal(buffer, &iCache)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 	} else {
 		iCache.Issues = make(map[string]bool)
@@ -109,12 +110,12 @@ func run(pass *analysis.Pass) (any, error) {
 	if len(iCache.Issues) > 0 {
 		jsonb, err := json.Marshal(iCache)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 
 		_, err = cf.WriteAt(jsonb, 0)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 	}
 
