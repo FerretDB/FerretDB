@@ -23,6 +23,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 func TestCommandsFreeMonitoringGetFreeMonitoringStatus(t *testing.T) {
@@ -64,11 +65,13 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 		err            *mongo.CommandError // optional, expected error from MongoDB
 		altMessage     string              // optional, alternative error message for FerretDB, ignored if empty
 		skip           string              // optional, skip test with a specified reason
+		skipForMongoDB string              // optional, skip test for MongoDB backend with a specific reason
 	}{
 		"Enable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "enable"}},
 			expectedRes:    bson.D{{"ok", float64(1)}},
 			expectedStatus: "enabled",
+			skipForMongoDB: "MongoDB decommissioned enabling free monitoring",
 		},
 		"Disable": {
 			command:        bson.D{{"setFreeMonitoring", 1}, {"action", "disable"}},
@@ -96,11 +99,13 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 			command:        bson.D{{"setFreeMonitoring", bson.D{}}, {"action", "enable"}},
 			expectedRes:    bson.D{{"ok", float64(1)}},
 			expectedStatus: "enabled",
+			skipForMongoDB: "MongoDB decommissioned enabling free monitoring",
 		},
 		"NilCommand": {
 			command:        bson.D{{"setFreeMonitoring", nil}, {"action", "enable"}},
 			expectedRes:    bson.D{{"ok", float64(1)}},
 			expectedStatus: "enabled",
+			skipForMongoDB: "MongoDB decommissioned enabling free monitoring",
 		},
 		"ActionMissing": {
 			command: bson.D{{"setFreeMonitoring", nil}},
@@ -130,6 +135,10 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 				t.Skip(tc.skip)
 			}
 
+			if tc.skipForMongoDB != "" {
+				setup.SkipForMongoDB(t, tc.skipForMongoDB)
+			}
+
 			require.NotNil(t, tc.command, "command must not be nil")
 
 			var res bson.D
@@ -143,7 +152,13 @@ func TestCommandsFreeMonitoringSetFreeMonitoring(t *testing.T) {
 
 			require.NoError(t, err)
 
-			AssertEqualDocuments(t, tc.expectedRes, res)
+			actual := ConvertDocument(t, res)
+			actual.Remove("$clusterTime")
+			actual.Remove("operationTime")
+
+			expected := ConvertDocument(t, tc.expectedRes)
+
+			testutil.AssertEqual(t, expected, actual)
 
 			if tc.expectedStatus != "" {
 				var actual bson.D

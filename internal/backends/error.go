@@ -17,8 +17,7 @@ package backends
 import (
 	"errors"
 	"fmt"
-
-	"golang.org/x/exp/slices"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 )
@@ -38,6 +37,8 @@ const (
 	ErrorCodeCollectionNameIsInvalid
 	ErrorCodeCollectionDoesNotExist
 	ErrorCodeCollectionAlreadyExists
+
+	ErrorCodeInsertDuplicateID
 )
 
 // Error represents a backend error returned by all Backend, Database and Collection methods.

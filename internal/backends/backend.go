@@ -15,18 +15,22 @@
 package backends
 
 import (
+	"cmp"
 	"context"
+	"slices"
 
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/FerretDB/FerretDB/internal/clientconn/conninfo"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 	"github.com/FerretDB/FerretDB/internal/util/resource"
 )
 
 // Backend is a generic interface for all backends for accessing them.
 //
-// Backend object is expected to be stateful and wrap database connection(s).
-// Handler can create one Backend or multiple Backends with different authentication credentials.
+// Backend object should be stateful and wrap database connection(s).
+// Handler uses only one long-lived Backend object.
 //
 // Backend(s) methods can be called by multiple client connections / command handlers concurrently.
 // They should be thread-safe.
@@ -34,6 +38,9 @@ import (
 // See backendContract and its methods for additional details.
 type Backend interface {
 	Close()
+
+	Status(context.Context, *StatusParams) (*StatusResult, error)
+
 	Database(string) (Database, error)
 	ListDatabases(context.Context, *ListDatabasesParams) (*ListDatabasesResult, error)
 	DropDatabase(context.Context, *DropDatabaseParams) error
@@ -41,7 +48,6 @@ type Backend interface {
 	prometheus.Collector
 
 	// There is no interface method to create a database; see package documentation.
-	// TODO https://github.com/FerretDB/FerretDB/issues/3069
 }
 
 // backendContract implements Backend interface.
@@ -73,6 +79,33 @@ func (bc *backendContract) Close() {
 	resource.Untrack(bc, bc.token)
 }
 
+// StatusParams represents the parameters of Backend.Status method.
+type StatusParams struct{}
+
+// StatusResult represents the results of Backend.Status method.
+type StatusResult struct {
+	CountCollections       int64
+	CountCappedCollections int32
+}
+
+// Status returns backend's status.
+//
+// This method should also be used to check that the backend is alive,
+// connection can be established and authenticated.
+// For that reason, the implementation should not return only cached results.
+func (bc *backendContract) Status(ctx context.Context, params *StatusParams) (*StatusResult, error) {
+	defer observability.FuncCall(ctx)()
+
+	// to both check that conninfo is present (which is important for that method),
+	// and to render doc.go correctly
+	must.NotBeZero(conninfo.Get(ctx))
+
+	res, err := bc.b.Status(ctx, params)
+	checkError(err)
+
+	return res, err
+}
+
 // Database returns a Database instance for the given valid name.
 //
 // The database does not need to exist.
@@ -90,7 +123,9 @@ func (bc *backendContract) Database(name string) (Database, error) {
 }
 
 // ListDatabasesParams represents the parameters of Backend.ListDatabases method.
-type ListDatabasesParams struct{}
+type ListDatabasesParams struct {
+	Name string // TODO https://github.com/FerretDB/FerretDB/issues/3601
+}
 
 // ListDatabasesResult represents the results of Backend.ListDatabases method.
 type ListDatabasesResult struct {
@@ -100,15 +135,30 @@ type ListDatabasesResult struct {
 // DatabaseInfo represents information about a single database.
 type DatabaseInfo struct {
 	Name string
-	Size int64
 }
 
-// ListDatabases returns a Database instance for given parameters.
+// ListDatabases returns a list of databases sorted by name.
+//
+// TODO https://github.com/FerretDB/FerretDB/issues/3601
+// If ListDatabasesParams' Name is not empty, then only the database with that name should be returned (or an empty list).
+//
+// Database may not exist; that's not an error.
 func (bc *backendContract) ListDatabases(ctx context.Context, params *ListDatabasesParams) (*ListDatabasesResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	res, err := bc.b.ListDatabases(ctx, params)
 	checkError(err)
+
+	if res != nil && len(res.Databases) > 0 {
+		must.BeTrue(slices.IsSortedFunc(res.Databases, func(a, b DatabaseInfo) int {
+			return cmp.Compare(a.Name, b.Name)
+		}))
+
+		if params != nil && params.Name != "" {
+			must.BeTrue(len(res.Databases) == 1)
+			must.BeTrue(res.Databases[0].Name == params.Name)
+		}
+	}
 
 	return res, err
 }

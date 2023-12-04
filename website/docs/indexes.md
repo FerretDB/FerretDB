@@ -18,11 +18,11 @@ The `createIndexes()` command takes two arguments: a document containing the ind
 
 You can create single field indexes or compound indexes.
 
-### Single Field Indexes
+### Single field indexes
 
 Suppose a `products` collection contains the following documents:
 
-```js
+```json5
 { _id: 1, name: "iPhone 12", category: "smartphone", price: 799 }
 { _id: 2, name: "iPad Pro", category: "tablet", price: 999 }
 { _id: 3, name: "Galaxy S21", category: "smartphone", price: 699 }
@@ -42,7 +42,7 @@ This creates an ascending index on the `price` field.
 If it's `-1`, it specifies a descending order direction for the index.
 :::
 
-### Compound Indexes
+### Compound indexes
 
 For compound indexes, you can create an index key combining multiple fields together as a key.
 Below is an example of a compound index that uses `price` and `category` fields
@@ -52,7 +52,7 @@ from the `products` collection as the index key:
 db.products.createIndex({ price: 1, category: 1 })
 ```
 
-### Unique Indexes
+### Unique indexes
 
 You can create unique indexes to ensure that the indexed fields do not contain duplicate values.
 To create a unique index, set the `unique` option as `true` when calling `createIndexes()` command.
@@ -79,7 +79,7 @@ db.products.createIndex({ category: 1, name: 1 }, { unique: true })
   Instead, it will simply return the name and key of the existing index, since duplicate indexes would be redundant and inefficient.
 - Meanwhile, any attempt to call `createIndexes()` command for an existing index using the same name and different key, _or_ different name but the same key will return an error.
 
-## How to list Indexes
+## How to list indexes
 
 To display a collection's index details, use the `listIndexes()` command.
 You can also use the `getIndexes()` method to call the `listIndexes()` command.

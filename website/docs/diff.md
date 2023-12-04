@@ -1,12 +1,12 @@
 ---
-sidebar_position: 10
+sidebar_position: 11
 slug: /diff/ # referenced in README.md and beacon
 ---
 
 # Known differences
 
 <!--
-   Each numbered point should have a corresponding test file in https://github.com/FerretDB/dance/tree/main/tests/diff
+   Each numbered point should have a corresponding, numbered test file https://github.com/FerretDB/FerretDB/tree/main/integration/diff_*_test.go
    Bullet subpoints should be in the same file as the parent point.
 -->
 

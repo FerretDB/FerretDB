@@ -1,7 +1,7 @@
 ---
 slug: using-cla-assistant-with-ferretdb
 title: Using CLA Assistant with FerretDB
-author: Alexey Palazhchenko
+authors: [aleksi]
 description: Like many other open-source projects, FerretDB requires all contributors to sign [our Contributor License Agreement (CLA)](https://gist.github.com/ferretdb-bot/554e6a30bfcc1d954f3853b4aad95281) to protect them from liability.
 image: /img/blog/cla3.jpg
 tags: [compatible applications, open source]

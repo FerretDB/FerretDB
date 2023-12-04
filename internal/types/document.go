@@ -15,11 +15,10 @@
 package types
 
 import (
+	"cmp"
 	"fmt"
-	"sort"
+	"slices"
 	"strconv"
-
-	"golang.org/x/exp/slices"
 
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -27,7 +26,8 @@ import (
 
 // Common interface with bson.Document.
 //
-// TODO Remove this type.
+// Remove this type.
+// TODO https://github.com/FerretDB/FerretDB/issues/260
 type document interface {
 	Keys() []string
 	Values() []any
@@ -35,11 +35,19 @@ type document interface {
 
 // Document represents BSON document: an ordered collection of fields
 // (key/value pairs where key is a string and value is any BSON value).
+//
+// Data documents (that are stored in the backend) have a special RecordID property
+// that is not a field and can't be accessed by most methods.
+// It is used to locate the document in the backend.
 type Document struct {
-	fields []field
+	keys     map[string]int
+	fields   []field
+	frozen   bool
+	recordID int64
 }
 
 // field represents a field in the document.
+// RecordID is not a field.
 //
 // The order of field is like that to reduce a pressure on gc a bit, and make vet/fieldalignment linter happy.
 type field struct {
@@ -50,7 +58,8 @@ type field struct {
 // ConvertDocument converts bson.Document to *types.Document.
 // It references the same data without copying it.
 //
-// TODO Remove this function: https://github.com/FerretDB/FerretDB/issues/260
+// Remove this function.
+// TODO https://github.com/FerretDB/FerretDB/issues/260
 func ConvertDocument(d document) (*Document, error) {
 	if d == nil {
 		panic("types.ConvertDocument: d is nil")
@@ -58,25 +67,31 @@ func ConvertDocument(d document) (*Document, error) {
 
 	keys := d.Keys()
 	values := d.Values()
+	l := len(keys)
 
-	if len(keys) != len(values) {
-		panic(fmt.Sprintf("document must have the same number of keys and values (keys: %d, values: %d)", len(keys), len(values)))
+	if lv := len(values); l != lv {
+		panic(fmt.Sprintf("document must have the same number of keys and values (keys: %d, values: %d)", l, lv))
 	}
 
-	// If values are not set, we don't need to allocate memory for fields.
-	if len(values) == 0 {
+	if l == 0 {
 		return new(Document), nil
 	}
 
-	fields := make([]field, len(keys))
-	for i, key := range d.Keys() {
-		fields[i] = field{
+	docKeys := make(map[string]int, l)
+	docFields := make([]field, l)
+
+	for i, key := range keys {
+		docKeys[key]++
+		docFields[i] = field{
 			key:   key,
 			value: values[i],
 		}
 	}
 
-	return &Document{fields}, nil
+	return &Document{
+		keys:   docKeys,
+		fields: docFields,
+	}, nil
 }
 
 // MakeDocument creates an empty document with set capacity.
@@ -86,6 +101,7 @@ func MakeDocument(capacity int) *Document {
 	}
 
 	return &Document{
+		keys:   make(map[string]int, capacity),
 		fields: make([]field, 0, capacity),
 	}
 }
@@ -97,11 +113,12 @@ func NewDocument(pairs ...any) (*Document, error) {
 		return nil, fmt.Errorf("types.NewDocument: invalid number of arguments: %d", l)
 	}
 
-	doc := MakeDocument(l / 2)
-
 	if l == 0 {
-		return doc, nil
+		return new(Document), nil
 	}
+
+	docKeys := make(map[string]int, l/2)
+	docFields := make([]field, l/2)
 
 	for i := 0; i < l; i += 2 {
 		key, ok := pairs[i].(string)
@@ -110,20 +127,59 @@ func NewDocument(pairs ...any) (*Document, error) {
 		}
 
 		value := pairs[i+1]
+		assertType(value)
 
-		doc.fields = append(doc.fields, field{key: key, value: value})
+		docKeys[key]++
+		docFields[i/2] = field{
+			key:   key,
+			value: value,
+		}
 	}
 
-	return doc, nil
+	return &Document{
+		keys:   docKeys,
+		fields: docFields,
+	}, nil
 }
 
 func (*Document) compositeType() {}
 
-// DeepCopy returns a deep copy of this Document.
+// RecordID returns the document's RecordID (that is 0 by default).
+func (d *Document) RecordID() int64 {
+	return d.recordID
+}
+
+// SetRecordID sets the document's RecordID.
+func (d *Document) SetRecordID(recordID int64) {
+	d.recordID = recordID
+}
+
+// Freeze prevents document from further field modifications.
+// Any methods that would modify document fields will panic.
+//
+// RecordID modification is not prevented.
+//
+// It is safe to call Freeze multiple times.
+func (d *Document) Freeze() {
+	if d != nil {
+		d.frozen = true
+	}
+}
+
+// checkFrozen panics if document is frozen.
+func (d *Document) checkFrozen() {
+	if d.frozen {
+		panic("document is frozen and can't be modified")
+	}
+}
+
+// DeepCopy returns an unfrozen deep copy of this Document.
+// RecordID is copied too.
 func (d *Document) DeepCopy() *Document {
 	if d == nil {
 		panic("types.Document.DeepCopy: nil document")
 	}
+
 	return deepCopy(d).(*Document)
 }
 
@@ -217,22 +273,17 @@ func (d *Document) FindDuplicateKey() (string, bool) {
 // Command returns the first document's key. This is often used as a command name.
 // It returns an empty string if document is nil or empty.
 func (d *Document) Command() string {
-	keys := d.Keys()
-	if len(keys) == 0 {
+	if d == nil || len(d.fields) == 0 {
 		return ""
 	}
-	return keys[0]
+
+	return d.fields[0].key
 }
 
 // Has returns true if the given key is present in the document.
 func (d *Document) Has(key string) bool {
-	for _, field := range d.fields {
-		if field.key == key {
-			return true
-		}
-	}
-
-	return false
+	_, ok := d.keys[key]
+	return ok
 }
 
 // Get returns a value at the given key.
@@ -271,6 +322,9 @@ func (d *Document) Get(key string) (any, error) {
 //
 // As a special case, _id always becomes the first key.
 func (d *Document) Set(key string, value any) {
+	assertType(value)
+	d.checkFrozen()
+
 	if d.isKeyDuplicate(key) {
 		panic(fmt.Sprintf("types.Document.Set: key is duplicated: %s", key))
 	}
@@ -282,18 +336,29 @@ func (d *Document) Set(key string, value any) {
 		}
 	}
 
-	d.fields = append(d.fields, field{key: key, value: value})
+	if d.keys == nil {
+		d.keys = make(map[string]int, 1)
+	}
+	d.keys[key]++
+
+	d.fields = append(d.fields, field{
+		key:   key,
+		value: value,
+	})
 }
 
 // Remove the given key and return its value, or nil if the key does not exist.
 // If the key is duplicated, it panics.
 func (d *Document) Remove(key string) any {
+	d.checkFrozen()
+
 	if d.isKeyDuplicate(key) {
 		panic(fmt.Sprintf("types.Document.Remove: key is duplicated: %s", key))
 	}
 
 	for i, field := range d.fields {
 		if field.key == key {
+			delete(d.keys, key)
 			d.fields = slices.Delete(d.fields, i, i+1)
 			return field.value
 		}
@@ -320,6 +385,9 @@ func (d *Document) GetByPath(path Path) (any, error) {
 // The Document type will be used to create these parts.
 // If multiple fields match the path it panics.
 func (d *Document) SetByPath(path Path, value any) error {
+	assertType(value)
+	d.checkFrozen()
+
 	if path.Len() == 1 {
 		d.Set(path.Slice()[0], value)
 		return nil
@@ -368,6 +436,8 @@ func (d *Document) SetByPath(path Path, value any) error {
 // RemoveByPath removes document by path, doing nothing if the key does not exist.
 // If the Path has only one element, it removes the value for the given key.
 func (d *Document) RemoveByPath(path Path) {
+	d.checkFrozen()
+
 	if path.Len() == 1 {
 		d.Remove(path.Slice()[0])
 
@@ -378,25 +448,17 @@ func (d *Document) RemoveByPath(path Path) {
 
 // SortFieldsByKey sorts the document fields by ascending order of the key.
 func (d *Document) SortFieldsByKey() {
-	sort.Slice(d.fields, func(i, j int) bool { return d.fields[i].key < d.fields[j].key })
+	d.checkFrozen()
+
+	slices.SortFunc(d.fields, func(a, b field) int {
+		return cmp.Compare(a.key, b.key)
+	})
 }
 
 // isKeyDuplicate returns true if the target key is duplicated in the document and false otherwise.
 // If the key is not found, it returns false.
 func (d *Document) isKeyDuplicate(targetKey string) bool {
-	var found bool
-
-	for _, key := range d.Keys() {
-		if key == targetKey {
-			if found {
-				return true
-			}
-
-			found = true
-		}
-	}
-
-	return false
+	return d.keys[targetKey] > 1
 }
 
 // moveIDToTheFirstIndex sets the _id field of the document at the first position.
@@ -406,20 +468,25 @@ func (d *Document) moveIDToTheFirstIndex() {
 		return
 	}
 
-	idIdx := 0
+	var idIdx int
 
-	if d.fields[idIdx].key == "_id" {
-		return
-	}
-
-	for i, key := range d.Keys() {
-		if key == "_id" {
+	for i, field := range d.fields {
+		if field.key == "_id" {
 			idIdx = i
 			break
 		}
 	}
 
-	d.fields = slices.Insert(d.fields, 0, field{key: d.fields[idIdx].key, value: d.fields[idIdx].value})
+	if idIdx == 0 {
+		return
+	}
+
+	d.checkFrozen()
+
+	d.fields = slices.Insert(d.fields, 0, field{
+		key:   d.fields[idIdx].key,
+		value: d.fields[idIdx].value,
+	})
 
 	d.fields = slices.Delete(d.fields, idIdx+1, idIdx+2)
 }

@@ -47,8 +47,6 @@ func init() {
 
 // Registry stores cursors.
 //
-// TODO better cleanup (?), more metrics https://github.com/FerretDB/FerretDB/issues/2862
-//
 //nolint:vet // for readability
 type Registry struct {
 	rw sync.RWMutex
@@ -110,10 +108,12 @@ func (r *Registry) Close() {
 
 // NewParams represent parameters for NewCursor.
 type NewParams struct {
-	Iter       types.DocumentsIterator
-	DB         string
-	Collection string
-	Username   string
+	Iter         types.DocumentsIterator
+	DB           string
+	Collection   string
+	Username     string
+	ShowRecordID bool
+	_            struct{} // prevent unkeyed literals
 }
 
 // NewCursor creates and stores a new cursor.
@@ -139,7 +139,7 @@ func (r *Registry) NewCursor(ctx context.Context, params *NewParams) *Cursor {
 
 	r.created.WithLabelValues(params.DB, params.Collection, params.Username).Inc()
 
-	c := newCursor(id, params.DB, params.Collection, params.Username, params.Iter, r)
+	c := newCursor(id, params, r)
 	r.m[id] = c
 
 	r.wg.Add(1)

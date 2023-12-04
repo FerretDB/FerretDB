@@ -8,11 +8,19 @@ linters-settings:
   # asciicheck
   depguard:
     rules:
+      old:
+        files:
+          - $all
+        deny:
+          - pkg: golang.org/x/net/context
+            desc: use `context` package instead
+          - pkg: golang.org/x/exp/slices
+            desc: use `slices` package instead
       commonerrors:
         files:
           - $all
         deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/handlers/commonerrors
+          - pkg: github.com/FerretDB/FerretDB/internal/handler/commonerrors
   exhaustive:
     default-signifies-exhaustive: false
   gci:
@@ -26,7 +34,6 @@ linters-settings:
   godot:
     scope: toplevel
     exclude:
-      - go-sumtype:decl
       - check interfaces
     capital: true
   godox:
@@ -34,6 +41,8 @@ linters-settings:
       - BUG
       - FIXME
       - HACK
+      - lala
+      - lalala
   goheader:
     # Please do not update it, including bumping a year.
     template: |-
@@ -67,7 +76,7 @@ linters-settings:
     alias:
       - pkg: github.com/prometheus/client_model/go
         alias: dto
-      - pkg: go.opentelemetry.io/otel/semconv/v1.17.0
+      - pkg: go.opentelemetry.io/otel/semconv/v1.21.0
         alias: otelsemconv
       - pkg: go.opentelemetry.io/otel/sdk/trace
         alias: oteltrace
@@ -106,6 +115,7 @@ linters:
     - depguard
     - exhaustive
     - gci
+    - gochecksumtype
     - goconst
     - godot
     - godox

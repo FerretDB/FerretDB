@@ -22,7 +22,7 @@ is recommended for most deployments.
 It does not include PostgreSQL or other backends, so you must run them separately.
 You can do that with Docker Compose, Kubernetes, or other means.
 
-### Setup with Docker Compose
+### PostgreSQL Setup with Docker Compose
 
 The following steps describe a quick local setup:
 
@@ -83,7 +83,51 @@ You can improve that setup by:
 
 Find out more about:
 
-- [getting logs](../configuration/logging.md#docker-logs).
+- [getting logs](../configuration/observability.md#docker-logs).
+
+### SQLite Setup with Docker Compose
+
+The following steps describe the setup for SQLite:
+
+1. Store the following in the `docker-compose.yml` file:
+
+   ```yaml
+   services:
+     ferretdb:
+       image: ghcr.io/ferretdb/ferretdb
+       restart: on-failure
+       ports:
+         - 27017:27017
+       environment:
+         - FERRETDB_HANDLER=sqlite
+       volumes:
+         - ./state:/state
+
+   networks:
+     default:
+       name: ferretdb
+   ```
+
+   Unlike PostgreSQL, SQLite operates serverlessly so it does not require its own service in Docker Compose.
+   :::note
+   At the moment, authentication is not available for the SQLite backend ([See Issue here](https://github.com/FerretDB/FerretDB/issues/3008)).
+   :::
+
+2. Start services with `docker compose up -d`.
+3. If you have `mongosh` installed, just run it to connect to FerretDB.
+
+   The example URI would look like:
+
+   ```text
+   mongodb://127.0.0.1:27017/ferretdb
+   ```
+
+   Similarly, if you don't have `mongosh` installed, run this command to run it inside the temporary MongoDB container, attaching to the same Docker network:
+
+   ```text
+   docker run --rm -it --network=ferretdb --entrypoint=mongosh mongo \
+     "mongodb://ferretdb/ferretdb"
+   ```
 
 ## Development image
 

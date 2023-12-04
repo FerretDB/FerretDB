@@ -17,12 +17,10 @@ package clientconn
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
 	"errors"
 	"fmt"
 	"math/rand"
 	"net"
-	"os"
 	"runtime/pprof"
 	"sync"
 	"time"
@@ -31,9 +29,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/handlers"
+	"github.com/FerretDB/FerretDB/internal/handler"
 	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
+	"github.com/FerretDB/FerretDB/internal/util/tlsutil"
 	"github.com/FerretDB/FerretDB/internal/wire"
 )
 
@@ -53,17 +52,22 @@ type Listener struct {
 
 // NewListenerOpts represents listener configuration.
 type NewListenerOpts struct {
-	TCP         string
-	Unix        string
+	TCP  string
+	Unix string
+
 	TLS         string
 	TLSCertFile string
 	TLSKeyFile  string
 	TLSCAFile   string
 
-	ProxyAddr      string
+	ProxyAddr        string
+	ProxyTLSCertFile string
+	ProxyTLSKeyFile  string
+	ProxyTLSCAFile   string
+
 	Mode           Mode
 	Metrics        *connmetrics.ListenerMetrics
-	Handler        handlers.Interface
+	Handler        *handler.Handler
 	Logger         *zap.Logger
 	TestRecordsDir string // if empty, no records are created
 }
@@ -184,6 +188,7 @@ func (l *Listener) Run(ctx context.Context) error {
 		}()
 	}
 
+	<-ctx.Done()
 	logger.Info("Waiting for all connections to stop...")
 	wg.Wait()
 
@@ -200,44 +205,12 @@ type setupTLSListenerOpts struct {
 
 // setupTLSListener returns a new TLS listener or and error.
 func setupTLSListener(opts *setupTLSListenerOpts) (net.Listener, error) {
-	if _, err := os.Stat(opts.certFile); err != nil {
-		return nil, fmt.Errorf("TLS certificate file: %w", err)
-	}
-
-	if _, err := os.Stat(opts.keyFile); err != nil {
-		return nil, fmt.Errorf("TLS key file: %w", err)
-	}
-
-	cert, err := tls.LoadX509KeyPair(opts.certFile, opts.keyFile)
+	config, err := tlsutil.Config(opts.certFile, opts.keyFile, opts.caFile)
 	if err != nil {
 		return nil, err
 	}
 
-	config := tls.Config{
-		Certificates: []tls.Certificate{cert},
-	}
-
-	if opts.caFile != "" {
-		if _, err = os.Stat(opts.caFile); err != nil {
-			return nil, fmt.Errorf("TLS CA file: %w", err)
-		}
-
-		var rootCA []byte
-
-		if rootCA, err = os.ReadFile(opts.caFile); err != nil {
-			return nil, err
-		}
-
-		roots := x509.NewCertPool()
-		if ok := roots.AppendCertsFromPEM(rootCA); !ok {
-			return nil, fmt.Errorf("failed to parse root certificate")
-		}
-
-		config.ClientAuth = tls.RequireAndVerifyClientCert
-		config.ClientCAs = roots
-	}
-
-	listener, err := tls.Listen("tcp", opts.addr, &config)
+	listener, err := tls.Listen("tcp", opts.addr, config)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
@@ -301,12 +274,17 @@ func acceptLoop(ctx context.Context, listener net.Listener, wg *sync.WaitGroup, 
 			pprof.SetGoroutineLabels(runCtx)
 
 			opts := &newConnOpts{
-				netConn:        netConn,
-				mode:           l.Mode,
-				l:              l.Logger.Named("// " + connID + " "), // derive from the original unnamed logger
-				handler:        l.Handler,
-				connMetrics:    l.Metrics.ConnMetrics, // share between all conns
-				proxyAddr:      l.ProxyAddr,
+				netConn:     netConn,
+				mode:        l.Mode,
+				l:           l.Logger.Named("// " + connID + " "), // derive from the original unnamed logger
+				handler:     l.Handler,
+				connMetrics: l.Metrics.ConnMetrics, // share between all conns
+
+				proxyAddr:        l.ProxyAddr,
+				proxyTLSCertFile: l.ProxyTLSCertFile,
+				proxyTLSKeyFile:  l.ProxyTLSKeyFile,
+				proxyTLSCAFile:   l.ProxyTLSCAFile,
+
 				testRecordsDir: l.TestRecordsDir,
 			}
 

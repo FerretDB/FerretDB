@@ -24,6 +24,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
 // TestCreateIndexesCommandCompat tests specific behavior for index creation that can be only provided through RunCommand.
@@ -40,7 +41,8 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 		key            any
 		unique         any
 		resultType     compatTestCaseResultType // defaults to nonEmptyResult
-		skip           string                   // optional, skip test with a specified reason
+
+		skip string // optional, skip test with a specified reason
 	}{
 		"InvalidCollectionName": {
 			collectionName: 42,
@@ -112,15 +114,13 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Helper()
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3175")
+			t.Helper()
+			t.Parallel()
 
 			indexesDoc := bson.D{}
 
@@ -198,10 +198,8 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 // TestCreateIndexesCommandCompatCheckFields check that the response contains response's fields
 // such as numIndexBefore, numIndexAfter, createdCollectionAutomatically
 // contain the correct values.
-func TestCreateIndexesCommandCompatCheckFields(tt *testing.T) {
-	tt.Parallel()
-
-	t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3176")
+func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
+	t.Parallel()
 
 	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
 	targetCollection := targetCollections[0]
@@ -290,7 +288,8 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 		toDrop   any                // required, index to drop
 
 		resultType compatTestCaseResultType // optional, defaults to nonEmptyResult
-		skip       string                   // optional, skip test with a specified reason
+
+		skip string // optional, skip test with a specified reason
 	}{
 		"MultipleIndexesByName": {
 			toCreate: []mongo.IndexModel{
@@ -312,6 +311,13 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 			toDrop:     bson.A{"non-existent", "invalid"},
 			resultType: emptyResult,
 		},
+		"MultipleIndexesWithDefault": {
+			toCreate: []mongo.IndexModel{
+				{Keys: bson.D{{"v", 1}}},
+			},
+			toDrop:     bson.A{"v_1", "_id_"},
+			resultType: emptyResult,
+		},
 		"InvalidMultipleIndexType": {
 			toDrop:     bson.A{1},
 			resultType: emptyResult,
@@ -321,6 +327,13 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 				{Keys: bson.D{{"v", -1}}},
 			},
 			toDrop: bson.D{{"v", -1}},
+		},
+		"SimilarIndexes": {
+			toCreate: []mongo.IndexModel{
+				{Keys: bson.D{{"v", 1}, {"foo", 1}}},
+				{Keys: bson.D{{"v", 1}, {"bar", 1}}},
+			},
+			toDrop: bson.D{{"v", 1}, {"bar", 1}},
 		},
 		"DropAllExpression": {
 			toCreate: []mongo.IndexModel{
@@ -375,11 +388,10 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 			for i := range targetCollections {
 				targetCollection := targetCollections[i]
 				compatCollection := compatCollections[i]
-
 				tt.Run(targetCollection.Name(), func(tt *testing.T) {
 					tt.Helper()
 
-					t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3175")
+					var t testtb.TB = tt
 
 					if tc.toCreate != nil {
 						_, targetErr := targetCollection.Indexes().CreateMany(ctx, tc.toCreate)
@@ -404,7 +416,7 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 						targetList := FetchAll(t, ctx, targetCursor)
 						compatList := FetchAll(t, ctx, compatCursor)
 
-						require.Equal(t, compatList, targetList)
+						require.ElementsMatch(t, compatList, targetList)
 					}
 
 					targetCommand := bson.D{
@@ -439,7 +451,7 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 						require.Nil(t, compatRes)
 					}
 
-					require.Equal(t, compatRes, targetRes)
+					require.ElementsMatch(t, compatRes, targetRes)
 
 					if compatErr == nil {
 						nonEmptyResults = true
@@ -462,13 +474,8 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 					targetList := FetchAll(t, ctx, targetCursor)
 					compatList := FetchAll(t, ctx, compatCursor)
 
-					assert.Equal(t, compatList, targetList)
+					assert.ElementsMatch(t, compatList, targetList)
 				})
-			}
-
-			// https://github.com/FerretDB/FerretDB/issues/3175
-			if setup.IsSQLite(tt) {
-				return
 			}
 
 			switch tc.resultType {

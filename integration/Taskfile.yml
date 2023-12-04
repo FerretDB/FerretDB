@@ -6,7 +6,7 @@ vars:
   BENCH_NAME: .
   BENCH_COUNT: 10
   BENCH_TIME: 5s
-  BENCH_DOCS: 0
+  BENCH_DOCS: 1000
   RACE_FLAG: -race={{and (ne OS "windows") (ne ARCH "arm") (ne ARCH "riscv64")}}
   BUILD_TAGS:
 
@@ -16,13 +16,13 @@ tasks:
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
-        -target-backend=ferretdb-pg
-        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
+        -target-backend=ferretdb-postgresql
+        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
-        -target-backend=ferretdb-pg
-        -postgresql-url=postgres://username:password@127.0.0.1:5433/ferretdb?pool_max_conns=50
+        -target-backend=ferretdb-postgresql
+        -postgresql-url=postgres://username:password@127.0.0.1:5433/ferretdb
       - >
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
@@ -33,53 +33,59 @@ tasks:
         go test -count=1 {{.RACE_FLAG}} -run=TestEnvData
         -tags=ferretdb_testenvdata .
         -target-backend=mongodb
-        -target-url=mongodb://127.0.0.1:47017/
+        -target-url='mongodb://127.0.0.1:47017/'
 
   integration-gen:
     cmds:
       - go generate -x ./...
 
-  integration-lint:
+  lint:
+    desc: "Run linters"
     cmds:
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - ../bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
-      - ../bin/go-consistent{{exeExt}} -pedantic ./...
-      - ../bin/go-sumtype{{exeExt}} ./...
+
+      # Stop CI from failing too often; see https://github.com/quasilyte/go-consistent/issues/38.
+      # Still, note the output and fix the issues.
+      - cmd: ../bin/go-consistent{{exeExt}} -pedantic ./...
+        ignore_error: true
+
       - go vet -vettool=../bin/checkswitch{{exeExt}} ./...
+      - go vet -vettool=../bin/checkcomments{{exeExt}} ./...
 
   integration-security:
     cmds:
       - ../bin/govulncheck{{exeExt}} -test ./...
 
-  bench-pg:
-    desc: "Run benchmarks for `pg` handler"
+  bench-postgresql:
+    desc: "Run benchmarks for `postgresql` backend"
     cmds:
       - >
         go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
         -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
-        -target-backend=ferretdb-pg
-        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
-        | tee new-pg.txt
-      - ../bin/benchstat{{exeExt}} old-pg.txt new-pg.txt
+        -target-backend=ferretdb-postgresql
+        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+        | tee new-postgresql.txt
+      - ../bin/benchstat{{exeExt}} old-postgresql.txt new-postgresql.txt
 
-  bench-pg-no-pushdown:
-    desc: "Run benchmarks for `pg` with query pushdown disabled"
+  bench-postgresql-no-pushdown:
+    desc: "Run benchmarks for `postgresql` backend without filter pushdown"
     cmds:
       - >
         go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
         -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
-        -target-backend=ferretdb-pg
-        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb?pool_max_conns=50
-        -- -disable-filter-pushdown
-        | tee new-pg.txt
-      - ../bin/benchstat{{exeExt}} old-pg.txt new-pg.txt
+        -target-backend=ferretdb-postgresql
+        -postgresql-url=postgres://username@127.0.0.1:5432/ferretdb
+        -disable-filter-pushdown
+        | tee new-postgresql.txt
+      - ../bin/benchstat{{exeExt}} old-postgresql.txt new-postgresql.txt
 
   bench-sqlite:
-    desc: "Run benchmarks for `sqlite` handler"
+    desc: "Run benchmarks for `sqlite` backend"
     cmds:
       - >
         go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
@@ -92,7 +98,7 @@ tasks:
       - ../bin/benchstat{{exeExt}} old-sqlite.txt new-sqlite.txt
 
   bench-sqlite-no-pushdown:
-    desc: "Run benchmarks for `sqlite` with query pushdown disabled"
+    desc: "Run benchmarks for `sqlite` with filter pushdown disabled"
     cmds:
       - >
         go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
@@ -101,7 +107,34 @@ tasks:
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=ferretdb-sqlite
         -sqlite-url=file:../tmp/sqlite-tests/
-        -- -disable-filter-pushdown
+        -disable-filter-pushdown
+        | tee new-sqlite.txt
+      - ../bin/benchstat{{exeExt}} old-sqlite.txt new-sqlite.txt
+
+  bench-mysql:
+    desc: "Run benchmarks for `mysql` backend"
+    cmds:
+      - >
+        go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
+        -count={{.BENCH_COUNT}} -bench-{{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
+        -log-level=error
+        -bench-docs={{.BENCH_DOCS}}
+        -target-backend=ferretdb-mysql
+        -mysql-url=mysql://username:password@127.0.0.1:3306/ferretdb
+        | tee new-mysql.txt
+      - ../bin/benchstat{{exeExt}} old-mysql.txt new-mysql.txt
+
+  bench-mysql-no-pushdown:
+    desc: "Run benchmarks for `mysql` with filter pushdown disabled"
+    cmds:
+      - >
+        go test -tags={{.BUILD_TAGS}} -timeout=0 -run=XXX
+        -count={{.BENCH_COUNT}} -bench={{.BENCH_NAME}} -benchtime={{.BENCH_TIME}} -benchmem
+        -log-level=error
+        -bench-docs={{.BENCH_DOCS}}
+        -target-backend=ferretdb-mysql
+        -mysql-url=mysql://username:password@127.0.0.1:3306/ferretdb
+        -disable-filter-pushdown
         | tee new-sqlite.txt
       - ../bin/benchstat{{exeExt}} old-sqlite.txt new-sqlite.txt
 
@@ -114,6 +147,6 @@ tasks:
         -log-level=error
         -bench-docs={{.BENCH_DOCS}}
         -target-backend=mongodb
-        -target-url=mongodb://127.0.0.1:47017/
+        -target-url='mongodb://127.0.0.1:47017/'
         | tee new-mongodb.txt
       - ../bin/benchstat{{exeExt}} old-mongodb.txt new-mongodb.txt

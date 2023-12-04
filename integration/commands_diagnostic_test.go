@@ -17,6 +17,7 @@ package integration
 import (
 	"net"
 	"net/url"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -74,10 +75,8 @@ func TestCommandsDiagnosticExplain(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/3050")
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
 			var actual bson.D
 
@@ -186,14 +185,12 @@ func TestCommandsDiagnosticGetLog(t *testing.T) {
 		},
 	} {
 		name, tc := name, tc
-		t.Run(name, func(tt *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			if tc.skip != "" {
-				tt.Skip(tc.skip)
+				t.Skip(tc.skip)
 			}
 
-			tt.Parallel()
-
-			t := setup.FailsForSQLite(tt, "https://github.com/FerretDB/FerretDB/issues/2775")
+			t.Parallel()
 
 			require.NotNil(t, tc.command, "command must not be nil")
 
@@ -225,21 +222,24 @@ func TestCommandsDiagnosticHostInfo(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	var actual bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{{"hostInfo", 42}}).Decode(&actual)
+	var a bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"hostInfo", 42}}).Decode(&a)
 	require.NoError(t, err)
 
-	m := actual.Map()
-	t.Log(m)
+	actual := ConvertDocument(t, a)
+	assert.Equal(t, float64(1), must.NotFail(actual.Get("ok")))
 
-	assert.Equal(t, float64(1), m["ok"])
-	assert.Equal(t, []string{"system", "os", "extra", "ok"}, CollectKeys(t, actual))
+	keys := actual.Keys()
+	keys = slices.DeleteFunc(keys, func(val string) bool {
+		return val == "$clusterTime" || val == "operationTime"
+	})
+	assert.Equal(t, []string{"system", "os", "extra", "ok"}, keys)
 
-	os := m["os"].(bson.D)
-	assert.Equal(t, []string{"type", "name", "version"}, CollectKeys(t, os))
+	os := must.NotFail(actual.Get("os")).(*types.Document)
+	assert.Equal(t, []string{"type", "name", "version"}, os.Keys())
 
-	system := m["system"].(bson.D)
-	keys := CollectKeys(t, system)
+	system := must.NotFail(actual.Get("system")).(*types.Document)
+	keys = system.Keys()
 	assert.Contains(t, keys, "currentTime")
 	assert.Contains(t, keys, "hostname")
 	assert.Contains(t, keys, "cpuAddrSize")
@@ -251,19 +251,22 @@ func TestCommandsDiagnosticListCommands(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	var actual bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{{"listCommands", 42}}).Decode(&actual)
+	var a bson.D
+	err := collection.Database().RunCommand(ctx, bson.D{{"listCommands", 42}}).Decode(&a)
 	require.NoError(t, err)
 
-	m := actual.Map()
-	t.Log(m)
+	actual := ConvertDocument(t, a)
+	assert.Equal(t, float64(1), must.NotFail(actual.Get("ok")))
 
-	assert.Equal(t, float64(1), m["ok"])
-	assert.Equal(t, []string{"commands", "ok"}, CollectKeys(t, actual))
+	keys := actual.Keys()
+	keys = slices.DeleteFunc(keys, func(val string) bool {
+		return val == "$clusterTime" || val == "operationTime"
+	})
+	assert.Equal(t, []string{"commands", "ok"}, keys)
 
-	commands := m["commands"].(bson.D)
-	listCommands := commands.Map()["listCommands"].(bson.D)
-	assert.NotEmpty(t, listCommands.Map()["help"].(string))
+	commands := must.NotFail(actual.Get("commands")).(*types.Document)
+	listCommands := must.NotFail(commands.Get("listCommands")).(*types.Document)
+	assert.NotEmpty(t, must.NotFail(listCommands.Get("help")).(string))
 }
 
 func TestCommandsDiagnosticValidate(t *testing.T) {
@@ -295,6 +298,9 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 
 	actual.Remove("keysPerIndex")
 	actual.Remove("indexDetails")
+	actual.Remove("$clusterTime")
+	actual.Remove("operationTime")
+
 	testutil.CompareAndSetByPathNum(t, expected, actual, 39, types.NewStaticPath("nrecords"))
 	testutil.AssertEqual(t, expected, actual)
 }
@@ -305,11 +311,8 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // for readability
-		command bson.D // required, command to run
-
-		err        *mongo.CommandError // required, expected error from MongoDB
-		altMessage string              // optional, alternative error message for FerretDB, ignored if empty
-		skip       string              // optional, skip test with a specified reason
+		command bson.D
+		err     *mongo.CommandError
 	}{
 		"InvalidTypeDocument": {
 			command: bson.D{{"validate", bson.D{}}},
@@ -318,7 +321,6 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 				Name:    "InvalidNamespace",
 				Message: "collection name has invalid type object",
 			},
-			altMessage: "collection name has invalid type object",
 		},
 		"NonExistentCollection": {
 			command: bson.D{{"validate", "nonExistentCollection"}},
@@ -331,10 +333,6 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
-			if tc.skip != "" {
-				t.Skip(tc.skip)
-			}
-
 			t.Parallel()
 
 			require.NotNil(t, tc.command, "command must not be nil")
@@ -346,7 +344,7 @@ func TestCommandsDiagnosticValidateError(t *testing.T) {
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(res)
 
 			assert.Nil(t, res)
-			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			AssertEqualCommandError(t, *tc.err, err)
 		})
 	}
 }
@@ -433,9 +431,9 @@ func TestCommandWhatsMyURIConnection(t *testing.T) {
 	t.Run("SameClientStress", func(t *testing.T) {
 		t.Parallel()
 
-		ports := make(chan string, teststress.NumGoroutines)
+		ports := make(chan string, 10)
 
-		teststress.Stress(t, func(ready chan<- struct{}, start <-chan struct{}) {
+		teststress.StressN(t, len(ports), func(ready chan<- struct{}, start <-chan struct{}) {
 			ready <- struct{}{}
 			<-start
 

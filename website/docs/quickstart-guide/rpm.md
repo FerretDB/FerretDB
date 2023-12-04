@@ -8,6 +8,7 @@ To install the `.rpm` packages for FerretDB on your RHEL, CentOS, and other `.rp
 you can use `rpm` tool.
 
 Download the latest FerretDB `.rpm` package from [our release pages](https://github.com/FerretDB/FerretDB/releases/latest),
+rename it to `ferretdb.rpm`,
 then run the following command in your terminal:
 
 ```sh
@@ -20,7 +21,7 @@ You can check that FerretDB was installed by running
 ferretdb --version
 ```
 
-FerretDB does not automatically installs PostgreSQL or other backends.
+FerretDB does not automatically install PostgreSQL or other backends.
 To install PostgreSQL, run the following commands:
 
 ```sh
@@ -32,4 +33,4 @@ You have to do it manually by running `ferretdb` binary with the [correct flags]
 
 Find out more about:
 
-- [getting logs](../configuration/logging.md#binary-executable-logs).
+- [getting logs](../configuration/observability.md#binary-executable-logs).

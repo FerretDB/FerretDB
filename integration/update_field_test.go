@@ -87,6 +87,51 @@ func TestUpdateFieldSet(t *testing.T) {
 	}
 }
 
+// TestUpdateFieldSetIDDoc checks that the order of fields in the _id document matters.
+func TestUpdateFieldSetIDDoc(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+
+	_, err := collection.InsertOne(ctx, bson.D{
+		{"_id", bson.D{{"a", int32(1)}, {"z", int32(2)}}},
+		{"v", int32(1)},
+	})
+	require.NoError(t, err)
+	_, err = collection.InsertOne(ctx, bson.D{
+		{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
+		{"v", int32(2)},
+	})
+	require.NoError(t, err)
+
+	res, err := collection.UpdateByID(
+		ctx,
+		bson.D{{"a", int32(3)}, {"z", int32(4)}},
+		bson.D{{"$set", bson.D{{"v", int32(3)}}}},
+	)
+	require.NoError(t, err)
+	assert.Equal(t, &mongo.UpdateResult{MatchedCount: 1, ModifiedCount: 1}, res)
+
+	expected := []bson.D{{
+		{"_id", bson.D{{"a", int32(1)}, {"z", int32(2)}}},
+		{"v", int32(1)},
+	}, {
+		{"_id", bson.D{{"a", int32(3)}, {"z", int32(4)}}},
+		{"v", int32(3)},
+	}}
+	AssertEqualDocumentsSlice(t, expected, FindAll(t, ctx, collection))
+
+	res, err = collection.UpdateByID(
+		ctx,
+		bson.D{{"z", int32(4)}, {"a", int32(3)}},
+		bson.D{{"$set", bson.D{{"v", int32(4)}}}},
+	)
+	require.NoError(t, err)
+	assert.Equal(t, new(mongo.UpdateResult), res)
+
+	AssertEqualDocumentsSlice(t, expected, FindAll(t, ctx, collection))
+}
+
 func TestUpdateFieldSetUpdateManyUpsert(t *testing.T) {
 	t.Parallel()
 
@@ -508,6 +553,82 @@ func TestUpdateFieldErrors(t *testing.T) {
 				Code:    56,
 				Message: "The update path 'v.' contains an empty field name, which is not allowed.",
 			},
+		},
+		"BitUnsupportedOperator": {
+			id: "int32",
+			update: bson.D{
+				{"$bit", bson.D{{"v", bson.D{{"not", 1}}}}},
+			},
+			err: &mongo.WriteError{
+				Code: 2,
+				Message: "The $bit modifier only supports 'and', 'or', and 'xor', not 'not' " +
+					"which is an unknown operator: {not: 1}",
+			},
+			provider: shareddata.Int32s,
+		},
+		"BitEmptyFieldPath": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$bit", bson.D{{"v.", bson.D{{"and", 1}}}}}},
+			err: &mongo.WriteError{
+				Code:    56,
+				Message: "The update path 'v.' contains an empty field name, which is not allowed.",
+			},
+		},
+		"BitEmptyOperation": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$bit", bson.D{{"v", bson.D{}}}}},
+			err: &mongo.WriteError{
+				Code: 2,
+				Message: "You must pass in at least one bitwise operation. " +
+					"The format is: {$bit: {field: {and/or/xor: #}}",
+			},
+		},
+		"BitUnsuitableValue": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$bit", bson.D{{"v.foo", bson.D{{"or", 1}}}}}},
+			err: &mongo.WriteError{
+				Code: 28,
+				Message: "Cannot create field 'foo' in element " +
+					"{v: [ { foo: [ { bar: \"hello\" }, { bar: \"world\" } ] } ]}",
+			},
+		},
+		"BitNonIntegralDocValue": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$bit", bson.D{{"v.0.foo", bson.D{{"and", 1}}}}}},
+			err: &mongo.WriteError{
+				Code: 2,
+				Message: "Cannot apply $bit to a value of non-integral type." +
+					"_id: \"array-documents-nested\" has the field foo of non-integer type array",
+			},
+		},
+		"BitIncompatibleOperatorValue": {
+			id:     "array-documents-nested",
+			update: bson.D{{"$bit", "string"}},
+			err: &mongo.WriteError{
+				Code: 9,
+				Message: "Modifiers operate on fields but we found type string instead. " +
+					"For example: {$mod: {<field>: ...}} not {$bit: \"string\"}",
+			},
+		},
+		"BitEmbeddedDocBadValue": {
+			id:     "int32",
+			update: bson.D{{"$bit", bson.D{{"test", "and"}}}},
+			err: &mongo.WriteError{
+				Code: 2,
+				Message: "The $bit modifier is not compatible with a string. " +
+					"You must pass in an embedded document: {$bit: {field: {and/or/xor: #}}",
+			},
+			provider: shareddata.Int32s,
+		},
+		"BitNonIntegralOperand": {
+			id:     "int32",
+			update: bson.D{{"$bit", bson.D{{"v", bson.D{{"and", "test"}}}}}},
+			err: &mongo.WriteError{
+				Code: 2,
+				Message: "The $bit modifier field must be an Integer(32/64 bit); " +
+					"a 'string' is not supported here: {and: \"test\"}",
+			},
+			provider: shareddata.Int32s,
 		},
 	} {
 		name, tc := name, tc

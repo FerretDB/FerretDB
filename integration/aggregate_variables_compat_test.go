@@ -32,8 +32,7 @@ func TestAggregateVariablesCompatRoot(t *testing.T) {
 			pipeline: bson.A{
 				bson.D{{"$addFields", bson.D{{"field", "$$ROOT"}}}},
 			},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
-			skip:           "https://github.com/FerretDB/FerretDB/issues/1413",
+			skip: "https://github.com/FerretDB/FerretDB/issues/1413",
 		},
 		"GroupID": {
 			pipeline: bson.A{
@@ -41,8 +40,7 @@ func TestAggregateVariablesCompatRoot(t *testing.T) {
 				bson.D{{"$group", bson.D{{"_id", "$$ROOT"}}}},
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
-			skip:           "https://github.com/FerretDB/FerretDB/issues/1992",
+			skip: "https://github.com/FerretDB/FerretDB/issues/1992",
 		},
 		"GroupIDTwice": {
 			pipeline: bson.A{
@@ -51,8 +49,41 @@ func TestAggregateVariablesCompatRoot(t *testing.T) {
 				bson.D{{"$group", bson.D{{"_id", "$$ROOT"}}}},
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
-			skip:           "https://github.com/FerretDB/FerretDB/issues/1992",
+			skip: "https://github.com/FerretDB/FerretDB/issues/1992",
+		},
+		"GroupIDFieldID": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{{"_id", "$$ROOT._id"}}}},
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/1992",
+		},
+		"GroupIDFieldValue": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{
+					{"_id", "$$ROOT.v"},
+					// set first _id of the documents as group's unique value
+					{"unique", bson.D{{"$first", "$_id"}}},
+				}}},
+				bson.D{{"$sort", bson.D{{"unique", 1}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/2185",
+		},
+		"GroupIDFieldDotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{{"_id", "$$ROOT.v.foo"}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/1992",
+		},
+		"GroupIDFieldArrayDotNotation": {
+			pipeline: bson.A{
+				bson.D{{"$sort", bson.D{{"_id", 1}}}},
+				bson.D{{"$group", bson.D{{"_id", "$$ROOT.v.0"}}}},
+			},
+			skip: "https://github.com/FerretDB/FerretDB/issues/1992",
 		},
 		"GroupIDExpression": {
 			pipeline: bson.A{
@@ -62,8 +93,7 @@ func TestAggregateVariablesCompatRoot(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", 1}}}},
 			},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
-			skip:           "https://github.com/FerretDB/FerretDB/issues/1992",
+			skip: "https://github.com/FerretDB/FerretDB/issues/1992",
 		},
 		"GroupSumAccumulator": {
 			pipeline: bson.A{
@@ -74,7 +104,6 @@ func TestAggregateVariablesCompatRoot(t *testing.T) {
 				}}},
 				bson.D{{"$sort", bson.D{{"_id", -1}}}},
 			},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
 		},
 		"ProjectSumOperator": {
 			pipeline: bson.A{
@@ -82,8 +111,7 @@ func TestAggregateVariablesCompatRoot(t *testing.T) {
 					{"sum", bson.D{{"$sum", "$$ROOT"}}},
 				}}},
 			},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
-			skip:           "https://github.com/FerretDB/FerretDB/issues/1992",
+			skip: "https://github.com/FerretDB/FerretDB/issues/1992",
 		},
 		"ProjectTypeOperator": {
 			pipeline: bson.A{
@@ -91,22 +119,19 @@ func TestAggregateVariablesCompatRoot(t *testing.T) {
 					{"type", bson.D{{"$type", "$$ROOT"}}},
 				}}},
 			},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
-			skip:           "https://github.com/FerretDB/FerretDB/issues/1992",
+			skip: "https://github.com/FerretDB/FerretDB/issues/1992",
 		},
 		"Set": {
 			pipeline: bson.A{
 				bson.D{{"$set", bson.D{{"field", "$$ROOT"}}}},
 			},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
-			skip:           "https://github.com/FerretDB/FerretDB/issues/1413",
+			skip: "https://github.com/FerretDB/FerretDB/issues/1413",
 		},
 		"Unwind": {
 			pipeline: bson.A{
 				bson.D{{"$unwind", "$$ROOT"}},
 			},
-			failsForSQLite: "https://github.com/FerretDB/FerretDB/issues/3148",
-			resultType:     emptyResult,
+			resultType: emptyResult,
 		},
 	}
 

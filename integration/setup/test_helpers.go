@@ -21,18 +21,25 @@ import (
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
+// IsPostgreSQL returns true if the current test is running for PostgreSQL backend.
+//
+// This function should not be used lightly.
+func IsPostgreSQL(tb testtb.TB) bool {
+	return *targetBackendF == "ferretdb-postgresql"
+}
+
+// IsSQLite returns true if the current test is running for SQLite backend.
+//
+// This function should not be used lightly.
+func IsSQLite(tb testtb.TB) bool {
+	return *targetBackendF == "ferretdb-sqlite"
+}
+
 // IsMongoDB returns true if the current test is running for MongoDB.
 //
 // This function should not be used lightly.
 func IsMongoDB(tb testtb.TB) bool {
 	return *targetBackendF == "mongodb"
-}
-
-// IsSQLite returns true if the current test is running for SQLite.
-//
-// This function should not be used lightly.
-func IsSQLite(tb testtb.TB) bool {
-	return *targetBackendF == "ferretdb-sqlite"
 }
 
 // FailsForFerretDB return testtb.TB that expects test to fail for FerretDB and pass for MongoDB.
@@ -54,7 +61,7 @@ func FailsForFerretDB(tb testtb.TB, reason string) testtb.TB {
 func FailsForSQLite(tb testtb.TB, reason string) testtb.TB {
 	tb.Helper()
 
-	if *targetBackendF == "ferretdb-sqlite" {
+	if IsSQLite(tb) {
 		return testfail.Expected(tb, reason)
 	}
 
@@ -74,12 +81,7 @@ func SkipForMongoDB(tb testtb.TB, reason string) {
 	}
 }
 
-// IsPushdownDisabled returns true if FerretDB pushdowns are disabled.
-func IsPushdownDisabled() bool {
+// FilterPushdownDisabled returns true if FerretDB filter pushdown is disabled.
+func FilterPushdownDisabled() bool {
 	return *disableFilterPushdownF
-}
-
-// IsSortPushdownEnabled returns true if sort pushdown is enabled.
-func IsSortPushdownEnabled() bool {
-	return *enableSortPushdownF
 }

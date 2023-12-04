@@ -14,8 +14,57 @@
 
 package sqlite
 
-import "testing"
+import (
+	"testing"
 
-func TestDummy(t *testing.T) {
-	// we need at least one test per package to correctly calculate coverage
+	"github.com/stretchr/testify/require"
+
+	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
+	"github.com/FerretDB/FerretDB/internal/util/state"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+)
+
+func TestCollectionsStats(t *testing.T) {
+	t.Parallel()
+	ctx := testutil.Ctx(t)
+
+	sp, err := state.NewProvider("")
+	require.NoError(t, err)
+
+	r, err := metadata.NewRegistry(testutil.TestSQLiteURI(t, ""), testutil.Logger(t), sp)
+	require.NoError(t, err)
+	t.Cleanup(r.Close)
+
+	dbName := testutil.DatabaseName(t)
+	d, err := r.DatabaseGetOrCreate(ctx, dbName)
+	require.NoError(t, err)
+
+	cNames := []string{"collectionOne", "collectionTwo"}
+	colls := make([]*metadata.Collection, len(cNames))
+
+	for i, cName := range cNames {
+		_, err = r.CollectionCreate(ctx, &metadata.CollectionCreateParams{DBName: dbName, Name: cName})
+		require.NoError(t, err)
+		colls[i] = r.CollectionGet(ctx, dbName, cName)
+	}
+
+	t.Run("RefreshTwoTables", func(t *testing.T) {
+		_, err = collectionsStats(ctx, d, colls, true)
+		require.NoError(t, err)
+	})
+
+	t.Run("RefreshNonExistentFirstTable", func(t *testing.T) {
+		_, err = collectionsStats(ctx, d, []*metadata.Collection{{TableName: "non-existent"}, colls[0]}, true)
+		require.ErrorContains(t, err, "SQL logic error: no such table: non-existent")
+	})
+
+	t.Run("RefreshNonExistentSecondTable", func(t *testing.T) {
+		_, err = collectionsStats(ctx, d, []*metadata.Collection{colls[0], {TableName: "non-existent"}}, true)
+		require.ErrorContains(t, err, "SQL logic error: no such table: non-existent")
+	})
+
+	t.Run("NoRefreshWithNonExistentTable", func(t *testing.T) {
+		_, err = collectionsStats(ctx, d, []*metadata.Collection{{TableName: "non-existent"}, colls[0]}, false)
+		require.NoError(t, err)
+	})
 }

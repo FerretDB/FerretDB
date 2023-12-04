@@ -12,7 +12,7 @@ services:
       -c log_min_duration_statement=1000ms
       -c log_min_error_statement=WARNING
       -c log_min_messages=WARNING
-      -c max_connections=200
+      -c max_connections=300
     ports:
       - 5432:5432
     extra_hosts:
@@ -47,14 +47,36 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=ferretdb
 
+  mysql:
+    build:
+      context: ./build/deps
+      dockerfile: mysql.Dockerfile
+    container_name: ferretdb_mysql
+    command:
+      - --slow_query_log=1
+      - --long_query_time=1
+      - --log_error_verbosity=2
+      - --max_connections=200
+    ports:
+      - 3306:3306
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # UTC−03:30/−02:30. Set to catch timezone problems.
+      - TZ=America/St_Johns
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_USER=username
+      - MYSQL_PASSWORD=password
+      - MYSQL_DATABASE=ferretdb
+
   mongodb:
     build:
       context: ./build/deps
-      dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
+      dockerfile: mongo.Dockerfile
     container_name: ferretdb_mongodb
-    command: --config /etc/mongod.conf
+    command: --config /etc/mongodb.conf
     ports:
-      - 47017:27017
+      - 47017:47017
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -62,16 +84,16 @@ services:
       - TZ=Asia/Kathmandu
     volumes:
       - ./build/certs:/etc/certs
-      - ./build/mongod.conf:/etc/mongod.conf
+      - ./build/mongodb.conf:/etc/mongodb.conf
 
   mongodb_secured:
     build:
       context: ./build/deps
-      dockerfile: ${MONGO_DOCKERFILE:-mongo6}.Dockerfile
+      dockerfile: mongo.Dockerfile
     container_name: ferretdb_mongodb_secured
-    command: --config /etc/mongod.conf
+    command: --config /etc/mongodb.conf
     ports:
-      - 47018:27017
+      - 47018:47018
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
@@ -81,7 +103,7 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=password
     volumes:
       - ./build/certs:/etc/certs
-      - ./build/mongod_secured.conf:/etc/mongod.conf
+      - ./build/mongodb_secured.conf:/etc/mongodb.conf
 
   # for test scripts
   legacy-mongo-shell:
@@ -103,9 +125,12 @@ services:
       context: ./build/deps
       dockerfile: jaeger.Dockerfile
     container_name: ferretdb_jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
     ports:
+      - 4318:4318 # OTLP over HTTP
+      - 6831:6831/udp # Compact Thrift from BuildKit
       - 16686:16686 # UI on http://127.0.0.1:16686/
-      - 14268:14268 # to receive spans from clients
 
   trivy:
     build:
@@ -114,24 +139,6 @@ services:
     container_name: ferretdb_trivy
     volumes:
       - .:/workdir
-
-  # for testing .deb and .rpm packages
-  ubuntu:
-    build:
-      context: ./build/deps
-      dockerfile: ubuntu2204.Dockerfile
-    container_name: ferretdb_ubuntu
-    platform: linux/amd64
-    volumes:
-      - ./tmp/debs:/debs
-  ubi:
-    build:
-      context: ./build/deps
-      dockerfile: ubi9.Dockerfile
-    container_name: ferretdb_ubi
-    platform: linux/amd64
-    volumes:
-      - ./tmp/rpms:/rpms
 
   # for YAML files
   prettier:
@@ -210,3 +217,7 @@ services:
       - ./website/sidebars.js:/workdir/docusaurus-docs/sidebars.js:ro
 
       - ./website/build:/workdir/docusaurus-docs/build:rw
+
+networks:
+  default:
+    name: ferretdb
