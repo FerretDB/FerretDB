@@ -62,7 +62,7 @@ func TestCursor(t *testing.T) {
 	_, err = collection2.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
-	t.Run("CursorClosedAsExpected", func(t *testing.T) {
+	t.Run("CursorIDIsZeroAfterLastGetMore", func(t *testing.T) {
 		cur, err := collection2.Find(ctx, bson.D{}, opts)
 		require.NoError(t, err)
 		assert.Equal(t, 1, cur.RemainingBatchLength())
@@ -72,7 +72,7 @@ func TestCursor(t *testing.T) {
 		assert.NotEqual(t, int64(0), cur.ID())
 
 		assert.Equal(t, 0, cur.RemainingBatchLength())
-		cur.Next(ctx)                       // last getMore
+		cur.Next(ctx)                       // last getMore does a network request to confirm there's no more documents to fetch
 		assert.Equal(t, int64(0), cur.ID()) // ID is 0 if the cursor has been closed or exhausted
 
 		assert.False(t, cur.TryNext(ctx))
@@ -80,6 +80,7 @@ func TestCursor(t *testing.T) {
 
 	t.Run("CursorNotFoundAfterDisconnect", func(t *testing.T) {
 		t.Skip("not valid")
+
 		cur, err := collection2.Find(ctx, bson.D{}, opts)
 		require.NoError(t, err)
 
