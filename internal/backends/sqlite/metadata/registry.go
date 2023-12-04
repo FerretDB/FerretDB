@@ -326,9 +326,9 @@ func (r *Registry) collectionCreate(ctx context.Context, params *CollectionCreat
 		Name:      collectionName,
 		TableName: tableName,
 		Settings: Settings{
+			UUID:            uuid.NewString(),
 			CappedSize:      params.CappedSize,
 			CappedDocuments: params.CappedDocuments,
-			UUID:            uuid.NewString(),
 		},
 	}
 

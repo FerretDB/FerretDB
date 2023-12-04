@@ -523,10 +523,10 @@ func (r *Registry) collectionCreate(ctx context.Context, p *pgxpool.Pool, params
 
 	c := &Collection{
 		Name:            collectionName,
+		UUID:            uuid.NewString(),
 		TableName:       tableName,
 		CappedSize:      params.CappedSize,
 		CappedDocuments: params.CappedDocuments,
-		UUID:            uuid.NewString(),
 	}
 
 	q := fmt.Sprintf(`CREATE TABLE %s (`, pgx.Identifier{dbName, tableName}.Sanitize())
