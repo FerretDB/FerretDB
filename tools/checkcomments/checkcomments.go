@@ -69,7 +69,7 @@ func run(pass *analysis.Pass) (any, error) {
 	}
 
 	defer func() {
-		if err := cf.Close(); err != nil {
+		if err = cf.Close(); err != nil {
 			log.Println(err)
 		}
 	}()
@@ -168,7 +168,7 @@ func checkTodoComments(pass *analysis.Pass, cache *issueCache, client *github.Cl
 					msg := "Rate limit reached."
 
 					if os.Getenv("GITHUB_TOKEN") == "" {
-						msg += "Please set a GITHUB_TOKEN as described at " +
+						msg += " Please set a GITHUB_TOKEN as described at " +
 							"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token"
 					}
 
