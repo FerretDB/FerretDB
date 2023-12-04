@@ -75,7 +75,7 @@ func TestCursor(t *testing.T) {
 		cur.Next(ctx)                       // last getMore does a network request to confirm there's no more documents to fetch
 		assert.Equal(t, int64(0), cur.ID()) // ID is 0 if the cursor has been closed or exhausted
 
-		assert.False(t, cur.TryNext(ctx))
+		assert.False(t, cur.TryNext(ctx)) // .
 	})
 
 	t.Run("CursorNotFoundAfterDisconnect", func(t *testing.T) {
