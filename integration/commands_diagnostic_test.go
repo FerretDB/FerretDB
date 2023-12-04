@@ -274,33 +274,74 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 
 	ctx, collection := setup.Setup(t, shareddata.Doubles)
 
-	var doc bson.D
-	err := collection.Database().RunCommand(ctx, bson.D{{"validate", collection.Name()}}).Decode(&doc)
-	require.NoError(t, err)
+	t.Run("Basic", func(t *testing.T) {
+		t.Parallel()
 
-	actual := ConvertDocument(t, doc)
-	expected := must.NotFail(types.NewDocument(
-		"ns", "TestCommandsDiagnosticValidate.TestCommandsDiagnosticValidate",
-		"nInvalidDocuments", int32(0),
-		"nNonCompliantDocuments", int32(0),
-		"nrecords", int32(25),
-		"nIndexes", int32(1),
-		"valid", true,
-		"repaired", false,
-		"warnings", types.MakeArray(0),
-		"errors", types.MakeArray(0),
-		"extraIndexEntries", types.MakeArray(0),
-		"missingIndexEntries", types.MakeArray(0),
-		"corruptRecords", types.MakeArray(0),
-		"ok", float64(1),
-	))
+		var doc bson.D
+		command := bson.D{{"validate", collection.Name()}}
+		err := collection.Database().RunCommand(ctx, command).Decode(&doc)
+		require.NoError(t, err)
 
-	actual.Remove("keysPerIndex")
-	actual.Remove("indexDetails")
-	actual.Remove("$clusterTime")
-	actual.Remove("operationTime")
+		actual := ConvertDocument(t, doc)
+		expected := must.NotFail(types.NewDocument(
+			"ns", "TestCommandsDiagnosticValidate.TestCommandsDiagnosticValidate",
+			"nInvalidDocuments", int32(0),
+			"nNonCompliantDocuments", int32(0),
+			"nrecords", int32(25),
+			"nIndexes", int32(1),
+			"valid", true,
+			"repaired", false,
+			"warnings", types.MakeArray(0),
+			"errors", types.MakeArray(0),
+			"extraIndexEntries", types.MakeArray(0),
+			"missingIndexEntries", types.MakeArray(0),
+			"corruptRecords", types.MakeArray(0),
+			"ok", float64(1),
+		))
 
-	testutil.AssertEqual(t, expected, actual)
+		actual.Remove("keysPerIndex")
+		actual.Remove("indexDetails")
+		actual.Remove("$clusterTime")
+		actual.Remove("operationTime")
+
+		testutil.AssertEqual(t, expected, actual)
+	})
+
+	t.Run("TwoIndexes", func(t *testing.T) {
+		t.Parallel()
+
+		_, err := collection.Indexes().CreateOne(ctx, *&mongo.IndexModel{Keys: bson.D{{"a", 1}}})
+		require.NoError(t, err)
+
+		var doc bson.D
+		command := bson.D{{"validate", collection.Name()}}
+		err = collection.Database().RunCommand(ctx, command).Decode(&doc)
+		require.NoError(t, err)
+
+		actual := ConvertDocument(t, doc)
+		expected := must.NotFail(types.NewDocument(
+			"ns", "TestCommandsDiagnosticValidate.TestCommandsDiagnosticValidate",
+			"nInvalidDocuments", int32(0),
+			"nNonCompliantDocuments", int32(0),
+			"nrecords", int32(25),
+			"nIndexes", int32(2),
+			"valid", true,
+			"repaired", false,
+			"warnings", types.MakeArray(0),
+			"errors", types.MakeArray(0),
+			"extraIndexEntries", types.MakeArray(0),
+			"missingIndexEntries", types.MakeArray(0),
+			"corruptRecords", types.MakeArray(0),
+			"ok", float64(1),
+		))
+
+		actual.Remove("keysPerIndex")
+		actual.Remove("indexDetails")
+		actual.Remove("$clusterTime")
+		actual.Remove("operationTime")
+
+		testutil.AssertEqual(t, expected, actual)
+	})
 }
 
 func TestCommandsDiagnosticValidateError(t *testing.T) {
