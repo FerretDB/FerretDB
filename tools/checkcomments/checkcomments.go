@@ -146,38 +146,50 @@ func checkTodoComments(pass *analysis.Pass, cache *issueCache, client *github.Cl
 
 				num := match[1]
 
-				_, ok := cache.Issues[num]
-
-				if !ok {
-					number, err := strconv.Atoi(num)
-					if err != nil {
-						return err
+				if isOpen, ok := cache.Issues[num]; ok {
+					if !isOpen {
+						message := fmt.Sprintf("invalid TODO: linked issue %s is closed", num)
+						pass.Reportf(c.Pos(), message)
 					}
 
-					isOpen, err := isIssueOpen(client, number)
-					if err != nil {
-						if errors.As(err, new(*github.RateLimitError)) {
-							msg := "Rate limit reached."
-
-							if os.Getenv("GITHUB_TOKEN") == "" {
-								msg += "Please set a GITHUB_TOKEN as described at " +
-									"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token"
-							}
-
-							log.Println(msg)
-
-							return nil
-						}
-
-						return err
-					}
-
-					cache.Issues[num] = isOpen
+					continue
 				}
 
-				if !cache.Issues[num] {
-					message := fmt.Sprintf("invalid TODO: linked issue %s is closed", num)
+				number, err := strconv.Atoi(num)
+				if err != nil {
+					return err
+				}
+
+				isOpen, err := isIssueOpen(client, number)
+				var re *github.ErrorResponse
+
+				switch {
+				case errors.As(err, new(*github.RateLimitError)):
+					msg := "Rate limit reached."
+
+					if os.Getenv("GITHUB_TOKEN") == "" {
+						msg += "Please set a GITHUB_TOKEN as described at " +
+							"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token"
+					}
+
+					log.Println(msg)
+
+					return nil
+
+				case errors.As(err, &re) && re.Response.StatusCode == 404:
+					message := fmt.Sprintf("invalid TODO: linked issue %s does not exist", num)
 					pass.Reportf(c.Pos(), message)
+
+				case err != nil:
+					return err
+
+				default:
+					cache.Issues[num] = isOpen
+
+					if !isOpen {
+						message := fmt.Sprintf("invalid TODO: linked issue %s is closed", num)
+						pass.Reportf(c.Pos(), message)
+					}
 				}
 			}
 		}
@@ -200,7 +212,7 @@ func isIssueOpen(client *github.Client, number int) (bool, error) {
 //
 // Due to analysis tools changing cwd for each package they check,
 // we need to find the root of the project in order to get the common cache file.
-// this is done by recursively traversing the current path up until README.md is found.
+// This is done by recursively traversing the current path up until README.md is found.
 func getCacheFilePath(p string) string {
 	path := filepath.Dir(p)
 

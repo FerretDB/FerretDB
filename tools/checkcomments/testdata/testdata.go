@@ -34,3 +34,11 @@ func testCorrectFormatClosed() {
 func testIncorrectFormatClosed() {
 	// TODO: https://github.com/FerretDB/FerretDB/issues/1 // want "invalid TODO: incorrect format"
 }
+
+func testCorrectFormatNotExists() {
+	// TODO https://github.com/FerretDB/FerretDB/issues/999999 // want "invalid TODO: linked issue 999999 does not exist"
+}
+
+func testIncorrectFormatNotExists() {
+	// TODO: https://github.com/FerretDB/FerretDB/issues/999999 // want "invalid TODO: incorrect format"
+}
