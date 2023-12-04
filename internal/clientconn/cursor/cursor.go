@@ -58,10 +58,10 @@ type Cursor struct {
 	*NewParams
 	r *Registry
 
+	m            sync.Mutex
 	token        *resource.Token
 	created      time.Time
 	closed       chan struct{}
-	closeOnce    sync.Once
 	lastRecordID atomic.Int64
 }
 
@@ -83,6 +83,9 @@ func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, r *Reg
 }
 
 func (c *Cursor) Reset(iter types.DocumentsIterator) error {
+	c.m.Lock()
+	defer c.m.Unlock()
+
 	if c.Type != Tailable && c.Type != TailableAwait {
 		panic("Reset called on non-tailable cursor")
 	}
@@ -105,6 +108,9 @@ func (c *Cursor) Reset(iter types.DocumentsIterator) error {
 
 // Next implements types.DocumentsIterator interface.
 func (c *Cursor) Next() (struct{}, *types.Document, error) {
+	c.m.Lock()
+	defer c.m.Unlock()
+
 	zero, doc, err := c.iter.Next()
 	if doc != nil {
 		recordID := doc.RecordID()
@@ -120,16 +126,21 @@ func (c *Cursor) Next() (struct{}, *types.Document, error) {
 
 // Close implements types.DocumentsIterator interface.
 func (c *Cursor) Close() {
-	c.closeOnce.Do(func() {
-		c.iter.Close()
-		c.iter = nil
+	c.m.Lock()
+	defer c.m.Unlock()
 
-		c.r.delete(c)
+	if c.iter == nil {
+		return
+	}
 
-		close(c.closed)
+	c.iter.Close()
+	c.iter = nil
 
-		resource.Untrack(c, c.token)
-	})
+	c.r.delete(c)
+
+	close(c.closed)
+
+	resource.Untrack(c, c.token)
 }
 
 // check interfaces
