@@ -72,8 +72,12 @@ func parentTest(testName string) string {
 }
 
 // runGoTest runs `go test` with given extra args.
-func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger) error {
+func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger, skip string) error {
 	cmd := exec.CommandContext(ctx, "go", append([]string{"test", "-json"}, args...)...)
+	if skip != "" {
+		cmd.Args = append(cmd.Args, "-skip="+skip)
+	}
+
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
 	cmd.Stderr = os.Stderr
@@ -276,7 +280,7 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 
 // testsRun runs tests specified by the shard index and total or by the run regex
 // using `go test` with given extra args.
-func testsRun(index, total uint, run string, args []string, logger *zap.SugaredLogger) error {
+func testsRun(index, total uint, run, skip string, args []string, logger *zap.SugaredLogger) error {
 	logger.Debugf("testsRun: index=%d, total=%d, run=%q, args=%q", index, total, run, args)
 
 	var totalTest int
@@ -308,7 +312,7 @@ func testsRun(index, total uint, run string, args []string, logger *zap.SugaredL
 		run += ")$"
 	}
 
-	return runGoTest(context.TODO(), append([]string{"-run=" + run}, args...), totalTest, true, logger)
+	return runGoTest(context.TODO(), append([]string{"-run=" + run}, args...), totalTest, true, logger, skip)
 }
 
 // listTestFuncs returns a sorted slice of all top-level test functions (tests, benchmarks, examples, fuzz functions)

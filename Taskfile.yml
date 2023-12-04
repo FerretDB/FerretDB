@@ -192,7 +192,9 @@ tasks:
       - test-integration-sqlite
       # no test-integration-hana
       - test-integration-mongodb
-
+    env:
+      - TEST_SKIP={{.TEST_SKIP}} 
+   
   test-integration-postgresql:
     desc: "Run integration tests for `postgresql` backend"
     deps: [gen-version]
@@ -203,6 +205,7 @@ tasks:
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
@@ -228,6 +231,7 @@ tasks:
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
@@ -253,6 +257,7 @@ tasks:
         --shard-index={{.SHARD_INDEX}}
         --shard-total={{.SHARD_TOTAL}}
         --run='{{.TEST_RUN}}'
+        --skip='{{.TEST_SKIP}}'
         --
         -count=1
         -timeout={{.TEST_TIMEOUT}}
