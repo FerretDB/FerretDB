@@ -63,7 +63,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 	cachePath := getCacheFilePath(currentPath)
 
-	// lockedfile is used to coordinate multiple invocations using the same cache file.
+	// lockedfile is used to coordinate multiple invocations of the same cache file.
 	cf, err := lockedfile.OpenFile(cachePath, os.O_RDWR|os.O_CREATE, 0o666)
 	if err != nil {
 		return nil, err
