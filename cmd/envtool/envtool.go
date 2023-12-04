@@ -206,7 +206,6 @@ func setupMongodb(ctx context.Context, logger *zap.SugaredLogger) error {
 
 // setupMongodbSecured configures `mongodb_secured` container.
 func setupMongodbSecured(ctx context.Context, logger *zap.SugaredLogger) error {
-	// TODO https://github.com/FerretDB/FerretDB/issues/3310
 	return waitForPort(ctx, logger.Named("mongodb_secured"), 47018)
 }
 
