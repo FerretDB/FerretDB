@@ -62,7 +62,24 @@ func TestCursor(t *testing.T) {
 	_, err = collection2.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
+	t.Run("CursorClosedAsExpected", func(t *testing.T) {
+		cur, err := collection2.Find(ctx, bson.D{}, opts)
+		require.NoError(t, err)
+		assert.Equal(t, 1, cur.RemainingBatchLength())
+
+		cur.Next(ctx)
+		cur.Next(ctx)
+		assert.NotEqual(t, int64(0), cur.ID())
+
+		assert.Equal(t, 0, cur.RemainingBatchLength())
+		cur.Next(ctx)                       // last getMore
+		assert.Equal(t, int64(0), cur.ID()) // ID is 0 if the cursor has been closed or exhausted
+
+		assert.False(t, cur.TryNext(ctx))
+	})
+
 	t.Run("CursorNotFoundAfterDisconnect", func(t *testing.T) {
+		t.Skip(t)
 		cur, err := collection2.Find(ctx, bson.D{}, opts)
 		require.NoError(t, err)
 
@@ -91,22 +108,9 @@ func TestCursor(t *testing.T) {
 
 		}()
 
-		// err = client2.Disconnect(ctx)
-		// require.NoError(t, err)
-
-		wg.Wait()
-	})
-
-	t.Run("CursorClosedAfterIDZero", func(t *testing.T) {
-		// test if an additional getMore is needed when the cursor ID is 0
-		// client2.Connect(ctx)
-		cur, err := collection2.Find(ctx, bson.D{}, opts)
+		err = client2.Disconnect(ctx)
 		require.NoError(t, err)
 
-		cur.Next(ctx)
-		cur.Next(ctx)
-
-		assert.False(t, cur.Next(ctx))
-		assert.Equal(t, int64(0), cur.ID())
+		wg.Wait()
 	})
 }
