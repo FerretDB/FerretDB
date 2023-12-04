@@ -79,7 +79,7 @@ func TestCursor(t *testing.T) {
 	})
 
 	t.Run("CursorNotFoundAfterDisconnect", func(t *testing.T) {
-		t.Skip(t)
+		t.Skip("not valid")
 		cur, err := collection2.Find(ctx, bson.D{}, opts)
 		require.NoError(t, err)
 
