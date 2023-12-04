@@ -272,10 +272,10 @@ func TestCommandsDiagnosticListCommands(t *testing.T) {
 func TestCommandsDiagnosticValidate(t *testing.T) {
 	t.Parallel()
 
-	ctx, collection := setup.Setup(t, shareddata.Doubles)
-
 	t.Run("Basic", func(t *testing.T) {
 		t.Parallel()
+
+		ctx, collection := setup.Setup(t, shareddata.Doubles)
 
 		var doc bson.D
 		command := bson.D{{"validate", collection.Name()}}
@@ -284,7 +284,7 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 
 		actual := ConvertDocument(t, doc)
 		expected := must.NotFail(types.NewDocument(
-			"ns", "TestCommandsDiagnosticValidate.TestCommandsDiagnosticValidate",
+			"ns", "TestCommandsDiagnosticValidate-Basic.TestCommandsDiagnosticValidate-Basic",
 			"nInvalidDocuments", int32(0),
 			"nNonCompliantDocuments", int32(0),
 			"nrecords", int32(25),
@@ -310,6 +310,8 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 	t.Run("TwoIndexes", func(t *testing.T) {
 		t.Parallel()
 
+		ctx, collection := setup.Setup(t, shareddata.Doubles)
+
 		_, err := collection.Indexes().CreateOne(ctx, mongo.IndexModel{Keys: bson.D{{"a", 1}}})
 		require.NoError(t, err)
 
@@ -320,7 +322,7 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 
 		actual := ConvertDocument(t, doc)
 		expected := must.NotFail(types.NewDocument(
-			"ns", "TestCommandsDiagnosticValidate.TestCommandsDiagnosticValidate",
+			"ns", "TestCommandsDiagnosticValidate-TwoIndexes.TestCommandsDiagnosticValidate-TwoIndexes",
 			"nInvalidDocuments", int32(0),
 			"nNonCompliantDocuments", int32(0),
 			"nrecords", int32(25),
