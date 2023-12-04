@@ -57,7 +57,7 @@ func tagPackages(t *testing.T, tag string) []string {
 
 // negTagPackages returns packages that are NOT imported by FerretDB when the
 // given Go build negative tag is provided. Eg of negative tags
-// 'ferretdb_no_postgresql', 'ferretdb_no_sqlite'
+// 'ferretdb_no_postgresql', 'ferretdb_no_sqlite'.
 func negTagPackages(t *testing.T, negTag string) []string {
 	t.Helper()
 
