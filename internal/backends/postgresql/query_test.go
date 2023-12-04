@@ -23,7 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -322,19 +321,19 @@ func TestPrepareOrderByClause(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
-		sort   *backends.SortField
+		sort   *types.Document
 		capped bool
 
 		orderBy string
 		args    []any
 	}{
 		"Ascending": {
-			sort:    &backends.SortField{Key: "field", Descending: false},
+			sort:    must.NotFail(types.NewDocument("field", int64(1))),
 			orderBy: ` ORDER BY _jsonb->$1`,
 			args:    []any{"field"},
 		},
 		"Descending": {
-			sort:    &backends.SortField{Key: "field", Descending: true},
+			sort:    must.NotFail(types.NewDocument("field", int64(-1))),
 			orderBy: ` ORDER BY _jsonb->$1 DESC`,
 			args:    []any{"field"},
 		},
@@ -343,7 +342,7 @@ func TestPrepareOrderByClause(t *testing.T) {
 			args:    nil,
 		},
 		"SortDotNotation": {
-			sort:    &backends.SortField{Key: "field.embedded", Descending: true},
+			sort:    must.NotFail(types.NewDocument("field.embedded", int64(-1))),
 			orderBy: "",
 			args:    nil,
 		},
@@ -353,13 +352,13 @@ func TestPrepareOrderByClause(t *testing.T) {
 			args:    nil,
 		},
 		"CappedWithSort": {
-			sort:    &backends.SortField{Key: "field", Descending: true},
+			sort:    must.NotFail(types.NewDocument("field", int64(-1))),
 			capped:  true,
 			orderBy: ` ORDER BY _jsonb->$1 DESC`,
 			args:    []any{"field"},
 		},
 		"CappedWithSortDotNotation": {
-			sort:    &backends.SortField{Key: "field.embedded", Descending: true},
+			sort:    must.NotFail(types.NewDocument("field.embedded", int64(-1))),
 			capped:  true,
 			orderBy: "",
 			args:    nil,
@@ -370,6 +369,7 @@ func TestPrepareOrderByClause(t *testing.T) {
 			t.Parallel()
 
 			orderBy, args := prepareOrderByClause(new(metadata.Placeholder), tc.sort, tc.capped)
+
 			assert.Equal(t, tc.orderBy, orderBy)
 			assert.Equal(t, tc.args, args)
 		})

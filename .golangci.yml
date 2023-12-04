@@ -46,21 +46,26 @@ linters-settings:
           - "!**/internal/backends/sqlite/*.go"
           - "!**/internal/backends/postgresql/*.go"
           - "!**/internal/backends/postgresql/metadata/*.go"
-          - "!**/internal/handlers/hana/hanadb/*.go"
+          - "!**/internal/backends/hana/*.go"
         deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/handlers/sjson
-      backends:
+          - pkg: github.com/FerretDB/FerretDB/internal/handler/sjson
+      common:
         files:
           - "**/internal/backends/**/*.go"
         deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/handlers/common
-      commonerrors:
+          - pkg: github.com/FerretDB/FerretDB/internal/handler/common
+      handlererrors:
         files:
           - $all
           - "!**/internal/clientconn/*.go"
-          - "!**/internal/handlers/**/*.go"
+          - "!**/internal/handler/**.go"
         deny:
-          - pkg: github.com/FerretDB/FerretDB/internal/handlers/commonerrors
+          - pkg: github.com/FerretDB/FerretDB/internal/handler/handlererrors
+      backends:
+        files:
+          - "**/internal/clientconn/cursor/*.go"
+        deny:
+          - pkg: github.com/FerretDB/FerretDB/internal/backends
   exhaustive:
     default-signifies-exhaustive: false
   gci:
@@ -124,8 +129,6 @@ linters-settings:
         alias: sqlite3
       - pkg: modernc.org/sqlite/lib
         alias: sqlite3lib
-      - pkg: github.com/FerretDB/FerretDB/internal/handlers/sqlite
-        alias: handler
   # ineffassign
   lll:
     line-length: 130

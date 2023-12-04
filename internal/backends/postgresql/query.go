@@ -22,9 +22,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -228,11 +227,14 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 	return filter, args, nil
 }
 
-// prepareOrderByClause returns ORDER BY clause for given sort field and returns the query and arguments.
+// prepareOrderByClause returns ORDER BY clause with arguments for given sort document.
 //
-// For capped collection, it returns ORDER BY recordID only if sort field is nil.
-func prepareOrderByClause(p *metadata.Placeholder, sort *backends.SortField, capped bool) (string, []any) {
-	if sort == nil {
+// The provided sort document should be already validated.
+//
+// For capped collection, it returns ORDER BY recordID only if sort document is empty.
+// For more than one sort fields, it sorts only by the first key provided.
+func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document, capped bool) (string, []any) {
+	if sort.Len() == 0 {
 		if capped {
 			return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil
 		}
@@ -240,17 +242,20 @@ func prepareOrderByClause(p *metadata.Placeholder, sort *backends.SortField, cap
 		return "", nil
 	}
 
+	k := sort.Keys()[0]
+	v := sort.Values()[0].(int64)
+
 	// Skip sorting dot notation
-	if strings.ContainsRune(sort.Key, '.') {
+	if strings.ContainsRune(k, '.') {
 		return "", nil
 	}
 
 	var order string
-	if sort.Descending {
+	if v == -1 {
 		order = " DESC"
 	}
 
-	return fmt.Sprintf(" ORDER BY %s->%s%s", metadata.DefaultColumn, p.Next(), order), []any{sort.Key}
+	return fmt.Sprintf(" ORDER BY %s->%s%s", metadata.DefaultColumn, p.Next(), order), []any{k}
 }
 
 // filterEqual returns the proper SQL filter with arguments that filters documents

@@ -23,7 +23,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -38,9 +38,9 @@ type queryIterator struct {
 
 	ctx           context.Context
 	rows          pgx.Rows // protected by m
-	onlyRecordIDs bool
 	token         *resource.Token
 	m             sync.Mutex
+	onlyRecordIDs bool
 }
 
 // newQueryIterator returns a new queryIterator for the given Rows.

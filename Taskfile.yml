@@ -243,6 +243,31 @@ tasks:
         -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
         -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
 
+  test-integration-mysql:
+    desc: "Run integration tests for `mysql` handler"
+    deps: [gen-version]
+    dir: integration
+    cmds:
+      - >
+        ../bin/envtool{{exeExt}} tests run
+        --shard-index={{.SHARD_INDEX}}
+        --shard-total={{.SHARD_TOTAL}}
+        --run='{{.TEST_RUN}}'
+        --
+        -count=1
+        -timeout={{.TEST_TIMEOUT}}
+        {{.RACE_FLAG}}
+        -tags={{.BUILD_TAGS}}
+        -shuffle=on
+        -coverpkg=../...
+        -coverprofile=integration-mysql.txt
+        .
+        -target-backend=ferretdb-mysql
+        -target-tls
+        -mysql-url='mysql://username:password@127.0.0.1:3306/ferretdb'
+        -compat-url='mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=../build/certs/client.pem&tlsCaFile=../build/certs/rootCA-cert.pem'
+        -disable-filter-pushdown={{.DISABLE_FILTER_PUSHDOWN}}
+
   test-integration-hana:
     desc: "Run integration tests for `hana` handler"
     deps: [gen-version]
@@ -296,8 +321,8 @@ tasks:
       - go test -list='Benchmark.*' ./...
       - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/bson/           | tee -a new.txt
       - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/bson/           | tee -a new.txt
-      - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/handlers/sjson/ | tee -a new.txt
-      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/handlers/sjson/ | tee -a new.txt
+      - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/handler/sjson/ | tee -a new.txt
+      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/handler/sjson/ | tee -a new.txt
       - bin/benchstat{{exeExt}} old.txt new.txt
 
   # That's not quite correct: https://github.com/golang/go/issues/15513
@@ -312,10 +337,10 @@ tasks:
     cmds:
       - go test -list='Fuzz.*' ./...
       # TODO https://github.com/FerretDB/FerretDB/issues/1273
-      # - go test -run=XXX -fuzz=FuzzArrayWithFixedSchemas      -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      # - go test -run=XXX -fuzz=FuzzArrayWithFixedDocuments    -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      # - go test -run=XXX -fuzz=FuzzDocumentWithFixedSchemas   -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
-      # - go test -run=XXX -fuzz=FuzzDocumentWithFixedDocuments -fuzztime={{.FUZZ_TIME}} ./internal/handlers/sjson/
+      # - go test -run=XXX -fuzz=FuzzArrayWithFixedSchemas      -fuzztime={{.FUZZ_TIME}} ./internal/handler/sjson/
+      # - go test -run=XXX -fuzz=FuzzArrayWithFixedDocuments    -fuzztime={{.FUZZ_TIME}} ./internal/handler/sjson/
+      # - go test -run=XXX -fuzz=FuzzDocumentWithFixedSchemas   -fuzztime={{.FUZZ_TIME}} ./internal/handler/sjson/
+      # - go test -run=XXX -fuzz=FuzzDocumentWithFixedDocuments -fuzztime={{.FUZZ_TIME}} ./internal/handler/sjson/
       - go test -run=XXX -fuzz=FuzzArray    -fuzztime={{.FUZZ_TIME}} ./internal/bson/
       - go test -run=XXX -fuzz=FuzzDocument -fuzztime={{.FUZZ_TIME}} ./internal/bson/
       - go test -run=XXX -fuzz=FuzzMsg      -fuzztime={{.FUZZ_TIME}} ./internal/wire/
@@ -429,6 +454,26 @@ tasks:
         --test-records-dir=tmp/records
         --test-enable-oplog
 
+  run-proxy-secured:
+    desc: "Run FerretDB in diff-proxy mode (TLS, auth required)"
+    deps: [build-host]
+    cmds:
+      - >
+        bin/ferretdb{{exeExt}}
+        --listen-addr=''
+        --listen-tls=:27018
+        --listen-tls-cert-file=./build/certs/server-cert.pem
+        --listen-tls-key-file=./build/certs/server-key.pem
+        --listen-tls-ca-file=./build/certs/rootCA-cert.pem
+        --proxy-addr=127.0.0.1:47018
+        --proxy-tls-cert-file=./build/certs/client-cert.pem
+        --proxy-tls-key-file=./build/certs/client-key.pem
+        --proxy-tls-ca-file=./build/certs/rootCA-cert.pem
+        --mode=diff-proxy
+        --handler=pg
+        --postgresql-url='postgres://username@127.0.0.1:5433/ferretdb?search_path='
+        --test-records-dir=tmp/records
+
   lint:
     desc: "Run linters"
     cmds:
@@ -436,9 +481,15 @@ tasks:
       - bin/envtool{{exeExt}} shell mkdir tmp/checkcomments
       - bin/golangci-lint{{exeExt}} run --config=.golangci.yml
       - bin/golangci-lint{{exeExt}} run --config=.golangci-new.yml
-      - bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
+
+      # Stop CI from failing too often; see https://github.com/quasilyte/go-consistent/issues/38.
+      # Still, note the output and fix the issues.
+      - cmd: bin/go-consistent{{exeExt}} -pedantic ./cmd/... ./internal/... ./build/... ./ferretdb/...
+        ignore_error: true
+
       - go vet -vettool=bin/checkswitch{{exeExt}} ./...
       - go vet -vettool=bin/checkcomments{{exeExt}} ./...
+
       - bin/task{{exeExt}} -d integration lint
       - bin/task{{exeExt}} -d tools lint
 
@@ -553,6 +604,8 @@ tasks:
         sh: bin/envtool{{exeExt}} shell read build/version/version.txt
       COMMIT:
         sh: bin/envtool{{exeExt}} shell read build/version/commit.txt
+      requires:
+        vars: [FILE, TARGET, OUTPUT]
 
   build-move-check:
     cmds:

@@ -29,7 +29,7 @@ import (
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
-	"github.com/FerretDB/FerretDB/internal/handlers/registry"
+	"github.com/FerretDB/FerretDB/internal/handler/registry"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/state"
 )
@@ -127,8 +127,9 @@ func New(config *Config) (*FerretDB, error) {
 	}
 
 	l := clientconn.NewListener(&clientconn.NewListenerOpts{
-		TCP:         config.Listener.TCP,
-		Unix:        config.Listener.Unix,
+		TCP:  config.Listener.TCP,
+		Unix: config.Listener.Unix,
+
 		TLS:         config.Listener.TLS,
 		TLSCertFile: config.Listener.TLSCertFile,
 		TLSKeyFile:  config.Listener.TLSKeyFile,

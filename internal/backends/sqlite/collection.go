@@ -26,7 +26,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
@@ -63,10 +63,6 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		return &backends.QueryResult{
 			Iter: newQueryIterator(ctx, nil, params.OnlyRecordIDs),
 		}, nil
-	}
-
-	if params == nil {
-		params = new(backends.QueryParams)
 	}
 
 	var whereClause string
@@ -264,10 +260,6 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		return &backends.ExplainResult{
 			QueryPlanner: must.NotFail(types.NewDocument()),
 		}, nil
-	}
-
-	if params == nil {
-		params = new(backends.ExplainParams)
 	}
 
 	selectClause := prepareSelectClause(meta.TableName, "", meta.Capped(), false)

@@ -28,7 +28,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata"
 	"github.com/FerretDB/FerretDB/internal/backends/postgresql/metadata/pool"
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
@@ -55,10 +55,6 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	p, err := c.r.DatabaseGetExisting(ctx, c.dbName)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
-	}
-
-	if params == nil {
-		params = new(backends.QueryParams)
 	}
 
 	if p == nil {
@@ -97,6 +93,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
 	q += sort
+
 	args = append(args, sortArgs...)
 
 	if params.Limit != 0 {
@@ -342,6 +339,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
 	q += sort
+
 	args = append(args, sortArgs...)
 	res.SortPushdown = sort != ""
 

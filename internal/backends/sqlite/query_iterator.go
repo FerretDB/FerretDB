@@ -21,7 +21,7 @@ import (
 	"sync"
 
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
-	"github.com/FerretDB/FerretDB/internal/handlers/sjson"
+	"github.com/FerretDB/FerretDB/internal/handler/sjson"
 	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/fsql"
 	"github.com/FerretDB/FerretDB/internal/util/iterator"
@@ -37,9 +37,9 @@ type queryIterator struct {
 
 	ctx           context.Context
 	rows          *fsql.Rows // protected by m
-	onlyRecordIDs bool
 	token         *resource.Token
 	m             sync.Mutex
+	onlyRecordIDs bool
 }
 
 // newQueryIterator returns a new queryIterator for the given *sql.Rows.
