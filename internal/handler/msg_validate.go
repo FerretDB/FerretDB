@@ -34,7 +34,7 @@ func (h *Handler) MsgValidate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 		return nil, lazyerrors.Error(err)
 	}
 
-	common.Ignored(document, h.L, "full", "repair", "metadata")
+	common.Ignored(document, h.L, "full", "repair", "metadata", "checkBSONConformance")
 
 	command := document.Command()
 
@@ -75,7 +75,7 @@ func (h *Handler) MsgValidate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg
 			"nInvalidDocuments", int32(0),
 			"nNonCompliantDocuments", int32(0),
 			"nrecords", int32(stats.CountDocuments),
-			"nIndexes", int32(1), // TODO https://github.com/FerretDB/FerretDB/issues/419
+			"nIndexes", int32(len(stats.IndexSizes)),
 			"valid", true,
 			"repaired", false,
 			"warnings", types.MakeArray(0),

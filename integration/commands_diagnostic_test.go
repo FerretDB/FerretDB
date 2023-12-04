@@ -271,20 +271,19 @@ func TestCommandsDiagnosticListCommands(t *testing.T) {
 
 func TestCommandsDiagnosticValidate(t *testing.T) {
 	t.Parallel()
+
 	ctx, collection := setup.Setup(t, shareddata.Doubles)
 
 	var doc bson.D
 	err := collection.Database().RunCommand(ctx, bson.D{{"validate", collection.Name()}}).Decode(&doc)
 	require.NoError(t, err)
 
-	t.Log(doc.Map())
-
 	actual := ConvertDocument(t, doc)
 	expected := must.NotFail(types.NewDocument(
 		"ns", "TestCommandsDiagnosticValidate.TestCommandsDiagnosticValidate",
 		"nInvalidDocuments", int32(0),
 		"nNonCompliantDocuments", int32(0),
-		"nrecords", int32(0), // replaced below
+		"nrecords", int32(25), // replaced below
 		"nIndexes", int32(1),
 		"valid", true,
 		"repaired", false,
@@ -301,7 +300,6 @@ func TestCommandsDiagnosticValidate(t *testing.T) {
 	actual.Remove("$clusterTime")
 	actual.Remove("operationTime")
 
-	testutil.CompareAndSetByPathNum(t, expected, actual, 39, types.NewStaticPath("nrecords"))
 	testutil.AssertEqual(t, expected, actual)
 }
 
