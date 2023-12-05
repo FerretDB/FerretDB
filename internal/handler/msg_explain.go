@@ -84,7 +84,9 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 
 	qp := new(backends.ExplainParams)
 
-	params.Filter, params.Sort = aggregations.GetPushdownQuery(params.StagesDocs)
+	if params.Aggregate {
+		params.Filter, params.Sort = aggregations.GetPushdownQuery(params.StagesDocs)
+	}
 
 	if !h.DisablePushdown {
 		qp.Filter = params.Filter
