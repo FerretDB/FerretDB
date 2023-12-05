@@ -845,8 +845,6 @@ func testFindAndModifyCompat(t *testing.T, testCases map[string]findAndModifyCom
 					target := ConvertDocument(t, targetMod)
 					testutil.AssertEqual(t, compat, target)
 
-					// AssertEqualDocuments(t, compatMod, targetMod)
-
 					// To make sure that the results of modification are equal,
 					// find all the documents in target and compat collections and compare that they are the same
 					opts := options.Find().SetSort(bson.D{{"_id", 1}})

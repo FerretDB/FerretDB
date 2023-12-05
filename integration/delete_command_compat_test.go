@@ -17,6 +17,8 @@ package integration
 import (
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -149,5 +151,12 @@ func TestDeleteCommandCompatNotExistingDatabase(t *testing.T) {
 	assert.NoError(t, targetErr)
 	assert.NoError(t, compatErr)
 
-	assert.Equal(t, compatRes, targetRes)
+	compat := ConvertDocument(t, compatRes)
+	compat.Remove("$clusterTime")
+	compat.Remove("operationTime")
+	compat.Remove("electionId")
+	compat.Remove("opTime")
+
+	target := ConvertDocument(t, targetRes)
+	testutil.AssertEqual(t, compat, target)
 }
