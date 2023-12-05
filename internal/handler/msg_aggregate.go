@@ -288,8 +288,32 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 			return nil, err
 		}
 
+		var cList *backends.ListCollectionsResult
+
+		if cList, err = db.ListCollections(ctx, nil); err != nil {
+			return nil, err
+		}
+
+		var cInfo backends.CollectionInfo
+
+		// TODO: what with tailable check
+
+		// TODO https://github.com/FerretDB/FerretDB/issues/3601
+		//nolint:lll // see issue above
+		if i, found := slices.BinarySearchFunc(cList.Collections, cName, func(e backends.CollectionInfo, t string) int {
+			return cmp.Compare(e.Name, t)
+		}); found {
+			cInfo = cList.Collections[i]
+		}
+
+		capped := cInfo.Capped()
+
+		if sort.Len() == 0 && capped {
+			qp.Sort = must.NotFail(types.NewDocument("$natural", int64(1)))
+		}
+
 		// Skip sorting if there are more than one sort parameters
-		if !h.DisablePushdown && sort.Len() == 1 {
+		if sort.Len() == 1 {
 			qp.Sort = sort
 		}
 
