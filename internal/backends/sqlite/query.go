@@ -50,8 +50,9 @@ func prepareOrderByClause(sort *types.Document) string {
 	if sort.Len() == 0 {
 		return ""
 	}
+
 	if sort.Len() != 1 { // sort first key is $natural
-		panic(1)
+		panic(1) // TODO
 	}
 
 	v, err := sort.Get("$natural")

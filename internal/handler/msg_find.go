@@ -79,7 +79,6 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 	var cInfo backends.CollectionInfo
 
 	// TODO https://github.com/FerretDB/FerretDB/issues/3601
-	//nolint:lll // see issue above
 	if i, found := slices.BinarySearchFunc(cList.Collections, params.Collection, func(e backends.CollectionInfo, t string) int {
 		return cmp.Compare(e.Name, t)
 	}); found {
