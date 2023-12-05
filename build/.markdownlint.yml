@@ -12,3 +12,4 @@ MD006: false # deprecated
 MD013: false # we use https://sembr.org that could lead to long lines
 MD026: { punctuation: ".,;:。，；：" } # default is .,;:!。，；：！
 MD029: { style: ordered }
+MD034: false # autolink tags <link> no longer supported by MDX
