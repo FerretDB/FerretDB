@@ -20,15 +20,18 @@ import (
 	"encoding/json"
 	"slices"
 
+	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 )
 
 // Settings represents collection settings.
 type Settings struct {
-	UUID            string      `json:"uuid"`
-	Indexes         []IndexInfo `json:"indexes"`
-	CappedSize      int64       `json:"cappedSize"`
-	CappedDocuments int64       `json:"cappedDocuments"`
+	UUID            string          `json:"uuid"`
+	Indexes         []IndexInfo     `json:"indexes"`
+	CappedSize      int64           `json:"cappedSize"`
+	CappedDocuments int64           `json:"cappedDocuments"`
+	ReadOnly        bool            `json:"readOnly"`
+	IDIndex         *types.Document `json:"idIndex"`
 }
 
 // IndexInfo represents information about a single index.

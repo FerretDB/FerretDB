@@ -83,19 +83,36 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 			"type", "collection",
 		))
 
+		options := types.NewStaticPath("options")
+		info := types.NewStaticPath("info")
+
+		must.NoError(d.SetByPath(options.Append("capped"), collection.Capped()))
+
+		if collection.CappedSize > 0 {
+			must.NoError(d.SetByPath(options.Append("size"), collection.CappedSize))
+		}
+
+		if collection.CappedDocuments > 0 {
+			must.NoError(d.SetByPath(options.Append("max"), collection.CappedDocuments))
+		}
+
+		if collection.IDIndex != nil {
+			must.NoError(d.SetByPath(types.NewStaticPath("idIndex"), collection.IDIndex))
+		}
+
+		must.NoError(d.SetByPath(info.Append("readOnly"), collection.ReadOnly))
 		if collection.UUID != "" {
 			uuid, err := uuid.Parse(collection.UUID)
 			if err != nil {
 				return nil, lazyerrors.Error(err)
 			}
 
-			path := types.NewStaticPath("info", "uuid")
 			uuidBinary := types.Binary{
 				Subtype: types.BinaryUUID,
 				B:       must.NotFail(uuid.MarshalBinary()),
 			}
 
-			must.NoError(d.SetByPath(path, uuidBinary))
+			must.NoError(d.SetByPath(info.Append("uuid"), uuidBinary))
 		}
 
 		matches, err := common.FilterDocument(d, filter)
