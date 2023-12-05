@@ -8,7 +8,7 @@ env:
 vars:
   SHARD_INDEX: 1
   SHARD_TOTAL: 1
-  DISABLE_PUSHDOWN: true
+  DISABLE_PUSHDOWN: false
   TEST_RUN: ""
   TEST_TIMEOUT: 35m
   BENCH_TIME: 5s
