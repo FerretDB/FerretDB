@@ -79,8 +79,7 @@ func TestPrepareOrderByClause(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
-		sort   *types.Document
-		capped bool
+		sort *types.Document
 
 		orderBy string
 	}{
@@ -95,9 +94,13 @@ func TestPrepareOrderByClause(t *testing.T) {
 		"SortNil": {
 			orderBy: "",
 		},
-		"Capped": {
-			capped:  true,
+		"NaturalAscending": {
+			sort:    must.NotFail(types.NewDocument("$natural", int64(1))),
 			orderBy: ` ORDER BY _ferretdb_record_id`,
+		},
+		"NaturalDescending": {
+			sort:    must.NotFail(types.NewDocument("$natural", int64(-1))),
+			orderBy: "",
 		},
 	} {
 		name, tc := name, tc
