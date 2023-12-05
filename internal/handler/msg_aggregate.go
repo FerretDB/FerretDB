@@ -310,12 +310,12 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		switch {
 		case h.DisablePushdown:
 			// Pushdown disabled
-		case sort.Len() == 0 && capped:
-			// Pushdown default recordID sorting for capped collections
-			qp.Sort = must.NotFail(types.NewDocument("$natural", int64(1)))
 		case sort.Len() == 1:
 			// Skip sorting if there are more than one sort parameters
 			qp.Sort = sort
+		case capped:
+			// Pushdown default recordID sorting for capped collections
+			qp.Sort = must.NotFail(types.NewDocument("$natural", int64(1)))
 		}
 
 		iter, err = processStagesDocuments(ctx, closer, &stagesDocumentsParams{c, qp, stagesDocuments})
