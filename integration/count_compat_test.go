@@ -18,6 +18,8 @@ import (
 	"math"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -99,7 +101,13 @@ func testCountCompat(t *testing.T, testCases map[string]countCompatTestCase) {
 
 					t.Logf("Compat (expected) result: %v", compatRes)
 					t.Logf("Target (actual)   result: %v", targetRes)
-					assert.Equal(t, compatRes, targetRes)
+
+					compatDoc := ConvertDocument(t, compatRes)
+					compatDoc.Remove("$clusterTime")
+					compatDoc.Remove("operationTime")
+
+					targetDoc := ConvertDocument(t, targetRes)
+					testutil.AssertEqual(t, compatDoc, targetDoc)
 
 					if targetRes != nil || compatRes != nil {
 						nonEmptyResults = true

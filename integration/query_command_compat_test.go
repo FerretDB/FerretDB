@@ -18,6 +18,8 @@ import (
 	"math"
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -147,7 +149,12 @@ func testQueryCommandCompat(t *testing.T, testCases map[string]queryCommandCompa
 					require.NoError(t, targetResult.Decode(&targetRes))
 					require.NoError(t, compatResult.Decode(&compatRes))
 
-					AssertEqualDocuments(t, compatRes, targetRes)
+					compatDoc := ConvertDocument(t, compatRes)
+					compatDoc.Remove("$clusterTime")
+					compatDoc.Remove("operationTime")
+
+					targetDoc := ConvertDocument(t, targetRes)
+					testutil.AssertEqual(t, compatDoc, targetDoc)
 
 					targetDocs := targetRes.Map()["cursor"].(bson.D).Map()["firstBatch"].(primitive.A)
 					compatDocs := compatRes.Map()["cursor"].(bson.D).Map()["firstBatch"].(primitive.A)
