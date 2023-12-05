@@ -606,7 +606,7 @@ func TestQueryCommandBatchSize(t *testing.T) {
 
 	// the number of documents is set above the default batchSize of 101
 	// for testing unset batchSize returning default batchSize
-	arr, _ := generateDocuments(0, 110)
+	arr, _ := GenerateDocuments(0, 110)
 	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
@@ -735,7 +735,7 @@ func TestQueryCommandSingleBatch(t *testing.T) {
 	t.Parallel()
 	ctx, collection := setup.Setup(t)
 
-	arr, _ := generateDocuments(0, 5)
+	arr, _ := GenerateDocuments(0, 5)
 	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 

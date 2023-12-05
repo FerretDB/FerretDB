@@ -961,7 +961,7 @@ func TestCommandsAdministrationCollStatsCount(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 
 	var n int32 = 1000
-	docs, _ := generateDocuments(0, n)
+	docs, _ := GenerateDocuments(0, n)
 	_, err := collection.InsertMany(ctx, docs)
 	require.NoError(t, err)
 
