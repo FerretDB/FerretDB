@@ -84,9 +84,8 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	var placeholder metadata.Placeholder
 
-	var args []any
-
 	var where string
+	var args []any
 
 	where, args, err = prepareWhereClause(&placeholder, params.Filter)
 	if err != nil {
@@ -96,6 +95,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 	q += where
 
 	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort)
+
 	q += sort
 	args = append(args, sortArgs...)
 

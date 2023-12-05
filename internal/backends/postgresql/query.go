@@ -230,11 +230,14 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 // prepareOrderByClause returns ORDER BY clause with arguments for given sort document.
 //
 // The provided sort document should be already validated.
-//
-// For more than one sort fields, it sorts only by the first key provided.
+// Provided document should only contain a single value.
 func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document) (string, []any) {
 	if sort.Len() == 0 {
 		return "", nil
+	}
+
+	if sort.Len() != 1 {
+		panic("Sorting multiple fields is not supported yet")
 	}
 
 	k := sort.Keys()[0]

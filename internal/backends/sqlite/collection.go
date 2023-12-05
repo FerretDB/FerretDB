@@ -65,15 +65,10 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}, nil
 	}
 
-	if params == nil {
-		params = new(backends.QueryParams)
-	}
-
 	q := prepareSelectClause(meta.TableName, params.Comment, meta.Capped(), params.OnlyRecordIDs)
 
-	var args []any
-
 	var whereClause string
+	var args []any
 
 	// that logic should exist in one place
 	// TODO https://github.com/FerretDB/FerretDB/issues/3235

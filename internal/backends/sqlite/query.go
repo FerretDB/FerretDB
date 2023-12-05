@@ -45,14 +45,17 @@ func prepareSelectClause(table, comment string, capped, onlyRecordIDs bool) stri
 	return fmt.Sprintf(`SELECT %s %s FROM %q`, comment, metadata.DefaultColumn, table)
 }
 
-// prepareOrderByClause returns ORDER BY clause for given sort document and returns.
+// prepareOrderByClause returns ORDER BY clause for given sort document.
+//
+// The provided sort document should be already validated.
+// Provided document should only contain a single value.
 func prepareOrderByClause(sort *types.Document) string {
 	if sort.Len() == 0 {
 		return ""
 	}
 
-	if sort.Len() != 1 { // sort first key is $natural
-		panic(1) // TODO
+	if sort.Len() != 1 {
+		panic("Sorting multiple fields is not supported yet")
 	}
 
 	v, err := sort.Get("$natural")
