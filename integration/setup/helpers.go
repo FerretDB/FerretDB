@@ -89,6 +89,7 @@ func FilterPushdownDisabled() bool {
 	return *disableFilterPushdownF
 }
 
+// Dir returns the absolute directory of this package.
 func Dir(tb testtb.TB) string {
 	tb.Helper()
 

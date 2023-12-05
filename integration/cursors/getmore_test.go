@@ -901,8 +901,6 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("FindExpire", func(tt *testing.T) {
-		require.Fail(tt, "oops")
-
 		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2983")
 
 		opts := options.Find().
