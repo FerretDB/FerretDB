@@ -46,15 +46,23 @@ func prepareSelectClause(table, comment string, capped, onlyRecordIDs bool) stri
 }
 
 // prepareOrderByClause returns ORDER BY clause for given sort document and returns.
-//
-// For capped collection, it returns ORDER BY recordID only if sort field is nil.
 func prepareOrderByClause(sort *types.Document) string {
 	if sort.Len() == 0 {
 		return ""
 	}
-	if sort.Len() == 1 { // sort first key is $natural
-		return fmt.Sprintf(` ORDER BY %s`, metadata.RecordIDColumn)
+	if sort.Len() != 1 { // sort first key is $natural
+		panic(1)
 	}
 
-	panic(1)
+	v, err := sort.Get("$natural")
+	if err != nil {
+		return ""
+	}
+
+	sortOrder := v.(int64)
+	if sortOrder != 1 {
+		return ""
+	}
+
+	return fmt.Sprintf(` ORDER BY %s`, metadata.RecordIDColumn)
 }

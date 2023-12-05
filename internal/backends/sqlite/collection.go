@@ -73,27 +73,25 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	var args []any
 
-	if !params.DisablePushdown {
-		var whereClause string
+	var whereClause string
 
-		// that logic should exist in one place
-		// TODO https://github.com/FerretDB/FerretDB/issues/3235
-		if params.Filter.Len() == 1 {
-			v, _ := params.Filter.Get("_id")
-			switch v.(type) {
-			case string, types.ObjectID:
-				whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
-				args = []any{string(must.NotFail(sjson.MarshalSingleValue(v)))}
-			}
+	// that logic should exist in one place
+	// TODO https://github.com/FerretDB/FerretDB/issues/3235
+	if params.Filter.Len() == 1 {
+		v, _ := params.Filter.Get("_id")
+		switch v.(type) {
+		case string, types.ObjectID:
+			whereClause = fmt.Sprintf(` WHERE %s = ?`, metadata.IDColumn)
+			args = []any{string(must.NotFail(sjson.MarshalSingleValue(v)))}
 		}
+	}
 
-		q += whereClause
-		q += prepareOrderByClause(params.Sort)
+	q += whereClause
+	q += prepareOrderByClause(params.Sort)
 
-		if params.Limit != 0 {
-			q += ` LIMIT ?`
-			args = append(args, params.Limit)
-		}
+	if params.Limit != 0 {
+		q += ` LIMIT ?`
+		args = append(args, params.Limit)
 	}
 
 	rows, err := db.QueryContext(ctx, q, args...)

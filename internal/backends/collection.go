@@ -79,8 +79,6 @@ type QueryParams struct {
 	Filter *types.Document
 	Sort   *types.Document
 
-	DisablePushdown bool
-
 	Limit         int64
 	OnlyRecordIDs bool
 	Comment       string
@@ -99,20 +97,12 @@ type QueryResult struct {
 // It also can be used to close the returned iterator and free underlying resources,
 // but doing so is not necessary - the handler will do that anyway.
 //
-// If DisablePushdown is true, no pushdown will be performed.
-// In such case Filter, Limit, and Sort cannot be set.
-//
 // Passed sort document should be already validated. If sort document is invalid, function panics.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
 	defer observability.FuncCall(ctx)()
 
 	if params == nil {
 		params = new(QueryParams)
-	}
-
-	if params.DisablePushdown &&
-		(params.Filter.Len() != 0 || params.Limit != 0 || params.Sort.Len() != 0) {
-		panic("Filter, Limit and Sort shouldn't be set if pushdown is disabled")
 	}
 
 	if params.Sort.Len() != 0 {
