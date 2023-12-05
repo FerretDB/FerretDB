@@ -211,7 +211,7 @@ func setupMongodbSecured(ctx context.Context, logger *zap.SugaredLogger) error {
 	}
 
 	eval := `'rs.initiate({_id: "mongodb-rs", members: [{_id: 0, host: "localhost:47018" }]})'`
-	shell := `mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=/etc/certs/client.pem&tlsCAFile=/etc/certs/rootCA-cert.pem` //nolint:lll // for readability
+	shell := `mongodb://username:password@127.0.0.1:47018/?tls=true&tlsCertificateKeyFile=/etc/certs/client.pem&tlsCaFile=/etc/certs/rootCA-cert.pem` //nolint:lll // for readability
 	args := []string{"compose", "exec", "-T", "mongodb_secured", "mongosh", "--eval", eval, "--shell", shell}
 
 	var buf bytes.Buffer

@@ -165,7 +165,13 @@ func TestCreateIndexesCommandCompat(t *testing.T) {
 				require.Nil(t, compatRes)
 			}
 
-			assert.Equal(t, compatRes, targetRes)
+			compatDoc := ConvertDocument(t, compatRes)
+			compatDoc.Remove("$clusterTime")
+			compatDoc.Remove("operationTime")
+			compatDoc.Remove("commitQuorum")
+
+			targetDoc := ConvertDocument(t, targetRes)
+			testutil.AssertEqual(t, compatDoc, targetDoc)
 
 			targetCursor, targetErr := targetCollection.Indexes().List(ctx)
 			compatCursor, compatErr := compatCollection.Indexes().List(ctx)
@@ -467,7 +473,12 @@ func TestDropIndexesCommandCompat(tt *testing.T) {
 						require.Nil(t, compatRes)
 					}
 
-					require.ElementsMatch(t, compatRes, targetRes)
+					compatDoc := ConvertDocument(t, compatRes)
+					compatDoc.Remove("$clusterTime")
+					compatDoc.Remove("operationTime")
+
+					targetDoc := ConvertDocument(t, targetRes)
+					testutil.AssertEqual(t, compatDoc, targetDoc)
 
 					if compatErr == nil {
 						nonEmptyResults = true
