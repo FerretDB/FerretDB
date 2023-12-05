@@ -12,11 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:build !ferretdb_no_sqlite
-
-package main
-
-// init adds "sqlite" backend flags.
-func init() {
-	handlerFlags["sqlite"] = &sqliteFlags
-}
+// Package cursors contains tests for cursors, tailable cursors, `getMore` command, etc.
+//
+// It does not contains tests for simple `find`/`aggregate` cases.
+package cursors

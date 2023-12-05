@@ -211,7 +211,7 @@ tasks:
         -shuffle=on
         -coverpkg=../...
         -coverprofile=integration-postgresql.txt
-        .
+        ./...
         -target-backend=ferretdb-postgresql
         -target-tls
         -postgresql-url='postgres://username@127.0.0.1:5432/ferretdb?search_path='
@@ -236,7 +236,7 @@ tasks:
         -shuffle=on
         -coverpkg=../...
         -coverprofile=integration-sqlite.txt
-        .
+        ./...
         -target-backend=ferretdb-sqlite
         -sqlite-url=file:../tmp/sqlite-tests/
         -target-tls
@@ -261,7 +261,7 @@ tasks:
         -shuffle=on
         -coverpkg=../...
         -coverprofile=integration-mysql.txt
-        .
+        ./...
         -target-backend=ferretdb-mysql
         -target-tls
         -mysql-url='mysql://username:password@127.0.0.1:3306/ferretdb'
@@ -286,7 +286,7 @@ tasks:
         -shuffle=on
         -coverpkg=../...
         -coverprofile=integration-hana.txt
-        .
+        ./...
         -target-backend=ferretdb-hana
         -target-tls
         -hana-url=$FERRETDB_HANA_URL
@@ -311,7 +311,7 @@ tasks:
         -shuffle=on
         -coverpkg=../...
         -coverprofile=integration-mongodb.txt
-        .
+        ./...
         -target-url='mongodb://127.0.0.1:47017/'
         -target-backend=mongodb
 
@@ -319,8 +319,8 @@ tasks:
     desc: "Run unit benchmarks"
     cmds:
       - go test -list='Benchmark.*' ./...
-      - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/bson/           | tee -a new.txt
-      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/bson/           | tee -a new.txt
+      - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/bson/          | tee -a new.txt
+      - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/bson/          | tee -a new.txt
       - go test -count=10 -bench=BenchmarkArray    -benchtime={{.BENCH_TIME}} ./internal/handler/sjson/ | tee -a new.txt
       - go test -count=10 -bench=BenchmarkDocument -benchtime={{.BENCH_TIME}} ./internal/handler/sjson/ | tee -a new.txt
       - bin/benchstat{{exeExt}} old.txt new.txt
@@ -604,6 +604,8 @@ tasks:
         sh: bin/envtool{{exeExt}} shell read build/version/version.txt
       COMMIT:
         sh: bin/envtool{{exeExt}} shell read build/version/commit.txt
+      requires:
+        vars: [FILE, TARGET, OUTPUT]
 
   build-move-check:
     cmds:

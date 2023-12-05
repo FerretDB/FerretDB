@@ -25,6 +25,7 @@ import (
 
 // Settings represents collection settings.
 type Settings struct {
+	UUID            string      `json:"uuid"`
 	Indexes         []IndexInfo `json:"indexes"`
 	CappedSize      int64       `json:"cappedSize"`
 	CappedDocuments int64       `json:"cappedDocuments"`
@@ -56,6 +57,7 @@ func (s Settings) deepCopy() Settings {
 	}
 
 	return Settings{
+		UUID:            s.UUID,
 		Indexes:         indexes,
 		CappedSize:      s.CappedSize,
 		CappedDocuments: s.CappedDocuments,

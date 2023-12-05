@@ -158,25 +158,140 @@ func TestCommandsAdministrationListDatabases(t *testing.T) {
 
 	db := collection.Database()
 	name := db.Name()
+	dbClient := collection.Database().Client()
 
-	actual, err := db.Client().ListDatabases(ctx, bson.D{{"name", name}})
-	require.NoError(t, err)
-	require.Len(t, actual.Databases, 1)
+	// Add an extra DB to help verify if ListDatabases returns multiple databases as intended.
+	extraDB := dbClient.Database(name + "_extra")
+	_, err := extraDB.Collection(collection.Name()+"_extra").InsertOne(ctx, shareddata.DocumentsDoubles)
+	assert.NoError(t, err, "failed to insert document on extra collection")
+	t.Cleanup(func() {
+		assert.NoError(t, extraDB.Drop(ctx), "failed to drop extra DB")
+	})
 
-	expected := mongo.ListDatabasesResult{
-		Databases: []mongo.DatabaseSpecification{{
-			Name:       name,
-			SizeOnDisk: actual.Databases[0].SizeOnDisk,
-			Empty:      actual.Databases[0].Empty,
-		}},
-		TotalSize: actual.TotalSize,
+	testCases := map[string]struct { //nolint:vet // for readability
+		filter any
+		opts   []*options.ListDatabasesOptions
+
+		expectedNameOnly bool
+		expected         mongo.ListDatabasesResult
+	}{
+		"Exists": {
+			filter: bson.D{{Key: "name", Value: name}},
+			expected: mongo.ListDatabasesResult{
+				Databases: []mongo.DatabaseSpecification{{
+					Name:  name,
+					Empty: false,
+				}},
+			},
+		},
+		"ExistsNameOnly": {
+			filter: bson.D{{Key: "name", Value: name}},
+			opts: []*options.ListDatabasesOptions{
+				options.ListDatabases().SetNameOnly(true),
+			},
+			expectedNameOnly: true,
+			expected: mongo.ListDatabasesResult{
+				Databases: []mongo.DatabaseSpecification{{
+					Name: name,
+				}},
+			},
+		},
+		"Regex": {
+			filter: bson.D{
+				{Key: "name", Value: name},
+				{Key: "name", Value: primitive.Regex{Pattern: "^Test", Options: "i"}},
+			},
+			expected: mongo.ListDatabasesResult{
+				Databases: []mongo.DatabaseSpecification{{
+					Name: name,
+				}},
+			},
+		},
+		"RegexNameOnly": {
+			filter: bson.D{
+				{Key: "name", Value: name},
+				{Key: "name", Value: primitive.Regex{Pattern: "^Test", Options: "i"}},
+			},
+			opts: []*options.ListDatabasesOptions{
+				options.ListDatabases().SetNameOnly(true),
+			},
+			expectedNameOnly: true,
+			expected: mongo.ListDatabasesResult{
+				Databases: []mongo.DatabaseSpecification{{
+					Name: name,
+				}},
+			},
+		},
+		"NotFound": {
+			filter: bson.D{{Key: "name", Value: "unknown"}},
+			expected: mongo.ListDatabasesResult{
+				Databases: []mongo.DatabaseSpecification{},
+			},
+		},
+		"RegexNotFound": {
+			filter: bson.D{
+				{Key: "name", Value: name},
+				{Key: "name", Value: primitive.Regex{Pattern: "^xyz$", Options: "i"}},
+			},
+			expected: mongo.ListDatabasesResult{
+				Databases: []mongo.DatabaseSpecification{},
+			},
+		},
+		"RegexNotFoundNameOnly": {
+			filter: bson.D{
+				{Key: "name", Value: name},
+				{Key: "name", Value: primitive.Regex{Pattern: "^xyz$", Options: "i"}},
+			},
+			opts: []*options.ListDatabasesOptions{
+				options.ListDatabases().SetNameOnly(true),
+			},
+			expectedNameOnly: true,
+			expected: mongo.ListDatabasesResult{
+				Databases: []mongo.DatabaseSpecification{},
+			},
+		},
+		"Multiple": {
+			filter: bson.D{
+				{Key: "name", Value: primitive.Regex{Pattern: "^" + name, Options: "i"}},
+			},
+			expected: mongo.ListDatabasesResult{
+				Databases: []mongo.DatabaseSpecification{
+					{
+						Name:  name,
+						Empty: false,
+					},
+					{
+						Name:  name + "_extra",
+						Empty: false,
+					},
+				},
+			},
+		},
 	}
 
-	assert.Equal(t, expected, actual)
+	for name, tc := range testCases {
+		tc, name := tc, name
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-	assert.NotZero(t, actual.Databases[0].SizeOnDisk, "%s's SizeOnDisk should be non-zero", name)
-	assert.False(t, actual.Databases[0].Empty, "%s's Empty should be false", name)
-	assert.NotZero(t, actual.TotalSize, "TotalSize should be non-zero")
+			actual, err := db.Client().ListDatabases(ctx, tc.filter, tc.opts...)
+			assert.NoError(t, err)
+			assert.Len(t, actual.Databases, len(tc.expected.Databases))
+			if tc.expectedNameOnly || len(tc.expected.Databases) == 0 {
+				assert.Zero(t, actual.TotalSize, "TotalSize should be zero")
+			} else {
+				assert.NotZero(t, actual.TotalSize, "TotalSize should be non-zero")
+			}
+
+			// Reset values of dynamic data received by the server to zero for making comparison viable.
+			for index := range actual.Databases {
+				actual.Databases[index].SizeOnDisk = 0
+			}
+			actual.TotalSize = 0
+
+			assert.Equal(t, tc.expected, actual)
+		})
+	}
 }
 
 func TestCommandsAdministrationListCollections(t *testing.T) {
@@ -202,6 +317,60 @@ func TestCommandsAdministrationListCollections(t *testing.T) {
 
 	assert.Len(t, target, 2)
 	assert.Equal(t, compat, target)
+}
+
+func TestCommandsAdministrationCollectionUUID(t *testing.T) {
+	t.Parallel()
+
+	ctx, collection := setup.Setup(t)
+	db := collection.Database()
+	collName := collection.Name()
+
+	err := db.CreateCollection(ctx, collName)
+	require.NoError(t, err)
+
+	cursor, err := db.ListCollections(ctx, bson.D{})
+	require.NoError(t, err)
+
+	var res []bson.D
+	err = cursor.All(ctx, &res)
+	require.NoError(t, err)
+	require.Len(t, res, 1)
+
+	doc := ConvertDocument(t, res[0])
+
+	path := types.NewStaticPath("info", "uuid")
+	uuid, err := doc.GetByPath(path)
+	require.NoError(t, err)
+	require.IsType(t, types.Binary{}, uuid)
+
+	collUUID := uuid.(types.Binary)
+	require.Len(t, collUUID.B, 16)
+	require.Equal(t, collUUID.Subtype, types.BinaryUUID)
+
+	// collection rename should not change the initial UUID
+
+	newName := collName + "_new"
+	command := bson.D{
+		{"renameCollection", db.Name() + "." + collName},
+		{"to", db.Name() + "." + newName},
+	}
+	err = collection.Database().Client().Database("admin").RunCommand(ctx, command).Err()
+	require.NoError(t, err)
+
+	cursor, err = db.ListCollections(ctx, bson.D{})
+	require.NoError(t, err)
+
+	err = cursor.All(ctx, &res)
+	require.NoError(t, err)
+	require.Len(t, res, 1)
+
+	doc = ConvertDocument(t, res[0])
+	name, _ := doc.Get("name")
+	require.Equal(t, name, newName)
+
+	uuid, _ = doc.GetByPath(path)
+	require.Equal(t, uuid, collUUID)
 }
 
 func TestCommandsAdministrationGetParameter(t *testing.T) {
@@ -792,7 +961,7 @@ func TestCommandsAdministrationCollStatsCount(t *testing.T) {
 	ctx, collection := setup.Setup(t)
 
 	var n int32 = 1000
-	docs, _ := generateDocuments(0, n)
+	docs, _ := GenerateDocuments(0, n)
 	_, err := collection.InsertMany(ctx, docs)
 	require.NoError(t, err)
 

@@ -20,7 +20,6 @@ import (
 	"flag"
 	"fmt"
 	"net/url"
-	"path/filepath"
 	"runtime/trace"
 	"slices"
 	"strings"
@@ -66,8 +65,6 @@ var (
 // Other globals.
 var (
 	allBackends = []string{"ferretdb-postgresql", "ferretdb-sqlite", "ferretdb-mysql", "ferretdb-hana", "mongodb"}
-
-	CertsRoot = filepath.Join("..", "build", "certs") // relative to `integration` directory
 )
 
 // SetupOpts represents setup options.
