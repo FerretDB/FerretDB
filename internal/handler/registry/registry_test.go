@@ -55,6 +55,42 @@ func tagPackages(t *testing.T, tag string) []string {
 	return maps.Keys(packages)
 }
 
+// negTagPackages returns packages that are NOT imported by FerretDB when the
+// given Go build negative tag is provided. Eg of negative tags
+// 'ferretdb_no_postgresql', 'ferretdb_no_sqlite'.
+func negTagPackages(t *testing.T, negTag string) []string {
+	t.Helper()
+
+	type list struct {
+		Deps []string `json:"Deps"`
+	}
+
+	// Few packages will not be imported if a negative tag is given
+	var withNegTag list
+	b, err := exec.Command("go", "list", "-json", "-tags", negTag, "../../../cmd/ferretdb").Output()
+	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(b, &withNegTag))
+
+	// Packages which are removed using negative tag will be prensent in this
+	// list
+	var withoutNegTag list
+	b, err = exec.Command("go", "list", "-json", "../../../cmd/ferretdb").Output()
+	require.NoError(t, err)
+	require.NoError(t, json.Unmarshal(b, &withoutNegTag))
+
+	packages := make(map[string]struct{}, len(withoutNegTag.Deps))
+
+	for _, p := range withoutNegTag.Deps {
+		packages[p] = struct{}{}
+	}
+
+	for _, p := range withNegTag.Deps {
+		delete(packages, p)
+	}
+
+	return maps.Keys(packages)
+}
+
 // TestDeps ensures that some packages are imported
 // only when the corresponding backend handler is enabled via Go build tag.
 func TestDeps(t *testing.T) {
@@ -65,5 +101,21 @@ func TestDeps(t *testing.T) {
 
 		diff := tagPackages(t, "ferretdb_hana")
 		assert.Contains(t, diff, "github.com/SAP/go-hdb/driver")
+	})
+
+	t.Run("NoPostgres", func(t *testing.T) {
+		t.Parallel()
+
+		diff := negTagPackages(t, "ferretdb_no_postgresql")
+		assert.Contains(t, diff, "github.com/FerretDB/FerretDB/internal/backends/postgresql")
+		assert.Contains(t, diff, "github.com/jackc/pgx/v5")
+	})
+
+	t.Run("NoSqlite", func(t *testing.T) {
+		t.Parallel()
+
+		diff := negTagPackages(t, "ferretdb_no_sqlite")
+		assert.Contains(t, diff, "github.com/FerretDB/FerretDB/internal/backends/sqlite")
+		assert.Contains(t, diff, "modernc.org/sqlite")
 	})
 }
