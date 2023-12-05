@@ -231,19 +231,22 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 //
 // The provided sort document should be already validated.
 //
-// For capped collection, it returns ORDER BY recordID only if sort document is empty.
 // For more than one sort fields, it sorts only by the first key provided.
-func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document, capped bool) (string, []any) {
+func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document) (string, []any) {
 	if sort.Len() == 0 {
-		if capped {
-			return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil
-		}
-
 		return "", nil
 	}
 
 	k := sort.Keys()[0]
 	v := sort.Values()[0].(int64)
+
+	if k == "$natural" {
+		if v == 1 {
+			return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil
+		}
+
+		return "", nil
+	}
 
 	// Skip sorting dot notation
 	if strings.ContainsRune(k, '.') {

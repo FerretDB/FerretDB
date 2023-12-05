@@ -95,7 +95,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 
 	q += where
 
-	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
+	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort)
 	q += sort
 	args = append(args, sortArgs...)
 
@@ -340,7 +340,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 
 	q += where
 
-	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort, meta.Capped())
+	sort, sortArgs := prepareOrderByClause(&placeholder, params.Sort)
 	res.SortPushdown = sort != ""
 
 	q += sort

@@ -321,8 +321,7 @@ func TestPrepareOrderByClause(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
-		sort   *types.Document
-		capped bool
+		sort *types.Document
 
 		orderBy string
 		args    []any
@@ -346,29 +345,20 @@ func TestPrepareOrderByClause(t *testing.T) {
 			orderBy: "",
 			args:    nil,
 		},
-		"Capped": {
-			capped:  true,
+		"NaturalAscending": {
+			sort:    must.NotFail(types.NewDocument("$natural", int64(1))),
 			orderBy: ` ORDER BY _ferretdb_record_id`,
-			args:    nil,
 		},
-		"CappedWithSort": {
-			sort:    must.NotFail(types.NewDocument("field", int64(-1))),
-			capped:  true,
-			orderBy: ` ORDER BY _jsonb->$1 DESC`,
-			args:    []any{"field"},
-		},
-		"CappedWithSortDotNotation": {
-			sort:    must.NotFail(types.NewDocument("field.embedded", int64(-1))),
-			capped:  true,
+		"NaturalDescending": {
+			sort:    must.NotFail(types.NewDocument("$natural", int64(-1))),
 			orderBy: "",
-			args:    nil,
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			orderBy, args := prepareOrderByClause(new(metadata.Placeholder), tc.sort, tc.capped)
+			orderBy, args := prepareOrderByClause(new(metadata.Placeholder), tc.sort)
 
 			assert.Equal(t, tc.orderBy, orderBy)
 			assert.Equal(t, tc.args, args)
