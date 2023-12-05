@@ -15,7 +15,7 @@ We are delighted to announce the release of FerretDB v1.16.0, where we update ou
 <!--truncate-->
 
 FerretDB is an open-source document database that provides MongoDB compatibility to other database backends, including [Postgres](https://www.postgresql.org/) and [SQLite](https://www.sqlite.org/), and more are on the way.
-Let's check out some of the latest changes in this release, and also give a round-up of some of our achievements this year.
+Let's check out some of the latest changes in this release.
 
 ## Latest changes
 
