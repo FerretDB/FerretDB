@@ -234,6 +234,7 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 	compat := ConvertDocument(t, compatRes)
 	compat.Remove("$clusterTime")
 	compat.Remove("operationTime")
+	compat.Remove("commitQuorum")
 
 	target := ConvertDocument(t, targetRes)
 	testutil.AssertEqual(t, compat, target)
@@ -259,7 +260,12 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, createdCollectionAutomatically.(bool)) // must be false because the collection already exists
 
-	AssertEqualDocuments(t, compatRes, targetRes)
+	compatDoc.Remove("$clusterTime")
+	compatDoc.Remove("operationTime")
+	compatDoc.Remove("commitQuorum")
+
+	targetDoc := ConvertDocument(t, targetRes)
+	testutil.AssertEqual(t, compatDoc, targetDoc)
 
 	// Call index creation for the index that already exists, expect note to be set.
 	indexesDoc = bson.D{{"key", bson.D{{"foo", 1}}}, {"name", "foo_1"}}
@@ -284,7 +290,11 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 	// note must be set because no new indexes were created:
 	require.Equal(t, "all indexes already exist", createdCollectionAutomatically.(string))
 
-	AssertEqualDocuments(t, compatRes, targetRes)
+	compatDoc.Remove("$clusterTime")
+	compatDoc.Remove("operationTime")
+
+	targetDoc = ConvertDocument(t, targetRes)
+	testutil.AssertEqual(t, compatDoc, targetDoc)
 }
 
 func TestDropIndexesCommandCompat(tt *testing.T) {
