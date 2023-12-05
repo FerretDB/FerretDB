@@ -261,10 +261,7 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 	var iter iterator.Interface[struct{}, *types.Document]
 
 	if len(collStatsDocuments) == len(stagesDocuments) {
-		var filter *types.Document
-		var sort *types.Document
-
-		filter, sort = aggregations.GetPushdownQuery(aggregationStages)
+		filter, sort := aggregations.GetPushdownQuery(aggregationStages)
 
 		// only documents stages or no stages - fetch documents from the DB and apply stages to them
 		qp := new(backends.QueryParams)
@@ -295,8 +292,6 @@ func (h *Handler) MsgAggregate(ctx context.Context, msg *wire.OpMsg) (*wire.OpMs
 		}
 
 		var cInfo backends.CollectionInfo
-
-		// TODO: what with tailable check
 
 		// TODO https://github.com/FerretDB/FerretDB/issues/3601
 		if i, found := slices.BinarySearchFunc(cList.Collections, cName, func(e backends.CollectionInfo, t string) int {
