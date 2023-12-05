@@ -135,10 +135,9 @@ func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*
 
 // ExplainParams represents the parameters of Collection.Explain method.
 type ExplainParams struct {
-	Filter          *types.Document
-	Sort            *types.Document
-	DisablePushdown bool
-	Limit           int64
+	Filter *types.Document
+	Sort   *types.Document
+	Limit  int64
 }
 
 // ExplainResult represents the results of Collection.Explain method.
@@ -165,11 +164,6 @@ func (cc *collectionContract) Explain(ctx context.Context, params *ExplainParams
 
 	if params == nil {
 		params = new(ExplainParams)
-	}
-
-	if params.DisablePushdown &&
-		(params.Filter.Len() != 0 || params.Limit != 0 || params.Sort.Len() != 0) {
-		panic("Filter, Limit and Sort shouldn't be set if pushdown is disabled")
 	}
 
 	if params.Sort.Len() != 0 {
