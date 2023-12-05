@@ -15,6 +15,9 @@
 package setup
 
 import (
+	"path/filepath"
+	"runtime"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testfail"
@@ -84,4 +87,14 @@ func SkipForMongoDB(tb testtb.TB, reason string) {
 // FilterPushdownDisabled returns true if FerretDB filter pushdown is disabled.
 func FilterPushdownDisabled() bool {
 	return *disableFilterPushdownF
+}
+
+// Dir returns the absolute directory of this package.
+func Dir(tb testtb.TB) string {
+	tb.Helper()
+
+	_, file, _, ok := runtime.Caller(0)
+	require.True(tb, ok)
+
+	return filepath.Dir(file)
 }
