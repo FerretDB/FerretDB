@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package integration
+package cursors
 
 import (
 	"math"
@@ -26,6 +26,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
+	"github.com/FerretDB/FerretDB/integration"
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/types"
@@ -48,7 +49,7 @@ func TestGetMoreCommand(t *testing.T) {
 
 	// the number of documents is set above the default batchSize of 101
 	// for testing unset batchSize returning default batchSize
-	bsonArr, arr := generateDocuments(0, 110)
+	bsonArr, arr := integration.GenerateDocuments(0, 110)
 
 	_, err := collection.InsertMany(ctx, bsonArr)
 	require.NoError(t, err)
@@ -69,14 +70,14 @@ func TestGetMoreCommand(t *testing.T) {
 			firstBatchSize:   1,
 			getMoreBatchSize: int32(1),
 			collection:       collection.Name(),
-			firstBatch:       ConvertDocuments(t, arr[:1]),
-			nextBatch:        ConvertDocuments(t, arr[1:2]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
+			nextBatch:        integration.ConvertDocuments(t, arr[1:2]),
 		},
 		"IntNegative": {
 			firstBatchSize:   1,
 			getMoreBatchSize: int32(-1),
 			collection:       collection.Name(),
-			firstBatch:       ConvertDocuments(t, arr[:1]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
 			err: &mongo.CommandError{
 				Code:    51024,
 				Name:    "Location51024",
@@ -87,21 +88,21 @@ func TestGetMoreCommand(t *testing.T) {
 			firstBatchSize:   1,
 			getMoreBatchSize: int32(0),
 			collection:       collection.Name(),
-			firstBatch:       ConvertDocuments(t, arr[:1]),
-			nextBatch:        ConvertDocuments(t, arr[1:]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
+			nextBatch:        integration.ConvertDocuments(t, arr[1:]),
 		},
 		"Long": {
 			firstBatchSize:   1,
 			getMoreBatchSize: int64(1),
 			collection:       collection.Name(),
-			firstBatch:       ConvertDocuments(t, arr[:1]),
-			nextBatch:        ConvertDocuments(t, arr[1:2]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
+			nextBatch:        integration.ConvertDocuments(t, arr[1:2]),
 		},
 		"LongNegative": {
 			firstBatchSize:   1,
 			getMoreBatchSize: int64(-1),
 			collection:       collection.Name(),
-			firstBatch:       ConvertDocuments(t, arr[:1]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
 			err: &mongo.CommandError{
 				Code:    51024,
 				Name:    "Location51024",
@@ -112,21 +113,21 @@ func TestGetMoreCommand(t *testing.T) {
 			firstBatchSize:   1,
 			getMoreBatchSize: int64(0),
 			collection:       collection.Name(),
-			firstBatch:       ConvertDocuments(t, arr[:1]),
-			nextBatch:        ConvertDocuments(t, arr[1:]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
+			nextBatch:        integration.ConvertDocuments(t, arr[1:]),
 		},
 		"Double": {
 			firstBatchSize:   1,
 			getMoreBatchSize: float64(1),
 			collection:       collection.Name(),
-			firstBatch:       ConvertDocuments(t, arr[:1]),
-			nextBatch:        ConvertDocuments(t, arr[1:2]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
+			nextBatch:        integration.ConvertDocuments(t, arr[1:2]),
 		},
 		"DoubleNegative": {
 			firstBatchSize:   1,
 			getMoreBatchSize: float64(-1),
 			collection:       collection.Name(),
-			firstBatch:       ConvertDocuments(t, arr[:1]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
 			err: &mongo.CommandError{
 				Code:    51024,
 				Name:    "Location51024",
@@ -137,21 +138,21 @@ func TestGetMoreCommand(t *testing.T) {
 			firstBatchSize:   1,
 			getMoreBatchSize: float64(0),
 			collection:       collection.Name(),
-			firstBatch:       ConvertDocuments(t, arr[:1]),
-			nextBatch:        ConvertDocuments(t, arr[1:]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
+			nextBatch:        integration.ConvertDocuments(t, arr[1:]),
 		},
 		"DoubleFloor": {
 			firstBatchSize:   1,
 			getMoreBatchSize: 1.9,
 			collection:       collection.Name(),
-			firstBatch:       ConvertDocuments(t, arr[:1]),
-			nextBatch:        ConvertDocuments(t, arr[1:2]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
+			nextBatch:        integration.ConvertDocuments(t, arr[1:2]),
 		},
 		"GetMoreCursorExhausted": {
 			firstBatchSize:   200,
 			getMoreBatchSize: int32(1),
 			collection:       collection.Name(),
-			firstBatch:       ConvertDocuments(t, arr[:110]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:110]),
 			err: &mongo.CommandError{
 				Code:    43,
 				Name:    "CursorNotFound",
@@ -162,7 +163,7 @@ func TestGetMoreCommand(t *testing.T) {
 			firstBatchSize:   1,
 			getMoreBatchSize: false,
 			collection:       collection.Name(),
-			firstBatch:       ConvertDocuments(t, arr[:1]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
@@ -175,22 +176,22 @@ func TestGetMoreCommand(t *testing.T) {
 			// unset getMore batchSize gets all remaining documents
 			getMoreBatchSize: nil,
 			collection:       collection.Name(),
-			firstBatch:       ConvertDocuments(t, arr[:1]),
-			nextBatch:        ConvertDocuments(t, arr[1:]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
+			nextBatch:        integration.ConvertDocuments(t, arr[1:]),
 		},
 		"LargeBatchSize": {
 			firstBatchSize:   1,
 			getMoreBatchSize: 105,
 			collection:       collection.Name(),
-			firstBatch:       ConvertDocuments(t, arr[:1]),
-			nextBatch:        ConvertDocuments(t, arr[1:106]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
+			nextBatch:        integration.ConvertDocuments(t, arr[1:106]),
 		},
 		"StringCursorID": {
 			firstBatchSize:   1,
 			getMoreBatchSize: 1,
 			collection:       collection.Name(),
 			cursorID:         "invalid",
-			firstBatch:       ConvertDocuments(t, arr[:1]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
@@ -203,7 +204,7 @@ func TestGetMoreCommand(t *testing.T) {
 			getMoreBatchSize: 1,
 			collection:       collection.Name(),
 			cursorID:         int32(1111),
-			firstBatch:       ConvertDocuments(t, arr[:1]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
@@ -216,7 +217,7 @@ func TestGetMoreCommand(t *testing.T) {
 			getMoreBatchSize: 1,
 			collection:       collection.Name(),
 			cursorID:         int64(1234),
-			firstBatch:       ConvertDocuments(t, arr[:1]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
 			err: &mongo.CommandError{
 				Code:    43,
 				Name:    "CursorNotFound",
@@ -227,7 +228,7 @@ func TestGetMoreCommand(t *testing.T) {
 			firstBatchSize:   1,
 			getMoreBatchSize: 1,
 			collection:       bson.D{},
-			firstBatch:       ConvertDocuments(t, arr[:1]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
 			err: &mongo.CommandError{
 				Code:    14,
 				Name:    "TypeMismatch",
@@ -238,7 +239,7 @@ func TestGetMoreCommand(t *testing.T) {
 			firstBatchSize:   1,
 			getMoreBatchSize: 1,
 			collection:       "invalid",
-			firstBatch:       ConvertDocuments(t, arr[:1]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
 			err: &mongo.CommandError{
 				Code: 13,
 				Name: "Unauthorized",
@@ -250,7 +251,7 @@ func TestGetMoreCommand(t *testing.T) {
 			firstBatchSize:   1,
 			getMoreBatchSize: 1,
 			collection:       "",
-			firstBatch:       ConvertDocuments(t, arr[:1]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
 			err: &mongo.CommandError{
 				Code:    73,
 				Name:    "InvalidNamespace",
@@ -261,7 +262,7 @@ func TestGetMoreCommand(t *testing.T) {
 			firstBatchSize:   1,
 			getMoreBatchSize: 1,
 			collection:       nil,
-			firstBatch:       ConvertDocuments(t, arr[:1]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:1]),
 			err: &mongo.CommandError{
 				Code:    40414,
 				Name:    "Location40414",
@@ -272,29 +273,29 @@ func TestGetMoreCommand(t *testing.T) {
 			firstBatchSize:   nil,
 			getMoreBatchSize: nil,
 			collection:       collection.Name(),
-			firstBatch:       ConvertDocuments(t, arr[:101]),
-			nextBatch:        ConvertDocuments(t, arr[101:]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:101]),
+			nextBatch:        integration.ConvertDocuments(t, arr[101:]),
 		},
 		"UnsetFindBatchSize": {
 			firstBatchSize:   nil,
 			getMoreBatchSize: 5,
 			collection:       collection.Name(),
-			firstBatch:       ConvertDocuments(t, arr[:101]),
-			nextBatch:        ConvertDocuments(t, arr[101:106]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:101]),
+			nextBatch:        integration.ConvertDocuments(t, arr[101:106]),
 		},
 		"UnsetGetMoreBatchSize": {
 			firstBatchSize:   5,
 			getMoreBatchSize: nil,
 			collection:       collection.Name(),
-			firstBatch:       ConvertDocuments(t, arr[:5]),
-			nextBatch:        ConvertDocuments(t, arr[5:]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:5]),
+			nextBatch:        integration.ConvertDocuments(t, arr[5:]),
 		},
 		"BatchSize": {
 			firstBatchSize:   3,
 			getMoreBatchSize: 5,
 			collection:       collection.Name(),
-			firstBatch:       ConvertDocuments(t, arr[:3]),
-			nextBatch:        ConvertDocuments(t, arr[3:8]),
+			firstBatch:       integration.ConvertDocuments(t, arr[:3]),
+			nextBatch:        integration.ConvertDocuments(t, arr[3:8]),
 		},
 	} {
 		name, tc := name, tc
@@ -339,7 +340,7 @@ func TestGetMoreCommand(t *testing.T) {
 				err := collection.Database().RunCommand(ctx, command).Decode(&res)
 				require.NoError(t, err)
 
-				doc := ConvertDocument(t, res)
+				doc := integration.ConvertDocument(t, res)
 
 				v, _ := doc.Get("cursor")
 				require.NotNil(t, v)
@@ -383,10 +384,10 @@ func TestGetMoreCommand(t *testing.T) {
 
 				err = collection.Database().RunCommand(ctx, getMoreCommand).Decode(&res)
 				if tc.err != nil {
-					AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+					integration.AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 
 					// upon error response contains firstBatch field.
-					doc = ConvertDocument(t, res)
+					doc = integration.ConvertDocument(t, res)
 
 					v, _ = doc.Get("cursor")
 					require.NotNil(t, v)
@@ -413,7 +414,7 @@ func TestGetMoreCommand(t *testing.T) {
 
 				require.NoError(t, err)
 
-				doc = ConvertDocument(t, res)
+				doc = integration.ConvertDocument(t, res)
 
 				v, _ = doc.Get("cursor")
 				require.NotNil(t, v)
@@ -448,7 +449,7 @@ func TestGetMoreBatchSizeCursor(t *testing.T) {
 	// The batchSize set by `find`/`aggregate` is used also by `getMore` unless
 	// `find`/`aggregate` has default batchSize or 0 batchSize, then `getMore` has unlimited batchSize.
 	// To test that, the number of documents is set to more than the double of default batchSize 101.
-	arr, _ := generateDocuments(0, 220)
+	arr, _ := integration.GenerateDocuments(0, 220)
 	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
@@ -600,7 +601,7 @@ func TestGetMoreCommandConnection(t *testing.T) {
 	databaseName := s.Collection.Database().Name()
 	collectionName := s.Collection.Name()
 
-	arr, _ := generateDocuments(0, 5)
+	arr, _ := integration.GenerateDocuments(0, 5)
 	_, err := collection1.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
@@ -625,7 +626,7 @@ func TestGetMoreCommandConnection(t *testing.T) {
 		).Decode(&res)
 		require.NoError(t, err)
 
-		doc := ConvertDocument(t, res)
+		doc := integration.ConvertDocument(t, res)
 
 		v, _ := doc.Get("cursor")
 		require.NotNil(t, v)
@@ -673,7 +674,7 @@ func TestGetMoreCommandConnection(t *testing.T) {
 		).Decode(&res)
 		require.NoError(t, err)
 
-		doc := ConvertDocument(t, res)
+		doc := integration.ConvertDocument(t, res)
 
 		v, _ := doc.Get("cursor")
 		require.NotNil(t, v)
@@ -692,7 +693,7 @@ func TestGetMoreCommandConnection(t *testing.T) {
 			},
 		).Decode(&res)
 
-		AssertMatchesCommandError(t, mongo.CommandError{Code: 50738, Name: "Location50738"}, err)
+		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50738, Name: "Location50738"}, err)
 	})
 }
 
@@ -872,7 +873,7 @@ func TestGetMoreCommandMaxTimeMSErrors(t *testing.T) {
 
 			var res bson.D
 			err := collection.Database().RunCommand(ctx, tc.command).Decode(&res)
-			AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
+			integration.AssertEqualAltCommandError(t, *tc.err, tc.altMessage, err)
 			require.Nil(t, res)
 		})
 	}
@@ -894,12 +895,14 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 	ctx, collection := s.Ctx, s.Collection
 
 	// need large amount of documents for time out to trigger
-	arr, _ := generateDocuments(0, 5000)
+	arr, _ := integration.GenerateDocuments(0, 5000)
 
 	_, err := collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
 	t.Run("FindExpire", func(tt *testing.T) {
+		require.Fail(tt, "oops")
+
 		t := setup.FailsForFerretDB(tt, "https://github.com/FerretDB/FerretDB/issues/2983")
 
 		opts := options.Find().
@@ -912,7 +915,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 
 		_, err := collection.Find(ctx, bson.D{}, opts)
 
-		AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, err)
+		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, err)
 	})
 
 	t.Run("FindGetMorePropagateMaxTimeMS", func(t *testing.T) {
@@ -935,7 +938,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		ok := cursor.Next(ctx)
 		assert.False(t, ok)
 
-		AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, cursor.Err())
+		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, cursor.Err())
 	})
 
 	t.Run("FindGetMoreMaxTimeMS", func(tt *testing.T) {
@@ -948,7 +951,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		}).Decode(&res)
 		require.NoError(t, err)
 
-		doc := ConvertDocument(t, res)
+		doc := integration.ConvertDocument(t, res)
 
 		v, _ := doc.Get("cursor")
 		require.NotNil(t, v)
@@ -966,7 +969,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 			{"maxTimeMS", 1},
 		}).Decode(&res)
 
-		AssertEqualCommandError(
+		integration.AssertEqualCommandError(
 			t,
 			mongo.CommandError{
 				Code:    2,
@@ -989,7 +992,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		// use $sort stage to slow down the query more than 1ms
 		_, err := collection.Aggregate(ctx, bson.A{bson.D{{"$sort", bson.D{{"v", 1}}}}}, opts)
 
-		AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, err)
+		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, err)
 	})
 
 	t.Run("AggregateGetMorePropagateMaxTimeMS", func(t *testing.T) {
@@ -1014,7 +1017,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		ok := cursor.Next(ctx)
 		assert.False(t, ok)
 
-		AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, cursor.Err())
+		integration.AssertMatchesCommandError(t, mongo.CommandError{Code: 50, Name: "MaxTimeMSExpired"}, cursor.Err())
 	})
 
 	t.Run("AggregateGetMoreMaxTimeMS", func(tt *testing.T) {
@@ -1028,7 +1031,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 		}).Decode(&res)
 		require.NoError(t, err)
 
-		doc := ConvertDocument(t, res)
+		doc := integration.ConvertDocument(t, res)
 
 		v, _ := doc.Get("cursor")
 		require.NotNil(t, v)
@@ -1046,7 +1049,7 @@ func TestGetMoreCommandMaxTimeMSCursor(t *testing.T) {
 			{"maxTimeMS", 1},
 		}).Decode(&res)
 
-		AssertEqualAltCommandError(
+		integration.AssertEqualAltCommandError(
 			t,
 			mongo.CommandError{
 				Code:    2,
