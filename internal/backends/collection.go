@@ -78,8 +78,8 @@ func CollectionContract(c Collection) Collection {
 type QueryParams struct {
 	Filter *types.Document
 	Sort   *types.Document
+	Limit  int64
 
-	Limit         int64
 	OnlyRecordIDs bool
 	Comment       string
 }
