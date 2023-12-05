@@ -17,6 +17,8 @@ package integration
 import (
 	"testing"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
@@ -229,7 +231,12 @@ func TestCreateIndexesCommandCompatCheckFields(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, createdCollectionAutomatically.(bool)) // must be true because a new collection was created
 
-	AssertEqualDocuments(t, compatRes, targetRes)
+	compat := ConvertDocument(t, compatRes)
+	compat.Remove("$clusterTime")
+	compat.Remove("operationTime")
+
+	target := ConvertDocument(t, targetRes)
+	testutil.AssertEqual(t, compat, target)
 
 	// Now this collection exists, so we create another index and expect createdCollectionAutomatically to be false.
 	indexesDoc = bson.D{{"key", bson.D{{"foo", 1}}}, {"name", "foo_1"}}
