@@ -703,7 +703,7 @@ func TestQueryCommandBatchSize(t *testing.T) {
 				rest...,
 			)
 
-			var res bson.D
+			var res bson.M
 			err := collection.Database().RunCommand(ctx, command).Decode(&res)
 			if tc.err != nil {
 				assert.Nil(t, res)
@@ -714,17 +714,17 @@ func TestQueryCommandBatchSize(t *testing.T) {
 
 			require.NoError(t, err)
 
-			v, ok := res.Map()["cursor"]
+			v, ok := res["cursor"]
 			require.True(t, ok)
 
-			cursor, ok := v.(bson.D)
+			cursor, ok := v.(bson.M)
 			require.True(t, ok)
 
 			// Do not check the value of cursor id, FerretDB has a different id.
-			cursorID := cursor.Map()["id"]
+			cursorID := cursor["id"]
 			assert.NotNil(t, cursorID)
 
-			firstBatch, ok := cursor.Map()["firstBatch"]
+			firstBatch, ok := cursor["firstBatch"]
 			require.True(t, ok)
 			require.Equal(t, tc.firstBatch, firstBatch)
 		})
@@ -791,7 +791,7 @@ func TestQueryCommandSingleBatch(t *testing.T) {
 				rest...,
 			)
 
-			var res bson.D
+			var res bson.M
 			err := collection.Database().RunCommand(ctx, command).Decode(&res)
 			if tc.err != nil {
 				assert.Nil(t, res)
@@ -802,13 +802,13 @@ func TestQueryCommandSingleBatch(t *testing.T) {
 
 			require.NoError(t, err)
 
-			v, ok := res.Map()["cursor"]
+			v, ok := res["cursor"]
 			require.True(t, ok)
 
-			cursor, ok := v.(bson.D)
+			cursor, ok := v.(bson.M)
 			require.True(t, ok)
 
-			cursorID := cursor.Map()["id"]
+			cursorID := cursor["id"]
 			assert.NotNil(t, cursorID)
 
 			if !tc.cursorClosed {

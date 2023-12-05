@@ -1727,7 +1727,7 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, cursor.Next(ctx))
 
-	defer cursor.Close(ctx)
+	defer require.NoError(t, cursor.Close(ctx))
 
 	t.Run("Empty", func(t *testing.T) {
 		t.Parallel()
@@ -1759,7 +1759,7 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 		c, err := collection.Find(ctx, bson.D{}, options.Find().SetBatchSize(1))
 		require.NoError(t, err)
 		require.True(t, c.Next(ctx))
-		defer c.Close(ctx)
+		defer require.NoError(t, c.Close(ctx))
 
 		var a bson.D
 		err = collection.Database().RunCommand(ctx, bson.D{
@@ -1784,7 +1784,7 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 		c, err := collection.Find(ctx, bson.D{}, options.Find().SetBatchSize(1))
 		require.NoError(t, err)
 		require.True(t, c.Next(ctx))
-		defer c.Close(ctx)
+		defer require.NoError(t, c.Close(ctx))
 
 		var a bson.D
 		err = collection.Database().RunCommand(ctx, bson.D{
@@ -1820,7 +1820,7 @@ func TestCommandsAdministrationKillCursors(t *testing.T) {
 		c, err := collection.Find(ctx, bson.D{}, options.Find().SetBatchSize(1))
 		require.NoError(t, err)
 		require.True(t, c.Next(ctx))
-		defer c.Close(ctx)
+		defer require.NoError(t, c.Close(ctx))
 
 		var a bson.D
 		err = collection.Database().RunCommand(ctx, bson.D{
