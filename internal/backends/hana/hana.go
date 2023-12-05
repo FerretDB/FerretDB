@@ -95,6 +95,9 @@ func CreateSchema(ctx context.Context, hdb *fsql.DB, schema string) error {
 // CreateSchema creates a schema in SAP HANA JSON Document Store if it not exists.
 func CreateSchemaIfNotExists(ctx context.Context, hdb *fsql.DB, schema string) error {
 	exists, err := SchemaExists(ctx, hdb, schema)
+	if err != nil {
+		return getHanaErrorIfExists(err)
+	}
 	if !exists {
 		err = CreateSchema(ctx, hdb, schema)
 	}
@@ -146,6 +149,9 @@ func CreateCollection(ctx context.Context, hdb *fsql.DB, schema, table string) e
 // Returns nil if collection already exist.
 func CreateCollectionIfNotExists(ctx context.Context, hdb *fsql.DB, schema, table string) error {
 	exists, err := CollectionExists(ctx, hdb, schema, table)
+	if err != nil {
+		return getHanaErrorIfExists(err)
+	}
 	if !exists {
 		err = CreateCollection(ctx, hdb, schema, table)
 	}

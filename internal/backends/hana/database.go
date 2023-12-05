@@ -95,9 +95,17 @@ func (db *database) DropCollection(ctx context.Context, params *backends.DropCol
 
 // RenameCollection implements backends.Database interface.
 func (db *database) RenameCollection(ctx context.Context, params *backends.RenameCollectionParams) error {
-	// Todo check if collection exists
-	sqlStmt := fmt.Sprintf("RENAME COLLECTION %s.%s to %s", db.schema, params.OldName, params.NewName)
-	_, err := db.hdb.ExecContext(ctx, sqlStmt)
+
+	exists, err := CollectionExists(ctx, db.hdb, db.schema, params.OldName)
+	if err != nil {
+		return getHanaErrorIfExists(err)
+	}
+	if !exists {
+		return lazyerrors.Errorf("old database %q or collection %q does not exist", db.schema, params.OldName)
+	}
+
+	sqlStmt := fmt.Sprintf("RENAME COLLECTION %q.%q to %q", db.schema, params.OldName, params.NewName)
+	_, err = db.hdb.ExecContext(ctx, sqlStmt)
 	if err != nil {
 		return lazyerrors.Error(err)
 	}
@@ -114,18 +122,21 @@ func (db *database) Stats(ctx context.Context, params *backends.DatabaseStatsPar
 	// Todo: should we load unloaded schemas?
 
 	queryCountDocuments := "SELECT COALESCE(SUM(RECORD_COUNT),0) FROM M_TABLES " +
-		"WHERE TABLE_TYPE = 'COLLECTION' AND SCHEMA_NAME = ?"
+		"WHERE TABLE_TYPE = 'COLLECTION' AND SCHEMA_NAME = '%s'"
 
-	rowCount := db.hdb.QueryRowContext(ctx, queryCountDocuments, db.schema)
+	queryCountDocuments = fmt.Sprintf(queryCountDocuments, db.schema)
+
+	rowCount := db.hdb.QueryRowContext(ctx, queryCountDocuments)
 	var countDocuments int64
 	if err := rowCount.Scan(&countDocuments); err != nil {
 		return nil, lazyerrors.Error(err)
 	}
 
 	querySizeTotal := "SELECT COALESCE(SUM(TABLE_SIZE),0) FROM M_TABLES " +
-		"WHERE TABLE_TYPE = 'COLLECTION' AND SCHEMA_NAME = ?"
+		"WHERE TABLE_TYPE = 'COLLECTION' AND SCHEMA_NAME = '%s'"
+	querySizeTotal = fmt.Sprintf(querySizeTotal, db.schema)
 
-	rowSizeTotal := db.hdb.QueryRowContext(ctx, querySizeTotal, db.schema)
+	rowSizeTotal := db.hdb.QueryRowContext(ctx, querySizeTotal)
 
 	var sizeTotal int64
 	if err := rowSizeTotal.Scan(&sizeTotal); err != nil {

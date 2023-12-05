@@ -17,6 +17,7 @@ package hana
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/FerretDB/FerretDB/internal/backends"
 	"github.com/FerretDB/FerretDB/internal/handler/sjson"
@@ -44,14 +45,32 @@ func newCollection(hdb *fsql.DB, schema, table string) backends.Collection {
 	})
 }
 
-// Query implements backends.Collection interface.
-func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*backends.QueryResult, error) {
+// Helperfunction to check if database and collection exist on hana.
+func (c *collection) checkSchemaAndCollectionExists(ctx context.Context) error {
 	s, err := SchemaExists(ctx, c.hdb, c.schema)
 	if !s {
-		return nil, lazyerrors.Errorf("Schema %q does not exist!", c.schema)
+		return lazyerrors.Errorf("Database %q does not exist!", c.schema)
 	}
 	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return lazyerrors.Error(err)
+	}
+
+	col, err := CollectionExists(ctx, c.hdb, c.schema, c.table)
+	if !col {
+		return lazyerrors.Errorf("Collection %q does not exist!", c.table)
+	}
+	if err != nil {
+		return lazyerrors.Error(err)
+	}
+
+	return nil
+}
+
+// Query implements backends.Collection interface.
+func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*backends.QueryResult, error) {
+	err := c.checkSchemaAndCollectionExists(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	selectClause := prepareSelectClause(c.schema, c.table)
@@ -112,20 +131,9 @@ func (c *collection) InsertAll(ctx context.Context, params *backends.InsertAllPa
 // UpdateAll implements backends.Collection interface.
 func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllParams) (*backends.UpdateAllResult, error) {
 	var res backends.UpdateAllResult
-	s, err := SchemaExists(ctx, c.hdb, c.schema)
-	if !s {
-		return &res, nil
-	}
+	err := c.checkSchemaAndCollectionExists(ctx)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	col, err := CollectionExists(ctx, c.hdb, c.schema, c.table)
-	if !col {
-		return &res, nil
-	}
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	updateSql := "UPDATE %q.%q SET %q = (%s) WHERE \"_id\" = %q"
@@ -158,23 +166,13 @@ func (c *collection) UpdateAll(ctx context.Context, params *backends.UpdateAllPa
 
 // DeleteAll implements backends.Collection interface.
 func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllParams) (*backends.DeleteAllResult, error) {
+
+	err := c.checkSchemaAndCollectionExists(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	var res backends.DeleteAllResult
-	s, err := SchemaExists(ctx, c.hdb, c.schema)
-	if !s {
-		return &res, nil
-	}
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	col, err := CollectionExists(ctx, c.hdb, c.schema, c.table)
-	if !col {
-		return &res, nil
-	}
-	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
 	deleteSql := "DELETE FROM %q.%q WHERE \"_id\" = %s"
 
 	for _, id := range params.IDs {
@@ -198,30 +196,16 @@ func (c *collection) DeleteAll(ctx context.Context, params *backends.DeleteAllPa
 
 // Explain implements backends.Collection interface.
 func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams) (*backends.ExplainResult, error) {
+	// TODO HANA does not provide explain plan in json format. We need a conversion here.
 	return nil, lazyerrors.New("not implemented yet")
 }
 
 // Stats implements backends.Collection interface.
 func (c *collection) Stats(ctx context.Context, params *backends.CollectionStatsParams) (*backends.CollectionStatsResult, error) {
 	var res backends.CollectionStatsResult
-	s, err := SchemaExists(ctx, c.hdb, c.schema)
-	if !s {
-		return nil, backends.NewError(
-			backends.ErrorCodeDatabaseDoesNotExist,
-			lazyerrors.Errorf("No database (schema) with name %q", c.schema))
-	}
+	err := c.checkSchemaAndCollectionExists(ctx)
 	if err != nil {
-		return nil, lazyerrors.Error(err)
-	}
-
-	col, err := CollectionExists(ctx, c.hdb, c.schema, c.table)
-	if !col {
-		return nil, backends.NewError(
-			backends.ErrorCodeCollectionDoesNotExist,
-			lazyerrors.Errorf("No collection with name %q.%q", c.schema, c.table))
-	}
-	if err != nil {
-		return nil, lazyerrors.Error(err)
+		return nil, err
 	}
 
 	// TODO: Fill out collection stats
@@ -236,17 +220,92 @@ func (c *collection) Compact(ctx context.Context, params *backends.CompactParams
 
 // ListIndexes implements backends.Collection interface.
 func (c *collection) ListIndexes(ctx context.Context, params *backends.ListIndexesParams) (*backends.ListIndexesResult, error) {
-	return nil, lazyerrors.New("not implemented yet")
+	err := c.checkSchemaAndCollectionExists(ctx)
+	if err != nil {
+		return nil, err
+	}
+	sql := "SELECT idx.INDEX_NAME, idx.COLUMN_NAME, idx.ASCENDING_ORDER " +
+		"FROM INDEX_COLUMNS idx, M_TABLES tbl " +
+		"WHERE idx.SCHEMA_NAME = '%s' AND idx.TABLE_NAME = '%s' AND " +
+		"idx.SCHEMA_NAME = tbl.SCHEMA_NAME AND idx.TABLE_NAME = tbl.TABLE_NAME AND " +
+		"tbl.TABLE_TYPE = 'COLLECTION'"
+
+	sql = fmt.Sprintf(sql, c.schema, c.table)
+	rows, err := c.hdb.QueryContext(ctx, sql)
+	if err != nil {
+		return nil, lazyerrors.Error(err)
+	}
+
+	defer rows.Close()
+
+	var indexes []backends.IndexInfo
+
+	for rows.Next() {
+		var idxName, idxColName string
+		var ascending bool
+
+		err = rows.Scan(&idxName, &idxColName, &ascending)
+		if err != nil {
+			return nil, lazyerrors.Error(nil)
+		}
+
+		indexes = append(indexes, backends.IndexInfo{
+			Name:   idxName,
+			Unique: true, // TODO: Is this possible to query from HANA?
+			Key:    []backends.IndexKeyPair{{Field: idxColName, Descending: !ascending}},
+		})
+	}
+
+	res := backends.ListIndexesResult{Indexes: indexes}
+
+	sort.Slice(res.Indexes, func(i, j int) bool {
+		return res.Indexes[i].Name < res.Indexes[j].Name
+	})
+
+	return &res, nil
 }
 
 // CreateIndexes implements backends.Collection interface.
 func (c *collection) CreateIndexes(ctx context.Context, params *backends.CreateIndexesParams) (*backends.CreateIndexesResult, error) { //nolint:lll // for readability
-	return nil, lazyerrors.New("not implemented yet")
+	err := c.checkSchemaAndCollectionExists(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	sql := "CREATE HASH INDEX %q.%s ON %q.%q(%q)"
+	var createStmt string
+	// TODO Can we support more than one field for indexes in HANA?
+	for _, index := range params.Indexes {
+		createStmt = fmt.Sprintf(sql, c.schema, index.Name, c.schema, c.table, index.Key[0].Field)
+		_, err := c.hdb.ExecContext(ctx, createStmt)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	return new(backends.CreateIndexesResult), nil
 }
 
 // DropIndexes implements backends.Collection interface.
 func (c *collection) DropIndexes(ctx context.Context, params *backends.DropIndexesParams) (*backends.DropIndexesResult, error) {
-	return nil, lazyerrors.New("not implemented yet")
+	err := c.checkSchemaAndCollectionExists(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO Check if index is on this collection.
+
+	sql := "DROP INDEX %q.%s"
+	var droptStmt string
+	for _, index := range params.Indexes {
+		droptStmt = fmt.Sprintf(sql, c.schema, index)
+		_, err := c.hdb.ExecContext(ctx, droptStmt)
+		if err != nil {
+			return nil, lazyerrors.Error(err)
+		}
+	}
+
+	return new(backends.DropIndexesResult), nil
 }
 
 // check interfaces
