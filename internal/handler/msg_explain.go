@@ -82,9 +82,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	qp := backends.ExplainParams{
-		Filter: params.Filter,
-	}
+	qp := new(backends.ExplainParams)
 
 	params.Filter, params.Sort = aggregations.GetPushdownQuery(params.StagesDocs)
 
@@ -143,7 +141,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		qp.Limit = params.Limit
 	}
 
-	res, err := coll.Explain(ctx, &qp)
+	res, err := coll.Explain(ctx, qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
