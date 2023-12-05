@@ -88,7 +88,7 @@ func (c *collection) Query(ctx context.Context, params *backends.QueryParams) (*
 		}
 
 		q += whereClause
-		q += prepareOrderByClause(params.Sort, meta.Capped())
+		q += prepareOrderByClause(params.Sort)
 
 		if params.Limit != 0 {
 			q += ` LIMIT ?`
@@ -288,7 +288,7 @@ func (c *collection) Explain(ctx context.Context, params *backends.ExplainParams
 		}
 	}
 
-	orderByClause := prepareOrderByClause(params.Sort, meta.Capped())
+	orderByClause := prepareOrderByClause(params.Sort)
 	sortPushdown := orderByClause != ""
 
 	q := `EXPLAIN QUERY PLAN ` + selectClause + whereClause + orderByClause

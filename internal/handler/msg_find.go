@@ -70,24 +70,25 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		return nil, lazyerrors.Error(err)
 	}
 
+	var cList *backends.ListCollectionsResult
+
+	if cList, err = db.ListCollections(ctx, nil); err != nil {
+		return nil, err
+	}
+
+	var cInfo backends.CollectionInfo
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3601
+	//nolint:lll // see issue above
+	if i, found := slices.BinarySearchFunc(cList.Collections, params.Collection, func(e backends.CollectionInfo, t string) int {
+		return cmp.Compare(e.Name, t)
+	}); found {
+		cInfo = cList.Collections[i]
+	}
+
+	capped := cInfo.Capped()
 	if params.Tailable {
-		var cList *backends.ListCollectionsResult
-
-		if cList, err = db.ListCollections(ctx, nil); err != nil {
-			return nil, err
-		}
-
-		var cInfo backends.CollectionInfo
-
-		// TODO https://github.com/FerretDB/FerretDB/issues/3601
-		//nolint:lll // see issue above
-		if i, found := slices.BinarySearchFunc(cList.Collections, params.Collection, func(e backends.CollectionInfo, t string) int {
-			return cmp.Compare(e.Name, t)
-		}); found {
-			cInfo = cList.Collections[i]
-		}
-
-		if !cInfo.Capped() {
+		if !capped {
 			return nil, handlererrors.NewCommandErrorMsgWithArgument(
 				handlererrors.ErrBadValue,
 				"tailable cursor requested on non capped collection",
@@ -123,6 +124,10 @@ func (h *Handler) MsgFind(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg, er
 		}
 
 		return nil, err
+	}
+
+	if params.Sort.Len() == 0 && capped {
+		qp.Sort = must.NotFail(types.NewDocument("$natural", int64(1)))
 	}
 
 	// Skip sorting if there are more than one sort parameters
