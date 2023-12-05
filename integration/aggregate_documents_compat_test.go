@@ -19,8 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-
 	"github.com/AlekSi/pointer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -31,6 +29,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/integration/setup"
 	"github.com/FerretDB/FerretDB/integration/shareddata"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 // aggregateStagesCompatTestCase describes aggregation stages compatibility test case.
