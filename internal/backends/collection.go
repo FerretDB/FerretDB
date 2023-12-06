@@ -97,7 +97,13 @@ type QueryResult struct {
 // It also can be used to close the returned iterator and free underlying resources,
 // but doing so is not necessary - the handler will do that anyway.
 //
-// Passed sort document should be already validated. If sort document is invalid, function panics.
+// Filter may be ignored, or safely applied partially or entirely.
+// Extra documents will be filtered out by the handler.
+//
+// Sort should have the following form: {"field1": int64(1), "field2": int64(-1), ...}.
+// If non-empty, it should be applied entirely.
+//
+// Limit, if non-zero, should be applied.
 func (cc *collectionContract) Query(ctx context.Context, params *QueryParams) (*QueryResult, error) {
 	defer observability.FuncCall(ctx)()
 
