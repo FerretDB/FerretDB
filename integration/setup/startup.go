@@ -22,27 +22,24 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"go.opentelemetry.io/otel/sdk/resource"
-	oteltrace "go.opentelemetry.io/otel/sdk/trace"
-	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
+
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
 // listenerMetrics are shared between tests.
 var listenerMetrics = connmetrics.NewListenerMetrics()
 
 // exporter is a shared OTLP http exporter for tests.
-var exporter *otlptrace.Exporter
+var exporter otelsdktrace.SpanExporter
 
 // Startup initializes things that should be initialized only once.
 func Startup() {
@@ -108,22 +105,7 @@ func Startup() {
 		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
 	}
 
-	exporter = must.NotFail(otlptracehttp.New(ctx,
-		otlptracehttp.WithEndpoint("127.0.0.1:4318"),
-		otlptracehttp.WithInsecure(),
-	))
-
-	tp := oteltrace.NewTracerProvider(
-		oteltrace.WithSpanProcessor(
-			oteltrace.NewBatchSpanProcessor(exporter),
-		),
-		oteltrace.WithSampler(oteltrace.AlwaysSample()),
-		oteltrace.WithResource(resource.NewSchemaless(
-			otelsemconv.ServiceNameKey.String("FerretDB"),
-		)),
-	)
-
-	otel.SetTracerProvider(tp)
+	exporter = observability.SetupOtel("integration")
 }
 
 // Shutdown cleans up after all tests.

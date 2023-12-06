@@ -31,13 +31,13 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 
 	"github.com/FerretDB/FerretDB/internal/util/lazyerrors"
 	"github.com/FerretDB/FerretDB/internal/util/must"
+	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
 
 // testEvent represents a single even emitted by `go test -json`.
@@ -59,12 +59,11 @@ func (te testEvent) Elapsed() time.Duration {
 
 // testResult represents the outcome of a single test.
 type testResult struct {
+	ctx        context.Context
 	run        time.Time
 	cont       time.Time
-	outputs    []string
 	lastAction string
-	context    context.Context
-	span       trace.Span
+	outputs    []string
 }
 
 // parentTest returns parent test name for the given subtest, or empty string.
@@ -78,6 +77,13 @@ func parentTest(testName string) string {
 
 // runGoTest runs `go test` with given extra args.
 func runGoTest(ctx context.Context, args []string, total int, times bool, logger *zap.SugaredLogger) error {
+	exporter := observability.SetupOtel("envtool tests")
+	defer func() {
+		if err := exporter.Shutdown(context.TODO()); err != nil {
+			logger.Error(err)
+		}
+	}()
+
 	cmd := exec.CommandContext(ctx, "go", append([]string{"test", "-json"}, args...)...)
 	logger.Debugf("Running %s", strings.Join(cmd.Args, " "))
 
@@ -105,6 +111,11 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 		totalTests = strconv.Itoa(total)
 	}
 
+	var root oteltrace.Span
+	ctx, root = otel.Tracer("").Start(ctx, "root")
+
+	defer root.End()
+
 	for {
 		var event testEvent
 		if err = d.Decode(&event); err != nil {
@@ -117,21 +128,19 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 
 		// logger.Desugar().Info("decoded event", zap.Any("event", event))
 
-		// Skip processing if event.Test is empty
-		if event.Test == "" {
-			continue
-		}
-
-		res, exists := results[event.Test]
-		if !exists {
+		res := results[event.Package+"."+event.Test]
+		if res == nil {
+			testCtx, _ := otel.Tracer("").Start(ctx, event.Test)
 			res = &testResult{
+				ctx:     testCtx,
 				outputs: make([]string, 0, 2),
 			}
-
-			results[event.Test] = res
-			results[event.Test].context = ctx
-			results[event.Test].lastAction = event.Action
+			results[event.Package+"."+event.Test] = res
 		}
+
+		res.lastAction = event.Action
+
+		oteltrace.SpanFromContext(res.ctx).AddEvent(event.Action)
 
 		switch event.Action {
 		case "start": // the test binary is about to be executed
@@ -140,43 +149,15 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 		case "run": // the test has started running
 			must.NotBeZero(event.Test)
 
-			// Start a new span for the test or subtest
-			if parentTest(event.Test) == "" {
-				res.context, res.span = otel.Tracer("").Start(ctx, event.Test)
-			} else {
-				parentCtx := results[parentTest(event.Test)].context
-				if parentCtx != nil {
-					res.context, res.span = otel.Tracer("").Start(parentCtx, event.Test)
-				}
-			}
-
 			res.run = event.Time
 			res.cont = event.Time
 
-			// Add an event to the span at the start of the test.
-			if res.span != nil {
-				res.span.AddEvent("Test Started", trace.WithTimestamp(event.Time), trace.WithAttributes(
-					attribute.String("test.name", event.Test),
-					attribute.String("test.action", event.Action),
-				))
-			}
 		case "pause": // the test has been paused
 			// nothing
 
 		case "cont": // the test has continued running
 			must.NotBeZero(event.Test)
 			res.cont = event.Time
-
-			// get span from context
-			span := trace.SpanFromContext(res.context)
-			if span != nil {
-				span.AddEvent("Test Continued", trace.WithTimestamp(event.Time), trace.WithAttributes(
-					attribute.String("test.name", event.Test),
-					attribute.String("test.action", event.Action),
-				))
-			}
-
-			res.span = span
 
 		case "output": // the test printed output
 			out := strings.TrimSuffix(event.Output, "\n")
@@ -187,39 +168,20 @@ func runGoTest(ctx context.Context, args []string, total int, times bool, logger
 				continue
 			}
 
-			results[event.Test].outputs = append(results[event.Test].outputs, out)
+			res.outputs = append(res.outputs, out)
 
 		case "bench": // the benchmark printed log output but did not fail
 			// nothing
 
 		case "pass": // the test passed
-			span := trace.SpanFromContext(res.context)
-			if span != nil {
-				span.AddEvent("Test Passed", trace.WithTimestamp(event.Time), trace.WithAttributes(
-					attribute.String("test.name", event.Test),
-					attribute.String("test.action", event.Action),
-				))
-
-				span.End()
-				res.span = nil
-			}
-
 			fallthrough
 
 		case "fail": // the test or benchmark failed
-			span := trace.SpanFromContext(res.context)
-			if span != nil {
-				span.AddEvent("Test Failed", trace.WithTimestamp(event.Time), trace.WithAttributes(
-					attribute.String("test.name", event.Test),
-					attribute.String("test.action", event.Action),
-				))
-
-				span.End()
-				res.span = nil
-			}
 			fallthrough
 
 		case "skip": // the test was skipped or the package contained no tests
+			oteltrace.SpanFromContext(res.ctx).End()
+
 			if event.Test == "" {
 				logger.Info(strings.ToTitle(event.Action) + " " + event.Package)
 				continue
@@ -404,6 +366,7 @@ func listTestFuncs(dir string) ([]string, error) {
 		}
 
 		if _, dup := testFuncs[l]; dup {
+			// testutil.DatabaseName and other helpers depend on test names being unique across packages
 			return nil, fmt.Errorf("duplicate test function name %q", l)
 		}
 

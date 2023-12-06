@@ -78,10 +78,12 @@ linters-settings:
         alias: dto
       - pkg: go.opentelemetry.io/otel/semconv/v1.21.0
         alias: otelsemconv
-      - pkg: go.opentelemetry.io/otel/sdk/resource
-        alias: otelresource
-      - pkg: go.opentelemetry.io/otel/sdk/trace
+      - pkg: go.opentelemetry.io/otel/trace
         alias: oteltrace
+      - pkg: go.opentelemetry.io/otel/sdk/resource
+        alias: otelsdkresource
+      - pkg: go.opentelemetry.io/otel/sdk/trace
+        alias: otelsdktrace
       - pkg: github.com/jaswdr/faker
         alias: fakerlib
   # ineffassign

@@ -16,3 +16,38 @@
 //
 // TODO https://github.com/FerretDB/FerretDB/issues/3244
 package observability
+
+import (
+	"context"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	otelsdkresource "go.opentelemetry.io/otel/sdk/resource"
+	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
+	otelsemconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+
+	"github.com/FerretDB/FerretDB/internal/util/must"
+)
+
+// SetupOtel sets up OpenTelemetry exporter with fixed values.
+func SetupOtel(service string) otelsdktrace.SpanExporter {
+	exporter := must.NotFail(otlptracehttp.New(
+		context.TODO(),
+		otlptracehttp.WithEndpoint("127.0.0.1:4318"),
+		otlptracehttp.WithInsecure(),
+	))
+
+	tp := otelsdktrace.NewTracerProvider(
+		otelsdktrace.WithSpanProcessor(
+			otelsdktrace.NewBatchSpanProcessor(exporter),
+		),
+		otelsdktrace.WithSampler(otelsdktrace.AlwaysSample()),
+		otelsdktrace.WithResource(otelsdkresource.NewSchemaless(
+			otelsemconv.ServiceNameKey.String(service),
+		)),
+	)
+
+	otel.SetTracerProvider(tp)
+
+	return exporter
+}
