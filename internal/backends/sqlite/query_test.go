@@ -102,7 +102,7 @@ func TestPrepareOrderByClause(t *testing.T) {
 		},
 		"NaturalDescending": {
 			sort:    must.NotFail(types.NewDocument("$natural", int64(-1))),
-			orderBy: "",
+			orderBy: ` ORDER BY _ferretdb_record_id DESC`,
 		},
 	} {
 		name, tc := name, tc
