@@ -56,10 +56,10 @@ func TestCursors(t *testing.T) {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(u.String()))
 	require.NoError(t, err)
 
-	collection2 := client.Database(databaseName).Collection(collectionName)
+	collection := client.Database(databaseName).Collection(collectionName)
 
 	arr, _ := integration.GenerateDocuments(0, 2)
-	_, err = collection2.InsertMany(ctx, arr)
+	_, err = collection.InsertMany(ctx, arr)
 	require.NoError(t, err)
 
 	t.Run("IdleCursorReusedAfterDisconnect", func(t *testing.T) {
