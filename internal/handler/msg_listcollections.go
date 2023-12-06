@@ -78,29 +78,39 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 	collections := types.MakeArray(len(res.Collections))
 
 	for _, collection := range res.Collections {
-		d := must.NotFail(types.NewDocument(
-			"name", collection.Name,
-			"type", "collection",
-		))
-
-		options := types.NewStaticPath("options")
-		info := types.NewStaticPath("info")
-
-		must.NoError(d.SetByPath(options.Append("capped"), collection.Capped()))
+		options := []any{"capped", collection.Capped()}
+		info := []any{"readOnly", false}
 
 		if collection.CappedSize > 0 {
-			must.NoError(d.SetByPath(options.Append("size"), collection.CappedSize))
+			options = append(options, "size", collection.CappedSize)
 		}
-
 		if collection.CappedDocuments > 0 {
-			must.NoError(d.SetByPath(options.Append("max"), collection.CappedDocuments))
+			options = append(options, "max", collection.CappedDocuments)
 		}
 
-		if collection.IDIndex != nil {
-			must.NoError(d.SetByPath(types.NewStaticPath("idIndex"), collection.IDIndex))
+		// Add indices to the collection info.
+		// TODO(henvic): fix getting the indices. Also, check for performance impact.
+		col, err := db.Collection(collection.Name)
+		if err != nil {
+			return nil, fmt.Errorf("cannot get collection %s: %w", collection.UUID, err)
+		}
+		indexes, err := col.ListIndexes(ctx, &backends.ListIndexesParams{})
+		if err != nil {
+			return nil, fmt.Errorf("cannot get indexes for collection %s: %w", collection.UUID, err)
+		}
+		idIndex := types.MakeArray(len(indexes.Indexes))
+		for _, index := range indexes.Indexes {
+			keys := types.MakeArray(len(index.Key))
+			for ki, k := range index.Key {
+				keys.Append(k.Field, ki)
+			}
+			idIndex.Append(must.NotFail(types.NewDocument(
+				"v", 2,
+				"key", keys,
+				"name", index.Name,
+			)))
 		}
 
-		must.NoError(d.SetByPath(info.Append("readOnly"), collection.ReadOnly))
 		if collection.UUID != "" {
 			uuid, err := uuid.Parse(collection.UUID)
 			if err != nil {
@@ -112,8 +122,16 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 				B:       must.NotFail(uuid.MarshalBinary()),
 			}
 
-			must.NoError(d.SetByPath(info.Append("uuid"), uuidBinary))
+			info = append(info, "uuid", uuidBinary)
 		}
+
+		d := must.NotFail(types.NewDocument(
+			"name", collection.Name,
+			"type", "collection",
+			"options", must.NotFail(types.NewDocument(options...)),
+			"info", must.NotFail(types.NewDocument(info...)),
+			"idIndex", idIndex,
+		))
 
 		matches, err := common.FilterDocument(d, filter)
 		if err != nil {

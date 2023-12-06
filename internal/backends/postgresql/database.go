@@ -57,8 +57,6 @@ func (db *database) ListCollections(ctx context.Context, params *backends.ListCo
 			UUID:            c.UUID,
 			CappedSize:      c.CappedSize,
 			CappedDocuments: c.CappedDocuments,
-			ReadOnly:        c.ReadOnly,
-			IDIndex:         c.IDIndex,
 		}
 	}
 

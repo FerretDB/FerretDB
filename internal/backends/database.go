@@ -19,7 +19,6 @@ import (
 	"context"
 	"slices"
 
-	"github.com/FerretDB/FerretDB/internal/types"
 	"github.com/FerretDB/FerretDB/internal/util/must"
 	"github.com/FerretDB/FerretDB/internal/util/observability"
 )
@@ -93,8 +92,6 @@ type CollectionInfo struct {
 	UUID            string
 	CappedSize      int64
 	CappedDocuments int64
-	ReadOnly        bool
-	IDIndex         *types.Document
 
 	_ struct{} // prevent unkeyed literals
 }

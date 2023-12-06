@@ -48,8 +48,6 @@ type Collection struct {
 	Indexes         Indexes
 	CappedSize      int64
 	CappedDocuments int64
-	ReadOnly        bool
-	IDIndex         *types.Document
 }
 
 // deepCopy returns a deep copy.
@@ -65,8 +63,6 @@ func (c *Collection) deepCopy() *Collection {
 		Indexes:         c.Indexes.deepCopy(),
 		CappedSize:      c.CappedSize,
 		CappedDocuments: c.CappedDocuments,
-		ReadOnly:        c.ReadOnly,
-		IDIndex:         c.IDIndex.DeepCopy(),
 	}
 }
 
@@ -122,8 +118,6 @@ func (c *Collection) marshal() *types.Document {
 		"indexes", c.Indexes.marshal(),
 		"cappedSize", c.CappedSize,
 		"cappedDocs", c.CappedDocuments,
-		"readOnly", c.ReadOnly,
-		"idIndex", c.IDIndex,
 	))
 }
 
@@ -166,14 +160,6 @@ func (c *Collection) unmarshal(doc *types.Document) error {
 
 	if v, _ := doc.Get("cappedDocs"); v != nil {
 		c.CappedDocuments = v.(int64)
-	}
-
-	if v, _ := doc.Get("readOnly"); v != nil {
-		c.ReadOnly = v.(bool)
-	}
-
-	if v, _ := doc.Get("idIndex"); v != nil {
-		c.IDIndex = v.(*types.Document)
 	}
 
 	return nil
