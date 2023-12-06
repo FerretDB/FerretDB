@@ -56,7 +56,7 @@ To link to file in a different directory, specify the relative file path.
 
 - `[file in a different directory](../basic-operations/read.md)`.
 
-# FIXME `/category/` does not work correctly
+FIXME `/category/` does not work correctly
 
 To link to category, prefix the directory name with `/category/`.
 
