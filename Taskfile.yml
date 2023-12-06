@@ -912,6 +912,8 @@ tasks:
     desc: "Create new documentation version"
     cmds:
       - docker compose run --rm docusaurus-docs docs:version {{.VERSION}}
+    requires:
+      vars: [VERSION]
 
   docs-cloudflare-preview:
     cmds:

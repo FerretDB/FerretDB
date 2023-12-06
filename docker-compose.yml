@@ -186,22 +186,20 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - ./website/docs:/workdir/docusaurus-docs/docs:rw
+      # shared with blog
+      - ./website/babel.config.js:/workdir/docusaurus-docs/babel.config.js:ro
+      - ./website/sidebars.js:/workdir/docusaurus-docs/sidebars.js:ro
+      - ./website/src:/workdir/docusaurus-docs/src:ro
       - ./website/static:/workdir/docusaurus-docs/static:ro
-      - ./website/src/components:/workdir/docusaurus-docs/src/components:ro
-      - ./website/src/css:/workdir/docusaurus-docs/src/css:ro
+      - ./website/build:/workdir/docusaurus-docs/build:rw
 
+      # docs sources
+      - ./website/docs:/workdir/docusaurus-docs/docs:rw
+      - ./website/docusaurus.config.js:/workdir/docusaurus-docs/docusaurus.config.js:ro
       - ./website/versioned_docs:/workdir/docusaurus-docs/versioned_docs:rw
       - ./website/versioned_sidebars:/workdir/docusaurus-docs/versioned_sidebars:rw
+      - ./website/versions.json:/workdir/docusaurus-docs/versions.json:rw
 
-      # We copy intro.js to redirect from /intro (old default docs page) to the root docs page.
-      - ./website/src/pages/intro.js:/workdir/docusaurus-docs/src/pages/intro.js
-
-      - ./website/babel.config.js:/workdir/docusaurus-docs/babel.config.js:ro
-      - ./website/docusaurus.config.js:/workdir/docusaurus-docs/docusaurus.config.js:ro
-      - ./website/sidebars.js:/workdir/docusaurus-docs/sidebars.js:ro
-
-      - ./website/build:/workdir/docusaurus-docs/build:rw
   docusaurus-blog:
     build:
       context: ./build/deps
@@ -210,16 +208,16 @@ services:
     ports:
       - 3001:3001
     volumes:
-      - ./website/blog:/workdir/docusaurus-docs/blog:ro
-      - ./website/static:/workdir/docusaurus-docs/static:ro
-      - ./website/src/components:/workdir/docusaurus-docs/src/components:ro
-      - ./website/src/css:/workdir/docusaurus-docs/src/css:ro
-
+      # shared with docs
       - ./website/babel.config.js:/workdir/docusaurus-docs/babel.config.js:ro
-      - ./website/docusaurus.config-blog.js:/workdir/docusaurus-docs/docusaurus.config.js:ro
       - ./website/sidebars.js:/workdir/docusaurus-docs/sidebars.js:ro
-
+      - ./website/src:/workdir/docusaurus-docs/src:ro
+      - ./website/static:/workdir/docusaurus-docs/static:ro
       - ./website/build:/workdir/docusaurus-docs/build:rw
+
+      # blog sources
+      - ./website/blog:/workdir/docusaurus-docs/blog:ro
+      - ./website/docusaurus.config-blog.js:/workdir/docusaurus-docs/docusaurus.config.js:ro
 
 networks:
   default:
