@@ -125,10 +125,7 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 	switch {
 	case h.DisablePushdown:
 		// Pushdown disabled
-	case params.Sort.Len() == 1:
-		// Skip sorting if there are more than one sort parameters
-		qp.Sort = params.Sort
-	case capped:
+	case params.Sort.Len() == 0 && capped:
 		// Pushdown default recordID sorting for capped collections
 		qp.Sort = must.NotFail(types.NewDocument("$natural", int64(1)))
 	}
