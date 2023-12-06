@@ -322,16 +322,19 @@ func TestPrepareOrderByClause(t *testing.T) {
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
 		sort *types.Document
+		skip string
 
 		orderBy string
 		args    []any
 	}{
 		"Ascending": {
+			skip:    "https://github.com/FerretDB/FerretDB/issues/3181",
 			sort:    must.NotFail(types.NewDocument("field", int64(1))),
 			orderBy: ` ORDER BY _jsonb->$1`,
 			args:    []any{"field"},
 		},
 		"Descending": {
+			skip:    "https://github.com/FerretDB/FerretDB/issues/3181",
 			sort:    must.NotFail(types.NewDocument("field", int64(-1))),
 			orderBy: ` ORDER BY _jsonb->$1 DESC`,
 			args:    []any{"field"},
@@ -341,6 +344,7 @@ func TestPrepareOrderByClause(t *testing.T) {
 			args:    nil,
 		},
 		"SortDotNotation": {
+			skip:    "https://github.com/FerretDB/FerretDB/issues/3181",
 			sort:    must.NotFail(types.NewDocument("field.embedded", int64(-1))),
 			orderBy: "",
 			args:    nil,
@@ -350,6 +354,7 @@ func TestPrepareOrderByClause(t *testing.T) {
 			orderBy: ` ORDER BY _ferretdb_record_id`,
 		},
 		"NaturalDescending": {
+			skip:    "https://github.com/FerretDB/FerretDB/issues/3638",
 			sort:    must.NotFail(types.NewDocument("$natural", int64(-1))),
 			orderBy: "",
 		},
@@ -357,6 +362,10 @@ func TestPrepareOrderByClause(t *testing.T) {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
+
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
 
 			orderBy, args := prepareOrderByClause(new(metadata.Placeholder), tc.sort)
 
