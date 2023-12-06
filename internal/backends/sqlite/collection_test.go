@@ -68,7 +68,7 @@ func TestCappedCollectionInsertAllQueryExplain(t *testing.T) {
 	t.Run("CappedCollectionSort", func(t *testing.T) {
 		t.Parallel()
 
-		sort := must.NotFail(types.NewDocument("_id", int64(1)))
+		sort := must.NotFail(types.NewDocument("$natural", int64(1)))
 		queryRes, err := cappedColl.Query(ctx, &backends.QueryParams{Sort: sort})
 		require.NoError(t, err)
 
@@ -82,6 +82,6 @@ func TestCappedCollectionInsertAllQueryExplain(t *testing.T) {
 
 		explainRes, err := cappedColl.Explain(ctx, &backends.ExplainParams{Sort: sort})
 		require.NoError(t, err)
-		assert.False(t, explainRes.SortPushdown)
+		assert.True(t, explainRes.SortPushdown)
 	})
 }

@@ -15,10 +15,12 @@
 package handler
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/FerretDB/FerretDB/build/version"
 	"github.com/FerretDB/FerretDB/internal/backends"
@@ -80,12 +82,14 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, lazyerrors.Error(err)
 	}
 
-	qp := backends.ExplainParams{
-		Filter: params.Filter,
-	}
+	qp := new(backends.ExplainParams)
 
 	if params.Aggregate {
-		qp.Filter, params.Sort = aggregations.GetPushdownQuery(params.StagesDocs)
+		params.Filter, params.Sort = aggregations.GetPushdownQuery(params.StagesDocs)
+	}
+
+	if !h.DisablePushdown {
+		qp.Filter = params.Filter
 	}
 
 	if params.Sort, err = common.ValidateSortDocument(params.Sort); err != nil {
@@ -101,24 +105,41 @@ func (h *Handler) MsgExplain(ctx context.Context, msg *wire.OpMsg) (*wire.OpMsg,
 		return nil, err
 	}
 
-	// Skip sorting if there are more than one sort parameters
-	if params.Sort.Len() == 1 {
-		qp.Sort = params.Sort
+	var cList *backends.ListCollectionsResult
+
+	if cList, err = db.ListCollections(ctx, nil); err != nil {
+		return nil, err
+	}
+
+	var cInfo backends.CollectionInfo
+
+	// TODO https://github.com/FerretDB/FerretDB/issues/3601
+	if i, found := slices.BinarySearchFunc(cList.Collections, params.Collection, func(e backends.CollectionInfo, t string) int {
+		return cmp.Compare(e.Name, t)
+	}); found {
+		cInfo = cList.Collections[i]
+	}
+
+	capped := cInfo.Capped()
+
+	switch {
+	case h.DisablePushdown:
+		// Pushdown disabled
+	case params.Sort.Len() == 0 && capped:
+		// Pushdown default recordID sorting for capped collections
+		qp.Sort = must.NotFail(types.NewDocument("$natural", int64(1)))
 	}
 
 	// Limit pushdown is not applied if:
+	//  - pushdown is disabled;
 	//  - `filter` is set, it must fetch all documents to filter them in memory;
 	//  - `sort` is set, it must fetch all documents and sort them in memory;
 	//  - `skip` is non-zero value, skip pushdown is not supported yet.
-	if params.Filter.Len() == 0 && params.Sort.Len() == 0 && params.Skip == 0 {
+	if !h.DisablePushdown && params.Filter.Len() == 0 && params.Sort.Len() == 0 && params.Skip == 0 {
 		qp.Limit = params.Limit
 	}
 
-	if h.DisableFilterPushdown {
-		qp.Filter = nil
-	}
-
-	res, err := coll.Explain(ctx, &qp)
+	res, err := coll.Explain(ctx, qp)
 	if err != nil {
 		return nil, lazyerrors.Error(err)
 	}
