@@ -467,6 +467,12 @@ func TestQueryCompatSort(t *testing.T) {
 			filter: bson.D{},
 			sort:   bson.D{{"v.f$oo.bar", 1}, {"_id", 1}},
 		},
+
+		"NonCappedNatural": {
+			filter:     bson.D{},
+			sort:       bson.D{{"$natural", int32(1)}},
+			resultType: emptyResult,
+		},
 	}
 
 	testQueryCompat(t, testCases)
