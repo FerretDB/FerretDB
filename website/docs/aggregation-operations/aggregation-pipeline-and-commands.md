@@ -58,7 +58,7 @@ So the above aggregation pipeline operation would return the following result:
 ]
 ```
 
-This section of the documentation will focus on [`aggregate` command](#aggregate-command), [aggregation stages](./aggregation-stages.md), and aggregation operators.
+This section of the documentation will focus on [`aggregate` command](#aggregate-command), [aggregation stages](aggregation-stages.md), and aggregation operators.
 
 ## `aggregate` command
 
