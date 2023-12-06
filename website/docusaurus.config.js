@@ -65,7 +65,8 @@ const config = {
           {
             to: '/',
             label: 'Documentation',
-            position: 'left'
+            position: 'left',
+            type: 'docsVersionDropdown'
           },
           {
             href: 'https://blog.ferretdb.io/',
