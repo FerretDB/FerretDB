@@ -911,7 +911,7 @@ tasks:
   docs-version:
     desc: "Create new documentation version"
     cmds:
-      - docker compose run --rm docusaurus-docs docs:version {{.VERSION}}
+      - docker compose run --rm docusaurus-docs docs:version v{{.VERSION}}
     requires:
       vars: [VERSION]
 
