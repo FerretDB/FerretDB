@@ -20,6 +20,7 @@ import (
 
 	"github.com/FerretDB/FerretDB/internal/backends/sqlite/metadata"
 	"github.com/FerretDB/FerretDB/internal/types"
+	"github.com/FerretDB/FerretDB/internal/util/must"
 )
 
 // prepareSelectClause returns SELECT clause for default column of provided table name.
@@ -50,20 +51,15 @@ func prepareSelectClause(table, comment string, capped, onlyRecordIDs bool) stri
 // The provided sort document should be already validated.
 // Provided document should only contain a single value.
 func prepareOrderByClause(sort *types.Document) string {
-	if sort.Len() == 0 {
+	if sort.Len() != 1 {
 		return ""
 	}
 
-	// the following code could be simplified now
+	v := must.NotFail(sort.Get("$natural"))
 
-	v, err := sort.Get("$natural")
-	if err != nil {
-		return ""
-	}
-
+	// TODO https://github.com/FerretDB/FerretDB/issues/3638
 	sortOrder := v.(int64)
 	if sortOrder != 1 {
-		// FIXME support -1 for $natural
 		return ""
 	}
 

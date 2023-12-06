@@ -232,36 +232,19 @@ func prepareWhereClause(p *metadata.Placeholder, sqlFilters *types.Document) (st
 // The provided sort document should be already validated.
 // Provided document should only contain a single value.
 func prepareOrderByClause(p *metadata.Placeholder, sort *types.Document) (string, []any) {
-	if sort.Len() == 0 {
+	if sort.Len() != 1 {
 		return "", nil
 	}
 
-	// the following code could be simplified now
+	v := must.NotFail(sort.Get("$natural"))
 
-	k := sort.Keys()[0]
-	v := sort.Values()[0].(int64)
-
-	if k == "$natural" {
-		if v == 1 {
-			return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil
-		}
-
-		// FIXME support -1 for $natural
+	// TODO https://github.com/FerretDB/FerretDB/issues/3638
+	sortOrder := v.(int64)
+	if sortOrder != 1 {
 		return "", nil
 	}
 
-	// Skip sorting dot notation
-	if strings.ContainsRune(k, '.') {
-		return "", nil
-	}
-
-	var order string
-	if v == -1 {
-		order = " DESC"
-	}
-
-	// FIXME remove it, it is not safe
-	return fmt.Sprintf(" ORDER BY %s->%s%s", metadata.DefaultColumn, p.Next(), order), []any{k}
+	return fmt.Sprintf(" ORDER BY %s", metadata.RecordIDColumn), nil
 }
 
 // filterEqual returns the proper SQL filter with arguments that filters documents
