@@ -38,6 +38,7 @@ import (
 	"github.com/FerretDB/FerretDB/internal/clientconn"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
 	"github.com/FerretDB/FerretDB/internal/handler/registry"
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/debug"
 	"github.com/FerretDB/FerretDB/internal/util/debugbuild"
 	"github.com/FerretDB/FerretDB/internal/util/logging"
@@ -339,7 +340,7 @@ func run() {
 		logger.Sugar().Warnf("Failed to set GOMAXPROCS: %s.", err)
 	}
 
-	ctx, stop := notifyAppTermination(context.Background())
+	ctx, stop := ctxutil.SigTerm(context.Background())
 
 	go func() {
 		<-ctx.Done()
