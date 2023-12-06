@@ -79,32 +79,41 @@ func TestPrepareOrderByClause(t *testing.T) {
 	t.Parallel()
 
 	for name, tc := range map[string]struct { //nolint:vet // used for test only
-		sort   *types.Document
-		capped bool
-
+		sort    *types.Document
+		skip    string
 		orderBy string
 	}{
 		"Ascending": {
 			sort:    must.NotFail(types.NewDocument("field", int64(1))),
+			skip:    "https://github.com/FerretDB/FerretDB/issues/3181",
 			orderBy: "",
 		},
 		"Descending": {
 			sort:    must.NotFail(types.NewDocument("field", int64(-1))),
+			skip:    "https://github.com/FerretDB/FerretDB/issues/3181",
 			orderBy: "",
 		},
 		"SortNil": {
 			orderBy: "",
 		},
-		"Capped": {
-			capped:  true,
+		"NaturalAscending": {
+			sort:    must.NotFail(types.NewDocument("$natural", int64(1))),
 			orderBy: ` ORDER BY _ferretdb_record_id`,
+		},
+		"NaturalDescending": {
+			sort:    must.NotFail(types.NewDocument("$natural", int64(-1))),
+			orderBy: "",
 		},
 	} {
 		name, tc := name, tc
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			orderBy := prepareOrderByClause(tc.sort, tc.capped)
+			if tc.skip != "" {
+				t.Skip(tc.skip)
+			}
+
+			orderBy := prepareOrderByClause(tc.sort)
 
 			assert.Equal(t, tc.orderBy, orderBy)
 		})
