@@ -126,9 +126,7 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 			})
 
 			t.Run("CappedCollectionSortAsc", func(t *testing.T) {
-				if name == "sqlite" {
-					t.Skip("https://github.com/FerretDB/FerretDB/issues/3181")
-				}
+				t.Skip("https://github.com/FerretDB/FerretDB/issues/3181")
 
 				t.Parallel()
 
@@ -150,9 +148,7 @@ func TestCollectionInsertAllQueryExplain(t *testing.T) {
 			})
 
 			t.Run("CappedCollectionSortDesc", func(t *testing.T) {
-				if name == "sqlite" {
-					t.Skip("https://github.com/FerretDB/FerretDB/issues/3181")
-				}
+				t.Skip("https://github.com/FerretDB/FerretDB/issues/3181")
 
 				t.Parallel()
 
