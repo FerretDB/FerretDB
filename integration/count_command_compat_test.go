@@ -18,6 +18,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
+
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -99,7 +101,12 @@ func testCountCommandCompat(t *testing.T, testCases map[string]countCommandCompa
 					require.NoError(t, targetResult.Decode(&targetRes))
 					require.NoError(t, compatResult.Decode(&compatRes))
 
-					AssertEqualDocuments(t, compatRes, targetRes)
+					compatDoc := ConvertDocument(t, compatRes)
+					compatDoc.Remove("$clusterTime")
+					compatDoc.Remove("operationTime")
+
+					targetDoc := ConvertDocument(t, targetRes)
+					testutil.AssertEqual(t, compatDoc, targetDoc)
 
 					targetCount := targetRes.Map()["n"].(int32)
 					compatCount := compatRes.Map()["n"].(int32)
