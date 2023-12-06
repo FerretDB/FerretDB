@@ -131,14 +131,14 @@ func testQueryCompatWithProviders(t *testing.T, providers shareddata.Providers, 
 					resultPushdown := tc.resultPushdown
 
 					var msg string
-					if setup.FilterPushdownDisabled() {
+					if setup.PushdownDisabled() {
 						resultPushdown = noPushdown
 						msg = "Filter pushdown is disabled, but target resulted with pushdown"
 					}
 
 					doc := ConvertDocument(t, explainRes)
 					pushdown, _ := doc.Get("filterPushdown")
-					assert.Equal(t, resultPushdown.FilterPushdownExpected(t), pushdown, msg)
+					assert.Equal(t, resultPushdown.PushdownExpected(t), pushdown, msg)
 
 					targetCursor, targetErr := targetCollection.Find(ctx, filter, opts)
 					compatCursor, compatErr := compatCollection.Find(ctx, filter, opts)
@@ -253,18 +253,16 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 		},
 		"Sort": {
 			sort:         bson.D{{"_id", int32(-1)}},
-			sortPushdown: pgPushdown,
+			sortPushdown: noPushdown,
 		},
 		"FilterSort": {
 			filter:       bson.D{{"v", int32(42)}},
 			sort:         bson.D{{"_id", int32(-1)}},
-			sortPushdown: pgPushdown,
+			sortPushdown: noPushdown,
 		},
 		"MultipleSortFields": {
-			sort: bson.D{{"v", 1}, {"_id", int32(-1)}},
-			// multiple sort fields are skipped by handler and no sort pushdown
-			// is set on handler, so record ID pushdown is done.
-			sortPushdown: allPushdown,
+			sort:         bson.D{{"v", 1}, {"_id", int32(-1)}},
+			sortPushdown: noPushdown,
 		},
 	} {
 		name, tc := name, tc
@@ -289,7 +287,7 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 
 			doc := ConvertDocument(t, explainRes)
 			sortPushdown, _ := doc.Get("sortPushdown")
-			assert.Equal(t, tc.sortPushdown.SortPushdownExpected(t), sortPushdown)
+			assert.Equal(t, tc.sortPushdown.PushdownExpected(t), sortPushdown)
 
 			findOpts := options.Find()
 			if tc.sort != nil {
