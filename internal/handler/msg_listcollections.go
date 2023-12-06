@@ -78,37 +78,19 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 	collections := types.MakeArray(len(res.Collections))
 
 	for _, collection := range res.Collections {
-		options := []any{"capped", collection.Capped()}
+		options := []any{}
 		info := []any{"readOnly", false}
+
+		if collection.Capped() {
+			options = append(options, "capped", true)
+		}
 
 		if collection.CappedSize > 0 {
 			options = append(options, "size", collection.CappedSize)
 		}
+
 		if collection.CappedDocuments > 0 {
 			options = append(options, "max", collection.CappedDocuments)
-		}
-
-		// Add indices to the collection info.
-		// TODO(henvic): fix getting the indices. Also, check for performance impact.
-		col, err := db.Collection(collection.Name)
-		if err != nil {
-			return nil, fmt.Errorf("cannot get collection %s: %w", collection.UUID, err)
-		}
-		indexes, err := col.ListIndexes(ctx, &backends.ListIndexesParams{})
-		if err != nil {
-			return nil, fmt.Errorf("cannot get indexes for collection %s: %w", collection.UUID, err)
-		}
-		idIndex := types.MakeArray(len(indexes.Indexes))
-		for _, index := range indexes.Indexes {
-			keys := types.MakeArray(len(index.Key))
-			for ki, k := range index.Key {
-				keys.Append(k.Field, ki)
-			}
-			idIndex.Append(must.NotFail(types.NewDocument(
-				"v", 2,
-				"key", keys,
-				"name", index.Name,
-			)))
 		}
 
 		if collection.UUID != "" {
@@ -130,7 +112,11 @@ func (h *Handler) MsgListCollections(ctx context.Context, msg *wire.OpMsg) (*wir
 			"type", "collection",
 			"options", must.NotFail(types.NewDocument(options...)),
 			"info", must.NotFail(types.NewDocument(info...)),
-			"idIndex", idIndex,
+			"idIndex", must.NotFail(types.NewDocument(
+				"v", int32(2),
+				"key", must.NotFail(types.NewDocument("_id", int32(1))),
+				"name", "_id_",
+			)),
 		))
 
 		matches, err := common.FilterDocument(d, filter)

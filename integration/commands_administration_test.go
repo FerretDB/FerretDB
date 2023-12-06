@@ -301,6 +301,53 @@ func TestCommandsAdministrationListCollections(t *testing.T) {
 	require.Greater(t, len(targetCollections), 2)
 
 	filter := bson.D{{
+		Key: "name", Value: bson.D{{
+			Key: "$in", Value: bson.A{
+				targetCollections[0].Name(),
+				targetCollections[len(targetCollections)-1].Name(),
+			},
+		}},
+	}}
+
+	target, err := targetCollections[0].Database().ListCollections(ctx, filter)
+	require.NoError(t, err)
+	var targetRes []bson.D
+	err = target.All(ctx, &targetRes)
+	require.NoError(t, err)
+	docTarget := ConvertDocument(t, targetRes[0])
+
+	compat, err := compatCollections[0].Database().ListCollections(ctx, filter)
+	require.NoError(t, err)
+	var compatRes []bson.D
+	err = compat.All(ctx, &compatRes)
+	require.NoError(t, err)
+	docCompat := ConvertDocument(t, compatRes[0])
+
+	assert.Equal(t, target.RemainingBatchLength(), compat.RemainingBatchLength())
+
+	for {
+		assert.Equal(t, target.ID(), compat.ID())
+
+		if target.Next(ctx) || !compat.Next(ctx) {
+			break
+		}
+	}
+
+	// Check idIndex
+	targetIDIndex := must.NotFail(docTarget.Get("idIndex"))
+	compatIDIndex := must.NotFail(docCompat.Get("idIndex"))
+
+	assert.NotEmpty(t, targetIDIndex)
+	assert.Equal(t, targetIDIndex, compatIDIndex)
+}
+
+func TestCommandsAdministrationListCollectionNames(t *testing.T) {
+	t.Parallel()
+	ctx, targetCollections, compatCollections := setup.SetupCompat(t)
+
+	require.Greater(t, len(targetCollections), 2)
+
+	filter := bson.D{{
 		"name", bson.D{{
 			"$in", bson.A{
 				targetCollections[0].Name(),
