@@ -19,6 +19,7 @@ package observability
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -30,7 +31,7 @@ import (
 )
 
 // SetupOtel sets up OpenTelemetry exporter with fixed values.
-func SetupOtel(service string) otelsdktrace.SpanExporter {
+func SetupOtel(service string) func(context.Context) error {
 	exporter := must.NotFail(otlptracehttp.New(
 		context.TODO(),
 		otlptracehttp.WithEndpoint("127.0.0.1:4318"),
@@ -38,9 +39,7 @@ func SetupOtel(service string) otelsdktrace.SpanExporter {
 	))
 
 	tp := otelsdktrace.NewTracerProvider(
-		otelsdktrace.WithSpanProcessor(
-			otelsdktrace.NewBatchSpanProcessor(exporter),
-		),
+		otelsdktrace.WithBatcher(exporter, otelsdktrace.WithBatchTimeout(time.Second)),
 		otelsdktrace.WithSampler(otelsdktrace.AlwaysSample()),
 		otelsdktrace.WithResource(otelsdkresource.NewSchemaless(
 			otelsemconv.ServiceNameKey.String(service),
@@ -49,5 +48,5 @@ func SetupOtel(service string) otelsdktrace.SpanExporter {
 
 	otel.SetTracerProvider(tp)
 
-	return exporter
+	return tp.Shutdown
 }

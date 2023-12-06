@@ -22,10 +22,8 @@ import (
 	"strconv"
 	"time"
 
-	otelsdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.uber.org/zap"
-
 	"github.com/prometheus/client_golang/prometheus"
+	"go.uber.org/zap"
 
 	"github.com/FerretDB/FerretDB/integration/shareddata"
 	"github.com/FerretDB/FerretDB/internal/clientconn/connmetrics"
@@ -38,8 +36,8 @@ import (
 // listenerMetrics are shared between tests.
 var listenerMetrics = connmetrics.NewListenerMetrics()
 
-// exporter is a shared OTLP http exporter for tests.
-var exporter otelsdktrace.SpanExporter
+// shutdownOtel is a function that stops OpenTelemetry provider.
+var shutdownOtel func(context.Context) error
 
 // Startup initializes things that should be initialized only once.
 func Startup() {
@@ -105,7 +103,7 @@ func Startup() {
 		zap.S().Infof("Compat system: none, compatibility tests will be skipped.")
 	}
 
-	exporter = observability.SetupOtel("integration")
+	shutdownOtel = observability.SetupOtel("integration")
 }
 
 // Shutdown cleans up after all tests.
@@ -113,7 +111,7 @@ func Shutdown() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	must.NoError(exporter.Shutdown(ctx))
+	must.NoError(shutdownOtel(ctx))
 
 	// to increase a chance of resource finalizers to spot problems
 	runtime.GC()
