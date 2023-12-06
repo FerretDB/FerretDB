@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/AlekSi/pointer v1.2.0
-	github.com/SAP/go-hdb v1.6.1
+	github.com/SAP/go-hdb v1.6.3
 	github.com/alecthomas/kong v0.8.1
 	github.com/arl/statsviz v0.6.0
 	github.com/go-sql-driver/mysql v1.7.1
@@ -21,10 +21,10 @@ require (
 	go.opentelemetry.io/otel v1.21.0
 	go.uber.org/automaxprocs v1.5.3
 	go.uber.org/zap v1.26.0
-	golang.org/x/crypto v0.15.0 // indirect; always use @latest
-	golang.org/x/crypto/x509roots/fallback v0.0.0-20231121201304-270bf2552c05
-	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa
-	golang.org/x/sys v0.14.0
+	golang.org/x/crypto v0.16.0 // indirect; always use @latest
+	golang.org/x/crypto/x509roots/fallback v0.0.0-20231129163542-152cdb1503eb
+	golang.org/x/exp v0.0.0-20231127185646-65229373498e
+	golang.org/x/sys v0.15.0
 	modernc.org/sqlite v1.27.0
 	go.opentelemetry.io/otel/trace v1.19.0
 )
@@ -58,7 +58,7 @@ require (
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/tools v0.15.0 // indirect
+	golang.org/x/tools v0.16.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/uint128 v1.2.0 // indirect
