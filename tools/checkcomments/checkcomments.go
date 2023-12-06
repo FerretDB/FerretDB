@@ -17,15 +17,19 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"go/ast"
 	"log"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/rogpeppe/go-internal/lockedfile"
 
 	"github.com/google/go-github/v56/github"
 	"golang.org/x/tools/go/analysis"
@@ -35,7 +39,7 @@ import (
 // checkIssueComments is used to enable/disable the linter quickly.
 const checkIssueComments = true
 
-// struct used to hold open status of issues, true if open otherwise false.
+// issueCache stores info regarding rate limiting and the status of issues.
 type issueCache struct {
 	ReachedRateLimit bool                  `json:"reachedRateLimit"`
 	Issues           map[string]issueState `json:"issues"`
@@ -57,13 +61,49 @@ func main() {
 // run analyses TODO comments.
 func run(pass *analysis.Pass) (any, error) {
 	if !checkIssueComments {
+		log.Println("checkcomments linter is disabled")
 		return nil, nil
 	}
 
-	comments := make(chan ast.Comment, 50)
-	go collectTodoComments(pass, comments)
+	comments := collectTodoComments(pass)
 
-	checkTodoComments(context.Background(), pass, comments, nil, nil)
+	if len(comments) == 0 {
+		return nil, nil
+	}
+
+	var err error
+	var currentPath, cachePath string
+
+	if currentPath, err = os.Getwd(); err != nil {
+		log.Panicf("could not get current path: %s", err)
+	}
+
+	if cachePath, err = cacheFilePath(currentPath); err != nil {
+		log.Panicf("could not get cache file path: %s", err)
+	}
+
+	var data []byte
+	if data, err = lockedfile.Read(cachePath); err != nil {
+		log.Panicf("could not read cache file: %s", err)
+	}
+
+	var cache issueCache
+	if err = json.Unmarshal(data, &cache); err != nil {
+		log.Panicf("could not unmarshal cache file: %s", err)
+	}
+
+	if cache.ReachedRateLimit {
+		return nil, nil
+	}
+
+	// token := os.Getenv("GITHUB_TOKEN")
+
+	//client, err := gh.NewRESTClient(token, nil)
+	//if err != nil {
+	//	log.Panicf("could not create GitHub client: %s", err)
+	//}
+
+	// checkTodoComments(context.Background(), pass, comments, &cache, client)
 
 	//	lockedfile.Transform()
 
@@ -136,8 +176,11 @@ func run(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
-// collectTodoComments collects comments that contain TODO messages and sends them to a channel.
-func collectTodoComments(pass *analysis.Pass, comments chan<- ast.Comment) {
+// collectTodoComments returns comments that contain TODO messages and sends them to a channel.
+func collectTodoComments(pass *analysis.Pass) []*ast.Comment {
+	var comments []*ast.Comment
+	var mx sync.Mutex
+
 	wgf := sync.WaitGroup{}
 	wgc := sync.WaitGroup{}
 
@@ -158,10 +201,12 @@ func collectTodoComments(pass *analysis.Pass, comments chan<- ast.Comment) {
 						}
 
 						if f.Name.Name == "testdata" {
-							line, _, _ = strings.Cut(line, ` // want "`)
+							c.Text, _, _ = strings.Cut(line, ` // want "`)
 						}
 
-						comments <- *c
+						mx.Lock()
+						comments = append(comments, c)
+						mx.Unlock()
 
 						wgc.Done()
 					}
@@ -174,72 +219,88 @@ func collectTodoComments(pass *analysis.Pass, comments chan<- ast.Comment) {
 
 	wgf.Wait()
 	wgc.Wait()
-	close(comments)
+
+	return comments
 }
 
 // checkTodoComments goes through the given comments and reports if TODOs are valid and linked issues are open.
-func checkTodoComments(ctx context.Context, pass *analysis.Pass, comments <-chan ast.Comment, cache *issueCache, client *github.Client) error {
-	for c := range comments {
-		match := todoRE.FindStringSubmatch(c.Text)
+func checkTodoComments(ctx context.Context, pass *analysis.Pass, comments []*ast.Comment, cache *issueCache, client *github.Client) {
+	done := make(chan struct{})
 
-		if match == nil {
-			pass.Reportf(c.Pos(), "invalid TODO: incorrect format")
-			continue
-		}
+	wg := sync.WaitGroup{}
+	wg.Add(len(comments))
 
-		issueLink := match[0]
+	for _, c := range comments {
+		go func(c *ast.Comment) {
+			defer wg.Done()
 
-		if state, ok := cache.Issues[issueLink]; ok {
-			if state != issueOpen {
-				message := fmt.Sprintf("invalid TODO: linked issue %s is %s", issueLink, state)
+			match := todoRE.FindStringSubmatch(c.Text)
+
+			if match == nil {
+				pass.Reportf(c.Pos(), "invalid TODO: incorrect format")
+				return
+			}
+
+			issueLink := match[0]
+
+			if state, ok := cache.Issues[issueLink]; ok {
+				if state != issueOpen {
+					message := fmt.Sprintf("invalid TODO: linked issue %s is %s", issueLink, state)
+					pass.Reportf(c.Pos(), message)
+				}
+
+				return
+			}
+
+			issueNum, err := strconv.Atoi(match[1])
+			if err != nil {
+				log.Panicf("invalid issue number: %s", match[1])
+			}
+
+			issue, _, err := client.Issues.Get(ctx, "FerretDB", "FerretDB", issueNum)
+			var re *github.ErrorResponse
+
+			switch {
+			case errors.As(err, new(*github.RateLimitError)):
+				cache.ReachedRateLimit = true
+				msg := "Rate limit reached."
+
+				if os.Getenv("GITHUB_TOKEN") == "" {
+					msg += " Please set a GITHUB_TOKEN as described at " +
+						"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token"
+				}
+
+				log.Println(msg)
+
+				close(done)
+
+			case errors.As(err, &re) && re.Response.StatusCode == 404:
+				cache.Issues[issueLink] = issueNotFound
+				message := fmt.Sprintf("invalid TODO: linked issue %s does not exist", issueLink)
 				pass.Reportf(c.Pos(), message)
+
+			case err != nil:
+				log.Printf("could not get issue %d: %s", issueNum, err)
+				close(done)
+
+			default:
+				if issue.GetState() == "closed" {
+					cache.Issues[issueLink] = issueClosed
+					message := fmt.Sprintf("invalid TODO: linked issue %s is closed", issueLink)
+					pass.Reportf(c.Pos(), message)
+				} else {
+					cache.Issues[issueLink] = issueOpen
+				}
 			}
-
-			continue
-		}
-
-		issueNum, err := strconv.Atoi(match[1])
-		if err != nil {
-			log.Panicf("invalid issue number: %s", match[1])
-		}
-
-		issue, _, err := client.Issues.Get(ctx, "FerretDB", "FerretDB", issueNum)
-		var re *github.ErrorResponse
-
-		switch {
-		case errors.As(err, new(*github.RateLimitError)):
-			cache.ReachedRateLimit = true
-			msg := "Rate limit reached."
-
-			if os.Getenv("GITHUB_TOKEN") == "" {
-				msg += " Please set a GITHUB_TOKEN as described at " +
-					"https://github.com/FerretDB/FerretDB/blob/main/CONTRIBUTING.md#setting-a-github_token"
-			}
-
-			log.Println(msg)
-
-			return nil
-
-		case errors.As(err, &re) && re.Response.StatusCode == 404:
-			cache.Issues[issueLink] = issueNotFound
-			message := fmt.Sprintf("invalid TODO: linked issue %s does not exist", issueLink)
-			pass.Reportf(c.Pos(), message)
-
-		case err != nil:
-			return err
-
-		default:
-			if issue.GetState() == "closed" {
-				cache.Issues[issueLink] = issueClosed
-				message := fmt.Sprintf("invalid TODO: linked issue %s is closed", issueLink)
-				pass.Reportf(c.Pos(), message)
-			} else {
-				cache.Issues[issueLink] = issueOpen
-			}
-		}
+		}(c)
 	}
 
-	return nil
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	<-done
 }
 
 /*
@@ -320,27 +381,30 @@ func checkTodoComments(pass *analysis.Pass, cache *issueCache, client *github.Cl
 
 	return nil
 }
+*/
 
-// getCacheFilePath returns the path to the cache file.
+// cacheFilePath returns the path to the cache file.
 //
-// Due to analysis tools changing cwd for each package they check,
-// we need to find the root of the project in order to get the common cache file.
-// This is done by recursively traversing the current path up until README.md is found.
-func getCacheFilePath(p string) string {
+// It locates the root project directory by moving up from the current location
+// until it finds the .git directory. Using .git ensures we find the project's top level,
+// unlike other file or directory names that could be found in subdirectories.
+//
+// If the project root is not found, an error is returned.
+func cacheFilePath(p string) (string, error) {
 	path := filepath.Dir(p)
-
-	readmePath := filepath.Join(path, "README.md")
-
-	_, err := os.Stat(readmePath)
+	gitPath := filepath.Join(path, ".git")
+	_, err := os.Stat(gitPath)
 
 	if os.IsNotExist(err) {
-		return getCacheFilePath(path)
+		if p == path {
+			return "", errors.New("could not find project root")
+		}
+
+		return cacheFilePath(path)
 	}
 
-	return filepath.Join(path, "tmp", "checkcomments", "cache.json")
+	return filepath.Join(path, "tmp", "checkcomments", "cache.json"), nil
 }
-
-*/
 
 type issueState int
 
