@@ -18,13 +18,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/FerretDB/FerretDB/internal/util/testutil"
-
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
 	"github.com/FerretDB/FerretDB/integration/setup"
+	"github.com/FerretDB/FerretDB/internal/util/testutil"
 )
 
 type countCommandCompatTestCase struct {
