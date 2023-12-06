@@ -40,32 +40,26 @@ import (
 type Cursor struct {
 	// the order of fields is weird to make the struct smaller due to alignment
 
-	created      time.Time
-	iter         types.DocumentsIterator
-	r            *Registry
-	token        *resource.Token
-	closed       chan struct{}
-	DB           string
-	Collection   string
-	Username     string
-	ID           int64
-	closeOnce    sync.Once
-	showRecordID bool
+	created time.Time
+	iter    types.DocumentsIterator
+	r       *Registry
+	*NewParams
+	token     *resource.Token
+	closed    chan struct{}
+	ID        int64
+	closeOnce sync.Once
 }
 
 // newCursor creates a new cursor.
-func newCursor(id int64, params *NewParams, r *Registry) *Cursor {
+func newCursor(id int64, iter types.DocumentsIterator, params *NewParams, r *Registry) *Cursor {
 	c := &Cursor{
-		ID:           id,
-		DB:           params.DB,
-		Collection:   params.Collection,
-		Username:     params.Username,
-		showRecordID: params.ShowRecordID,
-		iter:         params.Iter,
-		r:            r,
-		created:      time.Now(),
-		closed:       make(chan struct{}),
-		token:        resource.NewToken(),
+		ID:        id,
+		iter:      iter,
+		NewParams: params,
+		r:         r,
+		created:   time.Now(),
+		closed:    make(chan struct{}),
+		token:     resource.NewToken(),
 	}
 
 	resource.Track(c, c.token)
@@ -77,7 +71,7 @@ func newCursor(id int64, params *NewParams, r *Registry) *Cursor {
 func (c *Cursor) Next() (struct{}, *types.Document, error) {
 	zero, doc, err := c.iter.Next()
 	if doc != nil {
-		if c.showRecordID {
+		if c.ShowRecordID {
 			doc.Set("$recordId", doc.RecordID())
 		}
 	}

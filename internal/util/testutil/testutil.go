@@ -23,6 +23,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/FerretDB/FerretDB/internal/util/ctxutil"
 	"github.com/FerretDB/FerretDB/internal/util/testutil/testtb"
 )
 
@@ -31,7 +32,7 @@ import (
 func Ctx(tb testtb.TB) context.Context {
 	tb.Helper()
 
-	signalsCtx, signalsCancel := notifyTestsTermination(context.Background())
+	signalsCtx, signalsStop := ctxutil.SigTerm(context.Background())
 
 	testDone := make(chan struct{})
 
@@ -42,7 +43,7 @@ func Ctx(tb testtb.TB) context.Context {
 	go func() {
 		select {
 		case <-testDone:
-			signalsCancel()
+			signalsStop()
 
 		case <-signalsCtx.Done():
 			// There is a weird interaction between terminal's process group/session signal handling,
