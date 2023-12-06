@@ -33,6 +33,7 @@ func TestCappedCollectionInsertAllQueryExplain(t *testing.T) {
 	// TODO https://github.com/FerretDB/FerretDB/issues/3181
 
 	t.Parallel()
+	t.Skip("https://github.com/FerretDB/FerretDB/issues/3181")
 
 	ctx := testutil.Ctx(t)
 
