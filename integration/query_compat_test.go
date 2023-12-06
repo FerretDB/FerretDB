@@ -264,6 +264,31 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 			sort:         bson.D{{"v", 1}, {"_id", int32(-1)}},
 			sortPushdown: noPushdown,
 		},
+
+		"SortNaturalAsc": {
+			sort:         bson.D{{"$natural", int32(1)}},
+			sortPushdown: allPushdown,
+		},
+		"SortNaturalDesc": {
+			sort:         bson.D{{"$natural", int32(-1)}},
+			sortPushdown: allPushdown,
+		},
+		"SortNaturalInt64": {
+			sort:         bson.D{{"$natural", int64(1)}},
+			sortPushdown: noPushdown,
+		},
+		"SortNaturalZero": {
+			sort:         bson.D{{"$natural", int32(0)}},
+			sortPushdown: noPushdown,
+		},
+		"SortNaturalString": {
+			sort:         bson.D{{"$natural", "1"}},
+			sortPushdown: noPushdown,
+		},
+		"SortNaturalMultipleSorts": {
+			sort:         bson.D{{"$natural", "1"}, {"v", int32(1)}},
+			sortPushdown: noPushdown,
+		},
 	} {
 		name, tc := name, tc
 
