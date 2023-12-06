@@ -253,18 +253,16 @@ func TestQueryCappedCollectionCompat(t *testing.T) {
 		},
 		"Sort": {
 			sort:         bson.D{{"_id", int32(-1)}},
-			sortPushdown: pgPushdown,
+			sortPushdown: noPushdown,
 		},
 		"FilterSort": {
 			filter:       bson.D{{"v", int32(42)}},
 			sort:         bson.D{{"_id", int32(-1)}},
-			sortPushdown: pgPushdown,
+			sortPushdown: noPushdown,
 		},
 		"MultipleSortFields": {
-			sort: bson.D{{"v", 1}, {"_id", int32(-1)}},
-			// multiple sort fields are skipped by handler and no sort pushdown
-			// is set on handler, so record ID pushdown is done.
-			sortPushdown: allPushdown,
+			sort:         bson.D{{"v", 1}, {"_id", int32(-1)}},
+			sortPushdown: noPushdown,
 		},
 	} {
 		name, tc := name, tc
